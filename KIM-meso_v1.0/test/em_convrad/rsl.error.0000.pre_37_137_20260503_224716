@@ -1,0 +1,170 @@
+taskid: 0 hostname: Yongui-MacBookPro.local
+ starting wrf task            0  of            1
+ ./module_io_quilt_old.F        2931 F
+Quilting with   1 groups of   0 I/O tasks.
+ Ntasks in X            1 , ntasks in Y            1
+  Domain # 1: dx =  1000.000 m
+WRF V4.6.0 MODEL
+No git found or not a git repository, git commit version not available.
+ *************************************
+ Parent domain
+ ids,ide,jds,jde            1         101           1         101
+ ims,ime,jms,jme           -4         106          -4         106
+ ips,ipe,jps,jpe            1         101           1         101
+ *************************************
+DYNAMICS OPTION: Eulerian Mass Coordinate
+   alloc_space_field: domain            1 ,             284041008  bytes allocated
+  med_initialdata_input: calling input_input
+   Input data is acceptable to use: wrfinput_d01
+ CURRENT DATE          = 2007-06-01_00:00:00
+ SIMULATION START DATE = 2007-06-01_00:00:00
+Timing for processing wrfinput file (stream 0) for domain        1:    0.10569 elapsed seconds
+Max map factor in domain 1 =  1.00. Scale the dt in the model accordingly.
+INPUT LandUse = "USGS"
+ LANDUSE TYPE = "USGS" FOUND          61  CATEGORIES           2  SEASONS WATER CATEGORY =           16  SNOW CATEGORY =            0
+Timing for Writing wrfout_d01_2007-06-01_00:00:00 for domain        1:    0.13380 elapsed seconds
+ Tile Strategy is not specified. Assuming 1D-Y
+WRF TILE   1 IS      1 IE    101 JS      1 JE    101
+WRF NUMBER OF TILES =   1
+d01 2007-06-01_00:00:00  ----------------------------------------
+d01 2007-06-01_00:00:00  W-DAMPING  BEGINS AT W-COURANT NUMBER =    1.00000000
+d01 2007-06-01_00:00:00  ----------------------------------------
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.341522       715.945435    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:05 on domain   1:    1.95291 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.334076       715.944641    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:10 on domain   1:    0.52108 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.327362       715.945190    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:15 on domain   1:    0.46800 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.321350       715.945312    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:20 on domain   1:    0.47705 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.316071       715.944702    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:25 on domain   1:    0.45661 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.311401       715.943359    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:30 on domain   1:    0.50859 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.306915       715.942627    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:35 on domain   1:    0.63602 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.303192       715.940491    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:40 on domain   1:    0.53325 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.300293       715.940430    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:45 on domain   1:    0.47844 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.298157       715.941956    
+ KDM6AD_STATE qv min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   10003466.0       156818416.    
+ KDM6AD_DIAG leaving wrapper

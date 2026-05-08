@@ -1,0 +1,16 @@
+(lldb) target create "./wrf.exe"
+Current executable set to '/Users/yhlee/KDM6AD/KIM-meso_v1.0/test/em_convrad/wrf.exe' (arm64).
+(lldb) run
+2026-05-03 13:47:12.617115+0900 wrf.exe[38406:76182816] [CL_INVALID_OPERATION] : OpenCL Error : Failed to retrieve device information! Invalid enumerated value!
+
+2026-05-03 13:47:12.617340+0900 wrf.exe[38406:76182816] [CL_INVALID_OPERATION] : OpenCL Error : Failed to retrieve device information! Invalid enumerated value!
+
+2026-05-03 13:47:12.617351+0900 wrf.exe[38406:76182816] [CL_INVALID_OPERATION] : OpenCL Error : Failed to retrieve device information! Invalid enumerated value!
+
+2026-05-03 13:47:12.617362+0900 wrf.exe[38406:76182816] [CL_INVALID_OPERATION] : OpenCL Error : Failed to retrieve device information! Invalid enumerated value!
+
+ starting wrf task            0  of            1
+Process 38406 launched: '/Users/yhlee/KDM6AD/KIM-meso_v1.0/test/em_convrad/wrf.exe' (arm64)
+Process 38406 exited with status = 0 (0x00000000)
+(lldb) thread backtrace all
+error: Command requires a process which is currently stopped.

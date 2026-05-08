@@ -1,0 +1,14 @@
+# Fog visibility diagnostics output and optional input.
+# Use with namelist: iofields_filename = "iofields_fogvis.txt"
+
+# Primary outputs (history stream 0)
++:h:0:vis_sfc,vis_sfc_raw,vis_sfc_capped,fogfrac_sfc,fogmask,fogbase_m,fogtop_m,fogdepth_m
+
+# Debug outputs (off by default in Registry)
++:h:0:betaext_sfc,lwc_sfc_gm3,nd_sfc_cm3,re_sfc_um,beta_aer_sfc
+
+# Optional external aerosol inputs (choose one stream)
++:i:0:beta_aer_sfc
+# +:i:0:aod_sfc
+# +:i:15:beta_aer_sfc
+# +:i:15:aod_sfc

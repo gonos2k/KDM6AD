@@ -1,0 +1,87 @@
+taskid: 0 hostname: Yongui-MacBookPro.local
+ starting wrf task            0  of            1
+ ./module_io_quilt_old.F        2931 F
+Quilting with   1 groups of   0 I/O tasks.
+ Ntasks in X            1 , ntasks in Y            1
+  Domain # 1: dx =  1000.000 m
+WRF V4.6.0 MODEL
+No git found or not a git repository, git commit version not available.
+ *************************************
+ Parent domain
+ ids,ide,jds,jde            1         101           1         101
+ ims,ime,jms,jme           -4         106          -4         106
+ ips,ipe,jps,jpe            1         101           1         101
+ *************************************
+DYNAMICS OPTION: Eulerian Mass Coordinate
+   alloc_space_field: domain            1 ,             316752708  bytes allocated
+  med_initialdata_input: calling input_input
+   Input data is acceptable to use: wrfinput_d01
+ CURRENT DATE          = 2007-06-01_00:00:00
+ SIMULATION START DATE = 2007-06-01_00:00:00
+Timing for processing wrfinput file (stream 0) for domain        1:    0.08346 elapsed seconds
+Max map factor in domain 1 =  1.00. Scale the dt in the model accordingly.
+INPUT LandUse = "USGS"
+ LANDUSE TYPE = "USGS" FOUND          61  CATEGORIES           2  SEASONS WATER CATEGORY =           16  SNOW CATEGORY =            0
+Timing for Writing wrfout_d01_2007-06-01_00:00:00 for domain        1:    0.17929 elapsed seconds
+ Tile Strategy is not specified. Assuming 1D-Y
+WRF TILE   1 IS      1 IE    101 JS      1 JE    101
+WRF NUMBER OF TILES =   1
+d01 2007-06-01_00:00:00  ----------------------------------------
+d01 2007-06-01_00:00:00  W-DAMPING  BEGINS AT W-COURANT NUMBER =    1.00000000
+d01 2007-06-01_00:00:00  ----------------------------------------
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.341522       715.945435    
+ KDM6AD_STATE qv min/max=   0.00000000       8.22082256E-06
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(13,5,1) max_rel= 1.02288E-07 at_rel=(15,1,12)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 1.65173E-18 at_abs=(3,3,7) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 8.99965E+07 at_abs=(13,34,4) max_rel= 8.99965E-01 at_rel=(13,34,4)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:05 on domain   1:    2.15485 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+
+Program received signal SIGTRAP: Trace/breakpoint trap.
+
+Backtrace for this error:
+
+Could not print backtrace: executable file is not an executable
+
+Could not print backtrace: executable file is not an executable
+#0  0x1354da103
+#1  0x1354d9083
+#2  0x19fd05763
+#3  0x19fcb3a77
+#4  0x19fcb3a77
+#5  0x1424f5f43
+#6  0x14254f73f
+#7  0x134b3a25f
+#8  0x134b39eab
+#9  0x134b989df
+#10  0x134b9865f
+#11  0x134b25f93
+#12  0x105fb3767
+#13  0x10648076b
+#14  0x106cea353
+#15  0x1057a2ab7
+#16  0x10448de77
+#17  0x1044114d7
+#18  0x106fa11db

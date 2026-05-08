@@ -1,0 +1,1180 @@
+./main/real_em.f90:           CALL open_w_dataset ( id4, TRIM(inpname) , grid , config_flags , output_auxinput4 , "DATASET=AUXINPUT4", ierr )
+./main/real_em.f90:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/real_em.f90:        CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/real_nmm.F:           CALL open_w_dataset ( id4, TRIM(inpname) , grid , config_flags , output_auxinput4 , "DATASET=AUXINPUT4", ierr )
+./main/real_nmm.F:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/real_nmm.F:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/ideal_nmm.F:           CALL open_w_dataset ( id4, TRIM(inpname) , grid , config_flags , output_auxinput4 , "DATASET=AUXINPUT4", ierr )
+./main/ideal_nmm.F:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/ideal_nmm.F:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+Binary file ./main/real.exe matches
+Binary file ./main/real_em.o matches
+./main/real_em.F:           CALL open_w_dataset ( id4, TRIM(inpname) , grid , config_flags , output_auxinput4 , "DATASET=AUXINPUT4", ierr )
+./main/real_em.F:           CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+./main/real_em.F:        CALL output_auxinput4 ( id4, grid , config_flags , ierr )
+Binary file ./main/wrf.exe matches
+./main/depend.common:wrf_auxinput4out.o: \
+./main/depend.common:wrf_auxinput4in.o: \
+Binary file ./main/ndown.exe matches
+Binary file ./main/tc.exe matches
+Binary file ./main/libwrflib.a matches
+./inc/fine_stream_input.inc:   CALL wrf_debug              (   0 , 'med_initialdata_input: calling input_auxinput4' )
+./inc/fine_stream_input.inc:   CALL input_auxinput4 ( fid ,   grid , config_flags , ierr )
+./inc/fine_stream_input.inc:   CALL wrf_debug              ( 100 , 'med_initialdata_input: back from input_auxinput4' )
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INNAME"; then echo "auxinput4_inname=\"${NL_AUXINPUT4_INNAME}\"," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_OUTNAME"; then echo "auxinput4_outname=\"${NL_AUXINPUT4_OUTNAME}\"," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL_Y"; then echo "auxinput4_interval_y=${NL_AUXINPUT4_INTERVAL_Y}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL_D"; then echo "auxinput4_interval_d=${NL_AUXINPUT4_INTERVAL_D}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL_H"; then echo "auxinput4_interval_h=${NL_AUXINPUT4_INTERVAL_H}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL_M"; then echo "auxinput4_interval_m=${NL_AUXINPUT4_INTERVAL_M}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL_S"; then echo "auxinput4_interval_s=${NL_AUXINPUT4_INTERVAL_S}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_INTERVAL"; then echo "auxinput4_interval=${NL_AUXINPUT4_INTERVAL}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN_Y"; then echo "auxinput4_begin_y=${NL_AUXINPUT4_BEGIN_Y}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN_D"; then echo "auxinput4_begin_d=${NL_AUXINPUT4_BEGIN_D}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN_H"; then echo "auxinput4_begin_h=${NL_AUXINPUT4_BEGIN_H}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN_M"; then echo "auxinput4_begin_m=${NL_AUXINPUT4_BEGIN_M}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN_S"; then echo "auxinput4_begin_s=${NL_AUXINPUT4_BEGIN_S}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_BEGIN"; then echo "auxinput4_begin=${NL_AUXINPUT4_BEGIN}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END_Y"; then echo "auxinput4_end_y=${NL_AUXINPUT4_END_Y}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END_D"; then echo "auxinput4_end_d=${NL_AUXINPUT4_END_D}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END_H"; then echo "auxinput4_end_h=${NL_AUXINPUT4_END_H}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END_M"; then echo "auxinput4_end_m=${NL_AUXINPUT4_END_M}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END_S"; then echo "auxinput4_end_s=${NL_AUXINPUT4_END_S}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_AUXINPUT4_END"; then echo "auxinput4_end=${NL_AUXINPUT4_END}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_IO_FORM_AUXINPUT4"; then echo "io_form_auxinput4=${NL_IO_FORM_AUXINPUT4}," >> $FILE;fi
+./inc/namelist_script.inc:if test ! -z "$NL_FRAMES_PER_AUXINPUT4"; then echo "frames_per_auxinput4=${NL_FRAMES_PER_AUXINPUT4}," >> $FILE;fi
+./inc/module_io_domain_defs.inc:SUBROUTINE output_auxinput4 ( fid , grid , config_flags , ierr )
+./inc/module_io_domain_defs.inc: IF ( config_flags%io_form_auxinput4 .GT. 0 ) THEN
+./inc/module_io_domain_defs.inc:   CALL output_wrf( fid, grid, config_flags, auxinput4_only, ierr ) ;
+./inc/module_io_domain_defs.inc:END SUBROUTINE output_auxinput4
+./inc/module_io_domain_defs.inc:SUBROUTINE input_auxinput4 ( fid , grid , config_flags , ierr )
+./inc/module_io_domain_defs.inc: IF ( config_flags%io_form_auxinput4 .GT. 0 ) THEN
+./inc/module_io_domain_defs.inc:   CALL input_wrf( fid, grid, config_flags, auxinput4_only, ierr ) ;
+./inc/module_io_domain_defs.inc:END SUBROUTINE input_auxinput4
+./inc/scalar_derefs.inc: grid%just_read_auxinput4    = just_read_auxinput4
+./inc/scalar_derefs.inc: grid%auxinput4_oid    = auxinput4_oid
+./inc/scalar_derefs.inc: just_read_auxinput4 = grid%just_read_auxinput4
+./inc/scalar_derefs.inc: auxinput4_oid = grid%auxinput4_oid
+./inc/check_auxstream_alarms.inc:     CALL med_auxinput4_in ( grid , config_flags )
+./inc/check_auxstream_alarms.inc:        TRIM(config_flags%auxinput4_inname) , ' for domain ',grid%id
+./inc/med_open_esmf_calls.inc:CALL nl_get_io_form_auxinput4( 1, io_form )
+./inc/med_open_esmf_calls.inc:                   config_flags%auxinput4_inname, grid%auxinput4_oid, &
+./inc/med_open_esmf_calls.inc:                   input_auxinput4, ierr )
+./inc/namelist_defines.inc:character*256 :: auxinput4_inname
+./inc/namelist_defines.inc:character*256 :: auxinput4_outname
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_interval
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_begin
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: auxinput4_end
+./inc/namelist_defines.inc:integer :: io_form_auxinput4
+./inc/namelist_defines.inc:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_inname ( id_id , auxinput4_inname )
+./inc/nl_config.inc:  character*256 , INTENT(OUT) :: auxinput4_inname
+./inc/nl_config.inc:  auxinput4_inname = trim(model_config_rec%auxinput4_inname)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_inname
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_outname ( id_id , auxinput4_outname )
+./inc/nl_config.inc:  character*256 , INTENT(OUT) :: auxinput4_outname
+./inc/nl_config.inc:  auxinput4_outname = trim(model_config_rec%auxinput4_outname)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_outname
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval_y ( id_id , auxinput4_interval_y )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval_y
+./inc/nl_config.inc:  auxinput4_interval_y = model_config_rec%auxinput4_interval_y(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval_y
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval_d ( id_id , auxinput4_interval_d )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval_d
+./inc/nl_config.inc:  auxinput4_interval_d = model_config_rec%auxinput4_interval_d(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval_d
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval_h ( id_id , auxinput4_interval_h )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval_h
+./inc/nl_config.inc:  auxinput4_interval_h = model_config_rec%auxinput4_interval_h(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval_h
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval_m ( id_id , auxinput4_interval_m )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval_m
+./inc/nl_config.inc:  auxinput4_interval_m = model_config_rec%auxinput4_interval_m(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval_m
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval_s ( id_id , auxinput4_interval_s )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval_s
+./inc/nl_config.inc:  auxinput4_interval_s = model_config_rec%auxinput4_interval_s(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval_s
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_interval ( id_id , auxinput4_interval )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_interval
+./inc/nl_config.inc:  auxinput4_interval = model_config_rec%auxinput4_interval(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_interval
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin_y ( id_id , auxinput4_begin_y )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin_y
+./inc/nl_config.inc:  auxinput4_begin_y = model_config_rec%auxinput4_begin_y(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin_y
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin_d ( id_id , auxinput4_begin_d )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin_d
+./inc/nl_config.inc:  auxinput4_begin_d = model_config_rec%auxinput4_begin_d(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin_d
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin_h ( id_id , auxinput4_begin_h )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin_h
+./inc/nl_config.inc:  auxinput4_begin_h = model_config_rec%auxinput4_begin_h(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin_h
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin_m ( id_id , auxinput4_begin_m )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin_m
+./inc/nl_config.inc:  auxinput4_begin_m = model_config_rec%auxinput4_begin_m(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin_m
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin_s ( id_id , auxinput4_begin_s )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin_s
+./inc/nl_config.inc:  auxinput4_begin_s = model_config_rec%auxinput4_begin_s(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin_s
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_begin ( id_id , auxinput4_begin )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_begin
+./inc/nl_config.inc:  auxinput4_begin = model_config_rec%auxinput4_begin(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_begin
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end_y ( id_id , auxinput4_end_y )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end_y
+./inc/nl_config.inc:  auxinput4_end_y = model_config_rec%auxinput4_end_y(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end_y
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end_d ( id_id , auxinput4_end_d )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end_d
+./inc/nl_config.inc:  auxinput4_end_d = model_config_rec%auxinput4_end_d(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end_d
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end_h ( id_id , auxinput4_end_h )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end_h
+./inc/nl_config.inc:  auxinput4_end_h = model_config_rec%auxinput4_end_h(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end_h
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end_m ( id_id , auxinput4_end_m )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end_m
+./inc/nl_config.inc:  auxinput4_end_m = model_config_rec%auxinput4_end_m(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end_m
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end_s ( id_id , auxinput4_end_s )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end_s
+./inc/nl_config.inc:  auxinput4_end_s = model_config_rec%auxinput4_end_s(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end_s
+./inc/nl_config.inc:SUBROUTINE nl_get_auxinput4_end ( id_id , auxinput4_end )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: auxinput4_end
+./inc/nl_config.inc:  auxinput4_end = model_config_rec%auxinput4_end(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_auxinput4_end
+./inc/nl_config.inc:SUBROUTINE nl_get_io_form_auxinput4 ( id_id , io_form_auxinput4 )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: io_form_auxinput4
+./inc/nl_config.inc:  io_form_auxinput4 = model_config_rec%io_form_auxinput4
+./inc/nl_config.inc:END SUBROUTINE nl_get_io_form_auxinput4
+./inc/nl_config.inc:SUBROUTINE nl_get_frames_per_auxinput4 ( id_id , frames_per_auxinput4 )
+./inc/nl_config.inc:  integer , INTENT(OUT) :: frames_per_auxinput4
+./inc/nl_config.inc:  frames_per_auxinput4 = model_config_rec%frames_per_auxinput4(id_id)
+./inc/nl_config.inc:END SUBROUTINE nl_get_frames_per_auxinput4
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_inname ( id_id , auxinput4_inname )
+./inc/nl_config.inc:  character*256 , INTENT(IN) :: auxinput4_inname
+./inc/nl_config.inc:  model_config_rec%auxinput4_inname = trim(auxinput4_inname) 
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_inname
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_outname ( id_id , auxinput4_outname )
+./inc/nl_config.inc:  character*256 , INTENT(IN) :: auxinput4_outname
+./inc/nl_config.inc:  model_config_rec%auxinput4_outname = trim(auxinput4_outname) 
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_outname
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval_y ( id_id , auxinput4_interval_y )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval_y
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval_y(id_id) = auxinput4_interval_y
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval_y
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval_d ( id_id , auxinput4_interval_d )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval_d
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval_d(id_id) = auxinput4_interval_d
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval_d
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval_h ( id_id , auxinput4_interval_h )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval_h
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval_h(id_id) = auxinput4_interval_h
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval_h
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval_m ( id_id , auxinput4_interval_m )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval_m
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval_m(id_id) = auxinput4_interval_m
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval_m
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval_s ( id_id , auxinput4_interval_s )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval_s
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval_s(id_id) = auxinput4_interval_s
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval_s
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_interval ( id_id , auxinput4_interval )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_interval
+./inc/nl_config.inc:  model_config_rec%auxinput4_interval(id_id) = auxinput4_interval
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_interval
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin_y ( id_id , auxinput4_begin_y )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin_y
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin_y(id_id) = auxinput4_begin_y
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin_y
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin_d ( id_id , auxinput4_begin_d )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin_d
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin_d(id_id) = auxinput4_begin_d
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin_d
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin_h ( id_id , auxinput4_begin_h )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin_h
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin_h(id_id) = auxinput4_begin_h
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin_h
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin_m ( id_id , auxinput4_begin_m )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin_m
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin_m(id_id) = auxinput4_begin_m
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin_m
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin_s ( id_id , auxinput4_begin_s )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin_s
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin_s(id_id) = auxinput4_begin_s
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin_s
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_begin ( id_id , auxinput4_begin )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_begin
+./inc/nl_config.inc:  model_config_rec%auxinput4_begin(id_id) = auxinput4_begin
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_begin
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end_y ( id_id , auxinput4_end_y )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end_y
+./inc/nl_config.inc:  model_config_rec%auxinput4_end_y(id_id) = auxinput4_end_y
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end_y
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end_d ( id_id , auxinput4_end_d )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end_d
+./inc/nl_config.inc:  model_config_rec%auxinput4_end_d(id_id) = auxinput4_end_d
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end_d
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end_h ( id_id , auxinput4_end_h )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end_h
+./inc/nl_config.inc:  model_config_rec%auxinput4_end_h(id_id) = auxinput4_end_h
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end_h
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end_m ( id_id , auxinput4_end_m )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end_m
+./inc/nl_config.inc:  model_config_rec%auxinput4_end_m(id_id) = auxinput4_end_m
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end_m
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end_s ( id_id , auxinput4_end_s )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end_s
+./inc/nl_config.inc:  model_config_rec%auxinput4_end_s(id_id) = auxinput4_end_s
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end_s
+./inc/nl_config.inc:SUBROUTINE nl_set_auxinput4_end ( id_id , auxinput4_end )
+./inc/nl_config.inc:  integer , INTENT(IN) :: auxinput4_end
+./inc/nl_config.inc:  model_config_rec%auxinput4_end(id_id) = auxinput4_end
+./inc/nl_config.inc:END SUBROUTINE nl_set_auxinput4_end
+./inc/nl_config.inc:SUBROUTINE nl_set_io_form_auxinput4 ( id_id , io_form_auxinput4 )
+./inc/nl_config.inc:  integer , INTENT(IN) :: io_form_auxinput4
+./inc/nl_config.inc:  model_config_rec%io_form_auxinput4 = io_form_auxinput4 
+./inc/nl_config.inc:END SUBROUTINE nl_set_io_form_auxinput4
+./inc/nl_config.inc:SUBROUTINE nl_set_frames_per_auxinput4 ( id_id , frames_per_auxinput4 )
+./inc/nl_config.inc:  integer , INTENT(IN) :: frames_per_auxinput4
+./inc/nl_config.inc:  model_config_rec%frames_per_auxinput4(id_id) = frames_per_auxinput4
+./inc/nl_config.inc:END SUBROUTINE nl_set_frames_per_auxinput4
+./inc/io_form_for_stream.inc:    ELSE IF ( stream .eq. auxinput4_only ) THEN
+./inc/io_form_for_stream.inc:      CALL nl_get_io_form_auxinput4( 1, io_form )
+./inc/namelist_defines2.inc:character*256 :: auxinput4_inname
+./inc/namelist_defines2.inc:character*256 :: auxinput4_outname
+./inc/namelist_defines2.inc:integer :: auxinput4_interval_y
+./inc/namelist_defines2.inc:integer :: auxinput4_interval_d
+./inc/namelist_defines2.inc:integer :: auxinput4_interval_h
+./inc/namelist_defines2.inc:integer :: auxinput4_interval_m
+./inc/namelist_defines2.inc:integer :: auxinput4_interval_s
+./inc/namelist_defines2.inc:integer :: auxinput4_interval
+./inc/namelist_defines2.inc:integer :: auxinput4_begin_y
+./inc/namelist_defines2.inc:integer :: auxinput4_begin_d
+./inc/namelist_defines2.inc:integer :: auxinput4_begin_h
+./inc/namelist_defines2.inc:integer :: auxinput4_begin_m
+./inc/namelist_defines2.inc:integer :: auxinput4_begin_s
+./inc/namelist_defines2.inc:integer :: auxinput4_begin
+./inc/namelist_defines2.inc:integer :: auxinput4_end_y
+./inc/namelist_defines2.inc:integer :: auxinput4_end_d
+./inc/namelist_defines2.inc:integer :: auxinput4_end_h
+./inc/namelist_defines2.inc:integer :: auxinput4_end_m
+./inc/namelist_defines2.inc:integer :: auxinput4_end_s
+./inc/namelist_defines2.inc:integer :: auxinput4_end
+./inc/namelist_defines2.inc:integer :: io_form_auxinput4
+./inc/namelist_defines2.inc:integer :: frames_per_auxinput4
+./inc/set_timekeeping_defs.inc: INTEGER :: auxinput4_interval  , &
+./inc/set_timekeeping_defs.inc:            auxinput4_interval_d, &
+./inc/set_timekeeping_defs.inc:            auxinput4_interval_h, &
+./inc/set_timekeeping_defs.inc:            auxinput4_interval_m, &
+./inc/set_timekeeping_defs.inc:            auxinput4_interval_s   
+./inc/set_timekeeping_defs.inc: INTEGER :: auxinput4_begin  ,    &
+./inc/set_timekeeping_defs.inc:            auxinput4_begin_y,    &
+./inc/set_timekeeping_defs.inc:            auxinput4_begin_d,    &
+./inc/set_timekeeping_defs.inc:            auxinput4_begin_h,    &
+./inc/set_timekeeping_defs.inc:            auxinput4_begin_m,    &
+./inc/set_timekeeping_defs.inc:            auxinput4_begin_s      
+./inc/set_timekeeping_defs.inc: INTEGER :: auxinput4_end  ,      &
+./inc/set_timekeeping_defs.inc:            auxinput4_end_y,      &
+./inc/set_timekeeping_defs.inc:            auxinput4_end_d,      &
+./inc/set_timekeeping_defs.inc:            auxinput4_end_h,      &
+./inc/set_timekeeping_defs.inc:            auxinput4_end_m,      &
+./inc/set_timekeeping_defs.inc:            auxinput4_end_s        
+./inc/med_auxinput_in_closes.inc:     IF ( grid%nframes(stream) >= config_flags%frames_per_auxinput4 ) THEN
+./inc/med_auxinput_in_closes.inc:       CALL close_dataset ( grid%auxinput4_oid , config_flags , "DATASET=AUXINPUT4" )
+./inc/med_auxinput_in_closes.inc:       grid%auxinput4_oid = 0
+./inc/med_find_esmf_coupling.inc:  CALL nl_get_io_form_auxinput4( 1, io_form )
+./inc/namelist_defaults.inc:auxinput4_inname = "auxinput4_d<domain>_<date>"
+./inc/namelist_defaults.inc:auxinput4_outname = "auxinput4_d<domain>_<date>"
+./inc/namelist_defaults.inc:auxinput4_interval_y = 0
+./inc/namelist_defaults.inc:auxinput4_interval_d = 0
+./inc/namelist_defaults.inc:auxinput4_interval_h = 0
+./inc/namelist_defaults.inc:auxinput4_interval_m = 0
+./inc/namelist_defaults.inc:auxinput4_interval_s = 0
+./inc/namelist_defaults.inc:auxinput4_interval = 0
+./inc/namelist_defaults.inc:auxinput4_begin_y = 0
+./inc/namelist_defaults.inc:auxinput4_begin_d = 0
+./inc/namelist_defaults.inc:auxinput4_begin_h = 0
+./inc/namelist_defaults.inc:auxinput4_begin_m = 0
+./inc/namelist_defaults.inc:auxinput4_begin_s = 0
+./inc/namelist_defaults.inc:auxinput4_begin = 0
+./inc/namelist_defaults.inc:auxinput4_end_y = 0
+./inc/namelist_defaults.inc:auxinput4_end_d = 0
+./inc/namelist_defaults.inc:auxinput4_end_h = 0
+./inc/namelist_defaults.inc:auxinput4_end_m = 0
+./inc/namelist_defaults.inc:auxinput4_end_s = 0
+./inc/namelist_defaults.inc:auxinput4_end = 0
+./inc/namelist_defaults.inc:io_form_auxinput4 = 0
+./inc/namelist_defaults.inc:frames_per_auxinput4 = 999999
+./inc/med_auxinput_in.inc:                    config_flags%auxinput4_inname, grid%auxinput4_oid, &
+./inc/med_auxinput_in.inc:                    input_auxinput4, ierr )
+./inc/med_auxinput_in.inc:   CALL input_auxinput4 ( grid%auxinput4_oid, grid , config_flags , ierr )
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_inname
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_outname
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval_y
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval_d
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval_h
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval_m
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval_s
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_interval
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin_y
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin_d
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin_h
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin_m
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin_s
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_begin
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end_y
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end_d
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end_h
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end_m
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end_s
+./inc/namelist_statements.inc:NAMELIST /time_control/ auxinput4_end
+./inc/namelist_statements.inc:NAMELIST /time_control/ io_form_auxinput4
+./inc/namelist_statements.inc:NAMELIST /time_control/ frames_per_auxinput4
+./inc/io_form_for_dataset.inc:      CALL nl_get_io_form_auxinput4( 1, io_form )
+./inc/set_timekeeping_alarms.inc:! auxinput4 INTERVAL
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_interval( grid%id, auxinput4_interval )   ! same as minutes
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_interval_d( grid%id, auxinput4_interval_d )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_interval_h( grid%id, auxinput4_interval_h )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_interval_m( grid%id, auxinput4_interval_m )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_interval_s( grid%id, auxinput4_interval_s )
+./inc/set_timekeeping_alarms.inc:   IF ( auxinput4_interval_m .EQ. 0 ) auxinput4_interval_m = auxinput4_interval
+./inc/set_timekeeping_alarms.inc:   IF ( MAX( auxinput4_interval_d,   &
+./inc/set_timekeeping_alarms.inc:             auxinput4_interval_h, auxinput4_interval_m , auxinput4_interval_s   ) .GT. 0 ) THEN
+./inc/set_timekeeping_alarms.inc:     CALL WRFU_TimeIntervalSet( interval, D=auxinput4_interval_d, &
+./inc/set_timekeeping_alarms.inc:                                        H=auxinput4_interval_h, M=auxinput4_interval_m, S=auxinput4_interval_s, rc=rc )
+./inc/set_timekeeping_alarms.inc:                           'WRFU_TimeIntervalSet(auxinput4_interval) FAILED', &
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin  ( grid%id, auxinput4_begin   )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin_y( grid%id, auxinput4_begin_y )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin_d( grid%id, auxinput4_begin_d )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin_h( grid%id, auxinput4_begin_h )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin_m( grid%id, auxinput4_begin_m )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_begin_s( grid%id, auxinput4_begin_s )
+./inc/set_timekeeping_alarms.inc:   IF ( auxinput4_begin_m .EQ. 0 ) auxinput4_begin_m = auxinput4_begin
+./inc/set_timekeeping_alarms.inc:   IF ( MAX( auxinput4_begin_y, auxinput4_begin_d,   &
+./inc/set_timekeeping_alarms.inc:             auxinput4_begin_h, auxinput4_begin_m , auxinput4_begin_s   ) .GT. 0 ) THEN
+./inc/set_timekeeping_alarms.inc:      CALL WRFU_TimeIntervalSet( begin_time , D=auxinput4_begin_d, &
+./inc/set_timekeeping_alarms.inc:                                      H=auxinput4_begin_h, M=auxinput4_begin_m, S=auxinput4_begin_s, rc=rc )
+./inc/set_timekeeping_alarms.inc:                            'WRFU_TimeIntervalSet(auxinput4_begin) FAILED', &
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end( grid%id, auxinput4_end )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end_y( grid%id, auxinput4_end_y )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end_d( grid%id, auxinput4_end_d )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end_h( grid%id, auxinput4_end_h )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end_m( grid%id, auxinput4_end_m )
+./inc/set_timekeeping_alarms.inc:   CALL nl_get_auxinput4_end_s( grid%id, auxinput4_end_s )
+./inc/set_timekeeping_alarms.inc:   IF ( auxinput4_end_m .EQ. 0 ) auxinput4_end_m = auxinput4_end
+./inc/set_timekeeping_alarms.inc:   IF ( MAX( auxinput4_end_y, auxinput4_end_d,   &
+./inc/set_timekeeping_alarms.inc:             auxinput4_end_h, auxinput4_end_m , auxinput4_end_s   ) .GT. 0 ) THEN
+./inc/set_timekeeping_alarms.inc:      CALL WRFU_TimeIntervalSet( end_time , D=auxinput4_end_d, &
+./inc/set_timekeeping_alarms.inc:                                     H=auxinput4_end_h, M=auxinput4_end_m, S=auxinput4_end_s, rc=rc )
+./inc/set_timekeeping_alarms.inc:                            'WRFU_TimeIntervalSet(auxinput4_end) FAILED', &
+./inc/set_timekeeping_alarms.inc:   CALL domain_alarm_create( grid, auxinput4_ALARM, interval, begin_time, end_time )
+./inc/set_timekeeping_alarms.inc:     CALL WRFU_AlarmRingerOn( grid%alarms( auxinput4_ALARM ),  rc=rc )
+./inc/set_timekeeping_alarms.inc:                           'WRFU_AlarmRingerOn(auxinput4_ALARM) FAILED', &
+./inc/switches_and_alarms.inc:INTEGER, PARAMETER :: auxinput4_only     = 30
+./inc/config_assigns.inc: DEST_RECORD auxinput4_inname           = SOURCE_RECORD auxinput4_inname 
+./inc/config_assigns.inc: DEST_RECORD auxinput4_outname          = SOURCE_RECORD auxinput4_outname 
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval_y       = SOURCE_RECORD auxinput4_interval_y SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval_d       = SOURCE_RECORD auxinput4_interval_d SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval_h       = SOURCE_RECORD auxinput4_interval_h SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval_m       = SOURCE_RECORD auxinput4_interval_m SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval_s       = SOURCE_RECORD auxinput4_interval_s SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_interval         = SOURCE_RECORD auxinput4_interval SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin_y          = SOURCE_RECORD auxinput4_begin_y SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin_d          = SOURCE_RECORD auxinput4_begin_d SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin_h          = SOURCE_RECORD auxinput4_begin_h SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin_m          = SOURCE_RECORD auxinput4_begin_m SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin_s          = SOURCE_RECORD auxinput4_begin_s SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_begin            = SOURCE_RECORD auxinput4_begin SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end_y            = SOURCE_RECORD auxinput4_end_y SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end_d            = SOURCE_RECORD auxinput4_end_d SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end_h            = SOURCE_RECORD auxinput4_end_h SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end_m            = SOURCE_RECORD auxinput4_end_m SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end_s            = SOURCE_RECORD auxinput4_end_s SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD auxinput4_end              = SOURCE_RECORD auxinput4_end SOURCE_REC_DEX
+./inc/config_assigns.inc: DEST_RECORD io_form_auxinput4          = SOURCE_RECORD io_form_auxinput4 
+./inc/config_assigns.inc: DEST_RECORD frames_per_auxinput4       = SOURCE_RECORD frames_per_auxinput4 SOURCE_REC_DEX
+./inc/dummy_decl.inc:logical                                  :: just_read_auxinput4
+./inc/dummy_decl.inc:integer                                  :: auxinput4_oid
+./inc/state_struct.inc:logical                                  :: just_read_auxinput4
+./inc/state_struct.inc:integer                                  :: auxinput4_oid
+./inc/state_struct.inc:character*256                               :: auxinput4_inname
+./inc/state_struct.inc:character*256                               :: auxinput4_outname
+./inc/state_struct.inc:integer                                  :: auxinput4_interval_y
+./inc/state_struct.inc:integer                                  :: auxinput4_interval_d
+./inc/state_struct.inc:integer                                  :: auxinput4_interval_h
+./inc/state_struct.inc:integer                                  :: auxinput4_interval_m
+./inc/state_struct.inc:integer                                  :: auxinput4_interval_s
+./inc/state_struct.inc:integer                                  :: auxinput4_interval
+./inc/state_struct.inc:integer                                  :: auxinput4_begin_y
+./inc/state_struct.inc:integer                                  :: auxinput4_begin_d
+./inc/state_struct.inc:integer                                  :: auxinput4_begin_h
+./inc/state_struct.inc:integer                                  :: auxinput4_begin_m
+./inc/state_struct.inc:integer                                  :: auxinput4_begin_s
+./inc/state_struct.inc:integer                                  :: auxinput4_begin
+./inc/state_struct.inc:integer                                  :: auxinput4_end_y
+./inc/state_struct.inc:integer                                  :: auxinput4_end_d
+./inc/state_struct.inc:integer                                  :: auxinput4_end_h
+./inc/state_struct.inc:integer                                  :: auxinput4_end_m
+./inc/state_struct.inc:integer                                  :: auxinput4_end_s
+./inc/state_struct.inc:integer                                  :: auxinput4_end
+./inc/state_struct.inc:integer                                  :: io_form_auxinput4
+./inc/state_struct.inc:integer                                  :: frames_per_auxinput4
+./inc/allocs.inc:   grid%tail_statevars%VarName = 'just_read_auxinput4'
+./inc/allocs.inc:   grid%tail_statevars%lfield_0d => grid%just_read_auxinput4
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%just_read_auxinput4=.FALSE.
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_oid=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_y=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_d=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_h=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_m=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_s=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_y=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_d=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_h=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_m=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_s=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_y=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_d=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_h=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_m=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_s=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%auxinput4_end=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%io_form_auxinput4=0
+./inc/allocs.inc:IF ( setinitval .EQ. 3 ) grid%frames_per_auxinput4=0
+./run/README.namelist: auxinput4_inname                    = "wrflowinp_d<domain>" 
+./run/README.namelist: auxinput4_interval (max_dom)        = 360      ! minutes generally matches time given by interval_seconds
+./run/README.namelist: io_form_auxinput4                   = 2        ! IO format
+./run/README.namelist:                                                  namelists in &time_control: auxinput4_interval, auxinput4_end_h,
+./run/README.namelist:                                                  auxinput4_inname = "wrflowinp_d<domain>", and io_form_auxinput4
+./Registry/Registry.EM_COMMON:state logical just_read_auxinput4  -      misc      -         -     r    "we_just_read_sst"          "1=AUXINPUT4 ALARM RINGING, 0=NO AUXINPUT4 ALARM"  "-"
+./Registry/io_boilerplate_temporary.inc:state integer auxinput4_oid         - - - - - "" "" ""
+./Registry/io_boilerplate_temporary.inc:rconfig character auxinput4_inname namelist,time_control 1 "auxinput4_d<domain>_<date>"
+./Registry/io_boilerplate_temporary.inc:rconfig character auxinput4_outname namelist,time_control 1 "auxinput4_d<domain>_<date>"
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval_y namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval_d namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval_h namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval_m namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval_s namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_interval   namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin_y namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin_d namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin_h namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin_m namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin_s namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_begin   namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end_y namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end_d namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end_h namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end_m namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end_s namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer auxinput4_end   namelist,time_control max_domains 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer io_form_auxinput4 namelist,time_control 1 0
+./Registry/io_boilerplate_temporary.inc:rconfig integer frames_per_auxinput4 namelist,time_control max_domains 999999
+./dyn_em/solve_em.F:   USE module_domain_type, ONLY : history_alarm, restart_alarm, auxinput4_alarm            &
+./dyn_em/solve_em.F:   IF ( coupler_on )   grid%just_read_auxinput4 = Is_alarm_tstep(grid%domain_clock, grid%alarms(AUXINPUT4_ALARM))
+./dyn_em/solve_em.f90:   USE module_domain_type, ONLY : history_alarm, restart_alarm, auxinput4_alarm            &
+./dyn_em/solve_em.f90:   IF ( coupler_on )   grid%just_read_auxinput4 = Is_alarm_tstep(grid%domain_clock, grid%alarms(AUXINPUT4_ALARM))
+./test/em_real/examples.namelist: auxinput4_inname                    = "wrflowinp_d<domain>"
+./test/em_real/examples.namelist: auxinput4_interval                  = 360, 360, 360, 
+./test/em_real/examples.namelist: io_form_auxinput4                   = 2
+./test/em_real/namelist.input.chem: io_form_auxinput4                   = 0
+./arch/noopt_exceptions:wrf_auxinput4in.o : wrf_auxinput4in.F
+./arch/noopt_exceptions:wrf_auxinput4out.o : wrf_auxinput4out.F
+./arch/noopt_exceptions:wrf_auxinput4in.o \
+./arch/noopt_exceptions:wrf_auxinput4out.o \
+Binary file ./share/set_timekeeping.o matches
+./share/mediation_wrfmain.f90:   CALL wrf_debug              (   0 , 'med_initialdata_input: calling input_auxinput4' )
+./share/mediation_wrfmain.f90:   CALL input_auxinput4 ( fid ,   grid , config_flags , ierr )
+./share/mediation_wrfmain.f90:   CALL wrf_debug              ( 100 , 'med_initialdata_input: back from input_auxinput4' )
+./share/mediation_wrfmain.f90: grid % auxinput4_inname           = model_config_rec % auxinput4_inname 
+./share/mediation_wrfmain.f90: grid % auxinput4_outname          = model_config_rec % auxinput4_outname 
+./share/mediation_wrfmain.f90: grid % auxinput4_interval_y       = model_config_rec % auxinput4_interval_y (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_interval_d       = model_config_rec % auxinput4_interval_d (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_interval_h       = model_config_rec % auxinput4_interval_h (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_interval_m       = model_config_rec % auxinput4_interval_m (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_interval_s       = model_config_rec % auxinput4_interval_s (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_interval         = model_config_rec % auxinput4_interval (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin_y          = model_config_rec % auxinput4_begin_y (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin_d          = model_config_rec % auxinput4_begin_d (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin_h          = model_config_rec % auxinput4_begin_h (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin_m          = model_config_rec % auxinput4_begin_m (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin_s          = model_config_rec % auxinput4_begin_s (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_begin            = model_config_rec % auxinput4_begin (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end_y            = model_config_rec % auxinput4_end_y (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end_d            = model_config_rec % auxinput4_end_d (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end_h            = model_config_rec % auxinput4_end_h (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end_m            = model_config_rec % auxinput4_end_m (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end_s            = model_config_rec % auxinput4_end_s (grid%id)
+./share/mediation_wrfmain.f90: grid % auxinput4_end              = model_config_rec % auxinput4_end (grid%id)
+./share/mediation_wrfmain.f90: grid % io_form_auxinput4          = model_config_rec % io_form_auxinput4 
+./share/mediation_wrfmain.f90: grid % frames_per_auxinput4       = model_config_rec % frames_per_auxinput4 (grid%id)
+Binary file ./share/module_check_a_mundo.o matches
+./share/input_wrf.f90:               auxinput3_only, auxinput4_only, auxinput5_only,  &
+Binary file ./share/module_io_domain.o matches
+./share/module_check_a_mundo.f90:         model_config_rec%io_form_auxinput4 = 0
+./share/module_check_a_mundo.f90:                  'setting io_form_auxinput4 = 0 and auxinput4_interval = 0 for all domains'
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval(i)   = 0
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval_y(i) = 0
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval_d(i) = 0
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval_h(i) = 0
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval_m(i) = 0
+./share/module_check_a_mundo.f90:            model_config_rec%auxinput4_interval_s(i) = 0
+./share/module_check_a_mundo.f90:         IF ( model_config_rec%io_form_auxinput4 .EQ. 0 ) THEN
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- ERROR: If sst_update /= 0, io_form_auxinput4 must be /= 0'
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- Set io_form_auxinput4 in the time_control namelist (probably to 2).'
+./share/module_check_a_mundo.f90:         IF ( model_config_rec%io_form_auxinput4 .EQ. 0 ) THEN
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- ERROR: If sst_update /= 0, io_form_auxinput4 must be /= 0'
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- Set io_form_auxinput4 in the time_control namelist (probably to 2).'
+./share/module_check_a_mundo.f90:         IF ( ( model_config_rec%auxinput4_interval(1)   .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.f90:              ( model_config_rec%auxinput4_interval_y(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.f90:              ( model_config_rec%auxinput4_interval_d(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.f90:              ( model_config_rec%auxinput4_interval_h(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.f90:              ( model_config_rec%auxinput4_interval_m(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.f90:              ( model_config_rec%auxinput4_interval_s(1) .EQ. 0 ) ) THEN
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- ERROR: If sst_update /= 0, one of the auxinput4_interval settings must be /= 0'
+./share/module_check_a_mundo.f90:            wrf_err_message = '--- Set auxinput4_interval_s to the same value as interval_seconds (usually a pretty good guess).'
+Binary file ./share/mediation_integrate.o matches
+./share/mediation_integrate.f90:                    config_flags%auxinput4_inname, grid%auxinput4_oid, &
+./share/mediation_integrate.f90:                    input_auxinput4, ierr )
+./share/mediation_integrate.f90:   CALL input_auxinput4 ( grid%auxinput4_oid, grid , config_flags , ierr )
+./share/mediation_integrate.f90:     IF ( grid%nframes(stream) >= config_flags%frames_per_auxinput4 ) THEN
+./share/mediation_integrate.f90:       CALL close_dataset ( grid%auxinput4_oid , config_flags , "DATASET=AUXINPUT4" )
+./share/mediation_integrate.f90:       grid%auxinput4_oid = 0
+./share/module_check_a_mundo.F:! If sst_update = 0, set io_form_auxinput4 to 0 so WRF will not try to
+./share/module_check_a_mundo.F:         model_config_rec%io_form_auxinput4 = 0
+./share/module_check_a_mundo.F:                  'setting io_form_auxinput4 = 0 and auxinput4_interval = 0 for all domains'
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval(i)   = 0
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval_y(i) = 0
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval_d(i) = 0
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval_h(i) = 0
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval_m(i) = 0
+./share/module_check_a_mundo.F:            model_config_rec%auxinput4_interval_s(i) = 0
+./share/module_check_a_mundo.F:         IF ( model_config_rec%io_form_auxinput4 .EQ. 0 ) THEN
+./share/module_check_a_mundo.F:            wrf_err_message = '--- ERROR: If sst_update /= 0, io_form_auxinput4 must be /= 0'
+./share/module_check_a_mundo.F:            wrf_err_message = '--- Set io_form_auxinput4 in the time_control namelist (probably to 2).'
+./share/module_check_a_mundo.F:!   1. io_form_auxinput4 = 2 (only for one domain)
+./share/module_check_a_mundo.F:!   2. auxinput4_interval = NON-ZERO (just check most coarse domain)
+./share/module_check_a_mundo.F:         IF ( model_config_rec%io_form_auxinput4 .EQ. 0 ) THEN
+./share/module_check_a_mundo.F:            wrf_err_message = '--- ERROR: If sst_update /= 0, io_form_auxinput4 must be /= 0'
+./share/module_check_a_mundo.F:            wrf_err_message = '--- Set io_form_auxinput4 in the time_control namelist (probably to 2).'
+./share/module_check_a_mundo.F:         IF ( ( model_config_rec%auxinput4_interval(1)   .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.F:              ( model_config_rec%auxinput4_interval_y(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.F:              ( model_config_rec%auxinput4_interval_d(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.F:              ( model_config_rec%auxinput4_interval_h(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.F:              ( model_config_rec%auxinput4_interval_m(1) .EQ. 0 ) .AND. &
+./share/module_check_a_mundo.F:              ( model_config_rec%auxinput4_interval_s(1) .EQ. 0 ) ) THEN
+./share/module_check_a_mundo.F:            wrf_err_message = '--- ERROR: If sst_update /= 0, one of the auxinput4_interval settings must be /= 0'
+./share/module_check_a_mundo.F:            wrf_err_message = '--- Set auxinput4_interval_s to the same value as interval_seconds (usually a pretty good guess).'
+./share/module_check_a_mundo.F:!   1. io_form_auxinput4 = 2 (only for one domain)
+./share/module_check_a_mundo.F:!   2. auxinput4_interval = NON-ZERO (just check most coarse domain)
+./share/set_timekeeping.f90: INTEGER :: auxinput4_interval  , &
+./share/set_timekeeping.f90:            auxinput4_interval_d, &
+./share/set_timekeeping.f90:            auxinput4_interval_h, &
+./share/set_timekeeping.f90:            auxinput4_interval_m, &
+./share/set_timekeeping.f90:            auxinput4_interval_s   
+./share/set_timekeeping.f90: INTEGER :: auxinput4_begin  ,    &
+./share/set_timekeeping.f90:            auxinput4_begin_y,    &
+./share/set_timekeeping.f90:            auxinput4_begin_d,    &
+./share/set_timekeeping.f90:            auxinput4_begin_h,    &
+./share/set_timekeeping.f90:            auxinput4_begin_m,    &
+./share/set_timekeeping.f90:            auxinput4_begin_s      
+./share/set_timekeeping.f90: INTEGER :: auxinput4_end  ,      &
+./share/set_timekeeping.f90:            auxinput4_end_y,      &
+./share/set_timekeeping.f90:            auxinput4_end_d,      &
+./share/set_timekeeping.f90:            auxinput4_end_h,      &
+./share/set_timekeeping.f90:            auxinput4_end_m,      &
+./share/set_timekeeping.f90:            auxinput4_end_s        
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_interval( grid%id, auxinput4_interval )   
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_interval_d( grid%id, auxinput4_interval_d )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_interval_h( grid%id, auxinput4_interval_h )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_interval_m( grid%id, auxinput4_interval_m )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_interval_s( grid%id, auxinput4_interval_s )
+./share/set_timekeeping.f90:   IF ( auxinput4_interval_m .EQ. 0 ) auxinput4_interval_m = auxinput4_interval
+./share/set_timekeeping.f90:   IF ( MAX( auxinput4_interval_d,   &
+./share/set_timekeeping.f90:             auxinput4_interval_h, auxinput4_interval_m , auxinput4_interval_s   ) .GT. 0 ) THEN
+./share/set_timekeeping.f90:     CALL WRFU_TimeIntervalSet( interval, D=auxinput4_interval_d, &
+./share/set_timekeeping.f90:                                        H=auxinput4_interval_h, M=auxinput4_interval_m, S=auxinput4_interval_s, rc=rc )
+./share/set_timekeeping.f90:                           'WRFU_TimeIntervalSet(auxinput4_interval) FAILED', &
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin  ( grid%id, auxinput4_begin   )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin_y( grid%id, auxinput4_begin_y )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin_d( grid%id, auxinput4_begin_d )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin_h( grid%id, auxinput4_begin_h )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin_m( grid%id, auxinput4_begin_m )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_begin_s( grid%id, auxinput4_begin_s )
+./share/set_timekeeping.f90:   IF ( auxinput4_begin_m .EQ. 0 ) auxinput4_begin_m = auxinput4_begin
+./share/set_timekeeping.f90:   IF ( MAX( auxinput4_begin_y, auxinput4_begin_d,   &
+./share/set_timekeeping.f90:             auxinput4_begin_h, auxinput4_begin_m , auxinput4_begin_s   ) .GT. 0 ) THEN
+./share/set_timekeeping.f90:      CALL WRFU_TimeIntervalSet( begin_time , D=auxinput4_begin_d, &
+./share/set_timekeeping.f90:                                      H=auxinput4_begin_h, M=auxinput4_begin_m, S=auxinput4_begin_s, rc=rc )
+./share/set_timekeeping.f90:                            'WRFU_TimeIntervalSet(auxinput4_begin) FAILED', &
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end( grid%id, auxinput4_end )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end_y( grid%id, auxinput4_end_y )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end_d( grid%id, auxinput4_end_d )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end_h( grid%id, auxinput4_end_h )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end_m( grid%id, auxinput4_end_m )
+./share/set_timekeeping.f90:   CALL nl_get_auxinput4_end_s( grid%id, auxinput4_end_s )
+./share/set_timekeeping.f90:   IF ( auxinput4_end_m .EQ. 0 ) auxinput4_end_m = auxinput4_end
+./share/set_timekeeping.f90:   IF ( MAX( auxinput4_end_y, auxinput4_end_d,   &
+./share/set_timekeeping.f90:             auxinput4_end_h, auxinput4_end_m , auxinput4_end_s   ) .GT. 0 ) THEN
+./share/set_timekeeping.f90:      CALL WRFU_TimeIntervalSet( end_time , D=auxinput4_end_d, &
+./share/set_timekeeping.f90:                                     H=auxinput4_end_h, M=auxinput4_end_m, S=auxinput4_end_s, rc=rc )
+./share/set_timekeeping.f90:                            'WRFU_TimeIntervalSet(auxinput4_end) FAILED', &
+./share/set_timekeeping.f90:   CALL domain_alarm_create( grid, auxinput4_ALARM, interval, begin_time, end_time )
+./share/set_timekeeping.f90:     CALL WRFU_AlarmRingerOn( grid%alarms( auxinput4_ALARM ),  rc=rc )
+./share/set_timekeeping.f90:                           'WRFU_AlarmRingerOn(auxinput4_ALARM) FAILED', &
+./share/module_io_domain.f90:SUBROUTINE output_auxinput4 ( fid , grid , config_flags , ierr )
+./share/module_io_domain.f90: IF ( config_flags%io_form_auxinput4 .GT. 0 ) THEN
+./share/module_io_domain.f90:   CALL output_wrf( fid, grid, config_flags, auxinput4_only, ierr ) ;
+./share/module_io_domain.f90:END SUBROUTINE output_auxinput4
+./share/module_io_domain.f90:SUBROUTINE input_auxinput4 ( fid , grid , config_flags , ierr )
+./share/module_io_domain.f90: IF ( config_flags%io_form_auxinput4 .GT. 0 ) THEN
+./share/module_io_domain.f90:   CALL input_wrf( fid, grid, config_flags, auxinput4_only, ierr ) ;
+./share/module_io_domain.f90:END SUBROUTINE input_auxinput4
+Binary file ./share/mediation_wrfmain.o matches
+./share/input_wrf.F:               auxinput3_only, auxinput4_only, auxinput5_only,  &
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_oid=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_y=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_d=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_h=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_m=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval_s=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_interval=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_y=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_d=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_h=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_m=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin_s=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_begin=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_y=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_d=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_h=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_m=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end_s=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%auxinput4_end=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%io_form_auxinput4=0
+./frame/module_alloc_space_4.f90:IF ( setinitval .EQ. 3 ) grid%frames_per_auxinput4=0
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_inname ( id_id , auxinput4_inname )
+./frame/xx4.f90:  character*256 , INTENT(IN) :: auxinput4_inname
+./frame/xx4.f90:  model_config_rec%auxinput4_inname = trim(auxinput4_inname)
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_inname
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_outname ( id_id , auxinput4_outname )
+./frame/xx4.f90:  character*256 , INTENT(IN) :: auxinput4_outname
+./frame/xx4.f90:  model_config_rec%auxinput4_outname = trim(auxinput4_outname)
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_outname
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval_y ( id_id , auxinput4_interval_y )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval_y
+./frame/xx4.f90:  model_config_rec%auxinput4_interval_y(id_id) = auxinput4_interval_y
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval_y
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval_d ( id_id , auxinput4_interval_d )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval_d
+./frame/xx4.f90:  model_config_rec%auxinput4_interval_d(id_id) = auxinput4_interval_d
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval_d
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval_h ( id_id , auxinput4_interval_h )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval_h
+./frame/xx4.f90:  model_config_rec%auxinput4_interval_h(id_id) = auxinput4_interval_h
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval_h
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval_m ( id_id , auxinput4_interval_m )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval_m
+./frame/xx4.f90:  model_config_rec%auxinput4_interval_m(id_id) = auxinput4_interval_m
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval_m
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval_s ( id_id , auxinput4_interval_s )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval_s
+./frame/xx4.f90:  model_config_rec%auxinput4_interval_s(id_id) = auxinput4_interval_s
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval_s
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_interval ( id_id , auxinput4_interval )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_interval
+./frame/xx4.f90:  model_config_rec%auxinput4_interval(id_id) = auxinput4_interval
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_interval
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin_y ( id_id , auxinput4_begin_y )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin_y
+./frame/xx4.f90:  model_config_rec%auxinput4_begin_y(id_id) = auxinput4_begin_y
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin_y
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin_d ( id_id , auxinput4_begin_d )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin_d
+./frame/xx4.f90:  model_config_rec%auxinput4_begin_d(id_id) = auxinput4_begin_d
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin_d
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin_h ( id_id , auxinput4_begin_h )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin_h
+./frame/xx4.f90:  model_config_rec%auxinput4_begin_h(id_id) = auxinput4_begin_h
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin_h
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin_m ( id_id , auxinput4_begin_m )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin_m
+./frame/xx4.f90:  model_config_rec%auxinput4_begin_m(id_id) = auxinput4_begin_m
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin_m
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin_s ( id_id , auxinput4_begin_s )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin_s
+./frame/xx4.f90:  model_config_rec%auxinput4_begin_s(id_id) = auxinput4_begin_s
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin_s
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_begin ( id_id , auxinput4_begin )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_begin
+./frame/xx4.f90:  model_config_rec%auxinput4_begin(id_id) = auxinput4_begin
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_begin
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end_y ( id_id , auxinput4_end_y )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end_y
+./frame/xx4.f90:  model_config_rec%auxinput4_end_y(id_id) = auxinput4_end_y
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end_y
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end_d ( id_id , auxinput4_end_d )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end_d
+./frame/xx4.f90:  model_config_rec%auxinput4_end_d(id_id) = auxinput4_end_d
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end_d
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end_h ( id_id , auxinput4_end_h )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end_h
+./frame/xx4.f90:  model_config_rec%auxinput4_end_h(id_id) = auxinput4_end_h
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end_h
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end_m ( id_id , auxinput4_end_m )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end_m
+./frame/xx4.f90:  model_config_rec%auxinput4_end_m(id_id) = auxinput4_end_m
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end_m
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end_s ( id_id , auxinput4_end_s )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end_s
+./frame/xx4.f90:  model_config_rec%auxinput4_end_s(id_id) = auxinput4_end_s
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end_s
+./frame/xx4.f90:SUBROUTINE nl_set_auxinput4_end ( id_id , auxinput4_end )
+./frame/xx4.f90:  integer , INTENT(IN) :: auxinput4_end
+./frame/xx4.f90:  model_config_rec%auxinput4_end(id_id) = auxinput4_end
+./frame/xx4.f90:END SUBROUTINE nl_set_auxinput4_end
+./frame/xx4.f90:SUBROUTINE nl_set_io_form_auxinput4 ( id_id , io_form_auxinput4 )
+./frame/xx4.f90:  integer , INTENT(IN) :: io_form_auxinput4
+./frame/xx4.f90:  model_config_rec%io_form_auxinput4 = io_form_auxinput4
+./frame/xx4.f90:END SUBROUTINE nl_set_io_form_auxinput4
+./frame/xx4.f90:SUBROUTINE nl_set_frames_per_auxinput4 ( id_id , frames_per_auxinput4 )
+./frame/xx4.f90:  integer , INTENT(IN) :: frames_per_auxinput4
+./frame/xx4.f90:  model_config_rec%frames_per_auxinput4(id_id) = frames_per_auxinput4
+./frame/xx4.f90:END SUBROUTINE nl_set_frames_per_auxinput4
+Binary file ./frame/module_io.o matches
+./frame/module_cpl.F:      ! 1) We asked (legally) for an AUXINPUT4 input AND this is the first time step AFTER an auxinput4_alarm was ringing
+./frame/module_cpl.F:      IF( ( config_flags%auxinput4_interval .NE. 0 .AND. config_flags%io_form_auxinput4 .NE. 0 .AND. grid%just_read_auxinput4 ) &
+./frame/module_cpl.F:         grid%just_read_auxinput4 = .FALSE.  ! the work as been done and not me done again until we reread data from AUXINPUT4
+Binary file ./frame/nl_set_4_routines.o matches
+./frame/module_cpl.f90:      IF( ( config_flags%auxinput4_interval .NE. 0 .AND. config_flags%io_form_auxinput4 .NE. 0 .AND. grid%just_read_auxinput4 ) &
+./frame/module_cpl.f90:         grid%just_read_auxinput4 = .FALSE.  
+Binary file ./frame/module_alloc_space_1.o matches
+./frame/module_streams.f90:INTEGER, PARAMETER :: auxinput4_only     = 30
+./frame/module_domain_type.f90:logical                                  :: just_read_auxinput4
+./frame/module_domain_type.f90:integer                                  :: auxinput4_oid
+./frame/module_domain_type.f90:character*256                               :: auxinput4_inname
+./frame/module_domain_type.f90:character*256                               :: auxinput4_outname
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval_y
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval_d
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval_h
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval_m
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval_s
+./frame/module_domain_type.f90:integer                                  :: auxinput4_interval
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin_y
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin_d
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin_h
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin_m
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin_s
+./frame/module_domain_type.f90:integer                                  :: auxinput4_begin
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end_y
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end_d
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end_h
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end_m
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end_s
+./frame/module_domain_type.f90:integer                                  :: auxinput4_end
+./frame/module_domain_type.f90:integer                                  :: io_form_auxinput4
+./frame/module_domain_type.f90:integer                                  :: frames_per_auxinput4
+./frame/module_dm.f90:character*256 :: auxinput4_inname
+./frame/module_dm.f90:character*256 :: auxinput4_outname
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_interval
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_begin
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: auxinput4_end
+./frame/module_dm.f90:integer :: io_form_auxinput4
+./frame/module_dm.f90:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_inname
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_outname
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval_y
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval_d
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval_h
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval_m
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval_s
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_interval
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin_y
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin_d
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin_h
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin_m
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin_s
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_begin
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end_y
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end_d
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end_h
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end_m
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end_s
+./frame/module_dm.f90:NAMELIST /time_control/ auxinput4_end
+./frame/module_dm.f90:NAMELIST /time_control/ io_form_auxinput4
+./frame/module_dm.f90:NAMELIST /time_control/ frames_per_auxinput4
+./frame/module_io.f90:      CALL nl_get_io_form_auxinput4( 1, io_form )
+./frame/module_io.f90:    ELSE IF ( stream .eq. auxinput4_only ) THEN
+./frame/module_io.f90:      CALL nl_get_io_form_auxinput4( 1, io_form )
+Binary file ./frame/module_configure.o matches
+Binary file ./frame/nl_get_4_routines.o matches
+./frame/module_configure.f90:character*256 :: auxinput4_inname
+./frame/module_configure.f90:character*256 :: auxinput4_outname
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end
+./frame/module_configure.f90:integer :: io_form_auxinput4
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./frame/module_configure.f90:character*256 :: auxinput4_inname
+./frame/module_configure.f90:character*256 :: auxinput4_outname
+./frame/module_configure.f90:integer :: auxinput4_interval_y
+./frame/module_configure.f90:integer :: auxinput4_interval_d
+./frame/module_configure.f90:integer :: auxinput4_interval_h
+./frame/module_configure.f90:integer :: auxinput4_interval_m
+./frame/module_configure.f90:integer :: auxinput4_interval_s
+./frame/module_configure.f90:integer :: auxinput4_interval
+./frame/module_configure.f90:integer :: auxinput4_begin_y
+./frame/module_configure.f90:integer :: auxinput4_begin_d
+./frame/module_configure.f90:integer :: auxinput4_begin_h
+./frame/module_configure.f90:integer :: auxinput4_begin_m
+./frame/module_configure.f90:integer :: auxinput4_begin_s
+./frame/module_configure.f90:integer :: auxinput4_begin
+./frame/module_configure.f90:integer :: auxinput4_end_y
+./frame/module_configure.f90:integer :: auxinput4_end_d
+./frame/module_configure.f90:integer :: auxinput4_end_h
+./frame/module_configure.f90:integer :: auxinput4_end_m
+./frame/module_configure.f90:integer :: auxinput4_end_s
+./frame/module_configure.f90:integer :: auxinput4_end
+./frame/module_configure.f90:integer :: io_form_auxinput4
+./frame/module_configure.f90:integer :: frames_per_auxinput4
+./frame/module_configure.f90:character*256 :: auxinput4_inname
+./frame/module_configure.f90:character*256 :: auxinput4_outname
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end
+./frame/module_configure.f90:integer :: io_form_auxinput4
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_inname
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_outname
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end
+./frame/module_configure.f90:NAMELIST /time_control/ io_form_auxinput4
+./frame/module_configure.f90:NAMELIST /time_control/ frames_per_auxinput4
+./frame/module_configure.f90:auxinput4_inname = "auxinput4_d<domain>_<date>"
+./frame/module_configure.f90:auxinput4_outname = "auxinput4_d<domain>_<date>"
+./frame/module_configure.f90:auxinput4_interval_y = 0
+./frame/module_configure.f90:auxinput4_interval_d = 0
+./frame/module_configure.f90:auxinput4_interval_h = 0
+./frame/module_configure.f90:auxinput4_interval_m = 0
+./frame/module_configure.f90:auxinput4_interval_s = 0
+./frame/module_configure.f90:auxinput4_interval = 0
+./frame/module_configure.f90:auxinput4_begin_y = 0
+./frame/module_configure.f90:auxinput4_begin_d = 0
+./frame/module_configure.f90:auxinput4_begin_h = 0
+./frame/module_configure.f90:auxinput4_begin_m = 0
+./frame/module_configure.f90:auxinput4_begin_s = 0
+./frame/module_configure.f90:auxinput4_begin = 0
+./frame/module_configure.f90:auxinput4_end_y = 0
+./frame/module_configure.f90:auxinput4_end_d = 0
+./frame/module_configure.f90:auxinput4_end_h = 0
+./frame/module_configure.f90:auxinput4_end_m = 0
+./frame/module_configure.f90:auxinput4_end_s = 0
+./frame/module_configure.f90:auxinput4_end = 0
+./frame/module_configure.f90:io_form_auxinput4 = 0
+./frame/module_configure.f90:frames_per_auxinput4 = 999999
+./frame/module_configure.f90: model_config_rec % auxinput4_inname           =  auxinput4_inname 
+./frame/module_configure.f90: model_config_rec % auxinput4_outname          =  auxinput4_outname 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval_y       =  auxinput4_interval_y 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval_d       =  auxinput4_interval_d 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval_h       =  auxinput4_interval_h 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval_m       =  auxinput4_interval_m 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval_s       =  auxinput4_interval_s 
+./frame/module_configure.f90: model_config_rec % auxinput4_interval         =  auxinput4_interval 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin_y          =  auxinput4_begin_y 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin_d          =  auxinput4_begin_d 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin_h          =  auxinput4_begin_h 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin_m          =  auxinput4_begin_m 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin_s          =  auxinput4_begin_s 
+./frame/module_configure.f90: model_config_rec % auxinput4_begin            =  auxinput4_begin 
+./frame/module_configure.f90: model_config_rec % auxinput4_end_y            =  auxinput4_end_y 
+./frame/module_configure.f90: model_config_rec % auxinput4_end_d            =  auxinput4_end_d 
+./frame/module_configure.f90: model_config_rec % auxinput4_end_h            =  auxinput4_end_h 
+./frame/module_configure.f90: model_config_rec % auxinput4_end_m            =  auxinput4_end_m 
+./frame/module_configure.f90: model_config_rec % auxinput4_end_s            =  auxinput4_end_s 
+./frame/module_configure.f90: model_config_rec % auxinput4_end              =  auxinput4_end 
+./frame/module_configure.f90: model_config_rec % io_form_auxinput4          =  io_form_auxinput4 
+./frame/module_configure.f90: model_config_rec % frames_per_auxinput4       =  frames_per_auxinput4 
+./frame/module_configure.f90: grid_config_rec % auxinput4_inname           = model_config_rec % auxinput4_inname 
+./frame/module_configure.f90: grid_config_rec % auxinput4_outname          = model_config_rec % auxinput4_outname 
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval_y       = model_config_rec % auxinput4_interval_y (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval_d       = model_config_rec % auxinput4_interval_d (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval_h       = model_config_rec % auxinput4_interval_h (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval_m       = model_config_rec % auxinput4_interval_m (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval_s       = model_config_rec % auxinput4_interval_s (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_interval         = model_config_rec % auxinput4_interval (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin_y          = model_config_rec % auxinput4_begin_y (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin_d          = model_config_rec % auxinput4_begin_d (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin_h          = model_config_rec % auxinput4_begin_h (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin_m          = model_config_rec % auxinput4_begin_m (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin_s          = model_config_rec % auxinput4_begin_s (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_begin            = model_config_rec % auxinput4_begin (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end_y            = model_config_rec % auxinput4_end_y (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end_d            = model_config_rec % auxinput4_end_d (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end_h            = model_config_rec % auxinput4_end_h (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end_m            = model_config_rec % auxinput4_end_m (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end_s            = model_config_rec % auxinput4_end_s (id_id)
+./frame/module_configure.f90: grid_config_rec % auxinput4_end              = model_config_rec % auxinput4_end (id_id)
+./frame/module_configure.f90: grid_config_rec % io_form_auxinput4          = model_config_rec % io_form_auxinput4 
+./frame/module_configure.f90: grid_config_rec % frames_per_auxinput4       = model_config_rec % frames_per_auxinput4 (id_id)
+./frame/module_configure.f90:character*256 :: auxinput4_inname
+./frame/module_configure.f90:character*256 :: auxinput4_outname
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_interval
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_begin
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: auxinput4_end
+./frame/module_configure.f90:integer :: io_form_auxinput4
+./frame/module_configure.f90:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_inname
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_outname
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_interval
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_begin
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_y
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_d
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_h
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_m
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end_s
+./frame/module_configure.f90:NAMELIST /time_control/ auxinput4_end
+./frame/module_configure.f90:NAMELIST /time_control/ io_form_auxinput4
+./frame/module_configure.f90:NAMELIST /time_control/ frames_per_auxinput4
+./frame/module_io_quilt.f90:character*256 :: auxinput4_inname
+./frame/module_io_quilt.f90:character*256 :: auxinput4_outname
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_y
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_d
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_h
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_m
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval_s
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_interval
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_y
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_d
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_h
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_m
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin_s
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_begin
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end_y
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end_d
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end_h
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end_m
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end_s
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: auxinput4_end
+./frame/module_io_quilt.f90:integer :: io_form_auxinput4
+./frame/module_io_quilt.f90:integer , DIMENSION(max_domains) :: frames_per_auxinput4
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_inname
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_outname
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval_y
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval_d
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval_h
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval_m
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval_s
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_interval
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin_y
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin_d
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin_h
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin_m
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin_s
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_begin
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end_y
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end_d
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end_h
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end_m
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end_s
+./frame/module_io_quilt.f90:NAMELIST /time_control/ auxinput4_end
+./frame/module_io_quilt.f90:NAMELIST /time_control/ io_form_auxinput4
+./frame/module_io_quilt.f90:NAMELIST /time_control/ frames_per_auxinput4
+./frame/module_alloc_space_1.f90:   grid%tail_statevars%VarName = 'just_read_auxinput4'
+./frame/module_alloc_space_1.f90:   grid%tail_statevars%lfield_0d => grid%just_read_auxinput4
+./frame/module_alloc_space_1.f90:IF ( setinitval .EQ. 3 ) grid%just_read_auxinput4=.FALSE.
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_inname ( id_id , auxinput4_inname )
+./frame/yy4.f90:  character*256 , INTENT(OUT) :: auxinput4_inname
+./frame/yy4.f90:  auxinput4_inname = trim(model_config_rec%auxinput4_inname)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_inname
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_outname ( id_id , auxinput4_outname )
+./frame/yy4.f90:  character*256 , INTENT(OUT) :: auxinput4_outname
+./frame/yy4.f90:  auxinput4_outname = trim(model_config_rec%auxinput4_outname)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_outname
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval_y ( id_id , auxinput4_interval_y )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval_y
+./frame/yy4.f90:  auxinput4_interval_y = model_config_rec%auxinput4_interval_y(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval_y
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval_d ( id_id , auxinput4_interval_d )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval_d
+./frame/yy4.f90:  auxinput4_interval_d = model_config_rec%auxinput4_interval_d(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval_d
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval_h ( id_id , auxinput4_interval_h )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval_h
+./frame/yy4.f90:  auxinput4_interval_h = model_config_rec%auxinput4_interval_h(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval_h
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval_m ( id_id , auxinput4_interval_m )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval_m
+./frame/yy4.f90:  auxinput4_interval_m = model_config_rec%auxinput4_interval_m(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval_m
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval_s ( id_id , auxinput4_interval_s )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval_s
+./frame/yy4.f90:  auxinput4_interval_s = model_config_rec%auxinput4_interval_s(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval_s
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_interval ( id_id , auxinput4_interval )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_interval
+./frame/yy4.f90:  auxinput4_interval = model_config_rec%auxinput4_interval(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_interval
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin_y ( id_id , auxinput4_begin_y )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin_y
+./frame/yy4.f90:  auxinput4_begin_y = model_config_rec%auxinput4_begin_y(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin_y
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin_d ( id_id , auxinput4_begin_d )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin_d
+./frame/yy4.f90:  auxinput4_begin_d = model_config_rec%auxinput4_begin_d(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin_d
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin_h ( id_id , auxinput4_begin_h )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin_h
+./frame/yy4.f90:  auxinput4_begin_h = model_config_rec%auxinput4_begin_h(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin_h
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin_m ( id_id , auxinput4_begin_m )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin_m
+./frame/yy4.f90:  auxinput4_begin_m = model_config_rec%auxinput4_begin_m(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin_m
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin_s ( id_id , auxinput4_begin_s )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin_s
+./frame/yy4.f90:  auxinput4_begin_s = model_config_rec%auxinput4_begin_s(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin_s
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_begin ( id_id , auxinput4_begin )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_begin
+./frame/yy4.f90:  auxinput4_begin = model_config_rec%auxinput4_begin(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_begin
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end_y ( id_id , auxinput4_end_y )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end_y
+./frame/yy4.f90:  auxinput4_end_y = model_config_rec%auxinput4_end_y(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end_y
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end_d ( id_id , auxinput4_end_d )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end_d
+./frame/yy4.f90:  auxinput4_end_d = model_config_rec%auxinput4_end_d(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end_d
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end_h ( id_id , auxinput4_end_h )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end_h
+./frame/yy4.f90:  auxinput4_end_h = model_config_rec%auxinput4_end_h(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end_h
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end_m ( id_id , auxinput4_end_m )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end_m
+./frame/yy4.f90:  auxinput4_end_m = model_config_rec%auxinput4_end_m(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end_m
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end_s ( id_id , auxinput4_end_s )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end_s
+./frame/yy4.f90:  auxinput4_end_s = model_config_rec%auxinput4_end_s(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end_s
+./frame/yy4.f90:SUBROUTINE nl_get_auxinput4_end ( id_id , auxinput4_end )
+./frame/yy4.f90:  integer , INTENT(OUT) :: auxinput4_end
+./frame/yy4.f90:  auxinput4_end = model_config_rec%auxinput4_end(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_auxinput4_end
+./frame/yy4.f90:SUBROUTINE nl_get_io_form_auxinput4 ( id_id , io_form_auxinput4 )
+./frame/yy4.f90:  integer , INTENT(OUT) :: io_form_auxinput4
+./frame/yy4.f90:  io_form_auxinput4 = model_config_rec%io_form_auxinput4
+./frame/yy4.f90:END SUBROUTINE nl_get_io_form_auxinput4
+./frame/yy4.f90:SUBROUTINE nl_get_frames_per_auxinput4 ( id_id , frames_per_auxinput4 )
+./frame/yy4.f90:  integer , INTENT(OUT) :: frames_per_auxinput4
+./frame/yy4.f90:  frames_per_auxinput4 = model_config_rec%frames_per_auxinput4(id_id)
+./frame/yy4.f90:END SUBROUTINE nl_get_frames_per_auxinput4

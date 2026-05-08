@@ -1,0 +1,190 @@
+"""
+KDM6 thermodynamics 진단 모듈 — Step F0.
+
+원본: module_mp_kdm6.F (코드 곳곳에 inline functions + 진단 코드):
+  - cpm(q) = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv             (Fortran 767)
+  - xl(t)  = xlv0 - xlv1·(t-t0c)                                (Fortran 768)
+  - supcol = T0c - clamp(t, 153.15, 393.15)                     (Fortran 1872)
+  - qs(:,:,1) = psat·exp(log(tr)·xa)·exp(xb·(1-tr))             (Fortran 942)
+                ep2·qs / (p - qs)
+  - qs(:,:,2) = (T<t0c) psat·exp(log(tr)·xai)·exp(xbi·(1-tr))   (Fortran 949)
+                else identical to qs(:,:,1)
+  - rh(:,:,1) = max(q/qs1, qmin),  rh(:,:,2) = max(q/qs2, qmin)
+  - supsat = max(q, qmin) - qs1
+  - denfac = sqrt(den0/den)
+  - work2 = venfac(p, t, den) (ventilation factor)
+
+본 모듈은 *순수 thermodynamics* 진단만 담당. coordinator(F1)가 이 진단들을 사용해
+Step A-E의 입력을 준비.
+"""
+from __future__ import annotations
+
+from typing import NamedTuple
+
+import torch
+
+from . import constants as c
+
+
+# ─── ThermoParams ─────────────────────────────────────────────────────────────
+
+
+class ThermoParams(NamedTuple):
+    """thermodynamic 진단의 시간/공간 불변 스칼라.
+
+    Defaults: WRF 표준 대기 값. 운영 시 kdm6init이 외부 입력으로 받는 값들.
+    """
+    cpd: float          # specific heat dry air (J/kg/K) — 1004.5
+    cpv: float          # specific heat water vapor — 1846
+    cliq: float         # specific heat liquid water — 4218
+    cice: float         # specific heat ice — 2106
+    rv: float           # gas constant water vapor — 461.5
+    rd: float           # gas constant dry air — 287.04
+    t0c: float          # 273.15
+    ttp: float          # triple-point T = t0c + 0.01 = 273.16
+    xlv0: float         # latent heat vaporization at t0c — 2.5e6
+    xls: float          # latent heat sublimation — 2.83e6
+    xa: float           # Goff-Gratch exponent (water): -dldt/rv
+    xb: float           # xa + hvap/(rv·ttp)
+    xai: float          # ice version
+    xbi: float          # ice version
+    psat: float         # saturation vapor pressure at ttp (Pa) — 610.78
+    ep2: float          # rd/rv ≈ 0.622
+    den0: float         # reference density (1.28 kg/m³)
+    qmin: float         # 1e-15
+
+
+def default_thermo_params() -> ThermoParams:
+    """WRF 표준 대기 default (Fortran kdm6init INPUTs)."""
+    cpd = 1004.5
+    cpv = 1846.0
+    cliq = 4218.0
+    cice = 2106.0
+    rv = 461.5
+    rd = 287.04
+    t0c = 273.15
+    ttp = t0c + 0.01
+    xlv0 = 2.5e6
+    xls = 2.83e6
+    psat = 610.78
+    ep2 = rd / rv
+
+    # Goff-Gratch derivations (Fortran kdm6init:932-937)
+    dldt = cliq - cpv
+    hvap = xlv0
+    xa = -dldt / rv
+    xb = xa + hvap / (rv * ttp)
+    dldti = cice - cpv
+    hsub = xls
+    xai = -dldti / rv
+    xbi = xai + hsub / (rv * ttp)
+
+    return ThermoParams(
+        cpd=cpd, cpv=cpv, cliq=cliq, cice=cice,
+        rv=rv, rd=rd, t0c=t0c, ttp=ttp,
+        xlv0=xlv0, xls=xls,
+        xa=xa, xb=xb, xai=xai, xbi=xbi,
+        psat=psat, ep2=ep2, den0=c.DEN0,
+        qmin=c.QCRMIN,
+    )
+
+
+# ─── 진단 함수 ─────────────────────────────────────────────────────────────
+
+
+def compute_cpm(q: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """Fortran 767: cpm = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv."""
+    q_safe = torch.clamp(q, min=params.qmin)
+    return params.cpd * (1.0 - q_safe) + q_safe * params.cpv
+
+
+def compute_xl(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """Fortran 768: xl = xlv0 - xlv1·(t-t0c). xlv1 = cpv - cliq."""
+    xlv1 = params.cliq - params.cpv  # Fortran: xlv1 = cl - cpv (kdm6init line ~3208)
+    return params.xlv0 - xlv1 * (t - params.t0c)
+
+
+def compute_supcol(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """Fortran 1872: supcol = T0c - clamp(t, 153.15, 393.15)."""
+    return params.t0c - torch.clamp(t, min=153.15, max=393.15)
+
+
+def compute_qs_water(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """Fortran 942-944: saturation mixing ratio w.r.t. water (Goff-Gratch).
+
+        es = psat · exp(log(ttp/t)·xa) · exp(xb·(1 - ttp/t))
+        es = min(es, 0.99·p)
+        qs = ep2·es / (p - es)
+        qs = max(qs, qmin)
+    """
+    t_safe = torch.clamp(t, min=1.0)
+    tr = params.ttp / t_safe
+    es = params.psat * torch.exp(torch.log(tr) * params.xa) * torch.exp(params.xb * (1.0 - tr))
+    es = torch.minimum(es, 0.99 * p)
+    qs = params.ep2 * es / torch.clamp(p - es, min=params.qmin)
+    return torch.clamp(qs, min=params.qmin)
+
+
+def compute_qs_ice(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """Fortran 948-957: saturation w.r.t. ice (T<t0c) or water (T≥t0c).
+
+    Note: 본 oracle은 *T<t0c일 때만 ice 식*, 그 외는 water 식과 동일. Fortran이
+    `if (t < ttp) ice else water` 패턴을 사용.
+    """
+    t_safe = torch.clamp(t, min=1.0)
+    tr = params.ttp / t_safe
+    es_ice = params.psat * torch.exp(torch.log(tr) * params.xai) * torch.exp(params.xbi * (1.0 - tr))
+    es_water = params.psat * torch.exp(torch.log(tr) * params.xa) * torch.exp(params.xb * (1.0 - tr))
+    es_raw = torch.where(t < params.ttp, es_ice, es_water)
+    es = torch.minimum(es_raw, 0.99 * p)
+    qs = params.ep2 * es / torch.clamp(p - es, min=params.qmin)
+    return torch.clamp(qs, min=params.qmin)
+
+
+def compute_rh(q: torch.Tensor, qs: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """rh = max(q/qs, qmin)."""
+    qs_safe = torch.clamp(qs, min=params.qmin)
+    return torch.clamp(q / qs_safe, min=params.qmin)
+
+
+def compute_supsat(q: torch.Tensor, qs1: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """supsat = max(q, qmin) - qs1."""
+    return torch.maximum(q, torch.tensor(params.qmin, dtype=q.dtype, device=q.device)) - qs1
+
+
+def compute_denfac(den: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
+    """denfac = sqrt(den0/den)."""
+    den_safe = torch.clamp(den, min=params.qmin)
+    return torch.sqrt(torch.tensor(params.den0, dtype=den.dtype, device=den.device) / den_safe)
+
+
+def compute_work2_venfac(
+    p: torch.Tensor, t: torch.Tensor, den: torch.Tensor,
+    *, params: ThermoParams,
+) -> torch.Tensor:
+    """Fortran 786-787: venfac(p, t, den) = (viscos/diffus)^(1/3) / sqrt(viscos) · sqrt(sqrt(den0/den)).
+
+    Used as `work2` in deposition/sublimation/melting산식.
+    """
+    diffus = 8.794e-5 * torch.exp(torch.log(t) * 1.81) / p
+    viscos = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
+    den0_t = torch.tensor(params.den0, dtype=t.dtype, device=t.device)
+    return (
+        torch.exp(torch.log(viscos / diffus) / 3.0) / torch.sqrt(viscos)
+        * torch.sqrt(torch.sqrt(den0_t / torch.clamp(den, min=params.qmin)))
+    )
+
+
+__all__ = [
+    "ThermoParams",
+    "default_thermo_params",
+    "compute_cpm",
+    "compute_xl",
+    "compute_supcol",
+    "compute_qs_water",
+    "compute_qs_ice",
+    "compute_rh",
+    "compute_supsat",
+    "compute_denfac",
+    "compute_work2_venfac",
+]

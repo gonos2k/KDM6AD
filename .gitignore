@@ -1,0 +1,59 @@
+# OS/editor noise
+.DS_Store
+
+# Claude/local agent state
+.claude/
+.serena/
+.omx/
+.tmp/
+
+# Build/runtime outputs
+*.o
+*.mod
+*.a
+*.so
+*.dylib
+*.exe
+*.log
+*.out
+*.err
+*.nc
+core
+core.*
+
+# Python/cache outputs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# WRF/KIM runtime artifacts
+KIM-meso_v1.0/run/rsl.out.*
+KIM-meso_v1.0/run/rsl.error.*
+KIM-meso_v1.0/run/wrfout_d01_*
+KIM-meso_v1.0/run/wrfrst_d01_*
+KIM-meso_v1.0/run/wrfinput_d01
+KIM-meso_v1.0/run/wrflowinp_d01
+KIM-meso_v1.0/run/met_em.*
+KIM-meso_v1.0/main/*.exe
+KIM-meso_v1.0/main/*.o
+KIM-meso_v1.0/main/*.mod
+KIM-meso_v1.0/main/*.dylib
+KIM-meso_v1.0/main/*.so
+
+# Native build trees and generated installs
+**/build/
+**/cmake-build-*/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/install/
+
+# Large local archives/artifacts
+*.tar.gz
+*.tgz
+*.zip
+*.pptx
+
+# Generated analysis outputs
+graphify-out/

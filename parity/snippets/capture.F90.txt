@@ -1,0 +1,76 @@
+! ----------------------------------------------------------------------------
+! capture.F90 — TEMPLATE for snapshotting kdm62D input/output state.
+!
+! Drop these blocks into module_mp_kdm6.F (or a wrapper) around a
+! representative kdm62D call. Output goes to two unformatted Fortran files
+! that `parity/import_fortran.py` converts to a golden-vector .npz directory.
+!
+! NOT a compilable file — paste-only. The user should adapt indices and
+! file unit numbers to the surrounding code.
+!
+! Scope: this T3 schema captures the 11 microphysics-level fields in
+! parity/_schema.py::StateFields. It intentionally does NOT write NCCN/QNN/NN.
+! It also does NOT write operational auxdiag arrays such as n0r/n0i/n0c/n0so,
+! n0go, work1_*, qcr, avedia_i, or rslopec*. The Python harness rebuilds those
+! from documented defaults unless the schema is extended later.
+! ----------------------------------------------------------------------------
+
+!------------------------------- BEFORE the kdm62D call ----------------------
+! Snapshot input state. Choose B = its:ite, K = kts:kte for the column(s)
+! you want to capture; small (B=1, K≤30) is recommended.
+open(unit=87, file='kdm6_parity_in.bin', form='unformatted', &
+     access='stream', status='replace')
+write(87) ite-its+1, kte-kts+1                          ! B, K
+write(87) real(t   (its:ite, kts:kte),     kind=8)
+write(87) real(q   (its:ite, kts:kte),     kind=8)      ! qv
+write(87) real(qci (its:ite, kts:kte, 1),  kind=8)      ! qc
+write(87) real(qci (its:ite, kts:kte, 2),  kind=8)      ! qi
+write(87) real(qrs (its:ite, kts:kte, 1),  kind=8)      ! qr
+write(87) real(qrs (its:ite, kts:kte, 2),  kind=8)      ! qs
+write(87) real(qrs (its:ite, kts:kte, 3),  kind=8)      ! qg
+write(87) real(nci (its:ite, kts:kte, 1),  kind=8)      ! nc
+write(87) real(nci (its:ite, kts:kte, 2),  kind=8)      ! ni
+write(87) real(nrs (its:ite, kts:kte, 1),  kind=8)      ! nr
+write(87) real(brs (its:ite, kts:kte),     kind=8)
+write(87) real(p   (ims:ime, kms:kme),     kind=8)
+write(87) real(den (ims:ime, kms:kme),     kind=8)
+write(87) real(delz(ims:ime, kms:kme),     kind=8)
+write(87) real(dend(its:ite, kts:kte),     kind=8)      ! local diagnostic
+write(87) real(delt,                       kind=8)      ! dtcld surrogate
+write(87) real(ccn0,                       kind=8)
+write(87) real(qmin,                       kind=8)
+write(87) real(ncmin_land,                 kind=8)
+write(87) real(ncmin_sea,                  kind=8)
+close(87)
+
+!------------------------------- AFTER the kdm62D call -----------------------
+! For "pre-sedimentation" parity, capture *inside* kdm62D right before the
+! NISLFV-PLM block. For "post-sedimentation" parity, capture here.
+open(unit=88, file='kdm6_parity_out.bin', form='unformatted', &
+     access='stream', status='replace')
+write(88) real(t   (its:ite, kts:kte),     kind=8)
+write(88) real(q   (its:ite, kts:kte),     kind=8)
+write(88) real(qci (its:ite, kts:kte, 1),  kind=8)
+write(88) real(qci (its:ite, kts:kte, 2),  kind=8)
+write(88) real(qrs (its:ite, kts:kte, 1),  kind=8)
+write(88) real(qrs (its:ite, kts:kte, 2),  kind=8)
+write(88) real(qrs (its:ite, kts:kte, 3),  kind=8)
+write(88) real(nci (its:ite, kts:kte, 1),  kind=8)
+write(88) real(nci (its:ite, kts:kte, 2),  kind=8)
+write(88) real(nrs (its:ite, kts:kte, 1),  kind=8)
+write(88) real(brs (its:ite, kts:kte),     kind=8)
+write(88) real(rainncv (its:ite),          kind=8)
+write(88) real(snowncv (its:ite),          kind=8)
+write(88) real(graupelncv(its:ite),        kind=8)
+close(88)
+
+! ----------------------------------------------------------------------------
+! Convert to .npz:
+!   python parity/import_fortran.py kdm6_parity_in.bin kdm6_parity_out.bin \
+!          --out parity/golden/<name> \
+!          --test-name "<descriptive label>"
+!
+! A passing vector from this template is not NCCN/QNN parity evidence; those
+! fields are outside the current schema. For operational KIM auxdiag parity,
+! add the auxdiag arrays to the binary format and parity/_schema.py first.
+! ----------------------------------------------------------------------------

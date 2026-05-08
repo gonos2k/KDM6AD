@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "capture_date": "2026-04-29T01:14:46.522915+00:00",
+    "fortran_commit": "n/a",
+    "kim_version": "synthetic",
+    "note": "Generated from Python oracle output \u2014 round-trip parity should be exact.",
+    "sea_mask": [
+      true
+    ],
+    "shape": [
+      1,
+      4
+    ],
+    "test_name": "self_test_round_trip"
+  },
+  "scalars": {
+    "ccn0": 100000000.0,
+    "dtcld": 60.0,
+    "ncmin_land": 1000000.0,
+    "ncmin_sea": 1000000.0,
+    "qmin": 1e-15
+  },
+  "surface_accum": {}
+}

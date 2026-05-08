@@ -1,0 +1,304 @@
+taskid: 0 hostname: Yongui-MacBookPro.local
+ starting wrf task            0  of            1
+ ./module_io_quilt_old.F        2931 F
+Quilting with   1 groups of   0 I/O tasks.
+ Ntasks in X            1 , ntasks in Y            1
+  Domain # 1: dx =  1000.000 m
+WRF V4.6.0 MODEL
+No git found or not a git repository, git commit version not available.
+ *************************************
+ Parent domain
+ ids,ide,jds,jde            1         101           1         101
+ ims,ime,jms,jme           -4         106          -4         106
+ ips,ipe,jps,jpe            1         101           1         101
+ *************************************
+DYNAMICS OPTION: Eulerian Mass Coordinate
+   alloc_space_field: domain            1 ,             316752708  bytes allocated
+  med_initialdata_input: calling input_input
+   Input data is acceptable to use: wrfinput_d01
+ CURRENT DATE          = 2007-06-01_00:00:00
+ SIMULATION START DATE = 2007-06-01_00:00:00
+Timing for processing wrfinput file (stream 0) for domain        1:    0.08024 elapsed seconds
+Max map factor in domain 1 =  1.00. Scale the dt in the model accordingly.
+INPUT LandUse = "USGS"
+ LANDUSE TYPE = "USGS" FOUND          61  CATEGORIES           2  SEASONS WATER CATEGORY =           16  SNOW CATEGORY =            0
+Timing for Writing wrfout_d01_2007-06-01_00:00:00 for domain        1:    0.18231 elapsed seconds
+ Tile Strategy is not specified. Assuming 1D-Y
+WRF TILE   1 IS      1 IE    101 JS      1 JE    101
+WRF NUMBER OF TILES =   1
+d01 2007-06-01_00:00:00  ----------------------------------------
+d01 2007-06-01_00:00:00  W-DAMPING  BEGINS AT W-COURANT NUMBER =    1.00000000
+d01 2007-06-01_00:00:00  ----------------------------------------
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.341522       715.945435    
+ KDM6AD_STATE qv min/max=   0.00000000       8.22082256E-06
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(13,5,1) max_rel= 1.02288E-07 at_rel=(15,1,12)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 1.65173E-18 at_abs=(3,3,7) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 8.99965E+07 at_abs=(13,34,4) max_rel= 8.99965E-01 at_rel=(13,34,4)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:05 on domain   1:    2.10788 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.334106       715.944641    
+ KDM6AD_STATE qv min/max=   0.00000000       1.89799957E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(7,3,1) max_rel= 1.02276E-07 at_rel=(90,1,87)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 1.15247E-17 at_abs=(72,3,47) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 1.73600E+03 at_abs=(43,9,99) max_rel= 1.73600E-05 at_rel=(43,9,99)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:10 on domain   1:    0.60646 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.327393       715.945190    
+ KDM6AD_STATE qv min/max=   0.00000000       3.06820657E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(21,2,1) max_rel= 1.02275E-07 at_rel=(67,1,12)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 3.93444E-17 at_abs=(69,3,17) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 3.43200E+03 at_abs=(4,9,87) max_rel= 3.43200E-05 at_rel=(4,9,87)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:15 on domain   1:    0.60951 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.321411       715.945312    
+ KDM6AD_STATE qv min/max=   0.00000000       4.27325285E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(89,4,1) max_rel= 1.02270E-07 at_rel=(29,1,43)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 6.13794E-17 at_abs=(3,3,7) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 4.63200E+03 at_abs=(48,9,10) max_rel= 4.63200E-05 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:20 on domain   1:    0.61748 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.316193       715.944702    
+ KDM6AD_STATE qv min/max=   0.00000000       5.48822500E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(17,3,1) max_rel= 1.02242E-07 at_rel=(81,1,96)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 7.83980E-17 at_abs=(44,3,11) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 5.72000E+03 at_abs=(79,9,44) max_rel= 5.72000E-05 at_rel=(79,9,44)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:25 on domain   1:    0.61114 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.311523       715.943359    
+ KDM6AD_STATE qv min/max=   0.00000000       6.70376539E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(28,3,1) max_rel= 1.02250E-07 at_rel=(72,1,25)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 7.37728E-17 at_abs=(11,3,89) max_rel= 1.00000E+00 at_rel=(4,3,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 7.18400E+03 at_abs=(48,9,10) max_rel= 7.18400E-05 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:30 on domain   1:    0.61466 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.307037       715.942627    
+ KDM6AD_STATE qv min/max=   0.00000000       7.91858110E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(29,2,1) max_rel= 1.02232E-07 at_rel=(56,1,48)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 9.09364E-17 at_abs=(9,3,74) max_rel= 1.00000E+00 at_rel=(64,5,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 7.81600E+03 at_abs=(48,9,10) max_rel= 7.81600E-05 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:35 on domain   1:    0.60221 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.303284       715.940430    
+ KDM6AD_STATE qv min/max=   0.00000000       9.13157128E-05
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(22,3,1) max_rel= 1.02278E-07 at_rel=(36,1,86)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 2.15978E-16 at_abs=(57,3,97) max_rel= 1.00000E+00 at_rel=(86,5,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 9.05600E+03 at_abs=(48,9,10) max_rel= 9.05600E-05 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:40 on domain   1:    0.60840 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.300415       715.940430    
+ KDM6AD_STATE qv min/max=   0.00000000       1.03472739E-04
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(26,2,1) max_rel= 1.02276E-07 at_rel=(90,1,66)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 3.14072E-16 at_abs=(34,3,97) max_rel= 1.00000E+00 at_rel=(86,5,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 1.01920E+04 at_abs=(48,9,10) max_rel= 1.01920E-04 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:45 on domain   1:    0.60636 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.298279       715.941895    
+ KDM6AD_STATE qv min/max=   0.00000000       1.15611962E-04
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
+KDM6AD_DIRECT_PARITY_TEMP th max_abs= 3.05176E-05 at_abs=(31,2,1) max_rel= 1.02238E-07 at_rel=(58,1,57)
+KDM6AD_DIRECT_PARITY_TEMP qv max_abs= 1.69082E-16 at_abs=(75,3,84) max_rel= 1.00000E+00 at_rel=(5,5,1)
+KDM6AD_DIRECT_PARITY_TEMP qc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qi max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qs max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qg max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnn max_abs= 1.08320E+04 at_abs=(48,9,10) max_rel= 1.08320E-04 at_rel=(48,9,10)
+KDM6AD_DIRECT_PARITY_TEMP qnc max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qni max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qnr max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+KDM6AD_DIRECT_PARITY_TEMP qib max_abs= 0.00000E+00 at_abs=(1,1,1) max_rel= 0.00000E+00 at_rel=(1,1,1)
+Timing for main: time 2007-06-01_00:00:50 on domain   1:    0.61379 elapsed seconds
+ KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
+ KDM6AD_DIAG after scratch allocation
+ KDM6AD_DIAG after host_to_double copy
+ KDM6AD_DIAG after kdm6_step rc=           0
+ KDM6AD_DIAG after handle_close rc=           0
+ KDM6AD_DIAG before double_to_host copy
+ KDM6AD_DIAG after double_to_host copy
+ KDM6AD_STATE th min/max=   298.296936       715.944580    
+ KDM6AD_STATE qv min/max=   0.00000000       1.27725682E-04
+ KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
+ KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
+ KDM6AD_DIAG leaving wrapper
