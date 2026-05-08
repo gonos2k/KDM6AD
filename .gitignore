@@ -57,3 +57,8 @@ KIM-meso_v1.0/main/*.so
 
 # Generated analysis outputs
 graphify-out/
+wiki/
+
+# Local editor/project config
+**/.obsidian/
+xclaudex.toml
