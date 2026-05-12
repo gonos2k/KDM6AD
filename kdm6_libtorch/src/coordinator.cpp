@@ -470,10 +470,16 @@ CoordinatorState kdm62d_step(
         return state;
     }
 
+    // Fortran module_mp_kdm6.F:747 entry-prologue clamp on nci(:,:,3).
+    // Mirror it here so warm-phase ncact (coordinator.cpp:264-270) consumes the clamped
+    // value, matching slot-37 behaviour. Post-rate clamp at line 791 is kept as the
+    // surrogate for Fortran :2952 / :3076.
+    CoordinatorState cur = state;
+    cur.nccn = torch::clamp(cur.nccn, /*min=*/1.0e8, /*max=*/2.0e10);
+
     const int loops_max = compute_loops_max(delt, dtcldcr);
     const double dtcld = delt / static_cast<double>(loops_max);
 
-    CoordinatorState cur = state;
     for (int i = 0; i < loops_max; ++i) {
         cur = kdm62d_one_step(
             cur, forcing, aux, sea_mask,

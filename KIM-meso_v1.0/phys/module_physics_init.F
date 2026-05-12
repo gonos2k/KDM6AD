@@ -2301,6 +2301,9 @@ CHARACTER(LEN=8) :: name
     STEPRA = nint(RADT*60./DT)
     STEPRA = max(STEPRA,1)
 
+   WRITE(0,*) 'KDM6AD_PHASE ra_init zone1 args+STEPRA done'
+   FLUSH(0)
+
 !-- initialization
 
    IF(start_of_simulation)THEN
@@ -2345,6 +2348,9 @@ CHARACTER(LEN=8) :: name
      ENDIF
    ENDIF
 
+   WRITE(0,*) 'KDM6AD_PHASE ra_init zone2 zero-fill done'
+   FLUSH(0)
+
 !-- ww: attempt to use CAM ozone and some aerosol profiles in all rad schemes
 !   note that CAM option will still do the same. 
 !   n_ozmixm: no of months; levsiz: = 59, vertical dim
@@ -2372,6 +2378,9 @@ CHARACTER(LEN=8) :: name
                      its, ite, jts, jte, kts, kte)
    ENDIF
 
+   WRITE(0,*) 'KDM6AD_PHASE ra_init zone3 ozone+aerosol done'
+   FLUSH(0)
+
 !-- find out which microphysics option is used first
 
 !   mp_select: SELECT CASE(config_flags%mp_physics)
@@ -2382,6 +2391,9 @@ CHARACTER(LEN=8) :: name
 !   END SELECT mp_select
 
 !-- chose long wave radiation scheme
+
+   WRITE(0,*) 'KDM6AD_PHASE ra_init zone4 entering lwrad_select ra_lw_physics=', config_flags%ra_lw_physics
+   FLUSH(0)
 
    lwrad_select: SELECT CASE(config_flags%ra_lw_physics)
 
