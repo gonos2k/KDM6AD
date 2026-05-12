@@ -2,9 +2,13 @@
 #include "kdm6/runtime.h"
 #include "kdm6/state.h"
 
+#include <ATen/Parallel.h>
 #include <cstdio>
+#include <cstdlib>
+#include <dlfcn.h>
 #include <exception>
 #include <memory>
+#include <mutex>
 
 //
 // C ABI ↔ C++ 어댑터.
@@ -22,6 +26,43 @@ bool any_null(std::initializer_list<const void*> ptrs) {
         if (!p) return true;
     }
     return false;
+}
+
+// libtorch/OpenMP single-thread fence.
+//
+// libkdm6_c depends on libtorch_cpu, and libtorch_cpu depends on libomp, so a
+// bridge constructor alone is not a reliable "before libomp" hook. Keep the
+// environment defaults for lazy runtime reads, then also call the libomp API
+// directly from the first kdm6_step_c entry before any tensor operation.
+
+__attribute__((constructor))
+static void kdm6_singlethread_env_fence() {
+    // setenv with overwrite=0 respects external user override.
+    setenv("OMP_NUM_THREADS", "1", 0);
+    setenv("OMP_THREAD_LIMIT", "1", 0);
+    setenv("MKL_NUM_THREADS", "1", 0);
+    setenv("VECLIB_MAXIMUM_THREADS", "1", 0);
+    setenv("KMP_BLOCKTIME", "0", 0);
+    setenv("KMP_DUPLICATE_LIB_OK", "TRUE", 0);
+}
+
+void call_runtime_setter(const char* name, int value) {
+    using setter_t = void (*)(int);
+    if (auto* symbol = dlsym(RTLD_DEFAULT, name)) {
+        reinterpret_cast<setter_t>(symbol)(value);
+    }
+}
+
+void ensure_libtorch_singlethread() {
+    static std::once_flag flag;
+    std::call_once(flag, []() {
+        call_runtime_setter("omp_set_dynamic", 0);
+        call_runtime_setter("omp_set_num_threads", 1);
+        call_runtime_setter("omp_set_max_active_levels", 1);
+        call_runtime_setter("kmp_set_blocktime", 0);
+        at::set_num_threads(1);
+        at::set_num_interop_threads(1);
+    });
 }
 
 }  // anonymous namespace
@@ -47,6 +88,8 @@ extern "C" int kdm6_step_c(
                   nccn_out, nc_out, ni_out, nr_out, bg_out, handle})) {
         return KDM6_ERR_NULL_POINTER;
     }
+
+    ensure_libtorch_singlethread();
 
     try {
         kdm6::FortranArrayDescriptor desc{
