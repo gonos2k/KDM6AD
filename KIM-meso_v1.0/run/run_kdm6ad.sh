@@ -32,4 +32,9 @@ rm -f rsl.error.0000 rsl.out.0000 wrfinput_d01 wrfout_d01_*
 
 cd "$(dirname "$0")"
 mpirun -np 1 ../main/ideal.exe > rsl.out.ideal 2>&1
-mpirun -np 1 ../main/wrf.exe   > rsl.out.stderr 2>&1
+# T12 reversal note (2026-05-12): direct ../main/wrf.exe crashes after step 1
+# on this stack. Codex's mpirun-only hypothesis was based on an lldb test that
+# did not reproduce. mpirun -np 1 is required for runtime stability — the
+# post-success shutdown SIGSEGV/SIGABRT is cosmetic (data is on disk before
+# the abort fires).
+mpirun -np 1 ../main/wrf.exe > rsl.out.stderr 2>&1
