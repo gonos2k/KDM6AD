@@ -1303,15 +1303,20 @@ CHARACTER(LEN=8) :: name
     CALL wrf_debug(100,'VEGPARM_HC_INNIT = start')
 ! -------------------------------------------------------------------------
 ! 20250331 yhlee
-  
-  call vegparam_hc_init(MMINLU_loc,hc_jun,ivgtyp,its,itf,jts,jtf,ims,ime,jms,jme)
+! 2026-05-14: guard with mminlu_loc check, mirroring landuse_init at line 1439.
+! Ideal cases without sf_surface_physics/bl_pbl_physics leave mminlu_loc blank,
+! and vegparam_hc_init then walks VEGPARM.TBL to EOF and trips on a list-input
+! parse. Skipping the call when mminlu is unset matches the landuse_init contract.
+   IF(mminlu_loc .ne. '    ')THEN
+    call vegparam_hc_init(MMINLU_loc,hc_jun,ivgtyp,its,itf,jts,jtf,ims,ime,jms,jme)
 
-  do j = jts, jtf
-    do i = its, itf
-!   HC_jun(i,j) = ZTOPVTBL( IVGTYP(i,j) )
-     IF (XLAND(i,j) .GT. 1.5 ) HC_jun(i,j) = 0
+    do j = jts, jtf
+      do i = its, itf
+!     HC_jun(i,j) = ZTOPVTBL( IVGTYP(i,j) )
+       IF (XLAND(i,j) .GT. 1.5 ) HC_jun(i,j) = 0
+      enddo
     enddo
-  enddo
+   ENDIF
 
     CALL wrf_debug(100,'VEGPARM_HC_INNIT = done')
 
