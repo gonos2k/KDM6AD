@@ -104,6 +104,26 @@ CONTAINS
       END DO
     END IF
 
+    ! KDM6AD step-1 forward-consistency dump (slot 137 path, pre-physics)
+    IF (ITIMESTEP == 1) THEN
+      OPEN(UNIT=8802, FILE='kdm6_step1_kdm6ad_in.bin', FORM='UNFORMATTED', &
+           ACCESS='STREAM', STATUS='REPLACE')
+      WRITE(8802) IMS, IME, KMS, KME, JMS, JME
+      WRITE(8802) Q
+      WRITE(8802) QC
+      WRITE(8802) QR
+      WRITE(8802) QI
+      WRITE(8802) QS
+      WRITE(8802) QG
+      WRITE(8802) NC
+      WRITE(8802) NR
+      WRITE(8802) NI
+      WRITE(8802) NN
+      WRITE(8802) BG
+      WRITE(8802) TH
+      CLOSE(8802)
+    END IF
+
     DO J = JTS, JTE
       JJ = J - JTS + 1
       DO K = KTS, KTE
@@ -172,6 +192,26 @@ CONTAINS
         ANY(QC(ITS:ITE,KTS:KTE,JTS:JTE) /= QC(ITS:ITE,KTS:KTE,JTS:JTE)) .OR. &
         ANY(QI(ITS:ITE,KTS:KTE,JTS:JTE) /= QI(ITS:ITE,KTS:KTE,JTS:JTE))) THEN
       CALL wrf_error_fatal('kdm6ad: NaN after copy-back')
+    END IF
+
+    ! KDM6AD step-1 forward-consistency dump (slot 137 path, post-physics)
+    IF (ITIMESTEP == 1) THEN
+      OPEN(UNIT=8802, FILE='kdm6_step1_kdm6ad_out.bin', FORM='UNFORMATTED', &
+           ACCESS='STREAM', STATUS='REPLACE')
+      WRITE(8802) IMS, IME, KMS, KME, JMS, JME
+      WRITE(8802) Q
+      WRITE(8802) QC
+      WRITE(8802) QR
+      WRITE(8802) QI
+      WRITE(8802) QS
+      WRITE(8802) QG
+      WRITE(8802) NC
+      WRITE(8802) NR
+      WRITE(8802) NI
+      WRITE(8802) NN
+      WRITE(8802) BG
+      WRITE(8802) TH
+      CLOSE(8802)
     END IF
 
   END SUBROUTINE kdm6ad

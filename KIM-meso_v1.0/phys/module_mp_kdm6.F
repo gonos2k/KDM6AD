@@ -317,11 +317,31 @@
            else
              nn(i,k,j) = (150.*exp(-0.35*z_sum/1000.)+10.)*1.e6
            endif
-!           nn(i,k,j) = ccn0   
+!           nn(i,k,j) = ccn0
 ! yhlee end
          enddo
        enddo
      enddo
+   endif
+!
+   ! KDM6AD step-1 forward-consistency dump (slot 37 path, pre-physics)
+   if (itimestep .eq. 1) then
+     open(unit=8801, file='kdm6_step1_kdm6_in.bin', form='unformatted', &
+          access='stream', status='replace')
+     write(8801) ims, ime, kms, kme, jms, jme
+     write(8801) q
+     write(8801) qc
+     write(8801) qr
+     write(8801) qi
+     write(8801) qs
+     write(8801) qg
+     write(8801) nc
+     write(8801) nr
+     write(8801) ni
+     write(8801) nn
+     write(8801) bg
+     write(8801) th
+     close(8801)
    endif
 !
    do j = jts,jte
@@ -435,8 +455,28 @@
          enddo
        enddo
      endif
-   enddo        
-! 
+   enddo
+!
+   ! KDM6AD step-1 forward-consistency dump (slot 37 path, post-physics)
+   if (itimestep .eq. 1) then
+     open(unit=8801, file='kdm6_step1_kdm6_out.bin', form='unformatted', &
+          access='stream', status='replace')
+     write(8801) ims, ime, kms, kme, jms, jme
+     write(8801) q
+     write(8801) qc
+     write(8801) qr
+     write(8801) qi
+     write(8801) qs
+     write(8801) qg
+     write(8801) nc
+     write(8801) nr
+     write(8801) ni
+     write(8801) nn
+     write(8801) bg
+     write(8801) th
+     close(8801)
+   endif
+!
    end subroutine kdm6
 !
 !------------------------------------------------------------------------------
