@@ -324,7 +324,7 @@
      enddo
    endif
 !
-   ! KDM6AD step-1 forward-consistency dump (slot 37 path, pre-physics)
+   ! KDM6AD step-1 forward-consistency dump (Fortran kdm6 path,pre-physics)
    if (itimestep .eq. 1) then
      open(unit=8801, file='kdm6_step1_kdm6_in.bin', form='unformatted', &
           access='stream', status='replace')
@@ -457,10 +457,15 @@
      endif
    enddo
 !
-   ! KDM6AD step-1 forward-consistency dump (slot 37 path, post-physics)
-   if (itimestep .eq. 1) then
-     open(unit=8801, file='kdm6_step1_kdm6_out.bin', form='unformatted', &
-          access='stream', status='replace')
+   ! KDM6AD forward-consistency dumps (Fortran kdm6 path,post-physics)
+   if (itimestep .eq. 1 .or. itimestep .eq. 1440) then
+     if (itimestep .eq. 1) then
+       open(unit=8801, file='kdm6_step1_kdm6_out.bin', form='unformatted', &
+            access='stream', status='replace')
+     else
+       open(unit=8801, file='kdm6_step1440_kdm6_out.bin', form='unformatted', &
+            access='stream', status='replace')
+     endif
      write(8801) ims, ime, kms, kme, jms, jme
      write(8801) q
      write(8801) qc

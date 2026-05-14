@@ -94,8 +94,10 @@ void test_c_abi_step_runs_microphysics() {
         bool qc_changed = std::fabs(qc_o.data[0] - qc.data[0]) > 1e-12;
         bool qr_changed = std::fabs(qr_o.data[0] - qr.data[0]) > 1e-12;
         assert(qc_changed || qr_changed);
-        // Fortran module_mp_kdm6.F:747 prologue clamp [1e8, 2e10]; input 12345 → ≥1e8.
-        std::fprintf(stderr, "nccn_o[0] = %.10e\n", nccn_o.data[0]);
+        // Fortran module_mp_kdm6.F:747 prologue clamp; input 12345 < NCCN_MIN, so output
+        // must be inside [NCCN_MIN, NCCN_MAX] (constants in kdm6/constants.h, duplicated
+        // here as raw numbers because the test enforces ABI isolation by including only
+        // kdm6_c_api.h — see file header).
         assert(nccn_o.data[0] >= 1.0e8 - 1e-3);
         assert(nccn_o.data[0] <= 2.0e10 + 1e-3);
 

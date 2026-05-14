@@ -475,7 +475,7 @@ CoordinatorState kdm62d_step(
     // value, matching slot-37 behaviour. Post-rate clamp at line 791 is kept as the
     // surrogate for Fortran :2952 / :3076.
     CoordinatorState cur = state;
-    cur.nccn = torch::clamp(cur.nccn, /*min=*/1.0e8, /*max=*/2.0e10);
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);
 
     const int loops_max = compute_loops_max(delt, dtcldcr);
     const double dtcld = delt / static_cast<double>(loops_max);
@@ -794,7 +794,7 @@ CoordinatorState state_update(
         torch::clamp(nc_new, /*min=*/0.0),
         torch::clamp(nr_new, /*min=*/0.0),
         torch::clamp(ni_new, /*min=*/0.0),
-        torch::clamp(nccn_new, /*min=*/1.0e8, /*max=*/2.0e10),
+        torch::clamp(nccn_new, constants::NCCN_MIN, constants::NCCN_MAX),
         brs_new,
         t_new,
     };

@@ -104,7 +104,7 @@ CONTAINS
       END DO
     END IF
 
-    ! KDM6AD step-1 forward-consistency dump (slot 137 path, pre-physics)
+    ! KDM6AD step-1 forward-consistency dump (PyTorch kdm6ad path,pre-physics)
     IF (ITIMESTEP == 1) THEN
       OPEN(UNIT=8802, FILE='kdm6_step1_kdm6ad_in.bin', FORM='UNFORMATTED', &
            ACCESS='STREAM', STATUS='REPLACE')
@@ -194,7 +194,7 @@ CONTAINS
       CALL wrf_error_fatal('kdm6ad: NaN after copy-back')
     END IF
 
-    ! KDM6AD step-1 forward-consistency dump (slot 137 path, post-physics)
+    ! KDM6AD step-1 forward-consistency dump (PyTorch kdm6ad path,post-physics)
     IF (ITIMESTEP == 1) THEN
       OPEN(UNIT=8802, FILE='kdm6_step1_kdm6ad_out.bin', FORM='UNFORMATTED', &
            ACCESS='STREAM', STATUS='REPLACE')
