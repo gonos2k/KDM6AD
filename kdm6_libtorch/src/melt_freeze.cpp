@@ -114,6 +114,7 @@ ContactFreezingParams default_contact_freezing_params(double xlf) {
         cmc, constants::MUC, g1pmc, g4pmc,
         /*rcn=*/0.1e-6, /*boltzmann=*/1.38e-23,
         xlf, constants::QCRMIN, constants::NCMIN, /*supcol_threshold=*/2.0,
+        /*ncmin_tensor=*/c10::nullopt,
     };
 }
 
@@ -137,7 +138,11 @@ ContactFreezingOutputs contact_freezing_torch(
                      * p.g4pmc * in.rslopecmu * in.rslopec3 * in.rslopec2 * dtcld;
     auto pinuc = torch::where(active, torch::minimum(pinuc_raw, in.qc), zero);
 
-    auto nc_active = torch::logical_and(active, in.nc > p.ncmin);
+    // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
+    auto nc_above_ncmin = p.ncmin_tensor.has_value()
+        ? in.nc > p.ncmin_tensor.value()
+        : in.nc > p.ncmin;
+    auto nc_active = torch::logical_and(active, nc_above_ncmin);
     auto ninuc_raw = difa * 2.0 * PI * Nic * in.n0c / (p.muc + 1.0)
                      * p.g1pmc * in.rslopecmu * in.rslopec2 * dtcld;
     auto ninuc = torch::where(nc_active, torch::minimum(ninuc_raw, in.nc), zero);
@@ -157,6 +162,7 @@ BiggCloudParams default_bigg_cloud_params() {
         constants::PFRZ1, constants::PFRZ2,
         g1p2dcomuc1, g1pdcomuc1,
         constants::QCRMIN, constants::NCMIN,
+        /*ncmin_tensor=*/c10::nullopt,
     };
 }
 
@@ -176,7 +182,11 @@ BiggCloudOutputs bigg_cloud_freezing_torch(
                        * in.rslopecmu * in.rslopecd * in.rslopecd * in.rslopec * dtcld;
     auto pfrzdtc = torch::where(active, torch::minimum(pfrzdtc_raw, in.qc), zero);
 
-    auto nc_active = torch::logical_and(active, in.nc > p.ncmin);
+    // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
+    auto nc_above_ncmin = p.ncmin_tensor.has_value()
+        ? in.nc > p.ncmin_tensor.value()
+        : in.nc > p.ncmin;
+    auto nc_active = torch::logical_and(active, nc_above_ncmin);
     auto nfrzdtc_raw = p.cmc * p.pfrz1 * in.n0c / p.denr / (p.muc + 1.0)
                        * bigg_factor * p.g1pdcomuc1 * in.rslopecmu * in.rslopec
                        * in.rslopecd * dtcld;

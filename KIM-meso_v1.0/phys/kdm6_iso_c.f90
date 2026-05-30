@@ -39,7 +39,9 @@ module kdm6_iso_c
         th_out, qv_out, qc_out, qr_out, &
         qi_out, qs_out, qg_out, &
         nccn_out, nc_out, ni_out, nr_out, bg_out, &
-        handle &
+        handle, &
+        xland, ncmin_land, ncmin_sea, &
+        rain_increment, snow_increment, graupel_increment &
       ) bind(C, name="kdm6_step_c") result(rc)
       import :: c_int, c_double, c_ptr
       real(c_double), intent(in)  :: th(*), qv(*), qc(*), qr(*)
@@ -53,6 +55,13 @@ module kdm6_iso_c
       real(c_double), intent(out) :: qi_out(*), qs_out(*), qg_out(*)
       real(c_double), intent(out) :: nccn_out(*), nc_out(*), ni_out(*), nr_out(*), bg_out(*)
       type(c_ptr), intent(out)    :: handle
+      
+      
+      real(c_double), intent(in)  :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      
+      
+      real(c_double), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
 
@@ -97,7 +106,9 @@ contains
       th_out, qv_out, qc_out, qr_out, &
       qi_out, qs_out, qg_out, &
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
-      handle &
+      handle, &
+      xland, ncmin_land, ncmin_sea, &
+      rain_increment, snow_increment, graupel_increment &
     ) result(rc)
     real(c_double), intent(in),  contiguous :: th(:,:,:), qv(:,:,:), qc(:,:,:), qr(:,:,:)
     real(c_double), intent(in),  contiguous :: qi(:,:,:), qs(:,:,:), qg(:,:,:)
@@ -111,6 +122,13 @@ contains
     real(c_double), intent(out), contiguous :: nccn_out(:,:,:), nc_out(:,:,:), ni_out(:,:,:), nr_out(:,:,:)
     real(c_double), intent(out), contiguous :: bg_out(:,:,:)
     type(c_ptr),    intent(out)             :: handle
+    
+    real(c_double), intent(in),  contiguous :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    
+    real(c_double), intent(out), contiguous :: rain_increment(:,:)
+    real(c_double), intent(out), contiguous :: snow_increment(:,:)
+    real(c_double), intent(out), contiguous :: graupel_increment(:,:)
     integer(c_int)                          :: rc
 
     rc = kdm6_step_c( &
@@ -122,7 +140,9 @@ contains
       th_out, qv_out, qc_out, qr_out, &
       qi_out, qs_out, qg_out, &
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
-      handle)
+      handle, &
+      xland, real(ncmin_land, c_double), real(ncmin_sea, c_double), &
+      rain_increment, snow_increment, graupel_increment)
   end function kdm6_step
 
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)

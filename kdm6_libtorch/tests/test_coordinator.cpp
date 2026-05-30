@@ -277,7 +277,14 @@ void test_state_update_zero_rates_identity() {
 
 void test_state_update_pcond_warms_and_moves_qv_to_qc() {
     TEST(test_state_update_pcond_warms_and_moves_qv_to_qc) {
-        // pcond>0 → qc 증가, qv 감소, T 증가 (xl·pcond/cpm·dt). 다른 모든 rate=0.
+        // Updated contract (Codex stop-gate finding 8): `state_update` no longer
+        // consumes warm.pcond / warm.pcact / warm.cloud_complete_evap /
+        // warm.ncact — those are deferred to `apply_satadj_step` which runs
+        // AFTER state_update + reclassifications, mirroring Fortran
+        // module_mp_kdm6.f90:2880-2929 sequence. So with warm.pcond=1e-7 and
+        // all other rates=0, `state_update` should LEAVE qv/qc/t unchanged
+        // (modulo cold/mf identities). pcond's effect is exercised by the
+        // separate apply_satadj_step kernel test.
         const int B = 1, K = 1;
         auto opts = f64();
         CoordinatorState s{
@@ -294,20 +301,18 @@ void test_state_update_pcond_warms_and_moves_qv_to_qc() {
             torch::zeros({B, K}, opts),         // brs
             torch::full({B, K}, 280.0, opts),   // t (warm, supcol<0)
         };
-        auto pre = make_zero_pre(B, K);  // cpm=1004.5, xl=2.5e6, supcol=-10 → warm
+        auto pre = make_zero_pre(B, K);
         auto warm = make_zero_warm(B, K);
-        warm.pcond = torch::full({B, K}, 1.0e-7, opts);  // 1e-7 kg/kg/s for 60s = 6e-6
+        warm.pcond = torch::full({B, K}, 1.0e-7, opts);  // ignored by state_update now
         auto cold = make_zero_cold(B, K);
         auto mf = make_zero_mf(B, K);
 
         const double dtcld = 60.0;
         auto out = state_update(s, pre, warm, cold, mf, dtcld);
-        const double dq = 1.0e-7 * dtcld;  // 6e-6
-        const double dT = 2.5e6 / 1004.5 * dq;  // ~14.93 K
-
-        assert(std::abs(out.qv.item<double>() - (8.0e-3 - dq)) < 1e-15);
-        assert(std::abs(out.qc.item<double>() - (1.0e-4 + dq)) < 1e-15);
-        assert(std::abs(out.t.item<double>() - (280.0 + dT)) < 1e-9);
+        // pcond no longer applied here → state is identity (modulo any rates).
+        assert(std::abs(out.qv.item<double>() - 8.0e-3) < 1e-15);
+        assert(std::abs(out.qc.item<double>() - 1.0e-4) < 1e-15);
+        assert(std::abs(out.t.item<double>()  - 280.0)  < 1e-9);
     } END_TEST();
 }
 
@@ -1286,6 +1291,81 @@ void test_threshold_cleanup_grad_flows() {
     } END_TEST();
 }
 
+// ── F1d2: group conservation limiter trip-correctness ───────────────────────
+// Zero-filled phase structs (all fields = z; the compiler enforces the count).
+WarmPhaseOutputs make_zero_warm(const torch::Tensor& z) {
+    return WarmPhaseOutputs{ z, z, z, z, z, z, z, z, z, z, z, z };  // 12
+}
+ColdPhaseOutputs make_zero_cold(const torch::Tensor& z) {
+    return ColdPhaseOutputs{
+        z, z, z, z,        z, z, z, z,        z, z, z, z, z, z, z, z,
+        z, z, z, z, z,     z, z, z, z,        z, z, z, z,
+        z, z,              z, z, z,           z, z,        z, z,        z, z,  // 40
+    };
+}
+MeltFreezePhaseOutputs make_zero_mf(const torch::Tensor& z) {
+    return MeltFreezePhaseOutputs{
+        z, z, z, z, z, z, z,   z, z,   z, z,   z, z, z,   z, z, z, z,          // 18
+    };
+}
+
+void test_group_limiter_caps_oversubscribed_ice_mass() {
+    TEST(test_group_limiter_caps_oversubscribed_ice_mass) {
+        // Trip-correctness: psaut+praci+psaci jointly demand ≫ qi; the ice-mass
+        // budget must scale them so total consumption == qi exactly (806× fix).
+        auto opts = f64();
+        auto z = torch::zeros({1, 1}, opts);
+        const double dtcld = 60.0, qi0 = 1.0e-6, big = 1.0e-4;
+        auto state = make_zero_state(1, 1);
+        state.qi = torch::full({1, 1}, qi0, opts);
+        state.qr = torch::full({1, 1}, 1.0e-3, opts);          // delta2=delta3=0
+        auto supcol = torch::full({1, 1}, 10.0, opts);         // cold arm (>0)
+        auto warm = make_zero_warm(z);
+        auto mf = make_zero_mf(z);
+        auto cold = make_zero_cold(z);
+        auto gopt = torch::dtype(torch::kFloat64).requires_grad(true);
+        cold.psaut = torch::full({1, 1}, big, gopt);
+        cold.praci = torch::full({1, 1}, big, gopt);
+        cold.psaci = torch::full({1, 1}, big, gopt);
+
+        auto scaled = scale_rates_for_conservation(state, supcol, warm, cold, mf, dtcld);
+        auto consumed = (scaled.cold.psaut + scaled.cold.praci + scaled.cold.psaci) * dtcld;
+        assert(torch::allclose(consumed, state.qi, /*rtol=*/1e-10));
+
+        // factor = qi/source applied uniformly to each sink
+        double expect = big * qi0 / (3.0 * big * dtcld);
+        assert(torch::allclose(scaled.cold.psaut,
+                               torch::full({1, 1}, expect, opts), /*rtol=*/1e-10));
+
+        // autograd flows through the limiter (no graph break)
+        scaled.cold.psaut.sum().backward();
+        assert(cold.psaut.grad().defined()
+               && torch::all(torch::isfinite(cold.psaut.grad())).item<bool>());
+    } END_TEST();
+}
+
+void test_group_limiter_inactive_on_warm_cell() {
+    TEST(test_group_limiter_inactive_on_warm_cell) {
+        // A warm cell (supcol<=0) must be untouched by cold (pass-1) budgets.
+        auto opts = f64();
+        auto z = torch::zeros({1, 1}, opts);
+        const double big = 1.0e-4;
+        auto state = make_zero_state(1, 1);
+        state.qi = torch::full({1, 1}, 1.0e-6, opts);
+        state.qr = torch::full({1, 1}, 1.0e-3, opts);
+        auto supcol = torch::full({1, 1}, -5.0, opts);         // WARM arm (<=0)
+        auto warm = make_zero_warm(z);
+        auto mf = make_zero_mf(z);
+        auto cold = make_zero_cold(z);
+        cold.psaut = torch::full({1, 1}, big, opts);
+        cold.praci = torch::full({1, 1}, big, opts);
+
+        auto scaled = scale_rates_for_conservation(state, supcol, warm, cold, mf, 60.0);
+        assert(torch::equal(scaled.cold.psaut, cold.psaut));   // cold budget did NOT fire
+        assert(torch::equal(scaled.cold.praci, cold.praci));
+    } END_TEST();
+}
+
 int main() {
     std::cout << "kdm6_libtorch coordinator post-update tests\n";
     test_threshold_cleanup_zeros_paired_number();
@@ -1318,6 +1398,8 @@ int main() {
     test_kdm62d_step_delt_zero_is_noop_and_no_nan();
     test_kdm62d_step_sub_cycling_runs();
     test_sedimentation_chain_runs_and_accumulates();
+    test_group_limiter_caps_oversubscribed_ice_mass();
+    test_group_limiter_inactive_on_warm_cell();
     std::cout << "All tests passed.\n";
     return 0;
 }

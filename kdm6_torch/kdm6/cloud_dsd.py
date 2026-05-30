@@ -171,7 +171,16 @@ def diag_qcr_torch(
     params: CloudDsdParams,
     ref: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Fortran 869-874: sea면 qc1(maritime), land면 qc0(continental).
+    """Fortran module_mp_kdm6.F:826-830 — sea(slmsk==2) → qc0, land → qc1.
+
+    Physical reasoning: qc0 = qc_base · XNCR0 (XNCR0=5e7, low CCN concentration)
+    and qc1 = qc_base · XNCR1 (XNCR1=5e8, high CCN). Higher CCN → smaller
+    cloud droplets → harder autoconversion → HIGHER qcr threshold. Ocean air
+    is clean (LOW CCN) so it gets the LOWER threshold qc0; land air is dusty
+    (HIGH CCN) so it gets the HIGHER threshold qc1. The Param-field names
+    `qc0/continental`, `qc1/maritime` in CloudDsdParams are legacy labels
+    pinned to the scalar values, not the regime mapping; the regime wiring
+    is here and mirrors the operational Fortran assignment.
 
     Parameters
     ----------
@@ -181,7 +190,7 @@ def diag_qcr_torch(
 
     Returns
     -------
-    qcr : (B, K) tensor with qc0 또는 qc1로 채워짐.
+    qcr : (B, K) tensor with qc0 (sea) or qc1 (land).
     """
     if ref is None:
         dtype = torch.float64
@@ -189,9 +198,9 @@ def diag_qcr_torch(
     else:
         dtype = ref.dtype
         device = ref.device
-    qc1_t = torch.tensor(params.qc1, dtype=dtype, device=device)
     qc0_t = torch.tensor(params.qc0, dtype=dtype, device=device)
-    qcr = torch.where(sea_mask, qc1_t, qc0_t)
+    qc1_t = torch.tensor(params.qc1, dtype=dtype, device=device)
+    qcr = torch.where(sea_mask, qc0_t, qc1_t)
     return qcr
 
 

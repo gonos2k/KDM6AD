@@ -324,7 +324,12 @@
      enddo
    endif
 !
-   ! KDM6AD step-1 forward-consistency dump (Fortran kdm6 path,pre-physics)
+   ! KDM6AD step-1 forward-consistency dump (Fortran kdm6 path, pre-physics).
+   ! Gated for production safety: fixed filename + STATUS='REPLACE' collides
+   ! across MPI ranks and pollutes the working dir. Recompile with
+   ! -DKDM6_FORWARD_PARITY_DUMP (or add to CPPFLAGS in configure.wrf) to
+   ! re-enable for forensic comparison vs the kdm6ad path.
+#ifdef KDM6_FORWARD_PARITY_DUMP
    if (itimestep .eq. 1) then
      open(unit=8801, file='kdm6_step1_kdm6_in.bin', form='unformatted', &
           access='stream', status='replace')
@@ -343,6 +348,7 @@
      write(8801) th
      close(8801)
    endif
+#endif
 !
    do j = jts,jte
      do k = kts,kte
@@ -457,7 +463,9 @@
      endif
    enddo
 !
-   ! KDM6AD forward-consistency dumps (Fortran kdm6 path,post-physics)
+   ! KDM6AD forward-consistency dumps (Fortran kdm6 path, post-physics).
+   ! Gated — see pre-physics dump comment for rationale.
+#ifdef KDM6_FORWARD_PARITY_DUMP
    if (itimestep .eq. 1 .or. itimestep .eq. 1440) then
      if (itimestep .eq. 1) then
        open(unit=8801, file='kdm6_step1_kdm6_out.bin', form='unformatted', &
@@ -481,6 +489,7 @@
      write(8801) th
      close(8801)
    endif
+#endif
 !
    end subroutine kdm6
 !

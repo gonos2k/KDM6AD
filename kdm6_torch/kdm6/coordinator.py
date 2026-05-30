@@ -680,6 +680,131 @@ def melt_freeze_phase_torch(
 # ─── Step F1e: State mutation update ─────────────────────────────────────────
 
 
+def scale_rates_for_conservation_torch(
+    state: CoordinatorState,
+    supcol: torch.Tensor,
+    warm: WarmPhaseOutputs,
+    cold: ColdPhaseOutputs,
+    mf: MeltFreezePhaseOutputs,
+    *,
+    dtcld: float,
+):
+    """F1d2 — Fortran group conservation budgets (module_mp_kdm6.f90 :2410-2547
+    cold-arm + :2607-2678 warm-arm). 14 budgets: value=max(floor,reservoir);
+    source=Σ(signed sinks)·dtcld; if source>value scale every listed sink by
+    factor=value/source. Bounds the SUM of competing sinks on one species — the
+    tier the per-rate caps cannot provide (its absence caused the 806× staged-ice
+    over-production). Runs AFTER melt_freeze (D5 read UNSCALED cold rates, as
+    Fortran does) and BEFORE state_update; supcol gates cold(pass1)/warm(pass2)
+    exactly as state_update's cold_mask=(supcol>0).
+
+    Mirrors C++ scale_rates_for_conservation 1:1. Each `source` is the LITERAL
+    Fortran arithmetic on the corresponding rate tensors (the port carries
+    Fortran's signs ⇒ identical arithmetic). Rates are scaled IN ORDER,
+    sequentially (a rate re-read by a later budget sees its already-scaled
+    value). factor=value/max(source,value) is an exact no-op (=1) where
+    source≤value (the common case ⇒ existing tests unchanged). pgaut/pgacs ≡ 0
+    (dropped, not invented); paacw/naacw appear ×2 in source but scaled once.
+    AD-safe: torch.where + maximum, no .item(). Returns scaled (warm, cold, mf).
+    """
+    dtype = state.qc.dtype
+    cold_gate = supcol > 0          # == state_update cold_mask
+    warm_gate = supcol <= 0         # complement (warm arm)
+    delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype)
+    delta3 = (state.qr < 1.0e-4).to(dtype)
+    one_m_d2 = 1.0 - delta2
+    one_m_d3 = 1.0 - delta3
+    EPS = 1.0e-15                   # Fortran qmin (matches C++ constants::EPS)
+
+    # Mutable working copies keyed by rate name (names are unique across the
+    # three structs). Sequential mutation needs mutable state — NamedTuples are
+    # immutable, so we mutate this dict and _replace at the end.
+    W = ("praut", "pracw", "prevp", "nraut", "nccol", "nracw", "nrcol")
+    C = ("paacw_adj", "piacw", "pmulcs", "pmulcg", "psaut", "pinud", "pidep",
+         "praci", "psaci", "pgaci", "pmulrs", "pmulrg", "piacr", "psacr_adj",
+         "pgacr_adj", "psdep", "pracs", "pgdep", "naacw", "niacw", "nraci",
+         "nsaci", "ngaci", "niacr", "nsaut", "ninud", "nmulcs", "nmulcg",
+         "nmulrs", "nmulrg", "nsacr", "ngacr", "psevp", "pgevp")
+    M = ("pseml", "pgeml", "nseml", "ngeml")
+    r = {nm: getattr(warm, nm) for nm in W}
+    r.update({nm: getattr(cold, nm) for nm in C})
+    r.update({nm: getattr(mf, nm) for nm in M})
+
+    def limit(reservoir, floor, source_sum, gate, names):
+        value = torch.clamp(reservoir, min=floor)
+        source = source_sum * dtcld
+        factor = torch.where(gate, value / torch.maximum(source, value),
+                             torch.ones_like(value))
+        for nm in names:
+            r[nm] = r[nm] * factor
+
+    # ── PASS 1: cold arm (t<=t0c), gate=cold_gate ──────────────────────────
+    limit(state.qc, EPS,                                              # cloud mass :2410
+          r["praut"] + r["pracw"] + 2.0 * r["paacw_adj"] + r["piacw"]
+          + r["pmulcs"] + r["pmulcg"], cold_gate,
+          ("praut", "pracw", "paacw_adj", "piacw", "pmulcs", "pmulcg"))
+    limit(state.qi, EPS,                                              # ice mass :2425
+          r["psaut"] - r["pinud"] - r["pidep"] + r["praci"] + r["psaci"]
+          + r["pgaci"] - r["pmulcs"] - r["pmulrs"] - r["pmulcg"] - r["pmulrg"]
+          - r["piacw"], cold_gate,
+          ("psaut", "pinud", "pidep", "praci", "psaci", "pgaci", "piacw",
+           "pmulcs", "pmulrs", "pmulcg", "pmulrg"))
+    limit(state.qr, EPS,                                              # rain mass :2445
+          -r["praut"] - r["prevp"] - r["pracw"] + r["piacr"] + r["psacr_adj"]
+          + r["pgacr_adj"] + r["pmulrs"] + r["pmulrg"], cold_gate,
+          ("praut", "prevp", "pracw", "piacr", "psacr_adj", "pgacr_adj",
+           "pmulrs", "pmulrg"))
+    limit(state.qs, EPS,                                              # snow mass :2462 (pgaut,pgacs≡0)
+          -(r["psdep"] + r["psaut"] + r["paacw_adj"] + r["piacr"] * delta3
+            + r["praci"] * delta3 - r["pracs"] * one_m_d2
+            + r["psacr_adj"] * delta2 + r["psaci"]), cold_gate,
+          ("psdep", "psaut", "paacw_adj", "piacr", "praci", "psaci", "pracs",
+           "psacr_adj"))
+    limit(state.qg, EPS,                                              # graupel mass :2483 (pgaut,pgacs≡0)
+          -(r["pgdep"] + r["piacr"] * one_m_d3 + r["praci"] * one_m_d3
+            + r["psacr_adj"] * one_m_d2 + r["pracs"] * one_m_d2 + r["pgaci"]
+            + r["paacw_adj"] + r["pgacr_adj"]), cold_gate,
+          ("pgdep", "piacr", "praci", "psacr_adj", "pracs", "paacw_adj",
+           "pgaci", "pgacr_adj"))
+    limit(state.nc, c.NCMIN,                                          # cloud number :2504
+          r["nraut"] + r["nccol"] + r["nracw"] + r["niacw"] + 2.0 * r["naacw"],
+          cold_gate, ("nraut", "nccol", "nracw", "naacw", "niacw"))
+    limit(state.ni, c.NCMIN,                                          # ice number :2518
+          r["nraci"] + r["nsaci"] + r["ngaci"] + r["niacr"] + r["nsaut"]
+          - r["nmulcs"] - r["nmulcg"] - r["nmulrs"] - r["nmulrg"] - r["ninud"],
+          cold_gate,
+          ("nraci", "nsaci", "ngaci", "niacr", "nsaut", "ninud", "nmulcs",
+           "nmulcg", "nmulrs", "nmulrg"))
+    limit(state.nr, c.NRMIN,                                          # rain number :2537
+          -r["nraut"] + r["nraci"] + r["nrcol"] + r["niacr"] + r["nsacr"]
+          + r["ngacr"], cold_gate,
+          ("nraci", "nraut", "nrcol", "niacr", "nsacr", "ngacr"))
+
+    # ── PASS 2: warm arm (t>t0c), gate=warm_gate ───────────────────────────
+    limit(state.qc, EPS,                                             # cloud mass :2607
+          r["praut"] + r["pracw"] + 2.0 * r["paacw_adj"], warm_gate,
+          ("praut", "pracw", "paacw_adj"))
+    limit(state.qr, EPS,                                             # rain mass :2619
+          -2.0 * r["paacw_adj"] - r["praut"] + r["pseml"] + r["pgeml"]
+          - r["pracw"] - r["prevp"], warm_gate,
+          ("praut", "prevp", "pracw", "paacw_adj", "pseml", "pgeml"))
+    limit(state.qs, c.QCRMIN,                                        # snow mass :2634 (pgacs≡0)
+          -r["pseml"] - r["psevp"], warm_gate, ("psevp", "pseml"))
+    limit(state.qg, c.QCRMIN,                                        # graupel mass :2645 (pgacs≡0)
+          -(r["pgevp"] + r["pgeml"]), warm_gate, ("pgevp", "pgeml"))
+    limit(state.nc, c.NCMIN,                                         # cloud number :2656
+          r["nraut"] + r["nccol"] + r["nracw"] + 2.0 * r["naacw"], warm_gate,
+          ("nraut", "nccol", "nracw", "naacw"))
+    limit(state.nr, c.NRMIN,                                         # rain number :2669
+          -r["nraut"] + r["nrcol"] - r["nseml"] - r["ngeml"], warm_gate,
+          ("nraut", "nrcol", "nseml", "ngeml"))
+
+    warm2 = warm._replace(**{nm: r[nm] for nm in W})
+    cold2 = cold._replace(**{nm: r[nm] for nm in C})
+    mf2 = mf._replace(**{nm: r[nm] for nm in M})
+    return warm2, cold2, mf2
+
+
 def state_update_torch(
     state: CoordinatorState,
     pre: PreambleOutputs,
@@ -688,7 +813,7 @@ def state_update_torch(
     mf: MeltFreezePhaseOutputs,
     *,
     dtcld: float,
-    xlf: float = _mf.DEFAULT_XLF,
+    xls: float = 2.85e6,   # CONSTANT sublimation latent heat (Fortran XLS); xlf(T)=xls-xl(T) derived
 ) -> CoordinatorState:
     """F1e — 모든 phase rate를 state에 적용해 새 state 산출.
 
@@ -900,13 +1025,16 @@ def state_update_torch(
     # ── Energy balance (T) — review3#4 fix: xls/xlf split ────────────
     # Fortran 2820-2825: xlwork2 = -xls·(psdep+pgdep+pidep+pinud) + xl·(prevp+psevp+pgevp)
     #                              + freeze/melt 항(xlf), t -= xlwork2/cpm·dtcld.
-    #   xls = xl + xlf (sublimation latent heat = vaporization + fusion).
+    #   Fortran 2596: xlf = xls - xl(T). xls is the CONSTANT sublimation latent
+    #   heat (2.85e6); fusion xlf is DERIVED and TEMPERATURE-DEPENDENT. The prior
+    #   code inverted this (constant xlf, derived xls), over-heating freezing at
+    #   cold T. Mirrors the C++ coordinator.cpp fix (single bug across both ports).
     #   세 group으로 분리:
     #     (a) warm-phase vapor↔water (xl): pcond, prevp, psevp, pgevp
-    #     (b) deposition/sublimation vapor↔ice (xls): pinud, pidep, psdep, pgdep
-    #     (c) freeze/melt liquid↔solid (xlf): pinuc, pfrzdtc, pfrzdtr, psmlt, pgmlt, pimlt_qi, pseml, pgeml
+    #     (b) deposition/sublimation vapor↔ice (xls, CONSTANT): pinud, pidep, psdep, pgdep
+    #     (c) freeze/melt liquid↔solid (xlf=xls-xl(T)): pinuc, pfrzdtc, pfrzdtr, psmlt, pgmlt, pimlt_qi, pseml, pgeml
     cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
-    xls = pre.xl + xlf  # per-cell sublimation latent heat (J/kg)
+    xlf = xls - pre.xl  # per-cell fusion latent heat (J/kg), temperature-dependent
 
     dT_warm_phase = dtcld * pre.xl / cpm_safe * (
         warm.pcond                            # B5 condensation (qv→qc, +)
@@ -1194,12 +1322,17 @@ def apply_dsd_number_limiters_torch(
         lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
         q_thresh=qmin, n_thresh=c.NCMIN,
     )
-    # Ice
+    # Ice — Fortran kdm6.f90:1417 uses `qci(:,2) .ge. 1.e-14` ALONE (no n-gate),
+    # unlike rain (line 1389) and cloud (line 1406) which AND with n-thresholds.
+    # This asymmetry is intentional: Fortran's lamda snap RECOMPUTES nci from qci
+    # when lamda<lamdaimin, so cells with qi>=1e-14 AND ni<ncmin must still
+    # enter the snap to get ni reset. Passing n_thresh=NCMIN here was a port
+    # bug that mirrored the C++ port. Use 1e-14 q_thresh and 0 n_thresh.
     ni_new = _limit_number_for_lamda(
         state.qi, state.ni, den,
         pidn=pidni, dm=c.DMI,
         lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
-        q_thresh=qmin, n_thresh=c.NCMIN,
+        q_thresh=1.0e-14, n_thresh=0.0,
     )
 
     # Absolute number caps (Fortran 3079-3082): nrs > NRMAX → snap to lamdarmax.
@@ -1282,7 +1415,20 @@ def kdm62d_one_step_torch(
         params=mf_params, dtcld=dtcld,
     )
 
-    new_state = state_update_torch(state, pre, warm_out, cold_out, mf_out, dtcld=dtcld)
+    # F1d2: group conservation limiters (Fortran group budgets :2410-2678).
+    # AFTER melt_freeze (D5 read UNSCALED cold rates) + BEFORE state_update.
+    # Bounds the SUM of competing sinks per species (the tier the per-rate caps
+    # lack — the 806× staged-ice fix). Mirrors C++ scale_rates_for_conservation.
+    warm_out, cold_out, mf_out = scale_rates_for_conservation_torch(
+        state, pre.supcol, warm_out, cold_out, mf_out, dtcld=dtcld,
+    )
+
+    # Pass the CONFIGURED sublimation latent heat (single source); fusion
+    # xlf = xls - xl(T) is derived inside (Fortran convention). Mirrors C++.
+    new_state = state_update_torch(
+        state, pre, warm_out, cold_out, mf_out,
+        dtcld=dtcld, xls=full_params.thermo.xls,
+    )
     # review5#4 + review7#1: Picons (Fortran 2876-2882) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)
     # review8#3: rain→cloud reclassification (Fortran 2952-2964) when avedia_r ≤ 82μm.

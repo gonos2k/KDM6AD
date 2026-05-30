@@ -35,7 +35,7 @@ class MeltingParams(NamedTuple):
 
     precs1/precs2: snow deposition coefficient (Step C4와 동일 산식)
     precg1: graupel deposition coefficient (precg2는 ProgB runtime tensor)
-    xlf : latent heat of fusion (kdm6init INPUT, default 3.336e5 J/kg)
+    xlf : latent heat of fusion (Fortran XLF = 3.50e5 J/kg, module_model_constants.F:56)
     t0c : 273.15 K
     """
 
@@ -47,7 +47,7 @@ class MeltingParams(NamedTuple):
     qcrmin: float
 
 
-DEFAULT_XLF = 3.336e5  # J/kg, latent heat of fusion (Fortran kdm6init INPUT)
+DEFAULT_XLF = 3.50e5  # J/kg, Fortran XLF (module_model_constants.F:56)
 DEFAULT_T0C = 273.15
 
 
@@ -444,7 +444,7 @@ class EnhancedMeltingParams(NamedTuple):
     qcrmin: float
 
 
-DEFAULT_CLIQ = 4218.0  # J/kg/K
+DEFAULT_CLIQ = 4190.0  # J/kg/K, Fortran cliq (module_model_constants.F:27)
 
 
 def default_enhanced_melting_params(*, cliq: float = DEFAULT_CLIQ,

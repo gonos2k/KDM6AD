@@ -36,14 +36,14 @@ class ThermoParams(NamedTuple):
     """
     cpd: float          # specific heat dry air (J/kg/K) — 1004.5
     cpv: float          # specific heat water vapor — 1846
-    cliq: float         # specific heat liquid water — 4218
+    cliq: float         # specific heat liquid water — 4190 (Fortran cliq)
     cice: float         # specific heat ice — 2106
-    rv: float           # gas constant water vapor — 461.5
-    rd: float           # gas constant dry air — 287.04
+    rv: float           # gas constant water vapor — 461.6 (Fortran r_v)
+    rd: float           # gas constant dry air — 287.0 (Fortran r_d)
     t0c: float          # 273.15
     ttp: float          # triple-point T = t0c + 0.01 = 273.16
     xlv0: float         # latent heat vaporization at t0c — 2.5e6
-    xls: float          # latent heat sublimation — 2.83e6
+    xls: float          # latent heat sublimation — 2.85e6 (Fortran XLS)
     xa: float           # Goff-Gratch exponent (water): -dldt/rv
     xb: float           # xa + hvap/(rv·ttp)
     xai: float          # ice version
@@ -55,28 +55,31 @@ class ThermoParams(NamedTuple):
 
 
 def default_thermo_params() -> ThermoParams:
-    """WRF 표준 대기 default (Fortran kdm6init INPUTs)."""
+    """WRF 표준 대기 default — Fortran share/module_model_constants.F 값 (significant-digit precision).
+    r_d=287., r_v=461.6, cp=7*r_d/2=1004.5, cpv=4*r_v=1846.4, cliq=4190., XLS=2.85E6.
+    """
     cpd = 1004.5
-    cpv = 1846.0
-    cliq = 4218.0
+    cpv = 1846.4          # = 4*r_v (Fortran cpv = 4.*r_v)
+    cliq = 4190.0         # Fortran cliq
     cice = 2106.0
-    rv = 461.5
-    rd = 287.04
+    rv = 461.6            # Fortran r_v
+    rd = 287.0            # Fortran r_d
     t0c = 273.15
     ttp = t0c + 0.01
     xlv0 = 2.5e6
-    xls = 2.83e6
+    xls = 2.85e6          # Fortran XLS
     psat = 610.78
     ep2 = rd / rv
 
-    # Goff-Gratch derivations (Fortran kdm6init:932-937)
-    dldt = cliq - cpv
+    # Goff-Gratch derivations — Fortran kdm6.f90:851-858. Note `cvap = cpv` so
+    # dldt = cvap - cliq = cpv - cliq (NOT cliq-cpv). xa, xai are POSITIVE.
+    dldt = cpv - cliq
     hvap = xlv0
-    xa = -dldt / rv
+    xa = -dldt / rv                # = (cliq - cpv) / rv > 0
     xb = xa + hvap / (rv * ttp)
-    dldti = cice - cpv
+    dldti = cpv - cice
     hsub = xls
-    xai = -dldti / rv
+    xai = -dldti / rv              # = (cice - cpv) / rv > 0
     xbi = xai + hsub / (rv * ttp)
 
     return ThermoParams(
@@ -99,8 +102,12 @@ def compute_cpm(q: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
 
 
 def compute_xl(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 768: xl = xlv0 - xlv1·(t-t0c). xlv1 = cpv - cliq."""
-    xlv1 = params.cliq - params.cpv  # Fortran: xlv1 = cl - cpv (kdm6init line ~3208)
+    """Fortran kdm6.f90:711 xlcal(x) = xlv0 - xlv1*(x-t0c), where xlv1 = cl-cpv
+    (kdm6init line ~3052). NOTE: this xlv1 is POSITIVE (cliq>cpv), distinct
+    from the `dldt = cvap-cliq` (NEGATIVE) used for xa/xb in qs formula.
+    See [[feedback-dldt-sign-convention]].
+    """
+    xlv1 = params.cliq - params.cpv  # Fortran: xlv1 = cl - cpv (kdm6.f90:3052)
     return params.xlv0 - xlv1 * (t - params.t0c)
 
 

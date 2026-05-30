@@ -29809,34 +29809,34 @@ IF(TRIM(vname).EQ.'rhopo3d')THEN
 ENDIF
 IF(TRIM(vname).EQ.'re_cloud')THEN
   IF(uses.EQ.0)THEN
-    in_use = model_config_rec%mp_physics(id).EQ.47
+    in_use = model_config_rec%mp_physics(id).EQ.137
     uses = 1
   ELSE
-    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.47
+    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.137
   ENDIF
 ENDIF
 IF(TRIM(vname).EQ.'re_ice')THEN
   IF(uses.EQ.0)THEN
-    in_use = model_config_rec%mp_physics(id).EQ.47
+    in_use = model_config_rec%mp_physics(id).EQ.137
     uses = 1
   ELSE
-    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.47
+    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.137
   ENDIF
 ENDIF
 IF(TRIM(vname).EQ.'re_snow')THEN
   IF(uses.EQ.0)THEN
-    in_use = model_config_rec%mp_physics(id).EQ.47
+    in_use = model_config_rec%mp_physics(id).EQ.137
     uses = 1
   ELSE
-    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.47
+    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.137
   ENDIF
 ENDIF
 IF(TRIM(vname).EQ.'rhopo3d')THEN
   IF(uses.EQ.0)THEN
-    in_use = model_config_rec%mp_physics(id).EQ.47
+    in_use = model_config_rec%mp_physics(id).EQ.137
     uses = 1
   ELSE
-    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.47
+    in_use = in_use.OR.model_config_rec%mp_physics(id).EQ.137
   ENDIF
 ENDIF
 IF(TRIM(vname).EQ.'re_cloud')THEN
@@ -45256,7 +45256,7 @@ SUBROUTINE set_scalar_indices_from_config ( idomain , dummy2, dummy1 )
    scalar_streams_table( idomain, P_qnr )%stream(2) = 2097152 
    F_qnr = .TRUE.
   END IF
-  IF (model_config_rec%mp_physics(idomain)==37 .OR. model_config_rec%mp_physics(idomain)==137)THEN
+  IF (model_config_rec%mp_physics(idomain)==37)THEN
    IF ( moist_index_table( PARAM_qv , idomain ) .lt. 1 ) THEN
      moist_num_table(idomain) = moist_num_table(idomain) + 1
      P_qv = moist_num_table(idomain)
@@ -45412,7 +45412,7 @@ SUBROUTINE set_scalar_indices_from_config ( idomain , dummy2, dummy1 )
    scalar_streams_table( idomain, P_qnr )%stream(2) = 2097152 
    F_qnr = .TRUE.
   END IF
-  IF (model_config_rec%mp_physics(idomain)==47)THEN
+  IF (model_config_rec%mp_physics(idomain)==137)THEN
    IF ( moist_index_table( PARAM_qv , idomain ) .lt. 1 ) THEN
      moist_num_table(idomain) = moist_num_table(idomain) + 1
      P_qv = moist_num_table(idomain)

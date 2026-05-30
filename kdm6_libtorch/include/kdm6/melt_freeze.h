@@ -23,7 +23,7 @@ struct MeltingParams {
     double qcrmin;
 };
 
-inline constexpr double DEFAULT_XLF = 3.336e5;
+inline constexpr double DEFAULT_XLF = 3.50e5;  // Fortran XLF (module_model_constants.F:56)
 
 MeltingParams default_melting_params(double xlf = DEFAULT_XLF);
 
@@ -59,6 +59,8 @@ struct ContactFreezingParams {
     double xlf;
     double qmin, ncmin;
     double supcol_threshold;
+    // Per-cell ncmin override (operational xland path; see runtime.cpp).
+    c10::optional<torch::Tensor> ncmin_tensor;
 };
 
 ContactFreezingParams default_contact_freezing_params(double xlf = DEFAULT_XLF);
@@ -88,6 +90,8 @@ struct BiggCloudParams {
     double pfrz1, pfrz2;
     double g1p2dcomuc1, g1pdcomuc1;
     double qmin, ncmin;
+    // Per-cell ncmin override (operational xland path; see runtime.cpp).
+    c10::optional<torch::Tensor> ncmin_tensor;
 };
 
 BiggCloudParams default_bigg_cloud_params();
@@ -148,7 +152,7 @@ struct EnhancedMeltingParams {
     double qcrmin;
 };
 
-inline constexpr double DEFAULT_CLIQ = 4218.0;
+inline constexpr double DEFAULT_CLIQ = 4190.0;  // Fortran cliq (module_model_constants.F:27)
 
 EnhancedMeltingParams default_enhanced_melting_params(
     double cliq = DEFAULT_CLIQ, double xlf = DEFAULT_XLF

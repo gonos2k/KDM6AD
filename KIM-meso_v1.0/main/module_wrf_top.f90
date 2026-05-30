@@ -119,7 +119,7 @@ CONTAINS
 
    CHARACTER (LEN=*), PARAMETER :: release_version = 'V4.6.0'
 
-    CHARACTER (LEN=*), PARAMETER :: commit_version = 'No git found or not a git repository, git commit version not available.'
+    CHARACTER (LEN=*), PARAMETER :: commit_version = 'git commit 59b8085041e8a5e1c83da21ca564bb0bb4cd3297 1 file changed, 12 insertions(+)'
 
 
 

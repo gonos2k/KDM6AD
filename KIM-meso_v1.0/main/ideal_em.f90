@@ -43,7 +43,7 @@ PROGRAM ideal
 
    CHARACTER (LEN=*), PARAMETER :: release_version = 'V4.6.0'
 
-    CHARACTER (LEN=*), PARAMETER :: commit_version = 'No git found or not a git repository, git commit version not available.'
+    CHARACTER (LEN=*), PARAMETER :: commit_version = 'git commit 6ee743d736c49e8c344aa9cecf24a2baf06dde3b 79 files changed, 2206 insertions(+), 350 deletions(-)'
 
 
 

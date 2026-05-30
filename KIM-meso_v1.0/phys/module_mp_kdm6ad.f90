@@ -71,6 +71,14 @@ CONTAINS
     REAL(c_double), ALLOCATABLE :: TH_OUT(:,:,:), Q_OUT(:,:,:), QC_OUT(:,:,:), QR_OUT(:,:,:)
     REAL(c_double), ALLOCATABLE :: QI_OUT(:,:,:), QS_OUT(:,:,:), QG_OUT(:,:,:)
     REAL(c_double), ALLOCATABLE :: NN_OUT(:,:,:), NC_OUT(:,:,:), NI_OUT(:,:,:), NR_OUT(:,:,:), BG_OUT(:,:,:)
+    
+    
+    REAL(c_double), ALLOCATABLE :: XLAND_IN(:,:)
+    
+    
+    
+    REAL(c_double), ALLOCATABLE :: RAIN_INC(:,:), SNOW_INC(:,:), GRAUPEL_INC(:,:)
+    REAL :: TOTAL_INC, SOLID_INC
 
     IM = ITE - ITS + 1
     KM = KTE - KTS + 1
@@ -87,6 +95,8 @@ CONTAINS
     ALLOCATE(TH_OUT(IM, KM, JM), Q_OUT(IM, KM, JM), QC_OUT(IM, KM, JM), QR_OUT(IM, KM, JM))
     ALLOCATE(QI_OUT(IM, KM, JM), QS_OUT(IM, KM, JM), QG_OUT(IM, KM, JM))
     ALLOCATE(NN_OUT(IM, KM, JM), NC_OUT(IM, KM, JM), NI_OUT(IM, KM, JM), NR_OUT(IM, KM, JM), BG_OUT(IM, KM, JM))
+    ALLOCATE(XLAND_IN(IM, JM))
+    ALLOCATE(RAIN_INC(IM, JM), SNOW_INC(IM, JM), GRAUPEL_INC(IM, JM))
 
     IF (ITIMESTEP == 1) THEN
       DO J = JMS, JME
@@ -103,6 +113,11 @@ CONTAINS
         END DO
       END DO
     END IF
+
+    
+
+    
+
 
     DO J = JTS, JTE
       JJ = J - JTS + 1
@@ -130,22 +145,34 @@ CONTAINS
       END DO
     END DO
 
+    
+    
+    DO J = JTS, JTE
+      JJ = J - JTS + 1
+      DO I = ITS, ITE
+        II = I - ITS + 1
+        XLAND_IN(II, JJ) = REAL(XLAND(I, J), c_double)
+      END DO
+    END DO
+
     RC = kdm6_step(TH_IN, Q_IN, QC_IN, QR_IN, QI_IN, QS_IN, QG_IN, &
                    NN_IN, NC_IN, NI_IN, NR_IN, BG_IN,              &
                    DEN_IN, PII_IN, P_IN, DELZ_IN,                  &
                    INT(IM, c_int), INT(KM, c_int), INT(JM, c_int), REAL(DELT, c_double), &
                    0_c_int, 1_c_int,                               &
                    TH_OUT, Q_OUT, QC_OUT, QR_OUT, QI_OUT, QS_OUT, QG_OUT, &
-                   NN_OUT, NC_OUT, NI_OUT, NR_OUT, BG_OUT, HANDLE)
+                   NN_OUT, NC_OUT, NI_OUT, NR_OUT, BG_OUT, HANDLE, &
+                   XLAND_IN, REAL(ncmin_land, c_double), REAL(ncmin_sea, c_double), &
+                   RAIN_INC, SNOW_INC, GRAUPEL_INC)
 
     IF (RC /= KDM6_OK) THEN
-      CALL wrf_error_fatal3("<stdin>",142,&
+      CALL wrf_error_fatal3("<stdin>",169,&
 'kdm6ad: kdm6_step failed')
     END IF
 
     RC = kdm6_handle_close(HANDLE)
     IF (RC /= KDM6_OK) THEN
-      CALL wrf_error_fatal3("<stdin>",148,&
+      CALL wrf_error_fatal3("<stdin>",175,&
 'kdm6ad: kdm6_handle_close failed')
     END IF
     DO J = JTS, JTE
@@ -169,13 +196,66 @@ CONTAINS
         END DO
       END DO
     END DO
+
+    
+    
+    
+    
+    
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
+    DO J = JTS, JTE
+      JJ = J - JTS + 1
+      DO I = ITS, ITE
+        II = I - ITS + 1
+        
+        RAINNCV(I, J)    = 0.0
+        SNOWNCV(I, J)    = 0.0
+        GRAUPELNCV(I, J) = 0.0
+        SR(I, J)         = 0.0
+
+        TOTAL_INC = REAL(RAIN_INC(II, JJ))
+        SOLID_INC = REAL(SNOW_INC(II, JJ) + GRAUPEL_INC(II, JJ))
+        IF (TOTAL_INC > 0.0) THEN
+          RAINNCV(I, J) = TOTAL_INC
+          RAIN(I, J)    = TOTAL_INC + RAIN(I, J)
+        END IF
+        IF (REAL(SNOW_INC(II, JJ)) > 0.0) THEN
+          SNOWNCV(I, J) = REAL(SNOW_INC(II, JJ))
+          SNOW(I, J)    = REAL(SNOW_INC(II, JJ)) + SNOW(I, J)
+        END IF
+        IF (REAL(GRAUPEL_INC(II, JJ)) > 0.0) THEN
+          GRAUPELNCV(I, J) = REAL(GRAUPEL_INC(II, JJ))
+          GRAUPEL(I, J)    = REAL(GRAUPEL_INC(II, JJ)) + GRAUPEL(I, J)
+        END IF
+        
+        
+        
+        IF (TOTAL_INC > 0.0) THEN
+          SR(I, J) = SOLID_INC / (RAINNCV(I, J) + 1.0E-12)
+        END IF
+      END DO
+    END DO
+
     IF (ANY(TH(ITS:ITE,KTS:KTE,JTS:JTE) /= TH(ITS:ITE,KTS:KTE,JTS:JTE)) .OR. &
         ANY(Q(ITS:ITE,KTS:KTE,JTS:JTE) /= Q(ITS:ITE,KTS:KTE,JTS:JTE)) .OR. &
         ANY(QC(ITS:ITE,KTS:KTE,JTS:JTE) /= QC(ITS:ITE,KTS:KTE,JTS:JTE)) .OR. &
         ANY(QI(ITS:ITE,KTS:KTE,JTS:JTE) /= QI(ITS:ITE,KTS:KTE,JTS:JTE))) THEN
-      CALL wrf_error_fatal3("<stdin>",176,&
+      CALL wrf_error_fatal3("<stdin>",252,&
 'kdm6ad: NaN after copy-back')
     END IF
+
+    
+    
+
 
   END SUBROUTINE kdm6ad
 

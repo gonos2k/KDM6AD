@@ -4,10 +4,18 @@
 // G1-G7 결정 동일하게 적용.
 //
 #include "kdm6/constants.h"
+#include "kdm6/coordinator.h"
 #include "state.h"
 #include <memory>
 
 namespace kdm6 {
+
+// Production aux-diagnostics builder. Exposed for regression tests that need
+// to verify the actual values the operational path installs (so the test
+// breaks when build_default_aux is rewired to physics, instead of silently
+// passing against hardcoded literals).
+CoordinatorAuxDiagnostics build_default_aux_for_test(
+    const State& s, const Forcing& f);
 
 // ── [G4] Parameters — opt-in 미분가능 파라미터 ─────────────────────────────
 struct Parameters {
@@ -35,10 +43,23 @@ Parameters make_parameters(int grad_flags = 0,
 // 1차 prototype 단계에서는 NotImplementedError-equivalent (TORCH_CHECK fails).
 // slope/core/sedimentation 모듈이 채워지면 본 함수가 그 합성.
 //
-State kdm6_fn(const State& state,
-              const Forcing& forcing,
-              const Parameters& params,
-              double dt);
+// Pure differentiable forward result — state + sedimentation increments.
+// The increments are computed inside kdm6_fn via sedimentation_chain (after
+// kdm62d_step) so they participate in the autograd graph alongside state.
+struct FnResult {
+    State state_out;
+    torch::Tensor rain_increment;     // (im*jme,) [mm]
+    torch::Tensor snow_increment;
+    torch::Tensor graupel_increment;
+};
+
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& params,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland = c10::nullopt,
+                 double ncmin_land = 0.0,
+                 double ncmin_sea = 0.0);
 
 // ── [G3] Handle — vjp/jvp/jacobian 인터페이스 ──────────────────────────────
 class Handle {
@@ -80,12 +101,35 @@ private:
 struct StepResult {
     State state_out;
     std::unique_ptr<Handle> handle;
+    // Sedimentation surface increments — populated by runtime kdm6_fn after
+    // sedimentation_chain runs (see runtime.cpp). Shape (im*jme,) [mm] — one
+    // value per column. Optional (zero tensors when sedimentation produced no
+    // fallout) — caller can ignore if not consuming precip diagnostics.
+    torch::Tensor rain_increment;
+    torch::Tensor snow_increment;
+    torch::Tensor graupel_increment;
 };
 
+// `xland`: optional Tensor with values 1 (land) or 2 (sea). Accepted shapes:
+//   - (im, jme) 2-D — preferred for direct C++ callers
+//   - (im*jme,) 1-D — what the C ABI flattens to before invoking runtime
+// Runtime reshapes via `.view({-1})` so either layout works.
+// Convention: xland >= 1.5 → sea, else land (WRF slmsk).
+// When set, runtime derives sea_mask from xland (replacing the all-true
+// fallback at runtime.cpp `kdm6_fn`) AND builds a per-cell ncmin tensor:
+//   ncmin_eff(i,j) = (xland(i,j) >= 1.5) ? ncmin_sea : ncmin_land
+// `sea_mask` is broadcast to (im*jme, kme) so cloud_dsd::diag_qcr_torch and
+// other consumers see per-cell values. The per-cell `ncmin_tensor` is injected
+// into the Phase Params' `ncmin_tensor` field (see warm.h, cold.h, melt_freeze.h).
+// When `xland == nullopt`, the function preserves the pre-extension behavior
+// (sea_mask all-true, scalar constants::NCMIN in every Params struct).
 StepResult kdm6_step(const State& state,
                      const Forcing& forcing,
                      const Parameters& params,
                      double dt = 60.0,
-                     bool value_only = false);
+                     bool value_only = false,
+                     const c10::optional<torch::Tensor>& xland = c10::nullopt,
+                     double ncmin_land = 0.0,
+                     double ncmin_sea = 0.0);
 
 }  // namespace kdm6

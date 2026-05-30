@@ -70,10 +70,13 @@ void test_diag_qcr_sea_land_branch() {
         auto sea_mask = torch::tensor({{true, false, true}});
         auto ref = torch::full({1, 3}, 1.0, f64());
         auto qcr = diag_qcr_torch(sea_mask, p, ref);
-        // sea row = qc1, land row = qc0
-        assert(std::abs(qcr[0][0].item<double>() - p.qc1) < 1e-12);
-        assert(std::abs(qcr[0][1].item<double>() - p.qc0) < 1e-12);
-        assert(std::abs(qcr[0][2].item<double>() - p.qc1) < 1e-12);
+        // Mirrors Fortran module_mp_kdm6.F:826-830: sea(slmsk==2) → qc0
+        // (low-CCN/low-threshold), land → qc1 (high-CCN/high-threshold).
+        // qc0/qc1 field names are scalar labels, not regime labels; the
+        // regime wiring is in src/cloud_dsd.cpp diag_qcr_torch.
+        assert(std::abs(qcr[0][0].item<double>() - p.qc0) < 1e-12);
+        assert(std::abs(qcr[0][1].item<double>() - p.qc1) < 1e-12);
+        assert(std::abs(qcr[0][2].item<double>() - p.qc0) < 1e-12);
     } END_TEST();
 }
 

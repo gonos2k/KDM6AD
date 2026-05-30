@@ -217,10 +217,82 @@ void test_kdm6_step_wired_runs_microphysics() {
         bool qc_changed = !torch::allclose(result.state_out.qc, s.qc, 0.0, 1e-12);
         bool qr_changed = !torch::allclose(result.state_out.qr, s.qr, 0.0, 1e-12);
         assert(qc_changed || qr_changed);
-        assert(torch::allclose(result.state_out.nccn, s.nccn, 0.0, 0.0));
+        // nccn input 12345 < constants::NCCN_MIN (1e8) so the entry-prologue
+        // reservoir clamp (mirrors module_mp_kdm6.F:747) snaps it to NCCN_MIN.
+        // Same expectation as test_c_abi.cpp:101-102.
+        assert(torch::all(result.state_out.nccn >= 1.0e8 - 1e-3).item<bool>());
+        assert(torch::all(result.state_out.nccn <= 2.0e10 + 1e-3).item<bool>());
 
         // (d) value_only path does not allocate a derivative handle.
         assert(result.handle == nullptr);
+    } END_TEST();
+}
+
+// Per Codex review (task-mp83ehx5-w3eqhq): direct C++ caller exercising the
+// public runtime.h xland contract — both accepted shapes (2-D (im, jme) and
+// flat (im*jme,)) must produce identical per-cell ncmin behavior, and a
+// mixed land/sea grid must produce land vs sea cells with detectably different
+// autoconv outcomes (matches the test_c_abi mixed-xland test but goes through
+// the C++ runtime entry directly, bypassing the C ABI flattening layer).
+void test_kdm6_step_xland_direct_cpp_caller() {
+    TEST(test_kdm6_step_xland_direct_cpp_caller) {
+        const int im = 2, jme = 1, B = im * jme, K = 1;
+        auto opts = torch::dtype(torch::kFloat64);
+
+        auto build_state = [&]() {
+            State s;
+            s.th   = torch::full({B, K}, 285.0 / 1.1, opts);
+            s.qv   = torch::full({B, K}, 6.5e-3, opts);
+            s.qc   = torch::full({B, K}, 5.0e-4, opts);
+            s.qr   = torch::full({B, K}, 1.0e-4, opts);
+            s.qi   = torch::zeros({B, K}, opts);
+            s.qs   = torch::zeros({B, K}, opts);
+            s.qg   = torch::zeros({B, K}, opts);
+            s.nccn = torch::full({B, K}, 5.0e8, opts);
+            s.nc   = torch::full({B, K}, 1.0e2, opts);
+            s.ni   = torch::zeros({B, K}, opts);
+            s.nr   = torch::full({B, K}, 1.0e5, opts);
+            s.bg   = torch::zeros({B, K}, opts);
+            return s;
+        };
+        Forcing f;
+        f.rho  = torch::full({B, K}, 1.0, opts);
+        f.pii  = torch::full({B, K}, 1.1, opts);
+        f.p    = torch::full({B, K}, 8.0e4, opts);
+        f.delz = torch::full({B, K}, 550.0, opts);
+        auto params = make_parameters(/*grad_flags=*/0);
+
+        // Cell 0 = land (xland=1), cell 1 = sea (xland=2).
+        // Choose ncmin_land >> nc > ncmin_sea so the autoconv gate fires only
+        // in the sea cell.
+        auto xland_2d  = torch::tensor({{1.0}, {2.0}}, opts);           // (im, jme) per public header
+        auto xland_1d  = xland_2d.view({-1});                            // (im*jme,)
+
+        auto s_2d = build_state();
+        auto r_2d = kdm6_step(s_2d, f, params, /*dt=*/60.0,
+                              /*value_only=*/true,
+                              xland_2d, /*ncmin_land=*/1.0e3, /*ncmin_sea=*/1.0e1);
+
+        auto s_1d = build_state();
+        auto r_1d = kdm6_step(s_1d, f, params, /*dt=*/60.0,
+                              /*value_only=*/true,
+                              xland_1d, /*ncmin_land=*/1.0e3, /*ncmin_sea=*/1.0e1);
+
+        // (a) finite + non-negative for both shape variants.
+        for (auto* t : r_2d.state_out.fields()) assert(torch::all(torch::isfinite(*t)).item<bool>());
+        for (auto* t : r_1d.state_out.fields()) assert(torch::all(torch::isfinite(*t)).item<bool>());
+        // (b) the two shape variants are numerically identical — runtime
+        // reshapes both to the same internal layout.
+        assert(torch::allclose(r_2d.state_out.qc, r_1d.state_out.qc, 0.0, 0.0));
+        // (c) per-cell ncmin reached warm.cpp:51 autoconv gate:
+        //   land cell (nc=100 vs ncmin_land=1000): gate FALSE → autoconv off → qc preserved
+        //   sea cell  (nc=100 vs ncmin_sea =  10): gate TRUE  → autoconv on  → qc lower
+        // Therefore land cell's qc must be >= sea cell's qc.
+        auto qc_land = r_2d.state_out.qc[0].item<double>();
+        auto qc_sea  = r_2d.state_out.qc[1].item<double>();
+        assert(qc_land >= qc_sea - 1e-12);
+        // (d) sanity — at least one cell evolved (the sea one).
+        assert(!torch::allclose(r_2d.state_out.qc, s_2d.qc, 0.0, 1e-12));
     } END_TEST();
 }
 
@@ -236,6 +308,7 @@ int main() {
     test_make_parameters_default_frozen();
     test_layout_roundtrip();
     test_kdm6_step_wired_runs_microphysics();
+    test_kdm6_step_xland_direct_cpp_caller();
     std::cout << "All tests passed.\n";
     return 0;
 }

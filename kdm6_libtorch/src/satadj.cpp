@@ -6,7 +6,7 @@ namespace satadj {
 SatAdjParams default_satadj_params(double rv) {
     return SatAdjParams{
         /*rv=*/rv,
-        /*qmin=*/constants::QCRMIN,
+        /*qmin=*/constants::QCRMIN,   // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
     };
 }
 

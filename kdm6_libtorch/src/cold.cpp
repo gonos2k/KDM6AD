@@ -52,7 +52,7 @@ IceAccretionParams default_ice_accretion_params() {
         /*g1pdrmr=*/g1pdrmr, /*g2pdrmr=*/g2pdrmr, /*g3pdrmr=*/g3pdrmr,
         /*eacri=*/constants::EACRI,
         /*eacir=*/constants::EACIR,
-        /*qmin=*/constants::QCRMIN,
+        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
         /*qcrmin=*/constants::QCRMIN,
     };
 }
@@ -128,7 +128,7 @@ IceToSnowGraupelParams default_ice_to_snow_graupel_params() {
         /*g1pms=*/g1pms, /*g2pms=*/g2pms, /*g3pms=*/g3pms,
         /*g1pmg=*/g1pmg, /*g2pmg=*/g2pmg, /*g3pmg=*/g3pmg,
         /*g1pdimi=*/g1pdimi, /*g2pdimi=*/g2pdimi, /*g3pdimi=*/g3pdimi,
-        /*qmin=*/constants::QCRMIN,
+        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
         /*qcrmin=*/constants::QCRMIN,
     };
 }
@@ -203,6 +203,7 @@ NumberAccretionParams default_number_accretion_params() {
         /*eacri=*/constants::EACRI, /*eacir=*/constants::EACIR,
         /*n0s_const=*/constants::N0S, /*n0g_const=*/constants::N0G,
         /*ncmin=*/constants::NCMIN, /*nrmin=*/constants::NRMIN, /*qcrmin=*/constants::QCRMIN,
+        /*ncmin_tensor=*/c10::nullopt,
     };
 }
 
@@ -213,7 +214,11 @@ NumberAccretionOutputs number_accretion_torch(
 ) {
     auto zero = torch::zeros_like(in.qi);
 
-    auto cold_active = torch::logical_and(in.supcol > 0, in.ni > p.ncmin);
+    // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
+    auto ni_above_ncmin = p.ncmin_tensor.has_value()
+        ? in.ni > p.ncmin_tensor.value()
+        : in.ni > p.ncmin;
+    auto cold_active = torch::logical_and(in.supcol > 0, ni_above_ncmin);
     auto rain_active = in.nr > p.nrmin;
     auto snow_active = in.qs > p.qcrmin;
     auto graupel_active = in.qg > p.qcrmin;
@@ -289,10 +294,11 @@ CloudWaterRimingParams default_cloud_water_riming_params() {
         /*eacic=*/constants::EACIC,
         /*muc=*/constants::MUC,
         /*di50=*/constants::DI50,
-        /*qmin=*/constants::QCRMIN,
+        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
         /*qcrmin=*/constants::QCRMIN,
         /*ncmin=*/constants::NCMIN,
         /*qsum_floor=*/1.0e-15,
+        /*ncmin_tensor=*/c10::nullopt,
     };
 }
 
@@ -315,7 +321,11 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     auto psacw = torch::where(snow_active_qc, psacw_capped, zero);
 
     // ── nsacw ──────────────────────────────────────────────────────────
-    auto snow_active_nc = torch::logical_and(in.qs > p.qcrmin, in.nc > p.ncmin);
+    // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
+    auto nc_above_ncmin_riming = p.ncmin_tensor.has_value()
+        ? in.nc > p.ncmin_tensor.value()
+        : in.nc > p.ncmin;
+    auto snow_active_nc = torch::logical_and(in.qs > p.qcrmin, nc_above_ncmin_riming);
     auto nsacw_raw =
         PI * p.avts * 0.25 * p.eacsc * in.n0so * in.n0sfac * in.n0c / (p.muc + 1.0)
         * p.g3pbs
@@ -337,7 +347,8 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     auto pgacw = torch::where(graupel_active_qc, pgacw_capped, zero);
 
     // ── ngacw ──────────────────────────────────────────────────────────
-    auto graupel_active_nc = torch::logical_and(in.qg > p.qcrmin, in.nc > p.ncmin);
+    // Reuse nc_above_ncmin_riming from nsacw block (same per-cell ncmin).
+    auto graupel_active_nc = torch::logical_and(in.qg > p.qcrmin, nc_above_ncmin_riming);
     auto ngacw_raw =
         PI * in.avtg * 0.25 * p.eacgc * in.n0go * in.n0c / (p.muc + 1.0)
         * in.g3pbg
@@ -370,7 +381,8 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     auto piacw_capped = torch::minimum(piacw_raw, in.qc / dtcld);
     auto piacw = torch::where(piacw_active, piacw_capped, zero);
 
-    auto niacw_active = torch::logical_and(cold_ice, in.nc > p.ncmin);
+    // Reuse nc_above_ncmin_riming from nsacw block (same per-cell ncmin).
+    auto niacw_active = torch::logical_and(cold_ice, nc_above_ncmin_riming);
     auto niacw_raw =
         PI * p.avti * 0.25 * p.eacic * in.n0i * in.n0c / (p.muc + 1.0)
         * p.g3pbi

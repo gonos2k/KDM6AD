@@ -317,6 +317,13 @@
      enddo
    endif
 
+   
+
+   
+   
+   
+
+
    do j = jts,jte
      do k = kts,kte
        do i = its,ite
@@ -428,7 +435,11 @@
          enddo
        enddo
      endif
-   enddo        
+   enddo
+
+   
+   
+
 
    end subroutine kdm6
 

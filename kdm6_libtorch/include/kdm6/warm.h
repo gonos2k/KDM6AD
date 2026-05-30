@@ -26,6 +26,10 @@ struct WarmAutoconvParams {
     double nraut_coeff;  // 3.5e9
     double qcrmin;
     double ncmin;
+    // Per-cell ncmin override (operational xland path; see runtime.cpp).
+    // When set, mask sites use this tensor instead of the scalar `ncmin`.
+    // nullopt → fall back to scalar (Python oracle parity, simplified default).
+    c10::optional<torch::Tensor> ncmin_tensor;
 };
 
 WarmAutoconvParams default_warm_autoconv_params(double den0 = constants::DEN0);

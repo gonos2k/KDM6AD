@@ -97,11 +97,13 @@ def test_diag_lencon_lenconcr_floor():
 
 
 def test_diag_qcr_sea_land_branch():
-    """sea_mask=True → qc1, False → qc0."""
+    """Mirrors Fortran module_mp_kdm6.F:826-830: sea(slmsk==2)→qc0, land→qc1.
+    Physical reasoning: clean ocean air = low CCN = low qcr threshold = qc0;
+    dusty land air = high CCN = high qcr threshold = qc1."""
     p = default_cloud_dsd_params()
     sea_mask = torch.tensor([[True, False, True]])
     qcr = diag_qcr_torch(sea_mask, params=p)
-    expected = torch.tensor([[p.qc1, p.qc0, p.qc1]], dtype=torch.float64)
+    expected = torch.tensor([[p.qc0, p.qc1, p.qc0]], dtype=torch.float64)
     assert torch.allclose(qcr, expected, rtol=1e-12)
 
 

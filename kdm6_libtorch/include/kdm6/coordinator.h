@@ -255,6 +255,28 @@ struct WarmPhaseParams {
 
 WarmPhaseParams default_warm_phase_params();
 
+// ─── F1g+: pcact + satadj applied to post-state-update / post-reclass state ─
+//
+// Mirrors Fortran module_mp_kdm6.f90:2880-2929 — the entire `do i = its, ite`
+// block that runs AFTER mass balance (:2680-2823) and reclassifications
+// (:2862-2876). Computes pcact + ncact from the post-mass-balance state,
+// applies them, recomputes qs1, runs satadj for pcond, then applies pcond
+// (including the cloud_complete_evap NC→NCCN transfer at :2920-2923).
+//
+// xl, cpm taken from the original preamble (Fortran sets these once at
+// :819-820 and reuses them through the satadj block).
+//
+// Pure functional construction — autograd graph preserved.
+CoordinatorState apply_satadj_step(
+    const CoordinatorState& state,                  // post-state-update + reclass
+    const CoordinatorForcing& forcing,
+    const torch::Tensor& xl,                        // from preamble (initial)
+    const torch::Tensor& cpm,                       // from preamble (initial)
+    const satadj::SatAdjParams& satadj_params,
+    const thermo::ThermoParams& thermo_params,
+    double dtcld
+);
+
 // Run B1-B5 sequentially and return the 8-rate WarmPhaseOutputs.
 // No state mutation — caller applies via state_update.
 WarmPhaseOutputs warm_phase(
@@ -265,7 +287,13 @@ WarmPhaseOutputs warm_phase(
     const torch::Tensor& work1_r,     // (B, K) — caller-supplied (rain capacitance)
     const torch::Tensor& qcr,         // (B, K) — caller-supplied (sea/land DSD threshold)
     const WarmPhaseParams& params,
-    double dtcld
+    double dtcld,
+    // ThermoParams needed inside warm_phase to recompute qs1 from t_post_pcact
+    // before satadj (Fortran module_mp_kdm6.f90:2890-2914 sequential semantics).
+    // Default `{}` value preserves backward compatibility for callers that don't
+    // need true sequential pcact ordering (test_smoke direct C++ entry uses
+    // this default; runtime.cpp + coordinator entry pass the operational value).
+    const thermo::ThermoParams& thermo_params = thermo::default_thermo_params()
 );
 
 // Subset of PreambleOutputs that melt_freeze_phase consumes.
@@ -411,6 +439,38 @@ CoordinatorState kdm62d_step(
     double dtcldcr = constants::DTCLDCR
 );
 
+// ─── Step F1d2: group conservation limiters (Fortran 2410-2547 cold-arm +
+//                2607-2678 warm-arm) ──────────────────────────────────────────
+//
+// Scaled copies of the three phase-output structs after the 14 Fortran group
+// conservation budgets. Each budget: value=max(floor,reservoir);
+// source=Σ(signed sinks)·dtcld; if source>value scale every listed sink by
+// factor=value/source. Per-rate caps (already in warm/cold/mf) bound ONE rate;
+// these bound the SUM of competing sinks on a species — the missing tier that
+// caused the 806× staged-ice over-production. Mathematical no-op where
+// source≤value (the common case ⇒ existing tests unchanged).
+struct ConservedRates {
+    WarmPhaseOutputs warm;
+    ColdPhaseOutputs cold;
+    MeltFreezePhaseOutputs mf;
+};
+
+// Runs AFTER melt_freeze (so D5 melt rates exist + D5 read UNSCALED cold rates,
+// matching Fortran where the budget is the last thing before the state update)
+// and BEFORE state_update. supcol gates cold (pass1) vs warm (pass2) budgets
+// exactly as state_update's cold_mask=(supcol>0). Reservoirs/delta2/delta3 come
+// from the PRE-update `state`. Rates are scaled sequentially in Fortran order so
+// a rate re-read by a later budget sees its already-scaled value. Autograd-safe:
+// torch::where + maximum only, NO .item().
+ConservedRates scale_rates_for_conservation(
+    const CoordinatorState& state,
+    const torch::Tensor& supcol,
+    WarmPhaseOutputs warm,
+    ColdPhaseOutputs cold,
+    MeltFreezePhaseOutputs mf,
+    double dtcld
+);
+
 // ─── Step F1e: state mutation update (Fortran 2680-2823 직역) ────────────────
 //
 // Python state_update_torch와 1:1 정합. Mass + number + energy + brs 통합 갱신
@@ -430,7 +490,10 @@ CoordinatorState state_update(
     const ColdPhaseOutputs& cold,
     const MeltFreezePhaseOutputs& mf,
     double dtcld,
-    double xlf = 3.336e5    // latent heat of fusion (J/kg) — Fortran kdm6init INPUT
+    double xls = 2.85e6     // CONSTANT latent heat of sublimation (J/kg) — Fortran XLS.
+                            // Fusion xlf(T) = xls - xl(T) is DERIVED inside (temperature-
+                            // dependent), matching module_mp_kdm6.f90:2596. Caller passes
+                            // thermo.xls so the constant has a single source.
 );
 
 // ─── Step F1h: paired threshold cleanup (Fortran 3017-3035) ─────────────────
@@ -469,6 +532,25 @@ CoordinatorState reclassify_small_rain_to_cloud(
     const torch::Tensor& den,
     double qcrmin = 1.0e-9,
     double di_threshold = 82.0e-6
+);
+
+// ─── Step F1g'': homogeneous freeze (Fortran 1359-1369) — CURRENTLY UNWIRED ──
+//
+// At supcol > supcol_threshold (default 40, i.e., T < t0c-40 ≈ 233K), all qc
+// is instantaneously converted to qi with fusion latent heat release. Mirrors
+// Fortran `module_mp_kdm6.f90:1359-1369`.
+//
+// NOT CURRENTLY CALLED by kdm62d_one_step (2026-05-30). As a pre-cold freezing
+// step it must run BEFORE the cold phase with aux (n0i) REBUILT from the post-
+// freeze state; but aux is built upstream in the runtime (runtime.cpp), so wiring
+// it in left the cold phase on STALE n0i — the same staging class that produced an
+// 806× ice over-deposition regression. The function is retained (unused) as the
+// reference implementation for correct re-introduction together with the
+// aux-rebuild staging refactor.
+CoordinatorState apply_homogeneous_freeze_supercold(
+    const CoordinatorState& state,
+    const thermo::ThermoParams& thermo_params,
+    double supcol_threshold = 40.0
 );
 
 // ─── Step F1i: DSD number limiters (Fortran 3039-3082) ──────────────────────

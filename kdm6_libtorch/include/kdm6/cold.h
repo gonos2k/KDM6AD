@@ -95,6 +95,8 @@ struct NumberAccretionParams {
     double eacri, eacir;
     double n0s_const, n0g_const;
     double ncmin, nrmin, qcrmin;
+    // Per-cell ncmin override (operational xland path; see runtime.cpp).
+    c10::optional<torch::Tensor> ncmin_tensor;
 };
 
 NumberAccretionParams default_number_accretion_params();
@@ -136,6 +138,8 @@ struct CloudWaterRimingParams {
     double di50;
     double qmin, qcrmin, ncmin;
     double qsum_floor;
+    // Per-cell ncmin override (operational xland path; see runtime.cpp).
+    c10::optional<torch::Tensor> ncmin_tensor;
 };
 
 CloudWaterRimingParams default_cloud_water_riming_params();

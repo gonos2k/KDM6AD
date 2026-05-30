@@ -29,13 +29,17 @@ def test_default_thermo_params_finite():
 
 
 def test_default_thermo_params_xa_xb_consistency():
-    """xa = -dldt/rv, xb = xa + hvap/(rv·ttp)."""
+    """xa = -dldt/rv, xb = xa + hvap/(rv·ttp). Fortran kdm6.f90:851-855 uses
+    dldt = cvap - cliq = cpv - cliq (cvap=cpv per line 851); the previous
+    Python convention `cliq - cpv` had inverted sign of xa/xai/xb/xbi at
+    T<200K. See [[feedback-dldt-sign-convention]]."""
     p = default_thermo_params()
-    dldt = p.cliq - p.cpv
-    expected_xa = -dldt / p.rv
+    dldt = p.cpv - p.cliq                          # Fortran cvap - cliq
+    expected_xa = -dldt / p.rv                     # = (cliq - cpv)/rv > 0
     expected_xb = expected_xa + p.xlv0 / (p.rv * p.ttp)
     assert math.isclose(p.xa, expected_xa, rel_tol=1e-12)
     assert math.isclose(p.xb, expected_xb, rel_tol=1e-12)
+    assert p.xa > 0, "Fortran xa must be positive (cliq > cpv)"
 
 
 def test_compute_cpm_dry_vs_moist():

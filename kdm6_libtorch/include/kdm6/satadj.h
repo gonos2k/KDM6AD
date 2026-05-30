@@ -13,7 +13,7 @@
 namespace kdm6 {
 namespace satadj {
 
-inline constexpr double DEFAULT_RV = 461.5;  // J/kg/K, water vapor gas constant
+inline constexpr double DEFAULT_RV = 461.6;  // J/kg/K, Fortran r_v (module_model_constants.F:22)
 
 struct SatAdjParams {
     double rv;

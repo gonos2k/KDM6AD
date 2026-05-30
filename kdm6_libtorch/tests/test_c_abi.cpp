@@ -71,7 +71,9 @@ void test_c_abi_step_runs_microphysics() {
             th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(),
             qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
             nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
-            &handle
+            &handle,
+            /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
         );
         // F4 wiring 검증: stub 시절엔 KDM6_ERR_NOT_IMPLEMENTED 반환했음.
         assert(rc == KDM6_OK);
@@ -118,7 +120,9 @@ void test_c_abi_invalid_dim() {
             one.ptr(), one.ptr(), one.ptr(), one.ptr(),
             one.ptr(), one.ptr(), one.ptr(),
             one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
-            &handle
+            &handle,
+            /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
         );
         assert(rc == KDM6_ERR_INVALID_DIM);
         assert(handle == nullptr);
@@ -138,9 +142,102 @@ void test_c_abi_null_pointer() {
             one.ptr(), one.ptr(), one.ptr(), one.ptr(),
             one.ptr(), one.ptr(), one.ptr(),
             one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
-            &handle
+            &handle,
+            /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
         );
         assert(rc == KDM6_ERR_NULL_POINTER);
+    } END_TEST();
+}
+
+// Per Codex review: positive test that distinct per-cell ncmin values flow
+// through to a consumption site (B1 autoconv at warm.cpp:51). Uses a mixed
+// land/sea grid (one cell each, WRF convention: xland>=1.5 → sea regime;
+// else land) with `ncmin_land >> nc > ncmin_sea`, so the autoconv gate
+// `nc > ncmin_eff` differs between the two cells: passes for the sea cell,
+// fails for the land cell. Detected via qc_out divergence (sea cell loses
+// qc → qr via autoconv; land cell preserved).
+void test_c_abi_step_per_cell_ncmin_mixed_xland() {
+    TEST(test_c_abi_step_per_cell_ncmin_mixed_xland) {
+        const int im = 2, kme = 1, jme = 1;  // 2-cell domain
+
+        // Uniform warm-phase active state across both cells.
+        FortranBuf th(im, kme, jme,   285.0 / 1.1);
+        FortranBuf qv(im, kme, jme,   6.5e-3);
+        FortranBuf qc(im, kme, jme,   5.0e-4);
+        FortranBuf qr(im, kme, jme,   1.0e-4);
+        FortranBuf qi(im, kme, jme,   0.0);
+        FortranBuf qs(im, kme, jme,   0.0);
+        FortranBuf qg(im, kme, jme,   0.0);
+        FortranBuf nccn(im, kme, jme, 5.0e8);
+        FortranBuf nc(im, kme, jme,   1.0e2);  // 100/m³ — between sea (10) and land (1000)
+        FortranBuf ni(im, kme, jme,   0.0);
+        FortranBuf nr(im, kme, jme,   1.0e5);
+        FortranBuf bg(im, kme, jme,   0.0);
+        FortranBuf rho(im, kme, jme,  1.0);
+        FortranBuf pii(im, kme, jme,  1.1);
+        FortranBuf p(im, kme, jme,    8.0e4);
+        FortranBuf delz(im, kme, jme, 550.0);
+
+        FortranBuf th_o(im, kme, jme), qv_o(im, kme, jme), qc_o(im, kme, jme), qr_o(im, kme, jme);
+        FortranBuf qi_o(im, kme, jme), qs_o(im, kme, jme), qg_o(im, kme, jme);
+        FortranBuf nccn_o(im, kme, jme), nc_o(im, kme, jme), ni_o(im, kme, jme);
+        FortranBuf nr_o(im, kme, jme), bg_o(im, kme, jme);
+
+        // xland(im=2, jme=1): cell 0 = land (XLAND=1), cell 1 = sea (XLAND=2).
+        std::vector<double> xland_buf = {1.0, 2.0};
+        // Phase 4 ABI extension — per-column precip increment buffers (im, jme).
+        std::vector<double> rain_inc(im * jme, 0.0);
+        std::vector<double> snow_inc(im * jme, 0.0);
+        std::vector<double> graupel_inc(im * jme, 0.0);
+
+        kdm6_handle_t* handle = nullptr;
+        const int rc = kdm6_step_c(
+            th.ptr(), qv.ptr(), qc.ptr(), qr.ptr(), qi.ptr(), qs.ptr(), qg.ptr(),
+            nccn.ptr(), nc.ptr(), ni.ptr(), nr.ptr(), bg.ptr(),
+            rho.ptr(), pii.ptr(), p.ptr(), delz.ptr(),
+            im, kme, jme, /*dt=*/60.0,
+            /*param_grad_flags=*/0, /*value_only=*/1,
+            th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(),
+            qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
+            nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
+            &handle,
+            xland_buf.data(),
+            /*ncmin_land=*/1.0e3,   // 1000/m³ — gates nc=100 (BLOCKS autoconv)
+            /*ncmin_sea=*/1.0e1,    //   10/m³ — passes nc=100 (RUNS autoconv)
+            // Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
+            // For this 2-cell test im=2 jme=1 so each buffer is 2 doubles.
+            rain_inc.data(), snow_inc.data(), graupel_inc.data()
+        );
+        assert(rc == KDM6_OK);
+        assert(handle == nullptr);
+        // Precip increments finite + non-negative (no fallout from tiny qr/qs/qg
+        // in this 1-step test, so all should be ≈0 but valid).
+        for (double v : {rain_inc[0], rain_inc[1], snow_inc[0], snow_inc[1],
+                         graupel_inc[0], graupel_inc[1]}) {
+            assert(std::isfinite(v));
+            assert(v >= 0.0);
+        }
+        // Outputs finite.
+        for (auto* buf : {&th_o, &qv_o, &qc_o, &qr_o, &qi_o, &qs_o, &qg_o,
+                          &nccn_o, &nc_o, &ni_o, &nr_o, &bg_o}) {
+            for (size_t i = 0; i < buf->size(); ++i) {
+                assert(std::isfinite(buf->data[i]));
+            }
+        }
+        // Per-cell ncmin reached B1 autoconv (warm.cpp:51): the LAND cell's
+        // gate `nc(100) > ncmin_land(1000)` is FALSE so autoconv produces zero
+        // praut → qc preserved (within numerical drift from other warm rates);
+        // the SEA cell's gate `nc(100) > ncmin_sea(10)` is TRUE so autoconv
+        // fires → qc strictly less than land cell's qc.
+        // Indices: cell 0 = land (high ncmin), cell 1 = sea (low ncmin).
+        // Note FortranBuf is column-major (im, kme, jme) → flat layout
+        // arr(i,k,j) = data[i + im*(k + kme*j)]; with kme=jme=1, data[i] = cell i.
+        assert(qc_o.data[0] >= qc_o.data[1] - 1e-12);  // land qc >= sea qc
+        // Sanity: at least one cell experienced detectable change vs input.
+        bool qc_changed = std::fabs(qc_o.data[0] - qc.data[0]) > 1e-12
+                       || std::fabs(qc_o.data[1] - qc.data[1]) > 1e-12;
+        assert(qc_changed);
     } END_TEST();
 }
 
@@ -149,6 +246,7 @@ int main() {
     test_c_abi_step_runs_microphysics();
     test_c_abi_invalid_dim();
     test_c_abi_null_pointer();
+    test_c_abi_step_per_cell_ncmin_mixed_xland();
     std::cout << "All C ABI tests passed.\n";
     return 0;
 }

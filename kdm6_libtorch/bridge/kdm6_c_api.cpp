@@ -79,9 +79,16 @@ extern "C" int kdm6_step_c(
     double* qi_out, double* qs_out, double* qg_out,
     double* nccn_out, double* nc_out, double* ni_out, double* nr_out,
     double* bg_out,
-    kdm6_handle_t** handle
+    kdm6_handle_t** handle,
+    const double* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    double* rain_increment,
+    double* snow_increment,
+    double* graupel_increment
 ) {
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    // Note: `xland` deliberately excluded from null check — it's optional.
     if (any_null({th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg,
                   rho, pii, p, delz,
                   th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out,
@@ -102,11 +109,47 @@ extern "C" int kdm6_step_c(
 
         auto params = kdm6::make_parameters(param_grad_flags);
 
-        auto result = kdm6::kdm6_step(state_in, forcing, params, dt, value_only != 0);
+        // Optional xland → Tensor conversion (state.cpp layout convention):
+        // Fortran xland(im, jme) is column-major double*; C-order view is
+        // (jme, im); permute({1, 0}) gives (im, jme); reshape to flat
+        // (im*jme,) batch matches state batch index = i*jme + j.
+        c10::optional<torch::Tensor> xland_t = c10::nullopt;
+        if (xland != nullptr) {
+            auto opts = torch::TensorOptions().dtype(torch::kFloat64);
+            auto view2d = torch::from_blob(const_cast<double*>(xland),
+                                           {jme, im}, opts)
+                              .permute({1, 0})
+                              .contiguous();
+            xland_t = view2d.reshape({im * jme});
+        }
+
+        auto result = kdm6::kdm6_step(state_in, forcing, params, dt, value_only != 0,
+                                      xland_t, ncmin_land, ncmin_sea);
 
         kdm6::to_fortran_arrays(result.state_out, im, jme,
                                 th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out,
                                 nccn_out, nc_out, ni_out, nr_out, bg_out);
+
+        // Copy-back sedimentation surface increments — (im*jme,) Tensor →
+        // Fortran column-major double*(im, jme). Reuses the same (im, jme) ↔
+        // batch-flat layout convention as xland staging (state.cpp:67-72):
+        //   batch index B = i*jme + j; Fortran memory = (i, j) column-major.
+        // So tensor[B] at index i*jme+j maps to fortran[i + im*j].
+        auto copy_increment = [im, jme](const torch::Tensor& inc, double* dst) {
+            if (dst == nullptr) return;
+            auto inc_cpu = inc.contiguous().to(torch::kCPU, torch::kFloat64);
+            auto inc_2d = inc_cpu.reshape({im, jme}); // (im, jme) C-order
+            const double* src = inc_2d.data_ptr<double>();
+            // Transpose to Fortran (im, jme) column-major: dst[i + im*j] = src[i*jme + j]
+            for (int i = 0; i < im; ++i) {
+                for (int j = 0; j < jme; ++j) {
+                    dst[i + im * j] = src[i * jme + j];
+                }
+            }
+        };
+        copy_increment(result.rain_increment,    rain_increment);
+        copy_increment(result.snow_increment,    snow_increment);
+        copy_increment(result.graupel_increment, graupel_increment);
 
         if (value_only != 0) {
             *handle = nullptr;

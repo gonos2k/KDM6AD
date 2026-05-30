@@ -55,7 +55,28 @@ int kdm6_step_c(
     double* nccn_out, double* nc_out, double* ni_out, double* nr_out,
     double* bg_out,
     /* out: opaque handle */
-    kdm6_handle_t** handle
+    kdm6_handle_t** handle,
+    /* in (optional, appended): land/sea mask + per-regime ncmin scalars.
+     * `xland` is a double*(im, jme) — Fortran 2-D pattern matches WRF XLAND
+     * (>=1.5 → sea, else land). May be NULL → C++ falls back to the
+     * pre-extension behavior (sea_mask = all true, scalar `constants::NCMIN`).
+     * When non-NULL, `ncmin_land` / `ncmin_sea` are applied per-cell:
+     *   ncmin_eff(i,j) = (xland(i,j) >= 1.5) ? ncmin_sea : ncmin_land
+     * and injected into the C++ Phase Params' `ncmin_tensor` field.
+     * See module_mp_kdm6ad.F (caller) and runtime.cpp (consumer). */
+    const double* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    /* out (optional, appended): per-column sedimentation surface increments
+     * [mm] for the timestep `dt`. Each is a Fortran-allocated double*(im, jme)
+     * (column-major) or NULL to discard. WRF wrapper uses these to accumulate
+     * RAINNCV / SNOWNCV / GRAUPELNCV / SR / RAIN / SNOW / GRAUPEL.
+     * If NULL, the runtime still computes sedimentation but the increments
+     * are not copied out. See module_mp_kdm6ad.F:1304-1324 reference for the
+     * Fortran-side accumulation pattern. */
+    double* rain_increment,
+    double* snow_increment,
+    double* graupel_increment
 );
 
 /**

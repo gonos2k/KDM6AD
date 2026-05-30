@@ -1295,7 +1295,15 @@ wrf_err_message )
   ENDDO
   CASE (convrad)
 
-        call random_seed
+
+
+
+
+
+
+
+
+
   write(6,*) ' nxc, nyc for perturbation ',nxc,nyc
   write(6,*) ' delt for perturbation ',delt
 
@@ -1865,7 +1873,7 @@ wrf_err_message )
         nl_in = nl
         if(nl_in .gt. nl_max ) then
           write(6,*) ' too many levels for input arrays ',nl_in,nl_max
-          call wrf_error_fatal3("<stdin>",1868,&
+          call wrf_error_fatal3("<stdin>",1876,&
 ' too many levels for input arrays ' )
         end if
 
@@ -1915,7 +1923,7 @@ wrf_err_message )
               IF(pm_input(k) .LE. 0. )THEN
                 CALL wrf_message("Integrated pressure has gone negative - too cold for chosen height")
                 WRITE(message,*)'k,pm_input(k),h_input(k),th_input(k) = ',k,pm_input(k),h_input(k),th_input(k)
-                CALL wrf_error_fatal3("<stdin>",1918,&
+                CALL wrf_error_fatal3("<stdin>",1926,&
 message )
               ENDIF
               rho_input(k) = 1./((r/p1000mb)*th_input(k)*qvf*((pm_input(k)/p1000mb)**cvpm))
@@ -2060,7 +2068,7 @@ message )
       nl_in = nl
       if(nl_in .gt. nl_max ) then
         write(6,*) ' too many levels for input arrays ',nl_in,nl_max
-        call wrf_error_fatal3("<stdin>",2063,&
+        call wrf_error_fatal3("<stdin>",2071,&
 ' too many levels for input arrays ' )
       end if
 
@@ -2254,7 +2262,7 @@ message )
      CALL wrf_message (message)
      write(message,*) ' error exit '
      CALL wrf_message (message)
-     call wrf_error_fatal3("<stdin>",2257,&
+     call wrf_error_fatal3("<stdin>",2265,&
 ' error in input jet dimensions ' )
    end if
    read(10) field_in

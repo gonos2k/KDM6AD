@@ -19,6 +19,10 @@ program test_fortran_smoke
   real(c_double), allocatable, dimension(:,:,:) :: rho, pii, p, delz
   real(c_double), allocatable, dimension(:,:,:) :: th_o, qv_o, qc_o, qr_o, qi_o, qs_o, qg_o
   real(c_double), allocatable, dimension(:,:,:) :: nccn_o, nc_o, ni_o, nr_o, bg_o
+  ! Phase 3 ABI extension — land/sea mask + per-regime ncmin scalars.
+  real(c_double), allocatable, dimension(:,:) :: xland
+  ! Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
+  real(c_double), allocatable, dimension(:,:) :: rain_inc, snow_inc, graupel_inc
 
   type(c_ptr) :: handle
   integer(c_int) :: rc
@@ -35,6 +39,8 @@ program test_fortran_smoke
   allocate(qi_o(im, kme, jme), qs_o(im, kme, jme), qg_o(im, kme, jme))
   allocate(nccn_o(im, kme, jme), nc_o(im, kme, jme), ni_o(im, kme, jme), nr_o(im, kme, jme))
   allocate(bg_o(im, kme, jme))
+  allocate(xland(im, jme))
+  allocate(rain_inc(im, jme), snow_inc(im, jme), graupel_inc(im, jme))
 
   ! ── Warm-phase active cell (test_c_abi.cpp와 동일 입력) ───────────────────
   th   = 285.0_c_double / 1.1_c_double   ! T=285K, π=1.1
@@ -55,6 +61,8 @@ program test_fortran_smoke
   p    = 8.0e4_c_double
   delz = 550.0_c_double
 
+  xland = 2.0_c_double                       ! all-sea regime (matches pre-extension hardcode)
+
   ! ── Call kdm6_step via ISO_C_BINDING module ────────────────────────────────
   rc = kdm6_step(th, qv, qc, qr, qi, qs, qg, &
                  nccn, nc, ni, nr, bg, &
@@ -64,7 +72,9 @@ program test_fortran_smoke
                  1_c_int,        & ! value_only = 1
                  th_o, qv_o, qc_o, qr_o, qi_o, qs_o, qg_o, &
                  nccn_o, nc_o, ni_o, nr_o, bg_o, &
-                 handle)
+                 handle, &
+                 xland, 100.0_c_double, 10.0_c_double, & ! ncmin_land, ncmin_sea
+                 rain_inc, snow_inc, graupel_inc)        ! Phase 4 precip incs
 
   if (rc /= KDM6_OK) then
      print *, "FAIL: kdm6_step returned ", rc

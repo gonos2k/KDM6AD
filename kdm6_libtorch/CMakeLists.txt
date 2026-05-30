@@ -69,6 +69,12 @@ add_test(NAME warm COMMAND test_warm)
 add_executable(test_satadj tests/test_satadj.cpp)
 target_link_libraries(test_satadj PRIVATE kdm6)
 add_test(NAME satadj COMMAND test_satadj)
+# Regression evidence — see project_kdm6_operational_aux_port_required.md.
+# When the operational-aux port lands, this test will fail and should be
+# updated to assert physics-based values (or removed).
+add_executable(test_aux_placeholder_gap tests/test_aux_placeholder_gap.cpp)
+target_link_libraries(test_aux_placeholder_gap PRIVATE kdm6)
+add_test(NAME aux_placeholder_gap COMMAND test_aux_placeholder_gap)
 add_executable(test_cold tests/test_cold.cpp)
 target_link_libraries(test_cold PRIVATE kdm6)
 add_test(NAME cold COMMAND test_cold)
@@ -90,6 +96,9 @@ add_test(NAME cloud_dsd COMMAND test_cloud_dsd)
 add_executable(test_c_abi tests/test_c_abi.cpp)
 target_link_libraries(test_c_abi PRIVATE kdm6_c)
 add_test(NAME c_abi COMMAND test_c_abi)
+add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
+target_link_libraries(test_autograd_endtoend PRIVATE kdm6)
+add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
 
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.

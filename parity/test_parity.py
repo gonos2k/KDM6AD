@@ -125,9 +125,11 @@ def test_build_aux_qcr_matches_diag_qcr():
     assert torch.allclose(aux.qcr, expected_qcr, atol=0, rtol=0), (
         "aux.qcr drifted from diag_qcr_torch(sea_mask, ...) — _build_aux helper bug"
     )
-    # Sea row should equal qc1, land row should equal qc0.
-    assert torch.allclose(aux.qcr[0], torch.full((K,), params.cloud_dsd.qc1, dtype=dtype))
-    assert torch.allclose(aux.qcr[1], torch.full((K,), params.cloud_dsd.qc0, dtype=dtype))
+    # Mirrors Fortran module_mp_kdm6.F:826-830: sea(slmsk==2) → qc0 (low CCN
+    # → low threshold), land → qc1 (high CCN → high threshold). The qc0/qc1
+    # NAMES are scalar labels, not regime labels; the regime wiring is here.
+    assert torch.allclose(aux.qcr[0], torch.full((K,), params.cloud_dsd.qc0, dtype=dtype))
+    assert torch.allclose(aux.qcr[1], torch.full((K,), params.cloud_dsd.qc1, dtype=dtype))
 
 
 def test_build_aux_rslopecmu_rslopecd_match_preamble():

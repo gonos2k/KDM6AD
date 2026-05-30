@@ -36,5 +36,15 @@ torch::Tensor compute_work2_venfac(
     const ThermoParams& params
 );
 
+// Fortran diffac(a,b,c,d,e) = d*a*a/(xka(c,d)*rv*c*c) + 1/(e*diffus(c,b)) where
+//   a=xl (latent heat), b=p (pressure), c=t (temp), d=den, e=qs (sat ratio).
+// xka(t,den) = 1.414e3*viscos(t,den)*den.  diffus(t,p) = 8.794e-5*t^1.81/p.
+// Reference: module_mp_kdm6.f90:725-728. Used in prevp/psevp/pgevp via work1.
+torch::Tensor compute_diffac(
+    const torch::Tensor& xl, const torch::Tensor& pres, const torch::Tensor& t,
+    const torch::Tensor& den, const torch::Tensor& qs,
+    const ThermoParams& params
+);
+
 }  // namespace thermo
 }  // namespace kdm6

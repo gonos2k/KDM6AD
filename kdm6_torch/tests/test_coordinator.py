@@ -28,6 +28,7 @@ from kdm6.coordinator import (
     kdm62d_step_torch,
     melt_freeze_phase_torch,
     preamble_torch,
+    scale_rates_for_conservation_torch,
     sedimentation_chain_torch,
     state_update_torch,
     warm_phase_torch,
@@ -794,3 +795,113 @@ def test_sedimentation_grad_finite():
     loss = out.state.qr.sum() + out.rain_increment.sum()
     loss.backward()
     assert state.qr.grad is not None and torch.isfinite(state.qr.grad).all()
+
+
+# ── F1d2: group conservation limiters ────────────────────────────────────────
+
+def _zero_phase_struct(cls, ref):
+    """Zero-filled phase-output NamedTuple (every field zeros_like(ref))."""
+    return cls(**{f: torch.zeros_like(ref) for f in cls._fields})
+
+
+def _trip_state(qi_val):
+    """Single cold cell; qr>=1e-4 so delta2=delta3=0 (praci/piacr/psacr do NOT
+    reroute to snow/graupel), and qs=qg=0 so snow/graupel budgets see a negative
+    source and never re-scale — isolating the ice-mass budget."""
+    dtype = torch.float64
+    z = torch.zeros((1, 1), dtype=dtype)
+    return CoordinatorState(
+        qv=torch.full((1, 1), 5.0e-3, dtype=dtype),
+        qc=z.clone(),
+        qr=torch.full((1, 1), 1.0e-3, dtype=dtype),
+        qs=z.clone(),
+        qg=z.clone(),
+        qi=torch.full((1, 1), qi_val, dtype=dtype),
+        nc=torch.full((1, 1), 1.0e8, dtype=dtype),
+        nr=torch.full((1, 1), 1.0e4, dtype=dtype),
+        ni=torch.full((1, 1), 1.0e8, dtype=dtype),
+        brs=z.clone(),
+        t=torch.full((1, 1), 263.15, dtype=dtype),
+    )
+
+
+def test_group_limiter_caps_oversubscribed_ice_mass():
+    """Trip-correctness (the source>value path the no-op gate cannot reach):
+    when psaut+praci+psaci jointly demand far more ice than qi holds, the ice-
+    mass group budget scales them so TOTAL consumption == qi exactly. This is
+    the tier the per-rate caps lack — the 806× staged-ice over-production fix."""
+    dtype = torch.float64
+    dtcld = 60.0
+    qi0 = 1.0e-6
+    big = 1.0e-4   # each sink: big*dtcld = 6e-3 ≫ qi → jointly over-subscribed
+    state = _trip_state(qi0)
+    supcol = torch.full((1, 1), 10.0, dtype=dtype)   # cold arm (>0)
+
+    cold = _zero_phase_struct(ColdPhaseOutputs, state.qi)._replace(
+        psaut=torch.full((1, 1), big, dtype=dtype, requires_grad=True),
+        praci=torch.full((1, 1), big, dtype=dtype, requires_grad=True),
+        psaci=torch.full((1, 1), big, dtype=dtype, requires_grad=True),
+    )
+    warm = _zero_phase_struct(WarmPhaseOutputs, state.qi)
+    mf = _zero_phase_struct(MeltFreezePhaseOutputs, state.qi)
+
+    _w, c2, _m = scale_rates_for_conservation_torch(
+        state, supcol, warm, cold, mf, dtcld=dtcld)
+
+    # ice-mass source = (psaut+praci+psaci)·dtcld (only nonzero ice sinks);
+    # after scaling, total ice consumed must equal the available pool exactly.
+    consumed = (c2.psaut + c2.praci + c2.psaci) * dtcld
+    assert torch.allclose(consumed, state.qi, rtol=1e-10), \
+        f"ice over-draw not capped: consumed={consumed.item():.3e} qi={qi0:.3e}"
+
+    # uniform factor = qi/source applied to each sink
+    source = 3.0 * big * dtcld
+    expect = big * qi0 / source
+    assert torch.allclose(c2.psaut, torch.full((1, 1), expect, dtype=dtype), rtol=1e-10)
+
+    # autograd flows through the limiter (no graph break, no .item())
+    c2.psaut.sum().backward()
+    assert cold.psaut.grad is not None and torch.isfinite(cold.psaut.grad).all()
+
+
+def test_group_limiter_is_exact_noop_when_within_budget():
+    """When sinks fit the pool (source<=value), factor==1.0 exactly ⇒ rates
+    pass through bit-identical. This is the property that keeps the 216 existing
+    tests green despite the new stage running every step."""
+    dtype = torch.float64
+    state = _trip_state(1.0e-2)   # LARGE ice pool
+    supcol = torch.full((1, 1), 10.0, dtype=dtype)
+    small = 1.0e-8                # Σ·dtcld ≪ qi → no trip
+    cold = _zero_phase_struct(ColdPhaseOutputs, state.qi)._replace(
+        psaut=torch.full((1, 1), small, dtype=dtype),
+        praci=torch.full((1, 1), small, dtype=dtype),
+        psaci=torch.full((1, 1), small, dtype=dtype),
+    )
+    warm = _zero_phase_struct(WarmPhaseOutputs, state.qi)
+    mf = _zero_phase_struct(MeltFreezePhaseOutputs, state.qi)
+
+    _w, c2, _m = scale_rates_for_conservation_torch(
+        state, supcol, warm, cold, mf, dtcld=60.0)
+    assert torch.equal(c2.psaut, cold.psaut), "no-op violated (psaut changed)"
+    assert torch.equal(c2.praci, cold.praci), "no-op violated (praci changed)"
+    assert torch.equal(c2.psaci, cold.psaci), "no-op violated (psaci changed)"
+
+
+def test_group_limiter_inactive_on_warm_cell():
+    """A warm cell (supcol<=0) must be untouched by the cold (pass-1) budgets
+    even when over-subscribed — the gate confines each pass to its arm."""
+    dtype = torch.float64
+    state = _trip_state(1.0e-6)
+    supcol = torch.full((1, 1), -5.0, dtype=dtype)   # WARM arm (<=0)
+    big = 1.0e-4
+    cold = _zero_phase_struct(ColdPhaseOutputs, state.qi)._replace(
+        psaut=torch.full((1, 1), big, dtype=dtype),
+        praci=torch.full((1, 1), big, dtype=dtype),
+    )
+    warm = _zero_phase_struct(WarmPhaseOutputs, state.qi)
+    mf = _zero_phase_struct(MeltFreezePhaseOutputs, state.qi)
+    _w, c2, _m = scale_rates_for_conservation_torch(
+        state, supcol, warm, cold, mf, dtcld=60.0)
+    # cold-arm ice budget must NOT fire on a warm cell
+    assert torch.equal(c2.psaut, cold.psaut), "cold budget leaked onto warm cell"
+    assert torch.equal(c2.praci, cold.praci)

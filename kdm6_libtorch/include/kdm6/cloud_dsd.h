@@ -34,6 +34,22 @@ struct CloudDsdParams {
 
 CloudDsdParams default_cloud_dsd_params(double den0 = constants::DEN0);
 
+// General species DSD slope: rslope = 1/lamda with clamp to [1/lamdamax, 1/lamdamin],
+// where lamda = (pidn · n / (q·den))^(1/dm). This is the elementwise core shared by
+// cloud/rain/ice (Fortran lamdac/lamdar/lamdai). Used to derive n0 intercepts in
+// runtime build_default_aux: n0 = n / (rslope · rslope^mu · g1pm)  (Fortran 1385-1387,
+// no-clamp branch — identical to the gated lamda-recompute except for the rare
+// clamp-fired number back-mutation, which is a second-order effect).
+torch::Tensor diag_species_slope_torch(
+    const torch::Tensor& q,
+    const torch::Tensor& n,
+    const torch::Tensor& den,
+    double pidn,
+    double dm,
+    double lamdamax,
+    double lamdamin
+);
+
 // rslopec = 1/lamdac with clamp to [1/lamdacmax, 1/lamdacmin].
 torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& qc,
@@ -74,7 +90,11 @@ LenconOutputs diag_lencon_torch(
     double qcrmin = constants::QCRMIN
 );
 
-// qcr: sea면 qc1, land면 qc0. ref tensor의 dtype/device 따라감.
+// qcr: sea(slmsk==2) → qc0, land → qc1. Mirrors Fortran module_mp_kdm6.F:826-830.
+// Naming caveat: qc0 (continental) is the LOW-CCN scalar used for SEA;
+// qc1 (maritime) is the HIGH-CCN scalar used for LAND. See cloud_dsd.cpp
+// (and Python kdm6_torch/kdm6/cloud_dsd.py) for the physical reasoning.
+// ref tensor의 dtype/device 따라감.
 torch::Tensor diag_qcr_torch(
     const torch::Tensor& sea_mask,
     const CloudDsdParams& params,

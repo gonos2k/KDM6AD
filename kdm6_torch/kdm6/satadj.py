@@ -35,7 +35,7 @@ from . import constants as c
 
 # ─── physical constants (default values, kdm6init INPUT) ─────────────────────
 
-DEFAULT_RV = 461.5  # J/kg/K, water vapor gas constant
+DEFAULT_RV = 461.6  # J/kg/K, Fortran r_v (module_model_constants.F:22)
 
 
 class SatAdjParams(NamedTuple):

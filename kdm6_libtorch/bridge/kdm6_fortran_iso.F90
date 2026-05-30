@@ -47,7 +47,10 @@ MODULE kdm6_libtorch
                          th_out, qv_out, qc_out, qr_out, &
                          qi_out, qs_out, qg_out, &
                          nccn_out, nc_out, ni_out, nr_out, bg_out, &
-                         handle) BIND(C, name="kdm6_step_c") RESULT(rc)
+                         handle, &
+                         xland, ncmin_land, ncmin_sea, &
+                         rain_increment, snow_increment, graupel_increment &
+                         ) BIND(C, name="kdm6_step_c") RESULT(rc)
       USE, INTRINSIC :: ISO_C_BINDING
       INTEGER(C_INT)                                 :: rc
       ! 12 prognostic state inputs
@@ -65,6 +68,11 @@ MODULE kdm6_libtorch
       REAL(C_DOUBLE), DIMENSION(*), INTENT(INOUT)    :: nccn_out, nc_out, ni_out, nr_out, bg_out
       ! opaque handle
       TYPE(C_PTR), INTENT(OUT)                       :: handle
+      ! Phase 3 ABI extension — land/sea mask + per-regime ncmin scalars.
+      REAL(C_DOUBLE), DIMENSION(*), INTENT(IN)       :: xland
+      REAL(C_DOUBLE), VALUE                          :: ncmin_land, ncmin_sea
+      ! Phase 4 ABI extension — sedimentation surface increments [mm].
+      REAL(C_DOUBLE), DIMENSION(*), INTENT(OUT)      :: rain_increment, snow_increment, graupel_increment
     END FUNCTION kdm6_step_c
 
     FUNCTION kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &

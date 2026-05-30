@@ -34,6 +34,7 @@ WarmAutoconvParams default_warm_autoconv_params(double den0) {
         /*nraut_coeff=*/3.5e9,
         /*qcrmin=*/constants::QCRMIN,
         /*ncmin=*/constants::NCMIN,
+        /*ncmin_tensor=*/c10::nullopt,  // runtime.cpp injects per-cell tensor when xland provided
     };
 }
 
@@ -48,7 +49,11 @@ AutoconvOutputs autoconv_torch(
     const WarmAutoconvParams& params,
     double dtcld
 ) {
-    auto active = torch::logical_and(qc > qcr, nc > params.ncmin);
+    // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
+    auto nc_above_ncmin = params.ncmin_tensor.has_value()
+        ? nc > params.ncmin_tensor.value()
+        : nc > params.ncmin;
+    auto active = torch::logical_and(qc > qcr, nc_above_ncmin);
     auto zero = torch::zeros_like(qc);
 
     // praut: mass autoconversion

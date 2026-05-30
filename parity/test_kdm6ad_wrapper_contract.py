@@ -37,4 +37,7 @@ def test_c_bridge_value_only_returns_null_handle():
     bridge = _compact(C_BRIDGE.read_text())
 
     assert "IF (VALUE_ONLY != 0) { *HANDLE = NULLPTR; }" in bridge
-    assert "KDM6::KDM6_STEP(STATE_IN, FORCING, PARAMS, DT, VALUE_ONLY != 0)" in bridge
+    # Phase 3 extension: kdm6_step_c forwards xland + ncmin_land + ncmin_sea
+    # (NULL-safe) into the runtime so per-cell land/sea regime mapping flows
+    # through to warm/cold/melt-freeze gates. See kdm6_c_api.h and runtime.h.
+    assert "KDM6::KDM6_STEP(STATE_IN, FORCING, PARAMS, DT, VALUE_ONLY != 0, XLAND_T, NCMIN_LAND, NCMIN_SEA)" in bridge

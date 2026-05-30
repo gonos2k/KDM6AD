@@ -48,20 +48,32 @@ CloudDsdParams default_cloud_dsd_params(double den0) {
     };
 }
 
+torch::Tensor diag_species_slope_torch(
+    const torch::Tensor& q,
+    const torch::Tensor& n,
+    const torch::Tensor& den,
+    double pidn,
+    double dm,
+    double lamdamax,
+    double lamdamin
+) {
+    auto qden_safe = torch::clamp(q * den, /*min=*/DOMAIN_FLOOR);
+    auto ratio = pidn * n / qden_safe;
+    auto lamda = torch::exp(torch::log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) / dm);
+    return torch::clamp(
+        1.0 / lamda,
+        /*min=*/1.0 / lamdamax,
+        /*max=*/1.0 / lamdamin
+    );
+}
+
 torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& qc,
     const torch::Tensor& nc,
     const torch::Tensor& den,
     const CloudDsdParams& p
 ) {
-    auto qden_safe = torch::clamp(qc * den, /*min=*/DOMAIN_FLOOR);
-    auto ratio = p.pidnc * nc / qden_safe;
-    auto lamdac = torch::exp(torch::log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) / p.dmc);
-    return torch::clamp(
-        1.0 / lamdac,
-        /*min=*/1.0 / p.lamdacmax,
-        /*max=*/1.0 / p.lamdacmin
-    );
+    return diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
 }
 
 torch::Tensor diag_avedia_cloud_torch(
@@ -105,10 +117,17 @@ torch::Tensor diag_qcr_torch(
     const CloudDsdParams& p,
     const torch::Tensor& ref
 ) {
+    // Mirrors operational Fortran module_mp_kdm6.F:826-830 and Python oracle
+    // kdm6_torch/kdm6/cloud_dsd.py:diag_qcr_torch:
+    //   sea (slmsk==2)  → qc0 (low CCN → low qcr threshold, clean marine air)
+    //   land (else)     → qc1 (high CCN → high qcr threshold, dusty air)
+    // The Param-field names `qc0/continental`, `qc1/maritime` in CloudDsdParams
+    // are legacy labels pinned to scalar values, not the regime mapping; the
+    // regime wiring is here.
     auto opts = ref.options();
-    auto qc1_t = torch::tensor(p.qc1, opts);
     auto qc0_t = torch::tensor(p.qc0, opts);
-    return torch::where(sea_mask, qc1_t, qc0_t);
+    auto qc1_t = torch::tensor(p.qc1, opts);
+    return torch::where(sea_mask, qc0_t, qc1_t);
 }
 
 }  // namespace cloud_dsd

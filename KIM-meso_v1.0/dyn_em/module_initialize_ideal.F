@@ -1223,7 +1223,15 @@ CONTAINS
   ENDDO
   CASE (convrad)
 !  random low-level thermal perturbation to kick off convection
-        call random_seed
+!  KDM6/KDM6AD parity (2026-05-30): a bare `call random_seed` reseeds the PRNG
+!  from system entropy in modern gfortran, so every ideal.exe invocation draws a
+!  DIFFERENT thermal perturbation. The mp=37 and mp=137 runs would then start
+!  from different ICs, confounding any scheme-consistency comparison (this is why
+!  the convrad 37/137 pair showed a 1e-3 frame-1 "seed" with no microphysics
+!  active). Disabling the reseed makes RANDOM_NUMBER start from gfortran's fixed
+!  default state -> the SAME perturbation field across runs -> a controlled IC.
+!  (To restore per-run randomness for ensemble/realism work, re-enable the call.)
+!       call random_seed
   write(6,*) ' nxc, nyc for perturbation ',nxc,nyc
   write(6,*) ' delt for perturbation ',delt
 
