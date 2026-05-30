@@ -197,6 +197,9 @@ class WarmPhaseOutputs(NamedTuple):
     nrcol: torch.Tensor       # B3 rain self-collection + breakup
     prevp: torch.Tensor       # B4 rain evap
     pcond: torch.Tensor       # B5 saturation adjustment (qv ↔ qc)
+    rain_complete_evap: torch.Tensor  # B4 mask (float 0/1): rain fully evaporated
+                              # (prevp hit -qr/dtcld) → state_update zeroes nr
+                              # (Fortran :1744-1746; mirrors C++ WarmPhaseOutputs)
 
 
 def warm_phase_torch(
@@ -253,6 +256,14 @@ def warm_phase_torch(
         pre.slope.rslope2_r, pre.slope.rslopemu_r,
         params=params.rain_evap, dtcld=dtcld,
     )
+    # B4 complete-evap mask: rain fully evaporated this step (prevp hit the
+    # -qr/dtcld cap, bit-exact via maximum()). state_update zeroes nr for these
+    # cells (Fortran :1744-1746). Computed HERE (pre-limiter) because the group
+    # limiter scales prevp downstream, which would break the == equality. The
+    # CCN transfer to nccn is deferred (Task #74 — no nccn in this state).
+    rain_complete_evap = (
+        (state.qr > 0.0) & (prevp == -state.qr / dtcld)
+    ).to(state.qr.dtype)
 
     # ── B5: Saturation adjustment ──────────────────────────────────────
     pcond = _satadj.saturation_adjustment_torch(
@@ -266,6 +277,7 @@ def warm_phase_torch(
         nccol=nccol, nrcol=nrcol,
         prevp=prevp,
         pcond=pcond,
+        rain_complete_evap=rain_complete_evap,
     )
 
 
@@ -972,10 +984,18 @@ def state_update_torch(
         - warm.nrcol                              # rain self-collection
         - cold.niacr - cold.nraci                 # 2688 rain ←collected by ice
         - cold.nsacr - cold.ngacr                 # 2688 rain ←snow/graupel
+        + mf.nseml + mf.ngeml                     # 2699-2700 warm enhanced-melt number → rain
+                                                  # (warm-gated in melt_freeze ⇒ no-op when cold; mirrors C++)
     )
     dnr_amount = -mf.nfrzdtr                      # 1607 Bigg rain (amount)
     dnr = dnr_rate + dnr_amount
-    nr_new = state.nr + dnr
+    # Fortran :1744-1746: where rain fully evaporated this step, nr is zeroed
+    # BEFORE the rate delta is applied (so committed nr = rate-only). C++
+    # coordinator.cpp:944-945 mirrors this via nr - nr*rain_complete_evap. The
+    # CCN transfer to nccn (nci(:,:,3)) is deferred (Task #74). Mask is a
+    # constant (0/1) ⇒ AD-safe.
+    rain_complete_evap_amount = state.nr * warm.rain_complete_evap
+    nr_new = state.nr + dnr - rain_complete_evap_amount
 
     # ni (ice number) — Fortran 2694-2696 + inline 1554/1584/1469
     dni_rate = dtcld * (
