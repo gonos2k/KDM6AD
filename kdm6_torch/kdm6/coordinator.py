@@ -856,7 +856,8 @@ def state_update_torch(
     # ── Mass balance ───────────────────────────────────────────────────
     # qv (water vapor)
     dqv = dtcld * (
-        - warm.pcond                            # B5 응결 (qv→qc)
+        # pcond DEFERRED to apply_satadj_step_torch (post-update + post-reclass,
+        # Fortran :2906-2915; mirrors C++ apply_satadj_step). NOT applied here.
         - warm.prevp                            # B4 (rain↔vapor; prevp<0이면 qv 증가)
         - cold.pinud                            # C3 deposition nucleation (qv→qi)
         - cold.pidep - cold.psdep - cold.pgdep  # C4 dep/sub (vapor↔ice/snow/graupel)
@@ -867,7 +868,7 @@ def state_update_torch(
 
     # qc (cloud water)
     dqc_rate = dtcld * (
-        warm.pcond                                              # 3011 inline (qv→qc, +)
+        # pcond DEFERRED to apply_satadj_step_torch (see qv). NOT applied here.
         - warm.praut - warm.pracw                                # B1/B2 (qc→qr)
         - cold.piacw                                             # 2680 piacw (qc→qi)
         - 2.0 * cold.paacw_adj                                   # 2681: paacw·2 (qc→qs+qg)
@@ -1037,8 +1038,8 @@ def state_update_torch(
     xlf = xls - pre.xl  # per-cell fusion latent heat (J/kg), temperature-dependent
 
     dT_warm_phase = dtcld * pre.xl / cpm_safe * (
-        warm.pcond                            # B5 condensation (qv→qc, +)
-        + warm.prevp                          # B4 rain evap (prevp<0 → cooling)
+        # pcond warming DEFERRED to apply_satadj_step_torch (post-reclass).
+        warm.prevp                            # B4 rain evap (prevp<0 → cooling)
         + cold.psevp                          # C6 snow evap (psevp<0 → cooling)
         + cold.pgevp                          # C6' graupel evap (pgevp<0 → cooling)
     )
@@ -1376,6 +1377,42 @@ class CoordinatorAuxDiagnostics(NamedTuple):
     rslopecd: torch.Tensor
 
 
+def apply_satadj_step_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    xl: torch.Tensor,
+    cpm: torch.Tensor,
+    satadj_params,
+    thermo_params,
+    *,
+    dtcld: float,
+) -> CoordinatorState:
+    """F1g+ — saturation adjustment on the POST-state-update + POST-reclass state
+    (Fortran module_mp_kdm6.f90:2906-2915). Mirrors C++ apply_satadj_step.
+
+    pcond is DEFERRED out of state_update_torch so condensation fires on the
+    proper post-mass-balance, post-reclassification state — matching Fortran's
+    :2911 sequence (mass balance → Picons/rain-cloud reclass → satadj), NOT
+    before it (which was the C++↔Python divergence Codex flagged).
+
+    Scope vs C++: the C++ apply_satadj_step also runs pcact/ncact CCN activation
+    and a complete-evap NC→NCCN transfer. This oracle's CoordinatorState has no
+    `nccn` field, so those are deferred per Task #74 (same as warm_phase_torch,
+    which carries no ncact/pcact). qs1 is recomputed from the post-update t
+    (Fortran :2906) since t may have changed. AD-safe: clamp + arithmetic only.
+    """
+    cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
+    qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+    pcond = _satadj.saturation_adjustment_torch(
+        state.t, state.qv, state.qc, qs1, xl, cpm_safe,
+        params=satadj_params, dtcld=dtcld,
+    )
+    qv_final = torch.clamp(state.qv - pcond * dtcld, min=0.0)
+    qc_final = torch.clamp(state.qc + pcond * dtcld, min=0.0)
+    t_final = state.t + pcond * xl / cpm_safe * dtcld
+    return state._replace(qv=qv_final, qc=qc_final, t=t_final)
+
+
 def kdm62d_one_step_torch(
     state: CoordinatorState,
     forcing: CoordinatorForcing,
@@ -1433,6 +1470,14 @@ def kdm62d_one_step_torch(
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)
     # review8#3: rain→cloud reclassification (Fortran 2952-2964) when avedia_r ≤ 82μm.
     new_state = reclassify_small_rain_to_cloud_torch(new_state, forcing.den)
+    # F1g+: satadj/pcond on the post-update + post-reclass state (Fortran
+    # :2906-2915). Mirrors C++ apply_satadj_step; pcond was deferred OUT of
+    # state_update_torch so condensation fires on the proper post-mass-balance,
+    # post-reclass state (the C++↔Python parity fix Codex flagged).
+    new_state = apply_satadj_step_torch(
+        new_state, forcing, pre.xl, pre.cpm,
+        warm_params.satadj, full_params.thermo, dtcld=dtcld,
+    )
     # review9#1: paired threshold cleanup (Fortran 3017-3035) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
     new_state = apply_threshold_cleanup_torch(new_state)
