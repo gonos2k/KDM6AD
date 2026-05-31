@@ -457,8 +457,12 @@ struct RebuiltDiagnostics {
     CoordinatorAuxDiagnostics aux;
 };
 
+// `entry_pre` supplies the entry/substep-top THERMO (cpm/xl/qs1/qs2/rh/supsat)
+// that Fortran does NOT recompute after melt/freeze — it is spliced into the
+// rebuilt (post-freeze geometry) preamble so warm/cold see Fortran's staging.
 RebuiltDiagnostics rebuild_aux(
     const CoordinatorState& state,
+    const PreambleOutputs& entry_pre,
     const CoordinatorForcing& forcing,
     const CoordinatorParams& params,
     const torch::Tensor& qcr_carry

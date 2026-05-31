@@ -498,8 +498,10 @@ CoordinatorState kdm62d_one_step(
         state_pre, mf14, pre_core, dtcld, full_params.thermo.xls);
 
     // F1a': rebuild preamble + aux on the post-melt/freeze working state. qcr is
-    // sea_mask-derived + state-independent ⇒ carried from the entry aux.
-    auto rebuilt = rebuild_aux(working, forcing, full_params, aux.qcr);
+    // sea_mask-derived + state-independent ⇒ carried from the entry aux. The
+    // entry `pre` supplies the substep-top thermo (qs/xl/rh/supsat) that Fortran
+    // does NOT recompute post-freeze (kdm6.f90:785-786,:860-878) — spliced inside.
+    auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
     const auto& pre2 = rebuilt.pre;
     const auto& aux2 = rebuilt.aux;
 

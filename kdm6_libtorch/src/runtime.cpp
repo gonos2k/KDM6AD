@@ -184,13 +184,36 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
 // coordinator.h for kdm62d_one_step to call once the sequential chain lands.
 // Rebuilds BOTH preamble (slopes/work2/ProgB) AND aux (n0*/work1*/rslopec*) on
 // the working state — never one without the other (stale-pre = 806× class).
+//
+// THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
+// (kdm6.f90:1372-1430,:1546-1633,:1627-1633) recomputes the GEOMETRY (rslope*/
+// n0*/ProgB/work2/n0sfac) and supcol on the post-freeze state, but does NOT
+// recompute the saturation/latent-heat thermo: cpm(:785), xl(:786), qs1/qs2/
+// rh/sw(:860-878) are computed ONCE (entry/substep-top) and the rate loop reads
+// those entry-staged values (supsat=q-qs at :1645/:1772 uses entry qs; q=qv is
+// melt/freeze-invariant). So we SPLICE the entry-staged thermo back into the
+// rebuilt preamble — otherwise warm/cold would see post-freeze qs (exponential
+// in t ⇒ materially wrong supersaturation) and post-freeze xl. work1=diffac(xl,
+// p,t,den,qs) is re-slope-recomputed with POST-FREEZE t but ENTRY xl/qs
+// (:1629-1630), so we rebuild it with the entry thermo + the working t.
 RebuiltDiagnostics rebuild_aux(
-    const CoordinatorState& state,
+    const CoordinatorState& state,         // working (post-melt/freeze)
+    const PreambleOutputs& entry_pre,      // entry/substep-top preamble (thermo source)
     const CoordinatorForcing& forcing,
     const CoordinatorParams& params,
     const torch::Tensor& qcr_carry) {
-    auto pre = preamble(state, forcing, params);                       // re-slope + work2 + ProgB
+    auto pre = preamble(state, forcing, params);                       // re-slope + work2 + ProgB + (discarded) thermo
+    // Splice entry-staged thermo; keep post-freeze supcol/work2/denfac + geometry.
+    pre.cpm = entry_pre.cpm;  pre.xl = entry_pre.xl;
+    pre.qs1 = entry_pre.qs1;  pre.qs2 = entry_pre.qs2;
+    pre.rh_w = entry_pre.rh_w;  pre.rh_ice = entry_pre.rh_ice;
+    pre.supsat = entry_pre.supsat;
     auto aux = build_default_aux(state, forcing, pre.rslopec, params.thermo);
+    // work1 = diffac(ENTRY xl/qs, POST-FREEZE t) — Fortran kdm6.f90:1629-1630.
+    auto xls_t = torch::full_like(state.t, params.thermo.xls);
+    aux.work1_water = thermo::compute_diffac(entry_pre.xl, forcing.p, state.t, forcing.den, entry_pre.qs1, params.thermo);
+    aux.work1_ice   = thermo::compute_diffac(xls_t,        forcing.p, state.t, forcing.den, entry_pre.qs2, params.thermo);
+    aux.work1_r     = aux.work1_water;   // Fortran work1(:,:,1) for rain capacitance
     aux.qcr = qcr_carry;   // sea_mask-derived, state-independent — carry, don't recompute
     return RebuiltDiagnostics{pre, aux};
 }

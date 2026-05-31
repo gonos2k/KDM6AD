@@ -1548,16 +1548,35 @@ def rebuild_aux_torch(
     *,
     params: CoordinatorParams,
     qcr_carry: torch.Tensor,
+    entry_pre: PreambleOutputs,
 ):
     """Re-run preamble_torch + build_default_aux_torch on a working (post-melt/
     post-freeze) state. Returns (PreambleOutputs, CoordinatorAuxDiagnostics) —
     BOTH refreshed together (rebuilding aux but keeping a stale preamble is the
     806× over-deposition class). qcr is carried (sea_mask-derived). Mirrors C++
-    rebuild_aux. STEP 0b: defined, NOT yet called (no flow change).
+    rebuild_aux.
+
+    THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
+    recomputes GEOMETRY (rslope*/n0*/ProgB/work2/supcol) but NOT the saturation/
+    latent-heat thermo — cpm(:785)/xl(:786)/qs1/qs2/rh/sw(:860-878) are computed
+    once (entry/substep-top) and the rate loop reads those entry-staged values
+    (supsat=q-qs at :1645/:1772 uses entry qs; q=qv is melt/freeze-invariant). So
+    splice the entry thermo from `entry_pre`; recompute work1=diffac(xl,p,t,den,qs)
+    with ENTRY xl/qs + the POST-FREEZE t (Fortran :1629-1630).
     """
     pre = preamble_torch(state, forcing, sea_mask, params=params)
+    pre = pre._replace(
+        cpm=entry_pre.cpm, xl=entry_pre.xl, qs1=entry_pre.qs1, qs2=entry_pre.qs2,
+        rh_w=entry_pre.rh_w, rh_ice=entry_pre.rh_ice, supsat=entry_pre.supsat,
+    )
     aux = build_default_aux_torch(state, forcing, pre.rslopec, thermo_params=params.thermo)
-    aux = aux._replace(qcr=qcr_carry)
+    xls_t = torch.full_like(state.t, params.thermo.xls)
+    work1_water = _thermo.compute_diffac(
+        entry_pre.xl, forcing.p, state.t, forcing.den, entry_pre.qs1, params=params.thermo)
+    work1_ice = _thermo.compute_diffac(
+        xls_t, forcing.p, state.t, forcing.den, entry_pre.qs2, params=params.thermo)
+    aux = aux._replace(
+        qcr=qcr_carry, work1_water=work1_water, work1_ice=work1_ice, work1_r=work1_water)
     return pre, aux
 
 
@@ -1636,8 +1655,10 @@ def kdm62d_one_step_torch(
         state, mf14, pre, dtcld=dtcld, xls=full_params.thermo.xls)
 
     # Rebuild preamble + aux on the post-melt/freeze working state (qcr carried).
+    # entry `pre` supplies the substep-top thermo (qs/xl/rh/supsat) Fortran does
+    # NOT recompute post-freeze (kdm6.f90:785-786,:860-878) — spliced inside.
     pre2, aux2 = rebuild_aux_torch(
-        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr)
+        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
 
     warm_out = warm_phase_torch(
         working, forcing, pre2,
