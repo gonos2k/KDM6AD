@@ -414,6 +414,38 @@ PreambleCore pre_core_view(const PreambleOutputs& pre) {
     };
 }
 
+// Stage-A STEP 1: apply melt(D1) + freeze(D2-D4) as INLINE pre-state-update
+// mutations of a working state, using EXACTLY the signed expressions state_update
+// used for these terms — so "apply inline" + "zero the D1-D4 mf fields passed to
+// state_update" is an algebraic identity (state_pre + D1-D4 + warm+cold+D5 = OLD).
+// Functional (out = copy; reassign fields) ⇒ no in-place, autograd threads the
+// deltas. xlf=xls-pre.xl. NO clamps here — final nonneg clamps stay in
+// state_update on the full sum (so split clamp == single clamp). STEP 2 will move
+// this BEFORE warm/cold + rebuild aux; STEP 1 keeps warm/cold reading entry.
+CoordinatorState apply_melt_freeze_inline(
+    const CoordinatorState& s, const MeltFreezePhaseOutputs& mf,
+    const PreambleCore& pre, double dtcld, double xls
+) {
+    auto dtype = s.qc.dtype();
+    auto warm_mask = (pre.supcol <= 0).to(dtype);
+    auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);
+    auto xlf = xls - pre.xl;
+    auto out = s;
+    out.qc  = s.qc + (-mf.pinuc - mf.pfrzdtc + mf.pimlt_qi);                       // = dqc_amount
+    out.qr  = s.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr;    // = dqr D1 + dqr_amount(D4)
+    out.qs  = s.qs + dtcld * mf.psmlt;                                            // = dqs D1
+    out.qg  = s.qg + dtcld * mf.pgmlt + mf.pfrzdtr;                               // = dqg D1 + dqg_amount(D4)
+    out.qi  = s.qi + (mf.pinuc + mf.pfrzdtc - mf.pimlt_qi);                        // = dqi_amount
+    out.nc  = s.nc + (-mf.ninuc - mf.nfrzdtc + mf.pimlt_ni);                       // = dnc_amount
+    out.nr  = s.nr + (-mf.nfrzdtr);                                               // = dnr_amount(D4)
+    out.ni  = s.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni);                        // = dni_amount
+    out.brs = s.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze);          // = dbrs D1+D4 (clamp in state_update)
+    out.t   = s.t
+            + dtcld * xlf / cpm_safe * (mf.psmlt + mf.pgmlt)                       // = dT_freeze_rate D1 part
+            + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr - mf.pimlt_qi); // = dT_freeze_amount
+    return out;
+}
+
 }  // namespace
 
 CoordinatorState kdm62d_one_step(
@@ -481,12 +513,32 @@ CoordinatorState kdm62d_one_step(
         state_pre, pre_core.supcol, warm_out, cold_out, mf_out, dtcld
     );
 
-    // F1e: state update (mass + number + energy + brs + nonneg clamp).
-    // Pass the CONSTANT sublimation latent heat from thermo (single source); the
-    // T-dependent fusion xlf = xls - xl(T) is derived inside (Fortran convention).
+    // F1d3: Stage-A STEP 1 — apply melt(D1)+freeze(D2-D4) INLINE to a working
+    // state, and STRIP them from state_update by zeroing the D1-D4 fields of the
+    // mf passed in (the D1-D4 terms all multiply those fields → they vanish; D5
+    // pseml/pgeml/nseml/ngeml stay). Net is identical to the old single-sum
+    // state_update (state_pre + D1-D4 + warm+cold+D5). STEP 1 is behaviour-
+    // preserving: warm/cold/budgets still read state_pre (no rebuild yet), and
+    // delta2/delta3 are forced from entry (delta_src=&state_pre). Gate: em_quarter_ss
+    // dt=6 wrfout diff < roundoff. STEP 2 moves the inline-apply BEFORE warm/cold
+    // + rebuilds aux on the working state. See STAGE_A_REARCH_BLUEPRINT.md.
+    auto working = apply_melt_freeze_inline(
+        state_pre, scaled.mf, pre_core, dtcld, full_params.thermo.xls);
+    auto z = torch::zeros_like(state_pre.qc);
+    auto mf_d5 = scaled.mf;                       // keep D5 (pseml/pgeml/nseml/ngeml)
+    mf_d5.psmlt = z; mf_d5.pgmlt = z;             // D1 (zero ⇒ stripped from state_update)
+    mf_d5.pimlt_qi = z; mf_d5.pimlt_ni = z;
+    mf_d5.delta_brs_melt = z;
+    mf_d5.pinuc = z; mf_d5.ninuc = z;             // D2
+    mf_d5.pfrzdtc = z; mf_d5.nfrzdtc = z;         // D3
+    mf_d5.pfrzdtr = z; mf_d5.nfrzdtr = z;         // D4
+    mf_d5.delta_brs_freeze = z;
+
+    // F1e: state update on the WORKING base (post-melt/freeze), D1-D4 stripped,
+    // delta from ENTRY. Pass the CONSTANT sublimation latent heat (single source).
     auto new_state = state_update(
-        state_pre, pre_core, scaled.warm, scaled.cold, scaled.mf, dtcld,
-        full_params.thermo.xls
+        working, pre_core, scaled.warm, scaled.cold, mf_d5, dtcld,
+        full_params.thermo.xls, /*delta_src=*/&state_pre
     );
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).
@@ -819,11 +871,18 @@ CoordinatorState state_update(
     const ColdPhaseOutputs& cold,
     const MeltFreezePhaseOutputs& mf,
     double dtcld,
-    double xls
+    double xls,
+    const CoordinatorState* delta_src
 ) {
     auto dtype = state.qc.dtype();
     auto cold_mask = (pre.supcol > 0).to(dtype);
     auto warm_mask = 1.0 - cold_mask;
+    // Stage-A STEP 1: delta2/delta3 are computed from the ENTRY state when the
+    // base `state` is a post-melt/freeze working state (delta_src!=null). This
+    // preserves the identity (melt/freeze must not flip the qr/qs<1e-4 routing
+    // gates in the behaviour-preserving STEP 1). STEP 2 will pass null so delta
+    // tracks the working state (Fortran computes it on the mutated state :2516).
+    const CoordinatorState& dstate = delta_src ? *delta_src : state;
 
     // ── Mass balance ────────────────────────────────────────────────────────
     // qv — pcact/pcond DEFERRED to apply_satadj_step (called after state_update
@@ -869,9 +928,9 @@ CoordinatorState state_update(
     auto dqr_amount = -mf.pfrzdtr;
     auto qr_new = state.qr + dqr_rate + dqr_amount;
 
-    // delta2/delta3 routing flags (Fortran 2516-2519)
-    auto delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype);
-    auto delta3 = (state.qr < 1.0e-4).to(dtype);
+    // delta2/delta3 routing flags (Fortran 2516-2519) — from ENTRY state (dstate)
+    auto delta2 = ((dstate.qr < 1.0e-4) & (dstate.qs < 1.0e-4)).to(dtype);
+    auto delta3 = (dstate.qr < 1.0e-4).to(dtype);
     auto one_m_d2 = 1.0 - delta2;
     auto one_m_d3 = 1.0 - delta3;
 

@@ -513,10 +513,13 @@ CoordinatorState state_update(
     const ColdPhaseOutputs& cold,
     const MeltFreezePhaseOutputs& mf,
     double dtcld,
-    double xls = 2.85e6     // CONSTANT latent heat of sublimation (J/kg) — Fortran XLS.
+    double xls = 2.85e6,    // CONSTANT latent heat of sublimation (J/kg) — Fortran XLS.
                             // Fusion xlf(T) = xls - xl(T) is DERIVED inside (temperature-
                             // dependent), matching module_mp_kdm6.f90:2596. Caller passes
                             // thermo.xls so the constant has a single source.
+    const CoordinatorState* delta_src = nullptr  // Stage-A STEP 1: state to compute
+                            // delta2/delta3 from (the ENTRY state) when `state` is a
+                            // post-melt/freeze working base; nullptr → use `state`.
 );
 
 // ─── Step F1h: paired threshold cleanup (Fortran 3017-3035) ─────────────────
