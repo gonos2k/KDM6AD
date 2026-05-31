@@ -235,99 +235,29 @@ FnResult kdm6_fn(const State& state,
     // diffac (work1) computation.
     auto full_p = default_coordinator_params();
 
-    // ─── Stage-A sediment-order fix (Stage S1): SEDIMENT FIRST ────────────────
-    // Fortran sediments at the TOP of each dtcld sub-cycle (kdm6.f90:1069), BEFORE
-    // the melt/freeze/rate block (:1224+), then re-slopes (:1372-1430) and the
-    // microphysics reads the POST-FALL state. The port previously sedimented ONCE
-    // AFTER all microphysics — inverting Fortran's order. We now fall first, on the
-    // ENTRY state, then rebuild aux + run microphysics on the post-fall state. For
-    // the gate (dt <= dtcldcr ⇒ loops=1) this == Fortran's single sub-cycle exactly;
-    // Stage S2 will push it per-substep into kdm62d_step with per-substep mstep.
-    // K-flip: WRF stages K=0 at the surface; sedimentation_chain wants K=0 at TOP.
-    auto flip_k = [](const torch::Tensor& t) { return torch::flip(t, {1}); };
-    CoordinatorState cs_pyc{
-        flip_k(cs.qv), flip_k(cs.qc), flip_k(cs.qr),
-        flip_k(cs.qs), flip_k(cs.qg), flip_k(cs.qi),
-        flip_k(cs.nc), flip_k(cs.nr), flip_k(cs.ni),
-        flip_k(cs.nccn), flip_k(cs.brs), flip_k(cs.t),
-    };
-    CoordinatorForcing cf_pyc{
-        flip_k(cf.p), flip_k(cf.den), flip_k(cf.delz), flip_k(cf.dend),
-    };
-    auto pre_sed = preamble(cs_pyc, cf_pyc, full_p);
-    auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
-    auto work1_qr = pre_sed.slope.vt_r  / delz_safe;
-    auto workn_qr = pre_sed.slope.vtn_r / delz_safe;
-    auto work1_qs = pre_sed.slope.vt_s  / delz_safe;
-    auto work1_qg = pre_sed.slope.vt_g  / delz_safe;
-    auto work1_qi = pre_sed.slope.vt_i  / delz_safe;
-    auto workn_qi = pre_sed.slope.vtn_i / delz_safe;
-    int mstep_main = 1, mstep_ice = 1;
-    {
-        torch::NoGradGuard no_grad;
-        auto vmax_main = torch::maximum(torch::maximum(work1_qr, workn_qr),
-                                        torch::maximum(work1_qs, work1_qg)).max().item<double>();
-        auto vmax_ice = torch::maximum(work1_qi, workn_qi).max().item<double>();
-        mstep_main = std::min(std::max(static_cast<int>(std::round(vmax_main * dt + 0.5)), 1), 100);
-        mstep_ice  = std::min(std::max(static_cast<int>(std::round(vmax_ice  * dt + 0.5)), 1), 100);
+    // delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions).
+    if (dt <= 0.0) {
+        auto z = torch::zeros({cs.qc.size(0)}, cs.qc.options());
+        return FnResult{coord_to_state(cs, state, forcing), z, z, z};
     }
+
+    auto warm_p   = default_warm_phase_params();
+    auto cold_p   = default_cold_phase_params();
+    auto mf_p     = default_melt_freeze_phase_params();
+    auto cloud_p  = cloud_dsd::default_cloud_dsd_params();
     auto sed_params = sed::default_substep_advection_params();
-    auto sed_out = sedimentation_chain(
-        cs_pyc, cf_pyc, work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-        mstep_main, mstep_ice, dt, sed_params);
-    // Post-fall state back to WRF K-order; this feeds aux + microphysics.
-    CoordinatorState cs_sed{
-        flip_k(sed_out.state.qv), flip_k(sed_out.state.qc), flip_k(sed_out.state.qr),
-        flip_k(sed_out.state.qs), flip_k(sed_out.state.qg), flip_k(sed_out.state.qi),
-        flip_k(sed_out.state.nc), flip_k(sed_out.state.nr), flip_k(sed_out.state.ni),
-        flip_k(sed_out.state.nccn), flip_k(sed_out.state.brs), flip_k(sed_out.state.t),
-    };
 
-    // Operational aux diagnostics on the POST-FALL state: n0r/n0i/n0c + work1
-    // (diffac), mirroring Fortran kdm6.f90:1385-1430 + 1629-1630 (re-slope AFTER
-    // sediment, before the rate block). n0 numerators and work1 denominators are
-    // installed together to keep the evap/deposition rate budget balanced.
-    auto cloud_p = cloud_dsd::default_cloud_dsd_params();
-    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs_sed.qc, cs_sed.nc, cf.den, cloud_p);
-    auto aux = build_default_aux(cs_sed, cf, rslopec, full_p.thermo);
-
-    auto warm_p = default_warm_phase_params();
-    auto cold_p = default_cold_phase_params();
-    auto mf_p   = default_melt_freeze_phase_params();
-
-    // [xland plumbing] When xland is provided, derive sea_mask AND build a
-    // per-cell ncmin tensor; both broadcast to the state batch dim (im*jme, kme).
-    // Falls back to all-true sea_mask + scalar `constants::NCMIN` when nullopt
-    // (Python oracle parity, pre-extension behavior).
-    //
-    // Shape contract: xland may be either (im, jme) 2-D (per public header) or
-    // flat (im*jme,) 1-D (what the C ABI flattens to). Either is accepted —
-    // we reshape to (im*jme,) here so direct C++ callers don't need to flatten.
-    // WRF slmsk convention: xland >= 1.5 → sea regime, else land.
+    // [xland plumbing] sea_mask + per-cell ncmin are state-independent ⇒ derived
+    // ONCE. xland may be (im, jme) 2-D or flat (im*jme,); WRF slmsk: xland>=1.5 →
+    // sea. The qcr override (sea→qc0=8.4e-5, land→qc1=8.4e-4; Fortran :790-796) is
+    // re-applied per sub-cycle since aux is rebuilt each substep.
     torch::Tensor sea_mask;
-    if (xland.has_value()) {
+    const bool use_xland_qcr = xland.has_value();
+    if (use_xland_qcr) {
         auto xl = xland.value().to(cs.qc.options());
-        // Accept (im, jme), (im*jme,), or any reshape-equivalent layout.
         auto xl_flat = xl.contiguous().view({-1});
         auto sea_mask_flat = xl_flat >= 1.5;
-        // Expand sea_mask to (im*jme, kme) so cloud_dsd::diag_qcr_torch and
-        // other consumers see a per-cell value.
         sea_mask = sea_mask_flat.unsqueeze(1).expand_as(cs.qc).contiguous();
-
-        // Replace the hardcoded scalar `aux.qcr` (set by build_default_aux to
-        // 8.0e-5) with the proper land/sea-dependent qcr. Mapping matches
-        // Fortran module_mp_kdm6.f90:790-796 (slmsk==2 → qc0, else → qc1) and
-        // diag_qcr_torch (where(sea_mask, qc0, qc1)):
-        //   sea_mask=TRUE  (slmsk==2, maritime)    → qcr = qc0 = 8.4e-5 (LOW,  XNCR0=5e7)
-        //   sea_mask=FALSE (land, incl. XLAND<1.5) → qcr = qc1 = 8.4e-4 (HIGH, XNCR1=5e8)
-        // Note: the squall2d_x ideal case leaves XLAND=0, so sea_mask=(0>=1.5)=FALSE
-        // → land → qcr=qc1, matching the Fortran ELSE branch for slmsk≠2.
-        // Without this, the autoconversion threshold (warm.cpp:55 via aux.qcr)
-        // was identical for land/sea cells and the public sea_mask contract
-        // documented at runtime.h:96-97 would be ceremonial only.
-        aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cs.qc);
-
-        // Build per-cell ncmin tensor (same broadcast shape).
         auto ncmin_flat = torch::where(
             sea_mask_flat,
             torch::full_like(xl_flat, ncmin_sea),
@@ -342,22 +272,82 @@ FnResult kdm6_fn(const State& state,
         sea_mask = torch::ones_like(cs.qc, torch::dtype(torch::kBool));
     }
 
-    // Microphysics on the POST-FALL state (Fortran order: sediment → melt/rates).
-    auto cs_out = kdm62d_step(
-        cs_sed, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p,
-        /*delt=*/dt
-    );
+    // ─── Stage-A sediment-order fix (Stage S2): per-substep [sediment → microphysics] ──
+    // Fortran's dtcld sub-cycle (kdm6.f90:826) does, EACH substep: sediment at the
+    // TOP (:1069) → re-slope/ProgB/n0 (:1372-1430) → melt/freeze/rate block (:1224+)
+    // → state_update. The port previously did all microphysics then sedimented ONCE,
+    // inverting the order. We now split the timestep into `loops` sub-cycles and, per
+    // substep: fall(dtcld) on the current state → rebuild aux on the post-fall state →
+    // run ONE microphysics pass (kdm62d_one_step) over dtcld. The Fortran entry-prologue
+    // nccn clamp (:747) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
+    // Fortran (clamp before the sub-cycle loop, not per substep). For loops=1 (dt<=dtcldcr;
+    // every validation/typical case) this == Stage S1's single sub-cycle. K-flip: WRF
+    // stages K=0 at surface, sedimentation_chain wants K=0 at TOP; cf is constant so its
+    // flip + delz are hoisted out of the loop.
+    auto flip_k = [](const torch::Tensor& t) { return torch::flip(t, {1}); };
+    CoordinatorForcing cf_pyc{
+        flip_k(cf.p), flip_k(cf.den), flip_k(cf.delz), flip_k(cf.dend),
+    };
+    auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
 
-    // Final state = post-microphysics cs_out (WRF K-order). Sedimentation already
-    // ran FIRST (above), per Fortran's per-sub-cycle order; its surface increments
-    // (sed_out, 1-D per column [mm]) thread through FnResult ⇒ kdm6_step_c ⇒ WRF
-    // RAINNCV/SNOWNCV/GRAUPELNCV. (test_sedimentation_direction_python_convention
-    // still guards the K-flip; the flip now wraps the sediment block above.)
+    const int loops = compute_loops_max(dt, constants::DTCLDCR);
+    const double dtcld = dt / static_cast<double>(loops);
+
+    auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :747, ONCE
+    torch::Tensor rain_inc, snow_inc, graup_inc;
+
+    for (int i = 0; i < loops; ++i) {
+        // 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (Fortran :1069), per-substep mstep.
+        CoordinatorState cur_pyc{
+            flip_k(cur.qv), flip_k(cur.qc), flip_k(cur.qr),
+            flip_k(cur.qs), flip_k(cur.qg), flip_k(cur.qi),
+            flip_k(cur.nc), flip_k(cur.nr), flip_k(cur.ni),
+            flip_k(cur.nccn), flip_k(cur.brs), flip_k(cur.t),
+        };
+        auto pre_sed = preamble(cur_pyc, cf_pyc, full_p);
+        auto w1_qr = pre_sed.slope.vt_r  / delz_safe;
+        auto wn_qr = pre_sed.slope.vtn_r / delz_safe;
+        auto w1_qs = pre_sed.slope.vt_s  / delz_safe;
+        auto w1_qg = pre_sed.slope.vt_g  / delz_safe;
+        auto w1_qi = pre_sed.slope.vt_i  / delz_safe;
+        auto wn_qi = pre_sed.slope.vtn_i / delz_safe;
+        int mstep_main = 1, mstep_ice = 1;
+        {
+            torch::NoGradGuard no_grad;
+            auto vmax_main = torch::maximum(torch::maximum(w1_qr, wn_qr),
+                                            torch::maximum(w1_qs, w1_qg)).max().item<double>();
+            auto vmax_ice = torch::maximum(w1_qi, wn_qi).max().item<double>();
+            mstep_main = std::min(std::max(static_cast<int>(std::round(vmax_main * dtcld + 0.5)), 1), 100);
+            mstep_ice  = std::min(std::max(static_cast<int>(std::round(vmax_ice  * dtcld + 0.5)), 1), 100);
+        }
+        auto sed = sedimentation_chain(
+            cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+            mstep_main, mstep_ice, dtcld, sed_params);
+        cur = CoordinatorState{
+            flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
+            flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),
+            flip_k(sed.state.nc), flip_k(sed.state.nr), flip_k(sed.state.ni),
+            flip_k(sed.state.nccn), flip_k(sed.state.brs), flip_k(sed.state.t),
+        };
+        rain_inc  = (i == 0) ? sed.rain_increment    : rain_inc  + sed.rain_increment;
+        snow_inc  = (i == 0) ? sed.snow_increment    : snow_inc  + sed.snow_increment;
+        graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
+
+        // 2. Re-slope + aux on the POST-FALL state (Fortran :1372-1430 / :1629-1630).
+        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p);
+        auto aux = build_default_aux(cur, cf, rslopec, full_p.thermo);
+        if (use_xland_qcr) aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
+
+        // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1224+.
+        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld);
+    }
+
+    // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
+    // FnResult ⇒ kdm6_step_c ⇒ WRF RAINNCV/SNOWNCV/GRAUPELNCV.
     return FnResult{
-        coord_to_state(cs_out, state, forcing),
-        sed_out.rain_increment,
-        sed_out.snow_increment,
-        sed_out.graupel_increment,
+        coord_to_state(cur, state, forcing),
+        rain_inc, snow_inc, graup_inc,
     };
 }
 

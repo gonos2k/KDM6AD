@@ -333,6 +333,35 @@ int main() {
         if (worst_digits < 3.0) fail("worst-case FD agreement < 3 significant digits");
     }
 
+    // ── PART C: sub-cycled timestep (loops>1) — Stage-S2 per-substep sediment ─
+    // DT in PART A/B is 20s ⇒ loops=1 (single sub-cycle). Here DT=300s ⇒ loops=3
+    // (dtcld=100s), exercising the per-substep [sediment → re-slope/aux →
+    // microphysics] interleave + the accumulated surface increments + autograd
+    // through the sub-cycle loop. Smoke: forward finite, loss differentiable,
+    // ∂loss/∂(grad leaf) defined + finite (the loops>1 path the loops=1 gates
+    // can't reach).
+    std::cout << "\n[PART C] sub-cycled DT=300 (loops=3) — Stage-S2 per-substep sediment\n";
+    {
+        auto inC = build(/*grad=*/true);
+        auto rC = kdm6_fn(inC.s, inC.f, make_parameters(0), /*dt=*/300.0);
+        auto lossC = loss_of(rC);
+        bool fwd_finite = std::isfinite(lossC.item<double>())
+            && torch::isfinite(rC.state_out.qc).all().item<bool>()
+            && torch::isfinite(rC.state_out.qi).all().item<bool>()
+            && torch::isfinite(rC.rain_increment).all().item<bool>();
+        std::cout << "  forward finite: " << (fwd_finite ? "yes" : "NO")
+                  << "  loss=" << lossC.item<double>() << "\n";
+        if (!fwd_finite) fail("loops>1 forward non-finite");
+        lossC.backward();
+        for (int gi : GRAD_LEAVES) {
+            const auto& g = inC.leaves[gi].grad();
+            bool ok = g.defined() && torch::isfinite(g).all().item<bool>();
+            if (!ok) { std::cout << "  d/d(" << FNAME[gi] << ") SEVERED/NON-FINITE\n";
+                       fail(std::string("loops>1 grad ") + FNAME[gi]); }
+        }
+        if (!g_fail) std::cout << "  loops>1 forward finite + all grad leaves defined/finite [ok]\n";
+    }
+
     if (g_fail) { std::cerr << "\n" << g_fail << " check(s) failed\n"; return 1; }
     std::cout << "\n  PASS  kdm6_fn is differentiable end-to-end AND matches "
                  "central FD to significant digits\n";
