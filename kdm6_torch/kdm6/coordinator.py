@@ -805,6 +805,40 @@ def scale_rates_for_conservation_torch(
     return warm2, cold2, mf2
 
 
+def apply_melt_freeze_inline_torch(
+    state: CoordinatorState,
+    mf: MeltFreezePhaseOutputs,
+    pre: PreambleOutputs,
+    *,
+    dtcld: float,
+    xls: float,
+) -> CoordinatorState:
+    """Stage-A STEP 1: melt(D1)+freeze(D2-D4) as INLINE pre-state-update mutations
+    of a working state, using EXACTLY the signed expressions state_update_torch
+    used for these terms (so inline-apply ⟺ zeroing the D1-D4 mf fields is an
+    algebraic identity). Functional (_replace), no clamps (final clamps stay in
+    state_update_torch). xlf=xls-pre.xl. 1:1 mirror of C++ apply_melt_freeze_inline.
+    """
+    dtype = state.qc.dtype
+    warm_mask = (pre.supcol <= 0).to(dtype)
+    cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
+    xlf = xls - pre.xl
+    return state._replace(
+        qc=state.qc + (-mf.pinuc - mf.pfrzdtc + mf.pimlt_qi),
+        qr=state.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr,
+        qs=state.qs + dtcld * mf.psmlt,
+        qg=state.qg + dtcld * mf.pgmlt + mf.pfrzdtr,
+        qi=state.qi + (mf.pinuc + mf.pfrzdtc - mf.pimlt_qi),
+        nc=state.nc + (-mf.ninuc - mf.nfrzdtc + mf.pimlt_ni),
+        nr=state.nr + (-mf.nfrzdtr),
+        ni=state.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni),
+        brs=state.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze),
+        t=state.t
+        + dtcld * xlf / cpm_safe * (mf.psmlt + mf.pgmlt)
+        + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr - mf.pimlt_qi),
+    )
+
+
 def state_update_torch(
     state: CoordinatorState,
     pre: PreambleOutputs,
@@ -814,6 +848,9 @@ def state_update_torch(
     *,
     dtcld: float,
     xls: float = 2.85e6,   # CONSTANT sublimation latent heat (Fortran XLS); xlf(T)=xls-xl(T) derived
+    delta_src: CoordinatorState = None,  # Stage-A STEP 1: state to compute delta2/delta3
+                           # from (the ENTRY state) when `state` is a post-melt/freeze
+                           # working base; None → use `state`. Mirrors C++ delta_src.
 ) -> CoordinatorState:
     """F1e — 모든 phase rate를 state에 적용해 새 state 산출.
 
@@ -896,8 +933,10 @@ def state_update_torch(
     # ── delta2/delta3 routing flags (Fortran 2516-2519) — review3#5
     #   delta2 = 1 if (qr<1e-4 AND qs<1e-4): psacr → qs, pracs stays in snow
     #   delta3 = 1 if (qr<1e-4):              piacr/praci → qs (else → qg)
-    delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(state.qc.dtype)
-    delta3 = (state.qr < 1.0e-4).to(state.qc.dtype)
+    # Stage-A STEP 1: from ENTRY state (ds) when base is a working state.
+    ds = delta_src if delta_src is not None else state
+    delta2 = ((ds.qr < 1.0e-4) & (ds.qs < 1.0e-4)).to(state.qc.dtype)
+    delta3 = (ds.qr < 1.0e-4).to(state.qc.dtype)
     one_m_d2 = 1.0 - delta2
     one_m_d3 = 1.0 - delta3
 
@@ -1539,11 +1578,27 @@ def kdm62d_one_step_torch(
         state, pre.supcol, warm_out, cold_out, mf_out, dtcld=dtcld,
     )
 
+    # Stage-A STEP 1 (mirror of C++): apply melt(D1)+freeze(D2-D4) INLINE to a
+    # working state, and STRIP them from state_update by zeroing the 12 D1-D4 mf
+    # fields (D5 pseml/pgeml/nseml/ngeml stay). Net identical to the old single
+    # state_update. Behaviour-preserving: warm/cold/budgets read entry `state`,
+    # delta2/delta3 forced from entry (delta_src=state). STEP 2 moves the
+    # inline-apply BEFORE warm/cold + rebuilds aux. See STAGE_A_REARCH_BLUEPRINT.md.
+    working = apply_melt_freeze_inline_torch(
+        state, mf_out, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    z = torch.zeros_like(state.qc)
+    mf_d5 = mf_out._replace(                       # keep D5 (pseml/pgeml/nseml/ngeml)
+        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z, delta_brs_melt=z,  # D1
+        pinuc=z, ninuc=z,                          # D2
+        pfrzdtc=z, nfrzdtc=z,                      # D3
+        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,  # D4
+    )
+
     # Pass the CONFIGURED sublimation latent heat (single source); fusion
     # xlf = xls - xl(T) is derived inside (Fortran convention). Mirrors C++.
     new_state = state_update_torch(
-        state, pre, warm_out, cold_out, mf_out,
-        dtcld=dtcld, xls=full_params.thermo.xls,
+        working, pre, warm_out, cold_out, mf_d5,
+        dtcld=dtcld, xls=full_params.thermo.xls, delta_src=state,
     )
     # review5#4 + review7#1: Picons (Fortran 2876-2882) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)

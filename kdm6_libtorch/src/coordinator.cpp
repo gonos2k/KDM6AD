@@ -414,6 +414,8 @@ PreambleCore pre_core_view(const PreambleOutputs& pre) {
     };
 }
 
+}  // namespace
+
 // Stage-A STEP 1: apply melt(D1) + freeze(D2-D4) as INLINE pre-state-update
 // mutations of a working state, using EXACTLY the signed expressions state_update
 // used for these terms — so "apply inline" + "zero the D1-D4 mf fields passed to
@@ -445,8 +447,6 @@ CoordinatorState apply_melt_freeze_inline(
             + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr - mf.pimlt_qi); // = dT_freeze_amount
     return out;
 }
-
-}  // namespace
 
 CoordinatorState kdm62d_one_step(
     const CoordinatorState& state,

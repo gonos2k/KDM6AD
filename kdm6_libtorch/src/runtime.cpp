@@ -78,8 +78,13 @@ CoordinatorForcing build_forcing(const Forcing& f) {
     };
 }
 
+}  // namespace
+
 // Operational auxiliary diagnostics — physics-based, mirroring Fortran
 // module_mp_kdm6.f90:1385-1430 (n0 intercepts) and :1629-1630 (work1 = diffac).
+// Stage-A STEP 0: PROMOTED out of the anonymous namespace (declared in
+// coordinator.h) so rebuild_aux + the symbol-parity contract see it; matches the
+// Python build_default_aux_torch. Uses only cloud_dsd::/thermo:: + constants.
 //
 // Design (validated against the cross-file contract map):
 //   - n0r/n0i/n0c derive from the clamped DSD slope (diag_species_slope_torch),
@@ -162,9 +167,7 @@ CoordinatorAuxDiagnostics build_default_aux(
     };
 }
 
-}  // namespace
-
-// Test-facing wrapper around the anonymous-namespace build_default_aux. Mirrors
+// Test-facing wrapper around the now-exported build_default_aux. Mirrors
 // the production path so tests assert what the operational path actually installs.
 CoordinatorAuxDiagnostics build_default_aux_for_test(
     const State& s, const Forcing& f) {

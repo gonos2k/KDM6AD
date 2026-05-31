@@ -399,6 +399,18 @@ struct CoordinatorAuxDiagnostics {
 
 // ─── Stage-A re-architecture (sequential-flow) support ───────────────────────
 //
+// build_default_aux: physics-based aux (n0r/n0i/n0c, work1_*, avedia_i,
+// rslopec*) from a state + its cloud slope. Promoted out of runtime.cpp's
+// anonymous namespace (Stage-A STEP 0) so rebuild_aux can call it. Mirrors the
+// Python build_default_aux_torch. n0so/n0go are constants; qcr is a placeholder
+// the caller overrides.
+CoordinatorAuxDiagnostics build_default_aux(
+    const CoordinatorState& cs,
+    const CoordinatorForcing& cf,
+    const torch::Tensor& rslopec,
+    const thermo::ThermoParams& tp
+);
+
 // rebuild_aux: recompute the FULL DSD diagnostics (preamble slopes/work2/ProgB
 // AND the aux n0*/work1*/rslopec*/avedia_i) from an arbitrary (post-melt or
 // post-freeze) working state. Returns BOTH — they MUST be replaced together
@@ -418,6 +430,19 @@ RebuiltDiagnostics rebuild_aux(
     const CoordinatorForcing& forcing,
     const CoordinatorParams& params,
     const torch::Tensor& qcr_carry
+);
+
+// Stage-A STEP 1: apply melt(D1)+freeze(D2-D4) as INLINE pre-state-update
+// mutations of a working state (using EXACTLY the signed expressions
+// state_update applies for these terms; pair with zeroing the D1-D4 mf fields
+// passed to state_update ⇒ algebraic identity). Mirrors Python
+// apply_melt_freeze_inline_torch. Functional, AD-safe, no clamps.
+CoordinatorState apply_melt_freeze_inline(
+    const CoordinatorState& state,
+    const MeltFreezePhaseOutputs& mf,
+    const PreambleCore& pre,
+    double dtcld,
+    double xls
 );
 
 // ─── F1 chain wrapper: single-timestep one-shot ──────────────────────────────
