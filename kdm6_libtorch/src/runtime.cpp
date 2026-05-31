@@ -235,13 +235,61 @@ FnResult kdm6_fn(const State& state,
     // diffac (work1) computation.
     auto full_p = default_coordinator_params();
 
-    // Operational aux diagnostics: n0r/n0i/n0c + work1 (diffac) computed from the
-    // post-staging state, mirroring Fortran kdm6.f90:1385-1430 + 1629-1630. The
-    // n0 numerators and work1 denominators are installed together to keep the
-    // evap/deposition rate budget balanced (see build_default_aux header).
+    // ─── Stage-A sediment-order fix (Stage S1): SEDIMENT FIRST ────────────────
+    // Fortran sediments at the TOP of each dtcld sub-cycle (kdm6.f90:1069), BEFORE
+    // the melt/freeze/rate block (:1224+), then re-slopes (:1372-1430) and the
+    // microphysics reads the POST-FALL state. The port previously sedimented ONCE
+    // AFTER all microphysics — inverting Fortran's order. We now fall first, on the
+    // ENTRY state, then rebuild aux + run microphysics on the post-fall state. For
+    // the gate (dt <= dtcldcr ⇒ loops=1) this == Fortran's single sub-cycle exactly;
+    // Stage S2 will push it per-substep into kdm62d_step with per-substep mstep.
+    // K-flip: WRF stages K=0 at the surface; sedimentation_chain wants K=0 at TOP.
+    auto flip_k = [](const torch::Tensor& t) { return torch::flip(t, {1}); };
+    CoordinatorState cs_pyc{
+        flip_k(cs.qv), flip_k(cs.qc), flip_k(cs.qr),
+        flip_k(cs.qs), flip_k(cs.qg), flip_k(cs.qi),
+        flip_k(cs.nc), flip_k(cs.nr), flip_k(cs.ni),
+        flip_k(cs.nccn), flip_k(cs.brs), flip_k(cs.t),
+    };
+    CoordinatorForcing cf_pyc{
+        flip_k(cf.p), flip_k(cf.den), flip_k(cf.delz), flip_k(cf.dend),
+    };
+    auto pre_sed = preamble(cs_pyc, cf_pyc, full_p);
+    auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
+    auto work1_qr = pre_sed.slope.vt_r  / delz_safe;
+    auto workn_qr = pre_sed.slope.vtn_r / delz_safe;
+    auto work1_qs = pre_sed.slope.vt_s  / delz_safe;
+    auto work1_qg = pre_sed.slope.vt_g  / delz_safe;
+    auto work1_qi = pre_sed.slope.vt_i  / delz_safe;
+    auto workn_qi = pre_sed.slope.vtn_i / delz_safe;
+    int mstep_main = 1, mstep_ice = 1;
+    {
+        torch::NoGradGuard no_grad;
+        auto vmax_main = torch::maximum(torch::maximum(work1_qr, workn_qr),
+                                        torch::maximum(work1_qs, work1_qg)).max().item<double>();
+        auto vmax_ice = torch::maximum(work1_qi, workn_qi).max().item<double>();
+        mstep_main = std::min(std::max(static_cast<int>(std::round(vmax_main * dt + 0.5)), 1), 100);
+        mstep_ice  = std::min(std::max(static_cast<int>(std::round(vmax_ice  * dt + 0.5)), 1), 100);
+    }
+    auto sed_params = sed::default_substep_advection_params();
+    auto sed_out = sedimentation_chain(
+        cs_pyc, cf_pyc, work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
+        mstep_main, mstep_ice, dt, sed_params);
+    // Post-fall state back to WRF K-order; this feeds aux + microphysics.
+    CoordinatorState cs_sed{
+        flip_k(sed_out.state.qv), flip_k(sed_out.state.qc), flip_k(sed_out.state.qr),
+        flip_k(sed_out.state.qs), flip_k(sed_out.state.qg), flip_k(sed_out.state.qi),
+        flip_k(sed_out.state.nc), flip_k(sed_out.state.nr), flip_k(sed_out.state.ni),
+        flip_k(sed_out.state.nccn), flip_k(sed_out.state.brs), flip_k(sed_out.state.t),
+    };
+
+    // Operational aux diagnostics on the POST-FALL state: n0r/n0i/n0c + work1
+    // (diffac), mirroring Fortran kdm6.f90:1385-1430 + 1629-1630 (re-slope AFTER
+    // sediment, before the rate block). n0 numerators and work1 denominators are
+    // installed together to keep the evap/deposition rate budget balanced.
     auto cloud_p = cloud_dsd::default_cloud_dsd_params();
-    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs.qc, cs.nc, cf.den, cloud_p);
-    auto aux = build_default_aux(cs, cf, rslopec, full_p.thermo);
+    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs_sed.qc, cs_sed.nc, cf.den, cloud_p);
+    auto aux = build_default_aux(cs_sed, cf, rslopec, full_p.thermo);
 
     auto warm_p = default_warm_phase_params();
     auto cold_p = default_cold_phase_params();
@@ -294,85 +342,19 @@ FnResult kdm6_fn(const State& state,
         sea_mask = torch::ones_like(cs.qc, torch::dtype(torch::kBool));
     }
 
+    // Microphysics on the POST-FALL state (Fortran order: sediment → melt/rates).
     auto cs_out = kdm62d_step(
-        cs, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p,
+        cs_sed, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p,
         /*delt=*/dt
     );
 
-    // ── F2b: sedimentation chain (Codex audit B2 + layout-direction fix) ────
-    // Re-compute preamble on post-microphysics state to harvest slope outputs
-    // (vt_r/s/g/i + vtn_r/i) for `sedimentation_chain`. Mirrors Fortran
-    // module_mp_kdm6.f90:1050-1066 work1 normalization + mstep derivation.
-    //
-    // **VERTICAL LAYOUT CONVERSION**: WRF wrapper stages levels KTS..KTE into
-    // tensor K=0..K-1 where K=0 is BOTTOM (surface). Python sedimentation_chain
-    // assumes K=0 is TOP and K-1 is the surface (see
-    // kdm6_torch/kdm6/sedimentation.py:103, coordinator.py:1432). Without
-    // flipping, mp=137 sediments UPWARD and reads "surface accumulation" from
-    // the actual TOA layer. Test
-    // `test_sedimentation_direction_python_convention` in test_sedimentation.cpp
-    // catches this layout bug.
-    //
-    // Note: kdm62d_step is K-direction-agnostic (all operations are per-cell,
-    // no vertical gradients/advection), so it operates correctly on the
-    // WRF-convention input. Only the sedimentation block needs the flip.
-    auto flip_k = [](const torch::Tensor& t) { return torch::flip(t, {1}); };
-    CoordinatorState cs_pyc{
-        flip_k(cs_out.qv), flip_k(cs_out.qc), flip_k(cs_out.qr),
-        flip_k(cs_out.qs), flip_k(cs_out.qg), flip_k(cs_out.qi),
-        flip_k(cs_out.nc), flip_k(cs_out.nr), flip_k(cs_out.ni),
-        flip_k(cs_out.nccn), flip_k(cs_out.brs), flip_k(cs_out.t),
-    };
-    CoordinatorForcing cf_pyc{
-        flip_k(cf.p), flip_k(cf.den), flip_k(cf.delz), flip_k(cf.dend),
-    };
-
-    auto pre_post = preamble(cs_pyc, cf_pyc, full_p);
-    auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
-    auto work1_qr = pre_post.slope.vt_r  / delz_safe;
-    auto workn_qr = pre_post.slope.vtn_r / delz_safe;
-    auto work1_qs = pre_post.slope.vt_s  / delz_safe;
-    auto work1_qg = pre_post.slope.vt_g  / delz_safe;
-    auto work1_qi = pre_post.slope.vt_i  / delz_safe;
-    auto workn_qi = pre_post.slope.vtn_i / delz_safe;
-
-    int mstep_main = 1;
-    int mstep_ice  = 1;
-    {
-        torch::NoGradGuard no_grad;
-        auto vmax_main = torch::maximum(
-            torch::maximum(work1_qr, workn_qr),
-            torch::maximum(work1_qs, work1_qg)
-        ).max().item<double>();
-        auto vmax_ice = torch::maximum(work1_qi, workn_qi).max().item<double>();
-        mstep_main = std::max(static_cast<int>(std::round(vmax_main * dt + 0.5)), 1);
-        mstep_ice  = std::max(static_cast<int>(std::round(vmax_ice  * dt + 0.5)), 1);
-        mstep_main = std::min(mstep_main, 100);
-        mstep_ice  = std::min(mstep_ice,  100);
-    }
-
-    auto sed_params = sed::default_substep_advection_params();
-    auto sed_out = sedimentation_chain(
-        cs_pyc, cf_pyc,
-        work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-        mstep_main, mstep_ice, dt, sed_params
-    );
-
-    // Flip post-sedimentation state back to WRF convention before returning.
-    // rain/snow/graupel increments are 1-D per column (no K dim) so they
-    // don't need flipping — they're already correct as written by
-    // sedimentation_chain's surface_accumulation_torch.
-    CoordinatorState cs_wrf{
-        flip_k(sed_out.state.qv), flip_k(sed_out.state.qc), flip_k(sed_out.state.qr),
-        flip_k(sed_out.state.qs), flip_k(sed_out.state.qg), flip_k(sed_out.state.qi),
-        flip_k(sed_out.state.nc), flip_k(sed_out.state.nr), flip_k(sed_out.state.ni),
-        flip_k(sed_out.state.nccn), flip_k(sed_out.state.brs), flip_k(sed_out.state.t),
-    };
-    // sed_out.rain_increment / snow_increment / graupel_increment are 1-D
-    // per-column (im*jme,) [mm]. Threaded through FnResult so kdm6_step ⇒
-    // StepResult ⇒ kdm6_step_c ABI ⇒ WRF wrapper RAINNCV/SNOWNCV/GRAUPELNCV.
+    // Final state = post-microphysics cs_out (WRF K-order). Sedimentation already
+    // ran FIRST (above), per Fortran's per-sub-cycle order; its surface increments
+    // (sed_out, 1-D per column [mm]) thread through FnResult ⇒ kdm6_step_c ⇒ WRF
+    // RAINNCV/SNOWNCV/GRAUPELNCV. (test_sedimentation_direction_python_convention
+    // still guards the K-flip; the flip now wraps the sediment block above.)
     return FnResult{
-        coord_to_state(cs_wrf, state, forcing),
+        coord_to_state(cs_out, state, forcing),
         sed_out.rain_increment,
         sed_out.snow_increment,
         sed_out.graupel_increment,
