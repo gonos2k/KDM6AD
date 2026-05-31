@@ -391,8 +391,18 @@ PreambleWarm pre_warm_view(const PreambleOutputs& pre) {
 }
 
 PreambleCold pre_cold_view(const PreambleOutputs& pre) {
+    // Codex stop-review fix: the cold rate loop's deposition/nucleation driver is
+    // ICE supersaturation — Fortran kdm6.f90:1772 `supsat = max(q,qmin) - qs(i,k,2)`
+    // (qs2 = ICE saturation), feeding satdt/supice/ifsat + the C3 gate (:2259) and
+    // the pidep/psdep/pgdep caps (:2273-2340). The port's `pre.supsat` is WATER
+    // (compute_supsat(qv, qs1)), correct for the WARM loop (:1645) but wrong for
+    // cold. Reconstruct ice supsat from existing fields — EXACT since
+    //   supsat + qs1 - qs2 = (max(q,qmin) - qs1) + qs1 - qs2 = max(q,qmin) - qs2.
+    // cold_phase consumes PreambleCold.supsat ONLY in C3 (ice_nucleation) + C4
+    // (dep_sub); snow/graupel evap use rh_w/rh_ice, so this field is ice-only.
+    auto supsat_ice = pre.supsat + pre.qs1 - pre.qs2;
     return PreambleCold{
-        pre.supcol, pre.supsat, pre.rh_w, pre.rh_ice,
+        pre.supcol, supsat_ice, pre.rh_w, pre.rh_ice,
         pre.denfac, pre.work2,
         pre.rslopec,
         pre.progb.avtg, pre.progb.g3pbg, pre.progb.precg2,

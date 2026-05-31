@@ -397,6 +397,15 @@ def cold_phase_torch(
     rslopec3 = pre.rslopec * pre.rslopec * pre.rslopec
     s = pre.slope  # alias
 
+    # Codex stop-review fix: the cold deposition/nucleation driver is ICE
+    # supersaturation — Fortran kdm6.f90:1772 supsat=max(q,qmin)-qs(i,k,2) (qs2=ice
+    # sat), feeding satdt/supice/ifsat + the C3 gate (:2259) and pidep/psdep/pgdep
+    # caps (:2273-2340). pre.supsat is WATER (q-qs1, right for the WARM loop :1645,
+    # wrong for cold). Reconstruct ice supsat from existing fields — EXACT since
+    #   supsat + qs1 - qs2 = (max(q,qmin)-qs1) + qs1 - qs2 = max(q,qmin) - qs2.
+    # Used ONLY by C3 (ice_nucleation) + C4 (dep_sub); snow/graupel evap use rh_*.
+    supsat_ice = pre.supsat + pre.qs1 - pre.qs2
+
     # ── C1: ice accretion ──────────────────────────────────────────────
     # Fix [codex#3]: aux.n0r 사용 (이전 zeros placeholder는 cold-rain coupling 무효화)
     praci, piacr = _cold.ice_accretion_torch(
@@ -476,7 +485,7 @@ def cold_phase_torch(
 
     # ── C3: ice nucleation ───────────────────────────────────────────
     icenuc = _cold.ice_nucleation_torch(
-        pre.supcol, pre.supsat, pre.rh_ice, prevp,
+        pre.supcol, supsat_ice, pre.rh_ice, prevp,
         state.ni, forcing.den,
         params=params.ice_nucleation, dtcld=dtcld,
     )
@@ -484,7 +493,7 @@ def cold_phase_torch(
     # ── C4: deposition/sublimation ───────────────────────────────────
     depsub = _cold.dep_sub_torch(
         state.qi, state.qs, state.qg,
-        pre.rh_ice, pre.supcol, pre.supsat,
+        pre.rh_ice, pre.supcol, supsat_ice,
         prevp, icenuc.pinud, icenuc.ifsat,
         n0i, n0so, n0go, s.n0sfac,
         work1_ice, pre.work2,
