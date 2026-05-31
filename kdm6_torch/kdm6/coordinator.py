@@ -639,8 +639,16 @@ def melt_freeze_d1_d4_torch(
     )
 
     # ── D3: Bigg cloud ─────────────────────────────────────────────────
+    # Stage-A STEP 4: caps against the POST-D2 cloud reservoir — Fortran
+    # kdm6.f90 subtracts pinuc/ninuc from qci(1)/nci(1) (:1451,:1454) BEFORE
+    # :1469/:1478 cap pfrzdtc/nfrzdtc. Sequential freeze draw (D2 then D3 on a
+    # running qc/nc), not parallel caps vs entry qc. n0c is the SAME single
+    # re-sloped intercept (not recomputed after D2); only qc/nc advances. Mirror
+    # of C++ melt_freeze_d1_d4. AD-safe (qc_post_d2 = qc - pinuc(qc)).
+    qc_post_d2 = state.qc - contact.pinuc
+    nc_post_d2 = state.nc - contact.ninuc
     bigg_c = _mf.bigg_cloud_freezing_torch(
-        state.qc, state.nc, forcing.den, n0c,
+        qc_post_d2, nc_post_d2, forcing.den, n0c,
         rslopec, rslopecd, rslopecmu, pre.supcol,
         params=params.bigg_cloud, dtcld=dtcld,
     )

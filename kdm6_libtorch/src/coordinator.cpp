@@ -681,9 +681,19 @@ MeltFreezePhaseOutputs melt_freeze_d1_d4(
     };
     auto d2 = melt::contact_freezing_torch(d2_in, params.contact, dtcld);
 
-    // D3: Bigg cloud freezing (cold cells)
+    // D3: Bigg cloud freezing (cold cells). Stage-A STEP 4: caps against the
+    // POST-D2 cloud reservoir — Fortran kdm6.f90 subtracts pinuc/ninuc from
+    // qci(1)/nci(1) (:1451,:1454) BEFORE :1469/:1478 cap pfrzdtc/nfrzdtc against
+    // them. SEQUENTIAL freeze draw (D2 then D3 on a running qc/nc), not two
+    // parallel caps vs entry qc (which over-draws when pinuc+pfrzdtc>qc). n0c is
+    // the SAME single re-sloped intercept Fortran shares across D2+D3 (NOT
+    // recomputed after D2) — only the qc/nc cap+gate reservoir advances. AD-safe:
+    // qc_post_d2 = qc - pinuc(qc) is differentiable, so the freeze-partition
+    // sensitivity threads correctly.
+    auto qc_post_d2 = state.qc - d2.pinuc;
+    auto nc_post_d2 = state.nc - d2.ninuc;
     melt::BiggCloudInputs d3_in{
-        state.qc, state.nc,
+        qc_post_d2, nc_post_d2,
         forcing.den,
         n0c,
         rslopec, rslopecd, rslopecmu,
