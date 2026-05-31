@@ -1386,6 +1386,76 @@ class CoordinatorAuxDiagnostics(NamedTuple):
     rslopecd: torch.Tensor
 
 
+def build_default_aux_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    rslopec: torch.Tensor,
+    *,
+    thermo_params,
+) -> CoordinatorAuxDiagnostics:
+    """Physics-based DSD aux (n0r/n0i/n0c, work1_water/ice, avedia_i,
+    rslopecmu/rslopecd) computed FROM the state. 1:1 mirror of C++
+    build_default_aux (runtime.cpp:103). n0so/n0go are constants (mus=mug=0);
+    qcr is a placeholder (8e-5) overridden by the caller via qcr_carry. Used by
+    rebuild_aux_torch for the Stage-A sequential re-architecture. AD-safe.
+    """
+    rgmma = lambda x: math.exp(math.lgamma(x))
+    g1pmr = rgmma(1.0 + c.MUR)
+    g1pmi = rgmma(1.0 + c.MUI)
+    g4pmi = rgmma(4.0 + c.MUI)
+    pidnr = (math.pi * c.DENR / 6.0) * rgmma(1.0 + c.DMR + c.MUR) / g1pmr
+    pidni = (math.pi * c.DENI / 6.0) * rgmma(1.0 + c.DMI + c.MUI) / g1pmi
+
+    rslope_r = _dsd.diag_species_slope_torch(
+        state.qr, state.nr, forcing.den, pidnr, c.DMR, c.LAMDARMAX, c.LAMDARMIN)
+    rslope_i = _dsd.diag_species_slope_torch(
+        state.qi, state.ni, forcing.den, pidni, c.DMI, c.LAMDAIMAX, c.LAMDAIMIN)
+    rslopemu_r = rslope_r ** c.MUR
+    rslopemu_i = torch.ones_like(rslope_i) if c.MUI == 0.0 else rslope_i ** c.MUI
+    rslopecmu = rslopec ** c.MUC
+
+    n0r = state.nr / (rslope_r * rslopemu_r * g1pmr)
+    n0i = state.ni / (rslope_i * rslopemu_i * g1pmi)
+    n0c = (c.MUC + 1.0) * state.nc / (rslopec * rslopecmu)
+
+    xl = _thermo.compute_xl(state.t, params=thermo_params)
+    xls_t = torch.full_like(state.t, thermo_params.xls)
+    qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+    qs2 = _thermo.compute_qs_ice(state.t, forcing.p, params=thermo_params)
+    work1_water = _thermo.compute_diffac(xl, forcing.p, state.t, forcing.den, qs1, params=thermo_params)
+    work1_ice = _thermo.compute_diffac(xls_t, forcing.p, state.t, forcing.den, qs2, params=thermo_params)
+
+    return CoordinatorAuxDiagnostics(
+        n0r=n0r, n0i=n0i, n0c=n0c,
+        n0so=torch.full_like(state.qs, c.N0S),
+        n0go=torch.full_like(state.qg, c.N0G),
+        work1_r=work1_water, work1_ice=work1_ice, work1_water=work1_water,
+        qcr=torch.full_like(state.qc, 8.0e-5),
+        avedia_i=rslope_i * (g4pmi / g1pmi) ** (1.0 / 3.0),
+        rslopecmu=rslopecmu, rslopecd=rslopec ** c.DMC,
+    )
+
+
+def rebuild_aux_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    sea_mask: torch.Tensor,
+    *,
+    params: CoordinatorParams,
+    qcr_carry: torch.Tensor,
+):
+    """Re-run preamble_torch + build_default_aux_torch on a working (post-melt/
+    post-freeze) state. Returns (PreambleOutputs, CoordinatorAuxDiagnostics) —
+    BOTH refreshed together (rebuilding aux but keeping a stale preamble is the
+    806× over-deposition class). qcr is carried (sea_mask-derived). Mirrors C++
+    rebuild_aux. STEP 0b: defined, NOT yet called (no flow change).
+    """
+    pre = preamble_torch(state, forcing, sea_mask, params=params)
+    aux = build_default_aux_torch(state, forcing, pre.rslopec, thermo_params=params.thermo)
+    aux = aux._replace(qcr=qcr_carry)
+    return pre, aux
+
+
 def apply_satadj_step_torch(
     state: CoordinatorState,
     forcing: CoordinatorForcing,

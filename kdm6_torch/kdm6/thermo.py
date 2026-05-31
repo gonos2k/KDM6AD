@@ -148,6 +148,32 @@ def compute_qs_ice(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) ->
     return torch.clamp(qs, min=params.qmin)
 
 
+def compute_diffac(
+    xl: torch.Tensor,
+    pres: torch.Tensor,
+    t: torch.Tensor,
+    den: torch.Tensor,
+    qs: torch.Tensor,
+    *,
+    params: ThermoParams,
+) -> torch.Tensor:
+    """work1 diffusion factor (Fortran kdm6.f90:725-728):
+    diffac = den·xl²/(xka·rv·t²) + 1/(qs·diffus). 1:1 mirror of C++
+    thermo::compute_diffac. xka = thermal conductivity, diffus = vapor
+    diffusivity. AD-safe (clamp/sqrt/exp/log only, no .item()).
+    """
+    t_safe = torch.clamp(t, min=1.0)
+    viscos = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) \
+        / torch.clamp(den, min=params.qmin)
+    xka = 1.414e3 * viscos * den
+    diffus = 8.794e-5 * torch.exp(torch.log(t_safe) * 1.81) \
+        / torch.clamp(pres, min=params.qmin)
+    qs_safe = torch.clamp(qs, min=params.qmin)
+    term1 = den * xl * xl / (xka * params.rv * t_safe * t_safe)
+    term2 = 1.0 / (qs_safe * diffus)
+    return term1 + term2
+
+
 def compute_rh(q: torch.Tensor, qs: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
     """rh = max(q/qs, qmin)."""
     qs_safe = torch.clamp(qs, min=params.qmin)

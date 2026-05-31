@@ -102,6 +102,27 @@ def diag_cloud_slope_torch(
     return rslopec
 
 
+def diag_species_slope_torch(
+    q: torch.Tensor,
+    n: torch.Tensor,
+    den: torch.Tensor,
+    pidn: float,
+    dm: float,
+    lamdamax: float,
+    lamdamin: float,
+) -> torch.Tensor:
+    """rslope = 1/lamda clamped to [1/lamdamax, 1/lamdamin] (rain/ice species).
+
+    lamda = (pidn·n / max(q·den, 1e-30))^(1/dm). 1:1 mirror of C++
+    cloud_dsd::diag_species_slope_torch (the clamped DSD slope). Used by
+    build_default_aux_torch for rslope_r/rslope_i. AD-safe (clamp/exp/log only).
+    """
+    DOMAIN_FLOOR = 1.0e-30
+    ratio = pidn * n / torch.clamp(q * den, min=DOMAIN_FLOOR)
+    lamda = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / dm)
+    return torch.clamp(1.0 / lamda, min=1.0 / lamdamax, max=1.0 / lamdamin)
+
+
 # ─── avedia (cloud, rain) ─────────────────────────────────────────────────────
 
 
