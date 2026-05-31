@@ -322,6 +322,38 @@ struct MeltFreezePhaseParams {
 
 MeltFreezePhaseParams default_melt_freeze_phase_params();
 
+// Stage-A STEP 2 split: D1-D4 (melt + ice-nuc + Bigg freezing) depends only on
+// state+aux+slopes — computed/applied INLINE before warm/cold. Returns D5 fields
+// zeroed. Mirrors Python melt_freeze_d1_d4_torch.
+MeltFreezePhaseOutputs melt_freeze_d1_d4(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const torch::Tensor& n0c,
+    const torch::Tensor& n0r,
+    const torch::Tensor& n0so,
+    const torch::Tensor& n0go,
+    const torch::Tensor& rslopec,
+    const torch::Tensor& rslopecmu,
+    const torch::Tensor& rslopecd,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+);
+
+// Stage-A STEP 2 split: D5 (enhanced melting) needs cold_out's accretion rates —
+// computed AFTER cold_phase on the post-melt/freeze working state. Returns D1-D4
+// fields zeroed. Mirrors Python melt_freeze_d5_torch.
+MeltFreezePhaseOutputs melt_freeze_d5(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const ColdPhaseOutputs& cold_out,
+    const torch::Tensor& n0so,
+    const torch::Tensor& n0go,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+);
+
 // Run D1-D5 sequentially. D5 uses cold_out's post-HM-adjusted paacw/psacr/pgacr.
 MeltFreezePhaseOutputs melt_freeze_phase(
     const CoordinatorState& state,

@@ -592,11 +592,10 @@ class MeltFreezePhaseOutputs(NamedTuple):
     ngeml: torch.Tensor
 
 
-def melt_freeze_phase_torch(
+def melt_freeze_d1_d4_torch(
     state: CoordinatorState,
     forcing: CoordinatorForcing,
     pre: PreambleOutputs,
-    cold_out: ColdPhaseOutputs,    # paacw_adj, psacr_adj, pgacr_adj 사용
     n0c: torch.Tensor,
     n0r: torch.Tensor,
     n0so: torch.Tensor,
@@ -608,19 +607,18 @@ def melt_freeze_phase_torch(
     params: MeltFreezePhaseParams,
     dtcld: float,
 ) -> MeltFreezePhaseOutputs:
-    """F1d — melt/freeze phase chain.
+    """Stage-A STEP 2 split: D1-D4 (melt + ice-nuc + Bigg freezing) — depends ONLY
+    on state+aux+slopes (NOT cold_out), so it can be applied INLINE before
+    warm/cold (Fortran kdm6.f90:1239-1511). Returns D5 fields zeroed. 1:1 mirror
+    of C++ melt_freeze_d1_d4.
 
-    Process order:
-      D1 melting (T > T0c)
-      D2 contact freezing (Meyers, T < -2°C)
-      D3 immersion freezing (Bigg cloud, T < T0c)
-      D4 rain freezing (Bigg rain, T < T0c)
-      D5 enhanced melting (T > T0c, uses cold's paacw_adj/psacr_adj/pgacr_adj)
+    Process order: D1 melting (T>T0c) → D2 contact freeze → D3 Bigg cloud →
+    D4 Bigg rain.
     """
     s = pre.slope
+    z = torch.zeros_like(state.qc)
 
     # ── D1: Melting (warm) ─────────────────────────────────────────────
-    melt_in = _mf.MeltingOutputs._fields  # placeholder for documentation
     melt = _mf.melting_torch(
         state.qs, state.qg, state.qi, state.ni,
         state.t, forcing.p, forcing.den, pre.progb.rhox,
@@ -654,6 +652,37 @@ def melt_freeze_phase_torch(
         params=params.bigg_rain, dtcld=dtcld,
     )
 
+    return MeltFreezePhaseOutputs(
+        psmlt=melt.psmlt, pgmlt=melt.pgmlt,
+        pimlt_qi=melt.pimlt_qi, pimlt_ni=melt.pimlt_ni,
+        sfac_melt=melt.sfac, gfac_melt=melt.gfac,
+        delta_brs_melt=melt.delta_brs,
+        pinuc=contact.pinuc, ninuc=contact.ninuc,
+        pfrzdtc=bigg_c.pfrzdtc, nfrzdtc=bigg_c.nfrzdtc,
+        pfrzdtr=bigg_r.pfrzdtr, nfrzdtr=bigg_r.nfrzdtr,
+        delta_brs_freeze=bigg_r.delta_brs,
+        pseml=z, nseml=z, pgeml=z, ngeml=z,   # D5 deferred to melt_freeze_d5_torch
+    )
+
+
+def melt_freeze_d5_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    cold_out: ColdPhaseOutputs,    # paacw_adj, psacr_adj, pgacr_adj 사용
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Stage-A STEP 2 split: D5 enhanced melting — needs cold_out's accretion
+    rates, so computed AFTER cold_phase on the post-melt/freeze working state.
+    Returns D1-D4 fields zeroed. 1:1 mirror of C++ melt_freeze_d5.
+    """
+    s = pre.slope
+    z = torch.zeros_like(state.qc)
+
     # ── D5: Enhanced melting (uses cold's adjusted paacw/psacr/pgacr) ──
     enh = _mf.enhanced_melting_torch(
         state.qs, state.qg,
@@ -664,16 +693,45 @@ def melt_freeze_phase_torch(
     )
 
     return MeltFreezePhaseOutputs(
-        psmlt=melt.psmlt, pgmlt=melt.pgmlt,
-        pimlt_qi=melt.pimlt_qi, pimlt_ni=melt.pimlt_ni,
-        sfac_melt=melt.sfac, gfac_melt=melt.gfac,
-        delta_brs_melt=melt.delta_brs,
-        pinuc=contact.pinuc, ninuc=contact.ninuc,
-        pfrzdtc=bigg_c.pfrzdtc, nfrzdtc=bigg_c.nfrzdtc,
-        pfrzdtr=bigg_r.pfrzdtr, nfrzdtr=bigg_r.nfrzdtr,
-        delta_brs_freeze=bigg_r.delta_brs,
+        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z,
+        sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
+        pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z,
+        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,
         pseml=enh.pseml, nseml=enh.nseml,
         pgeml=enh.pgeml, ngeml=enh.ngeml,
+    )
+
+
+def melt_freeze_phase_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    cold_out: ColdPhaseOutputs,    # paacw_adj, psacr_adj, pgacr_adj 사용
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """F1d — legacy single-call melt/freeze (D1-D5 from one state). Thin combiner
+    over the split halves (melt_freeze_d1_d4_torch + melt_freeze_d5_torch); used by
+    tests + the STEP 1 parallel-from-entry path. Process order:
+      D1 melting → D2 contact freeze → D3 Bigg cloud → D4 Bigg rain → D5 enh-melt.
+    """
+    out = melt_freeze_d1_d4_torch(
+        state, forcing, pre, n0c, n0r, n0so, n0go,
+        rslopec, rslopecmu, rslopecd, params=params, dtcld=dtcld,
+    )
+    d5 = melt_freeze_d5_torch(
+        state, forcing, pre, cold_out, n0so, n0go, params=params, dtcld=dtcld,
+    )
+    return out._replace(
+        pseml=d5.pseml, nseml=d5.nseml, pgeml=d5.pgeml, ngeml=d5.ngeml,
     )
 
 
@@ -1549,56 +1607,68 @@ def kdm62d_one_step_torch(
     """
     pre = preamble_torch(state, forcing, sea_mask, params=full_params)
 
-    warm_out = warm_phase_torch(
+    # ─── Stage-A STEP 2: SEQUENTIAL melt/freeze → rebuild → warm/cold/D5 ──────
+    # Mirror of C++ kdm62d_one_step. Fortran kdm6.f90 mutates the state with melt
+    # (D1, :1239-1295) + contact/Bigg freeze (D2-D4, :1442-1511) BEFORE the
+    # warm/cold rate loop (:1768), then RE-SLOPES (:1372-1430,:1546-1633) so the
+    # rate loop reads post-freeze intercepts/slopes. We mirror exactly:
+    #   1. D1-D4 rates from the ENTRY state (entry aux + entry pre).
+    #   2. apply them INLINE → `working` (entry pre: entry xl/cpm/supcol).
+    #   3. rebuild_aux_torch(working) → fresh pre2 + aux2 TOGETHER (stale-pre=806×).
+    #   4. warm/cold/D5 read `working` + pre2 + aux2 (post-freeze supcol/slopes/n0).
+    # D2-D4 rates still from ENTRY here (STEP 3 recomputes on post-melt; STEP 4
+    # makes the D3 cap sequential vs post-D2 qc). See STAGE_A_REARCH_BLUEPRINT.md.
+    mf14 = melt_freeze_d1_d4_torch(
         state, forcing, pre,
-        aux.n0r, aux.work1_r, aux.qcr,
-        params=warm_params, dtcld=dtcld,
-    )
-
-    cold_out = cold_phase_torch(
-        state, forcing, pre, warm_out.prevp,
-        aux.n0i, aux.n0r, aux.n0so, aux.n0go, aux.n0c,
-        aux.rslopecmu, aux.rslopecd,
-        aux.avedia_i, aux.work1_ice, aux.work1_water,
-        params=cold_params, dtcld=dtcld,
-    )
-
-    mf_out = melt_freeze_phase_torch(
-        state, forcing, pre, cold_out,
         aux.n0c, aux.n0r, aux.n0so, aux.n0go,
         pre.rslopec, aux.rslopecmu, aux.rslopecd,
         params=mf_params, dtcld=dtcld,
     )
-
-    # F1d2: group conservation limiters (Fortran group budgets :2410-2678).
-    # AFTER melt_freeze (D5 read UNSCALED cold rates) + BEFORE state_update.
-    # Bounds the SUM of competing sinks per species (the tier the per-rate caps
-    # lack — the 806× staged-ice fix). Mirrors C++ scale_rates_for_conservation.
-    warm_out, cold_out, mf_out = scale_rates_for_conservation_torch(
-        state, pre.supcol, warm_out, cold_out, mf_out, dtcld=dtcld,
-    )
-
-    # Stage-A STEP 1 (mirror of C++): apply melt(D1)+freeze(D2-D4) INLINE to a
-    # working state, and STRIP them from state_update by zeroing the 12 D1-D4 mf
-    # fields (D5 pseml/pgeml/nseml/ngeml stay). Net identical to the old single
-    # state_update. Behaviour-preserving: warm/cold/budgets read entry `state`,
-    # delta2/delta3 forced from entry (delta_src=state). STEP 2 moves the
-    # inline-apply BEFORE warm/cold + rebuilds aux. See STAGE_A_REARCH_BLUEPRINT.md.
     working = apply_melt_freeze_inline_torch(
-        state, mf_out, pre, dtcld=dtcld, xls=full_params.thermo.xls)
-    z = torch.zeros_like(state.qc)
-    mf_d5 = mf_out._replace(                       # keep D5 (pseml/pgeml/nseml/ngeml)
-        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z, delta_brs_melt=z,  # D1
-        pinuc=z, ninuc=z,                          # D2
-        pfrzdtc=z, nfrzdtc=z,                      # D3
-        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,  # D4
+        state, mf14, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+
+    # Rebuild preamble + aux on the post-melt/freeze working state (qcr carried).
+    pre2, aux2 = rebuild_aux_torch(
+        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr)
+
+    warm_out = warm_phase_torch(
+        working, forcing, pre2,
+        aux2.n0r, aux2.work1_r, aux2.qcr,
+        params=warm_params, dtcld=dtcld,
     )
 
-    # Pass the CONFIGURED sublimation latent heat (single source); fusion
-    # xlf = xls - xl(T) is derived inside (Fortran convention). Mirrors C++.
+    cold_out = cold_phase_torch(
+        working, forcing, pre2, warm_out.prevp,
+        aux2.n0i, aux2.n0r, aux2.n0so, aux2.n0go, aux2.n0c,
+        aux2.rslopecmu, aux2.rslopecd,
+        aux2.avedia_i, aux2.work1_ice, aux2.work1_water,
+        params=cold_params, dtcld=dtcld,
+    )
+
+    mf5 = melt_freeze_d5_torch(
+        working, forcing, pre2, cold_out,
+        aux2.n0so, aux2.n0go, params=mf_params, dtcld=dtcld,
+    )
+
+    # F1d2: group conservation limiters bound warm/cold/D5 sinks against the
+    # WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly
+    # Fortran's combined budget+mass-balance loop (:2399-2706, gate `t.le.t0c`).
+    # D1-D4 already committed to `working`; scale_rates only touches the D5 fields
+    # (pseml/pgeml/nseml/ngeml). Mirrors C++ scale_rates_for_conservation.
+    warm_out, cold_out, mf5 = scale_rates_for_conservation_torch(
+        working, pre2.supcol, warm_out, cold_out, mf5, dtcld=dtcld,
+    )
+
+    # F1e: state update on the WORKING base. HYBRID pre (Fortran-exact):
+    #   xl/cpm = ENTRY (kdm6.f90:785-786 set once, reused through mass balance),
+    #   supcol/rhox = POST-FREEZE (mass-balance arm gates on t.le.t0c :2406; brs
+    #   rhox is post re-slope, :2593/2684). delta_src=None ⇒ delta2/delta3 track
+    #   working qr/qs (Fortran :2402-2405). mf5 carries D5 only (D1-D4 in working).
+    pre_su = pre._replace(
+        supcol=pre2.supcol, progb=pre.progb._replace(rhox=pre2.progb.rhox))
     new_state = state_update_torch(
-        working, pre, warm_out, cold_out, mf_d5,
-        dtcld=dtcld, xls=full_params.thermo.xls, delta_src=state,
+        working, pre_su, warm_out, cold_out, mf5,
+        dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
     )
     # review5#4 + review7#1: Picons (Fortran 2876-2882) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)

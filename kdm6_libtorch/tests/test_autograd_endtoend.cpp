@@ -25,6 +25,7 @@
 #include "kdm6/runtime.h"
 #include "kdm6/state.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -120,6 +121,113 @@ double eval_loss(int pf, int pk, double delta) {
 int g_fail = 0;
 void fail(const std::string& m) { std::cerr << "  FAIL: " << m << "\n"; ++g_fail; }
 
+// ── Kink-robust FD gate ──────────────────────────────────────────────────────
+// Central FD is INVALID at a non-smooth point (clamp / flux-limiter corner):
+// it averages the two one-sided slopes, so at a genuine kink it reports a value
+// autograd's (correct) subgradient cannot match. PART B routes such a "failing"
+// leaf here. Decision (designed + adversarially red-teamed — see commit msg):
+//   PASS  iff g_ad coincides with a CONVERGED, NON-DIVERGENT one-sided slope
+//         (AD is a valid one-sided subgradient at a real non-smoothness; the
+//          OTHER side carries a different slope — the kink signature).
+//   FAIL  if g_ad matches NEITHER one-sided slope while both converge to the
+//         same large slope  → genuine missing(S2)/attenuated(S3) gradient,
+//         OR both one-sided slopes diverge ~1/eps → discontinuity/jump(S4).
+// Central FD is NEVER consulted for the decision — only one-sided slopes are.
+// Every borderline case resolves to FAIL: it can never silently pass a real bug.
+constexpr double KK_EPS_MACH = 2.220446049250313e-16;
+inline double kk_nf(double e, double l0) {            // one-sided quotient round-off floor
+    return 8.0 * KK_EPS_MACH * (std::abs(l0) + 1.0) / e;
+}
+inline double kk_rel(double a, double b) {
+    return std::abs(a - b) / (std::abs(a) + std::abs(b) + 1e-300);
+}
+struct KinkVerdict { bool pass; std::string note; };
+
+// PURE decision (no I/O, no eval_loss) — unit-testable with synthetic samples.
+// Inputs: autograd grad + 5 loss samples (base l0, ±eps coarse, ±eps2 fine).
+KinkVerdict kink_decision(double g_ad, double eps, double l0,
+                          double lp, double lm,
+                          double eps2, double lp2, double lm2) {
+    const double TOL_REL = 5.0e-2, TOL_ABS = 1.0e-12, K_NF = 4.0, G_MAX = 4.0;
+    const double gLc = (l0 - lm)  / eps,  gRc = (lp  - l0) / eps;    // coarse one-sided
+    const double gLf = (l0 - lm2) / eps2, gRf = (lp2 - l0) / eps2;   // fine one-sided
+    const double nfC = kk_nf(eps, l0), nfF = kk_nf(eps2, l0);
+    // Per side: resolved limit (prefer finer level); flat = noise on both; div = ~1/eps growth.
+    auto side = [&](double sc, double sf, bool& flat, bool& div) -> double {
+        bool resC = std::abs(sc) > 3.0 * nfC, resF = std::abs(sf) > 3.0 * nfF;
+        flat = !(resC || resF); div = false;
+        if (flat) return 0.0;
+        if (resC && resF && std::abs(sf) > G_MAX * std::abs(sc)) div = true;
+        return resF ? sf : sc;
+    };
+    bool flatL, flatR, divL, divR;
+    const double sL = side(gLc, gLf, flatL, divL);
+    const double sR = side(gRc, gRf, flatR, divR);
+    if (divL && divR)
+        return {false, "DISCONTINUITY/JUMP at base point (both one-sided slopes diverge ~1/eps)"};
+    auto match = [&](double s, bool fine) -> bool {
+        double nf = fine ? nfF : nfC;
+        return kk_rel(g_ad, s) < TOL_REL ||
+               std::abs(g_ad - s) < std::max(TOL_ABS, K_NF * nf);
+    };
+    bool mL = !divL && match(sL, !flatL);
+    bool mR = !divR && match(sR, !flatR);
+    if (mL || mR) {
+        bool sidesAgree = !divL && !divR && kk_rel(sL, sR) < TOL_REL;
+        return {true, sidesAgree
+            ? "kink-note: AD==one-sided slope (sides agree; central test tripped on FD noise)"
+            : "kink-note: AD equals a valid one-sided subgradient (other side carries a different slope)"};
+    }
+    bool sidesAgree = !divL && !divR && !flatL && !flatR && kk_rel(sL, sR) < TOL_REL;
+    return {false, sidesAgree
+        ? "AUTOGRAD BUG: both one-sided derivatives agree on a large slope AD matches neither (missing/attenuated)"
+        : "AUTOGRAD inconsistent with both one-sided derivatives (no valid subgradient match)"};
+}
+
+// Probing wrapper: gathers l0 + one finer ± probe (3 extra eval_loss) then decides.
+// Reuses the lp/lm PART B already computed at the routing eps. Under NoGradGuard.
+KinkVerdict classify_kink(int pf, int pk, double g_ad,
+                          double eps, double lp, double lm) {
+    const double l0   = eval_loss(pf, pk, 0.0);
+    const double eps2 = eps * 0.1;
+    const double lp2  = eval_loss(pf, pk,  eps2);
+    const double lm2  = eval_loss(pf, pk, -eps2);
+    return kink_decision(g_ad, eps, l0, lp, lm, eps2, lp2, lm2);
+}
+
+// Adversarial self-test of the PURE decision: the gate MUST keep its teeth.
+// Synthesizes loss samples reproducing the four canonical scenarios and asserts
+// S1→PASS, S2/S3/S4→FAIL. This is the committed proof that the kink tolerance
+// cannot mask a real autograd break (S2 missing / S3 attenuated / S4 jump).
+void selftest_kink_decision() {
+    std::cout << "\n[PART B0] kink-gate adversarial self-test (S2/S3/S4 must FAIL)\n";
+    const double eps = 1.0e-2, eps2 = 1.0e-3, l0 = 0.05;   // ni-like scale
+    auto mk = [&](double gL_c, double gR_c, double gL_f, double gR_f) {
+        // returns {lp, lm, lp2, lm2} reproducing the requested one-sided slopes
+        return std::array<double,4>{ l0 + gR_c*eps, l0 - gL_c*eps,
+                                     l0 + gR_f*eps2, l0 - gL_f*eps2 };
+    };
+    struct Case { const char* name; double g_ad; std::array<double,4> s; bool expect_pass; };
+    const Case cases[] = {
+        // S1 legit kink: flat left (=g_ad), steep right; AD == left subgradient.
+        {"S1 kink",       -1.58e-9, mk(-1.58e-9,-6.08e-5,-1.58e-9,-6.08e-5), true},
+        // S2 missing/severed: both sides agree large, AD≈0.
+        {"S2 missing",     1.0e-12, mk(-3.0e-5,-3.0e-5,-3.0e-5,-3.0e-5),     false},
+        // S3 attenuated: both sides agree large, AD is half.
+        {"S3 attenuated", -1.5e-5,  mk(-3.0e-5,-3.0e-5,-3.0e-5,-3.0e-5),     false},
+        // S4 jump: both one-sided slopes grow ~10x as eps shrinks.
+        {"S4 jump",       -1.58e-9, mk(-6.0e-5,-6.0e-5,-6.0e-4,-6.0e-4),     false},
+    };
+    for (const auto& c : cases) {
+        KinkVerdict v = kink_decision(c.g_ad, eps, l0, c.s[0], c.s[1], eps2, c.s[2], c.s[3]);
+        bool ok = (v.pass == c.expect_pass);
+        std::cout << "  " << c.name << ": verdict=" << (v.pass ? "PASS" : "FAIL")
+                  << " expect=" << (c.expect_pass ? "PASS" : "FAIL")
+                  << (ok ? "  [ok]" : "  [WRONG]") << "  (" << v.note << ")\n";
+        if (!ok) fail(std::string("kink-gate self-test ") + c.name);
+    }
+}
+
 }  // namespace
 
 int main() {
@@ -168,6 +276,9 @@ int main() {
         }
     }
 
+    // ── PART B0: prove the kink-robust gate still catches real breaks ─────────
+    selftest_kink_decision();
+
     // ── PART B: central finite-difference vs autograd (fp64, sig-digit) ───────
     std::cout << "\n[PART B] central FD vs autograd  (rel = |ad-fd|/(|ad|+|fd|))\n";
     {
@@ -190,16 +301,32 @@ int main() {
             // Negligible-gradient leaves (both ~0) trivially agree — don't let
             // their noise dominate the "worst digits" headline.
             bool negligible = denom < 1.0e-12 * std::abs(g_ad + g_fd + 1.0);
-            if (!negligible && digits < worst_digits) worst_digits = digits;
+            bool central_fail = !(rel < 1.0e-3 || negligible);
+            // A central-FD failure may be a genuine non-smoothness (clamp / flux-
+            // limiter corner) where AD is a valid one-sided subgradient and central
+            // FD is invalid (it averages the two one-sided slopes). Route those
+            // through the kink-robust gate; only a real missing/attenuated/jump
+            // gradient still FAILs (kink_decision, self-tested in PART B0).
+            KinkVerdict kv{true, ""};
+            if (central_fail) kv = classify_kink(p.fi, p.k, g_ad, eps, lp, lm);
+            bool is_kink_pass = central_fail && kv.pass;
+            // A kink leaf is a NON-smooth point: its central-FD "digits" are
+            // meaningless, so it must not poison the worst-digits headline.
+            if (!negligible && !is_kink_pass && digits < worst_digits) worst_digits = digits;
             std::cout << "  " << FNAME[p.fi] << "[k" << p.k << "]"
                       << "  ad=" << g_ad << "  fd=" << g_fd
                       << "  rel=" << rel
                       << "  (" << (digits >= 99.0 ? std::string("exact")
                                    : std::to_string(digits).substr(0,4)) << " digits)"
-                      << (rel < 1.0e-3 || negligible ? "" : "  [MISMATCH]") << "\n";
-            if (!(rel < 1.0e-3 || negligible))
-                fail(std::string("FD mismatch ") + FNAME[p.fi]
-                     + "[k" + std::to_string(p.k) + "]");
+                      << (!central_fail ? "" : (is_kink_pass ? "  [KINK-OK]" : "  [MISMATCH]"))
+                      << "\n";
+            if (central_fail) {
+                if (is_kink_pass)
+                    std::cout << "      -> PASS-with-kink: " << kv.note << "\n";
+                else
+                    fail(std::string("FD mismatch ") + FNAME[p.fi]
+                         + "[k" + std::to_string(p.k) + "]: " + kv.note);
+            }
         }
         std::cout << "  worst-case agreement: " << worst_digits
                   << " significant digits (target >= 3)\n";
