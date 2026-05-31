@@ -1331,17 +1331,16 @@ def apply_dsd_number_limiters_torch(
         lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
         q_thresh=qmin, n_thresh=c.NCMIN,
     )
-    # Ice — Fortran kdm6.f90:1417 uses `qci(:,2) .ge. 1.e-14` ALONE (no n-gate),
-    # unlike rain (line 1389) and cloud (line 1406) which AND with n-thresholds.
-    # This asymmetry is intentional: Fortran's lamda snap RECOMPUTES nci from qci
-    # when lamda<lamdaimin, so cells with qi>=1e-14 AND ni<ncmin must still
-    # enter the snap to get ni reset. Passing n_thresh=NCMIN here was a port
-    # bug that mirrored the C++ port. Use 1e-14 q_thresh and 0 n_thresh.
+    # Ice — apply_dsd_number_limiters implements the FINAL kdm62d block, whose
+    # ice snap is Fortran kdm6.f90:2945 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
+    # — same qmin/ncmin pattern as the cloud snap (:2934) above. The prior 1e-14/0
+    # gate mis-cited :1417 (the INLINE rate-phase snap, a different occurrence
+    # with no n-gate). Adjudicated vs Fortran 2026-05-31; mirrors the C++ fix.
     ni_new = _limit_number_for_lamda(
         state.qi, state.ni, den,
         pidn=pidni, dm=c.DMI,
         lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
-        q_thresh=1.0e-14, n_thresh=0.0,
+        q_thresh=qmin, n_thresh=c.NCMIN,
     )
 
     # Absolute number caps (Fortran 3079-3082): nrs > NRMAX → snap to lamdarmax.

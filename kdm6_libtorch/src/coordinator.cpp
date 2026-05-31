@@ -1386,15 +1386,18 @@ CoordinatorState apply_dsd_number_limiters(
         constants::LAMDACMIN, constants::LAMDACMAX,
         qmin, constants::NCMIN
     );
-    // Fortran kdm6.f90:1417 ice lamda snap: gate is `qci(:,2) .ge. 1.e-14`
-    // ALONE — unlike rain (line 1389) and cloud (line 1406) which AND with
-    // nrmin/ncmin, the ice gate has NO n-threshold. Pass n_thresh=0 so the
-    // C++ `active` reduces to `qi >= 1e-14`, matching Fortran exactly.
+    // apply_dsd_number_limiters implements the FINAL kdm62d block, whose ice
+    // snap is Fortran kdm6.f90:2945 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
+    // — same qmin/ncmin pattern as the cloud snap (:2934) just above. The prior
+    // 1e-14/0 gate mis-cited :1417 (the INLINE rate-phase snap, a different
+    // occurrence with no n-gate); the final-block gate ANDs with ncmin.
+    // (Adjudicated vs Fortran 2026-05-31; aggregate effect pending WRF per the
+    // parity-audit memory — this is a confirmed Fortran-alignment correction.)
     auto ni_new = limit_number_for_lamda(
         state.qi, state.ni, den,
         pidni, constants::DMI,
         constants::LAMDAIMIN, constants::LAMDAIMAX,
-        /*q_thresh=*/1.0e-14, /*n_thresh=*/0.0
+        /*q_thresh=*/qmin, /*n_thresh=*/constants::NCMIN
     );
 
     // Absolute caps (Fortran 3079-3082)
