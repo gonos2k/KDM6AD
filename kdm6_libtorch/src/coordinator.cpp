@@ -861,6 +861,10 @@ CoordinatorState state_update(
         - cold.pmulrs - cold.pmulrg
         - (mf.psmlt + mf.pgmlt) * warm_mask
         - mf.pseml - mf.pgeml
+        // #1 (audit): WARM arm sheds rimed cloud to RAIN (Fortran :2690 qr+=2*paacw);
+        // cold arm routes paacw to qs/qg instead (handled below, cold_mask). Was
+        // missing in both ports — warm cells wrongly grew ice. (WRF-validated.)
+        + 2.0 * cold.paacw_adj * warm_mask
     );
     auto dqr_amount = -mf.pfrzdtr;
     auto qr_new = state.qr + dqr_rate + dqr_amount;
@@ -875,7 +879,7 @@ CoordinatorState state_update(
     auto dqs = dtcld * (
         cold.psdep
         + cold.psaut
-        + cold.paacw_adj
+        + cold.paacw_adj * cold_mask          // #1: paacw→qs only in COLD arm (Fortran :2583); warm arm sheds to qr
         + cold.piacr * delta3
         + cold.praci * delta3
         + cold.psacr_adj * delta2
@@ -890,7 +894,7 @@ CoordinatorState state_update(
     // qg — 2702-2706 + warm-branch 2814
     auto dqg_rate = dtcld * (
         cold.pgdep
-        + cold.paacw_adj
+        + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (Fortran :2591); warm arm sheds to qr
         + cold.pgacr_adj
         + cold.pracs * one_m_d2
         + cold.piacr * one_m_d3

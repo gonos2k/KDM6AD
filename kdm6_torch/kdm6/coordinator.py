@@ -886,6 +886,8 @@ def state_update_torch(
         - cold.pmulrs - cold.pmulrg               # 2685 HM rain→ice splinter sinks
         - (mf.psmlt + mf.pgmlt) * warm_mask       # D1 psmlt<0 → qr 증가 (qr -= psmlt)
         - mf.pseml - mf.pgeml                     # D5 enhanced melt (pseml<0 → qr 증가)
+        + 2.0 * cold.paacw_adj * warm_mask        # #1: WARM arm sheds rimed cloud to RAIN (Fortran :2690 qr+=2*paacw);
+                                                  # cold arm routes paacw to qs/qg (below, cold_mask). Mirrors C++.
     )
     dqr_amount = -mf.pfrzdtr                      # 1612 Bigg rain → qg (amount)
     dqr = dqr_rate + dqr_amount
@@ -905,7 +907,7 @@ def state_update_torch(
     dqs = dtcld * (
         cold.psdep                                # C4 deposition
         + cold.psaut                              # C5 ice aggregation → snow
-        + cold.paacw_adj                          # 2697: paacw·1 (cold/warm 무관)
+        + cold.paacw_adj * cold_mask              # #1: paacw→qs only in COLD arm (Fortran :2583); warm arm sheds to qr
         + cold.piacr * delta3                     # piacr → qs when qr small
         + cold.praci * delta3                     # praci → qs when qr small
         + cold.psacr_adj * delta2                 # psacr → qs when qr&qs small
@@ -923,7 +925,7 @@ def state_update_torch(
     # review4#1: pgacw 제거; cold_mask 제거. pgevp 유지 (codex#4).
     dqg_rate = dtcld * (
         cold.pgdep                                # C4 deposition
-        + cold.paacw_adj                          # 2705: paacw·1 (cold/warm 무관)
+        + cold.paacw_adj * cold_mask              # #1: paacw→qg only in COLD arm (Fortran :2591); warm arm sheds to qr
         + cold.pgacr_adj                          # 2706 rain ←collected by graupel
         + cold.pracs * one_m_d2                   # snow → graupel when (1-delta2)
         + cold.piacr * one_m_d3                   # piacr → qg when qr ≥ 1e-4
