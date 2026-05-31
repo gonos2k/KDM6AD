@@ -397,6 +397,29 @@ struct CoordinatorAuxDiagnostics {
     torch::Tensor rslopecd;
 };
 
+// ─── Stage-A re-architecture (sequential-flow) support ───────────────────────
+//
+// rebuild_aux: recompute the FULL DSD diagnostics (preamble slopes/work2/ProgB
+// AND the aux n0*/work1*/rslopec*/avedia_i) from an arbitrary (post-melt or
+// post-freeze) working state. Returns BOTH — they MUST be replaced together
+// (rebuilding aux but keeping a stale preamble is the 806× over-deposition
+// class: cold/mf would read self-inconsistent intercepts on frozen
+// hydrometeors). qcr is sea_mask-derived + state-independent, so it is CARRIED
+// from the entry aux rather than recomputed. Pure torch (no .item()) — autograd
+// threads through the melt/freeze deltas, which is the whole point of Stage A.
+// See STAGE_A_REARCH_BLUEPRINT.md. (STEP 0: declared + defined, not yet called.)
+struct RebuiltDiagnostics {
+    PreambleOutputs pre;
+    CoordinatorAuxDiagnostics aux;
+};
+
+RebuiltDiagnostics rebuild_aux(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const CoordinatorParams& params,
+    const torch::Tensor& qcr_carry
+);
+
 // ─── F1 chain wrapper: single-timestep one-shot ──────────────────────────────
 //
 // Python kdm62d_one_step_torch와 1:1 정합. Order:

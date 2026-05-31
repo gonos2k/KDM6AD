@@ -176,6 +176,22 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
     return build_default_aux(cs, cf, rslopec, full_p.thermo);
 }
 
+// Stage-A re-architecture support (STEP 0). Defined here because the
+// anonymous-namespace build_default_aux is reachable from this TU; declared in
+// coordinator.h for kdm62d_one_step to call once the sequential chain lands.
+// Rebuilds BOTH preamble (slopes/work2/ProgB) AND aux (n0*/work1*/rslopec*) on
+// the working state — never one without the other (stale-pre = 806× class).
+RebuiltDiagnostics rebuild_aux(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const CoordinatorParams& params,
+    const torch::Tensor& qcr_carry) {
+    auto pre = preamble(state, forcing, params);                       // re-slope + work2 + ProgB
+    auto aux = build_default_aux(state, forcing, pre.rslopec, params.thermo);
+    aux.qcr = qcr_carry;   // sea_mask-derived, state-independent — carry, don't recompute
+    return RebuiltDiagnostics{pre, aux};
+}
+
 FnResult kdm6_fn(const State& state,
                  const Forcing& forcing,
                  const Parameters& /*params*/,
