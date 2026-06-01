@@ -46,7 +46,7 @@ class SatAdjParams(NamedTuple):
 
 
 def default_satadj_params(*, rv: float = DEFAULT_RV) -> SatAdjParams:
-    return SatAdjParams(rv=rv, qmin=c.QCRMIN)
+    return SatAdjParams(rv=rv, qmin=c.EPS)  # Fortran qmin=epsilon=1e-15; q_eff=max(q,qmin) floor (F:2927). 1:1 fix #1 (satadj path).
 
 
 def saturation_adjustment_torch(

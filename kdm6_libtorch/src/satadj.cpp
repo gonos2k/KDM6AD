@@ -6,7 +6,9 @@ namespace satadj {
 SatAdjParams default_satadj_params(double rv) {
     return SatAdjParams{
         /*rv=*/rv,
-        /*qmin=*/constants::QCRMIN,   // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
+        /*qmin=*/constants::EPS,      // Fortran qmin=epsilon=1e-15 (driver QMIN). satadj uses it as the
+                                      // q_eff=max(q,qmin) floor (F:2927) — same #1 issue, same fix as ThermoParams.
+                                      // A pure floor (no div-safety), inactive in warm cells where q>>floor.
     };
 }
 
