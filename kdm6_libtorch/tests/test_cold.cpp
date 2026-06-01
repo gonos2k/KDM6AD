@@ -322,11 +322,15 @@ void test_cwr_inactive_when_qc_low() {
         assert(torch::allclose(out_lo.pgacw, torch::zeros_like(in_lo.qc)));
         assert(torch::allclose(out_lo.piacw, torch::zeros_like(in_lo.qc)));
 
-        // Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old qcrmin=1e-9) → gate OPEN → psacw>0
-        // (capped at qc/dtcld). FAILS if the qmin gate regresses to 1e-9 (would re-block this qc).
+        // Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old qcrmin=1e-9) → gate OPEN → ALL three
+        // qc-gated rates (psacw/pgacw/piacw, sharing the qc>qmin gate) > 0 (capped at qc/dtcld).
+        // FAILS if the qmin gate regresses to 1e-9 (would re-block this qc). inputs: qs/qg>qcrmin,
+        // supcol>0, qi>qcrmin, avedia_i>=di50 so only the qc gate can zero them.
         auto in_band = make_cwr_inputs(/*supcol=*/10.0, /*avedia_i=*/1.0e-4, /*grad=*/false, /*qc=*/1.0e-12);
         auto out_band = cloud_water_riming_torch(in_band, p, 60.0);
         assert(torch::all(out_band.psacw > 0.0).item<bool>());
+        assert(torch::all(out_band.pgacw > 0.0).item<bool>());
+        assert(torch::all(out_band.piacw > 0.0).item<bool>());
     } END_TEST();
 }
 

@@ -482,11 +482,15 @@ def test_cwr_inactive_when_qc_low():
     assert torch.allclose(out.pgacw, z)
     assert torch.allclose(out.piacw, z)
 
-    # Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old 1e-9) → gate OPEN → psacw>0.
-    # FAILS if the qmin gate regresses to 1e-9.
+    # Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old 1e-9) → gate OPEN → ALL three
+    # qc-gated rates (psacw/pgacw/piacw, sharing the qc>qmin gate) > 0. FAILS if the qmin gate
+    # regresses to 1e-9. _cwr_inputs has qs/qg>qcrmin, supcol>0, qi>qcrmin, avedia_i>=di50 so only
+    # the qc gate can zero them.
     inb = _cwr_inputs(qc_value=1.0e-12)
     out_b = cloud_water_riming_torch(*inb, params=p, dtcld=60.0)
     assert torch.all(out_b.psacw > 0.0)
+    assert torch.all(out_b.pgacw > 0.0)
+    assert torch.all(out_b.piacw > 0.0)
 
 
 def test_cwr_piacw_pk97_di50_threshold():
