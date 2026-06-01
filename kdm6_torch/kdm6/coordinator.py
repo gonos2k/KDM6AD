@@ -1913,6 +1913,8 @@ def sedimentation_chain_torch(
     mstep_ice: int,            # ice (qi/ni) substeps
     dtcld: float,
     params: _sed.SubstepAdvectionParams,
+    reslope_params: "CoordinatorParams | None" = None,  # 1:1 fix #9: per-substep re-slope
+    sea_mask: "torch.Tensor | None" = None,             # (B,K) bool for preamble_torch (qcr only; not vt)
 ) -> SedimentationOutputs:
     """F2b — sedimentation 통합 chain.
 
@@ -1921,11 +1923,14 @@ def sedimentation_chain_torch(
       2. ice (qi/ni) substepping (mstep_ice times)
       3. surface accumulation (bottom layer)
 
-    Note: ProgB+slope re-call (Fortran 1189-1262) — *각 substep 안에서* work1을
-    재진단하는 정확한 Fortran 직역은 향후 보완. 본 oracle은 *시간 불변* work1을
-    사용 (substep 내내 동일).
+    1:1 fix #9: when `reslope_params` is given, fall speeds are re-derived from the
+    post-substep state INSIDE the loop (Fortran F:1189-1205/1244-1269 ProgB+slope_kdm6
+    re-call) and used for the next substep; otherwise the passed-in work1 is reused for
+    every substep (identical when mstep==1). sea_mask only feeds preamble's qcr (which
+    sedimentation does not use), so any mask gives the same vt.
     """
     K = state.qr.shape[-1]
+    dz = torch.clamp(forcing.delz, min=1.0e-9)
     fall_qr_init = torch.zeros_like(state.qr)
     fall_nr_init = torch.zeros_like(state.qr)
     fall_qs_init = torch.zeros_like(state.qr)
@@ -1941,11 +1946,15 @@ def sedimentation_chain_torch(
     fall_qs = fall_qs_init
     fall_qg = fall_qg_init
     fall_brs = fall_brs_init
-    for _ in range(mstep_main):
+    # Mutable per-substep work1 (#9): re-derived from the post-substep state for n>1
+    # when reslope_params is set; init to the caller's E1-normalized values for n=1.
+    w1_qr, wn_qr, w1_qs, w1_qg = work1_qr, workn_qr, work1_qs, work1_qg
+    _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
+    for n in range(1, mstep_main + 1):
         out = _sed.substep_advection_torch(
             adv_state,
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
-            work1_qr, workn_qr, work1_qs, work1_qg,
+            w1_qr, wn_qr, w1_qs, w1_qg,
             forcing.delz, forcing.dend,
             mstep=mstep_main, dtcld=dtcld, params=params,
         )
@@ -1955,20 +1964,39 @@ def sedimentation_chain_torch(
         fall_qs = out.fall_qs
         fall_qg = out.fall_qg
         fall_brs = out.fall_brs
+        # Re-slope rain/snow/graupel from the post-substep state (F:1189-1205); ORIGINAL
+        # qi/ni kept (ice substepped below). vt depends only on hydrometeors → autograd-safe.
+        if reslope_params is not None and n < mstep_main:
+            rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
+                                qg=adv_state.qg, brs=adv_state.brs)
+            pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
+            w1_qr = pre.slope.vt_r / dz
+            wn_qr = pre.slope.vtn_r / dz
+            w1_qs = pre.slope.vt_s / dz
+            w1_qg = pre.slope.vt_g / dz
 
     # ── Ice substepping ──────────────────────────────────────────────
     ice_state = _sed.IceSubstepState(qi=state.qi, ni=state.ni)
     fall_qi = torch.zeros_like(state.qr)
     fall_ni = torch.zeros_like(state.qr)
-    for _ in range(mstep_ice):
+    w1_qi, wn_qi = work1_qi, workn_qi
+    for n in range(1, mstep_ice + 1):
         out_i = _sed.ice_substep_advection_torch(
             ice_state, fall_qi, fall_ni,
-            work1_qi, workn_qi, forcing.delz, forcing.dend,
+            w1_qi, wn_qi, forcing.delz, forcing.dend,
             mstep=mstep_ice, dtcld=dtcld, params=params,
         )
         ice_state = out_i.state
         fall_qi = out_i.fall_qi
         fall_ni = out_i.fall_ni
+        # Re-slope ice from the post-substep ice state (F:1244-1269).
+        if reslope_params is not None and n < mstep_ice:
+            rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
+                                qg=adv_state.qg, brs=adv_state.brs,
+                                qi=ice_state.qi, ni=ice_state.ni)
+            pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
+            w1_qi = pre.slope.vt_i / dz
+            wn_qi = pre.slope.vtn_i / dz
 
     # ── Surface accumulation (bottom = K-1 in tensor) ─────────────────
     bottom = K - 1

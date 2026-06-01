@@ -797,6 +797,40 @@ def test_sedimentation_grad_finite():
     assert state.qr.grad is not None and torch.isfinite(state.qr.grad).all()
 
 
+def test_sedimentation_reslope_per_substep():
+    """1:1 #9: with mstep>=2, per-substep re-slope (reslope_params=cp) re-derives work1 from
+    the post-substep state — changing the result vs time-invariant work1 (None) — stays
+    finite/non-negative, and gradients flow through the re-slope. At mstep==1 the loop runs
+    once and the re-slope is never consumed (bit-identical; covered by em_quarter_ss)."""
+    sp = default_substep_advection_params()
+    cp = default_coordinator_params()
+    state, forcing, sea_mask = _state_forcing(K=4)
+    qr = torch.full_like(state.qr, 5.0e-3).requires_grad_(True)  # heavy rain → fast fall, mstep>=2 regime
+    state = state._replace(qr=qr, qs=torch.full_like(state.qs, 1.0e-3),
+                           qg=torch.full_like(state.qg, 1.0e-3), nr=torch.full_like(state.nr, 1.0e4))
+    pre = preamble_torch(state, forcing, sea_mask, params=cp)
+    dz = torch.clamp(forcing.delz, min=1.0e-9)
+    w1_qr, wn_qr = pre.slope.vt_r / dz, pre.slope.vtn_r / dz
+    w1_qs, w1_qg = pre.slope.vt_s / dz, pre.slope.vt_g / dz
+    w1_qi, wn_qi = pre.slope.vt_i / dz, pre.slope.vtn_i / dz
+    mm = 3
+    out_static = sedimentation_chain_torch(
+        state, forcing, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+        mstep_main=mm, mstep_ice=mm, dtcld=60.0, params=sp, reslope_params=None)
+    out_reslope = sedimentation_chain_torch(
+        state, forcing, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+        mstep_main=mm, mstep_ice=mm, dtcld=60.0, params=sp, reslope_params=cp, sea_mask=sea_mask)
+    # (a) per-substep re-slope changes the result vs time-invariant work1 (mstep>1).
+    assert not torch.allclose(out_static.state.qr, out_reslope.state.qr)
+    # (b) finite + non-negative.
+    for f in ("qr", "qs", "qg", "qi"):
+        v = getattr(out_reslope.state, f)
+        assert torch.isfinite(v).all() and torch.all(v >= 0)
+    # (c) gradient flows through the re-slope chain to the qr leaf.
+    (out_reslope.state.qr.sum() + out_reslope.rain_increment.sum()).backward()
+    assert state.qr.grad is not None and torch.isfinite(state.qr.grad).all()
+
+
 # ── F1d2: group conservation limiters ────────────────────────────────────────
 
 def _zero_phase_struct(cls, ref):

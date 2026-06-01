@@ -695,8 +695,11 @@ CoordinatorState apply_dsd_number_limiters(
 //   3. surface accumulation (bottom layer)
 //
 // Note: `work1_qr/qs/qg/qi`는 caller 측에서 이미 `work / delz` (E1 normalize) 적용된
-// 텐서. ProgB/slope re-call (Fortran 1255-1268)은 *substep 내부에서* work1을 재진단
-// 하지만, 본 oracle/wrapper는 시간 불변 work1 가정 (Python과 동일).
+// 텐서 — these are the work1 for the FIRST substep.
+// `reslope_params` (1:1 fix #9): when non-null, fall speeds are re-derived from the
+// post-substep state INSIDE the n-loop (Fortran F:1189-1205/1244-1269 ProgB+slope_kdm6
+// re-call) and used for the next substep. When null, the passed-in work1 is reused for
+// every substep (the prior time-invariant behavior; identical when mstepmax==1).
 //
 struct SedimentationOutputs {
     CoordinatorState state;
@@ -719,7 +722,8 @@ SedimentationOutputs sedimentation_chain(
     const torch::Tensor& mstep_col_ice,   // (B,) per-column, integer-valued float
     int mstepmax_ice,                      // loop bound = max(mstep_col_ice)
     double dtcld,
-    const sed::SubstepAdvectionParams& params
+    const sed::SubstepAdvectionParams& params,
+    const CoordinatorParams* reslope_params = nullptr  // 1:1 fix #9: per-substep re-slope (null ⇒ time-invariant work1)
 );
 
 }  // namespace kdm6

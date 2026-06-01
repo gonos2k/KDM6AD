@@ -1658,9 +1658,12 @@ SedimentationOutputs sedimentation_chain(
     const torch::Tensor& mstep_col_ice,
     int mstepmax_ice,
     double dtcld,
-    const sed::SubstepAdvectionParams& params
+    const sed::SubstepAdvectionParams& params,
+    const CoordinatorParams* reslope_params
 ) {
     const int64_t K = state.qr.size(-1);
+    // delz floor matches runtime.cpp:291 (the initial work1 normalization).
+    auto delz_safe = torch::clamp(forcing.delz, /*min=*/1.0e-9);
 
     // ── Rain/snow/graupel/brs substepping ───────────────────────────────────
     sed::SubstepAdvectionState adv_state{state.qr, state.nr, state.qs, state.qg, state.brs};
@@ -1670,11 +1673,16 @@ SedimentationOutputs sedimentation_chain(
     auto fall_qg = torch::zeros_like(state.qr);
     auto fall_brs = torch::zeros_like(state.qr);
 
+    // Mutable per-substep work1 (1:1 fix #9). Initialized to the caller's E1-normalized
+    // values for substep n=1; re-derived from the post-substep state for n>1 when
+    // reslope_params is set (Fortran F:1189-1205 ProgB+slope_kdm6 re-call).
+    auto w1_qr = work1_qr, wn_qr = workn_qr, w1_qs = work1_qs, w1_qg = work1_qg;
+
     for (int n = 1; n <= mstepmax_main; ++n) {
         sed::SubstepAdvectionInputs sin{
             adv_state,
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
-            work1_qr, workn_qr, work1_qs, work1_qg,
+            w1_qr, wn_qr, w1_qs, w1_qg,
             forcing.delz, forcing.dend,
         };
         auto out = sed::substep_advection_torch(sin, mstep_col_main, mstepmax_main, n, dtcld, params);
@@ -1684,24 +1692,52 @@ SedimentationOutputs sedimentation_chain(
         fall_qs = out.fall_qs;
         fall_qg = out.fall_qg;
         fall_brs = out.fall_brs;
+
+        // Re-slope rain/snow/graupel fall speeds from the post-substep state (F:1189-1205):
+        // rebuild state (updated qr/nr/qs/qg/brs; ORIGINAL qi/ni/t — ice substepped below),
+        // ProgB+slope_kdm6 via preamble, re-normalize by delz. Used for substep n+1.
+        if (reslope_params != nullptr && n < mstepmax_main) {
+            CoordinatorState rs = state;
+            rs.qr = adv_state.qr; rs.nr = adv_state.nr;
+            rs.qs = adv_state.qs; rs.qg = adv_state.qg; rs.brs = adv_state.brs;
+            auto pre = preamble(rs, forcing, *reslope_params);
+            w1_qr = pre.slope.vt_r  / delz_safe;
+            wn_qr = pre.slope.vtn_r / delz_safe;
+            w1_qs = pre.slope.vt_s  / delz_safe;
+            w1_qg = pre.slope.vt_g  / delz_safe;
+        }
     }
 
     // ── Ice substepping ─────────────────────────────────────────────────────
     sed::IceSubstepState ice_state{state.qi, state.ni};
     auto fall_qi = torch::zeros_like(state.qr);
     auto fall_ni = torch::zeros_like(state.qr);
+    auto w1_qi = work1_qi, wn_qi = workn_qi;
 
     for (int n = 1; n <= mstepmax_ice; ++n) {
         sed::IceSubstepInputs iin{
             ice_state,
             fall_qi, fall_ni,
-            work1_qi, workn_qi,
+            w1_qi, wn_qi,
             forcing.delz, forcing.dend,
         };
         auto out_i = sed::ice_substep_advection_torch(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
         ice_state = out_i.state;
         fall_qi = out_i.fall_qi;
         fall_ni = out_i.fall_ni;
+
+        // Re-slope ice fall speeds from the post-substep ice state (F:1244-1269). Other
+        // species are the final post-main values; vt_i/vtn_i depend only on qi/ni so that
+        // is immaterial. Used for ice substep n+1.
+        if (reslope_params != nullptr && n < mstepmax_ice) {
+            CoordinatorState rs = state;
+            rs.qr = adv_state.qr; rs.nr = adv_state.nr; rs.qs = adv_state.qs;
+            rs.qg = adv_state.qg; rs.brs = adv_state.brs;
+            rs.qi = ice_state.qi; rs.ni = ice_state.ni;
+            auto pre = preamble(rs, forcing, *reslope_params);
+            w1_qi = pre.slope.vt_i  / delz_safe;
+            wn_qi = pre.slope.vtn_i / delz_safe;
+        }
     }
 
     // ── Surface accumulation (bottom layer K-1) ─────────────────────────────

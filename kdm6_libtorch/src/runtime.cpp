@@ -335,7 +335,8 @@ FnResult kdm6_fn(const State& state,
         }
         auto sed = sedimentation_chain(
             cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
-            mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params);
+            mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params,
+            /*reslope_params=*/&full_p);  // 1:1 fix #9: per-substep fall-speed re-slope (F:1189-1205)
         cur = CoordinatorState{
             flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
             flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),

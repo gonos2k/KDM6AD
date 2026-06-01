@@ -503,6 +503,68 @@ void test_sedimentation_direction_python_convention() {
     } END_TEST();
 }
 
+// 1:1 fix #9: per-substep fall-speed re-slope. With mstepmax>=2 the chain must re-derive
+// work1 from the post-substep state (reslope_params=&full_p) instead of reusing the initial
+// work1 (nullptr). This test forces mstepmax=3 on a heavy-rain column and asserts:
+//  (a) the re-sloped result DIFFERS from the time-invariant one (proves the re-slope fires),
+//  (b) outputs stay finite + non-negative, (c) gradients flow through the re-slope chain.
+// At mstepmax==1 the loop runs once and the re-slope is never consumed (bit-identical) —
+// that path is covered by the other tests + the em_quarter_ss bit-identity check.
+void test_sedimentation_reslope_per_substep() {
+    TEST(test_sedimentation_reslope_per_substep) {
+        const int B = 2, K = 4;
+        auto opts = f64();
+        CoordinatorState state{
+            torch::full({B, K}, 1.0e-2, opts),   // qv
+            torch::full({B, K}, 1.0e-3, opts),   // qc
+            torch::full({B, K}, 5.0e-3, opts.requires_grad(true)),  // qr (heavy → fast fall, mstep>=2)
+            torch::full({B, K}, 1.0e-3, opts),   // qs
+            torch::full({B, K}, 1.0e-3, opts),   // qg
+            torch::full({B, K}, 1.0e-4, opts),   // qi
+            torch::full({B, K}, 1.0e8, opts),    // nc
+            torch::full({B, K}, 1.0e4, opts),    // nr
+            torch::full({B, K}, 1.0e3, opts),    // ni
+            torch::full({B, K}, 5.0e8, opts),    // nccn
+            torch::full({B, K}, 1.0e-6, opts),   // brs
+            torch::full({B, K}, 280.0, opts),    // t
+        };
+        CoordinatorForcing forcing{
+            torch::full({B, K}, 8.0e4, opts), torch::full({B, K}, 1.1, opts),
+            torch::full({B, K}, 250.0, opts), torch::full({B, K}, 1.1 * 250.0, opts),
+        };
+        auto full_p = default_coordinator_params();
+        auto sed_params = default_substep_advection_params();
+        auto pre = preamble(state, forcing, full_p);
+        auto dz = torch::clamp(forcing.delz, /*min=*/1.0e-9);
+        auto w1_qr = pre.slope.vt_r / dz, wn_qr = pre.slope.vtn_r / dz;
+        auto w1_qs = pre.slope.vt_s / dz, w1_qg = pre.slope.vt_g / dz;
+        auto w1_qi = pre.slope.vt_i / dz, wn_qi = pre.slope.vtn_i / dz;
+        const int mm = 3;  // force multi-substep so the re-slope is consumed
+        auto mcol = torch::full({B}, (double)mm, opts);
+
+        auto out_static = sedimentation_chain(
+            state, forcing, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+            mcol, mm, mcol, mm, /*dtcld=*/60.0, sed_params, /*reslope_params=*/nullptr);
+        auto out_reslope = sedimentation_chain(
+            state, forcing, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+            mcol, mm, mcol, mm, /*dtcld=*/60.0, sed_params, /*reslope_params=*/&full_p);
+
+        // (a) per-substep re-slope changes the result vs time-invariant work1 (mstepmax>1).
+        assert(!torch::allclose(out_static.state.qr, out_reslope.state.qr));
+        // (b) finite + non-negative.
+        for (auto* t : {&out_reslope.state.qr, &out_reslope.state.qs,
+                        &out_reslope.state.qg, &out_reslope.state.qi}) {
+            assert(torch::all(torch::isfinite(*t)).item<bool>());
+            assert(torch::all(*t >= 0).item<bool>());
+        }
+        // (c) gradient flows through the re-slope chain to the qr leaf.
+        auto loss = out_reslope.state.qr.sum() + out_reslope.rain_increment.sum();
+        loss.backward();
+        assert(state.qr.grad().defined()
+               && torch::isfinite(state.qr.grad()).all().item<bool>());
+    } END_TEST();
+}
+
 int main() {
     std::cout << "kdm6_libtorch sedimentation tests\n";
     test_normalize_work_basic();
@@ -514,6 +576,7 @@ int main() {
     test_sedimentation_via_preamble_repath();
     test_sedimentation_exact_zero_precip();
     test_sedimentation_direction_python_convention();
+    test_sedimentation_reslope_per_substep();
     std::cout << "All sedimentation tests passed.\n";
     return 0;
 }
