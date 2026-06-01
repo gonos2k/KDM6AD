@@ -486,31 +486,43 @@ CoordinatorState kdm62d_one_step(
     // F1a: preamble (full diagnostics) on the ENTRY state.
     auto pre = preamble(state_pre, forcing, full_params);
 
-    // ─── Stage-A STEP 2: SEQUENTIAL melt/freeze → rebuild → warm/cold/D5 ──────
-    // Fortran kdm6.f90 mutates the state with melt (D1, :1239-1295) + contact/Bigg
-    // freeze (D2-D4, :1442-1511) BEFORE the warm/cold rate loop (:1768), then
-    // RE-SLOPES (ProgB+slope, :1372-1430,:1546-1633) so the rate loop reads
-    // post-freeze intercepts/slopes. We mirror that exactly:
-    //   1. D1-D4 rates from the ENTRY state (entry aux + entry pre).
-    //   2. apply them INLINE → `working` (entry pre_core: entry xl/cpm/supcol).
-    //   3. rebuild_aux(working) → fresh pre2 + aux2 TOGETHER (stale-pre = 806×).
-    //   4. warm/cold/D5 read `working` + pre2 + aux2 (post-freeze supcol/slopes/n0).
-    // D2-D4 rates still come from the ENTRY state here (STEP 3 recomputes them on
-    // the post-melt state; STEP 4 makes the D3 cap sequential vs post-D2 qc).
-    auto pre_core = pre_core_view(pre);   // ENTRY xl/cpm/supcol/rhox
-    auto mf14 = melt_freeze_d1_d4(
-        state_pre, forcing, pre_mf_view(pre),
-        aux.n0c, aux.n0r, aux.n0so, aux.n0go,
-        pre.rslopec, aux.rslopecmu, aux.rslopecd,
-        mf_params, dtcld
-    );
-    auto working = apply_melt_freeze_inline(
-        state_pre, mf14, pre_core, dtcld, full_params.thermo.xls);
+    // ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
+    // Fortran kdm6.f90 order: D1 melt (:1224-1295) → [homog freeze :1360-1370] →
+    // re-slope (:1372-1430) → D2-D4 contact/Bigg freeze (:1435-1511) → re-slope
+    // (:1546-1633) → warm/cold rate loop (:1768). We mirror it stage-by-stage:
+    //   1. D1 melt from the ENTRY state (warm cells); apply inline → working1.
+    //   2. rebuild_aux(working1) → pre1/aux1 (post-melt re-slope, :1372-1430).
+    //   3. D2-D4 freeze from working1 + pre1/aux1 (cold cells); apply inline → working.
+    //   4. rebuild_aux(working) → pre2/aux2 (post-freeze re-slope, :1546-1633).
+    //   5. warm/cold/D5 read `working` + pre2/aux2.
+    // STEP 3 (this split) is bit-identical to the prior STEP-2 single-apply modulo
+    // float reassociation: melt (warm, supcol<0) and freeze (cold, supcol>0) are
+    // mutually exclusive per cell, so D2-D4-on-post-melt ≡ D2-D4-on-entry. The split
+    // exists to host the (still-disabled) homog freeze between melt and the freeze
+    // re-slope (Fortran :1360-1370 — Stage H2).
+    auto pre_core = pre_core_view(pre);   // ENTRY xl/cpm/supcol/rhox (Fortran-fixed)
+    // 1. D1 melt → working1.
+    auto mf_d1 = melt_freeze_d1(
+        state_pre, forcing, pre_mf_view(pre), aux.n0so, aux.n0go, mf_params, dtcld);
+    auto working1 = apply_melt_freeze_inline(
+        state_pre, mf_d1, pre_core, dtcld, full_params.thermo.xls);
 
-    // F1a': rebuild preamble + aux on the post-melt/freeze working state. qcr is
-    // sea_mask-derived + state-independent ⇒ carried from the entry aux. The
-    // entry `pre` supplies the substep-top thermo (qs/xl/rh/supsat) that Fortran
-    // does NOT recompute post-freeze (kdm6.f90:785-786,:860-878) — spliced inside.
+    // 2. rebuild on the post-melt state (re-slope :1372-1430; entry thermo spliced).
+    auto rebuilt1 = rebuild_aux(working1, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
+    const auto& pre1 = rebuilt1.pre;
+    const auto& aux1 = rebuilt1.aux;
+
+    // 3. D2-D4 freeze on the post-melt/re-sloped state → working.
+    auto mf_d234 = melt_freeze_d2_d4(
+        working1, forcing, pre_mf_view(pre1),
+        aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
+        mf_params, dtcld);
+    auto working = apply_melt_freeze_inline(
+        working1, mf_d234, pre_core, dtcld, full_params.thermo.xls);
+
+    // 4. rebuild on the post-freeze state (re-slope :1546-1633; the prior STEP-2
+    // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/
+    // supsat) Fortran does NOT recompute post-freeze (:785-786,:860-878).
     auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
     const auto& pre2 = rebuilt.pre;
     const auto& aux2 = rebuilt.aux;
@@ -645,21 +657,54 @@ MeltFreezePhaseParams default_melt_freeze_phase_params() {
     };
 }
 
-// Stage-A STEP 2: the melt/freeze phase is SPLIT into the D1-D4 block (melt +
-// ice-nucleation + Bigg freezing — depends ONLY on state+aux+slopes, NOT on
-// cold_out) and the D5 block (enhanced melting — needs cold_out's accretion
-// rates). This split lets kdm62d_one_step apply D1-D4 INLINE before warm/cold
-// (Fortran kdm6.f90:1239-1511 mutate the state before the rate loop at :1768),
-// then compute D5 AFTER cold_phase. melt_freeze_phase below recombines them so
-// the legacy single-call signature (and its tests) stay bit-identical.
-MeltFreezePhaseOutputs melt_freeze_d1_d4(
+// Stage-A STEP 2/STEP 3 split. Fortran kdm6.f90 runs, in order: D1 melt
+// (:1224-1295) → [homog freeze :1360-1370] → re-slope (:1372-1430) → D2-D4 Bigg/
+// contact freeze (:1435-1511) → re-slope → warm/cold rate loop. So the melt/freeze
+// phase is split THREE ways: melt_freeze_d1 (D1 melt; warm cells), melt_freeze_d2_d4
+// (D2 contact + D3 Bigg-cloud + D4 Bigg-rain; cold cells, computed on the POST-MELT/
+// re-sloped state), and melt_freeze_d5 (enhanced melt; needs cold_out). This lets
+// kdm62d_one_step apply D1 → rebuild_aux → D2-D4 → rebuild_aux → warm/cold, exactly
+// mirroring Fortran's per-stage re-slope. melt_freeze_d1_d4 (combiner) + melt_freeze_phase
+// recompose them so the legacy single-call signature (+ its tests) stay bit-identical.
+MeltFreezePhaseOutputs melt_freeze_d1(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const torch::Tensor& n0so,
+    const torch::Tensor& n0go,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+) {
+    const auto& s = pre.slope;
+    auto zero = torch::zeros_like(state.qc);
+    // D1: melting (warm cells)
+    melt::MeltingInputs d1_in{
+        state.qs, state.qg, state.qi, state.ni,
+        state.t, forcing.p, forcing.den, pre.rhox,
+        n0so, n0go, s.n0sfac_field,
+        pre.work2, pre.precg2,
+        s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
+        s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
+    };
+    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld);
+    return MeltFreezePhaseOutputs{
+        /*psmlt=*/d1.psmlt, /*pgmlt=*/d1.pgmlt,
+        /*pimlt_qi=*/d1.pimlt_qi, /*pimlt_ni=*/d1.pimlt_ni,
+        /*sfac_melt=*/d1.sfac, /*gfac_melt=*/d1.gfac,
+        /*delta_brs_melt=*/d1.delta_brs,
+        /*pinuc=*/zero, /*ninuc=*/zero,                // D2 → melt_freeze_d2_d4
+        /*pfrzdtc=*/zero, /*nfrzdtc=*/zero,            // D3
+        /*pfrzdtr=*/zero, /*nfrzdtr=*/zero, /*delta_brs_freeze=*/zero,  // D4
+        /*pseml=*/zero, /*nseml=*/zero, /*pgeml=*/zero, /*ngeml=*/zero, // D5
+    };
+}
+
+MeltFreezePhaseOutputs melt_freeze_d2_d4(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,
     const PreambleMf& pre,
     const torch::Tensor& n0c,
     const torch::Tensor& n0r,
-    const torch::Tensor& n0so,
-    const torch::Tensor& n0go,
     const torch::Tensor& rslopec,
     const torch::Tensor& rslopecmu,
     const torch::Tensor& rslopecd,
@@ -668,19 +713,6 @@ MeltFreezePhaseOutputs melt_freeze_d1_d4(
 ) {
     const auto& s = pre.slope;
     auto zero = torch::zeros_like(state.qc);
-
-    // D1: melting (warm cells)
-    melt::MeltingInputs d1_in{
-        state.qs, state.qg, state.qi, state.ni,
-        state.t, forcing.p, forcing.den, pre.rhox,
-        n0so, n0go, s.n0sfac_field,
-        pre.work2,
-        pre.precg2,
-        s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
-        s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
-    };
-    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld);
-
     // D2: contact freezing (Meyers, T < -2°C)
     auto rslopec2 = rslopec * rslopec;
     auto rslopec3 = rslopec2 * rslopec;
@@ -693,15 +725,9 @@ MeltFreezePhaseOutputs melt_freeze_d1_d4(
     };
     auto d2 = melt::contact_freezing_torch(d2_in, params.contact, dtcld);
 
-    // D3: Bigg cloud freezing (cold cells). Stage-A STEP 4: caps against the
-    // POST-D2 cloud reservoir — Fortran kdm6.f90 subtracts pinuc/ninuc from
-    // qci(1)/nci(1) (:1451,:1454) BEFORE :1469/:1478 cap pfrzdtc/nfrzdtc against
-    // them. SEQUENTIAL freeze draw (D2 then D3 on a running qc/nc), not two
-    // parallel caps vs entry qc (which over-draws when pinuc+pfrzdtc>qc). n0c is
-    // the SAME single re-sloped intercept Fortran shares across D2+D3 (NOT
-    // recomputed after D2) — only the qc/nc cap+gate reservoir advances. AD-safe:
-    // qc_post_d2 = qc - pinuc(qc) is differentiable, so the freeze-partition
-    // sensitivity threads correctly.
+    // D3: Bigg cloud freezing (cold cells). STEP 4: caps against the POST-D2 cloud
+    // reservoir — Fortran subtracts pinuc/ninuc (:1451,:1454) BEFORE :1469/:1478 cap
+    // pfrzdtc/nfrzdtc. n0c is the SAME single re-sloped intercept across D2+D3.
     auto qc_post_d2 = state.qc - d2.pinuc;
     auto nc_post_d2 = state.nc - d2.ninuc;
     melt::BiggCloudInputs d3_in{
@@ -724,17 +750,40 @@ MeltFreezePhaseOutputs melt_freeze_d1_d4(
     auto d4 = melt::bigg_rain_freezing_torch(d4_in, params.bigg_rain, dtcld);
 
     return MeltFreezePhaseOutputs{
-        /*psmlt=*/d1.psmlt, /*pgmlt=*/d1.pgmlt,
-        /*pimlt_qi=*/d1.pimlt_qi, /*pimlt_ni=*/d1.pimlt_ni,
-        /*sfac_melt=*/d1.sfac, /*gfac_melt=*/d1.gfac,
-        /*delta_brs_melt=*/d1.delta_brs,
+        /*psmlt=*/zero, /*pgmlt=*/zero,                // D1 → melt_freeze_d1
+        /*pimlt_qi=*/zero, /*pimlt_ni=*/zero,
+        /*sfac_melt=*/zero, /*gfac_melt=*/zero, /*delta_brs_melt=*/zero,
         /*pinuc=*/d2.pinuc, /*ninuc=*/d2.ninuc,
         /*pfrzdtc=*/d3.pfrzdtc, /*nfrzdtc=*/d3.nfrzdtc,
         /*pfrzdtr=*/d4.pfrzdtr, /*nfrzdtr=*/d4.nfrzdtr,
         /*delta_brs_freeze=*/d4.delta_brs,
-        /*pseml=*/zero, /*nseml=*/zero,    // D5 deferred to melt_freeze_d5
-        /*pgeml=*/zero, /*ngeml=*/zero,
+        /*pseml=*/zero, /*nseml=*/zero, /*pgeml=*/zero, /*ngeml=*/zero, // D5
     };
+}
+
+// Combiner — legacy D1-D4-from-one-state output (D5 zeroed). Bit-identical to the
+// pre-split melt_freeze_d1_d4; used by melt_freeze_phase + the STEP-2 entry path.
+MeltFreezePhaseOutputs melt_freeze_d1_d4(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const torch::Tensor& n0c,
+    const torch::Tensor& n0r,
+    const torch::Tensor& n0so,
+    const torch::Tensor& n0go,
+    const torch::Tensor& rslopec,
+    const torch::Tensor& rslopecmu,
+    const torch::Tensor& rslopecd,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+) {
+    auto out  = melt_freeze_d1(state, forcing, pre, n0so, n0go, params, dtcld);
+    auto d234 = melt_freeze_d2_d4(state, forcing, pre, n0c, n0r, rslopec, rslopecmu, rslopecd, params, dtcld);
+    out.pinuc = d234.pinuc; out.ninuc = d234.ninuc;
+    out.pfrzdtc = d234.pfrzdtc; out.nfrzdtc = d234.nfrzdtc;
+    out.pfrzdtr = d234.pfrzdtr; out.nfrzdtr = d234.nfrzdtr;
+    out.delta_brs_freeze = d234.delta_brs_freeze;
+    return out;
 }
 
 MeltFreezePhaseOutputs melt_freeze_d5(

@@ -322,9 +322,37 @@ struct MeltFreezePhaseParams {
 
 MeltFreezePhaseParams default_melt_freeze_phase_params();
 
-// Stage-A STEP 2 split: D1-D4 (melt + ice-nuc + Bigg freezing) depends only on
-// state+aux+slopes — computed/applied INLINE before warm/cold. Returns D5 fields
-// zeroed. Mirrors Python melt_freeze_d1_d4_torch.
+// Stage-A STEP 3 split: D1 melt only (warm cells). Applied inline first; a
+// rebuild_aux then re-slopes before D2-D4. Returns D2-D5 zeroed. Mirrors Python
+// melt_freeze_d1_torch.
+MeltFreezePhaseOutputs melt_freeze_d1(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const torch::Tensor& n0so,
+    const torch::Tensor& n0go,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+);
+
+// Stage-A STEP 3 split: D2 contact + D3 Bigg-cloud (post-D2 cap) + D4 Bigg-rain,
+// computed on the POST-MELT/re-sloped state. Returns D1+D5 zeroed. Mirrors Python
+// melt_freeze_d2_d4_torch.
+MeltFreezePhaseOutputs melt_freeze_d2_d4(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const PreambleMf& pre,
+    const torch::Tensor& n0c,
+    const torch::Tensor& n0r,
+    const torch::Tensor& rslopec,
+    const torch::Tensor& rslopecmu,
+    const torch::Tensor& rslopecd,
+    const MeltFreezePhaseParams& params,
+    double dtcld
+);
+
+// Stage-A STEP 2 split: D1-D4 (melt + ice-nuc + Bigg freezing) combiner. Returns
+// D5 fields zeroed. Mirrors Python melt_freeze_d1_d4_torch.
 MeltFreezePhaseOutputs melt_freeze_d1_d4(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,

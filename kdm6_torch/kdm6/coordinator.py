@@ -601,33 +601,23 @@ class MeltFreezePhaseOutputs(NamedTuple):
     ngeml: torch.Tensor
 
 
-def melt_freeze_d1_d4_torch(
+def melt_freeze_d1_torch(
     state: CoordinatorState,
     forcing: CoordinatorForcing,
     pre: PreambleOutputs,
-    n0c: torch.Tensor,
-    n0r: torch.Tensor,
     n0so: torch.Tensor,
     n0go: torch.Tensor,
-    rslopec: torch.Tensor,
-    rslopecmu: torch.Tensor,
-    rslopecd: torch.Tensor,
     *,
     params: MeltFreezePhaseParams,
     dtcld: float,
 ) -> MeltFreezePhaseOutputs:
-    """Stage-A STEP 2 split: D1-D4 (melt + ice-nuc + Bigg freezing) — depends ONLY
-    on state+aux+slopes (NOT cold_out), so it can be applied INLINE before
-    warm/cold (Fortran kdm6.f90:1239-1511). Returns D5 fields zeroed. 1:1 mirror
-    of C++ melt_freeze_d1_d4.
-
-    Process order: D1 melting (T>T0c) → D2 contact freeze → D3 Bigg cloud →
-    D4 Bigg rain.
+    """Stage-A STEP 3 split: D1 melt only (warm cells). Applied inline first; a
+    rebuild then re-slopes before D2-D4 (Fortran kdm6.f90 melt :1224-1295 →
+    re-slope :1372-1430 → freeze :1435-1511). Returns D2-D5 zeroed. 1:1 mirror of
+    C++ melt_freeze_d1.
     """
     s = pre.slope
     z = torch.zeros_like(state.qc)
-
-    # ── D1: Melting (warm) ─────────────────────────────────────────────
     melt = _mf.melting_torch(
         state.qs, state.qg, state.qi, state.ni,
         state.t, forcing.p, forcing.den, pre.progb.rhox,
@@ -636,6 +626,36 @@ def melt_freeze_d1_d4_torch(
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
         params=params.melting, dtcld=dtcld,
     )
+    return MeltFreezePhaseOutputs(
+        psmlt=melt.psmlt, pgmlt=melt.pgmlt,
+        pimlt_qi=melt.pimlt_qi, pimlt_ni=melt.pimlt_ni,
+        sfac_melt=melt.sfac, gfac_melt=melt.gfac,
+        delta_brs_melt=melt.delta_brs,
+        pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z,        # D2-D4 → melt_freeze_d2_d4_torch
+        pfrzdtr=z, nfrzdtr=z, delta_brs_freeze=z,
+        pseml=z, nseml=z, pgeml=z, ngeml=z,            # D5
+    )
+
+
+def melt_freeze_d2_d4_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Stage-A STEP 3 split: D2 contact + D3 Bigg-cloud (post-D2 cap) + D4 Bigg-rain,
+    computed on the POST-MELT/re-sloped state. Returns D1+D5 zeroed. 1:1 mirror of
+    C++ melt_freeze_d2_d4.
+    """
+    s = pre.slope
+    z = torch.zeros_like(state.qc)
 
     # ── D2: Contact freezing ───────────────────────────────────────────
     rslopec2 = rslopec * rslopec
@@ -647,13 +667,7 @@ def melt_freeze_d1_d4_torch(
         params=params.contact, dtcld=dtcld,
     )
 
-    # ── D3: Bigg cloud ─────────────────────────────────────────────────
-    # Stage-A STEP 4: caps against the POST-D2 cloud reservoir — Fortran
-    # kdm6.f90 subtracts pinuc/ninuc from qci(1)/nci(1) (:1451,:1454) BEFORE
-    # :1469/:1478 cap pfrzdtc/nfrzdtc. Sequential freeze draw (D2 then D3 on a
-    # running qc/nc), not parallel caps vs entry qc. n0c is the SAME single
-    # re-sloped intercept (not recomputed after D2); only qc/nc advances. Mirror
-    # of C++ melt_freeze_d1_d4. AD-safe (qc_post_d2 = qc - pinuc(qc)).
+    # ── D3: Bigg cloud (STEP 4: caps vs POST-D2 qc/nc; Fortran :1451-1478) ──
     qc_post_d2 = state.qc - contact.pinuc
     nc_post_d2 = state.nc - contact.ninuc
     bigg_c = _mf.bigg_cloud_freezing_torch(
@@ -670,15 +684,43 @@ def melt_freeze_d1_d4_torch(
     )
 
     return MeltFreezePhaseOutputs(
-        psmlt=melt.psmlt, pgmlt=melt.pgmlt,
-        pimlt_qi=melt.pimlt_qi, pimlt_ni=melt.pimlt_ni,
-        sfac_melt=melt.sfac, gfac_melt=melt.gfac,
-        delta_brs_melt=melt.delta_brs,
+        psmlt=z, pgmlt=z, pimlt_qi=z, pimlt_ni=z,      # D1 → melt_freeze_d1_torch
+        sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
         pinuc=contact.pinuc, ninuc=contact.ninuc,
         pfrzdtc=bigg_c.pfrzdtc, nfrzdtc=bigg_c.nfrzdtc,
         pfrzdtr=bigg_r.pfrzdtr, nfrzdtr=bigg_r.nfrzdtr,
         delta_brs_freeze=bigg_r.delta_brs,
-        pseml=z, nseml=z, pgeml=z, ngeml=z,   # D5 deferred to melt_freeze_d5_torch
+        pseml=z, nseml=z, pgeml=z, ngeml=z,            # D5
+    )
+
+
+def melt_freeze_d1_d4_torch(
+    state: CoordinatorState,
+    forcing: CoordinatorForcing,
+    pre: PreambleOutputs,
+    n0c: torch.Tensor,
+    n0r: torch.Tensor,
+    n0so: torch.Tensor,
+    n0go: torch.Tensor,
+    rslopec: torch.Tensor,
+    rslopecmu: torch.Tensor,
+    rslopecd: torch.Tensor,
+    *,
+    params: MeltFreezePhaseParams,
+    dtcld: float,
+) -> MeltFreezePhaseOutputs:
+    """Combiner — D1-D4 from one state (D5 zeroed). 1:1 mirror of C++
+    melt_freeze_d1_d4. Used by melt_freeze_phase_torch + tests.
+    """
+    out = melt_freeze_d1_torch(state, forcing, pre, n0so, n0go, params=params, dtcld=dtcld)
+    d234 = melt_freeze_d2_d4_torch(
+        state, forcing, pre, n0c, n0r, rslopec, rslopecmu, rslopecd,
+        params=params, dtcld=dtcld)
+    return out._replace(
+        pinuc=d234.pinuc, ninuc=d234.ninuc,
+        pfrzdtc=d234.pfrzdtc, nfrzdtc=d234.nfrzdtc,
+        pfrzdtr=d234.pfrzdtr, nfrzdtr=d234.nfrzdtr,
+        delta_brs_freeze=d234.delta_brs_freeze,
     )
 
 
@@ -1643,29 +1685,38 @@ def kdm62d_one_step_torch(
     """
     pre = preamble_torch(state, forcing, sea_mask, params=full_params)
 
-    # ─── Stage-A STEP 2: SEQUENTIAL melt/freeze → rebuild → warm/cold/D5 ──────
-    # Mirror of C++ kdm62d_one_step. Fortran kdm6.f90 mutates the state with melt
-    # (D1, :1239-1295) + contact/Bigg freeze (D2-D4, :1442-1511) BEFORE the
-    # warm/cold rate loop (:1768), then RE-SLOPES (:1372-1430,:1546-1633) so the
-    # rate loop reads post-freeze intercepts/slopes. We mirror exactly:
-    #   1. D1-D4 rates from the ENTRY state (entry aux + entry pre).
-    #   2. apply them INLINE → `working` (entry pre: entry xl/cpm/supcol).
-    #   3. rebuild_aux_torch(working) → fresh pre2 + aux2 TOGETHER (stale-pre=806×).
-    #   4. warm/cold/D5 read `working` + pre2 + aux2 (post-freeze supcol/slopes/n0).
-    # D2-D4 rates still from ENTRY here (STEP 3 recomputes on post-melt; STEP 4
-    # makes the D3 cap sequential vs post-D2 qc). See STAGE_A_REARCH_BLUEPRINT.md.
-    mf14 = melt_freeze_d1_d4_torch(
-        state, forcing, pre,
-        aux.n0c, aux.n0r, aux.n0so, aux.n0go,
-        pre.rslopec, aux.rslopecmu, aux.rslopecd,
-        params=mf_params, dtcld=dtcld,
-    )
-    working = apply_melt_freeze_inline_torch(
-        state, mf14, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
+    # Mirror of C++ kdm62d_one_step. Fortran kdm6.f90 order: D1 melt (:1224-1295) →
+    # [homog freeze :1360-1370] → re-slope (:1372-1430) → D2-D4 freeze (:1435-1511) →
+    # re-slope (:1546-1633) → warm/cold rate loop (:1768). We mirror it stage-by-stage:
+    #   1. D1 melt from the ENTRY state (warm cells); apply inline → working1.
+    #   2. rebuild_aux_torch(working1) → pre1/aux1 (post-melt re-slope).
+    #   3. D2-D4 freeze from working1 + pre1/aux1 (cold cells); apply inline → working.
+    #   4. rebuild_aux_torch(working) → pre2/aux2 (post-freeze re-slope).
+    #   5. warm/cold/D5 read `working` + pre2/aux2.
+    # STEP 3 (this split) is bit-identical to the prior STEP-2 single-apply modulo
+    # float reassociation (melt warm / freeze cold are per-cell mutually exclusive,
+    # so D2-D4-on-post-melt ≡ D2-D4-on-entry). Hosts the (disabled) homog freeze
+    # between melt and the freeze re-slope (Stage H2).
+    # 1. D1 melt → working1.
+    mf_d1 = melt_freeze_d1_torch(
+        state, forcing, pre, aux.n0so, aux.n0go, params=mf_params, dtcld=dtcld)
+    working1 = apply_melt_freeze_inline_torch(
+        state, mf_d1, pre, dtcld=dtcld, xls=full_params.thermo.xls)
 
-    # Rebuild preamble + aux on the post-melt/freeze working state (qcr carried).
-    # entry `pre` supplies the substep-top thermo (qs/xl/rh/supsat) Fortran does
-    # NOT recompute post-freeze (kdm6.f90:785-786,:860-878) — spliced inside.
+    # 2. rebuild on the post-melt state (re-slope; entry thermo spliced).
+    pre1, aux1 = rebuild_aux_torch(
+        working1, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
+
+    # 3. D2-D4 freeze on the post-melt/re-sloped state → working.
+    mf_d234 = melt_freeze_d2_d4_torch(
+        working1, forcing, pre1,
+        aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
+        params=mf_params, dtcld=dtcld)
+    working = apply_melt_freeze_inline_torch(
+        working1, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+
+    # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
     pre2, aux2 = rebuild_aux_torch(
         working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
 
