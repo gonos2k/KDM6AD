@@ -69,6 +69,12 @@ void test_ice_accretion_inactive_below_thresholds() {
         assert(torch::allclose(out.praci, torch::zeros_like(in.qi)));
         assert(torch::allclose(out.piacr, torch::zeros_like(in.qi)));
 
+        // Gate-regression LOCK (#13): qi in (EPS=1e-15, old qcrmin=1e-9) → gate OPEN → praci>0
+        // (capped at qi/dtcld). FAILS if the qmin gate regresses to 1e-9 (would re-block this qi).
+        auto in_band = make_inputs(/*qi=*/1.0e-12, /*qr=*/1.0e-4);
+        auto out_band = ice_accretion_torch(in_band, p, 60.0);
+        assert(torch::all(out_band.praci > 0.0).item<bool>());
+
         auto in2 = make_inputs(/*qi=*/1.0e-5, /*qr=*/1.0e-12);  // qr too low
         auto out2 = ice_accretion_torch(in2, p, 60.0);
         assert(torch::allclose(out2.praci, torch::zeros_like(in2.qi)));
@@ -145,6 +151,12 @@ void test_isg_inactive_when_qi_low() {
         auto out = ice_to_snow_graupel_torch(in, p, 60.0);
         assert(torch::allclose(out.psaci, torch::zeros_like(in.qi)));
         assert(torch::allclose(out.pgaci, torch::zeros_like(in.qi)));
+
+        // Gate-regression LOCK (#14): qi in (EPS=1e-15, old 1e-9) → gate OPEN → psaci>0 (cap).
+        // FAILS if the qmin gate regresses to 1e-9.
+        auto in_band = make_isg_inputs(/*qi=*/1.0e-12, /*supcol=*/10.0);
+        auto out_band = ice_to_snow_graupel_torch(in_band, p, 60.0);
+        assert(torch::all(out_band.psaci > 0.0).item<bool>());
     } END_TEST();
 }
 

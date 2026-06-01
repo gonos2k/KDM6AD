@@ -105,6 +105,12 @@ def test_ice_accretion_inactive_below_thresholds():
     assert torch.allclose(praci, torch.zeros_like(praci))
     assert torch.allclose(piacr, torch.zeros_like(piacr))
 
+    # Gate-regression LOCK (#13): qi in (EPS=1e-15, old 1e-9) → gate OPEN → praci>0 (cap).
+    # FAILS if the qmin gate regresses to 1e-9.
+    inb = list(_ice_accretion_inputs(qi_value=1.0e-12, qr_value=1.0e-4))
+    praci_b, _ = ice_accretion_torch(*inb, params=p, dtcld=60.0)
+    assert torch.all(praci_b > 0.0)
+
     # 또: qr 너무 낮을 때
     inputs2 = list(_ice_accretion_inputs(qi_value=1.0e-5, qr_value=1.0e-12))
     praci2, piacr2 = ice_accretion_torch(*inputs2, params=p, dtcld=60.0)
@@ -274,6 +280,12 @@ def test_isg_inactive_when_qi_low():
     psaci, pgaci = ice_to_snow_graupel_torch(*inputs, params=p, dtcld=60.0)
     assert torch.allclose(psaci, torch.zeros_like(psaci))
     assert torch.allclose(pgaci, torch.zeros_like(pgaci))
+
+    # Gate-regression LOCK (#14): qi in (EPS=1e-15, old 1e-9) → gate OPEN → psaci>0 (cap).
+    # FAILS if the qmin gate regresses to 1e-9.
+    inb = _isg_inputs(qi_value=1.0e-12)
+    psaci_b, _ = ice_to_snow_graupel_torch(*inb, params=p, dtcld=60.0)
+    assert torch.all(psaci_b > 0.0)
 
 
 def test_isg_psaci_zero_when_qs_low():
@@ -469,6 +481,12 @@ def test_cwr_inactive_when_qc_low():
     assert torch.allclose(out.psacw, z)
     assert torch.allclose(out.pgacw, z)
     assert torch.allclose(out.piacw, z)
+
+    # Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old 1e-9) → gate OPEN → psacw>0.
+    # FAILS if the qmin gate regresses to 1e-9.
+    inb = _cwr_inputs(qc_value=1.0e-12)
+    out_b = cloud_water_riming_torch(*inb, params=p, dtcld=60.0)
+    assert torch.all(out_b.psacw > 0.0)
 
 
 def test_cwr_piacw_pk97_di50_threshold():
