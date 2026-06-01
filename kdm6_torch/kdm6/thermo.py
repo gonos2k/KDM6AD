@@ -88,7 +88,7 @@ def default_thermo_params() -> ThermoParams:
         xlv0=xlv0, xls=xls,
         xa=xa, xb=xb, xai=xai, xbi=xbi,
         psat=psat, ep2=ep2, den0=c.DEN0,
-        qmin=c.QCRMIN,
+        qmin=c.EPS,   # Fortran qmin = epsilon = 1e-15 (model_constants.F:10). 1:1 fix #1.
     )
 
 

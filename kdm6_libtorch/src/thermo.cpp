@@ -39,8 +39,12 @@ ThermoParams default_thermo_params() {
         t0c, ttp, xlv0, xls,
         xa, xb, xai, xbi, psat, ep2,
         constants::DEN0,
-        constants::QCRMIN,   // TODO: Fortran qmin=epsilon=1e-15 (model_constants.F:10);
-                             // switching to EPS broke wrfout flush — deferred.
+        constants::EPS,      // Fortran qmin = epsilon = 1e-15 (model_constants.F:10). 1:1 fix #1.
+                             // Faithful floors: cpm clamp(q) F:760, qs floor F:916/927, rh floor
+                             // F:917, supsat max(q,qmin) F:1695 (all match Fortran at 1e-15). The
+                             // div-safety clamps (pres-es: es<=0.99p ⇒ pres-es>=0.01p; den~1; pres~1e4)
+                             // never reach any floor, so 1e-15 vs 1e-9 is inert there. Fortran floors
+                             // qs at 1e-15 too (incl. inside diffac F:778), so this is fully 1:1.
     };
 }
 
