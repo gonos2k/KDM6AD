@@ -2,12 +2,12 @@
 KDM6 melting / freezing oracle — Step D.
 
 원본: module_mp_kdm6.F (Step D는 여러 영역에 분산):
-  D1 melting (1317-1392):
+  D1 melting (1284-1342):
        psmlt + nsmlt + pgmlt + ngmlt + pimlt (instantaneous)
-  D2 contact freezing — pinuc + ninuc (1534-1559)
-  D3 immersion freezing (Bigg cloud) — pfrzdtc + nfrzdtc (1561-1589)
-  D4 rain freezing (Bigg) — pfrzdtr + nfrzdtr (1591-1613)
-  D5 enhanced melting — pseml/nseml/pgeml/ngeml (2334-2366)
+  D2 contact freezing — pinuc + ninuc (1485-1507)
+  D3 immersion freezing (Bigg cloud) — pfrzdtc + nfrzdtc (1512-1537)
+  D4 rain freezing (Bigg) — pfrzdtr + nfrzdtr (1542-1561)
+  D5 enhanced melting — pseml/nseml/pgeml/ngeml (2276-2301)
 
 본 모듈은 sub-step 단위 함수를 누적 추가한다. Step D가 Fortran의 *state mutation 집중*
 영역이므로 oracle은 모든 rate를 산출하고 caller가 mutation을 적용한다.
@@ -122,7 +122,7 @@ def melting_torch(
     params: MeltingParams,
     dtcld: float,
 ) -> MeltingOutputs:
-    """Fortran 1317-1392 — psmlt + pgmlt + pimlt.
+    """Fortran 1284-1342 — psmlt + pgmlt + pimlt.
 
     Outer gate: T > T0c (warm). 모든 process inactive in cold.
 
@@ -183,7 +183,7 @@ def melting_torch(
     gfac_raw = rslope_g * n0go / torch.clamp(qg, min=params.qcrmin)
     gfac = torch.where(graupel_active & (qg > params.qcrmin), gfac_raw, zero)
 
-    # delta_brs = pgmlt / max(rhox, dens) (Fortran 1378-1380)
+    # delta_brs = pgmlt / max(rhox, dens) (Fortran 1325-1328)
     rhox_safe = torch.clamp(rhox, min=c.DENS)
     delta_brs = torch.where(graupel_active, pgmlt / rhox_safe, zero)
 
@@ -252,7 +252,7 @@ def contact_freezing_torch(
     params: ContactFreezingParams,
     dtcld: float,
 ) -> ContactFreezingOutputs:
-    """Fortran 1534-1559 — Meyers contact freezing of cloud water → cloud ice.
+    """Fortran 1485-1507 — Meyers contact freezing of cloud water → cloud ice.
 
     Returns rates over `dtcld` (Fortran 산식이 ·dtcld 후 cap).
     """
@@ -335,7 +335,7 @@ def bigg_cloud_freezing_torch(
     params: BiggCloudParams,
     dtcld: float,
 ) -> BiggCloudOutputs:
-    """Fortran 1561-1589 — Bigg immersion freezing of cloud water → ice."""
+    """Fortran 1512-1537 — Bigg immersion freezing of cloud water → ice."""
     zero = torch.zeros_like(qc)
     active = (supcol > 0) & (qc > params.qmin)
 
@@ -404,7 +404,7 @@ def bigg_rain_freezing_torch(
     params: BiggRainParams,
     dtcld: float,
 ) -> BiggRainOutputs:
-    """Fortran 1591-1613 — Bigg freezing of rain → graupel.
+    """Fortran 1542-1561 — Bigg freezing of rain → graupel.
 
     State mutation outputs:
         qg += pfrzdtr,   qr -= pfrzdtr,   brs += delta_brs (= pfrzdtr/denr),
@@ -475,7 +475,7 @@ def enhanced_melting_torch(
     params: EnhancedMeltingParams,
     dtcld: float,
 ) -> EnhancedMeltingOutputs:
-    """Fortran 2334-2366 — enhanced melting by accreted water.
+    """Fortran 2276-2301 — enhanced melting by accreted water.
 
     pseml = min(max(cliq·supcol·(paacw+psacr)/xlf, -qs/dtcld), 0)
     pgeml = min(max(cliq·supcol·(paacw+pgacr)/xlf, -qg/dtcld), 0)

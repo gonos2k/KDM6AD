@@ -257,14 +257,14 @@ WarmPhaseParams default_warm_phase_params();
 
 // ─── F1g+: pcact + satadj applied to post-state-update / post-reclass state ─
 //
-// Mirrors Fortran module_mp_kdm6.f90:2846-2895 — the entire `do i = its, ite`
-// block that runs AFTER mass balance (:2680-2823) and reclassifications
-// (:2757-2763 + :2833-2842). Computes pcact + ncact from the post-mass-balance state,
+// Mirrors Fortran module_mp_kdm6.F:2896-2945 — the entire `do i = its, ite`
+// block that runs AFTER mass balance (:2730-2873) and reclassifications
+// (:2807-2813 + :2883-2892). Computes pcact + ncact from the post-mass-balance state,
 // applies them, recomputes qs1, runs satadj for pcond, then applies pcond
-// (including the cloud_complete_evap NC→NCCN transfer at :2887-2889).
+// (including the cloud_complete_evap NC→NCCN transfer at :2937-2939).
 //
 // xl, cpm taken from the original preamble (Fortran sets these once at
-// :785-786 and reuses them through the satadj block).
+// :835-836 and reuses them through the satadj block).
 //
 // Pure functional construction — autograd graph preserved.
 CoordinatorState apply_satadj_step(
@@ -289,7 +289,7 @@ WarmPhaseOutputs warm_phase(
     const WarmPhaseParams& params,
     double dtcld,
     // ThermoParams needed inside warm_phase to recompute qs1 from t_post_pcact
-    // before satadj (Fortran module_mp_kdm6.f90:2872-2893 sequential semantics).
+    // before satadj (Fortran module_mp_kdm6.F:2922-2943 sequential semantics).
     // Default `{}` value preserves backward compatibility for callers that don't
     // need true sequential pcact ordering (test_smoke direct C++ entry uses
     // this default; runtime.cpp + coordinator entry pass the operational value).
@@ -551,8 +551,8 @@ CoordinatorState kdm62d_step(
     double dtcldcr = constants::DTCLDCR
 );
 
-// ─── Step F1d2: group conservation limiters (Fortran 2410-2547 cold-arm +
-//                2607-2678 warm-arm) ──────────────────────────────────────────
+// ─── Step F1d2: group conservation limiters (Fortran 2460-2651 cold-arm +
+//                2657-2728 warm-arm) ──────────────────────────────────────────
 //
 // Scaled copies of the three phase-output structs after the 14 Fortran group
 // conservation budgets. Each budget: value=max(floor,reservoir);
@@ -583,7 +583,7 @@ ConservedRates scale_rates_for_conservation(
     double dtcld
 );
 
-// ─── Step F1e: state mutation update (Fortran 2680-2823 직역) ────────────────
+// ─── Step F1e: state mutation update (Fortran 2730-2873 직역) ────────────────
 //
 // Python state_update_torch와 1:1 정합. Mass + number + energy + brs 통합 갱신
 // + nonneg clamp. Threshold cleanup은 *별도* (apply_threshold_cleanup 사용).
@@ -604,14 +604,14 @@ CoordinatorState state_update(
     double dtcld,
     double xls = 2.85e6,    // CONSTANT latent heat of sublimation (J/kg) — Fortran XLS.
                             // Fusion xlf(T) = xls - xl(T) is DERIVED inside (temperature-
-                            // dependent), matching module_mp_kdm6.f90:2596. Caller passes
+                            // dependent), matching module_mp_kdm6.F:2646. Caller passes
                             // thermo.xls so the constant has a single source.
     const CoordinatorState* delta_src = nullptr  // Stage-A STEP 1: state to compute
                             // delta2/delta3 from (the ENTRY state) when `state` is a
                             // post-melt/freeze working base; nullptr → use `state`.
 );
 
-// ─── Step F1h: paired threshold cleanup (Fortran 2899-2920) ─────────────────
+// ─── Step F1h: paired threshold cleanup (Fortran 2949-2970) ─────────────────
 //
 // q*<=qmin (qc/qi) 또는 q*<=qcrmin (qr/qs/qg) 셀에서:
 //   q* = 0; paired number도 0 (qc/qr/qi pair만)
@@ -623,7 +623,7 @@ CoordinatorState apply_threshold_cleanup(
     double qcrmin = 1.0e-9
 );
 
-// ─── Step F1f: Picons reclassification (Fortran 2757-2763, Park-Lim 2023) ───
+// ─── Step F1f: Picons reclassification (Fortran 2807-2813, Park-Lim 2023) ───
 //
 // 평균 ice 직경 ≥ 200μm → qi → qs로 재분류 (T<0°C, qi>qmin).
 // avedia_i를 post-update qi/ni/den으로 inline 재진단 (review6#1/review7#1).
@@ -637,7 +637,7 @@ CoordinatorState reclassify_large_ice_to_snow(
     double t0c = 273.15
 );
 
-// ─── Step F1g: rain→cloud reclassification (Fortran 2833-2842) ──────────────
+// ─── Step F1g: rain→cloud reclassification (Fortran 2883-2892) ──────────────
 //
 // 평균 빗방울 직경 ≤ 82μm → qr → qc 회수 (drizzle-sized).
 // avedia_r post-update qr/nr/den + LAMDARMAX/MIN clamp.
@@ -649,11 +649,11 @@ CoordinatorState reclassify_small_rain_to_cloud(
     double di_threshold = 82.0e-6
 );
 
-// ─── Step F1g'': homogeneous freeze (Fortran 1359-1369) — CURRENTLY UNWIRED ──
+// ─── Step F1g'': homogeneous freeze (Fortran 1409-1419) — CURRENTLY UNWIRED ──
 //
 // At supcol > supcol_threshold (default 40, i.e., T < t0c-40 ≈ 233K), all qc
 // is instantaneously converted to qi with fusion latent heat release. Mirrors
-// Fortran `module_mp_kdm6.f90:1359-1369`.
+// Fortran `module_mp_kdm6.F:1409-1419`.
 //
 // NOT CURRENTLY CALLED by kdm62d_one_step (2026-05-30). As a pre-cold freezing
 // step it must run BEFORE the cold phase with aux (n0i) REBUILT from the post-
@@ -668,12 +668,12 @@ CoordinatorState apply_homogeneous_freeze_supercold(
     double supcol_threshold = 40.0
 );
 
-// ─── Step F1i: DSD number limiters (Fortran 2922-2965) ──────────────────────
+// ─── Step F1i: DSD number limiters (Fortran 2972-3015) ──────────────────────
 //
 // (q, n) 쌍에 대해 lamda = (pidn·n / (q·den))^(1/dm). lamda가 [lamda_min,
 // lamda_max] 밖이면 boundary로 snap, n = den·q·lamda^dm/pidn 재계산.
 // rain (LAMDAR), cloud (LAMDAC, Cohard-Pinty pidnc), ice (LAMDAI). Plus
-// absolute caps NRMAX/NCMAX (Fortran 2956-2965).
+// absolute caps NRMAX/NCMAX (Fortran 3006-3015).
 // nccn clamp는 nccn 부재로 미적용.
 //
 CoordinatorState apply_dsd_number_limiters(
@@ -691,7 +691,7 @@ CoordinatorState apply_dsd_number_limiters(
 //   3. surface accumulation (bottom layer)
 //
 // Note: `work1_qr/qs/qg/qi`는 caller 측에서 이미 `work / delz` (E1 normalize) 적용된
-// 텐서. ProgB/slope re-call (Fortran 1205-1218)은 *substep 내부에서* work1을 재진단
+// 텐서. ProgB/slope re-call (Fortran 1255-1268)은 *substep 내부에서* work1을 재진단
 // 하지만, 본 oracle/wrapper는 시간 불변 work1 가정 (Python과 동일).
 //
 struct SedimentationOutputs {

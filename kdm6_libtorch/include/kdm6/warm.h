@@ -2,15 +2,15 @@
 //
 // KDM6 warm rain processes — Lim & Hong / Cohard-Pinty 더블모멘트.
 //
-// 원본: module_mp_kdm6.F: 1739-1855 (warm rain block 5 process)
+// 원본: module_mp_kdm6.F: 1693-1801 (warm rain block 5 process)
 //
 // Python oracle: kdm6_torch/kdm6/warm.py — 본 헤더와 1:1 정합.
 //
 // Sub-steps (procedures/kdm62d-port-decomposition.md):
-//   B1 autoconv          (Fortran 1758-1769) — autoconv_torch
-//   B2 accretion         (Fortran 1771-1794) — accretion_torch
-//   B3 self-collection   (Fortran 1799-1826) — self_collection_torch
-//   B4 rain evap         (Fortran 1828-1853) — rain_evap_torch
+//   B1 autoconv          (Fortran 1697-1717) — autoconv_torch
+//   B2 accretion         (Fortran 1718-1742) — accretion_torch
+//   B3 self-collection   (Fortran 1743-1774) — self_collection_torch
+//   B4 rain evap         (Fortran 1775-1801) — rain_evap_torch
 //
 
 #include "kdm6/constants.h"

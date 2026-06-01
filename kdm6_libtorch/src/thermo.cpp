@@ -22,7 +22,7 @@ ThermoParams default_thermo_params() {
     const double psat = 610.78;
     const double ep2 = rd / rv;
 
-    // Fortran kdm6.f90:851-858 — note cvap = cpv (line 851), so dldt sign is
+    // Fortran kdm6.F:901-908 — note cvap = cpv (line 901), so dldt sign is
     //   dldt  = cvap - cliq = cpv - cliq   (NOT cliq-cpv as Python oracle has it).
     // Python oracle kdm6_torch/kdm6/thermo.py:73 inverted this sign, and C++
     // mirrored Python. That made xa/xai negative where Fortran has them positive,
@@ -50,8 +50,8 @@ torch::Tensor compute_cpm(const torch::Tensor& q, const ThermoParams& p) {
 }
 
 torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
-    // Fortran kdm6.f90:711 xlcal(x)=xlv0-xlv1*(x-t0c), with xlv1=cl-cpv
-    // (kdm6.f90:3052). xlv1 is POSITIVE — distinct from `dldt = cvap-cliq`
+    // Fortran kdm6.F:761 xlcal(x)=xlv0-xlv1*(x-t0c), with xlv1=cl-cpv
+    // (kdm6.F:3102). xlv1 is POSITIVE — distinct from `dldt = cvap-cliq`
     // (NEGATIVE) used in qs's xa/xb formula. Two related-looking expressions,
     // opposite signs — don't conflate (see feedback-dldt-sign-convention).
     const double xlv1 = p.cliq - p.cpv;
@@ -115,7 +115,7 @@ torch::Tensor compute_diffac(
     const torch::Tensor& den, const torch::Tensor& qs,
     const ThermoParams& p
 ) {
-    // Fortran kdm6.f90:725-728 — diffac = d*a²/(xka*rv*c²) + 1/(e*diffus)
+    // Fortran kdm6.F:775-778 — diffac = d*a²/(xka*rv*c²) + 1/(e*diffus)
     auto t_safe = torch::clamp(t, /*min=*/1.0);
     auto viscos = 1.496e-6 * (t_safe * torch::sqrt(t_safe)) / (t_safe + 120.0) / torch::clamp(den, /*min=*/p.qmin);
     auto xka = 1.414e3 * viscos * den;

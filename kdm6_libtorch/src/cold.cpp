@@ -873,7 +873,7 @@ torch::Tensor snow_evap_torch(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// C6': Graupel evaporation (pgevp) — Fortran 2496-2505 (codex#4 / Task #53)
+// C6': Graupel evaporation (pgevp) — Fortran 2435-2441 (codex#4 / Task #53)
 // ═══════════════════════════════════════════════════════════════════════════
 
 GraupelEvapParams default_graupel_evap_params() {

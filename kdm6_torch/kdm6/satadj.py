@@ -1,7 +1,7 @@
 """
 KDM6 saturation adjustment — Step B5.
 
-원본: module_mp_kdm6.F: 2990-3011
+원본: module_mp_kdm6.F: 2927-2943
 
 Microphysics 끝에서 qv ↔ qc 1-step Clausius-Clapeyron 보정. latent heat
 feedback (`xl²/(rv·cpm)·qs/t²` 항)으로 응결/증발이 t/q를 동시에 변경하는 effect를
@@ -60,7 +60,7 @@ def saturation_adjustment_torch(
     params: SatAdjParams,
     dtcld: float,
 ) -> torch.Tensor:
-    """Fortran 2995-2999 — saturation adjustment rate.
+    """Fortran 2927-2931 — saturation adjustment rate.
 
     Returns
     -------

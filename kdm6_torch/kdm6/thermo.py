@@ -2,12 +2,12 @@
 KDM6 thermodynamics 진단 모듈 — Step F0.
 
 원본: module_mp_kdm6.F (코드 곳곳에 inline functions + 진단 코드):
-  - cpm(q) = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv             (Fortran 710)
-  - xl(t)  = xlv0 - xlv1·(t-t0c)                                (Fortran 711)
-  - supcol = T0c - clamp(t, 153.15, 393.15)                     (Fortran 1224)
-  - qs(:,:,1) = psat·exp(log(tr)·xa)·exp(xb·(1-tr))             (Fortran 863)
+  - cpm(q) = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv             (Fortran 760)
+  - xl(t)  = xlv0 - xlv1·(t-t0c)                                (Fortran 761)
+  - supcol = T0c - clamp(t, 153.15, 393.15)                     (Fortran 1274)
+  - qs(:,:,1) = psat·exp(log(tr)·xa)·exp(xb·(1-tr))             (Fortran 913)
                 ep2·qs / (p - qs)
-  - qs(:,:,2) = (T<t0c) psat·exp(log(tr)·xai)·exp(xbi·(1-tr))   (Fortran 871)
+  - qs(:,:,2) = (T<t0c) psat·exp(log(tr)·xai)·exp(xbi·(1-tr))   (Fortran 921)
                 else identical to qs(:,:,1)
   - rh(:,:,1) = max(q/qs1, qmin),  rh(:,:,2) = max(q/qs2, qmin)
   - supsat = max(q, qmin) - qs1
@@ -71,7 +71,7 @@ def default_thermo_params() -> ThermoParams:
     psat = 610.78
     ep2 = rd / rv
 
-    # Goff-Gratch derivations — Fortran kdm6.f90:851-858. Note `cvap = cpv` so
+    # Goff-Gratch derivations — Fortran module_mp_kdm6.F:901-908. Note `cvap = cpv` so
     # dldt = cvap - cliq = cpv - cliq (NOT cliq-cpv). xa, xai are POSITIVE.
     dldt = cpv - cliq
     hvap = xlv0
@@ -96,28 +96,28 @@ def default_thermo_params() -> ThermoParams:
 
 
 def compute_cpm(q: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 710: cpm = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv."""
+    """Fortran 760: cpm = cpd·(1-max(q,qmin)) + max(q,qmin)·cpv."""
     q_safe = torch.clamp(q, min=params.qmin)
     return params.cpd * (1.0 - q_safe) + q_safe * params.cpv
 
 
 def compute_xl(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran kdm6.f90:711 xlcal(x) = xlv0 - xlv1*(x-t0c), where xlv1 = cl-cpv
-    (kdm6init line ~3052). NOTE: this xlv1 is POSITIVE (cliq>cpv), distinct
+    """Fortran module_mp_kdm6.F:761 xlcal(x) = xlv0 - xlv1*(x-t0c), where xlv1 = cl-cpv
+    (kdm6init line ~3102). NOTE: this xlv1 is POSITIVE (cliq>cpv), distinct
     from the `dldt = cvap-cliq` (NEGATIVE) used for xa/xb in qs formula.
     See [[feedback-dldt-sign-convention]].
     """
-    xlv1 = params.cliq - params.cpv  # Fortran: xlv1 = cl - cpv (kdm6.f90:3052)
+    xlv1 = params.cliq - params.cpv  # Fortran: xlv1 = cl - cpv (module_mp_kdm6.F:3102)
     return params.xlv0 - xlv1 * (t - params.t0c)
 
 
 def compute_supcol(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 1224: supcol = T0c - clamp(t, 153.15, 393.15)."""
+    """Fortran 1274: supcol = T0c - clamp(t, 153.15, 393.15)."""
     return params.t0c - torch.clamp(t, min=153.15, max=393.15)
 
 
 def compute_qs_water(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 863-866: saturation mixing ratio w.r.t. water (Goff-Gratch).
+    """Fortran 913-916: saturation mixing ratio w.r.t. water (Goff-Gratch).
 
         es = psat · exp(log(ttp/t)·xa) · exp(xb·(1 - ttp/t))
         es = min(es, 0.99·p)
@@ -133,7 +133,7 @@ def compute_qs_water(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) 
 
 
 def compute_qs_ice(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 870-877: saturation w.r.t. ice (T<t0c) or water (T≥t0c).
+    """Fortran 920-927: saturation w.r.t. ice (T<t0c) or water (T≥t0c).
 
     Note: 본 oracle은 *T<t0c일 때만 ice 식*, 그 외는 water 식과 동일. Fortran이
     `if (t < ttp) ice else water` 패턴을 사용.
@@ -157,7 +157,7 @@ def compute_diffac(
     *,
     params: ThermoParams,
 ) -> torch.Tensor:
-    """work1 diffusion factor (Fortran kdm6.f90:725-728):
+    """work1 diffusion factor (Fortran module_mp_kdm6.F:775-778):
     diffac = den·xl²/(xka·rv·t²) + 1/(qs·diffus). 1:1 mirror of C++
     thermo::compute_diffac. xka = thermal conductivity, diffus = vapor
     diffusivity. AD-safe (clamp/sqrt/exp/log only, no .item()).
@@ -195,7 +195,7 @@ def compute_work2_venfac(
     p: torch.Tensor, t: torch.Tensor, den: torch.Tensor,
     *, params: ThermoParams,
 ) -> torch.Tensor:
-    """Fortran 729-730: venfac(p, t, den) = (viscos/diffus)^(1/3) / sqrt(viscos) · sqrt(sqrt(den0/den)).
+    """Fortran 779-780: venfac(p, t, den) = (viscos/diffus)^(1/3) / sqrt(viscos) · sqrt(sqrt(den0/den)).
 
     Used as `work2` in deposition/sublimation/melting산식.
     """

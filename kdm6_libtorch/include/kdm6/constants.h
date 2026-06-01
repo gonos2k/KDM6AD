@@ -74,7 +74,7 @@ inline constexpr double NRMIN  = 1.0e-2;
 inline constexpr double NRMAX  = 5.0e7;
 inline constexpr double NCMAX  = 5.0e10;
 inline constexpr double NCMIN  = 1.0e-2;
-// CCN reservoir clamp — Fortran module_mp_kdm6.F:751 (entry) and :2956 (cleanup).
+// CCN reservoir clamp — Fortran module_mp_kdm6.F:801 (entry) and :3006 (cleanup).
 // Mirrored at coordinator.cpp entry-prologue and post-rate cleanup; tested at test_c_abi.cpp.
 inline constexpr double NCCN_MIN = 1.0e8;
 inline constexpr double NCCN_MAX = 2.0e10;

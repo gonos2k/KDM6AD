@@ -457,7 +457,7 @@ def test_paired_cleanup_zeros_paired_number():
     assert torch.allclose(out.qg, torch.zeros_like(out.qg))
 
 
-# review9#2 regression: DSD number limiters (Fortran 3039-3082).
+# review9#2 regression: DSD number limiters (Fortran 2973-3014).
 
 
 def test_dsd_limiter_clamps_oversized_nr():

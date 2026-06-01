@@ -2,9 +2,9 @@
 KDM6 slope parameter oracle — `slope_kdm6` / `slope_rain` Fortran 직역.
 
 원본:
-  - module_mp_kdm6.F: 3536-3666 (`slope_kdm6`)
-  - module_mp_kdm6.F: 3668-3717 (`slope_rain`)
-  - module_mp_kdm6.F: 3270-3415 (`kdm6init` 파생 상수)
+  - module_mp_kdm6.F: 3427-3557 (`slope_kdm6`)
+  - module_mp_kdm6.F: 3559-3608 (`slope_rain`)
+  - module_mp_kdm6.F: 3125-3308 (`kdm6init` 파생 상수)
 """
 from __future__ import annotations
 

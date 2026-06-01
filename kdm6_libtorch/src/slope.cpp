@@ -211,9 +211,9 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     auto rslope2_g = torch::where(graupel_mask, scalar_like(params.rslopeg2max, inputs.qg), rslope_g * rslope_g);
     auto rslope3_g = torch::where(graupel_mask, scalar_like(params.rslopeg3max, inputs.qg), rslope2_g * rslope_g);
 
-    // Fortran slope_kdm6 (kdm6.f90:3477) gates ice slope with `qci .le. qmin`
+    // Fortran slope_kdm6 (kdm6.F:3527) gates ice slope with `qci .le. qmin`
     // where qmin = epsilon = 1e-15 (passed in from driver). EPS matches this.
-    // (kdm6.f90:1417,1602 use a DIFFERENT 1e-14 gate for the n0i/lamda snap
+    // (kdm6.F:1467,1652 use a DIFFERENT 1e-14 gate for the n0i/lamda snap
     // outside slope_kdm6 — that lives in apply_dsd_number_limiters land, not
     // here. Don't conflate the two.)
     auto ice_mask = (inputs.qi <= constants::EPS) | (inputs.den <= 0.0) | (inputs.ni <= 0.0);

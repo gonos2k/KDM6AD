@@ -61,7 +61,7 @@ State coord_to_state(const CoordinatorState& c, const State& orig, const Forcing
 
 CoordinatorForcing build_forcing(const Forcing& f) {
     // dend = air density (NOT density × delz).
-    // Fortran reference `module_mp_kdm6.f90:762` sets `dend(i,k) = den(i,k)`.
+    // Fortran reference `module_mp_kdm6.F:812` sets `dend(i,k) = den(i,k)`.
     // Python oracle's `CoordinatorForcing.dend` is mis-documented as
     // `density × delz` at `coordinator.py:63` — that label is wrong vs
     // operational Fortran. Codex stop-gate review caught this when the
@@ -81,7 +81,7 @@ CoordinatorForcing build_forcing(const Forcing& f) {
 }  // namespace
 
 // Operational auxiliary diagnostics — physics-based, mirroring Fortran
-// module_mp_kdm6.f90:1385-1430 (n0 intercepts) and :1629-1630 (work1 = diffac).
+// module_mp_kdm6.F:1435-1480 (n0 intercepts) and :1679-1680 (work1 = diffac).
 // Stage-A STEP 0: PROMOTED out of the anonymous namespace (declared in
 // coordinator.h) so rebuild_aux + the symbol-parity contract see it; matches the
 // Python build_default_aux_torch. Uses only cloud_dsd::/thermo:: + constants.
@@ -99,7 +99,7 @@ CoordinatorForcing build_forcing(const Forcing& f) {
 //   - work1_water = diffac(xl,  p, t, den, qs_water)  (Fortran work1(:,:,1))
 //     work1_ice   = diffac(xls, p, t, den, qs_ice)    (Fortran work1(:,:,2))
 //     work1_r     = work1_water (rain evap uses water diffusivity, review3#1).
-//   - avedia_i = rslope_i·(g4pmi/g1pmi)^(1/3)  (Fortran 1622).
+//   - avedia_i = rslope_i·(g4pmi/g1pmi)^(1/3)  (Fortran 1672).
 //
 // COUPLING NOTE: n0 (rate numerators) and work1 (evap/dep denominators) MUST be
 // installed together. A prior work1-only attempt collapsed QC because it changed
@@ -135,13 +135,13 @@ CoordinatorAuxDiagnostics build_default_aux(
                     : torch::pow(rslope_i, constants::MUI);
     auto rslopecmu = torch::pow(rslopec, constants::MUC);
 
-    // n0 intercepts (Fortran 1385-1387 default formula; clamped rslope already
+    // n0 intercepts (Fortran 1435-1437 default formula; clamped rslope already
     // reflects the lamda bounds).
     auto n0r = cs.nr / (rslope_r * rslopemu_r * g1pmr);
     auto n0i = cs.ni / (rslope_i * rslopemu_i * g1pmi);
     auto n0c = (constants::MUC + 1.0) * cs.nc / (rslopec * rslopecmu);
 
-    // work1 diffusion factors (Fortran 1629-1630).
+    // work1 diffusion factors (Fortran 1679-1680).
     auto xl    = thermo::compute_xl(cs.t, tp);
     auto xls_t = torch::full_like(cs.t, tp.xls);
     auto qs1   = thermo::compute_qs_water(cs.t, cf.p, tp);
@@ -186,16 +186,16 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
 // the working state — never one without the other (stale-pre = 806× class).
 //
 // THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
-// (kdm6.f90:1372-1430,:1546-1633,:1627-1633) recomputes the GEOMETRY (rslope*/
+// (kdm6.F:1422-1480,:1596-1683,:1677-1683) recomputes the GEOMETRY (rslope*/
 // n0*/ProgB/work2/n0sfac) and supcol on the post-freeze state, but does NOT
-// recompute the saturation/latent-heat thermo: cpm(:785), xl(:786), qs1/qs2/
-// rh/sw(:860-878) are computed ONCE (entry/substep-top) and the rate loop reads
-// those entry-staged values (supsat=q-qs at :1645/:1772 uses entry qs; q=qv is
+// recompute the saturation/latent-heat thermo: cpm(:835), xl(:836), qs1/qs2/
+// rh/sw(:910-928) are computed ONCE (entry/substep-top) and the rate loop reads
+// those entry-staged values (supsat=q-qs at :1695/:1822 uses entry qs; q=qv is
 // melt/freeze-invariant). So we SPLICE the entry-staged thermo back into the
 // rebuilt preamble — otherwise warm/cold would see post-freeze qs (exponential
 // in t ⇒ materially wrong supersaturation) and post-freeze xl. work1=diffac(xl,
 // p,t,den,qs) is re-slope-recomputed with POST-FREEZE t but ENTRY xl/qs
-// (:1629-1630), so we rebuild it with the entry thermo + the working t.
+// (:1679-1680), so we rebuild it with the entry thermo + the working t.
 RebuiltDiagnostics rebuild_aux(
     const CoordinatorState& state,         // working (post-melt/freeze)
     const PreambleOutputs& entry_pre,      // entry/substep-top preamble (thermo source)
@@ -209,7 +209,7 @@ RebuiltDiagnostics rebuild_aux(
     pre.rh_w = entry_pre.rh_w;  pre.rh_ice = entry_pre.rh_ice;
     pre.supsat = entry_pre.supsat;
     auto aux = build_default_aux(state, forcing, pre.rslopec, params.thermo);
-    // work1 = diffac(ENTRY xl/qs, POST-FREEZE t) — Fortran kdm6.f90:1629-1630.
+    // work1 = diffac(ENTRY xl/qs, POST-FREEZE t) — Fortran kdm6.F:1679-1680.
     auto xls_t = torch::full_like(state.t, params.thermo.xls);
     aux.work1_water = thermo::compute_diffac(entry_pre.xl, forcing.p, state.t, forcing.den, entry_pre.qs1, params.thermo);
     aux.work1_ice   = thermo::compute_diffac(xls_t,        forcing.p, state.t, forcing.den, entry_pre.qs2, params.thermo);
@@ -249,7 +249,7 @@ FnResult kdm6_fn(const State& state,
 
     // [xland plumbing] sea_mask + per-cell ncmin are state-independent ⇒ derived
     // ONCE. xland may be (im, jme) 2-D or flat (im*jme,); WRF slmsk: xland>=1.5 →
-    // sea. The qcr override (sea→qc0=8.4e-5, land→qc1=8.4e-4; Fortran :790-796) is
+    // sea. The qcr override (sea→qc0=8.4e-5, land→qc1=8.4e-4; Fortran :840-846) is
     // re-applied per sub-cycle since aux is rebuilt each substep.
     torch::Tensor sea_mask;
     const bool use_xland_qcr = xland.has_value();
@@ -273,13 +273,13 @@ FnResult kdm6_fn(const State& state,
     }
 
     // ─── Stage-A sediment-order fix (Stage S2): per-substep [sediment → microphysics] ──
-    // Fortran's dtcld sub-cycle (kdm6.f90:826) does, EACH substep: sediment at the
-    // TOP (:1069) → re-slope/ProgB/n0 (:1372-1430) → melt/freeze/rate block (:1224+)
+    // Fortran's dtcld sub-cycle (kdm6.F:876) does, EACH substep: sediment at the
+    // TOP (:1119) → re-slope/ProgB/n0 (:1422-1480) → melt/freeze/rate block (:1274+)
     // → state_update. The port previously did all microphysics then sedimented ONCE,
     // inverting the order. We now split the timestep into `loops` sub-cycles and, per
     // substep: fall(dtcld) on the current state → rebuild aux on the post-fall state →
     // run ONE microphysics pass (kdm62d_one_step) over dtcld. The Fortran entry-prologue
-    // nccn clamp (:751) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
+    // nccn clamp (:801) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
     // Fortran (clamp before the sub-cycle loop, not per substep). For loops=1 (dt<=dtcldcr;
     // every validation/typical case) this == Stage S1's single sub-cycle. K-flip: WRF
     // stages K=0 at surface, sedimentation_chain wants K=0 at TOP; cf is constant so its
@@ -294,11 +294,11 @@ FnResult kdm6_fn(const State& state,
     const double dtcld = dt / static_cast<double>(loops);
 
     auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
-    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :751, ONCE
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :801, ONCE
     torch::Tensor rain_inc, snow_inc, graup_inc;
 
     for (int i = 0; i < loops; ++i) {
-        // 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (Fortran :1069), per-substep mstep.
+        // 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (Fortran :1119), per-substep mstep.
         CoordinatorState cur_pyc{
             flip_k(cur.qv), flip_k(cur.qc), flip_k(cur.qr),
             flip_k(cur.qs), flip_k(cur.qg), flip_k(cur.qi),
@@ -334,12 +334,12 @@ FnResult kdm6_fn(const State& state,
         snow_inc  = (i == 0) ? sed.snow_increment    : snow_inc  + sed.snow_increment;
         graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
 
-        // 2. Re-slope + aux on the POST-FALL state (Fortran :1372-1430 / :1629-1630).
+        // 2. Re-slope + aux on the POST-FALL state (Fortran :1422-1480 / :1679-1680).
         auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p);
         auto aux = build_default_aux(cur, cf, rslopec, full_p.thermo);
         if (use_xland_qcr) aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
 
-        // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1224+.
+        // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
         cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld);
     }
 

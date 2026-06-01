@@ -3,9 +3,9 @@
 // KDM6 ProgB_param — graupel volume + density-dependent DSD parameters.
 //
 // 원본:
-//   - module_mp_kdm6.F: 3442-3534 (SUBROUTINE ProgB_param)
-//   - module_mp_kdm6.F: 3185-3205 (kdm6init의 hail_opt-의존 graupel 상수)
-//   - module_mp_kdm6.F: 3270-3284 (g1pmg/g1pdgmg gamma 파생)
+//   - module_mp_kdm6.F: 3332-3425 (SUBROUTINE ProgB_param)
+//   - module_mp_kdm6.F: 3090-3099 (kdm6init의 hail_opt-의존 graupel 상수)
+//   - module_mp_kdm6.F: 3166-3262 (g1pmg/g1pdgmg gamma 파생)
 //
 // Python oracle: kdm6_torch/kdm6/progb.py — 본 파일과 1:1 정합.
 //

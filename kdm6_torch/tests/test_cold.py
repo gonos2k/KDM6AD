@@ -1045,7 +1045,7 @@ def test_snow_evap_grad_finite():
 
 
 # ════ Step C6': Graupel evaporation (pgevp) ═══════════════════════════════════
-# Fortran 2496-2505 — psevp와 동일 구조, n0sfac 없음, precg2는 runtime 텐서.
+# Fortran 2423-2442 — psevp와 동일 구조, n0sfac 없음, precg2는 runtime 텐서.
 
 
 def _graupel_evap_inputs(*, requires_grad: bool = False, supcol_value: float = -5.0,

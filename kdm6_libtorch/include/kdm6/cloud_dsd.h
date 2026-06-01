@@ -5,11 +5,11 @@
 //
 // Functions:
 //   - diag_cloud_slope     rslopec = 1/lamdac (with [1/lamdacmax, 1/lamdacmin] clamp)
-//   - diag_avedia_cloud    avedia_c = rslopec · g3pmc^(1/3)         (Fortran 1620)
-//   - diag_avedia_rain     avedia_r = rslope_r · (g4pmr/g1pmr)^(1/3)(Fortran 1621)
-//   - diag_sigma_cloud     sigma_c  = rslopec · (g6pmc - g3pmc²)^(1/6) (Fortran 1623)
-//   - diag_lencon          autoconv→accretion threshold (Fortran 1653-1655)
-//   - diag_qcr             sea/land DSD critical mass (Fortran 792-795)
+//   - diag_avedia_cloud    avedia_c = rslopec · g3pmc^(1/3)         (Fortran 1670)
+//   - diag_avedia_rain     avedia_r = rslope_r · (g4pmr/g1pmr)^(1/3)(Fortran 1671)
+//   - diag_sigma_cloud     sigma_c  = rslopec · (g6pmc - g3pmc²)^(1/6) (Fortran 1673)
+//   - diag_lencon          autoconv→accretion threshold (Fortran 1703-1705)
+//   - diag_qcr             sea/land DSD critical mass (Fortran 842-845)
 //
 // `_rgmma` 부호: review6 audit 후 Γ(x) (= exp(lgamma(x))). Fortran rgmma와 일치.
 //
@@ -37,7 +37,7 @@ CloudDsdParams default_cloud_dsd_params(double den0 = constants::DEN0);
 // General species DSD slope: rslope = 1/lamda with clamp to [1/lamdamax, 1/lamdamin],
 // where lamda = (pidn · n / (q·den))^(1/dm). This is the elementwise core shared by
 // cloud/rain/ice (Fortran lamdac/lamdar/lamdai). Used to derive n0 intercepts in
-// runtime build_default_aux: n0 = n / (rslope · rslope^mu · g1pm)  (Fortran 1385-1387,
+// runtime build_default_aux: n0 = n / (rslope · rslope^mu · g1pm)  (Fortran 1435-1437,
 // no-clamp branch — identical to the gated lamda-recompute except for the rare
 // clamp-fired number back-mutation, which is a second-order effect).
 torch::Tensor diag_species_slope_torch(
@@ -90,7 +90,7 @@ LenconOutputs diag_lencon_torch(
     double qcrmin = constants::QCRMIN
 );
 
-// qcr: sea(slmsk==2) → qc0, land → qc1. Mirrors Fortran module_mp_kdm6.F:792-797.
+// qcr: sea(slmsk==2) → qc0, land → qc1. Mirrors Fortran module_mp_kdm6.F:842-847.
 // Naming caveat: qc0 (continental) is the LOW-CCN scalar used for SEA;
 // qc1 (maritime) is the HIGH-CCN scalar used for LAND. See cloud_dsd.cpp
 // (and Python kdm6_torch/kdm6/cloud_dsd.py) for the physical reasoning.

@@ -1,7 +1,7 @@
 #pragma once
 //
 // KDM6 saturation adjustment — Step B5.
-// 원본: module_mp_kdm6.F: 2990-3011
+// 원본: module_mp_kdm6.F: 2922-2943
 // Python oracle: kdm6_torch/kdm6/satadj.py
 //
 // pcond rate만 산출. nccond / state mutation은 caller 처리 (rain_evap와 동일 패턴).

@@ -1,12 +1,12 @@
 #pragma once
 //
 // KDM6 cold rain processes — ice phase microphysics.
-// 원본: module_mp_kdm6.F: 1858-2493 (Step C 영역)
+// 원본: module_mp_kdm6.F: 1818-2444 (Step C 영역)
 // Python oracle: kdm6_torch/kdm6/cold.py
 //
 // Sub-steps (procedures/kdm62d-port-decomposition.md):
-//   C1 ice mass accretion         (1898-1927) — ice_accretion_torch
-//   C2 ice→snow/graupel mass      (1929-1954) — ice_to_snow_graupel_torch  (TODO)
+//   C1 ice mass accretion         (1837-1863) — ice_accretion_torch
+//   C2 ice→snow/graupel mass      (1868-1890) — ice_to_snow_graupel_torch  (TODO)
 //   ... (C2b, C2c, C2d, C2e, C3-C6 누적 예정)
 //
 
@@ -360,7 +360,7 @@ torch::Tensor snow_evap_torch(
     double dtcld
 );
 
-// ─── Step C6': Graupel evaporation (pgevp) — Fortran 2496-2505 ──────────────
+// ─── Step C6': Graupel evaporation (pgevp) — Fortran 2435-2441 ──────────────
 //
 // Python 측은 codex#4 (Task #53)에서 추가됨. 구조는 snow_evap과 동일하되:
 //   (1) n0sfac factor 없음 (graupel은 ice-fraction scaling 미적용)

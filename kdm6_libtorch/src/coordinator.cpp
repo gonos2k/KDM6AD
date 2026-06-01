@@ -258,7 +258,7 @@ WarmPhaseOutputs warm_phase(
 
     // B-pre-5: pcact (CCN activation → cloud water). Computed BEFORE satadj so
     // that satadj sees the post-pcact (warmer, vapor-depleted) state — mirrors
-    // Fortran module_mp_kdm6.f90:2853-2893 sequential ordering. The Python
+    // Fortran module_mp_kdm6.F:2903-2943 sequential ordering. The Python
     // oracle defers pcact entirely (kdm6_torch/kdm6/coordinator.py:733-740 +
     // constants.py:107-111 design intent: "wrapper 단계에서 처리할 simplified
     // default") which works for offline parity tests but causes 15× cloud-water
@@ -266,7 +266,7 @@ WarmPhaseOutputs warm_phase(
     // This block implements Task #74 at the C++ layer; Python oracle parity is
     // preserved by keeping pcact OUT of the state_update budget when nullopt
     // (operational path always provides xland, so nccn-driven pcact fires).
-    // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (kdm6.f90:868, 2798).
+    // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (module_mp_kdm6.F:918, 2848).
     // 0.48 threshold is in PERCENT (matches SATMAX=1.0048 → 0.48% activation cutoff).
     auto sw_percent_wp = (pre.rh_w - 1.0) * 100.0;
     auto sw_ratio = torch::clamp(sw_percent_wp / 0.48, /*min=*/0.0);
@@ -282,8 +282,8 @@ WarmPhaseOutputs warm_phase(
 
     // Apply pcact to LOCAL copies of t/qv/qc before passing into satadj.
     // Functional construction only — autograd graph preserved (no in-place,
-    // no .item()). Mirrors Fortran kdm6.f90:2860-2864 + saturation recompute
-    // before conden at :2872-2877:
+    // no .item()). Mirrors Fortran module_mp_kdm6.F:2910-2914 + saturation recompute
+    // before conden at :2922-2927:
     //   q   := max(q   - pcact*dtcld, 0)         ← qv_post_pcact
     //   qci := max(qci + pcact*dtcld, 0)         ← qc_post_pcact
     //   t   := t       + pcact*xl/cpm*dtcld      ← t_post_pcact
@@ -392,10 +392,10 @@ PreambleWarm pre_warm_view(const PreambleOutputs& pre) {
 
 PreambleCold pre_cold_view(const PreambleOutputs& pre) {
     // Codex stop-review fix: the cold rate loop's deposition/nucleation driver is
-    // ICE supersaturation — Fortran kdm6.f90:1772 `supsat = max(q,qmin) - qs(i,k,2)`
-    // (qs2 = ICE saturation), feeding satdt/supice/ifsat + the C3 gate (:2259) and
-    // the pidep/psdep/pgdep caps (:2273-2340). The port's `pre.supsat` is WATER
-    // (compute_supsat(qv, qs1)), correct for the WARM loop (:1645) but wrong for
+    // ICE supersaturation — Fortran module_mp_kdm6.F:1822 `supsat = max(q,qmin) - qs(i,k,2)`
+    // (qs2 = ICE saturation), feeding satdt/supice/ifsat + the C3 gate (:2309) and
+    // the pidep/psdep/pgdep caps (:2323-2390). The port's `pre.supsat` is WATER
+    // (compute_supsat(qv, qs1)), correct for the WARM loop (:1695) but wrong for
     // cold. Reconstruct ice supsat from existing fields — EXACT since
     //   supsat + qs1 - qs2 = (max(q,qmin) - qs1) + qs1 - qs2 = max(q,qmin) - qs2.
     // cold_phase consumes PreambleCold.supsat ONLY in C3 (ice_nucleation) + C4
@@ -469,7 +469,7 @@ CoordinatorState kdm62d_one_step(
     const MeltFreezePhaseParams& mf_params,
     double dtcld
 ) {
-    // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran kdm6.f90:1360-1370)
+    // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran module_mp_kdm6.F:1410-1420)
     // is now ENABLED (Stage H2), applied at step 1b below — BETWEEN D1 melt and the
     // post-melt rebuild_aux. It was previously disabled because, as a pre-cold
     // freezing step, the cold phase would have read STALE n0i on the post-freeze ice
@@ -483,19 +483,19 @@ CoordinatorState kdm62d_one_step(
     auto pre = preamble(state_pre, forcing, full_params);
 
     // ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
-    // Fortran kdm6.f90 order: D1 melt (:1224-1295) → [homog freeze :1360-1370] →
-    // re-slope (:1372-1430) → D2-D4 contact/Bigg freeze (:1435-1511) → re-slope
-    // (:1546-1633) → warm/cold rate loop (:1768). We mirror it stage-by-stage:
+    // Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) → [homog freeze :1410-1420] →
+    // re-slope (:1422-1480) → D2-D4 contact/Bigg freeze (:1485-1561) → re-slope
+    // (:1596-1683) → warm/cold rate loop (:1818). We mirror it stage-by-stage:
     //   1. D1 melt from the ENTRY state (warm cells); apply inline → working1.
-    //   2. rebuild_aux(working1) → pre1/aux1 (post-melt re-slope, :1372-1430).
+    //   2. rebuild_aux(working1) → pre1/aux1 (post-melt re-slope, :1422-1480).
     //   3. D2-D4 freeze from working1 + pre1/aux1 (cold cells); apply inline → working.
-    //   4. rebuild_aux(working) → pre2/aux2 (post-freeze re-slope, :1546-1633).
+    //   4. rebuild_aux(working) → pre2/aux2 (post-freeze re-slope, :1596-1683).
     //   5. warm/cold/D5 read `working` + pre2/aux2.
     // STEP 3 (this split) is bit-identical to the prior STEP-2 single-apply modulo
     // float reassociation: melt (warm, supcol<0) and freeze (cold, supcol>0) are
     // mutually exclusive per cell, so D2-D4-on-post-melt ≡ D2-D4-on-entry. The split
     // exists to host the (still-disabled) homog freeze between melt and the freeze
-    // re-slope (Fortran :1360-1370 — Stage H2).
+    // re-slope (Fortran :1410-1420 — Stage H2).
     auto pre_core = pre_core_view(pre);   // ENTRY xl/cpm/supcol/rhox (Fortran-fixed)
     // 1. D1 melt → working1.
     auto mf_d1 = melt_freeze_d1(
@@ -503,14 +503,14 @@ CoordinatorState kdm62d_one_step(
     auto working1 = apply_melt_freeze_inline(
         state_pre, mf_d1, pre_core, dtcld, full_params.thermo.xls);
 
-    // 1b. Homogeneous freeze (Fortran :1360-1370): at supcol>40 (T<-40°C) freeze
+    // 1b. Homogeneous freeze (Fortran :1410-1420): at supcol>40 (T<-40°C) freeze
     // ALL cloud water → ice (qi+=qc, ni+=nc, t+=xlf/cpm·qc, qc=nc=0). Runs BETWEEN
     // D1 melt and the post-melt re-slope, so the re-slope + D2-D4 see the post-homog
     // qc (=0 in homog cells). Previously disabled (it was the 806× stale-aux trigger);
     // now safe because the rebuild_aux below re-slopes n0i on the post-homog ice.
     auto working1b = apply_homogeneous_freeze_supercold(working1, full_params.thermo, /*supcol_threshold=*/40.0);
 
-    // 2. rebuild on the post-melt+homog state (re-slope :1372-1430; entry thermo spliced).
+    // 2. rebuild on the post-melt+homog state (re-slope :1422-1480; entry thermo spliced).
     auto rebuilt1 = rebuild_aux(working1b, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
     const auto& pre1 = rebuilt1.pre;
     const auto& aux1 = rebuilt1.aux;
@@ -524,15 +524,15 @@ CoordinatorState kdm62d_one_step(
     auto working = apply_melt_freeze_inline(
         working1b, mf_d234, pre_core, dtcld, full_params.thermo.xls);
 
-    // 4. rebuild on the post-freeze state (re-slope :1546-1633; the prior STEP-2
+    // 4. rebuild on the post-freeze state (re-slope :1596-1683; the prior STEP-2
     // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/
-    // supsat) Fortran does NOT recompute post-freeze (:785-786,:860-878).
+    // supsat) Fortran does NOT recompute post-freeze (:835-836,:910-928).
     auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
     const auto& pre2 = rebuilt.pre;
     const auto& aux2 = rebuilt.aux;
 
     // F1b: warm phase (B1-B5) on the WORKING state + rebuilt pre2/aux2. thermo_params
-    // lets the sequential pcact path recompute qs1 before satadj (kdm6.f90:2853-2893).
+    // lets the sequential pcact path recompute qs1 before satadj (module_mp_kdm6.F:2903-2943).
     auto warm_out = warm_phase(
         working, forcing, pre_warm_view(pre2),
         aux2.n0r, aux2.work1_r, aux2.qcr,
@@ -557,7 +557,7 @@ CoordinatorState kdm62d_one_step(
 
     // F1d2: group conservation limiters bound warm/cold/D5 sinks against the
     // WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly
-    // Fortran's combined budget+mass-balance loop (:2399-2706, gate `t.le.t0c`).
+    // Fortran's combined budget+mass-balance loop (:2449-2756, gate `t.le.t0c`).
     // D1-D4 are already committed to `working`, and scale_rates only touches the
     // D5 fields (pseml/pgeml/nseml/ngeml), so passing mf5 is sufficient.
     auto scaled = scale_rates_for_conservation(
@@ -565,10 +565,10 @@ CoordinatorState kdm62d_one_step(
     );
 
     // F1e: state update on the WORKING base. HYBRID pre_core (Fortran-exact):
-    //   xl/cpm  = ENTRY  (kdm6.f90:785-786 set once, reused through mass balance),
-    //   supcol  = POST-FREEZE (mass-balance arm gates on t.le.t0c, :2406),
-    //   rhox    = POST-FREEZE (re-sloped before the rate loop; brs terms :2593/2684).
-    // delta_src = nullptr ⇒ delta2/delta3 track working qr/qs (Fortran :2402-2405
+    //   xl/cpm  = ENTRY  (module_mp_kdm6.F:835-836 set once, reused through mass balance),
+    //   supcol  = POST-FREEZE (mass-balance arm gates on t.le.t0c, :2456),
+    //   rhox    = POST-FREEZE (re-sloped before the rate loop; brs terms :2643/2734).
+    // delta_src = nullptr ⇒ delta2/delta3 track working qr/qs (Fortran :2452-2455
     // reads post-melt/freeze reservoirs). mf carries D5 only (D1-D4 in working).
     PreambleCore pre_core_su{pre.cpm, pre.xl, pre2.supcol, pre2.progb.rhox};
     auto new_state = state_update(
@@ -583,12 +583,12 @@ CoordinatorState kdm62d_one_step(
     new_state = reclassify_small_rain_to_cloud(new_state, forcing.den);
 
     // F1g+: pcact activation + satadj on post-state-update + post-reclass
-    // state. Mirrors Fortran module_mp_kdm6.f90:2853-2893 sequence. The
+    // state. Mirrors Fortran module_mp_kdm6.F:2903-2943 sequence. The
     // earlier `state_update` deliberately omitted pcact/pcond/ncact_activation/
     // cloud_complete_evap from its budgets so this step can run on the proper
     // post-mass-balance + post-reclass state — fixing the frame-6+ cascade
     // (Codex stop-gate finding 8: satadj was applied to stale pre-mass-balance
-    // state in C++, while Fortran runs it at line 2879 AFTER reclass at 2833).
+    // state in C++, while Fortran runs it at line 2929 AFTER reclass at 2883).
     new_state = apply_satadj_step(
         new_state, forcing,
         pre.xl, pre.cpm,
@@ -630,10 +630,10 @@ CoordinatorState kdm62d_step(
         return state;
     }
 
-    // Fortran module_mp_kdm6.F:747 entry-prologue clamp on nci(:,:,3).
+    // Fortran module_mp_kdm6.F:801 entry-prologue clamp on nci(:,:,3).
     // Mirror it here so warm-phase ncact (coordinator.cpp:264-270) consumes the clamped
     // value, matching slot-37 behaviour. Post-rate clamp at line 791 is kept as the
-    // surrogate for Fortran :2952 / :3076.
+    // surrogate for Fortran :2952 / :3006.
     CoordinatorState cur = state;
     cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);
 
@@ -662,9 +662,9 @@ MeltFreezePhaseParams default_melt_freeze_phase_params() {
     };
 }
 
-// Stage-A STEP 2/STEP 3 split. Fortran kdm6.f90 runs, in order: D1 melt
-// (:1224-1295) → [homog freeze :1360-1370] → re-slope (:1372-1430) → D2-D4 Bigg/
-// contact freeze (:1435-1511) → re-slope → warm/cold rate loop. So the melt/freeze
+// Stage-A STEP 2/STEP 3 split. Fortran module_mp_kdm6.F runs, in order: D1 melt
+// (:1274-1345) → [homog freeze :1410-1420] → re-slope (:1422-1480) → D2-D4 Bigg/
+// contact freeze (:1485-1561) → re-slope → warm/cold rate loop. So the melt/freeze
 // phase is split THREE ways: melt_freeze_d1 (D1 melt; warm cells), melt_freeze_d2_d4
 // (D2 contact + D3 Bigg-cloud + D4 Bigg-rain; cold cells, computed on the POST-MELT/
 // re-sloped state), and melt_freeze_d5 (enhanced melt; needs cold_out). This lets
@@ -731,7 +731,7 @@ MeltFreezePhaseOutputs melt_freeze_d2_d4(
     auto d2 = melt::contact_freezing_torch(d2_in, params.contact, dtcld);
 
     // D3: Bigg cloud freezing (cold cells). STEP 4: caps against the POST-D2 cloud
-    // reservoir — Fortran subtracts pinuc/ninuc (:1451,:1454) BEFORE :1469/:1478 cap
+    // reservoir — Fortran subtracts pinuc/ninuc (:1501,:1504) BEFORE :1519/:1528 cap
     // pfrzdtc/nfrzdtc. n0c is the SAME single re-sloped intercept across D2+D3.
     auto qc_post_d2 = state.qc - d2.pinuc;
     auto nc_post_d2 = state.nc - d2.ninuc;
@@ -854,10 +854,10 @@ MeltFreezePhaseOutputs melt_freeze_phase(
     return out;
 }
 
-// ─── F1d2: group conservation limiters (Fortran module_mp_kdm6.f90) ─────────
+// ─── F1d2: group conservation limiters (Fortran module_mp_kdm6.F) ─────────
 //
-// Ports the 14 Fortran group budgets: 8 cold-arm (t<=t0c, :2410-2547) + 6
-// warm-arm (t>t0c, :2607-2678), the two branches of one per-cell conditional.
+// Ports the 14 Fortran group budgets: 8 cold-arm (t<=t0c, :2460-2597) + 6
+// warm-arm (t>t0c, :2657-2728), the two branches of one per-cell conditional.
 // Each: value=max(floor,reservoir); source=Σ(signed sinks)·dtcld; if(source>
 // value) scale every listed sink by factor=value/source. Tensorized over the
 // full grid, gated by supcol so cold/warm budgets touch only their arm's cells.
@@ -884,7 +884,7 @@ ConservedRates scale_rates_for_conservation(
     auto cold_gate = (supcol > 0);                  // == state_update cold_mask
     auto warm_gate = (supcol <= 0);                 // complement (warm arm)
 
-    // delta2/delta3 from PRE-update reservoirs (Fortran :2402-2405; identical to
+    // delta2/delta3 from PRE-update reservoirs (Fortran :2452-2455; identical to
     // state_update :711-712 — duplicated, pure function of pre-state).
     auto delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype);
     auto delta3 = (state.qr < 1.0e-4).to(dtype);
@@ -903,14 +903,14 @@ ConservedRates scale_rates_for_conservation(
     };
 
     // ── PASS 1: cold arm (t<=t0c), gate=cold_gate ──────────────────────────
-    // cloud mass (:2410): praut+pracw+2·paacw+piacw+pmulcs+pmulcg
+    // cloud mass (:2460): praut+pracw+2·paacw+piacw+pmulcs+pmulcg
     limit(state.qc, constants::EPS,
           warm.praut + warm.pracw + 2.0 * cold.paacw_adj + cold.piacw
               + cold.pmulcs + cold.pmulcg,
           cold_gate,
           {&warm.praut, &warm.pracw, &cold.paacw_adj, &cold.piacw,
            &cold.pmulcs, &cold.pmulcg});
-    // ice mass (:2425): psaut-pinud-pidep+praci+psaci+pgaci-pmulcs-pmulrs-pmulcg-pmulrg-piacw
+    // ice mass (:2475): psaut-pinud-pidep+praci+psaci+pgaci-pmulcs-pmulrs-pmulcg-pmulrg-piacw
     limit(state.qi, constants::EPS,
           cold.psaut - cold.pinud - cold.pidep + cold.praci + cold.psaci
               + cold.pgaci - cold.pmulcs - cold.pmulrs - cold.pmulcg
@@ -919,14 +919,14 @@ ConservedRates scale_rates_for_conservation(
           {&cold.psaut, &cold.pinud, &cold.pidep, &cold.praci, &cold.psaci,
            &cold.pgaci, &cold.piacw, &cold.pmulcs, &cold.pmulrs, &cold.pmulcg,
            &cold.pmulrg});
-    // rain mass (:2445): -praut-prevp-pracw+piacr+psacr+pgacr+pmulrs+pmulrg
+    // rain mass (:2495): -praut-prevp-pracw+piacr+psacr+pgacr+pmulrs+pmulrg
     limit(state.qr, constants::EPS,
           -warm.praut - warm.prevp - warm.pracw + cold.piacr + cold.psacr_adj
               + cold.pgacr_adj + cold.pmulrs + cold.pmulrg,
           cold_gate,
           {&warm.praut, &warm.prevp, &warm.pracw, &cold.piacr, &cold.psacr_adj,
            &cold.pgacr_adj, &cold.pmulrs, &cold.pmulrg});
-    // snow mass (:2462): -(psdep+psaut+paacw+piacr·d3+praci·d3-pracs·(1-d2)+psacr·d2+psaci)
+    // snow mass (:2512): -(psdep+psaut+paacw+piacr·d3+praci·d3-pracs·(1-d2)+psacr·d2+psaci)
     //   (pgaut, pgacs ≡ 0 dropped)
     limit(state.qs, constants::EPS,
           -(cold.psdep + cold.psaut + cold.paacw_adj
@@ -935,7 +935,7 @@ ConservedRates scale_rates_for_conservation(
           cold_gate,
           {&cold.psdep, &cold.psaut, &cold.paacw_adj, &cold.piacr, &cold.praci,
            &cold.psaci, &cold.pracs, &cold.psacr_adj});
-    // graupel mass (:2483): -(pgdep+piacr·(1-d3)+praci·(1-d3)+psacr·(1-d2)+pracs·(1-d2)+pgaci+paacw+pgacr)
+    // graupel mass (:2533): -(pgdep+piacr·(1-d3)+praci·(1-d3)+psacr·(1-d2)+pracs·(1-d2)+pgaci+paacw+pgacr)
     //   (pgaut, pgacs ≡ 0 dropped)
     limit(state.qg, constants::EPS,
           -(cold.pgdep + cold.piacr * one_m_d3 + cold.praci * one_m_d3
@@ -944,12 +944,12 @@ ConservedRates scale_rates_for_conservation(
           cold_gate,
           {&cold.pgdep, &cold.piacr, &cold.praci, &cold.psacr_adj, &cold.pracs,
            &cold.paacw_adj, &cold.pgaci, &cold.pgacr_adj});
-    // cloud number (:2504): nraut+nccol+nracw+niacw+2·naacw
+    // cloud number (:2554): nraut+nccol+nracw+niacw+2·naacw
     limit(state.nc, constants::NCMIN,
           warm.nraut + warm.nccol + warm.nracw + cold.niacw + 2.0 * cold.naacw,
           cold_gate,
           {&warm.nraut, &warm.nccol, &warm.nracw, &cold.naacw, &cold.niacw});
-    // ice number (:2518): nraci+nsaci+ngaci+niacr+nsaut-nmulcs-nmulcg-nmulrs-nmulrg-ninud
+    // ice number (:2568): nraci+nsaci+ngaci+niacr+nsaut-nmulcs-nmulcg-nmulrs-nmulrg-ninud
     limit(state.ni, constants::NCMIN,
           cold.nraci + cold.nsaci + cold.ngaci + cold.niacr + cold.nsaut
               - cold.nmulcs - cold.nmulcg - cold.nmulrs - cold.nmulrg
@@ -957,7 +957,7 @@ ConservedRates scale_rates_for_conservation(
           cold_gate,
           {&cold.nraci, &cold.nsaci, &cold.ngaci, &cold.niacr, &cold.nsaut,
            &cold.ninud, &cold.nmulcs, &cold.nmulcg, &cold.nmulrs, &cold.nmulrg});
-    // rain number (:2537): -nraut+nraci+nrcol+niacr+nsacr+ngacr
+    // rain number (:2587): -nraut+nraci+nrcol+niacr+nsacr+ngacr
     limit(state.nr, constants::NRMIN,
           -warm.nraut + cold.nraci + warm.nrcol + cold.niacr + cold.nsacr
               + cold.ngacr,
@@ -966,34 +966,34 @@ ConservedRates scale_rates_for_conservation(
            &cold.ngacr});
 
     // ── PASS 2: warm arm (t>t0c), gate=warm_gate ───────────────────────────
-    // cloud mass (:2607): praut+pracw+2·paacw
+    // cloud mass (:2657): praut+pracw+2·paacw
     limit(state.qc, constants::EPS,
           warm.praut + warm.pracw + 2.0 * cold.paacw_adj,
           warm_gate,
           {&warm.praut, &warm.pracw, &cold.paacw_adj});
-    // rain mass (:2619): -2·paacw-praut+pseml+pgeml-pracw-prevp
+    // rain mass (:2669): -2·paacw-praut+pseml+pgeml-pracw-prevp
     limit(state.qr, constants::EPS,
           -2.0 * cold.paacw_adj - warm.praut + mf.pseml + mf.pgeml
               - warm.pracw - warm.prevp,
           warm_gate,
           {&warm.praut, &warm.prevp, &warm.pracw, &cold.paacw_adj,
            &mf.pseml, &mf.pgeml});
-    // snow mass (:2634, floor=qcrmin): -pseml-psevp   (pgacs ≡ 0 dropped)
+    // snow mass (:2684, floor=qcrmin): -pseml-psevp   (pgacs ≡ 0 dropped)
     limit(state.qs, constants::QCRMIN,
           -mf.pseml - cold.psevp,
           warm_gate,
           {&cold.psevp, &mf.pseml});
-    // graupel mass (:2645, floor=qcrmin): -(pgevp+pgeml)   (pgacs ≡ 0 dropped)
+    // graupel mass (:2695, floor=qcrmin): -(pgevp+pgeml)   (pgacs ≡ 0 dropped)
     limit(state.qg, constants::QCRMIN,
           -(cold.pgevp + mf.pgeml),
           warm_gate,
           {&cold.pgevp, &mf.pgeml});
-    // cloud number (:2656): nraut+nccol+nracw+2·naacw
+    // cloud number (:2706): nraut+nccol+nracw+2·naacw
     limit(state.nc, constants::NCMIN,
           warm.nraut + warm.nccol + warm.nracw + 2.0 * cold.naacw,
           warm_gate,
           {&warm.nraut, &warm.nccol, &warm.nracw, &cold.naacw});
-    // rain number (:2669): -nraut+nrcol-nseml-ngeml
+    // rain number (:2719): -nraut+nrcol-nseml-ngeml
     limit(state.nr, constants::NRMIN,
           -warm.nraut + warm.nrcol - mf.nseml - mf.ngeml,
           warm_gate,
@@ -1002,7 +1002,7 @@ ConservedRates scale_rates_for_conservation(
     return ConservedRates{warm, cold, mf};
 }
 
-// ─── F1e: state mutation update (Fortran 2680-2823) ────────────────────────
+// ─── F1e: state mutation update (Fortran 2730-2873) ────────────────────────
 //
 // Python state_update_torch와 1:1 정합. review3-10의 모든 수정 반영.
 // AD-friendly: in-place 없음, .item() 없음, mask는 multiplicative.
@@ -1024,15 +1024,15 @@ CoordinatorState state_update(
     // base `state` is a post-melt/freeze working state (delta_src!=null). This
     // preserves the identity (melt/freeze must not flip the qr/qs<1e-4 routing
     // gates in the behaviour-preserving STEP 1). STEP 2 will pass null so delta
-    // tracks the working state (Fortran computes it on the mutated state :2516).
+    // tracks the working state (Fortran computes it on the mutated state :2452-2455).
     const CoordinatorState& dstate = delta_src ? *delta_src : state;
 
     // ── Mass balance ────────────────────────────────────────────────────────
     // qv — pcact/pcond DEFERRED to apply_satadj_step (called after state_update
-    // + reclassifications in kdm62d_one_step), mirroring Fortran kdm6.f90:
-    // mass balance at :2549-2705 runs FIRST, then reclass (Picons ice→snow
-    // :2757-2763, rain→cloud :2833-2842), THEN pcact apply at :2853-2865, THEN
-    // satadj/pcond at :2872-2893.
+    // + reclassifications in kdm62d_one_step), mirroring Fortran module_mp_kdm6.F:
+    // mass balance at :2599-2755 runs FIRST, then reclass (Picons ice→snow
+    // :2807-2813, rain→cloud :2883-2892), THEN pcact apply at :2903-2915, THEN
+    // satadj/pcond at :2922-2943.
     // Per-cell warm/cold/mf rates are applied here; activation + condensation
     // run on the post-state-update + post-reclass state for proper Fortran
     // sequence parity (Codex stop-gate finding 8 - frame-6+ cascade origin).
@@ -1056,7 +1056,7 @@ CoordinatorState state_update(
     auto dqc_amount = -mf.pinuc - mf.pfrzdtc + mf.pimlt_qi;
     auto qc_new = state.qc + dqc_rate + dqc_amount;
 
-    // qr — cold 2571 / warm 2690 (rate) + inline D4 amount + D1/D5 melt
+    // qr — cold 2621 / warm 2740 (rate) + inline D4 amount + D1/D5 melt
     auto dqr_rate = dtcld * (
         warm.praut + warm.pracw
         + warm.prevp
@@ -1064,7 +1064,7 @@ CoordinatorState state_update(
         - cold.pmulrs - cold.pmulrg
         - (mf.psmlt + mf.pgmlt) * warm_mask
         - mf.pseml - mf.pgeml
-        // #1 (audit): WARM arm sheds rimed cloud to RAIN (Fortran :2690 qr+=2*paacw);
+        // #1 (audit): WARM arm sheds rimed cloud to RAIN (Fortran :2740 qr+=2*paacw);
         // cold arm routes paacw to qs/qg instead (handled below, cold_mask). Was
         // missing in both ports — warm cells wrongly grew ice. (WRF-validated.)
         + 2.0 * cold.paacw_adj * warm_mask
@@ -1072,17 +1072,17 @@ CoordinatorState state_update(
     auto dqr_amount = -mf.pfrzdtr;
     auto qr_new = state.qr + dqr_rate + dqr_amount;
 
-    // delta2/delta3 routing flags (Fortran 2402-2405) — from ENTRY state (dstate)
+    // delta2/delta3 routing flags (Fortran 2452-2455) — from ENTRY state (dstate)
     auto delta2 = ((dstate.qr < 1.0e-4) & (dstate.qs < 1.0e-4)).to(dtype);
     auto delta3 = (dstate.qr < 1.0e-4).to(dtype);
     auto one_m_d2 = 1.0 - delta2;
     auto one_m_d3 = 1.0 - delta3;
 
-    // qs — 2583 + warm-branch 2693
+    // qs — 2633 + warm-branch 2743
     auto dqs = dtcld * (
         cold.psdep
         + cold.psaut
-        + cold.paacw_adj * cold_mask          // #1: paacw→qs only in COLD arm (Fortran :2583); warm arm sheds to qr
+        + cold.paacw_adj * cold_mask          // #1: paacw→qs only in COLD arm (Fortran :2633); warm arm sheds to qr
         + cold.piacr * delta3
         + cold.praci * delta3
         + cold.psacr_adj * delta2
@@ -1094,10 +1094,10 @@ CoordinatorState state_update(
     );
     auto qs_new = state.qs + dqs;
 
-    // qg — 2588 + warm-branch 2695
+    // qg — 2638 + warm-branch 2745
     auto dqg_rate = dtcld * (
         cold.pgdep
-        + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (Fortran :2591); warm arm sheds to qr
+        + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (Fortran :2641); warm arm sheds to qr
         + cold.pgacr_adj
         + cold.pracs * one_m_d2
         + cold.piacr * one_m_d3
@@ -1111,7 +1111,7 @@ CoordinatorState state_update(
     auto dqg_amount = mf.pfrzdtr;
     auto qg_new = state.qg + dqg_rate + dqg_amount;
 
-    // qi — 2576 + inline freeze amounts (D2-D4/homog)
+    // qi — 2626 + inline freeze amounts (D2-D4/homog)
     auto dqi_rate = dtcld * (
         cold.pinud + cold.pidep
         + cold.piacw
@@ -1134,7 +1134,7 @@ CoordinatorState state_update(
     auto dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni;
     // ncact (activation) and cloud_complete_evap deferred to apply_satadj_step
     // — they fire on the post-state-update + post-reclass state per Fortran
-    // sequence (module_mp_kdm6.f90:2887-2927). The mass balance here only
+    // sequence (module_mp_kdm6.F:2937-2977). The mass balance here only
     // accounts for warm/cold/mf rates that Fortran applies BEFORE that block.
     auto nc_new = state.nc + dnc_rate + dnc_amount;
 
@@ -1143,7 +1143,7 @@ CoordinatorState state_update(
         - warm.nrcol
         - cold.niacr - cold.nraci
         - cold.nsacr - cold.ngacr
-        // Fortran kdm6.f90:2699-2700 — enhanced-melt number sources to rain.
+        // Fortran module_mp_kdm6.F:2749-2750 — enhanced-melt number sources to rain.
         // Previously omitted in C++; Codex review caught the gap.
         + mf.nseml + mf.ngeml
     );
@@ -1165,7 +1165,7 @@ CoordinatorState state_update(
     auto ni_zero_mask = cold.ice_complete_sublim.to(dtype);
     auto ni_new = ni_new_pre * (1.0 - ni_zero_mask);
 
-    // ── brs (graupel volume) — Fortran 2593 + warm-branch 2701 ─────────
+    // ── brs (graupel volume) — Fortran 2643 + warm-branch 2751 ─────────
     auto rhox_safe = torch::clamp(pre.rhox, /*min=*/constants::DENS);
     auto dbrs_cold_riming = cold_mask * dtcld * (
         cold.pgdep / rhox_safe
@@ -1191,7 +1191,7 @@ CoordinatorState state_update(
 
     // ── Energy balance (T) — review3#4 / review4#4 / review5#1 ──────────────
     auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);
-    // Fortran module_mp_kdm6.f90:2596 — `xls` is the CONSTANT latent heat of
+    // Fortran module_mp_kdm6.F:2646 — `xls` is the CONSTANT latent heat of
     // sublimation (XLS=2.85e6, passed in); the fusion latent heat is DERIVED and
     // TEMPERATURE-DEPENDENT: xlf(T) = xls - xl(T). The previous code INVERTED this
     // (constant xlf, derived xls), which over-heated freezing by up to ~56% at
@@ -1203,7 +1203,7 @@ CoordinatorState state_update(
 
     // pcact + pcond warming terms DEFERRED — apply_satadj_step adds them to
     // T after running on the post-state-update state (matches Fortran sequence
-    // at module_mp_kdm6.f90:2864 + :2893).
+    // at module_mp_kdm6.F:2914 + :2943).
     auto dT_warm_phase = dtcld * pre.xl / cpm_safe * (
         warm.prevp + cold.psevp + cold.pgevp
     );
@@ -1231,7 +1231,7 @@ CoordinatorState state_update(
     // B4 output, applied with the warm rates). cloud_complete_evap and
     // nccn_activation are part of the deferred satadj step (see dqv comment),
     // so they are NOT applied at this point — apply_satadj_step handles them
-    // after the reclassifications, matching Fortran module_mp_kdm6.f90:2887-2927.
+    // after the reclassifications, matching Fortran module_mp_kdm6.F:2937-2977.
     auto nccn_new = state.nccn + rain_complete_evap_amount;
 
     // review5#2 (partial): nonneg clamp. paired threshold cleanup은 분리.
@@ -1253,7 +1253,7 @@ CoordinatorState state_update(
 
 // ─── F1g+: pcact + satadj on post-state-update + post-reclass state ────────
 //
-// Mirrors Fortran module_mp_kdm6.f90:2853-2893 (the `do i = its, ite` block
+// Mirrors Fortran module_mp_kdm6.F:2903-2943 (the `do i = its, ite` block
 // after mass balance and reclassifications). The earlier `state_update` step
 // intentionally OMITS pcact/pcond/cloud_complete_evap/ncact_activation from
 // its budgets — they all happen here on the post-mass-balance state for
@@ -1261,12 +1261,12 @@ CoordinatorState state_update(
 //
 // Sequence:
 //   1. Recompute supsat from new_state (forcing.p, state.t, state.qv)
-//   2. Compute pcact + ncact (kdm6.f90:2855-2859)
+//   2. Compute pcact + ncact (module_mp_kdm6.F:2905-2909)
 //   3. Apply pcact   →  q -=pcact·dt, qc +=pcact·dt, t +=pcact·xl/cpm·dt
-//   4. Apply ncact   →  nc +=ncact·dt, nccn -=ncact·dt           (kdm6.f90:2862-2863)
-//   5. Recompute qs1 from post-pcact t                            (kdm6.f90:2872-2876)
-//   6. Run satadj → pcond, cloud_complete_evap                    (kdm6.f90:2877-2881)
-//   7. Complete-evap NC→NCCN transfer                             (kdm6.f90:2886-2889)
+//   4. Apply ncact   →  nc +=ncact·dt, nccn -=ncact·dt           (module_mp_kdm6.F:2912-2913)
+//   5. Recompute qs1 from post-pcact t                            (module_mp_kdm6.F:2922-2926)
+//   6. Run satadj → pcond, cloud_complete_evap                    (module_mp_kdm6.F:2927-2931)
+//   7. Complete-evap NC→NCCN transfer                             (module_mp_kdm6.F:2936-2939)
 //   8. Apply pcond   →  q -=pcond·dt, qc +=pcond·dt, t +=pcond·xl/cpm·dt
 //   9. Nonneg clamps + NCCN reservoir bounds
 //
@@ -1286,8 +1286,8 @@ CoordinatorState apply_satadj_step(
     auto qs1 = thermo::compute_qs_water(state.t, forcing.p, thermo_params);
     auto supsat = state.qv - qs1;
 
-    // Step 2: pcact + ncact (Fortran kdm6.f90:2855-2859).
-    // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (kdm6.f90:868, 2798).
+    // Step 2: pcact + ncact (Fortran module_mp_kdm6.F:2905-2909).
+    // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (module_mp_kdm6.F:918, 2848).
     // The 0.48 threshold is in PERCENT (matches SATMAX=1.0048 → 0.48% activation cutoff).
     // We must compute sw in percent here, NOT use raw `supsat = qv - qs1` (kg/kg).
     auto qs1_safe = torch::clamp(qs1, /*min=*/constants::QCRMIN);
@@ -1314,15 +1314,15 @@ CoordinatorState apply_satadj_step(
     auto nc_pp   = torch::clamp(state.nc + ncact * dtcld, /*min=*/0.0);
     auto nccn_pp = torch::clamp(state.nccn - ncact * dtcld, /*min=*/0.0);
 
-    // Step 5: recompute qs1 from t_pp (Fortran kdm6.f90:2872-2876).
+    // Step 5: recompute qs1 from t_pp (Fortran module_mp_kdm6.F:2922-2926).
     auto qs1_pp = thermo::compute_qs_water(t_pp, forcing.p, thermo_params);
 
-    // Step 6: satadj on the post-pcact snapshot (Fortran :2877-2881).
+    // Step 6: satadj on the post-pcact snapshot (Fortran :2927-2931).
     auto sat = satadj::saturation_adjustment_torch(
         t_pp, qv_pp, qc_pp, qs1_pp, xl, cpm_safe, satadj_params, dtcld
     );
 
-    // Step 7: complete-evap NC → NCCN (Fortran :2886-2889).
+    // Step 7: complete-evap NC → NCCN (Fortran :2936-2939).
     auto complete_evap_mask = sat.cloud_complete_evap.to(dtype);
     auto nc_evap_amount   = nc_pp * complete_evap_mask;
     auto nc_final         = torch::clamp(nc_pp - nc_evap_amount, /*min=*/0.0);
@@ -1489,7 +1489,7 @@ CoordinatorState reclassify_small_rain_to_cloud(
 
 // ─── F1g'': homogeneous cloud→ice freeze at supcol > 40 ────────────────────
 //
-// Fortran `module_mp_kdm6.f90:1359-1369` — at supcol > 40 (T < t0c-40 ≈ 233K),
+// Fortran `module_mp_kdm6.F:1409-1419` — at supcol > 40 (T < t0c-40 ≈ 233K),
 // instantaneously convert ALL cloud water to ice and release fusion latent heat:
 //   qci(2) += qci(1)         ! ice += cloud
 //   nci(2) += nci(1)
@@ -1594,9 +1594,9 @@ CoordinatorState apply_dsd_number_limiters(
         qmin, constants::NCMIN
     );
     // apply_dsd_number_limiters implements the FINAL kdm62d block, whose ice
-    // snap is Fortran kdm6.f90:2945 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
-    // — same qmin/ncmin pattern as the cloud snap (:2934) just above. The prior
-    // 1e-14/0 gate mis-cited :1417 (the INLINE rate-phase snap, a different
+    // snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
+    // — same qmin/ncmin pattern as the cloud snap (:2984) just above. The prior
+    // 1e-14/0 gate mis-cited :1467 (the INLINE rate-phase snap, a different
     // occurrence with no n-gate); the final-block gate ANDs with ncmin.
     // (Adjudicated vs Fortran 2026-05-31; aggregate effect pending WRF per the
     // parity-audit memory — this is a confirmed Fortran-alignment correction.)
@@ -1607,7 +1607,7 @@ CoordinatorState apply_dsd_number_limiters(
         /*q_thresh=*/qmin, /*n_thresh=*/constants::NCMIN
     );
 
-    // Absolute caps (Fortran 2957-2964)
+    // Absolute caps (Fortran 3007-3014)
     auto nr_at_max = den * state.qr * std::pow(constants::LAMDARMAX, constants::DMR) / pidnr;
     auto nc_at_max = den * state.qc * std::pow(constants::LAMDACMAX, constants::DMC) / pidnc;
     nr_new = torch::where(nr_new > constants::NRMAX, nr_at_max, nr_new);

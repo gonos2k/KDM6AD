@@ -1,20 +1,20 @@
 """
 KDM6 cold rain processes — ice phase microphysics oracle.
 
-원본: module_mp_kdm6.F: 1858-2493 (Step C 영역)
+원본: module_mp_kdm6.F: 1843-2440 (Step C 영역)
 
 본 모듈은 Step C의 sub-step을 누적 추가한다 (warm.py 패턴 답습):
-  - C1 (현재): ice mass accretion         — `ice_accretion_torch`        (1898-1927)
-  - C2:        ice→snow/graupel mass      — `ice_to_snow_graupel_torch`  (1929-1954)
-  - C2b:       number accretion           — `ice_number_accretion_torch` (1956-2010)
-  - C2c:       cloud water riming         — `cloud_water_riming_torch`   (2012-2095)
-  - C2d:       rain-snow-graupel coll     — `rain_snow_graupel_coll_torch` (2099-2225)
-  - C2e:       Hallett-Mossop mult        — `halmos_multiplication_torch` (2226-2366)
-  - C3:        ice nucleation (pinud)     — `ice_nucleation_torch`       (2369-2390)
-  - C4:        deposition/sublimation     — `dep_sub_torch`              (2395-2454)
-  - C5:        aggregation (psaut)        — `ice_aggregation_torch`      (2457-2470)
-  - C6:        snow evap (psevp)          — `snow_evap_torch`            (2484-2493)
-  - C6':       graupel evap (pgevp)       — `graupel_evap_torch`         (2496-2505)
+  - C1 (현재): ice mass accretion         — `ice_accretion_torch`        (1843-1862)
+  - C2:        ice→snow/graupel mass      — `ice_to_snow_graupel_torch`  (1868-1890)
+  - C2b:       number accretion           — `ice_number_accretion_torch` (1897-1944)
+  - C2c:       cloud water riming         — `cloud_water_riming_torch`   (1951-2031)
+  - C2d:       rain-snow-graupel coll     — `rain_snow_graupel_coll_torch` (2051-2150)
+  - C2e:       Hallett-Mossop mult        — `halmos_multiplication_torch` (2154-2248)
+  - C3:        ice nucleation (pinud)     — `ice_nucleation_torch`       (2309-2326)
+  - C4:        deposition/sublimation     — `dep_sub_torch`              (2334-2390)
+  - C5:        aggregation (psaut)        — `ice_aggregation_torch`      (2393-2406)
+  - C6:        snow evap (psevp)          — `snow_evap_torch`            (2424-2429)
+  - C6':       graupel evap (pgevp)       — `graupel_evap_torch`         (2435-2440)
 
 상위 호출자 `kdm62D`는 C1-C6 + B series를 같은 do-loop 안에서 호출하지만, 본
 oracle은 *순수함수*로 분리해 testability와 미분 가능성을 확보한다.
@@ -110,7 +110,7 @@ def default_ice_accretion_params() -> IceAccretionParams:
 def _wilt_reduction(ratio: torch.Tensor) -> torch.Tensor:
     """Wilt collection efficiency reduction: `min(max(0, ratio), 1)²`.
 
-    Fortran 1910/1925 — collected/collector mass-ratio 의존 감쇠. 매끄러운 product
+    Fortran 1846/1861 — collected/collector mass-ratio 의존 감쇠. 매끄러운 product
     이므로 `torch.clamp(min=0, max=1)`로 단순 직역. AD 안전.
     """
     return torch.clamp(ratio, min=0.0, max=1.0) ** 2
@@ -138,14 +138,14 @@ def ice_accretion_torch(
     params: IceAccretionParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1898-1927 — ice ↔ rain mass accretion.
+    """Fortran 1843-1862 — ice ↔ rain mass accretion.
 
     praci: Cloud ice + rain → rain (HL A15, LFO 25). T<T0.
     piacr: Rain + cloud ice → snow/graupel (HL A19, LFO 26). T<T0.
 
-    Outer gate (Fortran 1901): qi > qmin AND qr > qcrmin.
-    Wilt collection eff reduction (1910, 1925): min(max(0, ratio), 1)².
-    Mass cap (1911, 1926): min(rate, source_mass/dtcld).
+    Outer gate (Fortran 1837): qi > qmin AND qr > qcrmin.
+    Wilt collection eff reduction (1846, 1861): min(max(0, ratio), 1)².
+    Mass cap (1847, 1862): min(rate, source_mass/dtcld).
 
     Returns
     -------
@@ -206,7 +206,7 @@ class IceToSnowGraupelParams(NamedTuple):
     Ice shape (mui=0):   g1pdimi=rgmma(1+dmi+mui), etc.
 
     Note: `eacsi` (snow→ice) and `eacgi` (graupel→ice) collection efficiencies
-    are *runtime supcol-dependent* in Fortran (1896, 1946) — both share the
+    are *runtime supcol-dependent* in Fortran (1826, 1882) — both share the
     same formula `exp(clamp(0.07·(-supcol), [-80, 80]))`. Computed via
     `_exp_eac_from_supcol` helper, NOT in params.
     """
@@ -248,7 +248,7 @@ def default_ice_to_snow_graupel_params() -> IceToSnowGraupelParams:
 
 
 def _exp_eac_from_supcol(supcol: torch.Tensor) -> torch.Tensor:
-    """Fortran 1896 (eacsi) / 1946 (eacgi): `exp(clamp(0.07·(-supcol), [-80, 80]))`.
+    """Fortran 1826 (eacsi) / 1882 (eacgi): `exp(clamp(0.07·(-supcol), [-80, 80]))`.
 
     Note (counter-intuitive direction): supcol > 0 (cold) → arg < 0 → eacXi < 1.
     Warm (supcol → 0) → eacXi → 1. Very cold limit → eacXi → 0. This is
@@ -289,7 +289,7 @@ def ice_to_snow_graupel_torch(
     params: IceToSnowGraupelParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1932-1954 — cloud ice ←collected by→ snow & graupel.
+    """Fortran 1868-1890 — cloud ice ←collected by→ snow & graupel.
 
     psaci (HDC 10): qs > qcrmin AND qi > qmin → ice → snow
     pgaci (HL A17, LFO 41): qg > qcrmin AND qi > qmin → ice → graupel
@@ -306,7 +306,7 @@ def ice_to_snow_graupel_torch(
     qg_safe = torch.clamp(qg, min=params.qcrmin)
     common_i = rsloped_i * rslopemu_i
 
-    eac_temp = _exp_eac_from_supcol(supcol)  # Fortran 1896/1946 공통
+    eac_temp = _exp_eac_from_supcol(supcol)  # Fortran 1826/1882 공통
 
     # ── psaci: snow collects cloud ice ──────────────────────────────────
     active_s = (qs > params.qcrmin) & (qi > params.qmin)
@@ -325,7 +325,7 @@ def ice_to_snow_graupel_torch(
 
     # ── pgaci: graupel collects cloud ice ───────────────────────────────
     active_g = (qg > params.qcrmin) & (qi > params.qmin)
-    eacgi = eac_temp  # Fortran 1946 — same formula as eacsi
+    eacgi = eac_temp  # Fortran 1882 — same formula as eacsi
     acrfac_g = (
         params.g3pmg * rslopemu_g * rslope3_g * params.g1pdimi * common_i * rslope_i
         + 2.0 * params.g2pmg * rslopemu_g * rslope2_g * params.g2pdimi * common_i * rslope2_i
@@ -434,15 +434,15 @@ def number_accretion_torch(
     params: NumberAccretionParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Fortran 1956-2010 — 4 number accretion processes.
+    """Fortran 1897-1944 — 4 number accretion processes.
 
-    Outer gate (1961): supcol > 0 AND ni > ncmin (cold + sufficient ice number).
+    Outer gate (1897): supcol > 0 AND ni > ncmin (cold + sufficient ice number).
     Sub-gates:
       nraci/niacr: nr > nrmin
       nsaci:       qs > qcrmin
       ngaci:       qg > qcrmin
 
-    eacsi/eacgi share `exp(clamp(0.07·(-supcol), [-80,80]))` (Fortran 1896/2001).
+    eacsi/eacgi share `exp(clamp(0.07·(-supcol), [-80,80]))` (Fortran 1826/1937).
 
     Returns
     -------
@@ -607,7 +607,7 @@ def cloud_water_riming_torch(
     params: CloudWaterRimingParams,
     dtcld: float,
 ) -> CloudWaterRimingOutputs:
-    """Fortran 2012-2095 — 8 cloud water riming processes.
+    """Fortran 1951-2031 — 8 cloud water riming processes.
 
     Process map:
       psacw, nsacw — snow rimes cloud water (mass + number)
@@ -620,7 +620,7 @@ def cloud_water_riming_torch(
     """
     zero = torch.zeros_like(qc)
 
-    # qc-protective floor (Fortran 1893: qc1_safe = max(qc, qmin))
+    # qc-protective floor (Fortran 1951: qc1_safe = max(qc, qmin))
     qc_safe = torch.clamp(qc, min=params.qmin)
 
     # ── psacw ──────────────────────────────────────────────────────────
@@ -822,7 +822,7 @@ def rain_snow_graupel_collection_torch(
     params: RainSnowGraupelCollectionParams,
     dtcld: float,
 ) -> RainSnowGraupelCollectionOutputs:
-    """Fortran 2099-2215 — rain-snow & rain-graupel mass + number collection.
+    """Fortran 2051-2150 — rain-snow & rain-graupel mass + number collection.
 
     Active gates per process:
       pracs : qs > qcrmin AND qr > qcrmin AND supcol > 0   (cold-only)
@@ -932,11 +932,11 @@ def rain_snow_graupel_collection_torch(
 class HallettMossopParams(NamedTuple):
     """HM multiplication 시간불변 스칼라.
 
-    Fortran constants (line 128-129):
+    Fortran constants (line 128, 2158):
       Rispl = 5e-6 m  (splinter radius)
       Mispl = (4/3)·π·deni·Rispl³
     HM active range: 265.16 < t < 270.16 K. Peak fmul=1 at t=268.16.
-    Mass thresholds (Fortran 2224-2225):
+    Mass thresholds (Fortran 2160-2161):
       qs >= 0.1e-3, qg >= 0.1e-3, qc >= 0.5e-3, qr >= 0.1e-3
     """
 
@@ -968,7 +968,7 @@ def default_hallett_mossop_params() -> HallettMossopParams:
 def _hm_fmul(t: torch.Tensor, params: HallettMossopParams) -> torch.Tensor:
     """Triangular hat function — peak fmul=1 at t=t_mid (268.16), zero outside [t_lo, t_hi].
 
-    Fortran 2229-2237 (and identical 2280-2288):
+    Fortran 2166-2172 (and identical 2217-2223):
       t > t_hi             → 0
       t_mid < t <= t_hi    → (t_hi - t) / 2
       t_lo <= t <= t_mid   → (t - t_lo) / 3
@@ -1009,7 +1009,7 @@ def hallett_mossop_torch(
     *,
     params: HallettMossopParams,
 ) -> HallettMossopOutputs:
-    """Fortran 2217-2325 — Hallett & Mossop 1974 ice multiplication via splintering.
+    """Fortran 2154-2248 — Hallett & Mossop 1974 ice multiplication via splintering.
 
     *State-mutation* in Fortran (paacw/psacr/pgacr 차감)을 oracle은 `*_adj` 출력으로 표현 —
     caller가 mass-conservation을 명시적으로 사용. snow → graupel sequential processing은
@@ -1137,7 +1137,7 @@ def ice_nucleation_torch(
     params: IceNucleationParams,
     dtcld: float,
 ) -> IceNucleationOutputs:
-    """Fortran 2369-2390 — ice nucleation from vapor.
+    """Fortran 2309-2326 — ice nucleation from vapor.
 
     Returns
     -------
@@ -1278,18 +1278,18 @@ def dep_sub_torch(
     params: DepSubParams,
     dtcld: float,
 ) -> DepSubOutputs:
-    """Fortran 2393-2455 — sequential pidep → psdep → pgdep with cumulative ifsat.
+    """Fortran 2334-2390 — sequential pidep → psdep → pgdep with cumulative ifsat.
 
     Note (Fortran direct translation, counter-intuitive):
         sublimation cap uses `max(rate, satdt/2)` where `satdt = supsat/dtcld`.
         If supsat > 0 (vapor super-saturated), satdt/2 > 0 acts as a *positive*
         floor for the negative rate. So rate_raw < 0 may emerge POSITIVE after
-        capping. This is Fortran 2411 verbatim. Caller's mass-balance unwinds.
+        capping. This is Fortran 2347 verbatim. Caller's mass-balance unwinds.
 
     Outer gate: `supcol > 0` (cold).
     Each process: skip if ifsat (cumulative) already triggered.
 
-    *State mutation*: Fortran 2407-2409 sets `nci(:,:,2) = 0` when pidep hits the
+    *State mutation*: Fortran 2343-2345 sets `nci(:,:,2) = 0` when pidep hits the
     complete-sublimation cap (`pidep == -qi/dtcld`). Oracle returns this as a
     boolean mask `ice_complete_sublim`; caller applies the nci zero-out.
 
@@ -1400,7 +1400,7 @@ def ice_aggregation_torch(
     params: IceAggregationParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 2457-2470 — psaut + nsaut (ice → snow aggregation).
+    """Fortran 2393-2406 — psaut + nsaut (ice → snow aggregation).
 
     Ryan et al. 2010 qi0:
         T > 255.66:  qi0 = 0.4632·10^(-6 - 0.0413·(-supcol))·den
@@ -1475,7 +1475,7 @@ def snow_evap_torch(
     params: SnowEvapParams,
     dtcld: float,
 ) -> torch.Tensor:
-    """Fortran 2487-2493 — evaporation of melting snow.
+    """Fortran 2424-2429 — evaporation of melting snow.
 
     Outer gate: `supcol < 0` (warm) AND qs > 0 AND rh_w < 1 (sub-saturated water).
     psevp ≤ 0 (evap), capped by `-qs/dtcld`.
@@ -1503,7 +1503,7 @@ def snow_evap_torch(
 
 
 # ─── Step C6': Graupel evaporation (pgevp) ───────────────────────────────────
-# Fortran 2496-2505 — `psevp`와 구조 동일, 단 (1) n0sfac factor 없음, (2) precg2는
+# Fortran 2435-2440 — `psevp`와 구조 동일, 단 (1) n0sfac factor 없음, (2) precg2는
 # 시간 가변 텐서(ProgB output), (3) graupel rslope/n0go 사용. codex review #2 #4번
 # 권고로 cold module에 누락되어 있던 process를 추가.
 
@@ -1537,7 +1537,7 @@ def graupel_evap_torch(
     params: GraupelEvapParams,
     dtcld: float,
 ) -> torch.Tensor:
-    """Fortran 2499-2504 — evaporation of melting graupel.
+    """Fortran 2435-2440 — evaporation of melting graupel.
 
     Outer gate: `supcol < 0` (warm) AND qg > 0 AND rh_w < 1 (sub-saturated water).
     pgevp ≤ 0 (evap), capped by `-qg/dtcld`.
