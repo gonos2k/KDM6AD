@@ -54,12 +54,12 @@ void test_g4pmr_over_g1pmr_is_24() {
 }
 
 void test_avedia_rain_hardcoded() {
-    // avedia_r = rslope_r · 24^(1/3).
+    // avedia_r = rslope_r · (g4pmr/g1pmr)^0.3333333 — Fortran F:1671 truncated literal. 1:1 fix #4.
     TEST(test_avedia_rain_hardcoded) {
         auto p = default_cloud_dsd_params();
         auto rslope_r = torch::tensor({{1.0e-4, 5.0e-4}}, f64());
         auto out = diag_avedia_rain_torch(rslope_r, p);
-        auto expected = rslope_r * std::pow(24.0, 1.0 / 3.0);
+        auto expected = rslope_r * std::pow(p.g4pmr_over_g1pmr, 0.3333333);
         assert(torch::allclose(out, expected, /*rtol=*/1e-12, /*atol=*/0.0));
     } END_TEST();
 }

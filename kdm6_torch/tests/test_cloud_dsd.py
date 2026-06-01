@@ -51,7 +51,7 @@ def test_diag_cloud_slope_clamped():
 
 
 def test_diag_avedia_formulas():
-    """avedia_c = rslopec * g3pmc^(1/3); avedia_r = rslope_r * (g4pmr/g1pmr)^(1/3)."""
+    """avedia_c = rslopec * g3pmc^(1/3); avedia_r = rslope_r * (g4pmr/g1pmr)^0.3333333 (F:1671 literal, #4)."""
     p = default_cloud_dsd_params()
     dtype = torch.float64
     rslopec = torch.tensor([[1.0e-5]], dtype=dtype)
@@ -60,8 +60,8 @@ def test_diag_avedia_formulas():
     avedia_c = diag_avedia_cloud_torch(rslopec, params=p)
     avedia_r = diag_avedia_rain_torch(rslope_r, params=p)
 
-    expected_c = 1.0e-5 * p.g3pmc ** (1.0 / 3.0)
-    expected_r = 5.0e-4 * p.g4pmr_over_g1pmr ** (1.0 / 3.0)
+    expected_c = 1.0e-5 * p.g3pmc ** (1.0 / 3.0)          # cloud: F:1670 uses 1./3.
+    expected_r = 5.0e-4 * p.g4pmr_over_g1pmr ** 0.3333333  # rain: F:1671 truncated literal (#4)
     assert torch.allclose(avedia_c, torch.full_like(avedia_c, expected_c), rtol=1e-12)
     assert torch.allclose(avedia_r, torch.full_like(avedia_r, expected_r), rtol=1e-12)
 
@@ -133,11 +133,11 @@ def test_g4pmr_over_g1pmr_is_24():
 
 
 def test_avedia_rain_hardcoded():
-    """avedia_r = rslope_r · 24^(1/3) (MUR=1, Γ-truth)."""
+    """avedia_r = rslope_r · (g4pmr/g1pmr)^0.3333333 — Fortran F:1671 truncated literal (#4)."""
     p = default_cloud_dsd_params()
     rslope_r = torch.tensor([[1.0e-4, 5.0e-4]], dtype=torch.float64)
     out = diag_avedia_rain_torch(rslope_r, params=p)
-    expected = rslope_r * (24.0 ** (1.0 / 3.0))
+    expected = rslope_r * (p.g4pmr_over_g1pmr ** 0.3333333)
     assert torch.allclose(out, expected, rtol=1e-12)
 
 

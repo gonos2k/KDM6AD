@@ -98,8 +98,8 @@ def test_preamble_avedia_uses_slope_output():
     p = default_coordinator_params()
     state, forcing, sea_mask = _state_forcing()
     out = preamble_torch(state, forcing, sea_mask, params=p)
-    # avedia_r = rslope_r * (g4pmr/g1pmr)^(1/3)
-    expected = out.slope.rslope_r * (p.cloud_dsd.g4pmr_over_g1pmr ** (1.0 / 3.0))
+    # avedia_r = rslope_r * (g4pmr/g1pmr)^0.3333333 — Fortran F:1671/2878 truncated literal (#4)
+    expected = out.slope.rslope_r * (p.cloud_dsd.g4pmr_over_g1pmr ** 0.3333333)
     assert torch.allclose(out.avedia_r, expected, rtol=1e-12)
 
 
