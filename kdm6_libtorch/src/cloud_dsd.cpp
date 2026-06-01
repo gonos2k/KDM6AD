@@ -117,7 +117,7 @@ torch::Tensor diag_qcr_torch(
     const CloudDsdParams& p,
     const torch::Tensor& ref
 ) {
-    // Mirrors operational Fortran module_mp_kdm6.F:826-830 and Python oracle
+    // Mirrors operational Fortran module_mp_kdm6.F:792-797 and Python oracle
     // kdm6_torch/kdm6/cloud_dsd.py:diag_qcr_torch:
     //   sea (slmsk==2)  → qc0 (low CCN → low qcr threshold, clean marine air)
     //   land (else)     → qc1 (high CCN → high qcr threshold, dusty air)

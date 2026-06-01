@@ -279,7 +279,7 @@ FnResult kdm6_fn(const State& state,
     // inverting the order. We now split the timestep into `loops` sub-cycles and, per
     // substep: fall(dtcld) on the current state → rebuild aux on the post-fall state →
     // run ONE microphysics pass (kdm62d_one_step) over dtcld. The Fortran entry-prologue
-    // nccn clamp (:747) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
+    // nccn clamp (:751) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
     // Fortran (clamp before the sub-cycle loop, not per substep). For loops=1 (dt<=dtcldcr;
     // every validation/typical case) this == Stage S1's single sub-cycle. K-flip: WRF
     // stages K=0 at surface, sedimentation_chain wants K=0 at TOP; cf is constant so its
@@ -294,7 +294,7 @@ FnResult kdm6_fn(const State& state,
     const double dtcld = dt / static_cast<double>(loops);
 
     auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
-    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :747, ONCE
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :751, ONCE
     torch::Tensor rain_inc, snow_inc, graup_inc;
 
     for (int i = 0; i < loops; ++i) {

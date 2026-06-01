@@ -2,12 +2,12 @@
 KDM6 cloud DSD diagnostics — B1-B4의 placeholder 의존성 해소 모듈.
 
 원본:
-  - module_mp_kdm6.F: 1722-1725 (avedia_c, avedia_r, sigma_c)
-  - module_mp_kdm6.F: 1755-1757 (lencon, lenconcr)
-  - module_mp_kdm6.F: 869-874   (qcr - sea/land 분기)
-  - module_mp_kdm6.F: 3210-3211 (qc0, qc1)
-  - module_mp_kdm6.F: 3279      (pidnc = cmc * rgmma(1+dmc/(muc+1)))
-  - module_mp_kdm6.F: 777       (lamdac = (pidnc·nc / (qc·den))^(1/dmc))
+  - module_mp_kdm6.F: 1620-1623 (avedia_c, avedia_r, sigma_c)
+  - module_mp_kdm6.F: 1653-1655 (lencon, lenconcr)
+  - module_mp_kdm6.F: 792-797   (qcr - sea/land 분기)
+  - module_mp_kdm6.F: 3054-3055 (qc0, qc1)
+  - module_mp_kdm6.F: 3123      (pidnc = cmc * rgmma(1+dmc/(muc+1)))
+  - module_mp_kdm6.F: 720       (lamdac = (pidnc·nc / (qc·den))^(1/dmc))
 
 본 모듈이 산출하는 5개 양은 warm.py의 B1-B4 함수들이 입력으로 받는 placeholder.
 Step B 검증 후 B1-B4를 *coordinator*에서 호출할 때 본 진단을 먼저 수행.
@@ -127,12 +127,12 @@ def diag_species_slope_torch(
 
 
 def diag_avedia_cloud_torch(rslopec: torch.Tensor, *, params: CloudDsdParams) -> torch.Tensor:
-    """Fortran 1722: avedia_c = rslopec * g3pmc^(1/3)."""
+    """Fortran 1620: avedia_c = rslopec * g3pmc^(1/3)."""
     return rslopec * (params.g3pmc ** (1.0 / 3.0))
 
 
 def diag_avedia_rain_torch(rslope_r: torch.Tensor, *, params: CloudDsdParams) -> torch.Tensor:
-    """Fortran 1723: avedia_r = rslope_r * (g4pmr/g1pmr)^(1/3)."""
+    """Fortran 1621: avedia_r = rslope_r * (g4pmr/g1pmr)^(1/3)."""
     return rslope_r * (params.g4pmr_over_g1pmr ** (1.0 / 3.0))
 
 
@@ -145,7 +145,7 @@ def diag_sigma_cloud_torch(
     params: CloudDsdParams,
     strict_fortran: bool = False,
 ) -> torch.Tensor:
-    """Fortran 1725: sigma_c = rslopec * (g6pmc - g3pmc²)^(1/6).
+    """Fortran 1623: sigma_c = rslopec * (g6pmc - g3pmc²)^(1/6).
 
     review6 audit 후 `rgmma = Γ` 직역 적용 → muc=2에서:
         g3pmc = Γ(2) = 1.0, g6pmc = Γ(3) = 2.0, var_factor = 1.0 (positive).
@@ -171,7 +171,7 @@ def diag_lencon_torch(
     *,
     qcrmin: float = c.QCRMIN,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1755-1757:
+    """Fortran 1653-1655:
         lencon = 2.7e-2 · den · qc · (1e20/16 · avedia_c · sigma_c³ - 0.4)
         lenconcr = max(1.2 · lencon, qcrmin)
 
@@ -192,7 +192,7 @@ def diag_qcr_torch(
     params: CloudDsdParams,
     ref: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Fortran module_mp_kdm6.F:826-830 — sea(slmsk==2) → qc0, land → qc1.
+    """Fortran module_mp_kdm6.F:792-797 — sea(slmsk==2) → qc0, land → qc1.
 
     Physical reasoning: qc0 = qc_base · XNCR0 (XNCR0=5e7, low CCN concentration)
     and qc1 = qc_base · XNCR1 (XNCR1=5e8, high CCN). Higher CCN → smaller

@@ -1,13 +1,13 @@
 """
 KDM6 warm rain processes — Lim & Hong / Cohard-Pinty 더블모멘트 직역.
 
-원본: module_mp_kdm6.F: 1739-1855 (warm rain block 안의 5 process)
+원본: module_mp_kdm6.F: 1643-1751 (warm rain block 안의 5 process)
 
 본 모듈은 Step B의 sub-step 단위로 함수를 누적 추가한다.
-  - B1 (현재): autoconversion          — `autoconv_torch`        (1758-1769)
-  - B2:        accretion (cloud→rain)  — `accretion_torch`       (1771-1794)
-  - B3:        self-collection         — `self_collection_torch` (1799-1826)
-  - B4:        rain evaporation         — `rain_evap_torch`       (1828-1853)
+  - B1 (현재): autoconversion          — `autoconv_torch`        (1656-1667)
+  - B2:        accretion (cloud→rain)  — `accretion_torch`       (1674-1692)
+  - B3:        self-collection         — `self_collection_torch` (1697-1724)
+  - B4:        rain evaporation         — `rain_evap_torch`       (1729-1751)
   - B5:        saturation adjustment    — 별도 모듈 `satadj.py`로 분리 예정
 
 상위 호출자 `kdm62D`는 B1-B4를 같은 do-loop 안에서 호출하지만, 본 oracle은 각
@@ -54,7 +54,7 @@ class WarmAutoconvParams(NamedTuple):
 def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0) -> WarmAutoconvParams:
     """`kdm6init`의 qck1 + 운영 ncmin 기본값.
 
-    Derivation (Fortran kdm6init line ~3212):
+    Derivation (Fortran kdm6init line ~3056):
         qck1 = .104 * 9.8 * peaut / denr^(1/3) / xmyu * den0^(4/3)
     `den0`은 kdm6init의 INPUT 인자라 외부에서 들어옴 — 표준대기 1.28 fallback.
     """
@@ -84,7 +84,7 @@ def autoconv_torch(
     params: WarmAutoconvParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1758-1769 직역 — cloud→rain autoconversion (mass + number).
+    """Fortran 1656-1667 직역 — cloud→rain autoconversion (mass + number).
 
     Process
     -------
@@ -158,7 +158,7 @@ class WarmAccretionParams(NamedTuple):
 def default_warm_accretion_params() -> WarmAccretionParams:
     """`kdm6init`의 cloud/rain gamma family 직역.
 
-    원본 (Fortran kdm6init:3234-3253):
+    원본 (Fortran kdm6init:3078-3099):
         muc1 = 1+1/(muc+1);  g1pmc = rgmma(muc1)
         muc3 = 1+3/(muc+1);  g3pmc = rgmma(muc3)   ...
         mur1 = 1+mur;        g1pmr = rgmma(mur1)
@@ -202,7 +202,7 @@ def accretion_torch(
     params: WarmAccretionParams,
     dtcld: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1771-1794 — accretion of cloud water by rain (mass + number).
+    """Fortran 1674-1692 — accretion of cloud water by rain (mass + number).
 
     Two-mode collection kernel based on rain mean diameter (Cohard-Pinty 2000):
       - mode 1 (avedia_r >= di100=100 µm): big-drop kernel using ncrk1
@@ -314,10 +314,10 @@ def self_collection_torch(
     *,
     params: WarmSelfCollectionParams,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Fortran 1799-1826 — cloud and rain self-collection.
+    """Fortran 1697-1724 — cloud and rain self-collection.
 
-    nccol (1799-1806): cloud self-collection — 2-mode by avedia_c >= di100.
-    nrcol (1811-1826): rain self-collection + break-up — 4-mode by avedia_r:
+    nccol (1697-1704): cloud self-collection — 2-mode by avedia_c >= di100.
+    nrcol (1709-1724): rain self-collection + break-up — 4-mode by avedia_r:
       - avedia_r < di100              : ncrk2 small-drop kernel
       - di100 <= avedia_r < di600     : ncrk1 medium-drop kernel
       - di600 <= avedia_r < di2000    : exp(-2.5e3*eccbrk*(avedia_r-di600)) damping (break-up)
@@ -374,7 +374,7 @@ def self_collection_torch(
 class WarmRainEvapParams(NamedTuple):
     """prevp 산출에 필요한 시간불변 스칼라.
 
-    Derivations (Fortran kdm6init:3295-3306):
+    Derivations (Fortran kdm6init:3140-3150):
         g2pmr   = rgmma(2 + mur)              # rain gamma at 2+mur
         bvtr3o5 = 2.5 + 0.5*bvtr + mur
         g7pbro2 = rgmma(bvtr3o5)
@@ -421,12 +421,12 @@ def rain_evap_torch(
     params: WarmRainEvapParams,
     dtcld: float,
 ) -> torch.Tensor:
-    """Fortran 1828-1853 — rain evaporation/condensation (mass rate).
+    """Fortran 1729-1751 — rain evaporation/condensation (mass rate).
 
     prevp < 0 (rh<1, evaporation): qr→qv. capped by -qr/dtcld and satdt/2.
     prevp > 0 (rh>1, rare condensation): qv→qr. capped by satdt/2.
 
-    Note: nrevp(number rate) and complete-evap CCN transfer (Fortran 1846-1849)는
+    Note: nrevp(number rate) and complete-evap CCN transfer (Fortran 1744-1747)는
     *state mutation*이므로 caller가 mass-cap hit 검사 후 처리. 본 함수는 prevp만 산출.
 
     Returns

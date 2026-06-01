@@ -34,7 +34,7 @@ def test_default_warm_autoconv_params_finite_and_positive():
 
 
 def test_default_warm_autoconv_params_qck1_formula():
-    """qck1 = .104 * 9.8 * peaut / denr^(1/3) / xmyu * den0^(4/3) (Fortran kdm6init:3212)."""
+    """qck1 = .104 * 9.8 * peaut / denr^(1/3) / xmyu * den0^(4/3) (Fortran kdm6init:3056)."""
     den0 = 1.28
     expected = (
         0.104 * 9.8 * c.PEAUT

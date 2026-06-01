@@ -97,7 +97,7 @@ def test_diag_lencon_lenconcr_floor():
 
 
 def test_diag_qcr_sea_land_branch():
-    """Mirrors Fortran module_mp_kdm6.F:826-830: sea(slmsk==2)→qc0, land→qc1.
+    """Mirrors Fortran module_mp_kdm6.F:790-797: sea(slmsk==2)→qc0, land→qc1.
     Physical reasoning: clean ocean air = low CCN = low qcr threshold = qc0;
     dusty land air = high CCN = high qcr threshold = qc1."""
     p = default_cloud_dsd_params()

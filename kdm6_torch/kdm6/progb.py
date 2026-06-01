@@ -2,8 +2,8 @@
 KDM6 ProgB_param oracle — graupel volume + density-dependent DSD parameters.
 
 원본:
-  - module_mp_kdm6.F: 3442-3534 (`SUBROUTINE ProgB_param`)
-  - module_mp_kdm6.F: 3185-3205 (`kdm6init` 의 hail_opt-의존 graupel 상수)
+  - module_mp_kdm6.F: 3282-3375 (`SUBROUTINE ProgB_param`)
+  - module_mp_kdm6.F: 3040-3049 (`kdm6init` 의 hail_opt-의존 graupel 상수)
 
 역할:
   graupel mass `qg`(=qrs(:,:,3))와 volume mixing ratio `bg`(=brs)로부터 graupel
@@ -113,7 +113,7 @@ def default_progb_params() -> ProgBParams:
 
     Derivations
     -----------
-    - `g1pmg = 1` if `mug==0` else `rgmma(1+mug)` (Fortran kdm6init:3272-3276)
+    - `g1pmg = 1` if `mug==0` else `rgmma(1+mug)` (Fortran kdm6init:3116-3120)
     - `g1pdgmg = rgmma(1 + dmg + mug)`
     - `rslopegmax = 1 / lamdagmax`
     """
