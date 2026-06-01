@@ -167,7 +167,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     auto rain = rain_slope_components(
         inputs.qr, inputs.nr, inputs.den, inputs.denfac, params, /*include_den_gate=*/true);
 
-    auto snow_mask = (inputs.qs <= constants::QCRMIN) | (inputs.den <= 0.0);
+    auto snow_mask = (inputs.qs <= constants::QCRMIN);
     auto pidn0s = scalar_like(params.pidn0s, inputs.qs);
     auto lamdas = lamda_from_ratio(
         pidn0s * n0sfac_out / domain_clamp(inputs.qs * inputs.den),
@@ -193,7 +193,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     auto rslope2_s = torch::where(snow_mask, scalar_like(params.rslopes2max, inputs.qs), rslope_s * rslope_s);
     auto rslope3_s = torch::where(snow_mask, scalar_like(params.rslopes3max, inputs.qs), rslope2_s * rslope_s);
 
-    auto graupel_mask = (inputs.qg <= constants::QCRMIN) | (inputs.den <= 0.0) | (inputs.pidn0g <= 0.0);
+    auto graupel_mask = (inputs.qg <= constants::QCRMIN);
     auto lamdag = lamda_from_ratio(inputs.pidn0g / domain_clamp(inputs.qg * inputs.den), constants::DMG + 1.0);
     auto rslope_g_raw = 1.0 / lamdag;
     auto rslope_g = torch::where(graupel_mask, scalar_like(params.rslopegmax, inputs.qg), rslope_g_raw);
@@ -216,7 +216,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     // (kdm6.F:1467,1652 use a DIFFERENT 1e-14 gate for the n0i/lamda snap
     // outside slope_kdm6 — that lives in apply_dsd_number_limiters land, not
     // here. Don't conflate the two.)
-    auto ice_mask = (inputs.qi <= constants::EPS) | (inputs.den <= 0.0) | (inputs.ni <= 0.0);
+    auto ice_mask = (inputs.qi <= constants::EPS);
     auto pidni = scalar_like(params.pidni, inputs.qi);
     auto lamdai = lamda_from_ratio(pidni * inputs.ni / domain_clamp(inputs.qi * inputs.den), constants::DMI);
     auto rslope_i_raw = torch::clamp(

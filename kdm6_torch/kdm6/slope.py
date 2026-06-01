@@ -378,7 +378,7 @@ def slope_kdm6_torch(
         include_den_gate=True,
     )
 
-    snow_mask = (qs <= qcrmin) | (den <= 0.0)
+    snow_mask = (qs <= qcrmin)
     pidn0s = _scalar(params.pidn0s, qs)
     lamdas = _lamda_from_ratio(pidn0s * n0sfac_out / _domain_clamp(qs * den), dms + 1.0)
     rslope_s_raw = 1.0 / lamdas
@@ -401,7 +401,7 @@ def slope_kdm6_torch(
     rslope2_s = torch.where(snow_mask, _scalar(params.rslopes2max, qs), rslope_s * rslope_s)
     rslope3_s = torch.where(snow_mask, _scalar(params.rslopes3max, qs), rslope2_s * rslope_s)
 
-    graupel_mask = (qg <= qcrmin) | (den <= 0.0) | (pidn0g <= 0.0)
+    graupel_mask = (qg <= qcrmin)
     lamdag = _lamda_from_ratio(pidn0g / _domain_clamp(qg * den), dmg + 1.0)
     rslope_g_raw = 1.0 / lamdag
     rslope_g = torch.where(graupel_mask, _scalar(params.rslopegmax, qg), rslope_g_raw)
@@ -419,7 +419,7 @@ def slope_kdm6_torch(
     rslope2_g = torch.where(graupel_mask, _scalar(params.rslopeg2max, qg), rslope_g * rslope_g)
     rslope3_g = torch.where(graupel_mask, _scalar(params.rslopeg3max, qg), rslope2_g * rslope_g)
 
-    ice_mask = (qi <= qmin) | (den <= 0.0) | (ni <= 0.0)
+    ice_mask = (qi <= qmin)
     pidni = _scalar(params.pidni, qi)
     lamdai = _lamda_from_ratio(pidni * ni / _domain_clamp(qi * den), DMI)
     rslope_i_raw = torch.clamp(1.0 / lamdai, min=1.0 / lamdaimax, max=1.0 / lamdaimin)

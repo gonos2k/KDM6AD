@@ -485,7 +485,7 @@ def enhanced_melting_torch(
     Note: supcol < 0 → cliq·supcol < 0 → pseml < 0 (sink for snow), 직관 일치.
     """
     zero = torch.zeros_like(qs)
-    warm = supcol < 0
+    warm = supcol <= 0
 
     # ── pseml ──────────────────────────────────────────────────────────
     snow_active = warm & (qs > 0)

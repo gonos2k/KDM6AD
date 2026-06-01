@@ -249,7 +249,7 @@ EnhancedMeltingOutputs enhanced_melting_torch(
     double dtcld
 ) {
     auto zero = torch::zeros_like(in.qs);
-    auto warm = in.supcol < 0;
+    auto warm = in.supcol <= 0;
 
     auto snow_active = torch::logical_and(warm, in.qs > 0);
     auto pseml_raw = p.cliq * in.supcol * (in.paacw + in.psacr) / p.xlf;
