@@ -469,18 +469,14 @@ CoordinatorState kdm62d_one_step(
     const MeltFreezePhaseParams& mf_params,
     double dtcld
 ) {
-    // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran kdm6.f90:1359-1369)
-    // is DISABLED — kdm62d_one_step does NOT apply it. It is a pre-cold freezing
-    // step, but `aux` (n0i/avedia_i) is built upstream in the runtime
-    // (runtime.cpp build_default_aux, from the ORIGINAL state) and is NOT rebuilt
-    // after this freeze — so the cold phase would see STALE n0i on the post-freeze
-    // ice. That stale-aux pre-freeze staging is the same class that produced an
-    // 806× ice over-deposition regression when tried for the contact/Bigg freezing
-    // (joint Claude+Codex review, 2026-05-30). Re-enabling it requires the same
-    // cross-layer refactor as the full staging fix (freeze → REBUILD aux → cold).
-    // Until then we keep the step free of stale-aux pre-cold freezing. The
-    // apply_homogeneous_freeze_supercold function is retained (unused) as the
-    // reference implementation for proper re-introduction with the aux rebuild.
+    // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran kdm6.f90:1360-1370)
+    // is now ENABLED (Stage H2), applied at step 1b below — BETWEEN D1 melt and the
+    // post-melt rebuild_aux. It was previously disabled because, as a pre-cold
+    // freezing step, the cold phase would have read STALE n0i on the post-freeze ice
+    // (the 806× over-deposition class). The Stage-A re-architecture now ALWAYS
+    // rebuild_aux's after the freeze (re-slope on the post-homog/post-freeze ice
+    // before warm/cold), which removes the stale-aux hazard — validated on
+    // em_squall2d_x (−80°C tops): QICE stays bounded (~1.8e-3, no 806× blowup).
     auto state_pre = state;
 
     // F1a: preamble (full diagnostics) on the ENTRY state.
@@ -507,18 +503,26 @@ CoordinatorState kdm62d_one_step(
     auto working1 = apply_melt_freeze_inline(
         state_pre, mf_d1, pre_core, dtcld, full_params.thermo.xls);
 
-    // 2. rebuild on the post-melt state (re-slope :1372-1430; entry thermo spliced).
-    auto rebuilt1 = rebuild_aux(working1, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
+    // 1b. Homogeneous freeze (Fortran :1360-1370): at supcol>40 (T<-40°C) freeze
+    // ALL cloud water → ice (qi+=qc, ni+=nc, t+=xlf/cpm·qc, qc=nc=0). Runs BETWEEN
+    // D1 melt and the post-melt re-slope, so the re-slope + D2-D4 see the post-homog
+    // qc (=0 in homog cells). Previously disabled (it was the 806× stale-aux trigger);
+    // now safe because the rebuild_aux below re-slopes n0i on the post-homog ice.
+    auto working1b = apply_homogeneous_freeze_supercold(working1, full_params.thermo, /*supcol_threshold=*/40.0);
+
+    // 2. rebuild on the post-melt+homog state (re-slope :1372-1430; entry thermo spliced).
+    auto rebuilt1 = rebuild_aux(working1b, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
     const auto& pre1 = rebuilt1.pre;
     const auto& aux1 = rebuilt1.aux;
 
-    // 3. D2-D4 freeze on the post-melt/re-sloped state → working.
+    // 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog has
+    // zeroed qc in supcol>40 cells, so D2/D3 are inactive there — Fortran-exact.)
     auto mf_d234 = melt_freeze_d2_d4(
-        working1, forcing, pre_mf_view(pre1),
+        working1b, forcing, pre_mf_view(pre1),
         aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
         mf_params, dtcld);
     auto working = apply_melt_freeze_inline(
-        working1, mf_d234, pre_core, dtcld, full_params.thermo.xls);
+        working1b, mf_d234, pre_core, dtcld, full_params.thermo.xls);
 
     // 4. rebuild on the post-freeze state (re-slope :1546-1633; the prior STEP-2
     // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/

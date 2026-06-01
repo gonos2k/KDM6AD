@@ -1667,6 +1667,40 @@ def apply_satadj_step_torch(
     return state._replace(qv=qv_final, qc=qc_final, t=t_final)
 
 
+def apply_homogeneous_freeze_supercold_torch(
+    state: CoordinatorState,
+    thermo_params,
+    *,
+    supcol_threshold: float = 40.0,
+) -> CoordinatorState:
+    """Fortran kdm6.f90:1359-1369 — at supcol > 40 (T < t0c-40 ≈ 233K) with qc>0,
+    instantaneously freeze ALL cloud water to ice + release fusion latent heat:
+      qi += qc; ni += nc; t += xlf/cpm·qc; qc = 0; nc = 0   (xlf = xls - xl(T)).
+    Runs between D1 melt and the post-melt re-slope (Fortran order), so D2-D4 see
+    the post-homog qc (=0 in homog cells). 1:1 mirror of C++
+    apply_homogeneous_freeze_supercold. AD-safe (multiplicative mask). cpm uses qv
+    (melt/freeze-invariant) and xl uses t — both == entry values in homog cells
+    (D1 melt is warm-gated ⇒ inactive where supcol>40), matching Fortran's entry-
+    fixed cpm/xl (:785-786).
+    """
+    dtype = state.qc.dtype
+    supcol = thermo_params.t0c - state.t
+    mask = ((supcol > supcol_threshold) & (state.qc > 0.0)).to(dtype)
+    inv = 1.0 - mask
+    xl = _thermo.compute_xl(state.t, params=thermo_params)
+    cpm = _thermo.compute_cpm(state.qv, params=thermo_params)
+    xlf = thermo_params.xls - xl
+    cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
+    dT = xlf / cpm_safe * state.qc
+    return state._replace(
+        qc=state.qc * inv,
+        qi=state.qi + state.qc * mask,
+        nc=state.nc * inv,
+        ni=state.ni + state.nc * mask,
+        t=state.t + dT * mask,
+    )
+
+
 def kdm62d_one_step_torch(
     state: CoordinatorState,
     forcing: CoordinatorForcing,
@@ -1704,17 +1738,23 @@ def kdm62d_one_step_torch(
     working1 = apply_melt_freeze_inline_torch(
         state, mf_d1, pre, dtcld=dtcld, xls=full_params.thermo.xls)
 
-    # 2. rebuild on the post-melt state (re-slope; entry thermo spliced).
-    pre1, aux1 = rebuild_aux_torch(
-        working1, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
+    # 1b. Homogeneous freeze (Fortran :1360-1370): supcol>40 ⇒ all qc→qi, between
+    # D1 melt and the post-melt re-slope (so the re-slope + D2-D4 see post-homog qc).
+    # Now safe (rebuild below re-slopes n0i on the post-homog ice). Mirror of C++.
+    working1b = apply_homogeneous_freeze_supercold_torch(working1, full_params.thermo)
 
-    # 3. D2-D4 freeze on the post-melt/re-sloped state → working.
+    # 2. rebuild on the post-melt+homog state (re-slope; entry thermo spliced).
+    pre1, aux1 = rebuild_aux_torch(
+        working1b, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
+
+    # 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog zeroed
+    # qc in supcol>40 cells, so D2/D3 inactive there — Fortran-exact.)
     mf_d234 = melt_freeze_d2_d4_torch(
-        working1, forcing, pre1,
+        working1b, forcing, pre1,
         aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
         params=mf_params, dtcld=dtcld)
     working = apply_melt_freeze_inline_torch(
-        working1, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+        working1b, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
 
     # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
     pre2, aux2 = rebuild_aux_torch(
