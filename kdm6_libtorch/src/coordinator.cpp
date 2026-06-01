@@ -606,7 +606,8 @@ CoordinatorState kdm62d_one_step(
 // ─── F2: sub-cycling wrapper ────────────────────────────────────────────────
 
 int compute_loops_max(double delt, double dtcldcr) {
-    // Fortran: max(nint(delt/dtcldcr + 0.5), 1).
+    // Fortran: max(nint(delt/dtcldcr), 1).  For positive delt,
+    // (int)(delt/dtcldcr + 0.5) == nint(delt/dtcldcr) (round-half-up).
     int n = static_cast<int>(delt / dtcldcr + 0.5);
     return n > 1 ? n : 1;
 }
@@ -1029,8 +1030,9 @@ CoordinatorState state_update(
     // ── Mass balance ────────────────────────────────────────────────────────
     // qv — pcact/pcond DEFERRED to apply_satadj_step (called after state_update
     // + reclassifications in kdm62d_one_step), mirroring Fortran kdm6.f90:
-    // mass balance at :2680-2823 runs FIRST, then reclass at :2862-2876, THEN
-    // pcact apply at :2887-2898, THEN satadj/pcond at :2906-2927.
+    // mass balance at :2549-2705 runs FIRST, then reclass (Picons ice→snow
+    // :2757-2762, rain→cloud :2833-2842), THEN pcact apply at :2853-2864, THEN
+    // satadj/pcond at :2872-2893.
     // Per-cell warm/cold/mf rates are applied here; activation + condensation
     // run on the post-state-update + post-reclass state for proper Fortran
     // sequence parity (Codex stop-gate finding 8 - frame-6+ cascade origin).
