@@ -227,7 +227,7 @@ def default_contact_freezing_params(*, xlf: float = DEFAULT_XLF) -> ContactFreez
     return ContactFreezingParams(
         cmc=cmc, muc=c.MUC, g1pmc=g1pmc, g4pmc=g4pmc,
         rcn=0.1e-6, boltzmann=1.38e-23,
-        xlf=xlf, qmin=c.QCRMIN, ncmin=c.NCMIN, supcol_threshold=2.0,
+        xlf=xlf, qmin=c.EPS, ncmin=c.NCMIN, supcol_threshold=2.0,  # qmin=epsilon=1e-15 (Fortran F:1485 qc>qmin gate). 1:1 fix #1
     )
 
 
@@ -313,7 +313,7 @@ def default_bigg_cloud_params() -> BiggCloudParams:
         cmc=cmc, denr=c.DENR, muc=c.MUC,
         pfrz1=c.PFRZ1, pfrz2=c.PFRZ2,
         g1p2dcomuc1=g1p2dcomuc1, g1pdcomuc1=g1pdcomuc1,
-        qmin=c.QCRMIN, ncmin=c.NCMIN,
+        qmin=c.EPS, ncmin=c.NCMIN,  # qmin=epsilon=1e-15 (Fortran F:1512 qc>qmin gate). 1:1 fix #1
     )
 
 
@@ -381,7 +381,7 @@ def default_bigg_rain_params() -> BiggRainParams:
         cmr=cmr, denr=c.DENR,
         pfrz1=c.PFRZ1, pfrz2=c.PFRZ2,
         g1pdrmr=g1pdrmr, g1p2drmr=g1p2drmr,
-        qmin=c.QCRMIN, nrmin=c.NRMIN,
+        qmin=c.EPS, nrmin=c.NRMIN,  # qmin only feeds clamp(den,qmin) (den~1, inert); gate is qr>0. EPS for consistency. 1:1 fix #1
     )
 
 

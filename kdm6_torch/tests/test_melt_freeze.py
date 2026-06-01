@@ -166,6 +166,16 @@ def test_contact_active_at_cold():
     assert torch.all(out.pinuc <= qc)
 
 
+def test_contact_qc_gate_regression():
+    """qc gate at EPS=1e-15 (#1): qc<gate → pinuc=0; qc in (1e-15,1e-9) → pinuc>0
+    (gate-regression LOCK — fails if the qmin gate regresses to 1e-9)."""
+    p = default_contact_freezing_params()
+    out_lo = contact_freezing_torch(*_contact_inputs(supcol_value=10.0, qc_value=1.0e-16), params=p, dtcld=60.0)
+    assert torch.allclose(out_lo.pinuc, torch.zeros_like(out_lo.pinuc))
+    out_b = contact_freezing_torch(*_contact_inputs(supcol_value=10.0, qc_value=1.0e-12), params=p, dtcld=60.0)
+    assert torch.all(out_b.pinuc > 0.0)
+
+
 def test_contact_grad_finite():
     p = default_contact_freezing_params()
     inputs = _contact_inputs(supcol_value=10.0, requires_grad=True)
@@ -180,9 +190,9 @@ def test_contact_grad_finite():
 # ════ Step D3: Bigg cloud freezing ════════════════════════════════════════════
 
 
-def _bigg_cloud_inputs(*, supcol_value: float = 10.0, requires_grad: bool = False):
+def _bigg_cloud_inputs(*, supcol_value: float = 10.0, qc_value: float = 1.0e-3, requires_grad: bool = False):
     dtype = torch.float64
-    qc = torch.full((1, 2), 1.0e-3, dtype=dtype, requires_grad=requires_grad)
+    qc = torch.full((1, 2), qc_value, dtype=dtype, requires_grad=requires_grad)
     nc = torch.full((1, 2), 1.0e8, dtype=dtype, requires_grad=requires_grad)
     den = torch.full((1, 2), 1.1, dtype=dtype)
     n0c = torch.full((1, 2), 1.0e8, dtype=dtype)
@@ -207,6 +217,16 @@ def test_bigg_cloud_capped_by_qc():
     qc = inputs[0]
     assert torch.all(out.pfrzdtc <= qc + 1e-15)
     assert torch.all(out.pfrzdtc >= 0)
+
+
+def test_bigg_cloud_qc_gate_regression():
+    """qc gate at EPS=1e-15 (#1): qc<gate → pfrzdtc=0; qc in (1e-15,1e-9) → pfrzdtc>0
+    (gate-regression LOCK — fails if the qmin gate regresses to 1e-9)."""
+    p = default_bigg_cloud_params()
+    out_lo = bigg_cloud_freezing_torch(*_bigg_cloud_inputs(supcol_value=10.0, qc_value=1.0e-16), params=p, dtcld=60.0)
+    assert torch.allclose(out_lo.pfrzdtc, torch.zeros_like(out_lo.pfrzdtc))
+    out_b = bigg_cloud_freezing_torch(*_bigg_cloud_inputs(supcol_value=10.0, qc_value=1.0e-12), params=p, dtcld=60.0)
+    assert torch.all(out_b.pfrzdtc > 0.0)
 
 
 def test_bigg_cloud_grad_finite():

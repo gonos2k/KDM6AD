@@ -113,7 +113,7 @@ ContactFreezingParams default_contact_freezing_params(double xlf) {
     return ContactFreezingParams{
         cmc, constants::MUC, g1pmc, g4pmc,
         /*rcn=*/0.1e-6, /*boltzmann=*/1.38e-23,
-        xlf, constants::QCRMIN, constants::NCMIN, /*supcol_threshold=*/2.0,
+        xlf, /*qmin=*/constants::EPS, constants::NCMIN, /*supcol_threshold=*/2.0,  // qmin=epsilon=1e-15 (Fortran F:1485 qci>qmin gate; den-clamp inert). 1:1 fix #1
         /*ncmin_tensor=*/c10::nullopt,
     };
 }
@@ -161,7 +161,7 @@ BiggCloudParams default_bigg_cloud_params() {
         cmc, constants::DENR, constants::MUC,
         constants::PFRZ1, constants::PFRZ2,
         g1p2dcomuc1, g1pdcomuc1,
-        constants::QCRMIN, constants::NCMIN,
+        /*qmin=*/constants::EPS, constants::NCMIN,  // qmin=epsilon=1e-15 (Fortran F:1512 qci>qmin gate; den-clamp inert). 1:1 fix #1
         /*ncmin_tensor=*/c10::nullopt,
     };
 }
@@ -206,7 +206,7 @@ BiggRainParams default_bigg_rain_params() {
         cmr, constants::DENR,
         constants::PFRZ1, constants::PFRZ2,
         g1pdrmr, g1p2drmr,
-        constants::QCRMIN, constants::NRMIN,
+        /*qmin=*/constants::EPS, constants::NRMIN,  // qmin only feeds clamp(den,qmin) here (den~1, inert); gate is qr>0. EPS for consistency. 1:1 fix #1
     };
 }
 

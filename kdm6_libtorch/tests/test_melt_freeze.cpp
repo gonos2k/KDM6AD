@@ -98,10 +98,10 @@ void test_melt_grad_finite() {
 
 namespace {
 
-ContactFreezingInputs make_contact_inputs(double supcol_value, bool grad = false) {
+ContactFreezingInputs make_contact_inputs(double supcol_value, bool grad = false, double qc_value = 1.0e-3) {
     auto opts = grad ? f64().requires_grad(true) : f64();
     auto plain = f64();
-    auto qc = torch::full({1, 2}, 1.0e-3, opts);
+    auto qc = torch::full({1, 2}, qc_value, opts);
     auto nc = torch::full({1, 2}, 1.0e8, opts);
     auto t = torch::full({1, 2}, 263.15, plain);
     auto p = torch::full({1, 2}, 8.0e4, plain);
@@ -123,6 +123,42 @@ void test_contact_inactive_when_supcol_low() {
         auto in = make_contact_inputs(/*supcol=*/1.0);
         auto out = contact_freezing_torch(in, p, 60.0);
         assert(torch::allclose(out.pinuc, torch::zeros_like(in.qc)));
+    } END_TEST();
+}
+
+void test_contact_qc_gate_regression() {
+    TEST(test_contact_qc_gate_regression) {
+        auto p = default_contact_freezing_params();
+        // qc below the EPS=1e-15 gate (#1) → pinuc = 0 (gate blocks; supcol=10 > 2).
+        auto in_lo = make_contact_inputs(/*supcol=*/10.0, /*grad=*/false, /*qc=*/1.0e-16);
+        auto out_lo = contact_freezing_torch(in_lo, p, 60.0);
+        assert(torch::allclose(out_lo.pinuc, torch::zeros_like(in_lo.qc)));
+        // Gate-regression LOCK: qc in (EPS=1e-15, old qcrmin=1e-9) → gate OPEN → pinuc > 0
+        // (capped at qc). FAILS if the qmin gate regresses to 1e-9.
+        auto in_band = make_contact_inputs(/*supcol=*/10.0, /*grad=*/false, /*qc=*/1.0e-12);
+        auto out_band = contact_freezing_torch(in_band, p, 60.0);
+        assert(torch::all(out_band.pinuc > 0.0).item<bool>());
+    } END_TEST();
+}
+
+void test_bigg_cloud_qc_gate_regression() {
+    TEST(test_bigg_cloud_qc_gate_regression) {
+        auto p = default_bigg_cloud_params();
+        auto plain = f64();
+        auto nc = torch::full({1, 2}, 1.0e8, plain);
+        auto den = torch::full({1, 2}, 1.1, plain);
+        auto n0c = torch::full({1, 2}, 1.0e8, plain);
+        auto rsl_c = torch::full({1, 2}, 5.0e-5, plain);
+        auto rsl_cd = torch::full({1, 2}, std::pow(5.0e-5, constants::DMC), plain);
+        auto rsl_cmu = torch::full({1, 2}, std::pow(5.0e-5, constants::MUC), plain);
+        auto supcol = torch::full({1, 2}, 10.0, plain);
+        auto mk = [&](double qc_value) {
+            auto qc = torch::full({1, 2}, qc_value, plain);
+            return bigg_cloud_freezing_torch(BiggCloudInputs{qc, nc, den, n0c, rsl_c, rsl_cd, rsl_cmu, supcol}, p, 60.0);
+        };
+        // qc below EPS=1e-15 gate (#1) → pfrzdtc = 0; qc in (1e-15,1e-9) → pfrzdtc > 0 (gate-regression LOCK).
+        assert(torch::allclose(mk(1.0e-16).pfrzdtc, torch::zeros({1, 2}, plain)));
+        assert(torch::all(mk(1.0e-12).pfrzdtc > 0.0).item<bool>());
     } END_TEST();
 }
 
@@ -207,6 +243,8 @@ int main() {
     test_melt_pimlt_full_transfer();
     test_melt_grad_finite();
     test_contact_inactive_when_supcol_low();
+    test_contact_qc_gate_regression();
+    test_bigg_cloud_qc_gate_regression();
     test_contact_grad_finite();
     test_bigg_cloud_grad_finite();
     test_bigg_rain_delta_brs();
