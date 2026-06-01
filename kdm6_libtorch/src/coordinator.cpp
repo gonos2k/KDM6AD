@@ -1634,8 +1634,10 @@ SedimentationOutputs sedimentation_chain(
     const torch::Tensor& work1_qg,
     const torch::Tensor& work1_qi,
     const torch::Tensor& workn_qi,
-    int mstep_main,
-    int mstep_ice,
+    const torch::Tensor& mstep_col_main,
+    int mstepmax_main,
+    const torch::Tensor& mstep_col_ice,
+    int mstepmax_ice,
     double dtcld,
     const sed::SubstepAdvectionParams& params
 ) {
@@ -1649,14 +1651,14 @@ SedimentationOutputs sedimentation_chain(
     auto fall_qg = torch::zeros_like(state.qr);
     auto fall_brs = torch::zeros_like(state.qr);
 
-    for (int i = 0; i < mstep_main; ++i) {
+    for (int n = 1; n <= mstepmax_main; ++n) {
         sed::SubstepAdvectionInputs sin{
             adv_state,
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
             work1_qr, workn_qr, work1_qs, work1_qg,
             forcing.delz, forcing.dend,
         };
-        auto out = sed::substep_advection_torch(sin, mstep_main, dtcld, params);
+        auto out = sed::substep_advection_torch(sin, mstep_col_main, mstepmax_main, n, dtcld, params);
         adv_state = out.state;
         fall_qr = out.fall_qr;
         fall_nr = out.fall_nr;
@@ -1670,14 +1672,14 @@ SedimentationOutputs sedimentation_chain(
     auto fall_qi = torch::zeros_like(state.qr);
     auto fall_ni = torch::zeros_like(state.qr);
 
-    for (int i = 0; i < mstep_ice; ++i) {
+    for (int n = 1; n <= mstepmax_ice; ++n) {
         sed::IceSubstepInputs iin{
             ice_state,
             fall_qi, fall_ni,
             work1_qi, workn_qi,
             forcing.delz, forcing.dend,
         };
-        auto out_i = sed::ice_substep_advection_torch(iin, mstep_ice, dtcld, params);
+        auto out_i = sed::ice_substep_advection_torch(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
         ice_state = out_i.state;
         fall_qi = out_i.fall_qi;
         fall_ni = out_i.fall_ni;

@@ -34,13 +34,26 @@ std::vector<torch::Tensor> split_columns(const torch::Tensor& x, int64_t K) {
 
 SubstepAdvectionOutputs substep_advection_torch(
     const SubstepAdvectionInputs& in,
-    int mstep, double dtcld,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
     const SubstepAdvectionParams& p
 ) {
     const int64_t K = in.state.qr.size(-1);
     auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
     auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
-    const double inv_mstep = 1.0 / static_cast<double>(mstep);
+    // mstep_col: (B,) float, integer-valued, clamped [1,100] by caller.
+    // Per-column divisor inv_mstep_col = 1/mstep(i)  (Fortran .../mstep(i)).
+    // Per-column gate gate_col = 1 if n<=mstep(i) else 0  (Fortran if(n.le.mstep(i))).
+    // Both are (B,) and broadcast against (B,) per-level slices x.select(-1,k).
+    // NOTE: the gate is per-COLUMN (level-independent) exactly as Fortran; do NOT
+    // index it by k. A (B,1) mask + mask.select(-1,k) would be both physically
+    // wrong and an out-of-bounds runtime crash for k>=1.
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto inv_mstep_col = torch::reciprocal(mstep_col_safe);                 // (B,)
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qr.dtype()); // (B,)
+    auto falk_scale = inv_mstep_col * gate_col;                             // (B,): divisor*gate
 
     auto qr_cols = split_columns(in.state.qr, K);
     auto nr_cols = split_columns(in.state.nr, K);
@@ -65,11 +78,11 @@ SubstepAdvectionOutputs substep_advection_torch(
     // Top cell
     {
         const int64_t k = 0;
-        auto falk_qr_top = dend_col(k) * qr_cols[k] * work1_qr_col(k) * inv_mstep;
-        auto falk_nr_top = nr_cols[k] * workn_qr_col(k) * inv_mstep;
-        auto falk_qs_top = dend_col(k) * qs_cols[k] * work1_qs_col(k) * inv_mstep;
-        auto falk_qg_top = dend_col(k) * qg_cols[k] * work1_qg_col(k) * inv_mstep;
-        auto falk_brs_top = dend_col(k) * brs_cols[k] * work1_qg_col(k) * inv_mstep;
+        auto falk_qr_top = dend_col(k) * qr_cols[k] * work1_qr_col(k) * falk_scale;
+        auto falk_nr_top = nr_cols[k] * workn_qr_col(k) * falk_scale;
+        auto falk_qs_top = dend_col(k) * qs_cols[k] * work1_qs_col(k) * falk_scale;
+        auto falk_qg_top = dend_col(k) * qg_cols[k] * work1_qg_col(k) * falk_scale;
+        auto falk_brs_top = dend_col(k) * brs_cols[k] * work1_qg_col(k) * falk_scale;
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_top;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_top;
@@ -86,11 +99,11 @@ SubstepAdvectionOutputs substep_advection_torch(
 
     // Interior cells
     for (int64_t k = 1; k < K; ++k) {
-        auto falk_qr_k = dend_col(k) * qr_cols[k] * work1_qr_col(k) * inv_mstep;
-        auto falk_nr_k = nr_cols[k] * workn_qr_col(k) * inv_mstep;
-        auto falk_qs_k = dend_col(k) * qs_cols[k] * work1_qs_col(k) * inv_mstep;
-        auto falk_qg_k = dend_col(k) * qg_cols[k] * work1_qg_col(k) * inv_mstep;
-        auto falk_brs_k = dend_col(k) * brs_cols[k] * work1_qg_col(k) * inv_mstep;
+        auto falk_qr_k = dend_col(k) * qr_cols[k] * work1_qr_col(k) * falk_scale;
+        auto falk_nr_k = nr_cols[k] * workn_qr_col(k) * falk_scale;
+        auto falk_qs_k = dend_col(k) * qs_cols[k] * work1_qs_col(k) * falk_scale;
+        auto falk_qg_k = dend_col(k) * qg_cols[k] * work1_qg_col(k) * falk_scale;
+        auto falk_brs_k = dend_col(k) * brs_cols[k] * work1_qg_col(k) * falk_scale;
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_k;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_k;
@@ -104,11 +117,13 @@ SubstepAdvectionOutputs substep_advection_torch(
         auto dqg_k = torch::minimum(falk_qg_k * dtcld / dend_safe_col(k), qg_cols[k]);
         auto dbrs_k = torch::minimum(falk_brs_k * dtcld / dend_safe_col(k), brs_cols[k]);
 
-        auto falk_qr_above = dend_col(k - 1) * qr_cols[k - 1] * work1_qr_col(k - 1) * inv_mstep;
-        auto falk_nr_above = nr_cols[k - 1] * workn_qr_col(k - 1) * inv_mstep;
-        auto falk_qs_above = dend_col(k - 1) * qs_cols[k - 1] * work1_qs_col(k - 1) * inv_mstep;
-        auto falk_qg_above = dend_col(k - 1) * qg_cols[k - 1] * work1_qg_col(k - 1) * inv_mstep;
-        auto falk_brs_above = dend_col(k - 1) * brs_cols[k - 1] * work1_qg_col(k - 1) * inv_mstep;
+        // Above-cell flux uses the SAME per-column gate/divisor (Fortran dqr(i,k+1)
+        // is inside the same if(n.le.mstep(i)) block -- gate is per-column, not per-k).
+        auto falk_qr_above = dend_col(k - 1) * qr_cols[k - 1] * work1_qr_col(k - 1) * falk_scale;
+        auto falk_nr_above = nr_cols[k - 1] * workn_qr_col(k - 1) * falk_scale;
+        auto falk_qs_above = dend_col(k - 1) * qs_cols[k - 1] * work1_qs_col(k - 1) * falk_scale;
+        auto falk_qg_above = dend_col(k - 1) * qg_cols[k - 1] * work1_qg_col(k - 1) * falk_scale;
+        auto falk_brs_above = dend_col(k - 1) * brs_cols[k - 1] * work1_qg_col(k - 1) * falk_scale;
 
         auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
         auto dqr_above = torch::minimum(
@@ -151,13 +166,20 @@ SubstepAdvectionOutputs substep_advection_torch(
 
 IceSubstepOutputs ice_substep_advection_torch(
     const IceSubstepInputs& in,
-    int mstep, double dtcld,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
     const SubstepAdvectionParams& p
 ) {
     const int64_t K = in.state.qi.size(-1);
     auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
     auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
-    const double inv_mstep = 1.0 / static_cast<double>(mstep);
+    // Per-column divisor*gate (Fortran .../mstep_i(i) and if(n.le.mstep_i(i))).
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto inv_mstep_col = torch::reciprocal(mstep_col_safe);                 // (B,)
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qi.dtype()); // (B,)
+    auto falk_scale = inv_mstep_col * gate_col;                            // (B,)
 
     auto qi_cols = split_columns(in.state.qi, K);
     auto ni_cols = split_columns(in.state.ni, K);
@@ -174,8 +196,8 @@ IceSubstepOutputs ice_substep_advection_torch(
     // Top
     {
         const int64_t k = 0;
-        auto falk_qi_top = dend_col(k) * qi_cols[k] * work1_qi_col(k) * inv_mstep;
-        auto falk_ni_top = ni_cols[k] * workn_qi_col(k) * inv_mstep;
+        auto falk_qi_top = dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale;
+        auto falk_ni_top = ni_cols[k] * workn_qi_col(k) * falk_scale;
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
         qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
@@ -183,16 +205,17 @@ IceSubstepOutputs ice_substep_advection_torch(
     }
 
     for (int64_t k = 1; k < K; ++k) {
-        auto falk_qi_k = dend_col(k) * qi_cols[k] * work1_qi_col(k) * inv_mstep;
-        auto falk_ni_k = ni_cols[k] * workn_qi_col(k) * inv_mstep;
+        auto falk_qi_k = dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale;
+        auto falk_ni_k = ni_cols[k] * workn_qi_col(k) * falk_scale;
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k;
 
         auto dqi_k = torch::minimum(falk_qi_k * dtcld / dend_safe_col(k), qi_cols[k]);
         auto dni_k = torch::minimum(falk_ni_k * dtcld, ni_cols[k]);
 
-        auto falk_qi_above = dend_col(k - 1) * qi_cols[k - 1] * work1_qi_col(k - 1) * inv_mstep;
-        auto falk_ni_above = ni_cols[k - 1] * workn_qi_col(k - 1) * inv_mstep;
+        // Above-cell flux: SAME per-column gate/divisor (Fortran same if(n.le.mstep_i(i))).
+        auto falk_qi_above = dend_col(k - 1) * qi_cols[k - 1] * work1_qi_col(k - 1) * falk_scale;
+        auto falk_ni_above = ni_cols[k - 1] * workn_qi_col(k - 1) * falk_scale;
         auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
         auto dqi_above = torch::minimum(
             falk_qi_above * delz_ratio * dtcld / dend_safe_col(k), qi_cols[k - 1]);

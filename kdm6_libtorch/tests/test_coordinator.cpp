@@ -737,7 +737,9 @@ void test_sedimentation_chain_runs_and_accumulates() {
         auto params = sed::default_substep_advection_params();
         auto out = sedimentation_chain(
             s, f, work1, workn, work1, work1, work1, workn,
-            /*mstep_main=*/2, /*mstep_ice=*/1, /*dtcld=*/60.0, params
+            /*mstep_col_main=*/torch::full({B}, 2.0, opts), /*mstepmax_main=*/2,
+            /*mstep_col_ice=*/torch::full({B}, 1.0, opts),  /*mstepmax_ice=*/1,
+            /*dtcld=*/60.0, params
         );
 
         // Updated state finite + nonneg.

@@ -49,7 +49,10 @@ struct SubstepAdvectionInputs {
 
 SubstepAdvectionOutputs substep_advection_torch(
     const SubstepAdvectionInputs& inputs,
-    int mstep, double dtcld,
+    const torch::Tensor& mstep_col,  // (B,) per-column integer-valued float divisor + gate
+    int mstepmax,                     // loop bound (caller loops n=1..mstepmax)
+    int n,                            // current substep number (1-indexed)
+    double dtcld,
     const SubstepAdvectionParams& params
 );
 
@@ -73,7 +76,10 @@ struct IceSubstepInputs {
 
 IceSubstepOutputs ice_substep_advection_torch(
     const IceSubstepInputs& inputs,
-    int mstep, double dtcld,
+    const torch::Tensor& mstep_col,  // (B,) per-column integer-valued float divisor + gate
+    int mstepmax,                     // loop bound (caller loops n=1..mstepmax)
+    int n,                            // current substep number (1-indexed)
+    double dtcld,
     const SubstepAdvectionParams& params
 );
 

@@ -710,8 +710,10 @@ SedimentationOutputs sedimentation_chain(
     const torch::Tensor& work1_qg,
     const torch::Tensor& work1_qi,
     const torch::Tensor& workn_qi,
-    int mstep_main,
-    int mstep_ice,
+    const torch::Tensor& mstep_col_main,  // (B,) per-column, integer-valued float
+    int mstepmax_main,                     // loop bound = max(mstep_col_main)
+    const torch::Tensor& mstep_col_ice,   // (B,) per-column, integer-valued float
+    int mstepmax_ice,                      // loop bound = max(mstep_col_ice)
     double dtcld,
     const sed::SubstepAdvectionParams& params
 );

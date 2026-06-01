@@ -312,18 +312,30 @@ FnResult kdm6_fn(const State& state,
         auto w1_qg = pre_sed.slope.vt_g  / delz_safe;
         auto w1_qi = pre_sed.slope.vt_i  / delz_safe;
         auto wn_qi = pre_sed.slope.vtn_i / delz_safe;
-        int mstep_main = 1, mstep_ice = 1;
+        // Per-column mstep (Fortran :1107-1117): mstep(i)=max(nint(vmax(i)*dtcld+.5),1),
+        // capped at 100; mstepmax = max over columns (loop bound). All integer work in
+        // NoGradGuard. mstep_col_* kept as float (B,) tensors for use as divisor / gate.
+        torch::Tensor mstep_col_main, mstep_col_ice;
+        int mstepmax_main = 1, mstepmax_ice = 1;
         {
             torch::NoGradGuard no_grad;
-            auto vmax_main = torch::maximum(torch::maximum(w1_qr, wn_qr),
-                                            torch::maximum(w1_qs, w1_qg)).max().item<double>();
-            auto vmax_ice = torch::maximum(w1_qi, wn_qi).max().item<double>();
-            mstep_main = std::min(std::max(static_cast<int>(std::round(vmax_main * dtcld + 0.5)), 1), 100);
-            mstep_ice  = std::min(std::max(static_cast<int>(std::round(vmax_ice  * dtcld + 0.5)), 1), 100);
+            // Per-column max fall speed over K (Fortran nested k-loop takes the column max).
+            auto vmax_main_col = torch::maximum(torch::maximum(w1_qr, wn_qr),
+                                                torch::maximum(w1_qs, w1_qg)).amax(/*dim=*/-1);
+            mstep_col_main = torch::clamp(
+                torch::round(vmax_main_col * dtcld + 0.5).to(torch::kLong),
+                /*min=*/1, /*max=*/100).to(w1_qr.dtype());
+            mstepmax_main = static_cast<int>(mstep_col_main.max().item<double>());
+
+            auto vmax_ice_col = torch::maximum(w1_qi, wn_qi).amax(/*dim=*/-1);
+            mstep_col_ice = torch::clamp(
+                torch::round(vmax_ice_col * dtcld + 0.5).to(torch::kLong),
+                /*min=*/1, /*max=*/100).to(w1_qi.dtype());
+            mstepmax_ice = static_cast<int>(mstep_col_ice.max().item<double>());
         }
         auto sed = sedimentation_chain(
             cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
-            mstep_main, mstep_ice, dtcld, sed_params);
+            mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params);
         cur = CoordinatorState{
             flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
             flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),

@@ -86,7 +86,9 @@ def substep_advection_torch(
     delz: torch.Tensor,
     dend: torch.Tensor,            # density × delz product (ProgB output)
     *,
-    mstep: int,                    # substep 분할 수 (caller 결정)
+    mstep: int = 1,                # legacy global divisor (used iff mstep_col is None)
+    mstep_col: torch.Tensor | None = None,  # (B,) per-column int-valued divisor + gate
+    n_current: int = 1,            # current substep index (1-indexed) for per-column gate
     dtcld: float,
     params: SubstepAdvectionParams,
 ) -> SubstepAdvectionOutputs:
@@ -107,7 +109,15 @@ def substep_advection_torch(
     K = state.qr.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)
-    inv_mstep = 1.0 / float(mstep)
+    # falk_scale broadcasts against (B,) per-level slices x[:, k].
+    # Per-column path: divisor 1/mstep(i) * gate (n<=mstep(i)) -> (B,) (mirrors C++).
+    # Legacy scalar path: 1/mstep, gate always 1.
+    if mstep_col is not None:
+        mstep_col_safe = torch.clamp(mstep_col.to(dend.dtype), min=1.0)
+        gate = (mstep_col_safe >= float(n_current)).to(dend.dtype)
+        falk_scale = gate / mstep_col_safe
+    else:
+        falk_scale = 1.0 / float(mstep)
 
     # AD-friendly: build new column lists instead of in-place indexed assignment.
     # k_idx 0 = top (kte), k_idx K-1 = bottom (kts).
@@ -123,11 +133,11 @@ def substep_advection_torch(
     fall_brs_cols = [fall_brs_in[:, k] for k in range(K)]
 
     # ── Top cell (k=0) ─────────────────────────────────────────────────
-    falk_qr_top = dend[:, 0] * qr_cols[0] * work1_qr[:, 0] * inv_mstep
-    falk_nr_top = nr_cols[0] * workn_qr[:, 0] * inv_mstep
-    falk_qs_top = dend[:, 0] * qs_cols[0] * work1_qs[:, 0] * inv_mstep
-    falk_qg_top = dend[:, 0] * qg_cols[0] * work1_qg[:, 0] * inv_mstep
-    falk_brs_top = dend[:, 0] * brs_cols[0] * work1_qg[:, 0] * inv_mstep
+    falk_qr_top = dend[:, 0] * qr_cols[0] * work1_qr[:, 0] * falk_scale
+    falk_nr_top = nr_cols[0] * workn_qr[:, 0] * falk_scale
+    falk_qs_top = dend[:, 0] * qs_cols[0] * work1_qs[:, 0] * falk_scale
+    falk_qg_top = dend[:, 0] * qg_cols[0] * work1_qg[:, 0] * falk_scale
+    falk_brs_top = dend[:, 0] * brs_cols[0] * work1_qg[:, 0] * falk_scale
 
     fall_qr_cols[0] = fall_qr_cols[0] + falk_qr_top
     fall_nr_cols[0] = fall_nr_cols[0] + falk_nr_top
@@ -143,11 +153,11 @@ def substep_advection_torch(
 
     # ── Interior cells ─────────────────────────────────────────────────
     for k in range(1, K):
-        falk_qr_k = dend[:, k] * qr_cols[k] * work1_qr[:, k] * inv_mstep
-        falk_nr_k = nr_cols[k] * workn_qr[:, k] * inv_mstep
-        falk_qs_k = dend[:, k] * qs_cols[k] * work1_qs[:, k] * inv_mstep
-        falk_qg_k = dend[:, k] * qg_cols[k] * work1_qg[:, k] * inv_mstep
-        falk_brs_k = dend[:, k] * brs_cols[k] * work1_qg[:, k] * inv_mstep
+        falk_qr_k = dend[:, k] * qr_cols[k] * work1_qr[:, k] * falk_scale
+        falk_nr_k = nr_cols[k] * workn_qr[:, k] * falk_scale
+        falk_qs_k = dend[:, k] * qs_cols[k] * work1_qs[:, k] * falk_scale
+        falk_qg_k = dend[:, k] * qg_cols[k] * work1_qg[:, k] * falk_scale
+        falk_brs_k = dend[:, k] * brs_cols[k] * work1_qg[:, k] * falk_scale
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_k
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_k
@@ -164,11 +174,11 @@ def substep_advection_torch(
 
         # dqx_above: uses *current iteration value* of qx[k-1] (already updated above).
         # Fortran 직역상 sequential chain.
-        falk_qr_above = dend[:, k - 1] * qr_cols[k - 1] * work1_qr[:, k - 1] * inv_mstep
-        falk_nr_above = nr_cols[k - 1] * workn_qr[:, k - 1] * inv_mstep
-        falk_qs_above = dend[:, k - 1] * qs_cols[k - 1] * work1_qs[:, k - 1] * inv_mstep
-        falk_qg_above = dend[:, k - 1] * qg_cols[k - 1] * work1_qg[:, k - 1] * inv_mstep
-        falk_brs_above = dend[:, k - 1] * brs_cols[k - 1] * work1_qg[:, k - 1] * inv_mstep
+        falk_qr_above = dend[:, k - 1] * qr_cols[k - 1] * work1_qr[:, k - 1] * falk_scale
+        falk_nr_above = nr_cols[k - 1] * workn_qr[:, k - 1] * falk_scale
+        falk_qs_above = dend[:, k - 1] * qs_cols[k - 1] * work1_qs[:, k - 1] * falk_scale
+        falk_qg_above = dend[:, k - 1] * qg_cols[k - 1] * work1_qg[:, k - 1] * falk_scale
+        falk_brs_above = dend[:, k - 1] * brs_cols[k - 1] * work1_qg[:, k - 1] * falk_scale
 
         delz_ratio = delz[:, k - 1] / delz_safe[:, k]
         dqr_above = torch.minimum(
@@ -230,7 +240,9 @@ def ice_substep_advection_torch(
     delz: torch.Tensor,
     dend: torch.Tensor,
     *,
-    mstep: int,
+    mstep: int = 1,                # legacy global divisor (used iff mstep_col is None)
+    mstep_col: torch.Tensor | None = None,  # (B,) per-column int-valued divisor + gate
+    n_current: int = 1,            # current substep index (1-indexed)
     dtcld: float,
     params: SubstepAdvectionParams,
 ) -> IceSubstepOutputs:
@@ -241,7 +253,12 @@ def ice_substep_advection_torch(
     K = state.qi.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)
-    inv_mstep = 1.0 / float(mstep)
+    if mstep_col is not None:
+        mstep_col_safe = torch.clamp(mstep_col.to(dend.dtype), min=1.0)
+        gate = (mstep_col_safe >= float(n_current)).to(dend.dtype)
+        falk_scale = gate / mstep_col_safe
+    else:
+        falk_scale = 1.0 / float(mstep)
 
     qi_cols = [state.qi[:, k] for k in range(K)]
     ni_cols = [state.ni[:, k] for k in range(K)]
@@ -249,8 +266,8 @@ def ice_substep_advection_torch(
     fall_ni_cols = [fall_ni_in[:, k] for k in range(K)]
 
     # Top cell
-    falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] * inv_mstep
-    falk_ni_top = ni_cols[0] * workn_qi[:, 0] * inv_mstep
+    falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] * falk_scale
+    falk_ni_top = ni_cols[0] * workn_qi[:, 0] * falk_scale
     fall_qi_cols[0] = fall_qi_cols[0] + falk_qi_top
     fall_ni_cols[0] = fall_ni_cols[0] + falk_ni_top
     qi_cols[0] = torch.clamp(qi_cols[0] - falk_qi_top * dtcld / dend_safe[:, 0], min=0.0)
@@ -258,16 +275,16 @@ def ice_substep_advection_torch(
 
     # Interior
     for k in range(1, K):
-        falk_qi_k = dend[:, k] * qi_cols[k] * work1_qi[:, k] * inv_mstep
-        falk_ni_k = ni_cols[k] * workn_qi[:, k] * inv_mstep
+        falk_qi_k = dend[:, k] * qi_cols[k] * work1_qi[:, k] * falk_scale
+        falk_ni_k = ni_cols[k] * workn_qi[:, k] * falk_scale
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k
 
         dqi_k = torch.minimum(falk_qi_k * dtcld / dend_safe[:, k], qi_cols[k])
         dni_k = torch.minimum(falk_ni_k * dtcld, ni_cols[k])
 
-        falk_qi_above = dend[:, k - 1] * qi_cols[k - 1] * work1_qi[:, k - 1] * inv_mstep
-        falk_ni_above = ni_cols[k - 1] * workn_qi[:, k - 1] * inv_mstep
+        falk_qi_above = dend[:, k - 1] * qi_cols[k - 1] * work1_qi[:, k - 1] * falk_scale
+        falk_ni_above = ni_cols[k - 1] * workn_qi[:, k - 1] * falk_scale
         delz_ratio = delz[:, k - 1] / delz_safe[:, k]
         dqi_above = torch.minimum(
             falk_qi_above * delz_ratio * dtcld / dend_safe[:, k], qi_cols[k - 1])
