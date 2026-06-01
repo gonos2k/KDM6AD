@@ -40,7 +40,7 @@ void test_satadj_zero_when_balanced_and_no_cloud() {
     TEST(test_satadj_zero_when_balanced_and_no_cloud) {
         auto p = default_satadj_params();
         auto in = base_inputs(/*rh=*/1.0, /*qc=*/0.0);
-        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0);
+        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0).pcond;
         assert(torch::allclose(pcond, torch::zeros_like(pcond), 1e-12, 1e-15));
     } END_TEST();
 }
@@ -49,7 +49,7 @@ void test_satadj_condensation_path() {
     TEST(test_satadj_condensation_path) {
         auto p = default_satadj_params();
         auto in = base_inputs(/*rh=*/1.05, /*qc=*/0.0);
-        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0);
+        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0).pcond;
         assert(torch::all(pcond > 0).item<bool>());
         assert(torch::all(pcond <= in.q / 60.0 + 1e-15).item<bool>());
     } END_TEST();
@@ -59,7 +59,7 @@ void test_satadj_evaporation_path() {
     TEST(test_satadj_evaporation_path) {
         auto p = default_satadj_params();
         auto in = base_inputs(/*rh=*/0.95, /*qc=*/1.0e-4);
-        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0);
+        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0).pcond;
         assert(torch::all(pcond < 0).item<bool>());
         assert(torch::all(pcond >= -in.qc / 60.0 - 1e-15).item<bool>());
     } END_TEST();
@@ -69,7 +69,7 @@ void test_satadj_no_evap_without_cloud() {
     TEST(test_satadj_no_evap_without_cloud) {
         auto p = default_satadj_params();
         auto in = base_inputs(/*rh=*/0.7, /*qc=*/0.0);
-        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0);
+        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0).pcond;
         assert(torch::allclose(pcond, torch::zeros_like(pcond)));
     } END_TEST();
 }
@@ -78,7 +78,7 @@ void test_satadj_grad_finite() {
     TEST(test_satadj_grad_finite) {
         auto p = default_satadj_params();
         auto in = base_inputs(/*rh=*/1.05, /*qc=*/1.0e-4, /*grad=*/true);
-        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0);
+        auto pcond = saturation_adjustment_torch(in.t, in.q, in.qc, in.qs1, in.xl, in.cpm, p, 60.0).pcond;
         pcond.sum().backward();
         assert(in.q.grad().defined() && torch::isfinite(in.q.grad()).all().item<bool>());
         assert(in.qc.grad().defined() && torch::isfinite(in.qc.grad()).all().item<bool>());

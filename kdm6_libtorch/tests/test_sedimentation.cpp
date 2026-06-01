@@ -55,7 +55,9 @@ void test_substep_advection_state_nonneg() {
     TEST(test_substep_advection_state_nonneg) {
         auto p = default_substep_advection_params();
         auto in = make_adv_inputs(4);
-        auto out = substep_advection_torch(in, /*mstep=*/1, /*dtcld=*/60.0, p);
+        auto out = substep_advection_torch(
+            in, /*mstep_col=*/torch::full({1}, 1.0, f64()),
+            /*mstepmax=*/1, /*n=*/1, /*dtcld=*/60.0, p);
         assert(torch::all(out.state.qr >= 0).item<bool>());
         assert(torch::all(out.state.qs >= 0).item<bool>());
         assert(torch::all(out.state.qg >= 0).item<bool>());
@@ -67,7 +69,9 @@ void test_substep_advection_grad_finite() {
     TEST(test_substep_advection_grad_finite) {
         auto p = default_substep_advection_params();
         auto in = make_adv_inputs(4, /*grad=*/true);
-        auto out = substep_advection_torch(in, /*mstep=*/2, /*dtcld=*/60.0, p);
+        auto out = substep_advection_torch(
+            in, /*mstep_col=*/torch::full({1}, 2.0, f64()),
+            /*mstepmax=*/2, /*n=*/1, /*dtcld=*/60.0, p);
         auto loss = out.state.qr.sum() + out.state.qs.sum() + out.fall_qr.sum();
         loss.backward();
         assert(in.state.qr.grad().defined()
@@ -94,7 +98,9 @@ void test_ice_substep_grad_finite() {
             torch::full({1, 4}, 500.0, plain),
             torch::full({1, 4}, 1.1 * 500.0, plain),
         };
-        auto out = ice_substep_advection_torch(in, /*mstep=*/2, /*dtcld=*/60.0, p);
+        auto out = ice_substep_advection_torch(
+            in, /*mstep_col=*/torch::full({1}, 2.0, f64()),
+            /*mstepmax=*/2, /*n=*/1, /*dtcld=*/60.0, p);
         auto loss = out.state.qi.sum() + out.state.ni.sum()
                   + out.fall_qi.sum() + out.fall_ni.sum();
         loss.backward();
@@ -191,7 +197,11 @@ void test_sedimentation_chain_near_zero_precip_state() {
         auto out = sedimentation_chain(
             state, forcing,
             work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-            mstep_main, mstep_ice, dtcld, sed_params
+            /*mstep_col_main=*/torch::full({work1_qr.size(0)}, (double)mstep_main, f64()),
+            /*mstepmax_main=*/mstep_main,
+            /*mstep_col_ice=*/torch::full({work1_qr.size(0)}, (double)mstep_ice, f64()),
+            /*mstepmax_ice=*/mstep_ice,
+            dtcld, sed_params
         );
 
         // (a) finite outputs
@@ -304,7 +314,11 @@ void test_sedimentation_via_preamble_repath() {
         auto out = sedimentation_chain(
             state, forcing,
             work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-            mstep_main, mstep_ice, dtcld, sed_params
+            /*mstep_col_main=*/torch::full({work1_qr.size(0)}, (double)mstep_main, f64()),
+            /*mstepmax_main=*/mstep_main,
+            /*mstep_col_ice=*/torch::full({work1_qr.size(0)}, (double)mstep_ice, f64()),
+            /*mstepmax_ice=*/mstep_ice,
+            dtcld, sed_params
         );
 
         // (e) all outputs finite + non-neg
@@ -390,7 +404,11 @@ void test_sedimentation_exact_zero_precip() {
         auto out = sedimentation_chain(
             state, forcing,
             work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-            mstep_main, mstep_ice, 3.0, sed_params
+            /*mstep_col_main=*/torch::full({work1_qr.size(0)}, (double)mstep_main, f64()),
+            /*mstepmax_main=*/mstep_main,
+            /*mstep_col_ice=*/torch::full({work1_qr.size(0)}, (double)mstep_ice, f64()),
+            /*mstepmax_ice=*/mstep_ice,
+            3.0, sed_params
         );
         for (auto* t : {&out.state.qv, &out.state.qc, &out.state.qr, &out.state.qs,
                         &out.state.qg, &out.state.qi, &out.state.nc, &out.state.nr,
@@ -456,7 +474,8 @@ void test_sedimentation_direction_python_convention() {
         auto out = sedimentation_chain(
             state, forcing,
             work1_qr, workn_qr, work1_qs, work1_qg, work1_qi, workn_qi,
-            /*mstep_main=*/1, /*mstep_ice=*/1,
+            /*mstep_col_main=*/torch::full({work1_qr.size(0)}, 1.0, f64()), /*mstepmax_main=*/1,
+            /*mstep_col_ice=*/torch::full({work1_qr.size(0)}, 1.0, f64()),  /*mstepmax_ice=*/1,
             /*dtcld=*/60.0, sed_params
         );
 
