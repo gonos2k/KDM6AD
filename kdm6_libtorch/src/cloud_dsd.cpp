@@ -73,13 +73,14 @@ torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& den,
     const CloudDsdParams& p
 ) {
-    // Fortran F:1061/1429/1610/2793 cloud rslopec = 1./lamdac with NO max/min clamp.
-    // (rain F:3490 and ice F:3535 DO clamp — those stay clamped in diag_species_slope_torch.)
-    // Dedicated unclamped body removes a gradient-zeroing plateau (AD-faithful). 1:1 fix #6.
-    auto qden_safe = torch::clamp(qc * den, /*min=*/DOMAIN_FLOOR);
-    auto ratio = p.pidnc * nc / qden_safe;
-    auto lamda = torch::exp(torch::log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) / p.dmc);
-    return 1.0 / lamda;
+    // 1:1 item #6: Fortran F:1061 cloud rslopec=1./lamdac is UNCLAMPED, but that relies
+    // on Fortran's BRANCHY structure (if qc>qcrmin then …) so degenerate qc≈0 cells never
+    // evaluate the slope. The tensor port uses MASK-MULTIPLY (all cells compute, then ×mask),
+    // where an unclamped 1/lamdac OVERFLOWS to Inf in qc≈0 cells and Inf×0=NaN downstream
+    // (confirmed: WRF em_quarter_ss NaN at itimestep 66). Keeping the [1/lamdacmax,1/lamdacmin]
+    // clamp is the structural guard that reproduces Fortran's branch-skipped behavior. So this
+    // clamp is a DELIBERATE, structurally-required deviation — see parity tracker #6.
+    return diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
 }
 
 torch::Tensor diag_avedia_cloud_torch(

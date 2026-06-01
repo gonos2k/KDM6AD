@@ -94,9 +94,16 @@ def diag_cloud_slope_torch(
     DOMAIN_FLOOR = 1.0e-30
     ratio = params.pidnc * nc / torch.clamp(qc * den, min=DOMAIN_FLOOR)
     lamdac = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / params.dmc)
-    # Fortran F:1061/1429/1610/2793 cloud rslopec = 1./lamdac with NO max/min clamp
-    # (rain F:3490 / ice F:3535 DO clamp — kept in diag_species_slope_torch). 1:1 fix #6.
-    return 1.0 / lamdac
+    # 1:1 item #6: Fortran F:1061 is unclamped, but that is safe only because Fortran is
+    # BRANCHY (qc≈0 cells skip the slope). The tensor port is MASK-MULTIPLY, so an unclamped
+    # 1/lamdac overflows→Inf in qc≈0 cells and Inf×0=NaN downstream (WRF NaN @itimestep 66).
+    # The clamp is a structurally-required guard reproducing Fortran's branch-skip. DELIBERATE.
+    rslopec = torch.clamp(
+        1.0 / lamdac,
+        min=1.0 / params.lamdacmax,
+        max=1.0 / params.lamdacmin,
+    )
+    return rslopec
 
 
 def diag_species_slope_torch(
