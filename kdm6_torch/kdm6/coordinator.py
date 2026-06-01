@@ -1946,9 +1946,13 @@ def sedimentation_chain_torch(
     fall_qs = fall_qs_init
     fall_qg = fall_qg_init
     fall_brs = fall_brs_init
-    # Mutable per-substep work1 (#9): re-derived from the post-substep state for n>1
-    # when reslope_params is set; init to the caller's E1-normalized values for n=1.
+    # Mutable per-substep work1 (#9): re-derived from the post-substep state when
+    # reslope_params is set (Fortran F:1189-1205 after EVERY main substep). w1_qi/wn_qi are
+    # ALSO updated by the main re-slope — Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
+    # each main substep and the ice loop below consumes the post-main value (main→ice handoff,
+    # F:1194→F:1215). Inert here (ice unchanged in the main loop ⇒ same vt_i).
     w1_qr, wn_qr, w1_qs, w1_qg = work1_qr, workn_qr, work1_qs, work1_qg
+    w1_qi, wn_qi = work1_qi, workn_qi
     _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
     for n in range(1, mstep_main + 1):
         out = _sed.substep_advection_torch(
@@ -1964,9 +1968,10 @@ def sedimentation_chain_torch(
         fall_qs = out.fall_qs
         fall_qg = out.fall_qg
         fall_brs = out.fall_brs
-        # Re-slope rain/snow/graupel from the post-substep state (F:1189-1205); ORIGINAL
-        # qi/ni kept (ice substepped below). vt depends only on hydrometeors → autograd-safe.
-        if reslope_params is not None and n < mstep_main:
+        # Re-slope after EVERY main substep (F:1189-1205, unconditional incl. the last);
+        # ORIGINAL qi/ni kept (ice substepped below). rain/snow/graupel work1 feeds the next
+        # main substep; the ICE work1 (vt_i/vtn_i) is the handoff the ice loop consumes.
+        if reslope_params is not None:
             rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
                                 qg=adv_state.qg, brs=adv_state.brs)
             pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
@@ -1974,12 +1979,14 @@ def sedimentation_chain_torch(
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz
             w1_qg = pre.slope.vt_g / dz
+            w1_qi = pre.slope.vt_i / dz   # main→ice handoff (F:1194 slope_kdm6 → work1(4))
+            wn_qi = pre.slope.vtn_i / dz
 
     # ── Ice substepping ──────────────────────────────────────────────
     ice_state = _sed.IceSubstepState(qi=state.qi, ni=state.ni)
     fall_qi = torch.zeros_like(state.qr)
     fall_ni = torch.zeros_like(state.qr)
-    w1_qi, wn_qi = work1_qi, workn_qi
+    # w1_qi/wn_qi carry the main-loop handoff (or the passed-in initial if reslope is off).
     for n in range(1, mstep_ice + 1):
         out_i = _sed.ice_substep_advection_torch(
             ice_state, fall_qi, fall_ni,

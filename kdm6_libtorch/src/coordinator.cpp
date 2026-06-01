@@ -1674,9 +1674,16 @@ SedimentationOutputs sedimentation_chain(
     auto fall_brs = torch::zeros_like(state.qr);
 
     // Mutable per-substep work1 (1:1 fix #9). Initialized to the caller's E1-normalized
-    // values for substep n=1; re-derived from the post-substep state for n>1 when
-    // reslope_params is set (Fortran F:1189-1205 ProgB+slope_kdm6 re-call).
+    // values for substep n=1; re-derived from the post-substep state when reslope_params is set
+    // (Fortran F:1189-1205 ProgB+slope_kdm6 re-call after EVERY main substep). w1_qi/wn_qi are
+    // ALSO updated by the main re-slope: Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
+    // each main substep, and the ice loop below consumes the post-main-loop value — the
+    // main→ice HANDOFF (F:1194 → F:1215). (NB: Fortran leaves work1(4)/workn(2) un-normalized
+    // in the main loop, a latent over-sedimentation quirk; the port normalizes /delz
+    // consistently for physical/AD correctness. Inert: ice is unchanged in the main loop ⇒
+    // vt_i equals the initial value regardless.)
     auto w1_qr = work1_qr, wn_qr = workn_qr, w1_qs = work1_qs, w1_qg = work1_qg;
+    auto w1_qi = work1_qi, wn_qi = workn_qi;
 
     for (int n = 1; n <= mstepmax_main; ++n) {
         sed::SubstepAdvectionInputs sin{
@@ -1693,10 +1700,13 @@ SedimentationOutputs sedimentation_chain(
         fall_qg = out.fall_qg;
         fall_brs = out.fall_brs;
 
-        // Re-slope rain/snow/graupel fall speeds from the post-substep state (F:1189-1205):
-        // rebuild state (updated qr/nr/qs/qg/brs; ORIGINAL qi/ni/t — ice substepped below),
-        // ProgB+slope_kdm6 via preamble, re-normalize by delz. Used for substep n+1.
-        if (reslope_params != nullptr && n < mstepmax_main) {
+        // Re-slope from the post-substep state after EVERY main substep (Fortran F:1189-1205
+        // is unconditional within the n-loop, incl. the last): rebuild state (updated
+        // qr/nr/qs/qg/brs; ORIGINAL qi/ni — ice substepped below), ProgB+slope_kdm6 via
+        // preamble, re-normalize by delz. rain/snow/graupel work1 feeds the next main substep
+        // (unused after the last); the ICE work1 (vt_i/vtn_i) is the HANDOFF the ice loop
+        // consumes — Fortran's final main slope_kdm6 writes work1(4)/workn(2) for F:1215.
+        if (reslope_params != nullptr) {
             CoordinatorState rs = state;
             rs.qr = adv_state.qr; rs.nr = adv_state.nr;
             rs.qs = adv_state.qs; rs.qg = adv_state.qg; rs.brs = adv_state.brs;
@@ -1705,6 +1715,8 @@ SedimentationOutputs sedimentation_chain(
             wn_qr = pre.slope.vtn_r / delz_safe;
             w1_qs = pre.slope.vt_s  / delz_safe;
             w1_qg = pre.slope.vt_g  / delz_safe;
+            w1_qi = pre.slope.vt_i  / delz_safe;   // main→ice handoff (F:1194 slope_kdm6 → work1(4))
+            wn_qi = pre.slope.vtn_i / delz_safe;
         }
     }
 
@@ -1712,7 +1724,8 @@ SedimentationOutputs sedimentation_chain(
     sed::IceSubstepState ice_state{state.qi, state.ni};
     auto fall_qi = torch::zeros_like(state.qr);
     auto fall_ni = torch::zeros_like(state.qr);
-    auto w1_qi = work1_qi, wn_qi = workn_qi;
+    // w1_qi/wn_qi carry the main-loop handoff (post-final-main re-slope) when reslope_params
+    // is set, else the passed-in initial — Fortran's ice loop reads work1(4) left by the main.
 
     for (int n = 1; n <= mstepmax_ice; ++n) {
         sed::IceSubstepInputs iin{
