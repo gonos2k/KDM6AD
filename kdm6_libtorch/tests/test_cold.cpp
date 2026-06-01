@@ -274,10 +274,10 @@ void test_na_grad_finite() {
 
 namespace {
 
-CloudWaterRimingInputs make_cwr_inputs(double supcol_value, double avedia_i_value, bool grad = false) {
+CloudWaterRimingInputs make_cwr_inputs(double supcol_value, double avedia_i_value, bool grad = false, double qc_value = 1.0e-3) {
     auto opts = grad ? f64().requires_grad(true) : f64();
     auto plain = f64();
-    auto qc = torch::full({1, 2}, 1.0e-3, opts);
+    auto qc = torch::full({1, 2}, qc_value, opts);
     auto nc = torch::full({1, 2}, 1.0e8, opts);
     auto qs = torch::full({1, 2}, 1.0e-4, plain);
     auto qg = torch::full({1, 2}, 1.0e-4, plain);
@@ -311,6 +311,24 @@ CloudWaterRimingInputs make_cwr_inputs(double supcol_value, double avedia_i_valu
 }
 
 }  // namespace
+
+void test_cwr_inactive_when_qc_low() {
+    TEST(test_cwr_inactive_when_qc_low) {
+        auto p = default_cloud_water_riming_params();
+        // qc below the EPS=1e-15 gate (#16/#17) → psacw/pgacw/piacw = 0 (gate blocks; qs/qg>qcrmin).
+        auto in_lo = make_cwr_inputs(/*supcol=*/10.0, /*avedia_i=*/1.0e-4, /*grad=*/false, /*qc=*/1.0e-16);
+        auto out_lo = cloud_water_riming_torch(in_lo, p, 60.0);
+        assert(torch::allclose(out_lo.psacw, torch::zeros_like(in_lo.qc)));
+        assert(torch::allclose(out_lo.pgacw, torch::zeros_like(in_lo.qc)));
+        assert(torch::allclose(out_lo.piacw, torch::zeros_like(in_lo.qc)));
+
+        // Gate-regression LOCK (#16/#17): qc in (EPS=1e-15, old qcrmin=1e-9) → gate OPEN → psacw>0
+        // (capped at qc/dtcld). FAILS if the qmin gate regresses to 1e-9 (would re-block this qc).
+        auto in_band = make_cwr_inputs(/*supcol=*/10.0, /*avedia_i=*/1.0e-4, /*grad=*/false, /*qc=*/1.0e-12);
+        auto out_band = cloud_water_riming_torch(in_band, p, 60.0);
+        assert(torch::all(out_band.psacw > 0.0).item<bool>());
+    } END_TEST();
+}
 
 void test_cwr_piacw_pk97_di50_threshold() {
     TEST(test_cwr_piacw_pk97_di50_threshold) {
@@ -807,6 +825,7 @@ int main() {
     test_na_inactive_when_warm();
     test_na_capped_by_ni_per_dt();
     test_na_grad_finite();
+    test_cwr_inactive_when_qc_low();
     test_cwr_piacw_pk97_di50_threshold();
     test_cwr_paacw_weighted_average();
     test_cwr_grad_finite();
