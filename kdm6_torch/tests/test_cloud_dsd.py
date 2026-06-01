@@ -35,8 +35,9 @@ def test_default_cloud_dsd_params_qc0_qc1():
     assert math.isclose(p.qc1, qc_base * c.XNCR1, rel_tol=1e-12)
 
 
-def test_diag_cloud_slope_clamped():
-    """rslopec ∈ [1/lamdacmax, 1/lamdacmin]."""
+def test_diag_cloud_slope_unclamped():
+    """Fortran F:1061/1429/1610/2793 cloud rslopec = 1/lamdac, RAW (no clamp; rain/ice
+    DO clamp). 1:1 fix #6. rslopec must equal the unclamped 1/lamdac exactly."""
     p = default_cloud_dsd_params()
     dtype = torch.float64
     qc = torch.tensor([[1.0e-3, 1.0e-7]], dtype=dtype)  # high qc, very low qc
@@ -44,8 +45,15 @@ def test_diag_cloud_slope_clamped():
     den = torch.full((1, 2), 1.1, dtype=dtype)
 
     rslopec = diag_cloud_slope_torch(qc, nc, den, params=p)
-    assert torch.all(rslopec >= 1.0 / p.lamdacmax - 1e-30)
-    assert torch.all(rslopec <= 1.0 / p.lamdacmin + 1e-30)
+    # raw 1/lamdac, unclamped
+    DOMAIN_FLOOR = 1.0e-30
+    ratio = p.pidnc * nc / torch.clamp(qc * den, min=DOMAIN_FLOOR)
+    lamdac = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / p.dmc)
+    raw = 1.0 / lamdac
+    assert torch.allclose(rslopec, raw)
+    # and the result genuinely differs from the OLD clamped version (clamp removed)
+    clamped = torch.clamp(raw, min=1.0 / p.lamdacmax, max=1.0 / p.lamdacmin)
+    assert not torch.allclose(rslopec, clamped)
 
 
 def test_diag_avedia_formulas():

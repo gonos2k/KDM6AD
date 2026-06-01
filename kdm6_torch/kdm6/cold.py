@@ -102,7 +102,7 @@ def default_ice_accretion_params() -> IceAccretionParams:
         g1pdrmr=g1pdrmr, g2pdrmr=g2pdrmr, g3pdrmr=g3pdrmr,
         eacri=c.EACRI,
         eacir=c.EACIR,
-        qmin=c.QCRMIN,
+        qmin=c.EPS,          # GATE threshold = Fortran qmin=1e-15; div-safety clamps use qcrmin. 1:1 fix #13-17
         qcrmin=c.QCRMIN,
     )
 
@@ -242,7 +242,7 @@ def default_ice_to_snow_graupel_params() -> IceToSnowGraupelParams:
         g1pms=g1pms, g2pms=g2pms, g3pms=g3pms,
         g1pmg=g1pmg, g2pmg=g2pmg, g3pmg=g3pmg,
         g1pdimi=g1pdimi, g2pdimi=g2pdimi, g3pdimi=g3pdimi,
-        qmin=c.QCRMIN,
+        qmin=c.EPS,          # GATE threshold = Fortran qmin=1e-15; div-safety clamps use qcrmin. 1:1 fix #13-17
         qcrmin=c.QCRMIN,
     )
 
@@ -556,7 +556,7 @@ def default_cloud_water_riming_params() -> CloudWaterRimingParams:
         eacic=c.EACIC,
         muc=c.MUC,
         di50=c.DI50,
-        qmin=c.QCRMIN,
+        qmin=c.EPS,          # GATE threshold = Fortran qmin=1e-15; div-safety clamps use qcrmin. 1:1 fix #13-17
         qcrmin=c.QCRMIN,
         ncmin=c.NCMIN,
         qsum_floor=1.0e-15,
@@ -620,8 +620,9 @@ def cloud_water_riming_torch(
     """
     zero = torch.zeros_like(qc)
 
-    # qc-protective floor (Fortran 1951: qc1_safe = max(qc, qmin))
-    qc_safe = torch.clamp(qc, min=params.qmin)
+    # qc-protective div-safety floor stays 1e-9 (NOT the 1e-15 gate qmin); lowering
+    # THIS is the documented flush cause (wilt-ratio blow-up for tiny qc). 1:1 fix #16/#17.
+    qc_safe = torch.clamp(qc, min=params.qcrmin)
 
     # ── psacw ──────────────────────────────────────────────────────────
     snow_active = (qs > params.qcrmin) & (qi > params.qmin)  # qci(:,:,1) is qc here

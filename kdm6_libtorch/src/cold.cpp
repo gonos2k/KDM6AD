@@ -52,7 +52,7 @@ IceAccretionParams default_ice_accretion_params() {
         /*g1pdrmr=*/g1pdrmr, /*g2pdrmr=*/g2pdrmr, /*g3pdrmr=*/g3pdrmr,
         /*eacri=*/constants::EACRI,
         /*eacir=*/constants::EACIR,
-        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
+        /*qmin=*/constants::EPS,        // Fortran qmin=epsilon=1e-15 — GATE threshold only; div-safety clamps use qcrmin=1e-9. 1:1 fix #13-17.
         /*qcrmin=*/constants::QCRMIN,
     };
 }
@@ -128,7 +128,7 @@ IceToSnowGraupelParams default_ice_to_snow_graupel_params() {
         /*g1pms=*/g1pms, /*g2pms=*/g2pms, /*g3pms=*/g3pms,
         /*g1pmg=*/g1pmg, /*g2pmg=*/g2pmg, /*g3pmg=*/g3pmg,
         /*g1pdimi=*/g1pdimi, /*g2pdimi=*/g2pdimi, /*g3pdimi=*/g3pdimi,
-        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
+        /*qmin=*/constants::EPS,        // Fortran qmin=epsilon=1e-15 — GATE threshold only; div-safety clamps use qcrmin=1e-9. 1:1 fix #13-17.
         /*qcrmin=*/constants::QCRMIN,
     };
 }
@@ -294,7 +294,7 @@ CloudWaterRimingParams default_cloud_water_riming_params() {
         /*eacic=*/constants::EACIC,
         /*muc=*/constants::MUC,
         /*di50=*/constants::DI50,
-        /*qmin=*/constants::QCRMIN,     // TODO Fortran qmin=epsilon=1e-15 — broke flush, deferred
+        /*qmin=*/constants::EPS,        // Fortran qmin=epsilon=1e-15 — GATE threshold only; div-safety clamps use qcrmin=1e-9. 1:1 fix #13-17.
         /*qcrmin=*/constants::QCRMIN,
         /*ncmin=*/constants::NCMIN,
         /*qsum_floor=*/1.0e-15,
@@ -308,7 +308,7 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     double dtcld
 ) {
     auto zero = torch::zeros_like(in.qc);
-    auto qc_safe = torch::clamp(in.qc, /*min=*/p.qmin);
+    auto qc_safe = torch::clamp(in.qc, /*min=*/p.qcrmin);  // div-safety floor stays 1e-9 (NOT the gate qmin); lowering THIS is the documented flush cause. 1:1 fix #16/#17.
 
     // ── psacw ──────────────────────────────────────────────────────────
     auto snow_active_qc = torch::logical_and(in.qs > p.qcrmin, in.qc > p.qmin);

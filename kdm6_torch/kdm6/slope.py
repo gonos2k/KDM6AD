@@ -183,7 +183,8 @@ def _rain_slope_components(
     vtn_r = _scalar(params.pvtrn, qr) * rslopeb * denfac
     zeros = torch.zeros_like(qr)
     vt_r = torch.where(qr <= 0.0, zeros, vt_r)
-    vtn_r = torch.where(nr <= 0.0, zeros, vtn_r)
+    # Fortran F:3551-3554: vtn zeroing is a DEAD STORE (F:3553 reassigns vtn unconditionally),
+    # so Fortran always uses nonzero vtn. vt zeroing IS effective (kept above). 1:1 fix #5.
 
     return SlopeRainOutputs(
         rslope_r=rslope,
@@ -326,8 +327,8 @@ def default_slope_params() -> SlopeParams:
 
 
 def compute_supcol(t: torch.Tensor) -> torch.Tensor:
-    """`273.15 - clamp(t, 153.15, 393.15)`."""
-    return _scalar(273.15, t) - torch.clamp(t, min=153.15, max=393.15)
+    """Fortran F:3477 `supcol = t0c - t` (raw, no clamp). 1:1 fix #7."""
+    return _scalar(273.15, t) - t
 
 
 def n0sfac(supcol: torch.Tensor) -> torch.Tensor:
@@ -454,8 +455,7 @@ def slope_kdm6_torch(
 
     vtn_r = _scalar(params.pvtrn, qr) * rain.rslopeb_r * denfac
     vtn_i = _scalar(params.pvtin, qi) * rslopeb_i * denfac
-    vtn_r = torch.where(nr <= 0.0, torch.zeros_like(nr), vtn_r)
-    vtn_i = torch.where(ni <= 0.0, torch.zeros_like(ni), vtn_i)
+    # Fortran F:3551-3554: vtn_r/vtn_i zeroing is a DEAD STORE (reassigned unconditionally). 1:1 fix #5.
 
     return SlopeOutputs(
         rslope_r=rain.rslope_r,

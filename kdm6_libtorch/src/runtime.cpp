@@ -161,7 +161,7 @@ CoordinatorAuxDiagnostics build_default_aux(
         /*work1_ice=*/work1_ice,                // Fortran work1(:,:,2)
         /*work1_water=*/work1_water,            // Fortran work1(:,:,1)
         /*qcr=*/full_like(8.0e-5),              // overridden by diag_qcr_torch when xland present
-        /*avedia_i=*/rslope_i * std::pow(g4pmi / g1pmi, 1.0 / 3.0),
+        /*avedia_i=*/rslope_i * std::pow(g4pmi / g1pmi, 0.3333333),  // Fortran F:1672 ice avedia uses .3333333 literal. 1:1 fix #4/#11.
         /*rslopecmu=*/rslopecmu,
         /*rslopecd=*/torch::pow(rslopec, constants::DMC),
     };

@@ -61,15 +61,17 @@ def test_compute_xl_at_freezing():
     assert torch.isclose(xl, torch.tensor(p.xlv0, dtype=torch.float64))
 
 
-def test_compute_supcol_clamp():
-    """t > 393.15 또는 t < 153.15 모두 clamp."""
+def test_compute_supcol_raw():
+    """Fortran F:1274/3477 supcol = t0c - t, RAW (no [153.15,393.15] clamp). 1:1 fix #2."""
     p = default_thermo_params()
     t = torch.tensor([100.0, 200.0, 300.0, 400.0], dtype=torch.float64)
     sc = compute_supcol(t, params=p)
-    # t=100 → clamp 153.15 → supcol = 273.15-153.15 = 120
-    assert torch.isclose(sc[0], torch.tensor(120.0, dtype=torch.float64))
-    # t=400 → clamp 393.15 → supcol = -120
-    assert torch.isclose(sc[3], torch.tensor(-120.0, dtype=torch.float64))
+    # raw t0c - t at every T (no clamp): t=100 → 273.15-100 = 173.15
+    assert torch.isclose(sc[0], torch.tensor(173.15, dtype=torch.float64))
+    # t=400 → 273.15-400 = -126.85 (would have been clamped to -120 before)
+    assert torch.isclose(sc[3], torch.tensor(-126.85, dtype=torch.float64))
+    # exact linearity (constant grad -1): supcol == t0c - t everywhere
+    assert torch.allclose(sc, p.t0c - t)
 
 
 def test_compute_qs_water_at_273():

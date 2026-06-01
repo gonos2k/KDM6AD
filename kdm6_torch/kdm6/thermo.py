@@ -112,8 +112,8 @@ def compute_xl(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
 
 
 def compute_supcol(t: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """Fortran 1274: supcol = T0c - clamp(t, 153.15, 393.15)."""
-    return params.t0c - torch.clamp(t, min=153.15, max=393.15)
+    """Fortran F:1274/3477: supcol = t0c - t (raw, no clamp). 1:1 fix #2."""
+    return params.t0c - t
 
 
 def compute_qs_water(t: torch.Tensor, p: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:

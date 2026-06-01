@@ -580,7 +580,11 @@ ConservedRates scale_rates_for_conservation(
     WarmPhaseOutputs warm,
     ColdPhaseOutputs cold,
     MeltFreezePhaseOutputs mf,
-    double dtcld
+    double dtcld,
+    // Per-cell ncmin floor (xland-derived, runtime.cpp:265) for the cloud/ice NUMBER
+    // budgets — Fortran F:2554/2568/2706 max(ncmin,nci), ncmin=10(sea)/100(land).
+    // nullopt → scalar constants::NCMIN fallback. 1:1 parity fix #18.
+    const c10::optional<torch::Tensor>& ncmin_tensor = c10::nullopt
 );
 
 // ─── Step F1e: state mutation update (Fortran 2730-2873 직역) ────────────────

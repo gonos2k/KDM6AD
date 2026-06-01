@@ -68,7 +68,8 @@ PFRZ1 = 100.0
 PFRZ2 = 0.66
 
 # ─── thresholds ─────────────────────────────────────────────────
-QCRMIN = 1.0e-9     # minimum mixing ratio (qr, qs)
+QCRMIN = 1.0e-9     # minimum mixing ratio (qr, qs) — div-safety clamp floor
+EPS    = 1.0e-15    # Fortran qmin=epsilon (model_constants.F:10) — GATE thresholds only
 NRMIN = 1.0e-2      # minimum rain number
 NRMAX = 5.0e7
 NCMAX = 5.0e10

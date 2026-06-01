@@ -94,12 +94,9 @@ def diag_cloud_slope_torch(
     DOMAIN_FLOOR = 1.0e-30
     ratio = params.pidnc * nc / torch.clamp(qc * den, min=DOMAIN_FLOOR)
     lamdac = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / params.dmc)
-    rslopec = torch.clamp(
-        1.0 / lamdac,
-        min=1.0 / params.lamdacmax,
-        max=1.0 / params.lamdacmin,
-    )
-    return rslopec
+    # Fortran F:1061/1429/1610/2793 cloud rslopec = 1./lamdac with NO max/min clamp
+    # (rain F:3490 / ice F:3535 DO clamp — kept in diag_species_slope_torch). 1:1 fix #6.
+    return 1.0 / lamdac
 
 
 def diag_species_slope_torch(
@@ -132,8 +129,8 @@ def diag_avedia_cloud_torch(rslopec: torch.Tensor, *, params: CloudDsdParams) ->
 
 
 def diag_avedia_rain_torch(rslope_r: torch.Tensor, *, params: CloudDsdParams) -> torch.Tensor:
-    """Fortran 1671: avedia_r = rslope_r * (g4pmr/g1pmr)^(1/3)."""
-    return rslope_r * (params.g4pmr_over_g1pmr ** (1.0 / 3.0))
+    """Fortran 1671: avedia_r = rslope_r * (g4pmr/g1pmr)^.3333333 (truncated literal)."""
+    return rslope_r * (params.g4pmr_over_g1pmr ** 0.3333333)  # 1:1 fix #4 (cloud avedia uses 1/3, see line 131)
 
 
 # ─── sigma (cloud DSD width) ──────────────────────────────────────────────────

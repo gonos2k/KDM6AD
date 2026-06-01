@@ -66,7 +66,9 @@ SlopeRainOutputs rain_slope_components(const torch::Tensor& qr,
     auto vtn = scalar_like(params.pvtrn, qr) * rslopeb * denfac;
     auto zeros = torch::zeros_like(qr);
     vt = torch::where(qr <= 0.0, zeros, vt);
-    vtn = torch::where(nr <= 0.0, zeros, vtn);
+    // Fortran F:3551-3554: the `if(nrs<=0) vtn=0` zeroing is a DEAD STORE — F:3553 then
+    // reassigns vtn=pvtrn*rslopeb*denfac unconditionally, so Fortran always uses nonzero vtn
+    // (vt zeroing at F:3547-3550 comes AFTER its assignment, so vt zeroing IS kept above). 1:1 fix #5.
 
     return SlopeRainOutputs{rslope, rslopeb, rslopemu, rsloped, rslope2, rslope3, vt, vtn};
 }
@@ -149,7 +151,8 @@ SlopeParams default_slope_params() {
 }
 
 torch::Tensor compute_supcol(const torch::Tensor& t) {
-    return scalar_like(273.15, t) - torch::clamp(t, /*min=*/153.15, /*max=*/393.15);
+    // Fortran F:3477 supcol = t0c - t (raw, no clamp). 1:1 parity fix #7 (AD-faithful).
+    return scalar_like(273.15, t) - t;
 }
 
 torch::Tensor n0sfac(const torch::Tensor& supcol) {
@@ -252,7 +255,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     vt_i = torch::where(inputs.qi <= 0.0, torch::zeros_like(inputs.qi), vt_i);
 
     auto vtn_i = scalar_like(params.pvtin, inputs.qi) * rslopeb_i * inputs.denfac;
-    vtn_i = torch::where(inputs.ni <= 0.0, torch::zeros_like(inputs.ni), vtn_i);
+    // Fortran F:3553-3554: vtn_i dead-store (reassigned unconditionally after the ni<=0 zeroing). 1:1 fix #5.
 
     return SlopeOutputs{
         rain.rslope, rslope_s, rslope_g, rslope_i,

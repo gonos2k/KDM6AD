@@ -805,6 +805,7 @@ def scale_rates_for_conservation_torch(
     mf: MeltFreezePhaseOutputs,
     *,
     dtcld: float,
+    ncmin_tensor=None,   # per-cell ncmin floor for cloud/ice NUMBER budgets (1:1 fix #18)
 ):
     """F1d2 — Fortran group conservation budgets (module_mp_kdm6.F :2460-2597
     cold-arm + :2657-2728 warm-arm). 14 budgets: value=max(floor,reservoir);
@@ -855,6 +856,17 @@ def scale_rates_for_conservation_torch(
         for nm in names:
             r[nm] = r[nm] * factor
 
+    def limit_ncmin(reservoir, source_sum, gate, names):
+        # Per-cell ncmin floor (xland-derived) for cloud/ice NUMBER budgets — Fortran
+        # F:2554/2568/2706 max(ncmin,nci), ncmin=10/100, NOT hardcoded 0.01. 1:1 fix #18.
+        value = (torch.maximum(reservoir, ncmin_tensor) if ncmin_tensor is not None
+                 else torch.clamp(reservoir, min=c.NCMIN))
+        source = source_sum * dtcld
+        factor = torch.where(gate, value / torch.maximum(source, value),
+                             torch.ones_like(value))
+        for nm in names:
+            r[nm] = r[nm] * factor
+
     # ── PASS 1: cold arm (t<=t0c), gate=cold_gate ──────────────────────────
     limit(state.qc, EPS,                                              # cloud mass :2460
           r["praut"] + r["pracw"] + 2.0 * r["paacw_adj"] + r["piacw"]
@@ -883,10 +895,10 @@ def scale_rates_for_conservation_torch(
             + r["paacw_adj"] + r["pgacr_adj"]), cold_gate,
           ("pgdep", "piacr", "praci", "psacr_adj", "pracs", "paacw_adj",
            "pgaci", "pgacr_adj"))
-    limit(state.nc, c.NCMIN,                                          # cloud number :2554
+    limit_ncmin(state.nc,                                             # cloud number :2554
           r["nraut"] + r["nccol"] + r["nracw"] + r["niacw"] + 2.0 * r["naacw"],
           cold_gate, ("nraut", "nccol", "nracw", "naacw", "niacw"))
-    limit(state.ni, c.NCMIN,                                          # ice number :2568
+    limit_ncmin(state.ni,                                             # ice number :2568
           r["nraci"] + r["nsaci"] + r["ngaci"] + r["niacr"] + r["nsaut"]
           - r["nmulcs"] - r["nmulcg"] - r["nmulrs"] - r["nmulrg"] - r["ninud"],
           cold_gate,
@@ -909,7 +921,7 @@ def scale_rates_for_conservation_torch(
           -r["pseml"] - r["psevp"], warm_gate, ("psevp", "pseml"))
     limit(state.qg, c.QCRMIN,                                        # graupel mass :2695 (pgacs≡0)
           -(r["pgevp"] + r["pgeml"]), warm_gate, ("pgevp", "pgeml"))
-    limit(state.nc, c.NCMIN,                                         # cloud number :2706
+    limit_ncmin(state.nc,                                            # cloud number :2706
           r["nraut"] + r["nccol"] + r["nracw"] + 2.0 * r["naacw"], warm_gate,
           ("nraut", "nccol", "nracw", "naacw"))
     limit(state.nr, c.NRMIN,                                         # rain number :2719
@@ -1326,7 +1338,7 @@ def reclassify_large_ice_to_snow_torch(
     g1pdimi = math.exp(math.lgamma(1.0 + c.DMI + c.MUI))     # Γ(1+DMI+MUI)
     g4pmi = math.exp(math.lgamma(4.0 + c.MUI))               # Γ(4+MUI)
     pidni = cmi * g1pdimi / g1pmi
-    avedia_factor = (g4pmi / g1pmi) ** (1.0 / 3.0)
+    avedia_factor = (g4pmi / g1pmi) ** 0.3333333  # Fortran F:2802 ice avedia .3333333 literal. 1:1 fix #4/#11
     rslopeimax = 1.0 / c.LAMDAIMAX
     rslopeimin = 1.0 / c.LAMDAIMIN
 
@@ -1382,7 +1394,7 @@ def reclassify_small_rain_to_cloud_torch(
     g1pdrmr = math.exp(math.lgamma(1.0 + c.DMR + c.MUR))     # Γ(1+DMR+MUR)
     g4pmr = math.exp(math.lgamma(4.0 + c.MUR))               # Γ(4+MUR)
     pidnr = cmr * g1pdrmr / g1pmr
-    avedia_factor = (g4pmr / g1pmr) ** (1.0 / 3.0)
+    avedia_factor = (g4pmr / g1pmr) ** 0.3333333  # Fortran F:2878 rain avedia .3333333 literal. 1:1 fix #4/#11
     rslopermax = 1.0 / c.LAMDARMAX
     rslopermin = 1.0 / c.LAMDARMIN
 
@@ -1587,7 +1599,7 @@ def build_default_aux_torch(
         n0go=torch.full_like(state.qg, c.N0G),
         work1_r=work1_water, work1_ice=work1_ice, work1_water=work1_water,
         qcr=torch.full_like(state.qc, 8.0e-5),
-        avedia_i=rslope_i * (g4pmi / g1pmi) ** (1.0 / 3.0),
+        avedia_i=rslope_i * (g4pmi / g1pmi) ** 0.3333333,  # Fortran F:1672 ice avedia .3333333 literal. 1:1 fix #4/#11
         rslopecmu=rslopecmu, rslopecd=rslopec ** c.DMC,
     )
 
@@ -1786,6 +1798,12 @@ def kdm62d_one_step_torch(
     # (pseml/pgeml/nseml/ngeml). Mirrors C++ scale_rates_for_conservation.
     warm_out, cold_out, mf5 = scale_rates_for_conservation_torch(
         working, pre2.supcol, warm_out, cold_out, mf5, dtcld=dtcld,
+        # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The Python
+        # oracle has no xland (single-NCMIN simplification, see constants.py), so it
+        # passes None → falls back to scalar c.NCMIN; the C++ port threads the real
+        # per-cell tensor (10/100) in the WRF path. Same C++(per-cell)/oracle(scalar)
+        # boundary as the rate-gate ncmin.
+        ncmin_tensor=None,
     )
 
     # F1e: state update on the WORKING base. HYBRID pre (Fortran-exact):

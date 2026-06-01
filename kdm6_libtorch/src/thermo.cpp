@@ -59,7 +59,10 @@ torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
 }
 
 torch::Tensor compute_supcol(const torch::Tensor& t, const ThermoParams& p) {
-    return p.t0c - torch::clamp(t, /*min=*/153.15, /*max=*/393.15);
+    // Fortran F:1274/3477 supcol = t0c - t (raw, no clamp). Removing the [153.15,393.15]
+    // clamp restores dsupcol/dt at extreme T (AD-faithful) and is a no-op for tropospheric T.
+    // 1:1 parity fix #2.
+    return p.t0c - t;
 }
 
 torch::Tensor compute_qs_water(const torch::Tensor& t, const torch::Tensor& pres, const ThermoParams& p) {

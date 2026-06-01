@@ -561,7 +561,10 @@ CoordinatorState kdm62d_one_step(
     // D1-D4 are already committed to `working`, and scale_rates only touches the
     // D5 fields (pseml/pgeml/nseml/ngeml), so passing mf5 is sufficient.
     auto scaled = scale_rates_for_conservation(
-        working, pre2.supcol, warm_out, cold_out, mf5, dtcld
+        working, pre2.supcol, warm_out, cold_out, mf5, dtcld,
+        // per-cell ncmin floor for the cloud/ice NUMBER budgets (1:1 fix #18); same
+        // xland-derived tensor runtime.cpp injects into the rate-gate params.
+        cold_params.cloud_water_riming.ncmin_tensor
     );
 
     // F1e: state update on the WORKING base. HYBRID pre_core (Fortran-exact):
@@ -878,7 +881,8 @@ ConservedRates scale_rates_for_conservation(
     WarmPhaseOutputs warm,
     ColdPhaseOutputs cold,
     MeltFreezePhaseOutputs mf,
-    double dtcld
+    double dtcld,
+    const c10::optional<torch::Tensor>& ncmin_tensor
 ) {
     auto dtype = state.qc.dtype();
     auto cold_gate = (supcol > 0);                  // == state_update cold_mask
@@ -896,6 +900,21 @@ ConservedRates scale_rates_for_conservation(
                      const torch::Tensor& source_sum, const torch::Tensor& gate,
                      std::initializer_list<torch::Tensor*> rates) {
         auto value = torch::clamp(reservoir, floor);
+        auto source = source_sum * dtcld;
+        auto factor_raw = value / torch::maximum(source, value);
+        auto factor = torch::where(gate, factor_raw, torch::ones_like(value));
+        for (auto* r : rates) { *r = *r * factor; }
+    };
+
+    // Per-cell ncmin floor variant for the cloud/ice NUMBER budgets — Fortran
+    // F:2554/2568/2706 max(ncmin,nci) with ncmin=10(sea)/100(land), NOT the
+    // hardcoded 0.01. nullopt → scalar constants::NCMIN fallback. 1:1 fix #18.
+    auto limit_ncmin = [&](const torch::Tensor& reservoir,
+                           const torch::Tensor& source_sum, const torch::Tensor& gate,
+                           std::initializer_list<torch::Tensor*> rates) {
+        auto value = ncmin_tensor.has_value()
+            ? torch::maximum(reservoir, ncmin_tensor.value())
+            : torch::clamp(reservoir, constants::NCMIN);
         auto source = source_sum * dtcld;
         auto factor_raw = value / torch::maximum(source, value);
         auto factor = torch::where(gate, factor_raw, torch::ones_like(value));
@@ -945,12 +964,12 @@ ConservedRates scale_rates_for_conservation(
           {&cold.pgdep, &cold.piacr, &cold.praci, &cold.psacr_adj, &cold.pracs,
            &cold.paacw_adj, &cold.pgaci, &cold.pgacr_adj});
     // cloud number (:2554): nraut+nccol+nracw+niacw+2·naacw
-    limit(state.nc, constants::NCMIN,
+    limit_ncmin(state.nc,
           warm.nraut + warm.nccol + warm.nracw + cold.niacw + 2.0 * cold.naacw,
           cold_gate,
           {&warm.nraut, &warm.nccol, &warm.nracw, &cold.naacw, &cold.niacw});
     // ice number (:2568): nraci+nsaci+ngaci+niacr+nsaut-nmulcs-nmulcg-nmulrs-nmulrg-ninud
-    limit(state.ni, constants::NCMIN,
+    limit_ncmin(state.ni,
           cold.nraci + cold.nsaci + cold.ngaci + cold.niacr + cold.nsaut
               - cold.nmulcs - cold.nmulcg - cold.nmulrs - cold.nmulrg
               - cold.ninud,
@@ -989,7 +1008,7 @@ ConservedRates scale_rates_for_conservation(
           warm_gate,
           {&cold.pgevp, &mf.pgeml});
     // cloud number (:2706): nraut+nccol+nracw+2·naacw
-    limit(state.nc, constants::NCMIN,
+    limit_ncmin(state.nc,
           warm.nraut + warm.nccol + warm.nracw + 2.0 * cold.naacw,
           warm_gate,
           {&warm.nraut, &warm.nccol, &warm.nracw, &cold.naacw});
@@ -1397,7 +1416,7 @@ CoordinatorState reclassify_large_ice_to_snow(
     const double g1pdimi = rgmma_scalar(1.0 + constants::DMI + constants::MUI);
     const double g4pmi = rgmma_scalar(4.0 + constants::MUI);
     const double pidni = cmi * g1pdimi / g1pmi;
-    const double avedia_factor = std::pow(g4pmi / g1pmi, 1.0 / 3.0);
+    const double avedia_factor = std::pow(g4pmi / g1pmi, 0.3333333);  // Fortran F:2802 ice avedia .3333333 literal. 1:1 fix #4/#11.
     const double rslopeimax = 1.0 / constants::LAMDAIMAX;
     const double rslopeimin = 1.0 / constants::LAMDAIMIN;
 
@@ -1448,7 +1467,7 @@ CoordinatorState reclassify_small_rain_to_cloud(
     const double g1pdrmr = rgmma_scalar(1.0 + constants::DMR + constants::MUR);
     const double g4pmr = rgmma_scalar(4.0 + constants::MUR);
     const double pidnr = cmr * g1pdrmr / g1pmr;
-    const double avedia_factor = std::pow(g4pmr / g1pmr, 1.0 / 3.0);
+    const double avedia_factor = std::pow(g4pmr / g1pmr, 0.3333333);  // Fortran F:2878 rain avedia .3333333 literal. 1:1 fix #4/#11.
     const double rslopermax = 1.0 / constants::LAMDARMAX;
     const double rslopermin = 1.0 / constants::LAMDARMIN;
 

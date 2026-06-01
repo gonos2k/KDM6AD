@@ -73,7 +73,13 @@ torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& den,
     const CloudDsdParams& p
 ) {
-    return diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
+    // Fortran F:1061/1429/1610/2793 cloud rslopec = 1./lamdac with NO max/min clamp.
+    // (rain F:3490 and ice F:3535 DO clamp — those stay clamped in diag_species_slope_torch.)
+    // Dedicated unclamped body removes a gradient-zeroing plateau (AD-faithful). 1:1 fix #6.
+    auto qden_safe = torch::clamp(qc * den, /*min=*/DOMAIN_FLOOR);
+    auto ratio = p.pidnc * nc / qden_safe;
+    auto lamda = torch::exp(torch::log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) / p.dmc);
+    return 1.0 / lamda;
 }
 
 torch::Tensor diag_avedia_cloud_torch(
@@ -87,7 +93,9 @@ torch::Tensor diag_avedia_rain_torch(
     const torch::Tensor& rslope_r,
     const CloudDsdParams& p
 ) {
-    return rslope_r * std::pow(p.g4pmr_over_g1pmr, 1.0 / 3.0);
+    // Fortran F:1671 rain avedia uses the truncated literal `.3333333` (NOT 1./3.); cloud
+    // avedia F:1670 DOES use 1./3. (see line 83). 1:1 parity fix #4.
+    return rslope_r * std::pow(p.g4pmr_over_g1pmr, 0.3333333);
 }
 
 torch::Tensor diag_sigma_cloud_torch(
