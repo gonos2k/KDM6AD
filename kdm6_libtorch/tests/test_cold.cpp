@@ -64,7 +64,7 @@ void test_ice_accretion_params_finite_and_positive() {
 void test_ice_accretion_inactive_below_thresholds() {
     TEST(test_ice_accretion_inactive_below_thresholds) {
         auto p = default_ice_accretion_params();
-        auto in = make_inputs(/*qi=*/1.0e-12, /*qr=*/1.0e-4);  // qi too low
+        auto in = make_inputs(/*qi=*/1.0e-16, /*qr=*/1.0e-4);  // qi below the 1e-15 gate (#13) → exact 0
         auto out = ice_accretion_torch(in, p, 60.0);
         assert(torch::allclose(out.praci, torch::zeros_like(in.qi)));
         assert(torch::allclose(out.piacr, torch::zeros_like(in.qi)));
@@ -141,7 +141,7 @@ void test_isg_params_finite() {
 void test_isg_inactive_when_qi_low() {
     TEST(test_isg_inactive_when_qi_low) {
         auto p = default_ice_to_snow_graupel_params();
-        auto in = make_isg_inputs(/*qi=*/1.0e-12, /*supcol=*/10.0);
+        auto in = make_isg_inputs(/*qi=*/1.0e-16, /*supcol=*/10.0);  // qi below the 1e-15 gate (#14) → exact 0
         auto out = ice_to_snow_graupel_torch(in, p, 60.0);
         assert(torch::allclose(out.psaci, torch::zeros_like(in.qi)));
         assert(torch::allclose(out.pgaci, torch::zeros_like(in.qi)));

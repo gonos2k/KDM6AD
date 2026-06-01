@@ -98,9 +98,9 @@ def test_default_ice_accretion_params_gamma_consistency():
 
 
 def test_ice_accretion_inactive_below_thresholds():
-    """qi <= qmin OR qr <= qcrmin → praci = piacr = 0."""
+    """qi <= qmin(1e-15, #13) OR qr <= qcrmin(1e-9) → praci = piacr = 0."""
     p = default_ice_accretion_params()
-    inputs = list(_ice_accretion_inputs(qi_value=1.0e-12, qr_value=1.0e-4))  # qi too low
+    inputs = list(_ice_accretion_inputs(qi_value=1.0e-16, qr_value=1.0e-4))  # qi below 1e-15 gate
     praci, piacr = ice_accretion_torch(*inputs, params=p, dtcld=60.0)
     assert torch.allclose(praci, torch.zeros_like(praci))
     assert torch.allclose(piacr, torch.zeros_like(piacr))
@@ -268,9 +268,9 @@ def test_default_isg_params_gamma_consistency():
 
 
 def test_isg_inactive_when_qi_low():
-    """qi <= qmin → psaci = pgaci = 0."""
+    """qi <= qmin(1e-15, #14) → psaci = pgaci = 0."""
     p = default_ice_to_snow_graupel_params()
-    inputs = _isg_inputs(qi_value=1.0e-12)
+    inputs = _isg_inputs(qi_value=1.0e-16)  # qi below 1e-15 gate
     psaci, pgaci = ice_to_snow_graupel_torch(*inputs, params=p, dtcld=60.0)
     assert torch.allclose(psaci, torch.zeros_like(psaci))
     assert torch.allclose(pgaci, torch.zeros_like(pgaci))
@@ -461,9 +461,9 @@ def test_default_cwr_params_finite():
 
 
 def test_cwr_inactive_when_qc_low():
-    """qc <= qmin → psacw, pgacw, piacw = 0 (이들이 qc 직접 의존)."""
+    """qc <= qmin(1e-15, #16/#17) → psacw, pgacw, piacw = 0 (이들이 qc 직접 의존)."""
     p = default_cloud_water_riming_params()
-    inputs = _cwr_inputs(qc_value=1.0e-12)
+    inputs = _cwr_inputs(qc_value=1.0e-16)  # qc below 1e-15 gate
     out = cloud_water_riming_torch(*inputs, params=p, dtcld=60.0)
     z = torch.zeros_like(out.psacw)
     assert torch.allclose(out.psacw, z)
