@@ -1678,10 +1678,11 @@ SedimentationOutputs sedimentation_chain(
     // (Fortran F:1189-1205 ProgB+slope_kdm6 re-call after EVERY main substep). w1_qi/wn_qi are
     // ALSO updated by the main re-slope: Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
     // each main substep, and the ice loop below consumes the post-main-loop value — the
-    // main→ice HANDOFF (F:1194 → F:1215). (NB: Fortran leaves work1(4)/workn(2) un-normalized
-    // in the main loop, a latent over-sedimentation quirk; the port normalizes /delz
-    // consistently for physical/AD correctness. Inert: ice is unchanged in the main loop ⇒
-    // vt_i equals the initial value regardless.)
+    // main→ice HANDOFF (F:1194 → F:1215). Fortran's main loop normalizes only work1(1,2,3)/
+    // workn(1) (F:1198-1205) and leaves work1(4)/workn(2) RAW. The port runs the same flow but
+    // NORMALIZES the ice handoff /delz: the RAW value over-sediments ice (vt_i·dt≫1 ⇒ qi→0) and
+    // the depletion clamp zeroes ∂/∂qi, which breaks test_autograd_endtoend — the differentiable-
+    // port core goal. Deliberate AD-required deviation (cf. #6 cloud-rslopec); inert where QICE≈0.
     auto w1_qr = work1_qr, wn_qr = workn_qr, w1_qs = work1_qs, w1_qg = work1_qg;
     auto w1_qi = work1_qi, wn_qi = workn_qi;
 
@@ -1711,11 +1712,16 @@ SedimentationOutputs sedimentation_chain(
             rs.qr = adv_state.qr; rs.nr = adv_state.nr;
             rs.qs = adv_state.qs; rs.qg = adv_state.qg; rs.brs = adv_state.brs;
             auto pre = preamble(rs, forcing, *reslope_params);
-            w1_qr = pre.slope.vt_r  / delz_safe;
+            w1_qr = pre.slope.vt_r  / delz_safe;   // F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / delz_safe;
             w1_qs = pre.slope.vt_s  / delz_safe;
             w1_qg = pre.slope.vt_g  / delz_safe;
-            w1_qi = pre.slope.vt_i  / delz_safe;   // main→ice handoff (F:1194 slope_kdm6 → work1(4))
+            // main→ice handoff (F:1194 slope_kdm6 → work1(4) → F:1215). Fortran leaves work1(4)/
+            // workn(2) RAW here (F:1198-1205 normalizes only 1,2,3/workn1). The port normalizes /delz:
+            // the RAW value over-sediments ice (vt_i·dt≫1 ⇒ qi→0) and the depletion clamp max(qi-…,0)
+            // then ZEROES ∂/∂qi — breaking test_autograd_endtoend, the differentiable-port core goal.
+            // DELIBERATE AD-required deviation (cf. #6); inert in validation where QICE≈0. See tracker #9.
+            w1_qi = pre.slope.vt_i  / delz_safe;
             wn_qi = pre.slope.vtn_i / delz_safe;
         }
     }

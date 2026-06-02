@@ -1950,7 +1950,10 @@ def sedimentation_chain_torch(
     # reslope_params is set (Fortran F:1189-1205 after EVERY main substep). w1_qi/wn_qi are
     # ALSO updated by the main re-slope — Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
     # each main substep and the ice loop below consumes the post-main value (main→ice handoff,
-    # F:1194→F:1215). Inert here (ice unchanged in the main loop ⇒ same vt_i).
+    # F:1194→F:1215). Fortran leaves work1(4)/workn(2) RAW (F:1198-1205 normalizes only
+    # 1,2,3/workn1); the port NORMALIZES the ice handoff /delz because the RAW value
+    # over-sediments ice and the depletion clamp zeroes ∂/∂qi, breaking the differentiable-port
+    # core goal (test_autograd_endtoend). Deliberate AD-required deviation (cf. #6); inert where QICE≈0.
     w1_qr, wn_qr, w1_qs, w1_qg = work1_qr, workn_qr, work1_qs, work1_qg
     w1_qi, wn_qi = work1_qi, workn_qi
     _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
@@ -1975,11 +1978,16 @@ def sedimentation_chain_torch(
             rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
                                 qg=adv_state.qg, brs=adv_state.brs)
             pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
-            w1_qr = pre.slope.vt_r / dz
+            w1_qr = pre.slope.vt_r / dz   # F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz
             w1_qg = pre.slope.vt_g / dz
-            w1_qi = pre.slope.vt_i / dz   # main→ice handoff (F:1194 slope_kdm6 → work1(4))
+            # main→ice handoff (F:1194 → F:1215). Fortran leaves work1(4)/workn(2) RAW here
+            # (F:1198-1205 normalizes only 1,2,3/workn1). The port normalizes /delz: the RAW value
+            # over-sediments ice (vt_i·dt≫1 ⇒ qi→0) and the depletion clamp zeroes ∂/∂qi, breaking
+            # the differentiable-port core goal (test_autograd_endtoend). DELIBERATE AD-required
+            # deviation (cf. #6); inert where QICE≈0. See tracker #9.
+            w1_qi = pre.slope.vt_i / dz
             wn_qi = pre.slope.vtn_i / dz
 
     # ── Ice substepping ──────────────────────────────────────────────
