@@ -149,5 +149,31 @@ def test_state_dot_basic():
     assert torch.allclose(result, expected)
 
 
+def test_kdm6_pure_per_column_mstep_independence():
+    """1:1 fix #10 — per-column sedimentation mstep: a heterogeneous multi-column batch must
+    equal the per-column (B=1) stack. With the old scalar mstep (=max over columns) the columns
+    were coupled and diverged O(1e-1) at dt large enough for mstep>1; per-column mstep makes
+    each column independent (off-column substeps gate to 0)."""
+    from kdm6.state import State, Forcing
+    from kdm6.runtime import _kdm6_pure, make_parameters
+    B, K = 3, 4
+    mk = lambda cv: torch.tensor([[v] * K for v in cv], dtype=torch.float64)
+    # heterogeneous precip loadings -> different per-column fall speed -> different mstep
+    s = State(th=mk([290., 290., 290.]), qv=mk([1.4e-2] * 3), qc=mk([1e-3] * 3),
+              qr=mk([1e-5, 5e-3, 1e-3]), qi=mk([0.] * 3), qs=mk([0., 2e-3, 5e-4]),
+              qg=mk([0., 1e-3, 2e-4]), nccn=mk([1e9] * 3), nc=mk([1e8] * 3),
+              ni=mk([0.] * 3), nr=mk([1e4, 1e5, 5e4]), bg=mk([0.] * 3))
+    f = Forcing(rho=mk([1.0] * 3), pii=mk([0.97] * 3), p=mk([9e4] * 3), delz=mk([500.] * 3))
+    out_batched = _kdm6_pure(s, f, make_parameters(), dt=600.0)  # dt=600 -> loops>1, mstep>1
+    for i in range(B):
+        si = State(*[getattr(s, fl)[i:i + 1] for fl in s._fields])
+        fi = Forcing(*[getattr(f, fl)[i:i + 1] for fl in f._fields])
+        out_i = _kdm6_pure(si, fi, make_parameters(), dt=600.0)
+        for fl in s._fields:
+            assert torch.allclose(getattr(out_batched, fl)[i:i + 1], getattr(out_i, fl),
+                                  rtol=1e-10, atol=1e-15), \
+                f"#10 regressed: column {i} field {fl} differs (scalar-mstep coupling)"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
