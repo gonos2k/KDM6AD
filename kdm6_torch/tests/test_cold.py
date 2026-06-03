@@ -1138,16 +1138,33 @@ def test_graupel_evap_grad_finite():
 
 
 def test_default_cold_evap_params_fortran_formula_lock():
-    """audit round-4: Fortran-fidelity lock for the snow/graupel ventilation coefficients
-    (module_mp_kdm6.F:3254-3263). The WARM phase locks precr1 (test_warm.py); cold had NO
-    equivalent — so a SHARED C++↔Python drift of the 0.65/0.44/0.78 ventilation constants from
-    Fortran would pass the C++↔Python parity test silently (the documented 'both drift together'
-    failure mode). Hardcode the Fortran constants + the mus=0/mug=0 gamma moments via math.gamma()."""
+    """audit round-4 (+ Codex stop-gate): Fortran-fidelity lock for the snow/graupel ventilation
+    coefficients (module_mp_kdm6.F:3254-3263). The WARM phase locks precr1 (test_warm.py); cold had
+    none — so a SHARED C++↔Python drift of the 0.65/0.44/0.78 constants would pass the parity test
+    silently. precs1/precs2/precg1 are DUPLICATED across default_dep_sub_params AND
+    default_snow_evap_params/default_graupel_evap_params — lock EVERY copy to Fortran (hardcoded
+    constants + independent gamma moments) AND assert the duplicates agree, so neither a Fortran
+    drift nor an internal divergence between the copies can slip through."""
+    from kdm6.cold import default_dep_sub_params
     g2pms = math.gamma(2.0 + c.MUS)                     # F: g2pms = rgmma(2+mus)
     g2pmg = math.gamma(2.0 + c.MUG)                     # F: g2pmg = rgmma(2+mug)
     g5pbso2 = math.gamma(2.5 + 0.5 * c.BVTS + c.MUS)    # F: g5pbso2 = rgmma(2.5+0.5*bvts+mus)
+    exp_precs1 = 4.0 * 0.65 * g2pms                      # F:3254
+    exp_precs2 = 4.0 * 0.44 * (c.AVTS ** 0.5) * g5pbso2  # F:3255
+    exp_precg1 = 4.0 * 0.78 * g2pmg                      # F:3263
     snow = default_snow_evap_params()
     graup = default_graupel_evap_params()
-    assert math.isclose(snow.precs1, 4.0 * 0.65 * g2pms, rel_tol=1e-12)                      # F:3254
-    assert math.isclose(snow.precs2, 4.0 * 0.44 * (c.AVTS ** 0.5) * g5pbso2, rel_tol=1e-12)  # F:3255
-    assert math.isclose(graup.precg1, 4.0 * 0.78 * g2pmg, rel_tol=1e-12)                     # F:3263
+    dep = default_dep_sub_params()                       # the duplicated copy (cold.py:1219-1221)
+    for label, val, exp in (
+        ("snow.precs1", snow.precs1, exp_precs1),
+        ("snow.precs2", snow.precs2, exp_precs2),
+        ("graup.precg1", graup.precg1, exp_precg1),
+        ("dep.precs1", dep.precs1, exp_precs1),
+        ("dep.precs2", dep.precs2, exp_precs2),
+        ("dep.precg1", dep.precg1, exp_precg1),
+    ):
+        assert math.isclose(val, exp, rel_tol=1e-12), f"{label} drifted from Fortran F:3254-3263"
+    # the duplicated copies must also agree with each other (no internal divergence)
+    assert math.isclose(dep.precs1, snow.precs1, rel_tol=1e-12), "dep/snow precs1 diverged"
+    assert math.isclose(dep.precs2, snow.precs2, rel_tol=1e-12), "dep/snow precs2 diverged"
+    assert math.isclose(dep.precg1, graup.precg1, rel_tol=1e-12), "dep/graupel precg1 diverged"
