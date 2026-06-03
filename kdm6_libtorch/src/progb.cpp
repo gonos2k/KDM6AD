@@ -160,10 +160,10 @@ ProgBOutputs progb_param_torch(
     dgbgmug1  = torch::where(active, dgbgmug1,  zero);
 
     return ProgBOutputs{
-        rhox, bg_new, cmg, pidn0g,
-        avtg, bvtg, bvtg1, bvtg2, bvtg3, bvtg4,
-        g1pbg, g3pbg, g4pbg, g5pbgo2, g1pdgbgmg,
-        dgbgmug1, rslopegbmax, pvtg, precg2
+        /*rhox=*/rhox, /*bg=*/bg_new, /*cmg=*/cmg, /*pidn0g=*/pidn0g,
+        /*avtg=*/avtg, /*bvtg=*/bvtg, /*bvtg1=*/bvtg1, /*bvtg2=*/bvtg2, /*bvtg3=*/bvtg3, /*bvtg4=*/bvtg4,
+        /*g1pbg=*/g1pbg, /*g3pbg=*/g3pbg, /*g4pbg=*/g4pbg, /*g5pbgo2=*/g5pbgo2, /*g1pdgbgmg=*/g1pdgbgmg,
+        /*dgbgmug1=*/dgbgmug1, /*rslopegbmax=*/rslopegbmax, /*pvtg=*/pvtg, /*precg2=*/precg2
     };
 }
 

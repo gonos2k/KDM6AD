@@ -252,9 +252,9 @@ SurfaceAccumOutputs surface_accumulation_torch(
     auto fallsum_qsi = fall_qs_bottom + fall_qi_bottom;
     auto factor = delz_bottom / constants::DENR * dtcld * 1000.0;
     return SurfaceAccumOutputs{
-        torch::clamp(fallsum, 0.0) * factor,
-        torch::clamp(fallsum_qsi, 0.0) * factor,
-        torch::clamp(fall_qg_bottom, 0.0) * factor,
+        /*rain_increment=*/torch::clamp(fallsum, 0.0) * factor,
+        /*snow_increment=*/torch::clamp(fallsum_qsi, 0.0) * factor,
+        /*graupel_increment=*/torch::clamp(fall_qg_bottom, 0.0) * factor,
     };
 }
 

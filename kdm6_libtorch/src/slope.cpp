@@ -70,7 +70,9 @@ SlopeRainOutputs rain_slope_components(const torch::Tensor& qr,
     // reassigns vtn=pvtrn*rslopeb*denfac unconditionally, so Fortran always uses nonzero vtn
     // (vt zeroing at F:3547-3550 comes AFTER its assignment, so vt zeroing IS kept above). 1:1 fix #5.
 
-    return SlopeRainOutputs{rslope, rslopeb, rslopemu, rsloped, rslope2, rslope3, vt, vtn};
+    return SlopeRainOutputs{/*rslope=*/rslope, /*rslopeb=*/rslopeb, /*rslopemu=*/rslopemu,
+                            /*rsloped=*/rsloped, /*rslope2=*/rslope2, /*rslope3=*/rslope3,
+                            /*vt=*/vt, /*vtn=*/vtn};
 }
 
 }  // namespace
@@ -139,14 +141,14 @@ SlopeParams default_slope_params() {
     const double rslopei3max = rslopei2max * rslopeimax;
 
     return SlopeParams{
-        pidnr, pidn0s, pidni,
-        pvtr, pvtrn, pvti, pvtin, pvts,
-        rslopermax, rslopesmax, rslopegmax, rslopeimax,
-        rsloperbmax, rslopesbmax, rslopeibmax,
-        rslopermmax, rslopesmmax, rslopegmmax, rslopeimmax,
-        rsloperdmax, rslopesdmax, rslopegdmax, rslopeidmax,
-        rsloper2max, rslopes2max, rslopeg2max, rslopei2max,
-        rsloper3max, rslopes3max, rslopeg3max, rslopei3max
+        /*pidnr=*/pidnr, /*pidn0s=*/pidn0s, /*pidni=*/pidni,
+        /*pvtr=*/pvtr, /*pvtrn=*/pvtrn, /*pvti=*/pvti, /*pvtin=*/pvtin, /*pvts=*/pvts,
+        /*rslopermax=*/rslopermax, /*rslopesmax=*/rslopesmax, /*rslopegmax=*/rslopegmax, /*rslopeimax=*/rslopeimax,
+        /*rsloperbmax=*/rsloperbmax, /*rslopesbmax=*/rslopesbmax, /*rslopeibmax=*/rslopeibmax,
+        /*rslopermmax=*/rslopermmax, /*rslopesmmax=*/rslopesmmax, /*rslopegmmax=*/rslopegmmax, /*rslopeimmax=*/rslopeimmax,
+        /*rsloperdmax=*/rsloperdmax, /*rslopesdmax=*/rslopesdmax, /*rslopegdmax=*/rslopegdmax, /*rslopeidmax=*/rslopeidmax,
+        /*rsloper2max=*/rsloper2max, /*rslopes2max=*/rslopes2max, /*rslopeg2max=*/rslopeg2max, /*rslopei2max=*/rslopei2max,
+        /*rsloper3max=*/rsloper3max, /*rslopes3max=*/rslopes3max, /*rslopeg3max=*/rslopeg3max, /*rslopei3max=*/rslopei3max
     };
 }
 
@@ -258,15 +260,15 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     // Fortran F:3553-3554: vtn_i dead-store (reassigned unconditionally after the ni<=0 zeroing). 1:1 fix #5.
 
     return SlopeOutputs{
-        rain.rslope, rslope_s, rslope_g, rslope_i,
-        rain.rslopeb, rslopeb_s, rslopeb_g, rslopeb_i,
-        rain.rslopemu, rslopemu_s, rslopemu_g, rslopemu_i,
-        rain.rsloped, rsloped_s, rsloped_g, rsloped_i,
-        rain.rslope2, rslope2_s, rslope2_g, rslope2_i,
-        rain.rslope3, rslope3_s, rslope3_g, rslope3_i,
-        rain.vt, vt_s, vt_g, vt_i,
-        rain.vtn, vtn_i,
-        n0sfac_out
+        /*rslope_r=*/rain.rslope, /*rslope_s=*/rslope_s, /*rslope_g=*/rslope_g, /*rslope_i=*/rslope_i,
+        /*rslopeb_r=*/rain.rslopeb, /*rslopeb_s=*/rslopeb_s, /*rslopeb_g=*/rslopeb_g, /*rslopeb_i=*/rslopeb_i,
+        /*rslopemu_r=*/rain.rslopemu, /*rslopemu_s=*/rslopemu_s, /*rslopemu_g=*/rslopemu_g, /*rslopemu_i=*/rslopemu_i,
+        /*rsloped_r=*/rain.rsloped, /*rsloped_s=*/rsloped_s, /*rsloped_g=*/rsloped_g, /*rsloped_i=*/rsloped_i,
+        /*rslope2_r=*/rain.rslope2, /*rslope2_s=*/rslope2_s, /*rslope2_g=*/rslope2_g, /*rslope2_i=*/rslope2_i,
+        /*rslope3_r=*/rain.rslope3, /*rslope3_s=*/rslope3_s, /*rslope3_g=*/rslope3_g, /*rslope3_i=*/rslope3_i,
+        /*vt_r=*/rain.vt, /*vt_s=*/vt_s, /*vt_g=*/vt_g, /*vt_i=*/vt_i,
+        /*vtn_r=*/rain.vtn, /*vtn_i=*/vtn_i,
+        /*n0sfac_field=*/n0sfac_out
     };
 }
 

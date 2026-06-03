@@ -95,7 +95,7 @@ IceAccretionOutputs ice_accretion_torch(
     auto piacr_capped = torch::minimum(piacr_wilt, in.qr / dtcld);
     auto piacr = torch::where(active, piacr_capped, zero);
 
-    return IceAccretionOutputs{praci, piacr};
+    return IceAccretionOutputs{/*praci=*/praci, /*piacr=*/piacr};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -175,7 +175,7 @@ IceToSnowGraupelOutputs ice_to_snow_graupel_torch(
     auto pgaci_capped = torch::minimum(pgaci_wilt, in.qi / dtcld);
     auto pgaci = torch::where(active_g, pgaci_capped, zero);
 
-    return IceToSnowGraupelOutputs{psaci, pgaci};
+    return IceToSnowGraupelOutputs{/*psaci=*/psaci, /*pgaci=*/pgaci};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -274,7 +274,7 @@ NumberAccretionOutputs number_accretion_torch(
     auto ngaci_capped = torch::minimum(ngaci_wilt, in.ni / dtcld);
     auto ngaci = torch::where(cold_active & graupel_active, ngaci_capped, zero);
 
-    return NumberAccretionOutputs{nraci, niacr, nsaci, ngaci};
+    return NumberAccretionOutputs{/*nraci=*/nraci, /*niacr=*/niacr, /*nsaci=*/nsaci, /*ngaci=*/ngaci};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -394,8 +394,8 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     auto niacw = torch::where(niacw_active, niacw_capped, zero);
 
     return CloudWaterRimingOutputs{
-        psacw, nsacw, pgacw, ngacw,
-        paacw, naacw, piacw, niacw,
+        /*psacw=*/psacw, /*nsacw=*/nsacw, /*pgacw=*/pgacw, /*ngacw=*/ngacw,
+        /*paacw=*/paacw, /*naacw=*/naacw, /*piacw=*/piacw, /*niacw=*/niacw,
     };
 }
 
@@ -515,7 +515,7 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto ngacr = torch::where(graupel_nr_active, ngacr_capped, zero);
 
     return RainSnowGraupelCollectionOutputs{
-        pracs, nracs, psacr, nsacr, pgacr, ngacr,
+        /*pracs=*/pracs, /*nracs=*/nracs, /*psacr=*/psacr, /*nsacr=*/nsacr, /*pgacr=*/pgacr, /*ngacr=*/ngacr,
     };
 }
 
@@ -614,9 +614,9 @@ HallettMossopOutputs hallett_mossop_torch(
     auto pgacr_adj = in.pgacr - pmulrg;
 
     return HallettMossopOutputs{
-        pmulcs, pmulrs, pmulcg, pmulrg,
-        nmulcs, nmulrs, nmulcg, nmulrg,
-        paacw_adj, psacr_adj, pgacr_adj,
+        /*pmulcs=*/pmulcs, /*pmulrs=*/pmulrs, /*pmulcg=*/pmulcg, /*pmulrg=*/pmulrg,
+        /*nmulcs=*/nmulcs, /*nmulrs=*/nmulrs, /*nmulcg=*/nmulcg, /*nmulrg=*/nmulrg,
+        /*paacw_adj=*/paacw_adj, /*psacr_adj=*/psacr_adj, /*pgacr_adj=*/pgacr_adj,
     };
 }
 
@@ -671,7 +671,7 @@ IceNucleationOutputs ice_nucleation_torch(
 
     auto ifsat = torch::abs(in.prevp + pinud) >= torch::abs(satdt);
 
-    return IceNucleationOutputs{pinud, ninud, ifsat};
+    return IceNucleationOutputs{/*pinud=*/pinud, /*ninud=*/ninud, /*ifsat=*/ifsat};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -785,7 +785,8 @@ DepSubOutputs dep_sub_torch(
         torch::abs(in.prevp + in.pinud + pidep + psdep + pgdep) >= torch::abs(satdt)
     );
 
-    return DepSubOutputs{pidep, psdep, pgdep, ifsat_final, ice_complete_sublim};
+    return DepSubOutputs{/*pidep=*/pidep, /*psdep=*/psdep, /*pgdep=*/pgdep,
+                         /*ifsat=*/ifsat_final, /*ice_complete_sublim=*/ice_complete_sublim};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -832,7 +833,7 @@ IceAggregationOutputs ice_aggregation_torch(
     auto nsaut_capped = torch::minimum(nsaut_raw, ni / dtcld);
     auto nsaut = torch::where(active, nsaut_capped, zero);
 
-    return IceAggregationOutputs{psaut, nsaut};
+    return IceAggregationOutputs{/*psaut=*/psaut, /*nsaut=*/nsaut};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -845,7 +846,7 @@ SnowEvapParams default_snow_evap_params() {
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
     const double precs2 = 4.0 * 0.44 * std::pow(constants::AVTS, 0.5) * g5pbso2;
-    return SnowEvapParams{precs1, precs2, constants::QCRMIN};
+    return SnowEvapParams{/*precs1=*/precs1, /*precs2=*/precs2, /*qcrmin=*/constants::QCRMIN};
 }
 
 torch::Tensor snow_evap_torch(
@@ -879,7 +880,7 @@ torch::Tensor snow_evap_torch(
 GraupelEvapParams default_graupel_evap_params() {
     const double g2pmg = rgmma_scalar(2.0 + constants::MUG);
     const double precg1 = 4.0 * 0.78 * g2pmg;
-    return GraupelEvapParams{precg1, constants::QCRMIN};
+    return GraupelEvapParams{/*precg1=*/precg1, /*qcrmin=*/constants::QCRMIN};
 }
 
 torch::Tensor graupel_evap_torch(

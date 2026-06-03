@@ -118,7 +118,7 @@ LenconOutputs diag_lencon_torch(
     auto factor = 1.0e20 / 16.0 * avedia_c * sigma_c.pow(3) - 0.4;
     auto lencon = 2.7e-2 * den * qc * factor;
     auto lenconcr = torch::clamp(1.2 * lencon, /*min=*/qcrmin);
-    return LenconOutputs{lencon, lenconcr};
+    return LenconOutputs{/*lencon=*/lencon, /*lenconcr=*/lenconcr};
 }
 
 torch::Tensor diag_qcr_torch(

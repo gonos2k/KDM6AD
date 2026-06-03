@@ -98,7 +98,8 @@ MeltingOutputs melting_torch(
     auto pimlt_ni = torch::where(ice_active, in.ni, zero);
 
     return MeltingOutputs{
-        psmlt, pgmlt, pimlt_qi, pimlt_ni, sfac, gfac, delta_brs,
+        /*psmlt=*/psmlt, /*pgmlt=*/pgmlt, /*pimlt_qi=*/pimlt_qi, /*pimlt_ni=*/pimlt_ni,
+        /*sfac=*/sfac, /*gfac=*/gfac, /*delta_brs=*/delta_brs,
     };
 }
 
@@ -146,7 +147,7 @@ ContactFreezingOutputs contact_freezing_torch(
     auto ninuc_raw = difa * 2.0 * PI * Nic * in.n0c / (p.muc + 1.0)
                      * p.g1pmc * in.rslopecmu * in.rslopec2 * dtcld;
     auto ninuc = torch::where(nc_active, torch::minimum(ninuc_raw, in.nc), zero);
-    return ContactFreezingOutputs{pinuc, ninuc};
+    return ContactFreezingOutputs{/*pinuc=*/pinuc, /*ninuc=*/ninuc};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -191,7 +192,7 @@ BiggCloudOutputs bigg_cloud_freezing_torch(
                        * bigg_factor * p.g1pdcomuc1 * in.rslopecmu * in.rslopec
                        * in.rslopecd * dtcld;
     auto nfrzdtc = torch::where(nc_active, torch::minimum(nfrzdtc_raw, in.nc), zero);
-    return BiggCloudOutputs{pfrzdtc, nfrzdtc};
+    return BiggCloudOutputs{/*pfrzdtc=*/pfrzdtc, /*nfrzdtc=*/nfrzdtc};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -232,7 +233,7 @@ BiggRainOutputs bigg_rain_freezing_torch(
     auto nfrzdtr = torch::where(nr_active, torch::minimum(nfrzdtr_raw, in.nr), zero);
 
     auto delta_brs = pfrzdtr / p.denr;
-    return BiggRainOutputs{pfrzdtr, nfrzdtr, delta_brs};
+    return BiggRainOutputs{/*pfrzdtr=*/pfrzdtr, /*nfrzdtr=*/nfrzdtr, /*delta_brs=*/delta_brs};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -240,7 +241,7 @@ BiggRainOutputs bigg_rain_freezing_torch(
 // ═══════════════════════════════════════════════════════════════════════════
 
 EnhancedMeltingParams default_enhanced_melting_params(double cliq, double xlf) {
-    return EnhancedMeltingParams{cliq, xlf, constants::QCRMIN};
+    return EnhancedMeltingParams{/*cliq=*/cliq, /*xlf=*/xlf, /*qcrmin=*/constants::QCRMIN};
 }
 
 EnhancedMeltingOutputs enhanced_melting_torch(
@@ -269,7 +270,7 @@ EnhancedMeltingOutputs enhanced_melting_torch(
     auto gfac = in.rslope_g * in.n0go / torch::clamp(in.qg, /*min=*/p.qcrmin);
     auto ngeml = torch::where(graupel_active_qcr, -gfac * pgeml, zero);
 
-    return EnhancedMeltingOutputs{pseml, nseml, pgeml, ngeml};
+    return EnhancedMeltingOutputs{/*pseml=*/pseml, /*nseml=*/nseml, /*pgeml=*/pgeml, /*ngeml=*/ngeml};
 }
 
 }  // namespace melt

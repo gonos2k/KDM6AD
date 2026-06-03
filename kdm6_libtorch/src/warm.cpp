@@ -71,7 +71,7 @@ AutoconvOutputs autoconv_torch(
     auto nraut_capped = torch::minimum(nraut_unswap, nc / dtcld);
     auto nraut = torch::where(active, nraut_capped, zero);
 
-    return AutoconvOutputs{praut, nraut};
+    return AutoconvOutputs{/*praut=*/praut, /*nraut=*/nraut};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -145,7 +145,7 @@ AccretionOutputs accretion_torch(
     auto pracw = torch::where(rain_active, pracw_capped, zero);
     auto nracw = torch::where(rain_active, nracw_capped, zero);
 
-    return AccretionOutputs{pracw, nracw};
+    return AccretionOutputs{/*pracw=*/pracw, /*nracw=*/nracw};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -217,7 +217,7 @@ SelfCollectionOutputs self_collection_torch(
     auto rain_active = qr >= lenconcr;
     auto nrcol = torch::where(rain_active, nrcol_raw, zero);
 
-    return SelfCollectionOutputs{nccol, nrcol};
+    return SelfCollectionOutputs{/*nccol=*/nccol, /*nrcol=*/nrcol};
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

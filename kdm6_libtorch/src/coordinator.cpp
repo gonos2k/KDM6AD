@@ -343,10 +343,10 @@ namespace {
 // Pull thermo + cloud_dsd + rain-slope subset out of full PreambleOutputs for warm_phase.
 PreambleWarm pre_warm_view(const PreambleOutputs& pre) {
     return PreambleWarm{
-        pre.cpm, pre.xl, pre.qs1, pre.rh_w, pre.supsat, pre.work2,
-        pre.rslopec, pre.avedia_c, pre.avedia_r, pre.lenconcr,
-        pre.slope.rslope_r, pre.slope.rslopeb_r,
-        pre.slope.rslope2_r, pre.slope.rslope3_r, pre.slope.rslopemu_r,
+        /*cpm=*/pre.cpm, /*xl=*/pre.xl, /*qs1=*/pre.qs1, /*rh_w=*/pre.rh_w, /*supsat=*/pre.supsat, /*work2=*/pre.work2,
+        /*rslopec=*/pre.rslopec, /*avedia_c=*/pre.avedia_c, /*avedia_r=*/pre.avedia_r, /*lenconcr=*/pre.lenconcr,
+        /*rslope_r=*/pre.slope.rslope_r, /*rslopeb_r=*/pre.slope.rslopeb_r,
+        /*rslope2_r=*/pre.slope.rslope2_r, /*rslope3_r=*/pre.slope.rslope3_r, /*rslopemu_r=*/pre.slope.rslopemu_r,
     };
 }
 
@@ -362,25 +362,25 @@ PreambleCold pre_cold_view(const PreambleOutputs& pre) {
     // (dep_sub); snow/graupel evap use rh_w/rh_ice, so this field is ice-only.
     auto supsat_ice = pre.supsat + pre.qs1 - pre.qs2;
     return PreambleCold{
-        pre.supcol, supsat_ice, pre.rh_w, pre.rh_ice,
-        pre.denfac, pre.work2,
-        pre.rslopec,
-        pre.progb.avtg, pre.progb.g3pbg, pre.progb.precg2,
-        pre.slope,
+        /*supcol=*/pre.supcol, /*supsat=*/supsat_ice, /*rh_w=*/pre.rh_w, /*rh_ice=*/pre.rh_ice,
+        /*denfac=*/pre.denfac, /*work2=*/pre.work2,
+        /*rslopec=*/pre.rslopec,
+        /*avtg=*/pre.progb.avtg, /*g3pbg=*/pre.progb.g3pbg, /*precg2=*/pre.progb.precg2,
+        /*slope=*/pre.slope,
     };
 }
 
 PreambleMf pre_mf_view(const PreambleOutputs& pre) {
     return PreambleMf{
-        pre.supcol, pre.work2,
-        pre.progb.rhox, pre.progb.precg2,
-        pre.slope,
+        /*supcol=*/pre.supcol, /*work2=*/pre.work2,
+        /*rhox=*/pre.progb.rhox, /*precg2=*/pre.progb.precg2,
+        /*slope=*/pre.slope,
     };
 }
 
 PreambleCore pre_core_view(const PreambleOutputs& pre) {
     return PreambleCore{
-        pre.cpm, pre.xl, pre.supcol, pre.progb.rhox,
+        /*cpm=*/pre.cpm, /*xl=*/pre.xl, /*supcol=*/pre.supcol, /*rhox=*/pre.progb.rhox,
     };
 }
 
@@ -978,7 +978,7 @@ ConservedRates scale_rates_for_conservation(
           warm_gate,
           {&warm.nraut, &warm.nrcol, &mf.nseml, &mf.ngeml});
 
-    return ConservedRates{warm, cold, mf};
+    return ConservedRates{/*warm=*/warm, /*cold=*/cold, /*mf=*/mf};
 }
 
 // ─── F1e: state mutation update (Fortran 2730-2873) ────────────────────────
@@ -1319,18 +1319,18 @@ CoordinatorState apply_satadj_step(
     auto nccn_final = torch::clamp(nccn_final_raw, constants::NCCN_MIN, constants::NCCN_MAX);
 
     return CoordinatorState{
-        qv_final,
-        qc_final,
-        state.qr,
-        state.qs,
-        state.qg,
-        state.qi,
-        nc_final,
-        state.nr,
-        state.ni,
-        nccn_final,
-        state.brs,
-        t_final,
+        /*qv=*/qv_final,
+        /*qc=*/qc_final,
+        /*qr=*/state.qr,
+        /*qs=*/state.qs,
+        /*qg=*/state.qg,
+        /*qi=*/state.qi,
+        /*nc=*/nc_final,
+        /*nr=*/state.nr,
+        /*ni=*/state.ni,
+        /*nccn=*/nccn_final,
+        /*brs=*/state.brs,
+        /*t=*/t_final,
     };
 }
 

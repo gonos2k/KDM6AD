@@ -215,7 +215,7 @@ RebuiltDiagnostics rebuild_aux(
     aux.work1_ice   = thermo::compute_diffac(xls_t,        forcing.p, state.t, forcing.den, entry_pre.qs2, params.thermo);
     aux.work1_r     = aux.work1_water;   // Fortran work1(:,:,1) for rain capacitance
     aux.qcr = qcr_carry;   // sea_mask-derived, state-independent — carry, don't recompute
-    return RebuiltDiagnostics{pre, aux};
+    return RebuiltDiagnostics{/*pre=*/pre, /*aux=*/aux};
 }
 
 FnResult kdm6_fn(const State& state,
@@ -238,7 +238,8 @@ FnResult kdm6_fn(const State& state,
     // delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions).
     if (dt <= 0.0) {
         auto z = torch::zeros({cs.qc.size(0)}, cs.qc.options());
-        return FnResult{coord_to_state(cs, state, forcing), z, z, z};
+        return FnResult{/*state_out=*/coord_to_state(cs, state, forcing),
+                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z};
     }
 
     auto warm_p   = default_warm_phase_params();
@@ -365,8 +366,8 @@ FnResult kdm6_fn(const State& state,
     // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
     // FnResult ⇒ kdm6_step_c ⇒ WRF RAINNCV/SNOWNCV/GRAUPELNCV.
     return FnResult{
-        coord_to_state(cur, state, forcing),
-        rain_inc, snow_inc, graup_inc,
+        /*state_out=*/coord_to_state(cur, state, forcing),
+        /*rain_increment=*/rain_inc, /*snow_increment=*/snow_inc, /*graupel_increment=*/graup_inc,
     };
 }
 
@@ -432,20 +433,20 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
         torch::NoGradGuard no_grad;
         auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
         return StepResult{
-            std::move(fn_out.state_out), nullptr,
-            std::move(fn_out.rain_increment),
-            std::move(fn_out.snow_increment),
-            std::move(fn_out.graupel_increment),
+            /*state_out=*/std::move(fn_out.state_out), /*handle=*/nullptr,
+            /*rain_increment=*/std::move(fn_out.rain_increment),
+            /*snow_increment=*/std::move(fn_out.snow_increment),
+            /*graupel_increment=*/std::move(fn_out.graupel_increment),
         };
     }
     auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
     auto handle = std::make_unique<Handle>(
         state, fn_out.state_out, forcing, params, dt, /*value_only=*/false);
     return StepResult{
-        std::move(fn_out.state_out), std::move(handle),
-        std::move(fn_out.rain_increment),
-        std::move(fn_out.snow_increment),
-        std::move(fn_out.graupel_increment),
+        /*state_out=*/std::move(fn_out.state_out), /*handle=*/std::move(handle),
+        /*rain_increment=*/std::move(fn_out.rain_increment),
+        /*snow_increment=*/std::move(fn_out.snow_increment),
+        /*graupel_increment=*/std::move(fn_out.graupel_increment),
     };
 }
 
