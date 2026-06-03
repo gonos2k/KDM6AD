@@ -70,8 +70,20 @@ def make_parameters(
     """[G4] `Parameters` 생성 helper.
 
     기본값은 모든 파라미터 frozen이며, 보정 실험에서 필요한 항목만 grad를 켠다.
+
+    ⚠️ STAGE BOUNDARY (G4, not yet wired): the `*_grad`/`all_grad` flags set
+    `requires_grad=True` on the returned leaves, but `_kdm6_pure` / C++ `kdm6_fn`
+    currently build every phase-param bundle from `default_*_params()` (module
+    constants), NOT from this `Parameters` object (runtime.py:277, runtime.cpp:229).
+    So these leaves are NOT in the forward graph yet — `loss.backward()` leaves their
+    `.grad` as None, and `Handle.param_grad()` raises NotImplementedError. ∂loss/∂param
+    (parameter sensitivity for 4D-Var calibration) requires the G4 plumbing — threading
+    these values into the phase-param builders + warm/cold/mf formulas in BOTH trees —
+    which is a scoped future stage alongside the G3 vjp/jvp/jacobian adjoint API. The
+    validated deliverable today is the differentiable forward wrt the 12 STATE leaves.
     """
-    # TODO: 나머지 collection efficiency, lamdaR-MAX/MIN 등 추가
+    # TODO[G4]: wire these params into the phase-param builders (both trees) so ∂loss/∂param
+    # flows; add a param-leaf gradient test. Until then the flags are reserved, not live.
     # 우선 PEAUT가 가장 자주 튜닝되는 표면이라 이것부터 노출
     return Parameters(
         peaut=_mkparam(c.PEAUT, device=device, dtype=dtype, requires_grad=peaut_grad or all_grad),
