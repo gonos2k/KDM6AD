@@ -420,7 +420,8 @@ def rain_evap_torch(
     *,
     params: WarmRainEvapParams,
     dtcld: float,
-) -> torch.Tensor:
+    return_complete_evap: bool = False,
+) -> "torch.Tensor | tuple[torch.Tensor, torch.Tensor]":
     """Fortran 1779-1801 — rain evaporation/condensation (mass rate).
 
     prevp < 0 (rh<1, evaporation): qr→qv. capped by -qr/dtcld and satdt/2.
@@ -467,6 +468,11 @@ def rain_evap_torch(
     is_evap = prevp_raw < 0
     prevp_capped = torch.where(is_evap, prevp_evap, prevp_cond)
     prevp = torch.where(active, prevp_capped, zero)
+    if return_complete_evap:
+        # Fortran 1794-1797 / C++ warm.cpp:281: rain fully evaporated (prevp hit -qr/dtcld
+        # cap) ⇒ NR → NCCN. Mask = active & is_evap & (prevp == qr_cap).
+        rain_complete_evap = active & is_evap & (prevp == qr_cap)
+        return prevp, rain_complete_evap
     return prevp
 
 

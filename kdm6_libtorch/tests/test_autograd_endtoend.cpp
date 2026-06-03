@@ -64,8 +64,15 @@ double g_force[4][2] = {
     /* delz*/ {500.0,   500.0 },
 };
 
-// Differentiable leaves (the 8 the user named): θ,qv,qc,qr,qi,nc,ni,nr.
-const std::array<int,8> GRAD_LEAVES = {0,1,2,3,4,8,9,10};
+// Differentiable leaves. Original 8 (θ,qv,qc,qr,qi,nc,ni,nr) + qs(5),qg(6): both are
+// carried in loss_of's mass term, so they have a defined gradient path and belong in
+// the end-to-end severance gate (PART C). nccn(7) and bg(11) are intentionally EXCLUDED:
+// nccn's only physics route to the loss is CCN activation (pcact/ncact), deferred under
+// Task #74 (fortran-cpp-1to1 tracker #10 / satadj), so d(loss)/d(nccn)=0 today — a
+// nonzero assert would falsely fail; bg (graupel volume) has no loss term. Re-add both
+// once activation is wired and a downstream loss dependence exists. CCN is a prime
+// 4D-Var control variable, so this is the documented coverage boundary, not an oversight.
+const std::array<int,10> GRAD_LEAVES = {0,1,2,3,4,5,6,8,9,10};
 bool is_grad_leaf(int fi) {
     for (int g : GRAD_LEAVES) if (g == fi) return true;
     return false;
@@ -344,18 +351,42 @@ int main() {
     {
         auto inC = build(/*grad=*/true);
         auto rC = kdm6_fn(inC.s, inC.f, make_parameters(0), /*dt=*/300.0);
+        {   // PARITY DUMP — kdm6_fn output state on the fixed IC, for Python _kdm6_pure parity.
+            torch::NoGradGuard ng;
+            const auto& so = rC.state_out;
+            std::cout.precision(15);
+            auto pr = [&](const char* nm, const torch::Tensor& t) {
+                auto v = t.detach().reshape({-1});
+                std::cout << "CPPOUT " << nm << " " << v[0].item<double>()
+                          << " " << v[1].item<double>() << "\n";
+            };
+            pr("qv", so.qv); pr("qc", so.qc); pr("qr", so.qr); pr("qi", so.qi);
+            pr("qs", so.qs); pr("qg", so.qg); pr("nc", so.nc); pr("ni", so.ni);
+            pr("nr", so.nr); pr("th", so.th); pr("bg", so.bg); pr("nccn", so.nccn);
+        }
         auto lossC = loss_of(rC);
-        bool fwd_finite = std::isfinite(lossC.item<double>())
-            && torch::isfinite(rC.state_out.qc).all().item<bool>()
-            && torch::isfinite(rC.state_out.qi).all().item<bool>()
-            && torch::isfinite(rC.rain_increment).all().item<bool>();
+        // .item() reads below are pure value-asserts (finiteness/logging) and do NOT
+        // feed back into the graph — but fence them in NoGradGuard per the standing
+        // .item()+NoGradGuard rule. kdm6_fn (forward, above) and lossC.backward() (below)
+        // stay OUTSIDE the guard so the graph is built and traversed normally.
+        bool fwd_finite;
+        double lossC_val;
+        {
+            torch::NoGradGuard ng;
+            lossC_val = lossC.item<double>();
+            fwd_finite = std::isfinite(lossC_val)
+                && torch::isfinite(rC.state_out.qc).all().item<bool>()
+                && torch::isfinite(rC.state_out.qi).all().item<bool>()
+                && torch::isfinite(rC.rain_increment).all().item<bool>();
+        }
         std::cout << "  forward finite: " << (fwd_finite ? "yes" : "NO")
-                  << "  loss=" << lossC.item<double>() << "\n";
+                  << "  loss=" << lossC_val << "\n";
         if (!fwd_finite) fail("loops>1 forward non-finite");
         lossC.backward();
         for (int gi : GRAD_LEAVES) {
             const auto& g = inC.leaves[gi].grad();
-            bool ok = g.defined() && torch::isfinite(g).all().item<bool>();
+            bool ok;
+            { torch::NoGradGuard ng; ok = g.defined() && torch::isfinite(g).all().item<bool>(); }
             if (!ok) { std::cout << "  d/d(" << FNAME[gi] << ") SEVERED/NON-FINITE\n";
                        fail(std::string("loops>1 grad ") + FNAME[gi]); }
         }

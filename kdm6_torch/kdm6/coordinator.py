@@ -197,6 +197,7 @@ class WarmPhaseOutputs(NamedTuple):
     nrcol: torch.Tensor       # B3 rain self-collection + breakup
     prevp: torch.Tensor       # B4 rain evap
     pcond: torch.Tensor       # B5 saturation adjustment (qv ↔ qc)
+    rain_complete_evap: torch.Tensor = None  # B4 complete-evap mask → NR→NCCN (Task #74)
 
 
 def warm_phase_torch(
@@ -246,12 +247,13 @@ def warm_phase_torch(
     )
 
     # ── B4: Rain evaporation/condensation ──────────────────────────────
-    prevp = _warm.rain_evap_torch(
+    prevp, rain_complete_evap = _warm.rain_evap_torch(
         state.qr, pre.rh_w, pre.supsat,
         n0r, work1_r, pre.work2,
         pre.slope.rslope_r, pre.slope.rslopeb_r,
         pre.slope.rslope2_r, pre.slope.rslopemu_r,
         params=params.rain_evap, dtcld=dtcld,
+        return_complete_evap=True,
     )
 
     # ── B5: Saturation adjustment ──────────────────────────────────────
@@ -266,6 +268,7 @@ def warm_phase_torch(
         nccol=nccol, nrcol=nrcol,
         prevp=prevp,
         pcond=pcond,
+        rain_complete_evap=rain_complete_evap,
     )
 
 
@@ -1652,7 +1655,8 @@ def apply_satadj_step_torch(
     thermo_params,
     *,
     dtcld: float,
-) -> CoordinatorState:
+    nccn: "torch.Tensor | None" = None,
+) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1g+ — saturation adjustment on the POST-state-update + POST-reclass state
     (Fortran module_mp_kdm6.F:2922-2943). Mirrors C++ apply_satadj_step.
 
@@ -1668,15 +1672,58 @@ def apply_satadj_step_torch(
     (Fortran :2922-2926) since t may have changed. AD-safe: clamp + arithmetic only.
     """
     cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
+
+    if nccn is None:
+        # No CCN activation (nccn not threaded) — satadj only. Backward-compatible path used
+        # by the component tests; returns a bare CoordinatorState as before.
+        qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+        pcond = _satadj.saturation_adjustment_torch(
+            state.t, state.qv, state.qc, qs1, xl, cpm_safe, params=satadj_params, dtcld=dtcld)
+        return state._replace(
+            qv=torch.clamp(state.qv - pcond * dtcld, min=0.0),
+            qc=torch.clamp(state.qc + pcond * dtcld, min=0.0),
+            t=state.t + pcond * xl / cpm_safe * dtcld,
+        )
+
+    # ── CCN activation + satadj + complete-evap NC→NCCN ──────────────────────────
+    # 1:1 mirror of C++ apply_satadj_step (coordinator.cpp:1301-1361 / Fortran :2905-2939).
+    # Returns (new_state, nccn_out) — the driver carries nccn across sub-cycles. AD-safe.
     qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
+    supsat = state.qv - qs1
+    qs1_safe = torch.clamp(qs1, min=c.QCRMIN)
+    sw_percent = (state.qv / qs1_safe - 1.0) * 100.0          # Fortran sw in PERCENT (:918/2848)
+    sw_ratio = torch.clamp(sw_percent / 0.48, min=0.0)        # 0.48% activation cutoff (SATMAX)
+    activated_fraction = torch.minimum(torch.ones_like(sw_ratio), torch.pow(sw_ratio, c.ACTK))
+    ncact_raw = torch.clamp((nccn + state.nc) * activated_fraction - state.nc, min=0.0) / dtcld
+    ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
+    ncact = torch.where(supsat > 0.0, ncact, torch.zeros_like(ncact))
+    pcact_raw = (4.0 * math.pi * c.DENR * (c.ACTR * 1.0e-6) ** 3) * ncact / (3.0 * forcing.den)
+    pcact = torch.minimum(pcact_raw, torch.clamp(state.qv, min=0.0) / dtcld)
+
+    # apply pcact + ncact (pre-satadj snapshot)
+    qv_pp = torch.clamp(state.qv - pcact * dtcld, min=0.0)
+    qc_pp = torch.clamp(state.qc + pcact * dtcld, min=0.0)
+    t_pp = state.t + pcact * xl / cpm_safe * dtcld
+    nc_pp = torch.clamp(state.nc + ncact * dtcld, min=0.0)
+    nccn_pp = torch.clamp(nccn - ncact * dtcld, min=0.0)
+
+    # satadj on the post-pcact snapshot (qs1 recomputed from t_pp)
+    qs1_pp = _thermo.compute_qs_water(t_pp, forcing.p, params=thermo_params)
     pcond = _satadj.saturation_adjustment_torch(
-        state.t, state.qv, state.qc, qs1, xl, cpm_safe,
-        params=satadj_params, dtcld=dtcld,
-    )
-    qv_final = torch.clamp(state.qv - pcond * dtcld, min=0.0)
-    qc_final = torch.clamp(state.qc + pcond * dtcld, min=0.0)
-    t_final = state.t + pcond * xl / cpm_safe * dtcld
-    return state._replace(qv=qv_final, qc=qc_final, t=t_final)
+        t_pp, qv_pp, qc_pp, qs1_pp, xl, cpm_safe, params=satadj_params, dtcld=dtcld)
+    # complete-evap NC → NCCN (Fortran :2936-2939). C++ satadj's cloud_complete_evap mask =
+    # is_sub_with_cloud & (pcond == -qc/dtcld); recomputed here (Python satadj returns pcond only).
+    cloud_complete_evap = (qc_pp > 0.0) & (pcond == (-qc_pp / dtcld))
+    nc_evap = nc_pp * cloud_complete_evap.to(state.qc.dtype)
+    nc_final = torch.clamp(nc_pp - nc_evap, min=0.0)
+    nccn_final = torch.clamp(nccn_pp + nc_evap, min=c.NCCN_MIN, max=c.NCCN_MAX)
+
+    # apply pcond
+    qv_final = torch.clamp(qv_pp - pcond * dtcld, min=0.0)
+    qc_final = torch.clamp(qc_pp + pcond * dtcld, min=0.0)
+    t_final = t_pp + pcond * xl / cpm_safe * dtcld
+
+    return state._replace(qv=qv_final, qc=qc_final, t=t_final, nc=nc_final), nccn_final
 
 
 def apply_homogeneous_freeze_supercold_torch(
@@ -1724,10 +1771,16 @@ def kdm62d_one_step_torch(
     cold_params: ColdPhaseParams,
     mf_params: MeltFreezePhaseParams,
     dtcld: float,
-) -> CoordinatorState:
+    ncmin_tensor=None,   # per-cell ncmin floor for the conservation NUMBER budgets (#18);
+                         # None → scalar c.NCMIN fallback. Built from xland by the driver.
+    nccn=None,           # CCN reservoir for activation in apply_satadj_step (Task #74);
+                         # None → no activation (returns bare state). Threaded by the driver.
+) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
 
     Order: preamble → warm → cold → melt/freeze → state_update.
+    When ``nccn`` is given, apply_satadj_step runs CCN activation and this returns
+    ``(new_state, nccn_out)``; otherwise it returns a bare ``CoordinatorState``.
     """
     pre = preamble_torch(state, forcing, sea_mask, params=full_params)
 
@@ -1798,12 +1851,12 @@ def kdm62d_one_step_torch(
     # (pseml/pgeml/nseml/ngeml). Mirrors C++ scale_rates_for_conservation.
     warm_out, cold_out, mf5 = scale_rates_for_conservation_torch(
         working, pre2.supcol, warm_out, cold_out, mf5, dtcld=dtcld,
-        # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The Python
-        # oracle has no xland (single-NCMIN simplification, see constants.py), so it
-        # passes None → falls back to scalar c.NCMIN; the C++ port threads the real
-        # per-cell tensor (10/100) in the WRF path. Same C++(per-cell)/oracle(scalar)
-        # boundary as the rate-gate ncmin.
-        ncmin_tensor=None,
+        # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The driver
+        # (runtime._kdm6_pure) now builds this from xland + ncmin_land/ncmin_sea (mirroring
+        # the C++ WRF path) and threads it here; None → scalar c.NCMIN fallback (no xland).
+        # Only the conservation floor takes the per-cell tensor — the warm/cold rate-gate
+        # ncmin stays scalar (#10, Python phase params are scalar-typed).
+        ncmin_tensor=ncmin_tensor,
     )
 
     # F1e: state update on the WORKING base. HYBRID pre (Fortran-exact):
@@ -1817,6 +1870,14 @@ def kdm62d_one_step_torch(
         working, pre_su, warm_out, cold_out, mf5,
         dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
     )
+    # complete-rain-evap NR → NCCN (Fortran :2937; C++ state_update coordinator.cpp:1170/1254).
+    # state_update_torch gives new_state.nr = working.nr + dnr (no rce term — C++ subtracts rce
+    # separately); mirror C++ here: nr -= rce, nccn += rce. Gated on nccn so the component-test
+    # path (nccn=None) is byte-unchanged; placed before the reclass/satadj, matching C++.
+    if nccn is not None:
+        rce_amount = working.nr * warm_out.rain_complete_evap.to(working.nr.dtype)
+        nccn = nccn + rce_amount
+        new_state = new_state._replace(nr=torch.clamp(new_state.nr - rce_amount, min=0.0))
     # review5#4 + review7#1: Picons (Fortran 2807-2813) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)
     # review8#3: rain→cloud reclassification (Fortran 2883-2892) when avedia_r ≤ 82μm.
@@ -1825,16 +1886,21 @@ def kdm62d_one_step_torch(
     # :2922-2943). Mirrors C++ apply_satadj_step; pcond was deferred OUT of
     # state_update_torch so condensation fires on the proper post-mass-balance,
     # post-reclass state (the C++↔Python parity fix Codex flagged).
-    new_state = apply_satadj_step_torch(
+    _activate = nccn is not None
+    sat_result = apply_satadj_step_torch(
         new_state, forcing, pre.xl, pre.cpm,
-        warm_params.satadj, full_params.thermo, dtcld=dtcld,
+        warm_params.satadj, full_params.thermo, dtcld=dtcld, nccn=nccn,
     )
+    if _activate:
+        new_state, nccn = sat_result   # nccn updated by CCN activation — carried out
+    else:
+        new_state = sat_result
     # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
     new_state = apply_threshold_cleanup_torch(new_state)
-    # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number
-    # 재계산. nccn clamp는 deferred (Task #74).
-    return apply_dsd_number_limiters_torch(new_state, forcing.den)
+    # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
+    new_state = apply_dsd_number_limiters_torch(new_state, forcing.den)
+    return (new_state, nccn) if _activate else new_state
 
 
 def compute_loops_max(delt: float, dtcldcr: float = c.DTCLDCR) -> int:

@@ -263,6 +263,12 @@ FnResult kdm6_fn(const State& state,
             torch::full_like(xl_flat, ncmin_sea),
             torch::full_like(xl_flat, ncmin_land));
         auto ncmin_tensor = ncmin_flat.unsqueeze(1).expand_as(cs.qc).contiguous();
+        // Floor at the scalar safety minimum constants::NCMIN: a 0 (e.g. the default
+        // ncmin_land/ncmin_sea=0.0) must NOT drop the conservation floor to 0, else
+        // limit_ncmin's value/max(source,value) hits 0/0 → NaN when a number reservoir AND
+        // its source are both 0. With the defaults this collapses to NCMIN == the nullopt
+        // scalar path; real 10/100 (> NCMIN) are unchanged. Mirrors the Python _kdm6_pure fix.
+        ncmin_tensor = torch::clamp(ncmin_tensor, /*min=*/constants::NCMIN);
         warm_p.autoconv.ncmin_tensor              = ncmin_tensor;
         cold_p.number_accretion.ncmin_tensor      = ncmin_tensor;
         cold_p.cloud_water_riming.ncmin_tensor    = ncmin_tensor;

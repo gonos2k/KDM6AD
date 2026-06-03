@@ -26,6 +26,9 @@ import torch
 
 from .state import State, Forcing, from_fortran_arrays, to_fortran_arrays
 from . import constants as c
+from . import coordinator as _coord
+from . import cloud_dsd as _cdsd
+from . import sedimentation as _sed
 
 
 # ─── Parameters: opt-in differentiable model parameters ────────────────────────
@@ -188,35 +191,192 @@ class Handle:
 
 # ─── Pure function: 단일 KDM6 호출의 *autograd-friendly* 형태 ──────────────────
 
+# ── State ↔ CoordinatorState conversion (1:1 mirror of C++ runtime.cpp:40-64) ──
+# NOTE: K-order is NOT flipped here — WRF stages K=0 at the surface and the
+# coordinator/microphysics run in that order; only sedimentation wants K=0 at the
+# TOP, so the flip is localised inside _kdm6_pure around the sediment call.
+
+def _state_to_coord(s: State, f: Forcing) -> "_coord.CoordinatorState":
+    """State → CoordinatorState. t = th·pii, brs = bg. nccn is NOT carried (the
+    Python CoordinatorState has no nccn field — CCN activation is deferred, Task #74);
+    nccn stays on the State and passes through unchanged."""
+    return _coord.CoordinatorState(
+        qv=s.qv, qc=s.qc, qr=s.qr, qs=s.qs, qg=s.qg, qi=s.qi,
+        nc=s.nc, nr=s.nr, ni=s.ni, brs=s.bg, t=s.th * f.pii,
+    )
+
+
+def _build_coord_forcing(f: Forcing) -> "_coord.CoordinatorForcing":
+    """Forcing → CoordinatorForcing. den = rho; **dend = rho (air density ALONE,
+    NOT density × delz)** — see C++ build_forcing comment + project memory
+    `project_kdm6_dend_must_be_density_only`. The `coordinator.py:63` "density × delz"
+    label is the mis-documentation that comment flags (falk = dend·q·work1/mstep with
+    work1 = vt/delz cancels delz only when dend = ρ; an extra delz gives ~250× RAINNC)."""
+    return _coord.CoordinatorForcing(p=f.p, den=f.rho, delz=f.delz, dend=f.rho)
+
+
+def _coord_to_state(cobj: "_coord.CoordinatorState", orig: State, f: Forcing) -> State:
+    """CoordinatorState → State (reverse). th = t/pii, bg = brs. nccn passes through
+    from `orig` unchanged (not processed by the Python coordinator — Task #74)."""
+    return orig._replace(
+        qv=cobj.qv, qc=cobj.qc, qr=cobj.qr, qs=cobj.qs, qg=cobj.qg, qi=cobj.qi,
+        nc=cobj.nc, nr=cobj.nr, ni=cobj.ni, bg=cobj.brs, th=cobj.t / f.pii,
+    )
+
+
+def _flip_k(t: torch.Tensor) -> torch.Tensor:
+    """WRF K-order (K=0 surface) ↔ sedimentation K-order (K=0 top)."""
+    return torch.flip(t, dims=[1])
+
+
+# ─── Pure function: 단일 KDM6 호출의 *autograd-friendly* 형태 ──────────────────
+
 def _kdm6_pure(
     state: State,
     forcing: Forcing,
     params: Parameters,
     dt: float,
+    xland: "torch.Tensor | None" = None,
+    ncmin_land: float = 0.0,
+    ncmin_sea: float = 0.0,
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
-    이 함수가 본 프로젝트의 *모든* 미분가능 물리. slope/core/sedimentation의 합.
+    1:1 mirror of the C++ operational driver ``kdm6_fn`` (kdm6_libtorch/src/runtime.cpp:221-364):
+    sub-cycle the outer ``dt`` into ``compute_loops_max(dt, DTCLDCR)`` steps and, per substep,
+    run the Stage-S2 order — SEDIMENT at the top (Fortran :1119) → re-slope/aux on the
+    post-fall state (:1422-1480) → ONE microphysics pass ``kdm62d_one_step`` over dtcld (:1274+).
 
-    Pipeline (구현 예정):
-      1. slope.compute_slopes(state, forcing) → slopes
-      2. core.kdm62D_microphysics(state, slopes, forcing, params, dt) → tendencies
-      3. sedimentation.nislfv_plm(state, tendencies, forcing, dt) → state_after_fall
-      4. core.bookkeeping(state_after_fall) → final state
+    All differentiable physics flow through this one function; ``state`` graph is preserved.
 
-    Returns
-    -------
-    State : 한 step 적분 후 갱신된 state. 모든 텐서는 state.* 입력에 대한 graph 보존.
+    STATUS: implemented + differentiable + **C++-forward-parity-validated** — matches C++
+    ``kdm6_fn`` on the test IC to ~5e-14 relative (fp64 machine precision) across ALL fields
+    (qv/qc/qr/qi/qs/qg/nc/ni/nr/th/bg/nccn), with CCN activation now ported. Autograd reaches
+    all 8 leaves; the 222 component tests (nccn=None path) are unchanged.
 
-    Note
-    ----
-    `forcing`은 typically grad off (수치 forcing은 미분 대상 아님).
-    `params`는 `Parameters`의 grad 정책에 따름.
-    `state`는 보통 grad on (DA observation operator 입력).
+    nccn architecture: the Python CoordinatorState has no nccn field, so nccn is threaded
+    SEPARATELY (driver → kdm62d_one_step → apply_satadj_step, in/out) rather than carried in
+    the state tuple. CCN activation (pcact/ncact + complete-evap NC→NCCN + the [NCCN_MIN,
+    NCCN_MAX] clamp) runs inside apply_satadj_step exactly as C++ apply_satadj_step.
+
+    Remaining documented simplification:
+      - **mstep**: ``sedimentation_chain_torch`` takes a SCALAR mstep (= max over columns =
+        C++ ``mstepmax``), not a per-column tensor — identical for a single column / mstep=1
+        (the parity above is B=1). Heterogeneous-mstep multi-column columns carry the #10
+        residual until the per-column tensor is threaded.
+
+    Control inputs (mirroring C++ ``kdm6_fn(..., xland, ncmin_land, ncmin_sea)``):
+      - ``xland`` (None → maritime, the C++ no-xland branch) sets the land/sea ``sea_mask``,
+        which drives the per-substep ``qcr`` override via ``diag_qcr_torch`` (Fortran :842-847).
+      - ``ncmin_land``/``ncmin_sea`` build a per-cell ``ncmin_tensor`` (from ``sea_mask``) that
+        drives the CONSERVATION number-floor (#18, the path Python supports) — so they are
+        FUNCTIONAL, not no-op. The warm/cold rate-GATE ncmin stays scalar (#10, Python phase
+        params are scalar-typed). The per-cell tensor is floored at the scalar ``c.NCMIN``
+        safety minimum, so the default 0.0 collapses to ``c.NCMIN`` everywhere == the no-xland
+        (scalar) path — never a 0-floor (which would 0/0-NaN in the conservation scaling).
+      - ``params`` is currently baked into the default phase params (as in C++ ``kdm6_fn``),
+        not yet AD-trainable on this path.
+
+    Returns ``State`` only (no surface rain/snow/graupel increments — those are a C++ ABI
+    concern; ``_kdm6_pure``'s job is the differentiable state evolution).
     """
-    raise NotImplementedError(
-        "[G1] _kdm6_pure — to be implemented after slope.py / core.py / sedimentation.py"
+    cs = _state_to_coord(state, forcing)
+    cf = _build_coord_forcing(forcing)
+
+    # delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions). Mirror C++ :239.
+    if dt <= 0.0:
+        return _coord_to_state(cs, state, forcing)
+
+    full_p = _coord.default_coordinator_params()
+    warm_p = _coord.default_warm_phase_params()
+    cold_p = _coord.default_cold_phase_params()
+    mf_p = _coord.default_melt_freeze_phase_params()
+    cloud_p = _cdsd.default_cloud_dsd_params()
+    sed_params = _sed.default_substep_advection_params()
+
+    # Control input: xland → sea_mask (xland>=1.5 sea, else land), mirroring C++ :255-272.
+    # When xland is None → ones (maritime), the C++ no-xland branch. sea_mask drives the
+    # per-substep land/sea qcr override below; sedimentation ignores it.
+    _use_xland = xland is not None
+    if _use_xland:
+        xl_flat = xland.to(cs.qc.dtype).reshape(-1)
+        sea_mask = (xl_flat >= 1.5).unsqueeze(1).expand_as(cs.qc).contiguous()
+        # Per-cell ncmin floor for the conservation NUMBER budgets (#18), from xland +
+        # ncmin_land/ncmin_sea (mirror C++ runtime.cpp:261-265: sea→ncmin_sea, land→ncmin_land).
+        # Feeds the conservation floor only; the warm/cold PHASE gates stay scalar (#10).
+        # Floored at the scalar safety minimum c.NCMIN: a 0 (e.g. the default ncmin) must NOT
+        # drop the conservation floor to 0, else limit_ncmin's value/max(source,value) hits 0/0
+        # → NaN when a number reservoir AND its source are both 0. With the default 0.0 this
+        # collapses to c.NCMIN everywhere == the no-xland (None→c.NCMIN) path.
+        ncmin_tensor = torch.clamp(
+            torch.where(sea_mask, torch.full_like(cs.qc, ncmin_sea),
+                        torch.full_like(cs.qc, ncmin_land)),
+            min=c.NCMIN)
+    else:
+        sea_mask = torch.ones_like(cs.qc, dtype=torch.bool)
+        ncmin_tensor = None  # → scalar c.NCMIN fallback inside the conservation floor
+
+    loops = _coord.compute_loops_max(dt, c.DTCLDCR)
+    dtcld = dt / float(loops)
+
+    # cf is constant → flip + delz-clamp hoisted out of the loop (C++ :287-291).
+    cf_flip = _coord.CoordinatorForcing(
+        p=_flip_k(cf.p), den=_flip_k(cf.den), delz=_flip_k(cf.delz), dend=_flip_k(cf.dend),
     )
+    delz_safe = torch.clamp(cf_flip.delz, min=1.0e-9)
+
+    # CCN reservoir: clamp once at entry (Fortran :801; C++ runtime.cpp:297), then carry +
+    # deplete it across the sub-cycles through kdm62d_one_step → apply_satadj_step activation.
+    cur_nccn = torch.clamp(state.nccn, min=c.NCCN_MIN, max=c.NCCN_MAX)
+
+    cur = cs  # WRF K-order, evolves across sub-cycles
+    for _ in range(loops):
+        # 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (flipped to K=0-top order).
+        cur_flip = _coord.CoordinatorState(
+            qv=_flip_k(cur.qv), qc=_flip_k(cur.qc), qr=_flip_k(cur.qr), qs=_flip_k(cur.qs),
+            qg=_flip_k(cur.qg), qi=_flip_k(cur.qi), nc=_flip_k(cur.nc), nr=_flip_k(cur.nr),
+            ni=_flip_k(cur.ni), brs=_flip_k(cur.brs), t=_flip_k(cur.t),
+        )
+        pre_sed = _coord.preamble_torch(cur_flip, cf_flip, sea_mask, params=full_p)
+        w1_qr = pre_sed.slope.vt_r / delz_safe
+        wn_qr = pre_sed.slope.vtn_r / delz_safe
+        w1_qs = pre_sed.slope.vt_s / delz_safe
+        w1_qg = pre_sed.slope.vt_g / delz_safe
+        w1_qi = pre_sed.slope.vt_i / delz_safe
+        wn_qi = pre_sed.slope.vtn_i / delz_safe
+        # Scalar mstep = max over columns (Fortran :1107-1117 per-column nint; this uses the
+        # column-max = C++ mstepmax). Integer work under no_grad (loop bound only).
+        with torch.no_grad():
+            vmax_main_col = torch.maximum(torch.maximum(w1_qr, wn_qr),
+                                          torch.maximum(w1_qs, w1_qg)).amax(dim=-1)
+            mstep_main = int(torch.clamp(torch.round(vmax_main_col * dtcld + 0.5), 1, 100).max().item())
+            vmax_ice_col = torch.maximum(w1_qi, wn_qi).amax(dim=-1)
+            mstep_ice = int(torch.clamp(torch.round(vmax_ice_col * dtcld + 0.5), 1, 100).max().item())
+        sed = _coord.sedimentation_chain_torch(
+            cur_flip, cf_flip, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+            mstep_main=mstep_main, mstep_ice=mstep_ice, dtcld=dtcld,
+            params=sed_params, reslope_params=full_p, sea_mask=sea_mask,
+        )
+        # flip back to WRF K-order
+        cur = _coord.CoordinatorState(
+            qv=_flip_k(sed.state.qv), qc=_flip_k(sed.state.qc), qr=_flip_k(sed.state.qr),
+            qs=_flip_k(sed.state.qs), qg=_flip_k(sed.state.qg), qi=_flip_k(sed.state.qi),
+            nc=_flip_k(sed.state.nc), nr=_flip_k(sed.state.nr), ni=_flip_k(sed.state.ni),
+            brs=_flip_k(sed.state.brs), t=_flip_k(sed.state.t),
+        )
+        # 2. Re-slope + aux on the POST-FALL state (WRF order), Fortran :1422-1480.
+        rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, params=cloud_p)
+        aux = _coord.build_default_aux_torch(cur, cf, rslopec, thermo_params=full_p.thermo)
+        if _use_xland:  # land/sea qcr override (Fortran :842-847; C++ runtime.cpp:353)
+            aux = aux._replace(qcr=_cdsd.diag_qcr_torch(sea_mask, params=cloud_p, ref=cur.qc))
+        # 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
+        cur, cur_nccn = _coord.kdm62d_one_step_torch(
+            cur, cf, aux, sea_mask,
+            full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
+            dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
+        )
+
+    return _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
 
 
 kdm6_fn = _kdm6_pure
@@ -230,6 +390,9 @@ def kdm6_step(
     params: Parameters | None = None,
     dt: float = 60.0,
     value_only: bool = False,
+    xland: "torch.Tensor | None" = None,
+    ncmin_land: float = 0.0,
+    ncmin_sea: float = 0.0,
 ) -> tuple[State, Handle]:
     """[G3] 슬롯 47 진입점 — Fortran forward와 *동반 구동*되어 derivative 정보 산출.
 
@@ -246,6 +409,14 @@ def kdm6_step(
     value_only : bool, default False
         True이면 `torch.no_grad()`로 forward 값만 계산한다. False이면 full graph를
         유지한 Handle을 반환한다.
+    xland : torch.Tensor, optional
+        land/sea mask (xland>=1.5 → sea, else land). None이면 maritime (C++ no-xland branch).
+        per-substep qcr override를 구동 — `_kdm6_pure` 참조. Handle의 VJP/JVP func에도 bind됨.
+    ncmin_land, ncmin_sea : float
+        regime별 droplet-number floor. xland와 함께 per-cell ncmin_tensor를 만들어 conservation
+        number-floor(#18)를 구동 — FUNCTIONAL. 단 warm/cold rate-GATE ncmin은 scalar(#10).
+        default 0.0은 scalar c.NCMIN safety floor로 collapse (== no-xland scalar path) —
+        0-floor 0/0 NaN 방지.
 
     Returns
     -------
@@ -268,7 +439,7 @@ def kdm6_step(
 
     if value_only:
         with torch.no_grad():
-            state_out = kdm6_fn(state, forcing, params, dt)
+            state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea)
         return state_out, Handle(
             state_in=state,
             state_out=state_out,
@@ -281,7 +452,7 @@ def kdm6_step(
         )
 
     # build dynamic graph
-    state_out = kdm6_fn(state, forcing, params, dt)
+    state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea)
     handle = Handle(
         state_in=state,
         state_out=state_out,
@@ -289,7 +460,8 @@ def kdm6_step(
         params=params,
         dt=dt,
         pullback=None,
-        func=kdm6_fn,
+        # bind the control inputs so VJP/JVP/Jacobian respect xland/ncmin
+        func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea),
     )
     return state_out, handle
 

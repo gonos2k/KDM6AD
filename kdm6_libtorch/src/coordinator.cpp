@@ -1521,11 +1521,12 @@ CoordinatorState reclassify_small_rain_to_cloud(
 // Without this, residual qc lingers above the supercooled limit, distorting
 // downstream ice budget.
 //
-// NOTE: this function is CURRENTLY NOT CALLED by kdm62d_one_step (disabled
-// 2026-05-30). As a pre-cold freezing step it needs aux (n0i) rebuilt from the
-// post-freeze state (aux is built upstream in the runtime), and wiring it in
-// without that rebuild left the cold phase on stale n0i (806× over-deposition
-// regression). Retained for re-introduction with the aux-rebuild staging refactor.
+// NOTE: CALLED by kdm62d_one_step at the D1-melt→re-slope boundary (call site is
+// BETWEEN melt_freeze_d1 and the post-melt rebuild_aux). It was briefly disabled
+// (it was the 806× stale-n0i over-deposition trigger when run before any aux
+// rebuild); it is now safe because the rebuild_aux immediately after it re-slopes
+// n0i on the post-homog ice state. It MUST stay before that rebuild_aux so the
+// re-slope + D2-D4 + cold phase all see the post-homog qc (=0 in homog-frozen cells).
 CoordinatorState apply_homogeneous_freeze_supercold(
     const CoordinatorState& state,
     const thermo::ThermoParams& thermo_params,

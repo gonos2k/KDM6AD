@@ -90,6 +90,8 @@ QS0 = 6.0e-4         # threshold for aggregation
 SATMAX = 1.0048      # max saturation for CCN activation (continental)
 ACTK = 0.6           # CCN activation parameter
 ACTR = 1.5           # activated CCN drop radius
+NCCN_MIN = 1.0e8     # CCN reservoir lower clamp (Fortran entry :801) — C++ constants::NCCN_MIN
+NCCN_MAX = 2.0e10    # CCN reservoir upper clamp                       — C++ constants::NCCN_MAX
 
 # ─── Long collection kernel coefficients (Cohard-Pinty 2000 / KCE 분석해) ──
 NCRK1 = 3.03e3
