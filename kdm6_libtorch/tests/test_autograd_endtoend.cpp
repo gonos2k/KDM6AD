@@ -415,6 +415,48 @@ int main() {
         pr("qv", so.qv); pr("nc", so.nc); pr("th", so.th);
     }
 
+    // ── HIGH-NCCN ACTIVATION PARITY DUMP — exercises CCN activation reading a near-MAX
+    // nccn (the path of the state_update nccn-clamp-ordering fix: activation must read the
+    // RAW post-rce nccn, Fortran F:2905, not a MAX-clamped one). Supersaturated warm column,
+    // nccn near NCCN_MAX, dt=600 (loops>1) so activation fires across sub-cycles.
+    {
+        torch::NoGradGuard ng;
+        auto m = [](double v){ return torch::tensor({v, v}, torch::kFloat64).reshape({1,2}); };
+        State sr{ m(296.8), m(1.5e-2), m(1.0e-3), m(0.0), m(0.0), m(0.0), m(0.0),
+                  m(1.95e10), m(5.0e7), m(0.0), m(0.0), m(0.0) };
+        Forcing fr{ m(1.089), m(0.9704), m(9.0e4), m(500.0) };
+        auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/600.0);
+        const auto& so = rr.state_out;
+        std::cout.precision(15);
+        auto pr = [&](const char* nm, const torch::Tensor& t){
+            auto v = t.detach().reshape({-1});
+            std::cout << "NCCNOUT " << nm << " " << v[0].item<double>() << "\n";
+        };
+        std::cout << "\n[HIGH-NCCN] CCN activation parity dump (dt=600, nccn~1.95e10)\n";
+        pr("qv", so.qv); pr("qc", so.qc); pr("nc", so.nc); pr("nccn", so.nccn); pr("th", so.th);
+    }
+
+    // ── COLD MIXED-PHASE PARITY DUMP — exercises the cold/ice/melt-freeze chain with a
+    // WELL-POPULATED ice DSD (ni=1e4), deliberately away from the qi~4e-5 / ni~O(0.01)
+    // complete-sublimation-cap knife-edge (a documented precision-chaos discontinuity).
+    {
+        torch::NoGradGuard ng;
+        auto m = [](double v){ return torch::tensor({v, v}, torch::kFloat64).reshape({1,2}); };
+        State sr{ m(258.0), m(2.0e-3), m(5.0e-4), m(1.0e-5), m(1.0e-4), m(5.0e-5), m(1.0e-5),
+                  m(1.0e9), m(1.0e8), m(1.0e4), m(1.0e3), m(0.0) };
+        Forcing fr{ m(0.9567), m(0.9031), m(7.0e4), m(500.0) };
+        auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/120.0);
+        const auto& so = rr.state_out;
+        std::cout.precision(15);
+        auto pr = [&](const char* nm, const torch::Tensor& t){
+            auto v = t.detach().reshape({-1});
+            std::cout << "COLDOUT " << nm << " " << v[0].item<double>() << "\n";
+        };
+        std::cout << "\n[COLD] mixed-phase parity dump (dt=120, ni=1e4)\n";
+        pr("qv", so.qv); pr("qc", so.qc); pr("qr", so.qr); pr("qi", so.qi);
+        pr("qs", so.qs); pr("qg", so.qg); pr("ni", so.ni); pr("th", so.th);
+    }
+
     if (g_fail) { std::cerr << "\n" << g_fail << " check(s) failed\n"; return 1; }
     std::cout << "\n  PASS  kdm6_fn is differentiable end-to-end AND matches "
                  "central FD to significant digits\n";

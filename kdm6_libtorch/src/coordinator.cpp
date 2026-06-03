@@ -1211,9 +1211,17 @@ CoordinatorState state_update(
     // nccn_activation are part of the deferred satadj step (see dqv comment),
     // so they are NOT applied at this point — apply_satadj_step handles them
     // after the reclassifications, matching Fortran module_mp_kdm6.F:2937-2977.
+    // The rce addback is RAW (Fortran F:1795 `nci(:,:,3)+=nrs`, no clamp). The
+    // [NCCN_MIN,NCCN_MAX] reservoir clamp is NOT applied here — it is deferred to
+    // apply_satadj_step (Fortran F:3006), AFTER CCN activation reads nccn. Clamping
+    // here would make activation read a MAX-clamped nccn, understating ncact by ~9%
+    // when accumulated rce pins nccn near NCCN_MAX — a C++↔Fortran/Python divergence
+    // the Python oracle does not have (it reads raw nccn in activation, coordinator.py:1701).
     auto nccn_new = state.nccn + rain_complete_evap_amount;
 
-    // review5#2 (partial): nonneg clamp. paired threshold cleanup은 분리.
+    // review5#2 (partial): nonneg clamp on the moisture/number fields. paired threshold
+    // cleanup은 분리. nccn deliberately NOT clamped here (see above; entry clamp + add-only
+    // rce keep it ≥ NCCN_MIN; the MAX clamp is applied post-activation in apply_satadj_step).
     return CoordinatorState{
         torch::clamp(qv_new, /*min=*/0.0),
         torch::clamp(qc_new, /*min=*/0.0),
@@ -1224,7 +1232,7 @@ CoordinatorState state_update(
         torch::clamp(nc_new, /*min=*/0.0),
         torch::clamp(nr_new, /*min=*/0.0),
         torch::clamp(ni_new, /*min=*/0.0),
-        torch::clamp(nccn_new, constants::NCCN_MIN, constants::NCCN_MAX),
+        /*nccn=*/nccn_new,
         brs_new,
         t_new,
     };

@@ -286,8 +286,10 @@ FnResult kdm6_fn(const State& state,
     // inverting the order. We now split the timestep into `loops` sub-cycles and, per
     // substep: fall(dtcld) on the current state → rebuild aux on the post-fall state →
     // run ONE microphysics pass (kdm62d_one_step) over dtcld. The Fortran entry-prologue
-    // nccn clamp (:801) is applied ONCE here (kdm62d_one_step does NOT re-clamp), matching
-    // Fortran (clamp before the sub-cycle loop, not per substep). For loops=1 (dt<=dtcldcr;
+    // nccn clamp (F:801) is applied ONCE here, before the loop. Within each substep nccn is
+    // carried RAW through state_update (rce addback F:1795, no reservoir clamp) so CCN
+    // activation reads the raw post-rce value (F:2905); apply_satadj_step re-applies the
+    // [NCCN_MIN,NCCN_MAX] clamp AFTER activation (F:3006). For loops=1 (dt<=dtcldcr;
     // every validation/typical case) this == Stage S1's single sub-cycle. K-flip: WRF
     // stages K=0 at surface, sedimentation_chain wants K=0 at TOP; cf is constant so its
     // flip + delz are hoisted out of the loop.
