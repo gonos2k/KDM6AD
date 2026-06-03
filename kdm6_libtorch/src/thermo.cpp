@@ -43,8 +43,9 @@ ThermoParams default_thermo_params() {
                              // Faithful floors: cpm clamp(q) F:760, qs floor F:916/927, rh floor
                              // F:917, supsat max(q,qmin) F:1695 (all match Fortran at 1e-15). The
                              // div-safety clamps (pres-es: es<=0.99p ⇒ pres-es>=0.01p; den~1; pres~1e4)
-                             // never reach any floor, so 1e-15 vs 1e-9 is inert there. Fortran floors
-                             // qs at 1e-15 too (incl. inside diffac F:778), so this is fully 1:1.
+                             // never reach any floor, so 1e-15 vs 1e-9 is inert there. qs is floored at
+                             // 1e-15 UPSTREAM (F:916/927); diffac (F:778) then divides by that floored
+                             // qs — so this is fully 1:1.
     };
 }
 
@@ -113,7 +114,9 @@ torch::Tensor compute_work2_venfac(
     auto viscos = 1.496e-6 * (t * torch::sqrt(t)) / (t + 120.0) / den;
     auto den0_t = torch::full_like(t, p.den0);
     auto den_safe = torch::clamp(den, /*min=*/p.qmin);
-    return torch::exp(torch::log(viscos / diffus) / 3.0) / torch::sqrt(viscos)
+    // Fortran F:779 venfac uses the truncated literal `.3333333` (NOT 1./3.) — same
+    // literal-fidelity class as the rain/ice avedia exponent (#4/#11). 1:1 fix.
+    return torch::exp(torch::log(viscos / diffus) * 0.3333333) / torch::sqrt(viscos)
          * torch::sqrt(torch::sqrt(den0_t / den_safe));
 }
 

@@ -203,7 +203,8 @@ def compute_work2_venfac(
     viscos = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
     den0_t = torch.tensor(params.den0, dtype=t.dtype, device=t.device)
     return (
-        torch.exp(torch.log(viscos / diffus) / 3.0) / torch.sqrt(viscos)
+        # Fortran F:779 venfac uses the truncated literal .3333333 (NOT 1./3.); 1:1 fix (cf. avedia #4/#11).
+        torch.exp(torch.log(viscos / diffus) * 0.3333333) / torch.sqrt(viscos)
         * torch.sqrt(torch.sqrt(den0_t / torch.clamp(den, min=params.qmin)))
     )
 
