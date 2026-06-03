@@ -272,7 +272,10 @@ WarmPhaseOutputs warm_phase(
     auto sw_ratio = torch::clamp(sw_percent_wp / 0.48, /*min=*/0.0);
     auto activated_fraction = torch::minimum(
         torch::ones_like(sw_ratio),
-        torch::pow(sw_ratio, constants::ACTK)
+        // clamp base ≥ EPS: pow(x,0.6) grad → inf at x=0 (saturation) ⇒ NaN gradient
+        // (same guard as the live apply_satadj_step path). This warm_phase activation
+        // block is operationally superseded by apply_satadj_step, but kept NaN-safe.
+        torch::pow(torch::clamp(sw_ratio, /*min=*/constants::EPS), constants::ACTK)
     );
     auto ncact_raw = torch::clamp((state.nccn + state.nc) * activated_fraction - state.nc, /*min=*/0.0) / dtcld;
     auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);
