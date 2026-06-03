@@ -344,18 +344,23 @@ def _kdm6_pure(
         w1_qg = pre_sed.slope.vt_g / delz_safe
         w1_qi = pre_sed.slope.vt_i / delz_safe
         wn_qi = pre_sed.slope.vtn_i / delz_safe
-        # Scalar mstep = max over columns (Fortran :1107-1117 per-column nint; this uses the
-        # column-max = C++ mstepmax). Integer work under no_grad (loop bound only).
+        # PER-COLUMN mstep (Fortran :1107-1117 per-column nint; 1:1 fix #10): mstep_col(i) =
+        # clamp(round(vmax(i)·dtcld+0.5),1,100) as a (B,) tensor; the loop bound mstepmax =
+        # max over columns. Integer work under no_grad (gate/divisor only). Passing the (B,)
+        # tensors closes the multi-column scalar-mstep divergence (== scalar at single-col/mstep=1).
         with torch.no_grad():
             vmax_main_col = torch.maximum(torch.maximum(w1_qr, wn_qr),
                                           torch.maximum(w1_qs, w1_qg)).amax(dim=-1)
-            mstep_main = int(torch.clamp(torch.round(vmax_main_col * dtcld + 0.5), 1, 100).max().item())
+            mstep_col_main = torch.clamp(torch.round(vmax_main_col * dtcld + 0.5), 1, 100)  # (B,)
+            mstep_main = int(mstep_col_main.max().item())                                   # mstepmax (loop bound)
             vmax_ice_col = torch.maximum(w1_qi, wn_qi).amax(dim=-1)
-            mstep_ice = int(torch.clamp(torch.round(vmax_ice_col * dtcld + 0.5), 1, 100).max().item())
+            mstep_col_ice = torch.clamp(torch.round(vmax_ice_col * dtcld + 0.5), 1, 100)
+            mstep_ice = int(mstep_col_ice.max().item())
         sed = _coord.sedimentation_chain_torch(
             cur_flip, cf_flip, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
             mstep_main=mstep_main, mstep_ice=mstep_ice, dtcld=dtcld,
             params=sed_params, reslope_params=full_p, sea_mask=sea_mask,
+            mstep_col_main=mstep_col_main, mstep_col_ice=mstep_col_ice,
         )
         # flip back to WRF K-order
         cur = _coord.CoordinatorState(

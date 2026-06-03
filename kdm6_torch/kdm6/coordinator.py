@@ -1979,12 +1979,14 @@ def sedimentation_chain_torch(
     work1_qi: torch.Tensor,
     workn_qi: torch.Tensor,
     *,
-    mstep_main: int,           # rain/snow/graupel/brs substeps
-    mstep_ice: int,            # ice (qi/ni) substeps
+    mstep_main: int,           # rain/snow/graupel/brs loop bound (= mstepmax over columns)
+    mstep_ice: int,            # ice (qi/ni) loop bound (= mstepmax over columns)
     dtcld: float,
     params: _sed.SubstepAdvectionParams,
     reslope_params: "CoordinatorParams | None" = None,  # 1:1 fix #9: per-substep re-slope
     sea_mask: "torch.Tensor | None" = None,             # (B,K) bool for preamble_torch (qcr only; not vt)
+    mstep_col_main: "torch.Tensor | None" = None,       # (B,) per-column mstep (1:1 fix #10);
+    mstep_col_ice: "torch.Tensor | None" = None,        # None → scalar mstep_main/mstep_ice (legacy)
 ) -> SedimentationOutputs:
     """F2b — sedimentation 통합 chain.
 
@@ -2033,7 +2035,7 @@ def sedimentation_chain_torch(
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
             w1_qr, wn_qr, w1_qs, w1_qg,
             forcing.delz, forcing.dend,
-            mstep=mstep_main, dtcld=dtcld, params=params,
+            mstep=mstep_main, mstep_col=mstep_col_main, n_current=n, dtcld=dtcld, params=params,
         )
         adv_state = out.state
         fall_qr = out.fall_qr
@@ -2069,7 +2071,7 @@ def sedimentation_chain_torch(
         out_i = _sed.ice_substep_advection_torch(
             ice_state, fall_qi, fall_ni,
             w1_qi, wn_qi, forcing.delz, forcing.dend,
-            mstep=mstep_ice, dtcld=dtcld, params=params,
+            mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
         )
         ice_state = out_i.state
         fall_qi = out_i.fall_qi
