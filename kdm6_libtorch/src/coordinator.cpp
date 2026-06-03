@@ -1312,9 +1312,12 @@ CoordinatorState apply_satadj_step(
     auto qs1_safe = torch::clamp(qs1, /*min=*/constants::QCRMIN);
     auto sw_percent = (state.qv / qs1_safe - 1.0) * 100.0;
     auto sw_ratio = torch::clamp(sw_percent / 0.48, /*min=*/0.0);
+    // pow(x, ACTK<1) grad = 0.6·x^-0.4 → inf at x=0 (rh_w=1) ⇒ NaN gradient; clamp the base
+    // ≥ EPS for a finite one-sided subgradient (forward unchanged where sw_ratio≫EPS; ncact
+    // gated to 0 at supsat≤0). Mirrors the Python apply_satadj_step_torch fix.
     auto activated_fraction = torch::minimum(
         torch::ones_like(sw_ratio),
-        torch::pow(sw_ratio, constants::ACTK)
+        torch::pow(torch::clamp(sw_ratio, /*min=*/constants::EPS), constants::ACTK)
     );
     auto ncact_raw = torch::clamp(
         (state.nccn + state.nc) * activated_fraction - state.nc, /*min=*/0.0

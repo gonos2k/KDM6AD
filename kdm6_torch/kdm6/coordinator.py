@@ -1693,7 +1693,11 @@ def apply_satadj_step_torch(
     qs1_safe = torch.clamp(qs1, min=c.QCRMIN)
     sw_percent = (state.qv / qs1_safe - 1.0) * 100.0          # Fortran sw in PERCENT (:918/2848)
     sw_ratio = torch.clamp(sw_percent / 0.48, min=0.0)        # 0.48% activation cutoff (SATMAX)
-    activated_fraction = torch.minimum(torch.ones_like(sw_ratio), torch.pow(sw_ratio, c.ACTK))
+    # pow(x, ACTK<1) has grad 0.6·x^-0.4 → ∞ at x=0; at exactly rh_w=1 (sw_ratio=0) that NaNs
+    # the autograd. Clamp the base ≥ EPS for a finite one-sided subgradient (forward unchanged
+    # where sw_ratio≫EPS, and ncact is gated to 0 at supsat≤0 so the value is unaffected).
+    activated_fraction = torch.minimum(
+        torch.ones_like(sw_ratio), torch.pow(torch.clamp(sw_ratio, min=c.EPS), c.ACTK))
     ncact_raw = torch.clamp((nccn + state.nc) * activated_fraction - state.nc, min=0.0) / dtcld
     ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
     ncact = torch.where(supsat > 0.0, ncact, torch.zeros_like(ncact))
