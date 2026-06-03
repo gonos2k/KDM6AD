@@ -110,8 +110,12 @@ torch::Tensor compute_work2_venfac(
     const torch::Tensor& pres, const torch::Tensor& t, const torch::Tensor& den,
     const ThermoParams& p
 ) {
-    auto diffus = 8.794e-5 * torch::exp(torch::log(t) * 1.81) / pres;
-    auto viscos = 1.496e-6 * (t * torch::sqrt(t)) / (t + 120.0) / den;
+    // Clamp t>=1K (matching compute_qs_water/compute_diffac) so log(t)/sqrt(t) stay finite —
+    // AD-hardening for the 4D-Var control th (t=th*pii could transiently go <=0 -> NaN grad).
+    // Inert at all physical T (>1K); mirrors the Python venfac fix (sec.20).
+    auto t_safe = torch::clamp(t, /*min=*/1.0);
+    auto diffus = 8.794e-5 * torch::exp(torch::log(t_safe) * 1.81) / pres;
+    auto viscos = 1.496e-6 * (t_safe * torch::sqrt(t_safe)) / (t_safe + 120.0) / den;
     auto den0_t = torch::full_like(t, p.den0);
     auto den_safe = torch::clamp(den, /*min=*/p.qmin);
     // Fortran F:779 venfac uses the truncated literal `.3333333` (NOT 1./3.) — same

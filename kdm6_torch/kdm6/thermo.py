@@ -199,8 +199,12 @@ def compute_work2_venfac(
 
     Used as `work2` in deposition/sublimation/melting산식.
     """
-    diffus = 8.794e-5 * torch.exp(torch.log(t) * 1.81) / p
-    viscos = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
+    # Clamp t≥1K (matching compute_qs_water/compute_diffac) so log(t)/sqrt(t) stay finite —
+    # AD-hardening for the 4D-Var control th (t=th·pii could transiently go ≤0 → NaN grad).
+    # Inert at all physical T (>1K); mirrored in C++ thermo.cpp venfac (§20).
+    t_safe = torch.clamp(t, min=1.0)
+    diffus = 8.794e-5 * torch.exp(torch.log(t_safe) * 1.81) / p
+    viscos = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) / den
     den0_t = torch.tensor(params.den0, dtype=t.dtype, device=t.device)
     return (
         # Fortran F:779 venfac uses the truncated literal .3333333 (NOT 1./3.); 1:1 fix (cf. avedia #4/#11).
