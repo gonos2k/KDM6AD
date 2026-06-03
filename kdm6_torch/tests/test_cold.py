@@ -1135,3 +1135,19 @@ def test_graupel_evap_grad_finite():
     qg, precg2 = inputs[0], inputs[10]
     assert qg.grad is not None and torch.isfinite(qg.grad).all()
     assert precg2.grad is not None and torch.isfinite(precg2.grad).all()
+
+
+def test_default_cold_evap_params_fortran_formula_lock():
+    """audit round-4: Fortran-fidelity lock for the snow/graupel ventilation coefficients
+    (module_mp_kdm6.F:3254-3263). The WARM phase locks precr1 (test_warm.py); cold had NO
+    equivalent — so a SHARED C++↔Python drift of the 0.65/0.44/0.78 ventilation constants from
+    Fortran would pass the C++↔Python parity test silently (the documented 'both drift together'
+    failure mode). Hardcode the Fortran constants + the mus=0/mug=0 gamma moments via math.gamma()."""
+    g2pms = math.gamma(2.0 + c.MUS)                     # F: g2pms = rgmma(2+mus)
+    g2pmg = math.gamma(2.0 + c.MUG)                     # F: g2pmg = rgmma(2+mug)
+    g5pbso2 = math.gamma(2.5 + 0.5 * c.BVTS + c.MUS)    # F: g5pbso2 = rgmma(2.5+0.5*bvts+mus)
+    snow = default_snow_evap_params()
+    graup = default_graupel_evap_params()
+    assert math.isclose(snow.precs1, 4.0 * 0.65 * g2pms, rel_tol=1e-12)                      # F:3254
+    assert math.isclose(snow.precs2, 4.0 * 0.44 * (c.AVTS ** 0.5) * g5pbso2, rel_tol=1e-12)  # F:3255
+    assert math.isclose(graup.precg1, 4.0 * 0.78 * g2pmg, rel_tol=1e-12)                     # F:3263
