@@ -64,15 +64,12 @@ double g_force[4][2] = {
     /* delz*/ {500.0,   500.0 },
 };
 
-// Differentiable leaves. Original 8 (θ,qv,qc,qr,qi,nc,ni,nr) + qs(5),qg(6): both are
-// carried in loss_of's mass term, so they have a defined gradient path and belong in
-// the end-to-end severance gate (PART C). nccn(7) and bg(11) are intentionally EXCLUDED:
-// nccn's only physics route to the loss is CCN activation (pcact/ncact), deferred under
-// Task #74 (fortran-cpp-1to1 tracker #10 / satadj), so d(loss)/d(nccn)=0 today — a
-// nonzero assert would falsely fail; bg (graupel volume) has no loss term. Re-add both
-// once activation is wired and a downstream loss dependence exists. CCN is a prime
-// 4D-Var control variable, so this is the documented coverage boundary, not an oversight.
-const std::array<int,10> GRAD_LEAVES = {0,1,2,3,4,5,6,8,9,10};
+// Differentiable leaves — ALL 12 State fields (full prognostic coverage). θ,qv,qc,qr,qi,qs,qg
+// + nc,ni,nr carry direct loss paths (mass / 1e-9·number). nccn(7) reaches the loss via CCN
+// activation (pcact/ncact in apply_satadj_step, which is LIVE in C++) → nc → loss, so
+// d(loss)/d(nccn) is defined+nonzero+finite. bg(11) reaches it via graupel-volume → slope/fall
+// → qg. Any future graph severance on ANY prognostic leaf now fails PART C (4D-Var needs them all).
+const std::array<int,12> GRAD_LEAVES = {0,1,2,3,4,5,6,7,8,9,10,11};
 bool is_grad_leaf(int fi) {
     for (int g : GRAD_LEAVES) if (g == fi) return true;
     return false;
