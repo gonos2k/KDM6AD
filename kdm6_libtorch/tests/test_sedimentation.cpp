@@ -479,24 +479,29 @@ void test_sedimentation_direction_python_convention() {
             /*dtcld=*/60.0, sed_params
         );
 
-        // Python convention assertion: after one fall step, mass moved DOWN
-        // (high K). qr at K=0 should DECREASE (drained); qr at K=K-1 (bottom)
-        // should INCREASE (accumulated). Surface accumulation > 0.
+        // Python convention assertion: after one fall step, mass moved DOWN (toward high K).
+        // qr at K=0 (TOP) should DECREASE (drained); the cell DIRECTLY BELOW (K=1) should
+        // INCREASE. NOTE: the Fortran stored-falk sedimentation advances a slab exactly ONE cell
+        // per substep (audit round-2 fix), so with qr seeded only at K=0 and mstep=1, mass reaches
+        // K=1 — NOT the bottom K-1 (the old over-cascading port wrongly pushed it multiple cells
+        // in one substep). So check K=1, not K-1.
         auto qr_out = out.state.qr;
-        double qr_top    = qr_out[0][0].item<double>();
-        double qr_bottom = qr_out[0][K-1].item<double>();
+        double qr_top       = qr_out[0][0].item<double>();
+        double qr_below_top = qr_out[0][1].item<double>();
         // top emptied at least partly
         assert(qr_top < 1.0e-3);
-        // bottom received something OR mass left the column (via surface)
-        bool fell_internal = qr_bottom > 1.0e-15;
-        bool fell_surface  = out.rain_increment[0].item<double>() > 1.0e-15;
-        assert(fell_internal || fell_surface);
-        // If layout is inverted, qr_top would STAY at 1e-3 and qr_bottom would be 0.
-        // Defensive: explicit fail if both are violated.
-        if (qr_top >= 1.0e-3 - 1e-15 && qr_bottom < 1e-15 && !fell_surface) {
+        // the cell immediately below the top received the fallen mass (downward, one cell/substep)
+        assert(qr_below_top > 1.0e-15);
+        // REGRESSION GUARD (audit round-2 stored-falk fix): mass must NOT over-cascade past one
+        // cell in a single substep. With qr only at K=0 and mstep=1, K=2/K=3 must stay ~0 — the
+        // old port recomputed inflow from the depleted neighbour, leaking mass two+ cells down.
+        assert(qr_out[0][2].item<double>() < 1.0e-15);
+        assert(qr_out[0][K - 1].item<double>() < 1.0e-15);
+        // If layout is inverted, qr_top would STAY at 1e-3 and qr_below_top would be 0.
+        if (qr_top >= 1.0e-3 - 1e-15 && qr_below_top < 1e-15) {
             std::cerr << "LAYOUT BUG: sedimentation did not move mass downward in "
                          "Python K=0=top convention. qr_top=" << qr_top
-                      << " qr_bottom=" << qr_bottom
+                      << " qr_below_top=" << qr_below_top
                       << " rain_inc=" << out.rain_increment[0].item<double>() << "\n";
             assert(false);
         }

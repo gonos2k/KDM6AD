@@ -75,6 +75,12 @@ SubstepAdvectionOutputs substep_advection_torch(
     auto delz_col = [&](int64_t k) { return in.delz.select(-1, k); };
     auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
 
+    // falk_*_prev carries the cell-above's STORED falk (from ITS entry q) into the interior
+    // inflow — Fortran F:1144 stores falk(k) from PRE-update qrs(k), and F:1148-1149/1159-1160/
+    // 1165-1166/1171-1172 feed cell k from that STORED falk(k+1), NOT a recompute from the
+    // depleted neighbour. (Mirrors the Python sedimentation fix; audit round-2.)
+    torch::Tensor falk_qr_prev, falk_nr_prev, falk_qs_prev, falk_qg_prev, falk_brs_prev;
+
     // Top cell
     {
         const int64_t k = 0;
@@ -95,6 +101,9 @@ SubstepAdvectionOutputs substep_advection_torch(
         qs_cols[k] = torch::clamp(qs_cols[k] - falk_qs_top * dtcld / dend_safe_col(k), 0.0);
         qg_cols[k] = torch::clamp(qg_cols[k] - falk_qg_top * dtcld / dend_safe_col(k), 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - falk_brs_top * dtcld / dend_safe_col(k), 0.0);
+
+        falk_qr_prev = falk_qr_top;  falk_nr_prev = falk_nr_top;
+        falk_qs_prev = falk_qs_top;  falk_qg_prev = falk_qg_top;  falk_brs_prev = falk_brs_top;
     }
 
     // Interior cells
@@ -117,31 +126,31 @@ SubstepAdvectionOutputs substep_advection_torch(
         auto dqg_k = torch::minimum(falk_qg_k * dtcld / dend_safe_col(k), qg_cols[k]);
         auto dbrs_k = torch::minimum(falk_brs_k * dtcld / dend_safe_col(k), brs_cols[k]);
 
-        // Above-cell flux uses the SAME per-column gate/divisor (Fortran dqr(i,k+1)
-        // is inside the same if(n.le.mstep(i)) block -- gate is per-column, not per-k).
-        auto falk_qr_above = dend_col(k - 1) * qr_cols[k - 1] * work1_qr_col(k - 1) * falk_scale;
-        auto falk_nr_above = nr_cols[k - 1] * workn_qr_col(k - 1) * falk_scale;
-        auto falk_qs_above = dend_col(k - 1) * qs_cols[k - 1] * work1_qs_col(k - 1) * falk_scale;
-        auto falk_qg_above = dend_col(k - 1) * qg_cols[k - 1] * work1_qg_col(k - 1) * falk_scale;
-        auto falk_brs_above = dend_col(k - 1) * brs_cols[k - 1] * work1_qg_col(k - 1) * falk_scale;
-
+        // Inflow from the cell above: STORED falk of the cell above (falk_*_prev, from ITS entry
+        // q), capped by the cell-above's POST-update reservoir — Fortran min(falk(k+1)*delz_ratio
+        // *dtcld/dend, qrs(k+1)) with the stored falk(k+1). The earlier port recomputed falk from
+        // the depleted qx_cols[k-1], under-advecting interior mass + attenuating the fall gradient.
         auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
         auto dqr_above = torch::minimum(
-            falk_qr_above * delz_ratio * dtcld / dend_safe_col(k), qr_cols[k - 1]);
+            falk_qr_prev * delz_ratio * dtcld / dend_safe_col(k), qr_cols[k - 1]);
         auto dnr_above = torch::minimum(
-            falk_nr_above * delz_ratio * dtcld, nr_cols[k - 1]);
+            falk_nr_prev * delz_ratio * dtcld, nr_cols[k - 1]);
         auto dqs_above = torch::minimum(
-            falk_qs_above * delz_ratio * dtcld / dend_safe_col(k), qs_cols[k - 1]);
+            falk_qs_prev * delz_ratio * dtcld / dend_safe_col(k), qs_cols[k - 1]);
         auto dqg_above = torch::minimum(
-            falk_qg_above * delz_ratio * dtcld / dend_safe_col(k), qg_cols[k - 1]);
+            falk_qg_prev * delz_ratio * dtcld / dend_safe_col(k), qg_cols[k - 1]);
         auto dbrs_above = torch::minimum(
-            falk_brs_above * delz_ratio * dtcld / dend_safe_col(k), brs_cols[k - 1]);
+            falk_brs_prev * delz_ratio * dtcld / dend_safe_col(k), brs_cols[k - 1]);
 
         qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);
         nr_cols[k] = torch::clamp(nr_cols[k] - dnr_k + dnr_above, 0.0);
         qs_cols[k] = torch::clamp(qs_cols[k] - dqs_k + dqs_above, 0.0);
         qg_cols[k] = torch::clamp(qg_cols[k] - dqg_k + dqg_above, 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - dbrs_k + dbrs_above, 0.0);
+
+        // carry this cell's STORED falk (entry q) as the next cell's "above" inflow flux
+        falk_qr_prev = falk_qr_k;  falk_nr_prev = falk_nr_k;
+        falk_qs_prev = falk_qs_k;  falk_qg_prev = falk_qg_k;  falk_brs_prev = falk_brs_k;
     }
 
     return SubstepAdvectionOutputs{
@@ -193,6 +202,10 @@ IceSubstepOutputs ice_substep_advection_torch(
     auto delz_col = [&](int64_t k) { return in.delz.select(-1, k); };
     auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
 
+    // falk_*_prev carries the cell-above's STORED falk (entry q) — same Fortran fix as the
+    // rain substep (F:1228-1232). (audit round-2)
+    torch::Tensor falk_qi_prev, falk_ni_prev;
+
     // Top
     {
         const int64_t k = 0;
@@ -202,6 +215,7 @@ IceSubstepOutputs ice_substep_advection_torch(
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
         qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
         ni_cols[k] = torch::clamp(ni_cols[k] - falk_ni_top * dtcld, 0.0);
+        falk_qi_prev = falk_qi_top;  falk_ni_prev = falk_ni_top;
     }
 
     for (int64_t k = 1; k < K; ++k) {
@@ -213,17 +227,18 @@ IceSubstepOutputs ice_substep_advection_torch(
         auto dqi_k = torch::minimum(falk_qi_k * dtcld / dend_safe_col(k), qi_cols[k]);
         auto dni_k = torch::minimum(falk_ni_k * dtcld, ni_cols[k]);
 
-        // Above-cell flux: SAME per-column gate/divisor (Fortran same if(n.le.mstep_i(i))).
-        auto falk_qi_above = dend_col(k - 1) * qi_cols[k - 1] * work1_qi_col(k - 1) * falk_scale;
-        auto falk_ni_above = ni_cols[k - 1] * workn_qi_col(k - 1) * falk_scale;
+        // Inflow from above: STORED falk_*_prev (entry q of the cell above), capped by its
+        // POST-update reservoir — not a recompute from the depleted neighbour.
         auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
         auto dqi_above = torch::minimum(
-            falk_qi_above * delz_ratio * dtcld / dend_safe_col(k), qi_cols[k - 1]);
+            falk_qi_prev * delz_ratio * dtcld / dend_safe_col(k), qi_cols[k - 1]);
         auto dni_above = torch::minimum(
-            falk_ni_above * delz_ratio * dtcld, ni_cols[k - 1]);
+            falk_ni_prev * delz_ratio * dtcld, ni_cols[k - 1]);
 
         qi_cols[k] = torch::clamp(qi_cols[k] - dqi_k + dqi_above, 0.0);
         ni_cols[k] = torch::clamp(ni_cols[k] - dni_k + dni_above, 0.0);
+
+        falk_qi_prev = falk_qi_k;  falk_ni_prev = falk_ni_k;  // carry stored falk
     }
 
     return IceSubstepOutputs{

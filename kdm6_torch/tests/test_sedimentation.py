@@ -84,6 +84,33 @@ def test_substep_advection_top_cell_loses_mass():
     assert torch.all(out.state.qr[:, 0] < state_in.qr[:, 0])
 
 
+def test_substep_advection_one_cell_per_substep_stored_falk():
+    """audit round-2 regression: the Fortran stored-falk inflow advances a slab exactly ONE cell
+    per substep (module_mp_kdm6.F:1144 stores falk(k) from PRE-update q; F:1148 feeds cell k from
+    the STORED falk(k+1)). With qr seeded ONLY at K=0 and mstep=1, mass must reach K=1 and NOT
+    over-cascade to K=2/K=3 — the old port recomputed inflow from the depleted neighbour, leaking
+    mass multiple cells down in a single substep (a forward + fall-gradient defect)."""
+    p = default_substep_advection_params()
+    dtype = torch.float64
+    K = 4
+    qr = torch.zeros((1, K), dtype=dtype)
+    qr[0, 0] = 1.0e-3
+    z = torch.zeros((1, K), dtype=dtype)
+    state = SubstepAdvectionState(qr=qr, nr=qr * 1.0e9, qs=z.clone(), qg=z.clone(), brs=z.clone())
+    work1 = torch.full((1, K), 5.0e-3, dtype=dtype)
+    delz = torch.full((1, K), 500.0, dtype=dtype)
+    dend = torch.full((1, K), 1.1 * 500.0, dtype=dtype)
+    out = substep_advection_torch(
+        state, z.clone(), z.clone(), z.clone(), z.clone(), z.clone(),
+        work1, work1, z.clone(), z.clone(), delz, dend,
+        mstep=1, dtcld=60.0, params=p)
+    qr_out = out.state.qr[0]
+    assert qr_out[0] < 1.0e-3, "top did not drain"
+    assert qr_out[1] > 1.0e-15, "mass did not fall to the cell directly below (one cell/substep)"
+    assert qr_out[2] < 1.0e-15, "mass over-cascaded past one cell (stored-falk regression)"
+    assert qr_out[3] < 1.0e-15, "mass over-cascaded past one cell (stored-falk regression)"
+
+
 def test_substep_advection_fall_accumulates():
     """fall_qr는 falk 합이라 양수."""
     p = default_substep_advection_params()

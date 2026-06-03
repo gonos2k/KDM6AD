@@ -197,8 +197,47 @@ def test_kdm6_pure_complete_rain_evap_nccn_budget():
     assert (o.nr == 0).all(), "NR not zeroed after complete rain evaporation"
     folded = o.nccn - 1.0e9
     assert (folded > 1.0e3).all(), "evaporated NR did not recycle into NCCN"
-    assert (folded < 1.0e4).all(), "NCCN gain exceeds the available rain-drop count"
+    # Conservation: total NCCN gain ≤ total available rain-drop count (2 cells × initial nr 1e4).
+    # The round-2 sediment fix (stored-falk inflow) shifted the per-cell nr split — a cell may now
+    # retain its full 1e4 — so bound the TOTAL, not each cell (the old per-cell `< 1e4` was too tight).
+    assert folded.sum() <= 2.0e4 + 1.0, "NCCN gain exceeds the available rain-drop count"
     assert (o.qv > 2.0e-3).all(), "evaporated rain mass did not return to vapor"
+
+
+def test_kdm6_pure_bg_gradient_through_sedimentation():
+    """audit round-2 regression (grad-correctness): the sediment stored-falk fix restores the bg
+    (graupel-volume) gradient through the multi-layer interior fall coupling. At a SMOOTH graupel
+    operating point (rhox=qg/bg=250, mid-segment, away from the ProgB table nodes + rhox clamp),
+    autograd d(loss)/d(bg) must match central FD. The old recompute-from-depleted-neighbour threaded
+    the gradient through the full post-update cascade, attenuating AD to ~0.62× the true gradient
+    (and severing d(qi)/d(bg)); the stored-falk inflow makes falk(k+1) depend only on the entry q of
+    the cell above, exactly as Fortran, so the gradient is correct. .item()-light per the autograd rule."""
+    from kdm6.state import State, Forcing
+    from kdm6.runtime import _kdm6_pure, make_parameters
+    K = 4
+    mk = lambda v: torch.tensor([[v] * K], dtype=torch.float64)
+
+    def build(bg0_pert=0.0):
+        bg = torch.tensor([[8e-4 / 250.0 + bg0_pert] + [8e-4 / 250.0] * (K - 1)], dtype=torch.float64)
+        s = State(th=mk(290.0), qv=mk(5e-3), qc=mk(0.0), qr=mk(1e-4), qi=mk(0.0), qs=mk(0.0),
+                  qg=mk(8e-4), nccn=mk(1e9), nc=mk(0.0), ni=mk(0.0), nr=mk(1e3), bg=bg)
+        f = Forcing(rho=mk(1.0), pii=mk(0.97), p=mk(9e4), delz=mk(500.0))
+        return s, f
+
+    s, f = build()
+    s.bg.requires_grad_(True)
+    out = _kdm6_pure(s, f, make_parameters(), dt=20.0)
+    (out.qg.sum() + out.qr.sum() + out.qs.sum()).backward()
+    ad = s.bg.grad[0, 0]
+    with torch.no_grad():
+        def L(eps):
+            s2, f2 = build(eps)
+            o = _kdm6_pure(s2, f2, make_parameters(), dt=20.0)
+            return o.qg.sum() + o.qr.sum() + o.qs.sum()
+        eps = 1e-9
+        fd = (L(eps) - L(-eps)) / (2.0 * eps)
+    assert torch.isfinite(ad).all() and (ad != 0).all(), "bg gradient is severed/non-finite"
+    assert ((ad - fd).abs() < 1e-4 * fd.abs()).all(), "bg gradient ≠ central FD (sediment-grad regression)"
 
 
 if __name__ == "__main__":
