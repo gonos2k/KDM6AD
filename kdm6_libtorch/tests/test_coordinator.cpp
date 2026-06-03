@@ -1202,7 +1202,9 @@ void test_warm_phase_runs_finite() {
         assert(torch::all(torch::isfinite(out.nccol)).item<bool>());
         assert(torch::all(torch::isfinite(out.nrcol)).item<bool>());
         assert(torch::all(torch::isfinite(out.prevp)).item<bool>());
-        assert(torch::all(torch::isfinite(out.pcond)).item<bool>());
+        assert(out.rain_complete_evap.defined());
+        // (out.pcond removed — warm phase no longer runs a satadj; condensation finiteness
+        // is covered by the apply_satadj_step kernel test.)
 
         // praut, pracw는 ≥ 0 (qc → qr은 양의 rate)
         assert(torch::all(out.praut >= 0).item<bool>());
@@ -1214,7 +1216,7 @@ void test_warm_phase_runs_finite() {
 
 void test_warm_phase_grad_propagates() {
     TEST(test_warm_phase_grad_propagates) {
-        // qc/qr/nc/nr에 grad → out.praut + out.pcond.sum() backward 흐름 finite.
+        // qc/qr/nc/nr에 grad → out.praut + out.prevp.sum() backward 흐름 finite.
         const int B = 1, K = 1;
         auto opts = torch::dtype(torch::kFloat64).requires_grad(true);
         auto qc = torch::full({B, K}, 5.0e-4, opts);
