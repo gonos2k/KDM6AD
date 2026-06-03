@@ -199,10 +199,8 @@ WarmPhaseOutputs make_zero_warm(int B, int K) {
     auto z = torch::zeros({B, K}, f64());
     auto z_bool = torch::zeros({B, K}, torch::dtype(torch::kBool));
     return WarmPhaseOutputs{
-        z, z, z, z, z, z,
-        z, z_bool,
-        z, z_bool,
-        z, z,
+        z, z, z, z, z, z,   // praut,nraut,pracw,nracw,nccol,nrcol
+        z, z_bool,          // prevp, rain_complete_evap
     };
 }
 
@@ -277,14 +275,15 @@ void test_state_update_zero_rates_identity() {
 
 void test_state_update_pcond_warms_and_moves_qv_to_qc() {
     TEST(test_state_update_pcond_warms_and_moves_qv_to_qc) {
-        // Updated contract (Codex stop-gate finding 8): `state_update` no longer
-        // consumes warm.pcond / warm.pcact / warm.cloud_complete_evap /
-        // warm.ncact — those are deferred to `apply_satadj_step` which runs
-        // AFTER state_update + reclassifications, mirroring Fortran
-        // module_mp_kdm6.f90:2880-2929 sequence. So with warm.pcond=1e-7 and
-        // all other rates=0, `state_update` should LEAVE qv/qc/t unchanged
-        // (modulo cold/mf identities). pcond's effect is exercised by the
-        // separate apply_satadj_step kernel test.
+        // Updated contract (Codex stop-gate finding 8, then dead-code removal):
+        // the warm-phase pcond/pcact/cloud_complete_evap/ncact outputs were not just
+        // deferred — they are now REMOVED from WarmPhaseOutputs entirely, because the
+        // single live activation+satadj site is `apply_satadj_step` (it runs AFTER
+        // state_update + reclassifications, mirroring module_mp_kdm6.f90:2880-2929).
+        // So `state_update`, given only warm RATES (all zero here), structurally cannot
+        // apply any warm-phase condensation and must LEAVE qv/qc/t unchanged (modulo
+        // cold/mf identities). Condensation's effect is exercised by the separate
+        // apply_satadj_step kernel test.
         const int B = 1, K = 1;
         auto opts = f64();
         CoordinatorState s{
@@ -303,7 +302,8 @@ void test_state_update_pcond_warms_and_moves_qv_to_qc() {
         };
         auto pre = make_zero_pre(B, K);
         auto warm = make_zero_warm(B, K);
-        warm.pcond = torch::full({B, K}, 1.0e-7, opts);  // ignored by state_update now
+        // (warm-phase pcond removed entirely — activation+satadj is now solely in
+        // apply_satadj_step, so state_update can carry no warm-phase condensation term.)
         auto cold = make_zero_cold(B, K);
         auto mf = make_zero_mf(B, K);
 
@@ -1245,7 +1245,9 @@ void test_warm_phase_grad_propagates() {
 
         auto params = default_warm_phase_params();
         auto out = warm_phase(s, f, pre, n0r, work1_r, qcr, params, 60.0);
-        auto loss = out.praut.sum() + out.pcond.sum();
+        // praut carries the qc-dependence, prevp the qv-dependence (rain evap via rh);
+        // (pcond removed — warm phase no longer runs a satadj).
+        auto loss = out.praut.sum() + out.prevp.sum();
         loss.backward();
         assert(qc.grad().defined());
         assert(qv.grad().defined());
@@ -1296,7 +1298,7 @@ void test_threshold_cleanup_grad_flows() {
 // ── F1d2: group conservation limiter trip-correctness ───────────────────────
 // Zero-filled phase structs (all fields = z; the compiler enforces the count).
 WarmPhaseOutputs make_zero_warm(const torch::Tensor& z) {
-    return WarmPhaseOutputs{ z, z, z, z, z, z, z, z, z, z, z, z };  // 12
+    return WarmPhaseOutputs{ z, z, z, z, z, z, z, z };  // 8 (rates only; activation+satadj live in apply_satadj_step)
 }
 ColdPhaseOutputs make_zero_cold(const torch::Tensor& z) {
     return ColdPhaseOutputs{

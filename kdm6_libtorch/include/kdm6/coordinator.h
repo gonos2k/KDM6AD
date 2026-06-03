@@ -88,10 +88,9 @@ struct WarmPhaseOutputs {
     torch::Tensor nrcol;
     torch::Tensor prevp;
     torch::Tensor rain_complete_evap;
-    torch::Tensor pcond;
-    torch::Tensor cloud_complete_evap;
-    torch::Tensor ncact;
-    torch::Tensor pcact;
+    // NOTE: pcond/cloud_complete_evap/ncact/pcact intentionally absent — CCN activation and
+    // the warm-phase saturation adjustment are computed once, in apply_satadj_step (the live
+    // Task #74 site). The warm phase emits only rates here (mirrors the Python oracle).
 };
 
 // C1-C6' cold-phase rates (post-HM 조정 포함).

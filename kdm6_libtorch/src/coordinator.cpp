@@ -256,64 +256,21 @@ WarmPhaseOutputs warm_phase(
         params.rain_evap, dtcld
     );
 
-    // B-pre-5: pcact (CCN activation → cloud water). Computed BEFORE satadj so
-    // that satadj sees the post-pcact (warmer, vapor-depleted) state — mirrors
-    // Fortran module_mp_kdm6.F:2903-2943 sequential ordering. The Python
-    // oracle defers pcact entirely (kdm6_torch/kdm6/coordinator.py:733-740 +
-    // constants.py:107-111 design intent: "wrapper 단계에서 처리할 simplified
-    // default") which works for offline parity tests but causes 15× cloud-water
-    // overshoot in supersaturation-active operational runs (em_squall2d_x).
-    // This block implements Task #74 at the C++ layer; Python oracle parity is
-    // preserved by keeping pcact OUT of the state_update budget when nullopt
-    // (operational path always provides xland, so nccn-driven pcact fires).
-    // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (module_mp_kdm6.F:918, 2848).
-    // 0.48 threshold is in PERCENT (matches SATMAX=1.0048 → 0.48% activation cutoff).
-    auto sw_percent_wp = (pre.rh_w - 1.0) * 100.0;
-    auto sw_ratio = torch::clamp(sw_percent_wp / 0.48, /*min=*/0.0);
-    auto activated_fraction = torch::minimum(
-        torch::ones_like(sw_ratio),
-        // clamp base ≥ EPS: pow(x,0.6) grad → inf at x=0 (saturation) ⇒ NaN gradient
-        // (same guard as the live apply_satadj_step path). This warm_phase activation
-        // block is operationally superseded by apply_satadj_step, but kept NaN-safe.
-        torch::pow(torch::clamp(sw_ratio, /*min=*/constants::EPS), constants::ACTK)
-    );
-    auto ncact_raw = torch::clamp((state.nccn + state.nc) * activated_fraction - state.nc, /*min=*/0.0) / dtcld;
-    auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);
-    ncact = torch::where(pre.supsat > 0.0, ncact, torch::zeros_like(ncact));
-    auto pcact_raw = 4.0 * PI * constants::DENR * std::pow(constants::ACTR * 1.0e-6, 3.0) * ncact / (3.0 * forcing.den);
-    auto pcact = torch::minimum(pcact_raw, torch::clamp(state.qv, /*min=*/0.0) / dtcld);
-
-    // Apply pcact to LOCAL copies of t/qv/qc before passing into satadj.
-    // Functional construction only — autograd graph preserved (no in-place,
-    // no .item()). Mirrors Fortran module_mp_kdm6.F:2910-2914 + saturation recompute
-    // before conden at :2922-2927:
-    //   q   := max(q   - pcact*dtcld, 0)         ← qv_post_pcact
-    //   qci := max(qci + pcact*dtcld, 0)         ← qc_post_pcact
-    //   t   := t       + pcact*xl/cpm*dtcld      ← t_post_pcact
-    //   qs1 := compute_qs_water(t_post_pcact, p) ← qs1_post_pcact (Fortran
-    //                                              reruns conden which
-    //                                              recomputes saturation)
-    auto t_post_pcact   = state.t  + pcact * pre.xl / pre.cpm * dtcld;
-    auto qv_post_pcact  = torch::clamp(state.qv - pcact * dtcld, /*min=*/0.0);
-    auto qc_post_pcact  = torch::clamp(state.qc + pcact * dtcld, /*min=*/0.0);
-    auto qs1_post_pcact = thermo::compute_qs_water(t_post_pcact, forcing.p, thermo_params);
-
-    // B5: Saturation adjustment (qv ↔ qc) — consumes the post-pcact snapshot.
-    auto satadj = satadj::saturation_adjustment_torch(
-        t_post_pcact, qv_post_pcact, qc_post_pcact, qs1_post_pcact, pre.xl, pre.cpm,
-        params.satadj, dtcld
-    );
-
+    // Note: CCN activation (pcact/ncact) and the warm-phase saturation adjustment are
+    // intentionally NOT computed here. They are deferred to apply_satadj_step (Task #74),
+    // the single LIVE activation+satadj site (see :1280 — it sequences pcact → satadj →
+    // pcond/cloud_complete_evap exactly per module_mp_kdm6.F:2903-2943). A duplicate
+    // warm-phase satadj used to live here, but its outputs (pcond/cloud_complete_evap/
+    // ncact/pcact) were never consumed — the caller reads only the warm RATES returned
+    // below — so it was dead compute (and a dead pow() that had to be NaN-guarded). It is
+    // removed. The Python oracle's warm phase likewise emits only the rates, so dropping
+    // these four fields also keeps the two trees structurally aligned.
     return WarmPhaseOutputs{
         /*praut=*/b1.praut,  /*nraut=*/b1.nraut,
         /*pracw=*/b2.pracw,  /*nracw=*/b2.nracw,
         /*nccol=*/b3.nccol,  /*nrcol=*/b3.nrcol,
         /*prevp=*/rain_evap.prevp,
         /*rain_complete_evap=*/rain_evap.rain_complete_evap,
-        /*pcond=*/satadj.pcond,
-        /*cloud_complete_evap=*/satadj.cloud_complete_evap,
-        /*ncact=*/ncact,
-        /*pcact=*/pcact,
     };
 }
 
