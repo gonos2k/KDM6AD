@@ -328,6 +328,23 @@ def _kdm6_pure(
         sea_mask = torch.ones_like(cs.qc, dtype=torch.bool)
         ncmin_tensor = None  # → scalar c.NCMIN fallback inside the conservation floor
 
+    # Inject the per-cell ncmin into the rate-GATE params too — NOT only the conservation floor.
+    # The C++/Fortran autoconv/number-accretion/riming/contact/Bigg gates use the operational
+    # per-cell ncmin (sea 10 / land 100 from xland); without this the Python oracle's gates used
+    # scalar c.NCMIN (1e-2), a qualitative C++↔Python divergence in low-nc cells on the live xland
+    # path (audit round-5). Mirrors C++ runtime.cpp:273-277. None (no-xland) → params keep their
+    # scalar ncmin (== the C++ no-xland branch), so the no-xland parity path is unchanged.
+    if ncmin_tensor is not None:
+        warm_p = warm_p._replace(autoconv=warm_p.autoconv._replace(ncmin_tensor=ncmin_tensor))
+        cold_p = cold_p._replace(
+            number_accretion=cold_p.number_accretion._replace(ncmin_tensor=ncmin_tensor),
+            cloud_water_riming=cold_p.cloud_water_riming._replace(ncmin_tensor=ncmin_tensor),
+        )
+        mf_p = mf_p._replace(
+            contact=mf_p.contact._replace(ncmin_tensor=ncmin_tensor),
+            bigg_cloud=mf_p.bigg_cloud._replace(ncmin_tensor=ncmin_tensor),
+        )
+
     loops = _coord.compute_loops_max(dt, c.DTCLDCR)
     dtcld = dt / float(loops)
 

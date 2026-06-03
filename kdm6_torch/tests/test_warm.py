@@ -29,6 +29,8 @@ def test_default_warm_autoconv_params_finite_and_positive():
     p = default_warm_autoconv_params()
     for field in p._fields:
         value = getattr(p, field)
+        if value is None:  # optional ncmin_tensor (per-cell xland override) — None by default
+            continue
         assert math.isfinite(value), field
         assert value > 0.0, field
 

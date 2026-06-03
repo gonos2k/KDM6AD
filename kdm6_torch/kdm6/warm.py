@@ -49,6 +49,9 @@ class WarmAutoconvParams(NamedTuple):
     nraut_coeff: float  # 3.5e9 (number autoconv coefficient)
     qcrmin: float
     ncmin: float
+    # Per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++
+    # WarmAutoconvParams::ncmin_tensor / runtime.cpp:273). None → scalar `ncmin` fallback.
+    ncmin_tensor: "torch.Tensor | None" = None
 
 
 def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0) -> WarmAutoconvParams:
@@ -103,7 +106,9 @@ def autoconv_torch(
     (praut, nraut) : (B, K) tensors. Mass and number autoconversion rates [kg/kg/s, #/s].
     """
     # ── 외부 게이트 ──────────────────────────────────────────────────────
-    active = (qc > qcr) & (nc > params.ncmin)
+    # per-cell ncmin (xland operational path) overrides the scalar when present (mirrors C++).
+    nc_floor = params.ncmin_tensor if params.ncmin_tensor is not None else params.ncmin
+    active = (qc > qcr) & (nc > nc_floor)
     zero = torch.zeros_like(qc)
 
     # ── praut: mass autoconversion ─────────────────────────────────────

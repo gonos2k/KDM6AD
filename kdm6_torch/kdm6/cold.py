@@ -372,6 +372,8 @@ class NumberAccretionParams(NamedTuple):
     ncmin: float
     nrmin: float
     qcrmin: float
+    # per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++). None → scalar.
+    ncmin_tensor: "torch.Tensor | None" = None
 
 
 def default_number_accretion_params() -> NumberAccretionParams:
@@ -450,8 +452,9 @@ def number_accretion_torch(
     """
     zero = torch.zeros_like(qi)
 
-    # 공통 cold gate
-    cold_active = (supcol > 0) & (ni > params.ncmin)
+    # 공통 cold gate — per-cell ncmin (xland operational path) overrides scalar when present (C++ parity)
+    nc_floor = params.ncmin_tensor if params.ncmin_tensor is not None else params.ncmin
+    cold_active = (supcol > 0) & (ni > nc_floor)
 
     qi_safe = torch.clamp(qi, min=params.qcrmin)
     qr_safe = torch.clamp(qr, min=params.qcrmin)
@@ -541,6 +544,8 @@ class CloudWaterRimingParams(NamedTuple):
     qcrmin: float
     ncmin: float
     qsum_floor: float
+    # per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++). None → scalar.
+    ncmin_tensor: "torch.Tensor | None" = None
 
 
 def default_cloud_water_riming_params() -> CloudWaterRimingParams:
@@ -637,7 +642,9 @@ def cloud_water_riming_torch(
     psacw = torch.where(snow_active_qc, psacw_capped, zero)
 
     # ── nsacw ──────────────────────────────────────────────────────────
-    snow_active_nc = (qs > params.qcrmin) & (nc > params.ncmin)
+    # per-cell ncmin (xland operational path) overrides scalar when present (C++ parity)
+    _nc_floor = params.ncmin_tensor if params.ncmin_tensor is not None else params.ncmin
+    snow_active_nc = (qs > params.qcrmin) & (nc > _nc_floor)
     nsacw_raw = (
         _pi * params.avts * 0.25 * params.eacsc * n0so * n0sfac * n0c / (params.muc + 1.0)
         * params.g3pbs
@@ -661,7 +668,7 @@ def cloud_water_riming_torch(
     pgacw = torch.where(graupel_active_qc, pgacw_capped, zero)
 
     # ── ngacw ──────────────────────────────────────────────────────────
-    graupel_active_nc = (qg > params.qcrmin) & (nc > params.ncmin)
+    graupel_active_nc = (qg > params.qcrmin) & (nc > _nc_floor)  # per-cell ncmin (see nsacw)
     ngacw_raw = (
         _pi * avtg * 0.25 * params.eacgc * n0go * n0c / (params.muc + 1.0)
         * g3pbg

@@ -262,5 +262,26 @@ def test_kdm6_pure_all_zero_state_finite_gradient():
         assert leaf.grad is None or torch.isfinite(leaf.grad).all(), f"NaN/Inf grad on leaf {n} at t=0"
 
 
+def test_kdm6_pure_xland_ncmin_rate_gate():
+    """audit round-5 regression: the rate-GATE ncmin must use the per-cell xland value (sea 10 /
+    land 100), NOT the scalar c.NCMIN=1e-2. The Python oracle previously threaded the xland ncmin
+    only into the conservation floor (#18), leaving the autoconv/number-accretion/riming/contact/Bigg
+    GATES on scalar 1e-2 — a qualitative C++↔Python divergence (no-rain↔all-rain) in low-nc cells on
+    the live WRF path. Now mirrors C++ runtime.cpp:273-277. A land cell with nc=50 (in the band
+    1e-2 < nc < ncmin_land=100): WITH xland → autoconv OFF (gate nc>100 False, matching C++/Fortran);
+    WITHOUT xland (scalar 1e-2) → autoconv fires."""
+    from kdm6.state import State, Forcing
+    from kdm6.runtime import _kdm6_pure, make_parameters
+    m = lambda v: torch.tensor([[v]], dtype=torch.float64)
+    base = dict(th=m(290.0), qv=m(1.0e-2), qc=m(2.0e-3), qr=m(0.0), qi=m(0.0), qs=m(0.0),
+                qg=m(0.0), nccn=m(1e9), nc=m(50.0), ni=m(0.0), nr=m(0.0), bg=m(0.0))
+    f = Forcing(rho=m(1.0), pii=m(0.97), p=m(8.5e4), delz=m(100.0))
+    o_land = _kdm6_pure(State(**base), f, make_parameters(), dt=120.0,
+                        xland=m(1.0), ncmin_land=100.0, ncmin_sea=10.0)
+    assert (o_land.qr == 0).all(), "per-cell ncmin gate failed: autoconv fired at nc=50 < ncmin_land=100"
+    o_scalar = _kdm6_pure(State(**base), f, make_parameters(), dt=120.0)
+    assert (o_scalar.qr > 0).all(), "scalar-ncmin path should autoconvert at nc=50 > c.NCMIN(1e-2)"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

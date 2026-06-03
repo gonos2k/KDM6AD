@@ -364,6 +364,8 @@ def test_default_number_accretion_params_finite():
     p = default_number_accretion_params()
     for field in p._fields:
         v = getattr(p, field)
+        if v is None:  # optional ncmin_tensor (per-cell xland override) — None by default
+            continue
         assert math.isfinite(v) and v > 0, field
 
 
@@ -469,6 +471,8 @@ def test_default_cwr_params_finite():
     p = default_cloud_water_riming_params()
     for field in p._fields:
         v = getattr(p, field)
+        if v is None:  # optional ncmin_tensor (per-cell xland override) — None by default
+            continue
         assert math.isfinite(v) and v > 0, field
 
 

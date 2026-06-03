@@ -224,6 +224,8 @@ class ContactFreezingParams(NamedTuple):
     qmin: float
     ncmin: float
     supcol_threshold: float  # 2.0
+    # per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++). None → scalar.
+    ncmin_tensor: "torch.Tensor | None" = None
 
 
 def default_contact_freezing_params(*, xlf: float = DEFAULT_XLF) -> ContactFreezingParams:
@@ -282,7 +284,8 @@ def contact_freezing_torch(
     )
     pinuc = torch.where(active, torch.minimum(pinuc_raw, qc), zero)
 
-    nc_active = active & (nc > params.ncmin)
+    nc_floor = params.ncmin_tensor if params.ncmin_tensor is not None else params.ncmin  # per-cell xland ncmin (C++ parity)
+    nc_active = active & (nc > nc_floor)
     ninuc_raw = (
         difa * 2.0 * _pi * Nic * n0c / (params.muc + 1.0)
         * params.g1pmc * rslopecmu * rslopec2 * dtcld
@@ -310,6 +313,8 @@ class BiggCloudParams(NamedTuple):
     g1pdcomuc1: float
     qmin: float
     ncmin: float
+    # per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++). None → scalar.
+    ncmin_tensor: "torch.Tensor | None" = None
 
 
 def default_bigg_cloud_params() -> BiggCloudParams:
@@ -357,7 +362,8 @@ def bigg_cloud_freezing_torch(
     )
     pfrzdtc = torch.where(active, torch.minimum(pfrzdtc_raw, qc), zero)
 
-    nc_active = active & (nc > params.ncmin)
+    nc_floor = params.ncmin_tensor if params.ncmin_tensor is not None else params.ncmin  # per-cell xland ncmin (C++ parity)
+    nc_active = active & (nc > nc_floor)
     nfrzdtc_raw = (
         params.cmc * params.pfrz1 * n0c / params.denr / (params.muc + 1.0)
         * bigg_factor * params.g1pdcomuc1 * rslopecmu * rslopec * rslopecd * dtcld
