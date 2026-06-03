@@ -173,7 +173,7 @@ void test_rain_evap_inactive_when_qr_zero() {
         auto rslopemu_r = torch::full({1, 2}, std::pow(5.0e-4, constants::MUR), f64());
 
         auto prevp = rain_evap_torch(qr, rh_w, supsat, n0r, work1_r, work2,
-                                      rslope_r, rslopeb_r, rslope2_r, rslopemu_r, p, 60.0);
+                                      rslope_r, rslopeb_r, rslope2_r, rslopemu_r, p, 60.0).prevp;
         assert(torch::allclose(prevp, torch::zeros_like(qr)));
     } END_TEST();
 }
@@ -193,7 +193,7 @@ void test_rain_evap_evaporation_path() {
         auto rslopemu_r = torch::full({1, 2}, std::pow(5.0e-4, constants::MUR), f64());
 
         auto prevp = rain_evap_torch(qr, rh_w, supsat, n0r, work1_r, work2,
-                                      rslope_r, rslopeb_r, rslope2_r, rslopemu_r, p, 60.0);
+                                      rslope_r, rslopeb_r, rslope2_r, rslopemu_r, p, 60.0).prevp;
         // prevp <= 0 (evap)
         assert(torch::all(prevp <= 1e-15).item<bool>());
         // prevp >= -qr/dtcld (mass cap)
