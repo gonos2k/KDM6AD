@@ -390,6 +390,31 @@ int main() {
         if (!g_fail) std::cout << "  loops>1 forward finite + all grad leaves defined/finite [ok]\n";
     }
 
+    // ── RAIN-EVAP PARITY DUMP — fires the complete-rain-evap NR→NCCN budget ──────
+    // The standard IC (PART C dump above) never fully evaporates rain, so the
+    // complete-rain-evap branch (warm: prevp==qr_cap → rce → nccn+=nr, nr→0;
+    // coordinator.cpp:1170/1254 + warm.cpp:281) is the ONE driver path the CPPOUT
+    // dump can't validate against Python. Here a dry, sub-saturated, lightly-raining
+    // warm column makes rain evaporate to completion in-step ⇒ rce fires. The matching
+    // Python _kdm6_pure run on this same IC must agree to fp64 machine precision.
+    {
+        torch::NoGradGuard ng;
+        auto m = [](double v){ return torch::tensor({v, v}, torch::kFloat64).reshape({1,2}); };
+        State sr{ m(300.0), m(2.0e-3), m(0.0), m(5.0e-6), m(0.0), m(0.0), m(0.0),
+                  m(1.0e9), m(0.0), m(0.0), m(1.0e4), m(0.0) };
+        Forcing fr{ m(1.0), m(0.97), m(9.0e4), m(500.0) };
+        auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/120.0);
+        const auto& so = rr.state_out;
+        std::cout.precision(15);
+        auto pr = [&](const char* nm, const torch::Tensor& t){
+            auto v = t.detach().reshape({-1});
+            std::cout << "RCEOUT " << nm << " " << v[0].item<double>() << "\n";
+        };
+        std::cout << "\n[RAIN-EVAP] NR->NCCN budget parity dump (dt=120)\n";
+        pr("qr", so.qr); pr("nr", so.nr); pr("nccn", so.nccn);
+        pr("qv", so.qv); pr("nc", so.nc); pr("th", so.th);
+    }
+
     if (g_fail) { std::cerr << "\n" << g_fail << " check(s) failed\n"; return 1; }
     std::cout << "\n  PASS  kdm6_fn is differentiable end-to-end AND matches "
                  "central FD to significant digits\n";

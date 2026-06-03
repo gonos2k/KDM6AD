@@ -175,5 +175,31 @@ def test_kdm6_pure_per_column_mstep_independence():
                 f"#10 regressed: column {i} field {fl} differs (scalar-mstep coupling)"
 
 
+def test_kdm6_pure_complete_rain_evap_nccn_budget():
+    """1:1 NR->NCCN budget — a dry, sub-saturated, lightly-raining warm column evaporates its
+    rain to completion in-step, firing the complete-rain-evap branch (warm.py rain_complete_evap
+    -> coordinator NR->NCCN, coordinator.cpp:1170/1254): nr must zero, qr must zero, the evaporated
+    rain-drop count must recycle into nccn (a 4D-Var-relevant CCN term), and evaporated mass must
+    return to vapor. Matches C++ kdm6_fn on this exact IC to relΔ 4.53e-15 — see the [RAIN-EVAP]
+    RCEOUT dump in kdm6_libtorch/tests/test_autograd_endtoend.cpp. This is the one driver branch
+    the standard-IC CPPOUT parity (rce=0 there) cannot exercise. .item()-free (tensor ops only) per
+    the autograd rule."""
+    from kdm6.state import State, Forcing
+    from kdm6.runtime import _kdm6_pure, make_parameters
+    m = lambda v: torch.tensor([[v, v]], dtype=torch.float64)
+    s = State(th=m(300.0), qv=m(2.0e-3), qc=m(0.0), qr=m(5.0e-6), qi=m(0.0),
+              qs=m(0.0), qg=m(0.0), nccn=m(1.0e9), nc=m(0.0), ni=m(0.0),
+              nr=m(1.0e4), bg=m(0.0))
+    f = Forcing(rho=m(1.0), pii=m(0.97), p=m(9.0e4), delz=m(500.0))
+    o = _kdm6_pure(s, f, make_parameters(), dt=120.0)
+    assert torch.isfinite(o.nccn).all() and torch.isfinite(o.qr).all()
+    assert (o.qr == 0).all(), "rain did not fully evaporate (rce branch did not fire)"
+    assert (o.nr == 0).all(), "NR not zeroed after complete rain evaporation"
+    folded = o.nccn - 1.0e9
+    assert (folded > 1.0e3).all(), "evaporated NR did not recycle into NCCN"
+    assert (folded < 1.0e4).all(), "NCCN gain exceeds the available rain-drop count"
+    assert (o.qv > 2.0e-3).all(), "evaporated rain mass did not return to vapor"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
