@@ -186,6 +186,39 @@ def test_warm_phase_grad_propagates():
         assert x.grad is not None and torch.isfinite(x.grad).all(), name
 
 
+def test_apply_satadj_activation_reads_raw_nccn():
+    """Regression for the nccn-clamp-ordering fix (adversarial-audit cross-tree #1, commit f5d6ce5).
+
+    CCN activation must read the RAW nccn (Fortran F:2905), never a NCCN_MAX-clamped one — the
+    [NCCN_MIN,NCCN_MAX] reservoir clamp is deferred to AFTER activation (F:3006). The divergent
+    regime (nccn > NCCN_MAX reaching activation) is end-to-end-unreachable (rce needs rh<1, which
+    gates activation off via supsat<=0), so the black-box C++↔Python parity test cannot reach it;
+    this WHITE-BOX guard does. Feed apply_satadj_step two super-saturated columns differing ONLY in
+    nccn — one ABOVE NCCN_MAX, one AT it. Reading raw ⇒ the above-MAX column activates strictly more
+    cloud number (larger ncact). If a clamp is (re)inserted before activation, 2.2e10 collapses to
+    2.0e10 and the two outputs become identical — that equality is the regressed bug.
+    .item()-free (tensor comparison) per the autograd rule.
+    """
+    import kdm6.constants as c
+    from kdm6.coordinator import (CoordinatorState, CoordinatorForcing,
+                                  apply_satadj_step_torch, default_coordinator_params)
+    z = lambda v: torch.full((1, 1), v, dtype=torch.float64)
+    # super-saturated warm column (qv >> qs1(t=290, p=9e4)) so CCN activation fires (sw>0)
+    state = CoordinatorState(qv=z(2.0e-2), qc=z(1.0e-3), qr=z(0.0), qs=z(0.0), qg=z(0.0),
+                             qi=z(0.0), nc=z(5.0e7), nr=z(0.0), ni=z(0.0), brs=z(0.0), t=z(290.0))
+    forcing = CoordinatorForcing(p=z(9.0e4), den=z(1.0), delz=z(500.0), dend=z(1.0))
+    xl, cpm = z(2.5e6), z(1004.0)  # ncact reads nccn/nc/qv/qs1; xl/cpm only touch the t/qv updates
+    sp = default_warm_phase_params().satadj
+    tp = default_coordinator_params().thermo
+    s_above, _ = apply_satadj_step_torch(state, forcing, xl, cpm, sp, tp,
+                                         dtcld=6.0, nccn=z(c.NCCN_MAX * 1.1))  # 2.2e10 > MAX
+    s_at, _ = apply_satadj_step_torch(state, forcing, xl, cpm, sp, tp,
+                                      dtcld=6.0, nccn=z(c.NCCN_MAX))           # 2.0e10 == MAX
+    assert (s_above.nc > s_at.nc + 1.0).all(), (
+        "CCN activation did not read raw nccn — clamp-order bug regressed "
+        "(nccn>NCCN_MAX collapsed to NCCN_MAX before activation)")
+
+
 # ════ F1c: Cold phase chain ═══════════════════════════════════════════════════
 
 

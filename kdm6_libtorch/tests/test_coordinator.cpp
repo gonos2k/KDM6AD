@@ -316,6 +316,33 @@ void test_state_update_pcond_warms_and_moves_qv_to_qc() {
     } END_TEST();
 }
 
+void test_state_update_does_not_clamp_nccn_to_max() {
+    TEST(test_state_update_does_not_clamp_nccn_to_max) {
+        // Regression for the nccn-clamp-ordering fix (adversarial-audit cross-tree #1, f5d6ce5):
+        // state_update must NOT clamp nccn to NCCN_MAX. Fortran adds the rce addback RAW (F:1795);
+        // the [NCCN_MIN,NCCN_MAX] reservoir clamp is deferred to apply_satadj_step, AFTER CCN
+        // activation reads the raw nccn (F:2905/3006). Re-inserting a clamp at state_update's
+        // return would make activation read a MAX-capped nccn (~9% ncact drift, the divergence
+        // from the Python oracle). Feed nccn > NCCN_MAX with all rates zero; the returned nccn must
+        // pass through UNCLAMPED (> NCCN_MAX). (Forward-inert end-to-end — rce⊥activation — so this
+        // white-box check is the only guard for the clamp-order regression.)
+        const int B = 1, K = 1;
+        auto opts = f64();
+        const double nccn_hi = constants::NCCN_MAX * 1.1;   // 2.2e10 > NCCN_MAX
+        CoordinatorState s{
+            torch::full({B, K}, 8.0e-3, opts),  torch::full({B, K}, 1.0e-4, opts),
+            torch::zeros({B, K}, opts),         torch::zeros({B, K}, opts),
+            torch::zeros({B, K}, opts),         torch::zeros({B, K}, opts),
+            torch::full({B, K}, 1.0e8, opts),   torch::zeros({B, K}, opts),
+            torch::zeros({B, K}, opts),         torch::full({B, K}, nccn_hi, opts),
+            torch::zeros({B, K}, opts),         torch::full({B, K}, 280.0, opts),
+        };
+        auto out = state_update(s, make_zero_pre(B, K), make_zero_warm(B, K),
+                                make_zero_cold(B, K), make_zero_mf(B, K), /*dtcld=*/60.0);
+        assert(out.nccn.item<double>() > constants::NCCN_MAX);  // unclamped (raw passthrough)
+    } END_TEST();
+}
+
 // review12#1: single-rate isolation tests. Zero-rate identity catches symmetric
 // sign errors but not asymmetric routing — e.g., piacr·delta3 vs piacr·(1-delta3)
 // would silently invert which species qr→{qs,qg} flows into.
@@ -1388,6 +1415,7 @@ int main() {
     test_threshold_cleanup_grad_flows();
     test_state_update_zero_rates_identity();
     test_state_update_pcond_warms_and_moves_qv_to_qc();
+    test_state_update_does_not_clamp_nccn_to_max();
     test_state_update_piacr_routes_to_qs_when_qr_small();
     test_state_update_piacr_routes_to_qg_when_qr_large();
     test_state_update_psacr_adj_delta2_routing();
