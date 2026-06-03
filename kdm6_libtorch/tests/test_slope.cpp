@@ -172,8 +172,11 @@ void test_slope_kdm6_branches_to_max() {
         assert(torch::allclose(out.vt_s, zeros));
         assert(torch::allclose(out.vt_g, zeros));
         assert(torch::allclose(out.vt_i, zeros));
-        assert(torch::allclose(out.vtn_r, zeros));
-        assert(torch::allclose(out.vtn_i, zeros));
+        // 1:1 fix #5: vtn_r/vtn_i are reassigned UNCONDITIONALLY (vtn = pvtrn·rslopeb·denfac),
+        // mirroring Fortran where the vt zeroing (F:3547-3550) lands AFTER the vtn assignment.
+        // So in this below-qmin (max-slope) branch vt is zero but vtn stays NONZERO.
+        assert(!torch::allclose(out.vtn_r, zeros));
+        assert(!torch::allclose(out.vtn_i, zeros));
     } END_TEST();
 }
 

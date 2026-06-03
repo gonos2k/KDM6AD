@@ -1216,7 +1216,8 @@ void test_warm_phase_runs_finite() {
 
 void test_warm_phase_grad_propagates() {
     TEST(test_warm_phase_grad_propagates) {
-        // qc/qr/nc/nr에 grad → out.praut + out.prevp.sum() backward 흐름 finite.
+        // qc/qr에 grad → out.praut + out.pracw + out.prevp backward 흐름 finite
+        // (qv는 warm_phase가 더 이상 읽지 않음 — satadj가 apply_satadj_step으로 이동).
         const int B = 1, K = 1;
         auto opts = torch::dtype(torch::kFloat64).requires_grad(true);
         auto qc = torch::full({B, K}, 5.0e-4, opts);
@@ -1247,14 +1248,16 @@ void test_warm_phase_grad_propagates() {
 
         auto params = default_warm_phase_params();
         auto out = warm_phase(s, f, pre, n0r, work1_r, qcr, params, 60.0);
-        // praut carries the qc-dependence, prevp the qv-dependence (rain evap via rh);
-        // (pcond removed — warm phase no longer runs a satadj).
-        auto loss = out.praut.sum() + out.prevp.sum();
+        // After the warm-phase satadj moved to apply_satadj_step, warm_phase reads qc (praut,
+        // pracw) and qr (pracw, prevp) but NOT qv — the qv↔qc condensation is now solely in
+        // apply_satadj_step. So the live grad paths are qc and qr (qv no longer flows through
+        // warm_phase; asserting qv.grad here would be wrong post-removal).
+        auto loss = out.praut.sum() + out.pracw.sum() + out.prevp.sum();
         loss.backward();
         assert(qc.grad().defined());
-        assert(qv.grad().defined());
+        assert(qr.grad().defined());
         assert(torch::all(torch::isfinite(qc.grad())).item<bool>());
-        assert(torch::all(torch::isfinite(qv.grad())).item<bool>());
+        assert(torch::all(torch::isfinite(qr.grad())).item<bool>());
     } END_TEST();
 }
 

@@ -117,6 +117,23 @@ else()
     message(STATUS "Fortran compiler not found — skipping test_fortran_smoke")
 endif()
 
+# ── keep asserts live in the test executables ────────────────────────────────
+# The C++ tests validate via <cassert>. Under a Release build (-DNDEBUG) assert()
+# expands to nothing, which would (a) leave every assert-based test hollow — it runs
+# but verifies nothing — and (b) let a dangling member reference inside an assert
+# compile silently (we hit exactly this: a removed-field ref survived a Release build).
+# Force -UNDEBUG on the TEST targets only so their assertions actually execute in ctest.
+# The kdm6 / kdm6_c libraries are intentionally left untouched, so the WRF-linked dylib
+# stays -DNDEBUG-optimized.
+foreach(t IN ITEMS
+        test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
+        test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
+        test_cloud_dsd test_c_abi test_autograd_endtoend)
+    if(TARGET ${t})
+        target_compile_options(${t} PRIVATE -UNDEBUG)
+    endif()
+endforeach()
+
 # ── installation ────────────────────────────────────────────────────────────
 install(TARGETS kdm6 kdm6_c
     EXPORT kdm6Targets
