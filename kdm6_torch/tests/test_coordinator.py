@@ -178,9 +178,11 @@ def test_warm_phase_grad_propagates():
     state, forcing, pre, n0r, work1_r, qcr = _warm_phase_inputs(requires_grad=True)
     out = warm_phase_torch(state, forcing, pre, n0r, work1_r, qcr,
                             params=p, dtcld=60.0)
-    loss = (out.praut.sum() + out.pracw.sum() + out.prevp.sum() + out.pcond.sum())
+    loss = (out.praut.sum() + out.pracw.sum() + out.prevp.sum())
     loss.backward()
-    for x, name in [(state.qv, "qv"), (state.qc, "qc"), (state.qr, "qr")]:
+    # warm_phase reads qc (praut/pracw) and qr (pracw/prevp) but NOT qv — the qv↔qc
+    # satadj moved to apply_satadj_step_torch, so qv no longer flows through warm_phase.
+    for x, name in [(state.qc, "qc"), (state.qr, "qr")]:
         assert x.grad is not None and torch.isfinite(x.grad).all(), name
 
 
@@ -247,24 +249,9 @@ def test_cold_phase_warm_temperature_inactive():
     assert torch.allclose(out.psaut, z)
 
 
-def test_warm_phase_pcond_zero_when_balanced():
-    """rh_w = 1 (qv = qs1) AND qc = 0 → pcond = 0."""
-    p_full = default_coordinator_params()
-    pw = default_warm_phase_params()
-    state, forcing, sea_mask = _state_forcing()
-    # T 그대로, qv를 qs1과 같게 강제
-    state = state._replace(t=torch.full_like(state.t, 280.0))
-    pre = preamble_torch(state, forcing, sea_mask, params=p_full)
-    # qv를 qs1로 set, qc=0 (saturated, no cloud)
-    state = state._replace(qv=pre.qs1.clone(), qc=torch.zeros_like(state.qc))
-    pre = preamble_torch(state, forcing, sea_mask, params=p_full)
-    n0r = torch.full_like(state.qr, 8.0e6)
-    work1_r = torch.full_like(state.qr, 1.0e-3)
-    qcr = diag_qcr_torch(sea_mask, params=p_full.cloud_dsd, ref=state.qc)
-    out = warm_phase_torch(state, forcing, pre, n0r, work1_r, qcr,
-                            params=pw, dtcld=60.0)
-    # pcond should be ~0 (q ≈ qs1, qc = 0 → 어느 분기도 활성 안 됨)
-    assert torch.allclose(out.pcond, torch.zeros_like(out.pcond), atol=1e-15)
+# (test_warm_phase_pcond_zero_when_balanced removed: warm_phase no longer emits pcond — the
+#  B5 saturation adjustment moved to apply_satadj_step_torch. The satadj's zero-when-balanced
+#  behavior is covered directly by test_satadj.py against saturation_adjustment_torch.)
 
 
 # ════ F1d: Melt/Freeze phase chain ════════════════════════════════════════════

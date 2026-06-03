@@ -196,7 +196,9 @@ class WarmPhaseOutputs(NamedTuple):
     nccol: torch.Tensor       # B3 cloud self-collection
     nrcol: torch.Tensor       # B3 rain self-collection + breakup
     prevp: torch.Tensor       # B4 rain evap
-    pcond: torch.Tensor       # B5 saturation adjustment (qv ↔ qc)
+    # NOTE: no pcond. The warm-phase B5 saturation adjustment is NOT emitted here — qv↔qc
+    # condensation is done once, in apply_satadj_step_torch (after state_update +
+    # reclassifications, Fortran F:2922-2943). Mirrors the C++ WarmPhaseOutputs (8 rates).
     rain_complete_evap: torch.Tensor = None  # B4 complete-evap mask → NR→NCCN (Task #74)
 
 
@@ -218,7 +220,7 @@ def warm_phase_torch(
       B2 accretion (qc←rain mass+number)
       B3 self-collection (cloud + rain + break-up)
       B4 rain evap/cond (qr↔qv)
-      B5 saturation adjustment (qv↔qc)
+      (B5 saturation adjustment qv↔qc is DEFERRED to apply_satadj_step_torch, F:2922-2943)
 
     *No state mutation* — caller가 F1e에서 적용.
     """
@@ -256,18 +258,18 @@ def warm_phase_torch(
         return_complete_evap=True,
     )
 
-    # ── B5: Saturation adjustment ──────────────────────────────────────
-    pcond = _satadj.saturation_adjustment_torch(
-        state.t, state.qv, state.qc, pre.qs1, pre.xl, pre.cpm,
-        params=params.satadj, dtcld=dtcld,
-    )
+    # ── B5: Saturation adjustment — DEFERRED (not computed here). qv↔qc condensation is
+    # done once in apply_satadj_step_torch, after state_update + reclassifications
+    # (Fortran F:2922-2943). A duplicate warm-phase satadj used to live here, but its pcond
+    # output was never consumed by the driver (apply_satadj_step recomputes it), so it was
+    # removed to drop dead compute and stay structurally aligned with the C++ WarmPhaseOutputs
+    # (8 rates). The qv-dependence of the warm phase therefore lives only in apply_satadj_step.
 
     return WarmPhaseOutputs(
         praut=praut, nraut=nraut,
         pracw=pracw, nracw=nracw,
         nccol=nccol, nrcol=nrcol,
         prevp=prevp,
-        pcond=pcond,
         rain_complete_evap=rain_complete_evap,
     )
 
