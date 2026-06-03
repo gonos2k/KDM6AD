@@ -401,7 +401,11 @@ CoordinatorState apply_melt_freeze_inline(
     auto dtype = s.qc.dtype();
     auto warm_mask = (pre.supcol <= 0).to(dtype);
     auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);
-    auto xlf = xls - pre.xl;
+    // D1 MELT holds xlf = xlf0 (constant; Fortran F:1275, the whole melt block at T>T0c — for the
+    // rate AND the t-update); D2-D4 FREEZE uses the variable xls-xl(T) (Fortran F:1404). Sharing one
+    // xlf over-cools the melt heat-sink by +0.67%/K above freezing (audit round-6).
+    auto xlf_freeze = xls - pre.xl;
+    const double xlf_melt = melt::DEFAULT_XLF;
     auto out = s;
     out.qc  = s.qc + (-mf.pinuc - mf.pfrzdtc + mf.pimlt_qi);                       // = dqc_amount
     out.qr  = s.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr;    // = dqr D1 + dqr_amount(D4)
@@ -413,8 +417,9 @@ CoordinatorState apply_melt_freeze_inline(
     out.ni  = s.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni);                        // = dni_amount
     out.brs = s.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze);          // = dbrs D1+D4 (clamp in state_update)
     out.t   = s.t
-            + dtcld * xlf / cpm_safe * (mf.psmlt + mf.pgmlt)                       // = dT_freeze_rate D1 part
-            + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr - mf.pimlt_qi); // = dT_freeze_amount
+            + dtcld * xlf_melt / cpm_safe * (mf.psmlt + mf.pgmlt)                  // D1 melt rates → xlf0
+            - xlf_melt / cpm_safe * mf.pimlt_qi                                    // D1 instant ice-melt → xlf0
+            + xlf_freeze / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr);        // D2-D4 freeze → xls-xl(T)
     return out;
 }
 

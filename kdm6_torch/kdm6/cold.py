@@ -701,7 +701,7 @@ def cloud_water_riming_torch(
     piacw_capped = torch.minimum(piacw_raw, qc / dtcld)
     piacw = torch.where(piacw_active, piacw_capped, zero)
 
-    niacw_active = cold_ice & (nc > params.ncmin)
+    niacw_active = cold_ice & (nc > _nc_floor)  # per-cell xland ncmin (see nsacw; round-6 fix of round-5 miss)
     niacw_raw = (
         _pi * params.avti * 0.25 * params.eacic * n0i * n0c / (params.muc + 1.0)
         * params.g3pbi

@@ -951,12 +951,18 @@ def apply_melt_freeze_inline_torch(
     of a working state, using EXACTLY the signed expressions state_update_torch
     used for these terms (so inline-apply ⟺ zeroing the D1-D4 mf fields is an
     algebraic identity). Functional (_replace), no clamps (final clamps stay in
-    state_update_torch). xlf=xls-pre.xl. 1:1 mirror of C++ apply_melt_freeze_inline.
+    state_update_torch). xlf: D1 melt → xlf0 (const), D2-D4 freeze → xls-pre.xl(T). 1:1 mirror of
+    C++ apply_melt_freeze_inline.
     """
     dtype = state.qc.dtype
     warm_mask = (pre.supcol <= 0).to(dtype)
     cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
-    xlf = xls - pre.xl
+    # D1 MELT holds xlf = xlf0 (constant 3.5e5; Fortran F:1275 `if(supcol<0) xlf=xlf0`, and the
+    # whole melt block runs at T>T0c so it always uses xlf0 — for BOTH the rate AND the t-update).
+    # D2-D4 FREEZE uses the variable xls-xl(T) (Fortran F:1404). They must NOT share one xlf: using
+    # xls-xl for the melt heat-sink over-cools by +0.67%/K above freezing (audit round-6).
+    xlf_freeze = xls - pre.xl
+    xlf_melt = _mf.DEFAULT_XLF
     return state._replace(
         qc=state.qc + (-mf.pinuc - mf.pfrzdtc + mf.pimlt_qi),
         qr=state.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr,
@@ -968,8 +974,9 @@ def apply_melt_freeze_inline_torch(
         ni=state.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni),
         brs=state.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze),
         t=state.t
-        + dtcld * xlf / cpm_safe * (mf.psmlt + mf.pgmlt)
-        + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr - mf.pimlt_qi),
+        + dtcld * xlf_melt / cpm_safe * (mf.psmlt + mf.pgmlt)            # D1 melt rates → xlf0
+        - xlf_melt / cpm_safe * mf.pimlt_qi                             # D1 instant ice-melt → xlf0
+        + xlf_freeze / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr),  # D2-D4 freeze → xls-xl(T)
     )
 
 

@@ -981,3 +981,34 @@ def test_reclassify_small_rain_to_cloud_fires_for_small_drops():
                              nc=m(0.0), nr=m(1.0e3), ni=m(0.0), brs=m(0.0), t=m(285.0))
     out_l = reclassify_small_rain_to_cloud_torch(large, den)
     assert torch.allclose(out_l.qr, large.qr), "large-drop reclass should NOT fire"
+
+
+def test_apply_melt_freeze_inline_d1_melt_uses_xlf0():
+    """audit round-6: the D1-MELT latent-heat term must use xlf0 (constant 3.5e5, Fortran F:1275 —
+    the whole melt block at T>T0c holds xlf=xlf0), NOT the variable xls-xl(T) (which over-cools the
+    melt heat-sink by +0.67%/K above freezing). At T=283K (xl=2.476e6 → xls-xl=3.736e5, +6.7% above
+    xlf0), feed a MELT-only rate (psmlt) and assert the inline t-update Δt = dtcld·xlf0/cpm·psmlt,
+    matching xlf0 — NOT xls-xl. (Freeze terms still use xls-xl; they're 0 here.)"""
+    from kdm6.coordinator import (apply_melt_freeze_inline_torch, MeltFreezePhaseOutputs,
+                                  PreambleOutputs, CoordinatorState)
+    from kdm6 import melt_freeze as mfmod
+    m = lambda v: torch.tensor([[v]], dtype=torch.float64)
+    z = m(0.0)
+    cpm_v, xl_v, xls = 1005.0, 2.476e6, 2.85e6          # xl(283K); xls-xl=3.736e5 ≠ xlf0=3.5e5
+    psmlt_v, dtcld = 1.0e-5, 60.0
+    state = CoordinatorState(qv=m(8e-3), qc=z, qr=z, qs=m(1e-3), qg=z, qi=z,
+                             nc=z, nr=z, ni=z, brs=z, t=m(283.0))
+    pre = PreambleOutputs(cpm=m(cpm_v), xl=m(xl_v), supcol=m(-10.0),  # supcol<0 ⇔ T>T0c (melt regime)
+                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                          rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
+                          progb=None, slope=None)
+    mf = MeltFreezePhaseOutputs(psmlt=m(psmlt_v), pgmlt=z, pimlt_qi=z, pimlt_ni=z,
+                                sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
+                                pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z, pfrzdtr=z, nfrzdtr=z,
+                                delta_brs_freeze=z, pseml=z, nseml=z, pgeml=z, ngeml=z)
+    out = apply_melt_freeze_inline_torch(state, mf, pre, dtcld=dtcld, xls=xls)
+    dt_actual = (out.t - state.t).reshape(-1)[0]
+    dt_xlf0 = dtcld * mfmod.DEFAULT_XLF / cpm_v * psmlt_v          # correct (constant xlf0)
+    dt_xlsxl = dtcld * (xls - xl_v) / cpm_v * psmlt_v             # the buggy over-cooling value
+    assert torch.isclose(dt_actual, torch.tensor([[dt_xlf0]], dtype=torch.float64), rtol=1e-9).all(), \
+        f"melt t-update xlf wrong: Δt={dt_actual.item():.6e}; xlf0 expects {dt_xlf0:.6e}, xls-xl(buggy) {dt_xlsxl:.6e}"
