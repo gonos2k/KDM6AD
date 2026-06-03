@@ -1401,17 +1401,21 @@ def reclassify_small_rain_to_cloud_torch(
     pidnr = cmr * g1pdrmr / g1pmr
     avedia_factor = (g4pmr / g1pmr) ** 0.3333333  # Fortran F:2878 rain avedia .3333333 literal. 1:1 fix #4/#11
     rslopermax = 1.0 / c.LAMDARMAX
-    rslopermin = 1.0 / c.LAMDARMIN
 
     eps = 1.0e-30
     rain_active = (state.qr > qcrmin) & (state.nr > 0.0) & (den > 0.0)
     qr_safe = torch.clamp(state.qr * den, min=eps)
     ratio = pidnr * torch.clamp(state.nr, min=0.0) / qr_safe
     lamdar = torch.clamp(ratio, min=eps) ** (1.0 / c.DMR)
-    rslope_r_raw = torch.clamp(1.0 / torch.clamp(lamdar, min=eps),
-                               min=rslopermax, max=rslopermin)
-    rslope_r = torch.where(rain_active, rslope_r_raw,
-                           torch.full_like(rslope_r_raw, rslopermax))
+    # Fortran F:3490 active rain slope = min(1/lamdar, 1e-3): UPPER cap (1e-3 literal) ONLY, NO
+    # lower floor. The earlier `min=rslopermax` floor pinned avedia_r ≥ rslopermax·factor ≈ 82.4μm
+    # > di82=82μm, so the small-drop NR→NC / QR→QC reclass (Fortran F:2879-2892, LH A14/A15) could
+    # NEVER fire — dead code vs Fortran. The inactive branch keeps rslopermax (F:3483), matching the
+    # authoritative slope module (slope.py:161-163 / slope.cpp:44-46). audit round-3.
+    rslope_r_active = torch.minimum(1.0 / torch.clamp(lamdar, min=eps),
+                                    torch.full_like(lamdar, 1.0e-3))
+    rslope_r = torch.where(rain_active, rslope_r_active,
+                           torch.full_like(rslope_r_active, rslopermax))
     avedia_r = rslope_r * avedia_factor
 
     # 소형 drop이 cloud로 회귀: rain_active AND avedia_r ≤ 82μm

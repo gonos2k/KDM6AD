@@ -14,7 +14,10 @@ double rgmma_scalar(double x) {
 }
 
 torch::Tensor xka(const torch::Tensor& t, const torch::Tensor& den) {
-    auto viscos = 1.496e-6 * (t * torch::sqrt(t)) / (t + 120.0) / den;
+    // AD-harden: clamp t≥1K — t·sqrt(t) backward = 0·Inf=NaN at t=0 (4D-Var control th can transiently
+    // hit ≤0); inert at physical T (>1K). Mirrors thermo.cpp's t_safe. (audit round-3)
+    auto t_safe = torch::clamp(t, 1.0);
+    auto viscos = 1.496e-6 * (t_safe * torch::sqrt(t_safe)) / (t_safe + 120.0) / den;
     return 1.414e3 * viscos * den;
 }
 
@@ -132,7 +135,8 @@ ContactFreezingOutputs contact_freezing_torch(
 
     auto ele1 = 7.37 * in.t / (288.0 * 10.0 * in.p) / 100.0;
     const double ele2 = 4.0 * PI * p.boltzmann / (6.0 * PI * p.rcn);
-    auto viscos_t = 1.496e-6 * (in.t * torch::sqrt(in.t)) / (in.t + 120.0) / in.den;
+    auto t_safe = torch::clamp(in.t, 1.0);  // AD-harden: t·sqrt(t) grad = 0·Inf=NaN at t=0 (mirror thermo)
+    auto viscos_t = 1.496e-6 * (t_safe * torch::sqrt(t_safe)) / (t_safe + 120.0) / in.den;
     auto difa = ele2 * in.t * (1.0 + ele1 / p.rcn) / (viscos_t * in.den);
 
     auto pinuc_raw = p.cmc * difa * 2.0 * PI * Nic * in.n0c / den_safe / (p.muc + 1.0)

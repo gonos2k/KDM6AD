@@ -959,3 +959,25 @@ def test_group_limiter_inactive_on_warm_cell():
     # cold-arm ice budget must NOT fire on a warm cell
     assert torch.equal(c2.psaut, cold.psaut), "cold budget leaked onto warm cell"
     assert torch.equal(c2.praci, cold.praci)
+
+
+def test_reclassify_small_rain_to_cloud_fires_for_small_drops():
+    """audit round-3 regression: the small-drop rain→cloud reclassification (Fortran F:2879-2892,
+    LH A14/A15) MUST be able to fire. The earlier port floored the reclass rain slope at rslopermax
+    (=1/LAMDARMAX), pinning avedia_r ≥ ~82.4μm > di82=82μm, so it could NEVER fire — dead code vs
+    Fortran (active rain slope F:3490 = min(1/lamdar,1e-3), no lower floor). Small drops (low qr,
+    high nr → avedia < 82μm) must reclassify qr→qc + nr→nc; large drops must NOT."""
+    from kdm6.coordinator import reclassify_small_rain_to_cloud_torch, CoordinatorState
+    m = lambda v: torch.tensor([[v]], dtype=torch.float64)
+    den = m(1.0)
+    # small drops: qr=1e-6, nr=6.36e5 → avedia ≈ 14μm < di82 → FIRES
+    small = CoordinatorState(qv=m(1e-2), qc=m(0.0), qr=m(1.0e-6), qs=m(0.0), qg=m(0.0), qi=m(0.0),
+                             nc=m(0.0), nr=m(6.36e5), ni=m(0.0), brs=m(0.0), t=m(285.0))
+    out_s = reclassify_small_rain_to_cloud_torch(small, den)
+    assert (out_s.qr < small.qr).all(), "small-drop reclass did not fire (dead-code regression)"
+    assert (out_s.qc > 0).all() and (out_s.nc > 0).all(), "qr/nr did not move to qc/nc"
+    # large drops: qr=5e-3, nr=1e3 → avedia ≫ 82μm → does NOT fire
+    large = CoordinatorState(qv=m(1e-2), qc=m(0.0), qr=m(5.0e-3), qs=m(0.0), qg=m(0.0), qi=m(0.0),
+                             nc=m(0.0), nr=m(1.0e3), ni=m(0.0), brs=m(0.0), t=m(285.0))
+    out_l = reclassify_small_rain_to_cloud_torch(large, den)
+    assert torch.allclose(out_l.qr, large.qr), "large-drop reclass should NOT fire"

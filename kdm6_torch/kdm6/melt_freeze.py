@@ -81,8 +81,13 @@ def _venfac_proxy(p: torch.Tensor, t: torch.Tensor, den: torch.Tensor) -> torch.
     *외부에서 사전 진단된 work2*를 사용하는 것이 정합. 본 함수는 fallback용.
     Caller가 work2를 명시 입력으로 넘기는 것이 권장.
     """
-    diffus = 8.794e-5 * torch.exp(torch.log(t) * 1.81) / p
-    viscos = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
+    # AD-harden: clamp t≥1K before sqrt/log. t=th·pii can transiently hit ≤0 (the 4D-Var control
+    # is th), and torch's product-rule for t·sqrt(t) yields 0·Inf=NaN grad at t=0 (log(0)=-Inf too);
+    # the where-gate downstream zeros the FORWARD but Inf×0=NaN still poisons backward. Inert at all
+    # physical T (>1K). Mirrors thermo.py's t_safe (identical viscos form). (audit round-3)
+    t_safe = torch.clamp(t, min=1.0)
+    diffus = 8.794e-5 * torch.exp(torch.log(t_safe) * 1.81) / p
+    viscos = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) / den
     den0 = c.DEN0
     return (
         torch.exp(torch.log(viscos / diffus) / 3.0) / torch.sqrt(viscos)
@@ -92,7 +97,8 @@ def _venfac_proxy(p: torch.Tensor, t: torch.Tensor, den: torch.Tensor) -> torch.
 
 def _xka(t: torch.Tensor, den: torch.Tensor) -> torch.Tensor:
     """Fortran inline `xka(t, den) = 1.414e3 · viscos(t,den) · den`."""
-    viscos = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
+    t_safe = torch.clamp(t, min=1.0)  # AD-harden (see _venfac_proxy): t·sqrt(t) grad = 0·Inf at t=0
+    viscos = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) / den
     return 1.414e3 * viscos * den
 
 
@@ -266,7 +272,8 @@ def contact_freezing_torch(
     # Aerosol diffusivity
     ele1 = 7.37 * t / (288.0 * 10.0 * p) / 100.0
     ele2 = 4.0 * _pi * params.boltzmann / (6.0 * _pi * params.rcn)
-    viscos_t = 1.496e-6 * (t * torch.sqrt(t)) / (t + 120.0) / den
+    t_safe = torch.clamp(t, min=1.0)  # AD-harden (see _venfac_proxy): t·sqrt(t) grad = 0·Inf at t=0
+    viscos_t = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) / den
     difa = ele2 * t * (1.0 + ele1 / params.rcn) / (viscos_t * den)
 
     pinuc_raw = (

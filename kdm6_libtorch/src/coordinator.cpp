@@ -223,7 +223,7 @@ WarmPhaseOutputs warm_phase(
     const torch::Tensor& qcr,
     const WarmPhaseParams& params,
     double dtcld,
-    const thermo::ThermoParams& thermo_params
+    const thermo::ThermoParams& /*thermo_params*/  // unused since the dead warm-satadj removal (0d931a3)
 ) {
     // rslopec3 = rslopec^3 (derived helper, matches Python pre.rslopec * pre.rslopec * pre.rslopec)
     auto rslopec3 = pre.rslopec * pre.rslopec * pre.rslopec;
@@ -1440,7 +1440,6 @@ CoordinatorState reclassify_small_rain_to_cloud(
     const double pidnr = cmr * g1pdrmr / g1pmr;
     const double avedia_factor = std::pow(g4pmr / g1pmr, 0.3333333);  // Fortran F:2878 rain avedia .3333333 literal. 1:1 fix #4/#11.
     const double rslopermax = 1.0 / constants::LAMDARMAX;
-    const double rslopermin = 1.0 / constants::LAMDARMIN;
 
     constexpr double eps = 1.0e-30;
     auto dtype = state.qc.dtype();
@@ -1449,9 +1448,13 @@ CoordinatorState reclassify_small_rain_to_cloud(
     auto qr_safe = torch::clamp(state.qr * den, /*min=*/eps);
     auto ratio = pidnr * torch::clamp(state.nr, /*min=*/0.0) / qr_safe;
     auto lamdar = torch::pow(torch::clamp(ratio, /*min=*/eps), 1.0 / constants::DMR);
-    auto rslope_r_raw = torch::clamp(
+    // Fortran F:3490 active rain slope = min(1/lamdar, 1e-3): UPPER cap (1e-3 literal) ONLY, NO
+    // lower floor. The earlier min=rslopermax pinned avedia_r ≥ ~82.4μm > di82=82μm so the small-drop
+    // NR→NC / QR→QC reclass (F:2879-2892) could NEVER fire — dead code vs Fortran. Inactive branch
+    // keeps rslopermax (F:3483), matching the authoritative slope module slope.cpp:44-46. audit r3.
+    auto rslope_r_raw = torch::minimum(
         1.0 / torch::clamp(lamdar, /*min=*/eps),
-        /*min=*/rslopermax, /*max=*/rslopermin
+        torch::full_like(lamdar, 1.0e-3)
     );
     auto rslopermax_t = torch::full_like(rslope_r_raw, rslopermax);
     auto rslope_r = torch::where(rain_active, rslope_r_raw, rslopermax_t);

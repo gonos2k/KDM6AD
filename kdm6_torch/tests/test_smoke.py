@@ -240,5 +240,27 @@ def test_kdm6_pure_bg_gradient_through_sedimentation():
     assert ((ad - fd).abs() < 1e-4 * fd.abs()).all(), "bg gradient ≠ central FD (sediment-grad regression)"
 
 
+def test_kdm6_pure_all_zero_state_finite_gradient():
+    """audit round-3 regression (edge-robustness): an all-zero State (th=0 → t=th·pii=0K) gave a
+    FINITE forward but NaN BACKWARD — melt_freeze's contact-freezing viscos_t / xka / _venfac_proxy
+    used a RAW t in t·sqrt(t) (and log(t)), whose autograd is 0·Inf=NaN at t=0 (the where-gate zeroed
+    the forward but Inf×0 still poisoned backward). thermo.py already clamps t_safe=clamp(t,1);
+    melt_freeze now mirrors it (proven inert at physical T>1K). Every state-leaf gradient must be
+    finite even on the degenerate all-zero (t=0) state."""
+    from kdm6.state import State, Forcing
+    from kdm6.runtime import _kdm6_pure, make_parameters
+    B, K = 2, 5
+    leaves = {n: torch.zeros(B, K, dtype=torch.float64, requires_grad=True) for n in State._fields}
+    s = State(**leaves)
+    f = Forcing(rho=torch.full((B, K), 1.0, dtype=torch.float64),
+                pii=torch.full((B, K), 0.97, dtype=torch.float64),
+                p=torch.full((B, K), 9.0e4, dtype=torch.float64),
+                delz=torch.full((B, K), 500.0, dtype=torch.float64))
+    out = _kdm6_pure(s, f, make_parameters(), dt=120.0)
+    (out.qc.sum() + out.th.sum() + out.nc.sum()).backward()
+    for n, leaf in leaves.items():
+        assert leaf.grad is None or torch.isfinite(leaf.grad).all(), f"NaN/Inf grad on leaf {n} at t=0"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

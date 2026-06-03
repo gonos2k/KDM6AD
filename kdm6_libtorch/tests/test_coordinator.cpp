@@ -121,6 +121,30 @@ void test_rain_to_cloud_inactive_when_qr_zero() {
     } END_TEST();
 }
 
+void test_rain_to_cloud_fires_for_small_drops() {
+    TEST(test_rain_to_cloud_fires_for_small_drops) {
+        // audit round-3 regression: the small-drop rain→cloud reclass (Fortran F:2879-2892) MUST be
+        // able to fire. The earlier port floored the reclass rain slope at rslopermax, pinning
+        // avedia_r ≥ ~82.4μm > di82=82μm → it NEVER fired (dead code vs Fortran F:3490
+        // min(1/lamdar,1e-3), no lower floor). Small drops (qr=1e-6, nr=6.36e5 → avedia≈14μm) must
+        // move qr→qc + nr→nc; large drops (avedia≫82μm) must NOT.
+        auto opts = f64();
+        CoordinatorState s = make_zero_state(1, 1);
+        s.qr = torch::full({1, 1}, 1.0e-6, opts);
+        s.nr = torch::full({1, 1}, 6.36e5, opts);
+        auto den = torch::full({1, 1}, 1.0, opts);
+        auto out = reclassify_small_rain_to_cloud(s, den);
+        assert(out.qr.item<double>() < 1.0e-6);   // qr drained
+        assert(out.qc.item<double>() > 0.0);       // → cloud water
+        assert(out.nc.item<double>() > 0.0);       // → cloud number
+        CoordinatorState s2 = make_zero_state(1, 1);
+        s2.qr = torch::full({1, 1}, 5.0e-3, opts);
+        s2.nr = torch::full({1, 1}, 1.0e3, opts);
+        auto out2 = reclassify_small_rain_to_cloud(s2, den);
+        assert(std::abs(out2.qr.item<double>() - 5.0e-3) < 1e-15);  // large drops: NOT reclassified
+    } END_TEST();
+}
+
 // ─── apply_dsd_number_limiters ──────────────────────────────────────────────
 
 void test_dsd_limiter_clamps_oversized_ni_strong() {
@@ -1409,6 +1433,7 @@ int main() {
     test_picons_inactive_when_t_above_zero();
     test_picons_inactive_when_ni_zero();
     test_rain_to_cloud_inactive_when_qr_zero();
+    test_rain_to_cloud_fires_for_small_drops();
     test_dsd_limiter_clamps_oversized_ni_strong();
     test_dsd_limiter_clamps_oversized_nc_structure();
     test_dsd_limiter_passes_through_inactive();
