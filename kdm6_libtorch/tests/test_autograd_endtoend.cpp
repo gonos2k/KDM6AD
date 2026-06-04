@@ -351,11 +351,12 @@ int main() {
         {   // PARITY DUMP — kdm6_fn output state on the fixed IC, for Python _kdm6_pure parity.
             torch::NoGradGuard ng;
             const auto& so = rC.state_out;
-            std::cout.precision(15);
+            // hexfloat = EXACT fp64 bit pattern (decimal, even at 17 sig digits, only round-trips
+            // by theorem — hexfloat is self-evidently exact; parsed in Python via float.fromhex).
             auto pr = [&](const char* nm, const torch::Tensor& t) {
                 auto v = t.detach().reshape({-1});
-                std::cout << "CPPOUT " << nm << " " << v[0].item<double>()
-                          << " " << v[1].item<double>() << "\n";
+                std::cout << "CPPOUT " << nm << " " << std::hexfloat << v[0].item<double>()
+                          << " " << v[1].item<double>() << std::defaultfloat << "\n";
             };
             pr("qv", so.qv); pr("qc", so.qc); pr("qr", so.qr); pr("qi", so.qi);
             pr("qs", so.qs); pr("qg", so.qg); pr("nc", so.nc); pr("ni", so.ni);
@@ -405,10 +406,10 @@ int main() {
         Forcing fr{ m(1.0), m(0.97), m(9.0e4), m(500.0) };
         auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/120.0);
         const auto& so = rr.state_out;
-        std::cout.precision(15);
         auto pr = [&](const char* nm, const torch::Tensor& t){
             auto v = t.detach().reshape({-1});
-            std::cout << "RCEOUT " << nm << " " << v[0].item<double>() << "\n";
+            std::cout << "RCEOUT " << nm << " " << std::hexfloat << v[0].item<double>()
+                      << std::defaultfloat << "\n";  // exact fp64 bit pattern
         };
         std::cout << "\n[RAIN-EVAP] NR->NCCN budget parity dump (dt=120)\n";
         pr("qr", so.qr); pr("nr", so.nr); pr("nccn", so.nccn);
@@ -427,10 +428,10 @@ int main() {
         Forcing fr{ m(1.089), m(0.9704), m(9.0e4), m(500.0) };
         auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/600.0);
         const auto& so = rr.state_out;
-        std::cout.precision(15);
         auto pr = [&](const char* nm, const torch::Tensor& t){
             auto v = t.detach().reshape({-1});
-            std::cout << "NCCNOUT " << nm << " " << v[0].item<double>() << "\n";
+            std::cout << "NCCNOUT " << nm << " " << std::hexfloat << v[0].item<double>()
+                      << std::defaultfloat << "\n";  // exact fp64 bit pattern
         };
         std::cout << "\n[HIGH-NCCN] CCN activation parity dump (dt=600, nccn~1.95e10)\n";
         pr("qv", so.qv); pr("qc", so.qc); pr("nc", so.nc); pr("nccn", so.nccn); pr("th", so.th);
@@ -447,10 +448,10 @@ int main() {
         Forcing fr{ m(0.9567), m(0.9031), m(7.0e4), m(500.0) };
         auto rr = kdm6_fn(sr, fr, make_parameters(0), /*dt=*/120.0);
         const auto& so = rr.state_out;
-        std::cout.precision(15);
         auto pr = [&](const char* nm, const torch::Tensor& t){
             auto v = t.detach().reshape({-1});
-            std::cout << "COLDOUT " << nm << " " << v[0].item<double>() << "\n";
+            std::cout << "COLDOUT " << nm << " " << std::hexfloat << v[0].item<double>()
+                      << std::defaultfloat << "\n";  // exact fp64 bit pattern
         };
         std::cout << "\n[COLD] mixed-phase parity dump (dt=120, ni=1e4)\n";
         pr("qv", so.qv); pr("qc", so.qc); pr("qr", so.qr); pr("qi", so.qi);

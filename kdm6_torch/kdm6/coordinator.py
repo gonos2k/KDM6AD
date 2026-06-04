@@ -831,8 +831,9 @@ def scale_rates_for_conservation_torch(
     AD-safe: torch.where + maximum, no .item(). Returns scaled (warm, cold, mf).
     """
     dtype = state.qc.dtype
-    cold_gate = supcol > 0          # == state_update cold_mask
-    warm_gate = supcol <= 0         # complement (warm arm)
+    cold_gate = supcol >= 0         # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0; == state_update cold_mask
+    warm_gate = supcol < 0          # complement (warm arm, Fortran t>t0c). Boundary supcol==0 is a
+                                    # no-op (all cold rates strict-gated supcol>0 ⇒ 0 there); literal-fidelity only
     delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype)
     delta3 = (state.qr < 1.0e-4).to(dtype)
     one_m_d2 = 1.0 - delta2
@@ -970,7 +971,8 @@ def apply_melt_freeze_inline_torch(
         qg=state.qg + dtcld * mf.pgmlt + mf.pfrzdtr,
         qi=state.qi + (mf.pinuc + mf.pfrzdtc - mf.pimlt_qi),
         nc=state.nc + (-mf.ninuc - mf.nfrzdtc + mf.pimlt_ni),
-        nr=state.nr + (-mf.nfrzdtr),
+        nr=state.nr + (-mf.nfrzdtr)
+        + dtcld * (-mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt),  # D1 melt snow/graupel → rain number (Fortran 1299/1323)
         ni=state.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni),
         brs=state.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze),
         t=state.t
@@ -1017,11 +1019,12 @@ def state_update_torch(
            + dtcld·xlf/cpm·(pinud + pidep + psdep + pgdep + pinuc + pfrzdtc + pfrzdtr
                              - psmlt - pgmlt - pimlt_qi - pseml - pgeml)
 
-    Note: Fortran의 모든 mutation을 정확히 직역. T-branch routing은 *cold*=`supcol > 0`,
-    *warm*=`supcol < 0` mask로 처리.
+    Note: Fortran의 모든 mutation을 정확히 직역. T-branch routing은 *cold*=`supcol >= 0`
+    (Fortran F:2456 `t.le.t0c`), *warm*=`supcol < 0` mask로 처리. 경계 supcol==0은
+    no-op (cold rate가 모두 strict-gate supcol>0 ⇒ 0) — 리터럴 충실도용.
     """
-    cold_mask = (pre.supcol > 0).to(state.qc.dtype)
-    warm_mask = 1.0 - cold_mask  # cold or warm
+    cold_mask = (pre.supcol >= 0).to(state.qc.dtype)  # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
+    warm_mask = 1.0 - cold_mask  # = supcol<0 (Fortran t>t0c)
 
     # ── Unit policy (review5#1) ──────────────────────────────────────
     # warm/cold module 출력은 *rates* (per second) — F1e에서 dtcld 곱.
@@ -1156,6 +1159,7 @@ def state_update_torch(
         - cold.nsacr - cold.ngacr                 # 2625 rain ←snow/graupel
         + mf.nseml + mf.ngeml                     # 2749-2750 warm enhanced-melt number → rain
                                                   # (warm-gated in melt_freeze ⇒ no-op when cold; mirrors C++)
+        - mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt  # D1 melt snow/graupel → rain number (Fortran 1299/1323; D1-zeroed in mf5 at runtime, preserves inline↔state_update identity)
     )
     dnr_amount = -mf.nfrzdtr                      # 1556 Bigg rain (amount)
     dnr = dnr_rate + dnr_amount

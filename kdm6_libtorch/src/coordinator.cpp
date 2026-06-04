@@ -413,7 +413,8 @@ CoordinatorState apply_melt_freeze_inline(
     out.qg  = s.qg + dtcld * mf.pgmlt + mf.pfrzdtr;                               // = dqg D1 + dqg_amount(D4)
     out.qi  = s.qi + (mf.pinuc + mf.pfrzdtc - mf.pimlt_qi);                        // = dqi_amount
     out.nc  = s.nc + (-mf.ninuc - mf.nfrzdtc + mf.pimlt_ni);                       // = dnc_amount
-    out.nr  = s.nr + (-mf.nfrzdtr);                                               // = dnr_amount(D4)
+    out.nr  = s.nr + (-mf.nfrzdtr)                                                // = dnr_amount(D4)
+            + dtcld * (-mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt);        // D1 melt snow/graupel → rain number (Fortran 1299/1323)
     out.ni  = s.ni + (mf.ninuc + mf.nfrzdtc - mf.pimlt_ni);                        // = dni_amount
     out.brs = s.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze);          // = dbrs D1+D4 (clamp in state_update)
     out.t   = s.t
@@ -850,8 +851,8 @@ ConservedRates scale_rates_for_conservation(
     const c10::optional<torch::Tensor>& ncmin_tensor
 ) {
     auto dtype = state.qc.dtype();
-    auto cold_gate = (supcol > 0);                  // == state_update cold_mask
-    auto warm_gate = (supcol <= 0);                 // complement (warm arm)
+    auto cold_gate = (supcol >= 0);                 // Fortran F:2456 `t.le.t0c` ⇔ supcol>=0; == state_update cold_mask
+    auto warm_gate = (supcol < 0);                  // complement (warm arm, Fortran t>t0c); supcol==0 is a no-op (cold rates strict-gated)
 
     // delta2/delta3 from PRE-update reservoirs (Fortran :2452-2455; identical to
     // state_update :711-712 — duplicated, pure function of pre-state).
@@ -1002,8 +1003,8 @@ CoordinatorState state_update(
     const CoordinatorState* delta_src
 ) {
     auto dtype = state.qc.dtype();
-    auto cold_mask = (pre.supcol > 0).to(dtype);
-    auto warm_mask = 1.0 - cold_mask;
+    auto cold_mask = (pre.supcol >= 0).to(dtype);  // Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
+    auto warm_mask = 1.0 - cold_mask;              // = supcol<0 (Fortran t>t0c)
     // Stage-A STEP 1: delta2/delta3 are computed from the ENTRY state when the
     // base `state` is a post-melt/freeze working state (delta_src!=null). This
     // preserves the identity (melt/freeze must not flip the qr/qs<1e-4 routing
@@ -1130,6 +1131,9 @@ CoordinatorState state_update(
         // Fortran module_mp_kdm6.F:2749-2750 — enhanced-melt number sources to rain.
         // Previously omitted in C++; Codex review caught the gap.
         + mf.nseml + mf.ngeml
+        // Fortran module_mp_kdm6.F:1299/1323 — D1 melt of snow/graupel → rain number.
+        // (D1-zeroed in mf5 at runtime, preserves inline↔state_update identity; Codex review.)
+        - mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt
     );
     auto dnr_amount = -mf.nfrzdtr;
     auto rain_complete_evap_amount = state.nr * warm.rain_complete_evap.to(dtype);

@@ -7,7 +7,21 @@ both `pytest -q` and `ctest` silently (adversarial-audit finding, dim=test-effic
 
 This test closes that hole: it runs the real C++ test binary as a subprocess (OMP-isolated),
 parses its live dumps, runs the Python oracle `_kdm6_pure` on the SAME initial conditions, and
-asserts machine-precision agreement. No stale golden file — the C++ side is the live binary.
+asserts agreement. No stale golden file — the C++ side is the live binary.
+
+PRECISION HONESTY (do not call this "machine precision"): the C++ dumps print via std::hexfloat
+(EXACT fp64 bit pattern, parsed with float.fromhex — zero text truncation; decimal even at 17
+sig digits only round-trips by theorem, hexfloat is self-evidently exact). A per-field ULP audit
+on the bit-exact values shows: RCEOUT/NCCNOUT bit-IDENTICAL (0 ULP), COLDOUT 2 ULP — i.e. the
+single-substep (dt≤120) cases are bit-identical or ~2 ULP — while ONLY the 3-sub-cycle CPPOUT
+(dt=300, 2 levels with sediment transport + melt) accumulates up to 236 ULP on the smallest-
+magnitude fields (qs≈3e-5; absΔ≈1.6e-18, relΔ≈5e-14 ≈ 13.3 sig digits). 26/43 fields bit-
+identical, median 0 ULP. That CPPOUT residual is the irreducible signature of fp NON-
+ASSOCIATIVITY: torch and libtorch evaluate the same algebra in different operation orders over
+the sub-cycling, and ULP scales with path length (0 for 1 substep → 236 for 3) — NOT an
+algorithmic divergence. A relative figure on a small-magnitude field overstates disagreement;
+ULP is the honest metric. The assertion below is a REGRESSION BOUND (catches the orders-of-
+magnitude jump a real one-sided bug would cause), not a machine-precision claim.
 
 The ICs below MUST stay in lockstep with the dump blocks in
 kdm6_libtorch/tests/test_autograd_endtoend.cpp (CPPOUT=g_base dt=300, RCEOUT dt=120,
@@ -19,13 +33,28 @@ legitimately diverge by O(1); see lessons / wiki). Do NOT randomize the ICs here
 """
 from __future__ import annotations
 
+import math
 import os
 import shutil
+import struct
 import subprocess
 from pathlib import Path
 
 import pytest
 import torch
+
+
+def _ulp_distance(a: float, b: float) -> float:
+    """Number of representable fp64 values between a and b (the magnitude-independent
+    machine-precision metric). 0 = bit-identical. inf if either is NaN/Inf and they differ."""
+    if a == b:
+        return 0
+    if math.isnan(a) or math.isnan(b) or math.isinf(a) or math.isinf(b):
+        return float("inf")
+    def _mono(x: float) -> int:
+        i = struct.unpack("<q", struct.pack("<d", x))[0]
+        return i if i >= 0 else (0x8000000000000000 - i)
+    return abs(_mono(a) - _mono(b))
 
 _REPO = Path(__file__).resolve().parents[2]
 _BIN = _REPO / "kdm6_libtorch" / "build_miniforge" / "test_autograd_endtoend"
@@ -64,7 +93,11 @@ _CASES = {
 
 
 def _run_cpp_dumps() -> dict:
-    """Run the C++ end-to-end binary, return {TAG: {field: [v0(,v1)]}}."""
+    """Run the C++ end-to-end binary, return {TAG: {field: [v0(,v1)]}}.
+
+    The C++ dumps print via std::hexfloat (exact fp64 bit pattern), parsed here with
+    float.fromhex — so the value compared is BIT-EXACTLY the C++ double, with zero text
+    truncation (decimal at 17 sig digits only round-trips by theorem; hexfloat is exact)."""
     env = {**os.environ, "OMP_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1"}
     proc = subprocess.run([str(_BIN)], capture_output=True, text=True, env=env, timeout=300)
     dumps: dict = {}
@@ -72,7 +105,7 @@ def _run_cpp_dumps() -> dict:
         parts = line.split()
         if len(parts) >= 3 and parts[0] in _CASES:
             tag, field = parts[0], parts[1]
-            dumps.setdefault(tag, {})[field] = [float(x) for x in parts[2:]]
+            dumps.setdefault(tag, {})[field] = [float.fromhex(x) for x in parts[2:]]
     return dumps
 
 
@@ -90,11 +123,14 @@ def _py_step(state: dict, forcing: dict, dt: float):
 
 @pytest.mark.skipif(not _BIN.exists(), reason="C++ test_autograd_endtoend not built")
 def test_cpp_python_forward_parity():
-    """Every dumped field of every IC must match _kdm6_pure to fp64 machine precision."""
+    """C++ kdm6_fn ↔ Python _kdm6_pure agree to ~13+ significant digits across every dumped
+    field of every IC. Reports BOTH worst relΔ and worst ULP (see module docstring: this is a
+    non-associativity-bounded regression guard, NOT a bit-identity / machine-precision claim)."""
     dumps = _run_cpp_dumps()
     assert dumps, "no parity dumps parsed from the C++ binary output"
-    worst = 0.0
-    worst_where = ""
+    worst_rel, worst_rel_where = 0.0, ""
+    worst_ulp, worst_ulp_where = 0, ""
+    bit_identical = total = 0
     with torch.no_grad():  # value comparison only — keep .item() off any live graph
         for tag, (state, forcing, dt, ncols) in _CASES.items():
             assert tag in dumps, f"C++ binary did not emit {tag}"
@@ -104,10 +140,21 @@ def test_cpp_python_forward_parity():
                 for i in range(ncols):
                     c = cpp_vals[i]
                     p = py[i].item()
+                    total += 1
+                    u = _ulp_distance(p, c)
+                    if u == 0:
+                        bit_identical += 1
+                    if u > worst_ulp:
+                        worst_ulp, worst_ulp_where = u, f"{tag}.{field}[{i}]"
                     rel = abs(p - c) / (abs(c) if abs(c) > 0 else 1.0)
-                    if rel > worst:
-                        worst, worst_where = rel, f"{tag}.{field}[{i}] py={p:.15g} cpp={c:.15g}"
-    assert worst < 1e-10, f"C++↔Python parity broke: worst relΔ={worst:.3e} at {worst_where}"
+                    if rel > worst_rel:
+                        worst_rel, worst_rel_where = rel, f"{tag}.{field}[{i}] py={p:.17g} cpp={c:.17g}"
+    # Regression bound: a real one-sided bug jumps relΔ by orders of magnitude (>=~1e-6);
+    # benign fp non-associativity over the 3-substep CPPOUT path sits at ~5e-14 / ~236 ULP.
+    msg = (f"C++↔Python parity: worst relΔ={worst_rel:.3e} ({worst_rel_where}); "
+           f"worst ULP={worst_ulp} ({worst_ulp_where}); bit-identical {bit_identical}/{total}")
+    assert worst_rel < 1e-10, f"parity regressed — {msg}"
+    assert worst_ulp < 4096, f"parity ULP regressed (non-associativity bound) — {msg}"
 
 
 if __name__ == "__main__":

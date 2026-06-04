@@ -1012,3 +1012,37 @@ def test_apply_melt_freeze_inline_d1_melt_uses_xlf0():
     dt_xlsxl = dtcld * (xls - xl_v) / cpm_v * psmlt_v             # the buggy over-cooling value
     assert torch.isclose(dt_actual, torch.tensor([[dt_xlf0]], dtype=torch.float64), rtol=1e-9).all(), \
         f"melt t-update xlf wrong: Δt={dt_actual.item():.6e}; xlf0 expects {dt_xlf0:.6e}, xls-xl(buggy) {dt_xlsxl:.6e}"
+
+
+def test_apply_melt_freeze_inline_d1_melt_adds_rain_number():
+    """Codex review (Critical #1): the D1 melt block must add a RAIN-NUMBER source —
+    Fortran F:1299 `nrs(:,:,1) -= sfac*psmlt` and F:1323 `nrs(:,:,1) -= gfac*pgmlt`
+    (psmlt,pgmlt ≤ 0 ⇒ melting snow/graupel ADDS rain drops). Both trees computed
+    sfac_melt/gfac_melt but never applied them to nr (only D4 -nfrzdtr / D5 nseml,ngeml
+    were applied). Feed a melt-only rate with nonzero sfac/gfac and assert
+    Δnr = dtcld·(-sfac·psmlt - gfac·pgmlt) > 0."""
+    from kdm6.coordinator import (apply_melt_freeze_inline_torch, MeltFreezePhaseOutputs,
+                                  PreambleOutputs, CoordinatorState)
+    m = lambda v: torch.tensor([[v]], dtype=torch.float64)
+    z = m(0.0)
+    dtcld = 60.0
+    psmlt_v, pgmlt_v = -1.0e-5, -5.0e-6      # melt rates (≤ 0)
+    sfac_v, gfac_v = 2.0e8, 1.0e8            # number-side factors (≥ 0)
+    nr0 = 1.0e3
+    state = CoordinatorState(qv=m(8e-3), qc=z, qr=m(2e-4), qs=m(1e-3), qg=m(5e-4), qi=z,
+                             nc=z, nr=m(nr0), ni=z, brs=z, t=m(283.0))
+    pre = PreambleOutputs(cpm=m(1005.0), xl=m(2.476e6), supcol=m(-10.0),  # T>T0c (melt regime)
+                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                          rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
+                          progb=None, slope=None)
+    mf = MeltFreezePhaseOutputs(psmlt=m(psmlt_v), pgmlt=m(pgmlt_v), pimlt_qi=z, pimlt_ni=z,
+                                sfac_melt=m(sfac_v), gfac_melt=m(gfac_v), delta_brs_melt=z,
+                                pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z, pfrzdtr=z, nfrzdtr=z,
+                                delta_brs_freeze=z, pseml=z, nseml=z, pgeml=z, ngeml=z)
+    out = apply_melt_freeze_inline_torch(state, mf, pre, dtcld=dtcld, xls=2.85e6)
+    dnr_actual = (out.nr - state.nr).reshape(-1)[0]
+    dnr_expect = dtcld * (-sfac_v * psmlt_v - gfac_v * pgmlt_v)   # = 60*(2e3+5e2)=1.5e5
+    assert dnr_expect > 0.0
+    assert torch.isclose(dnr_actual, torch.tensor(dnr_expect, dtype=torch.float64), rtol=1e-9), \
+        f"D1 melt rain-number source wrong: Δnr={dnr_actual.item():.6e}, expected {dnr_expect:.6e} " \
+        f"(=0 means the F:1299/1323 sfac*psmlt+gfac*pgmlt source is still missing)"
