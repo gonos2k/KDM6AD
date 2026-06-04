@@ -1113,3 +1113,48 @@ def test_state_update_d1_melt_t_uses_xlf0():
     assert torch.isclose(dt_actual, torch.tensor(dt_xlf0, dtype=torch.float64), rtol=1e-9), \
         f"state_update D1-melt t used wrong xlf: Δt={dt_actual.item():.6e}; xlf0 expects " \
         f"{dt_xlf0:.6e}, xls-xl(buggy) {dt_xlsxl:.6e}"
+
+
+def test_inline_melt_qr_strict_warm_at_t0c():
+    """Codex round-3 Finding 1: apply_melt_freeze_inline's D1-melt qr term uses warm_mask=supcol<0
+    (Fortran F:1279 melt gate `t.gt.t0c`, STRICT), matching state_update (warm_mask=1-cold_mask,
+    cold=supcol>=0) — NOT supcol<=0. The earlier supcol<=0 made inline↔state_update diverge at
+    exactly T==T0c for a caller feeding nonzero mf there. Feed psmlt directly and assert the
+    melt→rain term is 0 at supcol==0 (strict) but fires for supcol<0."""
+    from kdm6.coordinator import (apply_melt_freeze_inline_torch, MeltFreezePhaseOutputs,
+                                  PreambleOutputs, CoordinatorState)
+    m = lambda v: torch.tensor([[v]], dtype=torch.float64)
+    z = m(0.0)
+    psmlt_v, dtcld = -1.0e-5, 60.0          # negative rate = melt
+    state = CoordinatorState(qv=m(8e-3), qc=z, qr=m(2e-4), qs=m(1e-3), qg=z, qi=z,
+                             nc=z, nr=z, ni=z, brs=z, t=m(273.16))
+    mf = MeltFreezePhaseOutputs(psmlt=m(psmlt_v), pgmlt=z, pimlt_qi=z, pimlt_ni=z,
+                                sfac_melt=z, gfac_melt=z, delta_brs_melt=z,
+                                pinuc=z, ninuc=z, pfrzdtc=z, nfrzdtc=z, pfrzdtr=z, nfrzdtr=z,
+                                delta_brs_freeze=z, pseml=z, nseml=z, pgeml=z, ngeml=z)
+
+    def melt_qr(supcol):
+        pre = PreambleOutputs(cpm=m(1005.0), xl=m(2.476e6), supcol=m(supcol),
+                              qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                              rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
+                              progb=None, slope=None)
+        out = apply_melt_freeze_inline_torch(state, mf, pre, dtcld=dtcld, xls=2.85e6)
+        return (out.qr - state.qr).reshape(-1)[0]
+    # supcol==0 (T==T0c): warm_mask=supcol<0=0 → NO melt-to-rain (strict; matches Fortran + state_update)
+    assert abs(melt_qr(0.0).item()) < 1e-18, \
+        f"inline melt→rain at supcol==0 must be 0 (strict warm); got {melt_qr(0.0).item():.3e}"
+    # supcol<0 (warm): melt fires, qr += dtcld·|psmlt|
+    assert torch.isclose(melt_qr(-10.0), torch.tensor(-dtcld * psmlt_v, dtype=torch.float64), rtol=1e-9)
+
+
+def test_mstep_rounds_half_up_not_bankers():
+    """Codex round-3 Finding 3: per-column mstep = NINT(vmax·dtcld + 0.5) (Fortran F:1107,
+    round-half-UP) = floor(vmax·dtcld + 1.0) for vmax≥0 — NOT torch.round (banker's half-to-even),
+    which selects the wrong substep count at exact CFL ties vmax·dtcld∈ℤ. Guards the runtime.py /
+    runtime.cpp mstep formula against reverting to torch.round."""
+    f = lambda x: int(torch.floor(torch.tensor(x, dtype=torch.float64) + 1.0))   # the port formula
+    # NINT(x+0.5) round-half-up reference: NINT(0.5)=1, NINT(1.0)=1, NINT(1.5)=2, NINT(2.5)=3, NINT(3.5)=4
+    assert (f(0.0), f(0.5), f(1.0), f(1.5), f(2.0), f(2.5), f(3.0)) == (1, 1, 2, 2, 3, 3, 4)
+    # the ties where banker's torch.round(x+0.5) would diverge (give 0 and 2):
+    assert f(0.0) == 1 and int(torch.round(torch.tensor(0.5, dtype=torch.float64))) == 0
+    assert f(2.0) == 3 and int(torch.round(torch.tensor(2.5, dtype=torch.float64))) == 2

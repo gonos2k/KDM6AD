@@ -331,14 +331,16 @@ FnResult kdm6_fn(const State& state,
             // Per-column max fall speed over K (Fortran nested k-loop takes the column max).
             auto vmax_main_col = torch::maximum(torch::maximum(w1_qr, wn_qr),
                                                 torch::maximum(w1_qs, w1_qg)).amax(/*dim=*/-1);
+            // NINT(x+0.5) for x>=0 = floor(x+1.0) (round-half-UP), NOT torch::round (banker's
+            // half-to-even) which picks the wrong substep count at exact CFL ties (Codex round-3 #3).
             mstep_col_main = torch::clamp(
-                torch::round(vmax_main_col * dtcld + 0.5).to(torch::kLong),
+                torch::floor(vmax_main_col * dtcld + 1.0).to(torch::kLong),
                 /*min=*/1, /*max=*/100).to(w1_qr.dtype());
             mstepmax_main = static_cast<int>(mstep_col_main.max().item<double>());
 
             auto vmax_ice_col = torch::maximum(w1_qi, wn_qi).amax(/*dim=*/-1);
             mstep_col_ice = torch::clamp(
-                torch::round(vmax_ice_col * dtcld + 0.5).to(torch::kLong),
+                torch::floor(vmax_ice_col * dtcld + 1.0).to(torch::kLong),
                 /*min=*/1, /*max=*/100).to(w1_qi.dtype());
             mstepmax_ice = static_cast<int>(mstep_col_ice.max().item<double>());
         }

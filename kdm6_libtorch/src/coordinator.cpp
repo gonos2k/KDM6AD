@@ -399,7 +399,9 @@ CoordinatorState apply_melt_freeze_inline(
     const PreambleCore& pre, double dtcld, double xls
 ) {
     auto dtype = s.qc.dtype();
-    auto warm_mask = (pre.supcol <= 0).to(dtype);
+    auto warm_mask = (pre.supcol < 0).to(dtype);  // Fortran F:1279 melt gate `t.gt.t0c` ⇔ supcol<0 (strict);
+                                                   // matches state_update warm_mask; Codex round-3 Finding 1
+                                                   // (must be <0 not <=0 to keep inline↔state_update identical at supcol==0).
     auto cpm_safe = torch::clamp(pre.cpm, /*min=*/constants::QCRMIN);
     // D1 MELT holds xlf = xlf0 (constant; Fortran F:1275, the whole melt block at T>T0c — for the
     // rate AND the t-update); D2-D4 FREEZE uses the variable xls-xl(T) (Fortran F:1404). Sharing one

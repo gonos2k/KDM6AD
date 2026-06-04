@@ -956,7 +956,10 @@ def apply_melt_freeze_inline_torch(
     C++ apply_melt_freeze_inline.
     """
     dtype = state.qc.dtype
-    warm_mask = (pre.supcol <= 0).to(dtype)
+    warm_mask = (pre.supcol < 0).to(dtype)  # Fortran F:1279 melt gate `t.gt.t0c` ⇔ supcol<0 (strict);
+                                             # matches state_update warm_mask (1-cold_mask, cold=supcol>=0).
+                                             # Codex round-3 Finding 1: must be <0 (not <=0) to keep
+                                             # inline↔state_update algebraically identical at supcol==0.
     cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
     # D1 MELT holds xlf = xlf0 (constant 3.5e5; Fortran F:1275 `if(supcol<0) xlf=xlf0`, and the
     # whole melt block runs at T>T0c so it always uses xlf0 — for BOTH the rate AND the t-update).

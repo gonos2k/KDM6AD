@@ -374,16 +374,18 @@ def _kdm6_pure(
         w1_qi = pre_sed.slope.vt_i / delz_safe
         wn_qi = pre_sed.slope.vtn_i / delz_safe
         # PER-COLUMN mstep (Fortran :1107-1117 per-column nint; 1:1 fix #10): mstep_col(i) =
-        # clamp(round(vmax(i)·dtcld+0.5),1,100) as a (B,) tensor; the loop bound mstepmax =
+        # clamp(nint(vmax(i)·dtcld+0.5),1,100) as a (B,) tensor; the loop bound mstepmax =
         # max over columns. Integer work under no_grad (gate/divisor only). Passing the (B,)
         # tensors closes the multi-column scalar-mstep divergence (== scalar at single-col/mstep=1).
+        # NINT(x+0.5) for x>=0 = floor(x+1.0) (round-half-UP) — NOT torch.round (banker's half-to-even),
+        # which selects the wrong substep count at exact CFL ties vmax·dtcld∈ℤ (Codex round-3 Finding 3).
         with torch.no_grad():
             vmax_main_col = torch.maximum(torch.maximum(w1_qr, wn_qr),
                                           torch.maximum(w1_qs, w1_qg)).amax(dim=-1)
-            mstep_col_main = torch.clamp(torch.round(vmax_main_col * dtcld + 0.5), 1, 100)  # (B,)
+            mstep_col_main = torch.clamp(torch.floor(vmax_main_col * dtcld + 1.0), 1, 100)  # (B,)
             mstep_main = int(mstep_col_main.max().item())                                   # mstepmax (loop bound)
             vmax_ice_col = torch.maximum(w1_qi, wn_qi).amax(dim=-1)
-            mstep_col_ice = torch.clamp(torch.round(vmax_ice_col * dtcld + 0.5), 1, 100)
+            mstep_col_ice = torch.clamp(torch.floor(vmax_ice_col * dtcld + 1.0), 1, 100)
             mstep_ice = int(mstep_col_ice.max().item())
         sed = _coord.sedimentation_chain_torch(
             cur_flip, cf_flip, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
