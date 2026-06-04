@@ -1158,3 +1158,42 @@ def test_mstep_rounds_half_up_not_bankers():
     # the ties where banker's torch.round(x+0.5) would diverge (give 0 and 2):
     assert f(0.0) == 1 and int(torch.round(torch.tensor(0.5, dtype=torch.float64))) == 0
     assert f(2.0) == 3 and int(torch.round(torch.tensor(2.5, dtype=torch.float64))) == 2
+
+
+def test_inline_equals_state_update_for_d1_d4_terms():
+    """DURABLE GUARD for the recurring inline↔state_update divergence class — THREE bugs this
+    campaign were exactly this (round-6 & round-2: D1-melt xlf0 split in inline but not
+    state_update; round-3 Finding 1: inline warm_mask <=0 vs state_update <0). The docstring of
+    apply_melt_freeze_inline promises it uses 'EXACTLY the signed expressions state_update used'
+    for the D1-D4 mf terms. Assert that directly: with warm=cold=0 and D5=0, applying a full
+    D1-D4 mf via apply_melt_freeze_inline must equal applying it via state_update (no clamp
+    triggers on a large-positive state). Any sign/latent-heat/unit/mask mismatch trips this."""
+    from kdm6.coordinator import apply_melt_freeze_inline_torch, state_update_torch
+    base_state, base_pre, warm, cold, base_mf = _state_update_inputs(t_value=278.16)  # supcol≈-5 (warm)
+    m = lambda v: torch.full_like(base_state.qc, v)
+    z = torch.zeros_like(base_state.qc)
+    xls, dtcld = 2.85e6, 60.0
+    # large positive state so state_update's nonneg clamps never trigger (→ pure additive identity)
+    state = base_state._replace(qv=m(1e-2), qc=m(1e-2), qr=m(1e-2), qs=m(1e-2), qg=m(1e-2),
+                                qi=m(1e-2), nc=m(1e8), nr=m(1e5), ni=m(1e6), brs=m(1e-3))
+    # full D1-D4 mf (D5 zeroed): melt (psmlt/pgmlt/pimlt + sfac/gfac/brs) + freeze (pinuc/pfrzdtc/pfrzdtr + nums)
+    mf = base_mf._replace(
+        psmlt=m(-1.0e-6), pgmlt=m(-5.0e-7), pimlt_qi=m(2.0e-6), pimlt_ni=m(3.0e2),
+        sfac_melt=m(1.0e8), gfac_melt=m(5.0e7), delta_brs_melt=m(-1.0e-9),
+        pinuc=m(1.0e-6), ninuc=m(1.0e3), pfrzdtc=m(1.0e-6), nfrzdtc=m(1.0e3),
+        pfrzdtr=m(1.0e-7), nfrzdtr=m(1.0e2), delta_brs_freeze=m(1.0e-10),
+        pseml=z, nseml=z, pgeml=z, ngeml=z)  # D5 = 0
+    warm0 = type(warm)(*[z for _ in warm._fields])
+    cold0 = type(cold)(*[z for _ in cold._fields])
+
+    # supcol=-5 (melt regime, warm_mask=1) catches xlf0/sign/unit mismatches; supcol=0 (boundary)
+    # catches the warm_mask <=0-vs-<0 class. Known cpm/xl so xls-xl≠xlf0; keep base progb (rhox).
+    for supcol in (-5.0, 0.0):
+        pre = base_pre._replace(cpm=m(1005.0), xl=m(2.476e6), supcol=m(supcol))
+        out_inline = apply_melt_freeze_inline_torch(state, mf, pre, dtcld=dtcld, xls=xls)
+        out_su = state_update_torch(state, pre, warm0, cold0, mf, dtcld=dtcld, xls=xls)
+        for fld in ("qc", "qr", "qs", "qg", "qi", "nc", "nr", "ni", "brs", "t"):
+            a, b = getattr(out_inline, fld), getattr(out_su, fld)
+            assert torch.allclose(a, b, rtol=1e-12, atol=1e-15), \
+                f"inline↔state_update D1-D4 mismatch on {fld} @supcol={supcol}: " \
+                f"inline={a.item():.12e} state_update={b.item():.12e}"
