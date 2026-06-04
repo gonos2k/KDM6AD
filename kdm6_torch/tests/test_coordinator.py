@@ -1197,3 +1197,30 @@ def test_inline_equals_state_update_for_d1_d4_terms():
             assert torch.allclose(a, b, rtol=1e-12, atol=1e-15), \
                 f"inline↔state_update D1-D4 mismatch on {fld} @supcol={supcol}: " \
                 f"inline={a.item():.12e} state_update={b.item():.12e}"
+
+
+def test_aux_rain_slope_inactive_gate_low_nr():
+    """Codex round-4 F3: build_default_aux gates rslope_r to 1/LAMDARMAX for nr<=nrmin (qr>qcrmin),
+    Fortran F:3482-3483 — so n0r (and prevp/rain collection) use the right rain intercept. Verify
+    n0r at a low-nr cell equals the inactive-branch formula nr/((1/LAMDARMAX)·(1/LAMDARMAX)^MUR·g1pmr)
+    and differs from the active cell's intercept. Rain only (ice has no n-threshold)."""
+    import math as _math
+    from kdm6.coordinator import (build_default_aux_torch, CoordinatorState, CoordinatorForcing,
+                                  default_coordinator_params)
+    m = lambda v: torch.full((1, 2), v, dtype=torch.float64)
+    state = CoordinatorState(
+        qv=m(8e-3), qc=m(1e-3),
+        qr=torch.tensor([[1.0e-3, 1.0e-3]], dtype=torch.float64),     # qr>qcrmin both
+        qs=m(0.0), qg=m(0.0), qi=m(0.0), nc=m(1e8),
+        nr=torch.tensor([[1.0e4, 0.5 * c.NRMIN]], dtype=torch.float64),  # active, inactive(<=nrmin)
+        ni=m(0.0), brs=m(0.0), t=m(290.0))
+    forcing = CoordinatorForcing(p=m(9e4), den=m(1.0), delz=m(500.0), dend=m(500.0))
+    aux = build_default_aux_torch(state, forcing, m(2.0e-6),
+                                  thermo_params=default_coordinator_params().thermo)
+    g1pmr = _math.exp(_math.lgamma(1.0 + c.MUR))
+    rslope_r_exp = 1.0 / c.LAMDARMAX
+    n0r_exp = (0.5 * c.NRMIN) / (rslope_r_exp * (rslope_r_exp ** c.MUR) * g1pmr)
+    assert torch.isclose(aux.n0r[0, 1], torch.tensor(n0r_exp, dtype=torch.float64), rtol=1e-9), \
+        f"aux n0r at nr<=nrmin must use rslope_r=1/LAMDARMAX; got {aux.n0r[0,1].item():.6e} exp {n0r_exp:.6e}"
+    # active cell (nr>>nrmin) is NOT forced to the inactive intercept
+    assert not torch.isclose(aux.n0r[0, 0], aux.n0r[0, 1])

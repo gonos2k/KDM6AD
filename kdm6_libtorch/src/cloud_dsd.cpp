@@ -71,7 +71,8 @@ torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& qc,
     const torch::Tensor& nc,
     const torch::Tensor& den,
-    const CloudDsdParams& p
+    const CloudDsdParams& p,
+    const c10::optional<torch::Tensor>& ncmin_tensor
 ) {
     // 1:1 item #6: Fortran F:1061 cloud rslopec=1./lamdac is UNCLAMPED, but that relies
     // on Fortran's BRANCHY structure (if qc>qcrmin then …) so degenerate qc≈0 cells never
@@ -80,7 +81,16 @@ torch::Tensor diag_cloud_slope_torch(
     // (confirmed: WRF em_quarter_ss NaN at itimestep 66). Keeping the [1/lamdacmax,1/lamdacmin]
     // clamp is the structural guard that reproduces Fortran's branch-skipped behavior. So this
     // clamp is a DELIBERATE, structurally-required deviation — see parity tracker #6.
-    return diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
+    auto rslopec_active = diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
+    // Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) → rslopec=rslopecmax
+    // = 1/lamdacmax. The clamp maps qc≈0 → 1/lamdacmax, but nc<=ncmin WITH qc>0 hits 1/lamdacmin
+    // (~40× too large); the nc<=ncmin gate forces 1/lamdacmax (Codex round-4 F2). Per-cell ncmin
+    // via ncmin_tensor; nullopt → scalar NCMIN (no-xland). Mirrors Python diag_cloud_slope_torch.
+    auto inactive = ncmin_tensor.has_value() ? (nc <= ncmin_tensor.value())
+                                             : (nc <= constants::NCMIN);
+    return torch::where(inactive,
+                        torch::full_like(rslopec_active, 1.0 / p.lamdacmax),
+                        rslopec_active);
 }
 
 torch::Tensor diag_avedia_cloud_torch(

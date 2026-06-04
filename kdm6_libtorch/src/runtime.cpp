@@ -125,6 +125,13 @@ CoordinatorAuxDiagnostics build_default_aux(
     auto rslope_r = cloud_dsd::diag_species_slope_torch(
         cs.qr, cs.nr, cf.den, pidnr, constants::DMR,
         constants::LAMDARMAX, constants::LAMDARMIN);
+    // Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
+    // = 1/LAMDARMAX. The clamp maps qr≈0 → 1/LAMDARMAX, but nr<=nrmin with qr>qcrmin would hit
+    // 1/LAMDARMIN; the gate forces 1/LAMDARMAX so n0r/prevp use the right intercept (Codex round-4 F3).
+    // Rain ONLY — ice has no n-threshold inactive branch (only the qi≈0 clamp).
+    auto rain_inactive = (cs.qr <= constants::QCRMIN) | (cs.nr <= constants::NRMIN);
+    rslope_r = torch::where(rain_inactive,
+                            torch::full_like(rslope_r, 1.0 / constants::LAMDARMAX), rslope_r);
     auto rslope_i = cloud_dsd::diag_species_slope_torch(
         cs.qi, cs.ni, cf.den, pidni, constants::DMI,
         constants::LAMDAIMAX, constants::LAMDAIMIN);
@@ -253,6 +260,7 @@ FnResult kdm6_fn(const State& state,
     // sea. The qcr override (sea→qc0=8.4e-5, land→qc1=8.4e-4; Fortran :840-846) is
     // re-applied per sub-cycle since aux is rebuilt each substep.
     torch::Tensor sea_mask;
+    c10::optional<torch::Tensor> ncmin_for_slope;  // per-cell ncmin for the cloud-slope inactive gate (Codex round-4 F2); nullopt → scalar NCMIN
     const bool use_xland_qcr = xland.has_value();
     if (use_xland_qcr) {
         auto xl = xland.value().to(cs.qc.options());
@@ -270,6 +278,7 @@ FnResult kdm6_fn(const State& state,
         // its source are both 0. With the defaults this collapses to NCMIN == the nullopt
         // scalar path; real 10/100 (> NCMIN) are unchanged. Mirrors the Python _kdm6_pure fix.
         ncmin_tensor = torch::clamp(ncmin_tensor, /*min=*/constants::NCMIN);
+        ncmin_for_slope = ncmin_tensor;  // thread the per-cell ncmin into the cloud-slope inactive gate (F2)
         warm_p.autoconv.ncmin_tensor              = ncmin_tensor;
         cold_p.number_accretion.ncmin_tensor      = ncmin_tensor;
         cold_p.cloud_water_riming.ncmin_tensor    = ncmin_tensor;
@@ -359,9 +368,11 @@ FnResult kdm6_fn(const State& state,
         graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
 
         // 2. Re-slope + aux on the POST-FALL state (Fortran :1422-1480 / :1679-1680).
-        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p);
+        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p, ncmin_for_slope);
         auto aux = build_default_aux(cur, cf, rslopec, full_p.thermo);
-        if (use_xland_qcr) aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
+        // qcr UNCONDITIONALLY from land/sea (Fortran :842-847): no-xland ⇒ sea_mask=all-sea ⇒ qc0
+        // (maritime ≈8.3776e-5), replacing build_default_aux's 8.0e-5 placeholder (Codex round-4 F1).
+        aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
 
         // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
         cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld);

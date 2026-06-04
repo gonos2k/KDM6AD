@@ -86,8 +86,10 @@ def diag_cloud_slope_torch(
     den: torch.Tensor,
     *,
     params: CloudDsdParams,
+    ncmin_tensor: "torch.Tensor | None" = None,
 ) -> torch.Tensor:
-    """rslopec = 1/lamdac, clamp to [1/lamdacmax, 1/lamdacmin].
+    """rslopec = 1/lamdac, clamp to [1/lamdacmax, 1/lamdacmin], with the Fortran
+    inactive-cloud gate (nc<=ncmin → rslopecmax = 1/lamdacmax).
 
     lamdac = (pidnc·nc / max(qc·den, 1e-30))^(1/dmc)
     """
@@ -98,11 +100,21 @@ def diag_cloud_slope_torch(
     # BRANCHY (qc≈0 cells skip the slope). The tensor port is MASK-MULTIPLY, so an unclamped
     # 1/lamdac overflows→Inf in qc≈0 cells and Inf×0=NaN downstream (WRF NaN @itimestep 66).
     # The clamp is a structurally-required guard reproducing Fortran's branch-skip. DELIBERATE.
-    rslopec = torch.clamp(
+    rslopec_active = torch.clamp(
         1.0 / lamdac,
         min=1.0 / params.lamdacmax,
         max=1.0 / params.lamdacmin,
     )
+    # Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) → rslopec=rslopecmax
+    # = 1/lamdacmax. The clamp above already maps qc≈0 → 1/lamdacmax (min-bound), but a
+    # nc<=ncmin cell WITH qc>0 gives a tiny lamdac → 1/lamdac large → wrongly hits the MAX-bound
+    # 1/lamdacmin (~40× too large). The nc<=ncmin gate forces 1/lamdacmax (Codex round-4 F2).
+    # Per-cell ncmin (xland) via ncmin_tensor; None → scalar c.NCMIN (no-xland). AD-safe (where).
+    nc_floor = ncmin_tensor if ncmin_tensor is not None else c.NCMIN
+    inactive = nc <= nc_floor
+    rslopec = torch.where(inactive,
+                          torch.full_like(rslopec_active, 1.0 / params.lamdacmax),
+                          rslopec_active)
     return rslopec
 
 

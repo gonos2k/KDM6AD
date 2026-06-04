@@ -1610,6 +1610,14 @@ def build_default_aux_torch(
 
     rslope_r = _dsd.diag_species_slope_torch(
         state.qr, state.nr, forcing.den, pidnr, c.DMR, c.LAMDARMAX, c.LAMDARMIN)
+    # Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
+    # = 1/LAMDARMAX. The clamp inside diag_species_slope maps qr≈0 → 1/LAMDARMAX, but a nr<=nrmin
+    # cell WITH qr>qcrmin would wrongly hit 1/LAMDARMIN; the nr<=nrmin gate forces 1/LAMDARMAX so
+    # n0r (and prevp / rain collection) use the correct rain intercept (Codex round-4 F3). Rain ONLY
+    # — ice has no n-threshold inactive branch (only the qi≈0 clamp; see feedback_if_threshold_audit).
+    rain_inactive = (state.qr <= c.QCRMIN) | (state.nr <= c.NRMIN)
+    rslope_r = torch.where(rain_inactive,
+                           torch.full_like(rslope_r, 1.0 / c.LAMDARMAX), rslope_r)
     rslope_i = _dsd.diag_species_slope_torch(
         state.qi, state.ni, forcing.den, pidni, c.DMI, c.LAMDAIMAX, c.LAMDAIMIN)
     rslopemu_r = rslope_r ** c.MUR

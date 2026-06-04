@@ -401,10 +401,13 @@ def _kdm6_pure(
             brs=_flip_k(sed.state.brs), t=_flip_k(sed.state.t),
         )
         # 2. Re-slope + aux on the POST-FALL state (WRF order), Fortran :1422-1480.
-        rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, params=cloud_p)
+        rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, params=cloud_p,
+                                               ncmin_tensor=ncmin_tensor)
         aux = _coord.build_default_aux_torch(cur, cf, rslopec, thermo_params=full_p.thermo)
-        if _use_xland:  # land/sea qcr override (Fortran :842-847; C++ runtime.cpp:353)
-            aux = aux._replace(qcr=_cdsd.diag_qcr_torch(sea_mask, params=cloud_p, ref=cur.qc))
+        # qcr from land/sea (Fortran :842-847). Applied UNCONDITIONALLY: no-xland ⇒ sea_mask=all-sea
+        # ⇒ qc0 (maritime, ≈8.3776e-5), the Fortran maritime default — replaces build_default_aux's
+        # 8.0e-5 placeholder which autoconverted ~4.5% too early on the no-xland path (Codex round-4 F1).
+        aux = aux._replace(qcr=_cdsd.diag_qcr_torch(sea_mask, params=cloud_p, ref=cur.qc))
         # 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
         cur, cur_nccn = _coord.kdm62d_one_step_torch(
             cur, cf, aux, sea_mask,

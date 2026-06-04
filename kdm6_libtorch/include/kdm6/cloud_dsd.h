@@ -50,12 +50,15 @@ torch::Tensor diag_species_slope_torch(
     double lamdamin
 );
 
-// rslopec = 1/lamdac with clamp to [1/lamdacmax, 1/lamdacmin].
+// rslopec = 1/lamdac with clamp to [1/lamdacmax, 1/lamdacmin] + Fortran inactive-cloud
+// gate (nc<=ncmin → 1/lamdacmax, Fortran F:1603). ncmin_tensor: per-cell ncmin (xland);
+// nullopt → scalar constants::NCMIN.
 torch::Tensor diag_cloud_slope_torch(
     const torch::Tensor& qc,
     const torch::Tensor& nc,
     const torch::Tensor& den,
-    const CloudDsdParams& params
+    const CloudDsdParams& params,
+    const c10::optional<torch::Tensor>& ncmin_tensor = {}
 );
 
 // avedia_c = rslopec · g3pmc^(1/3).

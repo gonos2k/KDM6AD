@@ -149,3 +149,40 @@ def test_g3pmc_g6pmc_hardcoded():
     assert math.isclose(p.g6pmc, 2.0, rel_tol=1e-12)
     # var_factor positive (이전 reciprocal-gamma 버그 시 -0.5 였음)
     assert p.g6pmc - p.g3pmc ** 2 > 0
+
+
+def test_qcr_maritime_default_is_qc0_not_placeholder():
+    """Codex round-4 F1: the no-xland qcr must be the Fortran maritime qc0
+    (4/3·π·denr·r0³·xncr0/den0 ≈ 8.3776e-5, Fortran F:3104 + :842-843), NOT the old 8.0e-5
+    placeholder. The no-xland runtime path now applies diag_qcr with an all-sea mask → qc0.
+    Guards the qc0 value AND that diag_qcr(all-sea) == qc0 (≠ the 8.0e-5 placeholder, ~4.5% off)."""
+    p = default_cloud_dsd_params()
+    expected_qc0 = (4.0 / 3.0) * math.pi * c.DENR * (c.R0 ** 3.0) * c.XNCR0 / c.DEN0
+    assert math.isclose(p.qc0, expected_qc0, rel_tol=1e-12)
+    assert abs(p.qc0 - 8.0e-5) > 1.0e-6, "qc0 must differ from the retired 8.0e-5 placeholder"
+    sea = torch.ones((1, 2), dtype=torch.bool)
+    qcr_sea = diag_qcr_torch(sea, params=p, ref=torch.zeros((1, 2), dtype=torch.float64))
+    assert torch.allclose(qcr_sea, torch.full((1, 2), p.qc0, dtype=torch.float64))
+
+
+def test_cloud_slope_inactive_gate_low_nc():
+    """Codex round-4 F2: diag_cloud_slope forces rslopec=1/lamdacmax in the inactive-cloud branch
+    (nc<=ncmin, Fortran F:1603-1604) — NOT the opposite clamp 1/lamdacmin that the un-gated slope
+    hits for a low-nc-with-qc>0 cell (~40× too large). Compare gated vs un-gated to show the fix."""
+    from kdm6.cloud_dsd import diag_species_slope_torch
+    p = default_cloud_dsd_params()
+    den = torch.full((1, 1), 1.0, dtype=torch.float64)
+    qc = torch.full((1, 1), 1.0e-3, dtype=torch.float64)          # qc>0
+    nc = torch.full((1, 1), 0.5 * c.NCMIN, dtype=torch.float64)   # nc<=ncmin (inactive)
+    gated = diag_cloud_slope_torch(qc, nc, den, params=p)
+    ungated = diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin)
+    rmax = torch.tensor(1.0 / p.lamdacmax, dtype=torch.float64)   # Fortran rslopecmax (inactive value)
+    rmin = torch.tensor(1.0 / p.lamdacmin, dtype=torch.float64)   # the WRONG opposite clamp
+    assert torch.isclose(gated[0, 0], rmax), f"gated rslopec must be 1/lamdacmax; got {gated[0,0].item():.3e}"
+    assert torch.isclose(ungated[0, 0], rmin), "un-gated low-nc cell hits 1/lamdacmin (the bug the gate fixes)"
+    assert not torch.isclose(gated[0, 0], ungated[0, 0])
+    # per-cell ncmin (xland) path: a cell above the per-cell floor is NOT gated
+    ncmin_t = torch.full((1, 1), 1.0e-3, dtype=torch.float64)     # per-cell floor below nc
+    nc2 = torch.full((1, 1), 5.0e-3, dtype=torch.float64)         # > per-cell floor, but <= scalar NCMIN(1e-2)
+    g2 = diag_cloud_slope_torch(qc, nc2, den, params=p, ncmin_tensor=ncmin_t)
+    assert not torch.isclose(g2[0, 0], rmax), "per-cell ncmin override must un-gate a cell above the per-cell floor"
