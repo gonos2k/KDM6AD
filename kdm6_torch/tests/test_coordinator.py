@@ -1046,3 +1046,41 @@ def test_apply_melt_freeze_inline_d1_melt_adds_rain_number():
     assert torch.isclose(dnr_actual, torch.tensor(dnr_expect, dtype=torch.float64), rtol=1e-9), \
         f"D1 melt rain-number source wrong: Δnr={dnr_actual.item():.6e}, expected {dnr_expect:.6e} " \
         f"(=0 means the F:1299/1323 sfac*psmlt+gfac*pgmlt source is still missing)"
+
+
+def test_state_update_paacw_routes_cold_at_t0c_boundary():
+    """Codex review #3 + stop-review correction: at exactly t==t0c (supcol==0) paacw (snow/graupel
+    riming of cloud water) is NONZERO — it is gated by qs/qg/qc presence, NOT by supcol (port
+    cold.py psacw/pgacw; Fortran F:1951 `if(qrs(2)>qcrmin .and. qci(1)>qmin)`), and Fortran uses it
+    in BOTH state-update branches (F:2459 cold AND F:2658 warm). Fortran routes it via `t.le.t0c`
+    (F:2456): the COLD branch (supcol>=0) sends paacw to qs+qg; the WARM branch (t>t0c) sheds
+    2*paacw to rain. So the port's cold_mask must be supcol>=0 (NOT supcol>0, which mis-routed the
+    exact-freezing cell to rain). This is NOT a numerical no-op (an earlier mischaracterization the
+    Codex stop-review correctly caught): with paacw active, the supcol==0 routing genuinely differs."""
+    from kdm6.coordinator import state_update_torch
+    state, pre, warm, cold, mf = _state_update_inputs(t_value=273.16)
+    zero = torch.zeros_like(state.qc)
+    warm0 = type(warm)(*[zero for _ in warm._fields])
+    mf0 = type(mf)(*[zero for _ in mf._fields])
+    pa = 1.0e-6
+    cold0 = type(cold)(*[zero for _ in cold._fields])._replace(
+        paacw_adj=torch.full_like(state.qc, pa))
+    dtcld = 60.0
+
+    pre_cold = pre._replace(supcol=torch.zeros_like(pre.supcol))         # t==t0c → cold (supcol>=0)
+    out_c = state_update_torch(state, pre_cold, warm0, cold0, mf0, dtcld=dtcld)
+    pre_warm = pre._replace(supcol=torch.full_like(pre.supcol, -1e-12))  # t just above t0c → warm
+    out_w = state_update_torch(state, pre_warm, warm0, cold0, mf0, dtcld=dtcld)
+
+    def d(out, fld):
+        return (getattr(out, fld) - getattr(state, fld)).reshape(-1)[0]
+    exp = torch.tensor(dtcld * pa, dtype=torch.float64)
+    # COLD branch at supcol==0 (Fortran-correct): paacw → qs AND qg, NOT rain.
+    assert torch.isclose(d(out_c, "qs"), exp, rtol=1e-9), f"cold qs Δ={d(out_c,'qs'):.3e} != {exp:.3e}"
+    assert torch.isclose(d(out_c, "qg"), exp, rtol=1e-9), f"cold qg Δ={d(out_c,'qg'):.3e} != {exp:.3e}"
+    assert abs(d(out_c, "qr")) < 1e-12, f"cold branch must not shed paacw to rain; qr Δ={d(out_c,'qr'):.3e}"
+    # WARM branch (the OLD supcol>0 behavior at the boundary): 2*paacw → rain, qs/qg get nothing.
+    assert torch.isclose(d(out_w, "qr"), 2 * exp, rtol=1e-9), f"warm qr Δ={d(out_w,'qr'):.3e} != {2*exp:.3e}"
+    assert abs(d(out_w, "qs")) < 1e-12 and abs(d(out_w, "qg")) < 1e-12
+    # NOT a no-op: the boundary routing genuinely differs between supcol>=0 (cold) and supcol<0 (warm).
+    assert not torch.isclose(d(out_c, "qs"), d(out_w, "qs"))
