@@ -288,7 +288,8 @@ CoordinatorParams default_coordinator_params(double den0) {
 PreambleOutputs preamble(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,
-    const CoordinatorParams& params
+    const CoordinatorParams& params,
+    const c10::optional<torch::Tensor>& ncmin_for_slope
 ) {
     // ── Thermodynamics (10 helpers) ─────────────────────────────────────────
     auto cpm = thermo::compute_cpm(state.qv, params.thermo);
@@ -304,7 +305,7 @@ PreambleOutputs preamble(
 
     // ── Cloud DSD ───────────────────────────────────────────────────────────
     auto rslopec = cloud_dsd::diag_cloud_slope_torch(
-        state.qc, state.nc, forcing.den, params.cloud_dsd
+        state.qc, state.nc, forcing.den, params.cloud_dsd, ncmin_for_slope
     );
     auto avedia_c = cloud_dsd::diag_avedia_cloud_torch(rslopec, params.cloud_dsd);
     auto sigma_c = cloud_dsd::diag_sigma_cloud_torch(rslopec, params.cloud_dsd);
@@ -435,7 +436,8 @@ CoordinatorState kdm62d_one_step(
     const WarmPhaseParams& warm_params,
     const ColdPhaseParams& cold_params,
     const MeltFreezePhaseParams& mf_params,
-    double dtcld
+    double dtcld,
+    const c10::optional<torch::Tensor>& ncmin_for_slope
 ) {
     // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran module_mp_kdm6.F:1410-1420)
     // is now ENABLED (Stage H2), applied at step 1b below — BETWEEN D1 melt and the
@@ -448,7 +450,7 @@ CoordinatorState kdm62d_one_step(
     auto state_pre = state;
 
     // F1a: preamble (full diagnostics) on the ENTRY state.
-    auto pre = preamble(state_pre, forcing, full_params);
+    auto pre = preamble(state_pre, forcing, full_params, ncmin_for_slope);
 
     // ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     // Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) → [homog freeze :1410-1420] →
@@ -479,7 +481,7 @@ CoordinatorState kdm62d_one_step(
     auto working1b = apply_homogeneous_freeze_supercold(working1, full_params.thermo, /*supcol_threshold=*/40.0);
 
     // 2. rebuild on the post-melt+homog state (re-slope :1422-1480; entry thermo spliced).
-    auto rebuilt1 = rebuild_aux(working1b, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
+    auto rebuilt1 = rebuild_aux(working1b, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope);
     const auto& pre1 = rebuilt1.pre;
     const auto& aux1 = rebuilt1.aux;
 
@@ -495,7 +497,7 @@ CoordinatorState kdm62d_one_step(
     // 4. rebuild on the post-freeze state (re-slope :1596-1683; the prior STEP-2
     // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/
     // supsat) Fortran does NOT recompute post-freeze (:835-836,:910-928).
-    auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr);
+    auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope);
     const auto& pre2 = rebuilt.pre;
     const auto& aux2 = rebuilt.aux;
 

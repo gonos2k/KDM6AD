@@ -208,8 +208,9 @@ RebuiltDiagnostics rebuild_aux(
     const PreambleOutputs& entry_pre,      // entry/substep-top preamble (thermo source)
     const CoordinatorForcing& forcing,
     const CoordinatorParams& params,
-    const torch::Tensor& qcr_carry) {
-    auto pre = preamble(state, forcing, params);                       // re-slope + work2 + ProgB + (discarded) thermo
+    const torch::Tensor& qcr_carry,
+    const c10::optional<torch::Tensor>& ncmin_for_slope) {
+    auto pre = preamble(state, forcing, params, ncmin_for_slope);       // re-slope + work2 + ProgB + (discarded) thermo
     // Splice entry-staged thermo; keep post-freeze supcol/work2/denfac + geometry.
     pre.cpm = entry_pre.cpm;  pre.xl = entry_pre.xl;
     pre.qs1 = entry_pre.qs1;  pre.qs2 = entry_pre.qs2;
@@ -375,7 +376,7 @@ FnResult kdm6_fn(const State& state,
         aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
 
         // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
-        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld);
+        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld, ncmin_for_slope);
     }
 
     // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒

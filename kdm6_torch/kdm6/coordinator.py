@@ -115,6 +115,8 @@ def preamble_torch(
     sea_mask: torch.Tensor,           # (B, K) bool — for qcr (continental vs maritime)
     *,
     params: CoordinatorParams,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud-slope inactive gate
+                                                 # (Fortran F:1603, per-column ncmin); None → scalar c.NCMIN
 ) -> PreambleOutputs:
     """F1a — thermodynamics + cloud DSD + ProgB + slope diagnostics 한 번에.
 
@@ -133,7 +135,8 @@ def preamble_torch(
     work2 = _thermo.compute_work2_venfac(forcing.p, state.t, forcing.den, params=params.thermo)
 
     # ── Cloud DSD ──────────────────────────────────────────────────────
-    rslopec = _dsd.diag_cloud_slope_torch(state.qc, state.nc, forcing.den, params=params.cloud_dsd)
+    rslopec = _dsd.diag_cloud_slope_torch(state.qc, state.nc, forcing.den, params=params.cloud_dsd,
+                                          ncmin_tensor=ncmin_tensor)
     avedia_c = _dsd.diag_avedia_cloud_torch(rslopec, params=params.cloud_dsd)
     sigma_c = _dsd.diag_sigma_cloud_torch(rslopec, params=params.cloud_dsd)
     lencon, lenconcr = _dsd.diag_lencon_torch(state.qc, forcing.den, avedia_c, sigma_c)
@@ -1654,6 +1657,7 @@ def rebuild_aux_torch(
     params: CoordinatorParams,
     qcr_carry: torch.Tensor,
     entry_pre: PreambleOutputs,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud-slope gate (threaded to preamble)
 ):
     """Re-run preamble_torch + build_default_aux_torch on a working (post-melt/
     post-freeze) state. Returns (PreambleOutputs, CoordinatorAuxDiagnostics) —
@@ -1669,7 +1673,7 @@ def rebuild_aux_torch(
     splice the entry thermo from `entry_pre`; recompute work1=diffac(xl,p,t,den,qs)
     with ENTRY xl/qs + the POST-FREEZE t (Fortran :1679-1680).
     """
-    pre = preamble_torch(state, forcing, sea_mask, params=params)
+    pre = preamble_torch(state, forcing, sea_mask, params=params, ncmin_tensor=ncmin_tensor)
     pre = pre._replace(
         cpm=entry_pre.cpm, xl=entry_pre.xl, qs1=entry_pre.qs1, qs2=entry_pre.qs2,
         rh_w=entry_pre.rh_w, rh_ice=entry_pre.rh_ice, supsat=entry_pre.supsat,
@@ -1825,7 +1829,7 @@ def kdm62d_one_step_torch(
     When ``nccn`` is given, apply_satadj_step runs CCN activation and this returns
     ``(new_state, nccn_out)``; otherwise it returns a bare ``CoordinatorState``.
     """
-    pre = preamble_torch(state, forcing, sea_mask, params=full_params)
+    pre = preamble_torch(state, forcing, sea_mask, params=full_params, ncmin_tensor=ncmin_tensor)
 
     # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     # Mirror of C++ kdm62d_one_step. Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) →
@@ -1853,7 +1857,8 @@ def kdm62d_one_step_torch(
 
     # 2. rebuild on the post-melt+homog state (re-slope; entry thermo spliced).
     pre1, aux1 = rebuild_aux_torch(
-        working1b, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
+        working1b, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
+        ncmin_tensor=ncmin_tensor)
 
     # 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog zeroed
     # qc in supcol>40 cells, so D2/D3 inactive there — Fortran-exact.)
@@ -1866,7 +1871,8 @@ def kdm62d_one_step_torch(
 
     # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
     pre2, aux2 = rebuild_aux_torch(
-        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre)
+        working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
+        ncmin_tensor=ncmin_tensor)
 
     warm_out = warm_phase_torch(
         working, forcing, pre2,

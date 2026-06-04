@@ -435,7 +435,8 @@ struct PreambleOutputs {
 PreambleOutputs preamble(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,
-    const CoordinatorParams& params
+    const CoordinatorParams& params,
+    const c10::optional<torch::Tensor>& ncmin_for_slope = {}  // per-cell ncmin for cloud-slope gate (F:1603); nullopt → scalar NCMIN
 );
 
 // External diagnostics that the F1 chain consumes. In production these are
@@ -492,7 +493,8 @@ RebuiltDiagnostics rebuild_aux(
     const PreambleOutputs& entry_pre,
     const CoordinatorForcing& forcing,
     const CoordinatorParams& params,
-    const torch::Tensor& qcr_carry
+    const torch::Tensor& qcr_carry,
+    const c10::optional<torch::Tensor>& ncmin_for_slope = {}  // threaded to preamble's cloud-slope gate
 );
 
 // Stage-A STEP 1: apply melt(D1)+freeze(D2-D4) as INLINE pre-state-update
@@ -524,7 +526,8 @@ CoordinatorState kdm62d_one_step(
     const WarmPhaseParams& warm_params,
     const ColdPhaseParams& cold_params,
     const MeltFreezePhaseParams& mf_params,
-    double dtcld
+    double dtcld,
+    const c10::optional<torch::Tensor>& ncmin_for_slope = {}  // per-cell ncmin → preamble/rebuild cloud-slope gate
 );
 
 // Fortran kdm62D entry: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
