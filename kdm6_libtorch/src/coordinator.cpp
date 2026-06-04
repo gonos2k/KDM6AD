@@ -1188,6 +1188,13 @@ CoordinatorState state_update(
     // made mp=137 produce ~90× more condensate than mp=37 in supercell ice
     // regions. Deposition correctly uses the constant `xls`; freezing uses xlf(T).
     auto xlf = xls - pre.xl;
+    // D1 MELT (psmlt/pgmlt/pimlt_qi) uses the CONSTANT xlf0, NOT xls-xl(T): Fortran F:1275
+    // `if(supcol<0) xlf=xlf0` applied at F:1303/1327/1339. Mirrors apply_melt_freeze_inline
+    // (audit round-6); the single-xlf form over-cooled the D1-melt heat in the component
+    // state_update path (Codex round-2). Runtime-shielded (mf5 zeroes D1) so parity-inert;
+    // restores the inline<->state_update identity. D5 pseml/pgeml stay on xls-xl (F:2752);
+    // cold riming on xls-xl (F:2645).
+    const double xlf_melt = melt::DEFAULT_XLF;
 
     // pcact + pcond warming terms DEFERRED — apply_satadj_step adds them to
     // T after running on the post-state-update state (matches Fortran sequence
@@ -1198,9 +1205,11 @@ CoordinatorState state_update(
     auto dT_dep_phase = dtcld * xls / cpm_safe * (
         cold.pinud + cold.pidep + cold.psdep + cold.pgdep
     );
+    // D1 melt (psmlt/pgmlt rate + pimlt_qi amount) → CONSTANT xlf0 (Fortran F:1303/1327/1339).
+    auto dT_melt_d1 = dtcld * xlf_melt / cpm_safe * (mf.psmlt + mf.pgmlt)
+                    - xlf_melt / cpm_safe * mf.pimlt_qi;
     auto dT_freeze_rate = dtcld * xlf / cpm_safe * (
-        mf.psmlt + mf.pgmlt
-        + mf.pseml + mf.pgeml
+        mf.pseml + mf.pgeml                       // D5 enhanced melt (xls-xl, F:2752)
         + cold_mask * (
             cold.piacr
             + 2.0 * cold.paacw_adj
@@ -1212,9 +1221,8 @@ CoordinatorState state_update(
     );
     auto dT_freeze_amount = xlf / cpm_safe * (
         mf.pinuc + mf.pfrzdtc + mf.pfrzdtr
-        - mf.pimlt_qi
     );
-    auto t_new = state.t + dT_warm_phase + dT_dep_phase + dT_freeze_rate + dT_freeze_amount;
+    auto t_new = state.t + dT_warm_phase + dT_dep_phase + dT_melt_d1 + dT_freeze_rate + dT_freeze_amount;
     // nccn: only rain_complete_evap adds back here (warm.rain_complete_evap is a
     // B4 output, applied with the warm rates). cloud_complete_evap and
     // nccn_activation are part of the deferred satadj step (see dqv comment),

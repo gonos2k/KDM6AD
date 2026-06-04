@@ -1084,3 +1084,32 @@ def test_state_update_paacw_routes_cold_at_t0c_boundary():
     assert abs(d(out_w, "qs")) < 1e-12 and abs(d(out_w, "qg")) < 1e-12
     # NOT a no-op: the boundary routing genuinely differs between supcol>=0 (cold) and supcol<0 (warm).
     assert not torch.isclose(d(out_c, "qs"), d(out_w, "qs"))
+
+
+def test_state_update_d1_melt_t_uses_xlf0():
+    """Codex round-2: state_update's D1-melt t-update must use the CONSTANT xlf0 (Fortran
+    F:1303/1327/1339), exactly like apply_melt_freeze_inline (round-6) — NOT xls-xl(T). The full
+    runtime is shielded (mf5 D1-zeroed before state_update) but the component path
+    (melt_freeze_phase_torch → state_update_torch) is reachable, where the single-xlf form
+    over-cooled by +0.67%/K above freezing. At T=283K (xls-xl=3.736e5 ≠ xlf0=3.5e5) feed a
+    melt-only psmlt and assert Δt = dtcld·xlf0/cpm·psmlt (D5 pseml/pgeml + cold riming + D2-D4
+    correctly stay on xls-xl, so they're zeroed here to isolate D1)."""
+    from kdm6.coordinator import state_update_torch
+    from kdm6 import melt_freeze as mfmod
+    state, pre, warm, cold, mf = _state_update_inputs(t_value=283.0)
+    cpm_v, xl_v, xls = 1005.0, 2.476e6, 2.85e6          # xls-xl=3.736e5 ≠ xlf0=3.5e5
+    pre2 = pre._replace(cpm=torch.full_like(pre.cpm, cpm_v),
+                        xl=torch.full_like(pre.xl, xl_v),
+                        supcol=torch.full_like(pre.supcol, -10.0))  # T>T0c (melt regime)
+    zero = torch.zeros_like(state.qc)
+    warm0 = type(warm)(*[zero for _ in warm._fields])
+    cold0 = type(cold)(*[zero for _ in cold._fields])
+    psmlt_v, dtcld = 1.0e-5, 60.0
+    mf0 = type(mf)(*[zero for _ in mf._fields])._replace(psmlt=torch.full_like(state.qc, psmlt_v))
+    out = state_update_torch(state, pre2, warm0, cold0, mf0, dtcld=dtcld, xls=xls)
+    dt_actual = (out.t - state.t).reshape(-1)[0]
+    dt_xlf0 = dtcld * mfmod.DEFAULT_XLF / cpm_v * psmlt_v
+    dt_xlsxl = dtcld * (xls - xl_v) / cpm_v * psmlt_v
+    assert torch.isclose(dt_actual, torch.tensor(dt_xlf0, dtype=torch.float64), rtol=1e-9), \
+        f"state_update D1-melt t used wrong xlf: Δt={dt_actual.item():.6e}; xlf0 expects " \
+        f"{dt_xlf0:.6e}, xls-xl(buggy) {dt_xlsxl:.6e}"

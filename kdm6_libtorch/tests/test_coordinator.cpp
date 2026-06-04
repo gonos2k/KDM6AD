@@ -486,6 +486,43 @@ void test_state_update_psmlt_warm_routes_to_qr_only() {
     } END_TEST();
 }
 
+void test_state_update_d1_melt_t_uses_xlf0() {
+    TEST(test_state_update_d1_melt_t_uses_xlf0) {
+        // Codex round-2: state_update's D1-melt t-update must use the CONSTANT xlf0
+        // (Fortran F:1303/1327/1339), exactly like apply_melt_freeze_inline (round-6) — NOT
+        // xls-xl(T). Runtime is shielded (mf5 zeroes D1) but this component path is reachable.
+        // At xl=2.476e6, xls=2.85e6 → xls-xl=3.736e5 ≠ xlf0=3.5e5, so the choice is observable.
+        const int B = 1, K = 1;
+        auto opts = f64();
+        const double cpm_v = 1005.0, xl_v = 2.476e6, xls = 2.85e6, psmlt_v = -1.0e-7, dtcld = 60.0, t0 = 283.0;
+        CoordinatorState s{
+            torch::full({B,K}, 8.0e-3, opts), torch::full({B,K}, 5.0e-4, opts),
+            torch::full({B,K}, 1.0e-4, opts), torch::full({B,K}, 1.0e-4, opts),
+            torch::full({B,K}, 1.0e-5, opts), torch::full({B,K}, 1.0e-5, opts),
+            torch::full({B,K}, 1.0e8, opts),  torch::full({B,K}, 1.0e5, opts),
+            torch::full({B,K}, 1.0e6, opts),  torch::full({B,K}, 1.0e9, opts),
+            torch::zeros({B,K}, opts),        torch::full({B,K}, t0, opts),
+        };
+        PreambleCore pre{
+            torch::full({B,K}, cpm_v, opts), torch::full({B,K}, xl_v, opts),
+            torch::full({B,K}, -10.0, opts), torch::full({B,K}, 500.0, opts),  // supcol<0 → T>T0c (melt)
+        };
+        auto warm = make_zero_warm(B, K);
+        auto cold = make_zero_cold(B, K);
+        auto mf = make_zero_mf(B, K);
+        mf.psmlt = torch::full({B,K}, psmlt_v, opts);  // melt-only
+
+        auto out = state_update(s, pre, warm, cold, mf, dtcld, xls);
+        const double dt_actual = out.t.item<double>() - t0;
+        const double dt_xlf0  = dtcld * melt::DEFAULT_XLF / cpm_v * psmlt_v;       // correct (constant)
+        const double dt_xlsxl = dtcld * (xls - xl_v)      / cpm_v * psmlt_v;       // buggy (xls-xl)
+        // tol 1e-11: out.t-t0 cancels against t0≈283 (~6e-14 fp noise); the buggy xls-xl value
+        // differs by ~1.4e-7, so 1e-11 cleanly separates correct (xlf0) from buggy.
+        assert(std::abs(dt_actual - dt_xlf0) < 1e-11);          // D1 melt t uses xlf0
+        assert(std::abs(dt_xlf0 - dt_xlsxl) > 1e-9);            // guard is meaningful (the two differ)
+    } END_TEST();
+}
+
 void test_state_update_pinuc_is_amount_not_rate() {
     TEST(test_state_update_pinuc_is_amount_not_rate) {
         // review5#1 단위 정책: D2 pinuc는 amount (이미 dtcld 적용됨).
@@ -1445,6 +1482,7 @@ int main() {
     test_state_update_piacr_routes_to_qg_when_qr_large();
     test_state_update_psacr_adj_delta2_routing();
     test_state_update_psmlt_warm_routes_to_qr_only();
+    test_state_update_d1_melt_t_uses_xlf0();
     test_state_update_pinuc_is_amount_not_rate();
     test_state_update_ice_complete_sublim_zeros_ni();
     test_warm_phase_runs_finite();

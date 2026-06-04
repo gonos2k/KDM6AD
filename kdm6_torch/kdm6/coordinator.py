@@ -1229,7 +1229,15 @@ def state_update_torch(
     #     (b) deposition/sublimation vapor↔ice (xls, CONSTANT): pinud, pidep, psdep, pgdep
     #     (c) freeze/melt liquid↔solid (xlf=xls-xl(T)): pinuc, pfrzdtc, pfrzdtr, psmlt, pgmlt, pimlt_qi, pseml, pgeml
     cpm_safe = torch.clamp(pre.cpm, min=c.QCRMIN)
-    xlf = xls - pre.xl  # per-cell fusion latent heat (J/kg), temperature-dependent
+    xlf = xls - pre.xl  # freeze/D5/cold-riming fusion latent heat (J/kg), temperature-dependent
+    # D1 MELT (psmlt/pgmlt/pimlt_qi) uses the CONSTANT xlf0, NOT xls-xl(T): Fortran F:1275
+    # `if(supcol<0) xlf=xlf0` then the melt block applies it at F:1303/1327/1339. This mirrors
+    # apply_melt_freeze_inline (audit round-6); the single-xlf form over-cooled the D1-melt heat
+    # in the component/legacy state_update path by +0.67%/K above freezing (Codex round-2 catch).
+    # Runtime is shielded (mf5 zeroes D1 before state_update) so this is parity-inert; the split
+    # restores the inline↔state_update algebraic identity. D5 pseml/pgeml stay on xls-xl(T)
+    # (Fortran warm-branch F:2752); cold riming on xls-xl(T) (F:2645).
+    xlf_melt = _mf.DEFAULT_XLF
 
     dT_warm_phase = dtcld * pre.xl / cpm_safe * (
         # pcond warming DEFERRED to apply_satadj_step_torch (post-reclass).
@@ -1240,14 +1248,18 @@ def state_update_torch(
     dT_dep_phase = dtcld * xls / cpm_safe * (
         cold.pinud + cold.pidep + cold.psdep + cold.pgdep   # vapor→ice deposition (xls)
     )
+    # D1 melt (psmlt/pgmlt rate + pimlt_qi amount) → CONSTANT xlf0 (Fortran F:1303/1327/1339).
+    dT_melt_d1 = (
+        dtcld * xlf_melt / cpm_safe * (mf.psmlt + mf.pgmlt)   # D1 snow/graupel melt (rate, cooling)
+        - xlf_melt / cpm_safe * mf.pimlt_qi                   # 1339 D1 instant ice-melt (amount, cooling)
+    )
     # xlf group — review4#4: Fortran 2647-2650 cold branch xlf list 추가.
     #   Fortran의 paacw/psacr/pgacr는 HM 후 *post-adjusted* value이므로, 우리 oracle의
     #   paacw_adj/psacr_adj/pgacr_adj와 동일. piacr·1 + paacw·2 + pmul*·1 + piacw·1
     #   + pgacr·1 + psacr·1 = 10 항.
-    # xlf rate group (warm/cold rates) — review5#1: D2-D4와 pimlt는 amount group으로 분리.
+    # xlf rate group (D5 + cold riming) — D1 melt moved to dT_melt_d1 (xlf0, Codex round-2).
     dT_freeze_rate = dtcld * xlf / cpm_safe * (
-        mf.psmlt + mf.pgmlt                     # D1 melt (negative rate → cooling)
-        + mf.pseml + mf.pgeml                   # D5 enhanced melt cooling
+        mf.pseml + mf.pgeml                     # D5 enhanced melt cooling (xls-xl, Fortran F:2752)
         # cold-branch riming/freezing: liquid → solid → fusion latent heat 방출 → warming
         + cold_mask * (
             cold.piacr                          # 2648 rain frozen on ice
@@ -1258,12 +1270,11 @@ def state_update_torch(
             + cold.pgacr_adj + cold.psacr_adj   # 2650 rain collected by graupel/snow
         )
     )
-    # xlf amount group (D2-D4 freezes + D1 ice melt) — pimlt_qi는 instantaneous full-melt amount.
+    # xlf amount group (D2-D4 freezes) — D1 ice-melt pimlt_qi moved to dT_melt_d1 (xlf0).
     dT_freeze_amount = xlf / cpm_safe * (
         mf.pinuc + mf.pfrzdtc + mf.pfrzdtr      # 1507/1536/1559 inline (amount, +)
-        - mf.pimlt_qi                            # 1337 ice → cloud water (-, cooling)
     )
-    dT_freeze_phase = dT_freeze_rate + dT_freeze_amount
+    dT_freeze_phase = dT_melt_d1 + dT_freeze_rate + dT_freeze_amount
     t_new = state.t + dT_warm_phase + dT_dep_phase + dT_freeze_phase
 
     # review5#2 (partial): Fortran 2615-2756 `max(... ,0.)` — nonnegative clamp만 적용.
