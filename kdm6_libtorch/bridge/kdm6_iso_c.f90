@@ -26,7 +26,7 @@ module kdm6_iso_c
   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
 
-  public :: kdm6_step, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+  public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
 
   ! ── C ABI interfaces ───────────────────────────────────────────────────────
   interface
@@ -62,6 +62,32 @@ module kdm6_iso_c
       real(c_float), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
+
+    ! [DA] fp64 DA adjoint forward (kdm6ad+da.md 0.1.A): same physics at
+    ! float64 with a gradient graph. Packed layout = the derivative-buffer
+    ! convention: state REAL(8) x(im,kme,jme,12) field order th,qv,qc,qr,qi,
+    ! qs,qg,nccn,nc,ni,nr,bg; forcing REAL(8) f(im,kme,jme,4) order rho,pii,
+    ! p,delz. value_only=0 -> handle for kdm6_handle_vjp_c/jvp_c (true-fp64,
+    ! finite at the ice corners where the f32 graph NaNs); value_only=1 ->
+    ! handle = C_NULL_PTR. Additive: the operational f32 path is untouched.
+    function kdm6_step_ad_c( &
+        state_in_packed, forcing_packed, &
+        im, kme, jme, dt, value_only, &
+        state_out_packed, handle, &
+        xland, ncmin_land, ncmin_sea &
+      ) bind(C, name="kdm6_step_ad_c") result(rc)
+      import :: c_int, c_double, c_float, c_ptr
+      real(c_double), intent(in)  :: state_in_packed(*)
+      real(c_double), intent(in)  :: forcing_packed(*)
+      integer(c_int), value       :: im, kme, jme
+      real(c_double), value       :: dt
+      integer(c_int), value       :: value_only
+      real(c_double), intent(out) :: state_out_packed(*)
+      type(c_ptr), intent(out)    :: handle
+      real(c_float), intent(in)  :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      integer(c_int)              :: rc
+    end function kdm6_step_ad_c
 
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
@@ -142,6 +168,30 @@ contains
       xland, real(ncmin_land, c_double), real(ncmin_sea, c_double), &
       rain_increment, snow_increment, graupel_increment)
   end function kdm6_step
+
+  ! [DA] fp64 DA adjoint forward — Fortran-friendly wrapper over kdm6_step_ad_c.
+  ! state(im,kme,jme,12) field order th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg;
+  ! forcing(im,kme,jme,4) order rho,pii,p,delz. value_only=0 -> live handle
+  ! for kdm6_handle_vjp/jvp (true-fp64 adjoints); value_only=1 -> C_NULL_PTR.
+  function kdm6_step_ad( &
+      state_in, forcing, &
+      im, kme, jme, dt, value_only, &
+      state_out, handle, &
+      xland, ncmin_land, ncmin_sea &
+    ) result(rc)
+    real(c_double), intent(in),  contiguous :: state_in(:,:,:,:)
+    real(c_double), intent(in),  contiguous :: forcing(:,:,:,:)
+    integer(c_int), intent(in)              :: im, kme, jme
+    real(c_double), intent(in)              :: dt
+    integer(c_int), intent(in)              :: value_only
+    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    type(c_ptr),    intent(out)             :: handle
+    real(c_float),  intent(in),  contiguous :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    integer(c_int)                          :: rc
+    rc = kdm6_step_ad_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                        state_out, handle, xland, ncmin_land, ncmin_sea)
+  end function kdm6_step_ad
 
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
