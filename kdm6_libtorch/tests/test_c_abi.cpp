@@ -241,12 +241,211 @@ void test_c_abi_step_per_cell_ncmin_mixed_xland() {
     } END_TEST();
 }
 
+
+// ── [DA Phase 3] value_only=0 + packed VJP/JVP ABI (kdm6ad+da.md §6.4/§10.2) ──
+void test_c_abi_vjp_jvp_roundtrip() {
+    TEST(test_c_abi_vjp_jvp_roundtrip) {
+        const int im = 1, kme = 2, jme = 1;          // 2-cell column
+        const size_t NF = 12;
+        const size_t BK = static_cast<size_t>(im) * jme * kme;
+
+        // mixed-phase 2-cell IC (g_base family; k0 warm, k1 supercooled)
+        auto fill2 = [&](FortranBuf& b, float v0, float v1) {
+            b.data[0] = v0; b.data[1] = v1;          // (im=1,jme=1) → k-major
+        };
+        FortranBuf th(im,kme,jme), qv(im,kme,jme), qc(im,kme,jme), qr(im,kme,jme);
+        FortranBuf qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme), nccn(im,kme,jme);
+        FortranBuf nc(im,kme,jme), ni(im,kme,jme), nr(im,kme,jme), bg(im,kme,jme);
+        fill2(th, 296.8f, 282.4f);   fill2(qv, 1.40e-2f, 2.0e-3f);
+        fill2(qc, 1.0e-3f, 5.0e-4f); fill2(qr, 1.0e-4f, 1.0e-5f);
+        fill2(qi, 0.0f, 1.0e-6f);    fill2(qs, 0.0f, 5.0e-5f);
+        fill2(qg, 0.0f, 1.0e-5f);    fill2(nccn, 1.0e9f, 1.0e9f);
+        fill2(nc, 1.0e8f, 1.0e8f);   fill2(ni, 0.0f, 1.0e8f);
+        fill2(nr, 1.0e4f, 1.0e3f);   fill2(bg, 0.0f, 0.0f);
+        FortranBuf rho(im,kme,jme), pii(im,kme,jme), p(im,kme,jme), delz(im,kme,jme);
+        fill2(rho, 1.089f, 0.9567f); fill2(pii, 0.9704f, 0.9031f);
+        fill2(p, 9.0e4f, 7.0e4f);    fill2(delz, 500.0f, 500.0f);
+
+        FortranBuf th_o(im,kme,jme), qv_o(im,kme,jme), qc_o(im,kme,jme), qr_o(im,kme,jme);
+        FortranBuf qi_o(im,kme,jme), qs_o(im,kme,jme), qg_o(im,kme,jme);
+        FortranBuf nccn_o(im,kme,jme), nc_o(im,kme,jme), ni_o(im,kme,jme), nr_o(im,kme,jme);
+        FortranBuf bg_o(im,kme,jme);
+
+        kdm6_handle_t* handle = nullptr;
+        int rc = kdm6_step_c(
+            th.ptr(), qv.ptr(), qc.ptr(), qr.ptr(), qi.ptr(), qs.ptr(), qg.ptr(),
+            nccn.ptr(), nc.ptr(), ni.ptr(), nr.ptr(), bg.ptr(),
+            rho.ptr(), pii.ptr(), p.ptr(), delz.ptr(),
+            im, kme, jme, /*dt=*/20.0,
+            /*param_grad_flags=*/0, /*value_only=*/0,
+            th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(),
+            qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
+            nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
+            &handle,
+            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr);
+        assert(rc == KDM6_OK);
+        assert(handle != nullptr);              // grad-mode → handle exists
+
+        // packed covector u = field-scaled deterministic pattern
+        std::vector<double> u_packed(NF * BK), grad_out(NF * BK, -777.0);
+        for (size_t i = 0; i < u_packed.size(); ++i)
+            u_packed[i] = 1.0 + 0.25 * static_cast<double>(i % 7);
+
+        rc = kdm6_handle_vjp_c(handle, u_packed.data(), grad_out.data());
+        assert(rc == KDM6_OK);
+        // f32-GRAPH CAVEAT (kdm6ad+da.md §0.1.A): the OPERATIONAL float32 graph
+        // can NaN its backward at inactive-ice corners (f32 underflow of deep
+        // rslope^k chains -> 1/0*0 in the where-mask backward — the §30 Inf×0
+        // mask-interior class, f32-only; the fp64 oracle/Handle gates are fully
+        // finite). The DA design default is the fp64 adjoint forward; this ABI
+        // smoke asserts MECHANICS + the known-corner confinement, not blanket
+        // finiteness. Known corner set on this IC: qi(cell1), nc(cell0), ni(cell0).
+        bool any_nz = false;
+        size_t n_nonfinite = 0;
+        for (size_t i = 0; i < grad_out.size(); ++i) {
+            assert(grad_out[i] != -777.0);      // fully overwritten
+            if (!std::isfinite(grad_out[i])) {
+                const size_t f = i / BK;
+                // confined to the ice/number corner fields: qi(4), nc(8), ni(9)
+                assert(f == 4 || f == 8 || f == 9);
+                ++n_nonfinite;
+            } else if (grad_out[i] != 0.0) {
+                any_nz = true;
+            }
+        }
+        assert(any_nz);
+        assert(n_nonfinite <= 4);
+
+        // packed direction v (small, field-major) → JVP
+        std::vector<double> v_packed(NF * BK), tan_out(NF * BK, -777.0);
+        for (size_t f = 0; f < NF; ++f) {
+            // per-field scale ~1e-4 of typical magnitude (rough, deterministic)
+            double scale = (f == 0) ? 1e-2 : (f >= 7 ? 1e4 : 1e-7);
+            for (size_t b = 0; b < BK; ++b)
+                v_packed[f * BK + b] = scale * (0.5 + 0.1 * static_cast<double>((f + b) % 5));
+        }
+        rc = kdm6_handle_jvp_c(handle, v_packed.data(), tan_out.data());
+        assert(rc == KDM6_OK);
+        bool tan_overwritten = false;
+        for (size_t i = 0; i < tan_out.size(); ++i)
+            if (tan_out[i] != -777.0) tan_overwritten = true;
+        assert(tan_overwritten);
+        // NOTE: the <Jv,u> == <v,J^T u> adjoint identity is NOT asserted at the
+        // f32 ABI — the operational f32 backward NaNs at the inactive-ice corner
+        // (see the vjp caveat above) and the Pearlmutter inner product propagates
+        // it (0*NaN). The identity is asserted EXACTLY (1e-12) on the fp64 paths:
+        // C++ test_handle_vjp (jvp_vjp_inner_product_exact, masked_adjoint_identity)
+        // and Python test_handle_vjp_jvp.py. The fp64 kdm6_step_ad(_c) entry is
+        // the design-default DA path (kdm6ad+da.md §0.1.A); this smoke pins the
+        // packed-ABI MECHANICS (rc, layout, overwrite, lifecycle).
+
+        // lifecycle: close → further calls refused with the documented code
+        rc = kdm6_handle_close_c(handle);
+        assert(rc == KDM6_OK);
+        // NOTE: handle memory is freed by close — calling again with the same
+        // pointer is UB per the ABI contract; a NULL handle returns OK.
+        assert(kdm6_handle_close_c(nullptr) == KDM6_OK);
+    } END_TEST();
+}
+
+void test_c_abi_vjp_value_only_refused() {
+    TEST(test_c_abi_vjp_value_only_refused) {
+        // value_only=1 → handle == nullptr → vjp on nullptr = NULL_POINTER.
+        // (the VALUE_ONLY error code is reserved for a future value-only handle
+        // object; the operational contract returns no handle at all.)
+        std::vector<double> buf(12, 0.0);
+        assert(kdm6_handle_vjp_c(nullptr, buf.data(), buf.data()) == KDM6_ERR_NULL_POINTER);
+        assert(kdm6_handle_jvp_c(nullptr, buf.data(), buf.data()) == KDM6_ERR_NULL_POINTER);
+    } END_TEST();
+}
+
+
+// ── [DA Phase 3] packed layout on a NONTRIVIAL tile (Codex stop-review) ──────
+// Columns evolve independently in kdm6 (no horizontal coupling), so the vjp of
+// a covector supported on ONE Fortran cell (i0,k0,j0) must have its gradient
+// support confined to the SAME (i0,j0) column. If the packed layout scrambles
+// (im,kme,jme) ordering, the support lands in a different column — this test
+// fails for any wrong permutation on an im=2,kme=2,jme=2 tile.
+void test_c_abi_vjp_packed_layout_nontrivial_tile() {
+    TEST(test_c_abi_vjp_packed_layout_nontrivial_tile) {
+        const int im = 2, kme = 2, jme = 2;
+        const size_t NF = 12, N = static_cast<size_t>(im) * kme * jme;
+        auto idx = [&](int i, int k, int j) {            // Fortran col-major
+            return static_cast<size_t>(i) + im * (static_cast<size_t>(k) + kme * j);
+        };
+
+        // distinct, physical values per column so every column is active-warm
+        FortranBuf th(im,kme,jme), qv(im,kme,jme), qc(im,kme,jme), qr(im,kme,jme);
+        FortranBuf qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme), nccn(im,kme,jme);
+        FortranBuf nc(im,kme,jme), ni(im,kme,jme), nr(im,kme,jme), bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme), pii(im,kme,jme), p(im,kme,jme), delz(im,kme,jme);
+        for (int j = 0; j < jme; ++j) for (int k = 0; k < kme; ++k) for (int i = 0; i < im; ++i) {
+            const size_t q = idx(i,k,j);
+            const float col = static_cast<float>(1 + i + 2*j);   // column flavor
+            th.data[q]   = 295.0f + 1.5f*col + 2.0f*k;
+            qv.data[q]   = 1.2e-2f + 1e-3f*col;
+            qc.data[q]   = 8.0e-4f + 1e-4f*col;
+            qr.data[q]   = 5.0e-5f + 1e-5f*col;
+            qi.data[q]   = 0.0f; qs.data[q] = 0.0f; qg.data[q] = 0.0f;
+            nccn.data[q] = 1.0e9f;
+            nc.data[q]   = 1.0e8f + 1e7f*col;
+            ni.data[q]   = 0.0f;
+            nr.data[q]   = 1.0e4f;
+            bg.data[q]   = 0.0f;
+            rho.data[q]  = 1.05f; pii.data[q] = 0.97f;
+            p.data[q]    = 8.8e4f; delz.data[q] = 500.0f;
+        }
+        FortranBuf th_o(im,kme,jme), qv_o(im,kme,jme), qc_o(im,kme,jme), qr_o(im,kme,jme);
+        FortranBuf qi_o(im,kme,jme), qs_o(im,kme,jme), qg_o(im,kme,jme);
+        FortranBuf nccn_o(im,kme,jme), nc_o(im,kme,jme), ni_o(im,kme,jme), nr_o(im,kme,jme);
+        FortranBuf bg_o(im,kme,jme);
+
+        kdm6_handle_t* handle = nullptr;
+        int rc = kdm6_step_c(
+            th.ptr(), qv.ptr(), qc.ptr(), qr.ptr(), qi.ptr(), qs.ptr(), qg.ptr(),
+            nccn.ptr(), nc.ptr(), ni.ptr(), nr.ptr(), bg.ptr(),
+            rho.ptr(), pii.ptr(), p.ptr(), delz.ptr(),
+            im, kme, jme, /*dt=*/20.0, 0, /*value_only=*/0,
+            th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(),
+            qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
+            nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
+            &handle, nullptr, 0.0, 0.0, nullptr, nullptr, nullptr);
+        assert(rc == KDM6_OK && handle != nullptr);
+
+        // covector: u = e_{qv at (i0=1,k0=0,j0=1)} — single Fortran cell
+        const int i0 = 1, k0 = 0, j0 = 1;
+        std::vector<double> u(NF * N, 0.0), g(NF * N, 0.0);
+        const size_t QV = 1;                              // field index of qv
+        u[QV * N + idx(i0, k0, j0)] = 1.0;
+        rc = kdm6_handle_vjp_c(handle, u.data(), g.data());
+        assert(rc == KDM6_OK);
+
+        // gradient support must be confined to column (i0,j0) across ALL fields
+        bool any_in_col = false;
+        for (size_t f = 0; f < NF; ++f) {
+            for (int j = 0; j < jme; ++j) for (int k = 0; k < kme; ++k) for (int i = 0; i < im; ++i) {
+                const double val = g[f * N + idx(i,k,j)];
+                if (!std::isfinite(val)) continue;        // f32 corner caveat
+                if (val != 0.0) {
+                    assert(i == i0 && j == j0);           // scrambled layout fails HERE
+                    any_in_col = true;
+                }
+            }
+        }
+        assert(any_in_col);
+        assert(kdm6_handle_close_c(handle) == KDM6_OK);
+    } END_TEST();
+}
+
 int main() {
     std::cout << "kdm6_libtorch C ABI bridge tests\n";
     test_c_abi_step_runs_microphysics();
     test_c_abi_invalid_dim();
     test_c_abi_null_pointer();
     test_c_abi_step_per_cell_ncmin_mixed_xland();
+    test_c_abi_vjp_jvp_roundtrip();
+    test_c_abi_vjp_value_only_refused();
+    test_c_abi_vjp_packed_layout_nontrivial_tile();
     std::cout << "All C ABI tests passed.\n";
     return 0;
 }

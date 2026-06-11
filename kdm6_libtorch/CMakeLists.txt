@@ -99,6 +99,9 @@ add_test(NAME c_abi COMMAND test_c_abi)
 add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
 target_link_libraries(test_autograd_endtoend PRIVATE kdm6)
 add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
+add_executable(test_handle_vjp tests/test_handle_vjp.cpp)
+target_link_libraries(test_handle_vjp PRIVATE kdm6)
+add_test(NAME handle_vjp COMMAND test_handle_vjp)
 
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.

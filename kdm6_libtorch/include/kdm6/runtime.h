@@ -61,6 +61,30 @@ FnResult kdm6_fn(const State& state,
                  double ncmin_land = 0.0,
                  double ncmin_sea = 0.0);
 
+// ── [G3] GraphOptions — DA derivative-call options (kdm6ad+da.md §8.1/§8.2) ──
+//
+// active_field_mask: bit i = State::fields()[i] (packed order th,qv,qc,qr,qi,
+// qs,qg,nccn,nc,ni,nr,bg — kdm6ad+da.md §6.4). 0x0FFF = all 12 fields active.
+// Semantics (adversarial review F1-MASK-ADJOINT-ASYM): vjp masks its OUTPUT
+// grad (P∘J^T); jvp masks its INPUT direction (J∘P) — so the SAME mask on both
+// sides forms an exactly-adjoint TL/AD pair: <J P v, u> = <v, P J^T u>.
+enum class GraphMode : int {
+    ValueOnly = 0,
+    RecordGraph = 1,
+    LocalGraphForVjp = 2,
+    CheckpointRecompute = 3,
+    DiagnosticFullGraph = 4,
+};
+
+struct GraphOptions {
+    GraphMode mode = GraphMode::RecordGraph;
+    uint32_t active_field_mask = 0x0FFFu;   // all 12 State fields
+    bool retain_graph = false;              // default one-shot vjp (DA policy §6.2)
+    bool create_graph = false;              // true → grad-of-grad (double-VJP)
+};
+
+inline constexpr uint32_t kAllStateFields = 0x0FFFu;
+
 // ── [G3] Handle — vjp/jvp/jacobian 인터페이스 ──────────────────────────────
 class Handle {
 public:
@@ -78,9 +102,15 @@ public:
     Handle(Handle&&) noexcept;
     Handle& operator=(Handle&&) noexcept;
 
-    // [G3] Derivative API
-    State vjp(const State& u) const;
-    State jvp(const State& v) const;
+    // [G3] Derivative API (kdm6ad+da.md §6.2/§7.2).
+    // vjp: J^T u — scalar = state_dot(state_out, u); torch::autograd::grad to the
+    //      state_in leaves. u field shapes must EQUAL state_out shapes (validated
+    //      BEFORE autograd — broadcasting silently corrupts the adjoint).
+    // jvp: J v via the double-VJP/Pearlmutter route (torch.func-style forward AD
+    //      is NOT used — custom Functions lack forward-mode rules; §0.1.B).
+    //      Repeat-callable (the forward graph is retained). v is INPUT-masked.
+    State vjp(const State& u, const GraphOptions& opts = {}) const;
+    State jvp(const State& v, const GraphOptions& opts = {}) const;
     // jacobian / param_grad — 후행 추가
 
     // [G6] RAII close — 명시적 해제

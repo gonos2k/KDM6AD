@@ -82,8 +82,27 @@ int kdm6_step_c(
 /**
  * VJP — J^T @ u. 4D-Var adjoint 용.
  *
- * `u_packed`는 12 필드 × (im*jme*kme) double의 *연결된* 배열.
- * `grad_out_packed`도 동일 layout, caller-allocated.
+ * PACKED BUFFER LAYOUT (ABI contract — u_packed / grad_out_packed, and the
+ * JVP v_packed / tangent_out_packed below):
+ *   - total size  = 12 * im * kme * jme doubles, caller-allocated.
+ *   - field-major: 12 consecutive blocks in State field order
+ *       th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg
+ *     (the n-th field, n = 1..12 in that order, starts at 0-based double
+ *     offset (n-1) * im*kme*jme).
+ *   - WITHIN each block: FORTRAN (im, kme, jme) COLUMN-MAJOR — the SAME
+ *     convention as every state/forcing array in kdm6_step_c. Concretely,
+ *     each block is bit-for-bit a Fortran array
+ *         REAL(8) :: A(im, kme, jme)
+ *     whose element A(i,k,j) — 1-BASED Fortran indices, i=1..im, k=1..kme,
+ *     j=1..jme — sits at 0-based double offset
+ *         (i-1) + im*(k-1) + im*kme*(j-1)
+ *     within the block. (For C callers with 0-based i,k,j: i + im*k +
+ *     im*kme*j.) A Fortran caller therefore declares
+ *         REAL(8) :: u(im, kme, jme, 12)
+ *     fills u(:,:,:,n) per field in the order above, and passes u — exactly
+ *     like its state arrays; no knowledge of the internal (B,K) tensor layout
+ *     is required. The bridge performs the layout staging internally.
+ *   - im/kme/jme are the dimensions captured in the handle at kdm6_step_c time.
  *
  * @return KDM6_OK 또는 KDM6_ERR_VALUE_ONLY / HANDLE_CLOSED / NOT_IMPLEMENTED.
  *
@@ -91,13 +110,19 @@ int kdm6_step_c(
  * operational state/forcing ABI (kdm6_step_c) went native float32 to match Fortran
  * mp37 (RWORDSIZE=4). 4D-Var adjoint/tangent precision must remain fp64 (the
  * differentiable oracle's precision); float32 gradient buffers would degrade it.
+ * PRECISION CAVEAT: gradients computed on the operational float32 graph carry
+ * f32 precision inside these double buffers, and the f32 backward can be NaN at
+ * inactive-ice corners — the design-default DA path is the fp64 adjoint forward
+ * (kdm6ad+da.md §0.1.A); this f32 ABI is for mechanics/diagnostics.
  */
 int kdm6_handle_vjp_c(kdm6_handle_t* h,
                       const double* u_packed,
                       double* grad_out_packed);
 
 /**
- * JVP — J @ v. EnKF perturbation 용. (packed arrays fp64 — see VJP note above.)
+ * JVP — J @ v (double-VJP/Pearlmutter route internally). EnKF perturbation 용.
+ * v_packed / tangent_out_packed use the SAME packed layout as the VJP above
+ * (field-major × Fortran (im,kme,jme) column-major blocks, fp64).
  */
 int kdm6_handle_jvp_c(kdm6_handle_t* h,
                       const double* v_packed,

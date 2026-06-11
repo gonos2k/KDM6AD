@@ -24,7 +24,8 @@ from dataclasses import dataclass
 from typing import Callable, NamedTuple
 import torch
 
-from .state import State, Forcing, from_fortran_arrays, to_fortran_arrays
+from .state import (State, Forcing, from_fortran_arrays, to_fortran_arrays,
+                    state_dot, zeros_like_state, map_state)
 from . import constants as c
 from . import coordinator as _coord
 from . import cloud_dsd as _cdsd
@@ -93,6 +94,39 @@ def make_parameters(
     )
 
 
+def _validate_state_shapes(given: State, ref: State, *, arg: str, ref_name: str) -> None:
+    """u/v 의 per-field shape 가 기준 State 와 정확히 일치하는지 사전 검증.
+
+    state_dot/inner-product 는 broadcasting 을 묵인하므로, (2,1) vs (1,2) 같은
+    broadcast-호환 mismatch 가 그럴듯하지만 *틀린* adjoint/tangent 를 조용히
+    반환한다 (adversarial review F1-SHAPE). autograd.grad 호출 전에 막는다."""
+    for name, g, r in zip(State._fields, given, ref):
+        if g.shape != r.shape:
+            raise ValueError(
+                f"{arg}.{name} shape {tuple(g.shape)} != {ref_name}.{name} "
+                f"shape {tuple(r.shape)} (broadcasting is not allowed here)"
+            )
+
+
+def _validate_active_fields(active_fields: tuple[str, ...]) -> None:
+    """active_fields 이름 검증. vjp/jvp 의 autograd.grad 호출 *이전* 에 실행해야
+    한다 — 잘못된 이름이 one-shot graph(retain_graph=False)를 소모한 뒤 실패하면
+    Handle 이 복구 불가가 된다 (Codex stop-review)."""
+    unknown = set(active_fields) - set(State._fields)
+    if unknown:
+        raise ValueError(f"unknown State fields: {sorted(unknown)}")
+
+
+def _mask_inactive_fields(s: State, active_fields: tuple[str, ...]) -> State:
+    """active_fields 외 field 를 0 으로 마스킹 (DA active_field_mask, kdm6ad+da.md §8.2).
+    autograd-safe: zeros_like 치환 (where 불필요 — field 단위 선택).
+    이름 검증은 _validate_active_fields 로 사전 수행."""
+    return State(*(
+        f if name in active_fields else torch.zeros_like(f)
+        for name, f in zip(State._fields, s)
+    ))
+
+
 # ─── Handle: JVP / VJP / Jacobian 추출 인터페이스 ──────────────────────────────
 
 @dataclass
@@ -151,30 +185,111 @@ class Handle:
         if self.pullback is None and self.func is None:
             raise RuntimeError("Handle is missing derivative context")
 
-    def vjp(self, u: State) -> State:
-        """[G3] J^T @ u — adjoint 연산.
+    def vjp(
+        self,
+        u: State,
+        *,
+        active_fields: tuple[str, ...] | None = None,
+        retain_graph: bool = False,
+        create_graph: bool = False,
+    ) -> State:
+        """[G3] J^T @ u — adjoint 연산 (kdm6ad+da.md §6.3).
+
+        scalar = <state_out, u> 를 만들고 state_in leaves로 torch.autograd.grad.
+        state_in 의 각 field 는 requires_grad leaf 여야 한다 (kdm6_step(value_only
+        =False) 호출 전에 설정). graph 에 연결되지 않은 field 의 grad 는 0 으로
+        materialize 된다 (allow_unused + materialize_grads).
 
         Parameters
         ----------
         u : State
-            state_out 공간의 covector (e.g., 관측-모델 잔차)
+            state_out 공간의 covector (e.g., RTTOV/GK2A 관측 adjoint ∂J/∂x_out)
+        active_fields : tuple[str, ...], optional
+            지정 시 그 외 field 의 grad 를 0 으로 마스킹 (cloud-active DA 의
+            hydrometeor-중심 VJP). None 이면 전 field 반환.
+        retain_graph : bool
+            True 면 같은 Handle 로 vjp 를 반복 호출 가능 (기본 one-shot=False).
+        create_graph : bool
+            True 면 반환 grad 가 다시 미분 가능 (double-VJP/Pearlmutter 용).
 
         Returns
         -------
-        state_in_grad : State
-            ∂(u · state_out) / ∂state_in
+        State : ∂<state_out, u> / ∂state_in  (= J^T u)
         """
         self._ensure_derivative_ready()
-        raise NotImplementedError("[G3] VJP — implement after core kdm6_step works")
+        if active_fields is not None:
+            _validate_active_fields(active_fields)
+        _validate_state_shapes(u, self.state_out, arg="u", ref_name="state_out")
+        scalar = state_dot(self.state_out, u)
+        grads = torch.autograd.grad(
+            scalar,
+            tuple(self.state_in),
+            retain_graph=retain_graph or create_graph,
+            create_graph=create_graph,
+            allow_unused=True,
+            materialize_grads=True,
+        )
+        out = State(*grads)
+        if active_fields is not None:
+            out = _mask_inactive_fields(out, active_fields)
+        return out
 
-    def jvp(self, v: State) -> State:
-        """[G3] J @ v — tangent linear 연산.
+    def jvp(self, v: State, *, active_fields: tuple[str, ...] | None = None) -> State:
+        """[G3] J @ v — tangent linear, double-VJP/Pearlmutter route (kdm6ad+da.md
+        §0.1.B/§10.2). torch.func.jvp 는 custom autograd Function 들의 forward-mode
+        rule 준비 전까지 비활성 (장기 목표) — 본 구현은 reverse-mode 만 사용한다.
 
-        Note: 일반적으로 vjp보다 비싸 (forward-mode가 활용되면 cheaper); 본 메서드는
-        후행 도입을 위한 placeholder. torch.func.jvp 활용 예정.
+        Pearlmutter: dummy adjoint u(=0, requires_grad) 로 w = J^T u 를
+        create_graph=True 로 만들고, <w, v> = u^T (J v) 를 u 로 미분하면 J v 가
+        fp 정확도로 나온다 (그래프가 u 에 선형이므로 u=0 seed 로 충분).
+        전제: 경로상 모든 op 의 backward 가 다시 미분 가능해야 한다
+        (test_custom_functions_double_backward_ready 게이트).
+
+        Notes
+        -----
+        - forward graph 는 retain 되므로 같은 Handle 로 반복 호출 가능.
+        - 비용: VJP 2회분 (forward-mode 대비 비싸지만 정확).
+        - active_fields 는 CONTROL-SUBSPACE 의미: 입력 방향 v 를 마스킹해 J·Pv 를
+          계산한다 (vjp 의 P·J^T u 와 정확히 adjoint 쌍). 출력공간 마스킹이
+          필요하면 반환 tangent 를 호출측에서 별도 마스킹할 것.
+        - state_in 의 모든 field 가 requires_grad leaf 여야 한다 — 일부만 켜진
+          경우 torch 가 명시적 RuntimeError 를 낸다 (silent zero 아님; 부분
+          control 은 전체-leaf 로 만들고 active_fields/마스크로 제한할 것).
         """
         self._ensure_derivative_ready()
-        raise NotImplementedError("[G3] JVP — implement after core kdm6_step works")
+        if active_fields is not None:
+            _validate_active_fields(active_fields)
+        _validate_state_shapes(v, self.state_in, arg="v", ref_name="state_in")
+        if active_fields is not None:
+            # CONTROL-SUBSPACE semantics (adversarial review F1-MASK-ADJOINT-ASYM):
+            # mask the INPUT direction (J·Pv), NOT the output tangent (P∘J).
+            # vjp masks its OUTPUT (P∘J^T), so the masked pair is exactly adjoint:
+            #   <J P v, u> = <v, P J^T u>  — same active_fields on both sides.
+            v = _mask_inactive_fields(v, active_fields)
+        # dummy adjoint: zero-valued leaves (graph is LINEAR in u — value irrelevant)
+        u_fields = tuple(
+            torch.zeros_like(f).requires_grad_(True) for f in self.state_out
+        )
+        scalar = state_dot(self.state_out, State(*u_fields))
+        w = torch.autograd.grad(
+            scalar,
+            tuple(self.state_in),
+            retain_graph=True,      # keep the forward graph for repeated calls
+            create_graph=True,      # w must be differentiable w.r.t. u
+            allow_unused=True,
+            materialize_grads=True,
+        )
+        inner = torch.zeros((), dtype=scalar.dtype, device=scalar.device)
+        for w_f, v_f in zip(w, v):
+            inner = inner + (w_f * v_f).sum()
+        tangents = torch.autograd.grad(
+            inner,
+            u_fields,
+            retain_graph=False,
+            allow_unused=True,
+            materialize_grads=True,
+        )
+        return State(*tangents)
 
     def jacobian(
         self,

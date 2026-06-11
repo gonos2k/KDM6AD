@@ -478,18 +478,135 @@ bool Handle::is_value_only() const noexcept {
     return impl_ && impl_->value_only;
 }
 
-State Handle::vjp(const State& /*u*/) const {
-    TORCH_CHECK(impl_, "Handle is moved-from");
-    TORCH_CHECK(!impl_->closed, "Handle is closed");
-    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
-    TORCH_CHECK_NOT_IMPLEMENTED(false, "[G3] vjp — implement after kdm6_fn body works");
+namespace {
+
+// u/v per-field shapes must EQUAL the reference state exactly — state_dot and
+// the Pearlmutter inner product broadcast silently, returning plausible but
+// WRONG adjoints/tangents for e.g. (2,1)-vs-(1,2) inputs (adversarial review
+// F1-SHAPE). Validate BEFORE any autograd call so a bad input cannot consume
+// the one-shot graph.
+void validate_state_shapes(const State& given, const State& ref,
+                           const char* arg, const char* ref_name) {
+    auto g = given.fields();
+    auto r = ref.fields();
+    for (size_t i = 0; i < g.size(); ++i) {
+        TORCH_CHECK(g[i]->defined(), arg, " field #", i, " is undefined");
+        TORCH_CHECK(g[i]->sizes() == r[i]->sizes(),
+                    arg, " field #", i, " shape ", g[i]->sizes(),
+                    " != ", ref_name, " shape ", r[i]->sizes(),
+                    " (broadcasting is not allowed here)");
+    }
 }
 
-State Handle::jvp(const State& /*v*/) const {
+// active_field_mask: zero the fields whose bit is unset (bit i = fields()[i]).
+State apply_active_mask(State s, uint32_t mask) {
+    if ((mask & kAllStateFields) == kAllStateFields) return s;
+    auto fs = s.fields();
+    for (size_t i = 0; i < fs.size(); ++i) {
+        if (!(mask & (1u << i))) *fs[i] = torch::zeros_like(*fs[i]);
+    }
+    return s;
+}
+
+}  // namespace
+
+State Handle::vjp(const State& u, const GraphOptions& opts) const {
     TORCH_CHECK(impl_, "Handle is moved-from");
     TORCH_CHECK(!impl_->closed, "Handle is closed");
     TORCH_CHECK(!impl_->value_only, "Handle is value-only");
-    TORCH_CHECK_NOT_IMPLEMENTED(false, "[G3] jvp — implement after kdm6_fn body works");
+    validate_state_shapes(u, impl_->state_out, "u", "state_out");
+
+    auto scalar = state_dot(impl_->state_out, u);
+
+    auto in_ptrs = impl_->state_in.fields();
+    std::vector<torch::Tensor> inputs;
+    inputs.reserve(in_ptrs.size());
+    for (auto* p : in_ptrs) inputs.push_back(*p);
+
+    auto grads = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/opts.retain_graph || opts.create_graph,
+        /*create_graph=*/opts.create_graph,
+        /*allow_unused=*/true);
+
+    State out;
+    auto out_ptrs = out.fields();
+    for (size_t i = 0; i < out_ptrs.size(); ++i) {
+        // materialize: an unconnected leaf is a zero column of J^T (exact)
+        *out_ptrs[i] = grads[i].defined() ? grads[i] : torch::zeros_like(inputs[i]);
+    }
+    return apply_active_mask(std::move(out), opts.active_field_mask);
+}
+
+State Handle::jvp(const State& v, const GraphOptions& opts) const {
+    // Pearlmutter double-VJP route (kdm6ad+da.md §0.1.B/§7.2): with a dummy
+    // adjoint u (zero-valued requires_grad leaves), w = J^T u is LINEAR in u,
+    // so Jv = d<w, v>/du exactly (zero seed suffices). torch.func-style forward
+    // AD is NOT used — the custom autograd Functions have no forward-mode rule.
+    // CONTROL-SUBSPACE mask semantics: the mask projects the INPUT direction
+    // (J·Pv) so the same mask on vjp/jvp forms an exactly-adjoint pair
+    // (adversarial review F1-MASK-ADJOINT-ASYM).
+    TORCH_CHECK(impl_, "Handle is moved-from");
+    TORCH_CHECK(!impl_->closed, "Handle is closed");
+    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    validate_state_shapes(v, impl_->state_in, "v", "state_in");
+
+    State v_eff = apply_active_mask(v, opts.active_field_mask);
+
+    auto out_ptrs = impl_->state_out.fields();
+    std::vector<torch::Tensor> u_leaves;
+    u_leaves.reserve(out_ptrs.size());
+    torch::Tensor scalar;
+    {
+        State u_state;
+        auto u_ptrs = u_state.fields();
+        for (size_t i = 0; i < out_ptrs.size(); ++i) {
+            auto leaf = torch::zeros_like(*out_ptrs[i]).requires_grad_(true);
+            u_leaves.push_back(leaf);
+            *u_ptrs[i] = leaf;
+        }
+        scalar = state_dot(impl_->state_out, u_state);
+    }
+
+    auto in_ptrs = impl_->state_in.fields();
+    std::vector<torch::Tensor> inputs;
+    inputs.reserve(in_ptrs.size());
+    for (auto* p : in_ptrs) inputs.push_back(*p);
+
+    // w = J^T u, kept differentiable w.r.t. u; the FORWARD graph is retained so
+    // the Handle stays repeat-callable (jvp/jvp/vjp on the same handle).
+    auto w = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/true, /*create_graph=*/true, /*allow_unused=*/true);
+
+    auto v_ptrs = v_eff.fields();
+    torch::Tensor inner = torch::zeros({}, scalar.options());
+    bool any_term = false;
+    for (size_t i = 0; i < w.size(); ++i) {
+        if (w[i].defined()) {
+            inner = inner + (w[i] * *v_ptrs[i]).sum();
+            any_term = true;
+        }
+        // undefined w[i] = a zero column of J^T (constant in u) — contributes
+        // no u-dependence, exactly as the true J would (zero column).
+    }
+
+    State out;
+    auto t_ptrs = out.fields();
+    if (!any_term || !inner.requires_grad()) {
+        for (size_t i = 0; i < t_ptrs.size(); ++i)
+            *t_ptrs[i] = torch::zeros_like(*out_ptrs[i]);
+        return out;
+    }
+
+    auto tangents = torch::autograd::grad(
+        {inner}, u_leaves, /*grad_outputs=*/{},
+        /*retain_graph=*/false, /*create_graph=*/false, /*allow_unused=*/true);
+    for (size_t i = 0; i < t_ptrs.size(); ++i) {
+        *t_ptrs[i] = tangents[i].defined() ? tangents[i]
+                                           : torch::zeros_like(*out_ptrs[i]);
+    }
+    return out;
 }
 
 // ── kdm6_step ───────────────────────────────────────────────────────────────

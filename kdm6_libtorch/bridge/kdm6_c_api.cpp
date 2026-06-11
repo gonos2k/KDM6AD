@@ -4,6 +4,7 @@
 
 #include <ATen/Parallel.h>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 #include <dlfcn.h>
 #include <exception>
@@ -17,6 +18,21 @@
 
 extern "C" struct kdm6_handle_t {
     std::unique_ptr<kdm6::Handle> impl;
+    // [DA Phase 3] shape metadata for the packed VJP/JVP ABI:
+    // packed layout = field-major sequence of FORTRAN (im,kme,jme) column-major
+    // double blocks — same convention as the state arrays (field order =
+    // State::fields(): th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg). See the
+    // unpack/pack helpers below; supersedes the kdm6ad+da.md §6.4 (B,K)-C-order
+    // sketch, which a Fortran caller could not fill without internal-layout
+    // knowledge (Codex stop-review: wrong for nontrivial tiles).
+    int im = 0;
+    int kme = 0;
+    int jme = 0;
+    // dtype of the recorded graph (operational kdm6_step_c → Float32; a future
+    // fp64 kdm6_step_ad_c → Float64). u/v are cast to this dtype; gradients
+    // computed on an f32 graph carry f32 precision even in double buffers
+    // (kdm6ad+da.md §0.1.A — the fp64 DA path is the design default).
+    c10::ScalarType dtype = c10::ScalarType::Float;
 };
 
 namespace {
@@ -154,7 +170,10 @@ extern "C" int kdm6_step_c(
         if (value_only != 0) {
             *handle = nullptr;
         } else {
-            auto* h = new kdm6_handle_t{std::move(result.handle)};
+            auto* h = new kdm6_handle_t{};
+            h->impl = std::move(result.handle);
+            h->im = im; h->kme = kme; h->jme = jme;
+            h->dtype = c10::ScalarType::Float;   // operational f32 graph
             *handle = h;
         }
         return KDM6_OK;
@@ -169,23 +188,111 @@ extern "C" int kdm6_step_c(
     }
 }
 
+namespace {
+
+// PACKED DERIVATIVE LAYOUT (Codex stop-review fix — "wrong for nontrivial tiles"):
+// the packed u/v/grad/tangent buffers use the SAME convention as every other
+// array in this ABI — a field-major sequence of FORTRAN (im, kme, jme)
+// COLUMN-MAJOR double blocks (field order = State::fields(): th,qv,qc,qr,qi,
+// qs,qg,nccn,nc,ni,nr,bg; per-field offset = field*im*kme*jme; within a field,
+// element (i,k,j) sits at i + im*k + im*kme*j, exactly like the state arrays).
+// The bridge performs the same (jme,kme,im)->(B=i*jme+j, K) staging as
+// from_blob_3d (state.cpp) and its inverse on the way out — a Fortran caller
+// fills these buffers exactly like its state arrays, no internal-layout
+// knowledge required. (The previous draft consumed the internal (B,K) C-order
+// directly, which only coincided with this for im=jme=1 tiles.)
+kdm6::State unpack_packed_state(const double* packed, int im, int kme, int jme,
+                                c10::ScalarType dtype) {
+    const int64_t N = static_cast<int64_t>(im) * kme * jme;
+    kdm6::State s;
+    auto fp = s.fields();
+    auto opts = torch::TensorOptions().dtype(torch::kFloat64);
+    for (size_t f = 0; f < fp.size(); ++f) {
+        // Fortran column-major (im,kme,jme) == C-order (jme,kme,im)
+        auto view3d = torch::from_blob(
+            const_cast<double*>(packed) + static_cast<int64_t>(f) * N,
+            {jme, kme, im}, opts)
+                          .permute({2, 1, 0});            // -> (im,kme,jme) logical
+        auto flat = view3d.permute({0, 2, 1})              // -> (im,jme,kme)
+                          .reshape({static_cast<int64_t>(im) * jme, kme});
+        *fp[f] = flat.clone().to(dtype);                   // (B=i*jme+j, K)
+    }
+    return s;
+}
+
+// State (B,K) → packed Fortran column-major double blocks (always written fp64 —
+// the DA-side containers; an f32-graph gradient keeps f32 PRECISION inside them).
+// Mirrors copy_back_to_fortran (state.cpp) at double precision.
+void pack_packed_state(const kdm6::State& s, double* packed,
+                       int im, int kme, int jme) {
+    const int64_t N = static_cast<int64_t>(im) * kme * jme;
+    auto fp = const_cast<kdm6::State&>(s).fields();
+    for (size_t f = 0; f < fp.size(); ++f) {
+        auto t = fp[f]->detach().to(torch::kFloat64);
+        TORCH_CHECK(t.numel() == N, "packed field ", f, " numel mismatch");
+        auto fortran_order = t.reshape({im, jme, kme})     // (B,K)->(im,jme,K)
+                                 .permute({0, 2, 1})       // -> (im,kme,jme) logical
+                                 .permute({2, 1, 0})       // -> (jme,kme,im) C-order
+                                 .contiguous();            //  == Fortran col-major bytes
+        std::memcpy(packed + static_cast<int64_t>(f) * N,
+                    fortran_order.data_ptr<double>(), sizeof(double) * N);
+    }
+}
+
+}  // namespace
+
 extern "C" int kdm6_handle_vjp_c(kdm6_handle_t* h,
-                                  const double* /*u_packed*/,
-                                  double* /*grad_out_packed*/) {
+                                  const double* u_packed,
+                                  double* grad_out_packed) {
     if (!h || !h->impl) return KDM6_ERR_NULL_POINTER;
+    if (!u_packed || !grad_out_packed) return KDM6_ERR_NULL_POINTER;
     if (h->impl->is_closed()) return KDM6_ERR_HANDLE_CLOSED;
     if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
-    // [TODO] u_packed → State, vjp 호출, grad_out_packed에 복사
-    return KDM6_ERR_NOT_IMPLEMENTED;
+    if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
+
+    try {
+        auto u = unpack_packed_state(u_packed, h->im, h->kme, h->jme, h->dtype);
+        // Repeat-callable by design at the ABI (a DA driver may apply several
+        // observation adjoints to one step) — retain the forward graph.
+        kdm6::GraphOptions opts;
+        opts.retain_graph = true;
+        auto grad = h->impl->vjp(u, opts);
+        pack_packed_state(grad, grad_out_packed, h->im, h->kme, h->jme);
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_handle_vjp_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) {
+        return KDM6_ERR_INTERNAL;
+    }
 }
 
 extern "C" int kdm6_handle_jvp_c(kdm6_handle_t* h,
-                                  const double* /*v_packed*/,
-                                  double* /*tangent_out_packed*/) {
+                                  const double* v_packed,
+                                  double* tangent_out_packed) {
     if (!h || !h->impl) return KDM6_ERR_NULL_POINTER;
+    if (!v_packed || !tangent_out_packed) return KDM6_ERR_NULL_POINTER;
     if (h->impl->is_closed()) return KDM6_ERR_HANDLE_CLOSED;
     if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
-    return KDM6_ERR_NOT_IMPLEMENTED;
+    if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
+
+    try {
+        auto v = unpack_packed_state(v_packed, h->im, h->kme, h->jme, h->dtype);
+        // Pearlmutter double-VJP under the hood (Handle::jvp); the forward
+        // graph is retained, so jvp/vjp may be interleaved on one handle.
+        auto tangent = h->impl->jvp(v);
+        pack_packed_state(tangent, tangent_out_packed, h->im, h->kme, h->jme);
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_handle_jvp_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) {
+        return KDM6_ERR_INTERNAL;
+    }
 }
 
 extern "C" int kdm6_handle_close_c(kdm6_handle_t* h) {
