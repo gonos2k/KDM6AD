@@ -101,8 +101,37 @@ def _rgmma_scalar(x: float) -> float:
     return _fc.rgmma_f(x)
 
 
+class _RgmmaF32(torch.autograd.Function):
+    """Elementwise Fortran rgmma on float32 — mirrors C++ ops::rgmma_t.
+
+    forward: fconst.rgmma_f per cell (f32 expf of the f32-rounded double-Lanczos
+    GAMMLN; torch.lgamma f32 differs at non-integer args). backward: the exact
+    derivative Gamma(x)*digamma(x) on the saved tensors.
+    """
+
+    @staticmethod
+    def forward(ctx, x: torch.Tensor) -> torch.Tensor:
+        import numpy as np
+        xc = x.detach().contiguous()
+        flat = xc.view(-1).numpy()
+        out = np.fromiter((_fc.rgmma_f(float(v)) for v in flat),
+                          dtype=np.float32, count=flat.size).reshape(tuple(xc.shape))
+        out_t = torch.from_numpy(out).to(x.device)
+        ctx.save_for_backward(x, out_t)
+        return out_t
+
+    @staticmethod
+    def backward(ctx, go: torch.Tensor) -> torch.Tensor:
+        x, out = ctx.saved_tensors
+        return go * out * torch.digamma(x)
+
+
 def _rgmma_tensor(x: torch.Tensor) -> torch.Tensor:
-    """Per-cell rgmma = Γ(x). review6 audit에서 부호 수정."""
+    """Per-cell rgmma = Γ(x) — dtype-dispatched like C++ ops::rgmma_t:
+    f32 → Fortran GAMMLN mirror (elementwise fconst.rgmma_f); f64 (oracle) →
+    exp(lgamma), which the C++ f64 path matches exactly."""
+    if x.dtype == torch.float32:
+        return _RgmmaF32.apply(x)
     return torch.exp(torch.lgamma(x))
 
 
