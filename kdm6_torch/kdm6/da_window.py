@@ -40,7 +40,7 @@ import torch
 
 from .state import State, Forcing, map_state, zeros_like_state
 from .runtime import kdm6_step, make_parameters, Parameters, _validate_state_shapes
-from .thermo import compute_qs_water, default_thermo_params
+from .thermo import compute_qs_water, compute_xl, compute_cpm, default_thermo_params
 
 
 def _to_f64(s):
@@ -119,6 +119,10 @@ class WindowConfig:
     obs_active: Callable[[int], bool] | None = None
     # §8.2 hydrometeor-centric adjoint (None = all fields)
     active_fields: tuple[str, ...] | None = None
+    # §5.2 PRE-state increments: the step consumes x_t' = x_t + η_pre_t.
+    # ∂J/∂η_pre_t = ∂J/∂x_t' = the OUTPUT of step-t's vjp (before adding
+    # obs_adj[t]) — returned as grad_eta_pre. Driver-level, kernel untouched.
+    eta_pre: "Sequence[State] | None" = None
     # §5.1 weak-constraint post-physics increments: x_{t+1} = M(x_t) + η_t.
     # length-T sequence of State increments (or None). Driver-level — no kernel
     # change, so the operational bitwise lock is untouched. The returned
@@ -135,6 +139,7 @@ class WindowResult:
     vjp_steps: list[int] = field(default_factory=list)   # steps whose VJP ran
     skipped_steps: list[int] = field(default_factory=list)  # DIAGNOSTIC: value-inert steps (VJP still ran)
     grad_eta: list[State] | None = None    # ∂J/∂η_t per step (§5.1), if eta given
+    grad_eta_pre: list[State] | None = None  # ∂J/∂η_pre_t per step (§5.2)
 
 
 def run_da_window(
@@ -172,6 +177,11 @@ def run_da_window(
             raise ValueError(f"eta length {len(config.eta)} != window length {T}")
         for t, e in enumerate(config.eta):
             _validate_state_shapes(e, x, arg=f"eta[{t}]", ref_name="state")
+    if config.eta_pre is not None:
+        if len(config.eta_pre) != T:
+            raise ValueError(f"eta_pre length {len(config.eta_pre)} != window length {T}")
+        for t, e in enumerate(config.eta_pre):
+            _validate_state_shapes(e, x, arg=f"eta_pre[{t}]", ref_name="state")
     f64_forcings = [_to_f64(f) for f in forcings]
     checkpoints: list[State] = []
     obs_adj: dict[int, State] = {}
@@ -187,8 +197,13 @@ def run_da_window(
 
     step_noop: list[bool] = []
     for t in range(T):
-        checkpoints.append(State(*(f.detach().clone() for f in x)))
-        _grab_obs(t, checkpoints[t])
+        xt = State(*(f.detach().clone() for f in x))
+        _grab_obs(t, xt)                                        # obs sees x_t (pre η_pre)
+        if config.eta_pre is not None:                          # §5.2 x_t' = x_t + η_pre_t
+            x = _add_states(x, _to_f64(config.eta_pre[t]))
+            checkpoints.append(State(*(f.detach().clone() for f in x)))  # checkpoint x_t'
+        else:
+            checkpoints.append(xt)   # reuse — one clone per step (review DP-5)
         out, h = kdm6_step(x, f64_forcings[t], params, config.dt,
                            value_only=True, xland=config.xland,
                            ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
@@ -211,6 +226,7 @@ def run_da_window(
     skipped: list[int] = []
 
     grad_eta: list[State] | None = [None] * T if config.eta is not None else None
+    grad_eta_pre: list[State] | None = [None] * T if config.eta_pre is not None else None
 
     for t in reversed(range(T)):
         if grad_eta is not None:
@@ -231,10 +247,97 @@ def run_da_window(
         adj = handle.vjp(adj, active_fields=config.active_fields)
         handle.close()
         vjp_steps.append(t)
+        if grad_eta_pre is not None:
+            # ∂J/∂η_pre_t = ∂J/∂x_t' — the vjp output, before obs_adj[t]
+            # (the obs at t reads x_t, NOT x_t' = x_t + η_pre).
+            grad_eta_pre[t] = State(*(g.clone() for g in adj))
         if t in obs_adj:
             adj = _add_states(adj, obs_adj[t])
 
     return WindowResult(adj_x0=adj, checkpoints=checkpoints,
                         state_final=state_final,
                         vjp_steps=vjp_steps, skipped_steps=skipped,
-                        grad_eta=grad_eta)
+                        grad_eta=grad_eta, grad_eta_pre=grad_eta_pre)
+
+
+# ── §5.4 partition control: conserve-by-construction ────────────────────────
+
+def apply_partition_liq2ice(state: State, forcing: Forcing,
+                            delta: torch.Tensor) -> State:
+    """Δ_liquid→ice partition control (kdm6ad+da.md §5.3/§5.4):
+
+        qc' = qc − Δ;  qi' = qi + Δ;  θ' = θ + (L_f(T)/(cpm·π))·Δ
+
+    Mass AND latent heating conserved BY CONSTRUCTION (no soft penalty). The
+    latent heat uses the FREEZE-branch constant L_f(T) = xls − xl(T) — KDM6's
+    per-process convention (melt terms use xlf0; freeze terms use xls−xl(T) —
+    the §37 branch-conditional-constant lesson). Differentiable: pure tensor
+    ops; Δ is the control leaf. Positivity of qc' is the optimizer's business
+    (couple with J_pos or a bounded parameterization); this operator itself
+    does not clamp — a clamp here would put the control on a kink.
+
+    NOTE (operational bitwise lock): this is a DRIVER-level operator applied
+    BETWEEN steps on the fp64 DA path; the operational mp137 forward never
+    sees these ops (design §5.3 partition_control_enabled semantics).
+    """
+    if delta.shape != state.qc.shape:
+        raise ValueError(f"delta shape {tuple(delta.shape)} != state shape "
+                         f"{tuple(state.qc.shape)}")
+    tp = default_thermo_params()
+    t = state.th * forcing.pii
+    xl = compute_xl(t, params=tp)              # T-dependent vaporization heat
+    lf = tp.xls - xl                           # freeze-branch latent heat (§37)
+    cpm = compute_cpm(state.qv, params=tp)
+    dth = lf / (cpm * forcing.pii) * delta
+    return state._replace(
+        qc=state.qc - delta,
+        qi=state.qi + delta,
+        th=state.th + dth,
+    )
+
+
+def apply_partition_cloud2rain(state: State, delta: torch.Tensor) -> State:
+    """Δ_cloud→precip(rain) partition control (design §5.3 list): same-phase
+    liquid→liquid — mass-only move, NO latent-heat term. Conserving by
+    construction; no clamp (positivity belongs to the optimizer, §5.4)."""
+    if delta.shape != state.qc.shape:
+        raise ValueError(f"delta shape {tuple(delta.shape)} != state shape "
+                         f"{tuple(state.qc.shape)}")
+    return state._replace(qc=state.qc - delta, qr=state.qr + delta)
+
+
+def apply_partition_snow2graupel(state: State, delta: torch.Tensor) -> State:
+    """Δ_snow→graupel partition control (design §5.3 list): same-phase
+    ice→ice — mass-only move, NO latent-heat term. The graupel rime-mass
+    bookkeeping (bg) is deliberately untouched: converted snow carries no
+    rime by definition; the bg/qg density proxy shifts accordingly."""
+    if delta.shape != state.qs.shape:
+        raise ValueError(f"delta shape {tuple(delta.shape)} != state shape "
+                         f"{tuple(state.qs.shape)}")
+    return state._replace(qs=state.qs - delta, qg=state.qg + delta)
+
+
+def apply_partition_ice2liq(state: State, forcing: Forcing,
+                            delta: torch.Tensor) -> State:
+    """Δ_ice→liquid (melting-direction) partition control.
+
+    SEPARATE operator from apply_partition_liq2ice rather than a sign branch:
+    KDM6's per-process latent-heat convention is BRANCH-CONDITIONAL (§37 —
+    melt terms use the constant xlf0, freeze terms use xls−xl(T)), and a
+    torch.where on sign(Δ) would put a kink exactly at the optimizer's Δ=0
+    starting point. Use this operator for melt-direction increments:
+
+        qi' = qi − Δ;  qc' = qc + Δ;  θ' = θ − (xlf0/(cpm·π))·Δ
+    """
+    if delta.shape != state.qi.shape:
+        raise ValueError(f"delta shape {tuple(delta.shape)} != state shape "
+                         f"{tuple(state.qi.shape)}")
+    from .melt_freeze import DEFAULT_XLF   # xlf0 = 3.5e5 (Fortran F:1275 melt branch)
+    tp = default_thermo_params()
+    cpm = compute_cpm(state.qv, params=tp)
+    dth = DEFAULT_XLF / (cpm * forcing.pii) * delta
+    return state._replace(
+        qi=state.qi - delta,
+        qc=state.qc + delta,
+        th=state.th - dth,
+    )

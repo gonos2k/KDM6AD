@@ -366,6 +366,7 @@ def _kdm6_pure(
     xland: "torch.Tensor | None" = None,
     ncmin_land: float = 0.0,
     ncmin_sea: float = 0.0,
+    controls=None,   # [DA §5.2] ProcessControls — fp64 DA only; None → byte-identical oracle
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
@@ -540,6 +541,7 @@ def _kdm6_pure(
             cur, cf, aux, sea_mask,
             full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
             dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
+            controls=controls,
         )
 
     return _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
@@ -559,6 +561,7 @@ def kdm6_step(
     xland: "torch.Tensor | None" = None,
     ncmin_land: float = 0.0,
     ncmin_sea: float = 0.0,
+    controls=None,   # [DA §5.2] ProcessControls — None → byte-identical default path
 ) -> tuple[State, Handle]:
     """[G3] 슬롯 47 진입점 — Fortran forward와 *동반 구동*되어 derivative 정보 산출.
 
@@ -605,7 +608,7 @@ def kdm6_step(
 
     if value_only:
         with torch.no_grad():
-            state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea)
+            state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, controls)
         return state_out, Handle(
             state_in=state,
             state_out=state_out,
@@ -618,7 +621,7 @@ def kdm6_step(
         )
 
     # build dynamic graph
-    state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea)
+    state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, controls)
     handle = Handle(
         state_in=state,
         state_out=state_out,
@@ -627,7 +630,7 @@ def kdm6_step(
         dt=dt,
         pullback=None,
         # bind the control inputs so VJP/JVP/Jacobian respect xland/ncmin
-        func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea),
+        func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea, controls),
     )
     return state_out, handle
 

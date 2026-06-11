@@ -34,6 +34,8 @@ from . import warm as _warm
 from . import satadj as _satadj
 from . import cold as _cold
 from . import melt_freeze as _mf
+from .process_controls import (ProcessControls, apply_warm_controls,
+    apply_cold_controls, apply_freeze_controls, apply_melt_controls)
 from . import sedimentation as _sed
 from . import constants as c
 from . import fconst as _fc
@@ -1864,6 +1866,8 @@ def kdm62d_one_step_torch(
                          # None → scalar c.NCMIN fallback. Built from xland by the driver.
     nccn=None,           # CCN reservoir for activation in apply_satadj_step (Task #74);
                          # None → no activation (returns bare state). Threaded by the driver.
+    controls=None,       # [DA §5.2] ProcessControls (fp64 DA path only). None → ZERO
+                         # added ops (byte-identical oracle); see process_controls.py.
 ) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
 
@@ -1958,6 +1962,9 @@ def kdm62d_one_step_torch(
         working1b, forcing, pre1,
         aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
         params=mf_params, dtcld=dtcld)
+    # [DA §5.2] no-op when None; caps the scaled D2+D3 draw against the qc/nc
+    # reservoirs the clamp-free inline applier is about to debit (Codex fix).
+    mf_d234 = apply_freeze_controls(mf_d234, controls, working1b.qc, working1b.nc)
     working = apply_melt_freeze_inline_torch(
         working1b, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
 
@@ -2010,6 +2017,8 @@ def kdm62d_one_step_torch(
         params=warm_params, dtcld=dtcld,
     )
 
+    warm_out = apply_warm_controls(warm_out, controls)   # [DA §5.2] no-op when None
+
     cold_out = cold_phase_torch(
         working, forcing, pre2, warm_out.prevp,
         aux2.n0i, aux2.n0r, aux2.n0so, aux2.n0go, aux2.n0c,
@@ -2018,10 +2027,13 @@ def kdm62d_one_step_torch(
         params=cold_params, dtcld=dtcld,
     )
 
+    cold_out = apply_cold_controls(cold_out, controls)   # [DA §5.2] no-op when None
+
     mf5 = melt_freeze_d5_torch(
         working, forcing, pre2, cold_out,
         aux2.n0so, aux2.n0go, params=mf_params, dtcld=dtcld,
     )
+    mf5 = apply_melt_controls(mf5, controls)             # [DA §5.2] no-op when None
 
     # F1d2: group conservation limiters bound warm/cold/D5 sinks against the
     # WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly

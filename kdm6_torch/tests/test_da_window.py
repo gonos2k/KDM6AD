@@ -342,5 +342,177 @@ def test_near_saturated_value_noop_is_not_skipped():
         assert torch.equal(a, b), f"near-sat adjoint != full graph in {name}"
 
 
+def test_eta_pre_control_grad_matches_full_graph():
+    """§5.2 pre-state increments: x_t' = x_t + η_pre_t consumed by the step.
+    grad_eta_pre must equal the full-graph autograd gradient w.r.t. η_pre
+    leaves exactly."""
+    forcings = [_mk_forcing() for _ in range(T_STEPS)]
+    g = torch.Generator().manual_seed(113)
+
+    def small(rg=False):
+        fields = []
+        for f in _mk_state():
+            scale = float(f.abs().max()) or 1.0
+            t = torch.randn(f.shape, generator=g, dtype=torch.float64) * 1e-6 * scale
+            fields.append(t.requires_grad_(True) if rg else t)
+        return State(*fields)
+
+    etas = [small() for _ in range(T_STEPS)]
+    u_T = _unit_state(seed=127)
+    obs = {T_STEPS: u_T}
+
+    res = run_da_window(_mk_state(), forcings, lambda t, x: obs.get(t),
+                        WindowConfig(dt=DT, eta_pre=etas))
+    assert res.grad_eta_pre is not None and len(res.grad_eta_pre) == T_STEPS
+
+    eta_leaves = [State(*(f.detach().clone().requires_grad_(True) for f in e))
+                  for e in etas]
+    x = _mk_state(rg=True)
+    params = make_parameters()
+    for t, f in enumerate(forcings):
+        x = State(*(a + b for a, b in zip(x, eta_leaves[t])))   # pre-increment
+        x = kdm6_fn(x, f, params, DT)
+    loss = state_dot(x, u_T)
+    all_leaves = tuple(_x for e in eta_leaves for _x in e)
+    grads = torch.autograd.grad(loss, all_leaves, allow_unused=True,
+                                materialize_grads=True)
+    for t in range(T_STEPS):
+        ref_t = grads[t * 12:(t + 1) * 12]
+        for name, a, b in zip(State._fields, res.grad_eta_pre[t], ref_t):
+            assert torch.equal(a, b), f"grad_eta_pre[{t}].{name} != full graph"
+
+
+def test_partition_liq2ice_conserves_by_construction():
+    """§5.4: Δ_liq→ice conserves total water EXACTLY, applies the FREEZE-branch
+    latent heat (xls − xl(T), NOT xlf0 — the §37 branch-constant lesson), is
+    the identity at Δ=0, and is differentiable in Δ."""
+    from kdm6.da_window import apply_partition_liq2ice
+    from kdm6.thermo import compute_xl, compute_cpm, default_thermo_params
+
+    s64 = State(*(f.to(torch.float64) for f in _mk_state()))
+    f = _mk_forcing()
+    tp = default_thermo_params()
+
+    # Δ = 0 → exact identity (no spurious ops on the zero path)
+    z = torch.zeros_like(s64.qc)
+    out0 = apply_partition_liq2ice(s64, f, z)
+    for name, a, b in zip(State._fields, out0, s64):
+        assert torch.equal(a, b), f"Δ=0 not identity in {name}"
+
+    # small positive Δ: water conserved exactly; qc/qi move by exactly ∓Δ
+    delta = torch.full_like(s64.qc, 1.0e-6)
+    out = apply_partition_liq2ice(s64, f, delta)
+    # conservation: the (qc,qi) pair moves by exactly ∓Δ (asserted below); the
+    # TOTAL-sum comparison is fp-rounding-bounded (qc−Δ and qi+Δ each round
+    # once, so Σ differs by ≤~1 ULP — construction-exact, not bitwise-sum-exact)
+    total_in = s64.qv + s64.qc + s64.qr + s64.qi + s64.qs + s64.qg
+    total_out = out.qv + out.qc + out.qr + out.qi + out.qs + out.qg
+    assert torch.allclose(total_in, total_out, rtol=1e-15, atol=0.0), \
+        "total water beyond fp-rounding bound"
+    assert torch.equal(out.qc, s64.qc - delta)
+    assert torch.equal(out.qi, s64.qi + delta)
+
+    # latent heat: θ increment must use xls − xl(T) — materially ≠ xlf0
+    t_abs = s64.th * f.pii
+    lf_freeze = tp.xls - compute_xl(t_abs, params=tp)
+    cpm = compute_cpm(s64.qv, params=tp)
+    dth_ref = lf_freeze / (cpm * f.pii) * delta
+    # compare in the SAME op order as the implementation: (th + dth) − th ≠ dth
+    # bitwise (fp round-trip), but th_out == th + dth_ref exactly.
+    assert torch.equal(out.th, s64.th + dth_ref), "θ increment wrong"
+    dth_xlf0 = 3.5e5 / (cpm * f.pii) * delta      # the WRONG (melt) constant
+    assert not torch.allclose(out.th - s64.th, dth_xlf0, rtol=1e-3), \
+        "θ increment indistinguishable from xlf0 — §37 branch-constant check weak"
+
+    # differentiability: a θ/qi-sensitive loss has nonzero grad w.r.t. Δ
+    d_leaf = torch.full_like(s64.qc, 1.0e-6).requires_grad_(True)
+    out2 = apply_partition_liq2ice(s64, f, d_leaf)
+    loss = (out2.th.sum() + out2.qi.sum())
+    (gd,) = torch.autograd.grad(loss, d_leaf)
+    assert torch.isfinite(gd).all() and (gd != 0).all()
+
+    # shape guard (driver-level F1-SHAPE class)
+    with pytest.raises(ValueError, match="shape"):
+        apply_partition_liq2ice(s64, f, torch.zeros((2, 1), dtype=torch.float64))
+
+
+def test_eta_pre_with_intermediate_obs_matches_full_graph():
+    """Review finding 6 (test gap): η_pre combined with an INTERMEDIATE
+    observation — obs at t reads x_t BEFORE the increment while the step
+    consumes x_t + η_pre,t; both grad_eta_pre and adj_x0 must equal the
+    full-graph reference exactly."""
+    forcings = [_mk_forcing() for _ in range(T_STEPS)]
+    g = torch.Generator().manual_seed(149)
+
+    def small():
+        fields = []
+        for f in _mk_state():
+            scale = float(f.abs().max()) or 1.0
+            fields.append(torch.randn(f.shape, generator=g, dtype=torch.float64)
+                          * 1e-6 * scale)
+        return State(*fields)
+
+    etas = [small() for _ in range(T_STEPS)]
+    obs = {1: _unit_state(151), T_STEPS: _unit_state(157)}
+
+    res = run_da_window(_mk_state(), forcings, lambda t, x: obs.get(t),
+                        WindowConfig(dt=DT, eta_pre=etas))
+
+    eta_leaves = [State(*(f.detach().clone().requires_grad_(True) for f in e))
+                  for e in etas]
+    x = _mk_state(rg=True)
+    params = make_parameters()
+    loss = torch.zeros((), dtype=torch.float64)
+    for t, f in enumerate(forcings):
+        if t in obs:
+            loss = loss + state_dot(x, obs[t])      # obs reads PRE-increment x_t
+        x = State(*(a + b for a, b in zip(x, eta_leaves[t])))
+        x = kdm6_fn(x, f, params, DT)
+    loss = loss + state_dot(x, obs[T_STEPS])
+    grads = torch.autograd.grad(loss, tuple(_x for e in eta_leaves for _x in e),
+                                allow_unused=True, materialize_grads=True)
+    for t in range(T_STEPS):
+        ref_t = grads[t * 12:(t + 1) * 12]
+        for name, a, b in zip(State._fields, res.grad_eta_pre[t], ref_t):
+            assert torch.equal(a, b), f"grad_eta_pre[{t}].{name} != full graph (intermediate obs)"
+
+
+def test_partition_pair_operators():
+    """§5.3 partition list: Δ_cloud→rain and Δ_snow→graupel are same-phase
+    mass-only moves (no θ term); Δ_ice→liq uses the MELT-branch xlf0 constant
+    (separate operator — a sign-branch would kink at the optimizer's Δ=0)."""
+    from kdm6.da_window import (apply_partition_cloud2rain,
+                                apply_partition_snow2graupel,
+                                apply_partition_ice2liq)
+    from kdm6.melt_freeze import DEFAULT_XLF
+    from kdm6.thermo import compute_cpm, default_thermo_params
+
+    s64 = State(*(f.to(torch.float64) for f in _mk_state()))
+    f = _mk_forcing()
+    d = torch.full_like(s64.qc, 1.0e-6)
+
+    o = apply_partition_cloud2rain(s64, d)
+    assert torch.equal(o.qc, s64.qc - d) and torch.equal(o.qr, s64.qr + d)
+    assert torch.equal(o.th, s64.th)            # same phase — no latent term
+
+    o2 = apply_partition_snow2graupel(s64, d)
+    assert torch.equal(o2.qs, s64.qs - d) and torch.equal(o2.qg, s64.qg + d)
+    assert torch.equal(o2.th, s64.th) and torch.equal(o2.bg, s64.bg)
+
+    o3 = apply_partition_ice2liq(s64, f, d)
+    tp = default_thermo_params()
+    cpm = compute_cpm(s64.qv, params=tp)
+    dth = DEFAULT_XLF / (cpm * f.pii) * d       # MELT branch: xlf0, not xls-xl(T)
+    assert torch.equal(o3.th, s64.th - dth)     # melting COOLS
+    assert torch.equal(o3.qi, s64.qi - d) and torch.equal(o3.qc, s64.qc + d)
+
+    # differentiable + shape guard
+    dl = d.clone().requires_grad_(True)
+    (g,) = torch.autograd.grad(apply_partition_ice2liq(s64, f, dl).th.sum(), dl)
+    assert torch.isfinite(g).all() and (g != 0).all()
+    with pytest.raises(ValueError, match="shape"):
+        apply_partition_cloud2rain(s64, torch.zeros((2, 1), dtype=torch.float64))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
