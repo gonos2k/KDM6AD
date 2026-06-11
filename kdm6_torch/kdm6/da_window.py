@@ -10,22 +10,23 @@ requires_grad leaves — never InferenceMode tensors, §8.3), pull the running
 adjoint through ``Handle.vjp``, close the handle, and accumulate the
 observation adjoint of the step. No full-window graph is ever retained.
 
-Cloud-active gate (§3): a step's VJP may be skipped (adjoint passes through
-as identity) ONLY when J = I is PROVABLE on a neighborhood, not merely when
-the VALUE is unchanged — a value-level no-op does NOT imply an identity
-Jacobian (counterexample: exactly-saturated clear air has pcond = 0 with
-∂pcond/∂qv != 0; Codex stop-review ×2). The provable condition implemented:
-  (a) every hydrometeor field is exactly zero (the max(0,·) clamps sit in
-      their flat interiors),
-  (b) the column is STRICTLY sub-saturated by a margin (qv < (1-m)·qs(T,p)),
-      so the condensation/activation gates are strictly off on a
-      neighborhood, and
-  (c) the forward step verifiably returned the state unchanged (all fields
-      equal; th within the Exner round-trip ULP).
-Under (a)+(b)+(c), M ≡ Id on an open neighborhood of x_t, hence J^T = I
-EXACTLY — the skip is not an approximation. Marginal cases (saturation within
-the margin, any nonzero hydrometeor) always take the real VJP. obs_active
-still forces the VJP per §3.3 OR-semantics; obs_adj is accumulated regardless.
+Cloud-active gate (§3) — VJP-skip REMOVED (three adversarial rounds, Codex):
+the driver always runs the real per-step VJP. The attempted identity-skip
+conditions each had a counterexample:
+  1. entry-hydrometeor heuristic  → supersaturated clear air condenses
+     (J != I with zero hydrometeors);
+  2. measured value-noop          → exactly-saturated air has pcond = 0 with
+     ∂pcond/∂qv != 0 (value fixed point, non-identity Jacobian);
+  3. value-noop + hydro==0 + strict sub-saturation margin → zero-hydrometeor
+     states sit EXACTLY ON the clamp/where kinks (e.g. the sediment vt gate
+     fires for ANY qi = +ε with no protective threshold), so the AD Jacobian
+     at those points is a SUBGRADIENT, not the identity.
+Conclusion: there is no cheaply-provable J = I condition at the AD level;
+correctness wins over the optimization. `use_cloud_gate`/`model_cloud_active`
+remain as §3 DIAGNOSTICS (and for obs-side loss gating — not evaluating
+cloud losses on clear pixels is the obs operator's business); they no longer
+alter the adjoint path. step_is_noop / column_strictly_subsaturated /
+hydro_exactly_zero are kept as exported diagnostics for the same reason.
 
 The driver is observation-operator agnostic: ``obs_adjoint(t, x_t)`` returns a
 ``State`` covector (already including any RTTOV-K / bridge VJP) or ``None``.
@@ -132,7 +133,7 @@ class WindowResult:
     checkpoints: list[State]           # fp64 detached x_t, t = 0..T-1 (entries)
     state_final: State                 # x_T (fp64, detached)
     vjp_steps: list[int] = field(default_factory=list)   # steps whose VJP ran
-    skipped_steps: list[int] = field(default_factory=list)  # gate-skipped
+    skipped_steps: list[int] = field(default_factory=list)  # DIAGNOSTIC: value-inert steps (VJP still ran)
     grad_eta: list[State] | None = None    # ∂J/∂η_t per step (§5.1), if eta given
 
 
@@ -215,29 +216,21 @@ def run_da_window(
         if grad_eta is not None:
             # ∂J/∂η_t = ∂J/∂x_{t+1} — the running adjoint right now (identity path).
             grad_eta[t] = State(*(g.clone() for g in adj))
-        gate_on = True
-        if config.use_cloud_gate:
-            # skip ONLY when J = I is provable on a neighborhood: verified
-            # value-noop AND all hydrometeors exactly zero AND strictly
-            # sub-saturated (see module docstring — value-noop alone does NOT
-            # imply an identity Jacobian). obs_active still forces the VJP.
-            o_act = bool(config.obs_active(t)) if config.obs_active else False
-            gate_on = (not step_noop[t]) or o_act
-        if gate_on:
-            # fresh requires_grad leaves from the detached checkpoint — a local
-            # graph OUTSIDE InferenceMode (§8.3); one step, then vjp, then close.
-            leaves = State(*(f.detach().clone().requires_grad_(True)
-                             for f in checkpoints[t]))
-            _, handle = kdm6_step(leaves, f64_forcings[t], params, config.dt,
-                                  value_only=False, xland=config.xland,
-                                  ncmin_land=config.ncmin_land,
-                                  ncmin_sea=config.ncmin_sea)
-            adj = handle.vjp(adj, active_fields=config.active_fields)
-            handle.close()
-            vjp_steps.append(t)
-        else:
-            # VERIFIED no-op step: J^T = I exactly — adjoint passes through (§3.3).
-            skipped.append(t)
+        # ALWAYS run the real per-step VJP (no identity-skip — see module
+        # docstring: zero-hydrometeor states sit on clamp/where kinks, so the
+        # AD Jacobian is a subgradient there, not the identity). The gate
+        # fields below are diagnostics only.
+        if config.use_cloud_gate and step_noop[t]:
+            skipped.append(t)   # diagnostic: "provably value-inert step" tally
+        leaves = State(*(f.detach().clone().requires_grad_(True)
+                         for f in checkpoints[t]))
+        _, handle = kdm6_step(leaves, f64_forcings[t], params, config.dt,
+                              value_only=False, xland=config.xland,
+                              ncmin_land=config.ncmin_land,
+                              ncmin_sea=config.ncmin_sea)
+        adj = handle.vjp(adj, active_fields=config.active_fields)
+        handle.close()
+        vjp_steps.append(t)
         if t in obs_adj:
             adj = _add_states(adj, obs_adj[t])
 

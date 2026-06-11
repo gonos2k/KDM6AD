@@ -124,10 +124,13 @@ def _clear_sky_state():
     )
 
 
-def test_cloud_active_gate_skips_clear_state():
-    """§3/§10.1: clear-sky window with the gate on → every step's VJP skipped,
-    adjoint passes through as identity (and that IS the correct adjoint here:
-    the no-op step's J^T is the identity on this state)."""
+def test_cloud_active_gate_clear_state_diagnostic_only():
+    """§3 endpoint after three adversarial rounds: the gate NEVER skips a VJP
+    (zero-hydrometeor states sit on clamp/where kinks — the AD Jacobian there
+    is a subgradient, not the identity). On a clear window the gate only
+    TALLIES value-inert steps; the adjoint must equal the full-window-graph
+    gradient exactly — the strongest correctness statement, kink subgradients
+    included."""
     state = _clear_sky_state()
     assert not model_cloud_active(state)
 
@@ -137,10 +140,14 @@ def test_cloud_active_gate_skips_clear_state():
     cfg = WindowConfig(dt=DT, use_cloud_gate=True)
     res = run_da_window(state, forcings, lambda t, x: obs.get(t), cfg)
 
-    assert res.skipped_steps == [1, 0] and not res.vjp_steps
-    # gate semantics: adjoint passed through unchanged
-    for name, a, b in zip(State._fields, res.adj_x0, u):
-        assert torch.equal(a, b.to(torch.float64)), f"passthrough broken in {name}"
+    # VJP ran on every step; the inert steps are tallied as diagnostics
+    assert res.vjp_steps == [1, 0]
+    assert res.skipped_steps == [1, 0]
+    ref = _full_graph_adjoint(
+        State(*(f.detach().clone().to(torch.float64).requires_grad_(True)
+                for f in state)), forcings, obs)
+    for name, a, b in zip(State._fields, res.adj_x0, ref):
+        assert torch.equal(a, b), f"clear-sky adjoint != full graph in {name}"
 
     # sanity: the no-op claim is real — the clear-sky forward leaves the state
     # unchanged except the th -> T -> th Exner round-trip (t = th*pii; th = t/pii),
@@ -159,20 +166,14 @@ def test_cloud_active_gate_skips_clear_state():
                 f"clear-sky step not a no-op in {name} — gate premise broken"
 
 
-def test_cloudy_state_keeps_gate_on():
-    """The gate must NOT skip cloud-active states (and obs_active can force it)."""
+def test_cloudy_state_not_tallied_inert():
+    """A cloud-active step is never tallied as value-inert; VJP always runs."""
     assert model_cloud_active(_mk_state())
     cfg = WindowConfig(dt=DT, use_cloud_gate=True)
     forcings = [_mk_forcing()]
     u = _unit_state(89)
     res = run_da_window(_mk_state(), forcings, lambda t, x: u if t == 1 else None, cfg)
     assert res.vjp_steps == [0] and not res.skipped_steps
-
-    # obs_active forces the gate even on a clear state (§3.3 OR-semantics)
-    cfg2 = WindowConfig(dt=DT, use_cloud_gate=True, obs_active=lambda t: True)
-    res2 = run_da_window(_clear_sky_state(), forcings,
-                         lambda t, x: u if t == 1 else None, cfg2)
-    assert res2.vjp_steps == [0] and not res2.skipped_steps
 
 
 def test_window_handles_closed_no_leak():
@@ -284,7 +285,7 @@ def test_supersaturated_clear_air_is_not_skipped():
     res = run_da_window(sup, forcings, lambda t, x: obs.get(t), cfg)
 
     assert res.vjp_steps == [0] and not res.skipped_steps, \
-        "gate skipped a condensing clear-air step (J^T != I) — wrong adjoint class"
+        "condensing clear-air step wrongly tallied inert / VJP missing"
 
     sup_leaves = State(*(f.detach().clone().to(torch.float64).requires_grad_(True)
                          for f in sup))
@@ -332,7 +333,7 @@ def test_near_saturated_value_noop_is_not_skipped():
     cfg = WindowConfig(dt=DT, use_cloud_gate=True)
     res = run_da_window(near_sat, [f], lambda t, x: obs.get(t), cfg)
     assert res.vjp_steps == [0] and not res.skipped_steps, \
-        "gate skipped a value-noop step WITHOUT provable identity (margin violated)"
+        "near-saturated value-noop wrongly tallied as provably inert"
 
     ref = _full_graph_adjoint(State(*(t.detach().clone().to(_t.float64)
                                       .requires_grad_(True) for t in near_sat)),
