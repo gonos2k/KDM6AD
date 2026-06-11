@@ -10,11 +10,14 @@ requires_grad leaves — never InferenceMode tensors, §8.3), pull the running
 adjoint through ``Handle.vjp``, close the handle, and accumulate the
 observation adjoint of the step. No full-window graph is ever retained.
 
-Cloud-active gate (§3): on steps where neither the model state nor the
-observations are cloud-active, the KDM6AD VJP is SKIPPED and the adjoint passes
-through unchanged (the scheme is a near-no-op there; treating J^T as identity
-is the documented gate semantics). The gate never silently drops an
-observation adjoint — obs_adj is accumulated regardless.
+Cloud-active gate (§3): a step's VJP may be skipped (adjoint passes through
+as identity) ONLY when the step is a VERIFIED no-op — the forward sweep
+already computes M(x_t), so the driver checks M(x_t) == x_t (all fields equal;
+th within the Exner round-trip ULP) instead of trusting an entry-state
+heuristic. An entry-hydrometeor heuristic alone is UNSAFE: a clear-but-
+SUPERSATURATED column has zero hydrometeors yet condenses (satadj/activation
+fire), so J^T != I there (Codex stop-review). obs_active still forces the VJP
+per §3.3 OR-semantics; obs_adj is accumulated regardless of the gate.
 
 The driver is observation-operator agnostic: ``obs_adjoint(t, x_t)`` returns a
 ``State`` covector (already including any RTTOV-K / bridge VJP) or ``None``.
@@ -44,10 +47,29 @@ def hydro_sum(s: State) -> torch.Tensor:
 
 
 def model_cloud_active(s: State, *, min_total_hydro: float = 1.0e-12) -> bool:
-    """§3.1 model-side gate (sum form; the column-fraction refinement is a
-    driver-config concern once real tiles arrive)."""
+    """§3.1 model-side ENTRY heuristic (hydrometeor presence). NOTE: this alone
+    is NOT a safe skip condition — a clear-but-supersaturated column has zero
+    hydrometeors yet condenses. The driver skips only on a VERIFIED no-op
+    (see step_is_noop); this heuristic remains exported for §3.1 diagnostics."""
     with torch.no_grad():
         return bool(hydro_sum(s).sum().item() > min_total_hydro)
+
+
+def step_is_noop(x_in: State, x_out: State, *, th_rtol: float = 1.0e-12) -> bool:
+    """True iff the forward step left the state unchanged: every field equal,
+    except th which may wobble by the Exner round-trip (t = th*pii; th = t/pii)
+    — a ~1-ULP value change whose Jacobian is still exactly the identity.
+    This is the SAFE skip condition for the cloud gate: it is measured on the
+    actual forward output, so a supersaturated clear column (condensation
+    onset, J^T != I) can never be skipped."""
+    with torch.no_grad():
+        for name, a, b in zip(State._fields, x_in, x_out):
+            if name == "th":
+                if not torch.allclose(a, b, rtol=th_rtol, atol=0.0):
+                    return False
+            elif not torch.equal(a, b):
+                return False
+    return True
 
 
 @dataclass
@@ -130,6 +152,7 @@ def run_da_window(
             _validate_state_shapes(u, xt, arg=f"obs_adjoint(t={t})", ref_name="x_t")
             obs_adj[t] = State(*(g.detach().to(torch.float64) for g in u))
 
+    step_noop: list[bool] = []
     for t in range(T):
         checkpoints.append(State(*(f.detach().clone() for f in x)))
         _grab_obs(t, checkpoints[t])
@@ -137,7 +160,9 @@ def run_da_window(
                            value_only=True, xland=config.xland,
                            ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
         h.close()
-        x = State(*(f.detach() for f in out))
+        out_detached = State(*(f.detach() for f in out))
+        step_noop.append(step_is_noop(x, out_detached))
+        x = out_detached
         if config.eta is not None:                      # §5.1 x_{t+1} = M(x_t) + η_t
             x = _add_states(x, _to_f64(config.eta[t]))
     state_final = x
@@ -156,10 +181,12 @@ def run_da_window(
             grad_eta[t] = State(*(g.clone() for g in adj))
         gate_on = True
         if config.use_cloud_gate:
-            m_act = model_cloud_active(checkpoints[t],
-                                       min_total_hydro=config.min_total_hydro)
+            # skip ONLY when the step was a VERIFIED no-op (measured on the
+            # forward output) — an entry-hydrometeor heuristic would wrongly
+            # skip a supersaturated clear column whose condensation makes
+            # J^T != I. obs_active still forces the VJP (§3.3 OR).
             o_act = bool(config.obs_active(t)) if config.obs_active else False
-            gate_on = m_act or o_act
+            gate_on = (not step_noop[t]) or o_act
         if gate_on:
             # fresh requires_grad leaves from the detached checkpoint — a local
             # graph OUTSIDE InferenceMode (§8.3); one step, then vjp, then close.
@@ -173,7 +200,7 @@ def run_da_window(
             handle.close()
             vjp_steps.append(t)
         else:
-            # clear-sky no-op step: J^T ≈ I — adjoint passes through (§3.3).
+            # VERIFIED no-op step: J^T = I exactly — adjoint passes through (§3.3).
             skipped.append(t)
         if t in obs_adj:
             adj = _add_states(adj, obs_adj[t])

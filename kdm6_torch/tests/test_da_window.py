@@ -256,5 +256,42 @@ def test_window_rejects_broadcastable_shape_mismatch():
                       WindowConfig(dt=DT, eta=[]))
 
 
+def test_supersaturated_clear_air_is_not_skipped():
+    """Codex stop-review counterexample: zero hydrometeors but SUPERSATURATED —
+    condensation fires (J^T != I), so the gate must NOT skip the step, and the
+    driver adjoint must still equal the full-graph gradient exactly."""
+    sup = State(
+        th=_t2(296.8, 290.0), qv=_t2(2.5e-2, 1.8e-2),   # well above saturation
+        qc=_t2(0.0, 0.0), qr=_t2(0.0, 0.0), qi=_t2(0.0, 0.0),
+        qs=_t2(0.0, 0.0), qg=_t2(0.0, 0.0), nccn=_t2(1.0e9, 1.0e9),
+        nc=_t2(0.0, 0.0), ni=_t2(0.0, 0.0), nr=_t2(0.0, 0.0),
+        bg=_t2(0.0, 0.0),
+    )
+    # entry-hydro heuristic says "clear" — the OLD gate would have skipped
+    from kdm6.da_window import model_cloud_active as _mca
+    assert not _mca(sup)
+
+    forcings = [_mk_forcing()]
+    # sanity: the step really acts (condensation onset)
+    out, h = kdm6_step(State(*(f.to(torch.float64) for f in sup)), forcings[0],
+                       dt=DT, value_only=True)
+    h.close()
+    assert (out.qc > 0).any(), "supersaturated column did not condense — IC too weak"
+
+    u = _unit_state(seed=107)
+    obs = {1: u}
+    cfg = WindowConfig(dt=DT, use_cloud_gate=True)
+    res = run_da_window(sup, forcings, lambda t, x: obs.get(t), cfg)
+
+    assert res.vjp_steps == [0] and not res.skipped_steps, \
+        "gate skipped a condensing clear-air step (J^T != I) — wrong adjoint class"
+
+    sup_leaves = State(*(f.detach().clone().to(torch.float64).requires_grad_(True)
+                         for f in sup))
+    ref = _full_graph_adjoint(sup_leaves, forcings, obs)
+    for name, a, b in zip(State._fields, res.adj_x0, ref):
+        assert torch.equal(a, b), f"supersat adjoint != full graph in {name}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
