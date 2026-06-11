@@ -11,13 +11,21 @@ adjoint through ``Handle.vjp``, close the handle, and accumulate the
 observation adjoint of the step. No full-window graph is ever retained.
 
 Cloud-active gate (§3): a step's VJP may be skipped (adjoint passes through
-as identity) ONLY when the step is a VERIFIED no-op — the forward sweep
-already computes M(x_t), so the driver checks M(x_t) == x_t (all fields equal;
-th within the Exner round-trip ULP) instead of trusting an entry-state
-heuristic. An entry-hydrometeor heuristic alone is UNSAFE: a clear-but-
-SUPERSATURATED column has zero hydrometeors yet condenses (satadj/activation
-fire), so J^T != I there (Codex stop-review). obs_active still forces the VJP
-per §3.3 OR-semantics; obs_adj is accumulated regardless of the gate.
+as identity) ONLY when J = I is PROVABLE on a neighborhood, not merely when
+the VALUE is unchanged — a value-level no-op does NOT imply an identity
+Jacobian (counterexample: exactly-saturated clear air has pcond = 0 with
+∂pcond/∂qv != 0; Codex stop-review ×2). The provable condition implemented:
+  (a) every hydrometeor field is exactly zero (the max(0,·) clamps sit in
+      their flat interiors),
+  (b) the column is STRICTLY sub-saturated by a margin (qv < (1-m)·qs(T,p)),
+      so the condensation/activation gates are strictly off on a
+      neighborhood, and
+  (c) the forward step verifiably returned the state unchanged (all fields
+      equal; th within the Exner round-trip ULP).
+Under (a)+(b)+(c), M ≡ Id on an open neighborhood of x_t, hence J^T = I
+EXACTLY — the skip is not an approximation. Marginal cases (saturation within
+the margin, any nonzero hydrometeor) always take the real VJP. obs_active
+still forces the VJP per §3.3 OR-semantics; obs_adj is accumulated regardless.
 
 The driver is observation-operator agnostic: ``obs_adjoint(t, x_t)`` returns a
 ``State`` covector (already including any RTTOV-K / bridge VJP) or ``None``.
@@ -31,6 +39,7 @@ import torch
 
 from .state import State, Forcing, map_state, zeros_like_state
 from .runtime import kdm6_step, make_parameters, Parameters, _validate_state_shapes
+from .thermo import compute_qs_water, default_thermo_params
 
 
 def _to_f64(s):
@@ -53,6 +62,28 @@ def model_cloud_active(s: State, *, min_total_hydro: float = 1.0e-12) -> bool:
     (see step_is_noop); this heuristic remains exported for §3.1 diagnostics."""
     with torch.no_grad():
         return bool(hydro_sum(s).sum().item() > min_total_hydro)
+
+
+def column_strictly_subsaturated(s: State, f: Forcing,
+                                 *, margin: float = 1.0e-3) -> bool:
+    """True iff qv < (1 - margin)·qs_water(T, p) EVERYWHERE — the condensation
+    and CCN-activation gates are then strictly off on a neighborhood of s,
+    which (with zero hydrometeors) makes M locally the identity. The margin
+    keeps the exactly-saturated counterexample (value-noop with J != I) out."""
+    with torch.no_grad():
+        t = s.th * f.pii
+        qs = compute_qs_water(t, f.p, params=default_thermo_params())
+        return bool((s.qv < (1.0 - margin) * qs).all().item())
+
+
+def hydro_exactly_zero(s: State) -> bool:
+    """True iff every hydrometeor mass AND number field is exactly zero —
+    the positivity clamps sit in their flat interiors (locally constant)."""
+    with torch.no_grad():
+        for fld in (s.qc, s.qr, s.qi, s.qs, s.qg, s.nc, s.ni, s.nr, s.bg):
+            if (fld != 0).any():
+                return False
+    return True
 
 
 def step_is_noop(x_in: State, x_out: State, *, th_rtol: float = 1.0e-12) -> bool:
@@ -82,7 +113,8 @@ class WindowConfig:
     # §3 cloud-active gate. obs_active is owned by the obs side; the driver
     # combines `model_active or obs_active(t)` per §3.3.
     use_cloud_gate: bool = False
-    min_total_hydro: float = 1.0e-12
+    min_total_hydro: float = 1.0e-12     # §3.1 diagnostic threshold (not the skip condition)
+    subsat_margin: float = 1.0e-3        # strict sub-saturation margin for the provable skip
     obs_active: Callable[[int], bool] | None = None
     # §8.2 hydrometeor-centric adjoint (None = all fields)
     active_fields: tuple[str, ...] | None = None
@@ -161,7 +193,11 @@ def run_da_window(
                            ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
         h.close()
         out_detached = State(*(f.detach() for f in out))
-        step_noop.append(step_is_noop(x, out_detached))
+        step_noop.append(
+            step_is_noop(x, out_detached)
+            and hydro_exactly_zero(x)
+            and column_strictly_subsaturated(x, f64_forcings[t],
+                                             margin=config.subsat_margin))
         x = out_detached
         if config.eta is not None:                      # §5.1 x_{t+1} = M(x_t) + η_t
             x = _add_states(x, _to_f64(config.eta[t]))
@@ -181,10 +217,10 @@ def run_da_window(
             grad_eta[t] = State(*(g.clone() for g in adj))
         gate_on = True
         if config.use_cloud_gate:
-            # skip ONLY when the step was a VERIFIED no-op (measured on the
-            # forward output) — an entry-hydrometeor heuristic would wrongly
-            # skip a supersaturated clear column whose condensation makes
-            # J^T != I. obs_active still forces the VJP (§3.3 OR).
+            # skip ONLY when J = I is provable on a neighborhood: verified
+            # value-noop AND all hydrometeors exactly zero AND strictly
+            # sub-saturated (see module docstring — value-noop alone does NOT
+            # imply an identity Jacobian). obs_active still forces the VJP.
             o_act = bool(config.obs_active(t)) if config.obs_active else False
             gate_on = (not step_noop[t]) or o_act
         if gate_on:

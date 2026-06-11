@@ -293,5 +293,53 @@ def test_supersaturated_clear_air_is_not_skipped():
         assert torch.equal(a, b), f"supersat adjoint != full graph in {name}"
 
 
+def test_near_saturated_value_noop_is_not_skipped():
+    """value-noop alone does NOT imply J = I (Codex stop-review ×2): at/near
+    exact saturation pcond = 0 with ∂pcond/∂qv != 0. A clear column with qv
+    INSIDE the sub-saturation margin must take the real VJP even though the
+    forward step changes nothing — the skip requires PROVABLE neighborhood
+    identity (strictly sub-saturated by the margin), not value equality."""
+    import torch as _t
+    from kdm6.thermo import compute_qs_water, default_thermo_params
+    from kdm6.da_window import step_is_noop, hydro_exactly_zero, \
+        column_strictly_subsaturated
+
+    th = _t2(300.0, 295.0)
+    f = _mk_forcing()
+    t_abs = th * f.pii
+    qs = compute_qs_water(t_abs.to(_t.float64), f.p.to(_t.float64),
+                          params=default_thermo_params())
+    qv = (0.9995 * qs)                      # inside the 1e-3 margin band
+    near_sat = State(
+        th=th, qv=qv,
+        qc=_t2(0.0, 0.0), qr=_t2(0.0, 0.0), qi=_t2(0.0, 0.0),
+        qs=_t2(0.0, 0.0), qg=_t2(0.0, 0.0), nccn=_t2(1.0e9, 1.0e9),
+        nc=_t2(0.0, 0.0), ni=_t2(0.0, 0.0), nr=_t2(0.0, 0.0),
+        bg=_t2(0.0, 0.0),
+    )
+    # premise checks: hydro zero, NOT strictly subsaturated at the margin,
+    # and the forward step is a VALUE no-op — the dangerous combination.
+    assert hydro_exactly_zero(near_sat)
+    assert not column_strictly_subsaturated(near_sat, f, margin=1.0e-3)
+    x64 = State(*(t.to(_t.float64) for t in near_sat))
+    out, h = kdm6_step(x64, f, dt=DT, value_only=True)
+    h.close()
+    assert step_is_noop(x64, State(*(t.detach() for t in out))), \
+        "IC drifted — pick qv closer below qs"
+
+    u = _unit_state(seed=109)
+    obs = {1: u}
+    cfg = WindowConfig(dt=DT, use_cloud_gate=True)
+    res = run_da_window(near_sat, [f], lambda t, x: obs.get(t), cfg)
+    assert res.vjp_steps == [0] and not res.skipped_steps, \
+        "gate skipped a value-noop step WITHOUT provable identity (margin violated)"
+
+    ref = _full_graph_adjoint(State(*(t.detach().clone().to(_t.float64)
+                                      .requires_grad_(True) for t in near_sat)),
+                              [f], obs)
+    for name, a, b in zip(State._fields, res.adj_x0, ref):
+        assert torch.equal(a, b), f"near-sat adjoint != full graph in {name}"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
