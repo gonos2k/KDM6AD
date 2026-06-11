@@ -20,11 +20,13 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 
 
 def _rgmma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. review6 audit에서 부호 수정."""
-    return exp(lgamma(x))
+    # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
+    return _fc.rgmma_f(x)
 
 
 # ─── Step D1: Melting (psmlt + pgmlt + pimlt + 그들의 number 효과) ────────────
@@ -229,9 +231,12 @@ class ContactFreezingParams(NamedTuple):
 
 
 def default_contact_freezing_params(*, xlf: float = DEFAULT_XLF) -> ContactFreezingParams:
-    cmc = _pi * c.DENR / 6.0
-    g1pmc = _rgmma(1.0 + 1.0 / (c.MUC + 1.0))
-    g4pmc = _rgmma(1.0 + 4.0 / (c.MUC + 1.0))
+    # f32-stepwise kdm6init constants (fconst, step-67 seed class): cmc=(pi_f*1000)/6;
+    # g4pmc carries the f32-stepwise argument 1.0f+4.0f/3.0f = 0x40155556 (the
+    # double-then-demote arg is 1 ULP low). Mirrors C++ default_contact_freezing_params.
+    cmc = _fc.CMC
+    g1pmc = _fc.G1PMC
+    g4pmc = _fc.G4PMC
     return ContactFreezingParams(
         cmc=cmc, muc=c.MUC, g1pmc=g1pmc, g4pmc=g4pmc,
         rcn=0.1e-6, boltzmann=1.38e-23,
@@ -269,11 +274,17 @@ def contact_freezing_torch(
 
     den_safe = torch.clamp(den, min=params.qmin)
     supcolt = torch.clamp(supcol, max=70.0)
-    Nic = torch.exp(-2.80 + 0.262 * supcolt) * 1000.0
+    # Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): gfortran -ffp-contract=fast
+    # CONTRACTS the argument into fma(0.262, supcolt, -2.80); addcmul mirrors the
+    # single rounding (C++ ops::fma_acc; step-67 seed class).
+    nic_arg = torch.addcmul(torch.full_like(supcolt, -2.80),
+                            torch.full_like(supcolt, 0.262), supcolt)
+    Nic = torch.exp(nic_arg) * 1000.0
 
-    # Aerosol diffusivity
+    # Aerosol diffusivity. ele2 (F:1521) is REAL(4) stepwise in gfortran —
+    # fconst.ELE2 holds the exact f32 value (C++ fconst::get().ele2 mirror).
     ele1 = 7.37 * t / (288.0 * 10.0 * p) / 100.0
-    ele2 = 4.0 * _pi * params.boltzmann / (6.0 * _pi * params.rcn)
+    ele2 = _fc.ELE2
     t_safe = torch.clamp(t, min=1.0)  # AD-harden (see _venfac_proxy): t·sqrt(t) grad = 0·Inf at t=0
     viscos_t = 1.496e-6 * (t_safe * torch.sqrt(t_safe)) / (t_safe + 120.0) / den
     difa = ele2 * t * (1.0 + ele1 / params.rcn) / (viscos_t * den)
@@ -318,9 +329,11 @@ class BiggCloudParams(NamedTuple):
 
 
 def default_bigg_cloud_params() -> BiggCloudParams:
-    cmc = _pi * c.DENR / 6.0
-    g1p2dcomuc1 = _rgmma(1.0 + 2.0 * c.DMC / (c.MUC + 1.0))
-    g1pdcomuc1 = _rgmma(1.0 + c.DMC / (c.MUC + 1.0))
+    # fconst routing (C++ default_bigg_cloud_params mirror): cmc f32-stepwise;
+    # g1p2dcomuc1=Γ_f(3), g1pdcomuc1=Γ_f(2) (integer args — same values as _rgmma).
+    cmc = _fc.CMC
+    g1p2dcomuc1 = _fc.G1P2DCOMUC1
+    g1pdcomuc1 = _fc.G1PDCOMUC1
     return BiggCloudParams(
         cmc=cmc, denr=c.DENR, muc=c.MUC,
         pfrz1=c.PFRZ1, pfrz2=c.PFRZ2,

@@ -91,7 +91,7 @@ void test_accretion_params_gamma() {
         // mur=1 ⇒ Γ(2)=1, Γ(5)=24, Γ(8)=5040 (큰 값에서 lgamma+exp roundtrip 노이즈 허용).
         assert(std::abs(p.g1pmr - 1.0) < 1e-12);
         assert(std::abs(p.g4pmr - 24.0) < 1e-10);
-        assert(std::abs(p.g7pmr - 5040.0) / 5040.0 < 1e-12);
+        assert(std::abs(p.g7pmr - 5040.0) / 5040.0 < 1e-5);  /* f32 rgmma_f: Γ(8)=5040.0024 (Fortran value) */
     } END_TEST();
 }
 

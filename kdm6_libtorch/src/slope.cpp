@@ -1,4 +1,5 @@
 #include "kdm6/slope.h"
+#include "kdm6/fconst.h"
 
 #include "kdm6/ops.h"
 
@@ -21,7 +22,12 @@ torch::Tensor domain_clamp(const torch::Tensor& x) {
 }
 
 torch::Tensor lamda_from_ratio(const torch::Tensor& ratio, double exponent) {
-    return torch::exp(torch::log(domain_clamp(ratio)) / exponent);
+    // Fortran F:3441 lamdar(x,y,z)= exp(log(((pidnr*z)/(x*y)))*(1./dmr)).
+    // Route exp/log through system libm (ops::libm_*) to match gfortran's libm
+    // rounding (Sleef-vs-libm last-ULP divergence on the operational float32 path).
+    // Fortran form is `*(1./dmr)` — multiply by the f32 reciprocal (step-65 class).
+    const double inv = static_cast<double>(1.0f / static_cast<float>(exponent));
+    return ops::libm_exp(ops::libm_log(domain_clamp(ratio)) * inv);
 }
 
 double pow_or_one(double base, double exponent) {
@@ -80,7 +86,7 @@ SlopeRainOutputs rain_slope_components(const torch::Tensor& qr,
 SlopeParams default_slope_params() {
     const auto rgmma = [](double x) {
         // Fortran rgmma = Γ(x) (review6 audit fix).
-        return std::exp(std::lgamma(x));
+        return static_cast<double>(fconst::rgmma_f(static_cast<float>(x)));  // Fortran-faithful f32 (step-67 class)
     };
 
     const double cmr = PI * constants::DENR / 6.0;
@@ -101,9 +107,9 @@ SlopeParams default_slope_params() {
     const double g1pdibimi = rgmma(1.0 + constants::DMI + constants::BVTI + constants::MUI);
     const double g1pbimi = rgmma(1.0 + constants::BVTI + constants::MUI);
 
-    const double pidnr = cmr * g1pdrmr / g1pmr;
+    const double pidnr = fconst::get().pidnr;   // f32-stepwise (kdm6init F:3235)
     const double pidn0s = cms * constants::N0S * g1pdsms / g1pms;
-    const double pidni = cmi * g1pdimi / g1pmi;
+    const double pidni = fconst::get().pidni;   // f32-stepwise (kdm6init F:3263)
 
     const double pvtr = constants::AVTR * g1pdrbrmr / g1pdrmr;
     const double pvtrn = constants::AVTR * g1pbrmr / g1pmr;
@@ -111,34 +117,50 @@ SlopeParams default_slope_params() {
     const double pvti = constants::AVTI * g1pdibimi / g1pdimi;
     const double pvtin = constants::AVTI * g1pbimi / g1pmi;
 
-    const double rslopermax = 1.0 / constants::LAMDARMAX;
-    const double rslopesmax = 1.0 / constants::LAMDASMAX;
-    const double rslopegmax = 1.0 / constants::LAMDAGMAX;
-    const double rslopeimax = 1.0 / constants::LAMDAIMAX;
+    // STEP-79 SEED (cell-2): Fortran kdm6init builds the whole rslope*max family
+    // REAL(4)-STEPWISE (F:3297-3340) — f32 reciprocal, f32 squares/cubes, powf for
+    // the b/m/d powers. Double-then-demote differs 1 ULP (rslopei2max 2AA9F3C9 vs
+    // gfortran 2AA9F3C8), consumed raw by inactive-branch rates (pidep). fconst idiom.
+    const float lamdarmax_f = static_cast<float>(constants::LAMDARMAX);
+    const float lamdasmax_f = static_cast<float>(constants::LAMDASMAX);
+    const float lamdagmax_f = static_cast<float>(constants::LAMDAGMAX);
+    const float lamdaimax_f = static_cast<float>(constants::LAMDAIMAX);
+    const float rslopermax_f = 1.0f / lamdarmax_f;
+    const float rslopesmax_f = 1.0f / lamdasmax_f;
+    const float rslopegmax_f = 1.0f / lamdagmax_f;
+    const float rslopeimax_f = 1.0f / lamdaimax_f;
+    const double rslopermax = rslopermax_f;
+    const double rslopesmax = rslopesmax_f;
+    const double rslopegmax = rslopegmax_f;
+    const double rslopeimax = rslopeimax_f;
 
-    const double rsloperbmax = std::pow(rslopermax, constants::BVTR);
-    const double rslopesbmax = std::pow(rslopesmax, constants::BVTS);
-    const double rslopeibmax = std::pow(rslopeimax, constants::BVTI);
+    const double rsloperbmax = std::powf(rslopermax_f, static_cast<float>(constants::BVTR));
+    const double rslopesbmax = std::powf(rslopesmax_f, static_cast<float>(constants::BVTS));
+    const double rslopeibmax = std::powf(rslopeimax_f, static_cast<float>(constants::BVTI));
 
-    const double rslopermmax = pow_or_one(rslopermax, constants::MUR);
-    const double rslopesmmax = pow_or_one(rslopesmax, constants::MUS);
-    const double rslopegmmax = pow_or_one(rslopegmax, constants::MUG);
-    const double rslopeimmax = pow_or_one(rslopeimax, constants::MUI);
+    const double rslopermmax = (constants::MUR == 0.0) ? 1.0 : std::powf(rslopermax_f, static_cast<float>(constants::MUR));
+    const double rslopesmmax = (constants::MUS == 0.0) ? 1.0 : std::powf(rslopesmax_f, static_cast<float>(constants::MUS));
+    const double rslopegmmax = (constants::MUG == 0.0) ? 1.0 : std::powf(rslopegmax_f, static_cast<float>(constants::MUG));
+    const double rslopeimmax = (constants::MUI == 0.0) ? 1.0 : std::powf(rslopeimax_f, static_cast<float>(constants::MUI));
 
-    const double rsloperdmax = std::pow(rslopermax, constants::DMR);
-    const double rslopesdmax = std::pow(rslopesmax, constants::DMS);
-    const double rslopegdmax = std::pow(rslopegmax, constants::DMG);
-    const double rslopeidmax = std::pow(rslopeimax, constants::DMI);
+    const double rsloperdmax = std::powf(rslopermax_f, static_cast<float>(constants::DMR));
+    const double rslopesdmax = std::powf(rslopesmax_f, static_cast<float>(constants::DMS));
+    const double rslopegdmax = std::powf(rslopegmax_f, static_cast<float>(constants::DMG));
+    const double rslopeidmax = std::powf(rslopeimax_f, static_cast<float>(constants::DMI));
 
-    const double rsloper2max = rslopermax * rslopermax;
-    const double rslopes2max = rslopesmax * rslopesmax;
-    const double rslopeg2max = rslopegmax * rslopegmax;
-    const double rslopei2max = rslopeimax * rslopeimax;
+    const float rsloper2max_f = rslopermax_f * rslopermax_f;
+    const float rslopes2max_f = rslopesmax_f * rslopesmax_f;
+    const float rslopeg2max_f = rslopegmax_f * rslopegmax_f;
+    const float rslopei2max_f = rslopeimax_f * rslopeimax_f;
+    const double rsloper2max = rsloper2max_f;
+    const double rslopes2max = rslopes2max_f;
+    const double rslopeg2max = rslopeg2max_f;
+    const double rslopei2max = rslopei2max_f;
 
-    const double rsloper3max = rsloper2max * rslopermax;
-    const double rslopes3max = rslopes2max * rslopesmax;
-    const double rslopeg3max = rslopeg2max * rslopegmax;
-    const double rslopei3max = rslopei2max * rslopeimax;
+    const double rsloper3max = rsloper2max_f * rslopermax_f;
+    const double rslopes3max = rslopes2max_f * rslopesmax_f;
+    const double rslopeg3max = rslopeg2max_f * rslopegmax_f;
+    const double rslopei3max = rslopei2max_f * rslopeimax_f;
 
     return SlopeParams{
         /*pidnr=*/pidnr, /*pidn0s=*/pidn0s, /*pidni=*/pidni,
@@ -158,8 +180,10 @@ torch::Tensor compute_supcol(const torch::Tensor& t) {
 }
 
 torch::Tensor n0sfac(const torch::Tensor& supcol) {
+    // Fortran F:3479 n0sfac = max(min(exp(alpha*supcol),n0smax/n0s),1.).
+    // Route exp through system libm to match gfortran libm rounding.
     auto capped = torch::clamp(
-        torch::exp(constants::ALPHA * supcol),
+        ops::libm_exp(constants::ALPHA * supcol),
         /*min=*/1.0,
         /*max=*/constants::N0SMAX / constants::N0S
     );
@@ -250,13 +274,17 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
 
     auto vt_s = scalar_like(params.pvts, inputs.qs) * rslopeb_s * inputs.denfac;
     auto vt_g = inputs.pvtg * rslopeb_g * inputs.denfac;
-    auto vt_i = scalar_like(params.pvti, inputs.qi) * rslopeb_i * inputs.denfac;
+    // Fortran F:3578: vt(:,:,4) = DBLE(pvti)*rslopeb*denfac — the vt array is
+    // DOUBLE PRECISION (class-7), so the ice fall speed is an f64 VALUE consumed
+    // unrounded by work1(4)/falk (falk applies the single f32 rounding). Step-72
+    // cell-B vtprec residual.
+    auto vt_i = params.pvti * rslopeb_i.to(torch::kFloat64) * inputs.denfac;
 
     vt_s = torch::where(inputs.qs <= 0.0, torch::zeros_like(inputs.qs), vt_s);
     vt_g = torch::where(inputs.qg <= 0.0, torch::zeros_like(inputs.qg), vt_g);
-    vt_i = torch::where(inputs.qi <= 0.0, torch::zeros_like(inputs.qi), vt_i);
+    vt_i = torch::where(inputs.qi <= 0.0, torch::zeros_like(vt_i), vt_i);
 
-    auto vtn_i = scalar_like(params.pvtin, inputs.qi) * rslopeb_i * inputs.denfac;
+    auto vtn_i = params.pvtin * rslopeb_i.to(torch::kFloat64) * inputs.denfac;  // workn(2) DOUBLE — same class
     // Fortran F:3553-3554: vtn_i dead-store (reassigned unconditionally after the ni<=0 zeroing). 1:1 fix #5.
 
     return SlopeOutputs{

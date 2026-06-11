@@ -14,15 +14,16 @@ program test_fortran_smoke
   integer(c_int), parameter :: im = 1, kme = 1, jme = 1
   real(c_double), parameter :: dt = 60.0_c_double
 
-  real(c_double), allocatable, dimension(:,:,:) :: th, qv, qc, qr, qi, qs, qg
-  real(c_double), allocatable, dimension(:,:,:) :: nccn, nc, ni, nr, bg
-  real(c_double), allocatable, dimension(:,:,:) :: rho, pii, p, delz
-  real(c_double), allocatable, dimension(:,:,:) :: th_o, qv_o, qc_o, qr_o, qi_o, qs_o, qg_o
-  real(c_double), allocatable, dimension(:,:,:) :: nccn_o, nc_o, ni_o, nr_o, bg_o
+  ! native float32 operational ABI (arrays c_float; dt/ncmin scalars stay c_double)
+  real(c_float), allocatable, dimension(:,:,:) :: th, qv, qc, qr, qi, qs, qg
+  real(c_float), allocatable, dimension(:,:,:) :: nccn, nc, ni, nr, bg
+  real(c_float), allocatable, dimension(:,:,:) :: rho, pii, p, delz
+  real(c_float), allocatable, dimension(:,:,:) :: th_o, qv_o, qc_o, qr_o, qi_o, qs_o, qg_o
+  real(c_float), allocatable, dimension(:,:,:) :: nccn_o, nc_o, ni_o, nr_o, bg_o
   ! Phase 3 ABI extension — land/sea mask + per-regime ncmin scalars.
-  real(c_double), allocatable, dimension(:,:) :: xland
+  real(c_float), allocatable, dimension(:,:) :: xland
   ! Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
-  real(c_double), allocatable, dimension(:,:) :: rain_inc, snow_inc, graupel_inc
+  real(c_float), allocatable, dimension(:,:) :: rain_inc, snow_inc, graupel_inc
 
   type(c_ptr) :: handle
   integer(c_int) :: rc

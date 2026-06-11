@@ -358,6 +358,18 @@ def _kdm6_pure(
     # deplete it across the sub-cycles through kdm62d_one_step → apply_satadj_step activation.
     cur_nccn = torch.clamp(state.nccn, min=c.NCCN_MIN, max=c.NCCN_MAX)
 
+    # Fortran entry padding (F:822-839): zero the dynamics-generated negative
+    # prognostics ONCE per kernel call (mirror of C++ runtime.cpp; the step-46 nn
+    # seed — negative qc must become 0 so the complete-evap NC→NCCN transfer can
+    # fire at pcond==-0.0/dt).
+    cs = cs._replace(
+        qc=torch.clamp(cs.qc, min=0.0), qr=torch.clamp(cs.qr, min=0.0),
+        qi=torch.clamp(cs.qi, min=0.0), qs=torch.clamp(cs.qs, min=0.0),
+        qg=torch.clamp(cs.qg, min=0.0), nr=torch.clamp(cs.nr, min=0.0),
+        nc=torch.clamp(cs.nc, min=0.0), ni=torch.clamp(cs.ni, min=0.0, max=1.0e6),
+        brs=torch.clamp(cs.brs, min=0.0),
+    )
+
     cur = cs  # WRF K-order, evolves across sub-cycles
     for _ in range(loops):
         # 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (flipped to K=0-top order).

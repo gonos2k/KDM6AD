@@ -1,4 +1,6 @@
+#include "kdm6/fconst.h"
 #include "kdm6/melt_freeze.h"
+#include "kdm6/ops.h"
 
 #include <cmath>
 
@@ -9,8 +11,10 @@ namespace {
 constexpr double PI = 3.14159265358979323846;
 
 double rgmma_scalar(double x) {
-    // Fortran rgmma = Γ(x) (review6 audit fix).
-    return std::exp(std::lgamma(x));
+    // Fortran rgmma(x)=EXP(GAMMLN(x)) in REAL(4): f32 expf of the f32-rounded
+    // double Lanczos — differs from exp(lgamma(double)) for NON-INTEGER args
+    // (e.g. Γ(4/3), Γ(7/3) in D2/D3 freezing — the step-67 qi/ni seed class).
+    return static_cast<double>(fconst::rgmma_f(static_cast<float>(x)));
 }
 
 torch::Tensor xka(const torch::Tensor& t, const torch::Tensor& den) {
@@ -56,10 +60,13 @@ MeltingOutputs melting_torch(
     auto coeres_s = in.rslope2_s
                   * torch::sqrt(torch::clamp(in.rslope_s * in.rslopeb_s, /*min=*/p.qcrmin))
                   * in.rslopemu_s;
+    // gfortran fuses the LAST multiply of the 2nd product into the inner '+'
+    // (precs2*n0so*work2*coeres → addcmul(precs1-term, precs2*n0so*work2, coeres)). F:1290-1291
+    auto psmlt_term1 = p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s;
+    auto psmlt_sum = ops::fma_acc(psmlt_term1, p.precs2 * in.n0so * in.work2, coeres_s);
     auto psmlt_raw = xka_val / p.xlf * (p.t0c - in.t) * in.n0sfac
                      * PI / 2.0
-                     * (p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s
-                        + p.precs2 * in.n0so * in.work2 * coeres_s)
+                     * psmlt_sum
                      / den_safe;
     auto psmlt_dt = psmlt_raw * dtcld;
     auto psmlt_capped = torch::minimum(torch::maximum(psmlt_dt, -in.qs), zero);
@@ -77,10 +84,12 @@ MeltingOutputs melting_torch(
     auto coeres_g = in.rslope2_g
                   * torch::sqrt(torch::clamp(in.rslope_g * in.rslopeb_g, /*min=*/p.qcrmin))
                   * in.rslopemu_g;
+    // Same fusion as psmlt: last mul of 2nd product fuses with inner '+'. F:1314-1315
+    auto pgmlt_term1 = p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g;
+    auto pgmlt_sum = ops::fma_acc(pgmlt_term1, in.precg2 * in.n0go * in.work2, coeres_g);
     auto pgmlt_raw = xka_val / p.xlf * (p.t0c - in.t)
                      * PI / 2.0
-                     * (p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g
-                        + in.precg2 * in.n0go * in.work2 * coeres_g)
+                     * pgmlt_sum
                      / den_safe;
     auto pgmlt_dt = pgmlt_raw * dtcld;
     auto pgmlt_capped = torch::minimum(torch::maximum(pgmlt_dt, -in.qg), zero);
@@ -111,9 +120,12 @@ MeltingOutputs melting_torch(
 // ═══════════════════════════════════════════════════════════════════════════
 
 ContactFreezingParams default_contact_freezing_params(double xlf) {
-    const double cmc = PI * constants::DENR / 6.0;
-    const double g1pmc = rgmma_scalar(1.0 + 1.0 / (constants::MUC + 1.0));
-    const double g4pmc = rgmma_scalar(1.0 + 4.0 / (constants::MUC + 1.0));
+    // f32-stepwise kdm6init constants (fconst.h): cmc=(pi_f*1000)/6, g1pmc=Γ_f(1+1/3),
+    // g4pmc=Γ_f(1+4/3) with the f32-stepwise argument 1.0f+4.0f/3.0f = 0x40155556
+    // (the double-then-demote arg 0x40155555 is 1 ULP low — step-67 seed class).
+    const double cmc = fconst::get().cmc;
+    const double g1pmc = fconst::get().g1pmc;
+    const double g4pmc = fconst::get().g4pmc;
     return ContactFreezingParams{
         cmc, constants::MUC, g1pmc, g4pmc,
         /*rcn=*/0.1e-6, /*boltzmann=*/1.38e-23,
@@ -127,21 +139,38 @@ ContactFreezingOutputs contact_freezing_torch(
     const ContactFreezingParams& p,
     double dtcld
 ) {
-    auto zero = torch::zeros_like(in.qc);
+    // STEP-67 SEED: Fortran pinuc/ninuc are DOUBLE PRECISION scalars (F:738) and
+    // n0c/rslopecmu are DOUBLE arrays (F:696-697), so the rate chain promotes to
+    // f64 at the `*n0c` factor and stays f64 through the min() cap — there is NO
+    // f32 rounding until the qci/nci state stores (F:1533-1537). The f32 PREFIX
+    // (cmc·difa·2·pi·Nic, all REAL operands) stays f32-stepwise. torch type
+    // promotion (f64 tensor ⊗ f32 tensor → f64) mirrors gfortran exactly; in.n0c
+    // is the f64 intercept (runtime.cpp/coordinator.cpp).
     auto active = torch::logical_and(in.supcol > p.supcol_threshold, in.qc > p.qmin);
     auto den_safe = torch::clamp(in.den, /*min=*/p.qmin);
     auto supcolt = torch::clamp(in.supcol, /*min=*/-1e30, /*max=*/70.0);
-    auto Nic = torch::exp(-2.80 + 0.262 * supcolt) * 1000.0;
+    // Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): gfortran -ffp-contract=fast
+    // CONTRACTS the argument into a single fma(0.262, supcolt, -2.80) — the
+    // unfused (0.262*supcolt)+(-2.80) differs 1 ULP at the step-67 cell.
+    auto nic_arg = ops::fma_acc(torch::full_like(supcolt, -2.80),
+                                torch::full_like(supcolt, 0.262), supcolt);
+    auto Nic = ops::libm_exp(nic_arg) * 1000.0;
 
     auto ele1 = 7.37 * in.t / (288.0 * 10.0 * in.p) / 100.0;
-    const double ele2 = 4.0 * PI * p.boltzmann / (6.0 * PI * p.rcn);
+    // ele2 (F:1521) is evaluated REAL(4) stepwise by gfortran — fconst.h holds the
+    // exact f32 value as a double (single demotion at the tensor op reproduces it).
+    const double ele2 = fconst::get().ele2;
     auto t_safe = torch::clamp(in.t, 1.0);  // AD-harden: t·sqrt(t) grad = 0·Inf=NaN at t=0 (mirror thermo)
     auto viscos_t = 1.496e-6 * (t_safe * torch::sqrt(t_safe)) / (t_safe + 120.0) / in.den;
     auto difa = ele2 * in.t * (1.0 + ele1 / p.rcn) / (viscos_t * in.den);
 
+    // f32 prefix h1..h4 = cmc*difa, *2, *pi, *Nic (each op REAL(4), F:1524); the
+    // chain goes DOUBLE from `* in.n0c` on (f64 tensor) — Fortran mixed-precision.
     auto pinuc_raw = p.cmc * difa * 2.0 * PI * Nic * in.n0c / den_safe / (p.muc + 1.0)
                      * p.g4pmc * in.rslopecmu * in.rslopec3 * in.rslopec2 * dtcld;
-    auto pinuc = torch::where(active, torch::minimum(pinuc_raw, in.qc), zero);
+    // min vs DBLE(qc) in f64 (F:1524 min(...,qci)); rate stays f64 to the apply.
+    auto zero_d = torch::zeros_like(pinuc_raw);
+    auto pinuc = torch::where(active, torch::minimum(pinuc_raw, in.qc.to(pinuc_raw.dtype())), zero_d);
 
     // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
     auto nc_above_ncmin = p.ncmin_tensor.has_value()
@@ -150,7 +179,7 @@ ContactFreezingOutputs contact_freezing_torch(
     auto nc_active = torch::logical_and(active, nc_above_ncmin);
     auto ninuc_raw = difa * 2.0 * PI * Nic * in.n0c / (p.muc + 1.0)
                      * p.g1pmc * in.rslopecmu * in.rslopec2 * dtcld;
-    auto ninuc = torch::where(nc_active, torch::minimum(ninuc_raw, in.nc), zero);
+    auto ninuc = torch::where(nc_active, torch::minimum(ninuc_raw, in.nc.to(ninuc_raw.dtype())), zero_d);
     return ContactFreezingOutputs{/*pinuc=*/pinuc, /*ninuc=*/ninuc};
 }
 
@@ -159,9 +188,12 @@ ContactFreezingOutputs contact_freezing_torch(
 // ═══════════════════════════════════════════════════════════════════════════
 
 BiggCloudParams default_bigg_cloud_params() {
-    const double cmc = PI * constants::DENR / 6.0;
-    const double g1p2dcomuc1 = rgmma_scalar(1.0 + 2.0 * constants::DMC / (constants::MUC + 1.0));
-    const double g1pdcomuc1 = rgmma_scalar(1.0 + constants::DMC / (constants::MUC + 1.0));
+    // f32-stepwise kdm6init constants (fconst.h): cmc=(pi_f*1000)/6,
+    // g1p2dcomuc1=Γ_f(3), g1pdcomuc1=Γ_f(2) (integer args ⇒ same as rgmma_scalar,
+    // routed through fconst for the single source of truth).
+    const double cmc = fconst::get().cmc;
+    const double g1p2dcomuc1 = fconst::get().g1p2dcomuc1;
+    const double g1pdcomuc1 = fconst::get().g1pdcomuc1;
     return BiggCloudParams{
         cmc, constants::DENR, constants::MUC,
         constants::PFRZ1, constants::PFRZ2,
@@ -176,26 +208,47 @@ BiggCloudOutputs bigg_cloud_freezing_torch(
     const BiggCloudParams& p,
     double dtcld
 ) {
-    auto zero = torch::zeros_like(in.qc);
+    // STEP-67 SEED (same class as D2): Fortran pfrzdtc/nfrzdtc are DOUBLE scalars
+    // (F:755-756); the chain is f64 from `*n0c` on with NO f32 rounding until the
+    // qci/nci stores (F:1563-1567). The f32 prefix is cmc*cmc (f1), *pfrz1 (f2) for
+    // pfrzdtc and cmc*pfrz1 (k1) for nfrzdtc — gfortran evaluates these REAL(4)
+    // stepwise BEFORE the n0c promotion, so compute them in float here (scalar
+    // constants; no autograd concern). bigg stays the f32 libm exp (F:1546).
     auto active = torch::logical_and(in.supcol > 0, in.qc > p.qmin);
     auto den_safe = torch::clamp(in.den, /*min=*/p.qmin);
     auto supcolt = torch::clamp(in.supcol, /*min=*/-1e30, /*max=*/70.0);
-    auto bigg_factor = torch::exp(p.pfrz2 * supcolt) - 1.0;
+    auto bigg_factor = ops::libm_exp(p.pfrz2 * supcolt) - 1.0;
 
-    auto pfrzdtc_raw = p.cmc * p.cmc * p.pfrz1 * in.n0c / den_safe / p.denr
+    // Scalar prefixes: on the f32 (operational) path gfortran evaluates them
+    // REAL(4) stepwise; on the fp64 oracle path the whole chain is f64 (Python
+    // oracle parity — it multiplies cmc*cmc*pfrz1 in f64 inside the chain).
+    const bool f32_path = (in.qc.scalar_type() == torch::kFloat32);
+    const float cmc_f = static_cast<float>(p.cmc);
+    const float pfrz1_f = static_cast<float>(p.pfrz1);
+    const double f2 = f32_path
+        ? static_cast<double>((cmc_f * cmc_f) * pfrz1_f)   // F:1545 (cmc)*cmc*pfrz1, f32 stepwise
+        : p.cmc * p.cmc * p.pfrz1;
+    const double k1 = f32_path
+        ? static_cast<double>(cmc_f * pfrz1_f)              // F:1557 (cmc)*pfrz1, f32
+        : p.cmc * p.pfrz1;
+
+    auto pfrzdtc_raw = f2 * in.n0c / den_safe / p.denr
                        / (p.muc + 1.0) * bigg_factor * p.g1p2dcomuc1
                        * in.rslopecmu * in.rslopecd * in.rslopecd * in.rslopec * dtcld;
-    auto pfrzdtc = torch::where(active, torch::minimum(pfrzdtc_raw, in.qc), zero);
+    // min vs DBLE(qc) — in.qc is the f32-stored POST-D2 cloud water (F:1536 store
+    // precedes the F:1545 cap); rate stays f64 to the apply.
+    auto zero_d = torch::zeros_like(pfrzdtc_raw);
+    auto pfrzdtc = torch::where(active, torch::minimum(pfrzdtc_raw, in.qc.to(pfrzdtc_raw.dtype())), zero_d);
 
     // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
     auto nc_above_ncmin = p.ncmin_tensor.has_value()
         ? in.nc > p.ncmin_tensor.value()
         : in.nc > p.ncmin;
     auto nc_active = torch::logical_and(active, nc_above_ncmin);
-    auto nfrzdtc_raw = p.cmc * p.pfrz1 * in.n0c / p.denr / (p.muc + 1.0)
+    auto nfrzdtc_raw = k1 * in.n0c / p.denr / (p.muc + 1.0)
                        * bigg_factor * p.g1pdcomuc1 * in.rslopecmu * in.rslopec
                        * in.rslopecd * dtcld;
-    auto nfrzdtc = torch::where(nc_active, torch::minimum(nfrzdtc_raw, in.nc), zero);
+    auto nfrzdtc = torch::where(nc_active, torch::minimum(nfrzdtc_raw, in.nc.to(nfrzdtc_raw.dtype())), zero_d);
     return BiggCloudOutputs{/*pfrzdtc=*/pfrzdtc, /*nfrzdtc=*/nfrzdtc};
 }
 
@@ -224,7 +277,7 @@ BiggRainOutputs bigg_rain_freezing_torch(
     auto active = torch::logical_and(in.supcol > 0, in.qr > 0);
     auto den_safe = torch::clamp(in.den, /*min=*/p.qmin);
     auto supcolt = torch::clamp(in.supcol, /*min=*/-1e30, /*max=*/70.0);
-    auto bigg_factor = torch::exp(p.pfrz2 * supcolt) - 1.0;
+    auto bigg_factor = ops::libm_exp(p.pfrz2 * supcolt) - 1.0;
 
     auto pfrzdtr_raw = p.cmr * p.cmr * p.pfrz1 * in.n0r / den_safe / p.denr
                        * bigg_factor * in.rsloped_r * in.rsloped_r * in.rslopemu_r

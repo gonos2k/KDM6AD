@@ -1152,7 +1152,11 @@ def test_default_cold_evap_params_fortran_formula_lock():
     from kdm6.cold import default_dep_sub_params
     g2pms = math.gamma(2.0 + c.MUS)                     # F: g2pms = rgmma(2+mus)
     g2pmg = math.gamma(2.0 + c.MUG)                     # F: g2pmg = rgmma(2+mug)
-    g5pbso2 = math.gamma(2.5 + 0.5 * c.BVTS + c.MUS)    # F: g5pbso2 = rgmma(2.5+0.5*bvts+mus)
+    # F: g5pbso2 = rgmma(2.5+0.5*bvts+mus) — Fortran rgmma is the REAL(4)
+    # expf(f32 gammln) (fconst.rgmma_f, step-67 seed class), NOT exact Γ at
+    # non-integer args; g2pms/g2pmg are Γ(2)=1 exactly either way.
+    from kdm6.fconst import rgmma_f
+    g5pbso2 = rgmma_f(2.5 + 0.5 * c.BVTS + c.MUS)
     exp_precs1 = 4.0 * 0.65 * g2pms                      # F:3254
     exp_precs2 = 4.0 * 0.44 * (c.AVTS ** 0.5) * g5pbso2  # F:3255
     exp_precg1 = 4.0 * 0.78 * g2pmg                      # F:3263

@@ -20,13 +20,15 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 
 
 def _rgmma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. GAMMLN은 ln(Γ)이므로
     rgmma는 *Γ(x)* (1/Γ 아님). 이전 구현은 `exp(-lgamma)` = 1/Γ로 잘못 짜여
     review6 audit에서 발견."""
-    return exp(lgamma(x))
+    # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
+    return _fc.rgmma_f(x)
 
 
 # ─── Params ──────────────────────────────────────────────────────────────────
@@ -53,15 +55,16 @@ def default_cloud_dsd_params(*, den0: float | None = None) -> CloudDsdParams:
     if den0 is None:
         den0 = c.DEN0
     cmc = _pi * c.DENR / 6.0
-    pidnc = cmc * _rgmma(1.0 + c.DMC / (c.MUC + 1.0))
+    pidnc = _fc.PIDNC   # f32-stepwise (kdm6init F:3205; see fconst.py)
     g3pmc = _rgmma(1.0 + 3.0 / (c.MUC + 1.0))
     g6pmc = _rgmma(1.0 + 6.0 / (c.MUC + 1.0))
     g1pmr = _rgmma(1.0 + c.MUR)
     g4pmr = _rgmma(4.0 + c.MUR)
 
-    qc_base = (4.0 / 3.0) * _pi * c.DENR * (c.R0 ** 3.0) / den0
-    qc0 = qc_base * c.XNCR0
-    qc1 = qc_base * c.XNCR1
+    # STEP-91 latent class mirror: kdm6init F:3135-3136 REAL(4) l2r — *xncr BEFORE /den0.
+    _qc_pre = _fc._f32(_fc._f32(_fc._f32(_fc._f32(4.0 / 3.0) * _fc.PI) * _fc._f32(c.DENR)) * _fc.powf(c.R0, 3.0))
+    qc0 = _fc._f32(_fc._f32(_qc_pre * _fc._f32(c.XNCR0)) / _fc._f32(den0))
+    qc1 = _fc._f32(_fc._f32(_qc_pre * _fc._f32(c.XNCR1)) / _fc._f32(den0))
 
     return CloudDsdParams(
         pidnc=pidnc,
@@ -95,23 +98,17 @@ def diag_cloud_slope_torch(
     """
     DOMAIN_FLOOR = 1.0e-30
     ratio = params.pidnc * nc / torch.clamp(qc * den, min=DOMAIN_FLOOR)
-    lamdac = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / params.dmc)
-    # 1:1 item #6: Fortran F:1061 is unclamped, but that is safe only because Fortran is
-    # BRANCHY (qc≈0 cells skip the slope). The tensor port is MASK-MULTIPLY, so an unclamped
-    # 1/lamdac overflows→Inf in qc≈0 cells and Inf×0=NaN downstream (WRF NaN @itimestep 66).
-    # The clamp is a structurally-required guard reproducing Fortran's branch-skip. DELIBERATE.
-    rslopec_active = torch.clamp(
-        1.0 / lamdac,
-        min=1.0 / params.lamdacmax,
-        max=1.0 / params.lamdacmin,
-    )
-    # Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) → rslopec=rslopecmax
-    # = 1/lamdacmax. The clamp above already maps qc≈0 → 1/lamdacmax (min-bound), but a
-    # nc<=ncmin cell WITH qc>0 gives a tiny lamdac → 1/lamdac large → wrongly hits the MAX-bound
-    # 1/lamdacmin (~40× too large). The nc<=ncmin gate forces 1/lamdacmax (Codex round-4 F2).
-    # Per-cell ncmin (xland) via ncmin_tensor; None → scalar c.NCMIN (no-xland). AD-safe (where).
+    lamdac = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) * _fc._f32(1.0 / _fc._f32(params.dmc)))  # Fortran *(1./dmc) — step-65 class
+    # STEP-75 SEED (D-B) mirror: Fortran's ACTIVE rslopec is UNCLAMPED (stmt fn
+    # lamdac F:802 has no bounds; the lamdacmax SNAP rewrites only nci/n0c). The
+    # NaN guard is preserved structurally: the 1e-30 domain floors bound lamdac > 0
+    # (no Inf), and the explosive qc/nc~0 cells are exactly the INACTIVE set
+    # overwritten below with 1/lamdacmax (Fortran F:1454 same branch).
+    rslopec_active = 1.0 / lamdac
+    # Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) →
+    # rslopec = rslopecmax = 1/lamdacmax. Per-cell ncmin (xland) via ncmin_tensor.
     nc_floor = ncmin_tensor if ncmin_tensor is not None else c.NCMIN
-    inactive = nc <= nc_floor
+    inactive = (qc <= c.EPS) | (nc <= nc_floor)
     rslopec = torch.where(inactive,
                           torch.full_like(rslopec_active, 1.0 / params.lamdacmax),
                           rslopec_active)
@@ -135,7 +132,10 @@ def diag_species_slope_torch(
     """
     DOMAIN_FLOOR = 1.0e-30
     ratio = pidn * n / torch.clamp(q * den, min=DOMAIN_FLOOR)
-    lamda = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) / dm)
+    # Fortran multiplies by the REAL(4) reciprocal `*(1./dmc)` — not /dm (step-65
+    # lamda evaluation-form class; mirrors C++ cloud_dsd.cpp).
+    inv_dm = _fc._f32(1.0 / _fc._f32(dm))
+    lamda = torch.exp(torch.log(torch.clamp(ratio, min=DOMAIN_FLOOR)) * inv_dm)
     return torch.clamp(1.0 / lamda, min=1.0 / lamdamax, max=1.0 / lamdamin)
 
 

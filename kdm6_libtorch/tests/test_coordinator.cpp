@@ -2,6 +2,7 @@
 // Python kdm6_torch/tests/test_coordinator.py와 1:1 정합되어야 함.
 //
 #include "kdm6/coordinator.h"
+#include "kdm6/fconst.h"
 #include "kdm6/constants.h"
 
 #include <torch/torch.h>
@@ -159,8 +160,11 @@ void test_dsd_limiter_clamps_oversized_ni_strong() {
         auto den = torch::full({1, 1}, 1.1, opts);
         auto out = apply_dsd_number_limiters(s, den);
 
-        // Γ-truth: pidni = (π·DENI/6) · Γ(4)/Γ(1) = 261.8 · 6 = 1570.8.
-        const double pidni_expected = M_PI * constants::DENI / 6.0 * 6.0;
+        // Γ-truth: pidni = (π·DENI/6) · Γ(4)/Γ(1) = 261.8 · 6 = 1570.8 — now the
+        // f32-stepwise Fortran value (fconst.h; differs ~1e-7 rel from the double
+        // form, which this 1e-9 gate would false-fail). The 36×-reciprocal-bug
+        // guard is preserved by the magnitude itself.
+        const double pidni_expected = fconst::get().pidni;
         const double ni_at_max = 1.1 * 1.0e-5
             * std::pow(constants::LAMDAIMAX, constants::DMI) / pidni_expected;
         const double got = out.ni.item<double>();
@@ -181,7 +185,7 @@ void test_dsd_limiter_clamps_oversized_nc_structure() {
         auto den = torch::full({1, 1}, 1.1, opts);
         auto out = apply_dsd_number_limiters(s, den);
 
-        const double pidnc_expected = M_PI * constants::DENR / 6.0 * 1.0;  // Γ(2)=1
+        const double pidnc_expected = fconst::get().pidnc;  // f32-stepwise (Γ(2)=1; structure guard preserved)
         const double nc_at_max = 1.1 * 1.0e-3
             * std::pow(constants::LAMDACMAX, constants::DMC) / pidnc_expected;
         const double got = out.nc.item<double>();

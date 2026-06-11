@@ -31,14 +31,17 @@ def test_default_cloud_dsd_params_qc0_qc1():
     assert p.qc0 < p.qc1
     # qc_base = 4/3 * pi * denr * r0^3 / den0
     qc_base = (4.0 / 3.0) * math.pi * c.DENR * (c.R0 ** 3) / c.DEN0
-    assert math.isclose(p.qc0, qc_base * c.XNCR0, rel_tol=1e-12)
-    assert math.isclose(p.qc1, qc_base * c.XNCR1, rel_tol=1e-12)
+    # STEP-91 class: params now carry the gfortran REAL(4)-stepwise values
+    # (kdm6init F:3135-3136) — agreement with the double formula is f32-level.
+    assert math.isclose(p.qc0, qc_base * c.XNCR0, rel_tol=1e-6)
+    assert math.isclose(p.qc1, qc_base * c.XNCR1, rel_tol=1e-6)
 
 
 def test_diag_cloud_slope_clamped():
-    """rslopec ∈ [1/lamdacmax, 1/lamdacmin]. Item #6: the clamp is a structurally-required
-    numerical guard (tensor mask-multiply turns an unclamped Inf into Inf×0=NaN, which
-    Fortran's branchy structure avoids) — see parity tracker #6."""
+    """STEP-75 D-B semantics: the ACTIVE rslopec is UNCLAMPED (Fortran stmt fn lamdac
+    F:802 has no bounds; the lamdacmax SNAP rewrites only nci/n0c). Only the INACTIVE
+    gate (qc<=qmin | nc<=ncmin) forces rslopec = 1/lamdacmax. Values stay finite and
+    positive (domain floors), which is the structural NaN guard."""
     p = default_cloud_dsd_params()
     dtype = torch.float64
     qc = torch.tensor([[1.0e-3, 1.0e-7]], dtype=dtype)  # high qc, very low qc
@@ -46,8 +49,14 @@ def test_diag_cloud_slope_clamped():
     den = torch.full((1, 2), 1.1, dtype=dtype)
 
     rslopec = diag_cloud_slope_torch(qc, nc, den, params=p)
-    assert torch.all(rslopec >= 1.0 / p.lamdacmax - 1e-30)
-    assert torch.all(rslopec <= 1.0 / p.lamdacmin + 1e-30)
+    assert torch.all(torch.isfinite(rslopec)) and torch.all(rslopec > 0)
+    # very-low-qc ACTIVE cell goes BELOW the old 1/lamdacmax floor (unclamped)
+    assert rslopec[0, 1].item() < 1.0 / p.lamdacmax
+    # inactive gates -> exactly 1/lamdacmax
+    r0 = diag_cloud_slope_torch(torch.zeros_like(qc), nc, den, params=p)
+    assert torch.all(r0 == 1.0 / p.lamdacmax)
+    r1 = diag_cloud_slope_torch(qc, torch.zeros_like(nc), den, params=p)
+    assert torch.all(r1 == 1.0 / p.lamdacmax)
 
 
 def test_diag_avedia_formulas():
@@ -158,7 +167,8 @@ def test_qcr_maritime_default_is_qc0_not_placeholder():
     Guards the qc0 value AND that diag_qcr(all-sea) == qc0 (≠ the 8.0e-5 placeholder, ~4.5% off)."""
     p = default_cloud_dsd_params()
     expected_qc0 = (4.0 / 3.0) * math.pi * c.DENR * (c.R0 ** 3.0) * c.XNCR0 / c.DEN0
-    assert math.isclose(p.qc0, expected_qc0, rel_tol=1e-12)
+    # f32-stepwise value (STEP-91 class) — f32-level agreement with the double formula.
+    assert math.isclose(p.qc0, expected_qc0, rel_tol=1e-6)
     assert abs(p.qc0 - 8.0e-5) > 1.0e-6, "qc0 must differ from the retired 8.0e-5 placeholder"
     sea = torch.ones((1, 2), dtype=torch.bool)
     qcr_sea = diag_qcr_torch(sea, params=p, ref=torch.zeros((1, 2), dtype=torch.float64))

@@ -35,6 +35,15 @@ torch::Tensor safe_sqrt(const torch::Tensor& x);
 torch::Tensor safe_pow(const torch::Tensor& x, double y);
 torch::Tensor safe_pow(const torch::Tensor& x, const torch::Tensor& y);
 
+// libm exp/log (float32 forward bit-matches gfortran libm; float64 -> torch native).
+// Graph-preserving (custom autograd Function with analytic backward), InferenceMode-safe.
+// Guaranteed single-rounding FMA: acc + value*t1*t2 (drop-in for torch::addcmul,
+// which is NOT reliably fused: SIMD body = two roundings, scalar tail = fused).
+torch::Tensor fma_acc(const torch::Tensor& acc, const torch::Tensor& t1,
+                      const torch::Tensor& t2, double value = 1.0);
+torch::Tensor libm_exp(const torch::Tensor& x);
+torch::Tensor libm_log(const torch::Tensor& x);
+
 torch::Tensor clip_positive(const torch::Tensor& x);
 
 enum class MinmodMode { Eager, Smoothed };

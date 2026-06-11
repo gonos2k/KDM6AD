@@ -1,11 +1,10 @@
 taskid: 0 hostname: 10.nate.com
- starting wrf task            0  of            1
  ./module_io_quilt_old.F        2931 F
 Quilting with   1 groups of   0 I/O tasks.
  Ntasks in X            1 , ntasks in Y            1
   Domain # 1: dx =  1000.000 m
 WRF V4.6.0 MODEL
-No git found or not a git repository, git commit version not available.
+git commit 59b8085041e8a5e1c83da21ca564bb0bb4cd3297 1 file changed, 12 insertions(+)
  *************************************
  Parent domain
  ids,ide,jds,jde            1         101           1         101
@@ -13,158 +12,79 @@ No git found or not a git repository, git commit version not available.
  ips,ipe,jps,jpe            1         101           1         101
  *************************************
 DYNAMICS OPTION: Eulerian Mass Coordinate
-   alloc_space_field: domain            1 ,             309852948  bytes allocated
+   alloc_space_field: domain            1 ,             316752708  bytes allocated
   med_initialdata_input: calling input_input
    Input data is acceptable to use: wrfinput_d01
  CURRENT DATE          = 2007-06-01_00:00:00
  SIMULATION START DATE = 2007-06-01_00:00:00
-Timing for processing wrfinput file (stream 0) for domain        1:    0.10525 elapsed seconds
+Timing for processing wrfinput file (stream 0) for domain        1:    0.11952 elapsed seconds
 Max map factor in domain 1 =  1.00. Scale the dt in the model accordingly.
+ KDM6AD_PHASE phy_init top mp_physics=          37
+ KDM6AD_PHASE phy_init before start_of_simulation write
+ KDM6AD_PHASE phy_init after start_of_simulation write
+ KDM6AD_PHASE phy_init after start_of_simulation debug
+ KDM6AD_PHASE phy_init before nl_get_cen_lat
+ KDM6AD_PHASE phy_init after nl_get_cen_lat
+ KDM6AD_PHASE phy_init before nl_get_iswater
+ KDM6AD_PHASE phy_init after nl_get_iswater
+ KDM6AD_PHASE phy_init after nl_get_isice
+ KDM6AD_PHASE phy_init after nl_get_isurban
+ KDM6AD_PHASE phy_init after nl_get_mminlu
+ KDM6AD_PHASE phy_init after nl_get block before landuse_ISICE
+ KDM6AD_PHASE phy_init after landuse_ISICE
+ KDM6AD_PHASE phy_init before landuse_init block
 INPUT LandUse = "USGS"
  LANDUSE TYPE = "USGS" FOUND          61  CATEGORIES           2  SEASONS WATER CATEGORY =           16  SNOW CATEGORY =            0
-Timing for Writing wrfout_d01_2007-06-01_00:00:00 for domain        1:    0.17402 elapsed seconds
+ KDM6AD_PHASE phy_init after landuse_init call
+ KDM6AD_PHASE phy_init tree canopy start
+ KDM6AD_PHASE phy_init tree canopy end
+ KDM6AD_PHASE phy_init before z2sigma
+ KDM6AD_PHASE phy_init after z2sigma
+ KDM6AD_PHASE phy_init before ra_init
+ KDM6AD_PHASE phy_init after ra_init
+Timing for Writing wrfout_d01_2007-06-01_00:00:00 for domain        1:    0.20972 elapsed seconds
  Tile Strategy is not specified. Assuming 1D-Y
 WRF TILE   1 IS      1 IE    101 JS      1 JE    101
 WRF NUMBER OF TILES =   1
 d01 2007-06-01_00:00:00  ----------------------------------------
 d01 2007-06-01_00:00:00  W-DAMPING  BEGINS AT W-COURANT NUMBER =    1.00000000
 d01 2007-06-01_00:00:00  ----------------------------------------
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.333527       715.945190    
- KDM6AD_STATE qv min/max=   0.00000000       1.81113724E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:05 on domain   1:    2.04442 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.321228       715.942749    
- KDM6AD_STATE qv min/max=   0.00000000       1.81130823E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:10 on domain   1:    0.52376 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.309814       715.944702    
- KDM6AD_STATE qv min/max=   0.00000000       1.81150921E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:15 on domain   1:    0.49564 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.299255       715.944336    
- KDM6AD_STATE qv min/max=   0.00000000       1.81172788E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:20 on domain   1:    0.56099 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.289490       715.946228    
- KDM6AD_STATE qv min/max=   0.00000000       1.81195959E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:25 on domain   1:    0.51900 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.280548       715.943420    
- KDM6AD_STATE qv min/max=   0.00000000       1.81220043E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:30 on domain   1:    0.48935 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.272400       715.942017    
- KDM6AD_STATE qv min/max=   0.00000000       1.81245096E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:35 on domain   1:    0.49580 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.265076       715.941406    
- KDM6AD_STATE qv min/max=   0.00000000       1.81270838E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:40 on domain   1:    0.49485 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.258453       715.940918    
- KDM6AD_STATE qv min/max=   0.00000000       1.81297231E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
-Timing for main: time 2007-06-01_00:00:45 on domain   1:    0.49538 elapsed seconds
- KDM6AD_DIAG enter wrapper im/km/jm/dt=         100          34         100   5.00000000    
- KDM6AD_DIAG after scratch allocation
- KDM6AD_DIAG after host_to_double copy
- KDM6AD_DIAG after kdm6_step rc=           0
- KDM6AD_DIAG after handle_close rc=           0
- KDM6AD_DIAG before double_to_host copy
- KDM6AD_DIAG after double_to_host copy
- KDM6AD_STATE th min/max=   298.252686       715.943542    
- KDM6AD_STATE qv min/max=   0.00000000       1.81324258E-02
- KDM6AD_STATE qc min/max=   0.00000000       0.00000000    
- KDM6AD_STATE qi min/max=   0.00000000       0.00000000    
- KDM6AD_STATE nc min/max=   0.00000000       0.00000000    
- KDM6AD_DIAG leaving wrapper
+Timing for main: time 2007-06-01_00:00:05 on domain   1:    2.07273 elapsed seconds
+Timing for main: time 2007-06-01_00:00:10 on domain   1:    0.34468 elapsed seconds
+Timing for main: time 2007-06-01_00:00:15 on domain   1:    0.34139 elapsed seconds
+Timing for main: time 2007-06-01_00:00:20 on domain   1:    0.34151 elapsed seconds
+Timing for main: time 2007-06-01_00:00:25 on domain   1:    0.34037 elapsed seconds
+Timing for main: time 2007-06-01_00:00:30 on domain   1:    0.34140 elapsed seconds
+Timing for main: time 2007-06-01_00:00:35 on domain   1:    0.34162 elapsed seconds
+Timing for main: time 2007-06-01_00:00:40 on domain   1:    0.34150 elapsed seconds
+Timing for main: time 2007-06-01_00:00:45 on domain   1:    0.34117 elapsed seconds
+Timing for main: time 2007-06-01_00:00:50 on domain   1:    0.34374 elapsed seconds
+Timing for main: time 2007-06-01_00:00:55 on domain   1:    0.34047 elapsed seconds
+Timing for main: time 2007-06-01_00:01:00 on domain   1:    0.34180 elapsed seconds
+
+Program received signal SIGSEGV: Segmentation fault - invalid memory reference.
+
+Backtrace for this error:
+
+Could not print backtrace: executable file is not an executable
+#0  0x1315ce103
+#1  0x1315cd083
+#2  0x1919d9763
+#3  0x131e0bee7
+#4  0x131c56fc3
+#5  0x130d88747
+#6  0x130d5e57f
+#7  0x130a25993
+#8  0x102fef9e7
+#9  0x102fefd0b
+#10  0x10300d18b
+#11  0x10081af13
+#12  0x10081aa43
+#13  0x10082451b
+#14  0x101862a1f
+#15  0x1018d3cb3
+#16  0x10194b4eb
+#17  0x10194b987
+#18  0x10050de23
+#19  0x1004914d7
+#20  0x10301c87b

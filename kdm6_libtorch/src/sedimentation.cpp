@@ -1,4 +1,5 @@
 #include "kdm6/sedimentation.h"
+#include "kdm6/ops.h"
 
 namespace kdm6 {
 namespace sed {
@@ -97,7 +98,12 @@ SubstepAdvectionOutputs substep_advection_torch(
         fall_brs_cols[k] = fall_brs_cols[k] + falk_brs_top;
 
         qr_cols[k] = torch::clamp(qr_cols[k] - falk_qr_top * dtcld / dend_safe_col(k), 0.0);
-        nr_cols[k] = torch::clamp(nr_cols[k] - falk_nr_top * dtcld, 0.0);
+        // F:1128 nrs = max(nrs - falkn*dtcld, 0.) — the multiply (*dtcld) is the op
+        // IMMEDIATELY before the subtract (no intervening /dend), so gfortran -ffp-contract=fast
+        // fuses it: fma(-falkn, dtcld, nrs). addcmul(acc, t1, t2, value) = acc + value*t1*t2.
+        nr_cols[k] = torch::clamp(
+            ops::fma_acc(nr_cols[k], falk_nr_top, torch::full_like(falk_nr_top, dtcld), -1.0),
+            0.0);
         qs_cols[k] = torch::clamp(qs_cols[k] - falk_qs_top * dtcld / dend_safe_col(k), 0.0);
         qg_cols[k] = torch::clamp(qg_cols[k] - falk_qg_top * dtcld / dend_safe_col(k), 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - falk_brs_top * dtcld / dend_safe_col(k), 0.0);
@@ -130,17 +136,20 @@ SubstepAdvectionOutputs substep_advection_torch(
         // q), capped by the cell-above's POST-update reservoir — Fortran min(falk(k+1)*delz_ratio
         // *dtcld/dend, qrs(k+1)) with the stored falk(k+1). The earlier port recomputed falk from
         // the depleted qx_cols[k-1], under-advecting interior mass + attenuating the fall gradient.
-        auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
+        // STEP-88 SEED class: Fortran F:1180-1205 evaluates falk(k+1)*delz(k+1)
+        // /delz(k)*dtcld LEFT-TO-RIGHT in f32 — multiply by raw delz(k+1) FIRST,
+        // then divide. A pre-computed delz_ratio rounds 1 ULP differently when
+        // the inflow min-cap does not bind.
         auto dqr_above = torch::minimum(
-            falk_qr_prev * delz_ratio * dtcld / dend_safe_col(k), qr_cols[k - 1]);
+            falk_qr_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qr_cols[k - 1]);
         auto dnr_above = torch::minimum(
-            falk_nr_prev * delz_ratio * dtcld, nr_cols[k - 1]);
+            falk_nr_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld, nr_cols[k - 1]);
         auto dqs_above = torch::minimum(
-            falk_qs_prev * delz_ratio * dtcld / dend_safe_col(k), qs_cols[k - 1]);
+            falk_qs_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qs_cols[k - 1]);
         auto dqg_above = torch::minimum(
-            falk_qg_prev * delz_ratio * dtcld / dend_safe_col(k), qg_cols[k - 1]);
+            falk_qg_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qg_cols[k - 1]);
         auto dbrs_above = torch::minimum(
-            falk_brs_prev * delz_ratio * dtcld / dend_safe_col(k), brs_cols[k - 1]);
+            falk_brs_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), brs_cols[k - 1]);
 
         qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);
         nr_cols[k] = torch::clamp(nr_cols[k] - dnr_k + dnr_above, 0.0);
@@ -209,18 +218,28 @@ IceSubstepOutputs ice_substep_advection_torch(
     // Top
     {
         const int64_t k = 0;
-        auto falk_qi_top = dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale;
-        auto falk_ni_top = ni_cols[k] * workn_qi_col(k) * falk_scale;
+        // Fortran F:1247-1248: falk/falkn are REAL — ONE f32 rounding of the f64
+        // chain f32(dend*qi)*vt_d/mstep (work1(4)/workn(2) DOUBLE; class-7).
+        auto falk_qi_top = (dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale)
+                               .to(in.state.qi.scalar_type());
+        auto falk_ni_top = (ni_cols[k] * workn_qi_col(k) * falk_scale)
+                               .to(in.state.qi.scalar_type());
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
         qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
-        ni_cols[k] = torch::clamp(ni_cols[k] - falk_ni_top * dtcld, 0.0);
+        // F:1220 nci = max(nci - falkn_i*dtcld, 0.) — multiply (*dtcld) is immediately before
+        // the subtract (no /dend), so gfortran fuses: fma(-falkn_i, dtcld, nci).
+        ni_cols[k] = torch::clamp(
+            ops::fma_acc(ni_cols[k], falk_ni_top, torch::full_like(falk_ni_top, dtcld), -1.0),
+            0.0);
         falk_qi_prev = falk_qi_top;  falk_ni_prev = falk_ni_top;
     }
 
     for (int64_t k = 1; k < K; ++k) {
-        auto falk_qi_k = dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale;
-        auto falk_ni_k = ni_cols[k] * workn_qi_col(k) * falk_scale;
+        auto falk_qi_k = (dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale)
+                             .to(in.state.qi.scalar_type());   // F:1247 REAL store (class-7)
+        auto falk_ni_k = (ni_cols[k] * workn_qi_col(k) * falk_scale)
+                             .to(in.state.qi.scalar_type());
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k;
 
@@ -229,11 +248,11 @@ IceSubstepOutputs ice_substep_advection_torch(
 
         // Inflow from above: STORED falk_*_prev (entry q of the cell above), capped by its
         // POST-update reservoir — not a recompute from the depleted neighbour.
-        auto delz_ratio = delz_col(k - 1) / delz_safe_col(k);
+        // STEP-88 SEED: Fortran F:1264-1269 left-to-right f32 — see main-substep note.
         auto dqi_above = torch::minimum(
-            falk_qi_prev * delz_ratio * dtcld / dend_safe_col(k), qi_cols[k - 1]);
+            falk_qi_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qi_cols[k - 1]);
         auto dni_above = torch::minimum(
-            falk_ni_prev * delz_ratio * dtcld, ni_cols[k - 1]);
+            falk_ni_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld, ni_cols[k - 1]);
 
         qi_cols[k] = torch::clamp(qi_cols[k] - dqi_k + dqi_above, 0.0);
         ni_cols[k] = torch::clamp(ni_cols[k] - dni_k + dni_above, 0.0);

@@ -43,11 +43,17 @@ KIM-meso_v1.0/main/*.dylib
 KIM-meso_v1.0/main/*.so
 
 # Native build trees and generated installs
+# (list the suffixed variants EXPLICITLY rather than a broad build*/ install*/ glob —
+#  the bare build/ install/ patterns missed build_miniforge/ install_miniforge/, so
+#  18+15 generated artifacts were tracked by accident; a broad *.glob risks catching
+#  unrelated source dirs like installer/ or buildtools/.)
 **/build/
+**/build_miniforge/
 **/cmake-build-*/
 **/CMakeFiles/
 **/CMakeCache.txt
 **/install/
+**/install_miniforge/
 
 # Large local archives/artifacts
 *.tar.gz

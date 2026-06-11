@@ -1,204 +1,138 @@
-# KDM6 Port ↔ Fortran Physical-Process ORDER Checklist
+# KDM6 Operation-ORDER Checklist (Fortran `module_mp_kdm6.F` ↔ C++ `kdm6_libtorch` ↔ Python `kdm6_torch`)
 
-Audit of the C++ (`kdm6_libtorch`) and Python (`kdm6_torch`) ports against Fortran `module_mp_kdm6.f90` **process ORDER + state-dependency** (entry-state vs already-updated-state — the axis that governs autodiff sensitivity). Generated 2026-05-31.
+Audit of the PROCESS-EXECUTION ORDER + per-step STATE-DEPENDENCY (which snapshot each step reads — entry vs
+post-melt vs post-freeze vs post-reclass — the axis that governs both forward sequencing and autodiff sensitivity).
+`.F`-basis citations (the `.f90` drifts every build). Rebuilt 2026-06-05 for the CURRENT sequential code.
 
-**Tally:** 67 steps — ❌ 22 MISMATCH · ⚠️ 9 REVIEW · ✅ 36 MATCH
+**Verdict (2026-06-05 FINAL): MACRO phase-order EXACT + the FOUR intra-phase deviations FIXED in code (O1-O4),
+unit+parity+WRF green (inert in the warm validation case — safety proven, positive effect needs an active
+cold/melt case). Codex-reviewed twice; 2 first-pass defects corrected (O2 was zeroing nr AFTER the cold phase
+that reads it — prevp is a RATE so qr/nr not yet reduced — moved to BEFORE cold; O4 mask used the CAPPED pidep
+`<=` which over-fires on all over-sublimation — switched to RAW `pidep_raw == −qi/dtcld` matching Fortran's
+F:2343 near-dead exact-equality). O1/O3 confirmed correct by Codex.** The four sequential-mutation deviations below were
+implemented in BOTH trees (C++ + Python oracle) — O1 D1 t-cooling threaded into pgmlt (cpm added to MeltingInputs/PreambleMf),
+O2 complete-rain-evap nr zeroed before `scale_rates_for_conservation`, O3 D2-D4 freeze fed the pre-homog supcol
+(`compute_supcol(working1.t)` override), O4 C5 psaut ni-gated by the C4 `ice_complete_sublim` mask. Validated: C++ ctest
+15/15, Python 241, C++↔Python parity green, autograd intact (all fixes are differentiable mask/threading, no .item/detach).
+Still REQUIRED before stamping FLOW_ORDER_EXACT: the WRF effect-gate (mp137 vs mp37, staging changes can regress in ways
+unit tests miss — see the 806× precedent). Original (pre-fix) verdict retained below for the per-deviation analysis.
 
-## Overall verdict
+**Verdict (pre-fix): MACRO phase-order EXACT; FOUR confirmed residual INTRA-phase sequential-mutation deviations.** The Stage-A
+re-architecture made `kdm62d_one_step` a SEQUENTIAL in-place chain that threads the working state through
+melt → (homog freeze) → re-slope → freeze → re-slope → warm → cold → D5 → conservation → state-update → reclass → satadj,
+and `kdm6_fn` runs sedimentation per-substep at the TOP of the sub-cycle. This fixed the macro inter-phase flow and
+SUPERSEDES the 2026-05-31 audit (67 steps / 22 MISMATCH) — all 22 of those MACRO mismatches are resolved (melt/freeze
+no longer deferred to a parallel state_update; sediment per-substep; homog freeze enabled; D2-D4 caps sequenced via
+`qc_post_d2`; Python pcact present). **BUT two FINER-grained intra-phase sequential STATE-mutations remain in
+parallel/deferred form (Codex order-audit 2026-06-05, both .F-adjudicated below) — so the flow is NOT bit-exact: do not
+claim "FLOW_ORDER_EXACT" outright.** C++ and Python are order-identical to each other; both deviate from Fortran in the
+same two intra-phase spots. All citations spot-adjudicated against the real `.F`.
 
-PARTIAL. The ports replicate Fortran's INTRA-PHASE order faithfully (warm B1-B5 internal order, cold C1-C6' incl. the hard Hallett-Mossop double paacw subtraction and the C4 supice/ifsat deposition chain, the 14 group-conservation limiters with sequential intra-budget rescaling, and the post-update tail reclass→pcact→satadj→cleanup→DSD). BUT the macro inter-phase FLOW is broken in three structural ways: (1) inline melt (D1) and freeze (D2-D4) are deferred from PRE-rate sequential mutations into a single parallel state_update, so warm/cold rates and budget reservoirs read ENTRY state instead of post-melt/post-freeze state; (2) sedimentation runs ONCE at end-of-step instead of per-sub-cycle pre-rate; (3) the homogeneous freeze (supcol>40) is disabled entirely. Forward values often coincide (especially loops_max=1, dt<=120s, and because cold rates gate supcol>0 while melt-enhancement gates supcol<=0), but the autodiff SENSITIVITY graph diverges wherever melting/freezing/sedimentation are active, because the ported gradient flows from the entry snapshot in parallel rather than threading through the sequential mutation chain. Verified against module_mp_kdm6.f90:1239-1295 (inline melt), :1360-1511 (homog freeze + inline contact/Bigg freeze), :1643-1753 (warm loop reads post-melt/post-freeze arrays), and runtime.cpp:255-317 (sedimentation once-at-end, mstep from dt).
+## Per-sub-cycle execution order (the authoritative sequence)
 
-67 process steps audited across 6 areas: 36 MATCH, 22 MISMATCH, 9 REVIEW. The MISMATCHes cluster into ONE root cause repeated across many cells: the port's "compute every phase from state_pre in parallel, apply once in state_update" design is FAITHFUL where Fortran's rate loop is itself entry-state (warm B1-B5, cold C1-C6' q/n reads, per-species mass update) — confirmed because Fortran does not mutate qci/qrs/nci/nrs between the rate-loop entry and the state-update block. It DIVERGES wherever Fortran does an INLINE pre-rate mutation: D1 melt (f90:1251-1291), D2-D4 freeze (f90:1442-1511), homogeneous freeze (f90:1360-1370), and the per-sub-cycle sedimentation (f90:826/1069-1320). In those cases Fortran's downstream rates/budgets see the mutated state (sequential) while the port sees entry state (parallel) — the exact gradient-flow break the audit targets. Sequential rate-to-rate couplings that DON'T touch state arrays (Hallett-Mossop paacw running subtraction, C3→C4 ifsat, C4 cumulative supice, intra-budget rate rescaling) ARE correctly threaded. C++ and Python are flow-consistent EXCEPT in CCN activation (pcact): C++ applies pcact in apply_satadj_step on post-reclass state matching Fortran; Python omits pcact entirely (Task #74, no nccn field) — a real C++/Py state-dependency inconsistency. Two additional C++/Py inconsistencies: complete-evap NC→NCCN transfer (C++ present, Python absent) and the unused-fn status of apply_homogeneous_freeze_supercold.
+Sub-cycle: Fortran `do loop=1,loops` (F:876 → `enddo` F:3017); ports loop in `runtime.cpp` `kdm6_fn` / `runtime.py`.
+"reads" = the state snapshot the step consumes (the autodiff-critical column).
 
-## Mismatches ranked by autodiff-sensitivity impact
+| # | Operation | Fortran `.F` | C++ (`coordinator.cpp` / `runtime.cpp`) | Python mirror | reads | ORDER |
+|---|-----------|--------------|------------------------------------------|---------------|-------|-------|
+| 0 | nccn entry-prologue clamp [1e8,2e10] (ONCE, before loop) | F:801 `nci(·,3)=min(max(·,1e8),2e10)` | runtime.cpp `clamp_nccn` (pre-loop) | runtime.py | — | ✅ |
+| 1 | **SEDIMENT(dtcld)** at substep TOP, per-substep mstep | F:1119 `do n=1,mstepmax` (fall block) | runtime.cpp:319-356 (sediment at loop top) | runtime.py per-substep | current substep | ✅ |
+| 2 | rebuild aux on post-fall state (re-slope) | F:1090/1095 ProgB+slope_kdm6 | runtime `rebuild_aux` post-fall | rebuild_aux_torch | post-fall | ✅ |
+| 3 | preamble (entry thermo+slope diagnostics) | F:1274 `supcol=t0c-t` region | coordinator F1a `preamble(state_pre)` | preamble_torch | entry | ✅ |
+| 4 | **D1 melt** (psmlt/pgmlt/pimlt) INLINE, xlf0 | F:1274-1345 | F1: `melt_freeze_d1` → `apply_melt_freeze_inline` → `working1` | melt_freeze_d1_torch | entry→working1 | ✅ |
+| 5 | **homogeneous freeze** (supcol>40: qc→qi) INLINE | F:1410-1420 | F1pre: `apply_homogeneous_freeze_supercold(working1)` → `working1b` | apply_homogeneous_freeze_supercold_torch | working1 | ✅ (was DISABLED pre-re-arch) |
+| 6 | rebuild aux (post-melt/homog re-slope) | F:1422-1480 | `rebuild_aux(working1b)` → pre1/aux1 | rebuild_aux_torch | working1b | ✅ |
+| 7 | **D2-D4 freeze** (pinuc/pfrzdtc/pfrzdtr) INLINE, SEQUENTIAL caps, xls−xl(T) | F:1442-1511 | `melt_freeze_d2_d4` → `apply_melt_freeze_inline` → `working` | melt_freeze_d2_d4_torch | working1b→working | ✅ |
+| 8 | rebuild aux (post-freeze re-slope: n0c/n0i/rslopec from frozen state) | F:1546-1683 | `rebuild_aux(working)` → pre2/aux2 | rebuild_aux_torch | working | ✅ |
+| 9 | **warm phase** (B1-B5: praut/pracw/prevp…) | F:1643-1753 | F1b: `warm_phase(working, pre2/aux2)` | warm_phase_torch | working | ✅ |
+| 10 | **cold phase** (C1-C6 + Hallett-Mossop + ice nuc/dep) | F:1768-2394 | F1c: `cold_phase(working, pre2/aux2)` | cold_phase_torch | working | ✅ |
+| 11 | **D5 enhanced melting** (pseml/pgeml) | F:2270-2293 | F1d: `melt_freeze_d5(cold_out, working)` | melt_freeze_d5_torch | working+cold | ✅ |
+| 12 | **conservation limiters** (budget source/factor rescaling, gate t≤t0c) | F:2449-2756 | F1d2: `scale_rates_for_conservation(working reservoirs)` | scale_rates_for_conservation_torch | working | ✅ |
+| 13 | **state update** (apply all committed rates to working base) | F:2616/2738 `qci(1)=max(qci(1)±…)` | F1e: `state_update(working, pre_core entry-thermo)` | state_update_torch | working | ✅ |
+| 14 | Picons reclass (qi→qs at avedia_i ≥ 200μm) | F:2807-2808 `qci(2)≥qmin & t<t0c & avedia(3)≥200e-6` | F1f: `reclassify_large_ice_to_snow` | reclassify…_torch | post-update | ✅ |
+| 15 | rain→cloud reclass (avedia_r ≤ di82=82μm) | F:2883 `avedia(2)≤di82` | F1g: `reclassify_small_rain_to_cloud` | reclassify…_torch | post-Picons | ✅ |
+| 16 | **pcact CCN activation + satadj** (ncact/pcact then conden/pcond; complete-evap NC→NCCN) | F:2905/2911 (pcact) → F:2927/2942 (conden/pcond) | F1g+: `apply_satadj_step` (post-reclass) | apply_satadj_step_torch (nccn threaded, Task #74) | post-reclass | ✅ (Python pcact was OMITTED pre-fix) |
+| 17 | paired threshold cleanup | F: (tail clamps) | F1h: `apply_threshold_cleanup` | apply_threshold_cleanup_torch | — | ✅ |
+| 18 | DSD number limiters (lamda snap + NRMAX/NCMAX) | F: (tail) | F1i: `apply_dsd_number_limiters` | apply_dsd_number_limiters_torch | — | ✅ |
+| end | enddo big loops | F:3017 | for-loop end | for-loop end | — | ✅ |
 
-### 1. Inline melt/freeze deferred to state_update (umbrella: D1 psmlt/pgmlt/pimlt + D2 pinuc + D3 pfrzdtc + D4 pfrzdtr)  — impact: HIGHEST. This single design choice breaks the gradient flow for the entire warm+cold+budget chain in any melting/freezing cell. In Fortran the melt (f90:1251-1253,1275-1278,1287-1291) and freeze (f90:1454-1456,1484-1486,1507-1510) mutate qc/qr/qs/qg/qi/nc/nr/ni/t BEFORE the warm rate loop (1643) and cold rate loop, AND before the conservation budgets (2399+). So every downstream rate's autodiff sensitivity to qc/qr/qi/t threads through the melt/freeze deltas. The ports compute warm/cold/mf all from state_pre and sum at state_update (coordinator.cpp:467-490) — gradients flow from the entry snapshot in parallel, never sensing that A depleted the reservoir B reads. Additionally the freeze caps are sequential in Fortran (pfrzdtc's min(...,qci(1)) at f90:1469 reads qci(1) AFTER pinuc subtracted it at 1454); the port caps both D2 and D3 against the SAME entry qc, so combined D2+D3 can over-draw qc vs Fortran (only partially masked by the group limiter, which itself reads entry reservoirs).
-- **Must match Fortran:** module_mp_kdm6.f90:1239-1295 (D1 melt inline) → 1360-1370 (homog freeze) → 1442-1511 (D2/D3/D4 freeze inline, sequential caps) → 1372-1430 re-slope refresh → 1643-1753 warm rate loop reading the mutated arrays → cold loop → 2399-2708 budgets reading mutated reservoirs
-- **Fix:** Re-architect kdm62d_one_step to a SEQUENTIAL chain that mutates the working state in place: (a) apply melt (D1) to a new_state BEFORE computing warm/cold rates; (b) apply the freeze block (D2→D3→D4 sequentially, each capping against the running qc/qr) BEFORE the warm/cold rate loop; (c) recompute the DSD re-slope refresh (f90:1372-1430) on the post-freeze state so warm/cold rates use post-freeze n0c/n0i/rslopec; (d) feed that post-melt/post-freeze state into warm_phase, cold_phase, and the budget reservoirs. Keep the rates themselves computed from that updated state (Fortran's rate loop is entry-state w.r.t. THAT post-melt/post-freeze snapshot). Mirror identically in coordinator.py. This is the largest refactor and the one the autodiff-fidelity requirement most depends on.
+## State-dependency (the autodiff axis)
+The decisive property the old design broke and the re-arch fixed: steps 9-13 (warm/cold/D5/conservation/state-update)
+read the **WORKING** state (= entry → D1-melt → homog-freeze → D2-D4-freeze applied IN PLACE), with the DSD diagnostics
+(n0c/n0i/rslopec/avedia) rebuilt from that post-freeze state (steps 6, 8). So each downstream rate's gradient threads
+through the melt/freeze deltas sequentially — NOT from a parallel entry snapshot. The freeze caps are sequential
+(D3 `pfrzdtc` caps against the running qc AFTER D2 `pinuc` drew it; `apply_melt_freeze_inline` commits D1→D2-D4 in order).
+Steps 14-16 (reclass → satadj) read the post-state-update / post-reclass state, matching Fortran's tail at F:2807-2942.
+NOTE: state_update step 13 deliberately uses ENTRY-thermo `pre_core` (xl/cpm/supcol/rhox) — Fortran re-slopes geometry
+post-melt/freeze but NOT qs/xl/rh (see project memory `project-kdm6-flow-order-audit` / `rebuild_aux must preserve
+ENTRY-staged thermo`); this is a faithful match, not an ordering shortcut.
 
-### 2. Sedimentation/fallout placement: once-at-end vs per-sub-cycle pre-rate  — impact: HIGH. Fortran runs rain/snow/graupel + ice sedimentation INSIDE each sub-cycle (f90:826 do loop wrapping 1069-1220) BEFORE melt and the rate loop, with per-sed-substep re-slope (1139-1146, 1205-1212) and dtcld; same-substep microphysics then sees sediment-depleted hydrometeors. The port runs the FULL microphysics (incl. reclass/satadj/cleanup/DSD tail) for all sub-cycles, then sedimentation ONCE on the end-of-step state (runtime.cpp:255 then 313), with mstep derived once from dt (runtime.cpp:297-310) not per-substep from dtcld. Gradients route through the entire microphysics in the port vs directly from substep-entry state in Fortran; surface accumulation (rainncv etc.) is a single end pass vs per-substep sum. For loops_max=1 (dt<=120s) the iteration count collapses, but the in-substep ordering (sediment→melt→rates) is still inverted to (rates→sediment).
-- **Must match Fortran:** module_mp_kdm6.f90:826 (do loop=1,loops) wrapping :1069-1156 (RSG sediment, re-slope 1139-1146), :1161-1220 (ice sediment, re-slope 1205-1212), :1299-1328 (per-substep surface accumulation); mstep per-substep :1049-1067
-- **Fix:** Move sedimentation_chain INSIDE the sub-cycle loop, at the TOP of kdm62d_one_step (before melt), so each sub-cycle: sediment(dtcld) → melt → freeze → rates → budgets → state_update → reclass/satadj/cleanup/DSD. Derive mstep per-substep from the substep's own slope with dtcld (matching f90:1049-1067), not once from dt. Accumulate rainncv/snowncv/graupelncv per substep. Both ports.
+## Intra-phase order details (finer than the macro steps — completeness sweep)
+The sub-cycle has **7 re-slope (`call slope_kdm6`) points** (F:1089, 1194, 1260, 1397, 1592, 2777, 2868); all are mapped:
+- F:1089 / F:1194 — per-substep re-slope INSIDE the RSG (`do n=1,mstepmax` F:1119-1206) and ice (`mstepmax_i` F:1211-1270) sediment loops → ports' `sedimentation_chain` per-substep re-slope (step 1; the resolved #9 item).
+- F:1260 — pre-melt re-slope → step 3 preamble (entry diagnostics fed to D1).
+- F:1397 — post-melt/pre-D2-D4 re-slope → step 6 `rebuild_aux(working1b)`.
+- F:1592 — post-D2-D4-freeze re-slope → step 8 `rebuild_aux(working)`.
+- **F:2777 / F:2868 — TAIL re-slopes** before the reclass gates: the ports do NOT have a separate macro step; instead the reclass functions RE-DERIVE the slope INTERNALLY on the post-state-update state — `reclassify_large_ice_to_snow` (coordinator.cpp:1418, avedia_i recompute :1451) recomputes `avedia_i` from post-update qi/ni for the ≥200μm gate (F:2807), and `reclassify_small_rain_to_cloud` (coordinator.cpp:1474, avedia_r recompute :1505) recomputes `avedia_r` for the ≤di82 gate (F:2883). So steps 14-15 gate on FRESH post-update avedia, matching the Fortran tail re-slope. ✅
 
-### 3. Warm rates + cold rates read entry state instead of post-freeze/post-reslope state  — impact: HIGH (a direct consequence of MISMATCH #1, called out separately because it is the measurable symptom). Fortran's warm loop (1643-1753) and cold loop read qci(1)/qrs(1)/nci/nrs AFTER the inline freeze block mutated them and AFTER the re-slope refresh (1372-1430) recomputed n0c/n0i/rslopec. The ports pass state_pre to warm_phase (coordinator.cpp:217) and cold_phase (coordinator.cpp:457). The CALL order (warm before cold) and the prevp→cold threading are correct (cold.cpp:653), so the ports get the rate-to-rate coupling right; only the STATE each rate reads is wrong (entry vs post-freeze/post-reslope). Wherever freezing competes with autoconv/accretion/deposition for the same qc/qr/qi, forward and gradient diverge.
-- **Must match Fortran:** module_mp_kdm6.f90:1372-1430 + 1546-1633 (re-slope on post-freeze state) → 1643-1753 (warm) → 1768-2394 (cold), all reading frozen+resloped arrays
-- **Fix:** Resolved automatically once MISMATCH #1 is fixed (warm/cold computed from the post-melt/post-freeze/post-reslope working state). Also reproduce the intervening re-slope #3 (f90:1372-1430 and 1546-1633) so the slope-derived diagnostics (n0c, n0i, rslopec, avedia) fed to warm/cold rates come from the frozen state, not entry.
+## Residual INTRA-phase order/state deviations — CONFIRMED (Codex order-audit 2026-06-05, .F-adjudicated)
+The macro phase order (the 18 steps) is exact, but TWO finer sequential STATE-mutations are still done in parallel/deferred
+form. Both are REAL forward+gradient deviations in their active cells (NOT measure-zero); both are C++/Python-consistent.
 
-### 4. Conservation budget reservoirs read entry state, not post-melt/freeze reservoirs  — impact: MEDIUM-HIGH. Fortran's budget value=max(floor,reservoir) at f90:2410-2678 reads qrs/qci/nrs reservoirs already mutated by inline melt/freeze (1252/1276/1454/1484/1507/1510) and by complete-rain-evap nr-zeroing (1746). The ports' scale_rates_for_conservation reads state.qc/qr/qs/qg/qi/nr (entry) because mf is deferred (coordinator.cpp:480-482). The budget ORDER and the sequential intra-budget rate rescaling (cloud→snow→graupel re-reading scaled paacw) are correctly reproduced (verified MATCH), so the divergence is purely the reservoir STATE the caps clamp against — which can change which rates get scaled and by how much, altering both forward mass balance and gradient magnitude.
-- **Must match Fortran:** module_mp_kdm6.f90:1744-1746 (pre-budget nr-zero) and the post-melt/freeze reservoirs read at :2410-2678
-- **Fix:** Once MISMATCH #1 makes melt/freeze a pre-rate in-place mutation, the budget reservoirs will naturally read the post-melt/post-freeze state. Also apply the complete-rain-evap nr-zeroing (f90:1744-1746, nci(3)+=nrs; nrs=0) BEFORE the budget loop so the rain-number budget reservoir is 0 (currently applied only inside state_update; Python documents the gap at coordinator.py:982-987).
+**(O1) D1 melt — `t` not cooled between snow-melt and graupel-melt (intra-D1 sequencing).** Fortran D1 applies psmlt then
+**cools `t` IN PLACE** (F:1290 `t = t + xlf/cpm·psmlt`, psmlt<0) and computes pgmlt from that COOLED `t` (F:1292 `pgmlt =
+xka(t)/xlf·(t0c−t)` — sequential), then cools `t` again, then pimlt. The ports compute psmlt/pgmlt/pimlt from the SAME entry
+`t` (melt_freeze.cpp:65/87, parallel) and sum the t-update. So in any cell with BOTH snow and graupel melting, the port's
+pgmlt magnitude (its `t0c−t` driver and `xka(t)`) is evaluated at the un-cooled entry `t` ⇒ forward + gradient differ.
+- Fortran: F:1289-1296 (psmlt → cool t → pgmlt reads cooled t). Port: coordinator.cpp `apply_melt_freeze_inline` sums D1 t-update.
+- Active: melting layers with snow AND graupel present. Inert where only one frozen species melts.
 
-### 5. Homogeneous freeze (supcol>40: qc→qi) disabled entirely  — impact: MEDIUM (localized to T<-40C cells but a genuine order+content gap, and the autodiff path through deep-cold qc→qi is entirely absent). Fortran applies it INLINE at the head of the post-sediment cold block (f90:1360-1370): qci(2)+=qci(1); nci(2)+=nci(1); t+=xlf/cpm*qci(1); qci(1)=0; nci(1)=0 — so the cold phase sees frozen ice. The port retains apply_homogeneous_freeze_supercold (coordinator.cpp:1307) but does NOT call it (coordinator.cpp:430-441), intentionally, because aux n0i was built upstream from the original state and would be stale post-freeze (same class as the 806x over-deposition regression).
-- **Must match Fortran:** module_mp_kdm6.f90:1360-1370 (inline qc→qi at supcol>40) followed by the re-slope at 1372-1430 rebuilding n0i before deposition at 2279-2367
-- **Fix:** Enable it, but ONLY after the aux-rebuild refactor: apply homogeneous freeze in-place at the top of the cold block, THEN recompute n0i/rslope_i from the post-freeze nci(2)/qci(2) before any deposition rate consumes them (the staleness is the blocker, not the transfer itself). Sequence it before the contact/Bigg freeze block. Both ports — and confirm Python's status matches C++ (memory note flags a prior Python add-then-correct that may differ).
+**(O2) complete-rain-evap nr-zeroing — moved AFTER the budgets instead of before.** Fortran, when rain fully evaporates in a
+step (`prevp == −qrs(1)/dtcld`), moves `nrs→nci(3)` and zeroes `nrs` INLINE (F:1794-1796) BEFORE the conservation budgets,
+so the rain-NUMBER budget reservoir `value=max(nrmin,nrs(1))` reads **0** (F:2587 and F:2719). The ports compute a
+`rain_complete_evap` mask in warm phase (warm.cpp:281), scale the conservation budgets from the NON-zeroed `state.nr`
+(rain-number budgets coordinator.cpp:973/1009), and apply the nr→nccn transfer only later in `state_update` (coordinator.cpp:1143; Python
+documents the gap at coordinator.py:1172). So the rain-number budget reservoir/rescale differs in complete-rain-evap cells.
+This is NOT a measure-zero fp-tie (correcting the prior framing) — it is a deterministic pre-budget mutation that Fortran's
+rain-number budgets read; flagged in the rate audit as #3/#4 flow-order-deferred. Active: cells where rain fully evaporates
+in one substep (common at cloud edges / sub-saturated layers).
 
-### 6. Python omits pcact CCN activation in satadj (C++/Python inconsistency)  — impact: MEDIUM (C++ matches Fortran; Python diverges from BOTH). Fortran applies pcact at f90:2853-2865 (sw>0: ncact/pcact update q/qci/nci3/nci1/t) AFTER rain→cloud reclass and BEFORE satadj, so satadj's qs1 recompute reads post-pcact t. C++ apply_satadj_step recomputes pcact+ncact on the post-reclass state, applies it, then recomputes qs1 from post-pcact t (coordinator.cpp:1086-1118) — MATCH. Python apply_satadj_step_torch has NO nccn field and skips pcact entirely (coordinator.py:1407-1418, Task #74), so Python's satadj sees a no-CCN state; under supersaturation Python's qs1/qv are wrong and the gradient pcact→t→qs1 is missing. Also the complete-evap NC→NCCN transfer (f90:2886-2889) is present in C++ (coordinator.cpp:1122-1126) but absent in Python.
-- **Must match Fortran:** module_mp_kdm6.f90:2853-2865 (pcact) and :2886-2889 (complete-evap NC→NCCN), both consumed by satadj at :2872-2893
-- **Fix:** Port pcact/ncact and the complete-evap NC→NCCN transfer into Python's apply_satadj_step_torch, adding an nccn state field, so Python matches both Fortran (f90:2853-2889) and C++. Until then the C++/Python parity test cannot validate CCN activation. Also delete the DEAD in-warm pcact/pcond computed in C++ warm_phase (coordinator.cpp:271-313) — it is recomputed from entry state, unused by state_update, and duplicates apply_satadj_step's pcact, a maintenance trap.
+**(O3) D2-D4 freeze `supcol` reads POST-homogeneous-freeze `t` instead of the pre-homog scalar.** Fortran sets the scalar
+`supcol = t0c−t` ONCE at F:1403 (post-D1-melt, PRE-homog) and reuses it UNCHANGED for D2 (F:1485), D3 (F:1512) AND D4
+(F:1542) — it is NOT recomputed after the homogeneous freeze warms `t` at F:1417. The ports `rebuild_aux(working1b)` AFTER
+the homog freeze, so `pre.supcol` (consumed by melt_freeze_d2_d4, coordinator.cpp:721 / coordinator.py) reflects the
+warmer post-homog `t` ⇒ a smaller supcol ⇒ D2-D4 freezing is suppressed in cells where homog fired. Active ONLY in
+supcol>40 (T<−40°C) cells that also undergo D2-D4 freezing (deep cold) — localized but a real fidelity deviation.
+- Fortran: F:1403 `supcol=t0c-t` (set once) → F:1417 homog warms t → F:1485/1512/1542 reuse the F:1403 supcol.
+- Fix: feed D2-D4 the supcol from the PRE-homog state (the F:1403 snapshot), not the rebuilt post-homog one.
 
-### 7. Per-sub-cycle mstep (sediment substep count) computed once outside loop  — impact: MEDIUM-LOW for loops_max=1 (collapses), but a structural order mismatch for loops>=2. Fortran derives mstep per sub-cycle from each substep's slope with dtcld (f90:1049-1067) before that substep's sedimentation. The port computes mstep_main/mstep_ice once from dt on a post-microphysics re-preamble (runtime.cpp:297-310). The fall-speed field is therefore a single fixed field rather than per-substep re-sloped.
-- **Must match Fortran:** module_mp_kdm6.f90:1049-1067 (per-substep mstep from substep slope, dtcld) and the per-sed-substep re-slope at 1139-1146 / 1205-1212
-- **Fix:** Folds into MISMATCH #2 (sedimentation inside the loop): once sedimentation moves into kdm62d_one_step, derive mstep per substep from that substep's slope with dtcld. Drop the once-outside-loop derivation in runtime.cpp.
+**(O4) complete-ice-sublimation `ni` zeroing — deferred past C5 aggregation.** Fortran, when ice fully sublimates
+(`pidep == −qci(2)/dtcld`), zeroes `nci(2)` INLINE inside the C4 deposition block (F:2343-2344) BEFORE C5 ice→snow
+aggregation (psaut), so C5's gate `nci(2)>0` (F:2396) reads **0** in fully-sublimated cells. The ports compute C5
+aggregation from the post-freeze snapshot with non-zeroed `ni` (cold phase reads `working.ni`) and defer the ni→0 zeroing
+to state_update (ni_zero_mask coordinator.cpp:1180 / coordinator.py:1192), so C5 can still produce snow aggregates from ice that
+Fortran has already zeroed. Active in complete-ice-sublimation cells.
+- Fortran: F:2343-2344 (`if pidep==-qci(2)/dtcld: nci(2)=0`) → F:2396 (C5 `nci(2)>0` reads zeroed ni).
+- Fix: apply the complete-sublimation ni→0 to the working state before the C5 aggregation rate (both trees).
 
-### 8. Cold/warm budget arm boundary at supcol==0 (t==t0c)  — impact: LOW (measure-zero exact-equality cells, but a real Fortran divergence). Fortran assigns t==t0c (supcol==0) to the COLD arm via if(t(i,k).le.t0c) (f90:2406). The ports use cold_gate=(supcol>0) STRICT (coordinator.cpp:689-690), so supcol==0 cells take the WARM budgets and warm state_update. Same strict convention is used consistently in both ports.
-- **Must match Fortran:** module_mp_kdm6.f90:2406 (if t.le.t0c → cold arm, inclusive boundary)
-- **Fix:** Change cold_gate to (supcol>=0) and warm_gate to (supcol<0) in scale_rates_for_conservation and state_update arm masks, to put t==t0c on the cold arm matching Fortran's <=. Verify the same boundary in the work2/dqv unification (which is value-safe at the boundary). Both ports.
+**Close-out options:** (O1) thread a running `t` through D1 so pgmlt/pimlt read the post-psmlt-cooled `t` (F:1290/1303→1313).
+(O2) apply complete-rain-evap nr→nccn zeroing to the working state BEFORE `scale_rates_for_conservation`. (O3) feed D2-D4 the
+pre-homog supcol (F:1403). (O4) apply complete-ice-sublimation ni→0 before C5 aggregation. All four are Fortran-fidelity
+sequential-mutation fixes (mirror both trees + autograd guards) deferred to a focused session; the checklist now LISTS
+them rather than hiding them under a "FLOW_ORDER_EXACT" verdict. Independently confirmed by the Codex order-audit
+(4 defects, all .F-line-adjudicated verbatim); Codex's "CHECKED AND COVERED" set re-confirmed the macro order (sediment
+per-substep, warm→cold→D5→conservation→state_update, reclass post-update, pcact/satadj last) and C++/Python agreement.
 
-## C++ ↔ Python order inconsistencies
-- CCN activation (pcact/ncact): C++ applies it in apply_satadj_step on the post-reclass state matching Fortran f90:2853-2865 (coordinator.cpp:1086-1118); Python omits pcact entirely (no nccn field, Task #74, coordinator.py:1407-1418). Python's satadj therefore sees a no-CCN state and its gradient omits the pcact→t→qs1 path. This is a genuine C++/Python state-dependency divergence, NOT just a value gap.
-- Complete-evap NC→NCCN transfer (f90:2886-2889): present in C++ apply_satadj_step (coordinator.cpp:1122-1126); ABSENT in Python (no nccn field). C++/Python inconsistent and Python missing the Fortran step.
-- apply_homogeneous_freeze_supercold: C++ retains the function but does not call it (coordinator.cpp:430-441, def :1307). Python does not invoke it in kdm62d_one_step_torch. The memory note flags a prior Python add-then-placement-correction whose current status may differ from C++'s retained-but-unused state; reconcile so both ports are identically disabled (or identically enabled after the aux-rebuild fix).
-- DEAD in-warm pcact/pcond: C++ warm_phase recomputes pcact AND pcond from a local snapshot (coordinator.cpp:271-313) that state_update ignores; Python warm_phase_torch also returns an unused pcond (coordinator.py:258-261). Both are dead but the C++ version additionally duplicates pcact compute — confirm both are inert and delete to prevent future divergence.
+## C++ ↔ Python order parity
+Identical phase-call order (coordinator.cpp F1pre-F1i ≡ coordinator.py kdm62d_one_step_torch); homogeneous freeze ENABLED
+in both (working1b); per-substep sediment in both runtimes; pcact/ncact + complete-evap NC→NCCN present in both
+`apply_satadj_step{,_torch}` (Python via the threaded `nccn` field, Task #74). The three C++/Python order
+inconsistencies the 2026-05-31 audit flagged (Python pcact omitted, complete-evap NC→NCCN C++-only, homog-freeze unused)
+are all closed.
 
-## Reviews needing deeper look
-- C3 ice-nucleation ifsat gating: Fortran sets the pinud-stage ifsat ONLY inside the nucleation if-block (f90:2276, gated by (supcol>8 & supsat>0) or rh>1.08); both ports set ifsat=|prevp+pinud|>=|satdt| UNCONDITIONALLY (cold.cpp:672, cold.py:1185). In cells where the nucleation gate is FALSE but |prevp|>=|satdt|, the ports set ifsat=True and SUPPRESS downstream pidep/psdep/pgdep that Fortran would have computed. Shared by both ports (cpp_py_consistent) so the parity test will not catch it. Needs verification of actual Fortran behavior in those cells and a gated-ifsat fix.
-- D5 enhanced melting (pseml/pgeml) supcol gate boundary: ports use supcol<0 (melt_freeze.cpp:252/263) vs Fortran supcol.le.0 (f90:2220). Benign for the rate value (cliq*0*(...)=0 at the boundary) but the boolean mask differs at supcol==0; also the -qs/dtcld and -qg/dtcld caps use entry-state qs/qg rather than Fortran's post-D1-melt qs/qg. Confirm after MISMATCH #1 is fixed.
-- delta2/delta3 routing flags: ports compute from entry-state qr/qs (coordinator.cpp:694-697); Fortran computes them from POST-melt/freeze qrs (f90:2402-2405, after psmlt/pgmlt/pfrzdtr altered qr at 1252/1276/1510). The 1e-4 threshold crossing can flip vs entry state. Resolves once melt/freeze is sequential (MISMATCH #1).
-- Picons (large-ice→snow) avedia_i recompute: order and post-state_update slope recompute confirmed (coordinator.cpp:1204-1216), but the avedia_i re-slope was NOT bit-verified against Fortran f90:2722-2752 (recomputed in-function, not via shared preamble). Value-parity check needed separately.
-- Rain→cloud reclass avedia_r recompute: same as above — in-function rain-lamda recompute (coordinator.cpp:1255-1265) not bit-verified vs Fortran's full ProgB+slope refresh at f90:2813-2828. No order/state impact but a value-path difference to confirm.
-- In-warm B5 pcond is DEAD code in BOTH ports (coordinator.cpp:298-302 returns satadj.pcond from a local pcact-applied snapshot; coordinator.py:258-261). Not consumed by state_update (the real condensation is recomputed in apply_satadj_step). Harmless for forward/order but wasted compute + maintenance trap; confirm WarmPhaseOutputs.pcond/pcact/ncact are consumed nowhere downstream, then delete.
-- Budget-block placement is REVIEW (not MATCH) because the ORDER (mf→budgets→state_update) is correct and cpp/py-identical, but the reservoir STATE the budgets clamp against is entry-state vs Fortran's post-melt/freeze — the same root cause as MISMATCH #1/#4. Re-audit after the sequential-melt/freeze refactor.
-- DSD number limiters value-parity: order (last, post-cleanup) and post-cleanup state-read confirmed (coordinator.cpp:1365+), but the nci(3) clamp [1e8,2e10] (f90:2956) and NRMAX/NCMAX caps (f90:2957-2964) need a separate value-parity check — outside the order/state scope of this audit.
-- Sub-cycle wrapper: the post-update TAIL correctly repeats per sub-cycle with dtcld in both ports (coordinator.cpp:552-561) — that part MATCHES — but sedimentation does not repeat (MISMATCH #2). Re-review the whole loop body ordering after sedimentation is moved inside.
-
-## Full checklist (by phase, in flow order)
-
-### orchestration
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ✅ | Sub-cycle loop (do loop=1,loops) + dtcld/loops_max | module_mp_kdm6.f90:822-826 | coordinator.cpp:521-563; coordinator.py:1498-1545 | ✓ | ✓ | ✓ |
-| ✅ | Pre-loop prologue: nonneg clamps, dend/cpm/xl, qcr land/sea, | module_mp_kdm6.f90:740-818 | runtime.cpp:189-253; coordinator.cpp:550 | ✓ | ✓ | ✓ |
-| ❌ | Rate reset + cloud rslopec + ProgB/slope #1 + numdt/mstep pr | module_mp_kdm6.f90:886-1067 | preamble() coordinator.cpp:328-377; mstep in runti | ✗ | ✗ | ✓ |
-| ❌ | Rain/snow/graupel SEDIMENTATION (mstepmax substep loop, re-s | module_mp_kdm6.f90:1069-1156 (re-slope 1 | runtime.cpp:313 sedimentation_chain ONCE after kdm | ✗ | ✗ | ✓ |
-| ❌ | Ice SEDIMENTATION (mstepmax_i substep loop, re-slope per sub | module_mp_kdm6.f90:1161-1220 (re-slope 1 | sedimentation_chain ice branch coordinator.cpp:146 | ✗ | ✗ | ✓ |
-| ❌ | Melting psmlt/pgmlt + t>t0c ice->cloud conversion (inline, p | module_mp_kdm6.f90:1222-1295 (psmlt/pgml | melt_freeze_phase D1 coordinator.cpp:594-604 from  | ✗ | ✗ | ✓ |
-| ❌ | Rainncv/snowncv/graupelncv/sr surface accumulation | module_mp_kdm6.f90:1299-1328 | sedimentation_chain surface_accumulation -> rain/s | ✗ | ✗ | ✓ |
-| ❌ | Homogeneous freeze (supcol>40: qc->qi), cold-block head | module_mp_kdm6.f90:1359-1369 (INLINE qci | apply_homogeneous_freeze_supercold coordinator.cpp | ✗ | ✗ | ✗ |
-| ❌ | Contact nuc pinuc/ninuc + Bigg cloud pfrzdtc + Bigg rain pfr | module_mp_kdm6.f90:1435-1511 (all applie | melt_freeze_phase D2/D3/D4 coordinator.cpp:606-636 | ✗ | ✗ | ✓ |
-| ❌ | Warm rates praut/nraut, pracw/nracw, nccol, nrcol, prevp | module_mp_kdm6.f90:1643-1753 (from post- | warm_phase coordinator.cpp:217-315; coordinator.py | ✓ | ✗ | ✓ |
-| ✅ | Cold accretion/collection/deposition rates incl. supice/ifsa | module_mp_kdm6.f90:1768-2394 (dep chain  | cold_phase coordinator.cpp:43-204; dep chain cold. | ✓ | ✓ | ✓ |
-| ✅ | Conservation group budgets + state update (cold t<=t0c vs wa | module_mp_kdm6.f90:2399-2708 (8 cold + 6 | scale_rates_for_conservation coordinator.cpp:680-8 | ✓ | ✓ | ✓ |
-| ⚠️ | Re-slope #4 + Picons reclass (qi->qs at avedia_i>=200um, t<2 | module_mp_kdm6.f90:2710-2765 (re-slope 2 | reclassify_large_ice_to_snow coordinator.cpp:493,1 | ✓ | ✓ | ✓ |
-| ⚠️ | Re-slope #5 + rain->cloud reclass (qr->qc at avedia_r<=82um) | module_mp_kdm6.f90:2771-2844 (qs/sw 2781 | reclassify_small_rain_to_cloud coordinator.cpp:496 | ✓ | ✓ | ✓ |
-| ⚠️ | CCN activation pcact + saturation adjustment pcond (post-rec | module_mp_kdm6.f90:2846-2895 (pcact if s | apply_satadj_step coordinator.cpp:505,1051-1150; c | ✓ | ✓ | ✗ |
-| ✅ | Final cleanup (qmin paired zeroing) + final DSD number limit | module_mp_kdm6.f90:2899-2966 (END of sub | apply_threshold_cleanup coordinator.cpp:513,1152-1 | ✓ | ✓ | ✓ |
-
-**Notes (non-MATCH):**
-- ❌ **Rate reset + cloud rslopec + ProgB/slope #1 + numdt/mst** — Rate-array zeroing moot (functional phases). But mstep (sediment substep count) computed once outside loop (runtime.cpp:297-310) not per sub-cycle from each substep slope; diverges from Fortran 1049-1067 per-substep mstep.
-- ❌ **Rain/snow/graupel SEDIMENTATION (mstepmax substep loop,** — Major reorder. Fortran: sediment->melt->rates per substep. Port: rates per substep then single global sedimentation at end (runtime.cpp:260-317; 'sedimentation 본 함수 밖' coordinator.py:1524, coordinator.h:427). Per-sed-substep re-slope (Fortran 1139-1146) collapsed to one fixed fall-speed field.
-- ❌ **Ice SEDIMENTATION (mstepmax_i substep loop, re-slope pe** — Same relocation as RSG. Ice-after-RSG order internally preserved but whole block outside loop, decoupled from per-substep state. Diverges from Fortran 1161-1220.
-- ❌ **Melting psmlt/pgmlt + t>t0c ice->cloud conversion (inli** — Fortran melting is pre-rate inline mutation (1222-1295) feeding rest of substep; port treats it as a parallel rate from entry-state summed at state_update. Changes t (supcol, qs, T-gated branches) and qrs/qci seen by every downstream process; significant gradient divergence where melting active.
-- ❌ **Rainncv/snowncv/graupelncv/sr surface accumulation** — Coupled to sedimentation-relocation. Single end pass vs per-substep accumulation. For loops_max=1 magnitude may coincide but ordering/state-dependency differs. RAINNCV-zero-at-entry handled correctly per project note.
-- ❌ **Homogeneous freeze (supcol>40: qc->qi), cold-block head** — Intentionally disabled (coordinator.cpp:430-441) because aux n0i would be stale post-freeze (same class as the 806x regression); needs aux-rebuild refactor. Both an ORDER and CONTENT gap. cpp_py_consistent=false: C++ keeps unused fn; Python side disabling status differs from prior memory that said it was added then placement-corrected.
-- ❌ **Contact nuc pinuc/ninuc + Bigg cloud pfrzdtc + Bigg rai** — Fortran sequences freezing (1435-1511) BEFORE accretion-rate computation (1643+) with a DSD/slope refresh (1537-1633) between. Port computes freezing and accretion both from entry-state in one parallel pass; the intervening re-slope #3 also not reproduced. Forward+gradient divergence where freezing competes with accretion for same qc/qr.
-- ❌ **Warm rates praut/nraut, pracw/nracw, nccol, nrcol, prev** — Call order warm-before-cold matches Fortran compute order; prevp->cold dependency preserved (cold.cpp:653). But warm rates read entry-state instead of post-freeze/post-reslope#3 state (Fortran 1546-1633 refresh).
-- ⚠️ **Re-slope #4 + Picons reclass (qi->qs at avedia_i>=200um** — Order (after state_update, before rain->cloud reclass) matches; recomputes own slope from post-update state (good). REVIEW: did not bit-verify avedia_i recompute vs Fortran 2722-2752 re-slope; 200um/273.15 gate present.
-- ⚠️ **Re-slope #5 + rain->cloud reclass (qr->qc at avedia_r<=** — Order Picons->rain->cloud matches Fortran 2731->2822. Intervening qs/sw recompute (2781-2800) covered by downstream satadj qs recompute. di82 threshold present. REVIEW: avedia_r re-slope recomputed in-function not via shared preamble; not bit-verified vs 2828.
-- ⚠️ **CCN activation pcact + saturation adjustment pcond (pos** — Position after both reclassifications matches Fortran 2846-2895; sequential pcact->pcond preserved. BUT two pcact impls: warm_phase B-pre-5 (coordinator.cpp:259-298 operational nccn) AND apply_satadj_step. Header (coordinator.cpp:259-282) says Python oracle DEFERS pcact (cpp_py_consistent=false, Task #74). Double-pcact risk: confirm warm_phase pcact and apply_satadj_step pcact are not both active on same cells.
-
-### warm-phase (B1-B5): internal ORDER + state-dependency (entry vs updated)
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ✅ | B1 autoconv (praut, nraut) — entry-state read | module_mp_kdm6.f90:1656-1667 (inside the | C++ coordinator.cpp:232-235 → warm.cpp:41-75; Py c | ✓ | ✓ | ✓ |
-| ✅ | B2 accretion (pracw, nracw) — does it see post-autoconv qc/q | module_mp_kdm6.f90:1674-1692 | C++ coordinator.cpp:238-242 → warm.cpp:104-149; Py | ✓ | ✓ | ✓ |
-| ✅ | B3 self-collection (nccol, nrcol) — entry nc/nr read | module_mp_kdm6.f90:1697-1724 | C++ coordinator.cpp:245-249 → warm.cpp:177-221; Py | ✓ | ✓ | ✓ |
-| ✅ | B4 rain evap/cond (prevp) — entry qr read + nrs(:,3) side-wr | module_mp_kdm6.f90:1729-1751 | C++ coordinator.cpp:252-257 → warm.cpp:241-283; Py | ✓ | ✓ | ✓ |
-| ✅ | Warm rates aggregated from a SINGLE entry snapshot (parallel | module_mp_kdm6.f90:1643-1753 (one do-loo | C++ warm_phase coordinator.cpp:217-315; Py warm_ph | ✓ | ✓ | ✓ |
-| ✅ | B5 satadj/pcond placement relative to state-update + reclass | module_mp_kdm6.f90: state-update 2565-27 | C++ coordinator.cpp:487-512 (state_update → reclas | ✓ | ✓ | ✓ |
-| ⚠️ | B5 pcond computed inside warm_phase is DEAD/redundant (both  | N/A — Fortran has no warm-loop pcond; pc | C++ warm_phase coordinator.cpp:298-302 returns sat | ✓ | ✓ | ✓ |
-| ✅ | B5 satadj entry-state subtlety: Fortran satadj reads qc AFTE | module_mp_kdm6.f90:2879-2881 pcond reads | C++ apply_satadj_step :1083-1119 (state already =  | ✓ | ✓ | ✓ |
-
-**Notes (non-MATCH):**
-- ⚠️ **B5 pcond computed inside warm_phase is DEAD/redundant (** — Both ports compute a pcond INSIDE warm_phase from the entry state (Py :259 uses state.t/qv/qc + pre.qs1; C++ :299 uses the pcact-applied LOCAL snapshot t_post_pcact/qv_post_pcact). This in-warm pcond is NOT used for state application — state_update defers it (C++ comments :829,:932,:1001; Py :859,:871), and the real condensation is recomputed in apply_satadj_step from the post-reclass state. So the in-warm B5 pcond is dead code w.r.t. forward state. Harmless for forward values/order, but it (a) is wasted compute and a maintenance trap, and (b) the C++ in-warm path also recomputes pcact (:271-296) duplicating apply_satadj_step's pcact (:1086-1105). Flagged REVIEW: confirm the WarmPhaseOutputs.pcond/pcact/ncact fields are consumed nowhere downstream (grep shows state_update ignores them); if truly unused, delete to avoid future divergence. ORDER/STATE of the EFFECTIVE path (apply_satadj_step) is correct, hence not MISMATCH.
-
-### cold-phase
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ✅ | C1 ice accretion (praci/piacr) ordering & entry-state | module_mp_kdm6.f90:1787-1841 (within sup | cold.cpp:24-98 ice_accretion_torch + coordinator.c | ✓ | ✓ | ✓ |
-| ✅ | C2 ice->snow/graupel (psaci/pgaci) ordering & entry-state | module_mp_kdm6.f90:1818-1840 | cold.cpp:102-178 + coordinator.cpp:77-87; cold.py: | ✓ | ✓ | ✓ |
-| ✅ | C2b number accretion (nraci/niacr/nsaci/ngaci) ordering | module_mp_kdm6.f90:1847-1896 | cold.cpp number_accretion + coordinator.cpp:90-102 | ✓ | ✓ | ✓ |
-| ✅ | C2c cloud-water riming -> paacw/naacw (qsum-weighted) orderi | module_mp_kdm6.f90:1901-1957 (psacw/pgac | cold.cpp:280-398 cloud_water_riming_torch (paacw a | ✓ | ✓ | ✓ |
-| ✅ | C2d rain-snow-graupel collection -> psacr/pgacr ordering & s | module_mp_kdm6.f90:1988-2101 (pracs,psac | cold.cpp:400-518 rain_snow_graupel_collection_torc | ✓ | ✓ | ✓ |
-| ✅ | C2e Hallett-Mossop in-place mutation of paacw/psacr/pgacr (C | module_mp_kdm6.f90:2108-2211 — snow side | cold.cpp:553-621 hallett_mossop_torch (paacw_after | ✓ | ✓ | ✓ |
-| ⚠️ | C3 ice nucleation -> pinud + ifsat seed (sequential to C4) | module_mp_kdm6.f90:2259-2277 (pinud capp | cold.cpp:640-674 ice_nucleation_torch (ifsat :672) | ✓ | ✗ | ✓ |
-| ✅ | C4 deposition/sublimation ifsat chain (pidep->psdep->pgdep,  | module_mp_kdm6.f90:2279-2367 — pidep ski | cold.cpp:712-789 dep_sub_torch (ifsat_after_pidep  | ✓ | ✓ | ✓ |
-| ✅ | C5 ice aggregation (psaut/nsaut) ordering & entry-state | module_mp_kdm6.f90:2346-2357 (inside sup | cold.cpp:804-836 ice_aggregation_torch (active=col | ✓ | ✓ | ✓ |
-| ✅ | C6/C6' snow/graupel evaporation (psevp/pgevp) ordering & sta | module_mp_kdm6.f90:2373-2392 (inside sup | cold.cpp:839-907 snow_evap/graupel_evap + coordina | ✓ | ✓ | ✓ |
-| ✅ | Cold-arm q/n state mutation discipline (rate loop reads ENTR | module_mp_kdm6.f90:1768-2393 — entire ra | cold.cpp coordinator.cpp:43-201 cold_phase (all C* | ✓ | ✓ | ✓ |
-
-**Notes (non-MATCH):**
-- ⚠️ **C3 ice nucleation -> pinud + ifsat seed (sequential to ** — ORDER (C3 before C4, feeds ifsat into C4 ifsat_in) is correct in both ports. STATE-DEPENDENCY divergence: Fortran sets the pinud-stage ifsat ONLY inside the nucleation if-block (line 2276); both ports set it unconditionally. In cells where the nucleation gate is false but |prevp|>=|satdt|, the ports set ifsat=True and SUPPRESS downstream pidep/psdep/pgdep that Fortran would have computed. Both ports share the bug (cpp_py_consistent) so the C++/Python parity test will not catch it. Flag for verification against Fortran behavior.
-
-### melt-freeze (D1-D5) ORDER + STATE-DEPENDENCY audit
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ✅ | Overall: melt_freeze runs AFTER cold_phase and reads UNSCALE | module_mp_kdm6.f90:1546-2394 (single big | C++ coordinator.cpp:457-472 (cold_phase then melt_ | ✓ | ✓ | ✓ |
-| ❌ | D1 melting — psmlt (snow→rain) + pgmlt (graupel→rain) | module_mp_kdm6.f90:1239-1278 (inside the | C++ melt_freeze.cpp:51-90 melting_torch + coordina | ✗ | ✗ | ✓ |
-| ❌ | D1 pimlt — instantaneous cloud-ice → cloud-water melt (qi→qc | module_mp_kdm6.f90:1286-1292: if(qci(:,: | C++ melt_freeze.cpp:95-98 (pimlt_qi=qi, pimlt_ni=n | ✗ | ✗ | ✓ |
-| ❌ | D2 contact nucleation — pinuc/ninuc (cloud water → cloud ice | module_mp_kdm6.f90:1442-1457: APPLIED IM | C++ melt_freeze.cpp:121-150 contact_freezing_torch | ✗ | ✗ | ✓ |
-| ❌ | D3 Bigg cloud freezing — pfrzdtc/nfrzdtc (cloud water → clou | module_mp_kdm6.f90:1464-1487: APPLIED IM | C++ melt_freeze.cpp:169-195 bigg_cloud_freezing_to | ✗ | ✗ | ✓ |
-| ❌ | D4 Bigg rain freezing — pfrzdtr/nfrzdtr (rain → graupel, sup | module_mp_kdm6.f90:1494-1511: APPLIED IM | C++ melt_freeze.cpp:213-236 bigg_rain_freezing_tor | ✗ | ✗ | ✓ |
-| ⚠️ | D5 enhanced melting (snow) — pseml/nseml (snow→rain by accre | module_mp_kdm6.f90:2226-2236: pseml=min( | C++ melt_freeze.cpp:254-261 (reads in.paacw=cold_o | ✓ | ✓ | ✓ |
-| ⚠️ | D5 enhanced melting (graupel) — pgeml/ngeml (graupel→rain by | module_mp_kdm6.f90:2241-2251: pgeml=min( | C++ melt_freeze.cpp:263-270 (in.paacw=paacw_adj, i | ✓ | ✓ | ✓ |
-| ✅ | D5 paacw HM-running-subtraction order (snow-side before grau | module_mp_kdm6.f90:2136 paacw=paacw-pmul | C++ cold.cpp:588 paacw_after_snow=paacw-pmulcs (us | ✓ | ✓ | ✓ |
-
-**Notes (non-MATCH):**
-- ❌ **D1 melting — psmlt (snow→rain) + pgmlt (graupel→rain)** — Order divergence: Fortran melting is a SEQUENTIAL pre-warm/cold mutation (f90:1251-1253); ports treat it as a PARALLEL entry-state rate folded into state_update. Proof it is not a representational equivalence: psmlt/pgmlt do NOT reappear in Fortran budgets/state-update after line 2395 (already applied), but the ports re-apply them in state_update (coordinator.cpp:862,889,905). In warm cells where snow/graupel and other warm-phase processes coexist, the port's warm rates miss the qr increase and qs/qg decrease that Fortran's already-melted state carries. C++↔Python identical.
-- ❌ **D1 pimlt — instantaneous cloud-ice → cloud-water melt (** — Same parallel-vs-sequential class as psmlt/pgmlt. pimlt is instantaneous total melt in Fortran (not a /dtcld rate) applied pre-warm/cold; ports fold qi/ni into state_update. The t-cooling (−xlf*qci2, f90:1289) is absent from the entry-state supcol the cold/warm phases see. Because pimlt fires only at T>T0c and most cold rates gate on supcol>0, forward overlap is small, but it is still an order+state divergence and the latent-heat feedback path differs. C++↔Python identical.
-- ❌ **D2 contact nucleation — pinuc/ninuc (cloud water → clou** — Critical for D5's input chain: in Fortran, paacw (and hence D5 pseml/pgeml) is computed from a qc that D2/D3 have already depleted; in the ports paacw uses entry-state qc. Even though D5 correctly reads the HM-adjusted paacw, the paacw VALUE itself is built on a different (entry vs post-D2/D3) qc state. Note D2/D3 fire at supcol>0 (cold) while D5 fires at supcol<0 (warm), so per-cell they don't co-occur, but the cross-timestep gradient flow through qc still diverges. C++↔Python identical (melt_freeze.cpp:121 / melt_freeze.py:239).
-- ❌ **D3 Bigg cloud freezing — pfrzdtc/nfrzdtc (cloud water →** — Double divergence: (1) D3 does not see D2's qc depletion (port reads entry qc for both); (2) cold/warm phases do not see D3's qc→qi conversion. In Fortran the per-rate min(...,qci(1)) caps on D2 and D3 are sequential (D3 capped against post-D2 qc); in the port both cap against entry qc, so combined D2+D3 can over-draw qc relative to Fortran (partially mitigated by the group conservation limiter ported at coordinator.cpp:480, but that limiter operates on entry-state reservoirs, not the sequential post-D2 state). C++↔Python identical.
-- ❌ **D4 Bigg rain freezing — pfrzdtr/nfrzdtr (rain → graupel** — Directly contaminates D5's input chain: psacr/pgacr feed D5 pseml/pgeml (paacw+psacr, paacw+pgacr). In Fortran psacr/pgacr are computed (2037/2077) from a qr that D4 has already depleted; in the ports they use entry-state qr. So even though D5 correctly reads psacr_adj/pgacr_adj post-HM, those rates were built on entry-state qr, not Fortran's post-D4 qr. Also the brs (graupel rime density) update ordering differs. C++↔Python identical (melt_freeze.cpp:213 / melt_freeze.py:394).
-- ⚠️ **D5 enhanced melting (snow) — pseml/nseml (snow→rain by ** — The HM-adjusted-paacw state dependency and the after-cold/before-budget ordering MATCH (the core requirement). Two residual concerns keep this at REVIEW not MATCH: (1) outer gate is supcol<0 in both ports (melt_freeze.cpp:252, melt_freeze.py:488) vs supcol.le.0 in Fortran (f90:2220) — benign because cliq*0*(...)=0 at the boundary, but the boolean mask differs; (2) the paacw/psacr VALUES D5 reads were themselves built (in cold_phase) from entry-state qc/qr, whereas Fortran built them from post-D2/D3/D4 qc/qr — so D5's input is correct in FORM (post-HM, unscaled) but its upstream rates carry the D1-D4-parallelism error documented above. The -qs/dtcld cap uses entry qs not Fortran's post-melt qs.
-- ⚠️ **D5 enhanced melting (graupel) — pgeml/ngeml (graupel→ra** — paacw_adj correctly subtracts BOTH pmulcs and pmulcg, matching Fortran where by the time pgeml is computed (2242) paacw has had both snow (2136) and graupel (2188) HM subtractions applied — Fortran uses the single running paacw(i,k). pgacr_adj=pgacr-pmulrg matches 2204. Same two REVIEW caveats as the snow side: supcol<0 vs supcol.le.0 gate (melt_freeze.cpp:252/263), and the upstream paacw/pgacr values carry the entry-state-qc/qr error from the D1-D4 parallelism. C++↔Python identical.
-
-### limiters+state_update
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ⚠️ | Budget block placement (runs between melt_freeze and state_u | module_mp_kdm6.f90:2399-2547 (cold budge | coordinator.cpp:480-482 (scale_rates call) between | ✓ | ✗ | ✓ |
-| ✅ | Sequential in-order mutation of rates across budgets (early- | module_mp_kdm6.f90:2415-2420 (cloud scal | coordinator.cpp:700-708 limit() does `*r = *r * fa | ✓ | ✓ | ✓ |
-| ✅ | state_update consumes the SCALED rates (not entry/unscaled r | module_mp_kdm6.f90:2565-2601 (cold updat | coordinator.cpp:487-490 passes scaled.warm/scaled. | ✓ | ✓ | ✓ |
-| ✅ | Cold-arm budget set membership + order (8 budgets, qc/qi/qr/ | module_mp_kdm6.f90:2410 (qc), :2425 (qi) | coordinator.cpp:712-771 (PASS 1, 8 limit() calls i | ✓ | ✓ | ✓ |
-| ✅ | Warm-arm budget set membership + order (6 budgets, qc/qr/qs/ | module_mp_kdm6.f90:2607 (qc), :2619 (qr) | coordinator.cpp:775-805 (PASS 2); coordinator.py:7 | ✓ | ✓ | ✓ |
-| ❌ | Cold/warm arm gating in budgets (complementary, no-op factor | module_mp_kdm6.f90:2406 `if(t(i,k).le.t0 | coordinator.cpp:689-690 cold_gate=(supcol>0), warm | ✓ | ✗ | ✓ |
-| ⚠️ | delta2/delta3 routing flags in budgets (from pre-update rese | module_mp_kdm6.f90:2402-2405 delta2=1 if | coordinator.cpp:694-697; coordinator.py:713-716 —  | ✓ | ✗ | ✓ |
-| ✅ | work2 (qv source) computation order + scaled-rate dependency | module_mp_kdm6.f90:2549 cold work2=-(pre | coordinator.cpp:836-843 dqv (single unified expr - | ✓ | ✓ | ✓ |
-| ✅ | Per-species mass update term order + which state each specie | module_mp_kdm6.f90:2565-2592 (cold: q,qc | coordinator.cpp:836-963 (qv,qc,qr,qs,qg,qi,nc,nr,n | ✓ | ✓ | ✓ |
-| ✅ | brs (graupel volume) b-term conversions use post-budget scal | module_mp_kdm6.f90:2553-2562 (biacr=piac | coordinator.cpp:966-987 dbrs_cold_riming (8 terms) | ✓ | ✓ | ✓ |
-| ✅ | Latent-heat / T update order (work2-style xlwork2) + scaled  | module_mp_kdm6.f90:2596-2601 cold (xlf=x | coordinator.cpp:999-1026 (dT_warm_phase xl, dT_dep | ✓ | ✓ | ✓ |
-| ❌ | Inline melt/freeze T+state mutation timing vs deferred port  | module_mp_kdm6.f90:1239-1278 (psmlt/pgml | melt_freeze.cpp:51-272 compute from entry state, N | ✗ | ✗ | ✓ |
-| ❌ | Complete-rain-evap nr-zeroing before rain-number budget | module_mp_kdm6.f90:1744-1746 if(prevp==- | coordinator.cpp:766-771 rain-number budget reads s | ✗ | ✗ | ✓ |
-
-**Notes (non-MATCH):**
-- ⚠️ **Budget block placement (runs between melt_freeze and st** — ORDER (mf→budgets→state_update) MATCHES Fortran exactly and is cpp/py identical. But STATE differs: Fortran's budget `value=max(floor,reservoir)` reads reservoirs already mutated by inline melt/freeze (:1252,:1276,:1454,:1455,:1484,:1485,:1507,:1510) and rain-evap nr-zeroing (:1746); the ports read entry-state (state.qc/qr/qs/qg/qi/nr) because mf is deferred to state_update. This is the central parallel-vs-sequential divergence for the budget reservoirs. Status REVIEW because the ORDER asked about is correct; the divergence is in reservoir state.
-- ❌ **Cold/warm arm gating in budgets (complementary, no-op f** — Boundary discrepancy: Fortran assigns t==t0c (supcol==0) to the COLD arm (`<=`); ports use cold_gate=(supcol>0) STRICT, so supcol==0 cells take the WARM budgets (and warm state_update). Affects only exact-equality cells (measure-zero but possible). Two-pass no-op equivalence to one if/else is otherwise correct. Same boundary convention is used consistently in both ports and in state_update (see next item), so cpp/py consistent but Fortran-divergent at the boundary.
-- ⚠️ **delta2/delta3 routing flags in budgets (from pre-update** — delta2/delta3 are duplicated identically in scale_rates (cpp:694 / py:713) and state_update (cpp:873 / py:899) as pure functions of qr/qs — internally consistent. But Fortran computes them from POST-melt/freeze qrs (psmlt/pgmlt/pfrzdtr alter qr at :1252/:1276/:1510 before :2402), so the 1e-4 threshold crossing can differ from the ports' entry-state qr. Same reservoir-timing root cause as item 1. cpp/py consistent.
-- ❌ **Inline melt/freeze T+state mutation timing vs deferred ** — Largest flow divergence in this area: Fortran applies melt/freeze to state at :1239-1510 (before the rate loop and budgets); the ports defer the entire mf effect into state_update (after budgets). Consequence: (a) warm/cold rate computations and (b) budget reservoir `value` caps see ENTRY state in the ports vs POST-melt/freeze state in Fortran. The per-cell forward value of the mf contribution itself is reproduced, but the SEQUENTIAL dependency (later rates/budgets sensing the melt/freeze) is lost — exactly the parallel-vs-sequential gradient mismatch the audit targets. cpp/py consistent (both defer identically).
-- ❌ **Complete-rain-evap nr-zeroing before rain-number budget** — Fortran zeroes nr on complete rain evaporation BEFORE the budget loop, so the rain-number budget reservoir is 0; the ports leave nr at entry value in the budget and apply the zeroing only inside state_update. Python explicitly documents this shared gap (coordinator.py:982-987). Another budget-reservoir state mismatch, consistent across both ports.
-
-### post-update + sedimentation order/state-dependency audit
-
-| | process | Fortran | port | order | state-dep | C++≡Py |
-|---|---|---|---|:--:|:--:|:--:|
-| ❌ | Sedimentation/fallout placement (per-substep vs once-at-end) | module_mp_kdm6.f90:826 do loop=1,loops w | C++ runtime.cpp:255 kdm62d_step (all loops+microph | ✗ | ✗ | ✓ |
-| ❌ | Homogeneous freeze (supcol>40 cloud->ice) pre-cold step | module_mp_kdm6.f90:1359-1369 (inside loo | C++ coordinator.cpp:430-441 (apply_homogeneous_fre | ✗ | ✗ | ✓ |
-| ✅ | Picons reclass (ice qi->snow qs at avedia_i>=200um, T<273.15 | module_mp_kdm6.f90:2757-2763 (do-k 2731- | C++ coordinator.cpp:493 reclassify_large_ice_to_sn | ✓ | ✓ | ✓ |
-| ✅ | Rain->cloud reclass (qr->qc at avedia_r<=82um) | module_mp_kdm6.f90:2833-2842 (do-k 2822- | C++ coordinator.cpp:496 reclassify_small_rain_to_c | ✓ | ✓ | ✓ |
-| ❌ | pcact CCN activation (vapor->cloud, nccn->nc) before satadj | module_mp_kdm6.f90:2853-2865 (sw>0; ncac | C++ coordinator.cpp:505 apply_satadj_step Step2-4  | ✗ | ✗ | ✗ |
-| ❌ | satadj/pcond (saturation adjustment qv<->qc) | module_mp_kdm6.f90:2872-2893 (qs1 recomp | C++ coordinator.cpp:505 apply_satadj_step Step5-8  | ✓ | ✗ | ✗ |
-| ❌ | Complete-evap NC transfer (nci1->nci3 / nc->nccn on full clo | module_mp_kdm6.f90:2886-2889 (if pcond== | C++ coordinator.cpp apply_satadj_step Step7 :1122- | ✗ | ✗ | ✗ |
-| ✅ | Threshold cleanup (zero sub-threshold q + paired number) | module_mp_kdm6.f90:2902-2919 (qci1/qci2  | C++ coordinator.cpp:513 apply_threshold_cleanup (d | ✓ | ✓ | ✓ |
-| ✅ | DSD number limiters (lamda snap nrs/nci + NRMAX/NCMAX caps + | module_mp_kdm6.f90:2923-2964 (rain :2923 | C++ coordinator.cpp:516 apply_dsd_number_limiters  | ✓ | ✓ | ✓ |
-| ❌ | Sub-cycle loop wrapper (do loop=1,loops): does full tail rep | module_mp_kdm6.f90:822-826 loops=max(nin | C++ coordinator.cpp:552-561 kdm62d_step loops kdm6 | ✗ | ✓ | ✓ |
-
-**Notes (non-MATCH):**
-- ❌ **Sedimentation/fallout placement (per-substep vs once-at** — Headline mismatch. Fortran fallout :1077-1122 (qrs/nrs/brs), :1169-1186 (qci), surface accum :1304-1320, all under do loop with dtcld. Ports run ENTIRE microphysics incl post-update tail every sub-cycle then sediment once. Sediment sees post-condensation/post-reclass state not pre-rate substep state. mstep from dt (runtime.cpp:306-307) not dtcld. Gradient routes through full microphysics in ports vs directly from substep-entry state in Fortran.
-- ❌ **Homogeneous freeze (supcol>40 cloud->ice) pre-cold step** — Precedes post-update tail. Disabled both ports (coordinator.cpp:430-441): aux n0i built upstream from original state, not rebuilt post-freeze (806x over-deposition class). Intentional but missing sequential step: Fortran cold phase sees post-freeze ice, ports see entry-state ice.
-- ❌ **pcact CCN activation (vapor->cloud, nccn->nc) before sa** — C++ matches Fortran. Python SKIPS pcact (coordinator.py:1414-1418) -- satadj sees no-CCN state. Task#74 divergence: state-dependency mismatch Python vs Fortran AND C++/Python inconsistency. warm_phase pcact (cpp:271-313) from entry-state but NOT consumed by state_update (:829-936) so dead -- no double count but redundant entry-state compute not matching Fortran post-reclass timing.
-- ❌ **satadj/pcond (saturation adjustment qv<->qc)** — Position (after reclass, before cleanup) matches both ports. STATE differs: Fortran+C++ feed post-pcact state; Python feeds post-reclass no-pcact state. Converge only when pcact~0 (sw<=0); under supersaturation Python qs1/qv wrong + gradient omits pcact->t->qs1. C++ also does complete-evap NC->NCCN (:1122-1126); Python omits.
-- ❌ **Complete-evap NC transfer (nci1->nci3 / nc->nccn on ful** — C++ sequential in right place (Step7 between satadj and pcond-apply, matching :2886-2889 between pcond compute :2881 and apply :2891). Python omits (Task#74 nccn). C++/Python inconsistent; Python vs Fortran missing step.
-- ❌ **Sub-cycle loop wrapper (do loop=1,loops): does full tai** — Post-update tail correctly repeats per sub-cycle in ports with dtcld matching Fortran -- THAT part matches. MISMATCH for sedimentation: Fortran sediments every sub-cycle (tail of substep n feeds sediment of n+1); ports sediment once at end. dt<=120s (loops=1, common KDM6AD case) collapses to same iter count, but delt>120s (loops>=2) lacks per-substep sediment coupling + per-substep state into sediment differs. compute_loops_max matches (coordinator.cpp:521-525 / coordinator.py:1498).
+## Supersedes
+This replaces the 2026-05-31 entry-parallel-era audit (67 steps / 36 MATCH / 22 MISMATCH / 9 REVIEW). That audit's root
+cause ("compute every phase from state_pre in parallel, apply once") was the design BEFORE the Stage-A sequential
+re-architecture; its 22 mismatches are the change-list that re-arch implemented. Full prior analysis is in git history.
+Related: `wiki/procedures/fortran-cpp-1to1-parity-tracking.md` (rate/formula 1:1 + coverage), project memory
+`project-kdm6-flow-order-audit` (the re-arch record), `project-kdm6-warm-rain-autoconv-timing-gap` (residual = precision).

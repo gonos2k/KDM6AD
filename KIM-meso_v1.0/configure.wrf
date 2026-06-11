@@ -92,9 +92,9 @@ ESMF_TARGET         = esmf_time
 NETCDF4_IO_OPTS = -DUSE_NETCDF4_FEATURES -DWRFIO_NCD_LARGE_FILE_SUPPORT
 GPFS            =
 CURL            =
-HDF5            = -lhdf5_hl -lhdf5
-ZLIB            = -lz
-NETCDF4_DEP_LIB =  -L/opt/homebrew/Cellar/netcdf/4.9.3_2/lib -lnetcdf -L/opt/homebrew/Cellar/netcdf-fortran/4.6.2/lib -lnetcdff -lnetcdf
+HDF5            =
+ZLIB            =
+NETCDF4_DEP_LIB = 
 
 # NETCDF4INCLUDEGOESHERE
 
@@ -139,13 +139,13 @@ CC              =       $(DM_CC)
 LD              =       $(FC)
 RWORDSIZE       =       $(NATIVE_RWORDSIZE)
 PROMOTION       =       #-fdefault-real-8
-ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_SUBR -DMACOS  -DWRF_USE_CLM $(NETCDF4_IO_OPTS)
+ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_SUBR -DMACOS  -DWRF_USE_CLM
 KDM6AD_PREFIX   =       /Users/yhlee/KDM6AD/kdm6_libtorch/install_miniforge
 KDM6AD_TORCH_LIB =      /opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib
-CFLAGS_LOCAL    =       -w -O3 -c  -DMACOS -DRPC_TYPES=1 -Wno-incompatible-pointer-types -Wno-int-conversion -I$(KDM6AD_PREFIX)/include/kdm6 # -DRSL0_ONLY
+CFLAGS_LOCAL    =       -w -O3 -c  -DMACOS -DRPC_TYPES=1 -I$(KDM6AD_PREFIX)/include/kdm6 # -DRSL0_ONLY
 LDFLAGS_LOCAL   =       -Wl,-rpath,$(KDM6AD_PREFIX)/lib -Wl,-rpath,$(KDM6AD_TORCH_LIB)
 LIB_LOCAL       =       $(KDM6AD_PREFIX)/lib/libkdm6_c.dylib $(KDM6AD_TORCH_LIB)/libtorch.dylib $(KDM6AD_TORCH_LIB)/libtorch_cpu.dylib $(KDM6AD_TORCH_LIB)/libc10.dylib
-CPLUSPLUSLIB    =
+CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
 FCOPTIM         =       -O2 -ftree-vectorize -funroll-loops
 FCREDUCEDOPT	=       $(FCOPTIM)
@@ -159,7 +159,7 @@ BYTESWAPIO      =       -fconvert=big-endian -frecord-marker=4
 FCBASEOPTS_NO_G =       -w $(FORMAT_FREE) $(BYTESWAPIO) $(FCCOMPAT)
 FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =
-TRADFLAG        =      -traditional-cpp $(NETCDF4_IO_OPTS)
+TRADFLAG        =      -traditional-cpp
 CPP             =      cpp -P -nostdinc -xassembler-with-cpp
 AR              =      ar
 ARFLAGS         =      ru
@@ -231,7 +231,7 @@ INCLUDE_MODULES =    $(MODULE_SRCH_FLAG) \
 REGISTRY        =    Registry
 CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
 
-LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)  $(NETCDF4_DEP_LIB)
+LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO) 
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 

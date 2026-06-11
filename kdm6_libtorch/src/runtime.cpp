@@ -1,4 +1,5 @@
 #include "kdm6/runtime.h"
+#include "kdm6/fconst.h"
 #include "kdm6/coordinator.h"
 #include "kdm6/ops.h"
 #include "kdm6/sedimentation.h"
@@ -116,10 +117,10 @@ CoordinatorAuxDiagnostics build_default_aux(
     const double g1pmr = std::exp(std::lgamma(1.0 + constants::MUR));            // Γ(2)=1
     const double g1pmi = std::exp(std::lgamma(1.0 + constants::MUI));            // Γ(1)=1
     const double g4pmi = std::exp(std::lgamma(4.0 + constants::MUI));            // Γ(4)=6
-    const double pidnr = (PI * constants::DENR / 6.0)
-                       * std::exp(std::lgamma(1.0 + constants::DMR + constants::MUR)) / g1pmr;
-    const double pidni = (PI * constants::DENI / 6.0)
-                       * std::exp(std::lgamma(1.0 + constants::DMI + constants::MUI)) / g1pmi;
+    // f32-stepwise Fortran constants (kdm6init): double-precomputed pidn* differ
+    // by 1 ULP from gfortran (the step-45 DSD-snap seed class). See fconst.h.
+    const double pidnr = fconst::get().pidnr;
+    const double pidni = fconst::get().pidni;
 
     // Rain / ice clamped DSD slopes (Fortran rslope(:,1) / rslope(:,4)).
     auto rslope_r = cloud_dsd::diag_species_slope_torch(
@@ -135,18 +136,55 @@ CoordinatorAuxDiagnostics build_default_aux(
     auto rslope_i = cloud_dsd::diag_species_slope_torch(
         cs.qi, cs.ni, cf.den, pidni, constants::DMI,
         constants::LAMDAIMAX, constants::LAMDAIMIN);
+    // Fortran slope_kdm6 F:3559-3565 ice INACTIVE branch: qi<=qmin -> rslope4 =
+    // rslopeimax = 1/LAMDAIMAX regardless of lamdai. The clamp alone leaves
+    // qmin-straddling cells (in-range lamdai) on the ACTIVE slope, and pidep
+    // pairs that n0i with the GATED pre2 rslope2_i -> 7.7x pidep mismatch
+    // (step-72 cell B). Ice has NO n-threshold (unlike rain; F:3527 qci-only).
+    auto ice_inactive = (cs.qi <= constants::EPS);
+    rslope_i = torch::where(ice_inactive,
+        torch::full_like(rslope_i, 1.0 / constants::LAMDAIMAX), rslope_i);
 
-    auto rslopemu_r = torch::pow(rslope_r, constants::MUR);                      // ^1
+    auto rslopemu_r = ops::safe_pow(rslope_r, constants::MUR);   // gfortran REAL**REAL = powf (step-67 class)                      // ^1
     auto rslopemu_i = (constants::MUI == 0.0)
                     ? torch::ones_like(rslope_i)
-                    : torch::pow(rslope_i, constants::MUI);
-    auto rslopecmu = torch::pow(rslopec, constants::MUC);
+                    : ops::safe_pow(rslope_i, constants::MUI);
+    // STEP-69 SEED: Fortran rslopecmu is DOUBLE (F:696) = DBLE(rslopec)**muc
+    // (F:1096/F:1464) — the EXACT f64 square of the f32 rslopec, held UNROUNDED
+    // into the D2/D3/riming f64 chains. powf-then-upcast adds one f32 rounding
+    // (the step-69 1-ULP qi/ni seed). Upcast FIRST; muc=2 => x*x exact in f64.
+    auto rslopec64 = rslopec.to(torch::kFloat64);
+    auto rslopecmu = (constants::MUC == 2.0)
+        ? rslopec64 * rslopec64
+        : ops::safe_pow(rslopec64, constants::MUC);
 
     // n0 intercepts (Fortran 1435-1437 default formula; clamped rslope already
     // reflects the lamda bounds).
     auto n0r = cs.nr / (rslope_r * rslopemu_r * g1pmr);
-    auto n0i = cs.ni / (rslope_i * rslopemu_i * g1pmi);
-    auto n0c = (constants::MUC + 1.0) * cs.nc / (rslopec * rslopecmu);
+    // STEP-67 SEED: Fortran n0i/n0c are DOUBLE arrays (F:697). The default n0i
+    // (F:1652) is nci/(rslope·rslopemu·g1pmi) with rslopemu DOUBLE — the whole
+    // expression evaluates in f64 with NO f32 rounding (g1pmi=Γ(1)=1, mui=0 ⇒
+    // rslopemu_i≡1). Upcasting rslope_i makes torch promotion mirror gfortran;
+    // no-op on the fp64 oracle path. Downstream f32 consumers (cold C2/C4) run
+    // their chains f64 from the n0i factor and round f32 at the rate store.
+    auto n0i = cs.ni / (rslope_i.to(torch::kFloat64) * rslopemu_i * g1pmi);
+    // F:1684-1696 / F:1499-1512: at qi>=1e-14 Fortran recomputes n0i in the
+    // MULTIPLY form (1/g1pmi)*DBLE(nci2)*lamdi_tmp**(mui+1) with the fresh f32
+    // lamdi (clamped to the lamda bounds when snapping) — one fewer f32 rounding
+    // than dividing by f32(1/lamdi) (step-72 cell-A 1-ULP class). mui=0, g1pmi=1.
+    {
+        const double inv_dmi_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMI));
+        auto lamdai_raw = ops::libm_exp(ops::libm_log(torch::clamp(
+            pidni * cs.ni / torch::clamp(cs.qi * cf.den, 1.0e-30), 1.0e-30)) * inv_dmi_f32);
+        auto lamdai_cl = torch::clamp(lamdai_raw, constants::LAMDAIMIN, constants::LAMDAIMAX);
+        n0i = torch::where(cs.qi >= 1.0e-14,
+                           cs.ni.to(torch::kFloat64) * lamdai_cl.to(torch::kFloat64), n0i);
+    }
+    // n0c: the ACTIVE-branch (lamdc-form, F:1641-1649) f64 intercept is installed
+    // by the kdm62d_one_step overrides (coordinator.cpp "n0c_active"); this default
+    // covers INACTIVE cells only, where every n0c consumer is rate-gated off —
+    // keep the established f32 value, held as f64 for a uniform aux dtype.
+    auto n0c = ((constants::MUC + 1.0) * cs.nc / (rslopec * rslopecmu)).to(torch::kFloat64);
 
     // work1 diffusion factors (Fortran 1679-1680).
     auto xl    = thermo::compute_xl(cs.t, tp);
@@ -170,7 +208,7 @@ CoordinatorAuxDiagnostics build_default_aux(
         /*qcr=*/full_like(8.0e-5),              // overridden by diag_qcr_torch when xland present
         /*avedia_i=*/rslope_i * std::pow(g4pmi / g1pmi, 0.3333333),  // Fortran F:1672 ice avedia uses .3333333 literal. 1:1 fix #4/#11.
         /*rslopecmu=*/rslopecmu,
-        /*rslopecd=*/torch::pow(rslopec, constants::DMC),
+        /*rslopecd=*/ops::safe_pow(rslopec, constants::DMC),   // F:1614 REAL**dmc = powf (step-67 class)
     };
 }
 
@@ -313,7 +351,21 @@ FnResult kdm6_fn(const State& state,
     const double dtcld = dt / static_cast<double>(loops);
 
     auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
-    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // Fortran :801, ONCE
+    // Fortran entry padding (F:822-839, "padding 0 for negative values generated by
+    // dynamics"): clamp the prognostics ONCE per kernel call, before the sub-cycle
+    // loop. Missing these left dynamics-negative qc (~-1e-19) alive into satadj,
+    // blocking the complete-evap NC->NCCN transfer Fortran fires at qc==0
+    // (pcond==-qc/dt -> 0.0==-0.0 true) — the step-46 nn divergence seed.
+    cur.qc = torch::clamp(cur.qc, /*min=*/0.0);            // F:824
+    cur.qr = torch::clamp(cur.qr, /*min=*/0.0);            // F:825
+    cur.qi = torch::clamp(cur.qi, /*min=*/0.0);            // F:826
+    cur.qs = torch::clamp(cur.qs, /*min=*/0.0);            // F:827
+    cur.qg = torch::clamp(cur.qg, /*min=*/0.0);            // F:828
+    cur.nr = torch::clamp(cur.nr, /*min=*/0.0);            // F:829
+    cur.nc = torch::clamp(cur.nc, /*min=*/0.0);            // F:832
+    cur.ni = torch::clamp(cur.ni, 0.0, 1.0e6);             // F:836 [0, 1e6]
+    cur.brs = torch::clamp(cur.brs, /*min=*/0.0);          // F:838
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // F:833, ONCE
     torch::Tensor rain_inc, snow_inc, graup_inc;
 
     for (int i = 0; i < loops; ++i) {

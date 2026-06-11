@@ -33,11 +33,13 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 
 
 def _rgmma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. review6 audit에서 부호 수정."""
-    return exp(lgamma(x))
+    # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
+    return _fc.rgmma_f(x)
 
 
 # ─── Step C1: Ice mass accretion (praci + piacr) ─────────────────────────────
@@ -1024,7 +1026,10 @@ def hallett_mossop_torch(
     Fortran 직역 (graupel side는 paacw_after_snow 사용).
     """
     zero = torch.zeros_like(paacw)
-    Mispl = (4.0 / 3.0) * _pi * params.deni * (params.rispl ** 3)
+    # STEP-86 class: REAL(4),save constants evaluated f32-stepwise in gfortran.
+    _piF = _fc._f32(_fc.PI)
+    _ri = _fc._f32(params.rispl)
+    Mispl = _fc._f32(_fc._f32(_fc._f32(_fc._f32(4.0 / 3.0) * _piF) * _fc._f32(params.deni)) * _fc._f32(_fc._f32(_ri * _ri) * _ri))
     fmul = _hm_fmul(t, params)
 
     # Common gates
@@ -1154,7 +1159,9 @@ def ice_nucleation_torch(
                     uses this to disable subsequent deposition processes.
     """
     zero = torch.zeros_like(supcol)
-    Minud = (4.0 / 3.0) * _pi * params.deni * (params.rinud ** 3)
+    _piN = _fc._f32(_fc.PI)
+    _rn = _fc._f32(params.rinud)
+    Minud = _fc._f32(_fc._f32(_fc._f32(_fc._f32(4.0 / 3.0) * _piN) * _fc._f32(params.deni)) * _fc._f32(_fc._f32(_rn * _rn) * _rn))  # STEP-86 SEED (F:2344)
 
     # Outer gate
     cold_super = (supcol > params.supcol_threshold) & (supsat > 0)
@@ -1431,7 +1438,9 @@ def ice_aggregation_torch(
     qi0 = torch.where(t > params.t_split, qi0_warm, qi0_cold)
 
     alpha1 = 0.005 * torch.exp(0.025 * neg_supcol)
-    Miaut = _pi * params.deni * (params.di125 ** 3) / 6.0
+    _piA = _fc._f32(_fc.PI)
+    _d3 = _fc._f32(params.di125)
+    Miaut = _fc._f32(_fc._f32(_fc._f32(_piA * _fc._f32(params.deni)) * _fc._f32(_fc._f32(_d3 * _d3) * _d3)) / _fc._f32(6.0))  # STEP-86 class (F:2436)
 
     # psaut = min(max(0, α₁·(qi-qi0)), qi/dt)
     psaut_raw = alpha1 * (qi - qi0)

@@ -2,6 +2,8 @@
 // review6 audit fix: rgmma = Γ(x) (= exp(lgamma(x))).
 //
 #include "kdm6/cloud_dsd.h"
+#include "kdm6/fconst.h"
+#include "kdm6/ops.h"
 
 #include <cmath>
 
@@ -14,7 +16,10 @@ constexpr double PI = 3.14159265358979323846;
 
 // Fortran rgmma(x) = exp(GAMMLN(x)) = Γ(x). review6 audit 부호 수정.
 inline double rgmma_scalar(double x) {
-    return std::exp(std::lgamma(x));
+    // Fortran rgmma(x)=EXP(GAMMLN(x)) in REAL(4): f32 expf of the f32-rounded
+    // double Lanczos — differs from exp(lgamma(double)) for NON-INTEGER args
+    // (e.g. Γ(4/3), Γ(7/3) in D2/D3 freezing — the step-67 qi/ni seed class).
+    return static_cast<double>(fconst::rgmma_f(static_cast<float>(x)));
 }
 
 constexpr double DOMAIN_FLOOR = 1.0e-30;
@@ -23,16 +28,24 @@ constexpr double DOMAIN_FLOOR = 1.0e-30;
 
 CloudDsdParams default_cloud_dsd_params(double den0) {
     const double cmc = PI * constants::DENR / 6.0;
-    const double pidnc = cmc * rgmma_scalar(1.0 + constants::DMC / (constants::MUC + 1.0));
-    const double g3pmc = rgmma_scalar(1.0 + 3.0 / (constants::MUC + 1.0));
-    const double g6pmc = rgmma_scalar(1.0 + 6.0 / (constants::MUC + 1.0));
-    const double g1pmr = rgmma_scalar(1.0 + constants::MUR);
-    const double g4pmr = rgmma_scalar(4.0 + constants::MUR);
+    const double pidnc = fconst::get().pidnc;   // f32-stepwise (kdm6init F:3205)
+    const double g3pmc = fconst::get().g3pmc;   // f32-stepwise
+    const double g6pmc = fconst::get().g6pmc;   // f32-stepwise
+    const double g1pmr = fconst::get().g1pmr;   // f32-stepwise
+    const double g4pmr = fconst::get().g4pmr;   // f32-stepwise
 
-    const double qc_base = (4.0 / 3.0) * PI * constants::DENR
-                         * std::pow(constants::R0, 3.0) / den0;
-    const double qc0 = qc_base * constants::XNCR0;
-    const double qc1 = qc_base * constants::XNCR1;
+    // STEP-91 latent class: kdm6init F:3135-3136 builds qc0/qc1 in REAL(4)
+    // left-to-right — 4./3.*pi*denr*r0**3*xncr/den0 (MULTIPLY by xncr BEFORE
+    // dividing by den0; r0**3 is f32 powf). Double chain + reordered ops can
+    // differ; these gate praut (qcr threshold).
+    const float pi_qc = static_cast<float>(fconst::get().pi);
+    const float r0_f = static_cast<float>(constants::R0);
+    const float r03_f = std::pow(r0_f, 3.0f);
+    const float qc_pre = (((4.0f / 3.0f) * pi_qc) * static_cast<float>(constants::DENR)) * r03_f;
+    const double qc0 = static_cast<double>(
+        (qc_pre * static_cast<float>(constants::XNCR0)) / static_cast<float>(den0));
+    const double qc1 = static_cast<double>(
+        (qc_pre * static_cast<float>(constants::XNCR1)) / static_cast<float>(den0));
 
     return CloudDsdParams{
         /*pidnc=*/pidnc,
@@ -59,7 +72,14 @@ torch::Tensor diag_species_slope_torch(
 ) {
     auto qden_safe = torch::clamp(q * den, /*min=*/DOMAIN_FLOOR);
     auto ratio = pidn * n / qden_safe;
-    auto lamda = torch::exp(torch::log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) / dm);
+    // Fortran lamdac(x,y,z)=exp(log((pidnc*z)/(x*y))*(1./dmc)); route exp/log through libm
+    // so the float32 forward bit-matches gfortran's libm. `/ dm` (division) is NOT fused.
+    // Fortran multiplies by the REAL(4) reciprocal `*(1./dmc)` — NOT a division by
+    // dm. log(ratio)~36 amplifies the f32(1/3)-vs-true-1/3 difference through exp
+    // into ~13 ULP of lamda (the step-65 rslopec seed). Hold the f32 reciprocal in
+    // a double so the scalar demotion reproduces gfortran exactly.
+    const double inv_dm = static_cast<double>(1.0f / static_cast<float>(dm));
+    auto lamda = ops::libm_exp(ops::libm_log(torch::clamp(ratio, /*min=*/DOMAIN_FLOOR)) * inv_dm);
     return torch::clamp(
         1.0 / lamda,
         /*min=*/1.0 / lamdamax,
@@ -74,20 +94,25 @@ torch::Tensor diag_cloud_slope_torch(
     const CloudDsdParams& p,
     const c10::optional<torch::Tensor>& ncmin_tensor
 ) {
-    // 1:1 item #6: Fortran F:1061 cloud rslopec=1./lamdac is UNCLAMPED, but that relies
-    // on Fortran's BRANCHY structure (if qc>qcrmin then …) so degenerate qc≈0 cells never
-    // evaluate the slope. The tensor port uses MASK-MULTIPLY (all cells compute, then ×mask),
-    // where an unclamped 1/lamdac OVERFLOWS to Inf in qc≈0 cells and Inf×0=NaN downstream
-    // (confirmed: WRF em_quarter_ss NaN at itimestep 66). Keeping the [1/lamdacmax,1/lamdacmin]
-    // clamp is the structural guard that reproduces Fortran's branch-skipped behavior. So this
-    // clamp is a DELIBERATE, structurally-required deviation — see parity tracker #6.
-    auto rslopec_active = diag_species_slope_torch(qc, nc, den, p.pidnc, p.dmc, p.lamdacmax, p.lamdacmin);
-    // Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) → rslopec=rslopecmax
-    // = 1/lamdacmax. The clamp maps qc≈0 → 1/lamdacmax, but nc<=ncmin WITH qc>0 hits 1/lamdacmin
-    // (~40× too large); the nc<=ncmin gate forces 1/lamdacmax (Codex round-4 F2). Per-cell ncmin
-    // via ncmin_tensor; nullopt → scalar NCMIN (no-xland). Mirrors Python diag_cloud_slope_torch.
-    auto inactive = ncmin_tensor.has_value() ? (nc <= ncmin_tensor.value())
-                                             : (nc <= constants::NCMIN);
+    // STEP-75 SEED (D-B): the Fortran ACTIVE cloud slope is UNCLAMPED — stmt fn
+    // lamdac (F:802) has NO bounds, and F:1454-1466 stores rslopec=1/lamdac as-is;
+    // the lamdacmax SNAP (F:1485-1497) rewrites only nci/n0c, never the rslopec*
+    // arrays. The previous clamp [1/lamdacmax,1/lamdacmin] (parity tracker #6) was
+    // a NaN guard for the mask-multiply port; it diverged D2/D3 (rslopec^4..^9) in
+    // the lamdac>lamdacmax snap regime. The guard is preserved structurally: the
+    // 1e-30 domain floors bound lamdc >= exp(log(1e-30)/3) ~ 1e-10 > 0 (no Inf),
+    // and the explosive qc/nc~0 cells are exactly the INACTIVE set overwritten
+    // below with 1/lamdacmax (Fortran F:1454 takes the same branch).
+    auto qden = torch::clamp(qc * den, /*min=*/DOMAIN_FLOOR);
+    auto ratio = torch::clamp(p.pidnc * nc / qden, /*min=*/DOMAIN_FLOOR);
+    const double inv_dmc = static_cast<double>(1.0f / static_cast<float>(p.dmc));
+    auto lamdc = ops::libm_exp(ops::libm_log(ratio) * inv_dmc);
+    auto rslopec_active = 1.0 / lamdc;                  // F:1461 ACTIVE, UNCLAMPED
+    // Fortran F:1603-1608 inactive-cloud branch: (qc<=qmin .or. nc<=ncmin) →
+    // rslopec = rslopecmax = 1/lamdacmax. Per-cell ncmin via ncmin_tensor.
+    auto inactive = (qc <= constants::EPS) |
+        (ncmin_tensor.has_value() ? (nc <= ncmin_tensor.value())
+                                  : (nc <= constants::NCMIN));
     return torch::where(inactive,
                         torch::full_like(rslopec_active, 1.0 / p.lamdacmax),
                         rslopec_active);
@@ -125,7 +150,12 @@ LenconOutputs diag_lencon_torch(
     const torch::Tensor& sigma_c,
     double qcrmin
 ) {
-    auto factor = 1.0e20 / 16.0 * avedia_c * sigma_c.pow(3) - 0.4;
+    // Fortran F:1703-1704 lencon = 2.7e-2*den*qci*(1.e20/16.*avedia*(sigma**3)-0.4).
+    // gfortran fuses the LAST multiply before the `-`: ((1.e20/16.*avedia)*sigma^3) - 0.4
+    // → single-rounding fma(coef, sigma^3, -0.4). The outer 2.7e-2*den*qci*factor chain has
+    // no trailing add/sub, so it stays as separate products.
+    auto coef = 1.0e20 / 16.0 * avedia_c;
+    auto factor = ops::fma_acc(torch::full_like(coef, -0.4), coef, ops::safe_pow(sigma_c, 3.0));  // Fortran sigma**3 = powf
     auto lencon = 2.7e-2 * den * qc * factor;
     auto lenconcr = torch::clamp(1.2 * lencon, /*min=*/qcrmin);
     return LenconOutputs{/*lencon=*/lencon, /*lenconcr=*/lenconcr};

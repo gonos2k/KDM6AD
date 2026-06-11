@@ -1,3 +1,4 @@
+#include "kdm6/fconst.h"
 #include "kdm6/warm.h"
 
 #include "kdm6/ops.h"
@@ -11,9 +12,10 @@ namespace {
 constexpr double PI = 3.14159265358979323846;
 
 double rgmma_scalar(double x) {
-    // Fortran rgmma(x) = exp(GAMMLN(x)) = Γ(x). review6 audit fix
-    // (이전 구현 exp(-lgamma) = 1/Γ는 부호 잘못).
-    return std::exp(std::lgamma(x));
+    // Fortran rgmma(x)=EXP(GAMMLN(x)) in REAL(4): f32 expf of the f32-rounded
+    // double Lanczos — differs from exp(lgamma(double)) for NON-INTEGER args
+    // (e.g. Γ(4/3), Γ(7/3) in D2/D3 freezing — the step-67 qi/ni seed class).
+    return static_cast<double>(fconst::rgmma_f(static_cast<float>(x)));
 }
 
 }  // namespace
@@ -23,11 +25,16 @@ double rgmma_scalar(double x) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 WarmAutoconvParams default_warm_autoconv_params(double den0) {
-    const double qck1 =
-        0.104 * 9.8 * constants::PEAUT
-        / std::pow(constants::DENR, 1.0 / 3.0)
-        / constants::XMYU
-        * std::pow(den0, 4.0 / 3.0);
+    // STEP-91 SEED: kdm6init F:3138 builds qck1 in REAL(4) left-to-right with
+    // f32 powf; the double chain demoted once lands 1 ULP low (454E1F0E vs
+    // Fortran 454E1F0F) -> praut -> small-rain-reclass round-trip qc seed.
+    // f32-stepwise, held in a double (fconst idiom).
+    const float qck1_f =
+        ((((0.104f * 9.8f) * static_cast<float>(constants::PEAUT))
+          / std::pow(static_cast<float>(constants::DENR), 1.0f / 3.0f))
+         / static_cast<float>(constants::XMYU))
+        * std::pow(static_cast<float>(den0), 4.0f / 3.0f);
+    const double qck1 = static_cast<double>(qck1_f);
 
     return WarmAutoconvParams{
         /*qck1=*/qck1,
@@ -122,17 +129,29 @@ AccretionOutputs accretion_torch(
     const double g7pmr_over_g1pmr = params.g7pmr / params.g1pmr;
 
     // Mode 1 (big drops): avedia_r >= di100
+    // Fortran F:1729-1731 bracket: (rslopec3*g6pmc + rslope3_r*g3pmc*(g4pmr/g1pmr))
+    // op1 = rslopec3*g6pmc (acc); op2 last mul = (rslope3_r*g3pmc)*(g4pmr/g1pmr) fuses into '+'.
+    auto pracw_b1_p2a = rslope3_r * params.g3pmc;
     auto pracw_mode1 = cmc_over_den * params.ncrk1 * nc * nr * rslopec3
-        * (rslopec3 * params.g6pmc + rslope3_r * params.g3pmc * g4pmr_over_g1pmr);
+        * ops::fma_acc(rslopec3 * params.g6pmc, pracw_b1_p2a,
+                         torch::full_like(rslopec3, g4pmr_over_g1pmr));
+    // Fortran F:1726-1727 bracket: (rslopec3*g3pmc + rslope3_r*(g4pmr/g1pmr))
+    // op1 = rslopec3*g3pmc (acc); op2 last mul = rslope3_r*(g4pmr/g1pmr) fuses into '+'.
     auto nracw_mode1 = params.ncrk1 * nc * nr
-        * (rslopec3 * params.g3pmc + rslope3_r * g4pmr_over_g1pmr);
+        * ops::fma_acc(rslopec3 * params.g3pmc, rslope3_r,
+                         torch::full_like(rslope3_r, g4pmr_over_g1pmr));
 
     // Mode 2 (small drops): avedia_r < di100
+    // Fortran F:1737-1739 bracket: (rslopec3*rslopec3*g9pmc + rslope3_r*rslope3_r*g3pmc*(g7pmr/g1pmr))
+    // 2nd operand evaluated then fused into the '+' (last mul = *(g7pmr/g1pmr)).
+    auto pracw_b2_p1 = rslopec3 * rslopec3 * params.g9pmc;
+    auto pracw_b2_p2a = rslope3_r * rslope3_r * params.g3pmc;
     auto pracw_mode2 = cmc_over_den * params.ncrk2 * nc * nr * rslopec3
-        * (rslopec3 * rslopec3 * params.g9pmc
-           + rslope3_r * rslope3_r * params.g3pmc * g7pmr_over_g1pmr);
+        * ops::fma_acc(pracw_b2_p1, pracw_b2_p2a, torch::full_like(rslopec3, g7pmr_over_g1pmr));
+    // Fortran F:1733-1735 bracket: (rslopec3*rslopec3*g6pmc + rslope3_r*rslope3_r), then *(g7pmr/g1pmr)
+    // op1 = rslopec3*rslopec3*g6pmc (acc); op2 last mul = rslope3_r*rslope3_r fuses into '+'.
     auto nracw_mode2 = params.ncrk2 * nc * nr
-        * (rslopec3 * rslopec3 * params.g6pmc + rslope3_r * rslope3_r)
+        * ops::fma_acc(rslopec3 * rslopec3 * params.g6pmc, rslope3_r, rslope3_r)
         * g7pmr_over_g1pmr;
 
     auto big_drop = avedia_r >= params.di100;
@@ -200,7 +219,7 @@ SelfCollectionOutputs self_collection_torch(
     auto nrcol_small = params.ncrk2 * nr * nr * rslope3_r * rslope3_r * g7pmr_over_g1pmr;
     auto nrcol_medium = params.ncrk1 * nr * nr * rslope3_r * g4pmr_over_g1pmr;
     auto coecol = -2.5e3 * params.eccbrk * (avedia_r - params.di600);
-    auto nrcol_breakup = torch::exp(coecol) * params.ncrk1 * nr * nr * rslope3_r * g4pmr_over_g1pmr;
+    auto nrcol_breakup = ops::libm_exp(coecol) * params.ncrk1 * nr * nr * rslope3_r * g4pmr_over_g1pmr;
 
     auto is_small = avedia_r < params.di100;
     auto is_medium = torch::logical_and(avedia_r >= params.di100, avedia_r < params.di600);
@@ -261,7 +280,11 @@ RainEvapOutputs rain_evap_torch(
 
     // prevp_raw = (rh-1) * n0r * (precr1*rslope2*rslopemu + precr2*work2*coeres) / work1
     auto work1_safe = torch::clamp(work1_r, /*min=*/constants::QCRMIN);
-    auto bracket = params.precr1 * rslope2_r * rslopemu_r + params.precr2 * work2 * coeres;
+    // Fortran F:1782-1783 bracket: (precr1*rslope2*rslopemu + precr2*work2*coeres)
+    // op1 = precr1*rslope2_r*rslopemu_r (acc); op2 last mul = (precr2*work2)*coeres fuses into '+'.
+    auto prevp_b_op1 = params.precr1 * rslope2_r * rslopemu_r;
+    auto prevp_b_p2a = params.precr2 * work2;
+    auto bracket = ops::fma_acc(prevp_b_op1, prevp_b_p2a, coeres);
     auto prevp_raw = (rh_w - 1.0) * n0r * bracket / work1_safe;
     prevp_raw = params.fac_evap * prevp_raw;
 

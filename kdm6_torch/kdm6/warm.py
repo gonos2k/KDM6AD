@@ -26,13 +26,15 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 from .ops import safe_div_pos, safe_pow
 
 
 def _rgmma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. review6 audit에서 부호 수정
     (이전 구현은 1/Γ였음 — Fortran rgmma는 Γ, 이름은 'reciprocal-gamma'와 무관)."""
-    return exp(lgamma(x))
+    # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
+    return _fc.rgmma_f(x)
 
 # ─── physics constants (Fortran kdm6 module-level) ───────────────────────────
 
@@ -61,12 +63,9 @@ def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0) -> WarmAutoconvP
         qck1 = .104 * 9.8 * peaut / denr^(1/3) / xmyu * den0^(4/3)
     `den0`은 kdm6init의 INPUT 인자라 외부에서 들어옴 — 표준대기 1.28 fallback.
     """
-    qck1 = (
-        0.104 * 9.8 * c.PEAUT
-        / (c.DENR ** (1.0 / 3.0))
-        / c.XMYU
-        * (den0 ** (4.0 / 3.0))
-    )
+    # STEP-91 SEED mirror: kdm6init F:3138 builds qck1 REAL(4) l2r with f32 powf.
+    qck1 = _fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(0.104) * _fc._f32(9.8)) * _fc._f32(c.PEAUT))
+        / _fc.powf(c.DENR, 1.0 / 3.0)) / _fc._f32(c.XMYU)) * _fc.powf(den0, 4.0 / 3.0))
     return WarmAutoconvParams(
         qck1=qck1,
         nraut_coeff=3.5e9,

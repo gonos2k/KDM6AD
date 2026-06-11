@@ -184,18 +184,18 @@ def substep_advection_torch(
 
         # dqx_above (inflow from the cell above): STORED falk of the cell above (falk_*_prev,
         # from ITS entry q), capped by the cell-above's POST-update reservoir qr_cols[k-1] —
-        # exactly Fortran min(falk(k+1)*delz_ratio*dtcld/dend, qrs(k+1)) with the stored falk(k+1).
-        delz_ratio = delz[:, k - 1] / delz_safe[:, k]
+        # STEP-88 SEED class: Fortran F:1180-1205/F:1264-1269 evaluates
+        # falk(k+1)*delz(k+1)/delz(k)*dtcld LEFT-TO-RIGHT in f32 (mirrors C++).
         dqr_above = torch.minimum(
-            falk_qr_prev * delz_ratio * dtcld / dend_safe[:, k], qr_cols[k - 1])
+            falk_qr_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], qr_cols[k - 1])
         dnr_above = torch.minimum(
-            falk_nr_prev * delz_ratio * dtcld, nr_cols[k - 1])
+            falk_nr_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld, nr_cols[k - 1])
         dqs_above = torch.minimum(
-            falk_qs_prev * delz_ratio * dtcld / dend_safe[:, k], qs_cols[k - 1])
+            falk_qs_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], qs_cols[k - 1])
         dqg_above = torch.minimum(
-            falk_qg_prev * delz_ratio * dtcld / dend_safe[:, k], qg_cols[k - 1])
+            falk_qg_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], qg_cols[k - 1])
         dbrs_above = torch.minimum(
-            falk_brs_prev * delz_ratio * dtcld / dend_safe[:, k], brs_cols[k - 1])
+            falk_brs_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], brs_cols[k - 1])
 
         qr_cols[k] = torch.clamp(qr_cols[k] - dqr_k + dqr_above, min=0.0)
         nr_cols[k] = torch.clamp(nr_cols[k] - dnr_k + dnr_above, min=0.0)
@@ -296,11 +296,10 @@ def ice_substep_advection_torch(
         dni_k = torch.minimum(falk_ni_k * dtcld, ni_cols[k])
 
         # inflow: STORED falk of the cell above (entry q), capped by its POST-update reservoir.
-        delz_ratio = delz[:, k - 1] / delz_safe[:, k]
         dqi_above = torch.minimum(
-            falk_qi_prev * delz_ratio * dtcld / dend_safe[:, k], qi_cols[k - 1])
+            falk_qi_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], qi_cols[k - 1])
         dni_above = torch.minimum(
-            falk_ni_prev * delz_ratio * dtcld, ni_cols[k - 1])
+            falk_ni_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld, ni_cols[k - 1])
 
         qi_cols[k] = torch.clamp(qi_cols[k] - dqi_k + dqi_above, min=0.0)
         ni_cols[k] = torch.clamp(ni_cols[k] - dni_k + dni_above, min=0.0)

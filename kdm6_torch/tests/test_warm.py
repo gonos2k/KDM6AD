@@ -45,7 +45,8 @@ def test_default_warm_autoconv_params_qck1_formula():
         * (den0 ** (4.0 / 3.0))
     )
     p = default_warm_autoconv_params(den0=den0)
-    assert math.isclose(p.qck1, expected, rel_tol=1e-12)
+    # STEP-91 SEED: qck1 is now the gfortran REAL(4)-stepwise value (0x454E1F0F).
+    assert math.isclose(p.qck1, expected, rel_tol=1e-6)
 
 
 # ─── inactive gate → branch zero ──────────────────────────────────────────────
@@ -252,7 +253,10 @@ def test_default_warm_accretion_params_gamma_consistency():
     assert math.isclose(p.g9pmc, 6.0, rel_tol=1e-12)
     assert math.isclose(p.g1pmr, 1.0, rel_tol=1e-12)
     assert math.isclose(p.g4pmr, 24.0, rel_tol=1e-12)
-    assert math.isclose(p.g7pmr, 5040.0, rel_tol=1e-12)
+    # Fortran rgmma is the REAL(4) expf(f32 gammln) (fconst.rgmma_f, step-67 seed
+    # class): Γ_f(8) = 5040.001953125, NOT exact 5040 (f32 exp of the rounded lnΓ).
+    from kdm6.fconst import rgmma_f
+    assert math.isclose(p.g7pmr, rgmma_f(8.0), rel_tol=1e-12)
 
 
 def test_accretion_inactive_when_qr_below_lenconcr():

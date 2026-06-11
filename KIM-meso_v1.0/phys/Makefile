@@ -280,6 +280,14 @@ submodules :
 clean:
 	@ echo 'use the clean script'
 
+module_mp_kdm6ad.o: kdm6_iso_c.o
+# ^ KDM6AD build-order edge, intentionally the first rule after `clean:` and ABOVE any
+# comment. tools/danger cuts this file from the first line mentioning the all-caps
+# marker word to EOF, so a reference to that word in ANY comment (even one explaining
+# this) would move the cut up and silently drop a rule placed below it. Keeping the
+# rule first makes it un-cuttable. Canonical copy also lives in main/depend.common.
+# Symptom if lost: c_float vs c_double kdm6_iso_c interface clash -> "REAL(4) to REAL(8)".
+
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 # DO NOT DELETE
 

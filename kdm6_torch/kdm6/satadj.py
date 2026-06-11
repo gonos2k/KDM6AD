@@ -71,7 +71,11 @@ def saturation_adjustment_torch(
     # work1 = (max(q, qmin) - qs1) / (1 + xl²·qs1/(rv·cpm·t²))   — Clausius-Clapeyron
     # 분모는 항상 > 1 (양수 보장). 단, t² 자체는 분모이므로 0 회피 위해 clamp.
     t_safe = torch.clamp(t, min=1.0)  # T > 1 K 가정 (대기 환경 100~400 K)
-    denom = 1.0 + xl * xl * qs1 / (params.rv * cpm * t_safe * t_safe)
+    # Fortran conden stmt-fn (module_mp_kdm6.F:781): denom = 1.+ d*d/(rv*e)*c/(a*a),
+    # equal-precedence left-assoc => ((((xl*xl)/(rv*cpm))*qs1)/(t*t)). gfortran does
+    # not reassociate division, so mirror that grouping (NOT (xl²·qs1)/(rv·cpm·t²))
+    # to stay 1:1 with F:781 and with the C++ port (satadj.cpp:27).
+    denom = 1.0 + xl * xl / (params.rv * cpm) * qs1 / (t_safe * t_safe)
     q_eff = torch.maximum(q, qmin_t)
     work1 = (q_eff - qs1) / denom
 

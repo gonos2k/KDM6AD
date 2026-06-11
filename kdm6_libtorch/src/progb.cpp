@@ -1,4 +1,5 @@
 #include "kdm6/progb.h"
+#include "kdm6/ops.h"
 
 #include <array>
 #include <cmath>
@@ -41,7 +42,8 @@ torch::Tensor make_table(const std::array<double, 9>& values, const torch::Tenso
 
 torch::Tensor rgmma_tensor(const torch::Tensor& x) {
     // Fortran rgmma = Γ(x) (review6 audit fix; 이전 -torch::lgamma 부호 잘못).
-    return torch::exp(torch::lgamma(torch::clamp(x, /*min=*/constants::EPS)));
+    // (A) transcendental: rgmma = EXP(GAMMLN(x)) (F:3051) → libm exp for gfortran bit-match.
+    return ops::libm_exp(torch::lgamma(torch::clamp(x, /*min=*/constants::EPS)));
 }
 
 ProgBParams default_progb_params() {
@@ -115,15 +117,19 @@ ProgBOutputs progb_param_torch(
 
     auto width = Tbl_right - Tbl_left;
     auto frac = (rhox - Tbl_left) / width;
-    auto avtg_raw = aTbl_left + frac * (aTbl_right - aTbl_left);
-    auto bvtg_raw = bTbl_left + frac * (bTbl_right - bTbl_left);
+    // (B) FMA: Fortran F:3386/3387 `aTbl(sy)+(...)*(...)*tmp2` — gfortran fuses the last
+    // multiply before the add. Here frac*(delta) is the final multiply preceding the `+`.
+    auto avtg_raw = ops::fma_acc(aTbl_left, frac, aTbl_right - aTbl_left);
+    auto bvtg_raw = ops::fma_acc(bTbl_left, frac, bTbl_right - bTbl_left);
 
     auto avtg = torch::where(active, avtg_raw, zero);
     auto bvtg = torch::where(active, bvtg_raw, zero);
 
     // ── derived sums ────────────────────────────────────────────────────
     auto bvtg1 = 1.0 + bvtg;
-    auto bvtg2 = 2.5 + 0.5 * bvtg + params.mug;
+    // (B) FMA: Fortran F:3389 `2.5+.5*bvtg+mug` — gfortran fuses .5*bvtg with the (2.5 + …)
+    // add; the trailing +mug is a separate add. Match: addcmul(2.5, bvtg, 0.5) then + mug.
+    auto bvtg2 = ops::fma_acc(scalar_like(2.5, bvtg), bvtg, scalar_like(0.5, bvtg)) + params.mug;
     auto bvtg3 = 3.0 + bvtg + params.mug;
     auto bvtg4 = 4.0 + bvtg;
     auto dgbgmug1 = 1.0 + params.dmg + bvtg + params.mug;
@@ -136,15 +142,20 @@ ProgBOutputs progb_param_torch(
     auto g1pdgbgmg = rgmma_tensor(dgbgmug1);
 
     // rslopegbmax = rslopegmax ** bvtg  (per-cell, since bvtg is a tensor)
+    // (A) transcendental: Fortran F:3398 `rslopegmax ** bvtg` → route pow through ops::safe_pow
+    // (libm pow). Base rslopegmax = 1/LAMDAGMAX > 0, so the EPS clamp is harmless (no value change).
     auto rslopegmax_t = scalar_like(params.rslopegmax, qg);
-    auto rslopegbmax_raw = torch::pow(rslopegmax_t, bvtg);
+    auto rslopegbmax_raw = ops::safe_pow(rslopegmax_t, bvtg);
     auto rslopegbmax = torch::where(active, rslopegbmax_raw, zero);
 
     // pvtg, precg2 ─ sqrt(0)의 backward는 inf → EPS clamp + mask zero
     auto pvtg_raw = avtg * g1pdgbgmg / params.g1pdgmg;
     auto pvtg = torch::where(active, pvtg_raw, zero);
 
-    auto precg2_raw = 4.0 * 0.31 * torch::sqrt(torch::clamp(avtg, /*min=*/constants::EPS)) * g5pbgo2;
+    // (A) transcendental: Fortran F:3400 `4.*.31*avtg**.5*g5pbgo2`. `avtg**.5` compiles to libm
+    // pow(avtg,0.5); route through ops::safe_pow (libm pow, base already EPS-clamped) instead of
+    // torch::sqrt (Sleef) for gfortran bit-match. Pure multiply chain → no FMA fusion (no +/-).
+    auto precg2_raw = 4.0 * 0.31 * ops::safe_pow(avtg, 0.5) * g5pbgo2;
     auto precg2 = torch::where(active, precg2_raw, zero);
 
     // 비활성 셀의 derived 출력은 zero로 mask (downstream graupel mask와 일관)

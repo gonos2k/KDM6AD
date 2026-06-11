@@ -1223,15 +1223,23 @@ CONTAINS
   ENDDO
   CASE (convrad)
 !  random low-level thermal perturbation to kick off convection
-!  KDM6/KDM6AD parity (2026-05-30): a bare `call random_seed` reseeds the PRNG
-!  from system entropy in modern gfortran, so every ideal.exe invocation draws a
-!  DIFFERENT thermal perturbation. The mp=37 and mp=137 runs would then start
-!  from different ICs, confounding any scheme-consistency comparison (this is why
-!  the convrad 37/137 pair showed a 1e-3 frame-1 "seed" with no microphysics
-!  active). Disabling the reseed makes RANDOM_NUMBER start from gfortran's fixed
-!  default state -> the SAME perturbation field across runs -> a controlled IC.
-!  (To restore per-run randomness for ensemble/realism work, re-enable the call.)
-!       call random_seed
+!  KDM6/KDM6AD parity (2026-06-05): modern gfortran (>=7) auto-seeds RANDOM_NUMBER
+!  from /dev/urandom on first use UNLESS random_seed(put=) is called with explicit
+!  values. Merely deleting a bare `call random_seed` does NOT give determinism on
+!  gfortran 15.2 (the 2026-05-30 assumption of a "fixed default state" was a
+!  legacy-gfortran (<=6) behavior). To get the SAME thermal perturbation across
+!  the mp=37 and mp=137 ideal.exe runs (a controlled IC for scheme-consistency
+!  comparison), seed the PRNG with a FIXED put array here.
+!  (To restore per-run randomness for ensemble/realism work, comment out the block.)
+  block
+    integer :: nseed_kdm6
+    integer, allocatable :: seed_kdm6(:)
+    call random_seed(size=nseed_kdm6)
+    allocate(seed_kdm6(nseed_kdm6))
+    seed_kdm6 = 20260605
+    call random_seed(put=seed_kdm6)
+    deallocate(seed_kdm6)
+  end block
   write(6,*) ' nxc, nyc for perturbation ',nxc,nyc
   write(6,*) ' delt for perturbation ',delt
 

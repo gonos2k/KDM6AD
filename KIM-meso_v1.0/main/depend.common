@@ -271,6 +271,12 @@ module_clear_halos.o: \
 
 # DEPENDENCIES for phys
 
+# KDM6AD: module_mp_kdm6ad USEs kdm6_iso_c → its .mod must build first.
+# (canonical, regeneration-safe home for this ABI-critical edge; the c_float/c_double
+#  interface kind mismatch surfaces as "REAL(4) to REAL(8)" if the order is wrong.)
+module_mp_kdm6ad.o: \
+	kdm6_iso_c.o
+
 module_madwrf.o: \
 	module_wrf_top.o \
 	../share/module_model_constants.o \
@@ -1045,6 +1051,7 @@ module_microphysics_driver.o: \
 	module_mp_wdm5.o \
 	module_mp_wdm6.o \
 	module_mp_kdm6.o \
+	module_mp_kdm6ad.o \
 	module_mp_cammgmp_driver.o \
 	module_irrigation.o \
 	module_mp_fast_sbm.o \

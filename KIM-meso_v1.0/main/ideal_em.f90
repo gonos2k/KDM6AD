@@ -43,7 +43,7 @@ PROGRAM ideal
 
    CHARACTER (LEN=*), PARAMETER :: release_version = 'V4.6.0'
 
-    CHARACTER (LEN=*), PARAMETER :: commit_version = 'git commit 6ee743d736c49e8c344aa9cecf24a2baf06dde3b 79 files changed, 2206 insertions(+), 350 deletions(-)'
+    CHARACTER (LEN=*), PARAMETER :: commit_version = 'git commit 8b97ce7ee482294f238a5b0861148a255355cc38 82 files changed, 2179 insertions(+), 1110 deletions(-)'
 
 
 

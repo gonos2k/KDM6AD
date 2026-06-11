@@ -20,14 +20,14 @@ namespace {
 // (im, kme, jme) Fortran column-major → flat double* (size im*kme*jme).
 struct FortranBuf {
     int im, kme, jme;
-    std::vector<double> data;
+    std::vector<float> data;  // native float32 ABI
 
-    FortranBuf(int im_, int kme_, int jme_, double fill = 0.0)
+    FortranBuf(int im_, int kme_, int jme_, float fill = 0.0f)
         : im(im_), kme(kme_), jme(jme_),
           data(static_cast<size_t>(im_) * kme_ * jme_, fill) {}
 
-    double* ptr() { return data.data(); }
-    const double* ptr() const { return data.data(); }
+    float* ptr() { return data.data(); }
+    const float* ptr() const { return data.data(); }
     size_t size() const { return data.size(); }
 };
 
@@ -185,11 +185,11 @@ void test_c_abi_step_per_cell_ncmin_mixed_xland() {
         FortranBuf nr_o(im, kme, jme), bg_o(im, kme, jme);
 
         // xland(im=2, jme=1): cell 0 = land (XLAND=1), cell 1 = sea (XLAND=2).
-        std::vector<double> xland_buf = {1.0, 2.0};
+        std::vector<float> xland_buf = {1.0f, 2.0f};
         // Phase 4 ABI extension — per-column precip increment buffers (im, jme).
-        std::vector<double> rain_inc(im * jme, 0.0);
-        std::vector<double> snow_inc(im * jme, 0.0);
-        std::vector<double> graupel_inc(im * jme, 0.0);
+        std::vector<float> rain_inc(im * jme, 0.0f);
+        std::vector<float> snow_inc(im * jme, 0.0f);
+        std::vector<float> graupel_inc(im * jme, 0.0f);
 
         kdm6_handle_t* handle = nullptr;
         const int rc = kdm6_step_c(

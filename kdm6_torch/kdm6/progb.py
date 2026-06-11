@@ -28,6 +28,7 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 from .ops import EPS
 
 # ─── ProgB_param 헤더 상수 (Fortran header parameters) ─────────────────────────
@@ -96,7 +97,8 @@ class ProgBOutputs(NamedTuple):
 def _rgmma_scalar(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. review6 audit에서 부호 수정
     (이전 구현은 1/Γ였음)."""
-    return exp(lgamma(x))
+    # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
+    return _fc.rgmma_f(x)
 
 
 def _rgmma_tensor(x: torch.Tensor) -> torch.Tensor:

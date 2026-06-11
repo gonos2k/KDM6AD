@@ -70,6 +70,26 @@ ctest --output-on-failure   # 13/13 PASS 확인 후 진행
 make install                # libkdm6_c.{so,dylib} → $PREFIX/lib
 ```
 
+#### 2.2.1 이 저장소의 구체 빌드 (재현 필수 — `install_miniforge/`는 gitignore됨)
+
+`install_miniforge/`(WRF가 rpath로 링크하는 dylib)와 `build_miniforge/`는 생성물이라 **git에 커밋되지 않는다**(`.gitignore`의 `**/install_miniforge/`, `**/build_miniforge/`). 따라서 fresh clone은 아래로 dylib를 **재생성**해야 WRF가 링크된다. miniforge libtorch를 쓰는 이 저장소의 검증된 incantation (from-scratch로 CMAKE/BUILD/INSTALL rc=0 + ctest 15/15 확인됨):
+
+```bash
+TORCH=/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch  # ← 본인 miniforge 경로
+cd kdm6_libtorch
+cmake -S . -B build_miniforge -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$TORCH"
+cmake --build build_miniforge -j8
+cmake --install build_miniforge          # → kdm6_libtorch/install_miniforge/lib/libkdm6_c.dylib (기본 prefix)
+```
+
+> ⚠️ `CMAKE_PREFIX_PATH`를 **miniforge torch**로 지정하지 않으면 `find_package(Caffe2/protobuf)`가
+> homebrew protobuf를 잡아 `absl::absl_check not found` 링크 에러가 난다 (CMakeLists.txt:11 참고).
+
+그 다음 `KIM-meso_v1.0/configure.wrf`의 **호스트-절대경로 2개를 본인 환경에 맞게 수정**한다 (이 값들은
+`./configure`가 자동 생성하지 않는 KDM6AD 수동 추가분이다):
+- `KDM6AD_PREFIX  = <repo>/kdm6_libtorch/install_miniforge`  (위 cmake --install 기본 prefix)
+- `KDM6AD_TORCH_LIB = $TORCH/lib`
+
 ### 2.3 KIM-meso 빌드 시스템 hook
 
 `compile`/`configure` 단계에서:

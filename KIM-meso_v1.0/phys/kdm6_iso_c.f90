@@ -43,32 +43,34 @@ module kdm6_iso_c
         xland, ncmin_land, ncmin_sea, &
         rain_increment, snow_increment, graupel_increment &
       ) bind(C, name="kdm6_step_c") result(rc)
-      import :: c_int, c_double, c_ptr
-      real(c_double), intent(in)  :: th(*), qv(*), qc(*), qr(*)
-      real(c_double), intent(in)  :: qi(*), qs(*), qg(*)
-      real(c_double), intent(in)  :: nccn(*), nc(*), ni(*), nr(*), bg(*)
-      real(c_double), intent(in)  :: rho(*), pii(*), p(*), delz(*)
+      import :: c_int, c_double, c_float, c_ptr
+      real(c_float), intent(in)  :: th(*), qv(*), qc(*), qr(*)
+      real(c_float), intent(in)  :: qi(*), qs(*), qg(*)
+      real(c_float), intent(in)  :: nccn(*), nc(*), ni(*), nr(*), bg(*)
+      real(c_float), intent(in)  :: rho(*), pii(*), p(*), delz(*)
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: param_grad_flags, value_only
-      real(c_double), intent(out) :: th_out(*), qv_out(*), qc_out(*), qr_out(*)
-      real(c_double), intent(out) :: qi_out(*), qs_out(*), qg_out(*)
-      real(c_double), intent(out) :: nccn_out(*), nc_out(*), ni_out(*), nr_out(*), bg_out(*)
+      real(c_float), intent(out) :: th_out(*), qv_out(*), qc_out(*), qr_out(*)
+      real(c_float), intent(out) :: qi_out(*), qs_out(*), qg_out(*)
+      real(c_float), intent(out) :: nccn_out(*), nc_out(*), ni_out(*), nr_out(*), bg_out(*)
       type(c_ptr), intent(out)    :: handle
       
       
-      real(c_double), intent(in)  :: xland(*)
+      real(c_float), intent(in)  :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
       
       
-      real(c_double), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
+      real(c_float), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
 
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
-      import :: c_int, c_double, c_ptr
+      import :: c_int, c_double, c_float, c_ptr
       type(c_ptr),    value       :: h
+      
+      
       real(c_double), intent(in)  :: u_packed(*)
       real(c_double), intent(out) :: grad_out_packed(*)
       integer(c_int)              :: rc
@@ -76,7 +78,7 @@ module kdm6_iso_c
 
     function kdm6_handle_jvp_c(h, v_packed, tangent_out_packed) &
         bind(C, name="kdm6_handle_jvp_c") result(rc)
-      import :: c_int, c_double, c_ptr
+      import :: c_int, c_double, c_float, c_ptr
       type(c_ptr),    value       :: h
       real(c_double), intent(in)  :: v_packed(*)
       real(c_double), intent(out) :: tangent_out_packed(*)
@@ -110,25 +112,25 @@ contains
       xland, ncmin_land, ncmin_sea, &
       rain_increment, snow_increment, graupel_increment &
     ) result(rc)
-    real(c_double), intent(in),  contiguous :: th(:,:,:), qv(:,:,:), qc(:,:,:), qr(:,:,:)
-    real(c_double), intent(in),  contiguous :: qi(:,:,:), qs(:,:,:), qg(:,:,:)
-    real(c_double), intent(in),  contiguous :: nccn(:,:,:), nc(:,:,:), ni(:,:,:), nr(:,:,:), bg(:,:,:)
-    real(c_double), intent(in),  contiguous :: rho(:,:,:), pii(:,:,:), p(:,:,:), delz(:,:,:)
+    real(c_float), intent(in),  contiguous :: th(:,:,:), qv(:,:,:), qc(:,:,:), qr(:,:,:)
+    real(c_float), intent(in),  contiguous :: qi(:,:,:), qs(:,:,:), qg(:,:,:)
+    real(c_float), intent(in),  contiguous :: nccn(:,:,:), nc(:,:,:), ni(:,:,:), nr(:,:,:), bg(:,:,:)
+    real(c_float), intent(in),  contiguous :: rho(:,:,:), pii(:,:,:), p(:,:,:), delz(:,:,:)
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: param_grad_flags, value_only
-    real(c_double), intent(out), contiguous :: th_out(:,:,:), qv_out(:,:,:), qc_out(:,:,:), qr_out(:,:,:)
-    real(c_double), intent(out), contiguous :: qi_out(:,:,:), qs_out(:,:,:), qg_out(:,:,:)
-    real(c_double), intent(out), contiguous :: nccn_out(:,:,:), nc_out(:,:,:), ni_out(:,:,:), nr_out(:,:,:)
-    real(c_double), intent(out), contiguous :: bg_out(:,:,:)
+    real(c_float), intent(out), contiguous :: th_out(:,:,:), qv_out(:,:,:), qc_out(:,:,:), qr_out(:,:,:)
+    real(c_float), intent(out), contiguous :: qi_out(:,:,:), qs_out(:,:,:), qg_out(:,:,:)
+    real(c_float), intent(out), contiguous :: nccn_out(:,:,:), nc_out(:,:,:), ni_out(:,:,:), nr_out(:,:,:)
+    real(c_float), intent(out), contiguous :: bg_out(:,:,:)
     type(c_ptr),    intent(out)             :: handle
     
-    real(c_double), intent(in),  contiguous :: xland(:,:)
+    real(c_float), intent(in),  contiguous :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
     
-    real(c_double), intent(out), contiguous :: rain_increment(:,:)
-    real(c_double), intent(out), contiguous :: snow_increment(:,:)
-    real(c_double), intent(out), contiguous :: graupel_increment(:,:)
+    real(c_float), intent(out), contiguous :: rain_increment(:,:)
+    real(c_float), intent(out), contiguous :: snow_increment(:,:)
+    real(c_float), intent(out), contiguous :: graupel_increment(:,:)
     integer(c_int)                          :: rc
 
     rc = kdm6_step_c( &

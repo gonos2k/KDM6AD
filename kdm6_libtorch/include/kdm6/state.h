@@ -51,18 +51,18 @@ State map_state(const State& s, const std::function<torch::Tensor(const torch::T
 // `requires_grad=true`이면 leaf clone 생성.
 //
 struct FortranArrayDescriptor {
-    const double* th;
-    const double* qv;
-    const double* qc;
-    const double* qr;
-    const double* qi;
-    const double* qs;
-    const double* qg;
-    const double* nccn;
-    const double* nc;
-    const double* ni;
-    const double* nr;
-    const double* bg;
+    const float* th;
+    const float* qv;
+    const float* qc;
+    const float* qr;
+    const float* qi;
+    const float* qs;
+    const float* qg;
+    const float* nccn;
+    const float* nc;
+    const float* ni;
+    const float* nr;
+    const float* bg;
     int im;
     int kme;
     int jme;
@@ -73,10 +73,10 @@ State from_fortran_arrays(const FortranArrayDescriptor& d,
                           bool nan_gate = false,
                           bool clip_neg = false);
 
-Forcing forcing_from_fortran_arrays(const double* rho,
-                                    const double* pii,
-                                    const double* p,
-                                    const double* delz,
+Forcing forcing_from_fortran_arrays(const float* rho,
+                                    const float* pii,
+                                    const float* p,
+                                    const float* delz,
                                     int im,
                                     int kme,
                                     int jme);
@@ -84,9 +84,9 @@ Forcing forcing_from_fortran_arrays(const double* rho,
 void to_fortran_arrays(const State& state,
                        int im, int jme,
                        /* output buffers, caller-allocated */
-                       double* th_out, double* qv_out, double* qc_out,
-                       double* qr_out, double* qi_out, double* qs_out,
-                       double* qg_out, double* nccn_out, double* nc_out,
-                       double* ni_out, double* nr_out, double* bg_out);
+                       float* th_out, float* qv_out, float* qc_out,
+                       float* qr_out, float* qi_out, float* qs_out,
+                       float* qg_out, float* nccn_out, float* nc_out,
+                       float* ni_out, float* nr_out, float* bg_out);
 
 }  // namespace kdm6

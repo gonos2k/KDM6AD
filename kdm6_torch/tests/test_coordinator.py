@@ -555,9 +555,11 @@ def test_dsd_limiter_clamps_oversized_nc():
     den = torch.full((1, 1), den_v, dtype=dtype)
     out = apply_dsd_number_limiters_torch(state, den)
 
-    # Γ-truth hardcoded: pidnc = (π·DENR/6) · Γ(1+DMC/(MUC+1)) = 523.6 · Γ(2) = 523.6 · 1.
-    cmc = math.pi * c.DENR / 6.0
-    pidnc_expected = cmc * 1.0    # Γ(2) = 1 (DMC=3, MUC=2)
+    # Γ-truth: pidnc = (π_f·DENR/6)·Γ_f(1+DMC/(MUC+1)) — since the step-45 seed fix
+    # the limiter uses the f32-stepwise kdm6init value fconst.PIDNC (gfortran REAL(4)
+    # evaluation; the double-precomputed 523.5988 is 1 f32-ULP off). Anchor to fconst.
+    from kdm6 import fconst as _fc
+    pidnc_expected = _fc.PIDNC    # f32-stepwise cmc·Γ_f(2) (fconst.py / fconst.h)
     nc_at_max = den_v * qc_v * (c.LAMDACMAX ** c.DMC) / pidnc_expected
     assert math.isclose(float(out.nc[0, 0]), nc_at_max, rel_tol=1e-9), (
         f"expected nc snapped to {nc_at_max:.6e}, got {float(out.nc[0, 0]):.6e}"
@@ -592,9 +594,10 @@ def test_dsd_limiter_clamps_oversized_ni():
     den = torch.full((1, 1), den_v, dtype=dtype)
     out = apply_dsd_number_limiters_torch(state, den)
 
-    # Γ-truth: pidni = (π·DENI/6) · Γ(1+DMI+MUI)/Γ(1+MUI) = 261.8 · Γ(4)/Γ(1) = 261.8 · 6.
-    cmi = math.pi * c.DENI / 6.0
-    pidni_expected = cmi * (6.0 / 1.0)    # Γ(4)=6, Γ(1)=1 (DMI=3, MUI=0)
+    # Γ-truth: pidni = (π_f·DENI/6)·Γ_f(1+DMI+MUI)/Γ_f(1+MUI) — f32-stepwise kdm6init
+    # value fconst.PIDNI since the step-45 seed fix (see the nc test above).
+    from kdm6 import fconst as _fc
+    pidni_expected = _fc.PIDNI    # f32-stepwise cmi·Γ_f(4)/Γ_f(1) (fconst.py / fconst.h)
     ni_at_max = den_v * qi_v * (c.LAMDAIMAX ** c.DMI) / pidni_expected
     assert math.isclose(float(out.ni[0, 0]), ni_at_max, rel_tol=1e-9), (
         f"expected ni snapped to {ni_at_max:.6e}, got {float(out.ni[0, 0]):.6e}"

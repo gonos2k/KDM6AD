@@ -83,13 +83,23 @@ void test_diag_qcr_sea_land_branch() {
 void test_diag_cloud_slope_clamp() {
     TEST(test_diag_cloud_slope_clamp) {
         auto p = default_cloud_dsd_params();
-        // Very small qc → lamdac large → rslope small → clamp to 1/lamdacmax.
+        // STEP-75 D-B semantics: the ACTIVE slope is UNCLAMPED (Fortran stmt fn
+        // lamdac F:802 has no bounds) — tiny qc with qc>qmin gives rslopec BELOW
+        // 1/lamdacmax; only the INACTIVE gate (qc<=qmin | nc<=ncmin) forces
+        // rslopec = 1/lamdacmax.
         auto qc = torch::full({1, 1}, 1.0e-12, f64());
         auto nc = torch::full({1, 1}, 1.0e8, f64());
         auto den = torch::full({1, 1}, 1.1, f64());
         auto rslope = diag_cloud_slope_torch(qc, nc, den, p);
-        assert(rslope.item<double>() <= 1.0 / p.lamdacmin + 1e-15);
-        assert(rslope.item<double>() >= 1.0 / p.lamdacmax - 1e-15);
+        assert(rslope.item<double>() > 0.0);
+        assert(rslope.item<double>() < 1.0 / p.lamdacmax);  // active, unclamped (below the old floor)
+        // inactive gates -> 1/lamdacmax exactly
+        auto qc0 = torch::full({1, 1}, 0.0, f64());
+        auto r_inact = diag_cloud_slope_torch(qc0, nc, den, p);
+        assert(std::abs(r_inact.item<double>() - 1.0 / p.lamdacmax) < 1e-18);
+        auto nc0 = torch::full({1, 1}, 0.0, f64());
+        auto r_inact2 = diag_cloud_slope_torch(qc, nc0, den, p);
+        assert(std::abs(r_inact2.item<double>() - 1.0 / p.lamdacmax) < 1e-18);
     } END_TEST();
 }
 

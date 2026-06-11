@@ -131,7 +131,7 @@ void test_layout_roundtrip() {
         const int im = 2;
         const int kme = 3;
         const int jme = 4;
-        std::vector<double> data(im * kme * jme);
+        std::vector<float> data(im * kme * jme);  // native float32 ABI
         for (int j = 0; j < jme; ++j) {
             for (int k = 0; k < kme; ++k) {
                 for (int i = 0; i < im; ++i) {
@@ -159,12 +159,12 @@ void test_layout_roundtrip() {
             }
         }
 
-        std::vector<double> out(data.size(), -1.0);
+        std::vector<float> out(data.size(), -1.0f);
         to_fortran_arrays(state, im, jme,
                           out.data(), out.data(), out.data(), out.data(),
                           out.data(), out.data(), out.data(), out.data(),
                           out.data(), out.data(), out.data(), out.data());
-        assert(std::memcmp(out.data(), data.data(), data.size() * sizeof(double)) == 0);
+        assert(std::memcmp(out.data(), data.data(), data.size() * sizeof(float)) == 0);
     } END_TEST();
 }
 

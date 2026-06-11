@@ -14,6 +14,7 @@ from typing import NamedTuple
 import torch
 
 from . import constants as c
+from . import fconst as _fc
 from .ops import EPS, isfinite_else, safe_pow
 
 DOMAIN_FLOOR = 1.0e-30  # Fortran slope 루틴 전용 floor (`max(..., 1.e-30)`)
@@ -118,7 +119,7 @@ class SlopeRainOutputs(NamedTuple):
 def _rgamma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. GAMMLN은 ln(Γ).
     review6 audit에서 부호 수정 (이전 구현은 1/Γ였음). 함수명은 호환을 위해 유지."""
-    return exp(lgamma(x))
+    return _fc.rgmma_f(x)  # Fortran-faithful f32 (step-67 class)
 
 
 def _pow_or_one(base: float, exponent: float) -> float:
@@ -135,7 +136,8 @@ def _domain_clamp(x: torch.Tensor) -> torch.Tensor:
 
 def _lamda_from_ratio(ratio: torch.Tensor, exponent: float) -> torch.Tensor:
     """Fortran의 `exp(log(max(...,1.e-30))*(1./exp))` 구조를 그대로 유지."""
-    return torch.exp(torch.log(_domain_clamp(ratio)) / exponent)
+    inv = _fc._f32(1.0 / _fc._f32(exponent))   # Fortran `*(1./dmr)` f32 reciprocal
+    return torch.exp(torch.log(_domain_clamp(ratio)) * inv)
 
 
 def _rain_slope_components(
@@ -252,9 +254,9 @@ def default_slope_params() -> SlopeParams:
     g1pdibimi = _rgamma(1.0 + DMI + bvti + MUI)
     g1pbimi = _rgamma(1.0 + bvti + MUI)
 
-    pidnr = cmr * g1pdrmr / g1pmr
+    pidnr = _fc.PIDNR   # f32-stepwise (kdm6init F:3235; see fconst.py)
     pidn0s = cms * n0s * g1pdsms / g1pms
-    pidni = cmi * g1pdimi / g1pmi
+    pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
 
     pvtr = avtr * g1pdrbrmr / g1pdrmr
     pvtrn = avtr * g1pbrmr / g1pmr
@@ -262,34 +264,37 @@ def default_slope_params() -> SlopeParams:
     pvti = avti * g1pdibimi / g1pdimi
     pvtin = avti * g1pbimi / g1pmi
 
-    rslopermax = 1.0 / lamdarmax
-    rslopesmax = 1.0 / lamdasmax
-    rslopegmax = 1.0 / LAMDAGMAX
-    rslopeimax = 1.0 / lamdaimax
+    # STEP-79 mirror: kdm6init builds the rslope*max family REAL(4)-stepwise
+    # (F:3297-3340) — f32 reciprocal, f32 squares/cubes, powf for b/m/d powers.
+    _F = _fc._f32
+    rslopermax = _F(1.0 / _F(lamdarmax))
+    rslopesmax = _F(1.0 / _F(lamdasmax))
+    rslopegmax = _F(1.0 / _F(LAMDAGMAX))
+    rslopeimax = _F(1.0 / _F(lamdaimax))
 
-    rsloperbmax = rslopermax**bvtr
-    rslopesbmax = rslopesmax**bvts
-    rslopeibmax = rslopeimax**bvti
+    rsloperbmax = _fc.powf(rslopermax, bvtr)
+    rslopesbmax = _fc.powf(rslopesmax, bvts)
+    rslopeibmax = _fc.powf(rslopeimax, bvti)
 
-    rslopermmax = _pow_or_one(rslopermax, mur)
-    rslopesmmax = _pow_or_one(rslopesmax, mus)
-    rslopegmmax = _pow_or_one(rslopegmax, mug)
-    rslopeimmax = _pow_or_one(rslopeimax, MUI)
+    rslopermmax = 1.0 if mur == 0.0 else _fc.powf(rslopermax, mur)
+    rslopesmmax = 1.0 if mus == 0.0 else _fc.powf(rslopesmax, mus)
+    rslopegmmax = 1.0 if mug == 0.0 else _fc.powf(rslopegmax, mug)
+    rslopeimmax = 1.0 if MUI == 0.0 else _fc.powf(rslopeimax, MUI)
 
-    rsloperdmax = rslopermax**DMR
-    rslopesdmax = rslopesmax**dms
-    rslopegdmax = rslopegmax**dmg
-    rslopeidmax = rslopeimax**DMI
+    rsloperdmax = _fc.powf(rslopermax, DMR)
+    rslopesdmax = _fc.powf(rslopesmax, dms)
+    rslopegdmax = _fc.powf(rslopegmax, dmg)
+    rslopeidmax = _fc.powf(rslopeimax, DMI)
 
-    rsloper2max = rslopermax * rslopermax
-    rslopes2max = rslopesmax * rslopesmax
-    rslopeg2max = rslopegmax * rslopegmax
-    rslopei2max = rslopeimax * rslopeimax
+    rsloper2max = _F(rslopermax * rslopermax)
+    rslopes2max = _F(rslopesmax * rslopesmax)
+    rslopeg2max = _F(rslopegmax * rslopegmax)
+    rslopei2max = _F(rslopeimax * rslopeimax)
 
-    rsloper3max = rsloper2max * rslopermax
-    rslopes3max = rslopes2max * rslopesmax
-    rslopeg3max = rslopeg2max * rslopegmax
-    rslopei3max = rslopei2max * rslopeimax
+    rsloper3max = _F(rsloper2max * rslopermax)
+    rslopes3max = _F(rslopes2max * rslopesmax)
+    rslopeg3max = _F(rslopeg2max * rslopegmax)
+    rslopei3max = _F(rslopei2max * rslopeimax)
 
     return SlopeParams(
         pidnr=pidnr,

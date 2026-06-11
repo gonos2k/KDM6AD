@@ -37,8 +37,10 @@ def test_default_thermo_params_xa_xb_consistency():
     dldt = p.cpv - p.cliq                          # Fortran cvap - cliq
     expected_xa = -dldt / p.rv                     # = (cliq - cpv)/rv > 0
     expected_xb = expected_xa + p.xlv0 / (p.rv * p.ttp)
-    assert math.isclose(p.xa, expected_xa, rel_tol=1e-12)
-    assert math.isclose(p.xb, expected_xb, rel_tol=1e-12)
+    # STEP-75 D-A: params now carry the gfortran REAL(4)-stepwise values (xai
+    # 0x3F0FF8E6 class) — agreement with the double formula is f32-level, not 1e-12.
+    assert math.isclose(p.xa, expected_xa, rel_tol=1e-6)
+    assert math.isclose(p.xb, expected_xb, rel_tol=1e-6)
     assert p.xa > 0, "Fortran xa must be positive (cliq > cpv)"
 
 

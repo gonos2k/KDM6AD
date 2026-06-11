@@ -56,14 +56,15 @@ State map_state(const State& s, const std::function<torch::Tensor(const torch::T
 //   B=1 (i=0,j=1): [1, 11, 21]
 //   B=2 (i=1,j=0): [100, 110, 120]
 //   B=3 (i=1,j=1): [101, 111, 121]
-static torch::Tensor from_blob_3d(const double* ptr, int im, int kme, int jme,
+static torch::Tensor from_blob_3d(const float* ptr, int im, int kme, int jme,
                                   bool requires_grad,
                                   bool nan_gate,
                                   bool clip_neg,
                                   bool is_th /*th는 clip_neg 면제*/) {
-    // [C4] non-owning view
-    auto opts = torch::TensorOptions().dtype(torch::kFloat64);
-    auto view3d = torch::from_blob(const_cast<double*>(ptr),
+    // [C4] non-owning view — NATIVE float32 operational ABI (matches Fortran RWORDSIZE=4);
+    // dtype propagates so the whole kdm6_fn forward runs single, like Fortran mp37.
+    auto opts = torch::TensorOptions().dtype(torch::kFloat32);
+    auto view3d = torch::from_blob(const_cast<float*>(ptr),
                                    {jme, kme, im},
                                    opts)
                       .permute({2, 1, 0})
@@ -109,10 +110,10 @@ State from_fortran_arrays(const FortranArrayDescriptor& d,
     return s;
 }
 
-Forcing forcing_from_fortran_arrays(const double* rho,
-                                    const double* pii,
-                                    const double* p,
-                                    const double* delz,
+Forcing forcing_from_fortran_arrays(const float* rho,
+                                    const float* pii,
+                                    const float* p,
+                                    const float* delz,
                                     int im,
                                     int kme,
                                     int jme) {
@@ -130,25 +131,26 @@ Forcing forcing_from_fortran_arrays(const double* rho,
 
 static void copy_back_to_fortran(const torch::Tensor& flat /*(B, K)*/,
                                  int im, int jme,
-                                 double* out /*(im, kme, jme)*/) {
+                                 float* out /*(im, kme, jme)*/) {
     auto K = flat.size(1);
     // Recover logical (im, kme, jme), then emit row-major (jme, kme, im)
     // so memcpy lands in the same byte order that Fortran uses for
-    // arr(im, kme, jme) column-major storage.
-    auto view3d = flat.detach()
+    // arr(im, kme, jme) column-major storage. NATIVE float32 (cast in case the
+    // tensor is fp64 from a differentiable path; operational path is already float32).
+    auto view3d = flat.detach().to(torch::kFloat32)
                       .reshape({im, jme, K})
                       .permute({0, 2, 1})
                       .permute({2, 1, 0})
                       .contiguous();
-    auto* src = view3d.data_ptr<double>();
-    std::memcpy(out, src, sizeof(double) * im * K * jme);
+    auto* src = view3d.data_ptr<float>();
+    std::memcpy(out, src, sizeof(float) * im * K * jme);
 }
 
 void to_fortran_arrays(const State& s, int im, int jme,
-                       double* th_out, double* qv_out, double* qc_out,
-                       double* qr_out, double* qi_out, double* qs_out,
-                       double* qg_out, double* nccn_out, double* nc_out,
-                       double* ni_out, double* nr_out, double* bg_out) {
+                       float* th_out, float* qv_out, float* qc_out,
+                       float* qr_out, float* qi_out, float* qs_out,
+                       float* qg_out, float* nccn_out, float* nc_out,
+                       float* ni_out, float* nr_out, float* bg_out) {
     copy_back_to_fortran(s.th,   im, jme, th_out);
     copy_back_to_fortran(s.qv,   im, jme, qv_out);
     copy_back_to_fortran(s.qc,   im, jme, qc_out);

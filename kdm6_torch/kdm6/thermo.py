@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import NamedTuple
 
 import torch
+from . import fconst as _fc
 
 from . import constants as c
 
@@ -73,14 +74,16 @@ def default_thermo_params() -> ThermoParams:
 
     # Goff-Gratch derivations — Fortran module_mp_kdm6.F:901-908. Note `cvap = cpv` so
     # dldt = cvap - cliq = cpv - cliq (NOT cliq-cpv). xa, xai are POSITIVE.
-    dldt = cpv - cliq
-    hvap = xlv0
-    xa = -dldt / rv                # = (cliq - cpv) / rv > 0
-    xb = xa + hvap / (rv * ttp)
-    dldti = cpv - cice
-    hsub = xls
-    xai = -dldti / rv              # = (cice - cpv) / rv > 0
-    xbi = xai + hsub / (rv * ttp)
+    # STEP-75 SEED mirror: gfortran evaluates these REAL(4) stepwise; the double
+    # value of xai demotes 1 ULP high (0x3F0FF8E7 vs Fortran 0x3F0FF8E6). Hold the
+    # f32-stepwise values (fconst pattern; mirrors C++ default_thermo_params).
+    cpv_f, cliq_f, cice_f, rv_f = _fc._f32(cpv), _fc._f32(cliq), _fc._f32(cice), _fc._f32(rv)
+    ttp_f, xlv0_f, xls_f = _fc._f32(ttp), _fc._f32(xlv0), _fc._f32(xls)
+    # f32 VARIABLES subtracted in f32 (1846.4f-2106.0f != f32(1846.4-2106.0)!)
+    xa = _fc._f32(-_fc._f32(cpv_f - cliq_f) / rv_f)
+    xb = _fc._f32(xa + _fc._f32(xlv0_f / _fc._f32(rv_f * ttp_f)))
+    xai = _fc._f32(-_fc._f32(cpv_f - cice_f) / rv_f)
+    xbi = _fc._f32(xai + _fc._f32(xls_f / _fc._f32(rv_f * ttp_f)))
 
     return ThermoParams(
         cpd=cpd, cpv=cpv, cliq=cliq, cice=cice,
@@ -186,9 +189,9 @@ def compute_supsat(q: torch.Tensor, qs1: torch.Tensor, *, params: ThermoParams) 
 
 
 def compute_denfac(den: torch.Tensor, *, params: ThermoParams) -> torch.Tensor:
-    """denfac = sqrt(den0/den)."""
+    """denfac = sqrt((1/den)*den0) — Fortran F:919-925 VREC->mul->VSQRT tree (step-72 class)."""
     den_safe = torch.clamp(den, min=params.qmin)
-    return torch.sqrt(torch.tensor(params.den0, dtype=den.dtype, device=den.device) / den_safe)
+    return torch.sqrt((1.0 / den_safe) * params.den0)
 
 
 def compute_work2_venfac(

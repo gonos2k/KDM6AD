@@ -1,6 +1,6 @@
 MODULE module_mp_kdm6ad
 
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_double, c_int, c_ptr
+  USE, INTRINSIC :: iso_c_binding, ONLY: c_double, c_float, c_int, c_ptr
   USE module_wrf_error
   USE kdm6_iso_c, ONLY: kdm6_step, kdm6_handle_close, KDM6_OK
 
@@ -64,20 +64,20 @@ CONTAINS
     TYPE(c_ptr) :: HANDLE
     REAL :: Z_SUM
 
-    REAL(c_double), ALLOCATABLE :: TH_IN(:,:,:), Q_IN(:,:,:), QC_IN(:,:,:), QR_IN(:,:,:)
-    REAL(c_double), ALLOCATABLE :: QI_IN(:,:,:), QS_IN(:,:,:), QG_IN(:,:,:)
-    REAL(c_double), ALLOCATABLE :: NN_IN(:,:,:), NC_IN(:,:,:), NI_IN(:,:,:), NR_IN(:,:,:), BG_IN(:,:,:)
-    REAL(c_double), ALLOCATABLE :: DEN_IN(:,:,:), PII_IN(:,:,:), P_IN(:,:,:), DELZ_IN(:,:,:)
-    REAL(c_double), ALLOCATABLE :: TH_OUT(:,:,:), Q_OUT(:,:,:), QC_OUT(:,:,:), QR_OUT(:,:,:)
-    REAL(c_double), ALLOCATABLE :: QI_OUT(:,:,:), QS_OUT(:,:,:), QG_OUT(:,:,:)
-    REAL(c_double), ALLOCATABLE :: NN_OUT(:,:,:), NC_OUT(:,:,:), NI_OUT(:,:,:), NR_OUT(:,:,:), BG_OUT(:,:,:)
+    REAL(c_float), ALLOCATABLE :: TH_IN(:,:,:), Q_IN(:,:,:), QC_IN(:,:,:), QR_IN(:,:,:)
+    REAL(c_float), ALLOCATABLE :: QI_IN(:,:,:), QS_IN(:,:,:), QG_IN(:,:,:)
+    REAL(c_float), ALLOCATABLE :: NN_IN(:,:,:), NC_IN(:,:,:), NI_IN(:,:,:), NR_IN(:,:,:), BG_IN(:,:,:)
+    REAL(c_float), ALLOCATABLE :: DEN_IN(:,:,:), PII_IN(:,:,:), P_IN(:,:,:), DELZ_IN(:,:,:)
+    REAL(c_float), ALLOCATABLE :: TH_OUT(:,:,:), Q_OUT(:,:,:), QC_OUT(:,:,:), QR_OUT(:,:,:)
+    REAL(c_float), ALLOCATABLE :: QI_OUT(:,:,:), QS_OUT(:,:,:), QG_OUT(:,:,:)
+    REAL(c_float), ALLOCATABLE :: NN_OUT(:,:,:), NC_OUT(:,:,:), NI_OUT(:,:,:), NR_OUT(:,:,:), BG_OUT(:,:,:)
     
     
-    REAL(c_double), ALLOCATABLE :: XLAND_IN(:,:)
+    REAL(c_float), ALLOCATABLE :: XLAND_IN(:,:)
     
     
     
-    REAL(c_double), ALLOCATABLE :: RAIN_INC(:,:), SNOW_INC(:,:), GRAUPEL_INC(:,:)
+    REAL(c_float), ALLOCATABLE :: RAIN_INC(:,:), SNOW_INC(:,:), GRAUPEL_INC(:,:)
     REAL :: TOTAL_INC, SOLID_INC
 
     IM = ITE - ITS + 1
@@ -125,22 +125,22 @@ CONTAINS
         KK = K - KTS + 1
         DO I = ITS, ITE
           II = I - ITS + 1
-          TH_IN(II, KK, JJ) = REAL(TH(I, K, J), c_double)
-          Q_IN(II, KK, JJ) = REAL(Q(I, K, J), c_double)
-          QC_IN(II, KK, JJ) = REAL(QC(I, K, J), c_double)
-          QR_IN(II, KK, JJ) = REAL(QR(I, K, J), c_double)
-          QI_IN(II, KK, JJ) = REAL(QI(I, K, J), c_double)
-          QS_IN(II, KK, JJ) = REAL(QS(I, K, J), c_double)
-          QG_IN(II, KK, JJ) = REAL(QG(I, K, J), c_double)
-          NN_IN(II, KK, JJ) = REAL(NN(I, K, J), c_double)
-          NC_IN(II, KK, JJ) = REAL(NC(I, K, J), c_double)
-          NI_IN(II, KK, JJ) = REAL(NI(I, K, J), c_double)
-          NR_IN(II, KK, JJ) = REAL(NR(I, K, J), c_double)
-          BG_IN(II, KK, JJ) = REAL(BG(I, K, J), c_double)
-          DEN_IN(II, KK, JJ) = REAL(DEN(I, K, J), c_double)
-          PII_IN(II, KK, JJ) = REAL(PII(I, K, J), c_double)
-          P_IN(II, KK, JJ) = REAL(P(I, K, J), c_double)
-          DELZ_IN(II, KK, JJ) = REAL(DELZ(I, K, J), c_double)
+          TH_IN(II, KK, JJ) = REAL(TH(I, K, J), c_float)
+          Q_IN(II, KK, JJ) = REAL(Q(I, K, J), c_float)
+          QC_IN(II, KK, JJ) = REAL(QC(I, K, J), c_float)
+          QR_IN(II, KK, JJ) = REAL(QR(I, K, J), c_float)
+          QI_IN(II, KK, JJ) = REAL(QI(I, K, J), c_float)
+          QS_IN(II, KK, JJ) = REAL(QS(I, K, J), c_float)
+          QG_IN(II, KK, JJ) = REAL(QG(I, K, J), c_float)
+          NN_IN(II, KK, JJ) = REAL(NN(I, K, J), c_float)
+          NC_IN(II, KK, JJ) = REAL(NC(I, K, J), c_float)
+          NI_IN(II, KK, JJ) = REAL(NI(I, K, J), c_float)
+          NR_IN(II, KK, JJ) = REAL(NR(I, K, J), c_float)
+          BG_IN(II, KK, JJ) = REAL(BG(I, K, J), c_float)
+          DEN_IN(II, KK, JJ) = REAL(DEN(I, K, J), c_float)
+          PII_IN(II, KK, JJ) = REAL(PII(I, K, J), c_float)
+          P_IN(II, KK, JJ) = REAL(P(I, K, J), c_float)
+          DELZ_IN(II, KK, JJ) = REAL(DELZ(I, K, J), c_float)
         END DO
       END DO
     END DO
@@ -151,7 +151,7 @@ CONTAINS
       JJ = J - JTS + 1
       DO I = ITS, ITE
         II = I - ITS + 1
-        XLAND_IN(II, JJ) = REAL(XLAND(I, J), c_double)
+        XLAND_IN(II, JJ) = REAL(XLAND(I, J), c_float)
       END DO
     END DO
 
