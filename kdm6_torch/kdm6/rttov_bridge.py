@@ -136,7 +136,10 @@ def dsd_diagnostics(state: State, forcing: Forcing,
     # effectRad_kdm6 (F:4117-4143): re = prefactor · rslope, then the scheme's
     # radiation clamps. Γ ratios are exact fp64 here (the Fortran init computes
     # them once via its f32 rgmma; the DA path is fp64 — documented deviation,
-    # constants only, ~1e-7 rel).
+    # constants only, ~1e-7 rel). If a fully f32-stepwise BITWISE bridge ever
+    # becomes a goal, swap these for the port's rgmma mirror (fconst/_RgmmaF32
+    # family) evaluated at f32 — the four prefactors are compile-time constants,
+    # so the change is local to this block.
     #   cloud: lamco = lamc·2·Γ(2/(μc+1)+1)/Γ(3/(μc+1)+1); re = 1/lamco
     #   ice:   lamio = lami·2·Γ(4+μi)/Γ(3+μi);            re = 1/lamio
     #   snow:  re = 0.5/lamdas
