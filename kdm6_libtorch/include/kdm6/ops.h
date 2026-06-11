@@ -43,6 +43,9 @@ torch::Tensor fma_acc(const torch::Tensor& acc, const torch::Tensor& t1,
                       const torch::Tensor& t2, double value = 1.0);
 torch::Tensor libm_exp(const torch::Tensor& x);
 torch::Tensor libm_log(const torch::Tensor& x);
+// Elementwise Fortran rgmma = EXP(GAMMLN(x)) (f32: fconst::rgmma_f per cell;
+// f64: exp(lgamma) — oracle semantics). Autograd: Gamma(x)*digamma(x).
+torch::Tensor rgmma_t(const torch::Tensor& x);
 
 torch::Tensor clip_positive(const torch::Tensor& x);
 

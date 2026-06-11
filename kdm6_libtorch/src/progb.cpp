@@ -43,7 +43,10 @@ torch::Tensor make_table(const std::array<double, 9>& values, const torch::Tenso
 torch::Tensor rgmma_tensor(const torch::Tensor& x) {
     // Fortran rgmma = Γ(x) (review6 audit fix; 이전 -torch::lgamma 부호 잘못).
     // (A) transcendental: rgmma = EXP(GAMMLN(x)) (F:3051) → libm exp for gfortran bit-match.
-    return ops::libm_exp(torch::lgamma(torch::clamp(x, /*min=*/constants::EPS)));
+    // STEP-final (Codex stop-review): the per-cell ProgB gamma must route through
+    // the Fortran GAMMLN mirror on the f32 path (torch::lgamma = Sleef lgammaf
+    // differs); ops::rgmma_t = elementwise fconst::rgmma_f (f64 path unchanged).
+    return ops::rgmma_t(torch::clamp(x, /*min=*/constants::EPS));
 }
 
 ProgBParams default_progb_params() {

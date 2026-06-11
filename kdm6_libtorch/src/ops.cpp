@@ -1,3 +1,4 @@
+#include "kdm6/fconst.h"
 #include "kdm6/ops.h"
 
 #include <c10/core/InferenceMode.h>
@@ -65,6 +66,21 @@ struct LibmExp : public torch::autograd::Function<LibmExp> {
         return {go[0] * ctx->get_saved_variables()[0].exp()};
     }
 };
+inline torch::Tensor rgmma_fwd(const torch::Tensor& x) {
+    // Fortran rgmma(x) = EXP(GAMMLN(x)) per CELL (ProgB per-cell gamma family):
+    // GAMMLN is the f32-return double-Lanczos (fconst::gammln_f) and EXP is expf.
+    // torch::lgamma f32 (Sleef lgammaf) differs from the Fortran GAMMLN mirror —
+    // route the f32 path through fconst::rgmma_f elementwise. f64 (oracle) path
+    // keeps exp(lgamma) — mirrors the Python oracle exactly.
+    if (x.scalar_type() == torch::kFloat32) {
+        auto xc = x.contiguous(); auto out = torch::empty_like(xc);
+        const float* xp = xc.data_ptr<float>(); float* op = out.data_ptr<float>();
+        const int64_t n = xc.numel();
+        for (int64_t i = 0; i < n; ++i) op[i] = fconst::rgmma_f(xp[i]);
+        return out;
+    }
+    return torch::exp(torch::lgamma(x));
+}
 struct LibmLog : public torch::autograd::Function<LibmLog> {
     static torch::Tensor forward(torch::autograd::AutogradContext* ctx, torch::Tensor x) {
         ctx->save_for_backward({x}); return log_fwd(x);
@@ -96,6 +112,19 @@ struct LibmPowTensor : public torch::autograd::Function<LibmPowTensor> {
     }
 };
 
+struct RgmmaT : public torch::autograd::Function<RgmmaT> {
+    static torch::Tensor forward(torch::autograd::AutogradContext* ctx, torch::Tensor x) {
+        auto out = rgmma_fwd(x);
+        ctx->save_for_backward({x, out});
+        return out;
+    }
+    static torch::autograd::tensor_list backward(torch::autograd::AutogradContext* ctx,
+                                                 torch::autograd::tensor_list go) {
+        auto saved = ctx->get_saved_variables();
+        // d/dx Gamma(x) = Gamma(x) * digamma(x)
+        return {go[0] * saved[1] * torch::digamma(saved[0])};
+    }
+};
 inline bool use_custom_autograd(const torch::Tensor& x) {
     return at::GradMode::is_enabled() && !c10::InferenceMode::is_enabled() && x.requires_grad();
 }
@@ -179,6 +208,10 @@ torch::Tensor fma_acc(const torch::Tensor& acc, const torch::Tensor& t1,
 
 torch::Tensor libm_log(const torch::Tensor& x) {
     return use_custom_autograd(x) ? LibmLog::apply(x) : log_fwd(x);
+}
+
+torch::Tensor rgmma_t(const torch::Tensor& x) {
+    return use_custom_autograd(x) ? RgmmaT::apply(x) : rgmma_fwd(x);
 }
 
 // [D1] 양수 분모 전용
