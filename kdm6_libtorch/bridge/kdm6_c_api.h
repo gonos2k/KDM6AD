@@ -80,6 +80,42 @@ int kdm6_step_c(
 );
 
 /**
+ * [DA §0.1.A] fp64 DA adjoint forward — kdm6_step_ad_c.
+ *
+ * The OPERATIONAL kdm6_step_c runs the native-f32 bitwise path; its gradients
+ * carry f32 precision and the f32 backward can NaN at inactive-ice corners.
+ * THIS entry runs the SAME physics at float64 with a gradient graph — the
+ * design-default DA path (kdm6ad+da.md §0.1.A). Use the returned handle with
+ * kdm6_handle_vjp_c / kdm6_handle_jvp_c for fp64 adjoints/tangents (the
+ * packed derivative buffers then carry true fp64 precision, finite at the
+ * ice corners).
+ *
+ * PACKED LAYOUT (identical to the VJP/JVP buffers — field-major sequences of
+ * FORTRAN (im,kme,jme) column-major double blocks):
+ *   state_in_packed / state_out_packed : 12 fields * im*kme*jme doubles,
+ *       field order th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg.
+ *   forcing_packed : 4 fields * im*kme*jme doubles, order rho,pii,p,delz.
+ * A Fortran caller declares REAL(8) :: x(im,kme,jme,12), f(im,kme,jme,4).
+ *
+ * value_only=0 → *handle is a live fp64 graph handle (close after use);
+ * value_only=1 → *handle = NULL (pure fp64 forward).
+ * xland: optional (im*jme,) or (im,jme) float array as in kdm6_step_c.
+ *
+ * NOTE: this entry does NOT touch the operational path — it is additive; the
+ * f32 kdm6_step_c remains bitwise-locked.
+ */
+int kdm6_step_ad_c(
+    const double* state_in_packed,
+    const double* forcing_packed,
+    int im, int kme, int jme, double dt,
+    int value_only,
+    double* state_out_packed,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea);
+
+/**
  * VJP — J^T @ u. 4D-Var adjoint 용.
  *
  * PACKED BUFFER LAYOUT (ABI contract — u_packed / grad_out_packed, and the

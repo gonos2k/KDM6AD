@@ -437,6 +437,96 @@ void test_c_abi_vjp_packed_layout_nontrivial_tile() {
     } END_TEST();
 }
 
+
+// ── [DA §0.1.A] fp64 DA adjoint forward via the C ABI ────────────────────────
+// THE motivation: the f32 graph's backward NaNs at inactive-ice corners (see
+// the f32 caveat in test_c_abi_vjp_jvp_roundtrip). The fp64 entry must give
+// (a) ALL-FINITE gradients on the same IC and (b) the adjoint identity at
+// fp64 tightness — neither holds on the f32 path.
+void test_c_abi_step_ad_fp64_vjp_finite_and_adjoint() {
+    TEST(test_c_abi_step_ad_fp64_vjp_finite_and_adjoint) {
+        const int im = 1, kme = 2, jme = 1;
+        const size_t NF = 12, BK = 2, N = NF * BK;
+
+        // same mixed-phase IC as the f32 roundtrip test (NaN corner: qi/nc/ni)
+        double st[N] = {
+            296.8, 282.4,        // th
+            1.40e-2, 2.0e-3,     // qv
+            1.0e-3, 5.0e-4,      // qc
+            1.0e-4, 1.0e-5,      // qr
+            0.0, 1.0e-6,         // qi
+            0.0, 5.0e-5,         // qs
+            0.0, 1.0e-5,         // qg
+            1.0e9, 1.0e9,        // nccn
+            1.0e8, 1.0e8,        // nc
+            0.0, 1.0e8,          // ni
+            1.0e4, 1.0e3,        // nr
+            0.0, 0.0,            // bg
+        };
+        double fz[4 * BK] = {
+            1.089, 0.9567,       // rho
+            0.9704, 0.9031,      // pii
+            9.0e4, 7.0e4,        // p
+            500.0, 500.0,        // delz
+        };
+        std::vector<double> out(N, -777.0);
+
+        kdm6_handle_t* handle = nullptr;
+        int rc = kdm6_step_ad_c(st, fz, im, kme, jme, /*dt=*/20.0,
+                                /*value_only=*/0, out.data(), &handle,
+                                nullptr, 0.0, 0.0);
+        assert(rc == KDM6_OK);
+        assert(handle != nullptr);
+        for (size_t i = 0; i < N; ++i) {
+            assert(out[i] != -777.0);
+            assert(std::isfinite(out[i]));
+        }
+
+        // u = the same deterministic covector as the f32 test
+        std::vector<double> u(N), g(N, 0.0);
+        for (size_t i = 0; i < N; ++i) u[i] = 1.0 + 0.25 * static_cast<double>(i % 7);
+        rc = kdm6_handle_vjp_c(handle, u.data(), g.data());
+        assert(rc == KDM6_OK);
+        bool any_nz = false;
+        for (size_t i = 0; i < N; ++i) {
+            assert(std::isfinite(g[i]));     // fp64: NO ice-corner NaN — the point
+            if (g[i] != 0.0) any_nz = true;
+        }
+        assert(any_nz);
+
+        // adjoint identity at fp64 tightness (the f32 test could not assert this)
+        std::vector<double> v(N), tan_out(N, 0.0);
+        for (size_t f = 0; f < NF; ++f) {
+            double scale = (f == 0) ? 1e-2 : (f >= 7 ? 1e4 : 1e-7);
+            for (size_t b = 0; b < BK; ++b)
+                v[f * BK + b] = scale * (0.5 + 0.1 * static_cast<double>((f + b) % 5));
+        }
+        rc = kdm6_handle_jvp_c(handle, v.data(), tan_out.data());
+        assert(rc == KDM6_OK);
+        double lhs = 0.0, rhs = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            assert(std::isfinite(tan_out[i]));
+            lhs += tan_out[i] * u[i];
+            rhs += v[i] * g[i];
+        }
+        const double denom = std::max(std::abs(lhs), std::abs(rhs));
+        assert(denom > 0.0);
+        assert(std::abs(lhs - rhs) / denom < 1e-12);
+
+        assert(kdm6_handle_close_c(handle) == KDM6_OK);
+
+        // value_only=1 → no handle, forward matches the graph forward bitwise
+        std::vector<double> out2(N, -777.0);
+        kdm6_handle_t* h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(st, fz, im, kme, jme, 20.0, /*value_only=*/1,
+                            out2.data(), &h2, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_OK);
+        assert(h2 == nullptr);
+        for (size_t i = 0; i < N; ++i)
+            assert(out2[i] == out[i]);   // fp64 forward-determinism through the ABI
+    } END_TEST();
+}
+
 int main() {
     std::cout << "kdm6_libtorch C ABI bridge tests\n";
     test_c_abi_step_runs_microphysics();
@@ -446,6 +536,7 @@ int main() {
     test_c_abi_vjp_jvp_roundtrip();
     test_c_abi_vjp_value_only_refused();
     test_c_abi_vjp_packed_layout_nontrivial_tile();
+    test_c_abi_step_ad_fp64_vjp_finite_and_adjoint();
     std::cout << "All C ABI tests passed.\n";
     return 0;
 }

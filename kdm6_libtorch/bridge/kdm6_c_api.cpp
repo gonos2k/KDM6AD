@@ -241,6 +241,93 @@ void pack_packed_state(const kdm6::State& s, double* packed,
 
 }  // namespace
 
+namespace {
+
+// forcing_packed (4 Fortran col-major double blocks: rho,pii,p,delz) → Forcing
+// tensors at the requested dtype, staged exactly like unpack_packed_state.
+kdm6::Forcing unpack_packed_forcing(const double* packed, int im, int kme, int jme,
+                                    c10::ScalarType dtype) {
+    const int64_t N = static_cast<int64_t>(im) * kme * jme;
+    auto opts = torch::TensorOptions().dtype(torch::kFloat64);
+    auto one = [&](int f) {
+        auto view3d = torch::from_blob(
+            const_cast<double*>(packed) + static_cast<int64_t>(f) * N,
+            {jme, kme, im}, opts)
+                          .permute({2, 1, 0});
+        return view3d.permute({0, 2, 1})
+            .reshape({static_cast<int64_t>(im) * jme, kme})
+            .clone().to(dtype);
+    };
+    kdm6::Forcing fc;
+    fc.rho = one(0); fc.pii = one(1); fc.p = one(2); fc.delz = one(3);
+    return fc;
+}
+
+}  // namespace
+
+extern "C" int kdm6_step_ad_c(
+    const double* state_in_packed,
+    const double* forcing_packed,
+    int im, int kme, int jme, double dt,
+    int value_only,
+    double* state_out_packed,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea) {
+    if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (any_null({state_in_packed, forcing_packed, state_out_packed,
+                  static_cast<const void*>(handle)})) {
+        return KDM6_ERR_NULL_POINTER;
+    }
+    ensure_libtorch_singlethread();
+    try {
+        // fp64 DA forward (design §0.1.A): same physics, float64 graph.
+        auto state_in = unpack_packed_state(state_in_packed, im, kme, jme,
+                                            c10::ScalarType::Double);
+        if (value_only == 0) {
+            auto sp = state_in.fields();
+            for (auto* p : sp) p->requires_grad_(true);
+        }
+        auto forcing = unpack_packed_forcing(forcing_packed, im, kme, jme,
+                                             c10::ScalarType::Double);
+        auto params = kdm6::make_parameters(0);
+
+        c10::optional<torch::Tensor> xland_t = c10::nullopt;
+        if (xland != nullptr) {
+            auto xopts = torch::TensorOptions().dtype(torch::kFloat32);
+            auto view2d = torch::from_blob(const_cast<float*>(xland),
+                                           {jme, im}, xopts)
+                              .permute({1, 0})
+                              .contiguous();
+            xland_t = view2d.reshape({im * jme});
+        }
+
+        auto result = kdm6::kdm6_step(state_in, forcing, params, dt,
+                                      value_only != 0, xland_t,
+                                      ncmin_land, ncmin_sea);
+        pack_packed_state(result.state_out, state_out_packed, im, kme, jme);
+
+        if (value_only != 0) {
+            *handle = nullptr;
+        } else {
+            auto* h = new kdm6_handle_t{};
+            h->impl = std::move(result.handle);
+            h->im = im; h->kme = kme; h->jme = jme;
+            h->dtype = c10::ScalarType::Double;   // fp64 DA graph
+            *handle = h;
+        }
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_step_ad_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) {
+        return KDM6_ERR_INTERNAL;
+    }
+}
+
 extern "C" int kdm6_handle_vjp_c(kdm6_handle_t* h,
                                   const double* u_packed,
                                   double* grad_out_packed) {
