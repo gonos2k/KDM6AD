@@ -65,6 +65,32 @@ module kdm6_iso_c
       integer(c_int)              :: rc
     end function kdm6_step_c
 
+    ! [DA] fp64 DA adjoint forward (kdm6ad+da.md 0.1.A): same physics at
+    ! float64 with a gradient graph. Packed layout = the derivative-buffer
+    ! convention: state REAL(8) x(im,kme,jme,12) field order th,qv,qc,qr,qi,
+    ! qs,qg,nccn,nc,ni,nr,bg; forcing REAL(8) f(im,kme,jme,4) order rho,pii,
+    ! p,delz. value_only=0 -> handle for kdm6_handle_vjp_c/jvp_c (true-fp64,
+    ! finite at the ice corners where the f32 graph NaNs); value_only=1 ->
+    ! handle = C_NULL_PTR. Additive: the operational f32 path is untouched.
+    function kdm6_step_ad_c( &
+        state_in_packed, forcing_packed, &
+        im, kme, jme, dt, value_only, &
+        state_out_packed, handle, &
+        xland, ncmin_land, ncmin_sea &
+      ) bind(C, name="kdm6_step_ad_c") result(rc)
+      import :: c_int, c_double, c_float, c_ptr
+      real(c_double), intent(in)  :: state_in_packed(*)
+      real(c_double), intent(in)  :: forcing_packed(*)
+      integer(c_int), value       :: im, kme, jme
+      real(c_double), value       :: dt
+      integer(c_int), value       :: value_only
+      real(c_double), intent(out) :: state_out_packed(*)
+      type(c_ptr), intent(out)    :: handle
+      real(c_float), intent(in)  :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      integer(c_int)              :: rc
+    end function kdm6_step_ad_c
+
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
       import :: c_int, c_double, c_float, c_ptr
