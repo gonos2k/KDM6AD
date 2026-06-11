@@ -26,7 +26,7 @@ module kdm6_iso_c
   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
 
-  public :: kdm6_step, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+  public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
 
   ! ── C ABI interfaces ───────────────────────────────────────────────────────
   interface
@@ -172,6 +172,30 @@ contains
       xland, real(ncmin_land, c_double), real(ncmin_sea, c_double), &
       rain_increment, snow_increment, graupel_increment)
   end function kdm6_step
+
+  ! [DA] fp64 DA adjoint forward — Fortran-friendly wrapper over kdm6_step_ad_c.
+  ! state(im,kme,jme,12) field order th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg;
+  ! forcing(im,kme,jme,4) order rho,pii,p,delz. value_only=0 -> live handle
+  ! for kdm6_handle_vjp/jvp (true-fp64 adjoints); value_only=1 -> C_NULL_PTR.
+  function kdm6_step_ad( &
+      state_in, forcing, &
+      im, kme, jme, dt, value_only, &
+      state_out, handle, &
+      xland, ncmin_land, ncmin_sea &
+    ) result(rc)
+    real(c_double), intent(in),  contiguous :: state_in(:,:,:,:)
+    real(c_double), intent(in),  contiguous :: forcing(:,:,:,:)
+    integer(c_int), intent(in)              :: im, kme, jme
+    real(c_double), intent(in)              :: dt
+    integer(c_int), intent(in)              :: value_only
+    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    type(c_ptr),    intent(out)             :: handle
+    real(c_float),  intent(in),  contiguous :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    integer(c_int)                          :: rc
+    rc = kdm6_step_ad_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                        state_out, handle, xland, ncmin_land, ncmin_sea)
+  end function kdm6_step_ad
 
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
