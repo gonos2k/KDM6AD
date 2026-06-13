@@ -4,7 +4,7 @@
 loss의 출력이 아니라 callback의 autograd가 만드는 cotangent다(§8 정정; runK는 seed 안 받음).
 관측·RTTOV 양쪽 quality==0 (profile, channel)만 metric/grad에 포함; bias correction은 residual 시점.
 
-solar(VIS/NIR 6채널)은 btrefl가 reflectance라 BT-residual 미정의 — IR 10채널 1차, solar 후속(§1.6).
+solar(VIS/NIR 6채널)은 btrefl가 reflectance라 BT-residual 미정의 — IR 10채널 1차, solar 후속(원칙 6).
 
 STUB — 미구현.
 """

@@ -2,7 +2,8 @@
 
 `pack_rttov_input`은 이미 RTTOV-unit인 torch 텐서를 RTTOV가 받는 numpy RttovInput으로 **직렬화만**
 한다(단위변환 없음 — 변환은 model_profile_builder에서 끝남). 강제 config(§4.6/§14.5):
-adk_bt=True, store_rad=True, GasUnits=2, MmrHydro=False, ClwdeParam/IcedeParam=user(Deff 입력).
+adk_bt=True, store_rad=True, GasUnits=2, MmrHydro=False; positive HydroDeff6/7 via setHydroDeffN
+(Deff 입력; gate=hydro_deff>0). 'user' enum 없음 — ClwdeParam/IcedeParam은 정수 기본값 유지.
 
 STUB — 미구현.
 """

@@ -75,7 +75,8 @@ class DsdDiagnostics(NamedTuple):
 
 
 class RttovCloudProfile(NamedTuple):
-    """RTTOV-SCATT-style cloud profile variables.
+    """RTTOV all-sky cloud profile variables (GK2A AMI = unified VIS/IR scatt --
+    NOT MW RTTOV-SCATT; design core-claim #6 / §9.1).
 
     Contents in [g/m^3] (RTTOV hydrotable convention), effective radii in
     [micron]. Category mapping (design §9.3 example):
@@ -182,7 +183,7 @@ def rttov_cloud_profile(state: State, forcing: Forcing,
                         xland: "torch.Tensor | None" = None,
                         ncmin_land: float = 0.0,
                         ncmin_sea: float = 0.0) -> RttovCloudProfile:
-    """Map the DSD diagnostics onto RTTOV-SCATT cloud profile variables.
+    """Map the DSD diagnostics onto RTTOV VIS/IR all-sky cloud profile variables.
 
     Pure tensor ops — the RTTOV-K adjoint composes with this operator's VJP
     via torch.autograd (chain: lambda_BT -> RTTOV-K -> lambda_profile ->
