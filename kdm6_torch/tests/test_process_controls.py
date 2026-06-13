@@ -49,7 +49,13 @@ def _run(controls=None, state=None):
 
 def test_controls_none_is_byte_identical():
     """controls=None AND all-None ProcessControls() must both be bitwise equal
-    to the no-kwarg call — zero added ops on the default path."""
+    to the no-kwarg call — zero added ops on the default path.
+
+    SCOPE NOTE (Codex review finding 4): this is a SAME-COMMIT comparison —
+    a regression that perturbed both paths identically would pass. The
+    cross-commit proof (output sha256 + autograd-graph node-count fingerprint
+    vs the pre-control baseline f58f253) was done once at introduction time;
+    this gate only pins controls=None ≡ no-kwarg from here on."""
     base = State(*(f.detach() for f in kdm6_fn(
         _mk_state(), _mk_forcing(), make_parameters(), DT)))
     for ctl in (None, ProcessControls()):

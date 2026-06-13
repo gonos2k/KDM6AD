@@ -173,6 +173,8 @@ contains
   ! state(im,kme,jme,12) field order th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg;
   ! forcing(im,kme,jme,4) order rho,pii,p,delz. value_only=0 -> live handle
   ! for kdm6_handle_vjp/jvp (true-fp64 adjoints); value_only=1 -> C_NULL_PTR.
+  ! xland is REQUIRED here (hosts always have XLAND); the C ABI's NULL-xland
+  ! default path is reachable from C callers only (Codex review finding 3).
   function kdm6_step_ad( &
       state_in, forcing, &
       im, kme, jme, dt, value_only, &

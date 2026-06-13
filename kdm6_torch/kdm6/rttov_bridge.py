@@ -63,7 +63,8 @@ class DsdDiagnostics(NamedTuple):
     # avedia_r doubles as the §9.3 "rain Dm" proxy (λ_nr carrier).
     avedia_c: torch.Tensor
     avedia_r: torch.Tensor
-    # graupel density proxy: rime-mass fraction brs/qg (λ_bg carrier, §9.3)
+    # graupel density proxy: rime-mass fraction brs/qg (λ_bg carrier, §9.3);
+    # 0 (with zero adjoint) where qg ≤ 1e-15 — inactive-graupel gate
     graupel_rime_frac: torch.Tensor
     # water contents rho·q [kg/m^3]
     wc_c: torch.Tensor
@@ -153,12 +154,24 @@ def dsd_diagnostics(state: State, forcing: Forcing,
                          min=10.01e-6, max=125.0e-6)
     reff_s = torch.clamp(0.5 * rslope_s, min=25.0e-6, max=999.0e-6)
 
+    # Rime fraction is meaningful only where graupel is ACTIVE. (qg→0, bg>0)
+    # is reachable at the DA boundary (bg is prognostic; analysis increments
+    # need not keep the qg/bg pair coupled) and the bare ratio would return
+    # ~bg/1e-15 garbage with an explosive ∂/∂bg = 1e15 adjoint. Gate to 0 with
+    # a zero adjoint — no graupel, no optical signal (Codex review finding 2).
+    # The clamp inside keeps the inactive branch finite, so torch.where's
+    # both-branch backward stays NaN-free (§30 Inf×0 class).
+    qg_active = state.qg > 1.0e-15
+    graupel_rime_frac = torch.where(
+        qg_active, state.bg / torch.clamp(state.qg, min=1.0e-15),
+        torch.zeros_like(state.qg))
+
     return DsdDiagnostics(
         rslope_c=rslope_c, rslope_r=rslope_r, rslope_s=rslope_s,
         rslope_g=rslope_g, rslope_i=rslope_i,
         reff_c=reff_c, reff_s=reff_s, reff_i=reff_i,
         avedia_c=pre.avedia_c, avedia_r=pre.avedia_r,
-        graupel_rime_frac=state.bg / torch.clamp(state.qg, min=1.0e-15),
+        graupel_rime_frac=graupel_rime_frac,
         wc_c=forcing.rho * state.qc, wc_r=forcing.rho * state.qr,
         wc_s=forcing.rho * state.qs, wc_g=forcing.rho * state.qg,
         wc_i=forcing.rho * state.qi,

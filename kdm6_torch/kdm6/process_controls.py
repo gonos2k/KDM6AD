@@ -101,20 +101,28 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     respect Fortran's own per-rate caps; exp(α)>1 can overdraw qc/nc, and the
     downstream final clamps would then CREATE mass (qc clipped at 0 while qi
     keeps the full transfer). So after scaling, renormalize the combined draw:
-        pinuc + pfrzdtc ≤ qc,   ninuc + nfrzdtc ≤ nc
-    (the rates here are per-substep AMOUNTS — the inline applier subtracts
+        pinuc + pfrzdtc ≤ max(qc, unscaled draw),
+        ninuc + nfrzdtc ≤ max(nc, unscaled draw)
+    (= the reservoir up to the ≲1-ULP rounding the baseline itself carries;
+    the rates here are per-substep AMOUNTS — the inline applier subtracts
     them directly). The renorm factor is differentiable (min via clamp)."""
     if controls is None or controls.alpha_freeze is None:
         return mf_d234
     scaled = _scale(mf_d234, ("pinuc", "ninuc", "pfrzdtc", "nfrzdtc"),
                     controls.alpha_freeze)
-    # BUDGET = max(reservoir, UNSCALED combined draw): Fortran's D2/D3 caps are
-    # INDEPENDENT (each ≤ qc), so the unscaled combined draw may legitimately
-    # exceed qc — the bitwise-validated baseline path must not be "corrected"
-    # by the control (adversarial review finding 1: a qc-only budget BINDS at
-    # α=0, breaking the α=0 value-identity by ULPs). The cap therefore only
-    # bounds the EXCESS the control itself introduces: at α=0 the ratio is
-    # budget/draw ≥ 1 → fac ≡ 1.0 exactly (clamp max=1.0, ×1.0 exact).
+    # BUDGET = max(reservoir, UNSCALED combined draw). Fortran's D2/D3 caps are
+    # SEQUENTIAL — pfrzdtc's cap reads qc AFTER the pinuc subtraction
+    # (module_mp_kdm6.F:1493 cap → :1504 subtract → :1519 cap), and the port
+    # mirrors this (coordinator.py qc_post_d2/nc_post_d2) — so the unscaled
+    # combined draw never exceeds the reservoir in REAL arithmetic. In FLOATING
+    # POINT, however, fl(qc − pinuc) can round UP, letting pinuc + pfrzdtc
+    # exceed qc by ≲1 ULP; a plain qc-only budget would BIND there at α=0
+    # (fac < 1), breaking the α=0 value-identity by ULPs (adversarial review
+    # finding 1). Taking max(reservoir, unscaled draw) bounds only the EXCESS
+    # the control itself introduces: at α=0 the ratio is budget/draw ≥ 1
+    # → fac ≡ 1.0 exactly (clamp max=1.0, ×1.0 exact), and at α>0 the scaled
+    # draw is capped at the baseline's own draw — no control-introduced mass
+    # creation (Codex adversarial review 2026-06-13, finding 1 adjudication).
     eps = 1.0e-30
     base_q = mf_d234.pinuc + mf_d234.pfrzdtc
     base_n = mf_d234.ninuc + mf_d234.nfrzdtc

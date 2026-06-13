@@ -223,17 +223,22 @@ def test_eta_control_grad_matches_full_graph():
     # full-graph reference with η leaves
     eta_leaves = [State(*(f.detach().clone().requires_grad_(True) for f in e))
                   for e in etas]
-    x = _mk_state(rg=True)
+    x0 = _mk_state(rg=True)
+    x = x0
     params = make_parameters()
     for t, f in enumerate(forcings):
         x = kdm6_fn(x, f, params, DT)
         x = State(*(a + b for a, b in zip(x, eta_leaves[t])))
     loss = state_dot(x, u_T)
-    all_leaves = tuple(_x for e in eta_leaves for _x in e)
+    all_leaves = tuple(x0) + tuple(_x for e in eta_leaves for _x in e)
     grads = torch.autograd.grad(loss, all_leaves, allow_unused=True,
                                 materialize_grads=True)
+    # adj_x0 must ALSO match — asserting only the control gradients could
+    # false-pass a broken initial-state adjoint (Codex review finding 5)
+    for name, a, b in zip(State._fields, res.adj_x0, grads[:12]):
+        assert torch.equal(a, b), f"adj_x0.{name} != full graph (eta path)"
     for t in range(T_STEPS):
-        ref_t = grads[t * 12:(t + 1) * 12]
+        ref_t = grads[12 + t * 12:12 + (t + 1) * 12]
         for name, a, b in zip(State._fields, res.grad_eta[t], ref_t):
             assert torch.equal(a, b), f"grad_eta[{t}].{name} != full graph"
 
@@ -367,17 +372,21 @@ def test_eta_pre_control_grad_matches_full_graph():
 
     eta_leaves = [State(*(f.detach().clone().requires_grad_(True) for f in e))
                   for e in etas]
-    x = _mk_state(rg=True)
+    x0 = _mk_state(rg=True)
+    x = x0
     params = make_parameters()
     for t, f in enumerate(forcings):
         x = State(*(a + b for a, b in zip(x, eta_leaves[t])))   # pre-increment
         x = kdm6_fn(x, f, params, DT)
     loss = state_dot(x, u_T)
-    all_leaves = tuple(_x for e in eta_leaves for _x in e)
+    all_leaves = tuple(x0) + tuple(_x for e in eta_leaves for _x in e)
     grads = torch.autograd.grad(loss, all_leaves, allow_unused=True,
                                 materialize_grads=True)
+    # adj_x0 must ALSO match (Codex review finding 5)
+    for name, a, b in zip(State._fields, res.adj_x0, grads[:12]):
+        assert torch.equal(a, b), f"adj_x0.{name} != full graph (eta_pre path)"
     for t in range(T_STEPS):
-        ref_t = grads[t * 12:(t + 1) * 12]
+        ref_t = grads[12 + t * 12:12 + (t + 1) * 12]
         for name, a, b in zip(State._fields, res.grad_eta_pre[t], ref_t):
             assert torch.equal(a, b), f"grad_eta_pre[{t}].{name} != full graph"
 
@@ -460,7 +469,8 @@ def test_eta_pre_with_intermediate_obs_matches_full_graph():
 
     eta_leaves = [State(*(f.detach().clone().requires_grad_(True) for f in e))
                   for e in etas]
-    x = _mk_state(rg=True)
+    x0 = _mk_state(rg=True)
+    x = x0
     params = make_parameters()
     loss = torch.zeros((), dtype=torch.float64)
     for t, f in enumerate(forcings):
@@ -469,10 +479,16 @@ def test_eta_pre_with_intermediate_obs_matches_full_graph():
         x = State(*(a + b for a, b in zip(x, eta_leaves[t])))
         x = kdm6_fn(x, f, params, DT)
     loss = loss + state_dot(x, obs[T_STEPS])
-    grads = torch.autograd.grad(loss, tuple(_x for e in eta_leaves for _x in e),
+    all_leaves = tuple(x0) + tuple(_x for e in eta_leaves for _x in e)
+    grads = torch.autograd.grad(loss, all_leaves,
                                 allow_unused=True, materialize_grads=True)
+    # adj_x0 must ALSO match (Codex review finding 5; the docstring promised
+    # it but the assertion was missing)
+    for name, a, b in zip(State._fields, res.adj_x0, grads[:12]):
+        assert torch.equal(a, b), \
+            f"adj_x0.{name} != full graph (eta_pre + intermediate obs)"
     for t in range(T_STEPS):
-        ref_t = grads[t * 12:(t + 1) * 12]
+        ref_t = grads[12 + t * 12:12 + (t + 1) * 12]
         for name, a, b in zip(State._fields, res.grad_eta_pre[t], ref_t):
             assert torch.equal(a, b), f"grad_eta_pre[{t}].{name} != full graph (intermediate obs)"
 

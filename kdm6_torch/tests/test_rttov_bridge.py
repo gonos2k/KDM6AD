@@ -99,6 +99,36 @@ def test_profile_carries_nr_and_bg_adjoints():
     assert (grads[1] != 0).any(), "λ_bg still zero — graupel density proxy not wired"
 
 
+def test_rime_frac_inactive_graupel_gate():
+    """(qg=0, bg>0) is reachable at the DA boundary — bg is prognostic and
+    analysis increments need not keep the qg/bg pair coupled. The bare ratio
+    bg/clamp(qg, 1e-15) returned ~1e9 garbage with an explosive
+    ∂/∂bg = 1e15 adjoint (Codex adversarial review 2026-06-13, finding 2);
+    the bridge must gate the frac to 0 with a ZERO adjoint where graupel is
+    inactive, and keep the plain ratio (bitwise) where it is active."""
+    state = _mk_state(rg=True)
+    state = state._replace(
+        qg=torch.tensor([[0.0, 5.0e-5]], dtype=torch.float64,
+                        requires_grad=True),
+        bg=torch.tensor([[1.0e-6, 2.0e-6]], dtype=torch.float64,
+                        requires_grad=True))
+    d = dsd_diagnostics(state, _mk_forcing())
+    # value: exactly 0 in the inactive cell, the plain ratio in the active one
+    frac = d.graupel_rime_frac.detach()
+    assert float(frac[0, 0]) == 0.0
+    assert torch.equal(frac[:, 1:],
+                       (state.bg[:, 1:] / state.qg[:, 1:]).detach())
+    assert float(frac.abs().max()) < 1.0, \
+        "bg/1e-15 garbage leaked through the inactive-graupel gate"
+    # adjoint: zero w.r.t. bg AND qg in the inactive cell, finite everywhere,
+    # nonzero in the active cell (the λ_bg carrier must survive the gate)
+    g_bg, g_qg = torch.autograd.grad(d.graupel_rime_frac.sum(),
+                                     (state.bg, state.qg))
+    assert float(g_bg[0, 0]) == 0.0 and float(g_qg[0, 0]) == 0.0
+    assert torch.isfinite(g_bg).all() and torch.isfinite(g_qg).all()
+    assert float(g_bg[0, 1]) != 0.0
+
+
 def test_bridge_autograd_flows():
     """Gradients flow from every profile variable back to the hydrometeor
     state leaves, finite, and hit the expected leaves (qc&nc for reff_liq)."""

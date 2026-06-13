@@ -100,6 +100,10 @@ int kdm6_step_c(
  * value_only=0 → *handle is a live fp64 graph handle (close after use);
  * value_only=1 → *handle = NULL (pure fp64 forward).
  * xland: optional (im*jme,) or (im,jme) float array as in kdm6_step_c.
+ *   The NULL/default-xland path is reachable from C callers ONLY: the public
+ *   Fortran wrapper kdm6_step_ad (kdm6_iso_c) takes xland as a REQUIRED
+ *   assumed-shape argument and always passes it — KIM/WRF hosts always have
+ *   XLAND, so no optional variant is provided (Codex review finding 3).
  *
  * NOTE: this entry does NOT touch the operational path — it is additive; the
  * f32 kdm6_step_c remains bitwise-locked.
