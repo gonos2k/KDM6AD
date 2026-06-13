@@ -95,11 +95,12 @@ def test_misaligned_window_rejects():
         build_obs_schedule(bad, [0.0], TOL)
 
 
-def test_open_window_allows_large_k():
-    """window_end_time=None leaves the upper bound open (only k>=0 enforced)."""
-    open_win = ObsWindowConfig(window_start_time=0.0, model_dt=100.0, window_end_time=None)
-    sched = build_obs_schedule(open_win, [5000.0], TOL)
-    assert sched.get(50) == [5000.0]
+def test_missing_window_end_rejected():
+    """No open/unbounded mode: window_end_time=None is rejected, else a k>T obs
+    would bind to a step da_window never visits and be silently dropped."""
+    no_end = ObsWindowConfig(window_start_time=0.0, model_dt=100.0, window_end_time=None)
+    with pytest.raises(ValueError, match="window_end_time is required"):
+        build_obs_schedule(no_end, [5000.0], TOL)
 
 
 # --- payload, batching, accessors ------------------------------------------
@@ -221,15 +222,17 @@ def test_non_finite_window_end_rejected():
 def test_tz_naive_datetime_rejected():
     """A tz-naive datetime silently uses host LOCAL tz -> reject loudly."""
     naive_start = datetime(2026, 1, 1, 0, 0, 0)  # no tzinfo
-    win = ObsWindowConfig(window_start_time=naive_start, model_dt=3600.0)
+    end = datetime(2026, 1, 1, 6, 0, 0, tzinfo=timezone.utc)
+    win = ObsWindowConfig(window_start_time=naive_start, model_dt=3600.0, window_end_time=end)
     with pytest.raises(ValueError, match="tz-aware UTC"):
         build_obs_schedule(win, [naive_start], TOL)
 
 
 def test_mixed_naive_aware_datetime_rejected():
-    """Mixing a naive window start with an aware obs time is the silent-misbind trap."""
+    """Mixing an aware window with a naive obs time is the silent-misbind trap."""
     aware_start = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
-    win = ObsWindowConfig(window_start_time=aware_start, model_dt=3600.0)
+    end = aware_start + timedelta(hours=6)
+    win = ObsWindowConfig(window_start_time=aware_start, model_dt=3600.0, window_end_time=end)
     naive_obs = datetime(2026, 1, 1, 2, 0, 0)  # no tzinfo
     with pytest.raises(ValueError, match="tz-aware UTC"):
         build_obs_schedule(win, [naive_obs], TOL)

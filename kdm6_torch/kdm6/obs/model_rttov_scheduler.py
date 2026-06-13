@@ -90,19 +90,18 @@ def _nearest_step(t_seconds: float, start_seconds: float, dt: float) -> int:
 class ObsWindowConfig(NamedTuple):
     """Assimilation-window timing (design 4.1). Times UTC; dt/tolerance seconds.
 
-    ``window_end_time`` may be ``None`` to leave the upper bound open (only
-    ``k >= 0`` is enforced); otherwise ``N = round((end - start) / model_dt)``
-    bounds the admissible step indices to ``[0, N]``. NOTE: in open mode the
-    upper bound is delegated to the caller -- ``da_window`` only calls
-    ``obs_adjoint(t, x_t)`` for ``t`` in ``[0, T]`` (T = len(forcings)), so an
-    obs bound to ``k > T`` would never be assimilated. To preserve
-    reject-don't-drop, a caller feeding ``da_window`` should pass a finite
-    ``window_end_time = window_start + T * model_dt`` so out-of-window
-    observations are rejected at build time.
+    ``window_end_time`` is REQUIRED: ``N = round((end - start) / model_dt)``
+    bounds the admissible step indices to ``[0, N]``. There is deliberately no
+    open/unbounded mode -- ``da_window`` only calls ``obs_adjoint(t, x_t)`` for
+    ``t`` in ``[0, T]`` (T = len(forcings)), so without a finite upper bound an
+    obs at ``k > T`` would be bound by the scheduler yet never assimilated,
+    silently dropping the observation (the exact reject-don't-drop violation
+    this scheduler exists to prevent). A caller feeding ``da_window`` passes
+    ``window_end_time = window_start + T * model_dt``.
     """
-    window_start_time: object              # numeric POSIX seconds or datetime (UTC)
-    model_dt: float                        # step-end interval [s], > 0
-    window_end_time: object | None = None  # numeric/datetime (UTC) or None (open)
+    window_start_time: object   # numeric POSIX seconds or datetime (UTC)
+    model_dt: float             # step-end interval [s], finite > 0
+    window_end_time: object     # numeric/datetime (UTC); required (no open mode)
 
 
 class ObsSchedule(NamedTuple):
@@ -132,8 +131,11 @@ def build_obs_schedule(window_cfg, obs_valid_times, obs_time_tolerance) -> ObsSc
                  precondition, and silently dropping an observation would be
                  silent data loss in the assimilation.
 
-    ``window_cfg`` is duck-typed: it must expose ``window_start_time`` and
-    ``model_dt`` (and optionally ``window_end_time``); ``ObsWindowConfig`` fits.
+    ``window_cfg`` is duck-typed: it must expose ``window_start_time``,
+    ``model_dt`` and a finite ``window_end_time``; ``ObsWindowConfig`` fits.
+    ``window_end_time`` is required (no open mode) so the upper bound ``N`` is
+    always known and an obs beyond the window is rejected at build time rather
+    than bound to a step ``da_window`` never visits (silent drop).
     ``obs_valid_times`` is an iterable of observation entries (see
     ``_obs_valid_time`` for accepted shapes). Returns an ``ObsSchedule`` whose
     ``by_step[k]`` is the list of entries bound to step ``k`` (several
@@ -152,16 +154,23 @@ def build_obs_schedule(window_cfg, obs_valid_times, obs_time_tolerance) -> ObsSc
             f"obs_time_tolerance must be a finite value >= 0 (got {tol})")
 
     end = getattr(window_cfg, "window_end_time", None)
-    n_steps: int | None = None
-    if end is not None:
-        end_s = _as_seconds(end)
-        span = end_s - start_s
-        n_steps = _nearest_step(end_s, start_s, dt)
-        if n_steps < 0 or abs(span - n_steps * dt) > tol:
-            raise ValueError(
-                "window is not an integer number of model_dt steps "
-                f"(span={span}, model_dt={dt}, tol={tol}); "
-                "obs cannot bind to a checkpoint boundary (design 2.2).")
+    if end is None:
+        # No open/unbounded mode: without a finite upper bound, an obs at k > T
+        # would bind here yet never be visited by da_window's obs_adjoint loop
+        # (t in [0, T]) -> silent drop. Require the bound so it is rejected now.
+        raise ValueError(
+            "window_end_time is required (no open window): without a finite "
+            "upper bound, observations beyond the last model step would be "
+            "silently dropped (da_window only calls obs_adjoint for t in [0, T]). "
+            "Pass window_end_time = window_start + T * model_dt.")
+    end_s = _as_seconds(end)
+    span = end_s - start_s
+    n_steps = _nearest_step(end_s, start_s, dt)
+    if n_steps < 0 or abs(span - n_steps * dt) > tol:
+        raise ValueError(
+            "window is not an integer number of model_dt steps "
+            f"(span={span}, model_dt={dt}, tol={tol}); "
+            "obs cannot bind to a checkpoint boundary (design 2.2).")
 
     by_step: dict = {}
     for entry in obs_valid_times:
@@ -174,7 +183,7 @@ def build_obs_schedule(window_cfg, obs_valid_times, obs_time_tolerance) -> ObsSc
                 f"step boundary within tolerance (t_obs={t_obs_s}, nearest "
                 f"t_k={t_k}, |delta|={abs(t_obs_s - t_k)} > tol={tol}); "
                 "model_dt must integer-divide the obs cadence (design 2.2).")
-        if k < 0 or (n_steps is not None and k > n_steps):
+        if k < 0 or k > n_steps:
             raise ValueError(
                 f"observation step index k={k} is outside the window "
                 f"[0, {n_steps}] (t_obs={t_obs_s}).")
