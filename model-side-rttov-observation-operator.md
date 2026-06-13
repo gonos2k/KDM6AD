@@ -437,15 +437,16 @@ obs_adjoint_callback(t, x_t) -> lambda_state | None      # da_window 의 obs_adj
 
 ```text
 def obs_adjoint_callback(t, x_t):
-    obs = schedule.get(t)            # t 가 정합된 step이 아니면 None
-    if obs is None:
+    obs_list = schedule.get(t)       # 정합된 step의 obs footprint LIST(§4.1), 아니면 None
+    if not obs_list:                 # None 또는 빈 list
         return None                  # 관측 없는 step → window는 순수 VJP만
+    # ★ 한 step에 footprint 여러 개 가능 → compute_obs_loss를 list에 대해 합산(아래 J).
     leaves    = fresh_requires_grad_leaves(x_t)         # detached checkpoint → fresh fp64 leaves
     # ★ apply 이전 변환은 전부 순수-torch (leaves→RTTOV-unit). 한 단계라도 numpy면 grad 끊김(§14.3).
     rttov_tensors = model_to_rttov_tensors(leaves, forcing, cfg,   # extract+단위+reff→Deff+보간W
                                            xland, ncmin_land, ncmin_sea)  # cloud는 rttov_cloud_profile 경유
     BT_hat    = RttovObsOp.apply(*rttov_tensors)        # forward: runK 1회(BT+K 캐시), 단위변환 없음
-    J         = compute_obs_loss(BT_hat, obs, masks, sigma)   # scalar (λ_BT는 autograd가 생성)
+    J         = sum(compute_obs_loss(BT_hat, o, masks, sigma) for o in obs_list)  # footprint합산; scalar(λ_BT는 autograd가 생성)
     # leaves는 State(12 텐서) → grad inputs는 tuple(leaves)로 풀어 넘긴다(State 자체는 grad 입력 불가).
     # ★ materialize_grads 금지: 그건 '합법적 0'(nccn)과 '끊긴 필수 경로'(λ_nc 등)를 둘 다 0으로
     #   덮어 버그를 숨긴다(Codex stop-review). 대신 declared-zero만 0, 필수 None은 loud-fail.
