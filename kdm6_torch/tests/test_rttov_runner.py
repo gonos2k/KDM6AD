@@ -106,7 +106,14 @@ def test_run_rttov_k_missing_script_raises(tmp_path):
     """run_rttov_k requires a prepared case (run.sh); absence is a loud error,
     not a silent no-op. (Exercises the out-of-process entry without live RTTOV.)"""
     with pytest.raises(FileNotFoundError, match="run script not found"):
-        run_rttov_k(tmp_path, nchannels=AMI_NCHANNELS)
+        run_rttov_k(tmp_path, nchannels=AMI_NCHANNELS, expected_nprofiles=6)
+
+
+def test_run_rttov_k_requires_expected_nprofiles(tmp_path):
+    """expected_nprofiles is required (no silent-truncation opt-out): omitting it
+    is a TypeError, not a run with the guard disabled."""
+    with pytest.raises(TypeError):
+        run_rttov_k(tmp_path, nchannels=AMI_NCHANNELS)  # missing expected_nprofiles
 
 
 # --- review fixes: truncation / empty-L / P_HALF / freshness -----------------
@@ -179,4 +186,4 @@ def test_run_rttov_k_clean_exit_without_output_raises(tmp_path):
     (k / "profiles_k.txt").write_text("PROFILES_K(   1)%T = (\n 1\n)\n")     # stale
     (tmp_path / "run.sh").write_text("#!/bin/sh\nexit 0\n")                  # writes nothing
     with pytest.raises(RuntimeError, match="did not write"):
-        run_rttov_k(tmp_path, nchannels=2)
+        run_rttov_k(tmp_path, nchannels=2, expected_nprofiles=1)

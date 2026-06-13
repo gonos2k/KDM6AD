@@ -262,7 +262,7 @@ def _run_case_fresh(script, targets, timeout):
                 "stale output was cleared; clean exit != valid output).")
 
 
-def run_rttov_k(case_dir, *, nchannels, expected_nprofiles=None,
+def run_rttov_k(case_dir, *, nchannels, expected_nprofiles,
                 run_script="run.sh", timeout=None):
     """Out-of-process single runK -> RttovKOutput (BT + K).
 
@@ -271,7 +271,11 @@ def run_rttov_k(case_dir, *, nchannels, expected_nprofiles=None,
     libtorch; the child env hard-sets the OMP fence) after clearing the outputs
     to be parsed (freshness gate), then parses ``k/radiance.txt`` +
     ``k/profiles_k.txt``. Raises on non-zero exit, on un-refreshed output, and on
-    a profile count != ``expected_nprofiles`` (no silent failure).
+    a profile count != ``expected_nprofiles``.
+
+    ``expected_nprofiles`` is REQUIRED (no default): the caller packed the input
+    and knows how many profiles RTTOV was asked to compute, so making it optional
+    would re-open the silent-truncation hole this guard exists to close.
     """
     script = _resolve_run_script(case_dir, run_script)
     out_k = script.parent / "k"
@@ -280,11 +284,12 @@ def run_rttov_k(case_dir, *, nchannels, expected_nprofiles=None,
                               expected_nprofiles=expected_nprofiles)
 
 
-def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles=None,
+def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles,
                      run_script="run.sh", timeout=None):
     """(Diagnostic, value-only -- NOT the adjoint path, design 7.) Out-of-process
     direct run -> BT from ``direct/radiance.txt``. Normally a single ``run_rttov_k``
-    supplies BT too; use this only for a value-only smoke."""
+    supplies BT too; use this only for a value-only smoke. ``expected_nprofiles``
+    is REQUIRED (no silent-truncation opt-out)."""
     script = _resolve_run_script(case_dir, run_script)
     target = script.parent / "direct" / "radiance.txt"
     _run_case_fresh(script, [target], timeout)
