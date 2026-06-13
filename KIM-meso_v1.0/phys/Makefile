@@ -304,6 +304,11 @@ module_mp_kdm6.o :
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.G  > $*.bb
 	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
 	$(RM) $*.G $*.bb
+	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
+          echo COMPILING $*.F for 4DVAR ; \
+          $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
+          mv $*.f90.tmp $*.f90 ; \
+        fi
 	$(FC) -o $@ -c $(FCFLAGS) -ffp-contract=off $(OMP) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
 
 module_mp_kdm6ad.o : module_mp_kdm6ad.F
@@ -314,6 +319,11 @@ module_mp_kdm6ad.o :
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.G  > $*.bb
 	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
 	$(RM) $*.G $*.bb
+	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
+          echo COMPILING $*.F for 4DVAR ; \
+          $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
+          mv $*.f90.tmp $*.f90 ; \
+        fi
 	$(FC) -o $@ -c $(FCFLAGS) -ffp-contract=off $(OMP) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
 
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
