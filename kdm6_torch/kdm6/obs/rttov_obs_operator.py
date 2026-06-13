@@ -132,21 +132,24 @@ def assemble_obs_covector(leaves: State, grads, *, connected_fields=CLEAR_SKY_CO
 
 
 def _build_mask(obs, rad_quality):
-    """Combined detached 0/1 mask (design 8): obs_quality_ok AND rad_quality==0.
+    """Combined detached 0/1 keep-mask (design 8): keep (profile, channel) iff
+    ``obs_quality == 0`` AND ``rad_quality == 0``.
 
-    ``obs`` may carry ``obs_quality`` (0/1, 1=usable; default all-usable) and/or a
-    pre-built ``channel_gate``. ``rad_quality`` (from RttovObsOp, detached) gates
-    out RTTOV-flagged channels so they contribute exactly 0 to J_obs and λ_BT.
+    ``obs_quality`` and ``rad_quality`` are QUALITY FLAGS, not keep-masks: 0 means
+    usable, nonzero means flagged/clipped (the RTTOV/obs convention, design 8 --
+    "BOTH quality == 0 enter"). They are gated identically (== 0) so a real obs
+    quality flag (0=good) is honored, not inverted. ``channel_gate`` (optional) is
+    a genuine keep-condition (1=keep, e.g. IR-only / cloud regime) and multiplies
+    directly. ``obs`` may omit ``obs_quality`` (default: all usable).
     """
-    rad_ok = (rad_quality == 0).to(rad_quality.dtype if rad_quality.is_floating_point()
-                                   else torch.float64)
-    mask = rad_ok
+    dt = torch.float64
+    mask = (rad_quality == 0).to(dt)
     oq = obs.get("obs_quality")
     if oq is not None:
-        mask = mask * torch.as_tensor(oq, dtype=mask.dtype, device=mask.device)
-    cg = obs.get("channel_gate")
+        mask = mask * (torch.as_tensor(oq, device=mask.device) == 0).to(dt)
+    cg = obs.get("channel_gate")     # keep-condition (1=keep), NOT a quality flag
     if cg is not None:
-        mask = mask * torch.as_tensor(cg, dtype=mask.dtype, device=mask.device)
+        mask = mask * torch.as_tensor(cg, dtype=dt, device=mask.device)
     return mask.detach()
 
 

@@ -104,7 +104,7 @@ def _obs_target():
     """obs BT near the base forward so the residual sits in the smooth Huber region."""
     base = model_to_rttov_tensors(_leaves(), _forcing(), _profile_cfg())
     bt = _mock_bt_torch(base).detach()
-    return {"bt": (bt - 2.0), "obs_quality": torch.ones(1, NCH, dtype=F64)}
+    return {"bt": (bt - 2.0), "obs_quality": torch.zeros(1, NCH, dtype=F64)}
 
 
 # --- ACCEPTANCE GATE: end-to-end grad anchor (J_obs -> leaves) ---------------
@@ -262,6 +262,23 @@ def test_transposed_k_shape_guard_raises():
         bt.sum().backward()
 
 
+def test_obs_quality_is_a_flag_zero_means_usable():
+    """obs_quality follows the QUALITY convention (0=usable, nonzero=flagged), NOT a
+    1=keep mask (design 8: 'quality==0 enter'). Flagging a channel (nonzero) drops
+    it; the zero-quality channels are kept -> gradient shrinks but stays nonzero."""
+    o = {**_obs_target(), "bt": _obs_target()["bt"] + 30.0}
+    o_good = {**o, "obs_quality": torch.zeros(1, NCH, dtype=F64)}   # all usable
+    oq_flag = torch.zeros(1, NCH, dtype=F64); oq_flag[0, 1] = 5.0   # flag channel 1
+    o_flag = {**o, "obs_quality": oq_flag}
+    cov_good = obs_adjoint_callback(0, _leaves(), schedule=ObsSchedule(by_step={0: [o_good]}),
+                                    cfg=_cfg(), forcings=[_forcing()], run_k=_mock_run_k)
+    cov_flag = obs_adjoint_callback(0, _leaves(), schedule=ObsSchedule(by_step={0: [o_flag]}),
+                                    cfg=_cfg(), forcings=[_forcing()], run_k=_mock_run_k)
+    # one channel flagged -> strictly less gradient, but still nonzero (others kept).
+    # (an inverted convention would instead KEEP only the flagged channel.)
+    assert 0.0 < float(cov_flag.th.abs().sum()) < float(cov_good.th.abs().sum())
+
+
 def test_all_obs_clipped_warns():
     """Every channel rad_quality-flagged -> J=0/grad=0 but warn (not silent)."""
     def run_k_all_clip(rin):
@@ -323,7 +340,7 @@ def _mock_run_k_2d(rin):
 def test_rank_adapter_2d_covector():
     """obs_adjoint_callback on a 2-D [1,nlev] state (as da_window passes) returns a
     2-D covector with th/qv nonzero and cloud zero -- the 1-D/2-D rank seam."""
-    o = {"bt": torch.zeros(1, _NCH2, dtype=F64), "obs_quality": torch.ones(1, _NCH2, dtype=F64)}
+    o = {"bt": torch.zeros(1, _NCH2, dtype=F64), "obs_quality": torch.zeros(1, _NCH2, dtype=F64)}
     cov = obs_adjoint_callback(0, _state_2d(), schedule=ObsSchedule(by_step={0: [o]}),
                                cfg=_cfg_2d(), forcings=[_forcing_2d_asc()], run_k=_mock_run_k_2d)
     assert cov.th.shape == (1, 2) and cov.qv.shape == (1, 2)   # covector keeps 2-D rank
@@ -336,7 +353,7 @@ def test_integration_da_window_end_to_end():
     """run_da_window with a 2-D state + obs_adjoint_callback completes (rank seam +
     da_window integration) and yields a finite, correctly-shaped adj_x0 with the
     obs signal on th/qv -- the integrated 4D-Var window gate (review #4)."""
-    o = {"bt": torch.zeros(1, _NCH2, dtype=F64), "obs_quality": torch.ones(1, _NCH2, dtype=F64)}
+    o = {"bt": torch.zeros(1, _NCH2, dtype=F64), "obs_quality": torch.zeros(1, _NCH2, dtype=F64)}
     forcings = [_forcing_2d_asc()]
     obs_adjoint = functools.partial(
         obs_adjoint_callback, schedule=ObsSchedule(by_step={0: [o]}),
