@@ -45,6 +45,24 @@ def _child_env() -> dict:
     return {**os.environ, **_OMP_FENCE}
 
 
+# RTTOV/Fortran non-finite markers the float regex (rttov_ascii._FLOAT_RE) does
+# NOT match and therefore silently DROPS -- turning a bad value into a shorter
+# field instead of a caught error (a uniform drop stays rectangular and passes
+# the ragged + isfinite checks). Scan the raw text and reject so a NaN/Inf/
+# overflow value can never be silently swallowed. (math.isfinite alone only
+# catches regex-matchable infinities, e.g. a huge exponent like 1.0E+400.)
+_NONFINITE_RE = re.compile(r"(?i)(?<![\w.])(nan|[+-]?inf(?:inity)?)(?![\w.])|\*{3,}")
+
+
+def _assert_finite_ascii(path):
+    m = _NONFINITE_RE.search(Path(path).read_text())
+    if m:
+        raise ValueError(
+            f"{path}: non-finite marker {m.group(0)!r} in RTTOV output "
+            "(NaN/Inf/overflow); the float parser would drop it and silently "
+            "shorten a field -- rejecting instead.")
+
+
 def ad_rttov_home() -> Path:
     """Resolve AD_RTTOV_HOME (env override; default per design 14.1)."""
     return Path(os.environ.get("AD_RTTOV_HOME", _DEFAULT_AD_RTTOV_HOME))
@@ -93,10 +111,13 @@ def parse_rttov_radiance(path, *, nchannels, expected_nprofiles=None):
     space; IR carry the brightness temperature). ``expected_nprofiles`` (known at
     the run boundary) is verified to catch a uniformly-truncated output that would
     otherwise parse as a smaller-but-valid case."""
+    _assert_finite_ascii(path)  # reject NaN/Inf/overflow tokens before they drop
     blocks = parse_rttov_ascii_blocks(path)
     if "RADIANCE%BT" not in blocks:
         raise ValueError(f"{path}: no RADIANCE%BT block (need store_rad/adk_bt).")
     bt_flat = blocks["RADIANCE%BT"]
+    if any(not math.isfinite(v) for v in bt_flat):
+        raise ValueError(f"{path}: RADIANCE%BT has non-finite values.")
     nprofiles = _infer_nprofiles(len(bt_flat), nchannels, "RADIANCE%BT")
     if expected_nprofiles is not None and nprofiles != expected_nprofiles:
         raise ValueError(
@@ -134,6 +155,7 @@ def parse_rttov_profiles_k(path, *, nchannels, expected_nprofiles=None):
     uniformly-truncated output that would parse as a smaller-but-valid case.
     Empty/non-finite fields and a P_HALF/T level/layer mismatch are rejected.
     """
+    _assert_finite_ascii(path)  # reject NaN/Inf/overflow tokens before they drop
     blocks = parse_rttov_ascii_blocks(path)
     by_field: dict = {}            # field -> {chanprof_idx: values}
     for key, values in blocks.items():

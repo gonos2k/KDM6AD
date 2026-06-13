@@ -134,10 +134,29 @@ def test_empty_k_field_raises(tmp_path):
 def test_non_finite_k_field_raises(tmp_path):
     f = tmp_path / "profiles_k.txt"
     f.write_text("PROFILES_K(   1)%T = (\n 1.0 NaN\n)\nPROFILES_K(   2)%T = (\n 3.0 4.0\n)\n")
-    # NaN tokens are dropped by the float regex -> ragged rows (a finiteness-class
-    # failure surfaced loudly, never a silently-shorter Jacobian).
-    with pytest.raises(ValueError, match="ragged rows|non-finite"):
+    with pytest.raises(ValueError, match="non-finite marker"):
         parse_rttov_profiles_k(f, nchannels=2)
+
+
+def test_uniform_nan_drop_in_k_rejected(tmp_path):
+    """The real hole: a NaN at the SAME position in every row would drop
+    uniformly -> rectangular-but-shorter K, passing ragged + isfinite. The raw
+    non-finite token scan must reject it (Codex stop-review)."""
+    f = tmp_path / "profiles_k.txt"
+    f.write_text(
+        "PROFILES_K(   1)%T = (\n 1.0 NaN 3.0\n)\n"
+        "PROFILES_K(   2)%T = (\n 4.0 NaN 6.0\n)\n")  # uniform NaN column
+    with pytest.raises(ValueError, match="non-finite marker"):
+        parse_rttov_profiles_k(f, nchannels=2)
+
+
+def test_bt_huge_exponent_inf_rejected(tmp_path):
+    """A regex-matchable infinity (huge exponent) parses to inf and is caught by
+    the math.isfinite check (the token scan does not see an 'inf' token here)."""
+    f = tmp_path / "radiance.txt"
+    f.write_text("RADIANCE%BT = (\n 1.0E+400 2.0\n)\n" + _QUAL2)
+    with pytest.raises(ValueError, match="RADIANCE%BT has non-finite"):
+        parse_rttov_radiance(f, nchannels=2)
 
 
 def test_phalf_layer_mismatch_raises(tmp_path):
