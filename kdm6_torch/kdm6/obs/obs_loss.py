@@ -1,17 +1,44 @@
-"""P? — 관측공간 loss (설계 §8; 수학 kdm6ad+da.md §4/§9.1).
+"""P6 -- observation-space loss (design 8; math kdm6ad+da.md §4/§9.1).
 
-`compute_obs_loss`는 **torch scalar J_obs**를 반환한다(BT_hat에 미분가능). λ_BT = ∂J_obs/∂BT_hat은
-loss의 출력이 아니라 callback의 autograd가 만드는 cotangent다(§8 정정; runK는 seed 안 받음).
-관측·RTTOV 양쪽 quality==0 (profile, channel)만 metric/grad에 포함; bias correction은 residual 시점.
+`compute_obs_loss` returns a **torch scalar J_obs**, differentiable in ``bt_hat``.
+λ_BT = ∂J_obs/∂bt_hat is NOT an output — it is the autograd cotangent the callback
+produces and feeds to `RttovObsOp.backward` (design 8; runK takes no seed).
 
-solar(VIS/NIR 6채널)은 btrefl가 reflectance라 BT-residual 미정의 — IR 10채널 1차, solar 후속(원칙 6).
+Masking (design 8): only (profile, channel) with BOTH obs-quality and RTTOV
+rad_quality == 0 enter the metric/gradient. The caller passes the combined
+DETACHED 0/1 ``masks`` (obs_quality & rad_quality==0 & channel-gate); a clipped
+cloudy radiance (rad_quality≠0) thus contributes exactly 0 to J_obs and λ_BT.
+Bias correction is a detached static (or VarBC-frozen) per-channel offset applied
+at residual definition, so ∂J/∂state is unaffected.
 
-STUB — 미구현.
+solar (VIS/NIR 6 channels) BT is reflectance, BT-residual undefined — IR 10
+channels first, solar later (principle 6); the caller masks solar out.
 """
 from __future__ import annotations
 
+import torch
 
-def compute_obs_loss(bt_hat, obs, masks, sigma):
-    """BT residual + Huber ψ_δ + (cloud/phase) loss → **torch scalar J_obs**.
-    (λ_BT는 반환하지 않는다 — autograd cotangent. §8.)"""
-    raise NotImplementedError("obs loss — 설계 §8, kdm6ad+da.md §4/§9.1")
+
+def _huber(x: torch.Tensor, delta: float) -> torch.Tensor:
+    """Huber ψ_δ: quadratic within ±δ, linear outside (robust to outliers)."""
+    ax = x.abs()
+    return torch.where(ax <= delta, 0.5 * x * x, delta * (ax - 0.5 * delta))
+
+
+def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
+    """Masked Huber BT-residual loss -> torch scalar J_obs (differentiable in bt_hat).
+
+    ``bt_hat`` [nprofiles, nchannels] (torch); ``obs`` dict with ``bt`` (same
+    shape) and optional detached ``bias``; ``masks`` detached 0/1 [nprofiles,
+    nchannels]; ``sigma`` obs error (scalar or per-channel). Returns
+    ``Σ_{p,c} m·ψ_δ((bt_hat − (bt_obs+bias))/σ)``. ``bias``/``masks``/``sigma`` are
+    detached/constant so λ_BT = ∂J/∂bt_hat = m·ψ_δ'(r)/σ is unaffected by them.
+    """
+    bt_obs = torch.as_tensor(obs["bt"], dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    bias = obs.get("bias")
+    if bias is not None:
+        bt_obs = bt_obs + torch.as_tensor(bias, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    m = torch.as_tensor(masks, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    sig = torch.as_tensor(sigma, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    r = (bt_hat - bt_obs) / torch.clamp(sig, min=1.0e-12)
+    return (m * _huber(r, delta)).sum()
