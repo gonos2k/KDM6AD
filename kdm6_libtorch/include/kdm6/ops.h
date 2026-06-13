@@ -37,8 +37,12 @@ torch::Tensor safe_pow(const torch::Tensor& x, const torch::Tensor& y);
 
 // libm exp/log (float32 forward bit-matches gfortran libm; float64 -> torch native).
 // Graph-preserving (custom autograd Function with analytic backward), InferenceMode-safe.
-// Guaranteed single-rounding FMA: acc + value*t1*t2 (drop-in for torch::addcmul,
-// which is NOT reliably fused: SIMD body = two roundings, scalar tail = fused).
+// Strict-IEEE two-rounding accumulate: acc + value*t1*t2, every op individually
+// rounded in gfortran source order ((value*t1) -> *t2 -> +acc; exact for value=+-1).
+// HISTORY: until the IEEE transition this emitted a guaranteed single-rounding
+// std::fmaf to mirror gfortran -ffp-contract=fast; both mp modules now compile
+// with -ffp-contract=off (configure.wrf per-file rules), so two-rounding is the
+// bitwise-correct form. Plain tensor ops — autograd-native.
 torch::Tensor fma_acc(const torch::Tensor& acc, const torch::Tensor& t1,
                       const torch::Tensor& t2, double value = 1.0);
 torch::Tensor libm_exp(const torch::Tensor& x);

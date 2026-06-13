@@ -132,65 +132,6 @@ inline bool use_custom_autograd(const torch::Tensor& x, const torch::Tensor& y) 
     return at::GradMode::is_enabled() && !c10::InferenceMode::is_enabled()
            && (x.requires_grad() || y.requires_grad());
 }
-inline bool use_custom_autograd(const torch::Tensor& x, const torch::Tensor& y,
-                                const torch::Tensor& z) {
-    return at::GradMode::is_enabled() && !c10::InferenceMode::is_enabled()
-           && (x.requires_grad() || y.requires_grad() || z.requires_grad());
-}
-
-// Guaranteed single-rounding fused multiply-add: acc + value*t1*t2 via std::fmaf
-// per element on float32. torch::addcmul is NOT reliably fused — its scalar
-// (small-tensor / vector-tail) path fuses (one rounding == std::fmaf) but its
-// SIMD-body path computes mul-then-add (TWO roundings), so the SAME cell gets a
-// different result depending on tensor shape/position. Measured live: the step-44
-// activation update nc+ncact*dt produced 0x4EAD0F17 on a (1,1) tensor but
-// 0x4EAD0F18 on a (1,40) column — the first mp37<->mp137 bit divergence. gfortran
-// -ffp-contract=fast fuses these statements, so bitwise parity requires a
-// guaranteed fma. float64 falls back to torch::addcmul (fp64 oracle unchanged).
-inline torch::Tensor fma_fwd(const torch::Tensor& acc, const torch::Tensor& t1,
-                             const torch::Tensor& t2, double value) {
-    if (acc.scalar_type() == torch::kFloat32 && t1.scalar_type() == torch::kFloat32 &&
-        t2.scalar_type() == torch::kFloat32) {
-        auto ac = acc.contiguous();
-        auto a  = t1.expand_as(ac).contiguous();
-        auto b  = t2.expand_as(ac).contiguous();
-        auto out = torch::empty_like(ac);
-        const float* pa = a.data_ptr<float>();
-        const float* pb = b.data_ptr<float>();
-        const float* pc = ac.data_ptr<float>();
-        float* po = out.data_ptr<float>();
-        const float v = static_cast<float>(value);
-        const int64_t n = ac.numel();
-        if (v == 1.0f) {
-            for (int64_t i = 0; i < n; ++i) po[i] = std::fmaf(pa[i], pb[i], pc[i]);
-        } else if (v == -1.0f) {
-            for (int64_t i = 0; i < n; ++i) po[i] = std::fmaf(-pa[i], pb[i], pc[i]);
-        } else {
-            // general scale: round v*a once, then fuse — matches gfortran's
-            // left-to-right (v*a)*b + acc contraction for literal-scaled terms.
-            for (int64_t i = 0; i < n; ++i) po[i] = std::fmaf(v * pa[i], pb[i], pc[i]);
-        }
-        return out;
-    }
-    return torch::addcmul(acc, t1, t2, value);
-}
-
-struct FmaAcc : public torch::autograd::Function<FmaAcc> {
-    static torch::Tensor forward(torch::autograd::AutogradContext* ctx,
-                                 torch::Tensor acc, torch::Tensor t1, torch::Tensor t2,
-                                 double value) {
-        ctx->saved_data["v"] = value;
-        ctx->save_for_backward({t1, t2});
-        return fma_fwd(acc, t1, t2, value);
-    }
-    static torch::autograd::tensor_list backward(torch::autograd::AutogradContext* ctx,
-                                                 torch::autograd::tensor_list go) {
-        auto saved = ctx->get_saved_variables();
-        auto t1 = saved[0], t2 = saved[1];
-        double v = ctx->saved_data["v"].toDouble();
-        return {go[0], go[0] * (v * t2), go[0] * (v * t1), torch::Tensor()};
-    }
-};
 
 }  // namespace
 
@@ -199,11 +140,22 @@ struct FmaAcc : public torch::autograd::Function<FmaAcc> {
 torch::Tensor libm_exp(const torch::Tensor& x) {
     return use_custom_autograd(x) ? LibmExp::apply(x) : exp_fwd(x);
 }
-// Guaranteed-FMA addcmul replacement (drop-in signature). See fma_fwd above.
+// Strict-IEEE two-rounding accumulate: acc + value*t1*t2 with every op
+// individually rounded, in gfortran -ffp-contract=off source order:
+// (value*t1) rounds (exact for value=+-1), *t2 rounds, +acc rounds.
+// HISTORY: this used to emit a guaranteed single-rounding std::fmaf per
+// element (custom autograd Function) to mirror -ffp-contract=fast, after the
+// step-44 seed showed torch::addcmul fuses shape-dependently (scalar tail
+// fused, SIMD body not — 0x4EAD0F17 vs 0x4EAD0F18 on the same cell). The
+// IEEE transition compiles both mp modules with -ffp-contract=off
+// (configure.wrf per-file rules), so the strict two-rounding form below is
+// now the bitwise-correct mirror — and being plain tensor ops it is
+// autograd/InferenceMode-native (no custom Function needed).
 torch::Tensor fma_acc(const torch::Tensor& acc, const torch::Tensor& t1,
                       const torch::Tensor& t2, double value) {
-    return use_custom_autograd(acc, t1, t2) ? FmaAcc::apply(acc, t1, t2, value)
-                                            : fma_fwd(acc, t1, t2, value);
+    if (value == 1.0)  return acc + t1 * t2;
+    if (value == -1.0) return acc - t1 * t2;
+    return acc + (t1 * value) * t2;
 }
 
 torch::Tensor libm_log(const torch::Tensor& x) {

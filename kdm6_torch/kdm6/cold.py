@@ -162,14 +162,17 @@ def ice_accretion_torch(
     qr_safe = torch.clamp(qr, min=params.qcrmin)
 
     # ── praci: Cloud ice collected by rain ──────────────────────────────
-    # acrfac = g3pmr·rslopemu_r·rslope3_r·g1pdimi·rsloped_i·rslopemu_i·rslope_i
-    #        + 2·g2pmr·rslopemu_r·rslope2_r·g2pdimi·rsloped_i·rslopemu_i·rslope2_i
-    #        + g1pmr·rslopemu_r·rslope_r ·g3pdimi·rsloped_i·rslopemu_i·rslope3_i
-    common_i = rsloped_i * rslopemu_i  # 공통 ice factor
+    # F:1839-1841: every multiply rounds in source order (-ffp-contract=off);
+    # rsloped/rslopemu stay INLINE in source position — a pre-grouped
+    # (rsloped*rslopemu) product reassociates the chain (IEEE sweep finding;
+    # mirrors the C++ cold.cpp fix).
     acrfac_pr = (
-        params.g3pmr * rslopemu_r * rslope3_r * params.g1pdimi * common_i * rslope_i
-        + 2.0 * params.g2pmr * rslopemu_r * rslope2_r * params.g2pdimi * common_i * rslope2_i
-        + params.g1pmr * rslopemu_r * rslope_r * params.g3pdimi * common_i * rslope3_i
+        params.g3pmr * rslopemu_r * rslope3_r * params.g1pdimi
+        * rsloped_i * rslopemu_i * rslope_i
+        + 2.0 * params.g2pmr * rslopemu_r * rslope2_r * params.g2pdimi
+        * rsloped_i * rslopemu_i * rslope2_i
+        + params.g1pmr * rslopemu_r * rslope_r * params.g3pdimi
+        * rsloped_i * rslopemu_i * rslope3_i
     )
     praci_raw = (
         _pi * params.cmi * n0i * n0r * torch.abs(vt2r - vt2i) / (4.0 * den_safe)
@@ -180,11 +183,15 @@ def ice_accretion_torch(
     praci = torch.where(active, praci_capped, zero)
 
     # ── piacr: Rain collected by cloud ice ──────────────────────────────
-    common_r = rsloped_r * rslopemu_r  # 공통 rain factor
+    # F:1854-1856 — source order; the rain pair is a REAL rounding factor
+    # (mur=1 → rslopemu_r==rslope_r), so the pre-grouping was a 1-ulp bug.
     acrfac_pi = (
-        params.g3pmi * rslopemu_i * rslope3_i * params.g1pdrmr * common_r * rslope_r
-        + 2.0 * params.g2pmi * rslopemu_i * rslope2_i * params.g2pdrmr * common_r * rslope2_r
-        + params.g1pmi * rslopemu_i * rslope_i * params.g3pdrmr * common_r * rslope3_r
+        params.g3pmi * rslopemu_i * rslope3_i * params.g1pdrmr
+        * rsloped_r * rslopemu_r * rslope_r
+        + 2.0 * params.g2pmi * rslopemu_i * rslope2_i * params.g2pdrmr
+        * rsloped_r * rslopemu_r * rslope2_r
+        + params.g1pmi * rslopemu_i * rslope_i * params.g3pdrmr
+        * rsloped_r * rslopemu_r * rslope3_r
     )
     piacr_raw = (
         _pi * params.cmr * n0i * n0r * torch.abs(vt2i - vt2r) / (4.0 * den_safe)
@@ -306,16 +313,20 @@ def ice_to_snow_graupel_torch(
     qi_safe = torch.clamp(qi, min=params.qcrmin)
     qs_safe = torch.clamp(qs, min=params.qcrmin)
     qg_safe = torch.clamp(qg, min=params.qcrmin)
-    common_i = rsloped_i * rslopemu_i
 
     eac_temp = _exp_eac_from_supcol(supcol)  # Fortran 1826/1882 공통
 
     # ── psaci: snow collects cloud ice ──────────────────────────────────
+    # F:1869-1871 — source-order rounding, rsloped_i/rslopemu_i inline
+    # (no pre-grouped product; IEEE sweep finding, mirrors the C++ fix).
     active_s = (qs > params.qcrmin) & (qi > params.qmin)
     acrfac_s = (
-        params.g3pms * rslopemu_s * rslope3_s * params.g1pdimi * common_i * rslope_i
-        + 2.0 * params.g2pms * rslopemu_s * rslope2_s * params.g2pdimi * common_i * rslope2_i
-        + params.g1pms * rslopemu_s * rslope_s * params.g3pdimi * common_i * rslope3_i
+        params.g3pms * rslopemu_s * rslope3_s * params.g1pdimi
+        * rsloped_i * rslopemu_i * rslope_i
+        + 2.0 * params.g2pms * rslopemu_s * rslope2_s * params.g2pdimi
+        * rsloped_i * rslopemu_i * rslope2_i
+        + params.g1pms * rslopemu_s * rslope_s * params.g3pdimi
+        * rsloped_i * rslopemu_i * rslope3_i
     )
     psaci_raw = (
         _pi * params.cmi * n0i * n0so * n0sfac * torch.abs(vt2s - vt2i)
@@ -328,10 +339,14 @@ def ice_to_snow_graupel_torch(
     # ── pgaci: graupel collects cloud ice ───────────────────────────────
     active_g = (qg > params.qcrmin) & (qi > params.qmin)
     eacgi = eac_temp  # Fortran 1882 — same formula as eacsi
+    # F:1883-1885 — source-order rounding, rsloped_i/rslopemu_i inline.
     acrfac_g = (
-        params.g3pmg * rslopemu_g * rslope3_g * params.g1pdimi * common_i * rslope_i
-        + 2.0 * params.g2pmg * rslopemu_g * rslope2_g * params.g2pdimi * common_i * rslope2_i
-        + params.g1pmg * rslopemu_g * rslope_g * params.g3pdimi * common_i * rslope3_i
+        params.g3pmg * rslopemu_g * rslope3_g * params.g1pdimi
+        * rsloped_i * rslopemu_i * rslope_i
+        + 2.0 * params.g2pmg * rslopemu_g * rslope2_g * params.g2pdimi
+        * rsloped_i * rslopemu_i * rslope2_i
+        + params.g1pmg * rslopemu_g * rslope_g * params.g3pdimi
+        * rsloped_i * rslopemu_i * rslope3_i
     )
     pgaci_raw = (
         _pi * params.cmi * n0i * n0go * torch.abs(vt2g - vt2i)
@@ -848,17 +863,20 @@ def rain_snow_graupel_collection_torch(
     qs_safe = torch.clamp(qs, min=params.qcrmin)
     qg_safe = torch.clamp(qg, min=params.qcrmin)
 
-    # Common factors
-    common_r_d = rsloped_r * rslopemu_r           # rain side: rsloped·rslopemu (mass kernel)
-    common_s_d = rsloped_s * rslopemu_s           # snow side: rsloped·rslopemu (mass kernel)
     snow_r_active = (qs > params.qcrmin) & (qr > params.qcrmin)
 
     # ── pracs (mass): rain collects snow, cold-only ─────────────────────
+    # F:2043-2048 — source-order rounding; rsloped/rslopemu inline (the
+    # pre-grouped products were a reassociation — REAL 1-ulp class on the
+    # rain pair since mur=1; IEEE sweep finding, mirrors the C++ fix).
     cold = supcol > 0
     acrfac_pracs = (
-        params.g3pmr * params.g1pdsms * rslope3_r * rslopemu_r * common_s_d * rslope_s
-        + 2.0 * params.g2pmr * params.g2pdsms * rslope2_r * rslopemu_r * common_s_d * rslope2_s
-        + params.g1pmr * params.g3pdsms * rslope_r * rslopemu_r * common_s_d * rslope3_s
+        params.g3pmr * params.g1pdsms * rslope3_r * rslopemu_r
+        * rsloped_s * rslopemu_s * rslope_s
+        + 2.0 * params.g2pmr * params.g2pdsms * rslope2_r * rslopemu_r
+        * rsloped_s * rslopemu_s * rslope2_s
+        + params.g1pmr * params.g3pdsms * rslope_r * rslopemu_r
+        * rsloped_s * rslopemu_s * rslope3_s
     )
     pracs_raw = (
         _pi * params.cms * n0so * n0sfac * n0r * torch.abs(vt2r - vt2s)
@@ -872,10 +890,14 @@ def rain_snow_graupel_collection_torch(
     nracs = zero.clone()
 
     # ── psacr (mass): snow collects rain ────────────────────────────────
+    # F:2081-2086 — source-order rounding; rsloped_r/rslopemu_r inline.
     acrfac_psacr = (
-        params.g3pms * params.g1pdrmr * rslope3_s * rslopemu_s * common_r_d * rslope_r
-        + 2.0 * params.g2pms * params.g2pdrmr * rslope2_s * rslopemu_s * common_r_d * rslope2_r
-        + params.g1pms * params.g3pdrmr * rslope_s * rslopemu_s * common_r_d * rslope3_r
+        params.g3pms * params.g1pdrmr * rslope3_s * rslopemu_s
+        * rsloped_r * rslopemu_r * rslope_r
+        + 2.0 * params.g2pms * params.g2pdrmr * rslope2_s * rslopemu_s
+        * rsloped_r * rslopemu_r * rslope2_r
+        + params.g1pms * params.g3pdrmr * rslope_s * rslopemu_s
+        * rsloped_r * rslopemu_r * rslope3_r
     )
     psacr_raw = (
         _pi * params.cmr * n0r * n0so * n0sfac * torch.abs(vt2s - vt2r)
@@ -901,11 +923,15 @@ def rain_snow_graupel_collection_torch(
     nsacr = torch.where(snow_nr_active, nsacr_capped, zero)
 
     # ── pgacr (mass): graupel collects rain ─────────────────────────────
+    # F:2121-2126 — source-order rounding; rsloped_r/rslopemu_r inline.
     graupel_r_active = (qg > params.qcrmin) & (qr > params.qcrmin)
     acrfac_pgacr = (
-        params.g3pmg * params.g1pdrmr * rslope3_g * rslopemu_g * common_r_d * rslope_r
-        + 2.0 * params.g2pmg * params.g2pdrmr * rslope2_g * rslopemu_g * common_r_d * rslope2_r
-        + params.g1pmg * params.g3pdrmr * rslope_g * rslopemu_g * common_r_d * rslope3_r
+        params.g3pmg * params.g1pdrmr * rslope3_g * rslopemu_g
+        * rsloped_r * rslopemu_r * rslope_r
+        + 2.0 * params.g2pmg * params.g2pdrmr * rslope2_g * rslopemu_g
+        * rsloped_r * rslopemu_r * rslope2_r
+        + params.g1pmg * params.g3pdrmr * rslope_g * rslopemu_g
+        * rsloped_r * rslopemu_r * rslope3_r
     )
     pgacr_raw = (
         _pi * params.cmr * n0r * n0go * torch.abs(vt2g - vt2r)

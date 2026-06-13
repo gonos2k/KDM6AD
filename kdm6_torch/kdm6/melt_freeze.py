@@ -274,11 +274,11 @@ def contact_freezing_torch(
 
     den_safe = torch.clamp(den, min=params.qmin)
     supcolt = torch.clamp(supcol, max=70.0)
-    # Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): gfortran -ffp-contract=fast
-    # CONTRACTS the argument into fma(0.262, supcolt, -2.80); addcmul mirrors the
-    # single rounding (C++ ops::fma_acc; step-67 seed class).
-    nic_arg = torch.addcmul(torch.full_like(supcolt, -2.80),
-                            torch.full_like(supcolt, 0.262), supcolt)
+    # Nic = exp(-2.80+0.262*supcolt)*1000 (F:1487): strict IEEE two-rounding in
+    # plain source order — 0.262*supcolt rounds, then -2.80 + (.) rounds (was an
+    # addcmul mirror of the -ffp-contract=fast fma — step-67 seed class — before
+    # the IEEE transition).
+    nic_arg = -2.80 + 0.262 * supcolt
     Nic = torch.exp(nic_arg) * 1000.0
 
     # Aerosol diffusivity. ele2 (F:1521) is REAL(4) stepwise in gfortran —

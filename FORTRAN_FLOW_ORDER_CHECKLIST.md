@@ -4,6 +4,15 @@ Audit of the PROCESS-EXECUTION ORDER + per-step STATE-DEPENDENCY (which snapshot
 post-melt vs post-freeze vs post-reclass — the axis that governs both forward sequencing and autodiff sensitivity).
 `.F`-basis citations (the `.f90` drifts every build). Rebuilt 2026-06-05 for the CURRENT sequential code.
 
+**FP-REGIME NOTE (2026-06-13, IEEE transition)**: the arithmetic contract underneath this ORDER audit changed —
+both mp modules now compile with per-file `-ffp-contract=off` (durable rules in `phys/Makefile`, NOT configure.wrf)
+and the ports are strict two-rounding (`ops::fma_acc` plain mul+add; addcmul/std::fmaf mirrors removed). Under this
+regime "order-exact" means EVERY `+−×÷` rounds individually in `.F` source order: hand-CSE pre-grouping
+(`common = rsloped*rslopemu`), division-for-reciprocal substitution, and `pow(x,3)`-for-`(x*x)*x` are ORDER bugs
+even when each op is individually rounded (7 such latent deviations found+fixed by the 2026-06-13 sweep; bitwise
+gate re-validated 205 vars × 6 frames). Future order audits must check the rounding ORDER axis, not just the
+statement-sequence axis.
+
 **Verdict (2026-06-05 FINAL): MACRO phase-order EXACT + the FOUR intra-phase deviations FIXED in code (O1-O4),
 unit+parity+WRF green (inert in the warm validation case — safety proven, positive effect needs an active
 cold/melt case). Codex-reviewed twice; 2 first-pass defects corrected (O2 was zeroing nr AFTER the cold phase

@@ -130,26 +130,26 @@ AccretionOutputs accretion_torch(
 
     // Mode 1 (big drops): avedia_r >= di100
     // Fortran F:1729-1731 bracket: (rslopec3*g6pmc + rslope3_r*g3pmc*(g4pmr/g1pmr))
-    // op1 = rslopec3*g6pmc (acc); op2 last mul = (rslope3_r*g3pmc)*(g4pmr/g1pmr) fuses into '+'.
+    // op1 = rslopec3*g6pmc (acc); op2 = ((rslope3_r*g3pmc)*(g4pmr/g1pmr)) — each op and the '+' individually rounded (strict IEEE source order).
     auto pracw_b1_p2a = rslope3_r * params.g3pmc;
     auto pracw_mode1 = cmc_over_den * params.ncrk1 * nc * nr * rslopec3
         * ops::fma_acc(rslopec3 * params.g6pmc, pracw_b1_p2a,
                          torch::full_like(rslopec3, g4pmr_over_g1pmr));
     // Fortran F:1726-1727 bracket: (rslopec3*g3pmc + rslope3_r*(g4pmr/g1pmr))
-    // op1 = rslopec3*g3pmc (acc); op2 last mul = rslope3_r*(g4pmr/g1pmr) fuses into '+'.
+    // op1 = rslopec3*g3pmc (acc); op2 = rslope3_r*(g4pmr/g1pmr) — mul rounds, '+' rounds (strict IEEE source order).
     auto nracw_mode1 = params.ncrk1 * nc * nr
         * ops::fma_acc(rslopec3 * params.g3pmc, rslope3_r,
                          torch::full_like(rslope3_r, g4pmr_over_g1pmr));
 
     // Mode 2 (small drops): avedia_r < di100
     // Fortran F:1737-1739 bracket: (rslopec3*rslopec3*g9pmc + rslope3_r*rslope3_r*g3pmc*(g7pmr/g1pmr))
-    // 2nd operand evaluated then fused into the '+' (last mul = *(g7pmr/g1pmr)).
+    // 2nd term = ((rslope3_r*rslope3_r)*g3pmc)*(g7pmr/g1pmr) — each multiply and the '+' individually rounded (strict IEEE source order).
     auto pracw_b2_p1 = rslopec3 * rslopec3 * params.g9pmc;
     auto pracw_b2_p2a = rslope3_r * rslope3_r * params.g3pmc;
     auto pracw_mode2 = cmc_over_den * params.ncrk2 * nc * nr * rslopec3
         * ops::fma_acc(pracw_b2_p1, pracw_b2_p2a, torch::full_like(rslopec3, g7pmr_over_g1pmr));
     // Fortran F:1733-1735 bracket: (rslopec3*rslopec3*g6pmc + rslope3_r*rslope3_r), then *(g7pmr/g1pmr)
-    // op1 = rslopec3*rslopec3*g6pmc (acc); op2 last mul = rslope3_r*rslope3_r fuses into '+'.
+    // op1 = rslopec3*rslopec3*g6pmc (acc); op2 = rslope3_r*rslope3_r — mul rounds, '+' rounds; then *(g7pmr/g1pmr) (strict IEEE source order).
     auto nracw_mode2 = params.ncrk2 * nc * nr
         * ops::fma_acc(rslopec3 * rslopec3 * params.g6pmc, rslope3_r, rslope3_r)
         * g7pmr_over_g1pmr;
@@ -281,7 +281,7 @@ RainEvapOutputs rain_evap_torch(
     // prevp_raw = (rh-1) * n0r * (precr1*rslope2*rslopemu + precr2*work2*coeres) / work1
     auto work1_safe = torch::clamp(work1_r, /*min=*/constants::QCRMIN);
     // Fortran F:1782-1783 bracket: (precr1*rslope2*rslopemu + precr2*work2*coeres)
-    // op1 = precr1*rslope2_r*rslopemu_r (acc); op2 last mul = (precr2*work2)*coeres fuses into '+'.
+    // op1 = precr1*rslope2_r*rslopemu_r (acc); op2 = (precr2*work2)*coeres — mul rounds, '+' rounds (strict IEEE source order).
     auto prevp_b_op1 = params.precr1 * rslope2_r * rslopemu_r;
     auto prevp_b_p2a = params.precr2 * work2;
     auto bracket = ops::fma_acc(prevp_b_op1, prevp_b_p2a, coeres);

@@ -234,11 +234,21 @@ def progb_param_torch(
     bTbl_left = bTbl[idx_left]
     bTbl_right = bTbl[idx_right]
 
-    # piecewise-linear interpolation. rhox==Tbl(9)이면 tmp2 fraction=1 → endpoint.
+    # Fortran F:3385-3387: tmp2 = 1./(Tbl(sy+1)-Tbl(sy)) — ONE rounded
+    # reciprocal reused for avtg AND bvtg — then
+    #   aTbl(sy) + ((rhox-Tbl(sy))*(aTbl(sy+1)-aTbl(sy)))*tmp2
+    # every op individually rounded left-to-right (-ffp-contract=off). A direct
+    # (rhox-Tbl_left)/width division is NOT bit-equal (fl(1/100) is inexact;
+    # IEEE sweep finding — mirrors the C++ progb.cpp fix).
     width = Tbl_right - Tbl_left            # = 100 (always)
-    frac = (rhox - Tbl_left) / width
-    avtg_raw = aTbl_left + frac * (aTbl_right - aTbl_left)
-    bvtg_raw = bTbl_left + frac * (bTbl_right - bTbl_left)
+    tmp2 = 1.0 / width
+    d1 = rhox - Tbl_left
+    avtg_raw = aTbl_left + (d1 * (aTbl_right - aTbl_left)) * tmp2
+    bvtg_raw = bTbl_left + (d1 * (bTbl_right - bTbl_left)) * tmp2
+    # Exact-endpoint branch (Fortran F:3404 `else if (rhox==Tbl(9))`), mirrored
+    # by construction rather than relying on lerp round-trip coincidence.
+    avtg_raw = torch.where(rhox == Tbl[-1], aTbl[-1], avtg_raw)
+    bvtg_raw = torch.where(rhox == Tbl[-1], bTbl[-1], bvtg_raw)
 
     avtg = torch.where(active, avtg_raw, zero)
     bvtg = torch.where(active, bvtg_raw, zero)

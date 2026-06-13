@@ -102,9 +102,10 @@ ProgBOutputs progb_param_torch(
     auto pidn0g = cmg * params.n0g * params.g1pdgmg / params.g1pmg;
 
     // ── 9-point linear interpolation: rhox → (avtg, bvtg) ──────────────
-    // searchsorted(right=true): Tbl[i-1] <= rhox < Tbl[i]; rhox==RHO_MAX이면
-    // idx_right==9 (out-of-bounds). 그래서 [1, 8]로 clamp → 마지막 bucket의
-    // frac=1로 endpoint를 흡수 (Fortran의 else if rhox==Tbl(9) 분기 자연 처리).
+    // searchsorted(right=true): Tbl[i-1] <= rhox < Tbl[i]; rhox==RHO_MAX gives
+    // idx_right==9 (out-of-bounds) so clamp to [1, 8]; the rhox==Tbl(9)
+    // endpoint itself is handled by the explicit where() below (Fortran's
+    // `else if (rhox==Tbl(9))` branch, F:3404).
     auto rhox_contig = rhox.contiguous();
     auto idx_right = torch::searchsorted(Tbl, rhox_contig, /*out_int32=*/false, /*right=*/true);
     idx_right = torch::clamp(idx_right, /*min=*/1, /*max=*/static_cast<int64_t>(Tbl.numel()) - 1);
@@ -119,19 +120,30 @@ ProgBOutputs progb_param_torch(
     auto bTbl_right = torch::index_select(bTbl, 0, idx_right.flatten()).reshape(out_shape);
 
     auto width = Tbl_right - Tbl_left;
-    auto frac = (rhox - Tbl_left) / width;
-    // (B) FMA: Fortran F:3386/3387 `aTbl(sy)+(...)*(...)*tmp2` — gfortran fuses the last
-    // multiply before the add. Here frac*(delta) is the final multiply preceding the `+`.
-    auto avtg_raw = ops::fma_acc(aTbl_left, frac, aTbl_right - aTbl_left);
-    auto bvtg_raw = ops::fma_acc(bTbl_left, frac, bTbl_right - bTbl_left);
+    // Fortran F:3385-3387: tmp2 = 1./(Tbl(sy+1)-Tbl(sy)) — ONE rounded
+    // reciprocal reused for avtg AND bvtg — then
+    //   aTbl(sy) + ((rhox-Tbl(sy))*(aTbl(sy+1)-aTbl(sy)))*tmp2
+    // with every op individually rounded left-to-right (-ffp-contract=off).
+    // A direct (rhox-Tbl_left)/width division is NOT bit-equal (fl(1/100) is
+    // inexact; ~2.3% of f32 rhox samples differ by 1 ulp — IEEE sweep finding).
+    auto tmp2 = 1.0 / width;
+    auto d1 = rhox - Tbl_left;
+    auto avtg_raw = ops::fma_acc(aTbl_left, d1 * (aTbl_right - aTbl_left), tmp2);
+    auto bvtg_raw = ops::fma_acc(bTbl_left, d1 * (bTbl_right - bTbl_left), tmp2);
+    // Exact-endpoint branch (Fortran F:3404 `else if (rhox==Tbl(9))`):
+    // mirrored by construction rather than relying on the lerp round-tripping
+    // bit-exactly at rhox==Tbl(9) for the current table constants.
+    const auto last = Tbl.numel() - 1;
+    avtg_raw = torch::where(rhox == Tbl[last], aTbl[last], avtg_raw);
+    bvtg_raw = torch::where(rhox == Tbl[last], bTbl[last], bvtg_raw);
 
     auto avtg = torch::where(active, avtg_raw, zero);
     auto bvtg = torch::where(active, bvtg_raw, zero);
 
     // ── derived sums ────────────────────────────────────────────────────
     auto bvtg1 = 1.0 + bvtg;
-    // (B) FMA: Fortran F:3389 `2.5+.5*bvtg+mug` — gfortran fuses .5*bvtg with the (2.5 + …)
-    // add; the trailing +mug is a separate add. Match: addcmul(2.5, bvtg, 0.5) then + mug.
+    // Fortran F:3389 `2.5+.5*bvtg+mug` — .5*bvtg rounds, then 2.5+(.) rounds, then
+    // +mug rounds (strict IEEE source order); fma_acc(2.5, bvtg, 0.5) + mug.
     auto bvtg2 = ops::fma_acc(scalar_like(2.5, bvtg), bvtg, scalar_like(0.5, bvtg)) + params.mug;
     auto bvtg3 = 3.0 + bvtg + params.mug;
     auto bvtg4 = 4.0 + bvtg;
@@ -157,7 +169,8 @@ ProgBOutputs progb_param_torch(
 
     // (A) transcendental: Fortran F:3400 `4.*.31*avtg**.5*g5pbgo2`. `avtg**.5` compiles to libm
     // pow(avtg,0.5); route through ops::safe_pow (libm pow, base already EPS-clamped) instead of
-    // torch::sqrt (Sleef) for gfortran bit-match. Pure multiply chain → no FMA fusion (no +/-).
+    // torch::sqrt (Sleef) for gfortran bit-match. Pure multiply chain, each op individually
+    // rounded (nothing is fused under -ffp-contract=off).
     auto precg2_raw = 4.0 * 0.31 * ops::safe_pow(avtg, 0.5) * g5pbgo2;
     auto precg2 = torch::where(active, precg2_raw, zero);
 

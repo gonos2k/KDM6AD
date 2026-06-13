@@ -288,6 +288,34 @@ module_mp_kdm6ad.o: kdm6_iso_c.o
 # rule first makes it un-cuttable. Canonical copy also lives in main/depend.common.
 # Symptom if lost: c_float vs c_double kdm6_iso_c interface clash -> "REAL(4) to REAL(8)".
 
+# KDM6/KDM6AD strict IEEE FP: compile WITHOUT FMA contraction. The libtorch
+# C++ port (mp=137) reproduces these modules bit-for-bit under two-rounding
+# per-op IEEE arithmetic; gfortran's default -ffp-contract=fast fuses a*b+c
+# into single-rounding FMA and re-seeds <=1-ULP divergence (amplified by
+# activation-onset cancellation). These explicit rules override the generic
+# .F.o suffix rule from ../configure.wrf and live HERE (not configure.wrf)
+# so a future ./configure cannot wipe them. Mirror flag: kdm6_libtorch
+# CMakeLists adds -ffp-contract=off to the C++ build.
+module_mp_kdm6.o : module_mp_kdm6.F
+
+module_mp_kdm6.o :
+	$(RM) $@
+	sed -e "s/^\!.*'.*//" -e "s/^ *\!.*'.*//" $*.F > $*.G
+	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.G  > $*.bb
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(RM) $*.G $*.bb
+	$(FC) -o $@ -c $(FCFLAGS) -ffp-contract=off $(OMP) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
+
+module_mp_kdm6ad.o : module_mp_kdm6ad.F
+
+module_mp_kdm6ad.o :
+	$(RM) $@
+	sed -e "s/^\!.*'.*//" -e "s/^ *\!.*'.*//" $*.F > $*.G
+	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.G  > $*.bb
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(RM) $*.G $*.bb
+	$(FC) -o $@ -c $(FCFLAGS) -ffp-contract=off $(OMP) $(MODULE_DIRS) $(PROMOTION) $(FCSUFFIX) $*.f90
+
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 # DO NOT DELETE
 

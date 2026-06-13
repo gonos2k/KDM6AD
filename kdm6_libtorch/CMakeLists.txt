@@ -6,6 +6,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ── strict IEEE FP (no FMA contraction) ─────────────────────────────────────
+# The Fortran mp modules compile with -ffp-contract=off (configure.wrf
+# per-file rules); mirror it here so scalar host-side math (fconst staging,
+# test reference expressions) is two-rounding IEEE as well. Tensor-op kernels
+# live inside libtorch and are unaffected either way.
+add_compile_options(-ffp-contract=off)
+
 # ── [C1] libtorch ───────────────────────────────────────────────────────────
 # 사용자가 -DCMAKE_PREFIX_PATH=<libtorch root>로 지정. Python venv에 있는 libtorch를
 # 쓰려면 venv의 torch/share/cmake/Torch가 PREFIX_PATH에 잡혀야 함.

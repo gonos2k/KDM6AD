@@ -60,8 +60,8 @@ MeltingOutputs melting_torch(
     auto coeres_s = in.rslope2_s
                   * torch::sqrt(torch::clamp(in.rslope_s * in.rslopeb_s, /*min=*/p.qcrmin))
                   * in.rslopemu_s;
-    // gfortran fuses the LAST multiply of the 2nd product into the inner '+'
-    // (precs2*n0so*work2*coeres → addcmul(precs1-term, precs2*n0so*work2, coeres)). F:1290-1291
+    // F:1290-1291 inner sum: term1 + ((precs2*n0so)*work2)*coeres — every op individually
+    // rounded in source order (-ffp-contract=off; fma_acc is plain two-rounding).
     auto psmlt_term1 = p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s;
     auto psmlt_sum = ops::fma_acc(psmlt_term1, p.precs2 * in.n0so * in.work2, coeres_s);
     auto psmlt_raw = xka_val / p.xlf * (p.t0c - in.t) * in.n0sfac
@@ -84,7 +84,7 @@ MeltingOutputs melting_torch(
     auto coeres_g = in.rslope2_g
                   * torch::sqrt(torch::clamp(in.rslope_g * in.rslopeb_g, /*min=*/p.qcrmin))
                   * in.rslopemu_g;
-    // Same fusion as psmlt: last mul of 2nd product fuses with inner '+'. F:1314-1315
+    // Same shape as psmlt: term1 + ((precg2*n0go)*work2)*coeres, strict two-rounding in source order. F:1314-1315
     auto pgmlt_term1 = p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g;
     auto pgmlt_sum = ops::fma_acc(pgmlt_term1, in.precg2 * in.n0go * in.work2, coeres_g);
     auto pgmlt_raw = xka_val / p.xlf * (p.t0c - in.t)
@@ -149,9 +149,10 @@ ContactFreezingOutputs contact_freezing_torch(
     auto active = torch::logical_and(in.supcol > p.supcol_threshold, in.qc > p.qmin);
     auto den_safe = torch::clamp(in.den, /*min=*/p.qmin);
     auto supcolt = torch::clamp(in.supcol, /*min=*/-1e30, /*max=*/70.0);
-    // Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): gfortran -ffp-contract=fast
-    // CONTRACTS the argument into a single fma(0.262, supcolt, -2.80) — the
-    // unfused (0.262*supcolt)+(-2.80) differs 1 ULP at the step-67 cell.
+    // Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): strict IEEE two-rounding in
+    // source order — 0.262*supcolt rounds, then -2.80 + (.) rounds (was an fma
+    // mirror of the -ffp-contract=fast contraction — step-67 seed class — before
+    // the IEEE transition).
     auto nic_arg = ops::fma_acc(torch::full_like(supcolt, -2.80),
                                 torch::full_like(supcolt, 0.262), supcolt);
     auto Nic = ops::libm_exp(nic_arg) * 1000.0;

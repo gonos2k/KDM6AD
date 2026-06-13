@@ -1767,10 +1767,11 @@ def apply_satadj_step_torch(
     # where sw_ratio≫EPS, and ncact is gated to 0 at supsat≤0 so the value is unaffected).
     activated_fraction = torch.minimum(
         torch.ones_like(sw_ratio), torch.pow(torch.clamp(sw_ratio, min=c.EPS), c.ACTK))
-    # Fortran F:2935-2936 contracts ((nci3+nci1)*frac - nci1) to one rounding (fmsub);
-    # mirror the C++ ops::fma_acc structure via addcmul (C++ f64 fallback == addcmul,
-    # keeping C++<->Python parity; the f32 single-rounding lives in the C++ fma_acc).
-    ncact_raw = torch.clamp(torch.addcmul(-state.nc, nccn + state.nc, activated_fraction), min=0.0) / dtcld
+    # Fortran F:2935-2936 ((nci3+nci1)*frac - nci1): strict IEEE two-rounding in
+    # plain source order — mul rounds, subtract rounds (C++ fma_acc computes the
+    # same since the IEEE transition; was an addcmul mirror of the
+    # -ffp-contract=fast fmsub before it).
+    ncact_raw = torch.clamp((nccn + state.nc) * activated_fraction - state.nc, min=0.0) / dtcld
     ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
     ncact = torch.where(supsat > 0.0, ncact, torch.zeros_like(ncact))
     # SEED#3 (Fortran module_mp_kdm6.F:2908): build the pcact mass constant

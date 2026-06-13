@@ -57,11 +57,11 @@ ThermoParams default_thermo_params() {
 
 torch::Tensor compute_cpm(const torch::Tensor& q, const ThermoParams& p) {
     auto q_safe = torch::clamp(q, /*min=*/p.qmin);
-    // Fortran F:760 cpmcal: cpd*(1.-q)+q*cpv — `a*b + c*d` form. gfortran fuses the
-    // LAST multiply (q*cpv) with the add (single rounding == FMA). addcmul(ab, c, d).
-    auto ab = p.cpd * (1.0 - q_safe);            // first product (scalar*tensor, not fused)
+    // Fortran F:760 cpmcal: cpd*(1.-q)+q*cpv — every op individually rounded in
+    // source order (-ffp-contract=off; fma_acc is two-rounding).
+    auto ab = p.cpd * (1.0 - q_safe);            // first product (scalar*tensor, individually rounded)
     auto cpv_t = torch::full_like(q_safe, p.cpv);
-    return ops::fma_acc(ab, q_safe, cpv_t);    // ab + q_safe*cpv  (last mul fuses)
+    return ops::fma_acc(ab, q_safe, cpv_t);    // ab + q_safe*cpv  (mul rounds, add rounds)
 }
 
 torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
@@ -70,8 +70,8 @@ torch::Tensor compute_xl(const torch::Tensor& t, const ThermoParams& p) {
     // (NEGATIVE) used in qs's xa/xb formula. Two related-looking expressions,
     // opposite signs — don't conflate (see feedback-dldt-sign-convention).
     const double xlv1 = p.cliq - p.cpv;
-    // Fortran F:761 xlcal: xlv0 - xlv1*(x-t0c) — `acc - a*b` form. gfortran fuses the
-    // multiply xlv1*(t-t0c) with the subtract (single rounding == FMA).
+    // Fortran F:761 xlcal: xlv0 - xlv1*(x-t0c) — multiply rounds, subtract rounds
+    // (strict IEEE source order).
     auto dt = t - p.t0c;
     auto acc = torch::full_like(t, p.xlv0);
     auto xlv1_t = torch::full_like(t, xlv1);
@@ -160,9 +160,8 @@ torch::Tensor compute_diffac(
     auto qs_safe = torch::clamp(qs, /*min=*/p.qmin);
     auto term1 = den * xl * xl / (xka * p.rv * t_safe * t_safe);
     auto term2 = 1.0 / (qs_safe * diffus);
-    // Fortran F:778 diffac = d*a*a/(...) + 1./(...): the operand immediately before `+`
-    // is a DIVISION (term1, term2 both end in /). gfortran fuses only a multiply that is
-    // immediately followed by +/- — there is none here, so term1 + term2 stays separate.
+    // Fortran F:778 diffac = d*a*a/(...) + 1./(...): plain source-order add of two
+    // division results — nothing is fused under -ffp-contract=off.
     return term1 + term2;
 }
 

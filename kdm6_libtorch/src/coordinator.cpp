@@ -1196,10 +1196,10 @@ CoordinatorState state_update(
     // tracks the working state (Fortran computes it on the mutated state :2452-2455).
     const CoordinatorState& dstate = delta_src ? *delta_src : state;
 
-    // dtcld as a tensor for addcmul (single-rounding FMA == gfortran's fused
-    // `state + sum*dtcld` in `max(state+(...)*dtcld, 0.)`, F:2616-2755). The Fortran
-    // budget statements compute the whole rate sum, multiply by dtcld, then add the
-    // reservoir — gfortran -ffp-contract=fast fuses that LAST multiply with the add.
+    // dtcld as a tensor for fma_acc. The Fortran budget statements
+    // `max(state+(Σrates)*dtcld, 0.)` (F:2616-2755) compute the whole rate sum,
+    // multiply by dtcld, then add the reservoir — Σ*dtcld rounds, then +state
+    // rounds: strict IEEE two-rounding in source order (-ffp-contract=off).
     auto dt_t = torch::full_like(state.qc, dtcld);
 
     // ── Mass balance ────────────────────────────────────────────────────────
@@ -1218,7 +1218,7 @@ CoordinatorState state_update(
         - cold.psevp
         - cold.pgevp
     );
-    // Fortran F:2737 `q = q + work2*dtcld` (cold arm :2599 likewise) ⇒ fuse sum*dtcld+qv.
+    // Fortran F:2737 `q = q + work2*dtcld` (cold arm :2599 likewise): sum*dtcld rounds, then +qv rounds (two-rounding source order).
     auto qv_new = ops::fma_acc(state.qv, dqv_sum, dt_t);
 
     // qc — pcact/pcond also deferred (see dqv comment). Warm-phase qc sinks
@@ -1230,8 +1230,8 @@ CoordinatorState state_update(
         - cold.pmulcs - cold.pmulcg
     );
     // amount terms = inline D1-D4 transfers (Fortran applies them as separate adds
-    // at :1504/1534 etc. — no dtcld, not fused). The rate sum*dtcld fuses with the
-    // reservoir (F:2616/2738 `max(qci(1)+(...)*dtcld,0)`).
+    // at :1504/1534 etc. — no dtcld). The rate sum*dtcld and the +reservoir are each
+    // individually rounded (F:2616/2738 `max(qci(1)+(...)*dtcld,0)`).
     // STEP-67 NOTE: this component path keeps the SUMMED amount form. At runtime it
     // is SHIELDED — kdm62d_one_step applies D1-D4 via apply_melt_freeze_inline
     // (which carries the Fortran f64-rate SEQUENTIAL store semantics for D2/D3)
@@ -1254,8 +1254,8 @@ CoordinatorState state_update(
         // missing in both ports — warm cells wrongly grew ice. (WRF-validated.)
         + 2.0 * cold.paacw_adj * warm_mask
     );
-    // dqr_amount = inline D4 freeze (Fortran :1560 separate add). rate sum*dtcld fuses
-    // with reservoir (F:2621/2740).
+    // dqr_amount = inline D4 freeze (Fortran :1560 separate add). sum*dtcld rounds,
+    // +reservoir rounds (F:2621/2740).
     auto dqr_amount = -mf.pfrzdtr;
     auto qr_new = ops::fma_acc(state.qr + dqr_amount, dqr_rate_sum, dt_t);
 
@@ -1265,7 +1265,7 @@ CoordinatorState state_update(
     auto one_m_d2 = 1.0 - delta2;
     auto one_m_d3 = 1.0 - delta3;
 
-    // qs — 2633 + warm-branch 2743. rate sum*dtcld fuses with reservoir.
+    // qs — 2633 + warm-branch 2743. sum*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dqs_sum = (
         cold.psdep
         + cold.psaut
@@ -1281,7 +1281,7 @@ CoordinatorState state_update(
     );
     auto qs_new = ops::fma_acc(state.qs, dqs_sum, dt_t);
 
-    // qg — 2638 + warm-branch 2745. rate sum*dtcld fuses with reservoir.
+    // qg — 2638 + warm-branch 2745. sum*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dqg_rate_sum = (
         cold.pgdep
         + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (Fortran :2641); warm arm sheds to qr
@@ -1299,7 +1299,7 @@ CoordinatorState state_update(
     auto dqg_amount = mf.pfrzdtr;
     auto qg_new = ops::fma_acc(state.qg + dqg_amount, dqg_rate_sum, dt_t);
 
-    // qi — 2626 + inline freeze amounts (D2-D4/homog). rate sum*dtcld fuses w/ reservoir.
+    // qi — 2626 + inline freeze amounts (D2-D4/homog). sum*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dqi_rate_sum = (
         cold.pinud + cold.pidep
         + cold.piacw
@@ -1312,7 +1312,7 @@ CoordinatorState state_update(
     auto qi_new = ops::fma_acc(state.qi + dqi_amount, dqi_rate_sum, dt_t);
 
     // ── Number balance ──────────────────────────────────────────────────────
-    // nci(1) budget F:2619/2747 `max(nci(1)+(...)*dtcld,0)` ⇒ fuse rate sum*dtcld+reservoir.
+    // nci(1) budget F:2619/2747 `max(nci(1)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dnc_rate_sum = (
         - warm.nraut
         - warm.nccol
@@ -1327,7 +1327,7 @@ CoordinatorState state_update(
     // accounts for warm/cold/mf rates that Fortran applies BEFORE that block.
     auto nc_new = ops::fma_acc(state.nc + dnc_amount, dnc_rate_sum, dt_t);
 
-    // nrs(1) budget F:2624/2749 `max(nrs(1)+(...)*dtcld,0)` ⇒ fuse rate sum*dtcld+reservoir.
+    // nrs(1) budget F:2624/2749 `max(nrs(1)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dnr_rate_sum = (
         warm.nraut
         - warm.nrcol
@@ -1342,12 +1342,12 @@ CoordinatorState state_update(
     );
     auto dnr_amount = -mf.nfrzdtr;
     // rce is a SEPARATE Fortran statement (F:1795 rain-number zeroing), not part of the
-    // budget multiply — kept as its own subtract, not fused into the dtcld FMA.
+    // budget multiply — kept as its own subtract, outside the dtcld accumulate.
     auto rain_complete_evap_amount = state.nr * warm.rain_complete_evap.to(dtype);
     auto nr_new = ops::fma_acc(
         state.nr + dnr_amount - rain_complete_evap_amount, dnr_rate_sum, dt_t);
 
-    // nci(2) budget F:2630 `max(nci(2)+(...)*dtcld,0)` ⇒ fuse rate sum*dtcld+reservoir.
+    // nci(2) budget F:2630 `max(nci(2)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
     auto dni_rate_sum = (
         cold.ninud
         - cold.nraci - cold.nsaci - cold.ngaci
@@ -1363,11 +1363,11 @@ CoordinatorState state_update(
     auto ni_new = ni_new_pre * (1.0 - ni_zero_mask);
 
     // ── brs (graupel volume) — Fortran 2643 + warm-branch 2751 ─────────
-    // Each Fortran branch is `brs = max(brs + (Σb)*dtcld, 0)` — the (Σb)*dtcld multiply
-    // fuses with the add. The port tensorizes the two branches with cold_mask/warm_mask
-    // scales; fuse each `(mask·Σb)·dtcld` and the `delta_brs_melt·dtcld` into the running
-    // sum via addcmul (one rounding per fused multiply). delta_brs_freeze is an inline
-    // amount (separate add, no multiply).
+    // Each Fortran branch is `brs = max(brs + (Σb)*dtcld, 0)`: (Σb)*dtcld rounds,
+    // the add rounds (two-rounding source order). The port tensorizes the two
+    // branches with cold_mask/warm_mask scales; each `*dtcld` accumulate (the
+    // `delta_brs_melt·dtcld` included) is a separate fma_acc (mul rounds, add
+    // rounds). delta_brs_freeze is an inline amount (separate add, no multiply).
     auto rhox_safe = torch::clamp(pre.rhox, /*min=*/constants::DENS);
     auto dbrs_cold_sum = cold_mask * (
         cold.pgdep / rhox_safe
@@ -1384,7 +1384,7 @@ CoordinatorState state_update(
         + mf.pgeml / rhox_safe
     );
     // brs + delta_brs_freeze + (delta_brs_melt + dbrs_cold_sum + dbrs_warm_sum)*dtcld,
-    // accumulating each *dtcld as a fused addcmul.
+    // accumulating each *dtcld as a separate two-rounding fma_acc (mul rounds, add rounds).
     auto brs_acc = state.brs + mf.delta_brs_freeze;
     brs_acc = ops::fma_acc(brs_acc, mf.delta_brs_melt, dt_t);
     brs_acc = ops::fma_acc(brs_acc, dbrs_cold_sum, dt_t);
@@ -1522,9 +1522,10 @@ CoordinatorState apply_satadj_step(
         torch::ones_like(sw_ratio),
         ops::safe_pow(sw_ratio, constants::ACTK)  // libm pow (bit-matches gfortran on float32)
     );
-    // Fortran F:2935-2936 `((nci3+nci1)*frac - nci1)`: gfortran contracts the
-    // multiply-subtract to ONE rounding (fmsub). The plain mul-then-sub differs by
-    // 1 ULP exactly at large-activation cells (step-48 seed: X 4EAFE27A vs ...7B).
+    // Fortran F:2935-2936 `((nci3+nci1)*frac - nci1)`: strict IEEE two-rounding in
+    // source order — (nccn+nc) rounds, *frac rounds, the subtract rounds (was an
+    // fmsub mirror of -ffp-contract=fast before the IEEE transition; step-48 seed
+    // class).
     auto ncact_raw = torch::clamp(
         ops::fma_acc(-state.nc, state.nccn + state.nc, activated_fraction), /*min=*/0.0
     ) / dtcld;
@@ -1553,8 +1554,8 @@ CoordinatorState apply_satadj_step(
     auto pcact_raw = PCACT_MASS_CONST * ncact / (3.0 * forcing.den);
     auto pcact = torch::minimum(pcact_raw, torch::clamp(state.qv, /*min=*/0.0) / dtcld);
 
-    // Step 3 + 4: apply pcact + ncact to (q, qc, t, nc, nccn). Use addcmul (single-rounding FMA,
-    // bit-matches gfortran's fused `state + rate*dtcld`) instead of separate mul+add (two roundings).
+    // Step 3 + 4: apply pcact + ncact to (q, qc, t, nc, nccn) — rate*dtcld rounds, then
+    // the +/- rounds (strict IEEE two-rounding, matches gfortran -ffp-contract=off F:2911-2915).
     auto dt_t = torch::full_like(pcact, dtcld);
     auto qv_pp   = torch::clamp(ops::fma_acc(state.qv,   pcact, dt_t, -1.0), /*min=*/0.0);
     auto qc_pp   = torch::clamp(ops::fma_acc(state.qc,   pcact, dt_t,  1.0), /*min=*/0.0);
@@ -1576,7 +1577,7 @@ CoordinatorState apply_satadj_step(
     auto nc_final         = torch::clamp(nc_pp - nc_evap_amount, /*min=*/0.0);
     auto nccn_final_raw   = nccn_pp + nc_evap_amount;
 
-    // Step 8: apply pcond to (q, qc, t) — addcmul single-rounding FMA (matches gfortran).
+    // Step 8: apply pcond to (q, qc, t) — pcond*dtcld rounds, then the +/- rounds (strict IEEE two-rounding, F:2941-2943).
     auto qv_final = torch::clamp(ops::fma_acc(qv_pp, sat.pcond, dt_t, -1.0), /*min=*/0.0);
     auto qc_final = torch::clamp(ops::fma_acc(qc_pp, sat.pcond, dt_t,  1.0), /*min=*/0.0);
     auto t_final  = ops::fma_acc(t_pp, sat.pcond * xl / cpm_safe, dt_t, 1.0);

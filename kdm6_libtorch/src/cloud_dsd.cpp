@@ -73,7 +73,7 @@ torch::Tensor diag_species_slope_torch(
     auto qden_safe = torch::clamp(q * den, /*min=*/DOMAIN_FLOOR);
     auto ratio = pidn * n / qden_safe;
     // Fortran lamdac(x,y,z)=exp(log((pidnc*z)/(x*y))*(1./dmc)); route exp/log through libm
-    // so the float32 forward bit-matches gfortran's libm. `/ dm` (division) is NOT fused.
+    // so the float32 forward bit-matches gfortran's libm.
     // Fortran multiplies by the REAL(4) reciprocal `*(1./dmc)` — NOT a division by
     // dm. log(ratio)~36 amplifies the f32(1/3)-vs-true-1/3 difference through exp
     // into ~13 ULP of lamda (the step-65 rslopec seed). Hold the f32 reciprocal in
@@ -150,12 +150,15 @@ LenconOutputs diag_lencon_torch(
     const torch::Tensor& sigma_c,
     double qcrmin
 ) {
-    // Fortran F:1703-1704 lencon = 2.7e-2*den*qci*(1.e20/16.*avedia*(sigma**3)-0.4).
-    // gfortran fuses the LAST multiply before the `-`: ((1.e20/16.*avedia)*sigma^3) - 0.4
-    // → single-rounding fma(coef, sigma^3, -0.4). The outer 2.7e-2*den*qci*factor chain has
-    // no trailing add/sub, so it stays as separate products.
+    // Fortran F:1703-1704 lencon = 2.7e-2*den*qci*(1.e20/16.*avedia*(sigma**3)-0.4):
+    // (1e20/16)*avedia rounds, *(sigma**3) rounds, then the -0.4 add rounds —
+    // strict source order under -ffp-contract=off (fma_acc is two-rounding).
+    // sigma**3: gfortran expands the f32 integer power as (sigma*sigma)*sigma
+    // (repeated multiplication, objdump-verified — NOT libm powf, which
+    // differs on ~26% of f32 samples; IEEE sweep finding).
     auto coef = 1.0e20 / 16.0 * avedia_c;
-    auto factor = ops::fma_acc(torch::full_like(coef, -0.4), coef, ops::safe_pow(sigma_c, 3.0));  // Fortran sigma**3 = powf
+    auto sigma3 = sigma_c * sigma_c * sigma_c;
+    auto factor = ops::fma_acc(torch::full_like(coef, -0.4), coef, sigma3);
     auto lencon = 2.7e-2 * den * qc * factor;
     auto lenconcr = torch::clamp(1.2 * lencon, /*min=*/qcrmin);
     return LenconOutputs{/*lencon=*/lencon, /*lenconcr=*/lenconcr};

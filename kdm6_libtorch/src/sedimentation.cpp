@@ -98,9 +98,8 @@ SubstepAdvectionOutputs substep_advection_torch(
         fall_brs_cols[k] = fall_brs_cols[k] + falk_brs_top;
 
         qr_cols[k] = torch::clamp(qr_cols[k] - falk_qr_top * dtcld / dend_safe_col(k), 0.0);
-        // F:1128 nrs = max(nrs - falkn*dtcld, 0.) — the multiply (*dtcld) is the op
-        // IMMEDIATELY before the subtract (no intervening /dend), so gfortran -ffp-contract=fast
-        // fuses it: fma(-falkn, dtcld, nrs). addcmul(acc, t1, t2, value) = acc + value*t1*t2.
+        // F:1128 nrs = max(nrs - falkn*dtcld, 0.) — falkn*dtcld rounds, the subtract
+        // rounds (strict IEEE source order; fma_acc(...,-1.0) = acc - t1*t2).
         nr_cols[k] = torch::clamp(
             ops::fma_acc(nr_cols[k], falk_nr_top, torch::full_like(falk_nr_top, dtcld), -1.0),
             0.0);
@@ -227,8 +226,8 @@ IceSubstepOutputs ice_substep_advection_torch(
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
         qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
-        // F:1220 nci = max(nci - falkn_i*dtcld, 0.) — multiply (*dtcld) is immediately before
-        // the subtract (no /dend), so gfortran fuses: fma(-falkn_i, dtcld, nci).
+        // F:1220 nci = max(nci - falkn_i*dtcld, 0.) — multiply rounds, subtract rounds
+        // (strict IEEE source order).
         ni_cols[k] = torch::clamp(
             ops::fma_acc(ni_cols[k], falk_ni_top, torch::full_like(falk_ni_top, dtcld), -1.0),
             0.0);

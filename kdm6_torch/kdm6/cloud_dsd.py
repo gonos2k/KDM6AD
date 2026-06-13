@@ -193,7 +193,11 @@ def diag_lencon_torch(
 
     autoconv → accretion 전환의 임계 값. 음수가 될 수 있어서 후행 max로 가드.
     """
-    factor = 1.0e20 / 16.0 * avedia_c * (sigma_c ** 3) - 0.4
+    # sigma**3 as explicit repeated multiplication (sigma*sigma)*sigma —
+    # gfortran's f32 integer-power expansion (mirrors the C++ fix; torch's
+    # pow(x,3) is value-identical but the explicit form documents the contract).
+    sigma3 = sigma_c * sigma_c * sigma_c
+    factor = 1.0e20 / 16.0 * avedia_c * sigma3 - 0.4
     lencon = 2.7e-2 * den * qc * factor
     lenconcr = torch.clamp(1.2 * lencon, min=qcrmin)
     return lencon, lenconcr
