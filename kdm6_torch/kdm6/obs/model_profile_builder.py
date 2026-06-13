@@ -210,8 +210,12 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
         p_half = torch.as_tensor(
             p_half, dtype=t_model.dtype, device=t_model.device).detach()
     # RTTOV-14 layer-based invariant: Nlayers = Nlevels - 1 (design 5; profile.py:124).
-    if p_lay is not None and p_half is not None and p_half.shape[0] != p_lay.shape[0] + 1:
+    # Check the EMITTED layer count (t_lay's vertical axis) vs p_half so the
+    # PASSTHROUGH path (p_lay is None) cannot silently emit an invalid
+    # layer/half-level profile -- e.g. a model column of N levels paired with an
+    # N-level p_half (needs N+1) would otherwise pass unchecked.
+    if p_half is not None and t_lay.shape[-1] != p_half.shape[0] - 1:
         raise ValueError(
-            f"Nlayers must equal Nlevels-1: p_lay has {p_lay.shape[0]} layers but "
-            f"p_half has {p_half.shape[0]} levels (design 5).")
+            f"Nlayers must equal Nlevels-1: emitted profile has {t_lay.shape[-1]} "
+            f"layers but p_half has {p_half.shape[0]} levels (design 5).")
     return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half)

@@ -189,7 +189,8 @@ def test_profile_shapes_on_target_grid():
 
 
 def test_no_target_grid_passes_through():
-    level_p = torch.tensor([150.0, 250.0, 450.0, 650.0, 850.0], dtype=F64)
+    # 5 model layers -> p_half must be 6 levels (Nlayers = Nlevels-1).
+    level_p = torch.tensor([100.0, 200.0, 350.0, 550.0, 750.0, 950.0], dtype=F64)
     leaves = _leaves(requires_grad=True)
     out = model_to_rttov_tensors(leaves, _forcing(), _cfg(layer_p=None, level_p=level_p))
     assert out.t_lay.shape == (5,)        # model grid, no interpolation
@@ -199,6 +200,15 @@ def test_no_target_grid_passes_through():
     (out.t_lay.sum() + out.q_lay.sum()).backward()
     assert float(leaves.th.grad.abs().sum()) > 0.0
     assert float(leaves.qv.grad.abs().sum()) > 0.0
+
+
+def test_passthrough_invalid_layer_level_profile_raises():
+    """The Nlayers=Nlevels-1 invariant must also guard the PASSTHROUGH path:
+    a 5-level model column paired with a 5-level p_half (needs 6) must raise,
+    not silently emit an invalid layer/half-level profile (Codex stop-review)."""
+    bad_level_p = torch.tensor([150.0, 250.0, 450.0, 650.0, 850.0], dtype=F64)  # 5, needs 6
+    with pytest.raises(ValueError, match="Nlayers must equal Nlevels-1"):
+        model_to_rttov_tensors(_leaves(), _forcing(), _cfg(layer_p=None, level_p=bad_level_p))
 
 
 def test_none_passthrough_rejects_descending_column():
