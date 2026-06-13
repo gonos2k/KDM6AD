@@ -119,16 +119,21 @@ def test_run_rttov_k_requires_expected_nprofiles(tmp_path):
 # --- review fixes: truncation / empty-L / P_HALF / freshness -----------------
 
 def test_expected_nprofiles_catches_uniform_truncation(tmp_path):
-    """A uniformly-truncated radiance (48 vals @16ch -> 3 profiles) parses as a
-    smaller valid case unless expected_nprofiles is checked (review HIGH)."""
+    """A uniformly-truncated case (48 chanprof @16ch -> 3 profiles) parses as a
+    smaller valid case; parse_rttov_k_case must reject it against expected=6
+    (raw parsers are pure/discovery; the guard lives at the case boundary)."""
+    k = tmp_path / "k"
+    k.mkdir()
     bt = " ".join(["0.0"] * 48)
     q = " ".join(["0"] * 48)
-    f = tmp_path / "radiance.txt"
-    f.write_text(f"RADIANCE%BT = (\n {bt}\n)\nRADIANCE%QUALITY = (\n {q}\n)\n")
-    # without the guard it would parse 3 profiles silently:
-    assert parse_rttov_radiance(f, nchannels=16)["nprofiles"] == 3
+    (k / "radiance.txt").write_text(f"RADIANCE%BT = (\n {bt}\n)\nRADIANCE%QUALITY = (\n {q}\n)\n")
+    pk = "".join(f"PROFILES_K( {i})%T = (\n 1.0\n)\n" for i in range(1, 49))
+    (k / "profiles_k.txt").write_text(pk)
+    # raw parser discovers 3 profiles (no guard at the pure-parser level):
+    assert parse_rttov_radiance(k / "radiance.txt", nchannels=16)["nprofiles"] == 3
+    # the case boundary rejects against the known expected count:
     with pytest.raises(ValueError, match="expected 6"):
-        parse_rttov_radiance(f, nchannels=16, expected_nprofiles=6)
+        parse_rttov_k_case(tmp_path, nchannels=16, expected_nprofiles=6)
 
 
 def test_empty_k_field_raises(tmp_path):

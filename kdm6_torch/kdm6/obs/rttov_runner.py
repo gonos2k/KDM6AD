@@ -105,12 +105,13 @@ def _infer_nprofiles(n_flat, nchannels, what):
     return n_flat // nchannels
 
 
-def parse_rttov_radiance(path, *, nchannels, expected_nprofiles=None):
+def parse_rttov_radiance(path, *, nchannels):
     """Parse an RTTOV radiance ASCII file -> {bt, rad_quality, nprofiles} reshaped
     to [nprofiles][nchannels]. BT is RADIANCE%BT (solar channels are 0 in BT
-    space; IR carry the brightness temperature). ``expected_nprofiles`` (known at
-    the run boundary) is verified to catch a uniformly-truncated output that would
-    otherwise parse as a smaller-but-valid case."""
+    space; IR carry the brightness temperature). PURE PARSER: it RETURNS the
+    parsed ``nprofiles``; the truncation guard (validating against the known
+    expected count) is enforced by the case/run boundary, not by an optional
+    parameter here (an optional guard is a silent opt-out)."""
     _assert_finite_ascii(path)  # reject NaN/Inf/overflow tokens before they drop
     blocks = parse_rttov_ascii_blocks(path)
     if "RADIANCE%BT" not in blocks:
@@ -119,10 +120,6 @@ def parse_rttov_radiance(path, *, nchannels, expected_nprofiles=None):
     if any(not math.isfinite(v) for v in bt_flat):
         raise ValueError(f"{path}: RADIANCE%BT has non-finite values.")
     nprofiles = _infer_nprofiles(len(bt_flat), nchannels, "RADIANCE%BT")
-    if expected_nprofiles is not None and nprofiles != expected_nprofiles:
-        raise ValueError(
-            f"{path}: parsed {nprofiles} profiles but expected {expected_nprofiles} "
-            "(uniformly-truncated/short RTTOV output -- whole profiles dropped).")
     # QUALITY is REQUIRED, not optional. The design's quality mask
     # (section 8: mask = obs_ok & rad_quality==0 & cloud_gate) cannot be enforced
     # if the runner silently returns no quality -- a missing block means
@@ -145,15 +142,15 @@ def parse_rttov_radiance(path, *, nchannels, expected_nprofiles=None):
     }
 
 
-def parse_rttov_profiles_k(path, *, nchannels, expected_nprofiles=None):
+def parse_rttov_profiles_k(path, *, nchannels):
     """Parse PROFILES_K(i)%FIELD blocks -> {field: [nprofiles][nchannels][L]}.
 
     ``i`` runs over chanprof (nchanprof = nprofiles*nchannels). Each field is
     grouped across all chanprof rows and reshaped; L is that field's own length
     (T/Q -> nlayers, P_HALF -> nlevels, surface scalars -> small L).
-    ``expected_nprofiles`` (known at the run boundary) is verified to catch a
-    uniformly-truncated output that would parse as a smaller-but-valid case.
-    Empty/non-finite fields and a P_HALF/T level/layer mismatch are rejected.
+    PURE PARSER: RETURNS the parsed ``nprofiles``; the truncation guard is
+    enforced at the case/run boundary (no optional opt-out here). Empty/non-finite
+    fields and a P_HALF/T level/layer mismatch are rejected.
     """
     _assert_finite_ascii(path)  # reject NaN/Inf/overflow tokens before they drop
     blocks = parse_rttov_ascii_blocks(path)
@@ -170,10 +167,6 @@ def parse_rttov_profiles_k(path, *, nchannels, expected_nprofiles=None):
 
     nchanprof = max(len(rows) for rows in by_field.values())
     nprofiles = _infer_nprofiles(nchanprof, nchannels, "nchanprof (PROFILES_K)")
-    if expected_nprofiles is not None and nprofiles != expected_nprofiles:
-        raise ValueError(
-            f"{path}: parsed {nprofiles} profiles but expected {expected_nprofiles} "
-            "(uniformly-truncated/short K output -- whole profiles dropped).")
     out: dict = {}
     for field, rows in by_field.items():
         if sorted(rows) != list(range(1, nchanprof + 1)):
@@ -207,28 +200,30 @@ def parse_rttov_profiles_k(path, *, nchannels, expected_nprofiles=None):
     return out, nprofiles
 
 
-def parse_rttov_k_case(out_dir, *, nchannels, expected_nprofiles=None):
+def parse_rttov_k_case(out_dir, *, nchannels, expected_nprofiles):
     """Assemble RttovKOutput from an already-run RTTOV-K case directory.
 
     Reads ``<out_dir>/k/radiance.txt`` (BT + quality) and
     ``<out_dir>/k/profiles_k.txt`` (K-matrix) -- both products of the SAME
     single runK (design 14.2). No subprocess; usable on a fixture's stored
     output (the verified-I/O path the design's first backend specifies).
-    ``expected_nprofiles`` is forwarded to both parsers (truncation guard).
+
+    ``expected_nprofiles`` is REQUIRED (no None opt-out): the parsed BT and K
+    profile counts are both validated against it, so a uniformly-truncated output
+    (whole profiles dropped, BT/K truncating alike) is rejected here.
     """
     out_dir = Path(out_dir)
-    rad = parse_rttov_radiance(out_dir / "k" / "radiance.txt", nchannels=nchannels,
-                               expected_nprofiles=expected_nprofiles)
+    rad = parse_rttov_radiance(out_dir / "k" / "radiance.txt", nchannels=nchannels)
     k, nprofiles_k = parse_rttov_profiles_k(
-        out_dir / "k" / "profiles_k.txt", nchannels=nchannels,
-        expected_nprofiles=expected_nprofiles)
-    if nprofiles_k != rad["nprofiles"]:
+        out_dir / "k" / "profiles_k.txt", nchannels=nchannels)
+    if rad["nprofiles"] != expected_nprofiles or nprofiles_k != expected_nprofiles:
         raise ValueError(
-            f"nprofiles mismatch: radiance {rad['nprofiles']} vs profiles_k "
-            f"{nprofiles_k} (inconsistent RTTOV outputs).")
+            f"profile count mismatch: radiance {rad['nprofiles']}, profiles_k "
+            f"{nprofiles_k}, expected {expected_nprofiles} (uniformly-truncated "
+            "output or wrong nchannels).")
     return RttovKOutput(
         bt=rad["bt"], rad_quality=rad["rad_quality"], k=k,
-        nprofiles=rad["nprofiles"], nchannels=nchannels)
+        nprofiles=expected_nprofiles, nchannels=nchannels)
 
 
 def _resolve_run_script(case_dir, run_script):
@@ -293,5 +288,9 @@ def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles,
     script = _resolve_run_script(case_dir, run_script)
     target = script.parent / "direct" / "radiance.txt"
     _run_case_fresh(script, [target], timeout)
-    return parse_rttov_radiance(target, nchannels=nchannels,
-                                expected_nprofiles=expected_nprofiles)
+    rad = parse_rttov_radiance(target, nchannels=nchannels)
+    if rad["nprofiles"] != expected_nprofiles:
+        raise ValueError(
+            f"{target}: parsed {rad['nprofiles']} profiles, expected "
+            f"{expected_nprofiles} (uniformly-truncated output).")
+    return rad
