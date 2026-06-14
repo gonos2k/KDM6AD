@@ -239,6 +239,37 @@ def test_cloud_assemble_nc_ni_none_is_sever():
     assert float(cov.nccn.abs().sum()) == 0.0 and float(cov.nc.abs().sum()) > 0.0
 
 
+def test_callback_uses_symmetric_obs_error():
+    """Phase 3 wiring: with cfg.error_model + obs['bt_clear'], the callback uses the
+    CA-dependent sigma. A large cloud-amount (CA) inflates sigma -> the obs gradient
+    on th is smaller than under the static clear-sky sigma (same residual)."""
+    from kdm6.obs.obs_loss import SymmetricObsError
+    cfg_static = _cloud_cfg()._replace(sigma=2.0)          # static clear-sky sigma
+    base_bt = _bt_torch(model_to_rttov_tensors(_cloudy_col(), _forcing_col(),
+                                               cfg_static.profile_cfg)).detach()
+    o_static = {"bt": base_bt + 30.0, "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+    cov_static = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_static]}),
+                                      cfg=cfg_static, forcings=[_forcing()], run_k=_mock_run_k)
+    # CA model: |O-Bclr|=30 -> CA~15 > ca_cld -> sigma=sigma_cld=20 (10x the static 2).
+    model = SymmetricObsError(sigma_clr=2.0, sigma_cld=20.0, ca_clr=1.0, ca_cld=10.0)
+    cfg_ca = cfg_static._replace(error_model=model)
+    o_ca = {**o_static, "bt_clear": base_bt}
+    cov_ca = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_ca]}),
+                                  cfg=cfg_ca, forcings=[_forcing()], run_k=_mock_run_k)
+    assert torch.isfinite(cov_ca.th).all()
+    assert 0.0 < float(cov_ca.th.abs().sum()) < float(cov_static.th.abs().sum())
+
+
+def test_callback_error_model_requires_bt_clear():
+    """error_model set but obs missing 'bt_clear' -> raise (no silent static fallback)."""
+    from kdm6.obs.obs_loss import SymmetricObsError
+    cfg = _cloud_cfg()._replace(error_model=SymmetricObsError(2.0, 20.0, 1.0, 10.0))
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64)}  # no bt_clear
+    with pytest.raises(ValueError, match="bt_clear"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                             cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+
+
 def test_da_window_cloud_integration():
     """run_da_window with a 2-D cloudy state + cloud obs_adjoint completes and yields
     a finite adj_x0 with the obs signal reaching x0 through the cloud chain."""

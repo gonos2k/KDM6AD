@@ -30,7 +30,7 @@ import torch
 
 from ..state import Forcing, State
 from .model_profile_builder import RttovProfileTensors, model_to_rttov_tensors
-from .obs_loss import compute_obs_loss
+from .obs_loss import compute_obs_loss, symmetric_obs_error
 from .rttov_input_builder import pack_rttov_input
 
 # Fields that NEVER have an RTTOV obs path (0 is the answer; dynamics VJP carries
@@ -74,9 +74,10 @@ class ObsOperatorConfig(NamedTuple):
     """Bundle for the callback: P2 profile config + P4 input config + loss params."""
     profile_cfg: object        # RttovProfileConfig (P2)
     input_cfg: object          # RttovInputConfig (P4)
-    sigma: object              # obs error (scalar or per-channel)
+    sigma: object              # static obs error (scalar or per-channel) -- fallback
     huber_delta: float = 1.0
     connected_fields: frozenset = CLEAR_SKY_CONNECTED
+    error_model: object = None  # Phase 3: SymmetricObsError (CA-dependent sigma) or None
 
 
 class RttovObsOp(torch.autograd.Function):
@@ -296,7 +297,20 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
         mask = _build_mask(o, rad_quality)
         if float(mask.sum()) > 0.0:   # mask is detached -> .sum() is graph-free
             any_active = True
-        term = compute_obs_loss(bt_hat, o, mask, cfg.sigma, delta=cfg.huber_delta)
+        # Phase 3: symmetric cloud obs-error sigma(CA) when an error_model + a clear-sky
+        # first-guess BT (o["bt_clear"]) are provided; else the static cfg.sigma. The
+        # CA-sigma is DETACHED (a weighting, no ghost grad into lambda_BT).
+        sigma = cfg.sigma
+        if cfg.error_model is not None:
+            bt_clear = o.get("bt_clear")
+            if bt_clear is None:
+                # error_model = intent to use CA-sigma; a missing clear-sky first guess
+                # would silently fall back to static sigma -> reject, don't drop.
+                raise ValueError(
+                    "ObsOperatorConfig.error_model is set but obs lacks 'bt_clear' "
+                    "(clear-sky first-guess BT) -- required for the symmetric CA obs-error.")
+            sigma = symmetric_obs_error(bt_hat, o["bt"], bt_clear, cfg.error_model)
+        term = compute_obs_loss(bt_hat, o, mask, sigma, delta=cfg.huber_delta)
         j = term if j is None else j + term
     if not any_active:
         # obs PRESENT but every (profile, channel) masked out (rad_quality /
