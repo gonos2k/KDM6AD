@@ -318,14 +318,75 @@ def test_overlay_rejects_noninteger_channels(tmp_path):
     assert chan == ["7 8"]
 
 
+# ---------------------------------------- per-obs surface overlay (skin/near_surface)
+_SURF = {
+    "skin": {"surftype": 1, "watertype": 1, "t": 301.0, "salinity": 35.0,
+             "foam_fraction": 0.0, "snow_fraction": 0.0, "fastem": [3.0, 5.0, 15.0, 0.1, 0.3]},
+    "near_surface": {"t2m": 298.0, "q2m": 20000.0, "wind_u10m": 4.0, "wind_v10m": 2.0,
+                     "wind_fetch": 100000.0},
+}
+
+
 @needs_fixture
-def test_overlay_rejects_surface(tmp_path):
-    """Non-None surface is not yet written into the case -> raise rather than silently
-    using the fixture's (reject-don't-drop). (geometry IS overlaid now -- see below.)"""
+def test_surface_overlay_writes_skin_and_near_surface(tmp_path):
+    """A surface dict overlays sfc/NN/skin.txt (&skin k0%...) + near_surface.txt
+    (&near_surface s0%...) -- including the fastem(1..5) array."""
     t_vec, q_vec = _fixture_tq()
-    rin = _rttov_input_from_arrays(t_vec, q_vec, surface={"skin_t": 290.0})
-    with pytest.raises(NotImplementedError, match="surface"):
-        write_rttov_case(rin, tmp_path / "case")
+    write_rttov_case(_rttov_input_from_arrays(t_vec, q_vec, surface=_SURF), tmp_path / "case")
+    sfc = tmp_path / "case" / "in" / "profiles" / "001" / "sfc"
+    sub = sorted(d for d in sfc.iterdir() if d.is_dir())[0]
+    skin = (sub / "skin.txt").read_text()
+    ns = (sub / "near_surface.txt").read_text()
+    assert re.search(r"k0%t\s*=\s*301\.0", skin) and re.search(r"k0%surftype\s*=\s*1", skin)
+    assert re.search(r"k0%fastem\(5\)\s*=\s*0\.3", skin)        # fastem array written
+    assert re.search(r"s0%t2m\s*=\s*298\.0", ns) and re.search(r"s0%q2m\s*=\s*20000", ns)
+
+
+@needs_fixture
+def test_surface_overlay_validation_rejects(tmp_path):
+    """reject-don't-drop: missing section/field, unknown/typo field, bad enum/range, and
+    a wrong-length fastem are rejected BEFORE any filesystem mutation."""
+    t_vec, q_vec = _fixture_tq()
+    import copy
+
+    def _w(mut):
+        s = copy.deepcopy(_SURF); mut(s)
+        write_rttov_case(_rttov_input_from_arrays(t_vec, q_vec, surface=s),
+                         tmp_path / "case", overwrite=True)
+    with pytest.raises(ValueError, match="section 'near_surface'"):
+        _w(lambda s: s.pop("near_surface"))
+    with pytest.raises(ValueError, match="skin missing"):
+        _w(lambda s: s["skin"].pop("t"))
+    with pytest.raises(ValueError, match="unknown fields"):
+        _w(lambda s: s["skin"].update(skin_temp=301.0))     # typo of 't'
+    with pytest.raises(ValueError, match="surftype"):
+        _w(lambda s: s["skin"].update(surftype=5))          # not 0/1/2
+    with pytest.raises(ValueError, match="skin T"):
+        _w(lambda s: s["skin"].update(t=10.0))              # out of [50,400] K
+    with pytest.raises(ValueError, match="fastem"):
+        _w(lambda s: s["skin"].update(fastem=[1.0, 2.0]))   # wrong length
+    # q2m UNITS band: a kg/kg (~0.02) or g/kg (~20) value is rejected (ppmv-moist trap).
+    with pytest.raises(ValueError, match="ppmv MOIST"):
+        _w(lambda s: s["near_surface"].update(q2m=0.018))   # kg/kg mislabel
+    with pytest.raises(ValueError, match="ppmv MOIST"):
+        _w(lambda s: s["near_surface"].update(q2m=18.0))    # g/kg mislabel
+    assert not (tmp_path / "case").exists()                 # all rejected pre-mutation
+
+
+@needs_live
+def test_live_surface_overlay_changes_bt(tmp_path):
+    """The overlaid skin temperature is honored: a +20 K skin-T change moves the window
+    IR BT -- proving the per-obs surface state reaches RTTOV."""
+    import copy
+    t_vec, q_vec = _fixture_tq()
+    cold = copy.deepcopy(_SURF); cold["skin"]["t"] = 290.0
+    warm = copy.deepcopy(_SURF); warm["skin"]["t"] = 310.0
+    bt_c = np.asarray(make_live_run_k(tmp_path / "c")(
+        _rttov_input_from_arrays(t_vec, q_vec, surface=cold))[0])
+    bt_w = np.asarray(make_live_run_k(tmp_path / "w")(
+        _rttov_input_from_arrays(t_vec, q_vec, surface=warm))[0])
+    # window IR channels see the surface -> a 20 K skin change moves their BT.
+    assert np.max(np.abs(bt_c[0, 6:] - bt_w[0, 6:])) > 0.5, (bt_c[0, 6:], bt_w[0, 6:])
 
 
 # --------------------------------------------- per-obs geometry overlay (angles.txt)

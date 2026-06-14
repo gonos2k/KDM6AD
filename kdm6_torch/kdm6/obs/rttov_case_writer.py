@@ -271,6 +271,124 @@ def _overlay_geometry(profile_dir: Path, geom: dict) -> None:
     path.write_text("&angles\n" + body + "\n/\n")
 
 
+# Surface state: skin.txt (&skin k0%...) + near_surface.txt (&near_surface s0%...),
+# per profile per surface index (sfc/NN/). All fields REQUIRED (reject-don't-drop: an
+# omitted field would silently take the fixture/RTTOV default).
+_SKIN_SCALARS = ("surftype", "watertype", "t", "salinity", "foam_fraction", "snow_fraction")
+_FASTEM_N = 5
+_NEAR_SURFACE_FIELDS = ("t2m", "q2m", "wind_u10m", "wind_v10m", "wind_fetch")
+
+
+def _surface_for_profile(surface, p: int):
+    return surface[p] if isinstance(surface, (list, tuple)) else surface
+
+
+def _validate_surface(surface, nprof: int) -> None:
+    """Validate RttovInputConfig.surface BEFORE any FS mutation (reject-don't-drop): a
+    dict (broadcast) or a list of ``nprof`` dicts, each ``{'skin': {...}, 'near_surface':
+    {...}}`` carrying EXACTLY the &skin (surftype/watertype/t/salinity/foam_fraction/
+    snow_fraction + fastem[5]) and &near_surface (t2m/q2m/wind_u10m/wind_v10m/wind_fetch)
+    fields, finite, with physical bounds + enums. An omitted/typo field is rejected (else
+    it would silently take the fixture default). q2m is in the profile Q units (ppmv moist
+    for gas_units=2); t/t2m in Kelvin; winds m/s; fetch m."""
+    if surface is None:
+        return
+    if isinstance(surface, (list, tuple)):
+        if len(surface) != nprof:
+            raise ValueError(f"RttovInputConfig.surface list has {len(surface)} entries != "
+                             f"nprofiles {nprof} (one per profile, or a single dict).")
+        items = list(surface)
+    elif isinstance(surface, dict):
+        items = [surface]
+    else:
+        raise TypeError("RttovInputConfig.surface must be a dict (broadcast) or a list of "
+                        "per-profile dicts with 'skin' and 'near_surface' sections.")
+    for s in items:
+        if not isinstance(s, dict):
+            raise TypeError("each surface entry must be a dict with 'skin'/'near_surface'.")
+        unknown_sec = [k for k in s if k not in ("skin", "near_surface")]
+        if unknown_sec:
+            raise ValueError(f"surface has unknown sections {unknown_sec}; need exactly "
+                             "'skin' and 'near_surface'.")
+        for sec in ("skin", "near_surface"):
+            if sec not in s or not isinstance(s[sec], dict):
+                raise ValueError(f"surface must have a dict section '{sec}'.")
+        skin, ns = s["skin"], s["near_surface"]
+        skin_keys = set(_SKIN_SCALARS) | {"fastem"}
+        miss = [k for k in skin_keys if k not in skin]
+        if miss:
+            raise ValueError(f"surface.skin missing {sorted(miss)}; need {sorted(skin_keys)}.")
+        ex = [k for k in skin if k not in skin_keys]
+        if ex:
+            raise ValueError(f"surface.skin has unknown fields {ex} (a typo would be silently dropped).")
+        for k in _SKIN_SCALARS:
+            if not math.isfinite(float(skin[k])):
+                raise ValueError(f"surface.skin {k}={skin[k]!r} is not finite.")
+        fe = skin["fastem"]
+        if not isinstance(fe, (list, tuple)) or len(fe) != _FASTEM_N or any(
+                not math.isfinite(float(x)) for x in fe):
+            raise ValueError(f"surface.skin fastem must be {_FASTEM_N} finite values.")
+        if int(skin["surftype"]) not in (0, 1, 2):
+            raise ValueError("surface.skin surftype must be 0 (land) / 1 (sea) / 2 (seaice).")
+        if int(skin["watertype"]) not in (0, 1):
+            raise ValueError("surface.skin watertype must be 0 (fresh) / 1 (ocean).")
+        if not (50.0 <= float(skin["t"]) <= 400.0):
+            raise ValueError(f"surface.skin t (skin T, K) {skin['t']} must be in [50, 400].")
+        for k in ("foam_fraction", "snow_fraction"):
+            if not (0.0 <= float(skin[k]) <= 1.0):
+                raise ValueError(f"surface.skin {k} {skin[k]} must be in [0, 1].")
+        if float(skin["salinity"]) < 0.0:
+            raise ValueError("surface.skin salinity must be >= 0.")
+        miss = [k for k in _NEAR_SURFACE_FIELDS if k not in ns]
+        if miss:
+            raise ValueError(f"surface.near_surface missing {sorted(miss)}; need {list(_NEAR_SURFACE_FIELDS)}.")
+        ex = [k for k in ns if k not in _NEAR_SURFACE_FIELDS]
+        if ex:
+            raise ValueError(f"surface.near_surface has unknown fields {ex} (a typo would be silently dropped).")
+        for k in _NEAR_SURFACE_FIELDS:
+            if not math.isfinite(float(ns[k])):
+                raise ValueError(f"surface.near_surface {k}={ns[k]!r} is not finite.")
+        if not (50.0 <= float(ns["t2m"]) <= 400.0):
+            raise ValueError(f"surface.near_surface t2m (K) {ns['t2m']} must be in [50, 400].")
+        # q2m is ppmv-MOIST (gas_units forced to 2, like the profile Q ~ O(1e2-1e5)).
+        # A kg/kg (~0.02) or g/kg (~20) mislabel is finite & non-negative but bone-dry as
+        # ppmv -> wrong IR BT (same class as the elevation km/m trap). Band it: the floor
+        # (50 ppmv) is below the driest real 2 m surface (~160 ppmv) yet above the g/kg
+        # mislabel; the cap catches gross unit errors.
+        if not (50.0 <= float(ns["q2m"]) <= 2.0e5):
+            raise ValueError(
+                f"surface.near_surface q2m {ns['q2m']} must be in [50, 2e5] ppmv MOIST "
+                "(gas_units=2, profile Q units) -- pass ppmv, NOT kg/kg or g/kg.")
+        if float(ns["wind_fetch"]) <= 0.0:
+            raise ValueError("surface.near_surface wind_fetch must be > 0 m.")
+
+
+def _overlay_surface(profile_dir: Path, surface: dict) -> None:
+    """Overlay the per-profile surface files for EVERY surface index (sfc/NN/): skin.txt
+    (&skin k0%...) + near_surface.txt (&near_surface s0%...) from a VALIDATED surface
+    dict. nsurfaces>1 broadcasts the same surface to each index."""
+    skin, ns = surface["skin"], surface["near_surface"]
+    sfc = profile_dir / "sfc"
+    subs = sorted(d for d in sfc.iterdir() if d.is_dir()) if sfc.is_dir() else []
+    if not subs:
+        raise FileNotFoundError(f"fixture profile missing {sfc}/NN (surface overlay target).")
+    skin_lines = [
+        f"  k0%surftype        = {int(skin['surftype'])}",
+        f"  k0%watertype       = {int(skin['watertype'])}",
+        f"  k0%t               = {float(skin['t']):.6f}",
+        f"  k0%salinity        = {float(skin['salinity']):.6f}",
+        f"  k0%foam_fraction   = {float(skin['foam_fraction']):.6f}",
+        f"  k0%snow_fraction   = {float(skin['snow_fraction']):.6f}",
+    ] + [f"  k0%fastem({i + 1})       = {float(skin['fastem'][i]):.6f}" for i in range(_FASTEM_N)]
+    ns_lines = [f"  s0%{k:<11s} = {float(ns[k]):.6f}" for k in _NEAR_SURFACE_FIELDS]
+    for d in subs:
+        for fn in ("skin.txt", "near_surface.txt"):
+            if not (d / fn).is_file():
+                raise FileNotFoundError(f"fixture surface dir missing {d / fn}.")
+        (d / "skin.txt").write_text("&skin\n" + "\n".join(skin_lines) + "\n/\n")
+        (d / "near_surface.txt").write_text("&near_surface\n" + "\n".join(ns_lines) + "\n/\n")
+
+
 def _as_channel_id(c) -> int:
     """Strict 1-based RTTOV channel id: reject bool / non-integral / non-positive.
 
@@ -569,15 +687,11 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
     # + channels come from the RttovInput; reject fields the writer would silently ignore.
     cfg = rttov_input.config
-    # geometry (per-obs viewing + solar angles) IS overlaid now (see _overlay_geometry,
-    # applied in _populate_case). surface (skin T / surface type / emissivity) is still
-    # taken from the fixture -- reject a non-None surface rather than silently ignore it.
-    if getattr(cfg, "surface", None) is not None:
-        raise NotImplementedError(
-            "RttovInputConfig.surface is not yet written into the case (the fixture's is "
-            "used) -- pass None until the surface overlay lands, else it would be silently "
-            "ignored.")
+    # geometry (viewing + solar angles) and surface (skin + near-surface state) are BOTH
+    # overlaid now (see _overlay_geometry / _overlay_surface, applied in _populate_case);
+    # validate them BEFORE any FS mutation.
     _validate_geometry(getattr(cfg, "geometry", None), rttov_input.nprofiles)
+    _validate_surface(getattr(cfg, "surface", None), rttov_input.nprofiles)
     # Reject cloud-family fields the writer does not recognize (a forbidden MW
     # RTTOV-SCATT slot like HYDRO1/HYDRO4, an extra HYDRO8, or a misspelled HYDRO6):
     # they would otherwise be silently dropped to a clear-sky run (reject-don't-drop,
@@ -686,6 +800,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             _overlay_cloud(pdir, rttov_input, p, len(t_all[p]))
         if cfg.geometry is not None:                    # per-obs viewing + solar angles
             _overlay_geometry(pdir, _geometry_for_profile(cfg.geometry, p))
+        if cfg.surface is not None:                      # per-obs skin + near-surface state
+            _overlay_surface(pdir, _surface_for_profile(cfg.surface, p))
     # trim the case to exactly nprof profiles so the run/parse profile count matches.
     for extra in prof_ids[nprof:]:
         shutil.rmtree(prof_root / extra)
