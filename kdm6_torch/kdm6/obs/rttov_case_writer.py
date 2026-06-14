@@ -314,6 +314,66 @@ def _verify_solar_namelist(config_path: Path) -> None:
             + "; ".join(bad))
 
 
+def _coef_channel_types(coef_path: Path) -> dict:
+    """Parse the rtcoef SOLAR_SPECTRUM section -> {1-based channel id: type}, type
+    0=thermal, 1=thermal+solar, 2=solar (rtcoef ASCII: after the ``SOLAR_SPECTRUM``
+    header + ``!`` comment lines, each data row is ``<chan> <type> <solar_spectrum>
+    <rayleigh>``; a ``!`` line after the data ends the section)."""
+    types: dict = {}
+    in_section = False
+    for line in coef_path.read_text().splitlines():
+        s = line.strip()
+        if not in_section:
+            if s == "SOLAR_SPECTRUM":
+                in_section = True
+            continue
+        if not s or s.startswith("!"):
+            if types:                 # a comment/blank AFTER the data rows ends the section
+                break
+            continue                  # header comments precede the data
+        parts = s.split()
+        if (len(parts) < 2 or not parts[0].lstrip("-").isdigit()
+                or not parts[1].lstrip("-").isdigit()):
+            break                     # a non-data line ends the section
+        types[int(parts[0])] = int(parts[1])
+    return types
+
+
+def _resolve_coef_path(case_root: Path) -> Path:
+    """The rtcoef .dat path the run uses: ``defn%coef_prefix`` (out/rttov_test.txt) +
+    ``defn%f_coef`` (in/coef.txt)."""
+    nl = (case_root / "out" / "rttov_test.txt").read_text()
+    mp = re.search(r"(?m)^\s*defn%coef_prefix\s*=\s*'([^']*)'", nl)
+    coef_txt = (case_root / "in" / "coef.txt").read_text()
+    mc = re.search(r"(?m)^\s*defn%f_coef\s*=\s*'([^']*)'", coef_txt)
+    if mp is None or mc is None or not mp.group(1).strip() or not mc.group(1).strip():
+        raise ValueError(f"{case_root}: cannot resolve coef path (defn%coef_prefix / "
+                         "defn%f_coef missing) -- needed to verify solar channel types.")
+    return Path(mp.group(1)) / mc.group(1)
+
+
+def _verify_solar_channel_types(case_root: Path, solar_ids) -> None:
+    """Every requested solar id must be a PURE-SOLAR (type 2) channel per the coef
+    SOLAR_SPECTRUM. A thermal (type 0) id would get a REFL(=0) observable contracted
+    against its BT-K row, and a thermal+solar (type 1, e.g. SW038) id has a MIXED K
+    (BT+REFL seeded) -- neither is a clean reflectance observable. reject-don't-drop:
+    the writer otherwise accepts any in-range id as 'solar' (Codex stop-review)."""
+    coef_path = _resolve_coef_path(case_root)
+    if not coef_path.is_file():
+        raise FileNotFoundError(
+            f"coef {coef_path} not found -- cannot verify solar channel types.")
+    types = _coef_channel_types(coef_path)
+    if not types:
+        raise ValueError(f"{coef_path}: no SOLAR_SPECTRUM channel types parsed.")
+    bad = [f"ch{ci}(type {types.get(ci)})"
+           for ci in sorted(_as_channel_id(c) for c in solar_ids) if types.get(ci) != 2]
+    if bad:
+        raise ValueError(
+            f"solar_channels {bad} are not pure-solar (type 2) per the coef SOLAR_SPECTRUM "
+            "-- only type-2 channels have a clean REFL observable + reflectance-K; thermal "
+            "(type 0) and thermal+solar (type 1, e.g. SW038) channels must be used as BT/IR.")
+
+
 def _verify_cloud_hydrotable(case_root: Path) -> None:
     """A cloud run needs a VIS/IR scattering hydrotable; the fixture names it in
     in/coef.txt (defn%f_hydrotable). A missing/empty entry means RTTOV has no optical
@@ -508,8 +568,10 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # against a BT-K row -> silent wrong gradient (Codex Phase-7 review).
     if solar_channels:
         requested = {_as_channel_id(c) for c in rttov_input.config.channels}
-        if requested & {_as_channel_id(c) for c in solar_channels}:
+        used_solar = requested & {_as_channel_id(c) for c in solar_channels}
+        if used_solar:
             _verify_solar_namelist(out / "out" / "rttov_test.txt")
+            _verify_solar_channel_types(out, used_solar)   # reject thermal/mixed ids
 
     nprof = rttov_input.nprofiles
     prof_root = out / "in" / "profiles"

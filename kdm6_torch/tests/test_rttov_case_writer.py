@@ -543,6 +543,30 @@ def test_solar_observable_rejects_no_adk_refl_fixture(tmp_path):
     write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix, overwrite=True)
 
 
+@needs_cloud_fixture
+def test_coef_channel_types_parses_solar_spectrum():
+    """The coef SOLAR_SPECTRUM parser identifies AMI channel types: 1-6 pure-solar
+    (type 2), 7 thermal+solar (type 1), 8-16 thermal (type 0)."""
+    from kdm6.obs.rttov_case_writer import _coef_channel_types, _resolve_coef_path
+    types = _coef_channel_types(_resolve_coef_path(_CFIX))
+    assert types[1] == 2 and types[6] == 2          # VIS/NIR solar
+    assert types[7] == 1                            # SW038 thermal+solar
+    assert types[8] == 0 and types[16] == 0         # IR thermal
+
+
+@needs_cloud_fixture
+def test_solar_observable_rejects_thermal_or_mixed_channel_id(tmp_path):
+    """A THERMAL (type 0) or thermal+solar (type 1) id in solar_channels is rejected per
+    the coef SOLAR_SPECTRUM -- only pure-solar (type 2) channels have a clean REFL
+    observable + reflectance-K (a thermal id would pair a REFL=0 observable with a BT-K
+    row; Codex stop-review). The real solar set (1-6) is accepted."""
+    rin, _ = _cloud_rttov_input()
+    for bad in ((8,), (7,), (1, 8)):               # 8=thermal, 7=thermal+solar
+        with pytest.raises(ValueError, match="pure-solar"):
+            write_rttov_case(rin, tmp_path / "case", solar_channels=bad, overwrite=True)
+    write_rttov_case(rin, tmp_path / "case", solar_channels=(1, 2, 3, 4, 5, 6), overwrite=True)
+
+
 # ------------------------------------------------- cloud K adapter (Phase 6, no run)
 def _flat_typemajor(nprof, nch, ntype, nlay):
     """Synthetic flat K block, type-major: value[type,layer] = type*100 + layer."""
