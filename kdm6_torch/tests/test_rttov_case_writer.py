@@ -361,6 +361,12 @@ def test_surface_overlay_validation_rejects(tmp_path):
         _w(lambda s: s["skin"].update(skin_temp=301.0))     # typo of 't'
     with pytest.raises(ValueError, match="surftype"):
         _w(lambda s: s["skin"].update(surftype=5))          # not 0/1/2
+    # STRICT enum: a fractional / stringy enum is rejected, NOT silently coerced
+    # (surftype=1.5 must not snap to 1; watertype="1" must not be accepted).
+    with pytest.raises(ValueError, match="exact integer enum"):
+        _w(lambda s: s["skin"].update(surftype=1.5))
+    with pytest.raises(ValueError, match="integer enum"):
+        _w(lambda s: s["skin"].update(watertype="1"))
     with pytest.raises(ValueError, match="skin T"):
         _w(lambda s: s["skin"].update(t=10.0))              # out of [50,400] K
     with pytest.raises(ValueError, match="fastem"):

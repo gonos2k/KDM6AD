@@ -275,8 +275,24 @@ def _overlay_geometry(profile_dir: Path, geom: dict) -> None:
 # per profile per surface index (sfc/NN/). All fields REQUIRED (reject-don't-drop: an
 # omitted field would silently take the fixture/RTTOV default).
 _SKIN_SCALARS = ("surftype", "watertype", "t", "salinity", "foam_fraction", "snow_fraction")
+_SKIN_FLOAT_FIELDS = ("t", "salinity", "foam_fraction", "snow_fraction")   # surftype/watertype are enums
 _FASTEM_N = 5
 _NEAR_SURFACE_FIELDS = ("t2m", "q2m", "wind_u10m", "wind_v10m", "wind_fetch")
+
+
+def _strict_enum_int(v, label: str) -> int:
+    """Exact integer for an enum field -- reject bool / fractional / stringy rather than
+    silently coercing (int(1.5)->1 would snap to a DIFFERENT valid enum; int('1')/int(True)
+    would accept junk). Mirrors _as_channel_id's strict-id discipline."""
+    if isinstance(v, bool):
+        raise ValueError(f"{label} {v!r} is a bool, not an integer enum.")
+    try:
+        iv = int(v)
+    except (TypeError, ValueError):
+        raise ValueError(f"{label} {v!r} is not an integer enum.")
+    if iv != v:                       # fractional float (1.5) or stringy ('1') -> not exact
+        raise ValueError(f"{label} {v!r} is not an exact integer enum (no silent coercion).")
+    return iv
 
 
 def _surface_for_profile(surface, p: int):
@@ -321,16 +337,18 @@ def _validate_surface(surface, nprof: int) -> None:
         ex = [k for k in skin if k not in skin_keys]
         if ex:
             raise ValueError(f"surface.skin has unknown fields {ex} (a typo would be silently dropped).")
-        for k in _SKIN_SCALARS:
+        for k in _SKIN_FLOAT_FIELDS:               # continuous fields (enums checked strictly below)
             if not math.isfinite(float(skin[k])):
                 raise ValueError(f"surface.skin {k}={skin[k]!r} is not finite.")
         fe = skin["fastem"]
         if not isinstance(fe, (list, tuple)) or len(fe) != _FASTEM_N or any(
                 not math.isfinite(float(x)) for x in fe):
             raise ValueError(f"surface.skin fastem must be {_FASTEM_N} finite values.")
-        if int(skin["surftype"]) not in (0, 1, 2):
+        # STRICT enum: int() would silently coerce 1.5->1 (a different valid enum) or
+        # accept "1"/True; reject a non-exact-integer instead (cf. _as_channel_id).
+        if _strict_enum_int(skin["surftype"], "surface.skin surftype") not in (0, 1, 2):
             raise ValueError("surface.skin surftype must be 0 (land) / 1 (sea) / 2 (seaice).")
-        if int(skin["watertype"]) not in (0, 1):
+        if _strict_enum_int(skin["watertype"], "surface.skin watertype") not in (0, 1):
             raise ValueError("surface.skin watertype must be 0 (fresh) / 1 (ocean).")
         if not (50.0 <= float(skin["t"]) <= 400.0):
             raise ValueError(f"surface.skin t (skin T, K) {skin['t']} must be in [50, 400].")
