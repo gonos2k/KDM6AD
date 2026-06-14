@@ -16,17 +16,18 @@ import pytest
 
 from kdm6.obs.rttov_runner import (
     RttovKOutput,
-    ad_rttov_home,
     parse_rttov_profiles_k,
     parse_rttov_radiance,
     parse_rttov_k_case,
     run_rttov_k,
 )
+from kdm6.obs.rttov_case_writer import default_fixture_case_dir
 
 _QUAL2 = "RADIANCE%QUALITY = (\n  0 0\n)\n"
 
 AMI_NCHANNELS = 16
-_FIX = ad_rttov_home() / "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/501/out"
+# Prefer the self-contained rttov_runtime bundle (cases/ami/501), else AD_RTTOV_HOME.
+_FIX = default_fixture_case_dir() / "out"
 _HAVE_FIX = (_FIX / "k" / "profiles_k.txt").is_file() and (_FIX / "direct" / "radiance.txt").is_file()
 skip_no_fixture = pytest.mark.skipif(not _HAVE_FIX, reason=f"ami/501 fixture not found under {_FIX}")
 

@@ -21,15 +21,44 @@ import re
 import shutil
 from pathlib import Path
 
-from .rttov_runner import ad_rttov_home, run_rttov_k
+from .rttov_runner import ad_rttov_home, rttov_runtime_root, run_rttov_k
 
-# The ami/501 GK2A AMI fixture case (6 profiles x 16 channels, 69 layers).
+# The ami/501 GK2A AMI clear-sky fixture (6 profiles x 16 channels, 69 layers).
 _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/501"
+# The AMI ALL-SKY cloud fixture (ami/501 + f_hydrotable + cloud input files). RTTOV
+# allocates nhydro = ntypes(7) + 1 (Baran) = 8 for VIS/IR, so hydro.txt has 8 columns:
+# OPAC 1-5, CLW-Deff liquid (col 6), Baum ice (col 7), Baran (col 8, unused). hydro_deff
+# has nhydro-1 = 7 columns (Baran excluded). Liquid/ice are the Deff-bearing slots 6/7.
+_AMI_CLOUD_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud"
+_NHYDRO = 8            # hydro.txt columns (7 hydrotable types + Baran)
+_NHYDRO_DEFF = 7       # hydro_deff.txt columns (nhydro - 1, Baran has no Deff)
+_LIQ_COL = 5           # 0-based: slot 6 = CLW-Deff liquid
+_ICE_COL = 6           # 0-based: slot 7 = Baum ice
+# RttovInput.profile cloud keys -> (matrix, column). content [g/m^3], Deff [micron].
+_CLOUD_KEYS = ("HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC")
+
+
+# Project-local runtime layout (tools/build_rttov_runtime.sh): cases/ami/{501,cloud}.
+_RUNTIME_AMI501 = "cases/ami/501"
+_RUNTIME_AMI_CLOUD = "cases/ami/cloud"
 
 
 def default_fixture_case_dir() -> Path:
-    """Resolve the ami/501 fixture case under AD_RTTOV_HOME (design 14.1)."""
+    """Resolve the ami/501 clear-sky fixture: prefer the project-local rttov_runtime
+    bundle (self-contained), else AD_RTTOV_HOME (design 14.1)."""
+    rt = rttov_runtime_root()
+    if rt is not None and (rt / _RUNTIME_AMI501).is_dir():
+        return rt / _RUNTIME_AMI501
     return ad_rttov_home() / _AMI501_FIXTURE
+
+
+def cloud_fixture_case_dir() -> Path:
+    """Resolve the AMI all-sky cloud fixture: prefer the project-local rttov_runtime
+    bundle (self-contained), else AD_RTTOV_HOME (Phase 5)."""
+    rt = rttov_runtime_root()
+    if rt is not None and (rt / _RUNTIME_AMI_CLOUD).is_dir():
+        return rt / _RUNTIME_AMI_CLOUD
+    return ad_rttov_home() / _AMI_CLOUD_FIXTURE
 
 
 def _format_rttov_vector(values) -> str:
@@ -56,6 +85,117 @@ def _overlay_atm(profile_dir: Path, field_file: str, values) -> None:
             f"{path}: model length {len(values)} != fixture layer count {n_fix} -- "
             "the model T/Q must be interpolated onto the fixture's layer grid before overlay.")
     path.write_text(_format_rttov_vector(values))
+
+
+def _validate_cloud_domain(rttov_input) -> None:
+    """Reject cloud values RTTOV would silently MISHANDLE (reject-don't-drop), before
+    any filesystem mutation:
+      * content (HYDRO6/7) must be finite and >= 0 (negative hydrometeor mass is
+        unphysical and RTTOV does not guard it),
+      * CFRAC must be finite and in [0, 1] (RTTOV expects a fraction),
+      * Deff (HYDRO_DEFF6/7) must be finite, and > 0 in EVERY layer where the matching
+        content > 0 -- a non-positive Deff in a cloudy layer trips RTTOV's positive-Deff
+        gate (rttov_calc_hydro_deff.F90:125) to SILENTLY substitute the parametrized
+        deff_param scheme, dropping the model's explicit effective diameter (and making
+        the HYDRO_DEFF adjoint meaningless). Deff <= 0 in a CLEAR layer is fine (no
+        content there), so the guard is content-coupled, not blanket-positive."""
+    import numpy as np
+    prof = rttov_input.profile
+    for p in range(rttov_input.nprofiles):
+        cfrac = np.asarray(prof["CFRAC"][p], dtype=float).reshape(-1)
+        if not np.all(np.isfinite(cfrac)) or np.any(cfrac < 0.0) or np.any(cfrac > 1.0):
+            raise ValueError(f"profile {p}: CFRAC must be finite and in [0, 1].")
+        for content_key, deff_key in (("HYDRO6", "HYDRO_DEFF6"), ("HYDRO7", "HYDRO_DEFF7")):
+            c = np.asarray(prof[content_key][p], dtype=float).reshape(-1)
+            d = np.asarray(prof[deff_key][p], dtype=float).reshape(-1)
+            if not np.all(np.isfinite(c)) or np.any(c < 0.0):
+                raise ValueError(f"profile {p}: {content_key} must be finite and >= 0.")
+            if not np.all(np.isfinite(d)):
+                raise ValueError(f"profile {p}: {deff_key} must be finite.")
+            if np.any((c > 0.0) & ~(d > 0.0)):
+                raise ValueError(
+                    f"profile {p}: {deff_key} must be > 0 wherever {content_key} > 0 -- a "
+                    "non-positive Deff in a cloudy layer would silently fall back to "
+                    "deff_param, dropping the model's explicit effective diameter.")
+
+
+def _write_matrix(path: Path, rows) -> None:
+    """Write a [nlay, ncol] matrix as space-separated ``%.6E`` per layer row."""
+    path.write_text("".join(" ".join(f"{float(v):.6E}" for v in row) + "\n" for row in rows))
+
+
+def _overlay_cloud(profile_dir: Path, rttov_input, p: int, nlay: int) -> None:
+    """Overlay the all-sky cloud input files for profile ``p`` from the RttovInput.
+
+    hydro.txt [nlay x 8]: content g/m^3 with liquid (HYDRO6) in slot-6 col, ice
+    (HYDRO7) in slot-7 col, all other slots (OPAC 1-5, Baran 8) zero. hydro_deff.txt
+    [nlay x 7]: effective DIAMETER micron, liquid/ice Deff in the same slot-6/7 cols.
+    hydro_frac.txt: a ``hydro_frac_eff`` line then [nlay x 1] cloud fraction (CFRAC).
+    The fixture provides f_hydrotable + the cloud namelist switches; the run derives
+    layers from p_half, so the model cloud rides the fixture layer grid.
+
+    hydro_deff.txt is WRITTEN here (not required to pre-exist): rttov_test reads it
+    whenever the file exists (driver INQUIRE), and RTTOV's positive-Deff gate then uses
+    the model's explicit Deff wherever it is > 0, falling back to deff_param.txt
+    (the parametrized scheme) elsewhere -- so deff_param.txt MUST be present as the
+    fallback (a fixture without it would error in the unconditional driver read)."""
+    import numpy as np
+    atm = profile_dir / "atm"
+    # Cloud-fixture contract: the run reads content (hydro.txt) + fraction
+    # (hydro_frac.txt) and ALWAYS reads deff_param.txt (driver line ~1691, no INQUIRE)
+    # as the Deff fallback. Reject a non-cloud / Deff-incomplete fixture rather than
+    # writing files the run will not read.
+    for fn in ("hydro.txt", "hydro_frac.txt", "deff_param.txt"):
+        if not (atm / fn).is_file():
+            raise FileNotFoundError(
+                f"cloud fixture profile missing {atm / fn} -- not a cloud-capable fixture "
+                "(need hydro.txt + hydro_frac.txt + deff_param.txt fallback).")
+    # UNIT contract: the model emits hydrometeor CONTENT in g/m^3, so the fixture must
+    # declare mmr_hydro = F (g/m^3). mmr_hydro is read only if mmr_hydro_aer.txt EXISTS
+    # (driver :1657 INQUIRE) and has NO type default when absent -- so a missing file or
+    # an mmr_hydro=T would SILENTLY reinterpret the overlaid g/m^3 as kg/kg (BT wrong by
+    # orders of magnitude). Reject-don't-drop.
+    mmr_path = atm / "mmr_hydro_aer.txt"
+    if not mmr_path.is_file():
+        raise FileNotFoundError(
+            f"cloud fixture profile missing {mmr_path} -- the hydrometeor unit flag is "
+            "undefined without it (the model emits g/m^3 and needs mmr_hydro=F).")
+    m = re.search(r"(?im)^\s*mmr_hydro\s*=\s*\.?\s*([TF])", mmr_path.read_text())
+    if m is None or m.group(1).upper() != "F":
+        raise ValueError(
+            f"{mmr_path}: cloud fixture must set mmr_hydro = F (g/m^3) to match the model's "
+            f"emitted content units (got {'mmr_hydro=' + m.group(1) if m else 'no mmr_hydro line'}).")
+    # HYDROTABLE-dimension contract: the writer's slot layout (nhydro=8 = ntypes 7 +
+    # Baran; liquid=col idx5, ice=col idx6) is hydrotable-specific. The fixture's
+    # EXISTING hydro.txt column count IS nhydro -- verify it equals _NHYDRO before
+    # overwriting, so a fixture built on a different hydrotable (different ntypes, hence
+    # a different liquid/ice column) is rejected rather than silently mis-slotted.
+    existing = [ln for ln in (atm / "hydro.txt").read_text().splitlines() if ln.strip()]
+    ncol_fix = len(existing[0].split()) if existing else 0
+    if ncol_fix != _NHYDRO:
+        raise ValueError(
+            f"{atm / 'hydro.txt'}: fixture hydro has {ncol_fix} columns but the AMI all-sky "
+            f"writer assumes nhydro={_NHYDRO} (ntypes 7 + Baran), liquid=col {_LIQ_COL + 1} / "
+            f"ice=col {_ICE_COL + 1} -- a different hydrotable would place the Deff-bearing "
+            "slots in different columns. Use the AMI hydrotable fixture.")
+
+    def _col(key):
+        v = np.asarray(rttov_input.profile[key][p], dtype=float).reshape(-1)
+        if v.shape[0] != nlay:
+            raise ValueError(f"cloud field {key} length {v.shape[0]} != fixture layers {nlay}.")
+        return v
+
+    H = np.zeros((nlay, _NHYDRO))
+    H[:, _LIQ_COL] = _col("HYDRO6")
+    H[:, _ICE_COL] = _col("HYDRO7")
+    D = np.zeros((nlay, _NHYDRO_DEFF))
+    D[:, _LIQ_COL] = _col("HYDRO_DEFF6")
+    D[:, _ICE_COL] = _col("HYDRO_DEFF7")
+    _write_matrix(atm / "hydro.txt", H)
+    _write_matrix(atm / "hydro_deff.txt", D)
+    with open(atm / "hydro_frac.txt", "w") as fh:
+        fh.write("0.000000E+00\n")                         # hydro_frac_eff (overlap, unused here)
+        fh.write(_format_rttov_vector(_col("CFRAC")))
 
 
 def _as_channel_id(c) -> int:
@@ -124,6 +264,46 @@ def _verify_fixture_contract(config_path: Path, rttov_config) -> None:
         raise ValueError(
             f"{config_path}: fixture namelist violates the obs-operator contract -- "
             + "; ".join(bad))
+
+
+def _verify_cloud_namelist(config_path: Path) -> None:
+    """A cloud RttovInput needs a fixture whose namelist actually ENABLES hydrometeor
+    scattering: defn%f_hydro (content) AND defn%f_hydro_frac (fraction) must be set to
+    non-empty paths (rttov_test gates ``opts%scatt%hydrometeors`` on both -- driver
+    ~line 1050). A fixture with the cloud atm/ files present but f_hydro/f_hydro_frac
+    unset would run CLEAR-SKY while overlaying the model cloud -> silently wrong cloud
+    BT/K. Reject-don't-drop: the overlaid hydro.txt/hydro_deff.txt would be ignored."""
+    text = config_path.read_text()
+    missing = []
+    for name in ("f_hydro", "f_hydro_frac"):
+        # non-empty quoted path (the driver default is "" = disabled).
+        m = re.search(rf"^\s*defn%{re.escape(name)}\s*=\s*['\"]([^'\"]*)['\"]", text, re.M)
+        if m is None or not m.group(1).strip():
+            missing.append(name)
+    if missing:
+        raise ValueError(
+            f"{config_path}: cloud RttovInput requires a hydrometeor-enabled fixture but "
+            f"defn%{'/defn%'.join(missing)} is unset -- the overlaid cloud would run "
+            "clear-sky (use the AMI cloud fixture / a hydrometeor-enabled case).")
+
+
+def _verify_cloud_hydrotable(case_root: Path) -> None:
+    """A cloud run needs a VIS/IR scattering hydrotable; the fixture names it in
+    in/coef.txt (defn%f_hydrotable). A missing/empty entry means RTTOV has no optical
+    properties for the overlaid hydrometeors (the run errors), and -- more subtly --
+    the slot<->type mapping the writer assumes (HYDRO6=liquid/HYDRO7=ice) is defined by
+    THAT table, so the cloud fixture must carry one. Require it to be set (the file's
+    existence is resolved against the run's coef prefix and checked loudly at run time)."""
+    coef = case_root / "in" / "coef.txt"
+    if not coef.is_file():
+        raise FileNotFoundError(
+            f"cloud fixture missing {coef} (defn%f_hydrotable lives here).")
+    m = re.search(r"(?im)^\s*defn%f_hydrotable\s*=\s*['\"]([^'\"]*)['\"]", coef.read_text())
+    if m is None or not m.group(1).strip():
+        raise ValueError(
+            f"{coef}: cloud fixture must set defn%f_hydrotable (the VIS/IR scattering "
+            "coefficient table) -- without it the overlaid hydrometeors have no optical "
+            "properties and the slot<->type mapping is undefined.")
 
 
 def _layer_pressure_from_half(ph):
@@ -207,6 +387,11 @@ def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int
 def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False) -> Path:
     """Copy the fixture case and overlay atm/t.txt + atm/q.txt from ``rttov_input``.
 
+    If ``rttov_input`` carries the full all-sky cloud set (HYDRO6/7 content +
+    HYDRO_DEFF6/7 + CFRAC), the AMI cloud fixture is used (unless ``fixture_case_dir``
+    is given) and atm/hydro.txt + atm/hydro_deff.txt + atm/hydro_frac.txt are overlaid
+    too -- the liquid (slot-6) / ice (slot-7) Deff-bearing columns from the model.
+
     Returns the ``out/`` subdir (containing run.sh) for ``run_rttov_k``. The case is
     trimmed to ``rttov_input.nprofiles`` profiles (extra fixture profiles removed;
     channels/lprofiles authored from ``config.channels``). Never modifies the fixture.
@@ -218,28 +403,48 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     never silently dropped (surface/geometry, a P_HALF off the fixture grid, or a
     fixture whose namelist contradicts the forced K/gas-unit contract).
     """
-    fixture = Path(fixture_case_dir) if fixture_case_dir is not None else default_fixture_case_dir()
     out = Path(out_case_dir)
     # Validate the RttovInput BEFORE any filesystem mutation (no leftover dir on reject).
-    # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q + channels
-    # come from the RttovInput; reject fields the writer would otherwise silently ignore.
+    # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
+    # + channels come from the RttovInput; reject fields the writer would silently ignore.
     cfg = rttov_input.config
     if getattr(cfg, "surface", None) is not None or getattr(cfg, "geometry", None) is not None:
         raise NotImplementedError(
             "RttovInputConfig.surface/geometry are not yet written into the case "
             "(the fixture's are used) -- pass None until the overlay lands, else they "
             "would be silently ignored.")
-    # All-sky cloud fields are not yet overlaid (Phase 5: AMI hydrotable + cloud fixture).
-    # A cloud RttovInput would otherwise run CLEAR-SKY while backward expects cloud K
-    # -> silently wrong gradient. Reject, don't drop.
-    cloud_keys = [k for k in ("HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC")
-                  if k in rttov_input.profile]
-    if cloud_keys:
-        raise NotImplementedError(
-            f"RttovInput carries cloud fields {cloud_keys} but write_rttov_case does not "
-            "yet overlay them (the AMI hydrotable + cloud fixture are Phase 5) -- the run "
-            "would be clear-sky while backward expects cloud K. Use a mock run_k for the "
-            "cloud autograd path until the live cloud fixture lands.")
+    # Reject cloud-family fields the writer does not recognize (a forbidden MW
+    # RTTOV-SCATT slot like HYDRO1/HYDRO4, an extra HYDRO8, or a misspelled HYDRO6):
+    # they would otherwise be silently dropped to a clear-sky run (reject-don't-drop,
+    # and this fires even when no recognized cloud key is present).
+    unknown_cloud = sorted(
+        k for k in rttov_input.profile
+        if (k.startswith("HYDRO") or k == "CFRAC") and k not in _CLOUD_KEYS)
+    if unknown_cloud:
+        raise ValueError(
+            f"unrecognized cloud-family fields {unknown_cloud}: the AMI all-sky writer "
+            f"handles only {list(_CLOUD_KEYS)} -- MW RTTOV-SCATT slots / extra "
+            "hydrometeor types / misspellings are rejected, not silently dropped.")
+    # All-sky: a cloud RttovInput (HYDRO6/7 content + HYDRO_DEFF6/7 + CFRAC) is overlaid
+    # onto the AMI cloud fixture (f_hydrotable + cloud namelist switches). Require the
+    # FULL cloud set -- a partial set would run with the fixture's stale cloud in the
+    # missing slots (e.g. ice content but fixture Deff) -> silently wrong cloud BT/K.
+    present = [k for k in _CLOUD_KEYS if k in rttov_input.profile]
+    is_cloud = bool(present)
+    if is_cloud and len(present) != len(_CLOUD_KEYS):
+        raise ValueError(
+            f"partial cloud RttovInput: have {present}, need all of {list(_CLOUD_KEYS)} "
+            "-- a missing cloud field would inherit the fixture's stale value (wrong BT/K).")
+    if is_cloud:
+        _validate_cloud_domain(rttov_input)
+    # Cloud RttovInput defaults to the AMI cloud fixture; an explicit fixture_case_dir
+    # always wins (caller may target another cloud-capable sensor case).
+    if fixture_case_dir is not None:
+        fixture = Path(fixture_case_dir)
+    elif is_cloud:
+        fixture = cloud_fixture_case_dir()
+    else:
+        fixture = default_fixture_case_dir()
     if not fixture.is_dir():
         raise FileNotFoundError(
             f"RTTOV fixture case not found: {fixture} (set AD_RTTOV_HOME / install ami/501).")
@@ -250,8 +455,26 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
             raise ValueError("refusing to overwrite the fixture case in place.")
         shutil.rmtree(out)
     shutil.copytree(fixture, out)
+    # Everything past copytree may reject (a bad fixture contract, an off-grid P_HALF,
+    # a profile-count mismatch, a cloud overlay error). On ANY failure remove the
+    # just-copied case so no PARTIAL out_case_dir is left behind (else the next call
+    # without overwrite=True would hit FileExistsError) -- reject-don't-drop (Codex F4).
+    try:
+        return _populate_case(out, rttov_input, cfg, is_cloud)
+    except BaseException:
+        shutil.rmtree(out, ignore_errors=True)
+        raise
 
+
+def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool) -> Path:
+    """Overlay the RttovInput onto the freshly-copied case ``out`` and return out/out.
+
+    Split out of write_rttov_case so a post-copytree failure can be cleaned up by the
+    caller (no partial case left behind)."""
     _verify_fixture_contract(out / "out" / "rttov_test.txt", cfg)
+    if is_cloud:
+        _verify_cloud_namelist(out / "out" / "rttov_test.txt")
+        _verify_cloud_hydrotable(out)
 
     nprof = rttov_input.nprofiles
     prof_root = out / "in" / "profiles"
@@ -285,6 +508,8 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
         _overlay_atm(pdir, "t.txt", t_all[p])
         _overlay_atm(pdir, "q.txt", q_all[p])
         _check_grid_matches_fixture(pdir, ph_all[p], None if pl_all is None else pl_all[p])
+        if is_cloud:
+            _overlay_cloud(pdir, rttov_input, p, len(t_all[p]))
     # trim the case to exactly nprof profiles so the run/parse profile count matches.
     for extra in prof_ids[nprof:]:
         shutil.rmtree(prof_root / extra)

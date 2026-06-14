@@ -24,7 +24,7 @@ from kdm6.obs.model_profile_builder import (
     RttovProfileConfig, model_to_rttov_tensors, qv_to_q_ppmv_moist)
 from kdm6.obs.obs_loss import compute_obs_loss
 from kdm6.obs.rttov_case_writer import (
-    default_fixture_case_dir, make_live_run_k, write_rttov_case)
+    cloud_fixture_case_dir, default_fixture_case_dir, make_live_run_k, write_rttov_case)
 from kdm6.obs.rttov_input_builder import (
     RttovInputConfig, RttovInput, pack_rttov_input)
 from kdm6.obs.rttov_obs_operator import RttovObsOp, _build_mask
@@ -49,6 +49,25 @@ def _have_exe() -> bool:
 _HAVE_EXE = _have_exe()
 needs_fixture = pytest.mark.skipif(not _HAVE_FIXTURE, reason="AD-RTTOV ami/501 fixture absent")
 needs_live = pytest.mark.skipif(not _HAVE_EXE, reason="RTTOV exe absent (live run)")
+
+# All-sky cloud fixture (ami/cloud: f_hydrotable + hydro/hydro_frac/deff_param inputs).
+_CFIX = cloud_fixture_case_dir()
+_HAVE_CLOUD_FIXTURE = _CFIX.is_dir() and (_CFIX / "out" / "run.sh").is_file()
+
+
+def _have_cloud_exe() -> bool:
+    if not _HAVE_CLOUD_FIXTURE:
+        return False
+    m = re.search(r"(\S+\.exe)", (_CFIX / "out" / "run.sh").read_text())
+    from pathlib import Path
+    return bool(m) and Path(m.group(1)).is_file()
+
+
+_HAVE_CLOUD_EXE = _have_cloud_exe()
+needs_cloud_fixture = pytest.mark.skipif(
+    not _HAVE_CLOUD_FIXTURE, reason="AD-RTTOV ami/cloud fixture absent")
+needs_cloud_live = pytest.mark.skipif(
+    not _HAVE_CLOUD_EXE, reason="RTTOV cloud exe absent (live cloud run)")
 
 _CHANNELS = tuple(range(1, 17))   # ami/501: 16 AMI channels
 
@@ -94,6 +113,42 @@ def _rttov_input_from_arrays(t_vec, q_vec, channels=_CHANNELS, p_half=None,
     cfg = RttovInputConfig(coef_id="ami_501_test", channels=channels,
                            surface=surface, geometry=geometry)
     return pack_rttov_input(prof, cfg)
+
+
+def _cloud_fixture_tq(profile="001"):
+    """The CLOUD fixture profile's T (K), Q (ppmv), p_half grid."""
+    atm = _CFIX / "in" / "profiles" / profile / "atm"
+    return (np.loadtxt(atm / "t.txt"), np.loadtxt(atm / "q.txt"),
+            np.loadtxt(atm / "p_half.txt"))
+
+
+def _cloud_rttov_input(channels=_CHANNELS, deff_liq=20.0, deff_ice=45.0, drop=None):
+    """Pack a single-profile all-sky cloud RttovInput on the cloud-fixture grid.
+
+    Deterministic synthetic cloud: ice aloft (layers 15-25), liquid lower (40-50),
+    g/m^3 content + micron Deff + binary cloud fraction. Returns (RttovInput, ref)
+    where ref holds the expected per-layer arrays for overlay round-trip checks.
+    ``drop`` removes one cloud key after packing (to exercise the partial-set guard).
+    """
+    from kdm6.obs.model_profile_builder import RttovProfileTensors
+    t_vec, q_vec, ph = _cloud_fixture_tq()
+    nlay = len(t_vec)
+    clw = np.zeros(nlay); clw[40:50] = 0.10
+    ciw = np.zeros(nlay); ciw[15:25] = 0.03
+    dl = np.full(nlay, float(deff_liq))
+    di = np.full(nlay, float(deff_ice))
+    cfrac = np.zeros(nlay); cfrac[15:50] = 1.0
+    f64 = torch.float64
+    prof = RttovProfileTensors(
+        t_lay=torch.as_tensor(t_vec, dtype=f64), q_lay=torch.as_tensor(q_vec, dtype=f64),
+        p_lay=None, p_half=torch.as_tensor(ph, dtype=f64),
+        clw=torch.as_tensor(clw, dtype=f64), ciw=torch.as_tensor(ciw, dtype=f64),
+        deff_liq=torch.as_tensor(dl, dtype=f64), deff_ice=torch.as_tensor(di, dtype=f64),
+        cfrac=torch.as_tensor(cfrac, dtype=f64))
+    rin = pack_rttov_input(prof, RttovInputConfig(coef_id="ami_cloud", channels=channels))
+    if drop is not None:
+        rin.profile.pop(drop)
+    return rin, dict(clw=clw, ciw=ciw, deff_liq=dl, deff_ice=di, cfrac=cfrac)
 
 
 # ---------------------------------------------------------------- overlay (no run)
@@ -288,25 +343,187 @@ def test_overlay_rejects_bad_fixture_contract(tmp_path):
         write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
 
 
-@needs_fixture
-def test_overlay_rejects_cloud_input(tmp_path):
-    """A cloud RttovInput (HYDRO*) is rejected until Phase 5 builds the cloud overlay;
-    else the live run would be clear-sky while the caller's backward expects cloud K."""
-    from kdm6.obs.model_profile_builder import RttovProfileTensors
-    t_vec, q_vec = _fixture_tq()
-    nlay = len(t_vec)
-    prof = RttovProfileTensors(
-        t_lay=torch.as_tensor(t_vec, dtype=torch.float64),
-        q_lay=torch.as_tensor(q_vec, dtype=torch.float64), p_lay=None,
-        p_half=torch.as_tensor(_fixture_p_half(), dtype=torch.float64),
-        clw=torch.zeros(nlay, dtype=torch.float64), ciw=torch.zeros(nlay, dtype=torch.float64),
-        deff_liq=torch.full((nlay,), 20.0, dtype=torch.float64),
-        deff_ice=torch.full((nlay,), 40.0, dtype=torch.float64),
-        cfrac=torch.zeros(nlay, dtype=torch.float64))
-    rin = pack_rttov_input(prof, RttovInputConfig(coef_id="ami", channels=_CHANNELS))
-    assert "HYDRO6" in rin.profile
-    with pytest.raises(NotImplementedError, match="cloud fields"):
+# ---------------------------------------------------------- all-sky cloud overlay
+@needs_cloud_fixture
+def test_cloud_overlay_writes_hydro_files(tmp_path):
+    """A full cloud RttovInput defaults to the AMI cloud fixture and overlays the
+    three cloud input files: hydro.txt [nlay x 8] (liquid HYDRO6 -> col idx5, ice
+    HYDRO7 -> col idx6, all other slots 0), hydro_deff.txt [nlay x 7] (model Deff in
+    the same liquid/ice cols), hydro_frac.txt (a hydro_frac_eff line + per-layer
+    CFRAC). The parametrized-Deff fallback (deff_param.txt) is preserved (the driver
+    reads it unconditionally; the positive-Deff gate prefers the model's explicit Deff)."""
+    rin, ref = _cloud_rttov_input()                         # no fixture_case_dir -> cloud fixture
+    write_rttov_case(rin, tmp_path / "case")
+    atm = tmp_path / "case" / "in" / "profiles" / "001" / "atm"
+    nlay = len(ref["clw"])
+
+    H = np.loadtxt(atm / "hydro.txt")
+    assert H.shape == (nlay, 8)
+    assert np.allclose(H[:, 5], ref["clw"], rtol=1e-6, atol=0)     # liquid content (slot 6)
+    assert np.allclose(H[:, 6], ref["ciw"], rtol=1e-6, atol=0)     # ice content (slot 7)
+    assert np.all(H[:, [0, 1, 2, 3, 4, 7]] == 0.0)                 # OPAC 1-5 + Baran: zero
+
+    D = np.loadtxt(atm / "hydro_deff.txt")
+    assert D.shape == (nlay, 7)                                    # nhydro - 1 (Baran has no Deff)
+    assert np.allclose(D[:, 5], ref["deff_liq"], rtol=1e-6, atol=0)
+    assert np.allclose(D[:, 6], ref["deff_ice"], rtol=1e-6, atol=0)
+    assert np.all(D[:, [0, 1, 2, 3, 4]] == 0.0)
+
+    frac = [ln for ln in (atm / "hydro_frac.txt").read_text().splitlines() if ln.strip()]
+    assert len(frac) == 1 + nlay                                   # eff line + per-layer CFRAC
+    assert np.allclose([float(x) for x in frac[1:]], ref["cfrac"], rtol=1e-6, atol=0)
+
+    assert (atm / "deff_param.txt").is_file()                      # param fallback preserved
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_does_not_mutate_fixture(tmp_path):
+    before = (_CFIX / "in" / "profiles" / "001" / "atm" / "hydro.txt").read_text()
+    rin, _ = _cloud_rttov_input()
+    write_rttov_case(rin, tmp_path / "case")
+    after = (_CFIX / "in" / "profiles" / "001" / "atm" / "hydro.txt").read_text()
+    assert before == after
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_partial_set_rejected(tmp_path):
+    """A partial cloud set (missing CFRAC) is rejected before any FS mutation -- the
+    missing field would inherit the fixture's stale value (silently wrong cloud)."""
+    rin, _ = _cloud_rttov_input(drop="CFRAC")
+    assert "HYDRO6" in rin.profile and "CFRAC" not in rin.profile
+    with pytest.raises(ValueError, match="partial cloud"):
         write_rttov_case(rin, tmp_path / "case")
+    assert not (tmp_path / "case").exists()                        # rejected before copytree
+
+
+@needs_fixture
+@needs_cloud_fixture
+def test_cloud_input_on_clearsky_fixture_rejected(tmp_path):
+    """A cloud RttovInput forced onto the clear-sky ami/501 fixture (no f_hydro in the
+    namelist) is rejected -- the overlaid cloud would run clear-sky (reject-don't-drop)."""
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(ValueError, match="clear-sky"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=_FIX)
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_nonpositive_deff_in_cloudy_layer(tmp_path):
+    """A non-positive Deff where content > 0 is rejected (before any FS mutation):
+    RTTOV's positive-Deff gate would SILENTLY fall back to deff_param, dropping the
+    model's explicit diameter -- the exact silent-drop the Deff adjoint can't survive."""
+    rin, _ = _cloud_rttov_input()                           # ciw[20]=0.03 (>0)
+    rin.profile["HYDRO_DEFF7"][0][20] = 0.0                 # ice Deff 0 in a cloudy layer
+    with pytest.raises(ValueError, match="must be > 0 wherever HYDRO7"):
+        write_rttov_case(rin, tmp_path / "case")
+    assert not (tmp_path / "case").exists()                 # rejected before copytree
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_allows_nonpositive_deff_in_clear_layer(tmp_path):
+    """Deff <= 0 in a CLEAR layer (content 0 there) is fine -- the guard is
+    content-coupled, not blanket-positive (RTTOV ignores Deff where content==0)."""
+    rin, _ = _cloud_rttov_input()                           # ciw[0]=0
+    rin.profile["HYDRO_DEFF7"][0][0] = 0.0
+    write_rttov_case(rin, tmp_path / "case")                # no raise
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_negative_content_and_bad_cfrac(tmp_path):
+    rin, _ = _cloud_rttov_input()
+    rin.profile["HYDRO6"][0][45] = -0.1                     # negative liquid mass
+    with pytest.raises(ValueError, match="HYDRO6 must be finite and >= 0"):
+        write_rttov_case(rin, tmp_path / "case")
+    rin2, _ = _cloud_rttov_input()
+    rin2.profile["CFRAC"][0][20] = 1.5                      # fraction > 1
+    with pytest.raises(ValueError, match=r"CFRAC must be finite and in \[0, 1\]"):
+        write_rttov_case(rin2, tmp_path / "case")
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_unrecognized_hydro_key(tmp_path):
+    """A forbidden MW RTTOV-SCATT slot (HYDRO1) alongside the AMI cloud set is
+    rejected, not silently dropped (reject-don't-drop)."""
+    rin, _ = _cloud_rttov_input()
+    rin.profile["HYDRO1"] = rin.profile["HYDRO6"].copy()
+    with pytest.raises(ValueError, match="unrecognized cloud-family"):
+        write_rttov_case(rin, tmp_path / "case")
+
+
+@needs_fixture
+def test_unrecognized_hydro_key_on_clearsky_rejected(tmp_path):
+    """Even with NO recognized cloud key, a stray HYDRO* key is rejected -- otherwise
+    a misspelled HYDRO6 would silently run clear-sky."""
+    t_vec, q_vec = _fixture_tq()
+    rin = _rttov_input_from_arrays(t_vec, q_vec)
+    rin.profile["HYDRO1"] = np.zeros(len(t_vec))
+    with pytest.raises(ValueError, match="unrecognized cloud-family"):
+        write_rttov_case(rin, tmp_path / "case")
+
+
+@needs_cloud_fixture
+def test_cloud_post_copy_failure_leaves_no_partial_case(tmp_path):
+    """A failure AFTER copytree (off-grid P_HALF caught inside _populate_case) must
+    remove the partial case, so a retry to the SAME dir doesn't hit FileExistsError."""
+    rin, _ = _cloud_rttov_input()
+    rin.profile["P_HALF"][0][:] = rin.profile["P_HALF"][0] + 1.0   # off the fixture grid
+    with pytest.raises(ValueError, match="fixture grid"):
+        write_rttov_case(rin, tmp_path / "case")
+    assert not (tmp_path / "case").exists()                        # cleaned up (no partial)
+    rin2, _ = _cloud_rttov_input()
+    write_rttov_case(rin2, tmp_path / "case")                      # retry, no overwrite=True
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_mmr_hydro_true(tmp_path):
+    """The model emits g/m^3 content -> a fixture with mmr_hydro=T (kg/kg) would
+    silently mis-scale it by orders of magnitude. Reject (unit contract)."""
+    badfix = tmp_path / "badfix"
+    shutil.copytree(_CFIX, badfix)
+    mmr = badfix / "in" / "profiles" / "001" / "atm" / "mmr_hydro_aer.txt"
+    mmr.write_text(re.sub(r"(?im)(mmr_hydro\s*=\s*)F", r"\g<1>T", mmr.read_text()))
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(ValueError, match="mmr_hydro = F"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_missing_mmr_file(tmp_path):
+    """mmr_hydro has NO default when the unit file is absent (driver reads it only on
+    INQUIRE) -> an absent file leaves the unit undefined. Reject."""
+    badfix = tmp_path / "badfix"
+    shutil.copytree(_CFIX, badfix)
+    (badfix / "in" / "profiles" / "001" / "atm" / "mmr_hydro_aer.txt").unlink()
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(FileNotFoundError, match="mmr_hydro_aer.txt"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_wrong_hydro_columns(tmp_path):
+    """The writer's liquid=col6/ice=col7/nhydro=8 layout is hydrotable-specific. A
+    fixture hydro.txt with a different column count (different ntypes hydrotable) would
+    silently mis-slot liquid/ice -> reject before overwriting."""
+    badfix = tmp_path / "badfix"
+    shutil.copytree(_CFIX, badfix)
+    h = badfix / "in" / "profiles" / "001" / "atm" / "hydro.txt"
+    nlay = len(_cloud_fixture_tq()[0])
+    h.write_text("".join(" ".join(["0.000000E+00"] * 6) + "\n" for _ in range(nlay)))  # 6 cols
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(ValueError, match="columns but the AMI all-sky writer assumes"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_missing_hydrotable_entry(tmp_path):
+    """A cloud fixture whose in/coef.txt has no f_hydrotable would have no VIS/IR
+    scattering optical properties (and an undefined slot<->type map). Reject."""
+    badfix = tmp_path / "badfix"
+    shutil.copytree(_CFIX, badfix)
+    coef = badfix / "in" / "coef.txt"
+    coef.write_text(re.sub(r"(?im)^(\s*defn%f_hydrotable\s*=\s*).*$", r"\g<1>''", coef.read_text()))
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(ValueError, match="f_hydrotable"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
 
 
 # ---------------------------------------------------------------- LIVE RTTOV
@@ -399,3 +616,33 @@ def test_live_obs_operator_autograd_through_real_k(tmp_path):
     # real K -> at least one channel sensitive to T and to Q.
     assert g_th.abs().sum().item() > 0.0
     assert g_qv.abs().sum().item() > 0.0
+
+
+# ---------------------------------------------------------- LIVE all-sky cloud
+@needs_cloud_live
+def test_live_cloud_run_k_emits_cloud_bt(tmp_path):
+    """make_live_run_k auto-selects the cloud fixture for a cloud RttovInput, writes
+    hydro/hydro_deff/hydro_frac, runs RTTOV, and returns physical IR cloud BT + K of
+    the right shape -- the explicit hydro_deff.txt does not break the run."""
+    rin, _ = _cloud_rttov_input()
+    bt, k, rad_quality = make_live_run_k(tmp_path / "cloud_case")(rin)
+    bt = np.asarray(bt)
+    assert bt.shape == (1, 16)
+    assert np.all((bt[0, 6:] > 150.0) & (bt[0, 6:] < 350.0))       # IR channels: physical BT
+    nlay = len(_cloud_fixture_tq()[0])
+    assert np.asarray(k["T"]).shape == (1, 16, nlay)
+    assert np.asarray(rad_quality).shape == (1, 16)
+
+
+@needs_cloud_live
+def test_live_cloud_explicit_deff_is_honored(tmp_path):
+    """The model's explicit hydro_deff.txt must CHANGE the BT vs a different ice Deff
+    -- proving RTTOV's positive-Deff gate uses the model Deff, not the parametrized
+    deff_param.txt fallback (else the model's DSD effective diameter is silently lost,
+    and the Deff adjoint would be meaningless). reject-don't-drop, validated live."""
+    rin_a, _ = _cloud_rttov_input(deff_ice=30.0)
+    rin_b, _ = _cloud_rttov_input(deff_ice=90.0)
+    bt_a = np.asarray(make_live_run_k(tmp_path / "a")(rin_a)[0])
+    bt_b = np.asarray(make_live_run_k(tmp_path / "b")(rin_b)[0])
+    # ice scattering differs with effective diameter -> at least one IR channel moves.
+    assert np.max(np.abs(bt_a[0, 6:] - bt_b[0, 6:])) > 0.05, (bt_a[0, 6:], bt_b[0, 6:])

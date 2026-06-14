@@ -65,6 +65,10 @@ KIM-meso_v1.0/main/*.so
 graphify-out/
 wiki/
 
+# Self-contained RTTOV execution bundle (binaries + coef/hydrotable; ~12 MB).
+# Rebuild from AD-RTTOV with tools/build_rttov_runtime.sh (see rttov_runtime/README.md).
+rttov_runtime/
+
 # Local editor/project config
 **/.obsidian/
 xclaudex.toml

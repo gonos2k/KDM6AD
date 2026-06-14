@@ -68,6 +68,22 @@ def ad_rttov_home() -> Path:
     return Path(os.environ.get("AD_RTTOV_HOME", _DEFAULT_AD_RTTOV_HOME))
 
 
+def rttov_runtime_root() -> Path | None:
+    """Resolve the project-local, self-contained RTTOV runtime bundle, or None.
+
+    The bundle (``<repo>/rttov_runtime/``: bin/rttov_test.exe + rtcoef/ + cases/ami/*,
+    built by tools/build_rttov_runtime.sh) lets the cloud path run WITHOUT the external
+    AD-RTTOV tree -- the fixture resolvers prefer it when present and fall back to
+    ``ad_rttov_home()`` otherwise. ``KDM6_RTTOV_RUNTIME`` overrides the location; it
+    still needs the system dylibs the exe links (MacPorts netcdf, Homebrew gcc).
+
+    Returns the bundle root only if it actually contains the exe (a half-built or
+    absent bundle resolves to None so the AD-RTTOV fallback is used)."""
+    env = os.environ.get("KDM6_RTTOV_RUNTIME")
+    root = Path(env) if env else Path(__file__).resolve().parents[3] / "rttov_runtime"
+    return root if (root / "bin" / "rttov_test.exe").is_file() else None
+
+
 class RttovKOutput(NamedTuple):
     """Single-runK result (design 7): direct BT + per-channel K-matrix + quality.
 
