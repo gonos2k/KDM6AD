@@ -77,7 +77,7 @@ class SymmetricObsError(NamedTuple):
     ca_cld: float       # CA at/above which sigma = sigma_cld
 
 
-def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError):
+def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError, *, mask=None):
     """Per-(profile, channel) obs-error SD from the SYMMETRIC cloud-amount predictor
     ``CA = (|B-Bclr| + |O-Bclr|)/2`` (Okamoto et al. 2014), a piecewise-linear ramp
     ``sigma_clr -> sigma_cld`` over ``[ca_clr, ca_cld]``.
@@ -86,12 +86,15 @@ def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError):
     CA depends on B (=bt_hat); if sigma carried that dependence it would leak a ghost
     gradient into lambda_BT. ``Bclr`` is the clear-sky first-guess BT (detached).
 
-    Per-(profile, channel) finiteness is NOT validated here: a MASKED channel (e.g. a
-    solar channel the IR gate excludes) may legitimately carry junk/non-finite BT, and
-    raising on it would block the kept IR channels. The resulting sigma can be
-    non-finite at such positions; ``compute_obs_loss`` is MASK-AWARE (it sanitizes the
-    masked denominator and validates finiteness only where the mask keeps the channel).
-    The scalar model params (always known up front) ARE validated.
+    Per-(profile, channel) finiteness is validated MASK-AWARE: when ``mask`` (the
+    design-8 keep-mask, 1=keep) is given, bt_hat/bt_obs/bt_clear must be finite where
+    KEPT (a non-finite there is a real bug -- in particular an ``inf`` bt_clear is
+    otherwise SILENTLY absorbed by the CA clamp into ``sigma_cld``, a plausible-looking
+    value, since bt_clear never enters the residual that ``compute_obs_loss`` checks).
+    A MASKED channel (e.g. a solar channel the IR gate excludes) may carry junk. Without
+    a mask no per-channel check is done -- the consumer (``compute_obs_loss``) is itself
+    mask-aware for the residual/sigma, but cannot see bt_clear, so pass the mask here for
+    the production path. The scalar model params are always validated.
     """
     if not all(math.isfinite(p) for p in
                (model.sigma_clr, model.sigma_cld, model.ca_clr, model.ca_cld)):
@@ -106,6 +109,13 @@ def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError):
     B = bt_hat.detach()
     O = torch.as_tensor(bt_obs, dtype=B.dtype, device=B.device).detach()
     Bclr = torch.as_tensor(bt_clear, dtype=B.dtype, device=B.device).detach()
+    if mask is not None:
+        kept = torch.as_tensor(mask, device=B.device).detach() > 0.0
+        for _nm, _v in (("bt_hat", B), ("bt_obs", O), ("bt_clear", Bclr)):
+            if not bool(torch.isfinite(_v.expand_as(kept)[kept]).all()):
+                raise ValueError(
+                    f"{_nm} has non-finite values in a KEPT channel -- invalid obs-error "
+                    "input (an inf bt_clear would otherwise be absorbed into sigma_cld).")
     ca = 0.5 * ((B - Bclr).abs() + (O - Bclr).abs())
     frac = ((ca - model.ca_clr) / (model.ca_cld - model.ca_clr)).clamp(0.0, 1.0)
     sigma = model.sigma_clr + (model.sigma_cld - model.sigma_clr) * frac

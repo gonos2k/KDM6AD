@@ -83,6 +83,24 @@ def test_symmetric_error_param_validation():
         symmetric_obs_error(bt, bt, bt, SymmetricObsError(20.0, 2.0, 1.0, 30.0))  # sigma_cld < sigma_clr
 
 
+def test_symmetric_error_mask_aware_kept_finiteness():
+    """With a mask, a non-finite CA input in a KEPT channel raises -- in particular an
+    inf bt_clear (which the CA clamp would otherwise SILENTLY absorb into sigma_cld,
+    since bt_clear never enters the residual compute_obs_loss checks). Masked: allowed."""
+    bt_hat = torch.tensor([[250.0, 280.0]], dtype=F64)
+    bt_obs = torch.tensor([[248.0, 270.0]], dtype=F64)
+    bt_clear_inf = torch.tensor([[250.0, float("inf")]], dtype=F64)        # inf at ch1
+    with pytest.raises(ValueError, match="KEPT channel"):                  # ch1 kept -> raise
+        symmetric_obs_error(bt_hat, bt_obs, bt_clear_inf, _MODEL,
+                            mask=torch.tensor([[1.0, 1.0]], dtype=F64))
+    sig = symmetric_obs_error(bt_hat, bt_obs, bt_clear_inf, _MODEL,        # ch1 masked -> ok
+                              mask=torch.tensor([[1.0, 0.0]], dtype=F64))
+    assert torch.isfinite(sig[0, 0])
+    # maskless: the silent absorption the mask-aware check guards against (inf -> sigma_cld).
+    sig2 = symmetric_obs_error(bt_hat, bt_obs, bt_clear_inf, _MODEL)
+    assert float(sig2[0, 1]) == pytest.approx(_MODEL.sigma_cld)
+
+
 def test_masked_solar_channel_nonfinite_does_not_block_ir():
     """Stop-review scenario: a MASKED (solar) channel carrying non-finite BT/clear-FG
     must NOT block the kept IR channels. symmetric_obs_error no longer validates

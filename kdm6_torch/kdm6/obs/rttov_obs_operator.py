@@ -309,7 +309,9 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
                 raise ValueError(
                     "ObsOperatorConfig.error_model is set but obs lacks 'bt_clear' "
                     "(clear-sky first-guess BT) -- required for the symmetric CA obs-error.")
-            sigma = symmetric_obs_error(bt_hat, o["bt"], bt_clear, cfg.error_model)
+            # pass the keep-mask: bt_clear/bt_hat/bt_obs are validated finite only in
+            # KEPT channels (an inf bt_clear is otherwise silently absorbed into sigma_cld).
+            sigma = symmetric_obs_error(bt_hat, o["bt"], bt_clear, cfg.error_model, mask=mask)
         term = compute_obs_loss(bt_hat, o, mask, sigma, delta=cfg.huber_delta)
         j = term if j is None else j + term
     if not any_active:

@@ -260,6 +260,21 @@ def test_callback_uses_symmetric_obs_error():
     assert 0.0 < float(cov_ca.th.abs().sum()) < float(cov_static.th.abs().sum())
 
 
+def test_callback_rejects_inf_bt_clear_in_kept_channel():
+    """Production path: error_model + an inf bt_clear in a KEPT channel must raise
+    (it would otherwise be silently absorbed into sigma_cld). The callback passes the
+    keep-mask to symmetric_obs_error so kept-channel finiteness is enforced."""
+    from kdm6.obs.obs_loss import SymmetricObsError
+    cfg = _cloud_cfg()._replace(error_model=SymmetricObsError(2.0, 20.0, 1.0, 10.0))
+    bt_clear = torch.zeros(1, NCH, dtype=F64)
+    bt_clear[0, 1] = float("inf")                          # inf in a kept channel
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64),
+         "bt_clear": bt_clear}
+    with pytest.raises(ValueError, match="KEPT channel"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                             cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+
+
 def test_callback_error_model_requires_bt_clear():
     """error_model set but obs missing 'bt_clear' -> raise (no silent static fallback)."""
     from kdm6.obs.obs_loss import SymmetricObsError
