@@ -17,6 +17,7 @@ contract. Env-coupled: needs AD_RTTOV_HOME's fixture case + the RTTOV exe.
 """
 from __future__ import annotations
 
+import math
 import re
 import shutil
 from pathlib import Path
@@ -196,6 +197,78 @@ def _overlay_cloud(profile_dir: Path, rttov_input, p: int, nlay: int) -> None:
     with open(atm / "hydro_frac.txt", "w") as fh:
         fh.write("0.000000E+00\n")                         # hydro_frac_eff (overlap, unused here)
         fh.write(_format_rttov_vector(_col("CFRAC")))
+
+
+# The &angles namelist fields (rttov_test.F90:1587-1596), per profile. Angles are in
+# DEGREES; latitude/longitude in degrees; **elevation in KILOMETERS** (RTTOV
+# profiles%elevation, elevmax=20 km -- NOT meters).
+_GEOM_FIELDS = ("zenangle", "azangle", "sunzenangle", "sunazangle",
+                "latitude", "longitude", "elevation")
+
+
+def _geometry_for_profile(geometry, p: int):
+    """Per-profile geometry dict: a list/tuple is indexed; a single dict is broadcast."""
+    return geometry[p] if isinstance(geometry, (list, tuple)) else geometry
+
+
+def _validate_geometry(geometry, nprof: int) -> None:
+    """Validate RttovInputConfig.geometry BEFORE any FS mutation (reject-don't-drop): a
+    dict (broadcast to all profiles) or a list of ``nprof`` dicts, each carrying EXACTLY
+    the 7 ``&angles`` fields, finite, with physical zenith/sun/latitude bounds. An
+    unknown/misspelled field is rejected (else it would be silently dropped and the
+    fixture's angle used)."""
+    if geometry is None:
+        return
+    if isinstance(geometry, (list, tuple)):
+        if len(geometry) != nprof:
+            raise ValueError(
+                f"RttovInputConfig.geometry list has {len(geometry)} entries != nprofiles "
+                f"{nprof} (one per profile, or a single dict to broadcast).")
+        items = list(geometry)
+    elif isinstance(geometry, dict):
+        items = [geometry]
+    else:
+        raise TypeError("RttovInputConfig.geometry must be a dict (broadcast) or a list "
+                        "of per-profile dicts of &angles fields.")
+    for g in items:
+        if not isinstance(g, dict):
+            raise TypeError("each geometry entry must be a dict of &angles fields.")
+        missing = [k for k in _GEOM_FIELDS if k not in g]
+        if missing:
+            raise ValueError(f"geometry missing fields {missing}; need all of {list(_GEOM_FIELDS)}.")
+        extra = [k for k in g if k not in _GEOM_FIELDS]
+        if extra:
+            raise ValueError(f"geometry has unknown fields {extra} (only {list(_GEOM_FIELDS)} "
+                             "are written -- a typo would be silently dropped).")
+        for k in _GEOM_FIELDS:
+            if not math.isfinite(float(g[k])):
+                raise ValueError(f"geometry {k}={g[k]!r} is not finite.")
+        if not (0.0 <= float(g["zenangle"]) < 90.0):
+            raise ValueError(f"geometry zenangle {g['zenangle']} must be in [0, 90) deg.")
+        if not (0.0 <= float(g["sunzenangle"]) <= 180.0):
+            raise ValueError(f"geometry sunzenangle {g['sunzenangle']} must be in [0, 180] deg.")
+        if not (-90.0 <= float(g["latitude"]) <= 90.0):
+            raise ValueError(f"geometry latitude {g['latitude']} must be in [-90, 90] deg.")
+        # RTTOV's profiles%elevation is in KILOMETERS (rttov_const.F90 elevmax=20.0 km;
+        # rttov_check_profiles guards ">20" with "units are km"). NWP/WRF terrain height
+        # is METERS -- a meters value would be silently misread as km. Bound to RTTOV's
+        # km range so the common mislabel (terrain > 20 m) is a LOUD reject (the [0,20]
+        # band is inherently ambiguous; the unit is documented). reject-don't-drop.
+        if not (-1.0 <= float(g["elevation"]) <= 20.0):
+            raise ValueError(
+                f"geometry elevation {g['elevation']} must be in [-1, 20] KILOMETERS "
+                "(RTTOV elevmax=20 km) -- pass surface height in km, NOT meters.")
+
+
+def _overlay_geometry(profile_dir: Path, geom: dict) -> None:
+    """Overlay the per-profile ``angles.txt`` (&angles namelist, 7 fields) from a
+    VALIDATED geometry dict (per-obs viewing + solar angles; the run otherwise uses the
+    fixture's fixed angles). Angles in degrees; elevation in KILOMETERS (RTTOV unit)."""
+    path = profile_dir / "angles.txt"
+    if not path.is_file():
+        raise FileNotFoundError(f"fixture profile missing {path} (geometry overlay target).")
+    body = "\n".join(f"  {k:<12s} = {float(geom[k]):.6f}" for k in _GEOM_FIELDS)
+    path.write_text("&angles\n" + body + "\n/\n")
 
 
 def _as_channel_id(c) -> int:
@@ -496,11 +569,15 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
     # + channels come from the RttovInput; reject fields the writer would silently ignore.
     cfg = rttov_input.config
-    if getattr(cfg, "surface", None) is not None or getattr(cfg, "geometry", None) is not None:
+    # geometry (per-obs viewing + solar angles) IS overlaid now (see _overlay_geometry,
+    # applied in _populate_case). surface (skin T / surface type / emissivity) is still
+    # taken from the fixture -- reject a non-None surface rather than silently ignore it.
+    if getattr(cfg, "surface", None) is not None:
         raise NotImplementedError(
-            "RttovInputConfig.surface/geometry are not yet written into the case "
-            "(the fixture's are used) -- pass None until the overlay lands, else they "
-            "would be silently ignored.")
+            "RttovInputConfig.surface is not yet written into the case (the fixture's is "
+            "used) -- pass None until the surface overlay lands, else it would be silently "
+            "ignored.")
+    _validate_geometry(getattr(cfg, "geometry", None), rttov_input.nprofiles)
     # Reject cloud-family fields the writer does not recognize (a forbidden MW
     # RTTOV-SCATT slot like HYDRO1/HYDRO4, an extra HYDRO8, or a misspelled HYDRO6):
     # they would otherwise be silently dropped to a clear-sky run (reject-don't-drop,
@@ -607,6 +684,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
         _check_grid_matches_fixture(pdir, ph_all[p], None if pl_all is None else pl_all[p])
         if is_cloud:
             _overlay_cloud(pdir, rttov_input, p, len(t_all[p]))
+        if cfg.geometry is not None:                    # per-obs viewing + solar angles
+            _overlay_geometry(pdir, _geometry_for_profile(cfg.geometry, p))
     # trim the case to exactly nprof profiles so the run/parse profile count matches.
     for extra in prof_ids[nprof:]:
         shutil.rmtree(prof_root / extra)

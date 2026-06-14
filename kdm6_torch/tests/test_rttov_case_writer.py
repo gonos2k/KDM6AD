@@ -319,13 +319,79 @@ def test_overlay_rejects_noninteger_channels(tmp_path):
 
 
 @needs_fixture
-def test_overlay_rejects_surface_or_geometry(tmp_path):
-    """Non-None surface/geometry are not yet written into the case -> raise rather
-    than silently using the fixture's (reject-don't-drop)."""
+def test_overlay_rejects_surface(tmp_path):
+    """Non-None surface is not yet written into the case -> raise rather than silently
+    using the fixture's (reject-don't-drop). (geometry IS overlaid now -- see below.)"""
     t_vec, q_vec = _fixture_tq()
     rin = _rttov_input_from_arrays(t_vec, q_vec, surface={"skin_t": 290.0})
-    with pytest.raises(NotImplementedError, match="surface/geometry"):
+    with pytest.raises(NotImplementedError, match="surface"):
         write_rttov_case(rin, tmp_path / "case")
+
+
+# --------------------------------------------- per-obs geometry overlay (angles.txt)
+_GEOM = {"zenangle": 30.0, "azangle": 120.0, "sunzenangle": 50.0, "sunazangle": 200.0,
+         "latitude": 35.5, "longitude": 127.0, "elevation": 0.1}
+
+
+@needs_fixture
+def test_geometry_overlay_writes_angles(tmp_path):
+    """A geometry dict overlays the per-profile &angles namelist (7 fields)."""
+    t_vec, q_vec = _fixture_tq()
+    rin = _rttov_input_from_arrays(t_vec, q_vec, geometry=_GEOM)
+    write_rttov_case(rin, tmp_path / "case")
+    txt = (tmp_path / "case" / "in" / "profiles" / "001" / "angles.txt").read_text()
+    for k, v in _GEOM.items():
+        m = re.search(rf"{k}\s*=\s*([-0-9.]+)", txt)
+        assert m and abs(float(m.group(1)) - v) < 1e-5, (k, txt)
+
+
+@needs_fixture
+def test_geometry_overlay_validation_rejects(tmp_path):
+    """reject-don't-drop: a missing field, an unknown/typo field, and an out-of-range
+    zenith are rejected BEFORE any filesystem mutation."""
+    t_vec, q_vec = _fixture_tq()
+
+    def _w(geom):
+        write_rttov_case(_rttov_input_from_arrays(t_vec, q_vec, geometry=geom),
+                         tmp_path / "case", overwrite=True)
+    with pytest.raises(ValueError, match="missing fields"):
+        _w({k: v for k, v in _GEOM.items() if k != "zenangle"})
+    with pytest.raises(ValueError, match="unknown fields"):
+        _w({**_GEOM, "sunzen": 50.0})                  # typo of sunzenangle
+    with pytest.raises(ValueError, match="zenangle"):
+        _w({**_GEOM, "zenangle": 95.0})                # out of [0, 90)
+    with pytest.raises(ValueError, match="latitude"):
+        _w({**_GEOM, "latitude": 120.0})               # out of [-90, 90]
+    # elevation is KILOMETERS (RTTOV unit); a meters terrain height (>20) is rejected
+    # loudly with a km/meters message (the silent meters->km misread trap).
+    with pytest.raises(ValueError, match="KILOMETERS"):
+        _w({**_GEOM, "elevation": 1500.0})             # 1500 m terrain passed as "elevation"
+    assert not (tmp_path / "case").exists()             # all rejected pre-mutation
+    # a valid km elevation (2.5 km) is accepted.
+    write_rttov_case(_rttov_input_from_arrays(t_vec, q_vec, geometry={**_GEOM, "elevation": 2.5}),
+                     tmp_path / "case", overwrite=True)
+
+
+@needs_fixture
+def test_geometry_list_length_must_match_nprofiles(tmp_path):
+    t_vec, q_vec = _fixture_tq()
+    rin = _rttov_input_from_arrays(t_vec, q_vec, geometry=[_GEOM, _GEOM])   # 2 != 1 profile
+    with pytest.raises(ValueError, match="entries != nprofiles"):
+        write_rttov_case(rin, tmp_path / "case")
+
+
+@needs_live
+def test_live_geometry_overlay_changes_bt(tmp_path):
+    """The overlaid satellite zenith angle is honored: a larger zenith (longer IR path)
+    changes the IR BT -- proving the per-obs geometry reaches RTTOV."""
+    t_vec, q_vec = _fixture_tq()
+    g20 = {**_GEOM, "zenangle": 20.0}
+    g60 = {**_GEOM, "zenangle": 60.0}
+    bt20 = np.asarray(make_live_run_k(tmp_path / "a")(
+        _rttov_input_from_arrays(t_vec, q_vec, geometry=g20))[0])
+    bt60 = np.asarray(make_live_run_k(tmp_path / "b")(
+        _rttov_input_from_arrays(t_vec, q_vec, geometry=g60))[0])
+    assert np.max(np.abs(bt20[0, 6:] - bt60[0, 6:])) > 0.1, (bt20[0, 6:], bt60[0, 6:])
 
 
 @needs_fixture
