@@ -213,16 +213,26 @@ def test_overlay_requires_p_half(tmp_path):
 
 
 @needs_fixture
-def test_overlay_rejects_layer_pressure(tmp_path):
-    """profile['P'] (layer pressure) is rejected, not silently accepted: the run
-    derives layers from the fixture p_half and never honors a layer-pressure input,
-    so accepting it (even a bracketed one) would silently honor an unused grid."""
+def test_overlay_accepts_canonical_layer_pressure(tmp_path):
+    """The interp path is honored: profile['P'] == fixture_layer_pressure() (the
+    canonical layer grid the caller interpolates onto) is accepted."""
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure
     t_vec, q_vec = _fixture_tq()
-    ph = _fixture_p_half()
-    p_lay = np.sqrt(ph[1:] * np.clip(ph[:-1], 1e-9, None))   # plausible (bracketed) grid
-    rin = _rttov_input_from_arrays(t_vec, q_vec, p_lay=p_lay)
+    rin = _rttov_input_from_arrays(t_vec, q_vec, p_lay=fixture_layer_pressure())
     assert "P" in rin.profile
-    with pytest.raises(ValueError, match="layer pressure"):
+    write_rttov_case(rin, tmp_path / "case")            # no raise
+
+
+@needs_fixture
+def test_overlay_rejects_noncanonical_layer_pressure(tmp_path):
+    """profile['P'] off the canonical fixture layer grid is rejected even when P_HALF
+    matches (T/Q interpolated onto the wrong layers) -- reject-don't-drop."""
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure
+    t_vec, q_vec = _fixture_tq()
+    p_lay = fixture_layer_pressure().copy()
+    p_lay[10] *= 1.05                                   # nudge one layer off the canonical grid
+    rin = _rttov_input_from_arrays(t_vec, q_vec, p_lay=p_lay)
+    with pytest.raises(ValueError, match="canonical layer"):
         write_rttov_case(rin, tmp_path / "case")
 
 

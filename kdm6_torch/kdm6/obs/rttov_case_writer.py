@@ -126,30 +126,46 @@ def _verify_fixture_contract(config_path: Path, rttov_config) -> None:
             + "; ".join(bad))
 
 
-def fixture_layer_pressure(fixture_case_dir=None, *, profile: str = "001"):
-    """Reference RTTOV layer pressure for a fixture profile, derived from its p_half.
-
-    The fixture is layer-based and exposes only p_half (no f_p), so there is no
-    authoritative layer-pressure file. This returns a sensible interpolation TARGET
-    -- the log-midpoint (geometric mean) of consecutive half-levels, with the TOA
-    layer (p_half=0) falling back to the arithmetic midpoint. Callers interpolate
-    model T/Q onto this grid and pass them via PASSTHROUGH (cfg.rttov_layer_pressure
-    left as the grid for the interp, but the resulting profile['P'] must NOT be sent
-    to write_rttov_case -- the run ignores layer pressure, so the writer rejects it).
-    """
+def _layer_pressure_from_half(ph):
+    """Canonical layer pressure from half-levels: log-midpoint (geometric mean) of
+    consecutive half-levels, with the TOA layer (p_half=0) falling back to the
+    arithmetic midpoint. This is the ONE convention the writer defines + validates,
+    so an interp caller must use the same (via fixture_layer_pressure())."""
     import numpy as np
-    fixture = Path(fixture_case_dir) if fixture_case_dir is not None else default_fixture_case_dir()
-    ph = np.loadtxt(fixture / "in" / "profiles" / profile / "atm" / "p_half.txt")
+    ph = np.asarray(ph, dtype=float).reshape(-1)
     lo, hi = ph[:-1], ph[1:]
     lay = np.sqrt(np.clip(lo, 0.0, None) * hi)          # log-midpoint (geometric mean)
     return np.where(lo <= 0.0, 0.5 * (lo + hi), lay)    # TOA (p_half=0): arithmetic midpoint
 
 
-def _check_grid_matches_fixture(profile_dir: Path, p_half_model) -> None:
+def fixture_layer_pressure(fixture_case_dir=None, *, profile: str = "001"):
+    """Canonical RTTOV layer pressure for a fixture profile (the interp TARGET).
+
+    The fixture is layer-based and exposes only p_half (no f_p), so there is no
+    authoritative layer-pressure file -- the writer DEFINES the canonical layer grid
+    here (`_layer_pressure_from_half`: log-midpoint, TOA arithmetic). The live obs
+    path sets ``cfg.rttov_layer_pressure`` to this so model T/Q are interpolated onto
+    the fixture layers; the resulting ``profile['P']`` IS sent to write_rttov_case,
+    which validates it equals this grid (an off-grid layer pressure is rejected).
+    Each fixture profile has its own p_half, so this is per-profile.
+    """
+    import numpy as np
+    fixture = Path(fixture_case_dir) if fixture_case_dir is not None else default_fixture_case_dir()
+    ph = np.loadtxt(fixture / "in" / "profiles" / profile / "atm" / "p_half.txt")
+    return _layer_pressure_from_half(ph)
+
+
+def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=None) -> None:
     """The run keeps the fixture's p_half (model T/Q are overlaid onto the fixture
     grid). If the RttovInput carries a P_HALF that differs, the model T/Q were built
     for a DIFFERENT vertical grid than the run uses -> silently wrong BT. Reject:
-    cfg.rttov_level_pressure must BE the fixture grid (design 14.1)."""
+    cfg.rttov_level_pressure must BE the fixture grid (design 14.1).
+
+    If a layer pressure ``p_lay_model`` (profile["P"], from cfg.rttov_layer_pressure)
+    is present, it must equal the canonical fixture layer grid (the log-midpoint of
+    THIS profile's p_half). This HONORS the interp path -- the caller interpolates
+    model T/Q onto ``fixture_layer_pressure()`` and the writer verifies it -- while
+    still rejecting an off-grid layer pressure (T/Q placed on the wrong layers)."""
     import numpy as np
     fix = np.loadtxt(profile_dir / "atm" / "p_half.txt")
     model = np.asarray(p_half_model, dtype=float).reshape(-1)
@@ -158,6 +174,16 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model) -> None:
             f"{profile_dir}/atm/p_half.txt: RttovInput P_HALF does not match the "
             "fixture grid -- interpolate the model T/Q onto the fixture's p_half "
             "before overlay (cfg.rttov_level_pressure must be the fixture grid).")
+    if p_lay_model is not None:
+        canon = _layer_pressure_from_half(fix)
+        p = np.asarray(p_lay_model, dtype=float).reshape(-1)
+        if p.shape != canon.shape or not np.allclose(p, canon, rtol=1e-5, atol=1e-9):
+            raise ValueError(
+                f"{profile_dir}/atm/p_half.txt: RttovInput layer pressure (profile['P'], "
+                "cfg.rttov_layer_pressure) does not match the fixture's canonical layer "
+                "grid -- set cfg.rttov_layer_pressure = fixture_layer_pressure(...) so the "
+                "model T/Q are interpolated onto the fixture layers (the run derives layers "
+                "from the fixture p_half).")
 
 
 def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int) -> None:
@@ -224,36 +250,30 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
             f"RttovInput has {nprof} profiles but fixture provides only {len(prof_ids)}.")
     t_all = rttov_input.profile["T"]
     q_all = rttov_input.profile["Q"]
-    # P_HALF is REQUIRED: the run keeps the fixture's p_half, so P_HALF is the only
-    # witness that the model T/Q were built for the fixture grid. Without it the
-    # writer would blindly place possibly-mis-gridded T/Q on the fixture grid (silent
-    # wrong BT). profile["P"] (p_lay) is intentionally NOT consumed -- RTTOV is
-    # layer-based and derives layers from p_half (the fixture has no f_p), so a
-    # validated P_HALF fully fixes the grid and P would be redundant.
+    # P_HALF is REQUIRED: the run keeps the fixture's p_half, so P_HALF is the
+    # half-level witness that the model T/Q were built for the fixture grid. Without
+    # it the writer would blindly place possibly-mis-gridded T/Q on the fixture grid
+    # (silent wrong BT). The layer witness is profile["P"] (validated below): RTTOV is
+    # layer-based and derives layers from p_half (the fixture has no f_p), so neither
+    # P_HALF nor P is written to the case -- both are grid witnesses for the T/Q.
     ph_all = rttov_input.profile.get("P_HALF")
     if ph_all is None:
         raise ValueError(
             "RttovInput.profile lacks P_HALF -- set cfg.rttov_level_pressure to the "
             "fixture p_half so the writer can verify the model T/Q are on the fixture "
             "grid (the run keeps the fixture p_half; an unverified grid is rejected).")
-    # profile["P"] (layer pressure, from cfg.rttov_layer_pressure) is REJECTED, not
-    # bracket-checked: the layer-based run derives layers from the fixture p_half and
-    # takes NO layer-pressure input (the fixture has no f_p), and there is no single
-    # authoritative layer-mean convention to validate it against -- so accepting it
-    # (even bracketed) would silently honor a grid the run ignores. Interpolate model
-    # T/Q onto fixture_layer_pressure() and supply them WITHOUT a layer pressure.
-    if "P" in rttov_input.profile:
-        raise ValueError(
-            "RttovInput carries a layer pressure (profile['P'], from "
-            "cfg.rttov_layer_pressure) that the layer-based RTTOV run does not consume "
-            "(it derives layers from the fixture p_half) -- the writer will not "
-            "silently accept an unhonored grid. Interpolate the model T/Q onto "
-            "fixture_layer_pressure() and supply them via passthrough (no p_lay).")
+    # profile["P"] (layer pressure, from cfg.rttov_layer_pressure) is VALIDATED, not
+    # silently accepted: it must equal the fixture's canonical layer grid
+    # (fixture_layer_pressure()). This honors the interp path (caller interpolates
+    # model T/Q onto fixture_layer_pressure()) while rejecting an off-grid layer
+    # pressure. The layer pressure is not written to the case (the layer-based run
+    # derives layers from p_half) -- it is purely the grid witness for the T/Q.
+    pl_all = rttov_input.profile.get("P")
     for p in range(nprof):
         pdir = prof_root / prof_ids[p]
         _overlay_atm(pdir, "t.txt", t_all[p])
         _overlay_atm(pdir, "q.txt", q_all[p])
-        _check_grid_matches_fixture(pdir, ph_all[p])
+        _check_grid_matches_fixture(pdir, ph_all[p], None if pl_all is None else pl_all[p])
     # trim the case to exactly nprof profiles so the run/parse profile count matches.
     for extra in prof_ids[nprof:]:
         shutil.rmtree(prof_root / extra)
