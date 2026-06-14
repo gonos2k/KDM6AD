@@ -154,24 +154,28 @@ def _build_mask(obs, rad_quality):
 
 
 def default_run_k(rttov_input):
-    """Live RTTOV runner adapter (RttovInput -> (bt, K, rad_quality)).
+    """Live RTTOV runner (RttovInput -> (bt, K, rad_quality)) via a fresh case dir.
 
-    DEFERRED (not thin -- it must write the case, thread kwargs, AND reorder the
-    NamedTuple). When ``write_rttov_case`` lands, implement as::
-
-        out = run_rttov_k(write_rttov_case(rttov_input),
-                          nchannels=len(rttov_input.config.channels),
-                          expected_nprofiles=rttov_input.nprofiles)
-        return out.bt, out.k, out.rad_quality   # NOTE: RttovKOutput field order is
-        # (bt, rad_quality, k, ...) -- this contract wants (bt, K, rad_quality), so
-        # reorder explicitly; never `return tuple(out)`.
-
-    Inject a runner explicitly until that lands; the autograd closure is validated
-    with a mock runner. (Live run MUST stay out-of-process per design 14.2.)
+    Convenience over ``make_live_run_k`` (rttov_case_writer): each call allocates a
+    UNIQUE scratch case dir (``mkdtemp``), writes the rttov_test case (overlay model
+    T/Q onto the AD-RTTOV fixture) -> out-of-process ``run_rttov_k`` (single runK) ->
+    reorders RttovKOutput to (bt, K, rad_quality), then removes the scratch dir. The
+    per-call unique dir makes concurrent calls race-free (a shared fixed dir would
+    let one call clobber another's case mid-run -> silently wrong BT/K, hence wrong
+    gradient). For an explicit/persistent case dir or a custom timeout/fixture,
+    build your own via ``make_live_run_k(out_case_dir, ...)`` and inject it. Live run
+    stays out-of-process (design 14.2); env-coupled (needs AD_RTTOV_HOME). The
+    offline autograd closure is validated with an analytic mock runner.
     """
-    raise NotImplementedError(
-        "live run_k needs write_rttov_case (rttov_test input-file writer, deferred); "
-        "inject a run_k(RttovInput)->(bt, K, rad_quality) explicitly.")
+    import shutil
+    import tempfile
+    from .rttov_case_writer import make_live_run_k
+    case_dir = tempfile.mkdtemp(prefix="kdm6_rttov_run_")
+    try:
+        # overwrite=True: mkdtemp pre-creates case_dir, so write_rttov_case must replace it.
+        return make_live_run_k(case_dir)(rttov_input)
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)
 
 
 def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
