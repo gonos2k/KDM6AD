@@ -42,11 +42,15 @@ OBS_ZERO_OK = frozenset({"nccn", "nr", "bg"})
 # else (cloud content/number) is legitimately 0 until the cloud path is built.
 CLEAR_SKY_CONNECTED = frozenset({"th", "qv"})
 
-# All-sky (cloud) must-connect leaves: clear-sky T/Q + cloud CONTENT (qc->clw,
-# qi+qs->ciw), which always has a path. nc/ni reach BT only through Deff, whose path
-# is clamp-dependent (size-pinned -> legitimately severed), so they are NOT required
-# to connect (None -> zero, not a sever); the Phase-1 builder test guards that plumbing.
-ALL_SKY_CONNECTED = frozenset({"th", "qv", "qc", "qi", "qs"})
+# All-sky (cloud) must-connect leaves: clear-sky T/Q + cloud content (qc->clw,
+# qi+qs->ciw) AND the number moments nc/ni (via Deff). nc/ni are INCLUDED because the
+# bridge's preamble is graph-preserving (torch.where keeps both branches in the graph),
+# so in cloud mode nc/ni ALWAYS return a tensor -- a ZERO tensor when the size is
+# clamped/inactive, NOT None (verified across clear/liquid/ice/mixed columns). Hence a
+# None grad for nc/ni can ONLY mean a structural sever (a numpy/.detach() break in
+# model_to_rttov_tensors) -> raise, never silently zero. qr/qg (no VIS/IR Deff item)
+# and nccn/nr/bg stay non-connected (legitimate zero; their sensitivity rides dynamics).
+ALL_SKY_CONNECTED = frozenset({"th", "qv", "qc", "qi", "qs", "nc", "ni"})
 
 
 class _Unset:

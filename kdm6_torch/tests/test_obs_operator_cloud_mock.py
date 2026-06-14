@@ -195,8 +195,9 @@ def test_full_cloud_closure_grad_anchor():
         g = getattr(cov, fld)
         assert torch.isfinite(g).all() and float(g.abs().sum()) > 0.0, f"{fld} not live"
     # nc/ni reach BT only through Deff; this column is in the unclamped ice/liquid-slope
-    # band, so the number-moment adjoint must be live+nonzero (an accidental sever ->
-    # zero -> caught here, since ALL_SKY_CONNECTED zeros a None instead of raising).
+    # band, so the number-moment adjoint must be live+nonzero. (nc/ni are in
+    # ALL_SKY_CONNECTED, so a structural sever -> None would have RAISED in the callback's
+    # assemble, not reached here; this additionally asserts the value is actually live.)
     for fld in ("nc", "ni"):
         g = getattr(cov, fld)
         assert torch.isfinite(g).all() and float(g.abs().sum()) > 0.0, f"{fld} severed"
@@ -222,19 +223,20 @@ def test_full_cloud_closure_grad_anchor():
         f"qc[{k}]: AD {float(cov.qc[0, k])} != FD {fd}"
 
 
-def test_cloud_assemble_connected_sever_and_zero():
-    """ALL_SKY_CONNECTED: qc None is a sever (raise); nc None is legitimate zero."""
+def test_cloud_assemble_nc_ni_none_is_sever():
+    """nc/ni are CONNECTED in cloud mode: the bridge keeps them in-graph (zero tensor,
+    not None, when inactive), so a None can only be a structural sever -> raise, never
+    silently zeroed. A non-connected field (nccn/qr/qg/nr/bg) None is the legit zero."""
     leaves = _cloudy_state()
-    # qc connected but None -> sever
-    grads = [torch.ones(1, 2, dtype=F64) if f in ("th", "qv", "qi", "qs") else None
-             for f in State._fields]
-    with pytest.raises(RuntimeError, match="structural sever"):
-        assemble_obs_covector(leaves, grads, connected_fields=ALL_SKY_CONNECTED)
-    # nc/ni None -> zero (not connected: clamp-dependent Deff path)
+    for severed in ("nc", "ni"):
+        grads = [torch.ones(1, 2, dtype=F64) if f != severed else None for f in State._fields]
+        with pytest.raises(RuntimeError, match="structural sever"):
+            assemble_obs_covector(leaves, grads, connected_fields=ALL_SKY_CONNECTED)
+    # non-connected None -> legitimate zero; connected present -> kept.
     grads2 = [torch.ones(1, 2, dtype=F64) if f in ALL_SKY_CONNECTED else None
               for f in State._fields]
     cov = assemble_obs_covector(leaves, grads2, connected_fields=ALL_SKY_CONNECTED)
-    assert float(cov.nc.abs().sum()) == 0.0 and float(cov.qc.abs().sum()) > 0.0
+    assert float(cov.nccn.abs().sum()) == 0.0 and float(cov.nc.abs().sum()) > 0.0
 
 
 def test_da_window_cloud_integration():
