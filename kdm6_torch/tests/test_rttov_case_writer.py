@@ -526,6 +526,46 @@ def test_cloud_overlay_rejects_missing_hydrotable_entry(tmp_path):
         write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
 
 
+# ------------------------------------------------- cloud K adapter (Phase 6, no run)
+def _flat_typemajor(nprof, nch, ntype, nlay):
+    """Synthetic flat K block, type-major: value[type,layer] = type*100 + layer."""
+    v = np.array([t * 100 + l for t in range(ntype) for l in range(nlay)], dtype=float)
+    return np.broadcast_to(v, (nprof, nch, ntype * nlay)).copy()
+
+
+def test_add_cloud_k_slots_reshape_and_slots():
+    """add_cloud_k_slots reshapes the flat type-major HYDRO/HYDRO_DEFF blocks and
+    extracts liquid (col 5) / ice (col 6) -> per-slot keys (nprof, nch, nlay)."""
+    from kdm6.obs.rttov_case_writer import add_cloud_k_slots
+    nprof, nch, nlay = 2, 3, 4
+    k = {"T": np.zeros((nprof, nch, nlay)).tolist(),
+         "HYDRO": _flat_typemajor(nprof, nch, 8, nlay).tolist(),
+         "HYDRO_DEFF": _flat_typemajor(nprof, nch, 7, nlay).tolist()}
+    add_cloud_k_slots(k, nlay=nlay)
+    lay = np.arange(nlay, dtype=float)
+    for key, typ in (("HYDRO6", 5), ("HYDRO7", 6), ("HYDRO_DEFF6", 5), ("HYDRO_DEFF7", 6)):
+        got = np.asarray(k[key])
+        assert got.shape == (nprof, nch, nlay), key
+        assert np.allclose(got, typ * 100 + lay), key   # exact slot + layer order
+
+
+def test_add_cloud_k_slots_rejects_bad_flat_length():
+    """A flat length != ntype*nlay (wrong hydrotable / layer count) is rejected, not
+    silently mis-slotted into a wrong-but-finite gradient."""
+    from kdm6.obs.rttov_case_writer import add_cloud_k_slots
+    k = {"HYDRO": np.zeros((1, 1, 8 * 4 + 1)).tolist()}   # 33 != 8*4
+    with pytest.raises(ValueError, match="slot layout does not hold"):
+        add_cloud_k_slots(k, nlay=4)
+
+
+def test_add_cloud_k_slots_noop_clearsky():
+    """No HYDRO blocks (clear-sky K) -> no-op (no per-slot keys added)."""
+    from kdm6.obs.rttov_case_writer import add_cloud_k_slots
+    k = {"T": [[[0.0, 0.0]]], "Q": [[[0.0, 0.0]]]}
+    add_cloud_k_slots(k, nlay=2)
+    assert "HYDRO6" not in k and "HYDRO_DEFF6" not in k
+
+
 # ---------------------------------------------------------------- LIVE RTTOV
 @needs_live
 def test_live_run_k_reproduces_fixture_bt(tmp_path):
@@ -646,3 +686,132 @@ def test_live_cloud_explicit_deff_is_honored(tmp_path):
     bt_b = np.asarray(make_live_run_k(tmp_path / "b")(rin_b)[0])
     # ice scattering differs with effective diameter -> at least one IR channel moves.
     assert np.max(np.abs(bt_a[0, 6:] - bt_b[0, 6:])) > 0.05, (bt_a[0, 6:], bt_b[0, 6:])
+
+
+@needs_cloud_live
+def test_live_cloud_obs_operator_autograd_through_real_k(tmp_path):
+    """Phase 6 milestone: the all-sky autograd loop closes through REAL cloud K.
+
+    cloud tensors (content + effective diameter) -> RttovObsOp.apply(live cloud run_k)
+    -> compute_obs_loss -> autograd.grad. The cloud-K adapter must wire HYDRO6/7
+    (content) and HYDRO_DEFF6/7 (Deff) from RTTOV's flat PROFILES_K so:
+      * content grads (clw, ciw) are finite + nonzero, AND
+      * Deff grads (deff_liq, deff_ice) are finite + nonzero -- the Deff adjoint is
+        LIVE (the getHydroDeffNK probe: HYDRO_DEFF K reaches the covector, not
+        connected-zero), and localizes to the cloudy layers it was fed in."""
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.obs.rttov_obs_operator import RttovObsOp, _build_mask
+    from kdm6.obs.obs_loss import compute_obs_loss
+
+    t_vec, q_vec, ph = _cloud_fixture_tq()
+    nlay = len(t_vec)
+    f64 = torch.float64
+    t = torch.tensor(t_vec, dtype=f64)
+    q = torch.tensor(q_vec, dtype=f64)
+    p_half = torch.tensor(ph, dtype=f64)
+    clw_np = np.zeros(nlay); clw_np[40:50] = 0.10          # liquid lower
+    ciw_np = np.zeros(nlay); ciw_np[15:25] = 0.03          # ice aloft
+    cfrac_np = np.zeros(nlay); cfrac_np[15:50] = 1.0
+    clw = torch.tensor(clw_np, dtype=f64, requires_grad=True)
+    ciw = torch.tensor(ciw_np, dtype=f64, requires_grad=True)
+    deff_liq = torch.full((nlay,), 20.0, dtype=f64, requires_grad=True)
+    deff_ice = torch.full((nlay,), 45.0, dtype=f64, requires_grad=True)
+    cfrac = torch.tensor(cfrac_np, dtype=f64)              # cfrac detached (non-diff)
+
+    cfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
+    run_k = make_live_run_k(tmp_path / "cloud_case")       # cloud RttovInput -> cloud fixture
+    bt_hat, rad_quality = RttovObsOp.apply(
+        run_k, cfg, t, q, None, p_half, clw, ciw, deff_liq, deff_ice, cfrac)
+
+    obs = {"bt": torch.zeros(1, 16, dtype=f64)}            # obs BT 0 -> large IR residual
+    mask = _build_mask(obs, rad_quality)
+    assert float(mask.sum()) > 0.0
+    j = compute_obs_loss(bt_hat, obs, mask, sigma=1.0)
+    g_clw, g_ciw, g_dl, g_di = torch.autograd.grad(j, [clw, ciw, deff_liq, deff_ice])
+
+    for g in (g_clw, g_ciw, g_dl, g_di):
+        assert torch.isfinite(g).all()
+    # content K (HYDRO6/7) live:
+    assert float(g_clw.abs().sum()) > 0.0 and float(g_ciw.abs().sum()) > 0.0
+    # Deff adjoint (HYDRO_DEFF6/7) LIVE -- the Phase 6 crux (else nc/ni have no obs path):
+    assert float(g_dl.abs().sum()) > 0.0, "liquid Deff adjoint dead (HYDRO_DEFF6 K not wired)"
+    assert float(g_di.abs().sum()) > 0.0, "ice Deff adjoint dead (HYDRO_DEFF7 K not wired)"
+    # correct slot+layer wiring: Deff grad localizes to the cloudy layers it was fed in.
+    assert float(g_di[15:25].abs().sum()) > 0.0          # ice Deff grad in the ice layers
+    assert float(g_dl[40:50].abs().sum()) > 0.0          # liquid Deff grad in the liquid layers
+
+
+@needs_cloud_live
+def test_live_cloud_full_model_closure_nc_ni_through_deff(tmp_path):
+    """Phase 6 NORTH STAR: the all-sky loop closes from MODEL leaves through the
+    bridge AND live cloud K. model_to_rttov_tensors(cloud=True) maps qc/qi/qs -> content
+    and nc/ni -> effective radius -> Deff; RttovObsOp.apply(live cloud run_k) ->
+    compute_obs_loss -> autograd.grad. nc/ni reach BT ONLY through HYDRO_DEFF6/7, so a
+    finite NONZERO nc/ni gradient proves the live Deff adjoint flows all the way back to
+    the number concentrations (the design's nc/ni-via-Deff claim, end to end)."""
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.obs.rttov_obs_operator import RttovObsOp, _build_mask
+    from kdm6.obs.obs_loss import compute_obs_loss
+
+    t_vec, q_vec, ph = _cloud_fixture_tq()
+    nlay = len(t_vec)
+    f64 = torch.float64
+    M_DRY, M_VAP = 28.9647e-3, 18.01528e-3                # invert Q(ppmv moist) -> qv
+    f = q_vec / 1.0e6
+    qv_vec = M_VAP * f * (1.0 / M_DRY) / (1.0 - f)
+
+    def band(lo, hi, val):
+        a = np.zeros(nlay); a[lo:hi] = val; return a
+    # Cloud chosen so BOTH (a) the cloud-sensitive IR channels stay usable and (b) the
+    # number->Deff slopes are UNCLAMPED so nc/ni actually reach Deff:
+    #  - THIN enough: a thick cloud saturates the IR channels, RTTOV flags them
+    #    (rad_quality bit 15), _build_mask drops them, only bt=0 solar channels survive
+    #    -> zero residual. qi=1.5e-4/qc=1e-4 keeps IR channels [6,11-15] usable.
+    #  - ni=5e4 (not 5e5): a higher ni clamps the ice DSD slope, severing ni->Deff (a
+    #    builder regime, cf. test_cloud_path_fd_vjp _mk_col); ni=5e4 sits in the
+    #    unclamped ice-slope band so d(deff_ice)/d(ni) != 0 and the ni adjoint is live.
+    qc = band(40, 50, 1.0e-4)                             # liquid cloud (lower trop)
+    qi = band(15, 25, 1.5e-4)                             # ice cloud (upper trop)
+    qs = band(15, 25, 3.0e-5)
+    nc = band(40, 50, 6.0e7)                              # liquid number -> reff -> Deff
+    ni = band(15, 25, 5.0e4)                              # ice number (unclamped slope band)
+    zeros = np.zeros(nlay)
+
+    def leaf(a):
+        return torch.tensor(a, dtype=f64, requires_grad=True)
+    th = torch.tensor(t_vec, dtype=f64, requires_grad=True)   # pii=1 -> t_lay = th
+    qv = leaf(qv_vec)
+    qc_t, qi_t, qs_t, nc_t, ni_t = leaf(qc), leaf(qi), leaf(qs), leaf(nc), leaf(ni)
+    z = torch.tensor(zeros, dtype=f64)
+    state = State(th=th, qv=qv, qc=qc_t, qr=z, qi=qi_t, qs=qs_t, qg=z,
+                  nccn=torch.full((nlay,), 1.0e9, dtype=f64), nc=nc_t, ni=ni_t, nr=z, bg=z)
+    rho = torch.tensor(np.linspace(0.05, 1.15, nlay), dtype=f64)    # TOA->surface
+    ones = torch.ones(nlay, dtype=f64)
+    forcing = Forcing(rho=rho, pii=ones, p=torch.tensor(np.linspace(2.0e3, 1.0e5, nlay), dtype=f64),
+                      delz=torch.full((nlay,), 500.0, dtype=f64))
+
+    profile_cfg = RttovProfileConfig(
+        gas_units=2, qv_convention="mixing_ratio_kgkg_dry", rttov_layer_pressure=None,
+        rttov_level_pressure=torch.tensor(ph, dtype=f64), cloud=True)
+    prof = model_to_rttov_tensors(state, forcing, profile_cfg)
+    input_cfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
+    run_k = make_live_run_k(tmp_path / "cloud_case")
+
+    bt_hat, rad_quality = RttovObsOp.apply(
+        run_k, input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half,
+        prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
+    obs = {"bt": torch.zeros(1, 16, dtype=f64)}
+    mask = _build_mask(obs, rad_quality)
+    assert float(mask.sum()) > 0.0
+    j = compute_obs_loss(bt_hat, obs, mask, sigma=1.0)
+    g = torch.autograd.grad(j, [th, qc_t, qi_t, qs_t, nc_t, ni_t], allow_unused=True,
+                            materialize_grads=True)
+    g_th, g_qc, g_qi, g_qs, g_nc, g_ni = g
+    for name, gg in zip(("th", "qc", "qi", "qs", "nc", "ni"), g):
+        assert torch.isfinite(gg).all(), name
+    # content path (qc/qi/qs -> HYDRO6/7) live:
+    assert float(g_qc.abs().sum()) > 0.0 and float(g_qi.abs().sum()) > 0.0
+    # NORTH STAR: nc/ni reach BT ONLY through Deff -> nonzero grad proves the live
+    # HYDRO_DEFF adjoint closes back to the number concentrations.
+    assert float(g_nc.abs().sum()) > 0.0, "nc adjoint dead -> live liquid Deff path broken"
+    assert float(g_ni.abs().sum()) > 0.0, "ni adjoint dead -> live ice Deff path broken"

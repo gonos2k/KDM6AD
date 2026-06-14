@@ -523,6 +523,52 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool) -> Path:
     return out / "out"
 
 
+# Raw flat PROFILES_K cloud field -> (ntype, per-slot liquid key, per-slot ice key).
+# ntype/slot columns reuse the OVERLAY constants so the K read and the input write
+# share ONE slot convention (liquid=_LIQ_COL=5, ice=_ICE_COL=6).
+_CLOUD_K_FIELDS = (
+    ("HYDRO", _NHYDRO, "HYDRO6", "HYDRO7"),
+    ("HYDRO_DEFF", _NHYDRO_DEFF, "HYDRO_DEFF6", "HYDRO_DEFF7"),
+)
+
+
+def add_cloud_k_slots(k: dict, *, nlay: int) -> dict:
+    """Augment a parsed K dict with the per-slot cloud K keys RttovObsOp.backward
+    expects (HYDRO6/7 + HYDRO_DEFF6/7), derived from the raw flat PROFILES_K
+    HYDRO/HYDRO_DEFF blocks. Mutates and returns ``k``.
+
+    The live blocks are ``[nprofiles][nchannels][ntype*nlay]``, laid out TYPE-MAJOR
+    (flat per chanprof = type0_lay0..type0_lay(nlay-1), type1_lay0..; i.e.
+    ``flat.reshape(ntype, nlay)`` gives [type, layer]). VERIFIED empirically (Phase 6):
+    with ice in layers 15-24 / liquid in 40-49, the HYDRO_DEFF K is nonzero EXACTLY at
+    (those layers, cols 5/6). Liquid = column _LIQ_COL (5), ice = _ICE_COL (6) -- the
+    SAME AMI VIS/IR convention the cloud overlay writes (so write-slot == read-slot).
+    Each output key is (nprofiles, nchannels, nlay), matching the backward K-shape guard.
+
+    No-op for a clear-sky K (no HYDRO blocks). reject-don't-drop: a flat length not
+    equal to ntype*nlay (wrong hydrotable / layer count) is rejected rather than
+    silently mis-slotted into a wrong-but-finite gradient."""
+    import numpy as np
+    for raw, ntype, liq_key, ice_key in _CLOUD_K_FIELDS:
+        if raw not in k:
+            continue
+        arr = np.asarray(k[raw], dtype=float)            # (nprof, nch, ntype*nlay)
+        if arr.ndim != 3:
+            raise ValueError(f"PROFILES_K {raw!r} K has shape {arr.shape}, expected 3-D "
+                             "[nprofiles, nchannels, ntype*nlay].")
+        nprof, nch, L = arr.shape
+        if L != ntype * nlay:
+            raise ValueError(
+                f"PROFILES_K {raw!r} flat length {L} != ntype*nlay = {ntype}*{nlay} = "
+                f"{ntype * nlay} -- the (ntype, nlay) slot layout does not hold (wrong "
+                "hydrotable / layer count); refusing to mis-slot the cloud K.")
+        # type-major flat -> (nprof, nch, ntype, nlay): dim2 = hydrometeor type, dim3 = layer.
+        slotted = arr.reshape(nprof, nch, ntype, nlay)
+        k[liq_key] = slotted[:, :, _LIQ_COL, :]          # (nprof, nch, nlay) liquid
+        k[ice_key] = slotted[:, :, _ICE_COL, :]          # (nprof, nch, nlay) ice
+    return k
+
+
 def make_live_run_k(out_case_dir, *, fixture_case_dir=None, timeout=None):
     """Build the live ``run_k(RttovInput) -> (bt, K, rad_quality)`` for RttovObsOp.
 
@@ -541,6 +587,11 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, timeout=None):
                                     fixture_case_dir=fixture_case_dir, overwrite=True)
         out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
                           expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
+        # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
+        # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
+        # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
+        nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
+        add_cloud_k_slots(out.k, nlay=nlay)
         # RttovKOutput field order is (bt, rad_quality, k, ...) -> reorder to the
         # run_k contract (bt, K, rad_quality); never `tuple(out)`.
         return out.bt, out.k, out.rad_quality
