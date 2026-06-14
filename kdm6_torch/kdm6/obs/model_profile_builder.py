@@ -38,6 +38,17 @@ _REQUIRED_GAS_UNITS = 2
 _PMIN = 1.0e-30  # log() floor; pressures are >0 so this only guards against junk.
 _QMAX = 1.0 - 1.0e-12  # specific-humidity ceiling (q < 1 strictly).
 
+# RTTOV cloudy VIS/IR effective-DIAMETER bounds [micron] (code-clipped; design 9.1,
+# RTTOV UG 8.5): liquid 2-52, Baum ice 10-120. Deff = 2*reff.
+_DEFF_LIQ_MIN, _DEFF_LIQ_MAX = 2.0, 52.0
+_DEFF_ICE_MIN, _DEFF_ICE_MAX = 10.0, 120.0
+# cfrac is non-differentiable at exactly 1.0 in RTTOV TL/AD/K (UG 8.5) -> clamp.
+_CFRAC_MAX = 1.0 - 1.0e-6
+# total cloud content [g/m^3] above which a layer is "cloudy" (binary cfrac).
+_CFRAC_CONTENT_THRESHOLD = 1.0e-6
+# blend denominator floor [g/m^3] for the content-weighted ice reff (avoid 0/0).
+_ICE_BLEND_EPS = 1.0e-12
+
 
 class RttovProfileConfig(NamedTuple):
     """Config consumed by ``model_to_rttov_tensors`` (duck-typed; any object with
@@ -46,21 +57,32 @@ class RttovProfileConfig(NamedTuple):
     ``rttov_layer_pressure`` is the target layer grid (1-D, ascending in
     pressure) for T/Q; ``None`` skips interpolation (column already on grid).
     ``rttov_level_pressure`` (PHalf, 1-D ascending) is a constant passthrough.
+    ``cloud=True`` enables the all-sky cloud path (content + effective diameter
+    via the hydrometeor bridge); the clear-sky default is unchanged.
     """
     gas_units: int                                 # must be _REQUIRED_GAS_UNITS (2)
     qv_convention: str                             # one of _SUPPORTED_QV_CONVENTIONS
     rttov_layer_pressure: "torch.Tensor | None" = None
     rttov_level_pressure: "torch.Tensor | None" = None
+    cloud: bool = False                            # all-sky cloud path on/off
 
 
 class RttovProfileTensors(NamedTuple):
-    """RTTOV-unit profile tensors (design 5). ``t_lay``/``q_lay`` are
-    differentiable in the model leaves; ``p_lay``/``p_half`` are constant grid.
-    Cloud and surface tensors are appended by later phases (deferred here)."""
+    """RTTOV-unit profile tensors (design 5). ``t_lay``/``q_lay`` (and the cloud
+    fields) are differentiable in the model leaves; ``p_lay``/``p_half`` are
+    constant grid. Cloud fields are ``None`` on the clear-sky path (cfg.cloud=False);
+    on the all-sky path they carry content [g/m^3] and effective DIAMETER [micron] on
+    the same RTTOV layer grid. Surface tensors are a later phase (deferred here)."""
     t_lay: torch.Tensor                  # temperature on RTTOV layers [K]
     q_lay: torch.Tensor                  # water vapour, ppmv moist, on layers
     p_lay: "torch.Tensor | None" = None  # layer pressures (constant) or None
     p_half: "torch.Tensor | None" = None  # half-level pressures (constant) or None
+    # all-sky cloud (design 9.1; HYDRO6/7 + HYDRO_DEFF6/7). None on clear-sky.
+    clw: "torch.Tensor | None" = None       # cloud liquid content [g/m^3] (qc)
+    ciw: "torch.Tensor | None" = None       # cloud ice content [g/m^3] (qi+qs)
+    deff_liq: "torch.Tensor | None" = None  # liquid effective DIAMETER [micron]
+    deff_ice: "torch.Tensor | None" = None  # ice effective DIAMETER [micron]
+    cfrac: "torch.Tensor | None" = None     # cloud fraction [0, ~1] (detached)
 
 
 def _require_qv_units(gas_units, qv_convention) -> None:
@@ -162,6 +184,88 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
     return w_left * f_left + w_right * f_right
 
 
+def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
+                           ncmin_land, ncmin_sea):
+    """All-sky cloud fields on the RTTOV layer grid (pure-torch, differentiable).
+
+    Wires the hydrometeor bridge (``rttov_cloud_profile``) into the obs path with the
+    recommended species->slot mapping: qc -> HYDRO6 liquid; qi+qs -> HYDRO7 ice
+    (content sum + content-weighted reff blend); rain/graupel dropped (no VIS/IR Deff
+    item). Deff = 2*reff, re-clipped to the RTTOV diameter windows. ``cfrac`` is a
+    DETACHED binary condensate gate clamped < 1.0 (RTTOV TL/AD/K is non-differentiable
+    at cfrac=1.0, UG 8.5). The bridge runs on a 2-D [1,K] column (preamble_torch); the
+    fields are squeezed back to the 1-D [K] obs convention and interpolated onto
+    ``p_target`` with the SAME constant-W operator as T/Q (grad flows only through the
+    gathered field). Returns (clw, ciw, deff_liq, deff_ice, cfrac) on the layer grid.
+    """
+    from ..rttov_bridge import rttov_cloud_profile   # lazy: pulls the coordinator chain
+    # xland feeds the bridge's per-cell sea/land ncmin gate (xland.view(-1,1)); the obs
+    # path is ONE column, so require a single value (reject a multi-column/scalar-float
+    # xland that would silently mis-mask -- reject-don't-drop).
+    if xland is not None:
+        xland = torch.as_tensor(xland)
+        if xland.numel() != 1:
+            raise ValueError(
+                f"xland must be a single-column value (numel 1) on the obs path; got "
+                f"shape {tuple(xland.shape)} -- select the column before the obs operator.")
+        xland = xland.reshape(1)
+    # the bridge needs a [1, K] batch; model_to_rttov_tensors works on a [K] column.
+    leaves2d = type(leaves)(*(f.unsqueeze(0) for f in leaves))
+    forcing2d = type(forcing)(*(f.unsqueeze(0) for f in forcing))
+    cp = rttov_cloud_profile(leaves2d, forcing2d, xland=xland,
+                             ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+
+    # RTTOV content must be >= 0 (DA increments can drive q<0); clamp_min is the
+    # clip_positive subgradient (0 in the unphysical region), not a graph break.
+    clw = torch.clamp(cp.clw.squeeze(0), min=0.0)        # qc liquid content [g/m^3]
+    ciw_only = torch.clamp(cp.ciw.squeeze(0), min=0.0)
+    snow = torch.clamp(cp.snow.squeeze(0), min=0.0)
+    ice_content = ciw_only + snow                        # qi + qs ice content [g/m^3]
+    # content-weighted ice effective radius (preserves autograd; eps-guarded 0/0 at
+    # zero ice -- the clamp's flat region gives a 0 subgradient there, kink-robust).
+    denom = torch.clamp(ice_content, min=_ICE_BLEND_EPS)
+    reff_ice_blend = (ciw_only * cp.reff_ice.squeeze(0)
+                      + snow * cp.reff_snow.squeeze(0)) / denom
+    # Deff = 2*reff re-clipped to RTTOV windows. NOTE (number-moment adjoint): reff is
+    # ALSO clamped inside the bridge (ice-slope bounds), so dDeff/d(nc,ni)=0 wherever
+    # either clamp is saturated -- a legitimate (size-pinned) zero, NOT a wiring break.
+    # The live detector for an unintended all-zero number-moment adjoint is the Phase-6
+    # getHydroDeffNK nonzero probe, not a Phase-1 assert (which would false-fail here).
+    deff_liq = torch.clamp(2.0 * cp.reff_liq.squeeze(0), _DEFF_LIQ_MIN, _DEFF_LIQ_MAX)
+    deff_ice = torch.clamp(2.0 * reff_ice_blend, _DEFF_ICE_MIN, _DEFF_ICE_MAX)
+
+    def _interp(field):
+        return field if p_target is None else interp_log_pressure(field, p_model, p_target)
+
+    # v1 APPROXIMATION: content AND Deff are interpolated independently in log-pressure.
+    # At a cloudy/clear interface the Deff interp is pulled toward the clear-layer floor,
+    # so a cloud-edge layer can get undersized particles (small BT bias). The consistent
+    # fix (interpolate DSD moments, recompute Deff post-interp) is deferred to the live
+    # phase; acceptable for the mock autograd backbone.
+    clw_lay = _interp(clw)
+    ciw_lay = _interp(ice_content)
+    deff_liq_lay = _interp(deff_liq)
+    deff_ice_lay = _interp(deff_ice)
+
+    # reject-don't-drop: a non-finite cloud field from a degenerate column would
+    # otherwise be MASKED (NaN > thresh is False -> cfrac=0 hides NaN content). Reject
+    # at the source rather than letting it reach the RTTOV interface as a silent NaN BT.
+    for _nm, _f in (("clw", clw_lay), ("ciw", ciw_lay),
+                    ("deff_liq", deff_liq_lay), ("deff_ice", deff_ice_lay)):
+        if not bool(torch.isfinite(_f).all()):
+            raise ValueError(
+                f"cloud field {_nm!r} has non-finite values (degenerate column / bad "
+                "bridge output) -- invalid RTTOV input (reject-don't-drop).")
+
+    # cfrac: detached binary condensate gate on the LAYER grid (clamped < 1.0). It is
+    # a weighting, not a differentiated input (Phase 1) -> detach so no ghost grad.
+    total = (clw_lay + ciw_lay).detach()
+    cfrac = torch.where(total > _CFRAC_CONTENT_THRESHOLD,
+                        torch.full_like(total, _CFRAC_MAX),
+                        torch.zeros_like(total))
+    return clw_lay, ciw_lay, deff_liq_lay, deff_ice_lay, cfrac
+
+
 def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
                            ncmin_land=0.0, ncmin_sea=0.0) -> RttovProfileTensors:
     """leaves(State) -> RTTOV-unit torch tensors for the clear-sky T/Q path.
@@ -218,4 +322,12 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
         raise ValueError(
             f"Nlayers must equal Nlevels-1: emitted profile has {t_lay.shape[-1]} "
             f"layers but p_half has {p_half.shape[0]} levels (design 5).")
-    return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half)
+
+    # All-sky cloud path (design 9.1): append content + effective diameter on the
+    # SAME layer grid. Clear-sky (cfg.cloud=False) is byte-unchanged (fields stay None).
+    cloud = {}
+    if getattr(cfg, "cloud", False):
+        clw, ciw, deff_liq, deff_ice, cfrac = _cloud_profile_tensors(
+            leaves, forcing, p_model, p_target, xland, ncmin_land, ncmin_sea)
+        cloud = dict(clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice, cfrac=cfrac)
+    return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half, **cloud)
