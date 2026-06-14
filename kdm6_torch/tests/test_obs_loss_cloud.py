@@ -83,22 +83,23 @@ def test_symmetric_error_param_validation():
         symmetric_obs_error(bt, bt, bt, SymmetricObsError(20.0, 2.0, 1.0, 30.0))  # sigma_cld < sigma_clr
 
 
-def test_symmetric_error_rejects_nonfinite_bt_clear():
-    bt = torch.zeros(1, 2, dtype=F64)
-    bad = torch.tensor([[250.0, float("nan")]], dtype=F64)
-    with pytest.raises(ValueError, match="bt_clear"):
-        symmetric_obs_error(bt, bt, bad, _MODEL)
-
-
-def test_symmetric_error_rejects_nonfinite_bt_hat_or_obs():
-    """CA is built from B (bt_hat) and O (bt_obs) too -- a NaN there must be rejected,
-    not turned into a NaN sigma that poisons even the IR channels via the loss sum."""
-    ok = torch.zeros(1, 2, dtype=F64)
-    nan = torch.tensor([[0.0, float("inf")]], dtype=F64)
-    with pytest.raises(ValueError, match="bt_hat"):
-        symmetric_obs_error(nan, ok, ok, _MODEL)
-    with pytest.raises(ValueError, match="bt_obs"):
-        symmetric_obs_error(ok, nan, ok, _MODEL)
+def test_masked_solar_channel_nonfinite_does_not_block_ir():
+    """Stop-review scenario: a MASKED (solar) channel carrying non-finite BT/clear-FG
+    must NOT block the kept IR channels. symmetric_obs_error no longer validates
+    per-channel (it would false-reject masked junk); compute_obs_loss is mask-aware,
+    so the masked channel contributes 0 (fwd + bwd NaN-safe) and the IR channels run."""
+    bt_hat = torch.tensor([[float("nan"), 280.0, 300.0]], dtype=F64, requires_grad=True)
+    bt_obs = torch.tensor([[float("nan"), 270.0, 260.0]], dtype=F64)
+    bt_clear = torch.tensor([[float("nan"), 250.0, 250.0]], dtype=F64)
+    sig = symmetric_obs_error(bt_hat, bt_obs, bt_clear, _MODEL)   # NaN at ch0 (masked)
+    assert not bool(torch.isfinite(sig[0, 0]))                    # masked sigma is non-finite...
+    mask = torch.tensor([[0.0, 1.0, 1.0]], dtype=F64)            # ...but ch0 (solar) is masked out
+    loss = compute_obs_loss(bt_hat, {"bt": bt_obs}, mask, sig, delta=1.0)
+    assert torch.isfinite(loss)                                   # not blocked / poisoned
+    (g,) = torch.autograd.grad(loss, bt_hat)
+    assert torch.isfinite(g).all()
+    assert float(g[0, 0]) == 0.0                                  # masked solar: zero grad
+    assert float(g[0, 1:].abs().sum()) > 0.0                      # IR channels processed
 
 
 def test_symmetric_error_rejects_nonpositive_or_nonfinite_sigma_params():

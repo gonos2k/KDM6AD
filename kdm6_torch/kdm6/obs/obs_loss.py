@@ -43,17 +43,20 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
         bt_obs = bt_obs + torch.as_tensor(bias, dtype=bt_hat.dtype, device=bt_hat.device).detach()
     m = torch.as_tensor(masks, dtype=bt_hat.dtype, device=bt_hat.device).detach()
     sig = torch.as_tensor(sigma, dtype=bt_hat.dtype, device=bt_hat.device).detach()
-    # obs error must be finite and strictly positive (a NaN survives clamp and poisons
-    # the loss; a non-positive sigma is meaningless) -- reject-don't-drop.
+    # MASK-AWARE validation (design 8): a MASKED channel (m==0: solar via the IR gate,
+    # or rad_quality-flagged) may carry junk/non-finite sigma & BT; it must contribute 0
+    # and neither raise nor poison fwd/bwd -- and must NOT block the kept channels. So:
+    #  (1) sanitize the masked DENOMINATOR to 1.0 (finite local d r/d bt_hat = 1/sig);
+    #  (2) validate finiteness/positivity ONLY where kept;
+    #  (3) zero the residual at masked positions (NaN-safe fwd AND bwd: 0*NaN avoided
+    #      because the masked r is replaced before _huber and the local grad is 1/1);
+    #  (4) any non-finite contribution that remains is in a KEPT channel -> real bug.
+    kept = m > 0.0
+    sig = torch.where(kept, sig.expand_as(m), torch.ones_like(m))
     if not bool(torch.isfinite(sig).all()) or bool((sig <= 0.0).any()):
-        raise ValueError("sigma (obs error) must be finite and > 0.")
+        raise ValueError("sigma (obs error) must be finite and > 0 in kept channels.")
     r = (bt_hat - bt_obs) / torch.clamp(sig, min=1.0e-12)
-    # Masked positions (m==0) must contribute EXACTLY 0 -- and must not poison the
-    # forward or backward with a non-finite residual there (0*NaN=NaN, and the 0*NaN
-    # gradient too, §30 Inf×0 class). Zero the residual at masked positions (the local
-    # d r/d bt_hat = 1/sigma stays finite, so backward is NaN-safe). Then any remaining
-    # non-finite is in a KEPT channel -> a real bug (NaN simulated/observed BT) -> reject.
-    r = torch.where(m > 0.0, r, torch.zeros_like(r))
+    r = torch.where(kept, r, torch.zeros_like(r))
     contrib = m * _huber(r, delta)
     if not bool(torch.isfinite(contrib).all()):
         raise ValueError(
@@ -82,6 +85,13 @@ def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError):
     Returned DETACHED: the obs error is a WEIGHTING, not part of the forward operator.
     CA depends on B (=bt_hat); if sigma carried that dependence it would leak a ghost
     gradient into lambda_BT. ``Bclr`` is the clear-sky first-guess BT (detached).
+
+    Per-(profile, channel) finiteness is NOT validated here: a MASKED channel (e.g. a
+    solar channel the IR gate excludes) may legitimately carry junk/non-finite BT, and
+    raising on it would block the kept IR channels. The resulting sigma can be
+    non-finite at such positions; ``compute_obs_loss`` is MASK-AWARE (it sanitizes the
+    masked denominator and validates finiteness only where the mask keeps the channel).
+    The scalar model params (always known up front) ARE validated.
     """
     if not all(math.isfinite(p) for p in
                (model.sigma_clr, model.sigma_cld, model.ca_clr, model.ca_cld)):
@@ -96,11 +106,6 @@ def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError):
     B = bt_hat.detach()
     O = torch.as_tensor(bt_obs, dtype=B.dtype, device=B.device).detach()
     Bclr = torch.as_tensor(bt_clear, dtype=B.dtype, device=B.device).detach()
-    # CA is built from B and O too -- finite-guard all three (a NaN here yields a NaN
-    # sigma that survives clamp and poisons even the IR channels via the loss sum).
-    for _nm, _v in (("bt_hat", B), ("bt_obs", O), ("bt_clear", Bclr)):
-        if not bool(torch.isfinite(_v).all()):
-            raise ValueError(f"{_nm} has non-finite values -- invalid obs-error input.")
     ca = 0.5 * ((B - Bclr).abs() + (O - Bclr).abs())
     frac = ((ca - model.ca_clr) / (model.ca_cld - model.ca_clr)).clamp(0.0, 1.0)
     sigma = model.sigma_clr + (model.sigma_cld - model.sigma_clr) * frac
