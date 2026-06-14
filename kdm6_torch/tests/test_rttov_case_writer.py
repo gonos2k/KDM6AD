@@ -526,6 +526,23 @@ def test_cloud_overlay_rejects_missing_hydrotable_entry(tmp_path):
         write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
 
 
+@needs_cloud_fixture
+def test_solar_observable_rejects_no_adk_refl_fixture(tmp_path):
+    """A solar channel requested but the fixture has adk_refl=.FALSE. -> the solar K rows
+    are BT-K, not d(REFL); merging a REFL observable onto BT-K rows is a silent wrong
+    gradient. write_rttov_case(solar_channels=...) must reject (mirrors the adk_bt check)."""
+    badfix = tmp_path / "badfix"
+    shutil.copytree(_CFIX, badfix)
+    nl = badfix / "out" / "rttov_test.txt"
+    nl.write_text(re.sub(r"(defn%opts%config%adk_refl\s*=\s*)\.TRUE\.", r"\g<1>.FALSE.",
+                         nl.read_text()))
+    rin, _ = _cloud_rttov_input()
+    with pytest.raises(ValueError, match="adk_refl"):
+        write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix, solar_channels=(1,))
+    # without solar_channels the SAME fixture is fine (IR-only: no solar contract).
+    write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix, overwrite=True)
+
+
 # ------------------------------------------------- cloud K adapter (Phase 6, no run)
 def _flat_typemajor(nprof, nch, ntype, nlay):
     """Synthetic flat K block, type-major: value[type,layer] = type*100 + layer."""
@@ -564,6 +581,37 @@ def test_add_cloud_k_slots_noop_clearsky():
     k = {"T": [[[0.0, 0.0]]], "Q": [[[0.0, 0.0]]]}
     add_cloud_k_slots(k, nlay=2)
     assert "HYDRO6" not in k and "HYDRO_DEFF6" not in k
+
+
+# ----------------------------------------- solar observable merge (Phase 7, no run)
+def test_merge_solar_observable_picks_refl_for_solar():
+    """The per-channel observable = REFL for solar channels, BT for thermal."""
+    from kdm6.obs.rttov_case_writer import merge_solar_observable
+    bt = np.array([[270.0, 280.0, 290.0, 300.0]])
+    refl = np.array([[0.9, 0.8, 0.0, 0.0]])
+    channels = (1, 2, 7, 8)
+    out = merge_solar_observable(bt, refl, channels, solar_channels=(1, 2))
+    assert np.allclose(out, [[0.9, 0.8, 290.0, 300.0]])      # ch1/2 -> refl; ch7/8 -> bt
+
+
+def test_merge_solar_observable_empty_noop_and_unknown_id_rejected():
+    from kdm6.obs.rttov_case_writer import merge_solar_observable
+    bt = np.array([[270.0, 280.0]])
+    refl = np.array([[0.9, 0.8]])
+    assert merge_solar_observable(bt, refl, (7, 8), ()) is bt           # no solar -> unchanged
+    # a solar id not in the run's channels is REJECTED (mirrors ir_channel_gate): a
+    # partial mis-map would write REFL into a BT-K column -> silent wrong gradient.
+    with pytest.raises(ValueError, match="not in the run's channels"):
+        merge_solar_observable(bt, refl, (7, 8), (1, 6))
+
+
+def test_merge_solar_observable_rejects_missing_refl():
+    """A solar channel requested but no REFL (solar not enabled) is rejected -- not a
+    silent BT=0 solar observable (whose REFL-K would still be live -> wrong gradient)."""
+    from kdm6.obs.rttov_case_writer import merge_solar_observable
+    bt = np.array([[270.0, 280.0]])
+    with pytest.raises(ValueError, match="no REFL"):
+        merge_solar_observable(bt, None, (1, 7), solar_channels=(1,))
 
 
 # ---------------------------------------------------------------- LIVE RTTOV
@@ -815,3 +863,57 @@ def test_live_cloud_full_model_closure_nc_ni_through_deff(tmp_path):
     # HYDRO_DEFF adjoint closes back to the number concentrations.
     assert float(g_nc.abs().sum()) > 0.0, "nc adjoint dead -> live liquid Deff path broken"
     assert float(g_ni.abs().sum()) > 0.0, "ni adjoint dead -> live ice Deff path broken"
+
+
+@needs_cloud_live
+def test_live_solar_reflectance_observable_and_refl_k(tmp_path):
+    """Phase 7: the SOLAR channels use the REFLECTANCE observable + live REFL-K.
+
+    With solar_channels set, make_live_run_k returns the per-channel observable = REFL
+    for ch1-6 (in [0,~1.x], NOT a 200-300 K BT) and BT for the IR channels. The RTTOV K
+    is already per-channel-type (REFL-K for solar, verified by FD), so gating the loss
+    to ONLY the solar channels and differentiating proves the live reflectance adjoint:
+    cloud content + Deff -> REFL -> loss -> grad is finite + nonzero, driven purely by
+    the solar/REFL path (BT-K for a solar channel is ~0)."""
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.obs.rttov_obs_operator import RttovObsOp, _build_mask
+    from kdm6.obs.obs_loss import compute_obs_loss
+
+    t_vec, q_vec, ph = _cloud_fixture_tq()
+    nlay = len(t_vec); f64 = torch.float64
+    t = torch.tensor(t_vec, dtype=f64); q = torch.tensor(q_vec, dtype=f64)
+    p_half = torch.tensor(ph, dtype=f64)
+    clw_np = np.zeros(nlay); clw_np[40:50] = 0.05         # thin reflective liquid
+    ciw_np = np.zeros(nlay); ciw_np[15:25] = 0.01
+    cfrac_np = np.zeros(nlay); cfrac_np[15:50] = 1.0
+    clw = torch.tensor(clw_np, dtype=f64, requires_grad=True)
+    ciw = torch.tensor(ciw_np, dtype=f64, requires_grad=True)
+    deff_liq = torch.full((nlay,), 20.0, dtype=f64, requires_grad=True)
+    deff_ice = torch.full((nlay,), 45.0, dtype=f64, requires_grad=True)
+    cfrac = torch.tensor(cfrac_np, dtype=f64)
+
+    cfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
+    solar = (1, 2, 3, 4, 5, 6)
+    run_k = make_live_run_k(tmp_path / "solar_case", solar_channels=solar)
+    y_hat, rad_quality = RttovObsOp.apply(run_k, cfg, t, q, None, p_half,
+                                          clw, ciw, deff_liq, deff_ice, cfrac)
+    y = y_hat.detach().numpy()[0]
+    # solar channels carry REFLECTANCE (small, dimensionless), IR carry BT (Kelvin).
+    assert np.all(y[:6] < 5.0) and np.any(y[:6] > 0.01), y[:6]
+    assert np.all((y[6:] > 150.0) & (y[6:] < 350.0)), y[6:]
+
+    # SOLAR-ISOLATED grad: gate the loss to ONLY the solar channels so it is driven
+    # purely by REFL + REFL-K. A nonzero cloud grad here proves the reflectance adjoint
+    # (a solar channel's BT-K is ~0, so this signal can only come from REFL-K).
+    solar_gate = torch.zeros(1, 16, dtype=f64); solar_gate[0, :6] = 1.0
+    obs = {"bt": torch.zeros(1, 16, dtype=f64), "channel_gate": solar_gate}
+    mask = _build_mask(obs, rad_quality)
+    assert float(mask.sum()) > 0.0, "need >=1 usable solar channel (rad_quality==0)"
+    j = compute_obs_loss(y_hat, obs, mask, sigma=0.1)     # reflectance-scale sigma
+    g_clw, g_ciw, g_dl, g_di = torch.autograd.grad(
+        j, [clw, ciw, deff_liq, deff_ice], allow_unused=True, materialize_grads=True)
+    for g in (g_clw, g_ciw, g_dl, g_di):
+        assert torch.isfinite(g).all()
+    # liquid content + Deff drive the solar reflectance -> live REFL-K grad.
+    assert float(g_clw.abs().sum()) > 0.0, "liquid content REFL adjoint dead"
+    assert float(g_dl.abs().sum()) > 0.0, "liquid Deff REFL adjoint dead"

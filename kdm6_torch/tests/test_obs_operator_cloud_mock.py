@@ -299,3 +299,50 @@ def test_da_window_cloud_integration():
         g = getattr(res.adj_x0, name)
         assert g.shape == (1, 2) and torch.isfinite(g).all()
     assert float(res.adj_x0.th.abs().sum()) > 0.0       # obs signal propagated to x0
+
+
+# --- Phase 7: mixed BT+REFL observable requires a per-channel sigma -------------
+def test_callback_rejects_scalar_sigma_with_solar_channels():
+    """A mixed BT+REFL observable (solar_channels set) with a SCALAR sigma is rejected
+    -- a scalar mis-weights the BT (~250 K) vs REFL (~0.5) unit systems ~50x. A
+    per-channel sigma is accepted (the guard passes)."""
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+    sched = ObsSchedule(by_step={0: [o]})
+    cfg_bad = _cloud_cfg()._replace(solar_channels=(1,))            # scalar sigma=20.0 + solar
+    with pytest.raises(ValueError, match="per-channel sigma"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=sched, cfg=cfg_bad,
+                             forcings=[_forcing()], run_k=_mock_run_k)
+    # per-channel sigma (length NCH) + solar -> guard passes (callback returns a covector).
+    cfg_ok = _cloud_cfg()._replace(solar_channels=(1,), sigma=[5.0] * NCH)
+    cov = obs_adjoint_callback(0, _cloudy_state(), schedule=sched, cfg=cfg_ok,
+                               forcings=[_forcing()], run_k=_mock_run_k)
+    assert isinstance(cov, State)
+
+
+def test_callback_scalar_sigma_ok_without_solar():
+    """No solar_channels (IR-only) -> a scalar sigma stays valid (back-compat)."""
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+    cov = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                               cfg=_cloud_cfg(), forcings=[_forcing()], run_k=_mock_run_k)
+    assert isinstance(cov, State)
+
+
+def test_callback_rejects_run_k_solar_mismatch():
+    """The injected run_k's solar set and ObsOperatorConfig.solar_channels must AGREE --
+    a tagged pure-BT run_k under a solar config (or vice versa) is a silent config-
+    mismatch wrong gradient, so it is rejected (Phase 7 seam)."""
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+    sched = ObsSchedule(by_step={0: [o]})
+
+    def rk(rin):
+        return _mock_run_k(rin)
+    rk.solar_channels = ()                                   # pure-BT run_k
+    cfg = _cloud_cfg()._replace(solar_channels=(1,), sigma=[5.0] * NCH)   # config says solar
+    with pytest.raises(ValueError, match="solar_channels"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=sched, cfg=cfg,
+                             forcings=[_forcing()], run_k=rk)
+    # matched tag -> no mismatch raise (callback returns a covector).
+    rk.solar_channels = (1,)
+    cov = obs_adjoint_callback(0, _cloudy_state(), schedule=sched, cfg=cfg,
+                               forcings=[_forcing()], run_k=rk)
+    assert isinstance(cov, State)

@@ -11,8 +11,15 @@ cloudy radiance (rad_quality≠0) thus contributes exactly 0 to J_obs and λ_BT.
 Bias correction is a detached static (or VarBC-frozen) per-channel offset applied
 at residual definition, so ∂J/∂state is unaffected.
 
-solar (VIS/NIR 6 channels) BT is reflectance, BT-residual undefined — IR 10
-channels first, solar later (principle 6); the caller masks solar out.
+OBSERVABLE (Phase 7): ``bt_hat`` / ``obs['bt']`` carry the per-channel OBSERVABLE, not
+BT-only — BT (Kelvin) for thermal channels and solar REFLECTANCE/BRF (dimensionless,
+0..~1) for the VIS/NIR channels (merged upstream by make_live_run_k's solar_channels).
+The metric is observable-agnostic (Huber residual / σ), but the units are MIXED, so for
+a solar+IR loss the caller MUST pass a PER-CHANNEL ``sigma`` (BT-scale for IR,
+reflectance-scale for solar) — a single scalar σ would mis-weight the two unit systems
+by ~σ_ratio (~50×). For solar channels ``obs['bt']`` / ``obs['bt_clear']`` carry the
+OBSERVED / CLEAR reflectance (the ``bt`` key name is historical; it holds the
+observable). A scalar σ remains valid only for a single-unit (IR-only) observable.
 """
 from __future__ import annotations
 

@@ -99,6 +99,7 @@ class RttovKOutput(NamedTuple):
     k: dict                  # {field: [nprofiles][nchannels][L_field]}
     nprofiles: int
     nchannels: int
+    refl: object = None      # [nprofiles][nchannels] solar reflectance (Phase 7); None if no solar
 
 
 def _reshape_profile_major(flat, nprofiles, nchannels):
@@ -151,8 +152,23 @@ def parse_rttov_radiance(path, *, nchannels):
         raise ValueError(
             f"{path}: RADIANCE%QUALITY length {len(qual_flat)} != RADIANCE%BT "
             f"length {len(bt_flat)} (inconsistent RTTOV output).")
+    # REFL (solar reflectance/BRF) is the SOLAR-channel observable (Phase 7): present
+    # only when the run has solar enabled (opts%rt_all%solar). Solar channels carry 0
+    # in BT space and the cloud signal in REFL; thermal channels carry 0 in REFL. It is
+    # OPTIONAL (a thermal-only run has no REFL block) -- absent -> None, not an error.
+    refl = None
+    refl_flat = blocks.get("RADIANCE%REFL")
+    if refl_flat is not None:
+        if len(refl_flat) != len(bt_flat):
+            raise ValueError(
+                f"{path}: RADIANCE%REFL length {len(refl_flat)} != RADIANCE%BT length "
+                f"{len(bt_flat)} (inconsistent RTTOV output).")
+        if any(not math.isfinite(v) for v in refl_flat):
+            raise ValueError(f"{path}: RADIANCE%REFL has non-finite values.")
+        refl = _reshape_profile_major(refl_flat, nprofiles, nchannels)
     return {
         "bt": _reshape_profile_major(bt_flat, nprofiles, nchannels),
+        "refl": refl,
         "rad_quality": _reshape_profile_major(qual_flat, nprofiles, nchannels),
         "nprofiles": nprofiles,
     }
@@ -239,7 +255,7 @@ def parse_rttov_k_case(out_dir, *, nchannels, expected_nprofiles):
             "output or wrong nchannels).")
     return RttovKOutput(
         bt=rad["bt"], rad_quality=rad["rad_quality"], k=k,
-        nprofiles=expected_nprofiles, nchannels=nchannels)
+        nprofiles=expected_nprofiles, nchannels=nchannels, refl=rad.get("refl"))
 
 
 def _resolve_run_script(case_dir, run_script):

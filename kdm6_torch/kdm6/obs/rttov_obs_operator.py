@@ -74,10 +74,14 @@ class ObsOperatorConfig(NamedTuple):
     """Bundle for the callback: P2 profile config + P4 input config + loss params."""
     profile_cfg: object        # RttovProfileConfig (P2)
     input_cfg: object          # RttovInputConfig (P4)
-    sigma: object              # static obs error (scalar or per-channel) -- fallback
+    sigma: object              # static obs error (scalar, or PER-CHANNEL if solar_channels)
     huber_delta: float = 1.0
     connected_fields: frozenset = CLEAR_SKY_CONNECTED
     error_model: object = None  # Phase 3: SymmetricObsError (CA-dependent sigma) or None
+    # Phase 7: 1-based ids whose observable is REFLECTANCE (the run_k must be built with
+    # the SAME set, e.g. make_live_run_k(solar_channels=...)). When non-empty the
+    # observable mixes BT + REFL units -> ``sigma`` MUST be per-channel (validated below).
+    solar_channels: tuple = ()
 
 
 class RttovObsOp(torch.autograd.Function):
@@ -232,6 +236,11 @@ def default_run_k(rttov_input):
         shutil.rmtree(case_dir, ignore_errors=True)
 
 
+# default_run_k always builds a pure-BT (solar=()) observable -- tag it so the callback
+# can detect a config mismatch against a solar ObsOperatorConfig (Phase 7 seam).
+default_run_k.solar_channels = ()
+
+
 def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
                          xland=None, ncmin_land=0.0, ncmin_sea=0.0):
     """da_window obs_adjoint(t, x_t) -> covector ∂J_obs/∂x_t (or None).
@@ -290,6 +299,35 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
     else:
         bt_hat, rad_quality = RttovObsOp.apply(
             run_k, cfg.input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half)
+
+    # Phase 7: cfg.solar_channels (which channels are REFL + need per-channel sigma) and
+    # the solar set the INJECTED run_k actually merges must AGREE -- else the observable
+    # type and the sigma/contraction assumptions desync (e.g. cfg says solar but run_k
+    # returns pure BT) -> a silent config-mismatch wrong gradient. make_live_run_k /
+    # default_run_k tag the closure with `.solar_channels`; verify it when present (an
+    # untagged custom/mock run_k can't be checked -> caller's responsibility).
+    rk_solar = getattr(run_k, "solar_channels", None)
+    if rk_solar is not None and tuple(int(c) for c in rk_solar) != tuple(int(c) for c in cfg.solar_channels):
+        raise ValueError(
+            f"run_k solar_channels {tuple(rk_solar)} != ObsOperatorConfig.solar_channels "
+            f"{tuple(cfg.solar_channels)} -- the observable type and sigma assumptions "
+            "would desync (build run_k with the SAME solar_channels as the config).")
+    # A mixed BT+REFL observable (solar_channels set) needs a PER-CHANNEL sigma (BT-scale
+    # for IR, reflectance-scale for solar). A scalar static sigma over the mixed vector
+    # mis-weights the two unit systems by ~the sigma ratio (~50x) -- reject it (the
+    # symmetric error_model path already returns a per-channel sigma). reject-don't-drop.
+    if cfg.solar_channels and cfg.error_model is None:
+        nch = bt_hat.shape[-1]
+        sig_t = torch.as_tensor(cfg.sigma)
+        if sig_t.ndim == 0 or sig_t.numel() == 1:
+            raise ValueError(
+                "ObsOperatorConfig.solar_channels is set (mixed BT+REFL observable) but "
+                "sigma is scalar -- pass a per-channel sigma (length nchannels; BT-scale "
+                "for IR, reflectance-scale for solar). A scalar mis-weights units ~50x.")
+        if sig_t.numel() != nch:
+            raise ValueError(
+                f"ObsOperatorConfig.sigma length {sig_t.numel()} != nchannels {nch} -- a "
+                "per-channel sigma is required for the mixed solar+IR observable.")
 
     j = None
     any_active = False

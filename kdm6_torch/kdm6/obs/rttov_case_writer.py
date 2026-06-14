@@ -287,6 +287,33 @@ def _verify_cloud_namelist(config_path: Path) -> None:
             "clear-sky (use the AMI cloud fixture / a hydrometeor-enabled case).")
 
 
+def _verify_solar_namelist(config_path: Path) -> None:
+    """A solar-channel observable (Phase 7) needs the fixture to (a) run solar
+    (defn%opts%rt_all%solar=.TRUE., so RADIANCE%REFL is produced) AND (b) seed the
+    REFLECTANCE adjoint (defn%opts%config%adk_refl=.TRUE., so the solar-channel K rows
+    are d(REFL)/d(profile), not BT-K). If solar runs but adk_refl is off, the run STILL
+    emits a REFL forward block, but the solar K rows are BT-K -- merge_solar_observable
+    would return the REFL observable and RttovObsOp.backward would contract it against a
+    BT-K row -> a finite, plausible, but WRONG gradient. This mirrors the adk_bt contract
+    check; reject-don't-drop (Codex Phase-7 review HIGH)."""
+    text = config_path.read_text()
+
+    def _is_true(name: str) -> bool:
+        m = re.search(rf"^\s*defn%{re.escape(name)}\s*=\s*(\.TRUE\.|\.FALSE\.)", text, re.M)
+        return m is not None and m.group(1) == ".TRUE."
+
+    bad = []
+    if not _is_true("opts%rt_all%solar"):
+        bad.append("defn%opts%rt_all%solar must be .TRUE. (else no RADIANCE%REFL is produced)")
+    if not _is_true("opts%config%adk_refl"):
+        bad.append("defn%opts%config%adk_refl must be .TRUE. (else solar-channel K is BT-K, "
+                   "not d(REFL); a REFL observable would contract against a BT-K row)")
+    if bad:
+        raise ValueError(
+            f"{config_path}: solar-channel observable requires a reflectance-K fixture -- "
+            + "; ".join(bad))
+
+
 def _verify_cloud_hydrotable(case_root: Path) -> None:
     """A cloud run needs a VIS/IR scattering hydrotable; the fixture names it in
     in/coef.txt (defn%f_hydrotable). A missing/empty entry means RTTOV has no optical
@@ -384,7 +411,8 @@ def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int
     config_path.write_text(text)
 
 
-def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False) -> Path:
+def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False,
+                     solar_channels=()) -> Path:
     """Copy the fixture case and overlay atm/t.txt + atm/q.txt from ``rttov_input``.
 
     If ``rttov_input`` carries the full all-sky cloud set (HYDRO6/7 content +
@@ -460,13 +488,13 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # just-copied case so no PARTIAL out_case_dir is left behind (else the next call
     # without overwrite=True would hit FileExistsError) -- reject-don't-drop (Codex F4).
     try:
-        return _populate_case(out, rttov_input, cfg, is_cloud)
+        return _populate_case(out, rttov_input, cfg, is_cloud, solar_channels)
     except BaseException:
         shutil.rmtree(out, ignore_errors=True)
         raise
 
 
-def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool) -> Path:
+def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=()) -> Path:
     """Overlay the RttovInput onto the freshly-copied case ``out`` and return out/out.
 
     Split out of write_rttov_case so a post-copytree failure can be cleaned up by the
@@ -475,6 +503,13 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool) -> Path:
     if is_cloud:
         _verify_cloud_namelist(out / "out" / "rttov_test.txt")
         _verify_cloud_hydrotable(out)
+    # Solar observable contract: if any REQUESTED channel is solar, the fixture must
+    # produce reflectance-K (solar + adk_refl), else a REFL observable would contract
+    # against a BT-K row -> silent wrong gradient (Codex Phase-7 review).
+    if solar_channels:
+        requested = {_as_channel_id(c) for c in rttov_input.config.channels}
+        if requested & {_as_channel_id(c) for c in solar_channels}:
+            _verify_solar_namelist(out / "out" / "rttov_test.txt")
 
     nprof = rttov_input.nprofiles
     prof_root = out / "in" / "profiles"
@@ -569,12 +604,54 @@ def add_cloud_k_slots(k: dict, *, nlay: int) -> dict:
     return k
 
 
-def make_live_run_k(out_case_dir, *, fixture_case_dir=None, timeout=None):
-    """Build the live ``run_k(RttovInput) -> (bt, K, rad_quality)`` for RttovObsOp.
+def merge_solar_observable(bt, refl, channels, solar_channels):
+    """Build the per-channel OBSERVABLE (Phase 7): BT for thermal channels, REFL
+    (solar reflectance/BRF) for the solar channels.
 
-    Each call: write_rttov_case (overlay T/Q onto the fixture) -> out-of-process
-    run_rttov_k (single runK: BT + K) -> reorder RttovKOutput to (bt, K,
-    rad_quality). ``out_case_dir`` is rewritten each call (overwrite=True).
+    RTTOV's single K run (adk_bt + adk_refl) is already per-channel-type -- the K row
+    is d(BT)/d(profile) for a thermal channel and d(REFL)/d(profile) for a solar one
+    (VERIFIED by FD). So the obs operator stays observable-AGNOSTIC: it contracts that
+    same K against the cotangent of THIS merged observable, and each channel's row
+    matches its observable. ``channels`` = the run's 1-based channel ids
+    (rttov_input.config.channels); ``solar_channels`` = the subset whose observable is
+    reflectance. Returns ``bt`` unchanged when ``solar_channels`` is empty (IR-only).
+
+    reject-don't-drop: a solar channel requested but no REFL produced (solar not
+    enabled in the run) is rejected, not silently left as BT=0 (a dead solar observable
+    whose REFL-K would still be live -> wrong gradient with a zero forward)."""
+    if not solar_channels:
+        return bt
+    import numpy as np
+    chan_ids = [int(c) for c in channels]
+    solar = {int(c) for c in solar_channels}
+    # Reject an unknown/mismatched solar id (mirror ir_channel_gate's reject-don't-drop):
+    # a partial typo (e.g. solar=(1..5,16) where 16 is a thermal channel in range) would
+    # otherwise write REFL into a BT-K column -> a REFL observable paired with a BT-K row.
+    unknown = solar - set(chan_ids)
+    if unknown:
+        raise ValueError(
+            f"solar_channels {sorted(unknown)} are not in the run's channels {chan_ids} "
+            "-- every solar id must map to a REFL column (the K row for that channel is "
+            "reflectance-K only if it is actually a solar channel).")
+    cols = [i for i, c in enumerate(chan_ids) if c in solar]
+    if refl is None:
+        raise ValueError(
+            f"solar_channels {sorted(solar)} requested but the run produced no REFL "
+            "(opts%rt_all%solar must be .TRUE. / a solar-capable fixture) -- refusing "
+            "to return a zero solar observable while the K carries live REFL sensitivity.")
+    obs = np.asarray(bt, dtype=float).copy()
+    obs[:, cols] = np.asarray(refl, dtype=float)[:, cols]
+    return obs
+
+
+def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), timeout=None):
+    """Build the live ``run_k(RttovInput) -> (observable, K, rad_quality)`` for RttovObsOp.
+
+    Each call: write_rttov_case (overlay T/Q + cloud onto the fixture) -> out-of-process
+    run_rttov_k (single runK: BT + REFL + K) -> cloud-K slot adapter -> merge the
+    per-channel observable (BT for thermal, REFL for ``solar_channels``; Phase 7).
+    ``out_case_dir`` is rewritten each call (overwrite=True). ``solar_channels`` (1-based
+    ids) empty -> pure BT (IR-only / clear-sky, unchanged).
 
     NOT concurrency-safe: ``out_case_dir`` is a single shared, rewritten directory,
     so two overlapping calls on the SAME closure would clobber each other's case
@@ -584,7 +661,8 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, timeout=None):
     """
     def _run_k(rttov_input):
         case_out = write_rttov_case(rttov_input, out_case_dir,
-                                    fixture_case_dir=fixture_case_dir, overwrite=True)
+                                    fixture_case_dir=fixture_case_dir, overwrite=True,
+                                    solar_channels=solar_channels)
         out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
                           expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
         # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
@@ -592,8 +670,16 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, timeout=None):
         # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
         nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
         add_cloud_k_slots(out.k, nlay=nlay)
-        # RttovKOutput field order is (bt, rad_quality, k, ...) -> reorder to the
-        # run_k contract (bt, K, rad_quality); never `tuple(out)`.
-        return out.bt, out.k, out.rad_quality
+        # Per-channel observable: BT (thermal) / REFL (solar). The K is already
+        # per-channel-type, so the obs operator contracts it against this observable's
+        # cotangent unchanged. RttovKOutput field order is (bt, rad_quality, k, ...) ->
+        # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
+        observable = merge_solar_observable(out.bt, out.refl,
+                                            rttov_input.config.channels, solar_channels)
+        return observable, out.k, out.rad_quality
 
+    # Tag the closure with its solar set so a consumer (obs_adjoint_callback) can verify
+    # it matches ObsOperatorConfig.solar_channels -- a mismatch (e.g. cfg says solar but
+    # this run_k merges pure BT) would be a silent config-mismatch wrong gradient.
+    _run_k.solar_channels = tuple(int(c) for c in solar_channels)
     return _run_k
