@@ -122,13 +122,34 @@ _CLOUD_FIELD_MAP = (("clw", "HYDRO6"), ("ciw", "HYDRO7"),
                     ("cfrac", "CFRAC"))
 
 
+def _canon_mapping(m):
+    """Order-independent, number-normalized canonical form of a dict / list-of-dicts /
+    None, for hashing. (30 and 30.0 must hash the same; key order must not matter.)"""
+    if m is None:
+        return None
+    if isinstance(m, (list, tuple)):
+        return tuple(_canon_mapping(x) for x in m)
+    if isinstance(m, dict):
+        return tuple(sorted((str(k), _canon_mapping(v)) for k, v in m.items()))
+    if isinstance(m, bool):
+        return m
+    if isinstance(m, (int, float)):
+        return repr(float(m))                      # 30 == 30.0 -> same fingerprint
+    return m
+
+
 def _config_hash(cfg, nlayers, nlevels, profile_keys=()) -> str:
     """Defensive fingerprint of everything that must match between a direct run
-    and the K run (design 7): coef, channels, forced options, grid sizes, AND the
-    set of profile fields present (clear vs cloud is a different run mode)."""
+    and the K run (design 7): coef, channels, forced options, grid sizes, the set of
+    profile fields present (clear vs cloud is a different run mode), AND the per-obs
+    geometry/surface (runtime-significant: the viewing/solar angles change BT and K, so
+    two inputs differing only in geometry MUST get distinct fingerprints -- else a
+    config-hash-keyed cache would return stale BT/K, Codex stop-review)."""
     key = repr((cfg.coef_id, tuple(cfg.channels), cfg.gas_units, bool(cfg.mmr_hydro),
                 bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels),
-                tuple(sorted(profile_keys))))
+                tuple(sorted(profile_keys)),
+                _canon_mapping(getattr(cfg, "geometry", None)),
+                _canon_mapping(getattr(cfg, "surface", None))))
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 

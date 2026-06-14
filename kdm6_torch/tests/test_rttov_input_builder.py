@@ -95,6 +95,24 @@ def test_config_hash_deterministic_and_sensitive():
     assert h1 != h3          # sensitive to config (channels)
 
 
+def test_config_hash_sensitive_to_geometry():
+    """geometry is runtime-significant (the viewing/solar angles change BT and K), so
+    two inputs differing only in geometry MUST get distinct config fingerprints -- else
+    a config-hash-keyed cache would return stale BT/K (Codex stop-review)."""
+    g = {"zenangle": 30.0, "azangle": 0.0, "sunzenangle": 50.0, "sunazangle": 200.0,
+         "latitude": 35.0, "longitude": 127.0, "elevation": 0.1}
+    h_none = pack_rttov_input(_profile(), _cfg()).config_hash
+    h_g = pack_rttov_input(_profile(), _cfg(geometry=g)).config_hash
+    h_g2 = pack_rttov_input(_profile(), _cfg(geometry=dict(g, zenangle=60.0))).config_hash
+    assert h_none != h_g          # adding geometry changes the fingerprint
+    assert h_g != h_g2            # a different zenith changes the fingerprint
+    assert h_g == pack_rttov_input(_profile(), _cfg(geometry=dict(g))).config_hash  # determ.
+    # number normalization: int 30 and float 30.0 hash the same (key order irrelevant too)
+    g_int = {"zenangle": 30, "elevation": 0.1, "azangle": 0.0, "sunzenangle": 50.0,
+             "sunazangle": 200.0, "latitude": 35.0, "longitude": 127.0}
+    assert pack_rttov_input(_profile(), _cfg(geometry=g_int)).config_hash == h_g
+
+
 def test_t_q_shape_consistency():
     p = _profile(nlay=4)
     with pytest.raises(ValueError, match="same profile/layer grid"):
