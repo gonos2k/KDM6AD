@@ -288,6 +288,27 @@ def test_overlay_rejects_bad_fixture_contract(tmp_path):
         write_rttov_case(rin, tmp_path / "case", fixture_case_dir=badfix)
 
 
+@needs_fixture
+def test_overlay_rejects_cloud_input(tmp_path):
+    """A cloud RttovInput (HYDRO*) is rejected until Phase 5 builds the cloud overlay;
+    else the live run would be clear-sky while the caller's backward expects cloud K."""
+    from kdm6.obs.model_profile_builder import RttovProfileTensors
+    t_vec, q_vec = _fixture_tq()
+    nlay = len(t_vec)
+    prof = RttovProfileTensors(
+        t_lay=torch.as_tensor(t_vec, dtype=torch.float64),
+        q_lay=torch.as_tensor(q_vec, dtype=torch.float64), p_lay=None,
+        p_half=torch.as_tensor(_fixture_p_half(), dtype=torch.float64),
+        clw=torch.zeros(nlay, dtype=torch.float64), ciw=torch.zeros(nlay, dtype=torch.float64),
+        deff_liq=torch.full((nlay,), 20.0, dtype=torch.float64),
+        deff_ice=torch.full((nlay,), 40.0, dtype=torch.float64),
+        cfrac=torch.zeros(nlay, dtype=torch.float64))
+    rin = pack_rttov_input(prof, RttovInputConfig(coef_id="ami", channels=_CHANNELS))
+    assert "HYDRO6" in rin.profile
+    with pytest.raises(NotImplementedError, match="cloud fields"):
+        write_rttov_case(rin, tmp_path / "case")
+
+
 # ---------------------------------------------------------------- LIVE RTTOV
 @needs_live
 def test_live_run_k_reproduces_fixture_bt(tmp_path):

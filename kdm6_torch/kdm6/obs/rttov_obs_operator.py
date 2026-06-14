@@ -7,10 +7,14 @@ torch (runK takes no seed, design 9.1). The callback implements da_window's
 `obs_adjoint(t, x_t)` (detached state -> covector), closing the loss locally with
 `autograd.grad` (never via Handle.vjp, design 10/14.3).
 
-Scope (P6, matching P2): the clear-sky T/Q path. The differentiable RTTOV inputs
-are (t_lay, q_lay) -> K fields ('T', 'Q'); RttovObsOp also returns ``rad_quality``
-(marked non-differentiable) so the loss can enforce the design-8 mask. Cloud
-content/Deff fields are appended when the hydrotable lands.
+Scope: clear-sky T/Q AND (Phase 2) the all-sky cloud path. Differentiable inputs are
+(t_lay, q_lay) -> K ('T','Q') plus, in cloud mode, (clw, ciw, deff_liq, deff_ice) ->
+K ('HYDRO6','HYDRO7','HYDRO_DEFF6','HYDRO_DEFF7'); cfrac is a non-differentiable
+passthrough. RttovObsOp also returns ``rad_quality`` (marked non-differentiable) so
+the loss can enforce the design-8 mask. The einsum + K-shape guard are field-agnostic,
+so the cloud expansion is a wider grad-input list, not new contraction logic. Live
+cloud K (HYDRO*) needs the AMI hydrotable + cloud fixture (Phases 5-6); the offline
+mock validates the full cloud autograd closure now.
 
 ``run_k`` is INJECTED (RttovInput -> (bt, K, rad_quality)): the live adapter wraps
 write-case + `rttov_runner.run_rttov_k`; tests pass an analytic mock so the full
@@ -38,9 +42,28 @@ OBS_ZERO_OK = frozenset({"nccn", "nr", "bg"})
 # else (cloud content/number) is legitimately 0 until the cloud path is built.
 CLEAR_SKY_CONNECTED = frozenset({"th", "qv"})
 
-# The differentiable RTTOV-input tensors passed to RttovObsOp.apply, in order,
-# and the K-matrix field each maps to (design 9.1: gas/T K). Clear-sky.
-_GRAD_FIELDS = ("T", "Q")  # (t_lay, q_lay)
+# All-sky (cloud) must-connect leaves: clear-sky T/Q + cloud CONTENT (qc->clw,
+# qi+qs->ciw), which always has a path. nc/ni reach BT only through Deff, whose path
+# is clamp-dependent (size-pinned -> legitimately severed), so they are NOT required
+# to connect (None -> zero, not a sever); the Phase-1 builder test guards that plumbing.
+ALL_SKY_CONNECTED = frozenset({"th", "qv", "qc", "qi", "qs"})
+
+
+class _Unset:
+    """Sentinel distinguishing a cloud arg NOT passed (clear-sky 6-arg apply ->
+    backward returns 6) from one passed as None (cloud 11-arg apply -> returns 11).
+    torch.autograd backward must return one grad per arg PASSED to apply."""
+    __slots__ = ()
+
+
+_UNSET = _Unset()
+
+# Differentiable RttovObsOp.apply inputs: (apply-arg index, PROFILES_K field). Base
+# T/Q always present; cloud content/Deff present in cloud mode. Apply arg order:
+#   0 run_k, 1 rttov_config, 2 t_lay, 3 q_lay, 4 p_lay, 5 p_half,
+#   6 clw, 7 ciw, 8 deff_liq, 9 deff_ice, 10 cfrac (cfrac = non-diff passthrough)
+_GRAD_INPUTS = ((2, "T"), (3, "Q"), (6, "HYDRO6"), (7, "HYDRO7"),
+                (8, "HYDRO_DEFF6"), (9, "HYDRO_DEFF7"))
 
 
 class ObsOperatorConfig(NamedTuple):
@@ -55,28 +78,56 @@ class ObsOperatorConfig(NamedTuple):
 class RttovObsOp(torch.autograd.Function):
     """forward: runK 1x -> (BT, rad_quality), cache K. backward: K^T·λ_BT.
 
-    ``apply(run_k, rttov_config, t_lay, q_lay, p_lay, p_half)`` -- ``run_k`` and
-    ``rttov_config`` are non-tensor (backward returns None for them); ``t_lay``/
-    ``q_lay`` are the differentiable inputs; ``p_lay``/``p_half`` are constant grids
-    (no grad). Returns ``(bt, rad_quality)`` with ``rad_quality`` marked
-    non-differentiable.
+    Clear-sky: ``apply(run_k, rttov_config, t_lay, q_lay, p_lay, p_half)`` (6 args).
+    All-sky (cloud): ``apply(..., p_half, clw, ciw, deff_liq, deff_ice, cfrac)`` (11
+    args, all-or-nothing). ``run_k``/``rttov_config`` are non-tensor; ``t_lay``/
+    ``q_lay`` (and cloud content/Deff) are differentiable; ``p_lay``/``p_half``/
+    ``cfrac`` are constant grids/weights (no grad). Returns ``(bt, rad_quality)`` with
+    ``rad_quality`` marked non-differentiable. backward returns one grad per arg
+    PASSED (6 clear-sky / 11 cloud) -- the _UNSET sentinel distinguishes the two.
     """
 
     @staticmethod
-    def forward(ctx, run_k, rttov_config, t_lay, q_lay, p_lay, p_half):
-        prof = RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half)
+    def forward(ctx, run_k, rttov_config, t_lay, q_lay, p_lay, p_half,
+                clw=_UNSET, ciw=_UNSET, deff_liq=_UNSET, deff_ice=_UNSET, cfrac=_UNSET):
+        cloud = (clw, ciw, deff_liq, deff_ice, cfrac)
+        passed = [x is not _UNSET for x in cloud]
+        if any(passed) and not all(passed):
+            raise ValueError(
+                "cloud inputs are all-or-nothing: pass all 5 "
+                "(clw, ciw, deff_liq, deff_ice, cfrac) or none (clear-sky).")
+        cloud_mode = all(passed)
+        if cloud_mode and any(x is None for x in cloud):
+            # a None among the 5 (vs _UNSET) is a PARTIAL cloud profile -- reject, don't
+            # silently drop the None field (grad_specs/pack would skip it). reject-don't-drop.
+            raise ValueError(
+                "cloud mode: all 5 cloud inputs must be tensors; a None among "
+                "(clw, ciw, deff_liq, deff_ice, cfrac) is a partial profile.")
+        n_args = 11 if cloud_mode else 6
+        if not cloud_mode:
+            clw = ciw = deff_liq = deff_ice = cfrac = None
+
+        prof = RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half,
+                                   clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice,
+                                   cfrac=cfrac)
         rin = pack_rttov_input(prof, rttov_config)     # torch -> numpy (detached)
         bt_np, k_dict, rad_quality_np = run_k(rin)     # single runK: BT + K + quality
+
+        # grad spec: (apply-arg index, K field, in-shape) for each DIFFERENTIABLE input
+        # present. args mirrors the apply positional order (run_k=0 ... cfrac=10).
+        args = (None, None, t_lay, q_lay, None, None, clw, ciw, deff_liq, deff_ice, cfrac)
+        grad_specs = [(idx, key, tuple(args[idx].shape))
+                      for (idx, key) in _GRAD_INPUTS if idx < n_args and args[idx] is not None]
         # fail FAST at the run_k contract boundary (not later inside autograd):
-        missing = set(_GRAD_FIELDS) - set(k_dict)
+        missing = [key for (_, key, _) in grad_specs if key not in k_dict]
         if missing:
             raise KeyError(
                 f"run_k k_dict missing required K field(s) {sorted(missing)} for the "
-                f"differentiable inputs {_GRAD_FIELDS} (design 9.1 PROFILES_K).")
+                "differentiable inputs (design 9.1 PROFILES_K).")
         ctx.k_dict = k_dict
         ctx.config_hash = rin.config_hash
-        ctx.grad_fields = _GRAD_FIELDS
-        ctx.in_shapes = (tuple(t_lay.shape), tuple(q_lay.shape))
+        ctx.grad_specs = grad_specs
+        ctx.n_args = n_args
         ctx.dtype = t_lay.dtype
         ctx.device = t_lay.device
         bt = torch.as_tensor(bt_np, dtype=t_lay.dtype, device=t_lay.device)
@@ -88,24 +139,22 @@ class RttovObsOp(torch.autograd.Function):
     def backward(ctx, grad_bt, grad_rad_quality):
         # grad_bt = λ_BT [nprofiles, nchannels]; grad_rad_quality is None (non-diff).
         lam = grad_bt
-        grads = []
         nprof, nch = lam.shape
-        for field, in_shape in zip(ctx.grad_fields, ctx.in_shapes):
-            k = ctx.k_dict[field]
-            kt = torch.as_tensor(k, dtype=ctx.dtype, device=ctx.device)  # [nprof,nch,nlay]
+        grads = [None] * ctx.n_args            # one slot per arg passed to apply
+        for idx, key, in_shape in ctx.grad_specs:
+            kt = torch.as_tensor(ctx.k_dict[key], dtype=ctx.dtype, device=ctx.device)
             # Guard the K shape: a transposed (or square nlay==nch) K would give a
-            # wrong-but-finite gradient silently (design 9.1/F1-SHAPE seam, md:601/730).
+            # wrong-but-finite gradient silently (design 9.1/F1-SHAPE seam). Field-
+            # agnostic, so it covers the cloud HYDRO*/HYDRO_DEFF* K identically.
             nlay = in_shape[-1]
             if tuple(kt.shape) != (nprof, nch, nlay):
                 raise ValueError(
-                    f"K['{field}'] shape {tuple(kt.shape)} != expected "
+                    f"K['{key}'] shape {tuple(kt.shape)} != expected "
                     f"(nprofiles, nchannels, nlayers) ({nprof}, {nch}, {nlay}); "
                     "guards a transposed/square-K silent wrong-gradient.")
             # channel contraction K^T·λ_BT: grad_field[p,l] = Σ_c K[p,c,l]·λ_BT[p,c]
-            g = torch.einsum("pcl,pc->pl", kt, lam)
-            grads.append(g.reshape(in_shape))   # match the forward input's shape (1-D single profile)
-        # forward args: (run_k, rttov_config, t_lay, q_lay, p_lay, p_half)
-        return (None, None, grads[0], grads[1], None, None)
+            grads[idx] = torch.einsum("pcl,pc->pl", kt, lam).reshape(in_shape)
+        return tuple(grads)
 
 
 def assemble_obs_covector(leaves: State, grads, *, connected_fields=CLEAR_SKY_CONNECTED) -> State:
@@ -228,8 +277,14 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
 
     prof = model_to_rttov_tensors(col_leaves, col_forcing, cfg.profile_cfg,
                                   xland=xland, ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
-    bt_hat, rad_quality = RttovObsOp.apply(
-        run_k, cfg.input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half)
+    if getattr(cfg.profile_cfg, "cloud", False):
+        # all-sky: pass the cloud content/Deff (differentiable) + cfrac (passthrough).
+        bt_hat, rad_quality = RttovObsOp.apply(
+            run_k, cfg.input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half,
+            prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
+    else:
+        bt_hat, rad_quality = RttovObsOp.apply(
+            run_k, cfg.input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half)
 
     j = None
     any_active = False

@@ -114,11 +114,21 @@ def torch_float64():
     return torch.float64
 
 
-def _config_hash(cfg, nlayers, nlevels) -> str:
+# All-sky cloud profile fields (design 9.1): attr on RttovProfileTensors -> RTTOV
+# PROFILES_K field key. Content HYDRO6/7 [g/m^3], effective DIAMETER HYDRO_DEFF6/7
+# [micron], cloud fraction CFRAC. Present only in cloud mode.
+_CLOUD_FIELD_MAP = (("clw", "HYDRO6"), ("ciw", "HYDRO7"),
+                    ("deff_liq", "HYDRO_DEFF6"), ("deff_ice", "HYDRO_DEFF7"),
+                    ("cfrac", "CFRAC"))
+
+
+def _config_hash(cfg, nlayers, nlevels, profile_keys=()) -> str:
     """Defensive fingerprint of everything that must match between a direct run
-    and the K run (design 7): coef, channels, forced options, grid sizes."""
+    and the K run (design 7): coef, channels, forced options, grid sizes, AND the
+    set of profile fields present (clear vs cloud is a different run mode)."""
     key = repr((cfg.coef_id, tuple(cfg.channels), cfg.gas_units, bool(cfg.mmr_hydro),
-                bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels)))
+                bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels),
+                tuple(sorted(profile_keys))))
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
@@ -128,8 +138,8 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
 
     Validates the forced RTTOV options and the layer/level invariant
     (Nlevels == Nlayers + 1), and rejects non-finite profiles. ``profile_tensors``
-    must carry ``t_lay``/``q_lay`` (layers) and ``p_half`` (levels); cloud fields
-    are appended in a later phase.
+    must carry ``t_lay``/``q_lay`` (layers) and ``p_half`` (levels); all-sky cloud
+    fields (clw/ciw/deff_liq/deff_ice/cfrac) are serialized when present (cloud mode).
     """
     _require_options(rttov_config)
     t = _to_numpy_2d(profile_tensors.t_lay, "t_lay")
@@ -151,7 +161,19 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
     if getattr(profile_tensors, "p_lay", None) is not None:
         profile["P"] = _to_numpy_2d(profile_tensors.p_lay, "p_lay")
 
+    # all-sky cloud fields (present only in cloud mode); each on the T/Q layer grid.
+    for attr, fkey in _CLOUD_FIELD_MAP:
+        val = getattr(profile_tensors, attr, None)
+        if val is not None:
+            arr = _to_numpy_2d(val, attr)
+            if arr.shape != (nprofiles, nlayers):
+                raise ValueError(
+                    f"{attr} shape {arr.shape} != T/Q grid ({nprofiles}, {nlayers}) "
+                    "-- cloud fields must ride the same layer grid.")
+            profile[fkey] = arr
+
     return RttovInput(
         profile=profile, config=rttov_config,
-        config_hash=_config_hash(rttov_config, nlayers, nlevels if nlevels else nlayers + 1),
+        config_hash=_config_hash(rttov_config, nlayers,
+                                 nlevels if nlevels else nlayers + 1, profile.keys()),
         nprofiles=nprofiles, nlayers=nlayers)

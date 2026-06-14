@@ -220,6 +220,26 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     """
     fixture = Path(fixture_case_dir) if fixture_case_dir is not None else default_fixture_case_dir()
     out = Path(out_case_dir)
+    # Validate the RttovInput BEFORE any filesystem mutation (no leftover dir on reject).
+    # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q + channels
+    # come from the RttovInput; reject fields the writer would otherwise silently ignore.
+    cfg = rttov_input.config
+    if getattr(cfg, "surface", None) is not None or getattr(cfg, "geometry", None) is not None:
+        raise NotImplementedError(
+            "RttovInputConfig.surface/geometry are not yet written into the case "
+            "(the fixture's are used) -- pass None until the overlay lands, else they "
+            "would be silently ignored.")
+    # All-sky cloud fields are not yet overlaid (Phase 5: AMI hydrotable + cloud fixture).
+    # A cloud RttovInput would otherwise run CLEAR-SKY while backward expects cloud K
+    # -> silently wrong gradient. Reject, don't drop.
+    cloud_keys = [k for k in ("HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC")
+                  if k in rttov_input.profile]
+    if cloud_keys:
+        raise NotImplementedError(
+            f"RttovInput carries cloud fields {cloud_keys} but write_rttov_case does not "
+            "yet overlay them (the AMI hydrotable + cloud fixture are Phase 5) -- the run "
+            "would be clear-sky while backward expects cloud K. Use a mock run_k for the "
+            "cloud autograd path until the live cloud fixture lands.")
     if not fixture.is_dir():
         raise FileNotFoundError(
             f"RTTOV fixture case not found: {fixture} (set AD_RTTOV_HOME / install ami/501).")
@@ -231,15 +251,6 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
         shutil.rmtree(out)
     shutil.copytree(fixture, out)
 
-    # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q +
-    # channels come from the RttovInput. Reject RttovInput fields the writer would
-    # otherwise silently ignore (reject-don't-drop):
-    cfg = rttov_input.config
-    if getattr(cfg, "surface", None) is not None or getattr(cfg, "geometry", None) is not None:
-        raise NotImplementedError(
-            "RttovInputConfig.surface/geometry are not yet written into the case "
-            "(the fixture's are used) -- pass None until the overlay lands, else they "
-            "would be silently ignored.")
     _verify_fixture_contract(out / "out" / "rttov_test.txt", cfg)
 
     nprof = rttov_input.nprofiles
