@@ -700,6 +700,27 @@ def test_solar_observable_rejects_thermal_or_mixed_channel_id(tmp_path):
     write_rttov_case(rin, tmp_path / "case", solar_channels=(1, 2, 3, 4, 5, 6), overwrite=True)
 
 
+@needs_cloud_fixture
+def test_solar_channels_not_in_run_rejected(tmp_path):
+    """A solar id absent from the run's channels is rejected at the earliest gate
+    (pre-mutation), not silently dropped by the requested-intersection (Codex review)."""
+    rin, _ = _cloud_rttov_input()                  # channels = 1..16
+    with pytest.raises(ValueError, match="not in the run's channels"):
+        write_rttov_case(rin, tmp_path / "case", solar_channels=(99,))
+    assert not (tmp_path / "case").exists()
+
+
+@needs_cloud_fixture
+def test_cloud_overlay_rejects_cfrac_zero_with_content(tmp_path):
+    """CFRAC=0 with positive content is rejected: RTTOV treats cfrac=0 as clear, so the
+    content (and its K row) would be SILENTLY dropped in that layer (Codex review)."""
+    rin, _ = _cloud_rttov_input()                  # ciw[20]=0.03>0, cfrac[20]=1
+    rin.profile["CFRAC"][0][20] = 0.0              # cloudy content but 0 fraction
+    with pytest.raises(ValueError, match="CFRAC must be > 0 wherever"):
+        write_rttov_case(rin, tmp_path / "case")
+    assert not (tmp_path / "case").exists()        # rejected before copytree
+
+
 # ------------------------------------------------- cloud K adapter (Phase 6, no run)
 def _flat_typemajor(nprof, nch, ntype, nlay):
     """Synthetic flat K block, type-major: value[type,layer] = type*100 + layer."""

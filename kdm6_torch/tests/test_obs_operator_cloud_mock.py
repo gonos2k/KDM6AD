@@ -346,3 +346,22 @@ def test_callback_rejects_run_k_solar_mismatch():
     cov = obs_adjoint_callback(0, _cloudy_state(), schedule=sched, cfg=cfg,
                                forcings=[_forcing()], run_k=rk)
     assert isinstance(cov, State)
+
+
+def test_callback_rejects_error_model_with_kept_solar():
+    """A BT-scale symmetric error_model must NOT weight a KEPT solar (reflectance)
+    channel -- its K-scale sigma would mis-weight the 0-1 reflectance residual. Reject;
+    gating the solar channel out (channel_gate) makes the IR-only error_model OK."""
+    from kdm6.obs.obs_loss import SymmetricObsError
+    cfg = _cloud_cfg()._replace(solar_channels=(1,), sigma=[5.0] * NCH,
+                                error_model=SymmetricObsError(2.0, 20.0, 1.0, 10.0))
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "bt_clear": torch.zeros(1, NCH, dtype=F64),
+         "obs_quality": torch.zeros(1, NCH, dtype=F64)}          # ch1 (solar) kept
+    with pytest.raises(ValueError, match="SOLAR .reflectance. channel is KEPT"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                             cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+    # gate the solar channel out -> the error_model weights only IR channels -> OK.
+    o_gated = dict(o, channel_gate=torch.tensor([[0.0, 1.0, 1.0]], dtype=F64))
+    cov = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_gated]}),
+                               cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+    assert isinstance(cov, State)

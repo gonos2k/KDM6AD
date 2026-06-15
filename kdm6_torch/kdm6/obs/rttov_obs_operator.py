@@ -328,6 +328,13 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
             raise ValueError(
                 f"ObsOperatorConfig.sigma length {sig_t.numel()} != nchannels {nch} -- a "
                 "per-channel sigma is required for the mixed solar+IR observable.")
+    # The symmetric error_model carries BT-scale scalar params (sigma_clr/sigma_cld in
+    # Kelvin); it must NOT weight a kept SOLAR channel (0-1 reflectance) -> mis-weight by
+    # ~the unit ratio. Precompute the solar columns; reject per-obs below if any is kept.
+    solar_cols = None
+    if cfg.error_model is not None and cfg.solar_channels:
+        solar_set = {int(c) for c in cfg.solar_channels}
+        solar_cols = [i for i, c in enumerate(cfg.input_cfg.channels) if int(c) in solar_set]
 
     j = None
     any_active = False
@@ -340,6 +347,12 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
         # CA-sigma is DETACHED (a weighting, no ghost grad into lambda_BT).
         sigma = cfg.sigma
         if cfg.error_model is not None:
+            if solar_cols and float(mask[..., solar_cols].sum()) > 0.0:
+                raise ValueError(
+                    "ObsOperatorConfig.error_model (BT-scale symmetric obs-error) is set "
+                    "but a SOLAR (reflectance) channel is KEPT -- its K-scale sigma would "
+                    "mis-weight the 0-1 reflectance residual. Gate the solar channels out "
+                    "(obs['channel_gate']) or use a per-channel-type error model.")
             bt_clear = o.get("bt_clear")
             if bt_clear is None:
                 # error_model = intent to use CA-sigma; a missing clear-sky first guess

@@ -106,6 +106,7 @@ def _validate_cloud_domain(rttov_input) -> None:
         cfrac = np.asarray(prof["CFRAC"][p], dtype=float).reshape(-1)
         if not np.all(np.isfinite(cfrac)) or np.any(cfrac < 0.0) or np.any(cfrac > 1.0):
             raise ValueError(f"profile {p}: CFRAC must be finite and in [0, 1].")
+        total_content = np.zeros_like(cfrac)
         for content_key, deff_key in (("HYDRO6", "HYDRO_DEFF6"), ("HYDRO7", "HYDRO_DEFF7")):
             c = np.asarray(prof[content_key][p], dtype=float).reshape(-1)
             d = np.asarray(prof[deff_key][p], dtype=float).reshape(-1)
@@ -118,6 +119,17 @@ def _validate_cloud_domain(rttov_input) -> None:
                     f"profile {p}: {deff_key} must be > 0 wherever {content_key} > 0 -- a "
                     "non-positive Deff in a cloudy layer would silently fall back to "
                     "deff_param, dropping the model's explicit effective diameter.")
+            total_content = total_content + c
+        # CFRAC > 0 wherever there IS hydrometeor content: RTTOV treats hydro_frac=0 as a
+        # clear (0% cloudy) layer, so positive content with cfrac=0 is SILENTLY ignored
+        # (cloud signal + that slot's K row zeroed -> a dead gradient channel). Reject the
+        # inconsistency (content-coupled, like the Deff guard; Codex review). The model
+        # bridge sets cfrac=1 where condensate>0, so this only catches a malformed input.
+        if np.any((total_content > 0.0) & ~(cfrac > 0.0)):
+            raise ValueError(
+                f"profile {p}: CFRAC must be > 0 wherever HYDRO6+HYDRO7 content > 0 -- "
+                "RTTOV treats cfrac=0 as clear, silently dropping the cloud content (and "
+                "its K) in that layer.")
 
 
 def _write_matrix(path: Path, rows) -> None:
@@ -258,6 +270,13 @@ def _validate_geometry(geometry, nprof: int) -> None:
             raise ValueError(
                 f"geometry elevation {g['elevation']} must be in [-1, 20] KILOMETERS "
                 "(RTTOV elevmax=20 km) -- pass surface height in km, NOT meters.")
+        # azangle/sunazangle and longitude are intentionally finiteness-only (no range
+        # bound): RTTOV uses azimuths via MOD(...,360)/cos (rttov_calc_sunglint.F90:191,
+        # rttov_dom relazi) so any value is handled correctly -- a [0,360) bound would
+        # FALSE-REJECT a legitimately-wrapped value. longitude is only consumed by the
+        # emissivity/BRDF ATLAS lookup; this path runs without an atlas (no atlas file),
+        # so longitude is currently passive. (Add a longitude convention bound when the
+        # atlas path lands.) Codex-reviewed: not a units trap for the current code.
 
 
 def _overlay_geometry(profile_dir: Path, geom: dict) -> None:
@@ -710,6 +729,16 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # validate them BEFORE any FS mutation.
     _validate_geometry(getattr(cfg, "geometry", None), rttov_input.nprofiles)
     _validate_surface(getattr(cfg, "surface", None), rttov_input.nprofiles)
+    # Every solar id must be a REQUESTED channel -- reject an out-of-run id at the
+    # earliest gate rather than silently dropping it via the requested-intersection
+    # below (reject-don't-drop; merge_solar_observable also catches it, but later).
+    if solar_channels:
+        chans = {_as_channel_id(c) for c in cfg.channels}
+        unknown = {_as_channel_id(c) for c in solar_channels} - chans
+        if unknown:
+            raise ValueError(
+                f"solar_channels {sorted(unknown)} are not in the run's channels "
+                f"{sorted(chans)} -- every solar id must be a requested channel.")
     # Reject cloud-family fields the writer does not recognize (a forbidden MW
     # RTTOV-SCATT slot like HYDRO1/HYDRO4, an extra HYDRO8, or a misspelled HYDRO6):
     # they would otherwise be silently dropped to a clear-sky run (reject-don't-drop,
