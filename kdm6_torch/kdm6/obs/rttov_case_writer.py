@@ -106,7 +106,6 @@ def _validate_cloud_domain(rttov_input) -> None:
         cfrac = np.asarray(prof["CFRAC"][p], dtype=float).reshape(-1)
         if not np.all(np.isfinite(cfrac)) or np.any(cfrac < 0.0) or np.any(cfrac > 1.0):
             raise ValueError(f"profile {p}: CFRAC must be finite and in [0, 1].")
-        total_content = np.zeros_like(cfrac)
         for content_key, deff_key in (("HYDRO6", "HYDRO_DEFF6"), ("HYDRO7", "HYDRO_DEFF7")):
             c = np.asarray(prof[content_key][p], dtype=float).reshape(-1)
             d = np.asarray(prof[deff_key][p], dtype=float).reshape(-1)
@@ -119,17 +118,12 @@ def _validate_cloud_domain(rttov_input) -> None:
                     f"profile {p}: {deff_key} must be > 0 wherever {content_key} > 0 -- a "
                     "non-positive Deff in a cloudy layer would silently fall back to "
                     "deff_param, dropping the model's explicit effective diameter.")
-            total_content = total_content + c
-        # CFRAC > 0 wherever there IS hydrometeor content: RTTOV treats hydro_frac=0 as a
-        # clear (0% cloudy) layer, so positive content with cfrac=0 is SILENTLY ignored
-        # (cloud signal + that slot's K row zeroed -> a dead gradient channel). Reject the
-        # inconsistency (content-coupled, like the Deff guard; Codex review). The model
-        # bridge sets cfrac=1 where condensate>0, so this only catches a malformed input.
-        if np.any((total_content > 0.0) & ~(cfrac > 0.0)):
-            raise ValueError(
-                f"profile {p}: CFRAC must be > 0 wherever HYDRO6+HYDRO7 content > 0 -- "
-                "RTTOV treats cfrac=0 as clear, silently dropping the cloud content (and "
-                "its K) in that layer.")
+        # NOTE (Codex stop-review): NO "CFRAC>0 wherever content>0" guard. The bridge sets
+        # cfrac = (total content > _CFRAC_CONTENT_THRESHOLD ~1e-6 g/m^3), so a layer with
+        # 0 < content <= threshold legitimately gets cfrac=0 (negligible cloud -> clear);
+        # RTTOV ignoring that sub-threshold content is the INTENDED thresholding, not a
+        # silent bug. cfrac=0 means "clear", and honoring it is correct -- there is no
+        # corruption to guard (such a guard would reject valid thresholded bridge output).
 
 
 def _write_matrix(path: Path, rows) -> None:

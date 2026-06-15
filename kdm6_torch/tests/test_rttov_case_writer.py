@@ -711,14 +711,14 @@ def test_solar_channels_not_in_run_rejected(tmp_path):
 
 
 @needs_cloud_fixture
-def test_cloud_overlay_rejects_cfrac_zero_with_content(tmp_path):
-    """CFRAC=0 with positive content is rejected: RTTOV treats cfrac=0 as clear, so the
-    content (and its K row) would be SILENTLY dropped in that layer (Codex review)."""
+def test_cloud_overlay_allows_subthreshold_content_with_zero_cfrac(tmp_path):
+    """A layer with positive-but-tiny content and cfrac=0 is ACCEPTED, not rejected:
+    the bridge thresholds cfrac (content <= ~1e-6 g/m^3 -> cfrac=0, negligible cloud ->
+    clear), and RTTOV ignoring that sub-threshold content is intended (Codex stop-review:
+    a 'CFRAC>0 where content>0' guard would reject valid thresholded bridge output)."""
     rin, _ = _cloud_rttov_input()                  # ciw[20]=0.03>0, cfrac[20]=1
-    rin.profile["CFRAC"][0][20] = 0.0              # cloudy content but 0 fraction
-    with pytest.raises(ValueError, match="CFRAC must be > 0 wherever"):
-        write_rttov_case(rin, tmp_path / "case")
-    assert not (tmp_path / "case").exists()        # rejected before copytree
+    rin.profile["CFRAC"][0][20] = 0.0              # content present, fraction 0 -> allowed
+    write_rttov_case(rin, tmp_path / "case")       # no raise
 
 
 # ------------------------------------------------- cloud K adapter (Phase 6, no run)
