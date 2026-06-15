@@ -239,9 +239,13 @@ program test_fortran_smoke
   ! the contiguous buffer through. fp64 path => grads must be ALL finite (a NaN OR
   ! Inf here is a contract violation and FAILS via ieee_is_finite, it is NOT skipped).
   tile_test: block
-    integer, parameter :: ti = 2, tk = 2, tj = 2, nfld = 12
+    ! DISTINCT extents (im,kme,jme)=(2,3,4) so NO axis permutation is a tile
+    ! symmetry — an im<->jme (or any axis) swap moves support out of column
+    ! (i0,j0) and FAILS. (A symmetric 2x2x2 tile with i0==j0 hides an im<->jme
+    ! swap: the seed cell maps to itself. Codex stop-review.)
+    integer, parameter :: ti = 2, tk = 3, tj = 4, nfld = 12
     integer, parameter :: nn = ti * tk * tj
-    integer, parameter :: i0 = 2, k0 = 1, j0 = 2     ! 1-based; field qv = 2
+    integer, parameter :: i0 = 2, k0 = 2, j0 = 3     ! 1-based; i0/=j0 (asymmetric); field qv = 2
     real(c_double), allocatable :: s_in(:,:,:,:), s_out(:,:,:,:), f_in(:,:,:,:)
     real(c_double), allocatable :: u_pk(:), g_pk(:)
     real(c_float),  allocatable :: xland2(:,:)
@@ -327,7 +331,7 @@ program test_fortran_smoke
        print *, "FAIL: VJP support empty on tile (sensitivity/layout lost)"
        stop 1
     end if
-    print *, "  PASS: kdm6_step_ad nontrivial-tile VJP support confined to source column (im,kme,jme axis-layout sensitive)"
+    print *, "  PASS: kdm6_step_ad (2,3,4)-tile VJP support confined to source column (axis-swap sensitive)"
 
     ! VALUE-LEVEL layout check: column (i0,j0) run STANDALONE (im=1) must reproduce
     ! the embedded tile's (i0,j0) column forward output (column independence). This
