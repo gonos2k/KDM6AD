@@ -8,6 +8,20 @@
 
 # KDM6AD + 위성자료동화(DA) 설계
 
+> **[구현 상태 — 2026-06-15]** 이 문서는 **설계(design) 문서**다. 본문 전체
+> (§0.1 "구현 전 결정", §6 VJP, §7 JVP, §10 검증, §11 우선순위 포함)에 남아 있는
+> "구현한다 / 구현 설계 / 구현 우선순위 / deferred / 장기 목표 / 1순위 / 구현 전 결정"
+> 류의 **계획형·미래형·상태형 서술은 모두 작성 시점의 설계 계획**이며, 그 계획은
+> **2026-06-12에 구현 완료**되었다 (commits 662dc85→975fe6c). 현재 **권위 있는 구현
+> 상태는 오직 §0.1.A + §1.2 + §6.4**다: `kdm6_step_ad_c` / `Handle::vjp` /
+> `Handle::jvp` 모두 구현 완료(runtime.cpp:513/541), fp64 adjoint-identity
+> `⟨Jv,u⟩==⟨v,Jᵀu⟩` ctest green(`test_c_abi.cpp`, `test_handle_vjp`), Fortran 래퍼
+> `kdm6_step_ad` 직접 스모크 추가(`kdm6_libtorch/tests/test_fortran_smoke.f90`).
+> 본문의 "deferred / 미구현 / 장기 목표 / 1순위" 등 상태 단어가 §1.2·§6.4와 충돌하면
+> **§1.2·§6.4가 우선**이고, 그 외 계획형 서술은 설계 근거의 역사적 기록으로 읽는다.
+> **단 하나의 예외:** `torch.func.jvp`(forward-mode AD) 자체는 여전히 장기 목표다 —
+> 구현 완료된 JVP는 Pearlmutter 방식(double-VJP)이며 `torch.func.jvp`가 아니다.
+
 ## 0. 목적
 
 이 문서는 KDM6AD를 단순한 forward cloud microphysics kernel이 아니라, GK2A AMI 위성 영상과 RTTOV all-sky/cloudy 모의 영상을 이용한 구간 위성자료동화의 미분 가능한 미세물리 연산자로 사용하는 설계를 정리한다.
@@ -620,6 +634,11 @@ mixed-phase 온도 범위는 허용
 
 ## 6. VJP 설계
 
+> **[구현 상태 — 설계 기록]** 이 절(§6.2 C++ / §6.3 Python / §6.4 C ABI)의 "구현
+> 설계/구현한다" 서술은 **계획 시점 표현**이며, 2026-06-12 모두 **구현 완료**되었다
+> (`Handle::vjp` runtime.cpp:513, ctest green — §1.2/§6.4). 미구현 TODO가 아니라
+> 설계 근거의 역사적 기록으로 읽는다.
+
 ### 6.1 수학적 정의
 
 One-step KDM6AD:
@@ -785,6 +804,10 @@ extern "C" int kdm6_handle_vjp_c(
 ---
 
 ## 7. JVP 설계
+
+> **[구현 상태 — 설계 기록]** 이 절의 "구현 정책/장기 목표" 서술은 계획 시점
+> 표현이다. `Handle::jvp`(Pearlmutter JVP)는 2026-06-12 **구현 완료**(runtime.cpp:541,
+> fp64 adjoint identity ctest green — §1.2/§6.4). 미구현 TODO가 아니다.
 
 ### 7.1 역할
 
@@ -1166,6 +1189,10 @@ test_inner_product_uses_pearlmutter_jvp_when_available
 
 ## 11. 구현 우선순위
 
+> **[구현 상태 — 설계 기록]** 아래 Phase 0–N 우선순위는 **계획 시점의 로드맵**이다.
+> VJP/JVP/C ABI/Fortran wrapper 경로는 2026-06-12 구현 완료되어 ctest green이다
+> (§1.2/§6.4). 이 목록은 달성된 계획의 기록으로 읽는다 — 열린 TODO가 아니다.
+
 ### Phase 0: 구현 전 결정/게이트 고정
 
 1. DA adjoint forward는 fp64로 분리한다.
@@ -1192,7 +1219,7 @@ test_inner_product_uses_pearlmutter_jvp_when_available
 
 1. `runtime.h`에 `GraphOptions`, `FieldMask`, shape metadata 설계 추가
 2. `runtime.cpp`의 `Handle::vjp` 구현
-3. `Handle::jvp`는 deferred 또는 FD-JVP diagnostic
+3. `Handle::jvp` (당시 계획: deferred 또는 FD-JVP diagnostic) → 2026-06-12 Pearlmutter JVP로 **구현 완료**, fp64 adjoint-identity ctest green (§6.4)
 4. `test_autograd_endtoend.cpp`에 VJP 검증 추가
 5. value_only graph forward-determinism test 추가
 
