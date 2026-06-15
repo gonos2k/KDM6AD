@@ -365,3 +365,36 @@ def test_callback_rejects_error_model_with_kept_solar():
     cov = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_gated]}),
                                cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
     assert isinstance(cov, State)
+
+
+def test_callback_rejects_cloud_with_clearsky_connected_fields():
+    """cloud=True but connected_fields=CLEAR_SKY_CONNECTED is rejected: a real graph-break
+    sever in a cloud-fed field (qc/qi/qs/nc/ni) would be treated as a legitimate zero
+    (silent wrong gradient) -- the connected set must match the operator mode (Codex HIGH)."""
+    from kdm6.obs.rttov_obs_operator import CLEAR_SKY_CONNECTED
+    cfg = _cloud_cfg()._replace(connected_fields=CLEAR_SKY_CONNECTED)   # cloud profile, clear set
+    o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+    with pytest.raises(ValueError, match="connected set"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                             cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+
+
+def test_backward_rejects_nonfinite_injected_k():
+    """A custom/injected run_k returning a non-finite K is rejected in backward -- a
+    NaN/Inf K would poison the contracted gradient (the live ASCII parser catches it, but
+    an injected runner must be guarded too; Codex review)."""
+    nlay = 2
+
+    def run_k_nan(rin):
+        nch = len(rin.config.channels)
+        k = {"T": np.zeros((1, nch, nlay)), "Q": np.zeros((1, nch, nlay))}
+        k["T"][0, 0, 0] = float("nan")                # poison one K entry
+        return [[0.0] * nch], k, [[0] * nch]
+
+    t = torch.zeros(nlay, dtype=F64, requires_grad=True)
+    q = torch.zeros(nlay, dtype=F64, requires_grad=True)
+    ph = torch.zeros(nlay + 1, dtype=F64)
+    bt_hat, _ = RttovObsOp.apply(run_k_nan, RttovInputConfig(coef_id="x", channels=(1, 2, 3)),
+                                 t, q, None, ph)
+    with pytest.raises(ValueError, match="non-finite"):
+        torch.autograd.grad(bt_hat.sum(), [t, q])

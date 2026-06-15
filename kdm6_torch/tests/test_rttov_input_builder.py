@@ -117,3 +117,14 @@ def test_t_q_shape_consistency():
     p = _profile(nlay=4)
     with pytest.raises(ValueError, match="same profile/layer grid"):
         pack_rttov_input(p._replace(q_lay=torch.linspace(1.0, 2.0, 3, dtype=F64)), _cfg())
+
+
+def test_config_hash_sensitive_to_grid_values():
+    """config_hash must change when the pressure GRID values change (not just the
+    layer/level counts) -- a same-count different-grid config is runtime-distinct
+    (different BT/K) and must not collide (Codex review)."""
+    p1 = _profile()
+    p2 = p1._replace(p_half=p1.p_half * 1.01)         # same counts, different grid
+    assert pack_rttov_input(p1, _cfg()).config_hash != pack_rttov_input(p2, _cfg()).config_hash
+    # deterministic: identical grid -> identical hash
+    assert pack_rttov_input(p1, _cfg()).config_hash == pack_rttov_input(_profile(), _cfg()).config_hash

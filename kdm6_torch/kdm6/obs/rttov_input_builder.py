@@ -138,7 +138,17 @@ def _canon_mapping(m):
     return m
 
 
-def _config_hash(cfg, nlayers, nlevels, profile_keys=()) -> str:
+def _grid_fingerprint(grids) -> tuple:
+    """Bit-exact fingerprint of the pressure-grid ARRAYS (P_HALF/P), not just their
+    counts. Two configs with the same nlayers/nlevels but different grids are runtime-
+    distinct (different BT/K) and MUST get different config hashes (Codex review; same
+    rationale as folding geometry/surface in)."""
+    import numpy as np
+    return tuple(None if g is None else np.ascontiguousarray(g, dtype=np.float64).tobytes()
+                 for g in grids)
+
+
+def _config_hash(cfg, nlayers, nlevels, profile_keys=(), grids=()) -> str:
     """Defensive fingerprint of everything that must match between a direct run
     and the K run (design 7): coef, channels, forced options, grid sizes, the set of
     profile fields present (clear vs cloud is a different run mode), AND the per-obs
@@ -149,7 +159,8 @@ def _config_hash(cfg, nlayers, nlevels, profile_keys=()) -> str:
                 bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels),
                 tuple(sorted(profile_keys)),
                 _canon_mapping(getattr(cfg, "geometry", None)),
-                _canon_mapping(getattr(cfg, "surface", None))))
+                _canon_mapping(getattr(cfg, "surface", None)),
+                _grid_fingerprint(grids)))
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
@@ -196,5 +207,6 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
     return RttovInput(
         profile=profile, config=rttov_config,
         config_hash=_config_hash(rttov_config, nlayers,
-                                 nlevels if nlevels else nlayers + 1, profile.keys()),
+                                 nlevels if nlevels else nlayers + 1, profile.keys(),
+                                 grids=(profile.get("P_HALF"), profile.get("P"))),
         nprofiles=nprofiles, nlayers=nlayers)

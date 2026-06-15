@@ -44,11 +44,26 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
     ``Σ_{p,c} m·ψ_δ((bt_hat − (bt_obs+bias))/σ)``. ``bias``/``masks``/``sigma`` are
     detached/constant so λ_BT = ∂J/∂bt_hat = m·ψ_δ'(r)/σ is unaffected by them.
     """
+    if not (math.isfinite(delta) and delta > 0.0):
+        raise ValueError(f"Huber delta must be finite and > 0 (got {delta!r}).")
     bt_obs = torch.as_tensor(obs["bt"], dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    # obs['bt'] and masks must be the FULL [nprofiles, nchannels] field -- a [nchannels]
+    # (or otherwise smaller) array would silently BROADCAST across profiles, mis-pairing
+    # observations (Codex review). sigma stays scalar-or-per-channel (broadcast intended).
+    if tuple(bt_obs.shape) != tuple(bt_hat.shape):
+        raise ValueError(f"obs['bt'] shape {tuple(bt_obs.shape)} != bt_hat {tuple(bt_hat.shape)} "
+                         "-- pass the full [nprofiles, nchannels] field (no silent broadcast).")
     bias = obs.get("bias")
     if bias is not None:
-        bt_obs = bt_obs + torch.as_tensor(bias, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+        bias_t = torch.as_tensor(bias, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+        if tuple(bias_t.shape) != tuple(bt_hat.shape):
+            raise ValueError(f"obs['bias'] shape {tuple(bias_t.shape)} != bt_hat "
+                             f"{tuple(bt_hat.shape)} -- per-(profile,channel) bias required.")
+        bt_obs = bt_obs + bias_t
     m = torch.as_tensor(masks, dtype=bt_hat.dtype, device=bt_hat.device).detach()
+    if tuple(m.shape) != tuple(bt_hat.shape):
+        raise ValueError(f"masks shape {tuple(m.shape)} != bt_hat {tuple(bt_hat.shape)} "
+                         "-- the keep-mask must be the full [nprofiles, nchannels] field.")
     sig = torch.as_tensor(sigma, dtype=bt_hat.dtype, device=bt_hat.device).detach()
     # MASK-AWARE validation (design 8): a MASKED channel (m==0: solar via the IR gate,
     # or rad_quality-flagged) may carry junk/non-finite sigma & BT; it must contribute 0

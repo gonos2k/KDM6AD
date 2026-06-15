@@ -161,6 +161,13 @@ class RttovObsOp(torch.autograd.Function):
                     f"K['{key}'] shape {tuple(kt.shape)} != expected "
                     f"(nprofiles, nchannels, nlayers) ({nprof}, {nch}, {nlay}); "
                     "guards a transposed/square-K silent wrong-gradient.")
+            # Finite-check K before contraction: the live parser rejects non-finite K, but
+            # an INJECTED run_k (mock / custom) could pass NaN/Inf, silently poisoning the
+            # accumulated gradient. Reject here so any run_k is covered (Codex review).
+            if not bool(torch.isfinite(kt).all()):
+                raise ValueError(
+                    f"K['{key}'] has non-finite values -- a NaN/Inf K would poison the "
+                    "obs gradient (the contraction K^T·lambda_BT). Reject, don't propagate.")
             # channel contraction K^T·λ_BT: grad_field[p,l] = Σ_c K[p,c,l]·λ_BT[p,c]
             grads[idx] = torch.einsum("pcl,pc->pl", kt, lam).reshape(in_shape)
         return tuple(grads)
@@ -291,7 +298,20 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
 
     prof = model_to_rttov_tensors(col_leaves, col_forcing, cfg.profile_cfg,
                                   xland=xland, ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
-    if getattr(cfg.profile_cfg, "cloud", False):
+    cloud = getattr(cfg.profile_cfg, "cloud", False)
+    # The connected set (sever detection in assemble_obs_covector) is determined by the
+    # operator MODE, not a free knob: cloud feeds qc/qi/qs/nc/ni to RTTOV
+    # (ALL_SKY_CONNECTED), clear-sky feeds only th/qv (CLEAR_SKY_CONNECTED). A mismatch
+    # (e.g. cloud=True but the default CLEAR_SKY_CONNECTED) would treat a real graph-break
+    # sever in a fed field as a legitimate zero -> silent wrong gradient (Codex HIGH).
+    expected_connected = ALL_SKY_CONNECTED if cloud else CLEAR_SKY_CONNECTED
+    if frozenset(cfg.connected_fields) != frozenset(expected_connected):
+        raise ValueError(
+            f"ObsOperatorConfig.connected_fields {set(cfg.connected_fields)} != the "
+            f"{'cloud' if cloud else 'clear-sky'} connected set {set(expected_connected)} "
+            "-- the operator mode (profile_cfg.cloud) determines which fields are RTTOV-fed; "
+            "a wrong set would treat a real sever as a legitimate zero (silent wrong gradient).")
+    if cloud:
         # all-sky: pass the cloud content/Deff (differentiable) + cfrac (passthrough).
         bt_hat, rad_quality = RttovObsOp.apply(
             run_k, cfg.input_cfg, prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half,

@@ -162,3 +162,27 @@ def test_compute_obs_loss_masked_nan_is_safe():
     (g,) = torch.autograd.grad(loss, bt_hat)
     assert torch.isfinite(g).all()                      # backward NaN-safe
     assert float(g[0, 1]) == 0.0                        # masked channel: zero gradient
+
+
+def test_compute_obs_loss_rejects_shape_mismatch():
+    """obs['bt'] and masks must be the full [nprofiles, nchannels] field -- a smaller
+    array would silently BROADCAST across profiles, mis-pairing observations (Codex)."""
+    bt_hat = torch.zeros(1, 3, dtype=F64, requires_grad=True)
+    full = torch.ones(1, 3, dtype=F64)
+    with pytest.raises(ValueError, match="no silent broadcast"):
+        compute_obs_loss(bt_hat, {"bt": torch.zeros(3, dtype=F64)}, full, 1.0)
+    with pytest.raises(ValueError, match="keep-mask"):
+        compute_obs_loss(bt_hat, {"bt": torch.zeros(1, 3, dtype=F64)}, torch.ones(3, dtype=F64), 1.0)
+    with pytest.raises(ValueError, match="bias"):
+        compute_obs_loss(bt_hat, {"bt": torch.zeros(1, 3, dtype=F64),
+                                  "bias": torch.zeros(3, dtype=F64)}, full, 1.0)
+
+
+def test_compute_obs_loss_rejects_bad_delta():
+    """Huber delta must be finite and > 0 (a negative/non-finite delta -> wrong loss)."""
+    bt_hat = torch.zeros(1, 2, dtype=F64, requires_grad=True)
+    obs = {"bt": torch.zeros(1, 2, dtype=F64)}
+    m = torch.ones(1, 2, dtype=F64)
+    for bad in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="Huber delta"):
+            compute_obs_loss(bt_hat, obs, m, 1.0, delta=bad)
