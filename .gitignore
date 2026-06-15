@@ -72,3 +72,11 @@ rttov_runtime/
 # Local editor/project config
 **/.obsidian/
 xclaudex.toml
+
+# WRF run-time outputs — large, reproducible, not source.
+# Stripped from this branch's history 2026-06-15 (GitHub 100MB limit).
+KIM-meso_v1.0/run/fogvis_tests/
+KIM-meso_v1.0/run/FOG/
+KIM-meso_v1.0/run/klfs_lc05_*
+KIM-meso_v1.0/run/*.nc.tmp
+KIM-meso_v1.0/run/*.pid*.tmp
