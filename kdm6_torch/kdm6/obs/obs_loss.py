@@ -56,9 +56,17 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
     bias = obs.get("bias")
     if bias is not None:
         bias_t = torch.as_tensor(bias, dtype=bt_hat.dtype, device=bt_hat.device).detach()
-        if tuple(bias_t.shape) != tuple(bt_hat.shape):
-            raise ValueError(f"obs['bias'] shape {tuple(bias_t.shape)} != bt_hat "
-                             f"{tuple(bt_hat.shape)} -- per-(profile,channel) bias required.")
+        # bias is a detached static/VarBC offset and is commonly PER-CHANNEL (one value per
+        # channel, constant across profiles) -- so it must BROADCAST into bt_hat's shape
+        # (scalar / [nch] / [1,nch] / [nprof,nch] ok), unlike obs['bt']/masks which must be
+        # the full field. Reject only a non-broadcastable or bt_hat-expanding bias.
+        try:
+            bshape = torch.broadcast_shapes(bias_t.shape, bt_hat.shape)
+        except RuntimeError:
+            bshape = None
+        if bshape != tuple(bt_hat.shape):
+            raise ValueError(f"obs['bias'] shape {tuple(bias_t.shape)} does not broadcast "
+                             f"into bt_hat {tuple(bt_hat.shape)} (scalar / per-channel / full).")
         bt_obs = bt_obs + bias_t
     m = torch.as_tensor(masks, dtype=bt_hat.dtype, device=bt_hat.device).detach()
     if tuple(m.shape) != tuple(bt_hat.shape):

@@ -173,9 +173,26 @@ def test_compute_obs_loss_rejects_shape_mismatch():
         compute_obs_loss(bt_hat, {"bt": torch.zeros(3, dtype=F64)}, full, 1.0)
     with pytest.raises(ValueError, match="keep-mask"):
         compute_obs_loss(bt_hat, {"bt": torch.zeros(1, 3, dtype=F64)}, torch.ones(3, dtype=F64), 1.0)
+
+
+def test_compute_obs_loss_bias_broadcasts_per_channel():
+    """A PER-CHANNEL bias (constant across profiles, the common VarBC/static form)
+    broadcasts into bt_hat and is accepted; a non-broadcastable or bt_hat-expanding bias
+    is rejected (Codex stop-review: per-channel bias must not be false-rejected)."""
+    bt_hat = torch.zeros(2, 3, dtype=F64, requires_grad=True)
+    full = torch.ones(2, 3, dtype=F64)
+    # per-channel bias [3] -> broadcasts to [2,3] -> ACCEPTED; scalar bias -> ACCEPTED
+    compute_obs_loss(bt_hat, {"bt": torch.zeros(2, 3, dtype=F64), "bias": torch.zeros(3, dtype=F64)},
+                     full, 1.0)
+    compute_obs_loss(bt_hat, {"bt": torch.zeros(2, 3, dtype=F64), "bias": torch.tensor(1.0, dtype=F64)},
+                     full, 1.0)
+    # incompatible [2] (trailing 2 != 3) and bt_hat-expanding [3,3] -> reject
     with pytest.raises(ValueError, match="bias"):
-        compute_obs_loss(bt_hat, {"bt": torch.zeros(1, 3, dtype=F64),
-                                  "bias": torch.zeros(3, dtype=F64)}, full, 1.0)
+        compute_obs_loss(bt_hat, {"bt": torch.zeros(2, 3, dtype=F64), "bias": torch.zeros(2, dtype=F64)},
+                         full, 1.0)
+    with pytest.raises(ValueError, match="bias"):
+        compute_obs_loss(bt_hat, {"bt": torch.zeros(2, 3, dtype=F64), "bias": torch.zeros(3, 3, dtype=F64)},
+                         full, 1.0)
 
 
 def test_compute_obs_loss_rejects_bad_delta():
