@@ -106,6 +106,7 @@ def _validate_cloud_domain(rttov_input) -> None:
         cfrac = np.asarray(prof["CFRAC"][p], dtype=float).reshape(-1)
         if not np.all(np.isfinite(cfrac)) or np.any(cfrac < 0.0) or np.any(cfrac > 1.0):
             raise ValueError(f"profile {p}: CFRAC must be finite and in [0, 1].")
+        total_content = np.zeros_like(cfrac)
         for content_key, deff_key in (("HYDRO6", "HYDRO_DEFF6"), ("HYDRO7", "HYDRO_DEFF7")):
             c = np.asarray(prof[content_key][p], dtype=float).reshape(-1)
             d = np.asarray(prof[deff_key][p], dtype=float).reshape(-1)
@@ -118,12 +119,22 @@ def _validate_cloud_domain(rttov_input) -> None:
                     f"profile {p}: {deff_key} must be > 0 wherever {content_key} > 0 -- a "
                     "non-positive Deff in a cloudy layer would silently fall back to "
                     "deff_param, dropping the model's explicit effective diameter.")
-        # NOTE (Codex stop-review): NO "CFRAC>0 wherever content>0" guard. The bridge sets
-        # cfrac = (total content > _CFRAC_CONTENT_THRESHOLD ~1e-6 g/m^3), so a layer with
-        # 0 < content <= threshold legitimately gets cfrac=0 (negligible cloud -> clear);
-        # RTTOV ignoring that sub-threshold content is the INTENDED thresholding, not a
-        # silent bug. cfrac=0 means "clear", and honoring it is correct -- there is no
-        # corruption to guard (such a guard would reject valid thresholded bridge output).
+            total_content = total_content + c
+        # CFRAC > 0 wherever content is ABOVE the bridge's cloudy threshold. This threads
+        # BOTH Codex stop-reviews: RTTOV treats cfrac=0 as clear, so SUBSTANTIAL content
+        # with cfrac=0 is silently dropped (cloud signal + that slot's K zeroed -> wrong
+        # BT/dead gradient) -> reject; BUT a layer with 0 < content <= threshold is the
+        # bridge's INTENDED "negligible -> clear" thresholding (cfrac legitimately 0) ->
+        # allow. Using the SAME threshold the bridge thresholds cfrac on makes the guard
+        # EXACTLY consistent (total_content == the bridge's clw+ciw, so bridge output never
+        # false-rejects); only a non-bridge/malformed above-threshold-content+cfrac=0 trips.
+        from .model_profile_builder import _CFRAC_CONTENT_THRESHOLD
+        if np.any((total_content > _CFRAC_CONTENT_THRESHOLD) & ~(cfrac > 0.0)):
+            raise ValueError(
+                f"profile {p}: CFRAC must be > 0 wherever HYDRO6+HYDRO7 content exceeds the "
+                f"cloudy threshold ({_CFRAC_CONTENT_THRESHOLD} g/m^3) -- RTTOV treats cfrac=0 "
+                "as clear, silently dropping substantial cloud content (and its K). "
+                "(Sub-threshold content with cfrac=0 is the bridge's intended clear gating.)")
 
 
 def _write_matrix(path: Path, rows) -> None:

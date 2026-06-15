@@ -711,14 +711,21 @@ def test_solar_channels_not_in_run_rejected(tmp_path):
 
 
 @needs_cloud_fixture
-def test_cloud_overlay_allows_subthreshold_content_with_zero_cfrac(tmp_path):
-    """A layer with positive-but-tiny content and cfrac=0 is ACCEPTED, not rejected:
-    the bridge thresholds cfrac (content <= ~1e-6 g/m^3 -> cfrac=0, negligible cloud ->
-    clear), and RTTOV ignoring that sub-threshold content is intended (Codex stop-review:
-    a 'CFRAC>0 where content>0' guard would reject valid thresholded bridge output)."""
-    rin, _ = _cloud_rttov_input()                  # ciw[20]=0.03>0, cfrac[20]=1
-    rin.profile["CFRAC"][0][20] = 0.0              # content present, fraction 0 -> allowed
-    write_rttov_case(rin, tmp_path / "case")       # no raise
+def test_cloud_overlay_cfrac_content_threshold_coupled(tmp_path):
+    """CFRAC=0 is threshold-coupled to content (both Codex stop-reviews): ABOVE-threshold
+    (substantial) content with cfrac=0 is REJECTED (RTTOV silently drops it), but
+    SUB-threshold content (<= ~1e-6 g/m^3, the bridge's negligible->clear gating) with
+    cfrac=0 is ALLOWED (valid thresholded output, must not be false-rejected)."""
+    from kdm6.obs.model_profile_builder import _CFRAC_CONTENT_THRESHOLD
+    # above-threshold content (ciw[20]=0.03 g/m^3) with cfrac=0 -> reject (silent drop)
+    rin, _ = _cloud_rttov_input()
+    rin.profile["CFRAC"][0][20] = 0.0
+    with pytest.raises(ValueError, match="exceeds the cloudy threshold"):
+        write_rttov_case(rin, tmp_path / "case", overwrite=True)
+    # sub-threshold content (below the bridge threshold) at a clear layer (cfrac=0) -> ok
+    rin2, _ = _cloud_rttov_input()
+    rin2.profile["HYDRO7"][0][5] = _CFRAC_CONTENT_THRESHOLD * 0.1   # layer 5: cfrac already 0
+    write_rttov_case(rin2, tmp_path / "case", overwrite=True)       # no raise
 
 
 # ------------------------------------------------- cloud K adapter (Phase 6, no run)
