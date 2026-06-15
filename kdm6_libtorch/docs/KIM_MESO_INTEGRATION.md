@@ -154,8 +154,11 @@ CASE (KDM6ADSCHEME)  ! KDM6_AD (kdm6_libtorch)
 ```
 
 **4D-Var/sensitivity**: `value_only=0`으로 호출하면 derivative-ready handle이 반환됨.
-이 경우 close하기 전에 `kdm6_handle_vjp/jvp` 호출 가능. **현재(F5 시점) vjp/jvp는
-KDM6_ERR_NOT_IMPLEMENTED** — G3 단계에서 구현 예정.
+이 경우 close하기 전에 `kdm6_handle_vjp/jvp` 호출 가능. **vjp/jvp는 fp64 경로에서
+구현·테스트 완료**(2026-06-12; `kdm6_step_ad_c` + `kdm6_handle_vjp_c`/`kdm6_handle_jvp_c`,
+`test_c_abi_step_ad_fp64_vjp_finite_and_adjoint` ctest green — finite gradient +
+adjoint identity). operational f32 `kdm6_step_c` graph 경로는 f32 backward caveat 있음;
+parameter-gradient는 G4 future. (과거 "F5 시점 KDM6_ERR_NOT_IMPLEMENTED" 서술 superseded.)
 
 ---
 
@@ -274,7 +277,7 @@ state_out)을 npz로 저장하여 `parity/run_parity.py --golden-dir <path>` 호
 - [ ] G2: namelist 옵션 `mp_physics = 137` 테스트 케이스
 - [ ] G3: 골든 벡터 1샘플 캡처 (Task #54)
 - [ ] G3: parity harness 통과 (rel-tol 목표)
-- [ ] G4: vjp/jvp 구현 (현재 NOT_IMPLEMENTED) + 4D-Var 결합
+- [x] G4: vjp/jvp 구현 (fp64 C ABI 완료, ctest green) — 4D-Var 결합/parameter-gradient는 후속
 
 ---
 

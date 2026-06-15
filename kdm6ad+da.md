@@ -169,7 +169,7 @@ else:
     handle = Handle(state_in, state_out, forcing, params, dt)
 ```
 
-현재 `Handle::vjp`와 `Handle::jvp`는 선언되어 있으나 `TORCH_CHECK_NOT_IMPLEMENTED` 상태이다.
+`Handle::vjp`/`Handle::jvp`는 **구현 완료**(runtime.cpp:513/541)되어 fp64 경로에서 동작한다 — Pearlmutter JVP + control-subspace mask로 vjp/jvp가 정확한 adjoint pair. `test_c_abi_step_ad_fp64_vjp_finite_and_adjoint`(ctest green)가 finite gradient + adjoint identity ⟨Jv,u⟩==⟨v,Jᵀu⟩를 검증한다. (operational f32 `kdm6_step_c` graph 경로는 f32 backward caveat; parameter-gradient/모델 보정은 G4 future. ※ 과거 "TORCH_CHECK_NOT_IMPLEMENTED stub" 서술은 2026-06-12 구현(commits 662dc85→975fe6c)으로 superseded.)
 
 ### 1.3 C ABI / Fortran wrapper 경로
 
@@ -713,7 +713,7 @@ def vjp(self, u: State) -> State:
 
 ### 6.4 C ABI VJP 설계
 
-현재 `kdm6_handle_vjp_c`는 signature만 있고 미구현이다.
+`kdm6_handle_vjp_c`(및 `kdm6_handle_jvp_c`, `kdm6_step_ad_c`)는 **구현 완료**되어 fp64 경로에서 동작한다 (`test_c_abi.cpp`의 adjoint-identity 테스트 green, ctest 16/16). 아래 packed layout이 그 ABI 계약이다.
 
 #### packed layout
 
