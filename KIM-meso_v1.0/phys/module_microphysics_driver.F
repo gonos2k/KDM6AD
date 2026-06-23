@@ -807,6 +807,56 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
    IF ( PRESENT ( channel_switch ) ) channel = channel_switch
 
    if (mp_physics .eq. 0) return
+#ifdef KDM6_UPSTREAM_PARITY_DUMP
+   IF (itimestep .eq. 1 .AND. mp_physics .eq. KDM6SCHEME .AND.      &
+       PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.           &
+       PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.           &
+       PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.           &
+       PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.         &
+       PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.         &
+       PRESENT( QIB_CURR ) ) THEN
+      OPEN(UNIT=8821, FILE='kdm6_upstream_entry_kdm6_in.bin',        &
+           FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+      WRITE(8821) ims, ime, kms, kme, jms, jme
+      WRITE(8821) qv_curr
+      WRITE(8821) qc_curr
+      WRITE(8821) qr_curr
+      WRITE(8821) qi_curr
+      WRITE(8821) qs_curr
+      WRITE(8821) qg_curr
+      WRITE(8821) qnc_curr
+      WRITE(8821) qnr_curr
+      WRITE(8821) qni_curr
+      WRITE(8821) qnn_curr
+      WRITE(8821) qib_curr
+      WRITE(8821) th
+      CLOSE(8821)
+   ENDIF
+   IF (itimestep .eq. 1 .AND. mp_physics .eq. KDM6ADSCHEME .AND.    &
+       PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.           &
+       PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.           &
+       PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.           &
+       PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.         &
+       PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.         &
+       PRESENT( QIB_CURR ) ) THEN
+      OPEN(UNIT=8822, FILE='kdm6_upstream_entry_kdm6ad_in.bin',      &
+           FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+      WRITE(8822) ims, ime, kms, kme, jms, jme
+      WRITE(8822) qv_curr
+      WRITE(8822) qc_curr
+      WRITE(8822) qr_curr
+      WRITE(8822) qi_curr
+      WRITE(8822) qs_curr
+      WRITE(8822) qg_curr
+      WRITE(8822) qnc_curr
+      WRITE(8822) qnr_curr
+      WRITE(8822) qni_curr
+      WRITE(8822) qnn_curr
+      WRITE(8822) qib_curr
+      WRITE(8822) th
+      CLOSE(8822)
+   ENDIF
+#endif
    IF( specified ) THEN
      sz = spec_zone
    ELSE
@@ -978,6 +1028,104 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
       enddo ! j
    enddo ! k
 !NUWRF JJS 20110525 ^^^^^
+#endif
+#ifdef KDM6_UPSTREAM_PARITY_DUMP
+      IF (itimestep .eq. 1 .AND. ij .eq. 1 .AND. mp_physics .eq. KDM6SCHEME .AND. &
+          PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.        &
+          PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.        &
+          PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.        &
+          PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.      &
+          PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.      &
+          PRESENT( QIB_CURR ) ) THEN
+         OPEN(UNIT=8823, FILE='kdm6_upstream_preselect_ij1_kdm6_in.bin', &
+              FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+         WRITE(8823) ims, ime, kms, kme, jms, jme
+         WRITE(8823) qv_curr
+         WRITE(8823) qc_curr
+         WRITE(8823) qr_curr
+         WRITE(8823) qi_curr
+         WRITE(8823) qs_curr
+         WRITE(8823) qg_curr
+         WRITE(8823) qnc_curr
+         WRITE(8823) qnr_curr
+         WRITE(8823) qni_curr
+         WRITE(8823) qnn_curr
+         WRITE(8823) qib_curr
+         WRITE(8823) th
+         CLOSE(8823)
+      ENDIF
+      IF (itimestep .eq. 1 .AND. ij .eq. 2 .AND. mp_physics .eq. KDM6SCHEME .AND. &
+          PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.        &
+          PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.        &
+          PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.        &
+          PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.      &
+          PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.      &
+          PRESENT( QIB_CURR ) ) THEN
+         OPEN(UNIT=8824, FILE='kdm6_upstream_preselect_ij2_kdm6_in.bin', &
+              FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+         WRITE(8824) ims, ime, kms, kme, jms, jme
+         WRITE(8824) qv_curr
+         WRITE(8824) qc_curr
+         WRITE(8824) qr_curr
+         WRITE(8824) qi_curr
+         WRITE(8824) qs_curr
+         WRITE(8824) qg_curr
+         WRITE(8824) qnc_curr
+         WRITE(8824) qnr_curr
+         WRITE(8824) qni_curr
+         WRITE(8824) qnn_curr
+         WRITE(8824) qib_curr
+         WRITE(8824) th
+         CLOSE(8824)
+      ENDIF
+      IF (itimestep .eq. 1 .AND. ij .eq. 1 .AND. mp_physics .eq. KDM6ADSCHEME .AND. &
+          PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.        &
+          PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.        &
+          PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.        &
+          PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.      &
+          PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.      &
+          PRESENT( QIB_CURR ) ) THEN
+         OPEN(UNIT=8825, FILE='kdm6_upstream_preselect_ij1_kdm6ad_in.bin', &
+              FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+         WRITE(8825) ims, ime, kms, kme, jms, jme
+         WRITE(8825) qv_curr
+         WRITE(8825) qc_curr
+         WRITE(8825) qr_curr
+         WRITE(8825) qi_curr
+         WRITE(8825) qs_curr
+         WRITE(8825) qg_curr
+         WRITE(8825) qnc_curr
+         WRITE(8825) qnr_curr
+         WRITE(8825) qni_curr
+         WRITE(8825) qnn_curr
+         WRITE(8825) qib_curr
+         WRITE(8825) th
+         CLOSE(8825)
+      ENDIF
+      IF (itimestep .eq. 1 .AND. ij .eq. 2 .AND. mp_physics .eq. KDM6ADSCHEME .AND. &
+          PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.        &
+          PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.        &
+          PRESENT( QS_CURR ) .AND. PRESENT ( QG_CURR ) .AND.        &
+          PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.      &
+          PRESENT( QNI_CURR ) .AND. PRESENT ( QNR_CURR ) .AND.      &
+          PRESENT( QIB_CURR ) ) THEN
+         OPEN(UNIT=8826, FILE='kdm6_upstream_preselect_ij2_kdm6ad_in.bin', &
+              FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+         WRITE(8826) ims, ime, kms, kme, jms, jme
+         WRITE(8826) qv_curr
+         WRITE(8826) qc_curr
+         WRITE(8826) qr_curr
+         WRITE(8826) qi_curr
+         WRITE(8826) qs_curr
+         WRITE(8826) qg_curr
+         WRITE(8826) qnc_curr
+         WRITE(8826) qnr_curr
+         WRITE(8826) qni_curr
+         WRITE(8826) qnn_curr
+         WRITE(8826) qib_curr
+         WRITE(8826) th
+         CLOSE(8826)
+      ENDIF
 #endif
 
      micro_select: SELECT CASE(mp_physics)
@@ -2531,6 +2679,62 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   PRESENT( QNI_CURR ).AND.  PRESENT( QNR_CURR ).AND.  &
                   PRESENT( QIB_CURR).AND.PRESENT( RHOPO3D).AND.       &
                   PRESENT( RAINNC  ) .AND. PRESENT ( RAINNCV )  ) THEN
+#ifdef KDM6_FORWARD_PARITY_DUMP
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8811, FILE='kdm6_driver_step1_kdm6_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8811) ims, ime, kms, kme, jms, jme
+               WRITE(8811) qv_curr
+               WRITE(8811) qc_curr
+               WRITE(8811) qr_curr
+               WRITE(8811) qi_curr
+               WRITE(8811) qs_curr
+               WRITE(8811) qg_curr
+               WRITE(8811) qnc_curr
+               WRITE(8811) qnr_curr
+               WRITE(8811) qni_curr
+               WRITE(8811) qnn_curr
+               WRITE(8811) qib_curr
+               WRITE(8811) th
+               CLOSE(8811)
+             ENDIF
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8831, FILE='kdm6_driver_step1_ij1_kdm6_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8831) ims, ime, kms, kme, jms, jme
+               WRITE(8831) qv_curr
+               WRITE(8831) qc_curr
+               WRITE(8831) qr_curr
+               WRITE(8831) qi_curr
+               WRITE(8831) qs_curr
+               WRITE(8831) qg_curr
+               WRITE(8831) qnc_curr
+               WRITE(8831) qnr_curr
+               WRITE(8831) qni_curr
+               WRITE(8831) qnn_curr
+               WRITE(8831) qib_curr
+               WRITE(8831) th
+               CLOSE(8831)
+             ENDIF
+             IF (itimestep .eq. 1 .AND. ij .eq. 2) THEN
+               OPEN(UNIT=8832, FILE='kdm6_driver_step1_ij2_kdm6_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8832) ims, ime, kms, kme, jms, jme
+               WRITE(8832) qv_curr
+               WRITE(8832) qc_curr
+               WRITE(8832) qr_curr
+               WRITE(8832) qi_curr
+               WRITE(8832) qs_curr
+               WRITE(8832) qg_curr
+               WRITE(8832) qnc_curr
+               WRITE(8832) qnr_curr
+               WRITE(8832) qni_curr
+               WRITE(8832) qnn_curr
+               WRITE(8832) qib_curr
+               WRITE(8832) th
+               CLOSE(8832)
+             ENDIF
+#endif
              CALL kdm6(                                             &
                   TH=th                                             &    
                  ,Q=qv_curr                                         &    
@@ -2575,13 +2779,31 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
                   )
+#ifdef KDM6_FORWARD_PARITY_DUMP
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8841, FILE='kdm6_driver_step1_ij1_kdm6_out.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8841) ims, ime, kms, kme, jms, jme
+               WRITE(8841) qv_curr
+               WRITE(8841) qc_curr
+               WRITE(8841) qr_curr
+               WRITE(8841) qi_curr
+               WRITE(8841) qs_curr
+               WRITE(8841) qg_curr
+               WRITE(8841) qnc_curr
+               WRITE(8841) qnr_curr
+               WRITE(8841) qni_curr
+               WRITE(8841) qnn_curr
+               WRITE(8841) qib_curr
+               WRITE(8841) th
+               CLOSE(8841)
+             ENDIF
+#endif
              ELSE
                  CALL wrf_error_fatal ( 'arguments not present for calling kdm6')
              ENDIF
 
         CASE (KDM6ADSCHEME)
-             WRITE(0,*) 'KDM6AD_PHASE driver case enter itimestep=', itimestep
-             FLUSH(0)
              CALL wrf_debug ( 100 , 'microphysics_driver: calling kdm6ad' )
              IF ( PRESENT( QV_CURR ) .AND. PRESENT ( QC_CURR ) .AND.  &
                   PRESENT( QR_CURR ) .AND. PRESENT ( QI_CURR ) .AND.  &
@@ -2589,8 +2811,62 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   PRESENT( QNN_CURR ) .AND. PRESENT ( QNC_CURR ) .AND.&
                   PRESENT( QNI_CURR ).AND.  PRESENT( QNR_CURR ).AND.  &
                   PRESENT( QIB_CURR) ) THEN
-             WRITE(0,*) 'KDM6AD_PHASE driver present-ok before call'
-             FLUSH(0)
+#ifdef KDM6_FORWARD_PARITY_DUMP
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8812, FILE='kdm6_driver_step1_kdm6ad_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8812) ims, ime, kms, kme, jms, jme
+               WRITE(8812) qv_curr
+               WRITE(8812) qc_curr
+               WRITE(8812) qr_curr
+               WRITE(8812) qi_curr
+               WRITE(8812) qs_curr
+               WRITE(8812) qg_curr
+               WRITE(8812) qnc_curr
+               WRITE(8812) qnr_curr
+               WRITE(8812) qni_curr
+               WRITE(8812) qnn_curr
+               WRITE(8812) qib_curr
+               WRITE(8812) th
+               CLOSE(8812)
+             ENDIF
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8833, FILE='kdm6_driver_step1_ij1_kdm6ad_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8833) ims, ime, kms, kme, jms, jme
+               WRITE(8833) qv_curr
+               WRITE(8833) qc_curr
+               WRITE(8833) qr_curr
+               WRITE(8833) qi_curr
+               WRITE(8833) qs_curr
+               WRITE(8833) qg_curr
+               WRITE(8833) qnc_curr
+               WRITE(8833) qnr_curr
+               WRITE(8833) qni_curr
+               WRITE(8833) qnn_curr
+               WRITE(8833) qib_curr
+               WRITE(8833) th
+               CLOSE(8833)
+             ENDIF
+             IF (itimestep .eq. 1 .AND. ij .eq. 2) THEN
+               OPEN(UNIT=8834, FILE='kdm6_driver_step1_ij2_kdm6ad_in.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8834) ims, ime, kms, kme, jms, jme
+               WRITE(8834) qv_curr
+               WRITE(8834) qc_curr
+               WRITE(8834) qr_curr
+               WRITE(8834) qi_curr
+               WRITE(8834) qs_curr
+               WRITE(8834) qg_curr
+               WRITE(8834) qnc_curr
+               WRITE(8834) qnr_curr
+               WRITE(8834) qni_curr
+               WRITE(8834) qnn_curr
+               WRITE(8834) qib_curr
+               WRITE(8834) th
+               CLOSE(8834)
+             ENDIF
+#endif
              CALL kdm6ad(                                           &
                   TH=th                                             &
                  ,Q=qv_curr                                         &
@@ -2620,7 +2896,7 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,SNOW=snownc ,SNOWNCV=snowncv                      &
                  ,SR=sr                                             &
                  ,REFL_10CM=refl_10cm                               &
-                 ,diagflag=diagflag                                 &
+                 ,diagflag=.true.                                   &  ! match mp37 (kdm6) call (L2768) so refl always computes
                  ,do_radar_ref=do_radar_ref                         &
                  ,GRAUPEL=graupelnc ,GRAUPELNCV=graupelncv          &
                  ,ITIMESTEP=itimestep                               &
@@ -2633,8 +2909,26 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                  ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
                   )
-             WRITE(0,*) 'KDM6AD_PHASE driver returned from kdm6ad'
-             FLUSH(0)
+#ifdef KDM6_FORWARD_PARITY_DUMP
+             IF (itimestep .eq. 1 .AND. ij .eq. 1) THEN
+               OPEN(UNIT=8842, FILE='kdm6_driver_step1_ij1_kdm6ad_out.bin', &
+                    FORM='UNFORMATTED', ACCESS='STREAM', STATUS='REPLACE')
+               WRITE(8842) ims, ime, kms, kme, jms, jme
+               WRITE(8842) qv_curr
+               WRITE(8842) qc_curr
+               WRITE(8842) qr_curr
+               WRITE(8842) qi_curr
+               WRITE(8842) qs_curr
+               WRITE(8842) qg_curr
+               WRITE(8842) qnc_curr
+               WRITE(8842) qnr_curr
+               WRITE(8842) qni_curr
+               WRITE(8842) qnn_curr
+               WRITE(8842) qib_curr
+               WRITE(8842) th
+               CLOSE(8842)
+             ENDIF
+#endif
              ELSE
                  CALL wrf_error_fatal ( 'arguments not present for calling kdm6ad')
              ENDIF

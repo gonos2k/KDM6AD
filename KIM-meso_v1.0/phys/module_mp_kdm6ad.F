@@ -3,6 +3,11 @@ MODULE module_mp_kdm6ad
   USE, INTRINSIC :: iso_c_binding, ONLY: c_double, c_float, c_int, c_ptr
   USE module_wrf_error
   USE kdm6_iso_c, ONLY: kdm6_step, kdm6_handle_close, KDM6_OK
+  ! Effective-radius diagnostic for radiation coupling: reuse the IDENTICAL
+  ! routine + background-radius constants that KDM6 (mp37) uses, so re_* is
+  ! bitwise-identical between mp37 and mp137 (see re_* loop after copy-back).
+  USE module_mp_kdm6, ONLY: effectRad_kdm6, refl10cm_kdm6
+  USE module_model_constants, ONLY: RE_QC_BG, RE_QI_BG, RE_QS_BG
 
   IMPLICIT NONE
 
@@ -79,13 +84,26 @@ CONTAINS
     ! mirroring Fortran module_mp_kdm6.f90:1304-1326.
     REAL(c_float), ALLOCATABLE :: RAIN_INC(:,:), SNOW_INC(:,:), GRAUPEL_INC(:,:)
     REAL :: TOTAL_INC, SOLID_INC
+    ! Graupel density diagnostic (im, km, jm) [kg m^-3] — kdm6_step writes the
+    ! last-ProgB rhox here; wrapper copies it to WRF diag_rhog (mp37 module_mp_kdm6.F:423).
+    REAL(c_float), ALLOCATABLE :: RHOG_OUT(:,:,:)
+
+    ! Per-column scratch for the effective-radius diagnostic (mirror of
+    ! module_mp_kdm6.F:454-477). Dimensioned KTS:KTE to match effectRad_kdm6's
+    ! explicit-shape (kts:kte) dummies exactly.
+    REAL :: t1d(KTS:KTE), den1d(KTS:KTE), qc1d(KTS:KTE), qi1d(KTS:KTE), qs1d(KTS:KTE)
+    REAL :: nc1d(KTS:KTE), ni1d(KTS:KTE), re_qc(KTS:KTE), re_qi(KTS:KTE), re_qs(KTS:KTE)
+
+    ! Per-column scratch for the radar reflectivity diagnostic (mirror of
+    ! module_mp_kdm6.F:427-447). REFL_10CM = max(-35, refl10cm_kdm6(...)).
+    REAL :: qv1d(KTS:KTE), qr1d(KTS:KTE), nr1d(KTS:KTE), qg1d(KTS:KTE), p1d(KTS:KTE)
+    REAL :: n0so1d(KTS:KTE), n0go1d(KTS:KTE), cmg1d(KTS:KTE), dBZ(KTS:KTE)
+    REAL :: refl_pi
 
     IM = ITE - ITS + 1
     KM = KTE - KTS + 1
     JM = JTE - JTS + 1
 
-    WRITE(0,*) 'KDM6AD_PHASE wrapper entry im/km/jm/dt=', IM, KM, JM, DELT
-    FLUSH(0)
     CALL wrf_debug(100, 'module_mp_kdm6ad: entering kdm6ad wrapper')
 
     ALLOCATE(TH_IN(IM, KM, JM), Q_IN(IM, KM, JM), QC_IN(IM, KM, JM), QR_IN(IM, KM, JM))
@@ -97,6 +115,9 @@ CONTAINS
     ALLOCATE(NN_OUT(IM, KM, JM), NC_OUT(IM, KM, JM), NI_OUT(IM, KM, JM), NR_OUT(IM, KM, JM), BG_OUT(IM, KM, JM))
     ALLOCATE(XLAND_IN(IM, JM))
     ALLOCATE(RAIN_INC(IM, JM), SNOW_INC(IM, JM), GRAUPEL_INC(IM, JM))
+    ALLOCATE(RHOG_OUT(IM, KM, JM))
+    RHOG_OUT = 0.0_c_float   ! intent(out) safety: never copy uninitialized memory into diag_rhog
+                             ! if the C side ever leaves rhog_out unwritten (see kdm6_c_api.cpp guard).
 
     IF (ITIMESTEP == 1) THEN
       DO J = JMS, JME
@@ -182,7 +203,8 @@ CONTAINS
                    TH_OUT, Q_OUT, QC_OUT, QR_OUT, QI_OUT, QS_OUT, QG_OUT, &
                    NN_OUT, NC_OUT, NI_OUT, NR_OUT, BG_OUT, HANDLE, &
                    XLAND_IN, REAL(ncmin_land, c_double), REAL(ncmin_sea, c_double), &
-                   RAIN_INC, SNOW_INC, GRAUPEL_INC)
+                   RAIN_INC, SNOW_INC, GRAUPEL_INC, &
+                   RHOG_OUT)
 
     IF (RC /= KDM6_OK) THEN
       CALL wrf_error_fatal('kdm6ad: kdm6_step failed')
@@ -210,9 +232,83 @@ CONTAINS
           NI(I, K, J) = REAL(NI_OUT(II, KK, JJ))
           NR(I, K, J) = REAL(NR_OUT(II, KK, JJ))
           BG(I, K, J) = REAL(BG_OUT(II, KK, JJ))
+          diag_rhog(I, K, J) = REAL(RHOG_OUT(II, KK, JJ))
         END DO
       END DO
     END DO
+
+    ! Effective radii for radiation (re_cloud/re_ice/re_snow) — exact mirror of
+    ! module_mp_kdm6.F:453-477. KDM6 (mp37) computes these from the POST-micro
+    ! state and feeds them to the radiation scheme (cloud optical properties);
+    ! the kdm6ad wrapper previously left re_* untouched (stale), which diverges
+    ! the radiation coupling from mp37 over a multi-step integration. re_* is a
+    ! pure diagnostic of the output state — NOT part of the differentiable micro
+    ! — so it is computed here in Fortran reusing the identical effectRad_kdm6
+    ! routine, giving bitwise-identical re_* whenever the post-micro state is
+    ! bitwise (which it is, single-step). Gated exactly as mp37 (has_req*).
+    IF (has_reqc /= 0 .AND. has_reqi /= 0 .AND. has_reqs /= 0) THEN
+      DO J = JTS, JTE
+        DO I = ITS, ITE
+          DO K = KTS, KTE
+            re_qc(K) = RE_QC_BG
+            re_qi(K) = RE_QI_BG
+            re_qs(K) = RE_QS_BG
+            t1d(K)   = TH(I, K, J) * PII(I, K, J)
+            den1d(K) = DEN(I, K, J)
+            qc1d(K)  = QC(I, K, J)
+            qi1d(K)  = QI(I, K, J)
+            qs1d(K)  = QS(I, K, J)
+            nc1d(K)  = NC(I, K, J)
+            ni1d(K)  = NI(I, K, J)
+          END DO
+          CALL effectRad_kdm6(t1d, qc1d, nc1d, qi1d, ni1d, qs1d, den1d, &
+                              QMIN, T0C, re_qc, re_qi, re_qs, KTS, KTE, I, J)
+          DO K = KTS, KTE
+            re_cloud(I, K, J) = MAX(RE_QC_BG, MIN(re_qc(K),  50.E-6))
+            re_ice(I, K, J)   = MAX(RE_QI_BG, MIN(re_qi(K), 125.E-6))
+            re_snow(I, K, J)  = MAX(RE_QS_BG, MIN(re_qs(K), 999.E-6))
+          END DO
+        END DO
+      END DO
+    END IF
+
+    ! Radar reflectivity (REFL_10CM) — exact mirror of module_mp_kdm6.F:427-447. mp37
+    ! computes dBZ from the POST-micro state via refl10cm_kdm6, then REFL_10CM=max(-35,dBZ).
+    ! The kdm6ad wrapper previously left REFL_10CM (INTENT(INOUT)) untouched → stale (every
+    ! cell diverged ~55 dBZ). Reuse the IDENTICAL refl10cm_kdm6 routine on the bitwise output
+    ! state. The 3 DSD intermediates it needs: n0so=n0s/g1pms/rslopemu(2)=2.e6 and n0go=n0g/
+    ! g1pmg/rslopemu(3)=4.e6 are exact CONSTANTS (mus=mug=0 ⇒ rslopemu=1, g1pms=g1pmg=1 at
+    ! module_mp_kdm6.F:3339/3350; n0s=2.e6 :58, n0g=4.e6 :3278); cmg=pi*rhox/6 (F:3560) is
+    ! recomputed from the threaded RHOG_OUT (rhox) with pi=4.*atan(1.) (F:3284), so it inherits
+    ! RHOG_OUT's §38 clamp-cell floor in the SAME cells as RHO_ICE (expected/accepted). Gated
+    ! like mp37 (diagflag .and. do_radar_ref==1); the kdm6ad driver call forces diagflag=.true.
+    IF (diagflag .AND. do_radar_ref == 1) THEN
+      refl_pi = 4.0 * ATAN(1.0)
+      DO J = JTS, JTE
+        JJ = J - JTS + 1
+        DO I = ITS, ITE
+          II = I - ITS + 1
+          DO K = KTS, KTE
+            KK = K - KTS + 1
+            t1d(K)    = TH(I, K, J) * PII(I, K, J)
+            p1d(K)    = P(I, K, J)
+            qv1d(K)   = Q(I, K, J)
+            qr1d(K)   = QR(I, K, J)
+            nr1d(K)   = NR(I, K, J)
+            qs1d(K)   = QS(I, K, J)
+            qg1d(K)   = QG(I, K, J)
+            n0so1d(K) = 2.E6
+            n0go1d(K) = 4.E6
+            cmg1d(K)  = refl_pi * RHOG_OUT(II, KK, JJ) / 6.0
+          END DO
+          CALL refl10cm_kdm6(qv1d, qr1d, nr1d, qs1d, qg1d, n0so1d, &
+                             n0go1d, t1d, p1d, dBZ, KTS, KTE, I, J, cmg1d)
+          DO K = KTS, KTE
+            REFL_10CM(I, K, J) = MAX(-35.0, dBZ(K))
+          END DO
+        END DO
+      END DO
+    END IF
 
     ! Phase 4 ABI extension — accumulate sedimentation surface increments.
     ! Mirrors Fortran module_mp_kdm6.f90:809+1304-1326 semantics:

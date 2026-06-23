@@ -1093,17 +1093,9 @@ CHARACTER(LEN=8) :: name
    shalf = 0.
 
    CALL wrf_debug(100,'top of phy_init')
-   WRITE(0,*) 'KDM6AD_PHASE phy_init top mp_physics=', config_flags%mp_physics
-   FLUSH(0)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before start_of_simulation write'
-   FLUSH(0)
 
    WRITE(wrf_err_message,*) 'phy_init:  start_of_simulation = ',start_of_simulation
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after start_of_simulation write'
-   FLUSH(0)
    CALL wrf_debug (100, TRIM(wrf_err_message))
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after start_of_simulation debug'
-   FLUSH(0)
 
    itf=min0(ite,ide-1)
    jtf=min0(jte,jde-1)
@@ -1119,27 +1111,13 @@ CHARACTER(LEN=8) :: name
    if (.not.usemonalb) CALL wrf_error_fatal('usemonalb should always be true for NMM')
 #endif
 
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before nl_get_cen_lat'
-   FLUSH(0)
    CALL nl_get_cen_lat(id,cen_lat)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get_cen_lat'
-   FLUSH(0)
    CALL wrf_debug(100,'calling nl_get_iswater, nl_get_isice, nl_get_mminlu_loc')
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before nl_get_iswater'
-   FLUSH(0)
    CALL nl_get_iswater(id,iswater)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get_iswater'
-   FLUSH(0)
    CALL nl_get_isice(id,isice)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get_isice'
-   FLUSH(0)
    CALL nl_get_isurban(id,isurban)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get_isurban'
-   FLUSH(0)
 !jm   CALL nl_get_mminlu( 1, mminlu_loc )
    CALL nl_get_mminlu( id, mminlu_loc )
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get_mminlu'
-   FLUSH(0)
 #if (NMM_CORE == 1 && HWRF == 1 )
    IF ( trim(mminlu_loc) .eq. "" ) THEN
      CALL wrf_message('WARNING:   MMINLU NOT SET, USING USGS')
@@ -1147,12 +1125,8 @@ CHARACTER(LEN=8) :: name
    ENDIF
 #endif
    CALL wrf_debug(100,'after nl_get_iswater, nl_get_isice, nl_get_mminlu_loc')
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after nl_get block before landuse_ISICE'
-   FLUSH(0)
 !-- temporary fix by ww
    landuse_ISICE = isice
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after landuse_ISICE'
-   FLUSH(0)
 
 !..Determine which cu_rad_feedback option to use
 
@@ -1438,8 +1412,6 @@ CHARACTER(LEN=8) :: name
    end if
 
    CALL wrf_debug ( 200 , 'module_start: phy_init: Before call to landuse_init' )
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before landuse_init block'
-   FLUSH(0)
 
    IF(mminlu_loc .ne. '    ')THEN
 !-- initialize surface properties
@@ -1455,8 +1427,6 @@ CHARACTER(LEN=8) :: name
                 ids, ide, jds, jde, kds, kde,                       &
                 ims, ime, jms, jme, kms, kme,                       &
                 its, ite, jts, jte, kts, kte                       )
-     WRITE(0,*) 'KDM6AD_PHASE phy_init after landuse_init call'
-     FLUSH(0)
    ENDIF
 
   ENDIF !}
@@ -1464,8 +1434,6 @@ CHARACTER(LEN=8) :: name
 ! yhlee start for Tree Canopy
 !
    CALL wrf_debug(100,'TREE CANOPY = start')
-   WRITE(0,*) 'KDM6AD_PHASE phy_init tree canopy start'
-   FLUSH(0)
 
    CALL nl_get_tree_canopy(id, itree_canopy)
    CALL nl_get_tree_canopy_alpha(id, tree_alpha)
@@ -1490,8 +1458,6 @@ CHARACTER(LEN=8) :: name
      ENDIF
 
      CALL wrf_debug(100,'TREE CANOPY = end')
-     WRITE(0,*) 'KDM6AD_PHASE phy_init tree canopy end'
-     FLUSH(0)
 
 ! -------------------------------------
 ! yhlee end
@@ -1501,13 +1467,9 @@ CHARACTER(LEN=8) :: name
 !-- convert zfull and zhalf to sigma values for ra_init (Eta CO2 needs these)
 !-- zfull/zhalf may be either zeta or eta
 !-- what is done here depends on coordinate (check this code if adding new coordinates)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before z2sigma'
-   FLUSH(0)
    CALL z2sigma(zfull,zhalf,sfull,shalf,p_top,pptop,config_flags, &
                 allowed_to_read,                                  &
                 kds,kde,kms,kme,kts,kte)
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after z2sigma'
-   FLUSH(0)
 
    ! CAM parameterizations specific initializations [Currently incorporates initializations for CAMZM, CAMUWPBL, CAMUWSHCU and CAMMGMP parameterizations]
 
@@ -1557,8 +1519,6 @@ CHARACTER(LEN=8) :: name
   ENDIF
 
    CALL wrf_debug ( 200 , 'module_start: phy_init: Before call to ra_init' )
-   WRITE(0,*) 'KDM6AD_PHASE phy_init before ra_init'
-   FLUSH(0)
 
    CALL ra_init(id=id,STEPRA=STEPRA,RADT=RADT,DT=DT,RTHRATEN=RTHRATEN,RTHRATENLW=RTHRATENLW,             &
                 RTHRATENSW=RTHRATENSW,CLDFRA=CLDFRA,EMISS=EMISS,cen_lat=cen_lat,JULYR=JULYR,JULDAY=JULDAY,GMT=GMT,    &
@@ -1576,8 +1536,6 @@ CHARACTER(LEN=8) :: name
                 ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,                   &
                 ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,                   &
                 its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte                    )
-   WRITE(0,*) 'KDM6AD_PHASE phy_init after ra_init'
-   FLUSH(0)
 
    CALL wrf_debug ( 200 , 'module_start: phy_init: Before call to bl_init' )
    CALL bl_init(STEPBL,BLDT,DT,RUBLTEN,RVBLTEN,RTHBLTEN,        &
@@ -4757,14 +4715,8 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
           CALL kdm6init(rhoair0,rhowater,rhosnow,cliq,cpv,ccn_conc, &
                 config_flags%hail_opt, allowed_to_read )
      CASE (KDM6ADSCHEME)
-          WRITE(0,*) 'KDM6AD_PHASE phy_init kdm6ad init case'
-          FLUSH(0)
-          WRITE(0,*) 'KDM6AD_PHASE phy_init before kdm6init'
-          FLUSH(0)
           CALL kdm6init(rhoair0,rhowater,rhosnow,cliq,cpv,ccn_conc, &
                 config_flags%hail_opt, allowed_to_read )
-          WRITE(0,*) 'KDM6AD_PHASE phy_init after kdm6init'
-          FLUSH(0)
      CASE (WDM7SCHEME)
           CALL wdm7init(rhoair0,rhowater,rhosnow,cliq,cpv,ccn_conc, allowed_to_read )
 #if (EM_CORE==1)

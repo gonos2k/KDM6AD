@@ -26,7 +26,7 @@ module kdm6_iso_c
   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
 
-  public :: kdm6_step, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+  public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
 
   
   interface
@@ -41,7 +41,8 @@ module kdm6_iso_c
         nccn_out, nc_out, ni_out, nr_out, bg_out, &
         handle, &
         xland, ncmin_land, ncmin_sea, &
-        rain_increment, snow_increment, graupel_increment &
+        rain_increment, snow_increment, graupel_increment, &
+        rhog_out &
       ) bind(C, name="kdm6_step_c") result(rc)
       import :: c_int, c_double, c_float, c_ptr
       real(c_float), intent(in)  :: th(*), qv(*), qc(*), qr(*)
@@ -62,8 +63,36 @@ module kdm6_iso_c
       
       
       real(c_float), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
+      
+      real(c_float), intent(out) :: rhog_out(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
+
+    
+    
+    
+    
+    
+    
+    
+    function kdm6_step_ad_c( &
+        state_in_packed, forcing_packed, &
+        im, kme, jme, dt, value_only, &
+        state_out_packed, handle, &
+        xland, ncmin_land, ncmin_sea &
+      ) bind(C, name="kdm6_step_ad_c") result(rc)
+      import :: c_int, c_double, c_float, c_ptr
+      real(c_double), intent(in)  :: state_in_packed(*)
+      real(c_double), intent(in)  :: forcing_packed(*)
+      integer(c_int), value       :: im, kme, jme
+      real(c_double), value       :: dt
+      integer(c_int), value       :: value_only
+      real(c_double), intent(out) :: state_out_packed(*)
+      type(c_ptr), intent(out)    :: handle
+      real(c_float), intent(in)  :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      integer(c_int)              :: rc
+    end function kdm6_step_ad_c
 
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
@@ -110,7 +139,8 @@ contains
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
       handle, &
       xland, ncmin_land, ncmin_sea, &
-      rain_increment, snow_increment, graupel_increment &
+      rain_increment, snow_increment, graupel_increment, &
+      rhog_out &
     ) result(rc)
     real(c_float), intent(in),  contiguous :: th(:,:,:), qv(:,:,:), qc(:,:,:), qr(:,:,:)
     real(c_float), intent(in),  contiguous :: qi(:,:,:), qs(:,:,:), qg(:,:,:)
@@ -131,6 +161,8 @@ contains
     real(c_float), intent(out), contiguous :: rain_increment(:,:)
     real(c_float), intent(out), contiguous :: snow_increment(:,:)
     real(c_float), intent(out), contiguous :: graupel_increment(:,:)
+    
+    real(c_float), intent(out), contiguous :: rhog_out(:,:,:)
     integer(c_int)                          :: rc
 
     rc = kdm6_step_c( &
@@ -144,8 +176,35 @@ contains
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
       handle, &
       xland, real(ncmin_land, c_double), real(ncmin_sea, c_double), &
-      rain_increment, snow_increment, graupel_increment)
+      rain_increment, snow_increment, graupel_increment, &
+      rhog_out)
   end function kdm6_step
+
+  
+  
+  
+  
+
+  
+  function kdm6_step_ad( &
+      state_in, forcing, &
+      im, kme, jme, dt, value_only, &
+      state_out, handle, &
+      xland, ncmin_land, ncmin_sea &
+    ) result(rc)
+    real(c_double), intent(in),  contiguous :: state_in(:,:,:,:)
+    real(c_double), intent(in),  contiguous :: forcing(:,:,:,:)
+    integer(c_int), intent(in)              :: im, kme, jme
+    real(c_double), intent(in)              :: dt
+    integer(c_int), intent(in)              :: value_only
+    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    type(c_ptr),    intent(out)             :: handle
+    real(c_float),  intent(in),  contiguous :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    integer(c_int)                          :: rc
+    rc = kdm6_step_ad_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                        state_out, handle, xland, ncmin_land, ncmin_sea)
+  end function kdm6_step_ad
 
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
@@ -170,5 +229,3 @@ contains
   end function kdm6_handle_close
 
 end module kdm6_iso_c
-
-

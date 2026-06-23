@@ -280,7 +280,7 @@ submodules :
 clean:
 	@ echo 'use the clean script'
 
-module_mp_kdm6ad.o: kdm6_iso_c.o
+module_mp_kdm6ad.o: kdm6_iso_c.o module_mp_kdm6.o
 # ^ KDM6AD build-order edge, intentionally the first rule after `clean:` and ABOVE any
 # comment. tools/danger cuts this file from the first line mentioning the all-caps
 # marker word to EOF, so a reference to that word in ANY comment (even one explaining
