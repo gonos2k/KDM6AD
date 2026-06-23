@@ -129,9 +129,9 @@ Forcing forcing_from_fortran_arrays(const float* rho,
     return forcing;
 }
 
-static void copy_back_to_fortran(const torch::Tensor& flat /*(B, K)*/,
-                                 int im, int jme,
-                                 float* out /*(im, kme, jme)*/) {
+void copy_back_to_fortran(const torch::Tensor& flat /*(B, K)*/,
+                          int im, int jme,
+                          float* out /*(im, kme, jme)*/) {
     auto K = flat.size(1);
     // Recover logical (im, kme, jme), then emit row-major (jme, kme, im)
     // so memcpy lands in the same byte order that Fortran uses for

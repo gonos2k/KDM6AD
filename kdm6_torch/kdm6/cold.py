@@ -1222,8 +1222,11 @@ def ice_nucleation_torch(
     pinud = torch.where(active, pinud_capped, zero)
     ninud = torch.where(active, ninud_capped, zero)
 
-    # ifsat: deposition saturation flag (used by caller for downstream dep/sub)
-    ifsat = torch.abs(prevp + pinud) >= torch.abs(satdt)
+    # ifsat (F:2417) is set INSIDE the pinud nucleation block (F:2401 gate) — fires ONLY
+    # where nuc_active. Computing it unconditionally wrongly gated pidep off in non-
+    # nucleating cells where |prevp|>=|satdt| (rain evap near ice saturation) — the dep
+    # cascade. pinud=0 when !inner_active, so nuc_active&!inner reduces to |prevp|>=|satdt|.
+    ifsat = nuc_active & (torch.abs(prevp + pinud) >= torch.abs(satdt))
 
     return IceNucleationOutputs(pinud=pinud, ninud=ninud, ifsat=ifsat)
 
@@ -1356,13 +1359,18 @@ def dep_sub_torch(
     pidep_capped = _dep_sub_capped(pidep_raw, qi, half_satdt, supice_pidep, dtcld)
     pidep = torch.where(pidep_active, pidep_capped, zero)
 
-    # complete-sublim signal: pidep == -qi/dtcld (within active region)
+    # complete-sublim signal: Fortran F:2434 tests the RAW pidep with EXACT equality
+    # (pidep == -qi/dtcld) BEFORE the floor — fires only at exact complete-sublimation
+    # (Case B), not whenever the sublimation cap binds (Case C). Capped `<=qi_cap+1e-30`
+    # over-fired and wrongly zeroed ni (12-cell residual). pidep_raw/qi_cap are f32.
     qi_cap = -qi / dtcld
-    ice_complete_sublim = pidep_active & (pidep <= qi_cap + 1.0e-30) & (pidep < 0)
+    ice_complete_sublim = pidep_active & (pidep_raw == qi_cap) & (pidep_raw < 0)
 
-    # Update ifsat after pidep
+    # Update ifsat after pidep — F:2442 is INSIDE the pidep block (pidep_active); gate the
+    # OR-term so cells where the block didn't run keep ifsat unchanged (sibling sweep of
+    # the C3 nuc_active fix; matches Fortran's per-block ifsat structure).
     ifsat_after_pidep = ifsat_in | (
-        torch.abs(prevp + pinud + pidep) >= torch.abs(satdt)
+        pidep_active & (torch.abs(prevp + pinud + pidep) >= torch.abs(satdt))
     )
 
     # ── psdep (snow deposition/sublimation) ─────────────────────────────
@@ -1378,8 +1386,9 @@ def dep_sub_torch(
     psdep_capped = _dep_sub_capped(psdep_raw, qs, half_satdt, supice_psdep, dtcld)
     psdep = torch.where(psdep_active, psdep_capped, zero)
 
+    # F:2461 ifsat update INSIDE the psdep block ⇒ gate by psdep_active (sibling sweep).
     ifsat_after_psdep = ifsat_after_pidep | (
-        torch.abs(prevp + pinud + pidep + psdep) >= torch.abs(satdt)
+        psdep_active & (torch.abs(prevp + pinud + pidep + psdep) >= torch.abs(satdt))
     )
 
     # ── pgdep (graupel deposition/sublimation) ──────────────────────────
@@ -1395,8 +1404,9 @@ def dep_sub_torch(
     pgdep_capped = _dep_sub_capped(pgdep_raw, qg, half_satdt, supice_pgdep, dtcld)
     pgdep = torch.where(pgdep_active, pgdep_capped, zero)
 
+    # F:2476 ifsat update INSIDE the pgdep block ⇒ gate by pgdep_active (sibling sweep).
     ifsat_final = ifsat_after_psdep | (
-        torch.abs(prevp + pinud + pidep + psdep + pgdep) >= torch.abs(satdt)
+        pgdep_active & (torch.abs(prevp + pinud + pidep + psdep + pgdep) >= torch.abs(satdt))
     )
 
     return DepSubOutputs(

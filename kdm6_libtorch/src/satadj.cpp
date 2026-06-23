@@ -48,8 +48,20 @@ SatAdjOutputs saturation_adjustment_torch(
     //   work1 < 0 and qc>0 → evap_path = max(work1, -qc) / dtcld
     //   else               → 0
     auto zero = torch::zeros_like(q);
-    auto cond_path = torch::minimum(work1, torch::maximum(q, zero)) / dtcld;
-    auto evap_path = torch::maximum(work1, -qc) / dtcld;
+    // §44 DOUBLE-internal-narrowed-once: Fortran work1 is DOUBLE (F:660), dtcld REAL(4) →
+    // work1/dtcld + the min/max run in DOUBLE, narrowing to the REAL(4) pcond ONCE at the
+    // store (F:3020/3022). C++ ran the whole chain in f32, rounding at every op. Mirror Fortran:
+    // promote work1/q/qc to f64, do /dtcld + min/max in f64, narrow at op dtype (q.scalar_type():
+    // f32 operational = Fortran-faithful; f64 DA = no-op, VJP preserved). work1 itself stays
+    // native f32 (F:3018 conden is REAL(4); 2026-06-10 f64-conden experiment was byte-neutral).
+    // The complete-evap RHS below stays PURE f32 (-qc/dtcld): Fortran F:3027 compares the
+    // f32-narrowed pcond against an f32 -qci/dtcld (qci,dtcld both REAL(4)) — do NOT upcast it.
+    auto rdt = q.scalar_type();
+    auto wd = work1.to(torch::kFloat64);
+    auto qd = q.to(torch::kFloat64);
+    auto qcd = qc.to(torch::kFloat64);
+    auto cond_path = (torch::minimum(wd, torch::maximum(qd, torch::zeros_like(qd))) / dtcld).to(rdt);
+    auto evap_path = (torch::maximum(wd, -qcd) / dtcld).to(rdt);
 
     auto is_super = work1 > 0;
     auto is_sub_with_cloud = torch::logical_and(work1 < 0, qc > 0);

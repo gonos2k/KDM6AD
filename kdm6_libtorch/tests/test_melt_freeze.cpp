@@ -27,6 +27,7 @@ MeltingInputs make_melt_inputs(double t_value, bool grad = false) {
     auto p = torch::full({1, 2}, 8.0e4, plain);
     auto den = torch::full({1, 2}, 1.1, plain);
     auto rhox = torch::full({1, 2}, 400.0, plain);
+    auto cpm = torch::full({1, 2}, 1005.0, plain);
     auto n0so = torch::full({1, 2}, 2.0e6, plain);
     auto n0go = torch::full({1, 2}, 4.0e6, plain);
     auto n0sfac = torch::full({1, 2}, 1.0, plain);
@@ -35,7 +36,7 @@ MeltingInputs make_melt_inputs(double t_value, bool grad = false) {
     auto rsl_s = torch::full({1, 2}, 5.0e-4, plain);
     auto rsl_g = torch::full({1, 2}, 1.0e-3, plain);
     return MeltingInputs{
-        qs, qg, qi, ni, t, p, den, rhox, n0so, n0go, n0sfac, work2, precg2,
+        qs, qg, qi, ni, t, p, den, rhox, cpm, n0so, n0go, n0sfac, work2, precg2,
         rsl_s, rsl_s * rsl_s,
         torch::full({1, 2}, std::pow(5.0e-4, constants::BVTS), plain),
         torch::full({1, 2}, std::pow(5.0e-4, constants::MUS), plain),

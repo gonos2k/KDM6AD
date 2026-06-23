@@ -10,6 +10,7 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <fenv.h>
 
 //
 // C ABI ↔ C++ 어댑터.
@@ -81,6 +82,19 @@ void ensure_libtorch_singlethread() {
     });
 }
 
+// FP-environment fence (Codex deep-review lead, 2026-06-22): libtorch / its BLAS
+// backend can set the denormals-flush (FTZ/FZ) and/or rounding bits in the host
+// FP control register, and those LEAK back into the WRF Fortran dynamics that runs
+// after this ABI call — diverging the multi-step trajectory even though the 12
+// microphysics outputs are bitwise per step. Save the caller's FP env on entry and
+// restore it on every return path (RAII) so the host dynamics keeps mp37's env.
+// AD-safe: this is FP control only, touches no autograd tensor.
+struct FpEnvGuard {
+    fenv_t saved_;
+    FpEnvGuard() { fegetenv(&saved_); }
+    ~FpEnvGuard() { fesetenv(&saved_); }
+};
+
 }  // anonymous namespace
 
 extern "C" int kdm6_step_c(
@@ -101,7 +115,8 @@ extern "C" int kdm6_step_c(
     double ncmin_sea,
     float* rain_increment,
     float* snow_increment,
-    float* graupel_increment
+    float* graupel_increment,
+    float* rhog_out
 ) {
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
     // Note: `xland` deliberately excluded from null check — it's optional.
@@ -111,6 +126,11 @@ extern "C" int kdm6_step_c(
                   nccn_out, nc_out, ni_out, nr_out, bg_out, handle})) {
         return KDM6_ERR_NULL_POINTER;
     }
+
+    // RAII: restore the caller's (Fortran host) FP env on every return path.
+    // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
+    // verified a no-op on this build (ARM FPCR unchanged), kept to insulate the host dynamics.
+    FpEnvGuard kdm6_fpenv_guard;
 
     ensure_libtorch_singlethread();
 
@@ -145,6 +165,20 @@ extern "C" int kdm6_step_c(
         kdm6::to_fortran_arrays(result.state_out, im, jme,
                                 th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out,
                                 nccn_out, nc_out, ni_out, nr_out, bg_out);
+
+        // diag_rhog/RHOPO3D — graupel density from the last ProgB (optional out;
+        // NULL → discard). Same (im, kme, jme) column-major layout as bg_out.
+        // intent(out) contract: when rhog_out is supplied it is ALWAYS written —
+        // zeros if the result tensor is (defensively) undefined — so the Fortran
+        // caller never copies uninitialized memory into diag_rhog.
+        if (rhog_out != nullptr) {
+            if (result.rhog.defined()) {
+                kdm6::copy_back_to_fortran(result.rhog, im, jme, rhog_out);
+            } else {
+                const size_t n_rhog = static_cast<size_t>(im) * kme * jme;
+                for (size_t idx = 0; idx < n_rhog; ++idx) rhog_out[idx] = 0.0f;
+            }
+        }
 
         // Copy-back sedimentation surface increments — (im*jme,) Tensor →
         // Fortran column-major float*(im, jme). Reuses the same (im, jme) ↔
@@ -265,6 +299,11 @@ kdm6::Forcing unpack_packed_forcing(const double* packed, int im, int kme, int j
 
 }  // namespace
 
+// NOTE: diag_rhog/RHOPO3D is deliberately NOT part of the adjoint packed ABI.
+// rhog is a FORWARD-only diagnostic (graupel density for radar reflectivity), not
+// a prognostic state variable and not an adjoint quantity — 4D-Var never needs its
+// gradient. It is exposed solely on the forward operational path (kdm6_step_c's
+// rhog_out). state_out_packed here carries only the prognostic state.
 extern "C" int kdm6_step_ad_c(
     const double* state_in_packed,
     const double* forcing_packed,

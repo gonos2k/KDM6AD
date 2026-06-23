@@ -54,6 +54,13 @@ G1PDCOMUC1  = rgmma_f(_f32(1.0 + _f32(_DMC / _f32(_MUC + 1.0))))              # 
 PIDNC = _f32(CMC * rgmma_f(_f32(1.0 + _f32(_DMC / _f32(_MUC + 1.0)))))
 PIDNR = _f32(_f32(CMR * G1PDRMR) / G1PMR)
 PIDNI = _f32(_f32(CMI * G1PDIMI) / G1PMI)
+# snow pidn0s = cms*n0s*g1pdsms/g1pms (REAL, f32-stepwise; kdm6init F:3326). dens=100 (snow).
+# double-then-round differs 1 ULP (gfortran 4E15CD86 vs double 4E15CD85) — §44 f32-stepwise.
+_DENS = _f32(100.0); _N0S = _f32(2.0e6); _MUS = _f32(0.0); _DMS = _f32(3.0)
+CMS    = _f32(_f32(PI * _DENS) / 6.0)
+G1PMS  = rgmma_f(_f32(1.0 + _MUS))
+G1PDSMS = rgmma_f(_f32(_f32(1.0 + _DMS) + _MUS))
+PIDN0S = _f32(_f32(_f32(CMS * _N0S) * G1PDSMS) / G1PMS)
 # ele2 = 4.*pi*1.38E-23/(6.*pi*Rcn) — Fortran F:1521, REAL(4) stepwise (D2 contact
 # freezing aerosol diffusivity; loop-invariant). C++ fconst.h mirror (step-67 seed).
 _RCN = _f32(0.1e-6)

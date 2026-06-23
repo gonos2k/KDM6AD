@@ -30,6 +30,7 @@ from . import constants as c
 from . import coordinator as _coord
 from . import cloud_dsd as _cdsd
 from . import sedimentation as _sed
+from . import fconst as _fc
 
 
 # ─── Parameters: opt-in differentiable model parameters ────────────────────────
@@ -462,7 +463,10 @@ def _kdm6_pure(
         )
 
     loops = _coord.compute_loops_max(dt, c.DTCLDCR)
-    dtcld = dt / float(loops)
+    # Fortran kdm62D dtcld = delt/loops is REAL(f32). Store the f32 VALUE (mirror C++ runtime.cpp
+    # static_cast<float>) so f64 contexts use Fortran's f32 dtcld — consistent with pvt-f32/pidn0s
+    # f32-stepwise constants. (Codex: dtcld-f32 oracle<->C++ consistency.)
+    dtcld = _fc._f32(dt / float(loops))
 
     # cf is constant → flip + delz-clamp hoisted out of the loop (C++ :287-291).
     cf_flip = _coord.CoordinatorForcing(
@@ -495,6 +499,13 @@ def _kdm6_pure(
             ni=_flip_k(cur.ni), brs=_flip_k(cur.brs), t=_flip_k(cur.t),
         )
         pre_sed = _coord.preamble_torch(cur_flip, cf_flip, sea_mask, params=full_p)
+        # BRS density re-clamp #0 (ProgB before sed fall loop). qg>qcrmin zeroing matches Fortran's
+        # f32 brs-underflow=>0 in graupel-empty cells. The OR-condition fix (to preserve Fortran-active
+        # graupel per Codex) was MEASURED WORSE (BG 8787->22394): C++ f64 ~1.7e-14 empty-cell residue
+        # > BRS_MIN wrongly counts as active. §20 f64-residue-vs-f32-underflow; kept qg>qcrmin form.
+        cur_flip = cur_flip._replace(brs=torch.where(
+            cur_flip.qg > full_p.progb.qcrmin, pre_sed.progb.bg,
+            torch.zeros_like(pre_sed.progb.bg)))
         w1_qr = pre_sed.slope.vt_r / delz_safe
         wn_qr = pre_sed.slope.vtn_r / delz_safe
         w1_qs = pre_sed.slope.vt_s / delz_safe

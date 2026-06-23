@@ -52,9 +52,10 @@ SubstepAdvectionOutputs substep_advection_torch(
     // index it by k. A (B,1) mask + mask.select(-1,k) would be both physically
     // wrong and an out-of-bounds runtime crash for k>=1.
     auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
-    auto inv_mstep_col = torch::reciprocal(mstep_col_safe);                 // (B,)
     auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qr.dtype()); // (B,)
-    auto falk_scale = inv_mstep_col * gate_col;                             // (B,): divisor*gate
+    // Fortran F:1125 falk = num/mstep(i): falk_* below DIVIDE the numerator by mstep_col_safe
+    // (single f32 rounding, matches Fortran) — NOT num*(1/mstep). A precomputed reciprocal
+    // differs 1 ULP for non-power-of-2 mstep (§44 eval-form). gate_col is 0/1 (×exact).
 
     auto qr_cols = split_columns(in.state.qr, K);
     auto nr_cols = split_columns(in.state.nr, K);
@@ -85,11 +86,12 @@ SubstepAdvectionOutputs substep_advection_torch(
     // Top cell
     {
         const int64_t k = 0;
-        auto falk_qr_top = dend_col(k) * qr_cols[k] * work1_qr_col(k) * falk_scale;
-        auto falk_nr_top = nr_cols[k] * workn_qr_col(k) * falk_scale;
-        auto falk_qs_top = dend_col(k) * qs_cols[k] * work1_qs_col(k) * falk_scale;
-        auto falk_qg_top = dend_col(k) * qg_cols[k] * work1_qg_col(k) * falk_scale;
-        auto falk_brs_top = dend_col(k) * brs_cols[k] * work1_qg_col(k) * falk_scale;
+        // §34: falk REAL(f32) — one f32 rounding of the f64 chain (work1 f64 via vt f64), mirror ice path.
+        auto falk_qr_top = (dend_col(k) * qr_cols[k] * work1_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_nr_top = nr_cols[k] * workn_qr_col(k) / mstep_col_safe * gate_col;
+        auto falk_qs_top = (dend_col(k) * qs_cols[k] * work1_qs_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qg_top = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_brs_top = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_top;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_top;
@@ -113,11 +115,11 @@ SubstepAdvectionOutputs substep_advection_torch(
 
     // Interior cells
     for (int64_t k = 1; k < K; ++k) {
-        auto falk_qr_k = dend_col(k) * qr_cols[k] * work1_qr_col(k) * falk_scale;
-        auto falk_nr_k = nr_cols[k] * workn_qr_col(k) * falk_scale;
-        auto falk_qs_k = dend_col(k) * qs_cols[k] * work1_qs_col(k) * falk_scale;
-        auto falk_qg_k = dend_col(k) * qg_cols[k] * work1_qg_col(k) * falk_scale;
-        auto falk_brs_k = dend_col(k) * brs_cols[k] * work1_qg_col(k) * falk_scale;
+        auto falk_qr_k = (dend_col(k) * qr_cols[k] * work1_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_nr_k = nr_cols[k] * workn_qr_col(k) / mstep_col_safe * gate_col;
+        auto falk_qs_k = (dend_col(k) * qs_cols[k] * work1_qs_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qg_k = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_brs_k = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_k;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_k;
@@ -194,9 +196,9 @@ IceSubstepOutputs ice_substep_advection_torch(
     auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
     // Per-column divisor*gate (Fortran .../mstep_i(i) and if(n.le.mstep_i(i))).
     auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
-    auto inv_mstep_col = torch::reciprocal(mstep_col_safe);                 // (B,)
     auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qi.dtype()); // (B,)
-    auto falk_scale = inv_mstep_col * gate_col;                            // (B,)
+    // Fortran F:1125 falk = num/mstep(i): DIVIDE the numerator (single f32 rounding) — NOT
+    // num*(1/mstep) (§44 eval-form, 1 ULP for non-power-of-2 mstep). gate_col is 0/1 (×exact).
 
     auto qi_cols = split_columns(in.state.qi, K);
     auto ni_cols = split_columns(in.state.ni, K);
@@ -219,9 +221,9 @@ IceSubstepOutputs ice_substep_advection_torch(
         const int64_t k = 0;
         // Fortran F:1247-1248: falk/falkn are REAL — ONE f32 rounding of the f64
         // chain f32(dend*qi)*vt_d/mstep (work1(4)/workn(2) DOUBLE; class-7).
-        auto falk_qi_top = (dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale)
+        auto falk_qi_top = (dend_col(k) * qi_cols[k] * work1_qi_col(k) / mstep_col_safe * gate_col)
                                .to(in.state.qi.scalar_type());
-        auto falk_ni_top = (ni_cols[k] * workn_qi_col(k) * falk_scale)
+        auto falk_ni_top = (ni_cols[k] * workn_qi_col(k) / mstep_col_safe * gate_col)
                                .to(in.state.qi.scalar_type());
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
@@ -235,9 +237,9 @@ IceSubstepOutputs ice_substep_advection_torch(
     }
 
     for (int64_t k = 1; k < K; ++k) {
-        auto falk_qi_k = (dend_col(k) * qi_cols[k] * work1_qi_col(k) * falk_scale)
+        auto falk_qi_k = (dend_col(k) * qi_cols[k] * work1_qi_col(k) / mstep_col_safe * gate_col)
                              .to(in.state.qi.scalar_type());   // F:1247 REAL store (class-7)
-        auto falk_ni_k = (ni_cols[k] * workn_qi_col(k) * falk_scale)
+        auto falk_ni_k = (ni_cols[k] * workn_qi_col(k) / mstep_col_safe * gate_col)
                              .to(in.state.qi.scalar_type());
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k;
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k;

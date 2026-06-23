@@ -401,7 +401,9 @@ def default_warm_rain_evap_params(*, fac_evap: float = 1.0) -> WarmRainEvapParam
     g7pbro2 = _rgmma(2.5 + 0.5 * bvtr + mur)
 
     precr1 = 2.0 * _pi * 0.78 * g2pmr
-    precr2 = 2.0 * _pi * 0.31 * (avtr ** 0.5) * g7pbro2
+    # Fortran F:3269 precr2 = 2.*pi*.31*avtr**.5*g7pbro2 REAL(f32-stepwise); avtr**.5 is REAL**REAL
+    # => libm POWF (not f64 pow). f64 pow->f32 differs 1 ULP. f32-stepwise + _fc.powf (mirror C++).
+    precr2 = _fc._f32(_fc._f32(_fc._f32(_fc._f32(2.0 * _fc._f32(_pi)) * 0.31) * _fc.powf(avtr, 0.5)) * g7pbro2)
 
     return WarmRainEvapParams(
         precr1=precr1,

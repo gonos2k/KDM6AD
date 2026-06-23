@@ -74,7 +74,7 @@ class MeltingOutputs(NamedTuple):
     pimlt_ni: torch.Tensor    # ice number → cloud water number
     sfac: torch.Tensor        # number-side factor for snow (caller applies to nrs)
     gfac: torch.Tensor        # number-side factor for graupel
-    delta_brs: torch.Tensor   # brs increment from pgmlt (pgmlt/rhox)
+    delta_brs: torch.Tensor   # brs increment RATE from pgmlt (pgmlt/rhox)
 
 
 def _venfac_proxy(p: torch.Tensor, t: torch.Tensor, den: torch.Tensor) -> torch.Tensor:
@@ -113,6 +113,7 @@ def melting_torch(
     p: torch.Tensor,
     den: torch.Tensor,
     rhox: torch.Tensor,            # graupel density (ProgB output)
+    cpm: torch.Tensor,             # moist heat capacity — pgmlt reads psmlt-UPDATED t (F:1326→1336)
     n0so: torch.Tensor,
     n0go: torch.Tensor,
     n0sfac: torch.Tensor,
@@ -173,10 +174,14 @@ def melting_torch(
     sfac = torch.where(snow_active & (qs > params.qcrmin), sfac_raw, zero)
 
     # ── pgmlt ──────────────────────────────────────────────────────────
+    # §35 SEQUENTIAL coupling (Fortran F:1326→1336): psmlt updates t BEFORE pgmlt reads it.
+    # t1 ≡ entry t where snow inactive (psmlt_dt_active≡0), psmlt-updated t where snow melted.
+    # Only the xka(t)·(t0c−t) prefactor depends on t; the bracket is t-independent.
+    t1 = t + (params.xlf / cpm) * psmlt_dt_active   # F:1326 (xlf=xlf0 in warm cells = params.xlf)
     graupel_active = warm & (qg > 0)
     coeres_g = rslope2_g * torch.sqrt(torch.clamp(rslope_g * rslopeb_g, min=params.qcrmin)) * rslopemu_g
     pgmlt_raw = (
-        _xka(t, den) / params.xlf * (params.t0c - t)
+        _xka(t1, den) / params.xlf * (params.t0c - t1)
         * _pi / 2.0
         * (params.precg1 * n0go * rslope2_g * rslopemu_g
            + precg2 * n0go * work2 * coeres_g)

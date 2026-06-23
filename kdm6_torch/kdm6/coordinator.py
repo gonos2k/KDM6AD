@@ -95,6 +95,9 @@ class PreambleOutputs(NamedTuple):
     rh_w: torch.Tensor         # rh w.r.t. water
     rh_ice: torch.Tensor       # rh w.r.t. ice
     supsat: torch.Tensor
+    # ICE supsat = max(q,qmin)-qs2 DIRECT (Fortran F:1913) — NOT `supsat+qs1-qs2`
+    # (f32 cancellation near saturation perturbs satdt → flips the cold ifsat gate).
+    supsat_ice: torch.Tensor
     denfac: torch.Tensor
     work2: torch.Tensor        # venfac
 
@@ -135,6 +138,9 @@ def preamble_torch(
     rh_w = _thermo.compute_rh(state.qv, qs1, params=params.thermo)
     rh_ice = _thermo.compute_rh(state.qv, qs2, params=params.thermo)
     supsat = _thermo.compute_supsat(state.qv, qs1, params=params.thermo)
+    # ICE supsat as a DIRECT single subtraction max(q,qmin)-qs2 (Fortran F:1913) — the
+    # cold dep loop's satdt/supice/ifsat driver. compute_supsat(qv,qs2)=max(qv,qmin)-qs2.
+    supsat_ice = _thermo.compute_supsat(state.qv, qs2, params=params.thermo)
     denfac = _thermo.compute_denfac(forcing.den, params=params.thermo)
     work2 = _thermo.compute_work2_venfac(forcing.p, state.t, forcing.den, params=params.thermo)
 
@@ -165,6 +171,7 @@ def preamble_torch(
     return PreambleOutputs(
         cpm=cpm, xl=xl, supcol=supcol,
         qs1=qs1, qs2=qs2, rh_w=rh_w, rh_ice=rh_ice, supsat=supsat,
+        supsat_ice=supsat_ice,
         denfac=denfac, work2=work2,
         rslopec=rslopec, avedia_c=avedia_c, avedia_r=avedia_r,
         sigma_c=sigma_c, lencon=lencon, lenconcr=lenconcr,
@@ -410,13 +417,13 @@ def cold_phase_torch(
     s = pre.slope  # alias
 
     # Codex stop-review fix: the cold deposition/nucleation driver is ICE
-    # supersaturation — Fortran module_mp_kdm6.F:1822 supsat=max(q,qmin)-qs(i,k,2) (qs2=ice
-    # sat), feeding satdt/supice/ifsat + the C3 gate (:2309) and pidep/psdep/pgdep
-    # caps (:2323-2390). pre.supsat is WATER (q-qs1, right for the WARM loop :1695,
-    # wrong for cold). Reconstruct ice supsat from existing fields — EXACT since
-    #   supsat + qs1 - qs2 = (max(q,qmin)-qs1) + qs1 - qs2 = max(q,qmin) - qs2.
+    # supersaturation — Fortran module_mp_kdm6.F:1913 supsat=max(q,qmin)-qs(i,k,2) (qs2=ice
+    # sat), feeding satdt/supice/ifsat + the C3 gate + pidep/psdep/pgdep caps. Use the
+    # DIRECT single subtraction (pre.supsat_ice) — the prior `supsat + qs1 - qs2`
+    # reconstruction lost ~1 ULP via f32 cancellation near saturation, perturbing satdt
+    # → flipping the cold ifsat saturation-exhaustion gate (the dep cascade; C++ parity).
     # Used ONLY by C3 (ice_nucleation) + C4 (dep_sub); snow/graupel evap use rh_*.
-    supsat_ice = pre.supsat + pre.qs1 - pre.qs2
+    supsat_ice = pre.supsat_ice
 
     # ── C1: ice accretion ──────────────────────────────────────────────
     # Fix [codex#3]: aux.n0r 사용 (이전 zeros placeholder는 cold-rain coupling 무효화)
@@ -633,6 +640,7 @@ def melt_freeze_d1_torch(
     melt = _mf.melting_torch(
         state.qs, state.qg, state.qi, state.ni,
         state.t, forcing.p, forcing.den, pre.progb.rhox,
+        pre.cpm,   # §35 pgmlt sequential-t coupling (F:1326→1336)
         n0so, n0go, s.n0sfac, pre.work2, pre.progb.precg2,
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
@@ -996,7 +1004,10 @@ def apply_melt_freeze_inline_torch(
     t_d3 = t_d2 + fr_coef * mf.pfrzdtc                 # D3 freeze heat (F:1569)
     return state._replace(
         qc=qc1 - mf.pfrzdtc,                           # D3 store (F:1565)
-        qr=state.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr,
+        # §44 association-order (mirror C++): Fortran subtracts psmlt→pgmlt→pfrzdtr as 3 SEQUENTIAL
+        # f32 stores (F:1325→1349→1577). `a - b - c - d` is left-assoc = sequential. Keep warm_mask
+        # (gates ungated-psmlt callers + inline↔state_update T0c identity). dtcld·rate ≡ capped amount.
+        qr=state.qr - dtcld * mf.psmlt * warm_mask - dtcld * mf.pgmlt * warm_mask - mf.pfrzdtr,
         qs=state.qs + dtcld * mf.psmlt,
         qg=state.qg + dtcld * mf.pgmlt + mf.pfrzdtr,
         qi=qi1 + mf.pfrzdtc,                           # D3 store (F:1566)
@@ -1208,12 +1219,12 @@ def state_update_torch(
         - cold.nsaut                              # 2632 ice → snow aggregation (-)
     )
     dni_amount = mf.ninuc + mf.nfrzdtc - mf.pimlt_ni  # 1501/1531/1338 (amounts)
-    dni = dni_rate + dni_amount
-    ni_new_pre = state.ni + dni
-    # review3#2: complete sublimation (pidep == -qi/dtcld) 시 ni=0 강제 (Fortran 2343-2344
-    # 영역의 nci=0 처리). 매끄러운 mask는 cold.ice_complete_sublim (bool).
+    # complete-sublim zeroes only the BASE reservoir (Fortran F:2435 nci2=0), THEN the
+    # F:2721 cold-rate budget accumulates on top — NOT the whole accumulated budget.
+    # (×1.0 exact ⇒ bitwise-identical to the prior form in all mask=0 cells.)
     ni_zero_mask = cold.ice_complete_sublim.to(state.qc.dtype)
-    ni_new = ni_new_pre * (1.0 - ni_zero_mask)
+    ni_base = (state.ni + dni_amount) * (1.0 - ni_zero_mask)
+    ni_new = ni_base + dni_rate
 
     # brs (graupel volume) — review4#3: Fortran 2643-2645 (cold) + 2751 (warm) 직역.
     #   기존 mf.delta_brs_melt (pgmlt/rhox), mf.delta_brs_freeze (pfrzdtr/denr) 외에
@@ -1525,6 +1536,7 @@ def apply_dsd_number_limiters_torch(
     *,
     qmin: float = 1.0e-15,
     qcrmin: float = None,
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud snap (F:3132)
 ) -> CoordinatorState:
     """Fortran 2972-3013: post-cleanup DSD number limiter.
 
@@ -1555,13 +1567,17 @@ def apply_dsd_number_limiters_torch(
         lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=qcrmin, n_thresh=c.NRMIN,
     )
-    # Cloud
-    nc_new = _limit_number_for_lamda(
+    # Cloud — gate by PER-CELL ncmin (Fortran F:3132 `nci1>=ncmin`, sea=10/land=100),
+    # NOT scalar NCMIN=1e-2: low-nc cells (nc<ncmin) must NOT be snapped (they were wrongly
+    # snapped UP to ~3.6e5 by the scalar gate — the nc6 residual). n_thresh=0 + per-cell where.
+    nc_snapped = _limit_number_for_lamda(
         state.qc, state.nc, den,
         pidn=pidnc, dm=c.DMC,
         lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
-        q_thresh=qmin, n_thresh=c.NCMIN,
+        q_thresh=qmin, n_thresh=0.0,
     )
+    _ncmin_t = ncmin_tensor if ncmin_tensor is not None else c.NCMIN
+    nc_new = torch.where(state.nc >= _ncmin_t, nc_snapped, state.nc)
     # Ice — apply_dsd_number_limiters implements the FINAL kdm62d block, whose
     # ice snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
     # — same qmin/ncmin pattern as the cloud snap (:2984) above. The prior 1e-14/0
@@ -1654,6 +1670,18 @@ def build_default_aux_torch(
     rslopecmu = rslopec.to(torch.float64) ** c.MUC
 
     n0r = state.nr / (rslope_r * rslopemu_r * g1pmr)
+    # §2B+1C active-rain n0r MULTIPLY form (Fortran F:1462-1465/1696) — MIRROR of C++ runtime.cpp:170-178
+    # (build_default_aux): nr·lamdr^(mur+1) with a fresh f32 lamdr (one fewer f32 rounding than dividing
+    # by the reciprocal-clamped rslope; matches Fortran's active branch). Feeds aux1/aux2/pre-warm n0r —
+    # the post-freeze aux2 adds the F:1700 nr-clamp rewrite on top. mur=1 ⇒ g1pmr=Γ(2)=1.
+    _inv_dmr_n0r = _fc._f32(1.0 / _fc._f32(c.DMR))
+    _lamdr_cl_n0r = torch.clamp(torch.exp(torch.log(torch.clamp(
+        pidnr * state.nr / torch.clamp(state.qr * forcing.den, min=1e-30), min=1e-30)) * _inv_dmr_n0r),
+        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    # §44 x**2.0=MULT (gfortran compiles lamdr**(mur+1), mur+1=2.0, as x*x not powf) — mirror C++.
+    _n0r_active = (1.0 / g1pmr) * state.nr * (_lamdr_cl_n0r * _lamdr_cl_n0r)
+    _active_rain_n0r = (state.qr >= c.QCRMIN) & (state.nr >= c.NRMIN)
+    n0r = torch.where(_active_rain_n0r, _n0r_active, n0r)
     n0i = state.ni / (rslope_i * rslopemu_i * g1pmi)
     n0c = (c.MUC + 1.0) * state.nc / (rslopec * rslopecmu)
 
@@ -1703,6 +1731,7 @@ def rebuild_aux_torch(
     pre = pre._replace(
         cpm=entry_pre.cpm, xl=entry_pre.xl, qs1=entry_pre.qs1, qs2=entry_pre.qs2,
         rh_w=entry_pre.rh_w, rh_ice=entry_pre.rh_ice, supsat=entry_pre.supsat,
+        supsat_ice=entry_pre.supsat_ice,
     )
     aux = build_default_aux_torch(state, forcing, pre.rslopec, thermo_params=params.thermo)
     xls_t = torch.full_like(state.t, params.thermo.xls)
@@ -1758,7 +1787,6 @@ def apply_satadj_step_torch(
     # 1:1 mirror of C++ apply_satadj_step (coordinator.cpp:1301-1361 / Fortran :2905-2939).
     # Returns (new_state, nccn_out) — the driver carries nccn across sub-cycles. AD-safe.
     qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
-    supsat = state.qv - qs1
     qs1_safe = torch.clamp(qs1, min=c.QCRMIN)
     sw_percent = (state.qv / qs1_safe - 1.0) * 100.0          # Fortran sw in PERCENT (:918/2848)
     sw_ratio = torch.clamp(sw_percent / 0.48, min=0.0)        # 0.48% activation cutoff (SATMAX)
@@ -1773,7 +1801,9 @@ def apply_satadj_step_torch(
     # -ffp-contract=fast fmsub before it).
     ncact_raw = torch.clamp((nccn + state.nc) * activated_fraction - state.nc, min=0.0) / dtcld
     ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
-    ncact = torch.where(supsat > 0.0, ncact, torch.zeros_like(ncact))
+    # CCN gate on the DIVISION form sw_percent>0 (Fortran F:3051 `sw>0`), NOT qv-qs1 —
+    # they flip oppositely in f32 near saturation, toggling activation (qc/nc residual).
+    ncact = torch.where(sw_percent > 0.0, ncact, torch.zeros_like(ncact))
     # SEED#3 (Fortran module_mp_kdm6.F:2908): build the pcact mass constant
     #   K = 4.*pi*denr*(actr*1.E-6)**3
     # with float32 stepwise rounding (gfortran REAL(4) left-to-right, cube = x*x*x),
@@ -1877,6 +1907,12 @@ def kdm62d_one_step_torch(
     ``(new_state, nccn_out)``; otherwise it returns a bare ``CoordinatorState``.
     """
     pre = preamble_torch(state, forcing, sea_mask, params=full_params, ncmin_tensor=ncmin_tensor)
+    # BRS density re-clamp #1 (Fortran ProgB_param INTENT(INOUT) brs=qg/rhox, L1084/L3376):
+    # adopt the entry-state ProgB-reclamped graupel volume so downstream brs accumulation
+    # starts from the density-[100,900]-capped base. progb.bg is already computed (dead
+    # output before this fix); functional ._replace, autograd-safe (where+clamp+divide).
+    state = state._replace(brs=torch.where(  # OR-gate (brs Group-B): match ProgB active (qg>qcrmin OR brs>brs_min)
+        (state.qg > full_params.progb.qcrmin) | (state.brs > _progb.BRS_MIN), pre.progb.bg, torch.zeros_like(pre.progb.bg)))
 
     # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     # Mirror of C++ kdm62d_one_step. Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) →
@@ -1911,6 +1947,11 @@ def kdm62d_one_step_torch(
     pre1, aux1 = rebuild_aux_torch(
         working1b, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
         ncmin_tensor=ncmin_tensor)
+    # BRS density re-clamp #2 (Fortran ProgB_param L1392 post-melt re-slope): adopt the
+    # post-melt ProgB-reclamped graupel volume so the D2-D4 freeze inline (which adds
+    # pfrzdtr/denr at density 1000) accumulates onto the [100,900]-capped base.
+    working1b = working1b._replace(brs=torch.where(  # OR-gate (brs Group-B)
+        (working1b.qg > full_params.progb.qcrmin) | (working1b.brs > _progb.BRS_MIN), pre1.progb.bg, torch.zeros_like(pre1.progb.bg)))
     # SEED#2 (post-melt re-slope, Fortran module_mp_kdm6.F:1453-1466): clamp-rewrite the
     # prognostic cloud number before D2-D4 reads it (ninuc/nfrzdtc caps min() against it,
     # F:1500-1501/1524-1531). Inert in unclamped cells; gated qc≥qmin & nc≥ncmin (F:1638).
@@ -1957,6 +1998,26 @@ def kdm62d_one_step_torch(
     aux1 = aux1._replace(n0i=torch.where(working1b.qi >= 1.0e-14,
                                          working1b.ni * _lamdi1, aux1.n0i))
 
+    # §1C POST-MELT rain-number clamp rewrite + n0r (Fortran F:1483-1494) — MIRROR of C++
+    # coordinator.cpp aux1 block (L694-715) and the post-freeze aux2 rewrite below. The post-melt
+    # re-slope snaps nrs to the lamdr bound (nrs=den·qr·lamdr_bound^dmr/pidnr) then
+    # n0r=(1/g1pmr)·nrs·lamdr^(mur+1); the SNAPPED nr feeds the D2-D4 freeze (pfrzdtr/nfrzdtr) AND
+    # aux1.n0r. Was missing here (only post-freeze aux2 had it) → oracle≠C++≠Fortran at the post-melt
+    # re-slope (Codex stop-review: active n0r change not mirrored). mur=1 ⇒ exponent 2, g1pmr=Γ(2)=1.
+    _nr_orig1 = working1b.nr
+    working1b = working1b._replace(nr=_limit_number_for_lamda(
+        working1b.qr, _nr_orig1, forcing.den,
+        pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
+        q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
+    _lamdr1 = torch.clamp(
+        torch.exp(torch.log(torch.clamp(
+            _fc.PIDNR * _nr_orig1 / torch.clamp(working1b.qr * forcing.den, min=1e-30),
+            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMR))),
+        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    _active_r1 = (working1b.qr >= c.QCRMIN) & (_nr_orig1 >= c.NRMIN)
+    aux1 = aux1._replace(n0r=torch.where(
+        _active_r1, working1b.nr * (_lamdr1 * _lamdr1), aux1.n0r))  # §44 x**2.0=MULT (gfortran), not powf
+
     # 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog zeroed
     # qc in supcol>40 cells, so D2/D3 inactive there — Fortran-exact.)
     mf_d234 = melt_freeze_d2_d4_torch(
@@ -1973,6 +2034,12 @@ def kdm62d_one_step_torch(
     pre2, aux2 = rebuild_aux_torch(
         working, forcing, sea_mask, params=full_params, qcr_carry=aux.qcr, entry_pre=pre,
         ncmin_tensor=ncmin_tensor)
+    # BRS density re-clamp #3 (Fortran ProgB_param L1587 post-freeze re-slope): adopt the
+    # post-freeze ProgB-reclamped graupel volume so state_update_torch (L1245) accumulates
+    # the cold/warm dbrs (Fortran L2643/L2751) onto the [100,900]-capped base — this is the
+    # site that fixes newly-frozen-rain graupel (pfrzdtr/denr density 1000 → reclamp 900).
+    working = working._replace(brs=torch.where(  # OR-gate (brs Group-B)
+        (working.qg > full_params.progb.qcrmin) | (working.brs > _progb.BRS_MIN), pre2.progb.bg, torch.zeros_like(pre2.progb.bg)))
     # SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): clamp-rewrite the
     # prognostic cloud number BEFORE the warm loop. The rewritten nci(1) is what warm
     # praut/nraut (F:1706-1716) AND the CCN activation ncact (F:2905, reads nci1 twice)
@@ -1997,6 +2064,24 @@ def kdm62d_one_step_torch(
         min=c.LAMDACMIN, max=c.LAMDACMAX)
     _n0c2 = (c.MUC + 1.0) * working.nc * (_lamdc2 ** (c.MUC + 1.0))
     aux2 = aux2._replace(n0c=torch.where(_active2, _n0c2, aux2.n0c))
+
+    # §1C POST-FREEZE rain-number clamp rewrite + n0r (Fortran F:1696-1704) — MIRROR of C++
+    # coordinator.cpp aux2 block. Fortran rewrites nrs (=den·qrs·lamdr_bound^dmr/pidnr) in out-of-range-
+    # lamdr cells then n0r=(1/g1pmr)·nrs·lamdr^(mur+1); the rewritten nr feeds warm/cold/state_update.
+    # Fixes the post-freeze n0r → warm prevp (F:1851). mur=1 ⇒ g1pmr=Γ(2)=1.
+    _nr_orig2 = working.nr
+    working = working._replace(nr=_limit_number_for_lamda(
+        working.qr, _nr_orig2, forcing.den,
+        pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
+        q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
+    _lamdr2 = torch.clamp(
+        torch.exp(torch.log(torch.clamp(
+            _fc.PIDNR * _nr_orig2 / torch.clamp(working.qr * forcing.den, min=1e-30),
+            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMR))),
+        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    _active_r2 = (working.qr >= c.QCRMIN) & (_nr_orig2 >= c.NRMIN)
+    aux2 = aux2._replace(n0r=torch.where(
+        _active_r2, working.nr * (_lamdr2 * _lamdr2), aux2.n0r))  # §44 x**2.0=MULT (gfortran), not powf
 
     # STEP-79 SEED (block-B ice P3, F:1684-1697) — same rewrite as block-A above.
     _ni_orig2 = working.ni
@@ -2062,6 +2147,21 @@ def kdm62d_one_step_torch(
         working, pre_su, warm_out, cold_out, mf5,
         dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
     )
+    # BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = the LAST ProgB of the
+    # sub-cycle, AFTER the cold/warm graupel-volume adds at L2643/L2751). This is the
+    # reclamp that produces the OUTPUT bg (L406 bg=brs, no post-L2863 brs mod). It caps
+    # newly-formed COLD-PHASE graupel (psaut/pgaut/pgaci snow→graupel sets brs at density
+    # 1000) to [100,900] — sites #1-#3 are all BEFORE state_update so they miss it.
+    # ALSO enforce the verified Fortran invariant QG<=qcrmin => BG==0 (checked on 2.8M
+    # cells, 0 exceptions): Fortran's f32 graupel-volume b-terms underflow to EXACTLY 0
+    # in graupel-empty cells, but the f64 oracle/C++ leave a tiny power-of-2 residue
+    # (~2^-53..2^-63). where(qg>qcrmin, ...) zeroes it — graupel-empty cells have no volume.
+    _bg4 = _progb.progb_param_torch(new_state.qg, new_state.brs, params=full_params.progb).bg
+    # FINAL output re-clamp: qg-only zeroing (NOT the OR-gate). The OR-gate here regresses brs ~14k cells —
+    # C++'s f32 brs flow does NOT underflow to 0 like Fortran's in empty cells. The OR-gate is applied UPSTREAM
+    # (sites #0-#3, #resed) to fix the qg cascade; genuine Group-B cells grow qg>qcrmin by the final stage.
+    new_state = new_state._replace(
+        brs=torch.where(new_state.qg > full_params.progb.qcrmin, _bg4, torch.zeros_like(_bg4)))
     # complete-rain-evap NR → NCCN (Fortran :2937; C++ state_update coordinator.cpp:1170/1254).
     # state_update_torch gives new_state.nr = working.nr + dnr (no rce term — C++ subtracts rce
     # separately); mirror C++ here: nr -= rce, nccn += rce. Gated on nccn so the component-test
@@ -2091,7 +2191,7 @@ def kdm62d_one_step_torch(
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
     new_state = apply_threshold_cleanup_torch(new_state)
     # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
-    new_state = apply_dsd_number_limiters_torch(new_state, forcing.den)
+    new_state = apply_dsd_number_limiters_torch(new_state, forcing.den, ncmin_tensor=ncmin_tensor)
     return (new_state, nccn) if _activate else new_state
 
 
@@ -2238,6 +2338,13 @@ def sedimentation_chain_torch(
             rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
                                 qg=adv_state.qg, brs=adv_state.brs)
             pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
+            # §20/F:1191 per-substep ProgB brs reset (brs INTENT(INOUT); qrs/qg INTENT(IN) so they
+            # stay bitwise — brs is the unique round-tripped prognostic). Fortran re-runs ProgB every
+            # substep, overwriting brs = qg/rhox. C++/oracle previously carried adv_state.brs raw. Same
+            # qg>qcrmin+zero staging as the pre-sed reset (OR-gate measured worse: f64 empty residue).
+            adv_state = adv_state._replace(brs=torch.where(  # OR-gate (brs Group-B)
+                (adv_state.qg > reslope_params.progb.qcrmin) | (adv_state.brs > _progb.BRS_MIN),
+                pre.progb.bg, torch.zeros_like(pre.progb.bg)))
             w1_qr = pre.slope.vt_r / dz   # F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz

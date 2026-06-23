@@ -76,7 +76,12 @@ int kdm6_step_c(
      * Fortran-side accumulation pattern. */
     float* rain_increment,
     float* snow_increment,
-    float* graupel_increment
+    float* graupel_increment,
+    /* out (optional, appended): graupel density [kg m^-3] diagnostic, a
+     * Fortran-allocated float*(im, kme, jme) column-major or NULL to discard.
+     * Mirrors Fortran module_mp_kdm6.F:423 `diag_rhog(i,k,j)=rhox(i,k)` — the
+     * last-ProgB graupel density. WRF wrapper writes this to diag_rhog/RHOPO3D. */
+    float* rhog_out
 );
 
 /**

@@ -158,6 +158,9 @@ struct MeltFreezePhaseOutputs {
     torch::Tensor sfac_melt;      // D1 sfac (snow factor; review12#3 added)
     torch::Tensor gfac_melt;      // D1 gfac (graupel factor)
     torch::Tensor delta_brs_melt; // rate (pgmlt/rhox)
+    torch::Tensor psmlt_capped;       // CAPPED AMOUNT (round-trip fix): apply_melt_freeze_inline uses these
+    torch::Tensor pgmlt_capped;       // directly (no /dtcld→×dtcld); state_update keeps the rate fields above
+    torch::Tensor delta_brs_capped;   // AMOUNT (pgmlt_capped/rhox)
     // D2 (amount)
     torch::Tensor pinuc;
     torch::Tensor ninuc;
@@ -300,6 +303,7 @@ struct PreambleMf {
     // thermo
     torch::Tensor supcol;
     torch::Tensor work2;
+    torch::Tensor cpm;   // §35 pgmlt reads psmlt-updated t (F:1326→1336)
     // ProgB subset (D1 melting uses rhox, precg2)
     torch::Tensor rhox;
     torch::Tensor precg2;
@@ -419,6 +423,10 @@ struct PreambleOutputs {
     // Thermodynamics
     torch::Tensor cpm, xl, supcol;
     torch::Tensor qs1, qs2, rh_w, rh_ice, supsat;
+    // ICE supersaturation = max(q,qmin) - qs2 computed DIRECTLY (single subtraction,
+    // Fortran F:1913), NOT the lossy `supsat + qs1 - qs2` reconstruction (f32
+    // cancellation near saturation perturbs satdt → flips the ifsat gate / dep caps).
+    torch::Tensor supsat_ice;
     torch::Tensor denfac, work2;
     // Cloud DSD
     torch::Tensor rslopec, avedia_c, avedia_r;
@@ -527,7 +535,8 @@ CoordinatorState kdm62d_one_step(
     const ColdPhaseParams& cold_params,
     const MeltFreezePhaseParams& mf_params,
     double dtcld,
-    const c10::optional<torch::Tensor>& ncmin_for_slope = {}  // per-cell ncmin → preamble/rebuild cloud-slope gate
+    const c10::optional<torch::Tensor>& ncmin_for_slope = {},  // per-cell ncmin → preamble/rebuild cloud-slope gate
+    torch::Tensor* rhog_out = nullptr  // out: LAST-ProgB graupel density (diag_rhog/RHOPO3D); nullptr → skip
 );
 
 // Fortran kdm62D entry: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
@@ -612,9 +621,10 @@ CoordinatorState state_update(
                             // Fusion xlf(T) = xls - xl(T) is DERIVED inside (temperature-
                             // dependent), matching module_mp_kdm6.F:2646. Caller passes
                             // thermo.xls so the constant has a single source.
-    const CoordinatorState* delta_src = nullptr  // Stage-A STEP 1: state to compute
+    const CoordinatorState* delta_src = nullptr, // Stage-A STEP 1: state to compute
                             // delta2/delta3 from (the ENTRY state) when `state` is a
                             // post-melt/freeze working base; nullptr → use `state`.
+    bool dump_graupel = false                    // KDM6_SUBSTEP_DUMP graupel-rate dump gate (= kdm6_dump_on)
 );
 
 // ─── Step F1h: paired threshold cleanup (Fortran 2949-2970) ─────────────────
@@ -686,7 +696,8 @@ CoordinatorState apply_dsd_number_limiters(
     const CoordinatorState& state,
     const torch::Tensor& den,
     double qmin = 1.0e-15,
-    double qcrmin = 1.0e-9
+    double qcrmin = 1.0e-9,
+    const c10::optional<torch::Tensor>& ncmin_tensor = c10::nullopt  // per-cell ncmin for cloud snap (F:3132)
 );
 
 // ─── F2b: sedimentation chain (NISLFV-PLM) ──────────────────────────────────

@@ -10,12 +10,126 @@
 #include "kdm6/fconst.h"
 
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <string>
+#include <vector>
 
 namespace kdm6 {
 
 namespace {
 
 constexpr double PI = 3.14159265358979323846;
+
+// ── per-substep parity dump (forensic; OFF by default) ───────────────────────
+// Compiled out unless KDM6_SUBSTEP_DUMP is defined at build time (keeps the active
+// production build free of dump/debug side effects — Codex stop-review). The source
+// is preserved for future per-substep bisection. When enabled it is additionally
+// env-gated (KDM6_SUBSTEP_DUMP must point to an output dir) and fires only on the
+// first kdm62d_one_step call. Order: Q QC QR QI QS QG NC NR NI NN BG TH.
+#ifdef KDM6_SUBSTEP_DUMP
+inline uint32_t kdm6_bswap32(uint32_t x) { return __builtin_bswap32(x); }
+inline void kdm6_dump_field_be(std::ofstream& f, const torch::Tensor& t) {
+    auto c = t.detach().to(torch::kFloat32).contiguous().cpu();
+    const int64_t n = c.numel();
+    const float* p = c.data_ptr<float>();
+    std::vector<uint32_t> buf(static_cast<size_t>(n));
+    for (int64_t i = 0; i < n; ++i) {
+        uint32_t u; std::memcpy(&u, &p[i], 4); buf[static_cast<size_t>(i)] = kdm6_bswap32(u);
+    }
+    f.write(reinterpret_cast<const char*>(buf.data()), n * 4);
+}
+inline void kdm6_dump_state_substep(const CoordinatorState& s, const char* tag) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_substep_" + tag + ".bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(s.qr.size(0));
+    int32_t K = static_cast<int32_t>(s.qr.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, s.qv);   kdm6_dump_field_be(f, s.qc);
+    kdm6_dump_field_be(f, s.qr);   kdm6_dump_field_be(f, s.qi);
+    kdm6_dump_field_be(f, s.qs);   kdm6_dump_field_be(f, s.qg);
+    kdm6_dump_field_be(f, s.nc);   kdm6_dump_field_be(f, s.nr);
+    kdm6_dump_field_be(f, s.ni);   kdm6_dump_field_be(f, s.nccn);
+    kdm6_dump_field_be(f, s.brs);  kdm6_dump_field_be(f, s.t);
+}
+// §Stage-2 n0r dump-bisection (UPDATE9): symmetric aligned dump of the post-freeze rain DSD at the
+// aux2 site — {nr_orig2(pre-rewrite), lamdr2, arg, den, qr, n0r(=aux2.n0r prevp reads)}. Mirror of
+// Fortran fort_n0rdiag (module_mp_kdm6.F after the post-freeze re-slope loop). Compares lamdr2 + n0r
+// CLEANLY at the exact computation point prevp(F:1851) reads — re-measures the n0r divergence that the
+// (removed) warm-rate dump may have captured at a misaligned point. f32 big-endian, B/K header.
+inline void kdm6_dump_n0rdiag(const torch::Tensor& nr_orig, const torch::Tensor& lamdr,
+                              const torch::Tensor& arg, const torch::Tensor& den,
+                              const torch::Tensor& qr, const torch::Tensor& n0r) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_n0rdiag.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(nr_orig.size(0));
+    int32_t K = static_cast<int32_t>(nr_orig.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, nr_orig); kdm6_dump_field_be(f, lamdr);
+    kdm6_dump_field_be(f, arg);     kdm6_dump_field_be(f, den);
+    kdm6_dump_field_be(f, qr);      kdm6_dump_field_be(f, n0r);
+}
+// Graupel-rate dump-bisection (qg/brs residual): the 8 qg-budget cold rates (post-scale, post-HM-adj)
+// + delta2/delta3 routing flags, at the state_update budget point. Mirror Fortran fort_graupel.bin
+// (module_mp_kdm6.F after the cold rate loop). Field order: psacr pracs pgdep piacr praci pgaci paacw pgacr delta2 delta3.
+inline void kdm6_dump_graupel_rates(
+    const torch::Tensor& psacr, const torch::Tensor& pracs, const torch::Tensor& pgdep,
+    const torch::Tensor& piacr, const torch::Tensor& praci, const torch::Tensor& pgaci,
+    const torch::Tensor& paacw, const torch::Tensor& pgacr) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_graupel.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(psacr.size(0));
+    int32_t K = static_cast<int32_t>(psacr.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, psacr); kdm6_dump_field_be(f, pracs);
+    kdm6_dump_field_be(f, pgdep); kdm6_dump_field_be(f, piacr);
+    kdm6_dump_field_be(f, praci); kdm6_dump_field_be(f, pgaci);
+    kdm6_dump_field_be(f, paacw); kdm6_dump_field_be(f, pgacr);
+}
+// D5-melt/HM-rate dump-bisection (qr/qs/qg STRUCTURAL residual): the SCALED budget melt terms feeding
+// Population A (pgeml→qr+qg) and B (pseml→qr+qs), plus HM splinter rates. At the state_update budget point.
+// Mirror Fortran fort_warmrates.bin. Field order: pseml pgeml nseml ngeml pmulrs pmulrg pmulcs pmulcg.
+inline void kdm6_dump_warm_rates(
+    const torch::Tensor& pseml, const torch::Tensor& pgeml, const torch::Tensor& nseml,
+    const torch::Tensor& ngeml, const torch::Tensor& pmulrs, const torch::Tensor& pmulrg,
+    const torch::Tensor& pmulcs, const torch::Tensor& pmulcg) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_warmrates.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(pseml.size(0));
+    int32_t K = static_cast<int32_t>(pseml.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, pseml);  kdm6_dump_field_be(f, pgeml);
+    kdm6_dump_field_be(f, nseml);  kdm6_dump_field_be(f, ngeml);
+    kdm6_dump_field_be(f, pmulrs); kdm6_dump_field_be(f, pmulrg);
+    kdm6_dump_field_be(f, pmulcs); kdm6_dump_field_be(f, pmulcg);
+}
+#endif  // KDM6_SUBSTEP_DUMP
 
 // Fortran rgmma(x) = exp(GAMMLN(x)) = Γ(x). review6 audit fix (1/Γ 아님).
 inline double rgmma_scalar(double x) {
@@ -84,7 +198,7 @@ ColdPhaseOutputs cold_phase(
         forcing.den,
         n0i, n0so, n0go, s.n0sfac_field,
         pre.supcol,
-        s.vt_s, s.vt_g, s.vt_i,
+        s.vt_s, s.vt2g, s.vt_i,   // vt2g = f32 cold-accretion graupel fall (F:725 REAL), not the f64 sed vt_g
         s.rslope_s, s.rslope2_s, s.rslope3_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslope3_g, s.rslopemu_g,
         s.rslope_i, s.rslope2_i, s.rslope3_i, s.rslopemu_i, s.rsloped_i,
@@ -98,7 +212,7 @@ ColdPhaseOutputs cold_phase(
         forcing.den,
         n0i, n0r, s.n0sfac_field,
         pre.supcol,
-        s.vt_r, s.vt_s, s.vt_g, s.vt_i,
+        s.vt_r, s.vt_s, s.vt2g, s.vt_i,   // vt2g = f32 cold-accretion graupel fall (F:725 REAL), not f64 sed vt_g
         s.rslope_r, s.rslope2_r, s.rslope3_r, s.rslopemu_r,
         s.rslope_s, s.rslope2_s, s.rslope3_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslope3_g, s.rslopemu_g,
@@ -126,7 +240,7 @@ ColdPhaseOutputs cold_phase(
         forcing.den,
         n0r, n0so, n0go, s.n0sfac_field,
         pre.supcol,
-        s.vt_r, s.vt_s, s.vt_g,
+        s.vt_r, s.vt_s, s.vt2g,   // vt2g = f32 cold-accretion graupel fall (F:725 REAL), not the f64 sed vt_g
         s.rslope_r, s.rslope2_r, s.rslope3_r, s.rslopemu_r, s.rsloped_r,
         s.rslope_s, s.rslope2_s, s.rslope3_s, s.rslopemu_s, s.rsloped_s,
         s.rslope_g, s.rslope2_g, s.rslope3_g, s.rslopemu_g,
@@ -305,6 +419,12 @@ PreambleOutputs preamble(
     auto rh_w = thermo::compute_rh(state.qv, qs1, params.thermo);
     auto rh_ice = thermo::compute_rh(state.qv, qs2, params.thermo);
     auto supsat = thermo::compute_supsat(state.qv, qs1, params.thermo);
+    // ICE supsat as a DIRECT single subtraction max(q,qmin)-qs2 (Fortran F:1913) — the
+    // cold dep loop's satdt/supice/ifsat driver. compute_supsat(qv,qs2)=max(qv,qmin)-qs2
+    // reuses the SAME max(qv,qmin) intermediate; bit-matches gfortran. The prior
+    // `supsat+qs1-qs2` reconstruction (pre_cold_view) lost ~1 ULP via f32 cancellation
+    // near saturation → perturbed satdt → flipped the ifsat gate (dep cascade qs/qv/qg/t).
+    auto supsat_ice = thermo::compute_supsat(state.qv, qs2, params.thermo);
     auto denfac = thermo::compute_denfac(forcing.den, params.thermo);
     auto work2 = thermo::compute_work2_venfac(forcing.p, state.t, forcing.den, params.thermo);
 
@@ -317,7 +437,8 @@ PreambleOutputs preamble(
     auto lencon_out = cloud_dsd::diag_lencon_torch(state.qc, forcing.den, avedia_c, sigma_c);
 
     // ── ProgB (graupel density 진단) ────────────────────────────────────────
-    auto progb_out = progb::progb_param_torch(state.qg, state.brs, params.progb);
+    auto progb_out = progb::progb_param_torch(state.qg, state.brs, params.progb,
+                                              /*op_dtype=*/forcing.den.scalar_type());
 
     // ── Slope (4-species) ───────────────────────────────────────────────────
     slope::SlopeKdm6Inputs slope_in{
@@ -334,6 +455,7 @@ PreambleOutputs preamble(
     return PreambleOutputs{
         /*cpm=*/cpm, /*xl=*/xl, /*supcol=*/supcol,
         /*qs1=*/qs1, /*qs2=*/qs2, /*rh_w=*/rh_w, /*rh_ice=*/rh_ice, /*supsat=*/supsat,
+        /*supsat_ice=*/supsat_ice,
         /*denfac=*/denfac, /*work2=*/work2,
         /*rslopec=*/rslopec, /*avedia_c=*/avedia_c, /*avedia_r=*/avedia_r,
         /*sigma_c=*/sigma_c,
@@ -375,7 +497,10 @@ PreambleCold pre_cold_view(const PreambleOutputs& pre) {
     //   supsat + qs1 - qs2 = (max(q,qmin) - qs1) + qs1 - qs2 = max(q,qmin) - qs2.
     // cold_phase consumes PreambleCold.supsat ONLY in C3 (ice_nucleation) + C4
     // (dep_sub); snow/graupel evap use rh_w/rh_ice, so this field is ice-only.
-    auto supsat_ice = pre.supsat + pre.qs1 - pre.qs2;
+    // Use the DIRECT max(q,qmin)-qs2 (PreambleOutputs.supsat_ice, F:1913) — NOT the
+    // algebraic `supsat + qs1 - qs2` (f32 cancellation near saturation perturbed satdt
+    // → flipped the ifsat saturation-exhaustion gate, the qs/qv/qg/t dep cascade).
+    auto supsat_ice = pre.supsat_ice;
     return PreambleCold{
         /*supcol=*/pre.supcol, /*supsat=*/supsat_ice, /*rh_w=*/pre.rh_w, /*rh_ice=*/pre.rh_ice,
         /*denfac=*/pre.denfac, /*work2=*/pre.work2,
@@ -387,7 +512,7 @@ PreambleCold pre_cold_view(const PreambleOutputs& pre) {
 
 PreambleMf pre_mf_view(const PreambleOutputs& pre) {
     return PreambleMf{
-        /*supcol=*/pre.supcol, /*work2=*/pre.work2,
+        /*supcol=*/pre.supcol, /*work2=*/pre.work2, /*cpm=*/pre.cpm,
         /*rhox=*/pre.progb.rhox, /*precg2=*/pre.progb.precg2,
         /*slope=*/pre.slope,
     };
@@ -436,29 +561,40 @@ CoordinatorState apply_melt_freeze_inline(
     // (no-op on the fp64 oracle path); autograd-safe (casts are differentiable).
     auto qc1 = (s.qc.to(kF64) - mf.pinuc.to(kF64) + mf.pimlt_qi.to(kF64)).to(dtype);
     out.qc  = (qc1.to(kF64) - mf.pfrzdtc.to(kF64)).to(dtype);                      // = dqc_amount (D2 then D3)
-    out.qr  = s.qr + dtcld * (-(mf.psmlt + mf.pgmlt) * warm_mask) - mf.pfrzdtr;    // = dqr D1 + dqr_amount(D4)
-    out.qs  = s.qs + dtcld * mf.psmlt;                                            // = dqs D1
-    out.qg  = s.qg + dtcld * mf.pgmlt + mf.pfrzdtr;                               // = dqg D1 + dqg_amount(D4)
+    // round-trip fix: use the CAPPED AMOUNT (Fortran F:1315/1324 qrs+=psmlt) directly — NO dtcld*(capped/dtcld).
+    // §44 association-order (mirror of SEED#5 t-update / §1D nr-update): Fortran subtracts psmlt then
+    // pgmlt then pfrzdtr as THREE SEQUENTIAL f32 stores (F:1325→1349→1577). Summing (psmlt+pgmlt) first
+    // diverges by 1 ULP in snow+graupel co-melt cells (qr148). psmlt_capped/pgmlt_capped are already
+    // snow/graupel-gated (warm_mask redundant — qs/t/nr drop it and are bitwise). Sequentialize.
+    auto qr1 = s.qr - mf.psmlt_capped * warm_mask;   // F:1325 snow-melt → rain (×warm_mask=×1.0 exact in warm cells)
+    auto qr2 = qr1 - mf.pgmlt_capped * warm_mask;    // F:1349 graupel-melt → rain
+    out.qr  = qr2 - mf.pfrzdtr;                       // F:1577 rain-freeze (LAST, D4)
+    out.qs  = s.qs + mf.psmlt_capped;                                                  // = dqs D1 (amount)
+    out.qg  = s.qg + mf.pgmlt_capped + mf.pfrzdtr;                                     // = dqg D1(amount) + D4
     auto qi1 = (s.qi.to(kF64) + mf.pinuc.to(kF64) - mf.pimlt_qi.to(kF64)).to(dtype);
     out.qi  = (qi1.to(kF64) + mf.pfrzdtc.to(kF64)).to(dtype);                      // = dqi_amount (D2 then D3)
     auto nc1 = (s.nc.to(kF64) - mf.ninuc.to(kF64) + mf.pimlt_ni.to(kF64)).to(dtype);
     out.nc  = (nc1.to(kF64) - mf.nfrzdtc.to(kF64)).to(dtype);                      // = dnc_amount (D2 then D3)
-    out.nr  = s.nr + (-mf.nfrzdtr)                                                // = dnr_amount(D4)
-            + dtcld * (-mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt);        // D1 melt snow/graupel → rain number (Fortran 1299/1323)
+    // §1D (whole-chain roadmap FRZ-07): Fortran applies the three nr-melt contributions as SEQUENTIAL
+    // f32 stores in order — F:1322 nrs-=sfac*psmlt, F:1346 nrs-=gfac*pgmlt, F:1578 nrs-=nfrzdtr (LAST).
+    // Use the CAPPED AMOUNT (psmlt_capped) directly — sfac*psmlt_capped, NO /dtcld→×dtcld round-trip.
+    auto nr1 = s.nr - mf.sfac_melt * mf.psmlt_capped;     // F:1322 snow-melt → rain number
+    auto nr2 = nr1 - mf.gfac_melt * mf.pgmlt_capped;      // F:1346 graupel-melt → rain number
+    out.nr  = nr2 - mf.nfrzdtr;                           // F:1578 rain-freeze (LAST)
     auto ni1 = (s.ni.to(kF64) + mf.ninuc.to(kF64) - mf.pimlt_ni.to(kF64)).to(dtype);
     out.ni  = (ni1.to(kF64) + mf.nfrzdtc.to(kF64)).to(dtype);                      // = dni_amount (D2 then D3)
-    out.brs = s.brs + (dtcld * mf.delta_brs_melt + mf.delta_brs_freeze);          // = dbrs D1+D4 (clamp in state_update)
+    out.brs = s.brs + (mf.delta_brs_capped + mf.delta_brs_freeze);                // = dbrs D1(amount)+D4 (clamp in state_update)
     // SEED#5 (Fortran module_mp_kdm6.F:1303 then :1327): Fortran applies psmlt and
     // pgmlt as TWO SEPARATE sequential t-adds (`t+=coef·psmlt; t+=coef·pgmlt`), each
     // float32-rounded. Summing (psmlt+pgmlt) BEFORE the coefficient (the prior form)
     // diverges by 1 ULP in cells where snow AND graupel melt together (verified 28%
     // of such cells). Split into two sequential adds; keep the dtcld·xlf0/cpm
     // coefficient (verified 0 ULP). Tensor-ops only ⇒ autograd-safe.
-    auto coef_melt = dtcld * xlf_melt / cpm_safe;
+    auto coef_melt = xlf_melt / cpm_safe;   // NO dtcld — psmlt_capped is the AMOUNT (Fortran F:1326 t+=xlf/cpm*psmlt)
     auto t_d1 = s.t
-            + coef_melt * mf.psmlt                                                 // D1 melt psmlt → xlf0 (sequential, F:1303)
-            + coef_melt * mf.pgmlt                                                 // D1 melt pgmlt → xlf0 (sequential, F:1327)
-            - xlf_melt / cpm_safe * mf.pimlt_qi;                                   // D1 instant ice-melt → xlf0
+            + coef_melt * mf.psmlt_capped                                          // D1 melt psmlt → xlf0 (sequential, F:1303, amount)
+            + coef_melt * mf.pgmlt_capped                                          // D1 melt pgmlt → xlf0 (sequential, F:1327, amount)
+            - xlf_melt / cpm_safe * mf.pimlt_qi;                                   // D1 instant ice-melt → xlf0 (amount)
     // D2-D4 freeze t-stores are SEQUENTIAL in Fortran (F:1539/F:1569/F:1591), each
     // `t += (xlf/cpm)*rate` rounding once to REAL(4); the f32 coefficient xlf/cpm
     // promotes against the DOUBLE D2/D3 rates exactly like gfortran.
@@ -479,7 +615,8 @@ CoordinatorState kdm62d_one_step(
     const ColdPhaseParams& cold_params,
     const MeltFreezePhaseParams& mf_params,
     double dtcld,
-    const c10::optional<torch::Tensor>& ncmin_for_slope
+    const c10::optional<torch::Tensor>& ncmin_for_slope,
+    torch::Tensor* rhog_out
 ) {
     // F1pre: homogeneous cloud→ice freeze (supcol>40, Fortran module_mp_kdm6.F:1410-1420)
     // is now ENABLED (Stage H2), applied at step 1b below — BETWEEN D1 melt and the
@@ -491,8 +628,36 @@ CoordinatorState kdm62d_one_step(
     // em_squall2d_x (−80°C tops): QICE stays bounded (~1.8e-3, no 806× blowup).
     auto state_pre = state;
 
+#ifdef KDM6_SUBSTEP_DUMP
+    // per-substep parity dump gate (forensic, OFF by default): first kdm62d_one_step call only.
+    static long kdm6_substep_call = 0;
+    ++kdm6_substep_call;
+    // dump target call (env KDM6_DUMP_CALL, default 1). With numtiles=1, call N == WRF step N.
+    static const long kdm6_dump_target = []{ const char* e = std::getenv("KDM6_DUMP_CALL"); return e ? std::atol(e) : 1L; }();
+    const bool kdm6_dump_on = (kdm6_substep_call == kdm6_dump_target);
+    if (kdm6_dump_on) kdm6_dump_state_substep(state, "entry");
+#endif
+
     // F1a: preamble (full diagnostics) on the ENTRY state.
     auto pre = preamble(state_pre, forcing, full_params, ncmin_for_slope);
+    // §35 diag_rhog (RHOPO3D) shadow rhox lifecycle: Fortran ProgB_param (the graupel reslope,
+    // called 7×) has INTENT(OUT) rhox — it WRITES rhox=clamp(qg/brs) ONLY for active cells and
+    // RETAINS the prior array value for inactive cells; diag_rhog=rhox at exit (module_mp_kdm6.F
+    // :423). So a cell active at an EARLIER reslope but with its graupel gone by the end keeps
+    // its last-active density. Replicate as a retain-shadow updated at each C++ reslope. Mask is
+    // qg-only (qg>qcrmin) — NOT (qg .OR. brs>brs_min): the C++ non-underflowing-f32 brs leaves a
+    // residue>brs_min in graupel-empty cells that Fortran's f32 underflows to 0 (§20), so an OR
+    // mask captures spurious empty cells. brs is bitwise where qg>qcrmin, so the retained value
+    // is bitwise. (sed-chain reslopes excluded — the entry `pre` is already post-sed.)
+    torch::Tensor rhog_acc = torch::where(state_pre.qg > full_params.progb.qcrmin,
+                                          pre.progb.rhox, torch::zeros_like(pre.progb.rhox));
+    // BRS density re-clamp #1 (Fortran ProgB_param INTENT(INOUT) brs=qg/rhox, L1084/L3376):
+    // adopt the entry-state ProgB density-reclamped graupel volume so downstream brs
+    // accumulation starts from the [100,900]-capped base (mirrors Python oracle). progb.bg
+    // was a dead output before this fix; tensor rebind ⇒ autograd-safe, no .item().
+    state_pre.brs = torch::where(torch::logical_or(state_pre.qg > full_params.progb.qcrmin,
+                                                   state_pre.brs > progb::BRS_MIN),
+                                 pre.progb.bg, torch::zeros_like(pre.progb.bg));  // OR-gate (brs Group-B): match ProgB active mask
 
     // ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     // Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) → [homog freeze :1410-1420] →
@@ -522,6 +687,11 @@ CoordinatorState kdm62d_one_step(
         state_pre, forcing, pre_mf_view(pre), aux.n0so, aux.n0go, mf_params, dtcld);
     auto working1 = apply_melt_freeze_inline(
         state_pre, mf_d1, pre_core, dtcld, full_params.thermo.xls);
+#ifdef KDM6_SUBSTEP_DUMP
+    // §34 dump-bisection: POST-D1-MELT state (pre re-slope, pre D2-D4 freeze). Splits the
+    // entry→postfreeze qs/qr/nr divergence into D1-melt (psmlt/pgmlt) vs D2-D4-freeze.
+    if (kdm6_dump_on) kdm6_dump_state_substep(working1, "postmelt");
+#endif
 
     // 1b. Homogeneous freeze (Fortran :1410-1420): at supcol>40 (T<-40°C) freeze
     // ALL cloud water → ice (qi+=qc, ni+=nc, t+=xlf/cpm·qc, qc=nc=0). Runs BETWEEN
@@ -534,6 +704,14 @@ CoordinatorState kdm62d_one_step(
     auto rebuilt1 = rebuild_aux(working1b, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope);
     const auto& pre1 = rebuilt1.pre;
     auto aux1 = rebuilt1.aux;   // mutable: n0c recomputed from the snapped nc below
+    // §35 diag_rhog shadow: post-melt reslope — update active (qg>qcrmin), retain else.
+    rhog_acc = torch::where(working1b.qg > full_params.progb.qcrmin, pre1.progb.rhox, rhog_acc);
+    // BRS density re-clamp #2 (Fortran ProgB_param L1392 post-melt re-slope): adopt the
+    // post-melt ProgB-reclamped graupel volume so the D2-D4 freeze inline (adds
+    // pfrzdtr/denr at density 1000) accumulates onto the [100,900]-capped base.
+    working1b.brs = torch::where(torch::logical_or(working1b.qg > full_params.progb.qcrmin,
+                                                   working1b.brs > progb::BRS_MIN),
+                                 pre1.progb.bg, torch::zeros_like(pre1.progb.bg));  // OR-gate (brs Group-B)
     // SEED#2 (post-melt re-slope, Fortran module_mp_kdm6.F:1453-1466): when the cloud
     // slope clamps (onset: tiny droplets ⇒ lamdc>lamdacmax), Fortran REWRITES the
     // prognostic nci(1)=den·qc·lamdc_clamped^dmc/pidnc before the D2-D4 freeze rates
@@ -570,16 +748,16 @@ CoordinatorState kdm62d_one_step(
         auto active = (working1b.qc >= constants::EPS) &
             (ncmin_for_slope.has_value() ? (nc_orig1 >= *ncmin_for_slope)
                                          : (nc_orig1 >= constants::NCMIN));
+        // §44 f64-state (cloud n0c): lamdc in op_dtype (op=f32 Fortran lamdc_tmp REAL(4); DA=f64).
+        auto cdt1 = forcing.den.scalar_type();
+        auto nc_o1_f = nc_orig1.to(cdt1);
+        auto pidnc1_f = torch::full_like(nc_o1_f, pidnc_snap);
         auto lamdc = torch::clamp(
-            ops::libm_exp(ops::libm_log(torch::clamp(pidnc_snap * nc_orig1 /
-                torch::clamp(working1b.qc * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
+            ops::libm_exp(ops::libm_log(torch::clamp(pidnc1_f * nc_o1_f /
+                torch::clamp(working1b.qc.to(cdt1) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
             constants::LAMDACMIN, constants::LAMDACMAX);
-        // STEP-67 SEED: Fortran n0c is DOUBLE (F:697) and F:1465 computes
-        // (muc+1)*DBLE(nci)*lamdc**(muc+1) — i.e. 3.0d·DBLE(nc)·DBLE(powf(lamdc,3))
-        // with the ONLY f32 rounding inside the REAL**REAL powf. Upcast nc so the
-        // product runs f64 (no-op on the fp64 oracle path); D2/D3 consume this f64
-        // intercept directly (their chains are f64 from the *n0c factor on).
-        auto n0c_active = (constants::MUC + 1.0) * working1b.nc.to(torch::kFloat64) *
+        // Fortran n0c is DOUBLE (F:697): (muc+1)*DBLE(nc_POST)*powf(lamdc,muc+1) — lamdc f32, then DBLE.
+        auto n0c_active = (constants::MUC + 1.0) * working1b.nc.to(cdt1).to(torch::kFloat64) *
             ops::safe_pow(lamdc, constants::MUC + 1.0);
         aux1.n0c = torch::where(active, n0c_active, aux1.n0c);
     }
@@ -601,12 +779,47 @@ CoordinatorState kdm62d_one_step(
             constants::LAMDAIMIN, constants::LAMDAIMAX,
             /*q_thresh=*/1.0e-14, /*n_thresh=*/0.0);
         const double INV_DMI_F32 = static_cast<double>(1.0f / static_cast<float>(constants::DMI));
+        // §44 f64-state (ice n0i, like rain n0r): cast ni/qi to forcing dtype (op=f32, DA=f64) + pidni f32
+        // tensor → lamdi/n0i f32 operational (Fortran REAL(4)); feeds cold dep/riming (qi/qs/qg/ni).
+        auto idt1 = forcing.den.scalar_type();
+        auto ni_o1_f = ni_orig1.to(idt1);
+        auto pidni1_f = torch::full_like(ni_o1_f, fconst::get().pidni);
         auto lamdi1 = torch::clamp(
-            ops::libm_exp(ops::libm_log(torch::clamp(fconst::get().pidni * ni_orig1 /
-                torch::clamp(working1b.qi * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
+            ops::libm_exp(ops::libm_log(torch::clamp(pidni1_f * ni_o1_f /
+                torch::clamp(working1b.qi.to(idt1) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
             constants::LAMDAIMIN, constants::LAMDAIMAX);
         aux1.n0i = torch::where(working1b.qi >= 1.0e-14,
-            working1b.ni.to(torch::kFloat64) * lamdi1.to(torch::kFloat64), aux1.n0i);
+            working1b.ni.to(idt1).to(torch::kFloat64) * lamdi1.to(torch::kFloat64), aux1.n0i);
+    }
+
+    // §1C rain-number clamp rewrite (Fortran F:1466-1474): the post-melt re-slope rewrites the rain
+    // number when lamdr snaps to a bound — nrs = den*qr*lamdr_bound^DMR/pidnr (exactly what
+    // limit_number_for_lamda computes) — and recomputes n0r = (1/g1pmr)*nr*lamdr^(mur+1) from the
+    // SNAPPED nr. The D2-D4 freeze (pfrzdtr/nfrzdtr) and aux1.n0r must read the rewritten nr.
+    // mur=1 ⇒ exponent 2, g1pmr=Γ(2)=1 ⇒ n0r = nr*lamdr^2. Mirrors the ni-snap block above.
+    {
+        auto nr_orig1 = working1b.nr;
+        working1b.nr = limit_number_for_lamda(
+            working1b.qr, nr_orig1, forcing.den,
+            fconst::get().pidnr, constants::DMR,
+            constants::LAMDARMIN, constants::LAMDARMAX,
+            /*q_thresh=*/constants::QCRMIN, /*n_thresh=*/constants::NRMIN);
+        const double INV_DMR_F32 = static_cast<double>(1.0f / static_cast<float>(constants::DMR));
+        // §44 f64-state (same as aux2): cast nr/qr to forcing dtype (op=f32 Fortran-faithful, DA=f64
+        // autograd). aux1.n0r feeds pfrzdtr (D2-D4 freeze) → qr; the f64 here propagated into the freeze.
+        auto op_dtype1 = forcing.den.scalar_type();
+        auto nr_o1_f = nr_orig1.to(op_dtype1);
+        auto qr1_f   = working1b.qr.to(op_dtype1);
+        auto nr1_f   = working1b.nr.to(op_dtype1);
+        auto pidnr1_f = torch::full_like(nr_o1_f, fconst::get().pidnr);
+        auto lamdr1 = torch::clamp(
+            ops::libm_exp(ops::libm_log(torch::clamp(pidnr1_f * nr_o1_f /
+                torch::clamp(qr1_f * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
+            constants::LAMDARMIN, constants::LAMDARMAX);
+        auto active_r = (working1b.qr >= constants::QCRMIN) & (nr_orig1 >= constants::NRMIN);
+        aux1.n0r = torch::where(active_r,
+            nr1_f.to(torch::kFloat64) * (lamdr1 * lamdr1).to(torch::kFloat64),  // §44 x**2.0=MULT (gfortran), not powf
+            aux1.n0r);
     }
 
     // 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog has
@@ -621,9 +834,37 @@ CoordinatorState kdm62d_one_step(
     // 4. rebuild on the post-freeze state (re-slope :1596-1683; the prior STEP-2
     // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/
     // supsat) Fortran does NOT recompute post-freeze (:835-836,:910-928).
+    // §44 f64-STATE at the SLOPE SOURCE: `working` is still f64 here (nr f64 from entry, qr
+    // promoted in the freeze chain). rebuild_aux→slope_kdm6_torch builds rslope*/denfac/work1/
+    // work2/n0sfac via safe_pow/libm_exp; on an f64 tensor those take torch's f64-Sleef branch,
+    // NOT gfortran's f32 powf/expf (F:655 rslope* are REAL(4)). The last-ULP-off f64 slope VALUE
+    // is then baked into EVERY warm/cold rate's acrfac/bracket/coeres — which is why truncating
+    // rate OUTPUTS was a no-op. Re-clamp the rebuild input to the forcing dtype (op=f32 →
+    // Fortran-faithful powf slopes; DA=f64 → no-op, VJP preserved) so the slopes match Fortran.
+    // (The later working re-clamp at the §44 systemic block becomes a no-op; n0r/n0i/n0c keep
+    // their explicit op_dtype rebuild + DOUBLE promotion below — Fortran n0* are double precision.)
+    {
+        auto dt_slope = forcing.den.scalar_type();
+        working = CoordinatorState{
+            working.qv.to(dt_slope), working.qc.to(dt_slope), working.qr.to(dt_slope), working.qs.to(dt_slope),
+            working.qg.to(dt_slope), working.qi.to(dt_slope), working.nc.to(dt_slope), working.nr.to(dt_slope),
+            working.ni.to(dt_slope), working.nccn.to(dt_slope), working.brs.to(dt_slope), working.t.to(dt_slope)};
+    }
     auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope);
     const auto& pre2 = rebuilt.pre;
     auto aux2 = rebuilt.aux;   // mutable: n0c recomputed from the snapped nc below
+    // §35 diag_rhog shadow: post-freeze reslope — update active (qg>qcrmin), retain else.
+    rhog_acc = torch::where(working.qg > full_params.progb.qcrmin, pre2.progb.rhox, rhog_acc);
+    // BRS density re-clamp #3 (Fortran ProgB_param L1587 post-freeze re-slope): adopt the
+    // post-freeze ProgB-reclamped graupel volume so state_update accumulates the cold/warm
+    // dbrs (Fortran L2643/L2751) onto the [100,900]-capped base — the site that fixes
+    // newly-frozen-rain graupel (pfrzdtr/denr density 1000 → reclamp to 900).
+    working.brs = torch::where(torch::logical_or(working.qg > full_params.progb.qcrmin,
+                                                 working.brs > progb::BRS_MIN),
+                               pre2.progb.bg, torch::zeros_like(pre2.progb.bg));  // OR-gate (brs Group-B)
+#ifdef KDM6_SUBSTEP_DUMP
+    if (kdm6_dump_on) kdm6_dump_state_substep(working, "postfreeze");
+#endif
     // SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): same cloud
     // lamda-snap back-mutation, here BEFORE the warm rate loop. The rewritten
     // prognostic nci(1) is what warm praut/nraut (F:1706-1716) AND — decisively —
@@ -647,16 +888,63 @@ CoordinatorState kdm62d_one_step(
         auto active = (working.qc >= constants::EPS) &
             (ncmin_for_slope.has_value() ? (nc_orig2 >= *ncmin_for_slope)
                                          : (nc_orig2 >= constants::NCMIN));
+        // §44 f64-state (cloud n0c, like rain/ice): lamdc in op_dtype (op=f32 → Fortran lamdc_tmp REAL(4);
+        // DA=f64). n0c = (muc+1)*DBLE(nc_POST)*powf(lamdc,muc+1) (F:1645/1649; n0c DOUBLE F:697).
+        auto cdt2 = forcing.den.scalar_type();
+        auto nc_o2_f = nc_orig2.to(cdt2);
+        auto pidnc2_f = torch::full_like(nc_o2_f, pidnc_snap);
         auto lamdc = torch::clamp(
-            ops::libm_exp(ops::libm_log(torch::clamp(pidnc_snap * nc_orig2 /
-                torch::clamp(working.qc * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
+            ops::libm_exp(ops::libm_log(torch::clamp(pidnc2_f * nc_o2_f /
+                torch::clamp(working.qc.to(cdt2) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
             constants::LAMDACMIN, constants::LAMDACMAX);
-        // f64 lamdc-form intercept — same as the post-melt block (Fortran F:1641/
-        // 1645/1649, n0c DOUBLE F:697); cold riming (nsacw/ngacw/niacw) promotes
-        // against it and rounds f32 at its rate stores.
-        auto n0c_active = (constants::MUC + 1.0) * working.nc.to(torch::kFloat64) *
+        auto n0c_active = (constants::MUC + 1.0) * working.nc.to(cdt2).to(torch::kFloat64) *
             ops::safe_pow(lamdc, constants::MUC + 1.0);
         aux2.n0c = torch::where(active, n0c_active, aux2.n0c);
+    }
+
+    // §1C POST-FREEZE rain-number clamp rewrite + n0r (Fortran F:1696-1704). MIRROR of the post-melt
+    // aux1 block — Fortran recomputes n0r at BOTH re-slopes. build_default_aux (runtime.cpp:175) already
+    // applies the active form with CLAMPED lamdr but the ORIGINAL nr; Fortran F:1700 REWRITES nrs (=
+    // den·qrs·lamdr_bound^dmr/pidnr) in out-of-range-lamdr cells and uses the rewritten nr. aux2 was
+    // missing this rewrite → the 15841 n0r-diverging cells (active rain, clamped lamdr) → warm prevp
+    // (F:1851, reads aux2.n0r) diverged 15834 cells. The rewritten working.nr also feeds warm/cold/
+    // state_update (Fortran rewrites nrs before the warm loop F:1756). mur=1 ⇒ g1pmr=Γ(2)=1.
+    {
+        auto nr_orig2 = working.nr;
+        working.nr = limit_number_for_lamda(
+            working.qr, nr_orig2, forcing.den,
+            fconst::get().pidnr, constants::DMR,
+            constants::LAMDARMIN, constants::LAMDARMAX,
+            /*q_thresh=*/constants::QCRMIN, /*n_thresh=*/constants::NRMIN);
+        const double INV_DMR_F32 = static_cast<double>(1.0f / static_cast<float>(constants::DMR));
+        // §44 f64-STATE contamination ROOT CAUSE (n0r warm divergence): the operational state qr/nr are
+        // f64 here (nr is f64 from entry; qr promoted in the freeze chain), so arg/log/exp/lamdr/n0r all
+        // ran in f64 while Fortran computes the rain DSD in f32. Cast nr/qr to the FORCING dtype
+        // (forcing.den): operational=f32 → Fortran-faithful (f32(working.nr)==Fortran nrs, verified bitwise);
+        // DA=f64 → autograd preserved (NO f32 truncation of the f64 gradient — fixes c_abi/handle_vjp).
+        auto op_dtype = forcing.den.scalar_type();
+        auto nr_f2 = nr_orig2.to(op_dtype);              // PRE-rewrite nrs — for lamdr2 (Fortran F:1694)
+        auto qr_f2 = working.qr.to(op_dtype);
+        auto pidnr_f = torch::full_like(nr_f2, fconst::get().pidnr);
+        auto lamdr2 = torch::clamp(
+            ops::libm_exp(ops::libm_log(torch::clamp(pidnr_f * nr_f2 /
+                torch::clamp(qr_f2 * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
+            constants::LAMDARMIN, constants::LAMDARMAX);
+        auto active_r2 = (working.qr >= constants::QCRMIN) & (nr_orig2 >= constants::NRMIN);
+        // n0r multiply uses POST-rewrite nrs (Fortran F:1696 in-range==pre, F:1700 clamped==post; working.nr
+        // = limit_number_for_lamda = pre for in-range, post for clamped → correct for BOTH). nr_orig2 here
+        // would be WRONG for clamped cells (Codex stop-review: aux2 must not recompute n0r from pre-rewrite nr).
+        auto nr_post_f2 = working.nr.to(op_dtype);
+        aux2.n0r = torch::where(active_r2,
+            nr_post_f2.to(torch::kFloat64) * (lamdr2 * lamdr2).to(torch::kFloat64),  // §44 x**2.0=MULT (gfortran), not powf
+            aux2.n0r);
+#ifdef KDM6_SUBSTEP_DUMP
+        if (kdm6_dump_on) {
+            auto arg2 = torch::clamp(pidnr_f * nr_f2 /
+                torch::clamp(qr_f2 * forcing.den, 1.0e-30), 1.0e-30);
+            kdm6_dump_n0rdiag(nr_f2, lamdr2, arg2, forcing.den, qr_f2, aux2.n0r);
+        }
+#endif
     }
 
     // STEP-79 SEED (block-B ice P3, F:1684-1697) — same rewrite as the block-A
@@ -670,14 +958,29 @@ CoordinatorState kdm62d_one_step(
             constants::LAMDAIMIN, constants::LAMDAIMAX,
             /*q_thresh=*/1.0e-14, /*n_thresh=*/0.0);
         const double INV_DMI_F32 = static_cast<double>(1.0f / static_cast<float>(constants::DMI));
+        // §44 f64-state (ice n0i): op_dtype cast (op=f32 Fortran REAL(4), DA=f64 autograd).
+        auto idt2 = forcing.den.scalar_type();
+        auto ni_o2_f = ni_orig2.to(idt2);
+        auto pidni2_f = torch::full_like(ni_o2_f, fconst::get().pidni);
         auto lamdi2 = torch::clamp(
-            ops::libm_exp(ops::libm_log(torch::clamp(fconst::get().pidni * ni_orig2 /
-                torch::clamp(working.qi * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
+            ops::libm_exp(ops::libm_log(torch::clamp(pidni2_f * ni_o2_f /
+                torch::clamp(working.qi.to(idt2) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
             constants::LAMDAIMIN, constants::LAMDAIMAX);
         aux2.n0i = torch::where(working.qi >= 1.0e-14,
-            working.ni.to(torch::kFloat64) * lamdi2.to(torch::kFloat64), aux2.n0i);
+            working.ni.to(idt2).to(torch::kFloat64) * lamdi2.to(torch::kFloat64), aux2.n0i);
     }
 
+    // §44 f64-STATE systemic fix: the operational state (qr/nr/... ) is f64 here (nr f64 from entry, qr
+    // promoted in the freeze chain); Fortran computes the warm/cold/satadj rates from REAL(4) state
+    // (promoting to DOUBLE only at explicit n0r/work1 terms). Re-clamp working to the FORCING dtype
+    // (op=f32 → Fortran-faithful rates; DA=f64 → autograd no-op) so the rate chain matches Fortran's f32.
+    {
+        auto dt = forcing.den.scalar_type();
+        working = CoordinatorState{
+            working.qv.to(dt), working.qc.to(dt), working.qr.to(dt), working.qs.to(dt),
+            working.qg.to(dt), working.qi.to(dt), working.nc.to(dt), working.nr.to(dt),
+            working.ni.to(dt), working.nccn.to(dt), working.brs.to(dt), working.t.to(dt)};
+    }
     // F1b: warm phase (B1-B5) on the WORKING state + rebuilt pre2/aux2. thermo_params
     // lets the sequential pcact path recompute qs1 before satadj (module_mp_kdm6.F:2903-2943).
     auto warm_out = warm_phase(
@@ -685,7 +988,6 @@ CoordinatorState kdm62d_one_step(
         aux2.n0r, aux2.work1_r, aux2.qcr,
         warm_params, dtcld, full_params.thermo
     );
-
     // F1c: cold phase (C1-C6') on the WORKING state + rebuilt pre2/aux2.
     auto cold_out = cold_phase(
         working, forcing, pre_cold_view(pre2),
@@ -721,10 +1023,57 @@ CoordinatorState kdm62d_one_step(
     // delta_src = nullptr ⇒ delta2/delta3 track working qr/qs (Fortran :2452-2455
     // reads post-melt/freeze reservoirs). mf carries D5 only (D1-D4 in working).
     PreambleCore pre_core_su{pre.cpm, pre.xl, pre2.supcol, pre2.progb.rhox};
+#ifdef KDM6_SUBSTEP_DUMP
+    // prestate = the EXACT state_update base (working@947, post-f32-reclamp). Compared to fort
+    // postfreeze (= Fortran budget base) to isolate base-vs-budget for the structural qr/qs/qg residual.
+    if (kdm6_dump_on) kdm6_dump_state_substep(working, "prestate");
+#endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
-        full_params.thermo.xls, /*delta_src=*/nullptr
+        full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on
     );
+    // BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = LAST ProgB, AFTER the
+    // cold/warm graupel-volume adds L2643/L2751 — the reclamp that produces the OUTPUT bg).
+    // Caps newly-formed COLD-PHASE graupel (snow→graupel sets brs at density 1000) to
+    // [100,900]; sites #1-#3 are all BEFORE state_update so they miss it. Mirrors oracle.
+    // ALSO enforce the verified Fortran invariant QG<=qcrmin => BG==0 (2.8M cells, 0
+    // exceptions): Fortran's f32 graupel-volume b-terms underflow to EXACTLY 0 in
+    // graupel-empty cells; the f64 mirror leaves a tiny power-of-2 residue. zero it.
+    {
+        auto progb4 = progb::progb_param_torch(new_state.qg, new_state.brs, full_params.progb,
+                                               /*op_dtype=*/forcing.den.scalar_type());
+        auto bg4 = progb4.bg;
+        // diag_rhog (RHOPO3D) source: this is the LAST ProgB graupel density, matching
+        // Fortran module_mp_kdm6.F:423 `diag_rhog(i,k,j)=rhox(i,k)` (the rhox from the
+        // L2772/L2863 ProgB that also produces the output bg). The subsequent reclass/
+        // satadj/cleanup steps do NOT recompute graupel density, so this rhox is what
+        // mp37 reports. Surface it for the kdm6ad wrapper to write WRF diag_rhog.
+        // §42/§20 diag_rhog: gate the LAST-ProgB graupel density to qg>qcrmin — the SAME
+        // gate as the output brs re-clamp below (new_state.brs=where(qg>qcrmin,bg4,0)). The
+        // brs>brs_min term is NOT used here: the C++ f64/non-underflowing-f32 graupel volume
+        // leaves a residue > brs_min in graupel-empty cells that Fortran's f32 underflows to 0
+        // (§20), so an OR-gate reads progb's [rho_min,rho_max] clamp (~rho_max) in ~25k spurious
+        // empty cells. qg-only matches the output-brs presence and avoids that residue.
+        if (rhog_out != nullptr) {
+            // §35 diag_rhog shadow: FINAL (state_update) reslope — update active (qg>qcrmin),
+            // retain the earlier-reslope value (rhog_acc) for cells whose graupel is now gone.
+            *rhog_out = torch::where(new_state.qg > full_params.progb.qcrmin, progb4.rhox, rhog_acc);
+        }
+        // qg>qcrmin zeroing matches Fortran's f32 brs-underflow=>0 in graupel-empty cells. The
+        // OR-condition (qg>qcrmin OR brs>BRS_MIN, to preserve Fortran-active graupel per Codex) was
+        // MEASURED WORSE (BG 8787->22394): C++ f64 ~1.7e-14 empty-cell residue > brs_min wrongly
+        // counts as active. §20 f64-residue-vs-f32-underflow; kept qg>qcrmin form (better Fortran fit).
+        // FINAL output re-clamp: qg-only zeroing (NOT the OR-gate). The OR-gate here regresses brs ~14k cells
+        // because C++'s f32 brs flow does NOT underflow to 0 like Fortran's in graupel-empty cells (qg<qcrmin,
+        // residue>brs_min) — Fortran's final ProgB leaves 0, C++'s OR-gate keeps the residue. The qg-only form
+        // matches Fortran's underflowed 0 there. The OR-gate IS applied UPSTREAM (sites #0-#3, #resed) to fix
+        // the qg cascade; by the final stage the genuine Group-B cells have grown qg>qcrmin (kept anyway).
+        new_state.brs = torch::where(new_state.qg > full_params.progb.qcrmin,
+                                     bg4, torch::zeros_like(bg4));
+    }
+#ifdef KDM6_SUBSTEP_DUMP
+    if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "poststateupdate");
+#endif
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).
     new_state = reclassify_large_ice_to_snow(new_state, forcing.den);
@@ -739,6 +1088,15 @@ CoordinatorState kdm62d_one_step(
     // post-mass-balance + post-reclass state — fixing the frame-6+ cascade
     // (Codex stop-gate finding 8: satadj was applied to stale pre-mass-balance
     // state in C++, while Fortran runs it at line 2929 AFTER reclass at 2883).
+    // §44 f64-state probe: re-clamp the pre-satadj state to op_dtype (op=f32 → Fortran REAL(4); DA=f64
+    // no-op) so apply_satadj_step (dtype=state.qc.dtype()) computes pcact/pcond in f32 like mp37.
+    {
+        auto sdt = forcing.den.scalar_type();
+        new_state = CoordinatorState{
+            new_state.qv.to(sdt), new_state.qc.to(sdt), new_state.qr.to(sdt), new_state.qs.to(sdt),
+            new_state.qg.to(sdt), new_state.qi.to(sdt), new_state.nc.to(sdt), new_state.nr.to(sdt),
+            new_state.ni.to(sdt), new_state.nccn.to(sdt), new_state.brs.to(sdt), new_state.t.to(sdt)};
+    }
     new_state = apply_satadj_step(
         new_state, forcing,
         pre.xl, pre.cpm,
@@ -750,7 +1108,12 @@ CoordinatorState kdm62d_one_step(
     new_state = apply_threshold_cleanup(new_state);
 
     // F1i: DSD number limiters (lamda boundary snap + NRMAX/NCMAX caps).
-    return apply_dsd_number_limiters(new_state, forcing.den);
+    new_state = apply_dsd_number_limiters(new_state, forcing.den, /*qmin=*/1.0e-15,
+                                          /*qcrmin=*/1.0e-9, /*ncmin_tensor=*/ncmin_for_slope);
+#ifdef KDM6_SUBSTEP_DUMP
+    if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "final");
+#endif
+    return new_state;
 }
 
 // ─── F2: sub-cycling wrapper ────────────────────────────────────────────────
@@ -836,6 +1199,7 @@ MeltFreezePhaseOutputs melt_freeze_d1(
     melt::MeltingInputs d1_in{
         state.qs, state.qg, state.qi, state.ni,
         state.t, forcing.p, forcing.den, pre.rhox,
+        pre.cpm,   // §35 pgmlt sequential-t coupling (F:1326→1336)
         n0so, n0go, s.n0sfac_field,
         pre.work2, pre.precg2,
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
@@ -847,6 +1211,7 @@ MeltFreezePhaseOutputs melt_freeze_d1(
         /*pimlt_qi=*/d1.pimlt_qi, /*pimlt_ni=*/d1.pimlt_ni,
         /*sfac_melt=*/d1.sfac, /*gfac_melt=*/d1.gfac,
         /*delta_brs_melt=*/d1.delta_brs,
+        /*psmlt_capped=*/d1.psmlt_capped, /*pgmlt_capped=*/d1.pgmlt_capped, /*delta_brs_capped=*/d1.delta_brs_capped,
         /*pinuc=*/zero, /*ninuc=*/zero,                // D2 → melt_freeze_d2_d4
         /*pfrzdtc=*/zero, /*nfrzdtc=*/zero,            // D3
         /*pfrzdtr=*/zero, /*nfrzdtr=*/zero, /*delta_brs_freeze=*/zero,  // D4
@@ -911,6 +1276,7 @@ MeltFreezePhaseOutputs melt_freeze_d2_d4(
         /*psmlt=*/zero, /*pgmlt=*/zero,                // D1 → melt_freeze_d1
         /*pimlt_qi=*/zero, /*pimlt_ni=*/zero,
         /*sfac_melt=*/zero, /*gfac_melt=*/zero, /*delta_brs_melt=*/zero,
+        /*psmlt_capped=*/zero, /*pgmlt_capped=*/zero, /*delta_brs_capped=*/zero,
         /*pinuc=*/d2.pinuc, /*ninuc=*/d2.ninuc,
         /*pfrzdtc=*/d3.pfrzdtc, /*nfrzdtc=*/d3.nfrzdtc,
         /*pfrzdtr=*/d4.pfrzdtr, /*nfrzdtr=*/d4.nfrzdtr,
@@ -972,6 +1338,7 @@ MeltFreezePhaseOutputs melt_freeze_d5(
         /*pimlt_qi=*/zero, /*pimlt_ni=*/zero,
         /*sfac_melt=*/zero, /*gfac_melt=*/zero,
         /*delta_brs_melt=*/zero,
+        /*psmlt_capped=*/zero, /*pgmlt_capped=*/zero, /*delta_brs_capped=*/zero,
         /*pinuc=*/zero, /*ninuc=*/zero,
         /*pfrzdtc=*/zero, /*nfrzdtc=*/zero,
         /*pfrzdtr=*/zero, /*nfrzdtr=*/zero,
@@ -1184,7 +1551,8 @@ CoordinatorState state_update(
     const MeltFreezePhaseOutputs& mf,
     double dtcld,
     double xls,
-    const CoordinatorState* delta_src
+    const CoordinatorState* delta_src,
+    bool dump_graupel
 ) {
     auto dtype = state.qc.dtype();
     auto cold_mask = (pre.supcol >= 0).to(dtype);  // Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
@@ -1223,11 +1591,14 @@ CoordinatorState state_update(
 
     // qc — pcact/pcond also deferred (see dqv comment). Warm-phase qc sinks
     // (autoconv, accretion, etc.) and cold/mf amount-transfers stay here.
+    // qc (qci idx1): cold F:2707 = praut+pracw+piacw+paacw+paacw+pmulcs+pmulcg; warm F:2829 = praut+
+    // pracw+paacw+paacw. piacw/pmulcs/pmulcg are COLD-only → ×cold_mask (piacw collision nonzero in warm).
+    // praut/pracw/2·paacw COMMON. paacw is TWO f32 adds (NOT 2*paacw: (s-p)-p ≠ s-2p).
     auto dqc_rate_sum = (
         - warm.praut - warm.pracw
-        - cold.piacw
-        - 2.0 * cold.paacw_adj
-        - cold.pmulcs - cold.pmulcg
+        - cold.piacw * cold_mask
+        - cold.paacw_adj - cold.paacw_adj
+        - cold.pmulcs * cold_mask - cold.pmulcg * cold_mask
     );
     // amount terms = inline D1-D4 transfers (Fortran applies them as separate adds
     // at :1504/1534 etc. — no dtcld). The rate sum*dtcld and the +reservoir are each
@@ -1242,17 +1613,22 @@ CoordinatorState state_update(
     auto qc_new = ops::fma_acc(state.qc + dqc_amount, dqc_rate_sum, dt_t);
 
     // qr — cold 2621 / warm 2740 (rate) + inline D4 amount + D1/D5 melt
+    // EXACT f32 add order (non-associative): COLD terms in F:2712 order, then WARM terms in
+    // F:2831 order — each term ≡0 in the other branch ⇒ leading/trailing exact no-ops (x+0.0f==x).
+    // ROOT-CAUSE FIX (strict per-branch, see qg below): COLD collision rates (piacr/pgacr/psacr) are
+    // nonzero in WARM cells (not temperature-gated) — mask EACH cold term ×cold_mask, EACH warm term
+    // ×warm_mask, per-term to preserve the exact f32 order (×1 exact / ×0 zeroes the cross-branch term).
+    // praut/pracw/prevp are COMMON to both branches (F:2712 & F:2831) → unmasked.
     auto dqr_rate_sum = (
-        warm.praut + warm.pracw
-        + warm.prevp
-        - cold.piacr - cold.pgacr_adj - cold.psacr_adj
-        - cold.pmulrs - cold.pmulrg
+        warm.praut + warm.pracw + warm.prevp
+        // COLD (F:2712): -piacr-pgacr-psacr-pmulrs-pmulrg
+        - cold.piacr * cold_mask - cold.pgacr_adj * cold_mask - cold.psacr_adj * cold_mask
+        - cold.pmulrs * cold_mask - cold.pmulrg * cold_mask
+        // WARM (F:2831): +paacw+paacw-pseml-pgeml. paacw is TWO separate f32 adds, NOT 2*paacw.
+        + cold.paacw_adj * warm_mask + cold.paacw_adj * warm_mask
+        - mf.pseml * warm_mask - mf.pgeml * warm_mask
+        // D1 snow/graupel melt → rain: zeroed in mf5 at runtime (inline↔state_update identity) ⇒ no-op.
         - (mf.psmlt + mf.pgmlt) * warm_mask
-        - mf.pseml - mf.pgeml
-        // #1 (audit): WARM arm sheds rimed cloud to RAIN (Fortran :2740 qr+=2*paacw);
-        // cold arm routes paacw to qs/qg instead (handled below, cold_mask). Was
-        // missing in both ports — warm cells wrongly grew ice. (WRF-validated.)
-        + 2.0 * cold.paacw_adj * warm_mask
     );
     // dqr_amount = inline D4 freeze (Fortran :1560 separate add). sum*dtcld rounds,
     // +reservoir rounds (F:2621/2740).
@@ -1262,63 +1638,97 @@ CoordinatorState state_update(
     // delta2/delta3 routing flags (Fortran 2452-2455) — from ENTRY state (dstate)
     auto delta2 = ((dstate.qr < 1.0e-4) & (dstate.qs < 1.0e-4)).to(dtype);
     auto delta3 = (dstate.qr < 1.0e-4).to(dtype);
+#ifdef KDM6_SUBSTEP_DUMP
+    if (dump_graupel) {   // = kdm6_dump_on (kdm6_substep_call==1, first WRF tile/step) — matches state dumps
+        kdm6_dump_graupel_rates(cold.psacr_adj, cold.pracs, cold.pgdep, cold.piacr,
+                                cold.praci, cold.pgaci, cold.paacw_adj, cold.pgacr_adj);
+    }
+#endif
     auto one_m_d2 = 1.0 - delta2;
     auto one_m_d3 = 1.0 - delta3;
 
     // qs — 2633 + warm-branch 2743. sum*dtcld rounds, +reservoir rounds (two-rounding source order).
+    // EXACT f32 add order (F:2724 cold snow): psdep, psaut, paacw, piacr·δ3, praci·δ3, psaci,
+    // -pracs·(1-δ2), psacr·δ2 — psacr·δ2 is LAST among cold terms, AFTER psaci and -pracs (was
+    // misplaced 6th → assoc-order divergence). Then warm (F:2834): psevp, pseml (psmlt D1≡0 no-op).
+    // ROOT-CAUSE FIX (strict per-branch, see qg): COLD collision rates nonzero in WARM cells → mask
+    // EACH cold term ×cold_mask, EACH warm term (psevp/pseml) ×warm_mask, per-term (exact f32 order).
+    // Fortran cold qs F:2724; warm qs F:2834 = psevp+pseml (pgacs≡0). psmlt is D1≡0.
     auto dqs_sum = (
-        cold.psdep
-        + cold.psaut
+        cold.psdep * cold_mask
+        + cold.psaut * cold_mask
         + cold.paacw_adj * cold_mask          // #1: paacw→qs only in COLD arm (Fortran :2633); warm arm sheds to qr
-        + cold.piacr * delta3
-        + cold.praci * delta3
-        + cold.psacr_adj * delta2
-        + cold.psaci
-        - cold.pracs * one_m_d2
-        + cold.psevp
+        + cold.piacr * delta3 * cold_mask
+        + cold.praci * delta3 * cold_mask
+        + cold.psaci * cold_mask
+        - cold.pracs * one_m_d2 * cold_mask
+        + cold.psacr_adj * delta2 * cold_mask
+        + cold.psevp * warm_mask
         + mf.psmlt
-        + mf.pseml
+        + mf.pseml * warm_mask
     );
     auto qs_new = ops::fma_acc(state.qs, dqs_sum, dt_t);
 
     // qg — 2638 + warm-branch 2745. sum*dtcld rounds, +reservoir rounds (two-rounding source order).
+    // Fortran qg budget — EXACT f32 add order (non-associative; a reordered sum diverged ~qg 9318).
+    // COLD (F:2729-2733): pgdep, piacr·(1-δ3), praci·(1-δ3), psacr·(1-δ2), pracs·(1-δ2), pgaci, paacw, pgacr
+    //   (pgaut/pgacs ≡ 0 dropped). WARM (F:2836): pgevp, pgeml (pgmlt ≡ 0, D1 applied inline).
+    // Cold terms (cold order) then warm terms — each ≡0 in the other branch ⇒ exact no-op leading/trailing.
+    // ROOT-CAUSE FIX (strict per-branch): the COLD collision rates (piacr/praci/psacr/pracs/pgaci/pgacr)
+    // are NOT temperature-gated — they are nonzero in WARM cells too (e.g. melt layer rain+graupel). The
+    // prior code added them UNMASKED, relying on "cold terms ≡0 in warm" (TRUE only for pgdep/pgevp/pgeml
+    // which ARE branch-gated). Fortran applies the cold source ONLY in the cold branch (t<=t0c, F:2729);
+    // warm cells (F:2836) get pgevp+pgeml only. Mask EACH cold term by cold_mask, EACH warm term by
+    // warm_mask — per-term (NOT grouped) preserves the exact f32 left-to-right order (×1.0f exact in the
+    // active branch, ×0 zeroes the spurious cross-branch term). pgmlt is D1≡0.
     auto dqg_rate_sum = (
-        cold.pgdep
-        + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (Fortran :2641); warm arm sheds to qr
-        + cold.pgacr_adj
-        + cold.pracs * one_m_d2
-        + cold.piacr * one_m_d3
-        + cold.praci * one_m_d3
-        + cold.psacr_adj * one_m_d2
-        + cold.pgaci
-        + cold.pgevp
+        cold.pgdep * cold_mask
+        + cold.piacr * one_m_d3 * cold_mask
+        + cold.praci * one_m_d3 * cold_mask
+        + cold.psacr_adj * one_m_d2 * cold_mask
+        + cold.pracs * one_m_d2 * cold_mask
+        + cold.pgaci * cold_mask
+        + cold.paacw_adj * cold_mask          // #1: paacw→qg only in COLD arm (F:2733); warm arm sheds to qr
+        + cold.pgacr_adj * cold_mask
+        + cold.pgevp * warm_mask
         + mf.pgmlt
-        + mf.pgeml
+        + mf.pgeml * warm_mask
     );
     // dqg_amount = inline D4 freeze (Fortran :1557 separate add).
     auto dqg_amount = mf.pfrzdtr;
     auto qg_new = ops::fma_acc(state.qg + dqg_amount, dqg_rate_sum, dt_t);
+#ifdef KDM6_SUBSTEP_DUMP
+    if (dump_graupel) {
+        // nr127 dump-bisection: which NUMBER rate diverges → drives the nr budget residual.
+        // Field order: nraut nrcol niacr nraci nsacr ngacr nseml ngeml (raw rates, pre-mask).
+        kdm6_dump_warm_rates(warm.nraut, warm.nrcol, cold.niacr, cold.nraci,
+                             cold.nsacr, cold.ngacr, mf.nseml, mf.ngeml);
+    }
+#endif
 
     // qi — 2626 + inline freeze amounts (D2-D4/homog). sum*dtcld rounds, +reservoir rounds (two-rounding source order).
-    auto dqi_rate_sum = (
-        cold.pinud + cold.pidep
-        + cold.piacw
-        - cold.praci - cold.psaci - cold.pgaci
-        - cold.psaut
-        + cold.pmulcs + cold.pmulrs
-        + cold.pmulcg + cold.pmulrg
-    );
+    // qi (qci idx2) is COLD-ONLY (F:2717; no warm update) → ×cold_mask. EXACT Fortran order: F:2717 is
+    // qci(2) -= (psaut+praci+psaci+pgaci-pinud-pidep-piacw-pmulcs-pmulcg-pmulrs-pmulrg)*dtcld, i.e. the
+    // budget delta is the NEGATED inner sum in that left-to-right order (prior interleaved order diverged
+    // ~455 cells at poststateupdate). Unary minus is exact; cold_mask=1.0f exact in cold.
+    auto dqi_rate_sum = cold_mask * ( -(
+        cold.psaut + cold.praci + cold.psaci + cold.pgaci
+        - cold.pinud - cold.pidep - cold.piacw
+        - cold.pmulcs - cold.pmulcg - cold.pmulrs - cold.pmulrg
+    ) );
     auto dqi_amount = mf.pinuc + mf.pfrzdtc - mf.pimlt_qi;
     auto qi_new = ops::fma_acc(state.qi + dqi_amount, dqi_rate_sum, dt_t);
 
     // ── Number balance ──────────────────────────────────────────────────────
     // nci(1) budget F:2619/2747 `max(nci(1)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
+    // nc (nci idx1): cold F:2708 = nraut+nccol+nracw+niacw+naacw+naacw; warm F:2838 = nraut+nccol+nracw+
+    // naacw+naacw. niacw COLD-only → ×cold_mask. nraut/nccol/nracw/2·naacw COMMON. naacw is TWO f32 adds.
     auto dnc_rate_sum = (
         - warm.nraut
         - warm.nccol
         - warm.nracw
-        - cold.niacw
-        - 2.0 * cold.naacw
+        - cold.niacw * cold_mask
+        - cold.naacw - cold.naacw
     );
     auto dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni;
     // ncact (activation) and cloud_complete_evap deferred to apply_satadj_step
@@ -1328,14 +1738,16 @@ CoordinatorState state_update(
     auto nc_new = ops::fma_acc(state.nc + dnc_amount, dnc_rate_sum, dt_t);
 
     // nrs(1) budget F:2624/2749 `max(nrs(1)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
+    // ROOT-CAUSE FIX (strict per-branch, see qg): COLD collision number rates (niacr/nraci/nsacr/ngacr)
+    // nonzero in WARM cells → ×cold_mask; warm enhanced-melt (nseml/ngeml) ×warm_mask. nraut/nrcol common
+    // (F:2715 cold & F:2840 warm). Per-term masking preserves the exact f32 order.
     auto dnr_rate_sum = (
         warm.nraut
         - warm.nrcol
-        - cold.niacr - cold.nraci
-        - cold.nsacr - cold.ngacr
-        // Fortran module_mp_kdm6.F:2749-2750 — enhanced-melt number sources to rain.
-        // Previously omitted in C++; Codex review caught the gap.
-        + mf.nseml + mf.ngeml
+        - cold.niacr * cold_mask - cold.nraci * cold_mask
+        - cold.nsacr * cold_mask - cold.ngacr * cold_mask
+        // Fortran module_mp_kdm6.F:2749-2750 — enhanced-melt number sources to rain (WARM arm).
+        + mf.nseml * warm_mask + mf.ngeml * warm_mask
         // Fortran module_mp_kdm6.F:1299/1323 — D1 melt of snow/graupel → rain number.
         // (D1-zeroed in mf5 at runtime, preserves inline↔state_update identity; Codex review.)
         - mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt
@@ -1348,19 +1760,23 @@ CoordinatorState state_update(
         state.nr + dnr_amount - rain_complete_evap_amount, dnr_rate_sum, dt_t);
 
     // nci(2) budget F:2630 `max(nci(2)+(...)*dtcld,0)`: Σ*dtcld rounds, +reservoir rounds (two-rounding source order).
-    auto dni_rate_sum = (
-        cold.ninud
+    // ni (nci idx2) COLD-ONLY (F:2721; no warm) → ×cold_mask. EXACT Fortran order F:2721:
+    // -nraci-nsaci-ngaci-niacr+ninud+nmulcs+nmulcg+nmulrs+nmulrg-nsaut (ninud is 5th, NOT 1st).
+    auto dni_rate_sum = cold_mask * (
         - cold.nraci - cold.nsaci - cold.ngaci
         - cold.niacr
+        + cold.ninud
         + cold.nmulcs + cold.nmulcg
         + cold.nmulrs + cold.nmulrg
         - cold.nsaut
     );
     auto dni_amount = mf.ninuc + mf.nfrzdtc - mf.pimlt_ni;
-    auto ni_new_pre = ops::fma_acc(state.ni + dni_amount, dni_rate_sum, dt_t);
-    // complete sublimation mask → ni=0
+    // complete-sublim zeroes only the BASE reservoir (Fortran F:2435 nci2=0), THEN the
+    // F:2721 cold-rate budget accumulates on top — NOT the whole accumulated budget.
+    // (×1.0 is exact, so this is bitwise-identical to the prior form in all mask=0 cells.)
     auto ni_zero_mask = cold.ice_complete_sublim.to(dtype);
-    auto ni_new = ni_new_pre * (1.0 - ni_zero_mask);
+    auto ni_base = (state.ni + dni_amount) * (1.0 - ni_zero_mask);
+    auto ni_new = ops::fma_acc(ni_base, dni_rate_sum, dt_t);
 
     // ── brs (graupel volume) — Fortran 2643 + warm-branch 2751 ─────────
     // Each Fortran branch is `brs = max(brs + (Σb)*dtcld, 0)`: (Σb)*dtcld rounds,
@@ -1368,9 +1784,29 @@ CoordinatorState state_update(
     // branches with cold_mask/warm_mask scales; each `*dtcld` accumulate (the
     // `delta_brs_melt·dtcld` included) is a separate fma_acc (mul rounds, add
     // rounds). delta_brs_freeze is an inline amount (separate add, no multiply).
+    // §brs-rhoMIN (Group A, 4 cells): Fortran inits rhox=0 (module_mp_kdm6.F L957) and ProgB SKIPS inactive
+    // cells (qg<=qcrmin .AND. brs<=brs_min), so the cold-budget term pgdep/rhox = pgdep/0 = +inf there
+    // (verified fort_brspreprogb.bin=0x7f800000); the post-budget ProgB re-clamp #4 then gets rhox=qg/inf=0 →
+    // clamp RHO_MIN=100 → brs=qg/RHO_MIN. The literal +inf NaN-crashes WRF (0*inf in cold_mask backward / copy-
+    // back). Equivalent FINITE replication: any brs_acc > qg/RHO_MIN makes ProgB clamp rhox to RHO_MIN ⇒
+    // brs=qg/RHO_MIN — bitwise-identical to Fortran, no inf/NaN. f32 op-path: divide pgdep by a TINY sentinel
+    // (1e-30) for COLD-inactive cells so pgdep/sentinel is huge-but-finite → brs_acc≫qg/RHO_MIN → clamp RHO_MIN.
+    // Straight-through (fwd=huge, bwd=smooth clamp(DENS)) keeps the f32 VJP finite; f64 DA-path = clamp(DENS).
+    // Confined to COLD inactive cells (supcol>=0) — warm cells stay smooth (no 0*huge in the cold_mask product).
     auto rhox_safe = torch::clamp(pre.rhox, /*min=*/constants::DENS);
+    torch::Tensor pgdep_div;
+    if (state.qc.scalar_type() == torch::kFloat32) {
+        auto cold_inactive = (state.qg <= constants::QCRMIN)
+                                 .logical_and(state.brs <= progb::BRS_MIN)
+                                 .logical_and(pre.supcol >= 0);
+        auto rhox_sent = torch::where(cold_inactive, torch::full_like(pre.rhox, 1.0e-30), rhox_safe);
+        auto smooth = cold.pgdep / rhox_safe;
+        pgdep_div = smooth + (cold.pgdep / rhox_sent - smooth).detach();  // fwd=huge(cold inactive)→clamp RHO_MIN, bwd=smooth
+    } else {
+        pgdep_div = cold.pgdep / rhox_safe;
+    }
     auto dbrs_cold_sum = cold_mask * (
-        cold.pgdep / rhox_safe
+        pgdep_div
         + cold.piacr / constants::DENR        // biacr
         + cold.praci / constants::DENI        // braci
         + cold.psacr_adj / constants::DENR    // bsacr
@@ -1413,34 +1849,27 @@ CoordinatorState state_update(
     // pcact + pcond warming terms DEFERRED — apply_satadj_step adds them to
     // T after running on the post-state-update state (matches Fortran sequence
     // at module_mp_kdm6.F:2914 + :2943).
-    auto dT_warm_phase = dtcld * pre.xl / cpm_safe * (
-        warm.prevp + cold.psevp + cold.pgevp
-    );
-    auto dT_dep_phase = dtcld * xls / cpm_safe * (
-        cold.pinud + cold.pidep + cold.psdep + cold.pgdep
-    );
-    // D1 melt (psmlt/pgmlt rate + pimlt_qi amount) → CONSTANT xlf0 (Fortran F:1303/1327/1339).
-    // SEED#5: psmlt and pgmlt are two SEQUENTIAL summands (F:1303 then :1327), NOT
-    // summed before the coefficient — split identically to apply_melt_freeze_inline
-    // (the inline↔state_update identity guard requires the same grouping in both).
+    // Fortran xlwork2 = TWO distinct branches (cold F:2738-2741 / warm F:2844-2845), selected by supcol>=0.
+    // Replicate EACH branch's EXACT f32 term order (non-associative add) verbatim + the `-coef*(sum)`
+    // negation, then t = t - xlwork2/cpm·dtcld. CRITICAL: cold frz has paacw TWICE (positions 2 & 8, NOT
+    // 2·paacw); cold dep order is psdep,pgdep,pidep,pinud; cold vap = prevp only; warm vap = prevp+psevp+pgevp.
+    // (The per-phase /cpm·dtcld split was association-order wrong → t 119→2052; the single-group form got
+    // t→49 but was still not bitwise Fortran-order — Codex. This per-branch verbatim form is bitwise.)
+    auto dep_sum_c = cold.psdep + cold.pgdep + cold.pidep + cold.pinud;                       // F:2738
+    auto frz_sum_c = cold.piacr + cold.paacw_adj                                              // F:2739-2741 (paacw ×2)
+        + cold.pmulcs + cold.pmulcg + cold.pmulrs + cold.pmulrg
+        + cold.piacw + cold.paacw_adj + cold.pgacr_adj + cold.psacr_adj;
+    auto xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c;             // F:2738-2741
+    auto vap_sum_w = warm.prevp + cold.psevp + cold.pgevp;                                    // F:2844
+    auto xlwork2_warm = -pre.xl * vap_sum_w - xlf * (mf.pseml + mf.pgeml);                    // F:2844-2845
+    auto xlwork2 = torch::where(pre.supcol >= 0, xlwork2_cold, xlwork2_warm);                 // cold ⇔ supcol>=0
+    // D1 melt + D2-D4 freeze AMOUNTS: ZERO at runtime (applied inline via apply_melt_freeze_inline); kept
+    // separate (SEED#5 split: psmlt/pgmlt sequential, xlf0 for D1) for the component/test inline↔state_update identity.
     auto coef_melt = dtcld * xlf_melt / cpm_safe;
-    auto dT_melt_d1 = coef_melt * mf.psmlt + coef_melt * mf.pgmlt
-                    - xlf_melt / cpm_safe * mf.pimlt_qi;
-    auto dT_freeze_rate = dtcld * xlf / cpm_safe * (
-        mf.pseml + mf.pgeml                       // D5 enhanced melt (xls-xl, F:2752)
-        + cold_mask * (
-            cold.piacr
-            + 2.0 * cold.paacw_adj
-            + cold.pmulcs + cold.pmulcg
-            + cold.pmulrs + cold.pmulrg
-            + cold.piacw
-            + cold.pgacr_adj + cold.psacr_adj
-        )
-    );
-    auto dT_freeze_amount = xlf / cpm_safe * (
-        mf.pinuc + mf.pfrzdtc + mf.pfrzdtr
-    );
-    auto t_new = state.t + dT_warm_phase + dT_dep_phase + dT_melt_d1 + dT_freeze_rate + dT_freeze_amount;
+    auto dT_amount = coef_melt * mf.psmlt + coef_melt * mf.pgmlt
+                   - xlf_melt / cpm_safe * mf.pimlt_qi
+                   + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr);
+    auto t_new = state.t - xlwork2 / cpm_safe * dtcld + dT_amount;                            // F:2742/2846
     // nccn: only rain_complete_evap adds back here (warm.rain_complete_evap is a
     // B4 output, applied with the warm rates). cloud_complete_evap and
     // nccn_activation are part of the deferred satadj step (see dqv comment),
@@ -1504,9 +1933,8 @@ CoordinatorState apply_satadj_step(
     auto dtype = state.qc.dtype();
     auto cpm_safe = torch::clamp(cpm, /*min=*/constants::QCRMIN);
 
-    // Step 1: supsat from current state (post-state-update + reclass).
+    // Step 1: qs1 from current state (post-state-update + reclass).
     auto qs1 = thermo::compute_qs_water(state.t, forcing.p, thermo_params);
-    auto supsat = state.qv - qs1;
 
     // Step 2: pcact + ncact (Fortran module_mp_kdm6.F:2905-2909).
     // Fortran `sw` is PERCENT supersaturation: sw = (rh - 1) * 100 (module_mp_kdm6.F:918, 2848).
@@ -1530,7 +1958,11 @@ CoordinatorState apply_satadj_step(
         ops::fma_acc(-state.nc, state.nccn + state.nc, activated_fraction), /*min=*/0.0
     ) / dtcld;
     auto ncact = torch::minimum(ncact_raw, torch::clamp(state.nccn, /*min=*/0.0) / dtcld);
-    ncact = torch::where(supsat > 0.0, ncact, torch::zeros_like(ncact));
+    // CCN-activation gate (Fortran F:3051 `if(sw>0)`): gate on the DIVISION-based
+    // sw_percent=(qv/qs1-1)*100 (matches Fortran sw, F:2996), NOT the subtraction
+    // qv-qs1 — they flip oppositely in f32 at near-exact saturation, toggling the whole
+    // CCN activation (the qc/nc satadj residual). sw_percent already computed above.
+    ncact = torch::where(sw_percent > 0.0, ncact, torch::zeros_like(ncact));
     // SEED#3 (Fortran module_mp_kdm6.F:2908): the pcact mass constant
     //   K = 4.*pi*denr*(actr*1.E-6)**3
     // is evaluated by gfortran in REAL(4), left-to-right, with the cube as x*x*x
@@ -1584,6 +2016,9 @@ CoordinatorState apply_satadj_step(
 
     // Step 9: reservoir clamps (preserve NCCN_MIN/MAX band).
     auto nccn_final = torch::clamp(nccn_final_raw, constants::NCCN_MIN, constants::NCCN_MAX);
+
+    // (nc6 root cause was the post-satadj apply_dsd_number_limiters cloud-snap gating on
+    // scalar NCMIN instead of per-cell ncmin — fixed there, not here. satadj nc is correct.)
 
     return CoordinatorState{
         /*qv=*/qv_final,
@@ -1818,21 +2253,26 @@ torch::Tensor limit_number_for_lamda(
     double q_thresh, double n_thresh
 ) {
     constexpr double eps = 1.0e-30;
-    auto active = (q >= q_thresh) & (n >= n_thresh);
-    auto qden = torch::clamp(q * den, /*min=*/eps);
-    auto ratio = torch::clamp(pidn * n / qden, /*min=*/eps);
-    // libm pow (float32 bit-matches gfortran). `ratio` already clamped min=eps(1e-30);
-    // safe_pow's inner min=EPS(1e-15) only raises the floor in cells the `active` gate
-    // (too_small/too_large) discards, so the consumed value is unchanged.
-    // Fortran lamda = exp(log(ratio)*(1./dm)) — exp-log with the f32 reciprocal,
-    // NOT powf (step-65 evaluation-form class).
+    // §44 f64-state: the operational state q/n can be f64 here; Fortran's nrs/nci snap (F:1693-1704) is
+    // REAL(4). Compute the snap lamda + back-derived number in the FORCING dtype (op=f32 → snap decision &
+    // value bit-match Fortran nrs_POST so aux2.n0r(POST) is bitwise; DA=f64 → autograd no-op). pidn wrapped
+    // as an f32 tensor to avoid the double-scalar-on-left f64 promotion.
+    auto dt = den.scalar_type();
+    auto qf = q.to(dt);
+    auto nf = n.to(dt);
+    auto active = (qf >= q_thresh) & (nf >= n_thresh);
+    auto qden = torch::clamp(qf * den, /*min=*/eps);
+    auto pidn_t = torch::full_like(nf, pidn);
+    auto ratio = torch::clamp(pidn_t * nf / qden, /*min=*/eps);
+    // libm pow (float32 bit-matches gfortran). Fortran lamda = exp(log(ratio)*(1./dm)) — exp-log with the
+    // f32 reciprocal, NOT powf (step-65 evaluation-form class).
     auto lamda = ops::libm_exp(ops::libm_log(ratio) * static_cast<double>(1.0f / static_cast<float>(dm)));
-    auto n_at_min = den * q * std::pow(lamda_min, dm) / pidn;
-    auto n_at_max = den * q * std::pow(lamda_max, dm) / pidn;
+    auto n_at_min = den * qf * std::pow(lamda_min, dm) / pidn;
+    auto n_at_max = den * qf * std::pow(lamda_max, dm) / pidn;
     auto too_small = active & (lamda <= lamda_min);
     auto too_large = active & (lamda >= lamda_max);
     return torch::where(too_small, n_at_min,
-                        torch::where(too_large, n_at_max, n));
+                        torch::where(too_large, n_at_max, nf));
 }
 
 }  // namespace
@@ -1841,7 +2281,8 @@ CoordinatorState apply_dsd_number_limiters(
     const CoordinatorState& state,
     const torch::Tensor& den,
     double qmin,
-    double qcrmin
+    double qcrmin,
+    const c10::optional<torch::Tensor>& ncmin_tensor
 ) {
     const double cmr = PI * constants::DENR / 6.0;
     const double cmc = PI * constants::DENR / 6.0;  // cloud uses water density
@@ -1857,12 +2298,21 @@ CoordinatorState apply_dsd_number_limiters(
         constants::LAMDARMIN, constants::LAMDARMAX,
         qcrmin, constants::NRMIN
     );
-    auto nc_new = limit_number_for_lamda(
+    // Cloud-number snap gated by PER-CELL ncmin (Fortran F:3132 `nci1>=ncmin`,
+    // ncmin_sea=10/land=100 set F:822/824) — NOT scalar NCMIN=1e-2. Low-nc cells (nc<ncmin,
+    // e.g. nc≈6 in subsaturated cloud) were wrongly snapped UP (lamdc<=lamdacmin) to ~3.6e5
+    // by the scalar gate (the nc6 residual); Fortran's per-cell gate skips them. Snap with
+    // n_thresh=0 then where-gate by the per-cell ncmin so only nc>=ncmin cells snap.
+    auto nc_snapped = limit_number_for_lamda(
         state.qc, state.nc, den,
         pidnc, constants::DMC,
         constants::LAMDACMIN, constants::LAMDACMAX,
-        qmin, constants::NCMIN
+        qmin, /*n_thresh=*/0.0
     );
+    auto ncmin_t = ncmin_tensor.has_value()
+        ? ncmin_tensor.value().to(state.nc.scalar_type())
+        : torch::full_like(state.nc, constants::NCMIN);
+    auto nc_new = torch::where(state.nc >= ncmin_t, nc_snapped, state.nc);
     // apply_dsd_number_limiters implements the FINAL kdm62d block, whose ice
     // snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
     // — same qmin/ncmin pattern as the cloud snap (:2984) just above. The prior
@@ -1963,6 +2413,17 @@ SedimentationOutputs sedimentation_chain(
             rs.qr = adv_state.qr; rs.nr = adv_state.nr;
             rs.qs = adv_state.qs; rs.qg = adv_state.qg; rs.brs = adv_state.brs;
             auto pre = preamble(rs, forcing, *reslope_params);
+            // §20/F:1191 per-substep ProgB brs reset (brs is INTENT(INOUT) in ProgB_param; qrs/qg
+            // INTENT(IN) so they stay bitwise — brs is the UNIQUE round-tripped prognostic). Fortran
+            // re-runs ProgB EVERY substep incl. the last, overwriting brs = qg/rhox (rhox=clamp(qg/brs,
+            // [100,900])). That round-trip is NOT the f32 identity: rhox-in-range → 1-ULP seed; rhox-
+            // clamped → brs=qg/{100,900} big change (the 483×1-ULP + 177×catastrophic split, all qg>0).
+            // C++ previously extracted only vt_* and carried adv_state.brs RAW. Use the SAME qg>qcrmin+
+            // zero staging as the pre-sed reset (runtime.cpp:409; the OR-gate was measured worse — f64
+            // empty-cell residue > brs_min). pre.progb.bg already = qg/rhox (progb.cpp). autograd-safe.
+            adv_state.brs = torch::where(torch::logical_or(adv_state.qg > reslope_params->progb.qcrmin,
+                                                           adv_state.brs > progb::BRS_MIN),
+                                         pre.progb.bg, torch::zeros_like(pre.progb.bg));  // OR-gate (brs Group-B)
             w1_qr = pre.slope.vt_r  / delz_safe;   // F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / delz_safe;
             w1_qs = pre.slope.vt_s  / delz_safe;

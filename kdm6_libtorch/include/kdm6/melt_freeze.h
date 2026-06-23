@@ -28,7 +28,9 @@ inline constexpr double DEFAULT_XLF = 3.50e5;  // Fortran XLF (module_model_cons
 MeltingParams default_melting_params(double xlf = DEFAULT_XLF);
 
 struct MeltingOutputs {
-    torch::Tensor psmlt, pgmlt;
+    torch::Tensor psmlt, pgmlt;                // RATE (capped_amount/dtcld) — state_update rate-sum path
+    torch::Tensor psmlt_capped, pgmlt_capped;  // CAPPED AMOUNT (Fortran F:1315) — apply_melt_freeze_inline uses
+    torch::Tensor delta_brs_capped;            // these directly (no /dtcld→×dtcld round-trip)
     torch::Tensor pimlt_qi, pimlt_ni;
     torch::Tensor sfac, gfac;
     torch::Tensor delta_brs;
@@ -37,6 +39,7 @@ struct MeltingOutputs {
 struct MeltingInputs {
     torch::Tensor qs, qg, qi, ni;
     torch::Tensor t, p, den, rhox;
+    torch::Tensor cpm;   // moist heat capacity — pgmlt reads the psmlt-UPDATED t (Fortran F:1326→1336 sequential)
     torch::Tensor n0so, n0go, n0sfac;
     torch::Tensor work2;
     torch::Tensor precg2;

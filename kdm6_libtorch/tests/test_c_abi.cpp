@@ -73,7 +73,8 @@ void test_c_abi_step_runs_microphysics() {
             nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
             &handle,
             /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
-            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr,
+            /*rhog_out=*/nullptr
         );
         // F4 wiring 검증: stub 시절엔 KDM6_ERR_NOT_IMPLEMENTED 반환했음.
         assert(rc == KDM6_OK);
@@ -122,7 +123,8 @@ void test_c_abi_invalid_dim() {
             one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
             &handle,
             /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
-            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr,
+            /*rhog_out=*/nullptr
         );
         assert(rc == KDM6_ERR_INVALID_DIM);
         assert(handle == nullptr);
@@ -144,7 +146,8 @@ void test_c_abi_null_pointer() {
             one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
             &handle,
             /*xland=*/nullptr, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
-            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr
+            /*rain_increment=*/nullptr, /*snow_increment=*/nullptr, /*graupel_increment=*/nullptr,
+            /*rhog_out=*/nullptr
         );
         assert(rc == KDM6_ERR_NULL_POINTER);
     } END_TEST();
@@ -207,7 +210,8 @@ void test_c_abi_step_per_cell_ncmin_mixed_xland() {
             /*ncmin_sea=*/1.0e1,    //   10/m³ — passes nc=100 (RUNS autoconv)
             // Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
             // For this 2-cell test im=2 jme=1 so each buffer is 2 doubles.
-            rain_inc.data(), snow_inc.data(), graupel_inc.data()
+            rain_inc.data(), snow_inc.data(), graupel_inc.data(),
+            /*rhog_out=*/nullptr
         );
         assert(rc == KDM6_OK);
         assert(handle == nullptr);
@@ -282,7 +286,7 @@ void test_c_abi_vjp_jvp_roundtrip() {
             qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
             nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
             &handle,
-            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr);
+            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, /*rhog_out=*/nullptr);
         assert(rc == KDM6_OK);
         assert(handle != nullptr);              // grad-mode → handle exists
 
@@ -409,7 +413,7 @@ void test_c_abi_vjp_packed_layout_nontrivial_tile() {
             th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(),
             qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
             nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
-            &handle, nullptr, 0.0, 0.0, nullptr, nullptr, nullptr);
+            &handle, nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, /*rhog_out=*/nullptr);
         assert(rc == KDM6_OK && handle != nullptr);
 
         // covector: u = e_{qv at (i0=1,k0=0,j0=1)} — single Fortran cell

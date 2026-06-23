@@ -33,7 +33,10 @@ MeltingParams default_melting_params(double xlf) {
     const double bvts2 = 2.5 + 0.5 * constants::BVTS + constants::MUS;
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
-    const double precs2 = 4.0 * 0.44 * std::pow(constants::AVTS, 0.5) * g5pbso2;
+    const float precs2_f32 = ((4.0f * 0.44f)
+                              * std::powf(static_cast<float>(constants::AVTS), 0.5f))
+                             * static_cast<float>(g5pbso2);  // Fortran precs2 REAL(4) (F:3255); avts**.5=powf (mirror warm.cpp precr2)
+    const double precs2 = precs2_f32;
     const double precg1 = 4.0 * 0.78 * g2pmg;
     return MeltingParams{
         /*precs1=*/precs1, /*precs2=*/precs2,
@@ -57,20 +60,31 @@ MeltingOutputs melting_torch(
 
     // ── psmlt ──────────────────────────────────────────────────────────
     auto snow_active = torch::logical_and(warm, in.qs > 0);
-    auto coeres_s = in.rslope2_s
-                  * torch::sqrt(torch::clamp(in.rslope_s * in.rslopeb_s, /*min=*/p.qcrmin))
-                  * in.rslopemu_s;
-    // F:1290-1291 inner sum: term1 + ((precs2*n0so)*work2)*coeres — every op individually
-    // rounded in source order (-ffp-contract=off; fma_acc is plain two-rounding).
-    auto psmlt_term1 = p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s;
-    auto psmlt_sum = ops::fma_acc(psmlt_term1, p.precs2 * in.n0so * in.work2, coeres_s);
-    auto psmlt_raw = xka_val / p.xlf * (p.t0c - in.t) * in.n0sfac
-                     * PI / 2.0
+    // §1B (whole-chain roadmap FRZ-01): Fortran F:1310-1315 — coeres/precs1/precs2/rslopemu are
+    // DOUBLE, psmlt is REAL(f32). The bracket (term1+term2) and the chain evaluate in f64; only the
+    // psmlt store rounds to f32 once. C++ previously demoted the double precs1/precs2 scalars to f32
+    // (torch weak-scalar) and summed via fma_acc (f32 two-rounding) — an f32-stepwise-vs-double-then-
+    // round deviation. Build the bracket/chain in f64 (inner rslope2*sqrt(rslope*rslopeb) kept f32 to
+    // match Fortran REAL operands), round once at the store. autograd-safe (.to(dtype) only).
+    // §1B (corrected): Fortran precs1/precs2 are REAL(f32) (F:147 `real,save`), rslopemu/coeres are
+    // DOUBLE (F:656/725). So the INNER products (precs1*n0so*rslope2), (precs2*n0so*work2) evaluate in
+    // f32, and promote to f64 ONLY at the *rslopemu / *coeres step (DOUBLE); the term1+term2 add is f64;
+    // psmlt is REAL → ONE f32 round at the store. (Earlier draft over-promoted the inner products to
+    // f64 — a "REAL-constant regression"; precs* stay f32 here. torch weak-scalar keeps precs*tensor f32.)
+    const auto F64 = torch::kFloat64;
+    auto coeres_s = (in.rslope2_s
+                  * torch::sqrt(torch::clamp(in.rslope_s * in.rslopeb_s, /*min=*/p.qcrmin))).to(F64)
+                  * in.rslopemu_s.to(F64);
+    auto psmlt_term1 = (p.precs1 * in.n0so * in.rslope2_s).to(F64) * in.rslopemu_s.to(F64);
+    auto psmlt_term2 = (p.precs2 * in.n0so * in.work2).to(F64) * coeres_s;
+    auto psmlt_sum = psmlt_term1 + psmlt_term2;
+    auto psmlt_raw = ((xka_val / p.xlf * (p.t0c - in.t) * in.n0sfac * PI / 2.0).to(F64)
                      * psmlt_sum
-                     / den_safe;
+                     / den_safe.to(F64)).to(in.qs.scalar_type());
     auto psmlt_dt = psmlt_raw * dtcld;
     auto psmlt_capped = torch::minimum(torch::maximum(psmlt_dt, -in.qs), zero);
-    auto psmlt = torch::where(snow_active, psmlt_capped, zero) / dtcld;
+    auto psmlt_capped_g = torch::where(snow_active, psmlt_capped, zero);  // CAPPED AMOUNT (Fortran F:1315)
+    auto psmlt = psmlt_capped_g / dtcld;                                  // RATE (for state_update rate-sum)
 
     auto sfac_raw = in.rslope_s * in.n0so * in.n0sfac
                     / torch::clamp(in.qs, /*min=*/p.qcrmin);
@@ -81,19 +95,30 @@ MeltingOutputs melting_torch(
 
     // ── pgmlt ──────────────────────────────────────────────────────────
     auto graupel_active = torch::logical_and(warm, in.qg > 0);
-    auto coeres_g = in.rslope2_g
-                  * torch::sqrt(torch::clamp(in.rslope_g * in.rslopeb_g, /*min=*/p.qcrmin))
-                  * in.rslopemu_g;
-    // Same shape as psmlt: term1 + ((precg2*n0go)*work2)*coeres, strict two-rounding in source order. F:1314-1315
-    auto pgmlt_term1 = p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g;
-    auto pgmlt_sum = ops::fma_acc(pgmlt_term1, in.precg2 * in.n0go * in.work2, coeres_g);
-    auto pgmlt_raw = xka_val / p.xlf * (p.t0c - in.t)
-                     * PI / 2.0
+    // §1B (FRZ-02): same as psmlt for graupel — F:1334-1338, coeres/precg1/precg2 DOUBLE, pgmlt REAL.
+    // NOTE: pgmlt has NO n0sfac factor (snow-only). precg2 is a tensor input here (per-cell).
+    // §1B (corrected): precg1/precg2 are REAL(f32) (F:147/F:649); rslopemu_g/coeres_g DOUBLE. Inner
+    // products f32, promote to f64 only via *rslopemu_g / *coeres_g; f64 add; one f32 round at pgmlt.
+    auto coeres_g = (in.rslope2_g
+                  * torch::sqrt(torch::clamp(in.rslope_g * in.rslopeb_g, /*min=*/p.qcrmin))).to(F64)
+                  * in.rslopemu_g.to(F64);
+    auto pgmlt_term1 = (p.precg1 * in.n0go * in.rslope2_g).to(F64) * in.rslopemu_g.to(F64);
+    auto pgmlt_term2 = (in.precg2 * in.n0go * in.work2).to(F64) * coeres_g;
+    auto pgmlt_sum = pgmlt_term1 + pgmlt_term2;
+    // §35 SEQUENTIAL coupling (Fortran F:1326→1336): psmlt updates t (t += xlf0/cpm·psmlt) BEFORE
+    // pgmlt reads it. The C++/oracle previously computed BOTH psmlt & pgmlt from entry-t (parallel)
+    // → C++≡oracle but both ≠ Fortran (cross-tree parity passes, WRF bitwise fails — §35 signature).
+    // t1 = entry-t in non-snow cells (psmlt_capped_g≡0 there), psmlt-updated-t where snow melted.
+    // Only pgmlt's xka(t)·(t0c−t) prefactor depends on t; the bracket (n0go/rslope/precg) is t-free.
+    auto t1 = in.t + (p.xlf / in.cpm) * psmlt_capped_g;   // F:1326 (xlf=xlf0 in warm cells, =p.xlf)
+    auto xka_val_g = xka(t1, in.den);                     // F:1336 xka(t1,den)
+    auto pgmlt_raw = ((xka_val_g / p.xlf * (p.t0c - t1) * PI / 2.0).to(F64)
                      * pgmlt_sum
-                     / den_safe;
+                     / den_safe.to(F64)).to(in.qs.scalar_type());
     auto pgmlt_dt = pgmlt_raw * dtcld;
     auto pgmlt_capped = torch::minimum(torch::maximum(pgmlt_dt, -in.qg), zero);
-    auto pgmlt = torch::where(graupel_active, pgmlt_capped, zero) / dtcld;
+    auto pgmlt_capped_g = torch::where(graupel_active, pgmlt_capped, zero);  // CAPPED AMOUNT
+    auto pgmlt = pgmlt_capped_g / dtcld;                                     // RATE
 
     auto gfac_raw = in.rslope_g * in.n0go / torch::clamp(in.qg, /*min=*/p.qcrmin);
     auto gfac = torch::where(
@@ -103,6 +128,7 @@ MeltingOutputs melting_torch(
 
     auto rhox_safe = torch::clamp(in.rhox, /*min=*/constants::DENS);
     auto delta_brs = torch::where(graupel_active, pgmlt / rhox_safe, zero);
+    auto delta_brs_capped = torch::where(graupel_active, pgmlt_capped_g / rhox_safe, zero);  // AMOUNT (Fortran F:1351 brs+=pgmlt/rhox)
 
     // ── pimlt: instantaneous ───────────────────────────────────────────
     auto ice_active = torch::logical_and(warm, in.qi > 0);
@@ -110,7 +136,9 @@ MeltingOutputs melting_torch(
     auto pimlt_ni = torch::where(ice_active, in.ni, zero);
 
     return MeltingOutputs{
-        /*psmlt=*/psmlt, /*pgmlt=*/pgmlt, /*pimlt_qi=*/pimlt_qi, /*pimlt_ni=*/pimlt_ni,
+        /*psmlt=*/psmlt, /*pgmlt=*/pgmlt,
+        /*psmlt_capped=*/psmlt_capped_g, /*pgmlt_capped=*/pgmlt_capped_g, /*delta_brs_capped=*/delta_brs_capped,
+        /*pimlt_qi=*/pimlt_qi, /*pimlt_ni=*/pimlt_ni,
         /*sfac=*/sfac, /*gfac=*/gfac, /*delta_brs=*/delta_brs,
     };
 }

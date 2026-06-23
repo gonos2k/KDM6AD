@@ -82,7 +82,14 @@ torch::Tensor compute_supcol(const torch::Tensor& t, const ThermoParams& p) {
     // Fortran F:1274/3477 supcol = t0c - t (raw, no clamp). Removing the [153.15,393.15]
     // clamp restores dsupcol/dt at extreme T (AD-faithful) and is a no-op for tropospheric T.
     // 1:1 parity fix #2.
-    return p.t0c - t;
+    // PATH-CONDITIONAL dtype (1:1 parity fix #N): t0c must borrow t's scalar_type so the subtraction is
+    // f32 on the operational path (Fortran REAL(4): t0c-t) and f64 on the DA/oracle path. `p.t0c` is a
+    // double; `double - f32tensor` PROMOTES to f64, which rounds the subtraction differently from
+    // Fortran's f32 for cells within ~1 f32-ULP of 273.15 — FLIPPING the SIGN of supcol, hence the
+    // cold/warm gate (supcol>=0 ⇔ t<=t0c), throughout the melt layer (T≈273.15). The opposite branch
+    // then fires freeze-vs-melt rates → large STRUCTURAL divergence in qr/qs/qg. full_like borrows t's
+    // dtype (mirrors the already-fixed slope.cpp:186 supcol). DA path (t f64) stays byte-identical.
+    return torch::full_like(t, p.t0c) - t;
 }
 
 torch::Tensor compute_qs_water(const torch::Tensor& t, const torch::Tensor& pres, const ThermoParams& p) {

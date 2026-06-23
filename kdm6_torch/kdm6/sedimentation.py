@@ -109,15 +109,17 @@ def substep_advection_torch(
     K = state.qr.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)
-    # falk_scale broadcasts against (B,) per-level slices x[:, k].
-    # Per-column path: divisor 1/mstep(i) * gate (n<=mstep(i)) -> (B,) (mirrors C++).
-    # Legacy scalar path: 1/mstep, gate always 1.
+    # mstep_col_safe (B,) divisor + gate (n<=mstep(i)) broadcast against (B,) level slices.
+    # Fortran F:1125 falk = num/mstep(i): falk = num / mstep_col_safe * gate divides the
+    # NUMERATOR (single f32 rounding, matches Fortran) — NOT num*(1/mstep), whose precomputed
+    # reciprocal differs 1 ULP for non-power-of-2 mstep (§44 eval-form). gate is 0/1 (×exact).
     if mstep_col is not None:
         mstep_col_safe = torch.clamp(mstep_col.to(dend.dtype), min=1.0)
         gate = (mstep_col_safe >= float(n_current)).to(dend.dtype)
-        falk_scale = gate / mstep_col_safe
     else:
-        falk_scale = 1.0 / float(mstep)
+        # Fortran F:1125 falk = num/mstep(i): divide the NUMERATOR (1 op), gate always 1.
+        mstep_col_safe = float(mstep)
+        gate = 1.0
 
     # AD-friendly: build new column lists instead of in-place indexed assignment.
     # k_idx 0 = top (kte), k_idx K-1 = bottom (kts).
@@ -133,11 +135,11 @@ def substep_advection_torch(
     fall_brs_cols = [fall_brs_in[:, k] for k in range(K)]
 
     # ── Top cell (k=0) ─────────────────────────────────────────────────
-    falk_qr_top = dend[:, 0] * qr_cols[0] * work1_qr[:, 0] * falk_scale
-    falk_nr_top = nr_cols[0] * workn_qr[:, 0] * falk_scale
-    falk_qs_top = dend[:, 0] * qs_cols[0] * work1_qs[:, 0] * falk_scale
-    falk_qg_top = dend[:, 0] * qg_cols[0] * work1_qg[:, 0] * falk_scale
-    falk_brs_top = dend[:, 0] * brs_cols[0] * work1_qg[:, 0] * falk_scale
+    falk_qr_top = dend[:, 0] * qr_cols[0] * work1_qr[:, 0] / mstep_col_safe * gate
+    falk_nr_top = nr_cols[0] * workn_qr[:, 0] / mstep_col_safe * gate
+    falk_qs_top = dend[:, 0] * qs_cols[0] * work1_qs[:, 0] / mstep_col_safe * gate
+    falk_qg_top = dend[:, 0] * qg_cols[0] * work1_qg[:, 0] / mstep_col_safe * gate
+    falk_brs_top = dend[:, 0] * brs_cols[0] * work1_qg[:, 0] / mstep_col_safe * gate
 
     fall_qr_cols[0] = fall_qr_cols[0] + falk_qr_top
     fall_nr_cols[0] = fall_nr_cols[0] + falk_nr_top
@@ -163,11 +165,11 @@ def substep_advection_torch(
     for k in range(1, K):
         # falk(k) from qr_cols[k] — still the ENTRY value here (cell k is updated only at the end
         # of this iteration; cells above touch only their own column), = Fortran pre-update qrs(k).
-        falk_qr_k = dend[:, k] * qr_cols[k] * work1_qr[:, k] * falk_scale
-        falk_nr_k = nr_cols[k] * workn_qr[:, k] * falk_scale
-        falk_qs_k = dend[:, k] * qs_cols[k] * work1_qs[:, k] * falk_scale
-        falk_qg_k = dend[:, k] * qg_cols[k] * work1_qg[:, k] * falk_scale
-        falk_brs_k = dend[:, k] * brs_cols[k] * work1_qg[:, k] * falk_scale
+        falk_qr_k = dend[:, k] * qr_cols[k] * work1_qr[:, k] / mstep_col_safe * gate
+        falk_nr_k = nr_cols[k] * workn_qr[:, k] / mstep_col_safe * gate
+        falk_qs_k = dend[:, k] * qs_cols[k] * work1_qs[:, k] / mstep_col_safe * gate
+        falk_qg_k = dend[:, k] * qg_cols[k] * work1_qg[:, k] / mstep_col_safe * gate
+        falk_brs_k = dend[:, k] * brs_cols[k] * work1_qg[:, k] / mstep_col_safe * gate
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_k
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_k
@@ -265,9 +267,10 @@ def ice_substep_advection_torch(
     if mstep_col is not None:
         mstep_col_safe = torch.clamp(mstep_col.to(dend.dtype), min=1.0)
         gate = (mstep_col_safe >= float(n_current)).to(dend.dtype)
-        falk_scale = gate / mstep_col_safe
     else:
-        falk_scale = 1.0 / float(mstep)
+        # Fortran F:1125 falk = num/mstep(i): divide the NUMERATOR (1 op), gate always 1.
+        mstep_col_safe = float(mstep)
+        gate = 1.0
 
     qi_cols = [state.qi[:, k] for k in range(K)]
     ni_cols = [state.ni[:, k] for k in range(K)]
@@ -275,8 +278,8 @@ def ice_substep_advection_torch(
     fall_ni_cols = [fall_ni_in[:, k] for k in range(K)]
 
     # Top cell
-    falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] * falk_scale
-    falk_ni_top = ni_cols[0] * workn_qi[:, 0] * falk_scale
+    falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] / mstep_col_safe * gate
+    falk_ni_top = ni_cols[0] * workn_qi[:, 0] / mstep_col_safe * gate
     fall_qi_cols[0] = fall_qi_cols[0] + falk_qi_top
     fall_ni_cols[0] = fall_ni_cols[0] + falk_ni_top
     qi_cols[0] = torch.clamp(qi_cols[0] - falk_qi_top * dtcld / dend_safe[:, 0], min=0.0)
@@ -287,8 +290,8 @@ def ice_substep_advection_torch(
     # in falk_*_prev), not a recompute from the depleted neighbour. (audit round-2)
     falk_qi_prev, falk_ni_prev = falk_qi_top, falk_ni_top
     for k in range(1, K):
-        falk_qi_k = dend[:, k] * qi_cols[k] * work1_qi[:, k] * falk_scale
-        falk_ni_k = ni_cols[k] * workn_qi[:, k] * falk_scale
+        falk_qi_k = dend[:, k] * qi_cols[k] * work1_qi[:, k] / mstep_col_safe * gate
+        falk_ni_k = ni_cols[k] * workn_qi[:, k] / mstep_col_safe * gate
         fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k
         fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k
 

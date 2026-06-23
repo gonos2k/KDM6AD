@@ -69,7 +69,7 @@ def test_preamble_outputs_finite():
     out = preamble_torch(state, forcing, sea_mask, params=p)
     # 모든 출력 finite
     for field in ["cpm", "xl", "supcol", "qs1", "qs2", "rh_w", "rh_ice",
-                  "supsat", "denfac", "work2",
+                  "supsat", "supsat_ice", "denfac", "work2",
                   "rslopec", "avedia_c", "avedia_r", "sigma_c", "lencon", "lenconcr"]:
         v = getattr(out, field)
         assert torch.isfinite(v).all(), field
@@ -1002,7 +1002,7 @@ def test_apply_melt_freeze_inline_d1_melt_uses_xlf0():
     state = CoordinatorState(qv=m(8e-3), qc=z, qr=z, qs=m(1e-3), qg=z, qi=z,
                              nc=z, nr=z, ni=z, brs=z, t=m(283.0))
     pre = PreambleOutputs(cpm=m(cpm_v), xl=m(xl_v), supcol=m(-10.0),  # supcol<0 ⇔ T>T0c (melt regime)
-                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, supsat_ice=z, denfac=z, work2=z,
                           rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
                           progb=None, slope=None)
     mf = MeltFreezePhaseOutputs(psmlt=m(psmlt_v), pgmlt=z, pimlt_qi=z, pimlt_ni=z,
@@ -1035,7 +1035,7 @@ def test_apply_melt_freeze_inline_d1_melt_adds_rain_number():
     state = CoordinatorState(qv=m(8e-3), qc=z, qr=m(2e-4), qs=m(1e-3), qg=m(5e-4), qi=z,
                              nc=z, nr=m(nr0), ni=z, brs=z, t=m(283.0))
     pre = PreambleOutputs(cpm=m(1005.0), xl=m(2.476e6), supcol=m(-10.0),  # T>T0c (melt regime)
-                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                          qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, supsat_ice=z, denfac=z, work2=z,
                           rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
                           progb=None, slope=None)
     mf = MeltFreezePhaseOutputs(psmlt=m(psmlt_v), pgmlt=m(pgmlt_v), pimlt_qi=z, pimlt_ni=z,
@@ -1138,7 +1138,7 @@ def test_inline_melt_qr_strict_warm_at_t0c():
 
     def melt_qr(supcol):
         pre = PreambleOutputs(cpm=m(1005.0), xl=m(2.476e6), supcol=m(supcol),
-                              qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, denfac=z, work2=z,
+                              qs1=z, qs2=z, rh_w=z, rh_ice=z, supsat=z, supsat_ice=z, denfac=z, work2=z,
                               rslopec=z, avedia_c=z, avedia_r=z, sigma_c=z, lencon=z, lenconcr=z,
                               progb=None, slope=None)
         out = apply_melt_freeze_inline_torch(state, mf, pre, dtcld=dtcld, xls=2.85e6)

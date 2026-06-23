@@ -255,14 +255,17 @@ def default_slope_params() -> SlopeParams:
     g1pbimi = _rgamma(1.0 + bvti + MUI)
 
     pidnr = _fc.PIDNR   # f32-stepwise (kdm6init F:3235; see fconst.py)
-    pidn0s = cms * n0s * g1pdsms / g1pms
+    pidn0s = _fc.PIDN0S  # f32-stepwise (kdm6init F:3326); double-then-round differs 1 ULP (§44)
     pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
 
-    pvtr = avtr * g1pdrbrmr / g1pdrmr
-    pvtrn = avtr * g1pbrmr / g1pmr
-    pvts = avts * g1pdsbsms / g1pdsms
-    pvti = avti * g1pdibimi / g1pdimi
-    pvtin = avti * g1pbimi / g1pmi
+    # Fortran pvt* are REAL(f32) (kdm6init); store the f32 VALUE to match Fortran's DBLE(REAL pvt)
+    # and the C++ mirror (slope.cpp static_cast<float>). §44 f32-stepwise constant; consistent with
+    # pidnr/pidni/pidn0s being f32-valued. (Codex stop-review: oracle<->C++ pvt consistency.)
+    pvtr = _fc._f32(avtr * g1pdrbrmr / g1pdrmr)
+    pvtrn = _fc._f32(avtr * g1pbrmr / g1pmr)
+    pvts = _fc._f32(avts * g1pdsbsms / g1pdsms)
+    pvti = _fc._f32(avti * g1pdibimi / g1pdimi)
+    pvtin = _fc._f32(avti * g1pbimi / g1pmi)
 
     # STEP-79 mirror: kdm6init builds the rslope*max family REAL(4)-stepwise
     # (F:3297-3340) — f32 reciprocal, f32 squares/cubes, powf for b/m/d powers.

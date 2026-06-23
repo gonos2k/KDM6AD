@@ -25,6 +25,8 @@ program test_fortran_smoke
   real(c_float), allocatable, dimension(:,:) :: xland
   ! Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
   real(c_float), allocatable, dimension(:,:) :: rain_inc, snow_inc, graupel_inc
+  ! Graupel density diagnostic (im, kme, jme) → WRF diag_rhog/RHOPO3D.
+  real(c_float), allocatable, dimension(:,:,:) :: rhog_o
 
   type(c_ptr) :: handle
   integer(c_int) :: rc
@@ -43,6 +45,7 @@ program test_fortran_smoke
   allocate(bg_o(im, kme, jme))
   allocate(xland(im, jme))
   allocate(rain_inc(im, jme), snow_inc(im, jme), graupel_inc(im, jme))
+  allocate(rhog_o(im, kme, jme))
 
   ! ── Warm-phase active cell (test_c_abi.cpp와 동일 입력) ───────────────────
   th   = 285.0_c_double / 1.1_c_double   ! T=285K, π=1.1
@@ -76,7 +79,8 @@ program test_fortran_smoke
                  nccn_o, nc_o, ni_o, nr_o, bg_o, &
                  handle, &
                  xland, 100.0_c_double, 10.0_c_double, & ! ncmin_land, ncmin_sea
-                 rain_inc, snow_inc, graupel_inc)        ! Phase 4 precip incs
+                 rain_inc, snow_inc, graupel_inc, &      ! Phase 4 precip incs
+                 rhog_o)                                 ! graupel density → diag_rhog
 
   if (rc /= KDM6_OK) then
      print *, "FAIL: kdm6_step returned ", rc

@@ -114,7 +114,8 @@ SelfCollectionOutputs self_collection_torch(
 // ─── Step B4: Rain evaporation ───────────────────────────────────────────────
 
 struct WarmRainEvapParams {
-    double precr1;       // 2*pi*0.78*g2pmr
+    double precr1;       // 2*pi*0.78*g2pmr (f64-pi; DA/oracle path)
+    double precr1_f32;   // f32-stepwise 2.*pi*0.78*g2pmr (Fortran REAL(4) F:3329; operational path)
     double precr2;       // 2*pi*0.31*sqrt(avtr)*g7pbro2
     double fac_evap;     // 1.0 (yhlee 변경, 원본 1.2)
 };

@@ -41,7 +41,8 @@ module kdm6_iso_c
         nccn_out, nc_out, ni_out, nr_out, bg_out, &
         handle, &
         xland, ncmin_land, ncmin_sea, &
-        rain_increment, snow_increment, graupel_increment &
+        rain_increment, snow_increment, graupel_increment, &
+        rhog_out &
       ) bind(C, name="kdm6_step_c") result(rc)
       import :: c_int, c_double, c_float, c_ptr
       real(c_float), intent(in)  :: th(*), qv(*), qc(*), qr(*)
@@ -60,6 +61,8 @@ module kdm6_iso_c
       real(c_double), value       :: ncmin_land, ncmin_sea
       ! Sedimentation surface increments (im, jme) float* [mm], caller-allocated.
       real(c_float), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
+      ! Graupel density (im, kme, jme) [kg m^-3] → WRF diag_rhog/RHOPO3D.
+      real(c_float), intent(out) :: rhog_out(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
 
@@ -132,7 +135,8 @@ contains
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
       handle, &
       xland, ncmin_land, ncmin_sea, &
-      rain_increment, snow_increment, graupel_increment &
+      rain_increment, snow_increment, graupel_increment, &
+      rhog_out &
     ) result(rc)
     real(c_float), intent(in),  contiguous :: th(:,:,:), qv(:,:,:), qc(:,:,:), qr(:,:,:)
     real(c_float), intent(in),  contiguous :: qi(:,:,:), qs(:,:,:), qg(:,:,:)
@@ -153,6 +157,8 @@ contains
     real(c_float), intent(out), contiguous :: rain_increment(:,:)
     real(c_float), intent(out), contiguous :: snow_increment(:,:)
     real(c_float), intent(out), contiguous :: graupel_increment(:,:)
+    ! Graupel density (im, kme, jme) [kg m^-3] → WRF diag_rhog/RHOPO3D.
+    real(c_float), intent(out), contiguous :: rhog_out(:,:,:)
     integer(c_int)                          :: rc
 
     rc = kdm6_step_c( &
@@ -166,7 +172,8 @@ contains
       nccn_out, nc_out, ni_out, nr_out, bg_out, &
       handle, &
       xland, real(ncmin_land, c_double), real(ncmin_sea, c_double), &
-      rain_increment, snow_increment, graupel_increment)
+      rain_increment, snow_increment, graupel_increment, &
+      rhog_out)
   end function kdm6_step
 
   ! [DA] fp64 DA adjoint forward — Fortran-friendly wrapper over kdm6_step_ad_c.

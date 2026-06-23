@@ -210,7 +210,10 @@ def progb_param_torch(
     # inactive cell은 RHO_MID로 채워 cmg=π·400/6 같은 spurious 계산 방지 후 zero gate.
     rhox = torch.where(active, rhox, _scalar(RHO_MID, qg))
 
-    # bg 갱신 (consistency): bg = qg / rhox (active일 때만, 아니면 입력 보존)
+    # bg 갱신 (consistency): bg = qg / rhox (active일 때만, 아니면 입력 보존).
+    # §44/AD-LIMIT (mirror C++ progb.cpp): the f32-faithful brs fix for the ~137 qg>0 clamp-boundary cells
+    # is unachievable without breaking AD (staircase VJP) or the ABI value_only==graph determinism. Kept
+    # smooth f64 (AD-first); see memory brs-ad-vs-bitwise-conflict.
     bg_new = torch.where(active, qg / rhox, bg)
 
     # ── cmg, pidn0g ──────────────────────────────────────────────────────

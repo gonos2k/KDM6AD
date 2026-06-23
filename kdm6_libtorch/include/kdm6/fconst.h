@@ -61,6 +61,7 @@ struct F32Consts {
     double pidnc;     // cmc*rgmma(1.+dmc/(muc+1.))        F:3205
     double pidnr;     // cmr*g1pdrmr/g1pmr                 F:3235
     double pidni;     // cmi*g1pdimi/g1pmi                 F:3263
+    double pidn0s;    // cms*n0s*g1pdsms/g1pms (snow)      F:3326
     double ele2;      // 4.*pi*1.38e-23/(6.*pi*Rcn)        F:1521 (REAL stepwise; loop-invariant)
 };
 
@@ -93,6 +94,13 @@ inline const F32Consts& get() {
         const float pidnc = cmc * rgmma_f(1.0f + dmc / (muc + 1.0f));
         const float pidnr = cmr * g1pdrmr / g1pmr;
         const float pidni = cmi * g1pdimi / g1pmi;
+        // snow pidn0s = cms*n0s*g1pdsms/g1pms (REAL, f32-stepwise; F:3326). dens=100 (snow).
+        // double-then-round differs 1 ULP (gfortran 4E15CD86 vs double 4E15CD85) — §44.
+        const float dens = 100.0f, n0s = 2.0e6f, mus = 0.0f, dms = 3.0f;
+        const float cms = pi * dens / 6.0f;
+        const float g1pms = rgmma_f(1.0f + mus);
+        const float g1pdsms = rgmma_f(1.0f + dms + mus);
+        const float pidn0s = cms * n0s * g1pdsms / g1pms;
         // ele2 = 4.*pi*1.38E-23/(6.*pi*Rcn) — Fortran F:1521 evaluates this REAL(4)
         // stepwise inside the D2 loop (loop-invariant): (4*pi)*kB / ((6*pi)*Rcn).
         const float rcn = 0.1e-6f;
@@ -104,6 +112,7 @@ inline const F32Consts& get() {
         c.g1pmi = g1pmi; c.g4pmi = g4pmi; c.g1pdimi = g1pdimi;
         c.g1p2dcomuc1 = g1p2dcomuc1; c.g1pdcomuc1 = g1pdcomuc1;
         c.pidnc = pidnc; c.pidnr = pidnr; c.pidni = pidni;
+        c.pidn0s = pidn0s;
         c.ele2 = ele2;
         return c;
     }();

@@ -89,4 +89,11 @@ void to_fortran_arrays(const State& state,
                        float* qg_out, float* nccn_out, float* nc_out,
                        float* ni_out, float* nr_out, float* bg_out);
 
+// Copy one (B, K) field tensor back to a Fortran column-major float*(im, kme, jme)
+// buffer (same layout convention as to_fortran_arrays). Exposed for threading
+// auxiliary diagnostics (e.g. diag_rhog/RHOPO3D) that are not part of State.
+void copy_back_to_fortran(const torch::Tensor& flat /*(B, K)*/,
+                          int im, int jme,
+                          float* out /*(im, kme, jme)*/);
+
 }  // namespace kdm6

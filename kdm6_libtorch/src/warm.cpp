@@ -86,7 +86,7 @@ AutoconvOutputs autoconv_torch(
 // ═══════════════════════════════════════════════════════════════════════════
 
 WarmAccretionParams default_warm_accretion_params() {
-    const double cmc = PI * constants::DENR / 6.0;
+    const double cmc = fconst::get().cmc;  // f32-faithful (Fortran cmc REAL(4) F:3156); raw f64 PI*DENR/6 is 1-ULP off → pracw (qr/nr)
     const double g3pmc = rgmma_scalar(1.0 + 3.0 / (constants::MUC + 1.0));
     const double g6pmc = rgmma_scalar(1.0 + 6.0 / (constants::MUC + 1.0));
     const double g9pmc = rgmma_scalar(1.0 + 9.0 / (constants::MUC + 1.0));
@@ -248,10 +248,22 @@ WarmRainEvapParams default_warm_rain_evap_params(double fac_evap) {
     const double g7pbro2 = rgmma_scalar(2.5 + 0.5 * constants::BVTR + constants::MUR);
 
     const double precr1 = 2.0 * PI * 0.78 * g2pmr;
-    const double precr2 = 2.0 * PI * 0.31 * std::pow(constants::AVTR, 0.5) * g7pbro2;
+    // Fortran F:3329 precr1 = 2.*pi*0.78*g2pmr is REAL(4) (same decl list as precr2, F:164) → f32-stepwise.
+    // f64-pi precr1 cast→f32 at the op multiply differs ~1 ULP from Fortran's f32-stepwise precr1, shifting
+    // prevp → qr/nr. Compute the f32-stepwise value; prevp selects it on the operational path, keeps the
+    // f64 precr1 on the DA path (qr.scalar_type() discriminator) so the oracle/VJP is preserved.
+    const float precr1_f32_v = ((2.0f * static_cast<float>(PI)) * 0.78f) * static_cast<float>(g2pmr);
+    // Fortran F:3269 precr2 = 2.*pi*.31*avtr**.5*g7pbro2 is REAL(f32-stepwise) and avtr**.5 is a
+    // REAL**REAL => libm POWF, not f64 pow. f64 pow->f32 (41E81FC5) differs 1 ULP from powf
+    // (41E81FC6), shifting precr2 by 1 ULP (§44 f32-stepwise + eval-form). Compute f32-stepwise.
+    const float precr2_f32 = (((2.0f * static_cast<float>(PI)) * 0.31f)
+                              * std::powf(static_cast<float>(constants::AVTR), 0.5f))
+                             * static_cast<float>(g7pbro2);
+    const double precr2 = precr2_f32;
 
     return WarmRainEvapParams{
         /*precr1=*/precr1,
+        /*precr1_f32=*/static_cast<double>(precr1_f32_v),
         /*precr2=*/precr2,
         /*fac_evap=*/fac_evap,
     };
@@ -280,13 +292,24 @@ RainEvapOutputs rain_evap_torch(
 
     // prevp_raw = (rh-1) * n0r * (precr1*rslope2*rslopemu + precr2*work2*coeres) / work1
     auto work1_safe = torch::clamp(work1_r, /*min=*/constants::QCRMIN);
-    // Fortran F:1782-1783 bracket: (precr1*rslope2*rslopemu + precr2*work2*coeres)
-    // op1 = precr1*rslope2_r*rslopemu_r (acc); op2 = (precr2*work2)*coeres — mul rounds, '+' rounds (strict IEEE source order).
-    auto prevp_b_op1 = params.precr1 * rslope2_r * rslopemu_r;
+    // Fortran F:1851-1852 bracket: (precr1*rslope2*rslopemu + precr2*work2*coeres)
+    // precr1 path-conditional: f32-stepwise (Fortran REAL(4) F:3329) on the operational f32 path,
+    // exact f64 precr1 on the DA/oracle f64 path. Branch on qr.scalar_type() — a structural dtype
+    // check (not a data-dependent .item()), so no autograd graph break; precr1_use is a constant.
+    const double precr1_use = (qr.scalar_type() == torch::kFloat32)
+                                  ? params.precr1_f32 : params.precr1;
+    auto prevp_b_op1 = precr1_use * rslope2_r * rslopemu_r;
     auto prevp_b_p2a = params.precr2 * work2;
     auto bracket = ops::fma_acc(prevp_b_op1, prevp_b_p2a, coeres);
-    auto prevp_raw = (rh_w - 1.0) * n0r * bracket / work1_safe;
-    prevp_raw = params.fac_evap * prevp_raw;
+    // §44 DOUBLE-internal-narrowed-once: every operand here is f32 EXCEPT n0r (DOUBLE per F:679,
+    // because Fortran n0r is `double precision`), so *n0r promotes the chain to f64. Fortran stores
+    // the RHS into the REAL(4) prevp(i,k) array (F:1872) and the fac_evap scale (F:1875), truncating
+    // to f32 BEFORE the caps (F:1877-1889). C++ did the promote-up but missed the store-truncation,
+    // feeding f64 prevp into state_update → f64 qr_new (qr 7856 / nr 4286 via the rce gate). Narrow
+    // at op dtype (qr.scalar_type(): f32 operational = Fortran-faithful; f64 DA = no-op, VJP intact).
+    auto op_dtype = qr.scalar_type();
+    auto prevp_raw = ((rh_w - 1.0) * n0r * bracket / work1_safe).to(op_dtype);  // F:1872 REAL(4) store
+    prevp_raw = (params.fac_evap * prevp_raw).to(op_dtype);                     // F:1875 REAL(4) store
 
     // 부호 분기: evap (negative) vs cond (positive)
     auto satdt = supsat / dtcld;

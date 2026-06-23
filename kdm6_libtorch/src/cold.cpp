@@ -29,8 +29,8 @@ torch::Tensor wilt_reduction(const torch::Tensor& ratio) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 IceAccretionParams default_ice_accretion_params() {
-    const double cmi = PI * constants::DENI / 6.0;
-    const double cmr = PI * constants::DENR / 6.0;
+    const double cmi = fconst::get().cmi;  // f32-faithful (Fortran cmi REAL(4) F:3159); raw f64 PI*DENI/6 → 1-ULP (piacr/praci)
+    const double cmr = fconst::get().cmr;  // f32-faithful (Fortran cmr REAL(4) F:3157); raw f64 PI*DENR/6 is 4.03e-5 off → psacr/pgacr
 
     const double g1pmr = rgmma_scalar(1.0 + constants::MUR);
     const double g2pmr = rgmma_scalar(2.0 + constants::MUR);
@@ -139,7 +139,7 @@ torch::Tensor exp_eac_from_supcol(const torch::Tensor& supcol) {
 }  // namespace
 
 IceToSnowGraupelParams default_ice_to_snow_graupel_params() {
-    const double cmi = PI * constants::DENI / 6.0;
+    const double cmi = fconst::get().cmi;  // f32-faithful (Fortran cmi REAL(4) F:3159); raw f64 PI*DENI/6 → 1-ULP (piacr/praci)
     const double g1pms = (constants::MUS == 0.0) ? 1.0 : rgmma_scalar(1.0 + constants::MUS);
     const double g2pms = rgmma_scalar(2.0 + constants::MUS);
     const double g3pms = rgmma_scalar(3.0 + constants::MUS);
@@ -254,6 +254,11 @@ NumberAccretionOutputs number_accretion_torch(
     double dtcld
 ) {
     auto zero = torch::zeros_like(in.qi);
+    // Path-conditional π (Fortran pi=4.*atan(1.) is REAL(4), 8.7e-8 below double π): f32 op =
+    // Fortran-faithful / f64 DA = oracle math.pi. The number rates' n0i/n0r are DOUBLE (F:667), so
+    // the chain promotes to f64 — raw f64 PI ≠ dble(f32 π) by 0.37 ULP, flipping boundary nr cells
+    // (§40 mirror-sweep: the MASS twins psacr/pgacr already use pi_t; the number twins were missed).
+    auto pi_t = torch::full_like(in.den, PI);
 
     // Per-cell ncmin (xland-derived, see runtime.cpp). nullopt → scalar fallback.
     auto ni_above_ncmin = p.ncmin_tensor.has_value()
@@ -280,7 +285,7 @@ NumberAccretionOutputs number_accretion_torch(
     auto acrfac_nra = ops::fma_acc(
         ops::fma_acc(acrfac_nra_t1, acrfac_nra_t2h, in.rslope2_i),
         acrfac_nra_t3h, in.rslope3_i);
-    auto nraci_raw = (PI * in.n0i * in.n0r * p.eacri * torch::abs(in.vt2r - in.vt2i)
+    auto nraci_raw = (pi_t * in.n0i * in.n0r * p.eacri * torch::abs(in.vt2r - in.vt2i)
                      * acrfac_nra / 4.0).to(in.ni.scalar_type());  // f64 n0i chain, f32 store F:1902
     auto nraci_wilt = nraci_raw * wilt_reduction(qr_safe / qi_safe);
     auto nraci_capped = torch::minimum(nraci_wilt, in.ni / dtcld);
@@ -295,7 +300,7 @@ NumberAccretionOutputs number_accretion_torch(
     auto acrfac_nia = ops::fma_acc(
         ops::fma_acc(acrfac_nia_t1, acrfac_nia_t2h, in.rslope2_r),
         acrfac_nia_t3h, in.rslope3_r);
-    auto niacr_raw = (PI * in.n0i * in.n0r * p.eacir * torch::abs(in.vt2i - in.vt2r)
+    auto niacr_raw = (pi_t * in.n0i * in.n0r * p.eacir * torch::abs(in.vt2i - in.vt2r)
                      * acrfac_nia / 4.0).to(in.ni.scalar_type());  // f64 n0i chain, f32 store F:1913
     auto niacr_wilt = niacr_raw * wilt_reduction(qi_safe / qr_safe);
     auto niacr_capped = torch::minimum(niacr_wilt, in.nr / dtcld);
@@ -310,7 +315,7 @@ NumberAccretionOutputs number_accretion_torch(
     auto acrfac_nsa = ops::fma_acc(
         ops::fma_acc(acrfac_nsa_t1, acrfac_nsa_t2h, in.rslope2_i),
         acrfac_nsa_t3h, in.rslope3_i);
-    auto nsaci_raw = (PI * in.n0i * p.n0s_const * in.n0sfac * eac_temp
+    auto nsaci_raw = (pi_t * in.n0i * p.n0s_const * in.n0sfac * eac_temp
                      * torch::abs(in.vt2s - in.vt2i) * acrfac_nsa / 4.0).to(in.ni.scalar_type());  // f32 store F:1927
     auto nsaci_wilt = nsaci_raw * wilt_reduction(qs_safe / qi_safe);
     auto nsaci_capped = torch::minimum(nsaci_wilt, in.ni / dtcld);
@@ -325,7 +330,7 @@ NumberAccretionOutputs number_accretion_torch(
     auto acrfac_nga = ops::fma_acc(
         ops::fma_acc(acrfac_nga_t1, acrfac_nga_t2h, in.rslope2_i),
         acrfac_nga_t3h, in.rslope3_i);
-    auto ngaci_raw = (PI * in.n0i * p.n0g_const * eac_temp
+    auto ngaci_raw = (pi_t * in.n0i * p.n0g_const * eac_temp
                      * torch::abs(in.vt2g - in.vt2i) * acrfac_nga / 4.0).to(in.ni.scalar_type());  // f32 store F:1941
     auto ngaci_wilt = ngaci_raw * wilt_reduction(qg_safe / qi_safe);
     auto ngaci_capped = torch::minimum(ngaci_wilt, in.ni / dtcld);
@@ -342,8 +347,10 @@ CloudWaterRimingParams default_cloud_water_riming_params() {
     const double g3pbs = rgmma_scalar(3.0 + constants::BVTS + constants::MUS);
     const double g3pbi = rgmma_scalar(3.0 + constants::BVTI + constants::MUI);
     return CloudWaterRimingParams{
-        /*avts=*/constants::AVTS,
-        /*avti=*/constants::AVTI,
+        /*avts=*/static_cast<float>(constants::AVTS),  // Fortran avts REAL(4): raw f64 11.72 is 2.67e-7 off →
+                                                       // psacw/nsacw 1-2 ULP → paacw 26973-cell qg divergence.
+                                                       // Mirrors pvts (slope.cpp:123); dump-bisection confirmed.
+        /*avti=*/static_cast<float>(constants::AVTI),  // same class (Fortran avti REAL(4)) → piacw/niacw (qi/ni).
         /*g3pbs=*/g3pbs,
         /*g3pbi=*/g3pbi,
         /*eacsc=*/constants::EACSC,
@@ -366,15 +373,21 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
 ) {
     auto zero = torch::zeros_like(in.qc);
     auto qc_safe = torch::clamp(in.qc, /*min=*/p.qcrmin);  // div-safety floor stays 1e-9 (NOT the gate qmin); lowering THIS is the documented flush cause. 1:1 fix #16/#17.
+    // Path-conditional π: Fortran pi=4.*atan(1.) is REAL(4) (8.7e-8 below true double π). full_like(den,PI)
+    // ⇒ f32-π on the operational path (den f32, Fortran-faithful) / f64-π on the DA path (den f64, oracle).
+    // raw PI stays f64 in the f64 rate chain (promoted at rslopemu/n0c) → 1-ULP qg/paacw divergence.
+    auto pi_t = torch::full_like(in.den, PI);
 
     // ── psacw ──────────────────────────────────────────────────────────
     auto snow_active_qc = torch::logical_and(in.qs > p.qcrmin, in.qc > p.qmin);
     auto psacw_raw =
         in.rslope3_s * in.rslopeb_s * in.rslopemu_s
-        * PI * in.n0so * in.n0sfac * p.avts * p.g3pbs * 0.25 * p.eacsc
+        * pi_t * in.n0so * in.n0sfac * p.avts * p.g3pbs * 0.25 * p.eacsc
         * wilt_reduction(in.qs / qc_safe)
         * in.qc * in.denfac;
-    auto psacw_capped = torch::minimum(psacw_raw, in.qc / dtcld);
+    // F:2044 psacw=min(EXPR,qci/dtcld) is a SINGLE statement → one f32 store AFTER the min
+    // (min runs in DOUBLE via the n0so chain). Demote post-min, not at _raw (avoids double-round).
+    auto psacw_capped = torch::minimum(psacw_raw, in.qc / dtcld).to(in.den.scalar_type());
     auto psacw = torch::where(snow_active_qc, psacw_capped, zero);
 
     // ── nsacw ──────────────────────────────────────────────────────────
@@ -399,10 +412,11 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
     auto graupel_active_qc = torch::logical_and(in.qg > p.qcrmin, in.qc > p.qmin);
     auto pgacw_raw =
         in.rslope3_g * in.rslopeb_g * in.rslopemu_g
-        * in.qc * PI * in.n0go * in.avtg * in.g3pbg * 0.25 * p.eacgc
+        * in.qc * pi_t * in.n0go * in.avtg * in.g3pbg * 0.25 * p.eacgc
         * wilt_reduction(in.qg / qc_safe)
         * in.denfac;
-    auto pgacw_capped = torch::minimum(pgacw_raw, in.qc / dtcld);
+    // F:2069 pgacw=min(EXPR,qci/dtcld) SINGLE statement → one f32 store AFTER the min (DOUBLE n0go chain).
+    auto pgacw_capped = torch::minimum(pgacw_raw, in.qc / dtcld).to(in.den.scalar_type());
     auto pgacw = torch::where(graupel_active_qc, pgacw_capped, zero);
 
     // ── ngacw ──────────────────────────────────────────────────────────
@@ -466,7 +480,7 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
 
 RainSnowGraupelCollectionParams default_rain_snow_graupel_collection_params() {
     const double cms = PI * constants::DENS / 6.0;
-    const double cmr = PI * constants::DENR / 6.0;
+    const double cmr = fconst::get().cmr;  // f32-faithful (Fortran cmr REAL(4) F:3157); raw f64 PI*DENR/6 is 4.03e-5 off → psacr/pgacr
     const double g1pms = (constants::MUS == 0.0) ? 1.0 : rgmma_scalar(1.0 + constants::MUS);
     const double g2pms = rgmma_scalar(2.0 + constants::MUS);
     const double g3pms = rgmma_scalar(3.0 + constants::MUS);
@@ -504,6 +518,7 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto qr_safe = torch::clamp(in.qr, /*min=*/p.qcrmin);
     auto qs_safe = torch::clamp(in.qs, /*min=*/p.qcrmin);
     auto qg_safe = torch::clamp(in.qg, /*min=*/p.qcrmin);
+    auto pi_t = torch::full_like(in.den, PI);  // path-conditional π (f32 op = Fortran REAL(4) pi / f64 DA = oracle)
 
     auto snow_r_active = torch::logical_and(in.qs > p.qcrmin, in.qr > p.qcrmin);
 
@@ -524,9 +539,9 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto acrfac_pracs = ops::fma_acc(
         ops::fma_acc(acrfac_pracs_t1, acrfac_pracs_t2h, in.rslope2_s),
         acrfac_pracs_t3h, in.rslope3_s);
-    auto pracs_raw =
+    auto pracs_raw = (
         PI * p.cms * in.n0so * in.n0sfac * in.n0r * torch::abs(in.vt2r - in.vt2s)
-        / (4.0 * den_safe) * acrfac_pracs * p.eacrs;
+        / (4.0 * den_safe) * acrfac_pracs * p.eacrs).to(in.den.scalar_type());  // f64 n0so/n0r, f32 store
     auto pracs_wilt = pracs_raw * wilt_reduction(qr_safe / qs_safe);
     auto pracs_capped = torch::minimum(pracs_wilt, in.qs / dtcld);
     auto pracs = torch::where(snow_r_active & cold, pracs_capped, zero);
@@ -545,9 +560,9 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto acrfac_psacr = ops::fma_acc(
         ops::fma_acc(acrfac_psacr_t1, acrfac_psacr_t2h, in.rslope2_r),
         acrfac_psacr_t3h, in.rslope3_r);
-    auto psacr_raw =
-        PI * p.cmr * in.n0r * in.n0so * in.n0sfac * torch::abs(in.vt2s - in.vt2r)
-        / (4.0 * den_safe) * acrfac_psacr * p.eacsr;
+    auto psacr_raw = (
+        pi_t * p.cmr * in.n0r * in.n0so * in.n0sfac * torch::abs(in.vt2s - in.vt2r)
+        / (4.0 * den_safe) * acrfac_psacr * p.eacsr).to(in.den.scalar_type());  // f64 n0r/n0so, f32 store
     auto psacr_wilt = psacr_raw * wilt_reduction(qs_safe / qr_safe);
     auto psacr_capped = torch::minimum(psacr_wilt, in.qr / dtcld);
     auto psacr = torch::where(snow_r_active, psacr_capped, zero);
@@ -562,9 +577,9 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto acrfac_nsacr = ops::fma_acc(
         ops::fma_acc(acrfac_nsacr_t1, acrfac_nsacr_t2h, in.rslopemu_r),
         acrfac_nsacr_t3h, in.rslopemu_r);
-    auto nsacr_raw =
-        PI / 4.0 * in.n0r * in.n0so * in.n0sfac * torch::abs(in.vt2s - in.vt2r)
-        * acrfac_nsacr * p.eacsr;
+    auto nsacr_raw = (
+        pi_t / 4.0 * in.n0r * in.n0so * in.n0sfac * torch::abs(in.vt2s - in.vt2r)
+        * acrfac_nsacr * p.eacsr).to(in.den.scalar_type());  // f64 n0r/n0so, f32 store; pi_t §40 sweep
     auto nsacr_wilt = nsacr_raw * wilt_reduction(qs_safe / qr_safe);
     auto nsacr_capped = torch::minimum(nsacr_wilt, in.nr / dtcld);
     auto nsacr = torch::where(snow_nr_active, nsacr_capped, zero);
@@ -582,9 +597,9 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto acrfac_pgacr = ops::fma_acc(
         ops::fma_acc(acrfac_pgacr_t1, acrfac_pgacr_t2h, in.rslope2_r),
         acrfac_pgacr_t3h, in.rslope3_r);
-    auto pgacr_raw =
-        PI * p.cmr * in.n0r * in.n0go * torch::abs(in.vt2g - in.vt2r)
-        / (4.0 * den_safe) * acrfac_pgacr * p.eacgr;
+    auto pgacr_raw = (
+        pi_t * p.cmr * in.n0r * in.n0go * torch::abs(in.vt2g - in.vt2r)
+        / (4.0 * den_safe) * acrfac_pgacr * p.eacgr).to(in.den.scalar_type());  // f64 n0r/n0go, f32 store
     auto pgacr_wilt = pgacr_raw * wilt_reduction(qg_safe / qr_safe);
     auto pgacr_capped = torch::minimum(pgacr_wilt, in.qr / dtcld);
     auto pgacr = torch::where(graupel_r_active, pgacr_capped, zero);
@@ -599,9 +614,9 @@ RainSnowGraupelCollectionOutputs rain_snow_graupel_collection_torch(
     auto acrfac_ngacr = ops::fma_acc(
         ops::fma_acc(acrfac_ngacr_t1, acrfac_ngacr_t2h, in.rslopemu_r),
         acrfac_ngacr_t3h, in.rslopemu_r);
-    auto ngacr_raw =
-        PI / 4.0 * in.n0r * in.n0go * torch::abs(in.vt2g - in.vt2r)
-        * acrfac_ngacr * p.eacgr;
+    auto ngacr_raw = (
+        pi_t / 4.0 * in.n0r * in.n0go * torch::abs(in.vt2g - in.vt2r)
+        * acrfac_ngacr * p.eacgr).to(in.den.scalar_type());  // f64 n0r/n0go, f32 store; pi_t §40 sweep
     auto ngacr_wilt = ngacr_raw * wilt_reduction(qg_safe / qr_safe);
     auto ngacr_capped = torch::minimum(ngacr_wilt, in.nr / dtcld);
     auto ngacr = torch::where(graupel_nr_active, ngacr_capped, zero);
@@ -636,9 +651,9 @@ HallettMossopParams default_hallett_mossop_params() {
         /*qg_threshold=*/0.1e-3,
         /*qc_threshold=*/0.5e-3,
         /*qr_threshold=*/0.1e-3,
-        /*t_lo=*/265.16,
-        /*t_hi=*/270.16,
-        /*t_mid=*/268.16,
+        /*t_lo=*/static_cast<float>(265.16),   // Fortran HM t-band edges are REAL(4) (F:2163-2170); f64 270.16
+        /*t_hi=*/static_cast<float>(270.16),   // is 3.66e-6 off → hm_fmul → pmulcs/pmulcg → paacw_adj (qg/qi/ni).
+        /*t_mid=*/static_cast<float>(268.16),
     };
 }
 
@@ -771,7 +786,12 @@ IceNucleationOutputs ice_nucleation_torch(
     auto pinud = torch::where(active, pinud_capped, zero);
     auto ninud = torch::where(active, ninud_capped, zero);
 
-    auto ifsat = torch::abs(in.prevp + pinud) >= torch::abs(satdt);
+    // ifsat (F:2417) is set INSIDE the pinud nucleation block (F:2401 gate) — so it
+    // fires ONLY where nuc_active. Computing it unconditionally wrongly gated pidep off
+    // (=0) in non-nucleating cells where |prevp|>=|satdt| (rain evap near ice saturation)
+    // — the 411-cell pidep / 58-cell psdep dep cascade. (pinud=0 when !inner_active, so
+    // the nuc_active&!inner case correctly reduces to |prevp|>=|satdt|, matching F:2417.)
+    auto ifsat = torch::logical_and(nuc_active, torch::abs(in.prevp + pinud) >= torch::abs(satdt));
 
     return IceNucleationOutputs{/*pinud=*/pinud, /*ninud=*/ninud, /*ifsat=*/ifsat};
 }
@@ -801,7 +821,10 @@ DepSubParams default_dep_sub_params() {
     const double bvts2 = 2.5 + 0.5 * constants::BVTS + constants::MUS;
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
-    const double precs2 = 4.0 * 0.44 * std::pow(constants::AVTS, 0.5) * g5pbso2;
+    const float precs2_f32 = ((4.0f * 0.44f)
+                              * std::powf(static_cast<float>(constants::AVTS), 0.5f))
+                             * static_cast<float>(g5pbso2);  // Fortran precs2 REAL(4) (F:3255); avts**.5=powf (mirror warm.cpp precr2)
+    const double precs2 = precs2_f32;
     const double precg1 = 4.0 * 0.78 * g2pmg;
     return DepSubParams{
         /*g2pmi=*/g2pmi,
@@ -840,14 +863,22 @@ DepSubOutputs dep_sub_torch(
     auto pidep = torch::where(pidep_active, pidep_capped, zero);
 
     auto qi_cap = -in.qi / dtcld;
+    // F:2434 tests the RAW pidep with EXACT equality (`pidep.eq.-(qci2)/dtcld`) BEFORE the
+    // F:2437 floor — fires only at exact complete-sublimation (Case B), NOT whenever the
+    // cap binds. Using the CAPPED pidep with `<=qi_cap+1e-30` fired across Case B∪C and
+    // wrongly zeroed ni (12-cell residual). pidep_raw & qi_cap are both f32 ⇒ == mirrors
+    // REAL(4) .eq.
     auto ice_complete_sublim = torch::logical_and(
-        torch::logical_and(pidep_active, pidep <= qi_cap + 1.0e-30),
-        pidep < 0
+        torch::logical_and(pidep_active, pidep_raw == qi_cap),
+        pidep_raw < 0
     );
 
+    // F:2442 ifsat update is INSIDE the pidep block (qci2>0 & ifsat≠1 ⇒ pidep_active);
+    // gate the OR-term by pidep_active so cells where the block didn't run (qi<=0) keep
+    // ifsat unchanged — matching Fortran (sibling sweep of the C3 nuc_active fix).
     auto ifsat_after_pidep = torch::logical_or(
         in.ifsat_in,
-        torch::abs(in.prevp + in.pinud + pidep) >= torch::abs(satdt)
+        torch::logical_and(pidep_active, torch::abs(in.prevp + in.pinud + pidep) >= torch::abs(satdt))
     );
 
     // ── psdep ──────────────────────────────────────────────────────────
@@ -862,14 +893,15 @@ DepSubOutputs dep_sub_torch(
     auto psdep_inner = ops::fma_acc(
         p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s,
         p.precs2 * in.n0so * in.work2, coeres_s);
-    auto psdep_raw = (in.rh_ice - 1.0) * in.n0sfac * psdep_inner / work1_safe;
+    auto psdep_raw = ((in.rh_ice - 1.0) * in.n0sfac * psdep_inner / work1_safe).to(in.qs.scalar_type());  // f64 work1/n0so, f32 store
     auto supice_psdep = satdt - in.prevp - in.pinud - pidep;
     auto psdep_capped = dep_sub_capped(psdep_raw, in.qs, half_satdt, supice_psdep, dtcld);
     auto psdep = torch::where(psdep_active, psdep_capped, zero);
 
+    // F:2461 ifsat update INSIDE the psdep block ⇒ gate by psdep_active (sibling sweep).
     auto ifsat_after_psdep = torch::logical_or(
         ifsat_after_pidep,
-        torch::abs(in.prevp + in.pinud + pidep + psdep) >= torch::abs(satdt)
+        torch::logical_and(psdep_active, torch::abs(in.prevp + in.pinud + pidep + psdep) >= torch::abs(satdt))
     );
 
     // ── pgdep ──────────────────────────────────────────────────────────
@@ -884,14 +916,15 @@ DepSubOutputs dep_sub_torch(
     auto pgdep_inner = ops::fma_acc(
         p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g,
         in.precg2 * in.n0go * in.work2, coeres_g);
-    auto pgdep_raw = (in.rh_ice - 1.0) * pgdep_inner / work1_safe;
+    auto pgdep_raw = ((in.rh_ice - 1.0) * pgdep_inner / work1_safe).to(in.qg.scalar_type());  // f64 work1/n0go, f32 store
     auto supice_pgdep = satdt - in.prevp - in.pinud - pidep - psdep;
     auto pgdep_capped = dep_sub_capped(pgdep_raw, in.qg, half_satdt, supice_pgdep, dtcld);
     auto pgdep = torch::where(pgdep_active, pgdep_capped, zero);
 
+    // F:2476 ifsat update INSIDE the pgdep block ⇒ gate by pgdep_active (sibling sweep).
     auto ifsat_final = torch::logical_or(
         ifsat_after_psdep,
-        torch::abs(in.prevp + in.pinud + pidep + psdep + pgdep) >= torch::abs(satdt)
+        torch::logical_and(pgdep_active, torch::abs(in.prevp + in.pinud + pidep + psdep + pgdep) >= torch::abs(satdt))
     );
 
     return DepSubOutputs{/*pidep=*/pidep, /*psdep=*/psdep, /*pgdep=*/pgdep,
@@ -964,7 +997,10 @@ SnowEvapParams default_snow_evap_params() {
     const double bvts2 = 2.5 + 0.5 * constants::BVTS + constants::MUS;
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
-    const double precs2 = 4.0 * 0.44 * std::pow(constants::AVTS, 0.5) * g5pbso2;
+    const float precs2_f32 = ((4.0f * 0.44f)
+                              * std::powf(static_cast<float>(constants::AVTS), 0.5f))
+                             * static_cast<float>(g5pbso2);  // Fortran precs2 REAL(4) (F:3255); avts**.5=powf (mirror warm.cpp precr2)
+    const double precs2 = precs2_f32;
     return SnowEvapParams{/*precs1=*/precs1, /*precs2=*/precs2, /*qcrmin=*/constants::QCRMIN};
 }
 
@@ -987,7 +1023,7 @@ torch::Tensor snow_evap_torch(
     auto psevp_inner = ops::fma_acc(
         p.precs1 * in.n0so * in.rslope2_s * in.rslopemu_s,
         p.precs2 * in.n0so * in.work2, coeres);
-    auto psevp_raw = (in.rh_w - 1.0) * in.n0sfac * psevp_inner / work1_safe;
+    auto psevp_raw = ((in.rh_w - 1.0) * in.n0sfac * psevp_inner / work1_safe).to(in.qs.scalar_type());  // f64 work1/n0so, f32 store
     auto psevp_capped = torch::minimum(torch::maximum(psevp_raw, -in.qs / dtcld), zero);
     auto psevp = torch::where(active, psevp_capped, zero);
     return psevp;
@@ -1023,7 +1059,7 @@ torch::Tensor graupel_evap_torch(
     auto pgevp_inner = ops::fma_acc(
         p.precg1 * in.n0go * in.rslope2_g * in.rslopemu_g,
         in.precg2 * in.n0go * in.work2, coeres);
-    auto pgevp_raw = (in.rh_w - 1.0) * pgevp_inner / work1_safe;
+    auto pgevp_raw = ((in.rh_w - 1.0) * pgevp_inner / work1_safe).to(in.qg.scalar_type());  // f64 work1/n0go, f32 store
     auto pgevp_capped = torch::minimum(torch::maximum(pgevp_raw, -in.qg / dtcld), zero);
     auto pgevp = torch::where(active, pgevp_capped, zero);
     return pgevp;

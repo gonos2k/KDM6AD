@@ -131,7 +131,14 @@ torch::Tensor diag_avedia_rain_torch(
 ) {
     // Fortran F:1671 rain avedia uses the truncated literal `.3333333` (NOT 1./3.); cloud
     // avedia F:1670 DOES use 1./3. (see line 83). 1:1 parity fix #4.
-    return rslope_r * std::pow(p.g4pmr_over_g1pmr, 0.3333333);
+    // Path-conditional cube-root: f32 powf on the OP path (Fortran (g4pmr/g1pmr)**.3333333 is
+    // REAL(4)) / f64 pow on the DA path (oracle cloud_dsd.py:152). The op-path double-pow-then-
+    // round was ~1 ULP off — harmless for avedia itself, but AMPLIFIED ~2500x by the nrcol
+    // breakup coecol=-2.5e3*(avedia-di600) → exp(coecol) → nrcol 5204-cell divergence / nr127.
+    const double cbrt_op = static_cast<double>(std::pow(static_cast<float>(p.g4pmr_over_g1pmr), 0.3333333f));
+    const double cbrt_da = std::pow(p.g4pmr_over_g1pmr, 0.3333333);
+    const double cbrt = (rslope_r.scalar_type() == torch::kFloat32) ? cbrt_op : cbrt_da;
+    return rslope_r * cbrt;
 }
 
 torch::Tensor diag_sigma_cloud_torch(

@@ -59,7 +59,11 @@ ProgBParams default_progb_params();
 ProgBOutputs progb_param_torch(
     const torch::Tensor& qg,
     const torch::Tensor& bg,
-    const ProgBParams& params
+    const ProgBParams& params,
+    // rhox/bg computed in op_dtype: f32 op-path = Fortran REAL(4) (the [100,900] clamp tips
+    // faithfully) / f64 DA-path = smooth (no staircase ⇒ VJP/FD/ABI-determinism intact).
+    // nullopt → bg.scalar_type() (no cast; backward-compatible for direct test callers).
+    c10::optional<c10::ScalarType> op_dtype = c10::nullopt
 );
 
 // Public access to the tensor rgmma helper.

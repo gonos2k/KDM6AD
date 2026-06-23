@@ -59,7 +59,7 @@ SlopeRainOutputs rain_slope_components(const torch::Tensor& qr,
         rain_mask,
         scalar_like(params.rslopermmax, qr),
         ops::safe_pow(rslope, constants::MUR)
-    );
+    ).to(torch::kFloat64);  // F:656 rslopemu is DOUBLE — promotes rate brackets to f64 (op f32 slopes, this f64)
     auto rsloped = torch::where(
         rain_mask,
         scalar_like(params.rsloperdmax, qr),
@@ -68,7 +68,12 @@ SlopeRainOutputs rain_slope_components(const torch::Tensor& qr,
     auto rslope2 = torch::where(rain_mask, scalar_like(params.rsloper2max, qr), rslope * rslope);
     auto rslope3 = torch::where(rain_mask, scalar_like(params.rsloper3max, qr), rslope2 * rslope);
 
-    auto vt = scalar_like(params.pvtr, qr) * rslopeb * denfac;
+    // §34 WHOLE-CHAIN foundation (2026-06-21, user-approved): vt = DBLE(pvtr)*rslopeb*denfac DOUBLE
+    // (F:3612, mirrors vt_i) for the SED work1 path. Makes entry-stage qr/qs/qg BITWISE (proven).
+    // Cold-phase vt2r/vt2s ALSO DOUBLE (F:725) so cold consumers keep f64; vt2g REAL(f32) handled
+    // separately. Driver-boundary metric stays regressed until freeze+warm+cold+satadj are ALSO
+    // bitwise (two-bugs-canceling chaos) — see remember.md whole-chain plan.
+    auto vt = scalar_like(params.pvtr, qr) * rslopeb.to(torch::kFloat64) * denfac;
     auto vtn = scalar_like(params.pvtrn, qr) * rslopeb * denfac;
     auto zeros = torch::zeros_like(qr);
     vt = torch::where(qr <= 0.0, zeros, vt);
@@ -90,7 +95,6 @@ SlopeParams default_slope_params() {
     };
 
     const double cmr = PI * constants::DENR / 6.0;
-    const double cms = PI * constants::DENS / 6.0;
     const double cmi = PI * constants::DENI / 6.0;
 
     const double g1pmr = rgmma(1.0 + constants::MUR);
@@ -98,7 +102,6 @@ SlopeParams default_slope_params() {
     const double g1pdrbrmr = rgmma(1.0 + constants::DMR + constants::BVTR + constants::MUR);
     const double g1pbrmr = rgmma(1.0 + constants::BVTR + constants::MUR);
 
-    const double g1pms = rgmma(1.0 + constants::MUS);
     const double g1pdsms = rgmma(1.0 + constants::DMS + constants::MUS);
     const double g1pdsbsms = rgmma(1.0 + constants::DMS + constants::BVTS + constants::MUS);
 
@@ -108,14 +111,18 @@ SlopeParams default_slope_params() {
     const double g1pbimi = rgmma(1.0 + constants::BVTI + constants::MUI);
 
     const double pidnr = fconst::get().pidnr;   // f32-stepwise (kdm6init F:3235)
-    const double pidn0s = cms * constants::N0S * g1pdsms / g1pms;
+    const double pidn0s = fconst::get().pidn0s;  // f32-stepwise (kdm6init F:3326); double-then-round differs 1 ULP (§44)
     const double pidni = fconst::get().pidni;   // f32-stepwise (kdm6init F:3263)
 
-    const double pvtr = constants::AVTR * g1pdrbrmr / g1pdrmr;
-    const double pvtrn = constants::AVTR * g1pbrmr / g1pmr;
-    const double pvts = constants::AVTS * g1pdsbsms / g1pdsms;
-    const double pvti = constants::AVTI * g1pdibimi / g1pdimi;
-    const double pvtin = constants::AVTI * g1pbimi / g1pmi;
+    // Fortran pvt* are REAL(f32) (kdm6init F:3262-3266). DBLE(pvtr)*rslopeb*denfac promotes the
+    // f32 value. Store the f32 VALUE (cast) so the f64 vt-multiply uses Fortran's f32 pvt, not the
+    // full-double computation (which differs in f64 and flips mstep — §44 f32-stepwise constant;
+    // invisible on the f32 path where scalar_like casts anyway, but decisive for f64 vt).
+    const double pvtr = static_cast<float>(constants::AVTR * g1pdrbrmr / g1pdrmr);
+    const double pvtrn = static_cast<float>(constants::AVTR * g1pbrmr / g1pmr);
+    const double pvts = static_cast<float>(constants::AVTS * g1pdsbsms / g1pdsms);
+    const double pvti = static_cast<float>(constants::AVTI * g1pdibimi / g1pdimi);
+    const double pvtin = static_cast<float>(constants::AVTI * g1pbimi / g1pmi);
 
     // STEP-79 SEED (cell-2): Fortran kdm6init builds the whole rslope*max family
     // REAL(4)-STEPWISE (F:3297-3340) — f32 reciprocal, f32 squares/cubes, powf for
@@ -213,7 +220,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
         snow_mask,
         scalar_like(params.rslopesmmax, inputs.qs),
         ops::safe_pow(rslope_s, constants::MUS)
-    );
+    ).to(torch::kFloat64);  // F:656 rslopemu DOUBLE (MUS=0⇒1.0, but f64 promotes the rate bracket)
     auto rsloped_s = torch::where(
         snow_mask,
         scalar_like(params.rslopesdmax, inputs.qs),
@@ -231,7 +238,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
         graupel_mask,
         scalar_like(params.rslopegmmax, inputs.qg),
         ops::safe_pow(rslope_g, constants::MUG)
-    );
+    ).to(torch::kFloat64);  // F:656 rslopemu DOUBLE (MUG=0⇒1.0, but f64 promotes the rate bracket)
     auto rsloped_g = torch::where(
         graupel_mask,
         scalar_like(params.rslopegdmax, inputs.qg),
@@ -263,7 +270,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
         ice_mask,
         scalar_like(params.rslopeimmax, inputs.qi),
         ops::safe_pow(rslope_i, constants::MUI)
-    );
+    ).to(torch::kFloat64);  // F:656 rslopemu DOUBLE (MUI=0⇒1.0, but f64 promotes the rate bracket)
     auto rsloped_i = torch::where(
         ice_mask,
         scalar_like(params.rslopeidmax, inputs.qi),
@@ -272,8 +279,18 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
     auto rslope2_i = torch::where(ice_mask, scalar_like(params.rslopei2max, inputs.qi), rslope_i * rslope_i);
     auto rslope3_i = torch::where(ice_mask, scalar_like(params.rslopei3max, inputs.qi), rslope2_i * rslope_i);
 
-    auto vt_s = scalar_like(params.pvts, inputs.qs) * rslopeb_s * inputs.denfac;
-    auto vt_g = inputs.pvtg * rslopeb_g * inputs.denfac;
+    auto vt_s = scalar_like(params.pvts, inputs.qs) * rslopeb_s.to(torch::kFloat64) * inputs.denfac;
+    auto vt_g = inputs.pvtg * rslopeb_g.to(torch::kFloat64) * inputs.denfac;
+    // §44/F:725: cold-accretion vt2g = REAL(f32), SEPARATE from the §34-DOUBLE sed vt_g above. Compute in
+    // the forcing dtype (op=f32 → Fortran-faithful; DA=f64 → autograd). scalar_like avoids the double-
+    // scalar-on-left f64 promotion. Consumed by cold pgaci/pgacr/ngacr (coordinator.cpp:155/169 → cold.cpp);
+    // the SED path keeps the f64 vt_g untouched (§34).
+    // F:1918 vt2g = DBLE(pvtg)*rslopeb*denfac → REAL(4) vt2g (F:724): f64 CHAIN, ONE f32 round at the
+    // store (NOT f32-stepwise). abs(vt2g-vt2r/vt2i) cancellation (vt2r/vt2s/vt2i are DOUBLE) needs vt2g's
+    // exact f32(f64-chain) value. op=f32 store (Fortran-faithful); DA=f64 (no-op, VJP preserved).
+    auto vt2g_dt = inputs.denfac.scalar_type();
+    auto vt2g = (inputs.pvtg.to(torch::kFloat64) * rslopeb_g.to(torch::kFloat64)
+                 * inputs.denfac.to(torch::kFloat64)).to(vt2g_dt);
     // Fortran F:3578: vt(:,:,4) = DBLE(pvti)*rslopeb*denfac — the vt array is
     // DOUBLE PRECISION (class-7), so the ice fall speed is an f64 VALUE consumed
     // unrounded by work1(4)/falk (falk applies the single f32 rounding). Step-72
@@ -282,6 +299,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
 
     vt_s = torch::where(inputs.qs <= 0.0, torch::zeros_like(inputs.qs), vt_s);
     vt_g = torch::where(inputs.qg <= 0.0, torch::zeros_like(inputs.qg), vt_g);
+    vt2g = torch::where(inputs.qg <= 0.0, torch::zeros_like(vt2g), vt2g);
     vt_i = torch::where(inputs.qi <= 0.0, torch::zeros_like(vt_i), vt_i);
 
     auto vtn_i = params.pvtin * rslopeb_i.to(torch::kFloat64) * inputs.denfac;  // workn(2) DOUBLE — same class
@@ -295,6 +313,7 @@ SlopeOutputs slope_kdm6_torch(const SlopeKdm6Inputs& inputs, const SlopeParams& 
         /*rslope2_r=*/rain.rslope2, /*rslope2_s=*/rslope2_s, /*rslope2_g=*/rslope2_g, /*rslope2_i=*/rslope2_i,
         /*rslope3_r=*/rain.rslope3, /*rslope3_s=*/rslope3_s, /*rslope3_g=*/rslope3_g, /*rslope3_i=*/rslope3_i,
         /*vt_r=*/rain.vt, /*vt_s=*/vt_s, /*vt_g=*/vt_g, /*vt_i=*/vt_i,
+        /*vt2g=*/vt2g,
         /*vtn_r=*/rain.vtn, /*vtn_i=*/vtn_i,
         /*n0sfac_field=*/n0sfac_out
     };

@@ -253,6 +253,7 @@ MeltFreezePhaseOutputs make_zero_mf(int B, int K) {
     auto z = torch::zeros({B, K}, f64());
     return MeltFreezePhaseOutputs{
         z, z, z, z, z, z, z,     // D1 (psmlt, pgmlt, pimlt_qi, pimlt_ni, sfac_melt, gfac_melt, delta_brs_melt)
+        z, z, z,                 // psmlt_capped, pgmlt_capped, delta_brs_capped (round-trip fix)
         z, z,                    // D2
         z, z,                    // D3
         z, z, z,                 // D4
@@ -405,6 +406,7 @@ void test_state_update_piacr_routes_to_qs_when_qr_small() {
         // qr small (5e-5 < 1e-4)
         auto s = make_test_state(B, K, /*qr=*/5.0e-5, /*qs=*/1.0e-5);
         auto pre = make_zero_pre(B, K);
+        pre.supcol = torch::full({B, K}, 5.0, opts);  // COLD cell: piacr is cold-only (F:2712/2724); routing is a cold-branch behavior
         auto warm = make_zero_warm(B, K);
         auto cold = make_zero_cold(B, K);
         cold.piacr = torch::full({B, K}, 1.0e-7, opts);
@@ -428,6 +430,7 @@ void test_state_update_piacr_routes_to_qg_when_qr_large() {
         auto opts = f64();
         auto s = make_test_state(B, K, /*qr=*/5.0e-4, /*qs=*/1.0e-5);
         auto pre = make_zero_pre(B, K);
+        pre.supcol = torch::full({B, K}, 5.0, opts);  // COLD cell: piacr is cold-only (F:2712/2729); routing is a cold-branch behavior
         auto warm = make_zero_warm(B, K);
         auto cold = make_zero_cold(B, K);
         cold.piacr = torch::full({B, K}, 1.0e-7, opts);
@@ -450,6 +453,7 @@ void test_state_update_psacr_adj_delta2_routing() {
         auto opts = f64();
         auto s = make_test_state(B, K, /*qr=*/5.0e-5, /*qs=*/5.0e-5);
         auto pre = make_zero_pre(B, K);
+        pre.supcol = torch::full({B, K}, 5.0, opts);  // COLD cell: psacr is cold-only (F:2724/2729); routing is a cold-branch behavior
         auto warm = make_zero_warm(B, K);
         auto cold = make_zero_cold(B, K);
         cold.psacr_adj = torch::full({B, K}, 1.0e-7, opts);
@@ -578,7 +582,7 @@ PreambleCold make_test_pre_cold(int B, int K) {
         /*rsloped_r=*/rsld, /*rsloped_s=*/rsld, /*rsloped_g=*/rsld, /*rsloped_i=*/rsld,
         /*rslope2_r=*/rsl2, /*rslope2_s=*/rsl2, /*rslope2_g=*/rsl2, /*rslope2_i=*/rsl2,
         /*rslope3_r=*/rsl3, /*rslope3_s=*/rsl3, /*rslope3_g=*/rsl3, /*rslope3_i=*/rsl3,
-        /*vt_r=*/vt, /*vt_s=*/vt, /*vt_g=*/vt, /*vt_i=*/vt,
+        /*vt_r=*/vt, /*vt_s=*/vt, /*vt_g=*/vt, /*vt_i=*/vt, /*vt2g=*/vt,
         /*vtn_r=*/vtn, /*vtn_i=*/vtn,
         /*n0sfac_field=*/n0sfac,
     };
@@ -1135,7 +1139,7 @@ PreambleMf make_test_pre_mf(int B, int K) {
         rsld, rsld, rsld, rsld,
         rsl2, rsl2, rsl2, rsl2,
         rsl3, rsl3, rsl3, rsl3,
-        vt, vt, vt, vt,
+        vt, vt, vt, vt, vt,
         vtn, vtn,
         n0sfac,
     };
@@ -1143,6 +1147,7 @@ PreambleMf make_test_pre_mf(int B, int K) {
     return PreambleMf{
         torch::full({B, K}, -10.0, opts),  // supcol < 0 → warm (D1 active)
         torch::full({B, K}, 1.5, opts),    // work2
+        torch::full({B, K}, 1005.0, opts), // cpm (§35 pgmlt sequential-t)
         torch::full({B, K}, 500.0, opts),  // rhox
         torch::full({B, K}, 0.5, opts),    // precg2
         slope_out,
@@ -1406,7 +1411,7 @@ ColdPhaseOutputs make_zero_cold(const torch::Tensor& z) {
 }
 MeltFreezePhaseOutputs make_zero_mf(const torch::Tensor& z) {
     return MeltFreezePhaseOutputs{
-        z, z, z, z, z, z, z,   z, z,   z, z,   z, z, z,   z, z, z, z,          // 18
+        z, z, z, z, z, z, z,   z, z, z,   z, z,   z, z,   z, z, z,   z, z, z, z,          // 21 (+3 capped: psmlt/pgmlt/delta_brs)
     };
 }
 

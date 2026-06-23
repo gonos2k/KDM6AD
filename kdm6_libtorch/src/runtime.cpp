@@ -1,3 +1,4 @@
+#include <iostream>
 #include "kdm6/runtime.h"
 #include "kdm6/fconst.h"
 #include "kdm6/coordinator.h"
@@ -160,7 +161,27 @@ CoordinatorAuxDiagnostics build_default_aux(
 
     // n0 intercepts (Fortran 1435-1437 default formula; clamped rslope already
     // reflects the lamda bounds).
-    auto n0r = cs.nr / (rslope_r * rslopemu_r * g1pmr);
+    // §2B+1C (whole-chain roadmap FRZ-03): n0r is DOUBLE in Fortran (F:667). (2B) default divide in
+    // f64 (mirror n0i:170). (1C) active-rain n0r MULTIPLY form (F:1462-1465) with a fresh f32 lamdr —
+    // one fewer f32 rounding than dividing by the reciprocal-clamped rslope; mirrors the n0i override.
+    // mur=1 ⇒ exponent (mur+1)=2, g1pmr=Γ(2)=1. NOTE: the F:1466-1474 nrs CLAMP REWRITE (snap nr to a
+    // lamda bound + recompute n0r) lives in coordinator.cpp's post-melt block (after the ni-snap),
+    // NOT here — this site only supplies the default/active n0r value for all rebuild_aux callers.
+    auto n0r = cs.nr.to(torch::kFloat64) / (rslope_r.to(torch::kFloat64) * rslopemu_r.to(torch::kFloat64) * g1pmr);
+    {
+        const double inv_dmr_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMR));
+        auto lamdr_raw = ops::libm_exp(ops::libm_log(torch::clamp(
+            pidnr * cs.nr / torch::clamp(cs.qr * cf.den, 1.0e-30), 1.0e-30)) * inv_dmr_f32);
+        auto lamdr_cl = torch::clamp(lamdr_raw, constants::LAMDARMIN, constants::LAMDARMAX);  // f32, like Fortran lamdr_tmp
+        // §44 x**2.0=MULT: gfortran compiles lamdr_tmp**(mur+1) with mur+1=2.0 as x*x (verified:
+        // x**(mur+1)≡x*x≡x**2 hex-identical at -O2), NOT powf — so lamdr^2 must be lamdr*lamdr, not
+        // safe_pow(lamdr,2.0) (powf≠x*x by ~1 ULP). This is the warm-prevp n0r divergence (15470 active
+        // cells, ~5 ULP). mur+1=2 (MUR=1).
+        auto n0r_active = (1.0 / g1pmr) * cs.nr.to(torch::kFloat64)
+                          * (lamdr_cl * lamdr_cl).to(torch::kFloat64);
+        auto active_rain = (cs.qr >= constants::QCRMIN) & (cs.nr >= constants::NRMIN);
+        n0r = torch::where(active_rain, n0r_active, n0r);
+    }
     // STEP-67 SEED: Fortran n0i/n0c are DOUBLE arrays (F:697). The default n0i
     // (F:1652) is nci/(rslope·rslopemu·g1pmi) with rslopemu DOUBLE — the whole
     // expression evaluates in f64 with NO f32 rounding (g1pmi=Γ(1)=1, mui=0 ⇒
@@ -206,7 +227,12 @@ CoordinatorAuxDiagnostics build_default_aux(
         /*work1_ice=*/work1_ice,                // Fortran work1(:,:,2)
         /*work1_water=*/work1_water,            // Fortran work1(:,:,1)
         /*qcr=*/full_like(8.0e-5),              // overridden by diag_qcr_torch when xland present
-        /*avedia_i=*/rslope_i * std::pow(g4pmi / g1pmi, 0.3333333),  // Fortran F:1672 ice avedia uses .3333333 literal. 1:1 fix #4/#11.
+        // F:1746 avedia(:,:,3)=rslope*((g4pmi/g1pmi)**.3333333); avedia is REAL(4), g4pmi/g1pmi
+        // REAL(4) ⇒ gfortran emits f32 powf. The f64 std::pow carried sub-ULP rounding that flipped
+        // boundary cells across the avedia_i>=di50 comparator gating piacw/niacw (F:2105/2116) →
+        // ni/qi/qs divergence. f32 powf as a host-constant scalar (idiom: coordinator.cpp:1895);
+        // autograd-untouched (scalar constant, not a graph node), only its f64→f32 rounding changes.
+        /*avedia_i=*/rslope_i * static_cast<double>(std::pow(static_cast<float>(g4pmi / g1pmi), 0.3333333f)),
         /*rslopecmu=*/rslopecmu,
         /*rslopecd=*/ops::safe_pow(rslopec, constants::DMC),   // F:1614 REAL**dmc = powf (step-67 class)
     };
@@ -254,6 +280,7 @@ RebuiltDiagnostics rebuild_aux(
     pre.qs1 = entry_pre.qs1;  pre.qs2 = entry_pre.qs2;
     pre.rh_w = entry_pre.rh_w;  pre.rh_ice = entry_pre.rh_ice;
     pre.supsat = entry_pre.supsat;
+    pre.supsat_ice = entry_pre.supsat_ice;  // entry-staged ICE supsat (direct max(q,qmin)-qs2, F:1913)
     auto aux = build_default_aux(state, forcing, pre.rslopec, params.thermo);
     // work1 = diffac(ENTRY xl/qs, POST-FREEZE t) — Fortran kdm6.F:1679-1680.
     auto xls_t = torch::full_like(state.t, params.thermo.xls);
@@ -285,7 +312,8 @@ FnResult kdm6_fn(const State& state,
     if (dt <= 0.0) {
         auto z = torch::zeros({cs.qc.size(0)}, cs.qc.options());
         return FnResult{/*state_out=*/coord_to_state(cs, state, forcing),
-                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z};
+                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z,
+                        /*rhog=*/torch::zeros_like(cs.qg)};
     }
 
     auto warm_p   = default_warm_phase_params();
@@ -348,7 +376,11 @@ FnResult kdm6_fn(const State& state,
     auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
 
     const int loops = compute_loops_max(dt, constants::DTCLDCR);
-    const double dtcld = dt / static_cast<double>(loops);
+    // Fortran kdm62D dtcld = delt/loops is REAL(f32). Store the f32 VALUE so f64 contexts
+    // (the f64-vt mstep `floor(vmax_f64 * dtcld + 1)`) use Fortran's f32 dtcld, not the full
+    // double — otherwise f64 vmax * double-dtcld flips mstep at CFL ties (f64-vt regression root,
+    // 2026-06-20). NO-OP on f32 path (dtcld already auto-casts f32 in f32 ops). §44 f32-stepwise.
+    const double dtcld = static_cast<float>(dt / static_cast<double>(loops));
 
     auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
     // Fortran entry padding (F:822-839, "padding 0 for negative values generated by
@@ -367,6 +399,7 @@ FnResult kdm6_fn(const State& state,
     cur.brs = torch::clamp(cur.brs, /*min=*/0.0);          // F:838
     cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // F:833, ONCE
     torch::Tensor rain_inc, snow_inc, graup_inc;
+    torch::Tensor rhog_final;  // diag_rhog/RHOPO3D — LAST sub-cycle's last-ProgB graupel density
 
     for (int i = 0; i < loops; ++i) {
         // 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (Fortran :1119), per-substep mstep.
@@ -377,6 +410,22 @@ FnResult kdm6_fn(const State& state,
             flip_k(cur.nccn), flip_k(cur.brs), flip_k(cur.t),
         };
         auto pre_sed = preamble(cur_pyc, cf_pyc, full_p);
+        // BRS density re-clamp #0 (ProgB before the sed fall loop): falkb=dend*brs*vt advects
+        // graupel VOLUME, so sed sees the density-[100,900]-reclamped brs. NOTE (2026-06-20): the
+        // OR-condition fix (where(qg>qcrmin OR brs>BRS_MIN, bg, 0), to not erase Fortran-active
+        // graupel per Codex) was MEASURED WORSE (BG 8787->22394): C++ f64 leaves a ~1.7e-14 residue
+        // in graupel-EMPTY cells that exceeds brs_min=1e-15, so the OR wrongly keeps them while
+        // Fortran's f32 brs underflowed to 0 — those empty-residue cells vastly outnumber the rare
+        // genuinely-active qg<=qcrmin cells. The qg>qcrmin zeroing better approximates Fortran's
+        // f32-underflow (§20 f64-residue-vs-f32-underflow). True fix needs the brs flow to underflow
+        // like Fortran f32. Kept the qg>qcrmin form as the better current approximation.
+        // OR-gate (brs Group-B): keep ProgB.bg where Fortran's ProgB is ACTIVE — qg>qcrmin OR brs_in>brs_min
+        // (F:3534, progb.cpp:89). The qg-only zeroing wrongly dropped cells with tiny qg<qcrmin but real
+        // brs>brs_min (Fortran keeps brs=qg/rhox there). Safe now that the op-state is f32 (§44): both trees
+        // produce the same f32 brs so the gate is consistent (the old "f64 residue>brs_min" regression is gone).
+        cur_pyc.brs = torch::where(torch::logical_or(cur_pyc.qg > full_p.progb.qcrmin,
+                                                     cur_pyc.brs > progb::BRS_MIN),
+                                   pre_sed.progb.bg, torch::zeros_like(pre_sed.progb.bg));
         auto w1_qr = pre_sed.slope.vt_r  / delz_safe;
         auto wn_qr = pre_sed.slope.vtn_r / delz_safe;
         auto w1_qs = pre_sed.slope.vt_s  / delz_safe;
@@ -416,6 +465,19 @@ FnResult kdm6_fn(const State& state,
             flip_k(sed.state.nc), flip_k(sed.state.nr), flip_k(sed.state.ni),
             flip_k(sed.state.nccn), flip_k(sed.state.brs), flip_k(sed.state.t),
         };
+        // §44 f64-state SOURCE fix: the sediment fall computes in f64 (vt DOUBLE, §34) but Fortran stores
+        // qrs/nrs/... as REAL(4). Re-clamp the post-fall operational state to the forcing dtype
+        // (op=f32 → Fortran REAL(4) store, makes the WHOLE downstream chain — aux/melt/freeze/warm/cold/
+        // satadj — compute in f32 like mp37; DA=f64 → autograd no-op). This is the root the per-site n0r
+        // casts were patching; with the state f32 here, the rate chain matches Fortran (modulo REAL(4)
+        // rate-output truncation still pending per UPDATE15).
+        {
+            auto sdt = cf.den.scalar_type();
+            cur = CoordinatorState{
+                cur.qv.to(sdt), cur.qc.to(sdt), cur.qr.to(sdt), cur.qs.to(sdt),
+                cur.qg.to(sdt), cur.qi.to(sdt), cur.nc.to(sdt), cur.nr.to(sdt),
+                cur.ni.to(sdt), cur.nccn.to(sdt), cur.brs.to(sdt), cur.t.to(sdt)};
+        }
         rain_inc  = (i == 0) ? sed.rain_increment    : rain_inc  + sed.rain_increment;
         snow_inc  = (i == 0) ? sed.snow_increment    : snow_inc  + sed.snow_increment;
         graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
@@ -428,7 +490,8 @@ FnResult kdm6_fn(const State& state,
         aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
 
         // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
-        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld, ncmin_for_slope);
+        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld, ncmin_for_slope,
+                              /*rhog_out=*/&rhog_final);
     }
 
     // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
@@ -436,6 +499,7 @@ FnResult kdm6_fn(const State& state,
     return FnResult{
         /*state_out=*/coord_to_state(cur, state, forcing),
         /*rain_increment=*/rain_inc, /*snow_increment=*/snow_inc, /*graupel_increment=*/graup_inc,
+        /*rhog=*/rhog_final,
     };
 }
 
@@ -622,6 +686,7 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
             /*rain_increment=*/std::move(fn_out.rain_increment),
             /*snow_increment=*/std::move(fn_out.snow_increment),
             /*graupel_increment=*/std::move(fn_out.graupel_increment),
+            /*rhog=*/std::move(fn_out.rhog),
         };
     }
     auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
@@ -632,6 +697,7 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
         /*rain_increment=*/std::move(fn_out.rain_increment),
         /*snow_increment=*/std::move(fn_out.snow_increment),
         /*graupel_increment=*/std::move(fn_out.graupel_increment),
+        /*rhog=*/std::move(fn_out.rhog),
     };
 }
 

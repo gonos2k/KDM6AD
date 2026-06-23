@@ -42,6 +42,7 @@ def _melt_inputs(*, requires_grad: bool = False, t_value: float = 280.0,
     p = torch.full((1, 2), 8.0e4, dtype=dtype)
     den = torch.full((1, 2), 1.1, dtype=dtype)
     rhox = torch.full((1, 2), 400.0, dtype=dtype)
+    cpm = torch.full((1, 2), 1005.0, dtype=dtype)
     n0so = torch.full((1, 2), 2.0e6, dtype=dtype)
     n0go = torch.full((1, 2), 4.0e6, dtype=dtype)
     n0sfac = torch.full((1, 2), 1.0, dtype=dtype)
@@ -50,7 +51,7 @@ def _melt_inputs(*, requires_grad: bool = False, t_value: float = 280.0,
     rsl_s = torch.full((1, 2), 5.0e-4, dtype=dtype)
     rsl_g = torch.full((1, 2), 1.0e-3, dtype=dtype)
     return (
-        qs, qg, qi, ni, t, p, den, rhox, n0so, n0go, n0sfac, work2, precg2,
+        qs, qg, qi, ni, t, p, den, rhox, cpm, n0so, n0go, n0sfac, work2, precg2,
         rsl_s, rsl_s * rsl_s,
         torch.full_like(rsl_s, 5.0e-4 ** c.BVTS),
         torch.full_like(rsl_s, 5.0e-4 ** c.MUS),

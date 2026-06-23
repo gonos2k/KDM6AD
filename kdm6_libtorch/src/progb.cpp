@@ -74,10 +74,12 @@ ProgBParams default_progb_params() {
 ProgBOutputs progb_param_torch(
     const torch::Tensor& qg,
     const torch::Tensor& bg,
-    const ProgBParams& params
+    const ProgBParams& params,
+    c10::optional<c10::ScalarType> op_dtype
 ) {
     TORCH_CHECK(qg.sizes() == bg.sizes(),
                 "qg shape ", qg.sizes(), " != bg shape ", bg.sizes());
+    const auto odt = op_dtype.value_or(bg.scalar_type());
 
     auto Tbl = make_table(DENSITY_TABLE, qg);
     auto aTbl = make_table(AVTG_TABLE, qg);
@@ -88,13 +90,19 @@ ProgBOutputs progb_param_torch(
     auto zero = torch::zeros_like(qg);
 
     // ── rhox 진단 + clamp ───────────────────────────────────────────────
-    auto bg_safe = torch::clamp(bg, /*min=*/BRS_MIN);
-    auto rhox_raw = qg / bg_safe;
-    auto rhox = torch::clamp(rhox_raw, /*min=*/RHO_MIN, /*max=*/RHO_MAX);
-    rhox = torch::where(active, rhox, scalar_like(RHO_MID, qg));
-
-    // bg 갱신 (consistency)
-    auto bg_new = torch::where(active, qg / rhox, bg);
+    // DTYPE-CONDITIONAL (the brs AD-limit fix): compute rhox/bg in op_dtype. On the OP path
+    // (f32) this is Fortran's REAL(4) rhox=qg/brs, so the [100,900] clamp tips IDENTICALLY
+    // (entry-brs clamp-tipping residual → 0). On the DA path (f64) op_dtype=f64 ⇒ smooth f64,
+    // NO f32 staircase, so the VJP/FD adjoint + the ABI fp64 value_only==graph determinism
+    // (test_c_abi.cpp:526) are untouched — dodging both prior failure modes (unconditional f32
+    // staircase / grad-mode split). Outputs cast back to qg's dtype (no downstream dtype ripple).
+    auto qg_op = qg.to(odt);
+    auto bg_safe = torch::clamp(bg.to(odt), /*min=*/BRS_MIN);
+    auto rhox_op = qg_op / bg_safe;
+    auto rhox_c = torch::clamp(rhox_op, /*min=*/RHO_MIN, /*max=*/RHO_MAX);
+    auto bg_new_op = qg_op / rhox_c;
+    auto rhox = torch::where(active, rhox_c.to(qg.scalar_type()), scalar_like(RHO_MID, qg));
+    auto bg_new = torch::where(active, bg_new_op.to(qg.scalar_type()), bg);
 
     // ── cmg, pidn0g ─────────────────────────────────────────────────────
     auto cmg_raw = PI * rhox / 6.0;

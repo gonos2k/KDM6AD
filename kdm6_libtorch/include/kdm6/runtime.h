@@ -51,6 +51,7 @@ struct FnResult {
     torch::Tensor rain_increment;     // (im*jme,) [mm]
     torch::Tensor snow_increment;
     torch::Tensor graupel_increment;
+    torch::Tensor rhog;               // (im*jme, kme) graupel density [kg m^-3] → WRF diag_rhog/RHOPO3D
 };
 
 FnResult kdm6_fn(const State& state,
@@ -138,6 +139,7 @@ struct StepResult {
     torch::Tensor rain_increment;
     torch::Tensor snow_increment;
     torch::Tensor graupel_increment;
+    torch::Tensor rhog;               // (im*jme, kme) graupel density [kg m^-3] → WRF diag_rhog/RHOPO3D
 };
 
 // `xland`: optional Tensor with values 1 (land) or 2 (sea). Accepted shapes:

@@ -30,6 +30,7 @@ struct SlopeOutputs {
     torch::Tensor rslope2_r, rslope2_s, rslope2_g, rslope2_i;
     torch::Tensor rslope3_r, rslope3_s, rslope3_g, rslope3_i;
     torch::Tensor vt_r, vt_s, vt_g, vt_i;
+    torch::Tensor vt2g;   // cold-accretion graupel fall = REAL(f32) (F:725), separate from the f64 sed vt_g
     torch::Tensor vtn_r, vtn_i;
     torch::Tensor n0sfac_field;
 };
