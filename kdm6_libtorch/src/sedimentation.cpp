@@ -285,11 +285,14 @@ SurfaceAccumOutputs surface_accumulation_torch(
 ) {
     auto fallsum = fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom;
     auto fallsum_qsi = fall_qs_bottom + fall_qi_bottom;
-    auto factor = delz_bottom / constants::DENR * dtcld * 1000.0;
+    // f32 association MUST match Fortran module_mp_kdm6.F:1412 left-to-right
+    // `fallsum*delz/denr*dtcld*1000.` (fallsum FIRST), NOT a precomputed
+    // `factor=delz/denr*dtcld*1000` then `fallsum*factor` — the grouping differs at
+    // f32 last-ULP and surfaces in RAINNC/SNOWNC/GRAUPELNC/SR (Codex bitwise audit).
     return SurfaceAccumOutputs{
-        /*rain_increment=*/torch::clamp(fallsum, 0.0) * factor,
-        /*snow_increment=*/torch::clamp(fallsum_qsi, 0.0) * factor,
-        /*graupel_increment=*/torch::clamp(fall_qg_bottom, 0.0) * factor,
+        /*rain_increment=*/torch::clamp(fallsum, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
+        /*snow_increment=*/torch::clamp(fallsum_qsi, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
+        /*graupel_increment=*/torch::clamp(fall_qg_bottom, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
     };
 }
 

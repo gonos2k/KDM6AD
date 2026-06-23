@@ -347,10 +347,13 @@ def surface_accumulation_torch(
     fallsum_qsi = fall_qs_bottom + fall_qi_bottom
     fallsum_qg = fall_qg_bottom
 
-    factor = delz_bottom / c.DENR * dtcld * 1000.0
-    rain_increment = torch.clamp(fallsum, min=0.0) * factor
-    snow_increment = torch.clamp(fallsum_qsi, min=0.0) * factor
-    graupel_increment = torch.clamp(fallsum_qg, min=0.0) * factor
+    # f32 association MUST match Fortran module_mp_kdm6.F:1412 left-to-right
+    # `fallsum*delz/denr*dtcld*1000.` (fallsum FIRST), NOT a precomputed
+    # `factor=delz/denr*dtcld*1000` then `fallsum*factor` — the grouping differs at
+    # f32 last-ULP and surfaces in RAINNC/SNOWNC/GRAUPELNC/SR (Codex bitwise audit).
+    rain_increment = torch.clamp(fallsum, min=0.0) * delz_bottom / c.DENR * dtcld * 1000.0
+    snow_increment = torch.clamp(fallsum_qsi, min=0.0) * delz_bottom / c.DENR * dtcld * 1000.0
+    graupel_increment = torch.clamp(fallsum_qg, min=0.0) * delz_bottom / c.DENR * dtcld * 1000.0
     return SurfaceAccumOutputs(
         rain_increment=rain_increment,
         snow_increment=snow_increment,
