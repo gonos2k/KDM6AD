@@ -404,7 +404,26 @@
          ni(i,k,j) = nci(i,k,2)
          nn(i,k,j) = nci(i,k,3)
          bg(i,k,j) = brs(i,k)
-         diag_rhog(i,k,j) = rhox(i,k)
+         ! Diagnostic-only graupel-density export, gated to the OUTPUT graupel and
+         ! snapped to the rho_max=900 clamp boundary, SYMMETRIC with the mp137 C++
+         ! export (kdm6_libtorch coordinator.cpp). Both reconciliations touch ONLY the
+         ! exported diag_rhog — the work-array rhox feeding cmg/pidn0g/bvtg above is
+         ! untouched, so prognostics are unchanged:
+         !  (a) qrs(i,k,3) (=qg) <= qcrmin -> 0. No graupel at output ⇒ no density;
+         !      drops rhox's stale retained value (an INTENT(OUT) work-array artifact
+         !      where graupel was present mid-step then removed), which mp137 reports 0.
+         !  (b) rhox 1 ULP below 900 (0x4460FFFF=899.999939) -> 900. Sub-ULP clamp
+         !      straddle (either tree can land just-below or clamp-to-900); collapse
+         !      both to 900. spacing(900.0) == the f32 ULP at 900.
+         ! Physically a no-op (max-density boundary / graupel-empty cells); makes
+         ! diag_rhog/RHO_ICE/RHOPO3D bitwise with mp137.
+         if (qrs(i,k,3) <= qcrmin) then
+           diag_rhog(i,k,j) = 0.0
+         else if (rhox(i,k) >= 900.0 - spacing(900.0)) then
+           diag_rhog(i,k,j) = 900.0
+         else
+           diag_rhog(i,k,j) = rhox(i,k)
+         endif
        enddo
      enddo
 !

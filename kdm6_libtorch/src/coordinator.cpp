@@ -1055,9 +1055,26 @@ CoordinatorState kdm62d_one_step(
         // (§20), so an OR-gate reads progb's [rho_min,rho_max] clamp (~rho_max) in ~25k spurious
         // empty cells. qg-only matches the output-brs presence and avoids that residue.
         if (rhog_out != nullptr) {
-            // §35 diag_rhog shadow: FINAL (state_update) reslope — update active (qg>qcrmin),
-            // retain the earlier-reslope value (rhog_acc) for cells whose graupel is now gone.
-            *rhog_out = torch::where(new_state.qg > full_params.progb.qcrmin, progb4.rhox, rhog_acc);
+            // diag_rhog gated to the OUTPUT graupel presence, SYMMETRIC with the Fortran
+            // mp37 export (module_mp_kdm6.F:423): qg>qcrmin -> the last-ProgB density, else 0.
+            // The inactive branch is 0 (NOT the retained rhog_acc): a graupel-empty output cell
+            // has no density, and Fortran's diag_rhog there is a stale INTENT(OUT) work-array
+            // artifact (it reports the mid-step value). Both trees zeroing on the identical
+            // bitwise output-qg gate closes the 138 retention-residue cells without breaking any
+            // currently-agreeing cell. (rhog_acc 652/708/857 is now vestigial.)
+            *rhog_out = torch::where(new_state.qg > full_params.progb.qcrmin,
+                                     progb4.rhox, torch::zeros_like(progb4.rhox));
+            // Diagnostic-only snap to the rho_max=900 clamp boundary, SYMMETRIC with the
+            // Fortran mp37 export snap (module_mp_kdm6.F:423). Graupel density landing 1 ULP
+            // below 900 (0x4460FFFF = 899.999939) is the sub-ULP brs clamp straddle: either
+            // tree can land just-below or clamp-to-900. Collapsing BOTH trees' near-boundary
+            // value to 900 makes RHO_ICE/diag_rhog bitwise without breaking the cells where
+            // both already agree at 899.999939. rhog is output-only (feeds no prognostic/rate;
+            // a FnResult side-diagnostic excluded from the adjoint), so this is AD-safe and the
+            // 252 prognostic/diagnostic fields are untouched. Threshold 900 - 2^-14 == f32
+            // spacing(900.0) matches Fortran's snap set exactly.
+            *rhog_out = torch::where(*rhog_out >= (900.0 - 0x1p-14),
+                                     torch::full_like(*rhog_out, 900.0), *rhog_out);
         }
         // qg>qcrmin zeroing matches Fortran's f32 brs-underflow=>0 in graupel-empty cells. The
         // OR-condition (qg>qcrmin OR brs>BRS_MIN, to preserve Fortran-active graupel per Codex) was
