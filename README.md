@@ -2,8 +2,10 @@
 
 A differentiable C++/libtorch port of the **KDM6** bulk cloud-microphysics scheme, with a
 Fortran ISO_C ABI bridge for coupling into a WRF/KIM-meso host. The port reproduces the
-Fortran reference **bit-for-bit on an operational float32 path** and exposes **autograd
-(VJP / JVP / HVP)** on a float64 data-assimilation path. See
+Fortran reference **bit-for-bit on an operational float32 path** and exposes **autograd**
+on a float64 data-assimilation path: **VJP and JVP through the C/Fortran ABI**
+(`kdm6_handle_vjp_c` / `kdm6_handle_jvp_c`); **HVP** is available only via the C++ autograd
+path (`GraphOptions.create_graph` grad-of-grad) and currently has **no dedicated C ABI entry**. See
 [`docs/KDM6AD_differentiable_mathematics.md`](docs/KDM6AD_differentiable_mathematics.md) for the
 full mathematical and AD-engineering writeup.
 

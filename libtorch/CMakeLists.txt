@@ -147,8 +147,13 @@ foreach(t IN ITEMS
 endforeach()
 
 # ── installation ────────────────────────────────────────────────────────────
+# NOTE: this is a plain file-copy install (libraries + headers), NOT a CMake
+# package — there is no generated kdm6Config.cmake / exported target set, so
+# `find_package(kdm6ad)` is intentionally unsupported. Consumers link the built
+# libkdm6_c.dylib directly (see docs/HOST_INTEGRATION.md). We therefore omit the
+# EXPORT clause rather than leave a half-configured `install(TARGETS … EXPORT)`
+# with no matching `install(EXPORT …)`.
 install(TARGETS kdm6 kdm6_c
-    EXPORT kdm6Targets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
 )

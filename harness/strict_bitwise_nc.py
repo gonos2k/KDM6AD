@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """STRICT raw-bit (uint-view) comparison of two NetCDF/HDF5 history files (mp37 vs mp137).
-NO tolerance — uint32/uint64 bit equality per element, at the LAST common time frame.
+NO tolerance — uint32/uint64 bit equality per element. Frame: the LAST common time
+frame by default, or an explicit 0-based frame index if a third argument is given.
 HDF5 byte layout/metadata differ even for identical data, so we compare DATA VARIABLES, not raw bytes.
 
 usage: strict_bitwise_nc.py <file37> <file137> [frame_index]

@@ -1,9 +1,16 @@
-# Host integration — wiring `host_fortran/` into a WRF/KIM-meso tree
+# Host integration — wiring the KDM6/KDM6AD Fortran into a WRF/KIM-meso tree
 
-The Layer-3 Fortran files in `host_fortran/` are the KDM6/KDM6AD microphysics
-integration source. They build into a full **KIM-meso/WRF host tree** (the foreign
-host model, not bundled here). This doc records the exact wiring so the bundled
-`.F` files can be dropped into a host and produce `wrf.exe` with selectable
+> **Not in this public repo.** Both the WRF/KIM-meso host tree (`host/`) and the isolated
+> integration Fortran (`host_fortran/`) are **excluded via `.gitignore`** — they are part of a
+> separately-governed model tree, not published here. This document is the wiring reference for
+> a maintainer who **already has** those sources. The KDM6/KDM6AD `.F` integration files
+> (`module_mp_kdm6.F`, `module_mp_kdm6ad.F`, `kdm6_iso_c.F`, and the `module_bc.F` /
+> `module_microphysics_driver.F` edits) live in that private host tree; the **differentiable
+> port itself** (`libtorch/`, `oracle/`, `harness/`) is what this public repo ships.
+
+The KDM6/KDM6AD microphysics integration source builds into a full **KIM-meso/WRF host tree**
+(the foreign host model, not bundled here). This doc records the exact wiring so those `.F`
+files can be dropped into a host and produce `wrf.exe` with selectable
 `mp_physics=37` (KDM6 Fortran) / `mp_physics=137` (KDM6AD libtorch port).
 
 ## Files (drop into `<WRF>/phys/`)

@@ -252,6 +252,8 @@ CoordinatorAuxDiagnostics build_default_aux(
 
 // Test-facing wrapper around the now-exported build_default_aux. Mirrors
 // the production path so tests assert what the operational path actually installs.
+// In `kdm6::testing` (see runtime.h) to mark it test-only, not stable API.
+namespace testing {
 CoordinatorAuxDiagnostics build_default_aux_for_test(
     const State& s, const Forcing& f) {
     auto cs = state_to_coord(s, f);
@@ -261,6 +263,7 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
     auto full_p = default_coordinator_params();
     return build_default_aux(cs, cf, rslopec, full_p.thermo);
 }
+}  // namespace testing
 
 // Stage-A re-architecture support (STEP 0). Defined here because the
 // anonymous-namespace build_default_aux is reachable from this TU; declared in

@@ -12,10 +12,14 @@ KDM6 PyTorch runtime — 슬롯 47 진입점 + autograd handle.
 설계 결정은 wiki/concepts/pytorch-autograd-integration.md 참조 (G1-G7).
 
 ──────────────────────────────────────────────────────────────────────
-현재 상태:
-  - 인터페이스 시그니처 + TODO 마커만 존재 (slope/core/sedimentation 미구현)
-  - kdm6_step 호출하면 NotImplementedError
-  - 본 파일이 의미있게 동작하려면 slope.py 먼저 필요
+현재 상태 (구현 완료):
+  - slope/core/sedimentation/satadj 등 물리 모듈이 모두 구현되어 `_kdm6_pure`가
+    실제 forward를 수행하고 미분가능하다(C++ libtorch 포트와 forward parity 검증됨).
+  - `kdm6_step(...)`는 값+handle을 반환하며 `Handle.vjp/jvp`가 동작한다.
+  - CCN 활성화(nccn)는 `CoordinatorState`에 필드로 두지 않고 driver가 별도로 thread한다
+    (satadj 단계에서 처리; `_kdm6_pure` 참조).
+  - `Handle.param_grad()`는 아직 미구현(`NotImplementedError`) — 물리 파라미터 sensitivity는
+    현재 지원되지 않는다(state leaf gradient만 유효; C ABI의 param_grad_flags도 동일하게 예약 상태).
 ──────────────────────────────────────────────────────────────────────
 """
 from __future__ import annotations

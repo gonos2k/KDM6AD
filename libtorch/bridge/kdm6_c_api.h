@@ -30,9 +30,16 @@ enum {
  * 입력 state/forcing은 Fortran-allocated float*(im, kme, jme).
  * 출력 state는 caller가 *미리 할당*한 float*(im, kme, jme)에 결과 복사.
  *
- * @param param_grad_flags  Bitwise OR of:
- *                            1 = PEAUT, 2 = NCRK1, 4 = NCRK2, 8 = ECCBRK, 15 = ALL
- *                          0이면 모든 파라미터 frozen.
+ * @param param_grad_flags  RESERVED — must be 0. Physics-parameter sensitivity
+ *                          (PEAUT / NCRK1 / NCRK2 / ECCBRK gradients) is NOT yet
+ *                          wired into the forward graph: kdm6_fn consumes baked-in
+ *                          constants (see runtime.cpp), so a non-zero flag would
+ *                          build trainable leaves that never reach the graph. To
+ *                          avoid a silent "flag set, no effect" trap, any non-zero
+ *                          value is REJECTED with KDM6_ERR_NOT_IMPLEMENTED. Only
+ *                          STATE leaves (the 12 prognostic inputs) are
+ *                          differentiable today. Bit meanings, reserved for a
+ *                          future param-grad ABI: 1=PEAUT, 2=NCRK1, 4=NCRK2, 8=ECCBRK.
  * @param value_only        1이면 graph 안 만듦 (forward 정합 검증용). 0이면 derivative-ready handle 반환.
  * @param[out] handle       opaque handle. value_only=1이면 NULL 반환, value_only=0이면 close 필요.
  *
@@ -176,8 +183,24 @@ int kdm6_handle_jvp_c(kdm6_handle_t* h,
 /**
  * Handle 닫기 — 자원 해제. Fortran 측이 매 step 후 *반드시* 호출해야 함.
  * NULL handle은 이미 닫힌 상태로 간주하고 KDM6_OK를 반환한다.
+ *
+ * WARNING (by-value form): this frees `h` (delete). AFTER this call the pointer
+ * `h` is DANGLING — the caller MUST discard it and must NOT reuse it for any
+ * further vjp/jvp/close call. Because the wrapper object itself is freed, a
+ * reuse does NOT return KDM6_ERR_HANDLE_CLOSED; it is undefined behavior
+ * (use-after-free). Prefer kdm6_handle_closep_c below, which nulls the caller's
+ * pointer so accidental reuse is caught as a NULL (→ KDM6_OK / no-op) instead.
  */
 int kdm6_handle_close_c(kdm6_handle_t* h);
+
+/**
+ * Handle 닫기 (pointer-nulling form — RECOMMENDED). Frees `*hp` and sets
+ * `*hp = NULL`, so the caller's handle variable can never dangle. Idempotent:
+ * `hp == NULL` or `*hp == NULL` is a no-op returning KDM6_OK. The Fortran
+ * wrapper kdm6_handle_close (kdm6_iso_c) binds to THIS entry with an
+ * intent(inout) c_ptr, guaranteeing the Fortran handle is reset to C_NULL_PTR.
+ */
+int kdm6_handle_closep_c(kdm6_handle_t** hp);
 
 #ifdef __cplusplus
 }  // extern "C"

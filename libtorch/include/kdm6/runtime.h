@@ -10,12 +10,17 @@
 
 namespace kdm6 {
 
-// Production aux-diagnostics builder. Exposed for regression tests that need
-// to verify the actual values the operational path installs (so the test
-// breaks when build_default_aux is rewired to physics, instead of silently
-// passing against hardcoded literals).
+// Test-only helper — NOT part of the stable public API despite living in this
+// installed header. Kept under `kdm6::testing` so external consumers cannot
+// mistake it for a supported entry point (it is no longer found as
+// `kdm6::build_default_aux_for_test`). Used by the aux-port regression test to
+// verify the actual values the operational path installs (so the test breaks
+// when build_default_aux is rewired to physics, instead of silently passing
+// against hardcoded literals).
+namespace testing {
 CoordinatorAuxDiagnostics build_default_aux_for_test(
     const State& s, const Forcing& f);
+}  // namespace testing
 
 // ── [G4] Parameters — opt-in 미분가능 파라미터 ─────────────────────────────
 struct Parameters {

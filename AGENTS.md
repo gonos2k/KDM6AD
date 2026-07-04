@@ -14,25 +14,42 @@ still appear in older Codex session metadata or shell `PWD`, but it is not the
 current KDM6AD-k worktree. When in doubt, run commands with explicit
 `workdir=/Users/yhlee/KDM6AD-k` and verify `pwd` before editing.
 
+## Public repo vs full host tree
+
+This root serves two contexts; keep their paths straight:
+
+- **Public repo** (published at github.com/gonos2k/KDM6AD): the differentiable
+  **port and tooling** only — `oracle/`, `libtorch/`, `harness/`, `docs/`, `wiki/`.
+  The WRF/KIM-meso host tree (`host/`) and the isolated integration Fortran
+  (`host_fortran/`) are **excluded via `.gitignore`** and are NOT in the public repo.
+- **Full host tree** (this local worktree only): additionally has `host/KIM-meso_v1.0/`
+  and `host_fortran/`. Host-path tasks below apply here, not in a fresh public clone.
+
+When working from a public clone, treat any `host/…` or `host_fortran/…` path below as
+"present only in the full host tree"; the port itself (`libtorch/`, `oracle/`, `harness/`)
+is self-contained and its `ctest`/`pytest` run from the repo alone.
+
 ## Overview
 
-`KDM6AD-k` is a standalone KDM6 microphysics parity stack: Python f64 oracle,
-C++ libtorch f32/AD mirror, Fortran ISO_C bridge, and a bundled KIM-meso/WRF
-host where `mp_physics=37` is KDM6 and `mp_physics=137` is KDM6AD.
+`KDM6AD-k` is a KDM6 microphysics parity stack: Python f64 oracle,
+C++ libtorch f32/AD mirror, Fortran ISO_C bridge, and — in the full host tree — a
+KIM-meso/WRF host where `mp_physics=37` is KDM6 and `mp_physics=137` is KDM6AD.
 
-The load-bearing invariant is strict standalone parity: SS step-1 mp37 vs mp137
-should remain raw-bit identical for all numeric common variables except the
-documented non-numeric `Times` variable.
+The load-bearing invariant is strict parity: mp37 vs mp137 raw-bit identical for all
+numeric common variables (only the non-numeric `Times` differs). As of **2026-07-04**
+this holds through a **full 12-hour (2160-step) SS real-case integration under MPI(np4)**
+— all 254 output variables bit-identical at every output frame (the campaign goal; see
+`wiki/concepts/KDM6AD Forward Parity.md`). Earlier milestones were SS step-1 and 10-step.
 
 ## Structure
 
 ```text
 KDM6AD-k/
-├── oracle/                  # Python f64 reference and pytest oracle
-├── libtorch/                # C++ mirror, C ABI, ISO_C bridge, ctest suite
-├── host_fortran/            # isolated KDM6/KDM6AD Fortran sources
-├── host/KIM-meso_v1.0/      # runnable host; only KDM6/KDM6AD integration is in scope
-├── harness/                 # SS/parity comparators and dump analysis scripts
+├── oracle/                  # Python f64 reference and pytest oracle        [public]
+├── libtorch/                # C++ mirror, C ABI, ISO_C bridge, ctest suite  [public]
+├── host_fortran/            # isolated KDM6/KDM6AD Fortran sources     [PRIVATE, gitignored]
+├── host/KIM-meso_v1.0/      # runnable host; only KDM6/KDM6AD in scope [PRIVATE, gitignored]
+├── harness/                 # SS/parity comparators and dump analysis      [public]
 ├── docs/HOST_INTEGRATION.md # host wiring contract
 ├── wiki/                    # Obsidian KG notes
 └── graphify-out/            # Graphify structural graph

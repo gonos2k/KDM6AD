@@ -116,6 +116,15 @@ module kdm6_iso_c
       type(c_ptr), value :: h
       integer(c_int)     :: rc
     end function kdm6_handle_close_c
+
+    ! Pointer-nulling close: hp is passed BY REFERENCE (no VALUE), so the C side
+    ! receives kdm6_handle_t** and can reset the caller's c_ptr to C_NULL_PTR.
+    function kdm6_handle_closep_c(hp) &
+        bind(C, name="kdm6_handle_closep_c") result(rc)
+      import :: c_int, c_ptr
+      type(c_ptr), intent(inout) :: hp
+      integer(c_int)             :: rc
+    end function kdm6_handle_closep_c
   end interface
 
 contains
@@ -218,10 +227,13 @@ contains
     rc = kdm6_handle_jvp_c(h, v_packed, tangent_out_packed)
   end function kdm6_handle_jvp
 
+  ! intent(inout): on return, h is reset to C_NULL_PTR so a stale handle can
+  ! never be reused (the C side frees the wrapper). Binds to the pointer-nulling
+  ! kdm6_handle_closep_c rather than the by-value form.
   function kdm6_handle_close(h) result(rc)
-    type(c_ptr), intent(in) :: h
-    integer(c_int)          :: rc
-    rc = kdm6_handle_close_c(h)
+    type(c_ptr), intent(inout) :: h
+    integer(c_int)             :: rc
+    rc = kdm6_handle_closep_c(h)
   end function kdm6_handle_close
 
 end module kdm6_iso_c

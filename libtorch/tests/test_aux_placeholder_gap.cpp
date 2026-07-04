@@ -72,7 +72,7 @@ int main() {
     // ── PART A: value parity vs independent Fortran-style computation ──────────
     {
         auto cell = make_test_cell(/*grad=*/false);
-        auto aux = build_default_aux_for_test(cell.s, cell.f);
+        auto aux = kdm6::testing::build_default_aux_for_test(cell.s, cell.f);
 
         double n0r_p  = aux.n0r.item<double>();
         double n0i_p  = aux.n0i.item<double>();
@@ -123,7 +123,7 @@ int main() {
     // ── PART B: gradient anchor — the autodiff graph must survive build_default_aux ──
     {
         auto cell = make_test_cell(/*grad=*/true);
-        auto aux = build_default_aux_for_test(cell.s, cell.f);
+        auto aux = kdm6::testing::build_default_aux_for_test(cell.s, cell.f);
 
         // Scalarize every aux field that depends on state so a single backward()
         // exercises all new pathways.

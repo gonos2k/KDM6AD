@@ -30,7 +30,10 @@ def remove_keys(text: str, keys: set[str]) -> str:
     out=[]
     for line in text.splitlines():
         stripped=line.strip()
-        if any(stripped.startswith(key) for key in keys):
+        # exact-key match (same predicate as replace_line): key must be immediately
+        # followed by '=', so 'fogvis_clw_min' does NOT also drop 'fogvis_clw_min_gm3'.
+        if any(stripped.startswith(key) and stripped[len(key):].lstrip().startswith('=')
+               for key in keys):
             continue
         out.append(line)
     return "\n".join(out)+"\n"
@@ -106,10 +109,17 @@ def main() -> int:
         'GFORTRAN_ERROR_BACKTRACE':'1',
     })
     stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
-    with stdout.open('w') as f:
-        proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env, stdout=f, stderr=subprocess.STDOUT)
-    for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
-        if src.exists(): shutil.copy2(src, out/src.name)
+    try:
+        with stdout.open('w') as f:
+            proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env, stdout=f, stderr=subprocess.STDOUT)
+        # Provenance: archive the EXACT namelist that was used (before we restore the pristine one).
+        for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
+            if src.exists(): shutil.copy2(src, out/src.name)
+    finally:
+        # Restore the pristine working namelist so the next run / git-diff is not polluted
+        # by this run's mutations (see the §10 namelist-race lesson: stale working-dir namelist
+        # → truncated runs → phantom parity failures).
+        nml.write_text(original)
     for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for src in run.glob(pat):
             if src.is_file(): shutil.copy2(src, out/src.name)

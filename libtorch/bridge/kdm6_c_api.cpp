@@ -131,6 +131,10 @@ extern "C" int kdm6_step_c(
                   nccn_out, nc_out, ni_out, nr_out, bg_out, handle})) {
         return KDM6_ERR_NULL_POINTER;
     }
+    // param_grad_flags is RESERVED (see kdm6_c_api.h): physics-parameter grads are
+    // not wired into the forward graph (kdm6_fn uses baked-in constants), so a
+    // non-zero flag would silently have no effect. Reject it loudly instead.
+    if (param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
 
     // RAII: restore the caller's (Fortran host) FP env on every return path.
     // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
@@ -324,6 +328,10 @@ extern "C" int kdm6_step_ad_c(
                   static_cast<const void*>(handle)})) {
         return KDM6_ERR_NULL_POINTER;
     }
+    // Same FP-env insulation as the operational kdm6_step_c: this fp64 DA entry also
+    // calls into libtorch/BLAS, which could perturb FTZ/rounding and leak into host
+    // dynamics when a DA workflow interleaves with the Fortran/WRF integration.
+    FpEnvGuard kdm6_fpenv_guard;
     ensure_libtorch_singlethread();
     try {
         // fp64 DA forward (design §0.1.A): same physics, float64 graph.
@@ -381,6 +389,7 @@ extern "C" int kdm6_handle_vjp_c(kdm6_handle_t* h,
     if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
     if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
 
+    FpEnvGuard kdm6_fpenv_guard;  // torch autograd (backward) may touch FP env — insulate host
     try {
         auto u = unpack_packed_state(u_packed, h->im, h->kme, h->jme, h->dtype);
         // Repeat-callable by design at the ABI (a DA driver may apply several
@@ -409,6 +418,7 @@ extern "C" int kdm6_handle_jvp_c(kdm6_handle_t* h,
     if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
     if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
 
+    FpEnvGuard kdm6_fpenv_guard;  // Pearlmutter double-VJP (autograd) may touch FP env — insulate host
     try {
         auto v = unpack_packed_state(v_packed, h->im, h->kme, h->jme, h->dtype);
         // Pearlmutter double-VJP under the hood (Handle::jvp); the forward
@@ -430,5 +440,15 @@ extern "C" int kdm6_handle_close_c(kdm6_handle_t* h) {
     if (!h) return KDM6_OK;
     if (h->impl) h->impl->close();
     delete h;
+    return KDM6_OK;
+}
+
+// Pointer-nulling close (recommended): frees *hp and resets it to NULL so the
+// caller's handle can never dangle. Idempotent on NULL / *NULL.
+extern "C" int kdm6_handle_closep_c(kdm6_handle_t** hp) {
+    if (!hp || !*hp) return KDM6_OK;
+    if ((*hp)->impl) (*hp)->impl->close();
+    delete *hp;
+    *hp = nullptr;
     return KDM6_OK;
 }
