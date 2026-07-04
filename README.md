@@ -37,12 +37,14 @@ masked-adjoint identity, double-backward readiness, f32 value-vs-graph determini
 rejection, and handle lifecycle guards). If a Fortran compiler is present, an ISO_C smoke
 test is added.
 
-> **Known ctest status: 14/16 on the pinned toolchain** ([ENVIRONMENT.md](ENVIRONMENT.md)).
-> Two numeric-corner asserts on the *f32 autograd backward* — `coordinator`
-> (`test_picons_inactive_when_ni_zero`) and `c_abi` (`test_c_abi_vjp_jvp_roundtrip`) — abort
-> because they encode exact-equality / hard-coded NaN-corner expectations that shift by a ULP
-> on bleeding-edge clang. They do not touch the operational forward path or the bitwise parity
-> below; they are tracked as a separate numeric-robustness item.
+> **Known ctest status: 15/16 on the pinned toolchain** ([ENVIRONMENT.md](ENVIRONMENT.md)).
+> The one remaining abort, `c_abi` (`test_c_abi_vjp_jvp_roundtrip`), is on the *f32
+> operational-graph backward*: it yields a NaN in the `th` gradient beyond the test's
+> hard-coded `{qi, nc, ni}` inactive-ice corner set. The f32 backward is known to be
+> non-finite at those corners (the reason the DA path uses fp64), so it does not touch the
+> operational forward path or the bitwise parity below; it is an open numeric item. (Three
+> earlier `coordinator` aborts were stale unit tests — a pre-§53q Picons invariant and two
+> `SlopeOutputs` initializers missing appended fields — since fixed.)
 
 ### Python oracle (independent f64 reference)
 ```sh

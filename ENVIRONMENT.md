@@ -5,12 +5,15 @@ the exact environment matters. Below is the **reference environment** on which t
 `mp37 ↔ mp137` STRICT BITWISE parity was produced. Other versions may work but are not
 guaranteed to reproduce bit-for-bit.
 
-**C++ unit-test status on this reference toolchain: `ctest` is 14/16.** The two aborts
-(`coordinator` `test_picons_inactive_when_ni_zero`; `c_abi` `test_c_abi_vjp_jvp_roundtrip`)
-are numeric-corner asserts on the *f32 autograd backward* — an exact `<1e-15` equality and a
-hard-coded NaN-corner field set — that are sensitive to libm/compiler ULP on bleeding-edge
-clang. They do **not** touch the operational forward path, so the bitwise parity above is
-unaffected; they are tracked as a separate numeric-robustness item.
+**C++ unit-test status on this reference toolchain: `ctest` is 15/16.** The one remaining abort
+(`c_abi` `test_c_abi_vjp_jvp_roundtrip`) is on the *f32 operational-graph backward*: it produces
+a NaN in the `th` gradient beyond the test's hard-coded `{qi, nc, ni}` inactive-ice corner set.
+The f32 backward is known to be non-finite at those corners (the documented reason the DA path
+uses fp64), so it does **not** touch the operational forward path or the bitwise parity above;
+whether `th`'s NaN is a benign toolchain-dependent broadening or a regression is an open item.
+(Three earlier `coordinator` aborts were **stale unit tests** — a pre-§53q Picons invariant and
+two synthetic `SlopeOutputs` initializers missing the appended `vt2r/vt2s/vt2i` fields — since
+fixed; they were test-maintenance issues, not production-code bugs or ULP effects.)
 
 ## Reference environment (verified 2026-07-04)
 

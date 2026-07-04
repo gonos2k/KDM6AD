@@ -92,18 +92,24 @@ void test_picons_inactive_when_t_above_zero() {
     } END_TEST();
 }
 
-void test_picons_inactive_when_ni_zero() {
-    TEST(test_picons_inactive_when_ni_zero) {
+void test_picons_no_ni_gate_fires_when_ni_zero() {
+    TEST(test_picons_no_ni_gate_fires_when_ni_zero) {
+        // §53q (coordinator.cpp): Fortran Picons has NO ni gate — its only gate is
+        // qi > qmin. With ni=0 the lamdai statement function drives 1/lamdai to the
+        // MAX-size clamp, so avedia_i is huge and a large-qi/cold cell reclassifies
+        // to snow *even at ni=0*. This matches mp37 and is REQUIRED for the 12h×np4
+        // bitwise parity; an earlier ni>0 guard suppressed the transfer and caused
+        // the "final qi-2/qs-1" parity divergence class. (Supersedes the old
+        // test_picons_inactive_when_ni_zero, which asserted the pre-§53q invariant.)
         auto opts = f64();
         CoordinatorState s = make_zero_state(1, 1);
         s.qi = torch::full({1, 1}, 1.0e-4, opts);
-        s.ni = torch::full({1, 1}, 0.0, opts);     // ni=0 → ice_active=false
-        s.t  = torch::full({1, 1}, 260.0, opts);
+        s.ni = torch::full({1, 1}, 0.0, opts);     // ni=0, but qi>qmin → Picons still fires
+        s.t  = torch::full({1, 1}, 260.0, opts);   // < 0°C so the temperature gate is open
         auto den = torch::full({1, 1}, 1.1, opts);
         auto out = reclassify_large_ice_to_snow(s, den);
-        // review8#1: ni<=0이면 false-positive Picons 안 걸려야 함
-        assert(std::abs(out.qi.item<double>() - 1.0e-4) < 1e-15);
-        assert(out.qs.item<double>() == 0.0);
+        assert(std::abs(out.qi.item<double>() - 0.0)    < 1e-15);   // qi fully transferred…
+        assert(std::abs(out.qs.item<double>() - 1.0e-4) < 1e-15);   // …into qs
     } END_TEST();
 }
 
@@ -582,7 +588,12 @@ PreambleCold make_test_pre_cold(int B, int K) {
         /*rsloped_r=*/rsld, /*rsloped_s=*/rsld, /*rsloped_g=*/rsld, /*rsloped_i=*/rsld,
         /*rslope2_r=*/rsl2, /*rslope2_s=*/rsl2, /*rslope2_g=*/rsl2, /*rslope2_i=*/rsl2,
         /*rslope3_r=*/rsl3, /*rslope3_s=*/rsl3, /*rslope3_g=*/rsl3, /*rslope3_i=*/rsl3,
-        /*vt_r=*/vt, /*vt_s=*/vt, /*vt_g=*/vt, /*vt_i=*/vt, /*vt2g=*/vt,
+        /*vt_r=*/vt, /*vt_s=*/vt, /*vt_g=*/vt, /*vt_i=*/vt,
+        // vt2g and the cold-accretion fall speeds vt2r/vt2s/vt2i were appended to
+        // SlopeOutputs after this test's initializer was first written; without them
+        // the positional aggregate-init shifted vtn_r/vtn_i/n0sfac_field off the end
+        // (left undefined → cold_phase hit an "undefined Tensor" c10::Error).
+        /*vt2g=*/vt, /*vt2r=*/vt, /*vt2s=*/vt, /*vt2i=*/vt,
         /*vtn_r=*/vtn, /*vtn_i=*/vtn,
         /*n0sfac_field=*/n0sfac,
     };
@@ -1139,8 +1150,9 @@ PreambleMf make_test_pre_mf(int B, int K) {
         rsld, rsld, rsld, rsld,
         rsl2, rsl2, rsl2, rsl2,
         rsl3, rsl3, rsl3, rsl3,
-        vt, vt, vt, vt, vt,
-        vtn, vtn,
+        vt, vt, vt, vt,                        // vt_r, vt_s, vt_g, vt_i
+        vt, vt, vt, vt,                        // vt2g, vt2r, vt2s, vt2i (appended to SlopeOutputs;
+        vtn, vtn,                              //   see make_test_pre_cold — same undefined-tensor fix)
         n0sfac,
     };
 
@@ -1477,7 +1489,7 @@ int main() {
     test_threshold_cleanup_zeros_paired_number();
     test_threshold_cleanup_passes_through_above_threshold();
     test_picons_inactive_when_t_above_zero();
-    test_picons_inactive_when_ni_zero();
+    test_picons_no_ni_gate_fires_when_ni_zero();
     test_rain_to_cloud_inactive_when_qr_zero();
     test_rain_to_cloud_fires_for_small_drops();
     test_dsd_limiter_clamps_oversized_ni_strong();

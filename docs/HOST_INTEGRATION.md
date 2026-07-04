@@ -74,11 +74,19 @@ The operational f32 path is strict-bitwise identical between `mp_physics=37`
 - Earlier milestones: SS step-1 254/254 (253 BITWISE-MATCH + Times; RHO_ICE 0 diffs),
   then a 10-step run.
 
-C++ unit suite (`ctest`): **14 of 16 pass on the pinned toolchain** (ENVIRONMENT.md).
-The two aborts are numeric-corner *asserts*, not operational-path failures:
-`coordinator` (`test_picons_inactive_when_ni_zero`, an exact `<1e-15` equality on an
-inactive-branch pass-through) and `c_abi` (`test_c_abi_vjp_jvp_roundtrip`, which pins the
-*field set* where the f32-graph backward is allowed to produce a NaN at inactive-ice
-corners). Both exercise the **f32 autograd backward corner**, not the operational forward,
-so neither affects the bitwise parity above; they are sensitive to libm/compiler ULP on
-bleeding-edge clang and are tracked as a separate numeric-robustness item (not yet fixed).
+C++ unit suite (`ctest`): **15 of 16 pass on the pinned toolchain** (ENVIRONMENT.md).
+The one remaining abort is `c_abi` (`test_c_abi_vjp_jvp_roundtrip`): the operational
+**f32-graph backward** produces a NaN in the `th` gradient beyond the test's hard-coded
+`{qi, nc, ni}` inactive-ice corner set. The f32 backward is *known* to be non-finite at those
+corners — that is the documented reason the DA design default is the fp64 adjoint forward
+(§0.1.A) — so this exercises the f32 backward corner, **not the operational forward**, and does
+not affect the bitwise parity above. Whether `th`'s NaN is a benign toolchain-dependent
+broadening of the corner set or a regression is an open numeric item.
+
+The earlier `coordinator` aborts were **stale unit tests, now fixed** — *not* production-code
+bugs and *not* f32/ULP effects: (1) `test_picons_inactive_when_ni_zero` asserted a pre-§53q
+invariant (ni=0 ⇒ no Picons) that was *intentionally removed* to match Fortran mp37 (Picons
+gates on `qi>qmin` only; `coordinator.cpp` §53q), and (2) two `*_runs_finite` tests built their
+synthetic `SlopeOutputs` with an out-of-date aggregate initializer that omitted the appended
+`vt2r/vt2s/vt2i` fields, leaving trailing fields undefined (→ `c10::Error` "undefined Tensor").
+The operational path populates every field, which is why the 12h×np4 bitwise parity holds.
