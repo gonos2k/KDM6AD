@@ -595,12 +595,19 @@ void test_c_abi_fp64_packed_layout_nontrivial_tile() {
             }
         assert(any_in_col);
 
-        // VALUE-LEVEL layout check (the fortran_smoke standalone-column check, in C++ so it
-        // needs no Fortran compiler): re-run column (i0,j0) as a STANDALONE (1,kme,1) tile and
-        // require its forward output to equal the embedded column BIT-FOR-BIT. Microphysics is
-        // column-local and fp64-deterministic, so any field/k offset or forcing-ordering bug in
-        // the packed (im,kme,jme,field) layout would feed the standalone different inputs and
-        // break the match — which support-confinement alone (above) cannot catch.
+        // VALUE-LEVEL column-independence check: re-run column (i0,j0) as a STANDALONE
+        // (1,kme,1) tile and require its forward output to equal the embedded column
+        // BIT-FOR-BIT (microphysics is column-local + fp64-deterministic).
+        // WHAT THIS PINS: the batch (i,j) striding and column independence — a wrong batch
+        // stride or any cross-column value contamination in the multi-column run makes the
+        // embedded column differ from standalone. Combined with the gradient-confinement
+        // check above (asymmetric extents → catches i<->j axis swaps), this locks the (i,j)
+        // batch layout at the value level, not just the gradient-support level.
+        // WHAT THIS DOES *NOT* PIN: the absolute field-block order or within-column k / forcing
+        // order. Those are built AND read with the same convention on both sides here, so a
+        // *consistent* mislabeling cancels out and the match still holds — a self-consistent
+        // buffer cannot validate its own convention. The fortran_smoke value-level test is the
+        // stronger absolute-ordering oracle (it uses Fortran's native x(i,k,j,field) layout).
         std::vector<double> st_s(NF * kme, 0.0), fz_s(4 * kme, 0.0), out_s(NF * kme, -777.0);
         for (size_t f = 0; f < NF; ++f)
             for (int k = 0; k < kme; ++k) st_s[f * kme + k] = st[f * BK + idx(i0, k, j0)];
