@@ -112,19 +112,22 @@ def main() -> int:
     stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
     proc=None
     try:
-        with stdout.open('w') as f:
-            proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
-                                stdout=f, stderr=subprocess.STDOUT, check=False)
-        # Provenance: archive the EXACT namelist that was used (before we restore the pristine one).
-        for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
-            if src.exists(): shutil.copy2(src, out/src.name)
-    except OSError as e:
-        # The LAUNCH itself failed (e.g. mpirun or wrf.exe missing / not executable) — this is
-        # distinct from a nonzero WRF exit, which comes back via proc.returncode. Without this
-        # except the OSError would propagate straight out (skipping the rc=127 fallback below),
-        # so we catch it, leave proc=None, and fall through to a clean exit code instead of a
-        # bare traceback. (finally still restores the namelist.)
-        print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
+        # Inner try/except is scoped to the LAUNCH ONLY (opening the stdout log + spawning
+        # mpirun/wrf.exe). A missing/non-executable launcher raises OSError here; catch it,
+        # leave proc=None, and fall through to the rc=127 fallback instead of a bare traceback.
+        # A nonzero WRF exit is NOT an exception — it comes back via proc.returncode.
+        try:
+            with stdout.open('w') as f:
+                proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
+                                    stdout=f, stderr=subprocess.STDOUT, check=False)
+        except OSError as e:
+            print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
+        # Provenance: archive the EXACT namelist used (before we restore the pristine one).
+        # Deliberately OUTSIDE the launch-except so a copy I/O error is NOT misreported as a
+        # launch failure or silently swallowed — it propagates (the finally still restores).
+        if proc is not None:
+            for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
+                if src.exists(): shutil.copy2(src, out/src.name)
     finally:
         # Restore the pristine working namelist so the next run / git-diff is not polluted
         # by this run's mutations (see the §10 namelist-race lesson: stale working-dir namelist
