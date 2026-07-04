@@ -125,7 +125,11 @@ def main() -> int:
                 proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
                                     stdout=f, stderr=subprocess.STDOUT, check=False)
             except OSError as e:
-                print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
+                # Record the launch failure in BOTH stderr and the run's own stdout log, so the
+                # cause is visible from the run directory alone (rsl logs won't exist — no spawn).
+                msg = f"run_ss_case: launch failed: {e}"
+                print(msg, file=sys.stderr)
+                print(msg, file=f)
         # Provenance: archive the EXACT namelist used (before we restore the pristine one).
         if proc is not None:
             for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:

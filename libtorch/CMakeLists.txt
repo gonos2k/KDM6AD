@@ -140,7 +140,7 @@ endif()
 foreach(t IN ITEMS
         test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
-        test_cloud_dsd test_c_abi test_autograd_endtoend)
+        test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp)
     if(TARGET ${t})
         target_compile_options(${t} PRIVATE -UNDEBUG)
     endif()

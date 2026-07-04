@@ -533,6 +533,70 @@ void test_c_abi_step_ad_fp64_vjp_finite_and_adjoint() {
     } END_TEST();
 }
 
+void test_c_abi_fp64_packed_layout_nontrivial_tile() {
+    TEST(test_c_abi_fp64_packed_layout_nontrivial_tile) {
+        // fp64 twin of test_c_abi_vjp_packed_layout_nontrivial_tile, via kdm6_step_ad_c. The
+        // f32 layout test must `continue` past non-finite gradients (the f32 corner caveat),
+        // so an off-column leak that happens to be NaN could slip through. fp64 has NO
+        // ice-corner NaN, so EVERY off-column gradient is a real finite number and the
+        // column-confinement is checked with no skip. Also needs no Fortran compiler (unlike
+        // the stronger fortran_smoke value-level layout check).
+        const int im = 2, kme = 2, jme = 2;
+        const size_t NF = 12, BK = static_cast<size_t>(im) * kme * jme;   // 8
+        const size_t N = NF * BK;
+        auto idx = [&](int i, int k, int j) {              // Fortran col-major within a field block
+            return static_cast<size_t>(i) + im * (static_cast<size_t>(k) + kme * j);
+        };
+        // Packed state, field order th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg; distinct warm columns.
+        std::vector<double> st(N, 0.0);
+        auto set = [&](size_t field, int i, int k, int j, double v) { st[field * BK + idx(i,k,j)] = v; };
+        for (int j = 0; j < jme; ++j) for (int k = 0; k < kme; ++k) for (int i = 0; i < im; ++i) {
+            const double col = 1.0 + i + 2.0 * j;
+            set(0, i,k,j, 295.0 + 1.5*col + 2.0*k);   // th
+            set(1, i,k,j, 1.2e-2 + 1e-3*col);          // qv
+            set(2, i,k,j, 8.0e-4 + 1e-4*col);          // qc
+            set(3, i,k,j, 5.0e-5 + 1e-5*col);          // qr
+            set(7, i,k,j, 1.0e9);                       // nccn
+            set(8, i,k,j, 1.0e8 + 1e7*col);            // nc
+            set(10, i,k,j, 1.0e4);                      // nr
+            // qi/qs/qg/ni/bg stay 0 — fp64 keeps them finite anyway
+        }
+        std::vector<double> fz(4 * BK, 0.0);
+        auto setf = [&](size_t field, int i, int k, int j, double v) { fz[field * BK + idx(i,k,j)] = v; };
+        for (int j = 0; j < jme; ++j) for (int k = 0; k < kme; ++k) for (int i = 0; i < im; ++i) {
+            setf(0, i,k,j, 1.05); setf(1, i,k,j, 0.97); setf(2, i,k,j, 8.8e4); setf(3, i,k,j, 500.0);
+        }
+        std::vector<double> out(N, -777.0);
+        kdm6_handle_t* handle = nullptr;
+        int rc = kdm6_step_ad_c(st.data(), fz.data(), im, kme, jme, /*dt=*/20.0,
+                                /*value_only=*/0, out.data(), &handle, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_OK && handle != nullptr);
+        for (size_t i = 0; i < N; ++i) { assert(out[i] != -777.0); assert(std::isfinite(out[i])); }
+
+        // seed u = e_{qv at (i0,k0,j0)} — a single Fortran cell
+        const int i0 = 1, k0 = 0, j0 = 1;
+        const size_t QV = 1;
+        std::vector<double> u(N, 0.0), g(N, 0.0);
+        u[QV * BK + idx(i0, k0, j0)] = 1.0;
+        rc = kdm6_handle_vjp_c(handle, u.data(), g.data());
+        assert(rc == KDM6_OK);
+
+        // fp64 → all grads finite; microphysics couples only within a column, so gradient
+        // support must be confined to column (i0,j0) across EVERY field. No NaN-skip here: a
+        // scrambled packed layout OR an off-column leak fails the (i==i0 && j==j0) assert.
+        bool any_in_col = false;
+        for (size_t f = 0; f < NF; ++f)
+            for (int j = 0; j < jme; ++j) for (int k = 0; k < kme; ++k) for (int i = 0; i < im; ++i) {
+                const double val = g[f * BK + idx(i,k,j)];
+                assert(std::isfinite(val));               // fp64: no ice-corner NaN
+                if (val != 0.0) { assert(i == i0 && j == j0); any_in_col = true; }
+            }
+        assert(any_in_col);
+        assert(kdm6_handle_closep_c(&handle) == KDM6_OK);
+        assert(handle == nullptr);
+    } END_TEST();
+}
+
 void test_c_abi_closep_nulls_handle() {
     TEST(test_c_abi_closep_nulls_handle) {
         // Idempotent no-ops: NULL pointer-to-handle and pointer-to-NULL both return OK.
@@ -579,6 +643,7 @@ int main() {
     test_c_abi_vjp_value_only_refused();
     test_c_abi_vjp_packed_layout_nontrivial_tile();
     test_c_abi_step_ad_fp64_vjp_finite_and_adjoint();
+    test_c_abi_fp64_packed_layout_nontrivial_tile();
     std::cout << "All C ABI tests passed.\n";
     return 0;
 }

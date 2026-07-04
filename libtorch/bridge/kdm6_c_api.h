@@ -21,6 +21,7 @@ enum {
     KDM6_ERR_NOT_IMPLEMENTED = -3,
     KDM6_ERR_HANDLE_CLOSED   = -4,
     KDM6_ERR_VALUE_ONLY      = -5,
+    KDM6_ERR_INVALID_ARG     = -6,   // an argument is outside its documented domain
     KDM6_ERR_INTERNAL        = -100,
 };
 
@@ -40,7 +41,8 @@ enum {
  *                          STATE leaves (the 12 prognostic inputs) are
  *                          differentiable today. Bit meanings, reserved for a
  *                          future param-grad ABI: 1=PEAUT, 2=NCRK1, 4=NCRK2, 8=ECCBRK.
- * @param value_only        1이면 graph 안 만듦 (forward 정합 검증용). 0이면 derivative-ready handle 반환.
+ * @param value_only        0/1 ONLY. 1 → graph 안 만듦(forward 정합 검증용), *handle=NULL.
+ *                          0 → derivative-ready handle 반환. Any other value → KDM6_ERR_INVALID_ARG.
  * @param[out] handle       opaque handle. value_only=1이면 NULL 반환, value_only=0이면 close 필요.
  *
  * @return KDM6_OK 또는 음수 에러 코드.

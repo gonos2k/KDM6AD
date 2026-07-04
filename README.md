@@ -57,8 +57,11 @@ cd "$KROOT/oracle" && python3 -m pytest      # algorithm + parity + VJP/JVP FD t
   This is the campaign goal; see `wiki/concepts/KDM6AD Forward Parity.md` and `wiki/log.md`.
 - Verification is uint32 bit-equality (not tolerance) via `harness/strict_bitwise_nc.py`;
   a mismatched variable *set* is itself a failure.
-- Host-coupled runs use single-threaded determinism (the ABI sets `OMP_NUM_THREADS=1` etc.
-  with `setenv(..., overwrite=0)`, so an external `OMP_NUM_THREADS` still overrides it).
+- Host-coupled runs use single-threaded determinism. The ABI seeds the thread env vars with
+  `setenv(..., overwrite=0)` (so it does not *clobber* an external `OMP_NUM_THREADS`), but it
+  then **forces the libtorch/OpenMP runtime itself to one thread** — `at::set_num_threads(1)`,
+  `at::set_num_interop_threads(1)`, `omp_set_num_threads(1)`. So the effective intra/interop
+  thread count is 1 regardless of the environment; the `overwrite=0` only governs the env var.
 
 ## Layout (this repo)
 

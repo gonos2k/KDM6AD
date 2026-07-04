@@ -127,6 +127,9 @@ extern "C" int kdm6_step_c(
     // that forgets to check the return code never reads an uninitialized handle.
     if (handle) *handle = nullptr;
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    // value_only is a 0/1 flag (0 → derivative handle, 1 → NULL handle). Reject any other
+    // value rather than silently treating a stray nonzero (e.g. 2) as value-only.
+    if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;
     // Note: `xland` deliberately excluded from null check — it's optional.
     if (any_null({th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg,
                   rho, pii, p, delz,
@@ -328,6 +331,7 @@ extern "C" int kdm6_step_ad_c(
     double ncmin_sea) {
     if (handle) *handle = nullptr;   // NULL output handle on every error path (see kdm6_step_c)
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;  // 0/1 flag only
     if (any_null({state_in_packed, forcing_packed, state_out_packed,
                   static_cast<const void*>(handle)})) {
         return KDM6_ERR_NULL_POINTER;

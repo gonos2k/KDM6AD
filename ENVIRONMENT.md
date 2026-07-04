@@ -36,8 +36,12 @@ tightened to the actual contract; all since fixed.)
   `docs/KDM6AD_differentiable_mathematics.md` §7.1.
 - **FP-contract**: both mp modules compile with `-ffp-contract=off`; the two-rounding accumulate
   (`ops::fma_acc`) mirrors that. A `fast` contraction setting changes results.
-- **Threading**: the ABI forces single-thread (`OMP_NUM_THREADS=1`, `at::set_num_threads(1)`, …)
-  for determinism, via `setenv(..., overwrite=0)` so an external `OMP_NUM_THREADS` still wins.
+- **Threading**: the ABI forces single-thread determinism by calling the runtime setters
+  directly — `at::set_num_threads(1)`, `at::set_num_interop_threads(1)`, `omp_set_num_threads(1)`
+  — so the effective libtorch/OpenMP thread count is **1 regardless of the environment**. It
+  also seeds `OMP_NUM_THREADS=1` etc. with `setenv(..., overwrite=0)`, which only avoids
+  clobbering an externally-set env var; it does **not** let an external value raise the actual
+  runtime thread count (the direct setters win).
 - **PyTorch**: the f64 autograd path (VJP/JVP/HVP) uses torch-native ops; a major torch version
   change can shift autograd internals (though the adjoint-identity tests are tolerance-based at
   rel<1e-12 and should hold across minor versions).
