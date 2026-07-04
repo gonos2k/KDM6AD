@@ -1,0 +1,57 @@
+name: port-ci
+
+# Port-only reproducibility gate: build the C++/libtorch port + ISO_C ABI and run the
+# full ctest suite from the public repo ALONE (no WRF/KIM-meso host). The macOS/arm64
+# bitwise host parity is a separate, platform-pinned property (see ENVIRONMENT.md) and is
+# NOT what this checks — the ctest suite is f64-deterministic / tolerance / ABI-mechanics,
+# so it is portable to Linux. This exists so "ctest is green" is CI-verified, not just a
+# claim in the README.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'libtorch/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'libtorch/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: build + ctest (ubuntu, libtorch CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install gfortran + PyTorch (CPU)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran
+          python -m pip install --upgrade pip
+          # CPU-only wheel — the port is CPU/float32 for parity; no CUDA path is claimed.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Configure (CMake, point at the pip libtorch)
+        run: |
+          cd libtorch && mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
+
+      - name: Build
+        run: cmake --build libtorch/build -j
+
+      - name: Install (file-copy)
+        run: cmake --install libtorch/build
+
+      - name: ctest
+        run: ctest --test-dir libtorch/build --output-on-failure

@@ -1,5 +1,7 @@
 # KDM6AD — differentiable microphysics port (KDM6 → PyTorch/libtorch)
 
+[![port-ci](https://github.com/gonos2k/KDM6AD/actions/workflows/ci.yml/badge.svg)](https://github.com/gonos2k/KDM6AD/actions/workflows/ci.yml)
+
 A differentiable C++/libtorch port of the **KDM6** bulk cloud-microphysics scheme, with a
 Fortran ISO_C ABI bridge for coupling into a WRF/KIM-meso host. The port reproduces the
 Fortran reference **bit-for-bit on an operational float32 path** and exposes **autograd**
