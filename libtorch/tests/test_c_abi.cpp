@@ -594,6 +594,26 @@ void test_c_abi_fp64_packed_layout_nontrivial_tile() {
                 if (val != 0.0) { assert(i == i0 && j == j0); any_in_col = true; }
             }
         assert(any_in_col);
+
+        // VALUE-LEVEL layout check (the fortran_smoke standalone-column check, in C++ so it
+        // needs no Fortran compiler): re-run column (i0,j0) as a STANDALONE (1,kme,1) tile and
+        // require its forward output to equal the embedded column BIT-FOR-BIT. Microphysics is
+        // column-local and fp64-deterministic, so any field/k offset or forcing-ordering bug in
+        // the packed (im,kme,jme,field) layout would feed the standalone different inputs and
+        // break the match — which support-confinement alone (above) cannot catch.
+        std::vector<double> st_s(NF * kme, 0.0), fz_s(4 * kme, 0.0), out_s(NF * kme, -777.0);
+        for (size_t f = 0; f < NF; ++f)
+            for (int k = 0; k < kme; ++k) st_s[f * kme + k] = st[f * BK + idx(i0, k, j0)];
+        for (size_t f = 0; f < 4; ++f)
+            for (int k = 0; k < kme; ++k) fz_s[f * kme + k] = fz[f * BK + idx(i0, k, j0)];
+        kdm6_handle_t* hs = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(st_s.data(), fz_s.data(), /*im=*/1, kme, /*jme=*/1, /*dt=*/20.0,
+                            /*value_only=*/1, out_s.data(), &hs, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_OK && hs == nullptr);
+        for (size_t f = 0; f < NF; ++f)
+            for (int k = 0; k < kme; ++k)
+                assert(out_s[f * kme + k] == out[f * BK + idx(i0, k, j0)]);  // bit-exact (column-local fp64)
+
         assert(kdm6_handle_closep_c(&handle) == KDM6_OK);
         assert(handle == nullptr);
     } END_TEST();

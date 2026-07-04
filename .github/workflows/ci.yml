@@ -17,6 +17,7 @@ on:
       # stays tied to the current commit, not just the last libtorch/** change.
       - 'README.md'
       - 'ENVIRONMENT.md'
+      - 'docs/HOST_INTEGRATION.md'
   pull_request:
     branches: [main]
     paths:
@@ -26,6 +27,7 @@ on:
       # stays tied to the current commit, not just the last libtorch/** change.
       - 'README.md'
       - 'ENVIRONMENT.md'
+      - 'docs/HOST_INTEGRATION.md'
   workflow_dispatch:
 
 jobs:

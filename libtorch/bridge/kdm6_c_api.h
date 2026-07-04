@@ -25,6 +25,15 @@ enum {
     KDM6_ERR_INTERNAL        = -100,
 };
 
+// VALIDATION PRECEDENCE (kdm6_step_c / kdm6_step_ad_c): the output handle is set to NULL
+// first, then arguments are checked in this order and the FIRST failure is returned:
+//   1. dimensions      → KDM6_ERR_INVALID_DIM
+//   2. value_only ∈ {0,1} → KDM6_ERR_INVALID_ARG
+//   3. required pointers → KDM6_ERR_NULL_POINTER
+//   4. param_grad_flags (step_c only) → KDM6_ERR_NOT_IMPLEMENTED
+// So an argument-domain error (e.g. value_only=2) may be reported BEFORE a null-pointer
+// error when both are present. On ANY error the output handle is left NULL.
+
 /**
  * 한 step KDM6 호출. Fortran forward와 *동반 구동*되어 derivative 정보 산출.
  *
