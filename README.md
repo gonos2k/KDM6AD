@@ -37,6 +37,13 @@ masked-adjoint identity, double-backward readiness, f32 value-vs-graph determini
 rejection, and handle lifecycle guards). If a Fortran compiler is present, an ISO_C smoke
 test is added.
 
+> **Known ctest status: 14/16 on the pinned toolchain** ([ENVIRONMENT.md](ENVIRONMENT.md)).
+> Two numeric-corner asserts on the *f32 autograd backward* — `coordinator`
+> (`test_picons_inactive_when_ni_zero`) and `c_abi` (`test_c_abi_vjp_jvp_roundtrip`) — abort
+> because they encode exact-equality / hard-coded NaN-corner expectations that shift by a ULP
+> on bleeding-edge clang. They do not touch the operational forward path or the bitwise parity
+> below; they are tracked as a separate numeric-robustness item.
+
 ### Python oracle (independent f64 reference)
 ```sh
 cd "$KROOT/oracle" && python3 -m pytest      # algorithm + parity + VJP/JVP FD tests (needs torch)

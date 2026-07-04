@@ -63,5 +63,22 @@ The generated `.f90`/`.mod`/`.o` are build artifacts — not bundled; the host r
 them (`.F` is preprocessed by `cpp` on capital-`.F`).
 
 ## Verified result
-With this wiring, SS step-1 `mp_physics=37` ↔ `137` is **254/254 strict f32 bitwise**
-(253 BITWISE-MATCH + Times non-numeric; RHO_ICE 0 diffs), C++ ctest 16/16.
+
+The operational f32 path is strict-bitwise identical between `mp_physics=37`
+(Fortran KDM6) and `137` (KDM6AD port). Verification, most-recent first:
+
+- **Campaign result (2026-07-04): a full 12-hour (2160-step) SS real-case run under
+  MPI(np4)** is bit-identical across all **254 output variables at every output frame**
+  (253 numeric BITWISE-MATCH + the non-numeric `Times`). Gate:
+  `harness/strict_bitwise_nc.py` (uint32/uint64 bit-equality, not tolerance).
+- Earlier milestones: SS step-1 254/254 (253 BITWISE-MATCH + Times; RHO_ICE 0 diffs),
+  then a 10-step run.
+
+C++ unit suite (`ctest`): **14 of 16 pass on the pinned toolchain** (ENVIRONMENT.md).
+The two aborts are numeric-corner *asserts*, not operational-path failures:
+`coordinator` (`test_picons_inactive_when_ni_zero`, an exact `<1e-15` equality on an
+inactive-branch pass-through) and `c_abi` (`test_c_abi_vjp_jvp_roundtrip`, which pins the
+*field set* where the f32-graph backward is allowed to produce a NaN at inactive-ice
+corners). Both exercise the **f32 autograd backward corner**, not the operational forward,
+so neither affects the bitwise parity above; they are sensitive to libm/compiler ULP on
+bleeding-edge clang and are tracked as a separate numeric-robustness item (not yet fixed).

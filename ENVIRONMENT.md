@@ -2,8 +2,15 @@
 
 Bitwise parity depends on the math library and floating-point behavior of the toolchain, so
 the exact environment matters. Below is the **reference environment** on which the current
-`mp37 ↔ mp137` STRICT BITWISE parity and `ctest` results were produced. Other versions may
-work but are not guaranteed to reproduce bit-for-bit.
+`mp37 ↔ mp137` STRICT BITWISE parity was produced. Other versions may work but are not
+guaranteed to reproduce bit-for-bit.
+
+**C++ unit-test status on this reference toolchain: `ctest` is 14/16.** The two aborts
+(`coordinator` `test_picons_inactive_when_ni_zero`; `c_abi` `test_c_abi_vjp_jvp_roundtrip`)
+are numeric-corner asserts on the *f32 autograd backward* — an exact `<1e-15` equality and a
+hard-coded NaN-corner field set — that are sensitive to libm/compiler ULP on bleeding-edge
+clang. They do **not** touch the operational forward path, so the bitwise parity above is
+unaffected; they are tracked as a separate numeric-robustness item.
 
 ## Reference environment (verified 2026-07-04)
 
