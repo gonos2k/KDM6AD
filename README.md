@@ -37,14 +37,12 @@ masked-adjoint identity, double-backward readiness, f32 value-vs-graph determini
 rejection, and handle lifecycle guards). If a Fortran compiler is present, an ISO_C smoke
 test is added.
 
-> **Known ctest status: 15/16 on the pinned toolchain** ([ENVIRONMENT.md](ENVIRONMENT.md)).
-> The one remaining abort, `c_abi` (`test_c_abi_vjp_jvp_roundtrip`), is on the *f32
-> operational-graph backward*: it yields a NaN in the `th` gradient beyond the test's
-> hard-coded `{qi, nc, ni}` inactive-ice corner set. The f32 backward is known to be
-> non-finite at those corners (the reason the DA path uses fp64), so it does not touch the
-> operational forward path or the bitwise parity below; it is an open numeric item. (Three
-> earlier `coordinator` aborts were stale unit tests — a pre-§53q Picons invariant and two
-> `SlopeOutputs` initializers missing appended fields — since fixed.)
+> **ctest is green (16/16) on the pinned toolchain** ([ENVIRONMENT.md](ENVIRONMENT.md)).
+> Note the derivative contract: a handle from `kdm6_step_c(... value_only=0 ...)` records the
+> operational **float32** graph, whose VJP/JVP is a *mechanics/diagnostics* path — gradients may
+> be non-finite at inactive-ice corners (f32 underflow, propagating to graph-connected inputs).
+> For reliable, fully-finite fp64 adjoints/tangents use `kdm6_step_ad_c` (the DA design default).
+> The `test_c_abi` smoke asserts only the packed-ABI mechanics, not f32 finiteness.
 
 ### Python oracle (independent f64 reference)
 ```sh

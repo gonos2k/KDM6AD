@@ -23,6 +23,14 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
 }  // namespace testing
 
 // ── [G4] Parameters — opt-in 미분가능 파라미터 ─────────────────────────────
+//
+// RESERVED / NOT WIRED. Physics-parameter sensitivity is not yet connected to the
+// forward graph: kdm6_fn consumes baked-in constants and IGNORES `params` (see
+// runtime.cpp). Building requires_grad parameter leaves via make_parameters(flags != 0)
+// therefore has NO effect on any gradient — only STATE leaves are differentiable today.
+// To avoid a silent "flag set, no effect" trap, kdm6_step() fast-fails (TORCH_CHECK) if
+// any Parameters tensor requires grad, and the C ABI rejects param_grad_flags != 0
+// (KDM6_ERR_NOT_IMPLEMENTED). These types are kept for a future param-grad ABI.
 struct Parameters {
     torch::Tensor peaut;
     torch::Tensor ncrk1;
@@ -30,7 +38,7 @@ struct Parameters {
     torch::Tensor eccbrk;
 };
 
-// 파라미터 grad 비트마스크 (ABI 호환)
+// 파라미터 grad 비트마스크 (ABI 호환) — RESERVED (see Parameters note above).
 namespace ParamGradFlags {
 inline constexpr int PEAUT  = 1 << 0;
 inline constexpr int NCRK1  = 1 << 1;
@@ -74,12 +82,16 @@ FnResult kdm6_fn(const State& state,
 // Semantics (adversarial review F1-MASK-ADJOINT-ASYM): vjp masks its OUTPUT
 // grad (P∘J^T); jvp masks its INPUT direction (J∘P) — so the SAME mask on both
 // sides forms an exactly-adjoint TL/AD pair: <J P v, u> = <v, P J^T u>.
+// NOTE: only RecordGraph is implemented. The other modes are RESERVED design
+// placeholders — Handle::vjp/jvp fast-fail (TORCH_CHECK) on any mode != RecordGraph
+// rather than silently ignoring it. Graph recording vs value-only is selected by the
+// `value_only` flag at kdm6_step time, not by this enum.
 enum class GraphMode : int {
     ValueOnly = 0,
     RecordGraph = 1,
-    LocalGraphForVjp = 2,
-    CheckpointRecompute = 3,
-    DiagnosticFullGraph = 4,
+    LocalGraphForVjp = 2,        // reserved — not implemented
+    CheckpointRecompute = 3,     // reserved — not implemented
+    DiagnosticFullGraph = 4,     // reserved — not implemented
 };
 
 struct GraphOptions {

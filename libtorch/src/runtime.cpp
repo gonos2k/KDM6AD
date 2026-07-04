@@ -615,6 +615,11 @@ State Handle::vjp(const State& u, const GraphOptions& opts) const {
     TORCH_CHECK(impl_, "Handle is moved-from");
     TORCH_CHECK(!impl_->closed, "Handle is closed");
     TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    // GraphMode is RESERVED except RecordGraph (see runtime.h): the alternative modes
+    // (LocalGraphForVjp/CheckpointRecompute/DiagnosticFullGraph) are not implemented.
+    // Fail loudly instead of silently honoring only retain_graph/create_graph.
+    TORCH_CHECK(opts.mode == GraphMode::RecordGraph,
+                "Handle::vjp: only GraphMode::RecordGraph is implemented");
     validate_state_shapes(u, impl_->state_out, "u", "state_out");
 
     auto scalar = state_dot(impl_->state_out, u);
@@ -650,6 +655,8 @@ State Handle::jvp(const State& v, const GraphOptions& opts) const {
     TORCH_CHECK(impl_, "Handle is moved-from");
     TORCH_CHECK(!impl_->closed, "Handle is closed");
     TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    TORCH_CHECK(opts.mode == GraphMode::RecordGraph,
+                "Handle::jvp: only GraphMode::RecordGraph is implemented");  // see runtime.h
     validate_state_shapes(v, impl_->state_in, "v", "state_in");
 
     State v_eff = apply_active_mask(v, opts.active_field_mask);
@@ -715,6 +722,17 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const Parameters& params, double dt, bool value_only,
                      const c10::optional<torch::Tensor>& xland,
                      double ncmin_land, double ncmin_sea) {
+    // Parameters are RESERVED / NOT WIRED (see runtime.h): kdm6_fn ignores them, so a
+    // requires_grad parameter leaf would silently produce no sensitivity. Fast-fail rather
+    // than mislead a C++ direct caller who passed make_parameters(ParamGradFlags::…).
+    auto param_needs_grad = [](const torch::Tensor& t) {
+        return t.defined() && t.requires_grad();
+    };
+    TORCH_CHECK(!(param_needs_grad(params.peaut) || param_needs_grad(params.ncrk1) ||
+                  param_needs_grad(params.ncrk2) || param_needs_grad(params.eccbrk)),
+                "kdm6_step: parameter gradients are not wired into the forward graph "
+                "(Parameters is reserved). Pass make_parameters(0); only state leaves are "
+                "differentiable. See runtime.h.");
     if (value_only) {
         torch::NoGradGuard no_grad;
         auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);

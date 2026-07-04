@@ -123,6 +123,9 @@ extern "C" int kdm6_step_c(
     float* graupel_increment,
     float* rhog_out
 ) {
+    // Defensive ABI: guarantee the output handle is NULL on EVERY error path, so a caller
+    // that forgets to check the return code never reads an uninitialized handle.
+    if (handle) *handle = nullptr;
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
     // Note: `xland` deliberately excluded from null check — it's optional.
     if (any_null({th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg,
@@ -323,6 +326,7 @@ extern "C" int kdm6_step_ad_c(
     const float* xland,
     double ncmin_land,
     double ncmin_sea) {
+    if (handle) *handle = nullptr;   // NULL output handle on every error path (see kdm6_step_c)
     if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
     if (any_null({state_in_packed, forcing_packed, state_out_packed,
                   static_cast<const void*>(handle)})) {

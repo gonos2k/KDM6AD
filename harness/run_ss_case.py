@@ -109,9 +109,11 @@ def main() -> int:
         'GFORTRAN_ERROR_BACKTRACE':'1',
     })
     stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
+    proc=None
     try:
         with stdout.open('w') as f:
-            proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env, stdout=f, stderr=subprocess.STDOUT)
+            proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
+                                stdout=f, stderr=subprocess.STDOUT, check=False)
         # Provenance: archive the EXACT namelist that was used (before we restore the pristine one).
         for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
             if src.exists(): shutil.copy2(src, out/src.name)
@@ -123,9 +125,12 @@ def main() -> int:
     for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for src in run.glob(pat):
             if src.is_file(): shutil.copy2(src, out/src.name)
-    (out/'exit_code').write_text(str(proc.returncode)+'\n')
+    # proc is None only if subprocess.run itself raised (e.g. mpirun/wrf.exe missing →
+    # OSError) and the finally block ran; report 127 (command-not-found convention).
+    rc = proc.returncode if proc is not None else 127
+    (out/'exit_code').write_text(str(rc)+'\n')
     print(out)
-    return proc.returncode
+    return rc
 
 if __name__ == '__main__':
     raise SystemExit(main())

@@ -57,7 +57,8 @@ cd <WRF> && ./compile -j 4 em_real            # SS real case → em_real; → ma
 Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137`) on an SS real case.
 
 ## Source note
-The `host_fortran/` files here were copied from the archived tracked KDM6AD tree at
+In the full/private host tree (NOT this public repo — see the banner at the top),
+the `host_fortran/` files were copied from the archived tracked KDM6AD tree at
 commit `eb1c823`.
 The generated `.f90`/`.mod`/`.o` are build artifacts — not bundled; the host regenerates
 them (`.F` is preprocessed by `cpp` on capital-`.F`).
@@ -74,19 +75,19 @@ The operational f32 path is strict-bitwise identical between `mp_physics=37`
 - Earlier milestones: SS step-1 254/254 (253 BITWISE-MATCH + Times; RHO_ICE 0 diffs),
   then a 10-step run.
 
-C++ unit suite (`ctest`): **15 of 16 pass on the pinned toolchain** (ENVIRONMENT.md).
-The one remaining abort is `c_abi` (`test_c_abi_vjp_jvp_roundtrip`): the operational
-**f32-graph backward** produces a NaN in the `th` gradient beyond the test's hard-coded
-`{qi, nc, ni}` inactive-ice corner set. The f32 backward is *known* to be non-finite at those
-corners — that is the documented reason the DA design default is the fp64 adjoint forward
-(§0.1.A) — so this exercises the f32 backward corner, **not the operational forward**, and does
-not affect the bitwise parity above. Whether `th`'s NaN is a benign toolchain-dependent
-broadening of the corner set or a regression is an open numeric item.
+C++ unit suite (`ctest`): **green — 16/16 on the pinned toolchain** (ENVIRONMENT.md).
 
-The earlier `coordinator` aborts were **stale unit tests, now fixed** — *not* production-code
-bugs and *not* f32/ULP effects: (1) `test_picons_inactive_when_ni_zero` asserted a pre-§53q
-invariant (ni=0 ⇒ no Picons) that was *intentionally removed* to match Fortran mp37 (Picons
-gates on `qi>qmin` only; `coordinator.cpp` §53q), and (2) two `*_runs_finite` tests built their
-synthetic `SlopeOutputs` with an out-of-date aggregate initializer that omitted the appended
-`vt2r/vt2s/vt2i` fields, leaving trailing fields undefined (→ `c10::Error` "undefined Tensor").
-The operational path populates every field, which is why the 12h×np4 bitwise parity holds.
+Derivative contract (why the f32 handle is not a finiteness guarantee): a handle from
+`kdm6_step_c(... value_only=0 ...)` records the operational **float32** graph. Its VJP/JVP is a
+mechanics/diagnostics path — correct packed layout and lifecycle, but the f32 backward can
+underflow at inactive-ice corners and the NaN propagates to graph-connected inputs (which fields
+exactly is f32-rounding/toolchain dependent). For reliable, fully-finite fp64 adjoints/tangents
+use `kdm6_step_ad_c` (the DA design default, §0.1.A). `test_c_abi` asserts only the packed-ABI
+mechanics, not f32 finiteness — so it stays green while honestly reflecting that contract.
+
+History (all fixed): earlier `coordinator` aborts were **stale unit tests**, *not* production
+bugs — a pre-§53q Picons invariant (ni-gate removed to match Fortran mp37, `coordinator.cpp`
+§53q) and two `SlopeOutputs` initializers missing the appended `vt2r/vt2s/vt2i` fields; and the
+f32 `c_abi` corner-set assertion was tightened from a toolchain-fragile field pin to the actual
+mechanics contract. The operational path populates every field, which is why the 12h×np4 bitwise
+parity holds.

@@ -111,7 +111,11 @@ int kdm6_step_c(
  *
  * value_only=0 → *handle is a live fp64 graph handle (close after use);
  * value_only=1 → *handle = NULL (pure fp64 forward).
- * xland: optional (im*jme,) or (im,jme) float array as in kdm6_step_c.
+ * xland: optional, but when non-NULL it MUST be a Fortran column-major (im,jme)
+ *   float buffer (element (i,j) at 0-based offset (i-1)+im*(j-1)), exactly as in
+ *   kdm6_step_c. A raw C pointer carries no shape, so this entry CANNOT
+ *   disambiguate a flat batch-order (i*jme+j) buffer — passing one silently
+ *   scrambles the land/sea mask when im>1 and jme>1. NULL → default (all-sea).
  *   The NULL/default-xland path is reachable from C callers ONLY: the public
  *   Fortran wrapper kdm6_step_ad (kdm6_iso_c) takes xland as a REQUIRED
  *   assumed-shape argument and always passes it — KIM/WRF hosts always have
@@ -162,10 +166,16 @@ int kdm6_step_ad_c(
  * operational state/forcing ABI (kdm6_step_c) went native float32 to match Fortran
  * mp37 (RWORDSIZE=4). 4D-Var adjoint/tangent precision must remain fp64 (the
  * differentiable oracle's precision); float32 gradient buffers would degrade it.
- * PRECISION CAVEAT: gradients computed on the operational float32 graph carry
- * f32 precision inside these double buffers, and the f32 backward can be NaN at
- * inactive-ice corners — the design-default DA path is the fp64 adjoint forward
- * (kdm6ad+da.md §0.1.A); this f32 ABI is for mechanics/diagnostics.
+ *
+ * CONTRACT — which handle to use for what:
+ *   - A handle from kdm6_step_c(... value_only=0 ...) records the OPERATIONAL float32
+ *     graph. Its VJP/JVP is a MECHANICS / DIAGNOSTICS path: correct packed layout and
+ *     lifecycle, gradients at f32 precision, but **finiteness is NOT guaranteed**. The f32
+ *     backward can underflow at inactive-ice corners and the NaN propagates to whatever
+ *     inputs are graph-connected (which fields exactly is f32-rounding/toolchain dependent).
+ *     Do NOT rely on these gradients for assimilation.
+ *   - For reliable, fully-finite fp64 adjoints/tangents use a handle from kdm6_step_ad_c
+ *     (the DA design default, kdm6ad+da.md §0.1.A) — same VJP/JVP calls, fp64 graph.
  */
 int kdm6_handle_vjp_c(kdm6_handle_t* h,
                       const double* u_packed,

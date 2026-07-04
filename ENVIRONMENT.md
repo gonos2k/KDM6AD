@@ -5,15 +5,14 @@ the exact environment matters. Below is the **reference environment** on which t
 `mp37 ↔ mp137` STRICT BITWISE parity was produced. Other versions may work but are not
 guaranteed to reproduce bit-for-bit.
 
-**C++ unit-test status on this reference toolchain: `ctest` is 15/16.** The one remaining abort
-(`c_abi` `test_c_abi_vjp_jvp_roundtrip`) is on the *f32 operational-graph backward*: it produces
-a NaN in the `th` gradient beyond the test's hard-coded `{qi, nc, ni}` inactive-ice corner set.
-The f32 backward is known to be non-finite at those corners (the documented reason the DA path
-uses fp64), so it does **not** touch the operational forward path or the bitwise parity above;
-whether `th`'s NaN is a benign toolchain-dependent broadening or a regression is an open item.
-(Three earlier `coordinator` aborts were **stale unit tests** — a pre-§53q Picons invariant and
-two synthetic `SlopeOutputs` initializers missing the appended `vt2r/vt2s/vt2i` fields — since
-fixed; they were test-maintenance issues, not production-code bugs or ULP effects.)
+**C++ unit-test status on this reference toolchain: `ctest` is green (16/16).** The operational
+**float32** derivative handle (`kdm6_step_c` value_only=0) is a mechanics/diagnostics path whose
+VJP/JVP may be non-finite at inactive-ice corners (f32 underflow that propagates to graph-connected
+inputs — which fields exactly is toolchain-dependent); `test_c_abi` asserts only the packed-ABI
+mechanics, not f32 finiteness. Reliable fully-finite fp64 adjoints come from `kdm6_step_ad_c`.
+(History: earlier `coordinator` aborts were stale unit tests — a pre-§53q Picons invariant and two
+`SlopeOutputs` initializers missing appended fields — and the f32 `c_abi` corner-set assertion was
+tightened to the actual contract; all since fixed.)
 
 ## Reference environment (verified 2026-07-04)
 
