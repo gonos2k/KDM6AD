@@ -112,19 +112,21 @@ def main() -> int:
     stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
     proc=None
     try:
-        # Inner try/except is scoped to the LAUNCH ONLY (opening the stdout log + spawning
-        # mpirun/wrf.exe). A missing/non-executable launcher raises OSError here; catch it,
-        # leave proc=None, and fall through to the rc=127 fallback instead of a bare traceback.
-        # A nonzero WRF exit is NOT an exception — it comes back via proc.returncode.
-        try:
-            with stdout.open('w') as f:
+        with stdout.open('w') as f:
+            # Inner try/except is scoped to the SPAWN ONLY (mpirun/wrf.exe launch). A
+            # missing/non-executable launcher raises OSError here → catch it, leave proc=None,
+            # and fall through to the rc=127 fallback instead of a bare traceback. A nonzero
+            # WRF exit is NOT an exception — it returns via proc.returncode.
+            # NOTE: opening the stdout log (the `with` above) is deliberately OUTSIDE this
+            # except — a log-open failure is a setup/IO error, not a launch failure, and must
+            # surface as itself rather than be mislabeled and mapped to rc=127. Likewise the
+            # provenance copy below is outside it so a copy error is not swallowed.
+            try:
                 proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
                                     stdout=f, stderr=subprocess.STDOUT, check=False)
-        except OSError as e:
-            print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
+            except OSError as e:
+                print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
         # Provenance: archive the EXACT namelist used (before we restore the pristine one).
-        # Deliberately OUTSIDE the launch-except so a copy I/O error is NOT misreported as a
-        # launch failure or silently swallowed — it propagates (the finally still restores).
         if proc is not None:
             for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
                 if src.exists(): shutil.copy2(src, out/src.name)
