@@ -4,6 +4,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -117,6 +118,13 @@ def main() -> int:
         # Provenance: archive the EXACT namelist that was used (before we restore the pristine one).
         for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
             if src.exists(): shutil.copy2(src, out/src.name)
+    except OSError as e:
+        # The LAUNCH itself failed (e.g. mpirun or wrf.exe missing / not executable) — this is
+        # distinct from a nonzero WRF exit, which comes back via proc.returncode. Without this
+        # except the OSError would propagate straight out (skipping the rc=127 fallback below),
+        # so we catch it, leave proc=None, and fall through to a clean exit code instead of a
+        # bare traceback. (finally still restores the namelist.)
+        print(f"run_ss_case: launch failed: {e}", file=sys.stderr)
     finally:
         # Restore the pristine working namelist so the next run / git-diff is not polluted
         # by this run's mutations (see the §10 namelist-race lesson: stale working-dir namelist
@@ -125,8 +133,8 @@ def main() -> int:
     for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for src in run.glob(pat):
             if src.is_file(): shutil.copy2(src, out/src.name)
-    # proc is None only if subprocess.run itself raised (e.g. mpirun/wrf.exe missing →
-    # OSError) and the finally block ran; report 127 (command-not-found convention).
+    # proc is None only if the launch raised OSError above (caught) → report 127
+    # (command-not-found convention); otherwise use WRF's real exit code.
     rc = proc.returncode if proc is not None else 127
     (out/'exit_code').write_text(str(rc)+'\n')
     print(out)
