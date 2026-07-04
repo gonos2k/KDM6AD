@@ -1,13 +1,13 @@
 ---
 title: Overview
 type: meta
-date_modified: 2026-07-02
+date_modified: 2026-07-04
 ---
 # Overview
 
 This vault tracks project knowledge for KDM6AD-k: a standalone KDM6AD working tree that compares the original [[KDM6]] Fortran microphysics scheme with the [[KDM6AD]] libtorch-based differentiable port inside the [[WRF KIM-meso Host]].
 
-The main theme is [[KDM6AD Forward Parity]]. The mp37 path calls the direct Fortran implementation in `module_mp_kdm6.F`, while the mp137 path enters a Fortran wrapper, stages WRF arrays through `kdm6_iso_c.F`, and calls the C++ libtorch port. As of 2026-07-02 the two paths agree STRICT BITWISE across all 254 output variables at every frame through a 10-step integration at np1 — the earlier "step-1 is the documented gate" framing is superseded, as is the "irreducible §48 graupel-density floor" (fixed via §53r). Longer-window and MPI-parallel gates are still in progress (a 12-hour np4 attempt had mp137 hit an MPI-runtime init crash, not a numerics divergence). See [[kdm6ad-10step-bitwise-achieved-2026-07-02]].
+The main theme is [[KDM6AD Forward Parity]]. mp37 calls the Fortran `module_mp_kdm6.F`; mp137 enters a Fortran wrapper, stages WRF arrays through `kdm6_iso_c.F`, and calls the C++ libtorch port. As of 2026-07-04 the two paths agree STRICT BITWISE across all 254 variables at every frame through a full 12-hour × MPI(np4) integration (2160 steps) — the campaign goal. The interim "12h in progress / mp137 MPI-runtime crash" note is superseded: that crash was an upstream numerics NaN from a transposed/OOB read in `flow_dep_bdy_qnn` (`share/module_bc.F`), root-caused and fixed (see [[module-bc-flow-dep-bdy-qnn-oob-2026-07-03]]); the last physics seed was §53x. Earlier "step-1 gate" / "irreducible §48 floor" framings are also superseded. See [[kdm6ad-differentiable-mathematics-2026-07-04]].
 
 The second theme is [[KDM6AD Automatic Differentiation ABI]]. Operational mp137 is forward-only (`value_only=1`), while AD workflows use packed fp64 state and forcing buffers through handle-based VJP/JVP calls. This separation keeps WRF runtime behavior deterministic while preserving a differentiation surface for DA workflows.
 
@@ -21,7 +21,7 @@ The June 10 presentation ([[kdm6ad-20260610-presentation-adversarial-review]]) i
 
 The mathematical manuscript theme is captured in [[kdm6plus-collection-mathematical-deep-ingest-2026-06-25]], [[KDM6AD Mathematical Microphysics Operators]], and [[KDM6AD Differentiability Audit]]: PSD moment relations, tendency equations, JVP/VJP products, sedimentation consistency checks, and diagnostic-boundary caveats to include before derivative claims.
 
-Open questions center on boundaries: `diag_rhog` is excluded from the packed AD ABI because it is a diagnostic with no meaningful derivative (no longer because it is a parity floor — it is now bitwise), diagnostics used for WRF parity may not all have derivative semantics, mp137 remains slower than mp37 in observed run timing (still unquantified), and the [[Differentiable Bulk Microphysics Research Gap]] still needs full-text literature verification before manuscript drafting. A newly load-bearing technique — the dtype-conditional "operational-raw / DA-clamped" numerics idiom that reconciled Fortran's raw operational math with autograd-safe clamped forms — is used ~25× but has no dedicated page yet.
+Open questions center on boundaries: `diag_rhog` is excluded from the packed AD ABI because it is a diagnostic with no meaningful derivative (no longer because it is a parity floor — it is now bitwise), diagnostics used for WRF parity may not all have derivative semantics, mp137 remains slower than mp37 in observed run timing (still unquantified), and the [[Differentiable Bulk Microphysics Research Gap]] still needs full-text literature verification before manuscript drafting. The dtype-conditional "operational-raw / DA-clamped" numerics idiom that reconciles Fortran's raw operational math with autograd-safe clamped forms — used ~25× and now the port's load-bearing technique — is captured in [[Operational-Raw vs DA-Clamped Dual Path]].
 
 ## Initialization Note
 This is an Obsidian-ready vault. The formal kg schema pin was not created because the global schema files were not available in the expected local skill directories.

@@ -28,7 +28,29 @@ Separating operational forward from AD handle calls keeps WRF execution determin
 - The WRF mp137 operational runtime remains value-only even though the separate AD ABI exists.
 - A complete DA system still needs dynamics, observation operators, covariance models, checkpointing, and minimization outside this microphysics ABI.
 
+## Update (2026-07-04): VJP/JVP/HVP 메커니즘 정식화
+
+`docs/KDM6AD_differentiable_mathematics.md`(→ [[kdm6ad-differentiable-mathematics-2026-07-04]])가 ABI의
+미분 메커니즘을 코드 근거로 확정:
+
+- **VJP(수반)**: 스칼라 $s=\langle F(x),u\rangle$(state_dot로 seed $u$ 주입)를 입력 리프에 대해 역전파 →
+  $\nabla_x s=J^\top u$. `torch::autograd::grad`, `retain_graph=true`로 한 핸들에 여러 관측 수반 반복 적용
+  (`runtime.cpp:611`, `kdm6_handle_vjp_c`).
+- **JVP(순방향)**: 커스텀 autograd Function에 forward-mode 규칙이 없어 `torch.func` 불가 → **Pearlmutter
+  이중-VJP**: 더미 $u=0$으로 $w=J^\top u$(u에 선형), $Jv=\nabla_u\langle w,v\rangle$. 역방향 2패스
+  (`runtime.cpp:639`, `kdm6_handle_jvp_c`).
+- **HVP**: 전용 함수 없음. `create_graph=true`의 grad-of-grad로 스칼라 손실의 헤시안-벡터 곱 제공
+  (`GraphOptions.create_graph`). 커스텀 Function backward가 이중-미분 가능해야 성립(테스트로 실증).
+- **커스텀 libm autograd Function 5종**(exp/log/pow×2/gamma): f32 forward는 gfortran 비트정합(libm),
+  backward는 해석적 torch-native. `use_custom_autograd` 3중 게이트(GradMode·!InferenceMode·requires_grad).
+- **핸들 수명**: `kdm6_handle_close_c`가 그래프 해제 후 wrapper까지 delete(재사용=UB); value-only 스텝은
+  null 핸들 → VJP 시 `KDM6_ERR_NULL_POINTER`.
+
+정확성: 수반 항등식 $\langle Jv,u\rangle=\langle v,J^\top u\rangle$ rel<$10^{-12}$(양변 역방향, FD 무관).
+**현재 리프는 12개 상태장뿐** — 물리 파라미터는 `make_parameters(0)`로 상수(비학습).
+
 ## Evidence
 
+- [[kdm6ad-differentiable-mathematics-2026-07-04]]
 - [[kdm6-vs-kdm6ad-code-comparison-2026-06-25]]
 - [[kdm6ad-20260610-presentation-adversarial-review]]

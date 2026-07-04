@@ -13,3 +13,4 @@ date_modified: 2026-06-25
 - [[KDM6AD Mathematical Microphysics Operators]] - Operator-level formulation of KDM6AD as a differentiable bulk microphysics map with PSD moment and tendency equations.
 - [[KDM6AD Differentiability Audit]] - Smoothness, diagnostic-boundary, and adjoint-consistency checks required before derivative claims.
 - [[KDM6AD Forward Parity]] - Requirement and evidence for mp137 matching mp37 forward behavior.
+- [[Operational-Raw vs DA-Clamped Dual Path]] — 작동 f32(raw 비트정합)/DA f64(clamped 유한수반) dtype 조건부 이중경로 idiom

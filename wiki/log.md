@@ -294,3 +294,17 @@ date_modified: 2026-06-25
 ## [2026-07-04] codex-review | 세션 변경 4건 검토 — 런타임 parity 3건 CORRECT, adjoint stale 1건 발견
 - Codex(gpt-5.5, xhigh, read-only) 검토: ① flow_dep_bdy_qnn OOB 수정(전치/선언/컬럼적분) CORRECT, ② §53x dqv branch-verbatim(cold/warm 항집합·supcol 게이트) CORRECT, ③ NN-init tile-restrict + pre-bridge NaN 가드 CORRECT.
 - 발견(pre-existing): wrftladj/solve_em_ad.F의 qnn adjoint 경로 stale — L3007 forward-recompute가 scale_h/dz8w/xland 누락, L5956 a_flow_dep_bdy_qnn은 ccn_conc조차 없는 구버전 시그니처. 활성 parity 경로 무관(em_real 미빌드), adjoint 재생성 필요한 별도 과제 → 부분 hand-patch 대신 BUGREPORT §7에 기록.
+
+## [2026-07-04] kg-update | 그래프 포트-범위로 재초점 (host/ .gitignore 제외)
+- Source dir: . (root); graphify 0.8.39, cli-update (AST-only, LLM 0)
+- Delta: 42076→5460 노드, 67567→7798 엣지, 4922→243 커뮤니티 — .gitignore(이번 세션 추가)가 /host/ WRF 트리를 제외해 그래프가 libtorch/oracle/harness(미분가능 포트)로 재초점됨. god nodes: State·kdm62d_one_step·Forcing·model_to_rttov_tensors (이전 WRF module_configure 대체). 공개 포트 저장소 범위와 정합.
+- Wiki sync: single (wiki/graph-report.md). index.md에 Graph snapshot 섹션 없음 → 미변경.
+- Caveats: (1) host/ Fortran 참조는 이제 그래프에 없음 — 전체 트리 그래프가 필요하면 .gitignore 우회 필요. (2) Fortran calls 엣지는 파일 간 부분적(USE/defines 백본은 신뢰).
+
+## [2026-07-04] reflect | 개념층이 달성·근본수정에 뒤처짐 + 이중경로 idiom 3주기 미페이지화
+- 3 insights: (1) Differentiability Audit의 균일-클램프 프레이밍이 점프/꺾임 구분·이중경로로 이중 반증, (2) op-raw/DA-clamped idiom 여전히 페이지 없음(2026-07-02부터 3주기), (3) hot/overview가 "12h 진행중/MPI 크래시(수치 아님)"로 stale — 실제는 달성 + flow_dep_bdy_qnn 수치 NaN 오진. Forward Parity·log는 갱신, overview/hot Recent Activity 재작성은 /kg-ingest 필요.
+- Schema drift: 없음. 관찰: heuristics(0)·procedures(0) 폴더가 fortran-pytorch-port 트랩·dump-bisection 사다리로 채울 여지.
+
+## [2026-07-04] ingest | docs/KDM6AD_differentiable_mathematics.md → 수학·AD 지식 흡수
+- Source page: [[kdm6ad-differentiable-mathematics-2026-07-04]]. Created: [[Operational-Raw vs DA-Clamped Dual Path]](concept). Updated: [[KDM6AD Automatic Differentiation ABI]](VJP/JVP/HVP·handle·custom Fn), [[KDM6AD Differentiability Audit]](점프 vs 꺾임 + 이중경로, Tension 콜아웃), [[KDM6AD Mathematical Microphysics Operators]](19-연산자 합성·야코비안), overview.md(12h 달성·flow_dep_bdy_qnn 오진 정정), concepts/sources _index.
+- Tensions preserved: Audit "균일 클램프" vs 소스(점프/이중경로) → Tension 콜아웃; overview "12h 진행중/MPI 크래시" → 달성+수치 NaN으로 정정. Reflect Insight #1·#2·#3 모두 해소.

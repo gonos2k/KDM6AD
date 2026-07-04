@@ -81,3 +81,21 @@ Derived from [[kdm6plus-collection-mathematical-deep-ingest-2026-06-25]].
 - [[Bulk Microphysics Design Space]]
 - [[KDM6AD Automatic Differentiation ABI]]
 - [[KDM6AD Differentiability Audit]]
+- [[Operational-Raw vs DA-Clamped Dual Path]]
+- [[kdm6ad-differentiable-mathematics-2026-07-04]]
+
+## Update (2026-07-04): 스텝의 합성-사상 정식화와 야코비안 연쇄
+
+`docs/KDM6AD_differentiable_mathematics.md`(→ [[kdm6ad-differentiable-mathematics-2026-07-04]])가 한 물리
+스텝을 명시적 합성 사상으로 확정:
+
+$$F=\prod_{\ell=L}^{1} J_G^{(\ell)},\quad G=K\circ R\circ S,\quad K=L_{19}\cdots L_1.$$
+
+- $S$ 침강 → $R$ 재기울기 → $K$ 미시물리 1패스, 소사이클 $L$회. `cur` 상태가 detach 없이 이어져 입력
+  리프→출력이 단일 autograd 그래프.
+- $K$는 **19개 부연산자**의 좌→우 합성(순서 기준은 C++ `coordinator.cpp:642-1291`; Python 오라클은 $L_9$
+  완전강수증발 배치·Picons $n_i$ 게이트·최종 얼음 limiter에서 갈림).
+- warm/cold/D5(연산자 8·10·11)는 **진단적**(rate만 방출) — 야코비안은 보존(12)·state_update(13)이 rate를
+  소비할 때만 진입.
+- state_update(13)는 수상 8필드 + $b_g$만 비음 클램프($q_v$·$n_{ccn}$·$\theta$는 비클램프).
+- **야코비안은 역순 곱**: VJP는 우→좌(reverse), JVP는 좌→우(forward). → [[KDM6AD Automatic Differentiation ABI]].
