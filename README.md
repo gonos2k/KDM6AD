@@ -76,7 +76,10 @@ and `wrf.exe`. Full wiring is documented in
 
 ```sh
 cd <WRF-KIM-meso>
-./configure                 # e.g. compiler choice 37, nesting 1
+./configure                 # pick the dmpar gfortran/gcc + OpenMPI build; nesting: basic (1).
+                            # (The exact menu number varies by host/WRF version — the KDM6AD
+                            #  wiring is menu-independent; apply_kdm6ad_config.sh transforms
+                            #  whatever configure.wrf ./configure produced.)
 ./apply_kdm6ad_config.sh    # re-inject KDM6AD wiring into the fresh configure.wrf (idempotent)
 ./compile -j 4 em_real      # SS is a REAL case → em_real; builds the C++ port then wrf.exe
 ```
