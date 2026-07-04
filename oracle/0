@@ -1,0 +1,59 @@
+**(a) AUTOGRAD Chain**
+
+Confirmed issues: none.
+
+Non-issues:
+[INFO] [model_profile_builder.py:203](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:203) — The leaf graph is preserved through `unsqueeze -> bridge -> squeeze`; quote: `f.unsqueeze(0)` and `cp.clw.squeeze(0)` — No numpy/item/detach appears on content/Deff before return.
+[INFO] [model_profile_builder.py:214](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:214) — Zero-ice blend is NaN-free with a zero subgradient; quote: `denom = torch.clamp(ice_content, min=_ICE_BLEND_EPS)` — At `ciw=snow=0`, numerator is zero, denominator is `1e-12`, blend is zero, and [model_profile_builder.py:218](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:218) `torch.clamp(..., _DEFF_ICE_MIN, ...)` returns 10 with flat gradient.
+
+**(b) NUMBER-MOMENT Path**
+
+Confirmed issues: none.
+
+Risks:
+[MEDIUM] [model_profile_builder.py:217](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:217) — Double clamp can silently zero `nc/ni` size sensitivity; quote: `torch.clamp(2.0 * cp.reff_liq...` and [rttov_bridge.py:152](/Users/yhlee/KDM6AD-k/oracle/kdm6/rttov_bridge.py:152) `reff_c = torch.clamp(...)` — If liquid `reff_liq > 26um`, builder emits `deff_liq=52` and the Deff adjoint to `nc` is zero even if the bridge reff path is connected. Tests deliberately use interior sizes at [test_model_profile_builder_cloud.py:95](/Users/yhlee/KDM6AD-k/oracle/tests/test_model_profile_builder_cloud.py:95), so clamp-active silent zeros are not exercised.
+
+Non-issues:
+[INFO] [rttov_bridge.py:195](/Users/yhlee/KDM6AD-k/oracle/kdm6/rttov_bridge.py:195) — Content has no number-moment dependency by construction; quote: `clw=d.wc_c * KG2G, ciw=d.wc_i * KG2G` — `nc/ni` only enter through reff/Deff, matching the stated Phase 1 mapping.
+
+**(c) INTERP Of Cloud Fields**
+
+Confirmed issues: none against the stated contract.
+
+Risks:
+[HIGH] [model_profile_builder.py:225](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:225) — Interpolating already-clamped Deff can bias cloud-edge particle size; quote: `deff_ice_lay = _interp(deff_ice)` — A cloudy layer with `deff=25` adjacent to a clear layer floored at `10` interpolates to an edge value below the cloudy particle size, even though content interpolation separately controls cloud amount.
+
+Non-issues:
+[INFO] [model_profile_builder.py:220](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:220) — Implementation follows the Phase 1 “same constant-W” contract; quote: `return field if p_target is None else interp_log_pressure(...)` — Autograd through interpolation remains the same gather/linear path as T/Q.
+
+**(d) SHAPE Seam**
+
+Confirmed issues: none for the documented obs callback path.
+
+Risks:
+[MEDIUM] [model_profile_builder.py:255](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:255) — Builder enforces only `p_model.ndim`, not every leaf/forcing field; quote: `if p_model.ndim != 1:` — A direct caller with `p=[K]` but a hydrometeor leaf shaped `[1,K]` reaches [model_profile_builder.py:203](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:203) `f.unsqueeze(0)`, producing `[1,1,K]`; `squeeze(0)` leaves `[1,K]`, silently violating the promised `[K]` cloud tensor convention.
+
+Non-issues:
+[INFO] [rttov_obs_operator.py:215](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/rttov_obs_operator.py:215) — The main obs callback enforces the single-column adapter; quote: `model_to_rttov_tensors wants a 1-D [nlev] column` — It squeezes `[1,K]` state/forcing before calling the builder.
+[INFO] [rttov_bridge.py:100](/Users/yhlee/KDM6AD-k/oracle/kdm6/rttov_bridge.py:100) — `xland` works for `None`, scalar, `[1]`, and `[1,1]`; quote: `xland.view(-1, 1)` — Those all become `[1,1]` and expand over the `[1,K]` bridge column.
+
+**(e) CLEAR-SKY**
+
+Confirmed issues: none.
+
+Non-issues:
+[INFO] [model_profile_builder.py:295](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:295) — `cfg.cloud=False` leaves cloud fields at NamedTuple defaults; quote: `cloud = {}` — No bridge call occurs unless [model_profile_builder.py:296](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:296) `getattr(cfg, "cloud", False)` is true.
+[INFO] [model_profile_builder.py:201](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:201) — Bridge import is lazy; quote: `from ..rttov_bridge import rttov_cloud_profile` — No clear-sky import-time regression from the bridge path.
+
+**(f) Reject-Don’t-Drop**
+
+Confirmed issues: none.
+
+Risks:
+[MEDIUM] [rttov_bridge.py:176](/Users/yhlee/KDM6AD-k/oracle/kdm6/rttov_bridge.py:176) — Negative hydrometeor contents are not rejected before becoming RTTOV cloud content; quote: `wc_c=forcing.rho * state.qc` and [rttov_bridge.py:195](/Users/yhlee/KDM6AD-k/oracle/kdm6/rttov_bridge.py:195) `clw=d.wc_c * KG2G` — A DA leaf with negative `qc/qi/qs` can emit negative `clw/ciw` rather than raising at the profile-builder boundary.
+
+Non-issues:
+[INFO] [model_profile_builder.py:193](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:193) — Rain/graupel are intentionally not mapped to Phase 1 VIS/IR profile fields; quote: `rain/graupel dropped` — This is an explicit mapping decision, not an accidental leaf sever.
+[INFO] [model_profile_builder.py:229](/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/model_profile_builder.py:229) — The only explicit detach is `cfrac`; quote: `(clw_lay + ciw_lay).detach()` — Content and Deff remain connected.
+
+Highest-priority risks: no confirmed autograd break in the builder, but Deff interpolation after clear-layer flooring can create cloud-edge BT physics bias once consumed by RTTOV; clamp-active number-moment sensitivities can go silently zero; and the public builder path lacks full leaf/content validation beyond pressure rank. No edits or test runs performed.

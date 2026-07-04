@@ -1,0 +1,5 @@
+pinned_version: 1
+pinned_at: 2026-06-25
+source: global
+source_version: 1
+notes: "Bootstrapped from the local kg-skill schema bundle and adapted for Codex paths."

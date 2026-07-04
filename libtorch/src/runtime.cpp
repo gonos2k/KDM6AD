@@ -1,0 +1,738 @@
+#include <iostream>
+#include "kdm6/runtime.h"
+#include "kdm6/fconst.h"
+#include "kdm6/coordinator.h"
+#include "kdm6/ops.h"
+#include "kdm6/sedimentation.h"
+
+#include <cmath>
+
+namespace kdm6 {
+
+// ── Parameters ──────────────────────────────────────────────────────────────
+static torch::Tensor mkparam(double value, bool grad,
+                             torch::Device device, torch::Dtype dtype) {
+    auto opts = torch::TensorOptions().dtype(dtype).device(device);
+    auto t = torch::tensor(value, opts);
+    if (grad) {
+        t = t.detach().clone().requires_grad_(true);
+    }
+    return t;
+}
+
+Parameters make_parameters(int grad_flags, torch::Device device, torch::Dtype dtype) {
+    Parameters p;
+    p.peaut  = mkparam(constants::PEAUT,  grad_flags & ParamGradFlags::PEAUT,  device, dtype);
+    p.ncrk1  = mkparam(constants::NCRK1,  grad_flags & ParamGradFlags::NCRK1,  device, dtype);
+    p.ncrk2  = mkparam(constants::NCRK2,  grad_flags & ParamGradFlags::NCRK2,  device, dtype);
+    p.eccbrk = mkparam(constants::ECCBRK, grad_flags & ParamGradFlags::ECCBRK, device, dtype);
+    return p;
+}
+
+// ── Wrapper State ↔ microphysics CoordinatorState 변환 ────────────────────
+//
+// Wrapper-level `kdm6::State`는 KIM-meso 측 layout (th, qv, qc, qr, qi, qs, qg,
+// nccn, nc, ni, nr, bg)를 따름. microphysics-level `kdm6::CoordinatorState`는
+// (qv, qc, qr, qs, qg, qi, nc, nr, ni, nccn, brs, t)이라 다음 매핑 필요:
+//   t = th · pii   (Exner inverse: T = θ · π)
+//   brs = bg       (graupel volume mixing ratio)
+//
+namespace {
+
+CoordinatorState state_to_coord(const State& s, const Forcing& f) {
+    return CoordinatorState{
+        /*qv=*/s.qv, /*qc=*/s.qc, /*qr=*/s.qr,
+        /*qs=*/s.qs, /*qg=*/s.qg, /*qi=*/s.qi,
+        /*nc=*/s.nc, /*nr=*/s.nr, /*ni=*/s.ni,
+        /*nccn=*/s.nccn,
+        /*brs=*/s.bg,
+        /*t=*/s.th * f.pii,
+    };
+}
+
+State coord_to_state(const CoordinatorState& c, const State& orig, const Forcing& f) {
+    State out = orig;
+    out.qv = c.qv; out.qc = c.qc; out.qr = c.qr;
+    out.qs = c.qs; out.qg = c.qg; out.qi = c.qi;
+    out.nc = c.nc; out.nr = c.nr; out.ni = c.ni;
+    out.nccn = c.nccn;
+    out.bg = c.brs;
+    out.th = c.t / f.pii;
+    return out;
+}
+
+CoordinatorForcing build_forcing(const Forcing& f) {
+    // dend = air density (NOT density × delz).
+    // Fortran reference `module_mp_kdm6.F:812` sets `dend(i,k) = den(i,k)`.
+    // Python oracle's `CoordinatorForcing.dend` is mis-documented as
+    // `density × delz` at `coordinator.py:63` — that label is wrong vs
+    // operational Fortran. Codex stop-gate review caught this when the
+    // squall RAINNC came out at 10,455 mm / 30 min (~250× physical) because
+    // the extra delz factor cascaded through `falk = dend·q·work1/mstep`
+    // (where work1 = vt/delz, so delz cancels OUT of falk only if dend=ρ),
+    // and the bottom-layer fall ended up over-scaled by delz when
+    // `surface_accumulation_torch` multiplies by delz again.
+    return CoordinatorForcing{
+        /*p=*/f.p,
+        /*den=*/f.rho,
+        /*delz=*/f.delz,
+        /*dend=*/f.rho,
+    };
+}
+
+}  // namespace
+
+// Operational auxiliary diagnostics — physics-based, mirroring Fortran
+// module_mp_kdm6.F:1435-1480 (n0 intercepts) and :1679-1680 (work1 = diffac).
+// Stage-A STEP 0: PROMOTED out of the anonymous namespace (declared in
+// coordinator.h) so rebuild_aux + the symbol-parity contract see it; matches the
+// Python build_default_aux_torch. Uses only cloud_dsd::/thermo:: + constants.
+//
+// Design (validated against the cross-file contract map):
+//   - n0r/n0i/n0c derive from the clamped DSD slope (diag_species_slope_torch),
+//     using the Fortran "default formula" n0 = n/(rslope·rslope^mu·g1pm) which is
+//     identical to the gated lamda-recompute except for the rare clamp-fired
+//     number back-mutation (a second-order effect on a fringe of cells; the
+//     downstream rate gates zero inactive cells regardless).
+//   - n0so/n0go: Fortran n0so = n0s/g1pms/rslopemu_s with mus=0 ⇒ g1pms=1,
+//     rslopemu_s=rslope^0=1, so n0so collapses to the constant n0s=2e6 (likewise
+//     n0go=n0g=4e6). The historical placeholders were therefore already EXACT;
+//     kept as constants to avoid the progb→slope_kdm6_torch graupel dependency.
+//   - work1_water = diffac(xl,  p, t, den, qs_water)  (Fortran work1(:,:,1))
+//     work1_ice   = diffac(xls, p, t, den, qs_ice)    (Fortran work1(:,:,2))
+//     work1_r     = work1_water (rain evap uses water diffusivity, review3#1).
+//   - avedia_i = rslope_i·(g4pmi/g1pmi)^(1/3)  (Fortran 1672).
+//
+// COUPLING NOTE: n0 (rate numerators) and work1 (evap/dep denominators) MUST be
+// installed together. A prior work1-only attempt collapsed QC because it changed
+// the denominator without the matching numerator. See
+// project_kdm6_operational_aux_port_required.md.
+CoordinatorAuxDiagnostics build_default_aux(
+    const CoordinatorState& cs,
+    const CoordinatorForcing& cf,
+    const torch::Tensor& rslopec,
+    const thermo::ThermoParams& tp) {
+    constexpr double PI = 3.14159265358979323846;
+
+    // Gamma normalization constants (rgmma = Γ = exp(lgamma)).
+    const double g1pmr = std::exp(std::lgamma(1.0 + constants::MUR));            // Γ(2)=1
+    // §53p: gfortran GAMMLN f32 mirror (Γ_f32(4)≈6.0000019f ≠ f32(exp(lgamma(4)))=6.0f) —
+    // sits on the avedia_i comparators (di50 riming gate + Picons 200 μm).
+    const double g1pmi = (constants::MUI == 0.0) ? 1.0
+        : fconst::rgmma_f(1.0f + static_cast<float>(constants::MUI));            // Γ(1)=1
+    const double g4pmi = fconst::rgmma_f(4.0f + static_cast<float>(constants::MUI));
+    // f32-stepwise Fortran constants (kdm6init): double-precomputed pidn* differ
+    // by 1 ULP from gfortran (the step-45 DSD-snap seed class). See fconst.h.
+    const double pidnr = fconst::get().pidnr;
+    const double pidni = fconst::get().pidni;
+
+    // Rain / ice clamped DSD slopes (Fortran rslope(:,1) / rslope(:,4)).
+    auto rslope_r = cloud_dsd::diag_species_slope_torch(
+        cs.qr, cs.nr, cf.den, pidnr, constants::DMR,
+        constants::LAMDARMAX, constants::LAMDARMIN);
+    // Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
+    // = 1/LAMDARMAX. The clamp maps qr≈0 → 1/LAMDARMAX, but nr<=nrmin with qr>qcrmin would hit
+    // 1/LAMDARMIN; the gate forces 1/LAMDARMAX so n0r/prevp use the right intercept (Codex round-4 F3).
+    // Rain ONLY — ice has no n-threshold inactive branch (only the qi≈0 clamp).
+    auto rain_inactive = (cs.qr <= constants::QCRMIN) | (cs.nr <= constants::NRMIN);
+    rslope_r = torch::where(rain_inactive,
+                            torch::full_like(rslope_r, 1.0 / constants::LAMDARMAX), rslope_r);
+    auto rslope_i = cloud_dsd::diag_species_slope_torch(
+        cs.qi, cs.ni, cf.den, pidni, constants::DMI,
+        constants::LAMDAIMAX, constants::LAMDAIMIN);
+    // Fortran slope_kdm6 F:3559-3565 ice INACTIVE branch: qi<=qmin -> rslope4 =
+    // rslopeimax = 1/LAMDAIMAX regardless of lamdai. The clamp alone leaves
+    // qmin-straddling cells (in-range lamdai) on the ACTIVE slope, and pidep
+    // pairs that n0i with the GATED pre2 rslope2_i -> 7.7x pidep mismatch
+    // (step-72 cell B). Ice has NO n-threshold (unlike rain; F:3527 qci-only).
+    auto ice_inactive = (cs.qi <= constants::EPS);
+    rslope_i = torch::where(ice_inactive,
+        torch::full_like(rslope_i, 1.0 / constants::LAMDAIMAX), rslope_i);
+
+    auto rslopemu_r = ops::safe_pow(rslope_r, constants::MUR);   // gfortran REAL**REAL = powf (step-67 class)                      // ^1
+    auto rslopemu_i = (constants::MUI == 0.0)
+                    ? torch::ones_like(rslope_i)
+                    : ops::safe_pow(rslope_i, constants::MUI);
+    // STEP-69 SEED: Fortran rslopecmu is DOUBLE (F:696) = DBLE(rslopec)**muc
+    // (F:1096/F:1464) — the EXACT f64 square of the f32 rslopec, held UNROUNDED
+    // into the D2/D3/riming f64 chains. powf-then-upcast adds one f32 rounding
+    // (the step-69 1-ULP qi/ni seed). Upcast FIRST; muc=2 => x*x exact in f64.
+    auto rslopec64 = rslopec.to(torch::kFloat64);
+    auto rslopecmu = (constants::MUC == 2.0)
+        ? rslopec64 * rslopec64
+        : ops::safe_pow(rslopec64, constants::MUC);
+
+    // n0 intercepts (Fortran 1435-1437 default formula; clamped rslope already
+    // reflects the lamda bounds).
+    // §2B+1C (whole-chain roadmap FRZ-03): n0r is DOUBLE in Fortran (F:667). (2B) default divide in
+    // f64 (mirror n0i:170). (1C) active-rain n0r MULTIPLY form (F:1462-1465) with a fresh f32 lamdr —
+    // one fewer f32 rounding than dividing by the reciprocal-clamped rslope; mirrors the n0i override.
+    // mur=1 ⇒ exponent (mur+1)=2, g1pmr=Γ(2)=1. NOTE: the F:1466-1474 nrs CLAMP REWRITE (snap nr to a
+    // lamda bound + recompute n0r) lives in coordinator.cpp's post-melt block (after the ni-snap),
+    // NOT here — this site only supplies the default/active n0r value for all rebuild_aux callers.
+    auto n0r = cs.nr.to(torch::kFloat64) / (rslope_r.to(torch::kFloat64) * rslopemu_r.to(torch::kFloat64) * g1pmr);
+    {
+        const double inv_dmr_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMR));
+        auto lamdr_raw = ops::libm_exp(ops::libm_log(torch::clamp(
+            pidnr * cs.nr / torch::clamp(cs.qr * cf.den, 1.0e-30), 1.0e-30)) * inv_dmr_f32);
+        auto lamdr_cl = torch::clamp(lamdr_raw, constants::LAMDARMIN, constants::LAMDARMAX);  // f32, like Fortran lamdr_tmp
+        // §44 x**2.0=MULT: gfortran compiles lamdr_tmp**(mur+1) with mur+1=2.0 as x*x (verified:
+        // x**(mur+1)≡x*x≡x**2 hex-identical at -O2), NOT powf — so lamdr^2 must be lamdr*lamdr, not
+        // safe_pow(lamdr,2.0) (powf≠x*x by ~1 ULP). This is the warm-prevp n0r divergence (15470 active
+        // cells, ~5 ULP). mur+1=2 (MUR=1).
+        auto n0r_active = (1.0 / g1pmr) * cs.nr.to(torch::kFloat64)
+                          * (lamdr_cl * lamdr_cl).to(torch::kFloat64);
+        auto active_rain = (cs.qr >= constants::QCRMIN) & (cs.nr >= constants::NRMIN);
+        n0r = torch::where(active_rain, n0r_active, n0r);
+    }
+    // STEP-67 SEED: Fortran n0i/n0c are DOUBLE arrays (F:697). The default n0i
+    // (F:1652) is nci/(rslope·rslopemu·g1pmi) with rslopemu DOUBLE — the whole
+    // expression evaluates in f64 with NO f32 rounding (g1pmi=Γ(1)=1, mui=0 ⇒
+    // rslopemu_i≡1). Upcasting rslope_i makes torch promotion mirror gfortran;
+    // no-op on the fp64 oracle path. Downstream f32 consumers (cold C2/C4) run
+    // their chains f64 from the n0i factor and round f32 at the rate store.
+    auto n0i = cs.ni / (rslope_i.to(torch::kFloat64) * rslopemu_i * g1pmi);
+    // F:1684-1696 / F:1499-1512: at qi>=1e-14 Fortran recomputes n0i in the
+    // MULTIPLY form (1/g1pmi)*DBLE(nci2)*lamdi_tmp**(mui+1) with the fresh f32
+    // lamdi (clamped to the lamda bounds when snapping) — one fewer f32 rounding
+    // than dividing by f32(1/lamdi) (step-72 cell-A 1-ULP class). mui=0, g1pmi=1.
+    {
+        const double inv_dmi_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMI));
+        auto lamdai_raw = ops::libm_exp(ops::libm_log(torch::clamp(
+            pidni * cs.ni / torch::clamp(cs.qi * cf.den, 1.0e-30), 1.0e-30)) * inv_dmi_f32);
+        auto lamdai_cl = torch::clamp(lamdai_raw, constants::LAMDAIMIN, constants::LAMDAIMAX);
+        n0i = torch::where(cs.qi >= 1.0e-14,
+                           cs.ni.to(torch::kFloat64) * lamdai_cl.to(torch::kFloat64), n0i);
+    }
+    // n0c: the ACTIVE-branch (lamdc-form, F:1641-1649) f64 intercept is installed
+    // by the kdm62d_one_step overrides (coordinator.cpp "n0c_active"); this default
+    // covers INACTIVE cells only, where every n0c consumer is rate-gated off —
+    // keep the established f32 value, held as f64 for a uniform aux dtype.
+    auto n0c = ((constants::MUC + 1.0) * cs.nc / (rslopec * rslopecmu)).to(torch::kFloat64);
+
+    // work1 diffusion factors (Fortran 1679-1680).
+    auto xl    = thermo::compute_xl(cs.t, tp);
+    auto xls_t = torch::full_like(cs.t, tp.xls);
+    auto qs1   = thermo::compute_qs_water(cs.t, cf.p, tp);
+    auto qs2   = thermo::compute_qs_ice(cs.t, cf.p, tp);
+    auto work1_water = thermo::compute_diffac(xl,    cf.p, cs.t, cf.den, qs1, tp);
+    auto work1_ice   = thermo::compute_diffac(xls_t, cf.p, cs.t, cf.den, qs2, tp);
+
+    auto full_like = [&](double v) { return torch::full_like(cs.qc, v); };
+
+    return CoordinatorAuxDiagnostics{
+        /*n0r=*/n0r,
+        /*n0i=*/n0i,
+        /*n0c=*/n0c,
+        /*n0so=*/full_like(constants::N0S),     // = n0s (mus=0 ⇒ formula collapses)
+        /*n0go=*/full_like(constants::N0G),     // = n0g (mug=0 ⇒ formula collapses)
+        /*work1_r=*/work1_water,                // Fortran work1(:,:,1)
+        /*work1_ice=*/work1_ice,                // Fortran work1(:,:,2)
+        /*work1_water=*/work1_water,            // Fortran work1(:,:,1)
+        /*qcr=*/full_like(8.0e-5),              // overridden by diag_qcr_torch when xland present
+        // F:1746 avedia(:,:,3)=rslope*((g4pmi/g1pmi)**.3333333); avedia is REAL(4), g4pmi/g1pmi
+        // REAL(4) ⇒ gfortran emits f32 powf. The f64 std::pow carried sub-ULP rounding that flipped
+        // boundary cells across the avedia_i>=di50 comparator gating piacw/niacw (F:2105/2116) →
+        // ni/qi/qs divergence. f32 powf as a host-constant scalar (idiom: coordinator.cpp:1895);
+        // autograd-untouched (scalar constant, not a graph node), only its f64→f32 rounding changes.
+        /*avedia_i=*/rslope_i * static_cast<double>(std::pow(static_cast<float>(g4pmi / g1pmi), 0.3333333f)),
+        /*rslopecmu=*/rslopecmu,
+        // §53e FORTRAN-BUG replication (measured, 739-cell postfreeze qi class): rslopecdmax is
+        // DECLARED `real, save` (F:141) but NEVER ASSIGNED anywhere → static zero-init → the
+        // INACTIVE-cloud branch (F:1504 rslopecd = rslopecdmax) stores 0.0, so D3's
+        // pfrzdtc/nfrzdtc (F:1593/1605, the ONLY consumers) are EXACTLY 0 in qc≤qmin|nc≤ncmin
+        // cells. Active branch keeps rslopec**dmc = powf (F:1510). Inactive marker: rslopec
+        // equals the exact 1/lamdacmax fill diag_cloud_slope_torch assigned (bit-identical
+        // double); an active cell landing exactly on 2e-6 is measure-zero (accepted).
+        /*rslopecd=*/torch::where(rslopec == (1.0 / constants::LAMDACMAX),
+                                  torch::zeros_like(rslopec),
+                                  ops::safe_pow(rslopec, constants::DMC)),
+    };
+}
+
+// Test-facing wrapper around the now-exported build_default_aux. Mirrors
+// the production path so tests assert what the operational path actually installs.
+CoordinatorAuxDiagnostics build_default_aux_for_test(
+    const State& s, const Forcing& f) {
+    auto cs = state_to_coord(s, f);
+    auto cf = build_forcing(f);
+    auto cloud_p = cloud_dsd::default_cloud_dsd_params();
+    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs.qc, cs.nc, cf.den, cloud_p);
+    auto full_p = default_coordinator_params();
+    return build_default_aux(cs, cf, rslopec, full_p.thermo);
+}
+
+// Stage-A re-architecture support (STEP 0). Defined here because the
+// anonymous-namespace build_default_aux is reachable from this TU; declared in
+// coordinator.h for kdm62d_one_step to call once the sequential chain lands.
+// Rebuilds BOTH preamble (slopes/work2/ProgB) AND aux (n0*/work1*/rslopec*) on
+// the working state — never one without the other (stale-pre = 806× class).
+//
+// THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
+// (kdm6.F:1422-1480,:1596-1683,:1677-1683) recomputes the GEOMETRY (rslope*/
+// n0*/ProgB/work2/n0sfac) and supcol on the post-freeze state, but does NOT
+// recompute the saturation/latent-heat thermo: cpm(:835), xl(:836), qs1/qs2/
+// rh/sw(:910-928) are computed ONCE (entry/substep-top) and the rate loop reads
+// those entry-staged values (supsat=q-qs at :1695/:1822 uses entry qs; q=qv is
+// melt/freeze-invariant). So we SPLICE the entry-staged thermo back into the
+// rebuilt preamble — otherwise warm/cold would see post-freeze qs (exponential
+// in t ⇒ materially wrong supersaturation) and post-freeze xl. work1=diffac(xl,
+// p,t,den,qs) is re-slope-recomputed with POST-FREEZE t but ENTRY xl/qs
+// (:1679-1680), so we rebuild it with the entry thermo + the working t.
+RebuiltDiagnostics rebuild_aux(
+    const CoordinatorState& state,         // working (post-melt/freeze)
+    const PreambleOutputs& entry_pre,      // entry/substep-top preamble (thermo source)
+    const CoordinatorForcing& forcing,
+    const CoordinatorParams& params,
+    const torch::Tensor& qcr_carry,
+    const c10::optional<torch::Tensor>& ncmin_for_slope,
+    progb::ProgBOutputs* progb_ret) {
+    auto pre = preamble(state, forcing, params, ncmin_for_slope, progb_ret);  // re-slope + work2 + ProgB(§53d merge) + (discarded) thermo
+    // Splice entry-staged thermo; keep post-freeze supcol/work2/denfac + geometry.
+    pre.cpm = entry_pre.cpm;  pre.xl = entry_pre.xl;
+    pre.qs1 = entry_pre.qs1;  pre.qs2 = entry_pre.qs2;
+    pre.rh_w = entry_pre.rh_w;  pre.rh_ice = entry_pre.rh_ice;
+    pre.supsat = entry_pre.supsat;
+    pre.supsat_ice = entry_pre.supsat_ice;  // entry-staged ICE supsat (direct max(q,qmin)-qs2, F:1913)
+    auto aux = build_default_aux(state, forcing, pre.rslopec, params.thermo);
+    // work1 = diffac(ENTRY xl/qs, POST-FREEZE t) — Fortran kdm6.F:1679-1680.
+    auto xls_t = torch::full_like(state.t, params.thermo.xls);
+    aux.work1_water = thermo::compute_diffac(entry_pre.xl, forcing.p, state.t, forcing.den, entry_pre.qs1, params.thermo);
+    aux.work1_ice   = thermo::compute_diffac(xls_t,        forcing.p, state.t, forcing.den, entry_pre.qs2, params.thermo);
+    aux.work1_r     = aux.work1_water;   // Fortran work1(:,:,1) for rain capacitance
+    aux.qcr = qcr_carry;   // sea_mask-derived, state-independent — carry, don't recompute
+    return RebuiltDiagnostics{/*pre=*/pre, /*aux=*/aux};
+}
+
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& /*params*/,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland,
+                 double ncmin_land,
+                 double ncmin_sea) {
+    // F4 wiring: wrapper State → CoordinatorState → kdm62d_step → State.
+    // params (PEAUT/NCRK1/NCRK2/ECCBRK)는 현재 default cold/warm/mf-phase params에서
+    // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
+    auto cs = state_to_coord(state, forcing);
+    auto cf = build_forcing(forcing);
+
+    // Coordinator params first — build_default_aux needs thermo params for the
+    // diffac (work1) computation.
+    auto full_p = default_coordinator_params();
+
+    // delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions).
+    if (dt <= 0.0) {
+        auto z = torch::zeros({cs.qc.size(0)}, cs.qc.options());
+        return FnResult{/*state_out=*/coord_to_state(cs, state, forcing),
+                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z,
+                        /*rhog=*/torch::zeros_like(cs.qg)};
+    }
+
+    auto warm_p   = default_warm_phase_params();
+    auto cold_p   = default_cold_phase_params();
+    auto mf_p     = default_melt_freeze_phase_params();
+    auto cloud_p  = cloud_dsd::default_cloud_dsd_params();
+    auto sed_params = sed::default_substep_advection_params();
+
+    // [xland plumbing] sea_mask + per-cell ncmin are state-independent ⇒ derived
+    // ONCE. xland may be (im, jme) 2-D or flat (im*jme,); WRF slmsk: xland>=1.5 →
+    // sea. The qcr override (sea→qc0=8.4e-5, land→qc1=8.4e-4; Fortran :840-846) is
+    // re-applied per sub-cycle since aux is rebuilt each substep.
+    torch::Tensor sea_mask;
+    c10::optional<torch::Tensor> ncmin_for_slope;  // per-cell ncmin for the cloud-slope inactive gate (Codex round-4 F2); nullopt → scalar NCMIN
+    const bool use_xland_qcr = xland.has_value();
+    if (use_xland_qcr) {
+        auto xl = xland.value().to(cs.qc.options());
+        auto xl_flat = xl.contiguous().view({-1});
+        auto sea_mask_flat = xl_flat >= 1.5;
+        sea_mask = sea_mask_flat.unsqueeze(1).expand_as(cs.qc).contiguous();
+        auto ncmin_flat = torch::where(
+            sea_mask_flat,
+            torch::full_like(xl_flat, ncmin_sea),
+            torch::full_like(xl_flat, ncmin_land));
+        auto ncmin_tensor = ncmin_flat.unsqueeze(1).expand_as(cs.qc).contiguous();
+        // Floor at the scalar safety minimum constants::NCMIN: a 0 (e.g. the default
+        // ncmin_land/ncmin_sea=0.0) must NOT drop the conservation floor to 0, else
+        // limit_ncmin's value/max(source,value) hits 0/0 → NaN when a number reservoir AND
+        // its source are both 0. With the defaults this collapses to NCMIN == the nullopt
+        // scalar path; real 10/100 (> NCMIN) are unchanged. Mirrors the Python _kdm6_pure fix.
+        ncmin_tensor = torch::clamp(ncmin_tensor, /*min=*/constants::NCMIN);
+        ncmin_for_slope = ncmin_tensor;  // thread the per-cell ncmin into the cloud-slope inactive gate (F2)
+        warm_p.autoconv.ncmin_tensor              = ncmin_tensor;
+        cold_p.number_accretion.ncmin_tensor      = ncmin_tensor;
+        cold_p.cloud_water_riming.ncmin_tensor    = ncmin_tensor;
+        mf_p.contact.ncmin_tensor                 = ncmin_tensor;
+        mf_p.bigg_cloud.ncmin_tensor              = ncmin_tensor;
+    } else {
+        sea_mask = torch::ones_like(cs.qc, torch::dtype(torch::kBool));
+    }
+
+    // ─── Stage-A sediment-order fix (Stage S2): per-substep [sediment → microphysics] ──
+    // Fortran's dtcld sub-cycle (kdm6.F:876) does, EACH substep: sediment at the
+    // TOP (:1119) → re-slope/ProgB/n0 (:1422-1480) → melt/freeze/rate block (:1274+)
+    // → state_update. The port previously did all microphysics then sedimented ONCE,
+    // inverting the order. We now split the timestep into `loops` sub-cycles and, per
+    // substep: fall(dtcld) on the current state → rebuild aux on the post-fall state →
+    // run ONE microphysics pass (kdm62d_one_step) over dtcld. The Fortran entry-prologue
+    // nccn clamp (F:801) is applied ONCE here, before the loop. Within each substep nccn is
+    // carried RAW through state_update (rce addback F:1795, no reservoir clamp) so CCN
+    // activation reads the raw post-rce value (F:2905); apply_satadj_step re-applies the
+    // [NCCN_MIN,NCCN_MAX] clamp AFTER activation (F:3006). For loops=1 (dt<=dtcldcr;
+    // every validation/typical case) this == Stage S1's single sub-cycle. K-flip: WRF
+    // stages K=0 at surface, sedimentation_chain wants K=0 at TOP; cf is constant so its
+    // flip + delz are hoisted out of the loop.
+    auto flip_k = [](const torch::Tensor& t) { return torch::flip(t, {1}); };
+    CoordinatorForcing cf_pyc{
+        flip_k(cf.p), flip_k(cf.den), flip_k(cf.delz), flip_k(cf.dend),
+    };
+    auto delz_safe = torch::clamp(cf_pyc.delz, /*min=*/1.0e-9);
+
+    const int loops = compute_loops_max(dt, constants::DTCLDCR);
+    // Fortran kdm62D dtcld = delt/loops is REAL(f32). Store the f32 VALUE so f64 contexts
+    // (the f64-vt mstep `floor(vmax_f64 * dtcld + 1)`) use Fortran's f32 dtcld, not the full
+    // double — otherwise f64 vmax * double-dtcld flips mstep at CFL ties (f64-vt regression root,
+    // 2026-06-20). NO-OP on f32 path (dtcld already auto-casts f32 in f32 ops). §44 f32-stepwise.
+    const double dtcld = static_cast<float>(dt / static_cast<double>(loops));
+
+    auto cur = cs;                                          // WRF K-order, evolves across sub-cycles
+    // Fortran entry padding (F:822-839, "padding 0 for negative values generated by
+    // dynamics"): clamp the prognostics ONCE per kernel call, before the sub-cycle
+    // loop. Missing these left dynamics-negative qc (~-1e-19) alive into satadj,
+    // blocking the complete-evap NC->NCCN transfer Fortran fires at qc==0
+    // (pcond==-qc/dt -> 0.0==-0.0 true) — the step-46 nn divergence seed.
+    cur.qc = torch::clamp(cur.qc, /*min=*/0.0);            // F:824
+    cur.qr = torch::clamp(cur.qr, /*min=*/0.0);            // F:825
+    cur.qi = torch::clamp(cur.qi, /*min=*/0.0);            // F:826
+    cur.qs = torch::clamp(cur.qs, /*min=*/0.0);            // F:827
+    cur.qg = torch::clamp(cur.qg, /*min=*/0.0);            // F:828
+    cur.nr = torch::clamp(cur.nr, /*min=*/0.0);            // F:829
+    cur.nc = torch::clamp(cur.nc, /*min=*/0.0);            // F:832
+    cur.ni = torch::clamp(cur.ni, 0.0, 1.0e6);             // F:836 [0, 1e6]
+    cur.brs = torch::clamp(cur.brs, /*min=*/0.0);          // F:838
+    cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // F:833, ONCE
+    torch::Tensor rain_inc, snow_inc, graup_inc;
+    torch::Tensor rhog_final;  // diag_rhog/RHOPO3D — LAST sub-cycle's last-ProgB graupel density
+
+    for (int i = 0; i < loops; ++i) {
+        // 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (Fortran :1119), per-substep mstep.
+        CoordinatorState cur_pyc{
+            flip_k(cur.qv), flip_k(cur.qc), flip_k(cur.qr),
+            flip_k(cur.qs), flip_k(cur.qg), flip_k(cur.qi),
+            flip_k(cur.nc), flip_k(cur.nr), flip_k(cur.ni),
+            flip_k(cur.nccn), flip_k(cur.brs), flip_k(cur.t),
+        };
+        // §53d persistent ProgB bundle — F:973-990 zero-init per sub-cycle; merged by EVERY
+        // preamble along the step (pre-sed F:1119, per-substep sed reslopes F:1224/F:1290,
+        // micro reslopes F:1469/F:1664, last ProgB F:2930).
+        auto progb_ret = progb::make_zero_progb_state(cur_pyc.qg);
+        auto pre_sed = preamble(cur_pyc, cf_pyc, full_p, /*ncmin=*/{}, &progb_ret);
+        // BRS density re-clamp #0 (ProgB before the sed fall loop): falkb=dend*brs*vt advects
+        // graupel VOLUME, so sed sees the density-[100,900]-reclamped brs. NOTE (2026-06-20): the
+        // OR-condition fix (where(qg>qcrmin OR brs>BRS_MIN, bg, 0), to not erase Fortran-active
+        // graupel per Codex) was MEASURED WORSE (BG 8787->22394): C++ f64 leaves a ~1.7e-14 residue
+        // in graupel-EMPTY cells that exceeds brs_min=1e-15, so the OR wrongly keeps them while
+        // Fortran's f32 brs underflowed to 0 — those empty-residue cells vastly outnumber the rare
+        // genuinely-active qg<=qcrmin cells. The qg>qcrmin zeroing better approximates Fortran's
+        // f32-underflow (§20 f64-residue-vs-f32-underflow). True fix needs the brs flow to underflow
+        // like Fortran f32. Kept the qg>qcrmin form as the better current approximation.
+        // OR-gate (brs Group-B): keep ProgB.bg where Fortran's ProgB is ACTIVE — qg>qcrmin OR brs_in>brs_min
+        // (F:3534, progb.cpp:89). The qg-only zeroing wrongly dropped cells with tiny qg<qcrmin but real
+        // brs>brs_min (Fortran keeps brs=qg/rhox there). Safe now that the op-state is f32 (§44): both trees
+        // produce the same f32 brs so the gate is consistent (the old "f64 residue>brs_min" regression is gone).
+        // §53 full-fidelity brs (2026-07-01, all-sites sweep): Fortran ProgB (F:3567/3578) writes brs
+        // ONLY in active cells; inactive cells KEEP their incoming brs — and progb.cpp:105 bg_new
+        // already implements exactly that (where(active, qg/rhox, incoming bg)). The outer re-gate
+        // here double-gated that faithful output and zeroed inactive cells, diverging from Fortran's
+        // kept residues (24151-cell brs class) and breaking the sed inflow chain. The old zeroing
+        // rationale (f64 residue > brs_min while Fortran f32 underflows) is stale post-§44: the op
+        // state is f32 and step-1 is globally bitwise, so incoming brs is bit-identical across trees.
+        cur_pyc.brs = pre_sed.progb.bg;
+        auto w1_qr = pre_sed.slope.vt_r  / delz_safe;
+        auto wn_qr = pre_sed.slope.vtn_r / delz_safe;
+        auto w1_qs = pre_sed.slope.vt_s  / delz_safe;
+        auto w1_qg = pre_sed.slope.vt_g  / delz_safe;
+        auto w1_qi = pre_sed.slope.vt_i  / delz_safe;
+        auto wn_qi = pre_sed.slope.vtn_i / delz_safe;
+        // Per-column mstep (Fortran :1107-1117): mstep(i)=max(nint(vmax(i)*dtcld+.5),1),
+        // capped at 100; mstepmax = max over columns (loop bound). All integer work in
+        // NoGradGuard. mstep_col_* kept as float (B,) tensors for use as divisor / gate.
+        torch::Tensor mstep_col_main, mstep_col_ice;
+        int mstepmax_main = 1, mstepmax_ice = 1;
+        {
+            torch::NoGradGuard no_grad;
+            // Per-column max fall speed over K (Fortran nested k-loop takes the column max).
+            auto vmax_main_col = torch::maximum(torch::maximum(w1_qr, wn_qr),
+                                                torch::maximum(w1_qs, w1_qg)).amax(/*dim=*/-1);
+            // NINT(x+0.5) for x>=0 = floor(x+1.0) (round-half-UP), NOT torch::round (banker's
+            // half-to-even) which picks the wrong substep count at exact CFL ties (Codex round-3 #3).
+            mstep_col_main = torch::clamp(
+                torch::floor(vmax_main_col * dtcld + 1.0).to(torch::kLong),
+                /*min=*/1, /*max=*/100).to(w1_qr.dtype());
+            mstepmax_main = static_cast<int>(mstep_col_main.max().item<double>());
+
+            auto vmax_ice_col = torch::maximum(w1_qi, wn_qi).amax(/*dim=*/-1);
+            mstep_col_ice = torch::clamp(
+                torch::floor(vmax_ice_col * dtcld + 1.0).to(torch::kLong),
+                /*min=*/1, /*max=*/100).to(w1_qi.dtype());
+            mstepmax_ice = static_cast<int>(mstep_col_ice.max().item<double>());
+        }
+        auto sed = sedimentation_chain(
+            cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+            mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params,
+            /*reslope_params=*/&full_p,   // 1:1 fix #9: per-substep fall-speed re-slope (F:1189-1205)
+            /*progb_ret=*/&progb_ret);    // §53d: F:1224/F:1290 per-substep ProgB retention
+        cur = CoordinatorState{
+            flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
+            flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),
+            flip_k(sed.state.nc), flip_k(sed.state.nr), flip_k(sed.state.ni),
+            flip_k(sed.state.nccn), flip_k(sed.state.brs), flip_k(sed.state.t),
+        };
+        // §44 f64-state SOURCE fix: the sediment fall computes in f64 (vt DOUBLE, §34) but Fortran stores
+        // qrs/nrs/... as REAL(4). Re-clamp the post-fall operational state to the forcing dtype
+        // (op=f32 → Fortran REAL(4) store, makes the WHOLE downstream chain — aux/melt/freeze/warm/cold/
+        // satadj — compute in f32 like mp37; DA=f64 → autograd no-op). This is the root the per-site n0r
+        // casts were patching; with the state f32 here, the rate chain matches Fortran (modulo REAL(4)
+        // rate-output truncation still pending per UPDATE15).
+        {
+            auto sdt = cf.den.scalar_type();
+            cur = CoordinatorState{
+                cur.qv.to(sdt), cur.qc.to(sdt), cur.qr.to(sdt), cur.qs.to(sdt),
+                cur.qg.to(sdt), cur.qi.to(sdt), cur.nc.to(sdt), cur.nr.to(sdt),
+                cur.ni.to(sdt), cur.nccn.to(sdt), cur.brs.to(sdt), cur.t.to(sdt)};
+        }
+        rain_inc  = (i == 0) ? sed.rain_increment    : rain_inc  + sed.rain_increment;
+        snow_inc  = (i == 0) ? sed.snow_increment    : snow_inc  + sed.snow_increment;
+        graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
+
+        // 2. Re-slope + aux on the POST-FALL state (Fortran :1422-1480 / :1679-1680).
+        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p, ncmin_for_slope);
+        auto aux = build_default_aux(cur, cf, rslopec, full_p.thermo);
+        // qcr UNCONDITIONALLY from land/sea (Fortran :842-847): no-xland ⇒ sea_mask=all-sea ⇒ qc0
+        // (maritime ≈8.3776e-5), replacing build_default_aux's 8.0e-5 placeholder (Codex round-4 F1).
+        aux.qcr = cloud_dsd::diag_qcr_torch(sea_mask, cloud_p, cur.qc);
+
+        // 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
+        // §53d: flip the sed-era persistent ProgB bundle to host-K orientation (matching the
+        // state flip above) and hand it into the micro step's retention lifecycle.
+        auto progb_ret_host = progb::ProgBOutputs{
+            flip_k(progb_ret.rhox),        flip_k(progb_ret.bg),        flip_k(progb_ret.cmg),
+            flip_k(progb_ret.pidn0g),      flip_k(progb_ret.avtg),      flip_k(progb_ret.bvtg),
+            flip_k(progb_ret.bvtg1),       flip_k(progb_ret.bvtg2),     flip_k(progb_ret.bvtg3),
+            flip_k(progb_ret.bvtg4),       flip_k(progb_ret.g1pbg),     flip_k(progb_ret.g3pbg),
+            flip_k(progb_ret.g4pbg),       flip_k(progb_ret.g5pbgo2),   flip_k(progb_ret.g1pdgbgmg),
+            flip_k(progb_ret.dgbgmug1),    flip_k(progb_ret.rslopegbmax),
+            flip_k(progb_ret.pvtg),        flip_k(progb_ret.precg2)};
+        cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld, ncmin_for_slope,
+                              /*rhog_out=*/&rhog_final,
+                              /*progb_ret=*/&progb_ret_host);
+    }
+
+    // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
+    // FnResult ⇒ kdm6_step_c ⇒ WRF RAINNCV/SNOWNCV/GRAUPELNCV.
+    return FnResult{
+        /*state_out=*/coord_to_state(cur, state, forcing),
+        /*rain_increment=*/rain_inc, /*snow_increment=*/snow_inc, /*graupel_increment=*/graup_inc,
+        /*rhog=*/rhog_final,
+    };
+}
+
+// ── Handle::Impl ────────────────────────────────────────────────────────────
+struct Handle::Impl {
+    State state_in;
+    State state_out;
+    Forcing forcing;
+    Parameters params;
+    double dt;
+    bool value_only;
+    bool closed = false;
+};
+
+Handle::Handle(State state_in, State state_out, Forcing forcing,
+               Parameters params, double dt, bool value_only)
+    : impl_(std::make_unique<Impl>(Impl{
+          std::move(state_in), std::move(state_out), std::move(forcing),
+          std::move(params), dt, value_only, false})) {}
+
+Handle::~Handle() = default;
+Handle::Handle(Handle&&) noexcept = default;
+Handle& Handle::operator=(Handle&&) noexcept = default;
+
+void Handle::close() {
+    if (impl_) {
+        impl_->closed = true;
+        impl_->state_in = State{};
+        impl_->state_out = State{};
+        impl_->forcing = Forcing{};
+        impl_->params = Parameters{};
+    }
+}
+
+bool Handle::is_closed() const noexcept {
+    return !impl_ || impl_->closed;
+}
+
+bool Handle::is_value_only() const noexcept {
+    return impl_ && impl_->value_only;
+}
+
+namespace {
+
+// u/v per-field shapes must EQUAL the reference state exactly — state_dot and
+// the Pearlmutter inner product broadcast silently, returning plausible but
+// WRONG adjoints/tangents for e.g. (2,1)-vs-(1,2) inputs (adversarial review
+// F1-SHAPE). Validate BEFORE any autograd call so a bad input cannot consume
+// the one-shot graph.
+void validate_state_shapes(const State& given, const State& ref,
+                           const char* arg, const char* ref_name) {
+    auto g = given.fields();
+    auto r = ref.fields();
+    for (size_t i = 0; i < g.size(); ++i) {
+        TORCH_CHECK(g[i]->defined(), arg, " field #", i, " is undefined");
+        TORCH_CHECK(g[i]->sizes() == r[i]->sizes(),
+                    arg, " field #", i, " shape ", g[i]->sizes(),
+                    " != ", ref_name, " shape ", r[i]->sizes(),
+                    " (broadcasting is not allowed here)");
+    }
+}
+
+// active_field_mask: zero the fields whose bit is unset (bit i = fields()[i]).
+State apply_active_mask(State s, uint32_t mask) {
+    if ((mask & kAllStateFields) == kAllStateFields) return s;
+    auto fs = s.fields();
+    for (size_t i = 0; i < fs.size(); ++i) {
+        if (!(mask & (1u << i))) *fs[i] = torch::zeros_like(*fs[i]);
+    }
+    return s;
+}
+
+}  // namespace
+
+State Handle::vjp(const State& u, const GraphOptions& opts) const {
+    TORCH_CHECK(impl_, "Handle is moved-from");
+    TORCH_CHECK(!impl_->closed, "Handle is closed");
+    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    validate_state_shapes(u, impl_->state_out, "u", "state_out");
+
+    auto scalar = state_dot(impl_->state_out, u);
+
+    auto in_ptrs = impl_->state_in.fields();
+    std::vector<torch::Tensor> inputs;
+    inputs.reserve(in_ptrs.size());
+    for (auto* p : in_ptrs) inputs.push_back(*p);
+
+    auto grads = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/opts.retain_graph || opts.create_graph,
+        /*create_graph=*/opts.create_graph,
+        /*allow_unused=*/true);
+
+    State out;
+    auto out_ptrs = out.fields();
+    for (size_t i = 0; i < out_ptrs.size(); ++i) {
+        // materialize: an unconnected leaf is a zero column of J^T (exact)
+        *out_ptrs[i] = grads[i].defined() ? grads[i] : torch::zeros_like(inputs[i]);
+    }
+    return apply_active_mask(std::move(out), opts.active_field_mask);
+}
+
+State Handle::jvp(const State& v, const GraphOptions& opts) const {
+    // Pearlmutter double-VJP route (kdm6ad+da.md §0.1.B/§7.2): with a dummy
+    // adjoint u (zero-valued requires_grad leaves), w = J^T u is LINEAR in u,
+    // so Jv = d<w, v>/du exactly (zero seed suffices). torch.func-style forward
+    // AD is NOT used — the custom autograd Functions have no forward-mode rule.
+    // CONTROL-SUBSPACE mask semantics: the mask projects the INPUT direction
+    // (J·Pv) so the same mask on vjp/jvp forms an exactly-adjoint pair
+    // (adversarial review F1-MASK-ADJOINT-ASYM).
+    TORCH_CHECK(impl_, "Handle is moved-from");
+    TORCH_CHECK(!impl_->closed, "Handle is closed");
+    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    validate_state_shapes(v, impl_->state_in, "v", "state_in");
+
+    State v_eff = apply_active_mask(v, opts.active_field_mask);
+
+    auto out_ptrs = impl_->state_out.fields();
+    std::vector<torch::Tensor> u_leaves;
+    u_leaves.reserve(out_ptrs.size());
+    torch::Tensor scalar;
+    {
+        State u_state;
+        auto u_ptrs = u_state.fields();
+        for (size_t i = 0; i < out_ptrs.size(); ++i) {
+            auto leaf = torch::zeros_like(*out_ptrs[i]).requires_grad_(true);
+            u_leaves.push_back(leaf);
+            *u_ptrs[i] = leaf;
+        }
+        scalar = state_dot(impl_->state_out, u_state);
+    }
+
+    auto in_ptrs = impl_->state_in.fields();
+    std::vector<torch::Tensor> inputs;
+    inputs.reserve(in_ptrs.size());
+    for (auto* p : in_ptrs) inputs.push_back(*p);
+
+    // w = J^T u, kept differentiable w.r.t. u; the FORWARD graph is retained so
+    // the Handle stays repeat-callable (jvp/jvp/vjp on the same handle).
+    auto w = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/true, /*create_graph=*/true, /*allow_unused=*/true);
+
+    auto v_ptrs = v_eff.fields();
+    torch::Tensor inner = torch::zeros({}, scalar.options());
+    bool any_term = false;
+    for (size_t i = 0; i < w.size(); ++i) {
+        if (w[i].defined()) {
+            inner = inner + (w[i] * *v_ptrs[i]).sum();
+            any_term = true;
+        }
+        // undefined w[i] = a zero column of J^T (constant in u) — contributes
+        // no u-dependence, exactly as the true J would (zero column).
+    }
+
+    State out;
+    auto t_ptrs = out.fields();
+    if (!any_term || !inner.requires_grad()) {
+        for (size_t i = 0; i < t_ptrs.size(); ++i)
+            *t_ptrs[i] = torch::zeros_like(*out_ptrs[i]);
+        return out;
+    }
+
+    auto tangents = torch::autograd::grad(
+        {inner}, u_leaves, /*grad_outputs=*/{},
+        /*retain_graph=*/false, /*create_graph=*/false, /*allow_unused=*/true);
+    for (size_t i = 0; i < t_ptrs.size(); ++i) {
+        *t_ptrs[i] = tangents[i].defined() ? tangents[i]
+                                           : torch::zeros_like(*out_ptrs[i]);
+    }
+    return out;
+}
+
+// ── kdm6_step ───────────────────────────────────────────────────────────────
+StepResult kdm6_step(const State& state, const Forcing& forcing,
+                     const Parameters& params, double dt, bool value_only,
+                     const c10::optional<torch::Tensor>& xland,
+                     double ncmin_land, double ncmin_sea) {
+    if (value_only) {
+        torch::NoGradGuard no_grad;
+        auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
+        return StepResult{
+            /*state_out=*/std::move(fn_out.state_out), /*handle=*/nullptr,
+            /*rain_increment=*/std::move(fn_out.rain_increment),
+            /*snow_increment=*/std::move(fn_out.snow_increment),
+            /*graupel_increment=*/std::move(fn_out.graupel_increment),
+            /*rhog=*/std::move(fn_out.rhog),
+        };
+    }
+    auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
+    auto handle = std::make_unique<Handle>(
+        state, fn_out.state_out, forcing, params, dt, /*value_only=*/false);
+    return StepResult{
+        /*state_out=*/std::move(fn_out.state_out), /*handle=*/std::move(handle),
+        /*rain_increment=*/std::move(fn_out.rain_increment),
+        /*snow_increment=*/std::move(fn_out.snow_increment),
+        /*graupel_increment=*/std::move(fn_out.graupel_increment),
+        /*rhog=*/std::move(fn_out.rhog),
+    };
+}
+
+}  // namespace kdm6

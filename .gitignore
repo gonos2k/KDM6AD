@@ -1,0 +1,60 @@
+# KDM6AD — port source + docs only. The host WRF/KIM-meso tree, build artifacts,
+# run outputs, and libtorch binaries are intentionally NOT tracked.
+
+# Host WRF/KIM-meso model source (kept private)
+/host/
+/host_fortran/
+
+# libtorch prebuilt + build tree (binaries, GBs)
+/libtorch/install/
+/libtorch/build/
+/libtorch/libtorch/
+/libtorch/*.tar*
+/libtorch/*.zip
+
+# Graph artifacts / scratch
+/graphify-out/
+/artifacts/
+.codegraph
+
+# Build artifacts
+*.o
+*.mod
+*.a
+*.dylib
+*.so
+*.exe
+__pycache__/
+*.pyc
+
+# Model run outputs
+*.nc
+klfs_lc05_*
+wrfout_*
+rsl.out.*
+rsl.error.*
+fort.*
+*.bin
+
+# Personal / large docs excluded from the public repo
+docs/2002224004(졸업논문).hwp
+docs/*복사본*
+/KDM6AD_20260610_research_report_literature_math.hwpx
+2026-*.md
+
+# Tool/agent RUNTIME state + logs (may contain session/conversation data) — NEVER track.
+# NOTE: AGENTS.md files are directory-level DOCUMENTATION and ARE tracked (do not ignore them).
+.omx/
+.omo/
+.codex
+**/.obsidian/
+
+# Empty/untitled editor scratch at repo root (Obsidian). The named design canvas
+# wiki/kdm6ad-da-extension.canvas IS content and is tracked.
+/무제*
+/*.base
+/1.canvas
+/2.canvas
+
+# OS
+.DS_Store
