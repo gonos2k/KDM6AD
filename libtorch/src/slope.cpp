@@ -4,6 +4,7 @@
 #include "kdm6/ops.h"
 
 #include <cmath>
+#include <math.h>   // global ::powf — intentionally the C libm powf (f32 gfortran parity)
 
 namespace kdm6 {
 namespace slope {

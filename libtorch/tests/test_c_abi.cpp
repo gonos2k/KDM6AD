@@ -541,8 +541,10 @@ void test_c_abi_fp64_packed_layout_nontrivial_tile() {
         // ice-corner NaN, so EVERY off-column gradient is a real finite number and the
         // column-confinement is checked with no skip. Also needs no Fortran compiler (unlike
         // the stronger fortran_smoke value-level layout check).
-        const int im = 2, kme = 2, jme = 2;
-        const size_t NF = 12, BK = static_cast<size_t>(im) * kme * jme;   // 8
+        // ASYMMETRIC extents (im != kme != jme) on purpose — a symmetric 2x2x2 tile with
+        // i0==j0 would make an i<->j axis swap invisible. Matches the fortran_smoke tile shape.
+        const int im = 2, kme = 3, jme = 4;
+        const size_t NF = 12, BK = static_cast<size_t>(im) * kme * jme;   // 24
         const size_t N = NF * BK;
         auto idx = [&](int i, int k, int j) {              // Fortran col-major within a field block
             return static_cast<size_t>(i) + im * (static_cast<size_t>(k) + kme * j);
@@ -573,8 +575,8 @@ void test_c_abi_fp64_packed_layout_nontrivial_tile() {
         assert(rc == KDM6_OK && handle != nullptr);
         for (size_t i = 0; i < N; ++i) { assert(out[i] != -777.0); assert(std::isfinite(out[i])); }
 
-        // seed u = e_{qv at (i0,k0,j0)} — a single Fortran cell
-        const int i0 = 1, k0 = 0, j0 = 1;
+        // seed u = e_{qv at (i0,k0,j0)} — a single Fortran cell; i0 != j0 so an i<->j swap moves it
+        const int i0 = 1, k0 = 1, j0 = 2;
         const size_t QV = 1;
         std::vector<double> u(N, 0.0), g(N, 0.0);
         u[QV * BK + idx(i0, k0, j0)] = 1.0;
@@ -594,6 +596,35 @@ void test_c_abi_fp64_packed_layout_nontrivial_tile() {
         assert(any_in_col);
         assert(kdm6_handle_closep_c(&handle) == KDM6_OK);
         assert(handle == nullptr);
+    } END_TEST();
+}
+
+void test_c_abi_invalid_value_only() {
+    TEST(test_c_abi_invalid_value_only) {
+        // value_only is a 0/1 flag; a stray value (2) must be REJECTED with KDM6_ERR_INVALID_ARG,
+        // and the output handle must be left NULL (the entry nulls it before any early return).
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf a(im, kme, jme, 1.0f);   // one valid non-null buffer reused for every arg —
+                                            // the value_only check fires before any physics runs
+        kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);   // poison; must be nulled
+        int rc = kdm6_step_c(
+            a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(),
+            a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(),
+            a.ptr(), a.ptr(), a.ptr(), a.ptr(),
+            im, kme, jme, /*dt=*/20.0, /*param_grad_flags=*/0, /*value_only=*/2,
+            a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(),
+            a.ptr(), a.ptr(), a.ptr(), a.ptr(), a.ptr(),
+            &h, nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+        assert(rc == KDM6_ERR_INVALID_ARG);
+        assert(h == nullptr);
+
+        // same 0/1 contract on the packed fp64 entry
+        std::vector<double> st(12, 0.0), fz(4, 0.0), out(12, -1.0);
+        kdm6_handle_t* h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(st.data(), fz.data(), im, kme, jme, /*dt=*/20.0,
+                            /*value_only=*/2, out.data(), &h2, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_ERR_INVALID_ARG);
+        assert(h2 == nullptr);
     } END_TEST();
 }
 
@@ -644,6 +675,7 @@ int main() {
     test_c_abi_vjp_packed_layout_nontrivial_tile();
     test_c_abi_step_ad_fp64_vjp_finite_and_adjoint();
     test_c_abi_fp64_packed_layout_nontrivial_tile();
+    test_c_abi_invalid_value_only();
     std::cout << "All C ABI tests passed.\n";
     return 0;
 }

@@ -37,7 +37,16 @@ jobs:
           sudo apt-get install -y gfortran
           python -m pip install --upgrade pip
           # CPU-only wheel — the port is CPU/float32 for parity; no CUDA path is claimed.
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          # Pinned to the ENVIRONMENT.md reference version so CI validates that toolchain,
+          # not whatever the latest wheel happens to be.
+          pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Record toolchain versions
+        run: |
+          cmake --version | head -1
+          g++ --version | head -1
+          gfortran --version | head -1
+          python -c 'import torch; print("torch", torch.__version__)'
 
       - name: Configure (CMake, point at the pip libtorch)
         run: |
