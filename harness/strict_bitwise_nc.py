@@ -14,9 +14,11 @@ def main():
     a.set_auto_maskandscale(False); b.set_auto_maskandscale(False)
     na = a.dimensions["Time"].size if "Time" in a.dimensions else 1
     nb = b.dimensions["Time"].size if "Time" in b.dimensions else 1
-    frame = int(sys.argv[3]) if len(sys.argv) > 3 else min(na, nb) - 1
+    explicit = len(sys.argv) > 3
+    frame = int(sys.argv[3]) if explicit else min(na, nb) - 1
+    label = "selected" if explicit else "last common"
     print(f"# {sys.argv[1].split('/')[-1]} (frames={na}) vs {sys.argv[2].split('/')[-1]} (frames={nb})")
-    print(f"# strict uint-bitwise compare at last common frame index {frame}")
+    print(f"# strict uint-bitwise compare at {label} frame index {frame}")
     common = sorted(set(a.variables) & set(b.variables))
     only_a = sorted(set(a.variables) - set(b.variables))
     only_b = sorted(set(b.variables) - set(a.variables))

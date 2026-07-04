@@ -39,8 +39,12 @@ module_mp_kdm6ad.o: module_mp_kdm6.o kdm6_iso_c.o    # kdm6ad reuses effectRad_k
 the mp37 KDM6 package: moist/scalar/nc/ni/nccn/bg + diag_rhog/RHOPO3D, re_*, REFL_10CM).
 
 ## Build & run
+`em_b_wave` below is only a **generic build-target example**. **The SS real-case parity runs
+build `em_real`** (`./compile -j 4 em_real`) — a REAL case must not use the idealized
+`em_b_wave` core. Use whichever target matches your case; the KDM6AD hook is target-independent.
 ```sh
-cd <WRF> && ./compile -j 4 em_b_wave          # → main/wrf.exe (links libkdm6_c.dylib + libtorch)
+cd <WRF> && ./compile -j 4 em_real            # SS real case → em_real; → main/wrf.exe (links libkdm6_c.dylib + libtorch)
+# (idealized/dry toy cases would use em_b_wave etc.)
 # touch phys/module_mp_kdm6*.F if only .F changed; no clean unless Registry changed.
 ```
 Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137`) on an SS real case.
