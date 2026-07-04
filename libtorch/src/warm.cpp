@@ -257,7 +257,7 @@ WarmRainEvapParams default_warm_rain_evap_params(double fac_evap) {
     // REAL**REAL => libm POWF, not f64 pow. f64 pow->f32 (41E81FC5) differs 1 ULP from powf
     // (41E81FC6), shifting precr2 by 1 ULP (§44 f32-stepwise + eval-form). Compute f32-stepwise.
     const float precr2_f32 = (((2.0f * static_cast<float>(PI)) * 0.31f)
-                              * std::powf(static_cast<float>(constants::AVTR), 0.5f))
+                              * ::powf(static_cast<float>(constants::AVTR), 0.5f))
                              * static_cast<float>(g7pbro2);
     const double precr2 = precr2_f32;
 

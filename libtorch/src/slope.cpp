@@ -163,19 +163,19 @@ SlopeParams default_slope_params() {
     const double rslopegmax = rslopegmax_f;
     const double rslopeimax = rslopeimax_f;
 
-    const double rsloperbmax = std::powf(rslopermax_f, static_cast<float>(constants::BVTR));
-    const double rslopesbmax = std::powf(rslopesmax_f, static_cast<float>(constants::BVTS));
-    const double rslopeibmax = std::powf(rslopeimax_f, static_cast<float>(constants::BVTI));
+    const double rsloperbmax = ::powf(rslopermax_f, static_cast<float>(constants::BVTR));
+    const double rslopesbmax = ::powf(rslopesmax_f, static_cast<float>(constants::BVTS));
+    const double rslopeibmax = ::powf(rslopeimax_f, static_cast<float>(constants::BVTI));
 
-    const double rslopermmax = (constants::MUR == 0.0) ? 1.0 : std::powf(rslopermax_f, static_cast<float>(constants::MUR));
-    const double rslopesmmax = (constants::MUS == 0.0) ? 1.0 : std::powf(rslopesmax_f, static_cast<float>(constants::MUS));
-    const double rslopegmmax = (constants::MUG == 0.0) ? 1.0 : std::powf(rslopegmax_f, static_cast<float>(constants::MUG));
-    const double rslopeimmax = (constants::MUI == 0.0) ? 1.0 : std::powf(rslopeimax_f, static_cast<float>(constants::MUI));
+    const double rslopermmax = (constants::MUR == 0.0) ? 1.0 : ::powf(rslopermax_f, static_cast<float>(constants::MUR));
+    const double rslopesmmax = (constants::MUS == 0.0) ? 1.0 : ::powf(rslopesmax_f, static_cast<float>(constants::MUS));
+    const double rslopegmmax = (constants::MUG == 0.0) ? 1.0 : ::powf(rslopegmax_f, static_cast<float>(constants::MUG));
+    const double rslopeimmax = (constants::MUI == 0.0) ? 1.0 : ::powf(rslopeimax_f, static_cast<float>(constants::MUI));
 
-    const double rsloperdmax = std::powf(rslopermax_f, static_cast<float>(constants::DMR));
-    const double rslopesdmax = std::powf(rslopesmax_f, static_cast<float>(constants::DMS));
-    const double rslopegdmax = std::powf(rslopegmax_f, static_cast<float>(constants::DMG));
-    const double rslopeidmax = std::powf(rslopeimax_f, static_cast<float>(constants::DMI));
+    const double rsloperdmax = ::powf(rslopermax_f, static_cast<float>(constants::DMR));
+    const double rslopesdmax = ::powf(rslopesmax_f, static_cast<float>(constants::DMS));
+    const double rslopegdmax = ::powf(rslopegmax_f, static_cast<float>(constants::DMG));
+    const double rslopeidmax = ::powf(rslopeimax_f, static_cast<float>(constants::DMI));
 
     const float rsloper2max_f = rslopermax_f * rslopermax_f;
     const float rslopes2max_f = rslopesmax_f * rslopesmax_f;

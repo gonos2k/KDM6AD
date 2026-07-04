@@ -906,7 +906,7 @@ DepSubParams default_dep_sub_params() {
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
     const float precs2_f32 = ((4.0f * 0.44f)
-                              * std::powf(static_cast<float>(constants::AVTS), 0.5f))
+                              * ::powf(static_cast<float>(constants::AVTS), 0.5f))
                              * static_cast<float>(g5pbso2);  // Fortran precs2 REAL(4) (F:3255); avts**.5=powf (mirror warm.cpp precr2)
     const double precs2 = precs2_f32;
     const double precg1 = 4.0 * 0.78 * g2pmg;
@@ -1082,7 +1082,7 @@ SnowEvapParams default_snow_evap_params() {
     const double g5pbso2 = rgmma_scalar(bvts2);
     const double precs1 = 4.0 * 0.65 * g2pms;
     const float precs2_f32 = ((4.0f * 0.44f)
-                              * std::powf(static_cast<float>(constants::AVTS), 0.5f))
+                              * ::powf(static_cast<float>(constants::AVTS), 0.5f))
                              * static_cast<float>(g5pbso2);  // Fortran precs2 REAL(4) (F:3255); avts**.5=powf (mirror warm.cpp precr2)
     const double precs2 = precs2_f32;
     return SnowEvapParams{/*precs1=*/precs1, /*precs2=*/precs2, /*qcrmin=*/constants::QCRMIN};
