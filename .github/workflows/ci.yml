@@ -13,11 +13,19 @@ on:
     paths:
       - 'libtorch/**'
       - '.github/workflows/**'
+      # docs that carry the "ctest is green 16/16" claim — re-run so the badge
+      # stays tied to the current commit, not just the last libtorch/** change.
+      - 'README.md'
+      - 'ENVIRONMENT.md'
   pull_request:
     branches: [main]
     paths:
       - 'libtorch/**'
       - '.github/workflows/**'
+      # docs that carry the "ctest is green 16/16" claim — re-run so the badge
+      # stays tied to the current commit, not just the last libtorch/** change.
+      - 'README.md'
+      - 'ENVIRONMENT.md'
   workflow_dispatch:
 
 jobs:
