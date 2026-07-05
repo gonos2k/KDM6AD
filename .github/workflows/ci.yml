@@ -33,7 +33,10 @@ on:
 jobs:
   build-and-test:
     name: build + ctest (ubuntu, libtorch CPU)
-    runs-on: ubuntu-latest
+    # Pinned image (not ubuntu-latest) so a future runner bump can't silently change the
+    # compiler/libc under the port. Actions stay on major tags (v4/v5) — the "Record
+    # toolchain versions" step logs cmake/g++/gfortran/torch so any drift is visible in the log.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

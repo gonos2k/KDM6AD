@@ -53,3 +53,14 @@ tightened to the actual contract; all since fixed.)
 
 - The WRF/KIM-meso host tree (not in this repo; see README → Full host integration).
 - GPU: the port is CPU/float32 for parity; no CUDA/Metal path is claimed here.
+
+## CI toolchain (separate from this reference environment)
+
+The `port-ci` GitHub Actions workflow verifies the **port-only `ctest` suite** on a
+**deliberately different** second toolchain — `ubuntu-24.04` / gcc+gfortran / Python 3.11,
+with only `torch` pinned to the reference (`2.8.0`). It is a *portability* gate (the suite is
+f64-deterministic / tolerance / ABI-mechanics, so it is not libm-sensitive); it does **not**
+reproduce the macOS/clang reference above, and it does **not** exercise the host bitwise
+parity (that is a macOS-pinned, host-coupled property checked with `harness/strict_bitwise_nc.py`,
+not in CI). So "ctest is green 16/16" is validated twice: on this local reference toolchain, and
+independently on the CI toolchain.
