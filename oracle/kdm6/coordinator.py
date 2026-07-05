@@ -1399,11 +1399,10 @@ def reclassify_large_ice_to_snow_torch(
     # avedia_i = rslope_i · (Γ(4+MUI)/Γ(1+MUI))^(1/3)
     #   rslope_i = 1/lamdai, clamped to [1/LAMDAIMAX, 1/LAMDAIMIN]
     #   lamdai = (pidni · ni / (qi·den))^(1/DMI)
-    #   pidni = cmi · Γ(1+DMI+MUI) / Γ(1+MUI),  cmi = π·DENI/6
-    cmi = math.pi * c.DENI / 6.0
-    g1pmi = math.exp(math.lgamma(1.0 + c.MUI))               # Γ(1+MUI)
-    g1pdimi = math.exp(math.lgamma(1.0 + c.DMI + c.MUI))     # Γ(1+DMI+MUI)
-    g4pmi = math.exp(math.lgamma(4.0 + c.MUI))               # Γ(4+MUI)
+    #   pidni = cmi · Γ(1+DMI+MUI) / Γ(1+MUI),  cmi = π·DENI/6  (documented; pidni itself
+    #   comes from _fc.PIDNI below — the cmi/g1pdimi factors are NOT recomputed here)
+    g1pmi = math.exp(math.lgamma(1.0 + c.MUI))               # Γ(1+MUI)  — used in avedia_factor
+    g4pmi = math.exp(math.lgamma(4.0 + c.MUI))               # Γ(4+MUI)  — used in avedia_factor
     pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263; see fconst.py)
     avedia_factor = _fc.powf(g4pmi / g1pmi, 0.3333333)  # F:2802 all-REAL(4) powf (step-91 latent class)
     rslopeimax = 1.0 / c.LAMDAIMAX

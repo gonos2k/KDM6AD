@@ -122,10 +122,6 @@ def _rgamma(x: float) -> float:
     return _fc.rgmma_f(x)  # Fortran-faithful f32 (step-67 class)
 
 
-def _pow_or_one(base: float, exponent: float) -> float:
-    return 1.0 if exponent == 0.0 else base**exponent
-
-
 def _scalar(value: float, ref: torch.Tensor) -> torch.Tensor:
     return torch.as_tensor(value, dtype=ref.dtype, device=ref.device)
 
