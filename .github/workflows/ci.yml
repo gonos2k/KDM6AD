@@ -24,8 +24,10 @@ on:
       # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
       # binary), so an oracle refactor that drifts from the C++ port is caught here.
       - 'oracle/kdm6/**'
-      # the parity test this job now runs — trigger when it changes too.
+      # the parity test this job now runs + the conftest that puts `kdm6` on sys.path for it —
+      # trigger when either changes too (they are direct inputs to the parity run).
       - 'oracle/tests/test_cpp_parity.py'
+      - 'oracle/conftest.py'
   pull_request:
     branches: [main]
     paths:
@@ -39,8 +41,10 @@ on:
       # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
       # binary), so an oracle refactor that drifts from the C++ port is caught here.
       - 'oracle/kdm6/**'
-      # the parity test this job now runs — trigger when it changes too.
+      # the parity test this job now runs + the conftest that puts `kdm6` on sys.path for it —
+      # trigger when either changes too (they are direct inputs to the parity run).
       - 'oracle/tests/test_cpp_parity.py'
+      - 'oracle/conftest.py'
   workflow_dispatch:
 
 jobs:
