@@ -112,5 +112,6 @@ jobs:
       # binary the build step produced; torch is already installed for the C++ build.
       - name: oracle↔C++ forward-parity regression bound (test_cpp_parity)
         run: |
-          pip install numpy pytest
+          # pinned to the last green combo (torch 2.8.0 is already installed above)
+          pip install "numpy==2.4.6" "pytest==9.1.1"
           cd oracle && python -m pytest tests/test_cpp_parity.py -rs -q
