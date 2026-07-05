@@ -1,11 +1,14 @@
 name: oracle-ci
 
-# Backs the "oracle pytest 495 passed" claim with public CI. The Python f64 oracle
-# (oracle/kdm6) is the algorithm-definition / parity reference; this job runs its full
-# pytest suite so an oracle refactor can't drift its values without CI catching it.
-# Pure torch + numpy (no RTTOV/.so or other heavy native deps — rttov_bridge is a
-# Python-side input builder), so it runs on a plain CPU runner. torch is pinned to the
-# ENVIRONMENT.md reference (2.8.0), matching port-ci.
+# Gates the PORTABLE, pure-Python part of the oracle suite (oracle/kdm6 — the f64
+# algorithm-definition / parity reference) so an oracle refactor can't drift its values
+# without CI catching it. On this Python-only runner ~442 tests run; the remainder SKIP by
+# design and are gated elsewhere (so this job does NOT claim the full 495-test run):
+#   - test_cpp_parity (oracle↔C++ forward parity) needs the built C++ port — it is gated by
+#     port-ci (ci.yml), which builds libtorch and runs that test after ctest.
+#   - test_rttov_runner needs a local RTTOV reference dataset not shipped in this public repo.
+# `-rs` prints the skip reasons so the pass/skip split is visible in the log. torch pinned to
+# the ENVIRONMENT.md reference (2.8.0); rttov_bridge is pure Python (no RTTOV .so).
 
 on:
   push:
@@ -41,5 +44,5 @@ jobs:
         run: |
           python -c 'import sys, torch, numpy; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__)'
 
-      - name: pytest (oracle/)
-        run: cd oracle && python -m pytest -q
+      - name: pytest (oracle/, pure-Python subset)
+        run: cd oracle && python -m pytest -rs -q

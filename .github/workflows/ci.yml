@@ -5,7 +5,10 @@ name: port-ci
 # bitwise host parity is a separate, platform-pinned property (see ENVIRONMENT.md) and is
 # NOT what this checks — the ctest suite is f64-deterministic / tolerance / ABI-mechanics,
 # so it is portable to Linux. This exists so "ctest is green" is CI-verified, not just a
-# claim in the README.
+# claim in the README. After ctest it also runs the oracle↔C++ forward-parity test
+# (oracle/tests/test_cpp_parity), which needs the compiled binary this job just built —
+# so an oracle refactor that drifts from the C++ port is caught here (the pure-Python
+# oracle suite itself is gated separately by oracle-ci).
 
 on:
   push:
@@ -18,6 +21,9 @@ on:
       - 'README.md'
       - 'ENVIRONMENT.md'
       - 'docs/HOST_INTEGRATION.md'
+      # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
+      # binary), so an oracle refactor that drifts from the C++ port is caught here.
+      - 'oracle/kdm6/**'
   pull_request:
     branches: [main]
     paths:
@@ -28,6 +34,9 @@ on:
       - 'README.md'
       - 'ENVIRONMENT.md'
       - 'docs/HOST_INTEGRATION.md'
+      # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
+      # binary), so an oracle refactor that drifts from the C++ port is caught here.
+      - 'oracle/kdm6/**'
   workflow_dispatch:
 
 jobs:
@@ -81,3 +90,11 @@ jobs:
 
       - name: ctest
         run: ctest --test-dir libtorch/build --output-on-failure
+
+      # oracle↔C++ forward parity: the Python f64 oracle vs this built C++ port. It lives
+      # here (not in oracle-ci) because it needs the compiled test_autograd_endtoend binary,
+      # which the build step above produced. torch is already installed for the C++ build.
+      - name: oracle↔C++ forward parity (test_cpp_parity)
+        run: |
+          pip install numpy pytest
+          cd oracle && python -m pytest tests/test_cpp_parity.py -rs -q
