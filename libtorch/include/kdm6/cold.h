@@ -4,10 +4,11 @@
 // 원본: module_mp_kdm6.F: 1818-2444 (Step C 영역)
 // Python oracle: kdm6_torch/kdm6/cold.py
 //
-// Sub-steps (procedures/kdm62d-port-decomposition.md):
-//   C1 ice mass accretion         (1837-1863) — ice_accretion_torch
-//   C2 ice→snow/graupel mass      (1868-1890) — ice_to_snow_graupel_torch  (TODO)
-//   ... (C2b, C2c, C2d, C2e, C3-C6 누적 예정)
+// Sub-steps (procedures/kdm62d-port-decomposition.md): the full Step-C chain is
+// implemented — C1 ice accretion, C2/C2b ice→snow/graupel mass+number, C2c cloud
+// riming, C2d rain-snow-graupel collection, C2e Hallett-Mossop, C3 nucleation,
+// C4 dep/sublimation, C5 aggregation (psaut), C6/C6' snow/graupel evap. See the
+// oracle cold.py for the per-substep decomposition and F: line references.
 //
 
 #include "kdm6/constants.h"

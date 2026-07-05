@@ -69,17 +69,13 @@ MeltingOutputs melting_torch(
 
     // ── psmlt ──────────────────────────────────────────────────────────
     auto snow_active = torch::logical_and(warm, in.qs > 0);
-    // §1B (whole-chain roadmap FRZ-01): Fortran F:1310-1315 — coeres/precs1/precs2/rslopemu are
-    // DOUBLE, psmlt is REAL(f32). The bracket (term1+term2) and the chain evaluate in f64; only the
-    // psmlt store rounds to f32 once. C++ previously demoted the double precs1/precs2 scalars to f32
-    // (torch weak-scalar) and summed via fma_acc (f32 two-rounding) — an f32-stepwise-vs-double-then-
-    // round deviation. Build the bracket/chain in f64 (inner rslope2*sqrt(rslope*rslopeb) kept f32 to
-    // match Fortran REAL operands), round once at the store. autograd-safe (.to(dtype) only).
-    // §1B (corrected): Fortran precs1/precs2 are REAL(f32) (F:147 `real,save`), rslopemu/coeres are
-    // DOUBLE (F:656/725). So the INNER products (precs1*n0so*rslope2), (precs2*n0so*work2) evaluate in
-    // f32, and promote to f64 ONLY at the *rslopemu / *coeres step (DOUBLE); the term1+term2 add is f64;
-    // psmlt is REAL → ONE f32 round at the store. (Earlier draft over-promoted the inner products to
-    // f64 — a "REAL-constant regression"; precs* stay f32 here. torch weak-scalar keeps precs*tensor f32.)
+    // §1B (whole-chain roadmap FRZ-01) — psmlt f32/f64 mixing, matching Fortran F:1310-1315.
+    // precs1/precs2 are REAL(f32) (F:147 `real,save`); rslopemu/coeres are DOUBLE (F:656/725). So the
+    // INNER products (precs1*n0so*rslope2), (precs2*n0so*work2) evaluate in f32 and promote to f64 ONLY
+    // at the *rslopemu / *coeres step (DOUBLE); the term1+term2 add is f64; psmlt is REAL → ONE f32 round
+    // at the store. autograd-safe (.to(dtype) only).
+    // DO NOT over-promote the inner products to f64 (a past "REAL-constant regression") — precs* stay
+    // f32 (torch weak-scalar keeps precs*tensor f32), else it becomes an f32-stepwise-vs-double deviation.
     const auto F64 = torch::kFloat64;
     auto coeres_s = (in.rslope2_s
                   * torch::sqrt(torch::clamp(in.rslope_s * in.rslopeb_s, /*min=*/p.qcrmin))).to(F64)

@@ -3,8 +3,8 @@ KDM6 cold rain processes — ice phase microphysics oracle.
 
 원본: module_mp_kdm6.F: 1843-2440 (Step C 영역)
 
-본 모듈은 Step C의 sub-step을 누적 추가한다 (warm.py 패턴 답습):
-  - C1 (현재): ice mass accretion         — `ice_accretion_torch`        (1843-1862)
+본 모듈은 Step C의 sub-step 전체(C1–C6')를 순수함수로 구현한다 (warm.py 패턴 답습):
+  - C1:        ice mass accretion         — `ice_accretion_torch`        (1843-1862)
   - C2:        ice→snow/graupel mass      — `ice_to_snow_graupel_torch`  (1868-1890)
   - C2b:       number accretion           — `ice_number_accretion_torch` (1897-1944)
   - C2c:       cloud water riming         — `cloud_water_riming_torch`   (1951-2031)
@@ -647,7 +647,6 @@ def cloud_water_riming_torch(
     qc_safe = torch.clamp(qc, min=params.qcrmin)
 
     # ── psacw ──────────────────────────────────────────────────────────
-    snow_active = (qs > params.qcrmin) & (qi > params.qmin)  # qci(:,:,1) is qc here
     snow_active_qc = (qs > params.qcrmin) & (qc > params.qmin)
     psacw_raw = (
         rslope3_s * rslopeb_s * rslopemu_s

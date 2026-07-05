@@ -186,7 +186,7 @@ def progb_param_torch(
     Returns
     -------
     ProgBOutputs
-        14개 텐서/스칼라 패키지. 모든 텐서는 `qg`/`bg` 입력 그래프와 연결.
+        텐서/스칼라 패키지 (필드는 ProgBOutputs 정의 참조). 모든 텐서는 `qg`/`bg` 입력 그래프와 연결.
     """
     if qg.shape != bg.shape:
         raise ValueError(f"qg shape {qg.shape} != bg shape {bg.shape}")

@@ -3,8 +3,8 @@ KDM6 warm rain processes — Lim & Hong / Cohard-Pinty 더블모멘트 직역.
 
 원본: module_mp_kdm6.F: 1693-1801 (warm rain block 안의 5 process)
 
-본 모듈은 Step B의 sub-step 단위로 함수를 누적 추가한다.
-  - B1 (현재): autoconversion          — `autoconv_torch`        (1706-1717)
+본 모듈은 Step B의 sub-step(B1–B4)을 순수함수로 구현한다.
+  - B1:        autoconversion          — `autoconv_torch`        (1706-1717)
   - B2:        accretion (cloud→rain)  — `accretion_torch`       (1724-1742)
   - B3:        self-collection         — `self_collection_torch` (1747-1774)
   - B4:        rain evaporation         — `rain_evap_torch`       (1779-1801)

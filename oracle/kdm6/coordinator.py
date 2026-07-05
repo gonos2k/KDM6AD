@@ -1176,8 +1176,7 @@ def state_update_torch(
     qi_new = state.qi + dqi
 
     # ── Number balance ────────────────────────────────────────────────
-    # nc (cloud number) — Fortran 2733 + inline 1603/1633
-    # nc (cloud number) — Fortran 2619 + inline 1500/1530/1338
+    # nc (cloud number) balance — Fortran nc update at F:2619 & F:2733 (+ inline 1500/1530/1338/1603/1633)
     dnc_rate = dtcld * (
         - warm.nraut                              # qc → qr autoconv
         - warm.nccol                              # cloud self-collection

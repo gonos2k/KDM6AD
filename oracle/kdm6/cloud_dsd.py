@@ -43,8 +43,9 @@ class CloudDsdParams(NamedTuple):
     g3pmc: float       # rgmma(1 + 3/(muc+1))
     g6pmc: float       # rgmma(1 + 6/(muc+1))
     g4pmr_over_g1pmr: float  # rgmma(4+mur)/rgmma(1+mur)
-    qc0: float         # continental critical: 4/3·π·denr·r0³·xncr0/den0
-    qc1: float         # maritime    critical: 4/3·π·denr·r0³·xncr1/den0
+    qc0: float         # SEA/maritime critical (XNCR0=5e7, low CCN):  4/3·π·denr·r0³·xncr0/den0
+    qc1: float         # LAND/continental critical (XNCR1=5e8, high CCN): 4/3·π·denr·r0³·xncr1/den0
+    # (field names qc0/qc1 mirror Fortran F:3104-3105; diag_qcr_torch wires sea→qc0, land→qc1)
 
 
 def default_cloud_dsd_params(*, den0: float | None = None) -> CloudDsdParams:
