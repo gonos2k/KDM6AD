@@ -1,0 +1,45 @@
+name: oracle-ci
+
+# Backs the "oracle pytest 495 passed" claim with public CI. The Python f64 oracle
+# (oracle/kdm6) is the algorithm-definition / parity reference; this job runs its full
+# pytest suite so an oracle refactor can't drift its values without CI catching it.
+# Pure torch + numpy (no RTTOV/.so or other heavy native deps — rttov_bridge is a
+# Python-side input builder), so it runs on a plain CPU runner. torch is pinned to the
+# ENVIRONMENT.md reference (2.8.0), matching port-ci.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'oracle/**'
+      - '.github/workflows/oracle-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'oracle/**'
+      - '.github/workflows/oracle-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  oracle-pytest:
+    name: oracle pytest (f64 reference)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install torch (CPU, pinned) + numpy + pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy pytest
+
+      - name: Record versions
+        run: |
+          python -c 'import sys, torch, numpy; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__)'
+
+      - name: pytest (oracle/)
+        run: cd oracle && python -m pytest -q
