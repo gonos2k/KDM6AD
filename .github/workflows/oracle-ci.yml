@@ -49,7 +49,8 @@ jobs:
 
       - name: Record versions
         run: |
-          python -c 'import sys, torch, numpy; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__)'
+          python -c 'import sys, torch, numpy, pytest; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__)'
+          pip --version   # installer version (deps are pinned; pip itself is not)
 
       - name: pytest (oracle/, pure-Python subset)
         run: cd oracle && python -m pytest -rs -q
