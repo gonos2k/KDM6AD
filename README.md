@@ -41,9 +41,10 @@ test is added.
 
 > **ctest is green (16/16)** — verified two ways: on the pinned *local* macOS/clang reference
 > toolchain ([ENVIRONMENT.md](ENVIRONMENT.md)), and independently by the **port-ci** badge above,
-> which builds + runs the suite on Ubuntu/gcc with `torch==2.8.0` on each push or PR that
-> touches the port (`libtorch/`), the workflow, or these ctest-claim docs (README / ENVIRONMENT
-> / HOST_INTEGRATION) — the workflow's path filter, so unrelated commits do not re-run it.
+> which builds + runs the suite on Ubuntu/gcc with `torch==2.8.0` on each push to `main`
+> (or PR targeting `main`) that touches the port (`libtorch/`), the workflow, or these
+> ctest-claim docs (README / ENVIRONMENT / HOST_INTEGRATION) — the workflow's branch + path
+> filters, so feature-branch or unrelated-file commits do not re-run it.
 > Note the derivative contract: a handle from `kdm6_step_c(... value_only=0 ...)` records the
 > operational **float32** graph, whose VJP/JVP is a *mechanics/diagnostics* path — gradients may
 > be non-finite at inactive-ice corners (f32 underflow, propagating to graph-connected inputs).
