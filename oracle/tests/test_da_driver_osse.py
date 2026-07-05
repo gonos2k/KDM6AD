@@ -97,3 +97,51 @@ def test_osse_selfconsistency_zero_innovation(tmp_path):
                                WindowConfig(dt=DT), _obs_cfg(tmp_path))
     assert rep.j_obs == pytest.approx(0.0, abs=1e-10)
     assert float(rep.window.adj_x0.th.abs().max()) == pytest.approx(0.0, abs=1e-12)
+
+
+def test_truth_side_quality_flags_gate_the_mask():
+    """Codex stop-review 회귀 가드 (mock — 어디서나 실행): 진실측 rad_quality가
+    플래그한 채널의 y(무효 관측, 절대값 1e6)는 innovation에서 배제돼야 한다.
+    수정 전(진실측 QC 무시)이면 J가 ~1e12로 폭발, 수정 후엔 ~0."""
+    from kdm6.da_driver import make_innovation_obs_adjoint, OsseObsConfig
+    from kdm6.obs.model_profile_builder import RttovProfileConfig
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+
+    B, nlev, nch, nlay = 2, 12, 4, 9
+
+    def mock_run_k(rin):
+        n = rin.nprofiles
+        bt = np.full((n, nch), 250.0)
+        k = {"T": np.zeros((n, nch, nlay)), "Q": np.zeros((n, nch, nlay))}
+        return bt, k, np.zeros((n, nch))          # 배경측은 전 채널 깨끗
+
+    p_lay = torch.linspace(100.0, 900.0, nlay, **_F64)
+    p_half = torch.linspace(95.0, 905.0, nlay + 1, **_F64)
+    cfg = OsseObsConfig(
+        run_k=mock_run_k,
+        profile_cfg=RttovProfileConfig(
+            gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+            rttov_layer_pressure=p_lay, rttov_level_pressure=p_half),
+        input_cfg=RttovInputConfig(coef_id="mock", channels=tuple(range(1, nch + 1))),
+        obs_sigma=1.0)
+
+    # 진실측 y: 채널 0은 플래그(quality=1) + 절대값 1e6, 나머지는 mock bt와 동일
+    y_bt = torch.full((B, nch), 250.0, **_F64)
+    y_bt[:, 0] = 1.0e6
+    y_rq = torch.zeros((B, nch), **_F64)
+    y_rq[:, 0] = 1.0                              # 진실측에서만 플래그
+    y_store = {1: (y_bt, y_rq)}
+
+    z = torch.zeros((B, nlev), **_F64)
+    x = State(th=torch.full((B, nlev), 280.0, **_F64),
+              qv=torch.full((B, nlev), 5.0e-3, **_F64),
+              qc=z, qr=z, qi=z, qs=z, qg=z, nccn=z, nc=z, ni=z, nr=z, bg=z)
+    p_model = torch.linspace(9.5e4, 1.0e4, nlev, **_F64).repeat(B, 1)  # WRF: k↑ p↓
+    f = Forcing(rho=torch.ones_like(z), pii=torch.ones_like(z),
+                p=p_model, delz=torch.ones_like(z))
+
+    j_acc: list = []
+    adj = make_innovation_obs_adjoint([f], y_store, cfg, j_acc)(1, x)
+    assert adj is not None
+    # 플래그 채널 배제 → 잔차 0인 채널만 남아 J ~ 0 (무시하면 ~1e12)
+    assert j_acc[0] < 1.0, f"truth-side flagged channel leaked into J: {j_acc[0]:.3e}"

@@ -129,9 +129,13 @@ def make_innovation_obs_adjoint(forcings: Sequence[Forcing], y_by_time: dict,
         if t not in y_by_time:
             return None
         f = forcings[t] if t < len(forcings) else forcings[-1]
-        y_bt, _y_rq = y_by_time[t]
+        y_bt, y_rq = y_by_time[t]
         bt, rad_quality, leaves = batched_clear_bt(x_t, f, obs_cfg)
-        obs = {"bt": y_bt}
+        # 양측 QC 결합 (Codex stop-review): 진실측에서 플래그된 채널의 y는 무효
+        # 관측 — obs_quality 슬롯(0=사용가능, rad_quality와 동일 게이트)으로
+        # 전달해 mask = (배경측 quality==0) AND (진실측 quality==0)이 되게 한다.
+        # 한쪽만 보면 플래그된 y가 innovation에 들어가 J/gradient가 오염된다.
+        obs = {"bt": y_bt, "obs_quality": y_rq}
         mask = _build_mask(obs, rad_quality)
         j = compute_obs_loss(bt, obs, mask, sigma=obs_cfg.obs_sigma)
         g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv])
