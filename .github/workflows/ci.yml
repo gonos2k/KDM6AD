@@ -37,6 +37,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Python version is NOT the ENVIRONMENT.md reference (3.9.10) on purpose: this job is a
+      # PORTABLE port-only ctest gate, not a reproduction of the macOS bitwise-parity host env.
+      # Only torch is pinned to the reference (2.8.0); Python/OS/compiler are deliberately a
+      # second, different toolchain (Ubuntu/gcc) so the suite is exercised beyond clang/macOS.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

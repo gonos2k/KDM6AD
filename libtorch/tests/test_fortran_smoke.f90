@@ -338,9 +338,14 @@ program test_fortran_smoke
     print *, "  PASS: kdm6_step_ad (2,3,4)-tile VJP support confined to source column (axis-swap sensitive)"
 
     ! VALUE-LEVEL layout check: column (i0,j0) run STANDALONE (im=1) must reproduce
-    ! the embedded tile's (i0,j0) column forward output (column independence). This
-    ! catches per-(field,k) offset / forcing-field ordering / state_out value-order
-    ! errors that pure support-confinement cannot (Codex review finding 5 gaps).
+    ! the embedded tile's (i0,j0) column forward output (column independence).
+    ! Because the inputs are authored through Fortran NATIVE x(i,k,j,field) assumed-shape
+    ! arrays (the compiler lays out the flat buffer, not manual offset math), this is a
+    ! stronger, more independent layout oracle than the C++ self-consistent packed-buffer
+    ! test: it catches wrapper-axis / (i,j)-stride / field-order mistakes that change the
+    ! embedded-vs-standalone column values. It is NOT a complete proof of every internal
+    ! convention, though — a *consistent* per-(field,k)/forcing mislabeling applied
+    ! identically to both the embedded and standalone runs still cancels out.
     standalone: block
       real(c_double), allocatable :: sa_in(:,:,:,:), sa_out(:,:,:,:), sa_f(:,:,:,:)
       real(c_float),  allocatable :: sa_xland(:,:)

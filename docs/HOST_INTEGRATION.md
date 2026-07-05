@@ -75,7 +75,9 @@ The operational f32 path is strict-bitwise identical between `mp_physics=37`
 - Earlier milestones: SS step-1 254/254 (253 BITWISE-MATCH + Times; RHO_ICE 0 diffs),
   then a 10-step run.
 
-C++ unit suite (`ctest`): **green — 16/16 on the pinned toolchain** (ENVIRONMENT.md).
+C++ unit suite (`ctest`): **green — 16/16** on the pinned *local* macOS/clang reference toolchain
+(ENVIRONMENT.md), and independently on Ubuntu/gcc with `torch==2.8.0` via the repo's `port-ci`
+GitHub Actions workflow on every push.
 
 Derivative contract (why the f32 handle is not a finiteness guarantee): a handle from
 `kdm6_step_c(... value_only=0 ...)` records the operational **float32** graph. Its VJP/JVP is a
