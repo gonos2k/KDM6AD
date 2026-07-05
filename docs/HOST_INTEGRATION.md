@@ -77,8 +77,9 @@ The operational f32 path is strict-bitwise identical between `mp_physics=37`
 
 C++ unit suite (`ctest`): **green — 16/16** on the pinned *local* macOS/clang reference toolchain
 (ENVIRONMENT.md), and independently on Ubuntu/gcc with `torch==2.8.0` via the repo's `port-ci`
-GitHub Actions workflow (which runs on pushes to `main` — or PRs targeting `main` — that touch
-`libtorch/`, the workflow, or the ctest-claim docs; not on feature branches or every commit).
+GitHub Actions workflow (which runs on pushes to `main` and on pull requests targeting `main`
+that touch `libtorch/`, the workflow, or the ctest-claim docs — branch + path filters; a
+side-branch commit is covered once it is opened as a PR to `main`).
 
 Derivative contract (why the f32 handle is not a finiteness guarantee): a handle from
 `kdm6_step_c(... value_only=0 ...)` records the operational **float32** graph. Its VJP/JVP is a
