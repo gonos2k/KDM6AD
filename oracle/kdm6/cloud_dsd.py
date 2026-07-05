@@ -219,10 +219,10 @@ def diag_qcr_torch(
     and qc1 = qc_base · XNCR1 (XNCR1=5e8, high CCN). Higher CCN → smaller
     cloud droplets → harder autoconversion → HIGHER qcr threshold. Ocean air
     is clean (LOW CCN) so it gets the LOWER threshold qc0; land air is dusty
-    (HIGH CCN) so it gets the HIGHER threshold qc1. The Param-field names
-    `qc0/continental`, `qc1/maritime` in CloudDsdParams are legacy labels
-    pinned to the scalar values, not the regime mapping; the regime wiring
-    is here and mirrors the operational Fortran assignment.
+    (HIGH CCN) so it gets the HIGHER threshold qc1. The CloudDsdParams field names
+    `qc0`/`qc1` mirror Fortran F:3104-3105 (pinned to the scalar values, not a regime
+    word); the sea→qc0 / land→qc1 regime wiring is here and mirrors the operational
+    Fortran assignment.
 
     Parameters
     ----------
