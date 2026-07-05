@@ -5,7 +5,7 @@ KDM6 cloud DSD diagnostics — B1-B4의 placeholder 의존성 해소 모듈.
   - module_mp_kdm6.F: 1670-1673 (avedia_c, avedia_r, sigma_c)
   - module_mp_kdm6.F: 1703-1705 (lencon, lenconcr)
   - module_mp_kdm6.F  grep `qcr(i,:) = qc0` / `qcr(i,:) = qc1`   (qcr sea/land 분기)
-  - module_mp_kdm6.F  grep `4./3.*pi*denr*r0**3.*xncr0/den0`     (qc0; xncr1 → qc1 정의)
+  - module_mp_kdm6.F  grep `4./3.*pi*denr*r0**3.*xncr0/den0` (qc0) / `4./3.*pi*denr*r0**3.*xncr1/den0` (qc1)
   - module_mp_kdm6.F: 3173      (pidnc = cmc * rgmma(1+dmc/(muc+1)))
   - module_mp_kdm6.F: 770       (lamdac = (pidnc·nc / (qc·den))^(1/dmc))
 
@@ -45,7 +45,7 @@ class CloudDsdParams(NamedTuple):
     g4pmr_over_g1pmr: float  # rgmma(4+mur)/rgmma(1+mur)
     qc0: float         # SEA/maritime critical (XNCR0=5e7, low CCN):  4/3·π·denr·r0³·xncr0/den0
     qc1: float         # LAND/continental critical (XNCR1=5e8, high CCN): 4/3·π·denr·r0³·xncr1/den0
-    # (field names qc0/qc1 mirror Fortran — grep `4./3.*pi*denr*r0**3.*xncr0/den0`; diag_qcr_torch wires sea→qc0, land→qc1)
+    # (field names qc0/qc1 mirror Fortran — grep `4./3.*pi*denr*r0**3.*xncr0/den0` / `4./3.*pi*denr*r0**3.*xncr1/den0`; diag_qcr_torch wires sea→qc0, land→qc1)
 
 
 def default_cloud_dsd_params(*, den0: float | None = None) -> CloudDsdParams:
@@ -220,7 +220,7 @@ def diag_qcr_torch(
     cloud droplets → harder autoconversion → HIGHER qcr threshold. Ocean air
     is clean (LOW CCN) so it gets the LOWER threshold qc0; land air is dusty
     (HIGH CCN) so it gets the HIGHER threshold qc1. The CloudDsdParams field names
-    `qc0`/`qc1` mirror Fortran (grep `4./3.*pi*denr*r0**3.*xncr0/den0`, `xncr1` for qc1; pinned to the scalar values, not a regime
+    `qc0`/`qc1` mirror Fortran (grep `4./3.*pi*denr*r0**3.*xncr0/den0` / `4./3.*pi*denr*r0**3.*xncr1/den0`; pinned to the scalar values, not a regime
     word); the sea→qc0 / land→qc1 regime wiring is here and mirrors the operational
     Fortran assignment.
 
