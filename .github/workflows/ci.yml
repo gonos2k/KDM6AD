@@ -1,14 +1,20 @@
 name: port-ci
 
+# Least-privilege: this job only reads the repo and runs tests; it needs no write scopes.
+permissions:
+  contents: read
+
 # Port-only reproducibility gate: build the C++/libtorch port + ISO_C ABI and run the
 # full ctest suite from the public repo ALONE (no WRF/KIM-meso host). The macOS/arm64
 # bitwise host parity is a separate, platform-pinned property (see ENVIRONMENT.md) and is
 # NOT what this checks — the ctest suite is f64-deterministic / tolerance / ABI-mechanics,
 # so it is portable to Linux. This exists so "ctest is green" is CI-verified, not just a
-# claim in the README. After ctest it also runs the oracle↔C++ forward-parity test
-# (oracle/tests/test_cpp_parity), which needs the compiled binary this job just built —
-# so an oracle refactor that drifts from the C++ port is caught here (the pure-Python
-# oracle suite itself is gated separately by oracle-ci).
+# claim in the README. After ctest it also runs the oracle↔C++ forward-parity REGRESSION
+# BOUND (oracle/tests/test_cpp_parity) — a worst_rel < 1e-6 check of the f32 C++ dump vs the
+# f64 Python oracle (not strict equality; the f32 mirror carries O(1e-8) roundoff, a real bug
+# jumps orders of magnitude). It needs the compiled binary this job just built, so an oracle
+# refactor that drifts from the C++ port is caught here (the pure-Python oracle suite itself
+# is gated separately by oracle-ci).
 
 on:
   push:
@@ -54,6 +60,7 @@ jobs:
     # compiler/libc under the port. Actions stay on major tags (v4/v5) — the "Record
     # toolchain versions" step logs cmake/g++/gfortran/torch so any drift is visible in the log.
     runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -99,10 +106,11 @@ jobs:
       - name: ctest
         run: ctest --test-dir libtorch/build --output-on-failure
 
-      # oracle↔C++ forward parity: the Python f64 oracle vs this built C++ port. It lives
-      # here (not in oracle-ci) because it needs the compiled test_autograd_endtoend binary,
-      # which the build step above produced. torch is already installed for the C++ build.
-      - name: oracle↔C++ forward parity (test_cpp_parity)
+      # oracle↔C++ forward-parity regression bound: the f64 Python oracle vs this built C++
+      # port (worst_rel < 1e-6, not strict equality — the f32 mirror carries O(1e-8) roundoff).
+      # It lives here (not in oracle-ci) because it needs the compiled test_autograd_endtoend
+      # binary the build step produced; torch is already installed for the C++ build.
+      - name: oracle↔C++ forward-parity regression bound (test_cpp_parity)
         run: |
           pip install numpy pytest
           cd oracle && python -m pytest tests/test_cpp_parity.py -rs -q

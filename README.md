@@ -57,6 +57,10 @@ test is added.
 ```sh
 cd "$KROOT/oracle" && python3 -m pytest      # algorithm + parity + VJP/JVP FD tests (needs torch)
 ```
+The **oracle-ci** badge gates the *portable pure-Python subset* of this suite (~442 tests) on
+Ubuntu; the oracle↔C++ forward-parity regression bound (which needs the built C++ port) is gated
+by **port-ci**, and the RTTOV-fixture tests skip in CI because they need a local dataset not
+shipped here — so a full local `pytest` runs more tests than either badge.
 
 ## Parity status
 

@@ -1,5 +1,9 @@
 name: oracle-ci
 
+# Least-privilege: read-only; this job only runs the oracle pytest.
+permissions:
+  contents: read
+
 # Gates the PORTABLE, pure-Python part of the oracle suite (oracle/kdm6 — the f64
 # algorithm-definition / parity reference) so an oracle refactor can't drift its values
 # without CI catching it. On this Python-only runner ~442 tests run; the remainder SKIP by
@@ -27,6 +31,7 @@ jobs:
   oracle-pytest:
     name: oracle pytest (f64 reference)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
