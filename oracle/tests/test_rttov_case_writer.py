@@ -1102,3 +1102,146 @@ def test_live_solar_reflectance_observable_and_refl_k(tmp_path):
     # liquid content + Deff drive the solar reflectance -> live REFL-K grad.
     assert float(g_clw.abs().sum()) > 0.0, "liquid content REFL adjoint dead"
     assert float(g_dl.abs().sum()) > 0.0, "liquid Deff REFL adjoint dead"
+
+
+# ------------------------------------------------------------- LIVE FD anchors
+# (DA_REALTIME_PLAN T0-2) Every earlier live-K gradient test asserts only
+# finite/nonzero/localized -- a WRONG-BUT-FINITE gradient from a K-unit
+# misinterpretation (per-ppmv vs per-kg/kg Q, per-micron Deff, layer scaling)
+# would pass them all. These anchors compare the K-contracted gradient against
+# a central finite difference of J built from two extra live FORWARD runs.
+# Tolerances are loose (RTTOV nonlinearity + ASCII output quantization), but a
+# unit error is a factor of ~1.6x (Q molar-mass) to 1e6x (ppmv) -- far outside.
+
+
+@needs_live
+def test_live_fd_anchor_clear_sky_t_and_q(tmp_path):
+    """Central FD of J vs the real-K gradient, on the strongest-gradient layer,
+    for BOTH th (K/K scaling + layer wiring) and qv (catches ppmv-vs-kg/kg)."""
+    t_vec, q_vec = _fixture_tq()
+    nlay = len(t_vec)
+    M_DRY, M_VAP = 28.9647e-3, 18.01528e-3
+    f = q_vec / 1.0e6
+    qv_vec = M_VAP * f * (1.0 / M_DRY) / (1.0 - f)
+
+    zeros = torch.zeros(nlay, dtype=torch.float64)
+    ones = torch.ones(nlay, dtype=torch.float64)
+    p_model = torch.linspace(1.0, 940.0, nlay, dtype=torch.float64)
+    profile_cfg = RttovProfileConfig(
+        gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+        rttov_layer_pressure=None,
+        rttov_level_pressure=torch.as_tensor(_fixture_p_half(), dtype=torch.float64))
+    input_cfg = RttovInputConfig(coef_id="ami_501_test", channels=_CHANNELS)
+    obs = {"bt": torch.zeros(1, 16, dtype=torch.float64)}
+
+    def run_j(th_np, qv_np, tag, mask_ref=None):
+        """One live forward: J at (th, qv). Returns (J, rad_quality, [grads])."""
+        th = torch.tensor(th_np, dtype=torch.float64, requires_grad=True)
+        qv = torch.tensor(qv_np, dtype=torch.float64, requires_grad=True)
+        leaves = State(th=th, qv=qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
+                       qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
+        forcing = Forcing(rho=ones, pii=ones, p=p_model, delz=ones)
+        prof = model_to_rttov_tensors(leaves, forcing, profile_cfg)
+        bt_hat, rad_quality = RttovObsOp.apply(
+            make_live_run_k(tmp_path / tag), input_cfg,
+            prof.t_lay, prof.q_lay, prof.p_lay, prof.p_half)
+        mask = _build_mask(obs, rad_quality) if mask_ref is None else mask_ref
+        j = compute_obs_loss(bt_hat, obs, mask, sigma=1.0)
+        return j, th, qv, mask
+
+    j0, th0, qv0, mask0 = run_j(t_vec, qv_vec, "base")
+    g_th, g_qv = torch.autograd.grad(j0, [th0, qv0])
+
+    # --- th anchor: strongest-|grad| layer, h = 0.5 K -------------------------
+    lt = int(g_th.abs().argmax())
+    h_t = 0.5
+    tp = t_vec.copy(); tp[lt] += h_t
+    tm = t_vec.copy(); tm[lt] -= h_t
+    jp, _, _, mp = run_j(tp, qv_vec, "tp", mask_ref=mask0)
+    jm, _, _, mm = run_j(tm, qv_vec, "tm", mask_ref=mask0)
+    fd_t = (float(jp.detach()) - float(jm.detach())) / (2.0 * h_t)
+    rel_t = abs(fd_t - float(g_th[lt])) / max(abs(fd_t), 1e-30)
+    assert rel_t < 0.08, (
+        f"th FD anchor failed at layer {lt}: FD {fd_t:.6e} vs K-grad "
+        f"{float(g_th[lt]):.6e} (rel {rel_t:.3f}) -- T K-row scaling/wiring suspect")
+
+    # --- qv anchor: strongest-|grad| layer, relative h = 2% -------------------
+    lq = int(g_qv.abs().argmax())
+    h_q = 0.02 * qv_vec[lq]
+    qp = qv_vec.copy(); qp[lq] += h_q
+    qm = qv_vec.copy(); qm[lq] -= h_q
+    jp, _, _, _ = run_j(t_vec, qp, "qp", mask_ref=mask0)
+    jm, _, _, _ = run_j(t_vec, qm, "qm", mask_ref=mask0)
+    fd_q = (float(jp.detach()) - float(jm.detach())) / (2.0 * h_q)
+    rel_q = abs(fd_q - float(g_qv[lq])) / max(abs(fd_q), 1e-30)
+    assert rel_q < 0.08, (
+        f"qv FD anchor failed at layer {lq}: FD {fd_q:.6e} vs K-grad "
+        f"{float(g_qv[lq]):.6e} (rel {rel_q:.3f}) -- Q K-row UNIT (ppmv vs kg/kg) suspect")
+
+
+@needs_cloud_live
+def test_live_fd_anchor_cloud_content_and_deff(tmp_path):
+    """All-sky FD anchor: ice content (HYDRO7 scaling, g/m^3) and ice Deff
+    (HYDRO_DEFF7 scaling, per-micron) vs central FD through live cloud RTTOV."""
+    t_vec, q_vec, ph = _cloud_fixture_tq()
+    nlay = len(t_vec)
+    f64 = torch.float64
+    t = torch.tensor(t_vec, dtype=f64)
+    q = torch.tensor(q_vec, dtype=f64)
+    p_half = torch.tensor(ph, dtype=f64)
+    clw_np = np.zeros(nlay); clw_np[40:50] = 0.10
+    ciw_np = np.zeros(nlay); ciw_np[15:25] = 0.03
+    cfrac = torch.tensor((clw_np + ciw_np > 0).astype("float64"), dtype=f64)
+    cfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
+    obs = {"bt": torch.zeros(1, 16, dtype=f64)}
+
+    def run_j(clw_v, ciw_v, di_v, tag, mask_ref=None):
+        clw = torch.tensor(clw_v, dtype=f64, requires_grad=True)
+        ciw = torch.tensor(ciw_v, dtype=f64, requires_grad=True)
+        dl = torch.full((nlay,), 20.0, dtype=f64, requires_grad=True)
+        di = torch.tensor(di_v, dtype=f64, requires_grad=True)
+        bt_hat, rad_quality = RttovObsOp.apply(
+            make_live_run_k(tmp_path / tag), cfg, t, q, None, p_half,
+            clw, ciw, dl, di, cfrac)
+        mask = _build_mask(obs, rad_quality) if mask_ref is None else mask_ref
+        j = compute_obs_loss(bt_hat, obs, mask, sigma=1.0)
+        return j, clw, ciw, dl, di, mask
+
+    di_base = np.full(nlay, 45.0)
+    j0, clw0, ciw0, dl0, di0, mask0 = run_j(clw_np, ciw_np, di_base, "base")
+    g_ciw, g_di = torch.autograd.grad(j0, [ciw0, di0])
+
+    # --- ICE content anchor (ice band layer with strongest grad) --------------
+    # (Liquid under the thick ice deck is IR-shielded: measured |g_clw| ~ 8e-6,
+    # so its FD signal drowns in RTTOV's ASCII output quantization -- physically
+    # correct, structurally untestable by FD. The content-unit check (g/m^3
+    # scaling, same writer/parser path) is carried by the ice content instead;
+    # HYDRO6-vs-7 slot WIRING is already covered by the localization tests.
+    # Measured signals: |g_ciw|max ~ 2.7e2, |g_di|max ~ 0.64 -- both give FD
+    # numerators orders of magnitude above the ASCII floor.)
+    band = list(range(15, 25))
+    lc = band[int(g_ciw[15:25].abs().argmax())]
+    h_c = 0.02 * ciw_np[lc]                                   # 2% of 0.03 g/m^3
+    cp = ciw_np.copy(); cp[lc] += h_c
+    cm = ciw_np.copy(); cm[lc] -= h_c
+    jp = float(run_j(clw_np, cp, di_base, "cp", mask_ref=mask0)[0].detach())
+    jm = float(run_j(clw_np, cm, di_base, "cm", mask_ref=mask0)[0].detach())
+    fd_c = (jp - jm) / (2.0 * h_c)
+    rel_c = abs(fd_c - float(g_ciw[lc])) / max(abs(fd_c), 1e-30)
+    assert rel_c < 0.12, (
+        f"ciw FD anchor failed at layer {lc}: FD {fd_c:.6e} vs K-grad "
+        f"{float(g_ciw[lc]):.6e} (rel {rel_c:.3f}) -- HYDRO7 content scaling suspect")
+
+    # --- ice Deff anchor (ice band, h = 1 micron) -----------------------------
+    band_i = list(range(15, 25))
+    li = band_i[int(g_di[15:25].abs().argmax())]
+    h_d = 1.0
+    dp_ = di_base.copy(); dp_[li] += h_d
+    dm_ = di_base.copy(); dm_[li] -= h_d
+    jp = float(run_j(clw_np, ciw_np, dp_, "dp", mask_ref=mask0)[0].detach())
+    jm = float(run_j(clw_np, ciw_np, dm_, "dm", mask_ref=mask0)[0].detach())
+    fd_d = (jp - jm) / (2.0 * h_d)
+    rel_d = abs(fd_d - float(g_di[li])) / max(abs(fd_d), 1e-30)
+    assert rel_d < 0.12, (
+        f"ice Deff FD anchor failed at layer {li}: FD {fd_d:.6e} vs K-grad "
+        f"{float(g_di[li]):.6e} (rel {rel_d:.3f}) -- HYDRO_DEFF7 per-micron scaling suspect")
