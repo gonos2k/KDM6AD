@@ -1,0 +1,106 @@
+# DA_REALTIME_PLAN — RTTOV 조인트 자료동화+민감도, 실시간 지향 계획
+
+결정일: 2026-07-05. 근거: 코드베이스 4-축 준비도 감사 + 스케일링 프로브 + 4-검토자 정밀
+검토(전 항목 실측 재검증, live RTTOV 측정 포함). 이 문서는 그 결정을 고정한다.
+
+## 0. 목표와 제약
+
+- **목표**: KDM6AD fp64 DA 경로의 JVP/VJP/HVP(연산그래프 재사용)로 고전 DA의 추가 연산
+  (수작업 TLM/adjoint, 유한차분 Hessian)을 대체하는 **효율 동화+민감도 체계**. 동화창 **3시간
+  고정**(dt=300s → 36스텝), 실시간 운영 지향.
+- **불변 제약**: 37↔137 f32 bitwise parity 최우선 — `libtorch/src`·`bridge`·`include`(dylib)는
+  코드 동결. 본 계획의 모든 작업은 oracle/harness/driver 계층에서만 수행한다.
+- **Phase-1은 오프라인**(offline-only) — 호스트(wrftladj) qnn adjoint stale 이슈는 온라인
+  host-4DVAR에만 해당하며 본 계획 범위 밖(BUGREPORT 참조).
+- **환경 결합**: live RTTOV는 이 머신의 `AD_RTTOV_HOME=/Users/yhlee/AD-RTTOV` 트리에 의존
+  (exe + ami coef/hydrotable + ami/501·cloud 픽스처). 타 머신에선 live tier가 skip됨.
+
+## 1. 실측 기반 (이 수치들이 모든 설계 결정의 근거)
+
+측정 조건: 이 머신(64GB), kme=40, dt=300, 단일스레드(브리지 `at::set_num_threads(1)` 강제).
+
+### 마이크로피직스 fp64 AD 경로 (`kdm6_step_ad_c`)
+- 클린 단가: **fwd ≈ 0.46 s / vjp ≈ 0.48 s / jvp ≈ 1.05 s per 1k 컬럼** (B=2048–8192 선형).
+- 그래프 기록 오버헤드 **+17–24%** (B≥512). 반복 VJP = 0.95×첫 VJP (retained-graph 재적용 성립).
+- JVP = **2.1–2.3× VJP** (Pearlmutter double-VJP). covector 희소성은 backward 비용에 무영향.
+- **대류 마진 2–3×**: 프로브 IC는 mstep=1(바닥). 현실적 stretched-grid 대류 컬럼은 mstep 11–18
+  → fwd 2.0× / vjp 2.9× / jvp 3.3×. **mstep은 batch-global** — 무거운 컬럼 1개가 샤드 전체를
+  재가격(1/512 heavy ≈ 512/512 heavy 실측).
+- 메모리 벽 없음(B=8192에서 RSS ~15GB/64GB, swap 0). 샤드 상한 2048–4096의 근거는 메모리가
+  아니라 **지연 granularity + JVP-피크 RSS(~7GB/proc @2048) + mstep 클러스터링 효율**.
+
+### 3h 창 adjoint (run_da_window, checkpoint/recompute)
+- 창 gradient 비용 = **36×fwd(체크포인트) + 36×(재계산 fwd+graph + vjp)** + n_obs×RTTOV-K.
+  (체크포인트 forward 스윕 포함 — 누락 시 30–40% 과소평가.)
+- **여러 obs 시각(≤18슬롯)의 covector는 한 번의 adjoint 스윕에 합성** — 모델 스윕에 n_obs
+  배수 없음 (bitwise 게이트 테스트 확인).
+- retained-graph CG 상각: 36그래프 유지 ≈ 8.3GB(B=128)/17.8GB(B=512), **B=2048은 불가**
+  (56–133GB). 상각은 B≤512에서만; B=2048은 recompute-per-sweep.
+- η(weak-constraint) gradient는 같은 스윕의 부산물(무비용)이나 제어차원 ~37× — Phase-1은
+  strong-constraint(η=None).
+
+### RTTOV H-연산자 (live 실측)
+- clear-sky 16ch full-K: **20 ms/프로파일**(한계), 케이스 고정비 76 ms. **all-sky: 483 ms/프로파일
+  (clear의 25×)** — all-sky의 지배 레버는 배치가 아니라 **thinning과 모드 선택**.
+- 배치 레버 ~3–5×(clear), 샤딩 3.5–6.8× — 합쳐 ~10× (100× 아님).
+- 배치 캡 = 픽스처 프로파일 디렉토리 수(기본 6; 템플릿 복제로 ≤999 확장 가능 — 실증됨).
+
+### 사이클 예산 (3h 창, 대류 마진 포함)
+| 모드 | 조건 | 사이클 시간 |
+|------|------|------------|
+| 민감도 전용 | B=2048, clear ~3k obs | **~4–10분 (오늘 가능, 비샤딩)** |
+| 조인트 GN DA (recompute) | B=2048, 2×5 GN | 40–60분급 |
+| 조인트 GN DA (10분 목표) | B≤512 + 내부≤5 + retained 상각 | ~10–13분 |
+
+## 2. 티어 구조 (승인된 롤아웃)
+
+- **Tier 0 — 민감도-전용 실시간 사이클** (즉시 착수): frame reader + live FD anchor +
+  mstep-aware 샤드 구성. 산출물 = `WindowResult(adj_x0, grad_eta*)` 민감도 리포트.
+  clear-sky ~3k obs에서 10분 사이클 내 동작이 수락 기준.
+- **Tier 1 — 조인트 DA 30–60분급**: + minimizer(diagonal-B CVT + L-BFGS strong_wolfe,
+  strong-constraint) + RTTOV 배치화(3-사이트).
+- **Tier 2 — 조인트 DA 10분급**: + 창-선형화 API(36 핸들 유지 + 반복 vjp, B≤512 샤드).
+
+## 3. 작업 항목 (정밀 검토로 재스코핑된 정의)
+
+### T0-1. wrfout frame → State/Forcing reader (`oracle/kdm6/io/`)
+단순 필드맵이 아님 — **조용히-틀리는 파생 4종**이 본체:
+1. **THM→th 역변환**: wrfout `T`는 use_theta_m=1(기본)일 때 moist perturbation theta
+   (θm = θ(1+Rv/Rd·qv)) — θ로 역변환 후 +T0(300). 생략 시 습윤층에서 th ~1% 오차.
+2. **rho 재구성**: `ALT`는 restart 전용 → full pressure/EOS로 재구성
+   (호스트 phy_prep의 rho=(1+qv)/alt 관례를 미러).
+3. **PH/PHB→dz8w**: geopotential 수직 destagger로 delz 산출.
+4. **t=0 nccn 폴백**: 첫 프레임에서 wrapper의 ITIMESTEP==1 초기화 미러.
+필드 존재 확인됨: QNCCN/QNCLOUD/QNICE/QNRAIN/**QIB(=bg)** 전부 kdm6adscheme 히스토리 필드 —
+결측·스핀업 불필요. 검증: 커밋된 1-컬럼 픽스처 + 파생 4종 각각의 단위 테스트.
+
+### T0-2. live FD anchor (1개 테스트, `@needs_cloud_live`)
+단일 레이어 T(및 qc) 섭동 → live RTTOV forward 2회 추가 → 중앙 FD vs K-수축 covector 성분,
+느슨한(수 %) 허용오차. **K 단위 오해석(ppmv vs kg/kg, per-μm)이 현 테스트를 전부 통과하는
+유일한 무방비 silent-wrong-gradient 클래스**를 닫는다.
+
+### T0-3. mstep-aware 샤드 구성 (driver 유틸)
+no-grad vmax 프리패스로 컬럼별 mstep 예측 → 유사 mstep끼리 샤드 묶기. batch-global
+재가격 방지로 코드 무변경 2–3× 회수. 가드 2종을 드라이버 스펙에 명시: 샤드별
+`default_run_k`(per-call mkdtemp, 공유 `make_live_run_k` 금지), `KDM6_SUBSTEP_DUMP` unset.
+
+### T1-4. minimizer (driver)
+strong-constraint(η=None) + **CVT v=B^{-1/2}(x0−xb)** (상태 ~10자릿수 스팬 → raw L-BFGS
+악조건) + `torch.optim.LBFGS(strong_wolfe)`, `.grad`는 run_da_window의 adj_x0 수동 할당.
+
+### T1-5. RTTOV 배치화 (3-사이트)
+(a) case-writer: 프로파일 디렉토리 복제 + 6-cap 해제(≤999); (b) model_profile_builder:
+1-D p 가드 완화 + 공유 fixture layer grid로 전 컬럼 보간(실용 단순화); (c) runner 경로 검증.
+
+### T2-6. 창-선형화 API (oracle/da_window 확장, 물리 무변경)
+36 per-step 핸들 유지 + CG 반복마다 반복 vjp 재적용. B≤512 전용(메모리). run_da_window는
+현재 핸들을 즉시 닫으므로 API-레벨 확장.
+
+## 4. 이후 결정 항목 (본 계획 범위 밖, 명시적 보류)
+
+- 스레드 fence 해제(`at::set_num_threads(1)` — frozen bridge): 샤딩으로 부족할 때만.
+  dylib 변경 + 12h×np4 재검증 사안.
+- C-핸들 창 체인 + cross-tree adjoint parity 테스트: 운영 물리(C++) 전환 게이트.
+- G4 파라미터 gradient(oracle 측만): 파라미터 민감도 필요 시.
+- 실관측(GK2A AMI L1B) 인제스트 + collocation: OSSE 이후.
+- HVP-obs: 현 GN-only(K 상수 취급)가 표준 — full-Newton 필요 시 FD-of-K.
