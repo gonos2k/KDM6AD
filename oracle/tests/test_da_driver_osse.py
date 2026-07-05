@@ -145,3 +145,32 @@ def test_truth_side_quality_flags_gate_the_mask():
     assert adj is not None
     # 플래그 채널 배제 → 잔차 0인 채널만 남아 J ~ 0 (무시하면 ~1e12)
     assert j_acc[0] < 1.0, f"truth-side flagged channel leaked into J: {j_acc[0]:.3e}"
+
+
+@needs_all
+def test_osse_analysis_reduces_background_error(tmp_path):
+    """조인트 DA 게이트: CVT+L-BFGS 분석이 J를 낮추고, 관측된 자유도(th)의
+    배경 오차를 진실 대비 줄인다 (실프레임 + live RTTOV, 소규모)."""
+    from kdm6.da_driver import run_osse_analysis
+
+    frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
+    idx = torch.linspace(0, frame.state.th.shape[0] - 1, 4).long()
+    x_true, f = _sub(frame, idx)
+    forcings = [f] * 2                                    # 짧은 창 (테스트 비용)
+    cfg = WindowConfig(dt=DT)
+    obs_cfg = _obs_cfg(tmp_path)
+
+    th_b = x_true.th.clone(); th_b[:, :10] += 0.8
+    x_bg = x_true._replace(th=th_b)
+
+    z = torch.zeros_like(x_true.th)
+    b_sigma = State(th=torch.full_like(z, 1.0), qv=z, qc=z, qr=z, qi=z, qs=z,
+                    qg=z, nccn=z, nc=z, ni=z, nr=z, bg=z)
+
+    rep = run_osse_analysis(x_true, x_bg, forcings, [2], cfg, obs_cfg,
+                            b_sigma, max_iter=4)
+
+    assert rep.minimize.j_trace[-1] < rep.minimize.j_trace[0], rep.minimize.j_trace
+    assert rep.th_err_an < rep.th_err_bg, (rep.th_err_an, rep.th_err_bg)
+    # σ=0 필드는 배경 고정 (CVT 제어 제외)
+    assert rep.qv_err_an == pytest.approx(rep.qv_err_bg, rel=1e-12)

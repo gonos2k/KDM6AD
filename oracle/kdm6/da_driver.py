@@ -119,31 +119,52 @@ def make_truth_bt_recorder(forcings: Sequence[Forcing], obs_times: set,
     return obs_adjoint
 
 
-def make_innovation_obs_adjoint(forcings: Sequence[Forcing], y_by_time: dict,
-                                obs_cfg: OsseObsConfig, j_acc: list):
-    """innovation 기반 obs_adjoint: J_t 누적 + covector 반환 (배치, runK 1회/시각)."""
+def _innovation_term(t: int, x_t: State, forcings: Sequence[Forcing],
+                     y_by_time: dict, obs_cfg: OsseObsConfig):
+    """공용 innovation 항: (J_t 스칼라, covector State) | None.
+
+    양측 QC 결합 (Codex stop-review): 진실측에서 플래그된 채널의 y는 무효 관측 —
+    obs_quality 슬롯(0=사용가능, rad_quality와 동일 게이트)으로 전달해
+    mask = (배경측 quality==0) AND (진실측 quality==0). 한쪽만 보면 플래그된
+    y가 innovation에 들어가 J/gradient가 오염된다.
+    """
     from .obs.rttov_obs_operator import _build_mask
     from .obs.obs_loss import compute_obs_loss
 
+    if t not in y_by_time:
+        return None
+    f = forcings[t] if t < len(forcings) else forcings[-1]
+    y_bt, y_rq = y_by_time[t]
+    bt, rad_quality, leaves = batched_clear_bt(x_t, f, obs_cfg)
+    obs = {"bt": y_bt, "obs_quality": y_rq}
+    mask = _build_mask(obs, rad_quality)
+    j = compute_obs_loss(bt, obs, mask, sigma=obs_cfg.obs_sigma)
+    g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv])
+    zeros = torch.zeros_like(leaves.th)
+    adj = State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
+                qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
+    return j.detach(), adj
+
+
+def make_innovation_obs_adjoint(forcings: Sequence[Forcing], y_by_time: dict,
+                                obs_cfg: OsseObsConfig, j_acc: list):
+    """innovation 기반 obs_adjoint: J_t 누적 + covector 반환 (배치, runK 1회/시각)."""
     def obs_adjoint(t: int, x_t: State):
-        if t not in y_by_time:
+        out = _innovation_term(t, x_t, forcings, y_by_time, obs_cfg)
+        if out is None:
             return None
-        f = forcings[t] if t < len(forcings) else forcings[-1]
-        y_bt, y_rq = y_by_time[t]
-        bt, rad_quality, leaves = batched_clear_bt(x_t, f, obs_cfg)
-        # 양측 QC 결합 (Codex stop-review): 진실측에서 플래그된 채널의 y는 무효
-        # 관측 — obs_quality 슬롯(0=사용가능, rad_quality와 동일 게이트)으로
-        # 전달해 mask = (배경측 quality==0) AND (진실측 quality==0)이 되게 한다.
-        # 한쪽만 보면 플래그된 y가 innovation에 들어가 J/gradient가 오염된다.
-        obs = {"bt": y_bt, "obs_quality": y_rq}
-        mask = _build_mask(obs, rad_quality)
-        j = compute_obs_loss(bt, obs, mask, sigma=obs_cfg.obs_sigma)
-        g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv])
-        j_acc.append(float(j.detach()))
-        zeros = torch.zeros_like(leaves.th)
-        return State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
-                     qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
+        j, adj = out
+        j_acc.append(float(j))
+        return adj
     return obs_adjoint
+
+
+def make_osse_obs_eval(forcings: Sequence[Forcing], y_by_time: dict,
+                       obs_cfg: OsseObsConfig):
+    """run_minimizer의 obs_eval 규약 (t, x_t) -> (j_t, adj_t) | None 브리지."""
+    def obs_eval(t: int, x_t: State):
+        return _innovation_term(t, x_t, forcings, y_by_time, obs_cfg)
+    return obs_eval
 
 
 @dataclass
@@ -182,3 +203,51 @@ def run_osse_sensitivity(x_truth: State, x_background: State,
     top_th = [(int(i) // K, int(i) % K, float(g.reshape(-1)[i])) for i in flat_idx]
     return OsseReport(j_obs=float(sum(j_acc)), n_obs_times=len(j_acc),
                       window=res, adj_norms=adj_norms, top_th=top_th)
+
+
+@dataclass
+class OsseAnalysisReport:
+    """조인트 DA 분석 사이클 결과 (Tier-1 능력의 end-to-end 데모)."""
+    minimize: object                     # MinimizeResult (x_analysis, j_trace, ...)
+    th_err_bg: float                     # ‖x_b.th − x_true.th‖ (배경 오차)
+    th_err_an: float                     # ‖x_a.th − x_true.th‖ (분석 오차)
+    qv_err_bg: float
+    qv_err_an: float
+
+
+def run_osse_analysis(x_truth: State, x_background: State,
+                      forcings: Sequence[Forcing], obs_times: Sequence[int],
+                      window_cfg: WindowConfig, obs_cfg: OsseObsConfig,
+                      b_sigma: State, *, max_iter: int = 5,
+                      history_size: int = 6) -> OsseAnalysisReport:
+    """조인트 DA 분석 사이클 1회: 진실→y, 배경→CVT+L-BFGS 최소화→분석.
+
+    run_minimizer(T1-4)와 배치 RTTOV innovation 항(T1-5)의 결합. 각 L-BFGS
+    closure 호출 = 창 적분 1회(fwd+adjoint) + 관측시각당 배치 runK 1회 —
+    창 적분 1회로 (J, ∇J)를 동시에 얻는 adjoint-method 경제성이 그대로 적용.
+    """
+    from .da_minimizer import run_minimizer
+
+    obs_set = set(int(t) for t in obs_times)
+    y_store: dict = {}
+    run_da_window(x_truth, forcings,
+                  make_truth_bt_recorder(forcings, obs_set, obs_cfg, y_store),
+                  window_cfg)
+    if set(y_store) != obs_set:
+        raise RuntimeError(f"truth BT recorded at {sorted(y_store)} != requested "
+                           f"{sorted(obs_set)}")
+
+    res = run_minimizer(x_background, forcings,
+                        make_osse_obs_eval(forcings, y_store, obs_cfg),
+                        window_cfg, b_sigma,
+                        max_iter=max_iter, history_size=history_size)
+
+    def _err(a, b):
+        return float((a - b).norm())
+
+    xt64 = State(*(f.to(torch.float64) for f in x_truth))
+    xb64 = State(*(f.to(torch.float64) for f in x_background))
+    return OsseAnalysisReport(
+        minimize=res,
+        th_err_bg=_err(xb64.th, xt64.th), th_err_an=_err(res.x_analysis.th, xt64.th),
+        qv_err_bg=_err(xb64.qv, xt64.qv), qv_err_an=_err(res.x_analysis.qv, xt64.qv))
