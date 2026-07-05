@@ -1498,6 +1498,20 @@ def reclassify_small_rain_to_cloud_torch(
 # ─── Step F1i: DSD number limiters (Fortran 2972-3013) ──────────────────────
 
 
+def _lamda_from_qn(q, n, den, *, pidn, dm, lamda_min, lamda_max):
+    """Clamped DSD-slope lamda from (q, n):
+        lamda = clamp( (pidn·n / clamp(q·den, 1e-30))^(1/dm), lamda_min, lamda_max ).
+    Fortran exp(log·(1./dm)) form (step-65 class, NOT pow). The f32 casts and the two
+    1e-30 floors are preserved verbatim so this is byte-identical to the inline copies
+    it replaces (post-reslope n0 rewrites). Used only to feed the aux n0 rewrites — the
+    per-species n0 formula/gate is intentionally NOT folded in (they differ)."""
+    return torch.clamp(
+        torch.exp(torch.log(torch.clamp(
+            pidn * n / torch.clamp(q * den, min=1e-30),
+            min=1e-30)) * _fc._f32(1.0 / _fc._f32(dm))),
+        min=lamda_min, max=lamda_max)
+
+
 def _limit_number_for_lamda(
     q: torch.Tensor, n: torch.Tensor, den: torch.Tensor,
     *, pidn: float, dm: float, lamda_min: float, lamda_max: float,
@@ -1970,11 +1984,8 @@ def kdm62d_one_step_torch(
     # at nci==ncmin — Codex stop-review). nci_raw=_nc_orig1; nci_final=snapped working1b.nc.
     _active1 = (working1b.qc >= c.EPS) & (
         (_nc_orig1 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig1 >= c.NCMIN))
-    _lamdc1 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            pidnc_snap * _nc_orig1 / torch.clamp(working1b.qc * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMC))),
-        min=c.LAMDACMIN, max=c.LAMDACMAX)
+    _lamdc1 = _lamda_from_qn(working1b.qc, _nc_orig1, forcing.den,
+                             pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
     _n0c1 = (c.MUC + 1.0) * working1b.nc * (_lamdc1 ** (c.MUC + 1.0))
     aux1 = aux1._replace(n0c=torch.where(_active1, _n0c1, aux1.n0c))
 
@@ -1988,11 +1999,8 @@ def kdm62d_one_step_torch(
         working1b.qi, _ni_orig1, forcing.den,
         pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
         q_thresh=1.0e-14, n_thresh=0.0))
-    _lamdi1 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            _fc.PIDNI * _ni_orig1 / torch.clamp(working1b.qi * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMI))),
-        min=c.LAMDAIMIN, max=c.LAMDAIMAX)
+    _lamdi1 = _lamda_from_qn(working1b.qi, _ni_orig1, forcing.den,
+                             pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
     aux1 = aux1._replace(n0i=torch.where(working1b.qi >= 1.0e-14,
                                          working1b.ni * _lamdi1, aux1.n0i))
 
@@ -2007,11 +2015,8 @@ def kdm62d_one_step_torch(
         working1b.qr, _nr_orig1, forcing.den,
         pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
-    _lamdr1 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            _fc.PIDNR * _nr_orig1 / torch.clamp(working1b.qr * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMR))),
-        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    _lamdr1 = _lamda_from_qn(working1b.qr, _nr_orig1, forcing.den,
+                             pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
     _active_r1 = (working1b.qr >= c.QCRMIN) & (_nr_orig1 >= c.NRMIN)
     aux1 = aux1._replace(n0r=torch.where(
         _active_r1, working1b.nr * (_lamdr1 * _lamdr1), aux1.n0r))  # §44 x**2.0=MULT (gfortran), not powf
@@ -2055,11 +2060,8 @@ def kdm62d_one_step_torch(
     # (boundary mismatch at nci==ncmin — Codex stop-review). cold_phase riming reads aux2.n0c.
     _active2 = (working.qc >= c.EPS) & (
         (_nc_orig2 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig2 >= c.NCMIN))
-    _lamdc2 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            pidnc_snap * _nc_orig2 / torch.clamp(working.qc * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMC))),
-        min=c.LAMDACMIN, max=c.LAMDACMAX)
+    _lamdc2 = _lamda_from_qn(working.qc, _nc_orig2, forcing.den,
+                             pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
     _n0c2 = (c.MUC + 1.0) * working.nc * (_lamdc2 ** (c.MUC + 1.0))
     aux2 = aux2._replace(n0c=torch.where(_active2, _n0c2, aux2.n0c))
 
@@ -2072,11 +2074,8 @@ def kdm62d_one_step_torch(
         working.qr, _nr_orig2, forcing.den,
         pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
-    _lamdr2 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            _fc.PIDNR * _nr_orig2 / torch.clamp(working.qr * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMR))),
-        min=c.LAMDARMIN, max=c.LAMDARMAX)
+    _lamdr2 = _lamda_from_qn(working.qr, _nr_orig2, forcing.den,
+                             pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
     _active_r2 = (working.qr >= c.QCRMIN) & (_nr_orig2 >= c.NRMIN)
     aux2 = aux2._replace(n0r=torch.where(
         _active_r2, working.nr * (_lamdr2 * _lamdr2), aux2.n0r))  # §44 x**2.0=MULT (gfortran), not powf
@@ -2087,11 +2086,8 @@ def kdm62d_one_step_torch(
         working.qi, _ni_orig2, forcing.den,
         pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
         q_thresh=1.0e-14, n_thresh=0.0))
-    _lamdi2 = torch.clamp(
-        torch.exp(torch.log(torch.clamp(
-            _fc.PIDNI * _ni_orig2 / torch.clamp(working.qi * forcing.den, min=1e-30),
-            min=1e-30)) * _fc._f32(1.0 / _fc._f32(c.DMI))),
-        min=c.LAMDAIMIN, max=c.LAMDAIMAX)
+    _lamdi2 = _lamda_from_qn(working.qi, _ni_orig2, forcing.den,
+                             pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
     aux2 = aux2._replace(n0i=torch.where(working.qi >= 1.0e-14,
                                          working.ni * _lamdi2, aux2.n0i))
 
