@@ -221,3 +221,33 @@ def test_live_batched_runk_matches_individual_runs(tmp_path):
         assert np.allclose(bt_b[p_idx], bt1[0], rtol=0, atol=2.0e-3), (
             f"profile {p_idx}: batched BT != individual BT\n"
             f"batched {bt_b[p_idx]}\nsingle  {bt1[0]}")
+
+
+@needs_fixture
+def test_case_writer_accepts_batched_builder_output_with_p_witness(tmp_path):
+    """Codex stop-review 회귀 가드: 배치 builder의 공유 layer-grid witness(P)는
+    pack에서 1-행으로 승격되는데, writer가 이를 nprof로 broadcast하지 않으면
+    pl_all[p]가 p>=1에서 IndexError — 전체 배치 체인(builder->pack->write)을
+    P 존재 상태로 검증한다."""
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure
+    p_lay_fix = torch.as_tensor(np.asarray(fixture_layer_pressure(), dtype=float), **_F64)
+    ph_fix = torch.as_tensor(np.asarray(_fixture_p_half(), dtype=float), **_F64)
+    B, nlev = 7, 40
+    g = torch.Generator().manual_seed(3)
+    # 컬럼별 서로 다른 ascending 소스 그리드 (픽스처 범위와 겹치게)
+    p = torch.sort(1.0 + 900.0 * torch.rand((B, nlev), generator=g, **_F64), dim=-1).values
+    th = 210.0 + 90.0 * torch.rand((B, nlev), generator=g, **_F64)
+    qv = 1.0e-6 + 5.0e-3 * torch.rand((B, nlev), generator=g, **_F64)
+    ones = torch.ones_like(p)
+    cfg = RttovProfileConfig(
+        gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+        rttov_layer_pressure=p_lay_fix, rttov_level_pressure=ph_fix)
+    prof = model_to_rttov_tensors(
+        _leaves(th, qv), Forcing(rho=ones, pii=ones, p=p, delz=ones), cfg)
+    assert prof.p_lay is not None                      # P witness 존재 (지적된 경로)
+    rin = pack_rttov_input(prof, RttovInputConfig(coef_id="ami_501_test",
+                                                  channels=_CHANNELS))
+    assert rin.nprofiles == B
+    out = write_rttov_case(rin, tmp_path / "case7p")   # 이전 코드면 IndexError
+    ids = sorted(d.name for d in (out.parent / "in" / "profiles").iterdir() if d.is_dir())
+    assert ids == [str(i).zfill(3) for i in range(1, B + 1)], ids

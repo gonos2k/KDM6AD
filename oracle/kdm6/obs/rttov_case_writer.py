@@ -884,6 +884,18 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # pressure. The layer pressure is not written to the case (the layer-based run
     # derives layers from p_half) -- it is purely the grid witness for the T/Q.
     pl_all = rttov_input.profile.get("P")
+    if pl_all is not None:
+        # Same row-count normalization as P_HALF above: the batched builder emits
+        # ONE shared layer grid (pack promotes it to a single row) while T/Q carry
+        # nprof rows — broadcast so pl_all[p] below indexes uniformly. Mismatched
+        # row counts (neither 1 nor nprof) are rejected, not guessed.
+        _pl_np = _np.asarray(pl_all, dtype=float)
+        if _pl_np.ndim == 2 and _pl_np.shape[0] not in (1, nprof):
+            raise ValueError(
+                f"P has {_pl_np.shape[0]} rows but RttovInput has {nprof} "
+                "profiles — provide one row per profile, or a single shared row.")
+        if _pl_np.ndim == 2 and _pl_np.shape[0] == 1 and nprof > 1:
+            pl_all = _np.broadcast_to(_pl_np, (nprof, _pl_np.shape[1]))
     for p in range(nprof):
         pdir = prof_root / prof_ids[p]
         _overlay_atm(pdir, "t.txt", t_all[p])
