@@ -251,3 +251,19 @@ def test_case_writer_accepts_batched_builder_output_with_p_witness(tmp_path):
     out = write_rttov_case(rin, tmp_path / "case7p")   # 이전 코드면 IndexError
     ids = sorted(d.name for d in (out.parent / "in" / "profiles").iterdir() if d.is_dir())
     assert ids == [str(i).zfill(3) for i in range(1, B + 1)], ids
+
+
+def test_interp_batched_exact_knots_and_endpoint_clamp():
+    """Codex 검토 보강: searchsorted(right=True) 타이(정확한 knot 일치)와
+    no-extrapolation endpoint 클램프에서도 배치 == 단일-컬럼 루프 정확 일치.
+    p_dst가 row0의 knot들과 정확히 일치(50=클램프, 100/200/400=타이, 500=클램프)."""
+    p_src = torch.tensor([[100.0, 200.0, 300.0, 400.0],
+                          [150.0, 250.0, 350.0, 450.0]], **_F64)
+    field = torch.tensor([[1.0, 2.0, 3.0, 4.0],
+                          [10.0, 20.0, 30.0, 40.0]], **_F64)
+    p_dst = torch.tensor([50.0, 100.0, 200.0, 400.0, 500.0], **_F64)
+    out_b = interp_log_pressure(field, p_src, p_dst)
+    rows = [interp_log_pressure(field[i], p_src[i], p_dst) for i in range(2)]
+    assert torch.equal(out_b, torch.stack(rows))
+    # 의미 검증(row0): 정확 knot은 그 값 그대로, 범위 밖은 endpoint 클램프
+    assert torch.equal(out_b[0], torch.tensor([1.0, 1.0, 2.0, 4.0, 4.0], **_F64))

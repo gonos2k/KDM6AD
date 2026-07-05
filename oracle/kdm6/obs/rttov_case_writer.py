@@ -864,10 +864,24 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             f"numbering is {width}-digit (max {10 ** width - 1}); chunk the "
             "batch across multiple cases.")
     if shared_grid:
+        # PER-PROFILE replication decision (Codex DA-stack review DEFECT fix):
+        # identical P_HALF rows alone must NOT wipe fixture profiles — a legacy
+        # caller whose fixture profiles ALREADY carry the caller's grid keeps
+        # them (and their per-profile aux: datetime/angles/skin). A profile is
+        # replaced by the 001 template ONLY when its own p_half does NOT match
+        # the caller's row (it could never pass the grid witness) — i.e. the
+        # caller built for the canonical grid, not for that fixture profile.
+        # Rows matching NEITHER are left untouched: the grid witness below
+        # rejects them loudly (reject-don't-drop, unchanged).
         template = prof_root / prof_ids[0]
         for i in range(2, nprof + 1):
             d = prof_root / str(i).zfill(width)
             if d.exists():
+                own = _np.loadtxt(d / "atm" / "p_half.txt")
+                row = _np.asarray(ph_all[i - 1], dtype=float).reshape(-1)
+                if own.shape == row.shape and _np.allclose(row, own,
+                                                           rtol=1e-5, atol=1e-9):
+                    continue                    # fixture profile already matches
                 shutil.rmtree(d)
             shutil.copytree(template, d)
         prof_ids = sorted(x.name for x in prof_root.iterdir() if x.is_dir())

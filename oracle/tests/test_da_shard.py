@@ -137,3 +137,36 @@ def test_compose_shards_rejects_bad_size():
     pred = MstepPrediction(main=torch.tensor([1, 2]), ice=torch.tensor([1, 1]))
     with pytest.raises(ValueError):
         compose_shards(pred, shard_size=0)
+
+
+def test_predictor_matches_runtime_at_clamp_boundaries(monkeypatch):
+    """Codex 검토 보강: 진입 클램프 경계 케이스 — dynamics 음수 프로그노스틱과
+    ni>1e6 캡 초과에서도 예측기가 runtime의 실제 첫 sub-cycle mstep과 축별
+    정확히 일치해야 한다 (양쪽 모두 같은 클램프를 통과함을 증명)."""
+    B, K = 4, 10
+    def full(v):
+        return torch.full((B, K), v, **_F64)
+    qr = full(2.0e-3); qr[0, :3] = -1.0e-4          # 음수 → clamp(0)
+    qc = full(3.0e-4); qc[1, 5] = -5.0e-5           # 음수 → clamp(0)
+    ni = full(1.0e4); ni[2] = 5.0e6                  # 캡(1e6) 초과 → clamp
+    nr = full(1.0e4); nr[3, 0] = -2.0e3              # 음수 → clamp(0)
+    state = State(th=full(285.0), qv=full(6.0e-3), qc=qc, qr=qr,
+                  qi=full(2.0e-5), qs=full(1.0e-4), qg=full(5.0e-5),
+                  nccn=full(1.0e9), nc=full(5.0e7), ni=ni, nr=nr, bg=full(0.0))
+    delz = torch.linspace(100.0, 500.0, K, **_F64).repeat(B, 1)
+    forcing = Forcing(rho=full(1.0), pii=full(0.95), p=full(8.5e4), delz=delz)
+
+    captured = {}
+    orig = _coord.sedimentation_chain_torch
+
+    def spy(*args, **kwargs):
+        if "first" not in captured:
+            captured["first"] = (kwargs["mstep_col_main"].clone(),
+                                 kwargs["mstep_col_ice"].clone())
+        return orig(*args, **kwargs)
+
+    monkeypatch.setattr(_coord, "sedimentation_chain_torch", spy)
+    _kdm6_pure(state, forcing, make_parameters(), dt=300.0)
+    pred = predict_mstep_col(state, forcing, dt=300.0)
+    assert torch.equal(pred.main, captured["first"][0].to(torch.int64))
+    assert torch.equal(pred.ice, captured["first"][1].to(torch.int64))

@@ -174,3 +174,30 @@ def test_osse_analysis_reduces_background_error(tmp_path):
     assert rep.th_err_an < rep.th_err_bg, (rep.th_err_an, rep.th_err_bg)
     # σ=0 필드는 배경 고정 (CVT 제어 제외)
     assert rep.qv_err_an == pytest.approx(rep.qv_err_bg, rel=1e-12)
+
+
+@needs_all
+def test_flip_direction_physical_asymmetry(tmp_path):
+    """Codex 검토 보강: zero-innovation 자기일관성은 진실·배경 양쪽에 대칭으로
+    들어간 flip/단위 오류를 못 잡는다. 물리 비대칭으로 방향을 고정: WRF k=0
+    (지표면) th 섭동은 IR 창채널 BT를 크게 움직이고, k=K-1(모델 상단) 섭동은
+    거의 못 움직여야 한다. flip이 뒤집혀 있으면 이 비대칭이 역전된다."""
+    from kdm6.da_driver import batched_clear_bt
+
+    frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
+    idx = torch.linspace(0, frame.state.th.shape[0] - 1, 2).long()
+    x, f = _sub(frame, idx)
+    cfg = _obs_cfg(tmp_path)
+
+    with torch.no_grad():
+        bt0, _, _ = batched_clear_bt(x, f, cfg)
+        x_sfc = x._replace(th=torch.cat([x.th[:, :1] + 2.0, x.th[:, 1:]], dim=1))
+        bt_sfc, _, _ = batched_clear_bt(x_sfc, f, cfg)
+        x_top = x._replace(th=torch.cat([x.th[:, :-1], x.th[:, -1:] + 2.0], dim=1))
+        bt_top, _, _ = batched_clear_bt(x_top, f, cfg)
+
+    d_sfc = float((torch.as_tensor(bt_sfc) - torch.as_tensor(bt0)).abs().max())
+    d_top = float((torch.as_tensor(bt_top) - torch.as_tensor(bt0)).abs().max())
+    assert d_sfc > 5.0 * max(d_top, 1.0e-6), (
+        f"surface-vs-top BT asymmetry wrong: |dBT_sfc|={d_sfc:.4f} vs "
+        f"|dBT_top|={d_top:.4f} — WRF<->RTTOV flip direction suspect")
