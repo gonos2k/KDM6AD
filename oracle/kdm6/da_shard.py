@@ -14,6 +14,8 @@ no_grad로 재사용한다(_state_to_coord/_build_coord_forcing/preamble_torch +
 """
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import torch
 
 from . import constants as c
@@ -25,7 +27,7 @@ from .runtime import _build_coord_forcing, _flip_k, _state_to_coord
 
 def predict_mstep_col(state: State, forcing: Forcing, *, dt: float,
                       xland: torch.Tensor | None = None) -> torch.Tensor:
-    """컬럼별 첫 sub-cycle 총 substep 예측: mstep_col_main + mstep_col_ice, (B,).
+    """컬럼별 첫 sub-cycle mstep 예측 — MstepPrediction(main, ice), 각 (B,) int64.
 
     runtime.py:519-532의 공식을 초기 상태에 그대로 적용한다(같은 헬퍼·같은
     preamble·같은 NINT(x+0.5)=floor(x+1) 라운딩). 전 과정 no_grad — 연산그래프
@@ -75,28 +77,46 @@ def predict_mstep_col(state: State, forcing: Forcing, *, dt: float,
         vmax_ice = torch.maximum(w1_qi, wn_qi).amax(dim=-1)
         mstep_main = torch.clamp(torch.floor(vmax_main * dtcld + 1.0), 1, 100)
         mstep_ice = torch.clamp(torch.floor(vmax_ice * dtcld + 1.0), 1, 100)
-        return (mstep_main + mstep_ice).to(torch.int64)
+        return MstepPrediction(main=mstep_main.to(torch.int64),
+                               ice=mstep_ice.to(torch.int64))
 
 
-def compose_shards(cost_key: torch.Tensor, shard_size: int) -> list[torch.Tensor]:
-    """비용 키(예: predict_mstep_col)로 정렬해 크기 shard_size의 연속 샤드로 분할.
+class MstepPrediction(NamedTuple):
+    """컬럼별 mstep 예측 — 두 축을 분리 유지.
 
-    각 샤드의 실행 비용은 batch-global mstep 때문에 샤드 내 max(cost_key)에
-    비례한다 — 정렬-분할은 그 max들을 계층화해 Σ(max_s · |s|)를 최소화하는
-    탐욕 해(동일 크기 제약 하 최적)다. 반환: 원 배치 인덱스 (B_s,) 텐서 리스트
-    (전체가 0..B-1의 분할).
+    runtime은 mstep_main과 mstep_ice를 **별개의 루프 상한**으로 max한다
+    (runtime.py:529/532) — 샤드의 진짜 비용은 max(main)+max(ice)이지
+    max(main+ice)가 아니다 (합산 키는 main-지배 컬럼과 ice-지배 컬럼을
+    같은 값으로 뭉개 잘못 묶는다: (10,1)과 (1,10)의 합은 같지만 한 샤드에
+    두면 10+10을 지불).
+    """
+    main: torch.Tensor   # (B,) int64
+    ice: torch.Tensor    # (B,) int64
+
+
+def compose_shards(pred: MstepPrediction, shard_size: int) -> list[torch.Tensor]:
+    """(main, ice) 사전식 정렬로 크기 shard_size의 연속 샤드 분할.
+
+    각 샤드의 실행 비용 ∝ max(main)+max(ice) (두 루프 상한이 독립으로 max —
+    runtime.py:529/532). 사전식 정렬(주축 main, 부축 ice)은 지배축을 계층화해
+    Σ((max_main+max_ice)·|s|)를 낮춘다. 반환: 원 배치 인덱스 (B_s,) 텐서
+    리스트 (전체가 0..B-1의 분할).
     """
     if shard_size <= 0:
         raise ValueError(f"shard_size must be positive, got {shard_size}")
-    order = torch.argsort(cost_key, stable=True)
+    # 사전식 (main 우선, ice 부차): stable argsort를 부축→주축 순으로 두 번.
+    order = torch.argsort(pred.ice, stable=True)
+    order = order[torch.argsort(pred.main[order], stable=True)]
     return [order[i:i + shard_size] for i in range(0, order.numel(), shard_size)]
 
 
-def shard_cost_summary(cost_key: torch.Tensor, shards: list[torch.Tensor]) -> dict:
-    """샤딩 전/후 비용 프록시 비교 (Σ max·size vs 비샤딩 max·B) — 로깅/튜닝용."""
-    total = int(cost_key.numel())
-    unsharded = int(cost_key.max()) * total
-    sharded = sum(int(cost_key[s].max()) * int(s.numel()) for s in shards)
+def shard_cost_summary(pred: MstepPrediction, shards: list[torch.Tensor]) -> dict:
+    """샤딩 전/후 비용 프록시 — 진짜 모델 (max main + max ice)·size 로 집계."""
+    total = int(pred.main.numel())
+    unsharded = (int(pred.main.max()) + int(pred.ice.max())) * total
+    sharded = sum(
+        (int(pred.main[s].max()) + int(pred.ice[s].max())) * int(s.numel())
+        for s in shards)
     return dict(unsharded_cost=unsharded, sharded_cost=sharded,
                 savings_ratio=1.0 - sharded / unsharded if unsharded else 0.0,
                 n_shards=len(shards), B=total)
