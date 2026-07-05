@@ -236,7 +236,10 @@ def test_overlay_refuses_more_profiles_than_fixture(tmp_path):
     prof.p_lay = None
     prof.p_half = torch.linspace(5.0, 1010.0, nlay + 1, dtype=torch.float64)
     rin = pack_rttov_input(prof, RttovInputConfig(coef_id="x", channels=_CHANNELS))
-    with pytest.raises(ValueError, match="only"):
+    # T1-5: a 7-profile SHARED-grid batch now grows the case by template
+    # replication — but this p_half is OFF the canonical fixture grid, so the
+    # grid witness rejects it (reject-don't-drop preserved, one gate later).
+    with pytest.raises(ValueError, match="does not match the fixture grid"):
         write_rttov_case(rin, tmp_path / "case")
 
 

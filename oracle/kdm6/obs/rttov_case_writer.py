@@ -6,7 +6,9 @@ gases, surface, geometry, pressure grid) and OVERLAY only ``atm/t.txt`` and
 ``atm/q.txt`` with the model's T / Q (RTTOV gas_units=2 ppmv-moist). The model
 T/Q ride the FIXTURE's pressure grid (p_half/gases/surface kept), so they must
 match the fixture's layer count (the overlay validates length). The case is
-trimmed to the RttovInput's nprofiles. The rttov_test config references inputs by
+trimmed to the RttovInput's nprofiles — or grown to it by replicating the first
+profile dir as a template (T1-5 batching; numbering stays contiguous zero-padded,
+capped by the fixture's digit width). The rttov_test config references inputs by
 RELATIVE path (``../in/...``), so a copied case is self-contained and runnable.
 
 ``make_live_run_k`` is the live ``run_k(RttovInput) -> (bt, K, rad_quality)`` the
@@ -819,9 +821,6 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     nprof = rttov_input.nprofiles
     prof_root = out / "in" / "profiles"
     prof_ids = sorted(d.name for d in prof_root.iterdir() if d.is_dir())
-    if nprof > len(prof_ids):
-        raise ValueError(
-            f"RttovInput has {nprof} profiles but fixture provides only {len(prof_ids)}.")
     t_all = rttov_input.profile["T"]
     q_all = rttov_input.profile["Q"]
     # P_HALF is REQUIRED: the run keeps the fixture's p_half, so P_HALF is the
@@ -836,6 +835,48 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             "RttovInput.profile lacks P_HALF -- set cfg.rttov_level_pressure to the "
             "fixture p_half so the writer can verify the model T/Q are on the fixture "
             "grid (the run keeps the fixture p_half; an unverified grid is rejected).")
+    # T1-5 SHARED-GRID BATCH MODE: the fixture's profiles carry DIFFERENT p_half
+    # grids (measured ami/501: 001 tops at 950 hPa, 002 at 1013, 003 at 1100), so a
+    # model batch built on the ONE canonical grid would fail the grid witness on
+    # 002+. When every input P_HALF row is identical (the caller declares one shared
+    # grid), rebuild profiles 002..nprof as copies of the FIRST profile dir — each
+    # then carries the canonical p_half and the fixture-borrowed aux defaults of
+    # profile 001 (t/q always overlaid below; geometry/surface iff cfg gives them).
+    # Per-profile-grid callers (P_HALF rows differ) keep the legacy fixture
+    # profiles untouched.
+    import numpy as _np
+    _ph_np = _np.asarray(ph_all, dtype=float)
+    if _ph_np.ndim == 2 and _ph_np.shape[0] not in (1, nprof):
+        raise ValueError(
+            f"P_HALF has {_ph_np.shape[0]} rows but RttovInput has {nprof} "
+            "profiles — provide one row per profile, or a single shared row.")
+    if _ph_np.ndim == 2 and _ph_np.shape[0] == 1 and nprof > 1:
+        # single shared row → broadcast so the per-profile overlay/witness below
+        # can index ph_all[p] uniformly (shared-grid batch by construction).
+        _ph_np = _np.broadcast_to(_ph_np, (nprof, _ph_np.shape[1]))
+        ph_all = _ph_np
+    shared_grid = nprof >= 2 and _ph_np.ndim == 2 and bool(
+        _np.array_equal(_ph_np, _np.broadcast_to(_ph_np[0:1], _ph_np.shape)))
+    width = len(prof_ids[0])
+    if nprof > 10 ** width - 1:
+        raise ValueError(
+            f"RttovInput has {nprof} profiles but the fixture's profile-dir "
+            f"numbering is {width}-digit (max {10 ** width - 1}); chunk the "
+            "batch across multiple cases.")
+    if shared_grid:
+        template = prof_root / prof_ids[0]
+        for i in range(2, nprof + 1):
+            d = prof_root / str(i).zfill(width)
+            if d.exists():
+                shutil.rmtree(d)
+            shutil.copytree(template, d)
+        prof_ids = sorted(x.name for x in prof_root.iterdir() if x.is_dir())
+    elif nprof > len(prof_ids):
+        raise ValueError(
+            f"RttovInput has {nprof} profiles but fixture provides only "
+            f"{len(prof_ids)} and the P_HALF rows are not identical — growing a "
+            "case is only defined for a shared-grid batch (all P_HALF rows equal "
+            "the canonical first-profile grid).")
     # profile["P"] (layer pressure, from cfg.rttov_layer_pressure) is VALIDATED, not
     # silently accepted: it must equal the fixture's canonical layer grid
     # (fixture_layer_pressure()). This honors the interp path (caller interpolates

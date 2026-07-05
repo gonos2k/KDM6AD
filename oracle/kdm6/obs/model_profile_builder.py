@@ -145,11 +145,55 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
     under ``no_grad`` (p is a forcing constant), so this is a constant linear
     operator and grad flows only through the gathered ``field`` -- the design's
     constant W with autograd-composed W^T.
+
+    BATCHED form (T1-5): ``p_src`` ``[B, n_src]`` (per-column grids) with ``field``
+    ``[B, n_src]`` and a SHARED 1-D ``p_dst`` -> ``[B, n_dst]``. Row-wise identical
+    to the 1-D form (gate test: batched == per-column loop, exact).
     """
+    if p_src.ndim == 2:
+        # BATCHED per-column source grids (T1-5): p_src [B, n_src], field [B, n_src],
+        # p_dst SHARED 1-D target (every column lands on the one fixture layer grid --
+        # the batching design the precision review scoped). Same formulas per row;
+        # the 1-D path below is byte-unchanged.
+        if p_dst.ndim != 1:
+            raise ValueError(
+                f"batched interp needs a SHARED 1-D p_dst (got ndim={p_dst.ndim}).")
+        if field.shape != p_src.shape:
+            raise ValueError(
+                f"batched interp needs field.shape == p_src.shape "
+                f"(got {tuple(field.shape)} vs {tuple(p_src.shape)}).")
+        n_src = p_src.shape[-1]
+        if n_src < 2:
+            raise ValueError("p_src must have at least 2 levels to interpolate.")
+        with torch.no_grad():
+            xs = torch.log(torch.clamp(p_src, min=_PMIN))                # [B, n_src]
+            xd1 = torch.log(torch.clamp(p_dst, min=_PMIN))               # [n_dst]
+            if not bool(torch.all(xs[:, 1:] > xs[:, :-1])):
+                raise ValueError(
+                    "every p_src column must be strictly ascending in pressure "
+                    "(TOA->surface).")
+            if not bool(torch.all(xd1[1:] > xd1[:-1])):
+                raise ValueError("p_dst must be strictly ascending in pressure.")
+            if bool((xd1.max() < xs.amin(dim=-1)).any()) or \
+               bool((xd1.min() > xs.amax(dim=-1)).any()):
+                raise ValueError(
+                    "p_dst range is disjoint from some p_src column -- likely a "
+                    "Pa/hPa unit mismatch; all grids must share one pressure unit.")
+            xd = xd1.expand(p_src.shape[0], -1).contiguous()             # [B, n_dst]
+            idx_right = torch.searchsorted(xs, xd, right=True).clamp(1, n_src - 1)
+            idx_left = idx_right - 1
+            x_left = torch.gather(xs, -1, idx_left)
+            x_right = torch.gather(xs, -1, idx_right)
+            w_right = ((xd - x_left) / (x_right - x_left)).clamp(0.0, 1.0)
+            w_left = 1.0 - w_right
+        f_left = torch.gather(field, -1, idx_left)   # differentiable
+        f_right = torch.gather(field, -1, idx_right)
+        return w_left * f_left + w_right * f_right
+
     if p_src.ndim != 1 or p_dst.ndim != 1:
         raise ValueError(
-            f"interp grids must be 1-D (got p_src.ndim={p_src.ndim}, "
-            f"p_dst.ndim={p_dst.ndim}); per-column pressure interp is a follow-up.")
+            f"interp grids must be 1-D or batched [B, n] p_src (got p_src.ndim="
+            f"{p_src.ndim}, p_dst.ndim={p_dst.ndim}).")
     n_src = p_src.shape[0]
     if field.shape[-1] != n_src:
         raise ValueError(
@@ -285,20 +329,39 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     # The passthrough must fail as loudly as the interp branch: a silently
     # passed-through descending/multi-column profile is a wrong-grid footgun
     # (the interp branch raises on the same input -- keep them consistent).
-    if p_model.ndim != 1:
-        # Do NOT silently take column 0 of a multi-column p (wrong-interp / silent
-        # data corruption). The obs operator processes one profile at a time;
-        # batched per-column interp is a documented follow-up.
+    batched = p_model.ndim == 2
+    if p_model.ndim not in (1, 2):
         raise ValueError(
-            f"model pressure must be a 1-D column grid (got ndim={p_model.ndim}); "
-            "process one profile at a time (batched per-column interp is a follow-up).")
-    with torch.no_grad():
-        if not bool(torch.all(p_model[1:] > p_model[:-1])):
-            raise ValueError(
-                "model pressure must be strictly ascending (TOA->surface); flip the "
-                "WRF column before the obs operator (no silent wrong-grid passthrough).")
-
+            f"model pressure must be a 1-D column or a [B, nlev] batch "
+            f"(got ndim={p_model.ndim}).")
     p_target = getattr(cfg, "rttov_layer_pressure", None)
+    if batched:
+        # BATCHED columns (T1-5): every column interpolates onto the ONE shared
+        # target grid, so the interp branch is REQUIRED -- a batched passthrough
+        # would silently pretend per-column grids are the fixture grid.
+        if p_target is None:
+            raise ValueError(
+                "batched columns require cfg.rttov_layer_pressure (shared target "
+                "grid); passthrough is single-column only.")
+        if getattr(cfg, "cloud", False):
+            # Deliberately deferred: all-sky batching's measured lever is only
+            # ~1.3x (per-profile scattering dominates), and the cloud staging is
+            # single-column. Loud reject beats a silent wrong-shape path.
+            raise ValueError(
+                "batched columns are clear-sky only for now (cloud staging is "
+                "single-column; DA_REALTIME_PLAN T1-5 scope note).")
+        with torch.no_grad():
+            if not bool(torch.all(p_model[:, 1:] > p_model[:, :-1])):
+                raise ValueError(
+                    "every model pressure column must be strictly ascending "
+                    "(TOA->surface); flip the WRF columns before the obs operator.")
+    else:
+        with torch.no_grad():
+            if not bool(torch.all(p_model[1:] > p_model[:-1])):
+                raise ValueError(
+                    "model pressure must be strictly ascending (TOA->surface); flip the "
+                    "WRF column before the obs operator (no silent wrong-grid passthrough).")
+
     if p_target is None:
         t_lay, q_lay, p_lay = t_model, q_model, None
     else:
@@ -313,15 +376,19 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     if p_half is not None:
         p_half = torch.as_tensor(
             p_half, dtype=t_model.dtype, device=t_model.device).detach()
+        if batched and p_half.ndim == 1:
+            # pack_rttov_input requires per-profile P_HALF rows; the shared fixture
+            # grid is identical for every column -> broadcast explicitly.
+            p_half = p_half.unsqueeze(0).expand(t_lay.shape[0], -1)
     # RTTOV-14 layer-based invariant: Nlayers = Nlevels - 1 (design 5; profile.py:124).
     # Check the EMITTED layer count (t_lay's vertical axis) vs p_half so the
     # PASSTHROUGH path (p_lay is None) cannot silently emit an invalid
     # layer/half-level profile -- e.g. a model column of N levels paired with an
     # N-level p_half (needs N+1) would otherwise pass unchecked.
-    if p_half is not None and t_lay.shape[-1] != p_half.shape[0] - 1:
+    if p_half is not None and t_lay.shape[-1] != p_half.shape[-1] - 1:
         raise ValueError(
             f"Nlayers must equal Nlevels-1: emitted profile has {t_lay.shape[-1]} "
-            f"layers but p_half has {p_half.shape[0]} levels (design 5).")
+            f"layers but p_half has {p_half.shape[-1]} levels (design 5).")
 
     # All-sky cloud path (design 9.1): append content + effective diameter on the
     # SAME layer grid. Clear-sky (cfg.cloud=False) is byte-unchanged (fields stay None).

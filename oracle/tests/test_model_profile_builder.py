@@ -220,12 +220,13 @@ def test_none_passthrough_rejects_descending_column():
 
 
 def test_none_passthrough_rejects_multicolumn():
-    """The multi-column reject is shared by both paths (hoisted above the split)."""
+    """Batched columns REQUIRE the interp target (T1-5): a batched passthrough
+    would silently pretend per-column grids are the fixture grid."""
     leaves, f = _leaves(), _forcing()
     f2 = f._replace(p=f.p.unsqueeze(0).repeat(3, 1))
     leaves2 = leaves._replace(th=leaves.th.unsqueeze(0).repeat(3, 1),
                               qv=leaves.qv.unsqueeze(0).repeat(3, 1))
-    with pytest.raises(ValueError, match="1-D column grid"):
+    with pytest.raises(ValueError, match="batched columns require"):
         model_to_rttov_tensors(leaves2, f2, _cfg(layer_p=None))
 
 
@@ -264,13 +265,24 @@ def test_pressure_monotonic_target_required():
         model_to_rttov_tensors(_leaves(), _forcing(), bad)
 
 
-def test_multicolumn_pressure_rejected():
+def test_multicolumn_pressure_now_batches_with_interp_target():
+    """T1-5: [B, nlev] columns with an interp target are the BATCHED path (was a
+    blanket reject) — result must equal the single-column call per row. A 3-D p
+    is still rejected (no silent shape guessing)."""
     leaves, f = _leaves(), _forcing()
-    f2 = f._replace(p=f.p.unsqueeze(0).repeat(3, 1))  # [3, 5] multi-column
+    f2 = f._replace(p=f.p.unsqueeze(0).repeat(3, 1))  # [3, 5] batched columns
     leaves2 = leaves._replace(th=leaves.th.unsqueeze(0).repeat(3, 1),
                               qv=leaves.qv.unsqueeze(0).repeat(3, 1))
-    with pytest.raises(ValueError, match="1-D column grid"):
-        model_to_rttov_tensors(leaves2, f2, _cfg())
+    prof_b = model_to_rttov_tensors(leaves2, f2, _cfg())
+    prof_1 = model_to_rttov_tensors(leaves, f, _cfg())
+    for row in range(3):
+        assert torch.equal(prof_b.t_lay[row], prof_1.t_lay)
+        assert torch.equal(prof_b.q_lay[row], prof_1.q_lay)
+    f3 = f._replace(p=f.p.unsqueeze(0).unsqueeze(0).repeat(2, 3, 1))  # 3-D
+    leaves3 = leaves._replace(th=leaves.th.unsqueeze(0).unsqueeze(0).repeat(2, 3, 1),
+                              qv=leaves.qv.unsqueeze(0).unsqueeze(0).repeat(2, 3, 1))
+    with pytest.raises(ValueError, match="1-D column or a"):
+        model_to_rttov_tensors(leaves3, f3, _cfg())
 
 
 # --- GRADIENT ANCHOR: grad flows leaves -> t_lay/q_lay (design 14.3) --------
