@@ -16,7 +16,7 @@ from typing import Mapping, Sequence
 
 import torch
 
-from .runtime import kdm6_step, make_parameters
+from .runtime import kdm6_step, make_parameters, _validate_state_shapes
 from .state import State, Forcing
 
 
@@ -89,6 +89,18 @@ class WindowLinearization:
         u_t 는 x_t 공간, t=T 는 state_final 공간).
         """
         self._assert_open()
+        # 사전 검증 (Codex stop-review): broadcast-호환이지만 틀린 covector shape
+        # ((1,K) vs (B,K) 등)는 vjp 내적/누산에서 조용히 broadcast 되어
+        # wrong-but-finite adjoint 가 된다 — run_da_window 와 동일한 exact-shape
+        # 가드(F1-SHAPE)를 적용. 범위 밖 시각 키도 조용히 무시하지 않는다.
+        for t_key, u in obs_adj.items():
+            tk = int(t_key)
+            if not (0 <= tk <= self.T):
+                raise ValueError(
+                    f"obs_adj time key {tk} outside [0, {self.T}]")
+            ref = self.state_final if tk == self.T else self.checkpoints[tk]
+            _validate_state_shapes(u, ref, arg=f"obs_adj[{tk}]",
+                                   ref_name="x_t")
         adj = obs_adj.get(self.T)
         adj = (_f64(adj) if adj is not None
                else _zeros_like_state(self.state_final))
@@ -106,7 +118,12 @@ class WindowLinearization:
         tangent_at_x_t 는 스텝 t 적용 전 접선 (obs 가 x_t 를 보는 규약과 동일).
         """
         self._assert_open()
+        _validate_state_shapes(v0, self.checkpoints[0], arg="v0",
+                               ref_name="x_0")
         want = set(int(t) for t in obs_times)
+        bad = [t for t in want if not (0 <= t <= self.T)]
+        if bad:
+            raise ValueError(f"obs_times {sorted(bad)} outside [0, {self.T}]")
         out: dict = {}
         tan = _f64(v0)
         for t in range(self.T):

@@ -109,3 +109,19 @@ def test_max_b_guard_and_close():
     lin.close()
     with pytest.raises(RuntimeError, match="closed"):
         lin.apply_adjoint({1: _unit_state(1)})
+
+
+def test_rejects_broadcastable_bad_covector_shapes():
+    """Codex stop-review 회귀 가드: broadcast-호환이지만 틀린 shape의 covector/
+    tangent와 범위 밖 시각 키는 조용히 수용되지 않고 loud하게 거부된다."""
+    x0, forcings = _mk_state(), [_mk_forcing()] * 2
+    bad = State(**{k: torch.zeros((1, 1), **_F64) for k in State._fields})  # (1,1) vs (1,2)
+    with WindowLinearization(x0, forcings, dt=DT) as lin:
+        with pytest.raises(ValueError, match="shape"):
+            lin.apply_adjoint({2: bad})
+        with pytest.raises(ValueError, match="outside"):
+            lin.apply_adjoint({99: _unit_state(9)})
+        with pytest.raises(ValueError, match="shape"):
+            lin.apply_tangent(bad)
+        with pytest.raises(ValueError, match="outside"):
+            lin.apply_tangent(_unit_state(1), obs_times=[7])
