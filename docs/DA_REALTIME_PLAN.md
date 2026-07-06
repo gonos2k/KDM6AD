@@ -144,3 +144,11 @@ Tier 0+1 조립 직후 실프레임(SS wrfout t=1) + live RTTOV-14로 실측:
   WindowConfig.param_grads(창 누적 Σ_t ∂⟨M,λ⟩/∂θ). FD 대조: 단일스텝 rel
   6.2e-4·창 7.3e-5 — 잔차는 f32-계단(ULP/h) 물리 바닥과 정확 일치. **파라미터
   민감도(4D-Var 보정)의 oracle-측 blocker 해소.**
+- **실관측 인제스트 코어** (§4 마지막 항목의 검증가능 부분, 2026-07-06):
+  `obs_ingest.py` — ObsPayload 스키마 공식화(기존 암묵 규약 명문화), haversine
+  collocation(관측→최근접 컬럼, grid-agnostic — 이상화 케이스의 all-0
+  XLAT/XLONG은 퇴화 그리드로 loud 거부), payload→(B,nch) 컬럼 정렬. 통합 규약:
+  **미배정 컬럼 = obs_quality=1** → 기존 양측-QC mask가 자동 배제(driver 무변경
+  소비, 통합 테스트로 확인). 충돌은 최근접 승자+카운트, far-gate 집계. **GK2A
+  AMI L1B 파일 디코더는 이 스키마를 만드는 어댑터로 유보** — 실데이터 없이 쓴
+  디코더는 검증 불가(인터페이스만 고정, 데이터 확보 시 구현).
