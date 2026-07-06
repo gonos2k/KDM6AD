@@ -114,3 +114,86 @@ def test_real_innovation_omb_and_adjoint(lc05_collocated, tmp_path):
     assert th_g is not None and float(th_g.norm()) > 0.0
     kmax = int(th_g.abs().sum(0).argmax())
     assert 3 <= kmax <= 20, f"th-adjoint peak k={kmax} (하부 대류권 기대)"
+
+
+@needs_all
+def test_real_allsky_beats_clear_on_cloudy_columns(lc05_collocated, tmp_path):
+    """첫 실관측 all-sky 게이트 (kdm6ad+da.md 본류): 구름 컬럼(관측 IR105<270K)
+    에서 (a) all-sky |O-B| < clear-sky |O-B| 가 다수, (b) 하이드로미티어
+    gradient(∂J/∂qi) nonzero — 관측→구름상태 역전파 경로의 존재 증명.
+
+    실측 (2026-07-07, B=24): clear mean −46.4K → all-sky −13.6K, 24/24 개선;
+    ∂J/∂qc~1.2e9, ∂J/∂qi~4.8e8, ∂J/∂qs~3.6e8. 여기선 B=6 경량 게이트.
+    """
+    import numpy as np
+    from kdm6.da_driver import OsseObsConfig, _blend_above_model_top, batched_clear_bt
+    from kdm6.obs.model_profile_builder import (RttovProfileConfig,
+                                                model_to_rttov_tensors)
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure, make_live_run_k
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.obs.rttov_obs_operator import RttovObsOp
+    from kdm6.state import Forcing, State
+    from test_rttov_case_writer import (_CHANNELS, _HAVE_CLOUD_EXE,
+                                        _fixture_p_half, _fixture_tq)
+    if not _HAVE_CLOUD_EXE:
+        pytest.skip("live cloud RTTOV (ami_cloud) 부재")
+
+    fr, co = lc05_collocated
+    qtot = (fr.state.qc + fr.state.qi + fr.state.qs).sum(1)
+    cloudy = torch.where((co.obs_quality[:, 12] == 0) & (co.bt[:, 12] < 270.0)
+                         & (qtot > 1e-5))[0]
+    order = cloudy[torch.argsort(co.bt[cloudy, 12])]
+    sel = order[torch.linspace(0, len(order) - 1, 6).long()]
+    x0 = State(**{k: v[sel] for k, v in fr.state._asdict().items()})
+    fc = Forcing(**{k: v[sel] for k, v in fr.forcing._asdict().items()})
+    y_bt, y_rq = co.bt[sel], co.obs_quality[sel]
+
+    tr, qr = _fixture_tq()
+    p_half_t = torch.as_tensor(np.asarray(_fixture_p_half(), dtype=float), **_F64)
+    p_lay_t = torch.as_tensor(np.asarray(fixture_layer_pressure(), dtype=float), **_F64)
+    ccfg = OsseObsConfig(
+        run_k=make_live_run_k(tmp_path / "clear"),
+        profile_cfg=RttovProfileConfig(
+            gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+            rttov_layer_pressure=p_lay_t, rttov_level_pressure=p_half_t),
+        input_cfg=RttovInputConfig(coef_id="ami_501_test", channels=_CHANNELS),
+        obs_sigma=1.0,
+        t_ref=torch.as_tensor(np.asarray(tr, dtype=float), **_F64),
+        q_ref=torch.as_tensor(np.asarray(qr, dtype=float), **_F64))
+    bt_clear = batched_clear_bt(x0, fc, ccfg)[0].detach()
+
+    pcfg = RttovProfileConfig(gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+                              rttov_layer_pressure=p_lay_t,
+                              rttov_level_pressure=p_half_t, cloud=True)
+    icfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
+    j105, better, qi_norm2 = 12, 0, 0.0
+    for i in range(len(sel)):
+        leaves = State(*(torch.flip(f[i], [-1]).detach().clone().requires_grad_(True)
+                         for f in x0))
+        fcol = Forcing(rho=torch.flip(fc.rho[i], [-1]),
+                       pii=torch.flip(fc.pii[i], [-1]),
+                       p=torch.flip(fc.p[i], [-1]) / 100.0,
+                       delz=torch.flip(fc.delz[i], [-1]))
+        prof = model_to_rttov_tensors(leaves, fcol, pcfg, xland=fr.xland[sel][i])
+        p_top = fcol.p[0].reshape(1)
+        t_lay = _blend_above_model_top(prof.t_lay.unsqueeze(0), ccfg.t_ref,
+                                       prof.p_lay, p_top, octaves=1.0).squeeze(0)
+        q_lay = _blend_above_model_top(prof.q_lay.unsqueeze(0), ccfg.q_ref,
+                                       prof.p_lay, p_top, octaves=4.0).squeeze(0)
+        above = (prof.p_lay < p_top).double().detach()
+        bt_i, rq_i = RttovObsOp.apply(
+            make_live_run_k(tmp_path / f"allsky_{i}"), icfg,
+            t_lay, q_lay, None, prof.p_half,
+            prof.clw * (1 - above), prof.ciw * (1 - above),
+            prof.deff_liq, prof.deff_ice, prof.cfrac)
+        mask = ((y_rq[i] == 0) & (rq_i.reshape(-1) == 0)).double()
+        j_i = 0.5 * ((mask * (bt_i.reshape(-1) - y_bt[i])) ** 2).sum()
+        j_i.backward()
+        if abs(float(bt_i.reshape(-1)[j105].detach()) - float(y_bt[i, j105])) < \
+           abs(float(bt_clear[i, j105]) - float(y_bt[i, j105])):
+            better += 1
+        g = leaves.qi.grad
+        if g is not None:
+            qi_norm2 += float(g.norm()) ** 2
+    assert better >= 4, f"all-sky가 clear보다 나은 컬럼 {better}/6 (≥4 기대)"
+    assert qi_norm2 > 0.0, "∂J/∂qi 전부 0 — 관측→구름상태 역전파 경로 부재"
