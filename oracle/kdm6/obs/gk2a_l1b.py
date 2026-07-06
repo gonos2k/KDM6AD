@@ -41,6 +41,10 @@ AMI_CHANNELS = ["vi004", "vi005", "vi006", "vi008", "nr013", "nr016",
                 "sw038", "wv063", "wv069", "wv073", "ir087", "ir096",
                 "ir105", "ir112", "ir123", "ir133"]
 IR_CHANNELS = AMI_CHANNELS[6:]                     # RTTOV ch 7-16 (열적외)
+# 주간 케이스 표준 세트: sw038(3.8μm) 제외 — 주간 태양반사 혼입으로 BT 오염
+# (실측 376K @ 09-12 KST; 운영 관례상 주간 배제/특별처리 대상). 야간 케이스나
+# 태양보정 도입 시에만 sw038 포함을 고려한다.
+CLEAN_IR_CHANNELS = [c for c in IR_CHANNELS if c != "sw038"]   # 9채널
 
 # KMA LCC 표준 구면 반경 [m] — KO/EA LC 격자 규격 (파일 속성엔 반경이 없음).
 EARTH_RADIUS_M = 6371008.77

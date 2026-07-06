@@ -41,11 +41,14 @@ _F64 = dict(dtype=torch.float64)
 @pytest.fixture(scope="module")
 def lc05_collocated():
     from kdm6.io.frame_reader import read_wrfout_frame
-    from kdm6.obs.gk2a_l1b import load_cal_table, read_ko_slot, slot_files
+    from kdm6.obs.gk2a_l1b import (CLEAN_IR_CHANNELS, load_cal_table,
+                                   read_ko_slot, slot_files)
     from kdm6.obs.obs_ingest import payload_to_column_obs
     fr = read_wrfout_frame(str(_WRFIN), 0)
     cal = load_cal_table(_CAL)
-    pl = read_ko_slot(slot_files(_GK2A, "202507190000"), cal, stride=8)
+    # 주간 케이스 표준: sw038 제외 깨끗한 IR 9채널 (사용자 지시 2026-07-07)
+    pl = read_ko_slot(slot_files(_GK2A, "202507190000", channels=CLEAN_IR_CHANNELS),
+                      cal, stride=8)
     co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"], max_dist_km=4.0)
     return fr, co
 
