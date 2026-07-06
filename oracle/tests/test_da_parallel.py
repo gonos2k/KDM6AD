@@ -103,3 +103,32 @@ def test_partition_guards_reject_overlap_and_gap(tmp_path):
                               case_root=str(tmp_path / "gap"), **common)
     with pytest.raises(RuntimeError, match="union"):
         run_sharded_sensitivity(specs, n_workers=1, parallel=False)
+
+
+@needs_all
+def test_partition_guard_rejects_trailing_gap(tmp_path):
+    """Codex stop-review 회귀 가드: 누락이 꼬리쪽(마지막 컬럼들)이어도 union
+    가드가 발화해야 한다 — max+1 유도였다면 침묵 통과했을 케이스."""
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure
+
+    frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
+    idx = torch.linspace(0, frame.state.th.shape[0] - 1, 4).long()
+    x = State(**{k: v[idx] for k, v in frame.state._asdict().items()})
+    f = Forcing(**{k: v[idx] for k, v in frame.forcing._asdict().items()})
+    tr, qr = _fixture_tq()
+    specs = build_shard_specs(
+        x, x, f, [torch.arange(0, 3)],                    # 컬럼 3 (꼬리) 누락
+        n_steps=1, dt=300.0, obs_times=[1],
+        case_root=str(tmp_path / "tg"),
+        profile_kwargs=dict(
+            gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+            rttov_layer_pressure=torch.as_tensor(
+                np.asarray(fixture_layer_pressure(), dtype=float), **_F64),
+            rttov_level_pressure=torch.as_tensor(
+                np.asarray(_fixture_p_half(), dtype=float), **_F64)),
+        input_kwargs=dict(coef_id="ami_501_test", channels=_CHANNELS),
+        t_ref=torch.as_tensor(np.asarray(tr, dtype=float), **_F64),
+        q_ref=torch.as_tensor(np.asarray(qr, dtype=float), **_F64))
+    assert specs[0].b_total == 4
+    with pytest.raises(RuntimeError, match="union"):
+        run_sharded_sensitivity(specs, n_workers=1, parallel=False)

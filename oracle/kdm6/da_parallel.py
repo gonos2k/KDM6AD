@@ -33,6 +33,9 @@ _F64 = dict(dtype=torch.float64)
 class ShardSpec:
     """worker 1개의 완전한 입력 (pickle로 전달)."""
     shard_id: int
+    b_total: int                       # 전체 배치 크기 — 재조립의 명시적 계약
+                                       # (인덱스에서 추론 불가: max+1은 꼬리 누락을,
+                                       # 크기 합은 gap을 각각 침묵 통과시킨다)
     col_idx: torch.Tensor              # 원 배치 컬럼 인덱스 (B_s,)
     x_truth: State                     # 해당 샤드 컬럼만 (B_s, K)
     x_background: State
@@ -98,9 +101,17 @@ def run_sharded_sensitivity(specs: Sequence[ShardSpec], *, n_workers: int,
         torch.set_num_threads(1)                        # 참조 경로도 동일 고정
         results = [_shard_worker(s) for s in specs]
 
-    # B_total은 샤드 크기 합이 아니라 **인덱스 공간**에서 유도 — 크기 합으로
-    # 잡으면 누락 분할(gap)이 IndexError로 죽어 union 가드에 못 닿는다.
-    B_total = max(int(s.col_idx.max()) for s in specs) + 1
+    # B_total은 명시적 계약 (Codex stop-review): 인덱스에서 유도하면 안 된다 —
+    # max+1은 꼬리 누락(trailing gap)을, 크기 합은 중간 gap을 각각 침묵
+    # 통과시킨다. build_shard_specs가 전체 배치 크기를 spec마다 기록한다.
+    B_total = int(specs[0].b_total)
+    if any(int(s.b_total) != B_total for s in specs):
+        raise RuntimeError("shard specs disagree on b_total — mixed partitions")
+    for s in specs:
+        if s.col_idx.numel() and (int(s.col_idx.min()) < 0
+                                  or int(s.col_idx.max()) >= B_total):
+            raise RuntimeError(
+                f"shard {s.shard_id} col_idx out of [0, {B_total}) — bad partition")
     K = specs[0].x_truth.th.shape[1]
     merged = {k: torch.zeros((B_total, K), **_F64) for k in State._fields}
     seen = torch.zeros(B_total, dtype=torch.bool)
@@ -134,7 +145,7 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
     for i, ci in enumerate(shard_indices):
         sub = lambda s: type(s)(**{k: v[ci] for k, v in s._asdict().items()})
         specs.append(ShardSpec(
-            shard_id=i, col_idx=ci.clone(),
+            shard_id=i, b_total=int(x_truth.th.shape[0]), col_idx=ci.clone(),
             x_truth=sub(x_truth), x_background=sub(x_background),
             forcing=sub(forcing),
             n_steps=n_steps, dt=dt, obs_times=tuple(int(t) for t in obs_times),
