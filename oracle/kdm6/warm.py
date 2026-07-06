@@ -56,7 +56,8 @@ class WarmAutoconvParams(NamedTuple):
     ncmin_tensor: "torch.Tensor | None" = None
 
 
-def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0) -> WarmAutoconvParams:
+def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0,
+                                 peaut=None) -> WarmAutoconvParams:
     """`kdm6init`의 qck1 + 운영 ncmin 기본값.
 
     Derivation (Fortran kdm6init line ~3106):
@@ -64,8 +65,15 @@ def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0) -> WarmAutoconvP
     `den0`은 kdm6init의 INPUT 인자라 외부에서 들어옴 — 표준대기 1.28 fallback.
     """
     # STEP-91 SEED mirror: kdm6init F:3138 builds qck1 REAL(4) l2r with f32 powf.
-    qck1 = _fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(0.104) * _fc._f32(9.8)) * _fc._f32(c.PEAUT))
-        / _fc.powf(c.DENR, 1.0 / 3.0)) / _fc._f32(c.XMYU)) * _fc.powf(den0, 4.0 / 3.0))
+    if peaut is None:
+        qck1 = _fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(_fc._f32(0.104) * _fc._f32(9.8)) * _fc._f32(c.PEAUT))
+            / _fc.powf(c.DENR, 1.0 / 3.0)) / _fc._f32(c.XMYU)) * _fc.powf(den0, 4.0 / 3.0))
+    else:
+        # G4 파라미터 경로: 같은 f32-stepwise 체인을 텐서-안전 캐스트(_f32t)로 —
+        # 값은 스칼라 경로와 IEEE 동일, grad는 peaut leaf까지 관통.
+        qck1 = _fc._f32t(_fc._f32t(_fc._f32t(_fc._f32t(
+            _fc._f32(_fc._f32(0.104) * _fc._f32(9.8)) * _fc._f32t(peaut))
+            / _fc.powf(c.DENR, 1.0 / 3.0)) / _fc._f32(c.XMYU)) * _fc.powf(den0, 4.0 / 3.0))
     return WarmAutoconvParams(
         qck1=qck1,
         nraut_coeff=3.5e9,
@@ -159,7 +167,7 @@ class WarmAccretionParams(NamedTuple):
     di100: float
 
 
-def default_warm_accretion_params() -> WarmAccretionParams:
+def default_warm_accretion_params(*, ncrk1=None, ncrk2=None) -> WarmAccretionParams:
     """`kdm6init`의 cloud/rain gamma family 직역.
 
     원본 (Fortran kdm6init:3128-3149):
@@ -179,8 +187,8 @@ def default_warm_accretion_params() -> WarmAccretionParams:
     g7pmr = _rgmma(7.0 + c.MUR)
 
     return WarmAccretionParams(
-        ncrk1=c.NCRK1,
-        ncrk2=c.NCRK2,
+        ncrk1=c.NCRK1 if ncrk1 is None else ncrk1,
+        ncrk2=c.NCRK2 if ncrk2 is None else ncrk2,
         cmc=cmc,
         g3pmc=g3pmc,
         g6pmc=g6pmc,
@@ -284,7 +292,8 @@ class WarmSelfCollectionParams(NamedTuple):
     di2000: float
 
 
-def default_warm_self_collection_params() -> WarmSelfCollectionParams:
+def default_warm_self_collection_params(*, ncrk1=None, ncrk2=None,
+                                        eccbrk=None) -> WarmSelfCollectionParams:
     g3pmc = _rgmma(1.0 + 3.0 / (c.MUC + 1.0))
     g6pmc = _rgmma(1.0 + 6.0 / (c.MUC + 1.0))
     g1pmr = _rgmma(1.0 + c.MUR)
@@ -292,9 +301,9 @@ def default_warm_self_collection_params() -> WarmSelfCollectionParams:
     g7pmr = _rgmma(7.0 + c.MUR)
 
     return WarmSelfCollectionParams(
-        ncrk1=c.NCRK1,
-        ncrk2=c.NCRK2,
-        eccbrk=c.ECCBRK,
+        ncrk1=c.NCRK1 if ncrk1 is None else ncrk1,
+        ncrk2=c.NCRK2 if ncrk2 is None else ncrk2,
+        eccbrk=c.ECCBRK if eccbrk is None else eccbrk,
         g3pmc=g3pmc,
         g6pmc=g6pmc,
         g1pmr=g1pmr,

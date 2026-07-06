@@ -119,6 +119,9 @@ class WindowConfig:
     obs_active: Callable[[int], bool] | None = None
     # §8.2 hydrometeor-centric adjoint (None = all fields)
     active_fields: tuple[str, ...] | None = None
+    # [G4] True → backward 스윕에서 스텝별 ∂⟨M(x_t,θ), λ_{t+1}⟩/∂θ 를 누적해
+    # WindowResult.grad_params 로 반환 (config.params 에 live leaf 필요).
+    param_grads: bool = False
     # §5.2 PRE-state increments: the step consumes x_t' = x_t + η_pre_t.
     # ∂J/∂η_pre_t = ∂J/∂x_t' = the OUTPUT of step-t's vjp (before adding
     # obs_adj[t]) — returned as grad_eta_pre. Driver-level, kernel untouched.
@@ -140,6 +143,7 @@ class WindowResult:
     skipped_steps: list[int] = field(default_factory=list)  # DIAGNOSTIC: value-inert steps (VJP still ran)
     grad_eta: list[State] | None = None    # ∂J/∂η_t per step (§5.1), if eta given
     grad_eta_pre: list[State] | None = None  # ∂J/∂η_pre_t per step (§5.2)
+    grad_params: "dict[str, torch.Tensor] | None" = None  # [G4] Σ_t 파라미터 수반
 
 
 def run_da_window(
@@ -227,6 +231,7 @@ def run_da_window(
 
     grad_eta: list[State] | None = [None] * T if config.eta is not None else None
     grad_eta_pre: list[State] | None = [None] * T if config.eta_pre is not None else None
+    grad_params_acc: "dict[str, torch.Tensor] | None" = None
 
     for t in reversed(range(T)):
         if grad_eta is not None:
@@ -244,6 +249,15 @@ def run_da_window(
                               value_only=False, xland=config.xland,
                               ncmin_land=config.ncmin_land,
                               ncmin_sea=config.ncmin_sea)
+        if config.param_grads:
+            # [G4] 파라미터 수반 기여는 이 스텝의 INCOMING adjoint(λ_{t+1})와의
+            # 내적으로 — state vjp(그래프 해제) *이전*에 계산해야 한다.
+            pg = handle.param_vjp(adj)
+            if grad_params_acc is None:
+                grad_params_acc = {k: g.clone() for k, g in pg.items()}
+            else:
+                for k, g in pg.items():
+                    grad_params_acc[k] = grad_params_acc[k] + g
         adj = handle.vjp(adj, active_fields=config.active_fields)
         handle.close()
         vjp_steps.append(t)
@@ -257,7 +271,8 @@ def run_da_window(
     return WindowResult(adj_x0=adj, checkpoints=checkpoints,
                         state_final=state_final,
                         vjp_steps=vjp_steps, skipped_steps=skipped,
-                        grad_eta=grad_eta, grad_eta_pre=grad_eta_pre)
+                        grad_eta=grad_eta, grad_eta_pre=grad_eta_pre,
+                        grad_params=grad_params_acc)
 
 
 # ── §5.4 partition control: conserve-by-construction ────────────────────────

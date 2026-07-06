@@ -136,3 +136,11 @@ Tier 0+1 조립 직후 실프레임(SS wrfout t=1) + live RTTOV-14로 실측:
   {qc,qr,nc,nr}+knock-on {th,qv}) — 발자국을 회귀 스냅샷으로 고정
   (test_cross_tree_adjoint_parity). **DA 소비 규칙 확정: 사이클은 한 트리로
   자기일관되게(증분 계산·적용 동일 트리); 트리 교차는 smooth 성분에서만.**
+- **G4 파라미터 gradient 배선** (§4 항목 완료, 2026-07-06, oracle 측만 — frozen
+  dylib 무접촉): warm-phase 파라미터(PEAUT/NCRK1/NCRK2/ECCBRK)가 live(grad 켜짐
+  또는 값 변경)면 phase-param builder로 흘러 ∂J/∂θ가 나온다. qck1의 REAL(4)
+  f32-stepwise 유도는 텐서-안전 캐스트(_f32t, IEEE 동일 라운딩)로 미분 관통 —
+  frozen 기본 경로는 byte-불변. Handle.param_grad/param_vjp +
+  WindowConfig.param_grads(창 누적 Σ_t ∂⟨M,λ⟩/∂θ). FD 대조: 단일스텝 rel
+  6.2e-4·창 7.3e-5 — 잔차는 f32-계단(ULP/h) 물리 바닥과 정확 일치. **파라미터
+  민감도(4D-Var 보정)의 oracle-측 blocker 해소.**

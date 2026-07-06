@@ -11,6 +11,16 @@ import struct
 def _f32(v: float) -> float:
     return struct.unpack('f', struct.pack('f', v))[0]
 
+
+def _f32t(v):
+    """텐서-안전 f32 round-trip (G4): torch.Tensor면 f32↔f64 캐스트(미분 관통,
+    값은 struct 경로와 IEEE 동일 라운딩), 아니면 기존 _f32. 파라미터 leaf가
+    f32-stepwise 유도 체인(qck1 등)을 grad를 유지한 채 통과하게 한다."""
+    import torch as _torch
+    if isinstance(v, _torch.Tensor):
+        return v.to(_torch.float32).to(_torch.float64)
+    return _f32(v)
+
 def gammln_f(x: float) -> float:
     """Exact port of Fortran GAMMLN (double internals, float32 return)."""
     STP = 2.5066282746310005

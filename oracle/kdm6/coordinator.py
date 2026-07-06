@@ -191,11 +191,23 @@ class WarmPhaseParams(NamedTuple):
     satadj: _satadj.SatAdjParams
 
 
-def default_warm_phase_params() -> WarmPhaseParams:
+def default_warm_phase_params(params=None) -> WarmPhaseParams:
+    """params(runtime.Parameters)가 주어지면 G4 leaf(peaut/ncrk1/ncrk2/eccbrk)를
+    warm 하위 번들에 연결한다 — None이면 기존 상수 경로 그대로(byte-불변)."""
+    if params is None:
+        return WarmPhaseParams(
+            autoconv=_warm.default_warm_autoconv_params(),
+            accretion=_warm.default_warm_accretion_params(),
+            self_coll=_warm.default_warm_self_collection_params(),
+            rain_evap=_warm.default_warm_rain_evap_params(),
+            satadj=_satadj.default_satadj_params(),
+        )
     return WarmPhaseParams(
-        autoconv=_warm.default_warm_autoconv_params(),
-        accretion=_warm.default_warm_accretion_params(),
-        self_coll=_warm.default_warm_self_collection_params(),
+        autoconv=_warm.default_warm_autoconv_params(peaut=params.peaut),
+        accretion=_warm.default_warm_accretion_params(
+            ncrk1=params.ncrk1, ncrk2=params.ncrk2),
+        self_coll=_warm.default_warm_self_collection_params(
+            ncrk1=params.ncrk1, ncrk2=params.ncrk2, eccbrk=params.eccbrk),
         rain_evap=_warm.default_warm_rain_evap_params(),
         satadj=_satadj.default_satadj_params(),
     )

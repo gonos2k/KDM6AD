@@ -18,8 +18,9 @@ KDM6 PyTorch runtime — 슬롯 47 진입점 + autograd handle.
   - `kdm6_step(...)`는 값+handle을 반환하며 `Handle.vjp/jvp`가 동작한다.
   - CCN 활성화(nccn)는 `CoordinatorState`에 필드로 두지 않고 driver가 별도로 thread한다
     (satadj 단계에서 처리; `_kdm6_pure` 참조).
-  - `Handle.param_grad()`는 아직 미구현(`NotImplementedError`) — 물리 파라미터 sensitivity는
-    현재 지원되지 않는다(state leaf gradient만 유효; C ABI의 param_grad_flags도 동일하게 예약 상태).
+  - `Handle.param_grad()`/`param_vjp()` 는 G4로 구현됨 — warm-phase 파라미터
+    (peaut/ncrk1/ncrk2/eccbrk) leaf 가 live 면 ∂L/∂θ 를 반환한다 (oracle 측만;
+    C ABI 의 param_grad_flags 는 여전히 예약 — C++ 트리는 미배선).
 ──────────────────────────────────────────────────────────────────────
 """
 from __future__ import annotations
@@ -77,18 +78,13 @@ def make_parameters(
 
     기본값은 모든 파라미터 frozen이며, 보정 실험에서 필요한 항목만 grad를 켠다.
 
-    ⚠️ STAGE BOUNDARY (G4, not yet wired): the `*_grad`/`all_grad` flags set
-    `requires_grad=True` on the returned leaves, but `_kdm6_pure` / C++ `kdm6_fn`
-    currently build every phase-param bundle from `default_*_params()` (module
-    constants), NOT from this `Parameters` object (runtime.py:277, runtime.cpp:229).
-    So these leaves are NOT in the forward graph yet — `loss.backward()` leaves their
-    `.grad` as None, and `Handle.param_grad()` raises NotImplementedError. ∂loss/∂param
-    (parameter sensitivity for 4D-Var calibration) requires the G4 plumbing — threading
-    these values into the phase-param builders + warm/cold/mf formulas in BOTH trees —
-    which is a scoped future stage alongside the G3 vjp/jvp/jacobian adjoint API. The
-    validated deliverable today is the differentiable forward wrt the 12 STATE leaves.
-    """
-    # TODO[G4]: wire these params into the phase-param builders (both trees) so ∂loss/∂param
+    G4 WIRED (oracle tree): the returned leaves flow into the WARM phase-param
+    builders whenever they are "live" — requires_grad set OR value differing from
+    the defaults (so a modified frozen parameter is honored, not silently
+    ignored). The frozen-default path is byte-identical to the constant path
+    (gate: test_param_grad_g4). Window accumulation: WindowConfig.param_grads.
+    The C++ tree remains un-wired (C ABI param_grad_flags stays reserved).
+    # G4 note: params wired into the warm builders (oracle side) so ∂loss/∂param
     # flows; add a param-leaf gradient test. Until then the flags are reserved, not live.
     # 우선 PEAUT가 가장 자주 튜닝되는 표면이라 이것부터 노출
     return Parameters(
@@ -316,9 +312,32 @@ class Handle:
         raise NotImplementedError("[G3] Jacobian — implement using torch.func.jacrev")
 
     def param_grad(self, scalar_loss: torch.Tensor) -> dict[str, torch.Tensor]:
-        """[G4] 파라미터 grad — 임의 스칼라 loss에 대한 ∂L/∂params."""
+        """[G4] 파라미터 grad — 임의 스칼라 loss에 대한 ∂L/∂params.
+
+        scalar_loss는 이 Handle의 state_out 그래프에 연결된 스칼라여야 한다.
+        requires_grad=True인 leaf만 대상(∂L/∂θ); 그래프 미연결 leaf는 0으로
+        materialize. live leaf가 없으면 명시적 에러(조용한 빈 dict 금지).
+        """
         self._ensure_derivative_ready()
-        raise NotImplementedError("[G4] param_grad — uses torch.autograd.grad")
+        live = {name: leaf for name, leaf in zip(Parameters._fields, self.params)
+                if getattr(leaf, "requires_grad", False)}
+        if not live:
+            raise ValueError(
+                "param_grad: no live parameter leaves — build Parameters with "
+                "make_parameters(peaut_grad=True, ...) and pass them to kdm6_step")
+        grads = torch.autograd.grad(
+            scalar_loss, list(live.values()),
+            retain_graph=True, allow_unused=True, materialize_grads=True)
+        return dict(zip(live.keys(), grads))
+
+    def param_vjp(self, u: State) -> dict[str, torch.Tensor]:
+        """[G4] ∂⟨state_out, u⟩/∂params — 창 backward 스윕의 스텝별 파라미터
+        수반 기여 (dJ/dθ = Σ_t ∂⟨M(x_t,θ), λ_{t+1}⟩/∂θ 의 항)."""
+        self._ensure_derivative_ready()
+        _validate_state_shapes(u, self.state_out, arg="u", ref_name="state_out")
+        scalar = sum((o * uu.detach().to(o.dtype)).sum()
+                     for o, uu in zip(self.state_out, u))
+        return self.param_grad(scalar)
 
 
 # ─── Pure function: 단일 KDM6 호출의 *autograd-friendly* 형태 ──────────────────
@@ -421,7 +440,15 @@ def _kdm6_pure(
         return _coord_to_state(cs, state, forcing)
 
     full_p = _coord.default_coordinator_params()
-    warm_p = _coord.default_warm_phase_params()
+    # G4: 파라미터가 "살아 있으면" warm 번들에 연결 — live = requires_grad 켜짐
+    # **또는 값이 기본 상수와 다름** (frozen이지만 수정된 파라미터가 조용히
+    # 무시되는 footgun 방지 — FD 섭동 실행이 정확히 그 경우). 기본값+frozen은
+    # 기존 상수 경로 그대로(byte-불변; 기존 스위트가 가드).
+    _param_defaults = (c.PEAUT, c.NCRK1, c.NCRK2, c.ECCBRK)
+    _params_live = params is not None and (
+        any(getattr(pp, "requires_grad", False) for pp in params)
+        or any(float(pp) != dv for pp, dv in zip(params, _param_defaults)))
+    warm_p = _coord.default_warm_phase_params(params if _params_live else None)
     cold_p = _coord.default_cold_phase_params()
     mf_p = _coord.default_melt_freeze_phase_params()
     cloud_p = _cdsd.default_cloud_dsd_params()
