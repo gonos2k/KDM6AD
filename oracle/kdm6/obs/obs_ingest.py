@@ -105,10 +105,18 @@ def collocate(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
             "degenerate grid: all columns share one (lat, lon) — an idealized "
             "case (all-zero XLAT/XLONG) has no geolocation; collocation is "
             "undefined there")
-    d = haversine_km(obs_lat[:, None], obs_lon[:, None],
-                     grid_lat[None, :], grid_lon[None, :])      # (n_obs, B)
-    dist, idx = d.min(dim=1)
-    return idx, dist
+    # 청크 처리: 전체 (n_obs, B) 거리행렬은 실규모(50k obs × 66k 컬럼)에서
+    # 26GB로 OOM — LC05 실그리드 첫 접촉에서 실측 확인. 관측 축을 나눠
+    # 피크 메모리를 chunk×B×8B (~0.5GB @1024×66k)로 제한한다.
+    chunk = max(1, int(2 ** 26 // max(grid_lat.numel(), 1)))     # ~512MB f64 상한
+    idx_parts, dist_parts = [], []
+    for s in range(0, obs_lat.numel(), chunk):
+        d = haversine_km(obs_lat[s:s + chunk, None], obs_lon[s:s + chunk, None],
+                         grid_lat[None, :], grid_lon[None, :])   # (chunk, B)
+        dd, ii = d.min(dim=1)
+        idx_parts.append(ii)
+        dist_parts.append(dd)
+    return torch.cat(idx_parts), torch.cat(dist_parts)
 
 
 @dataclass

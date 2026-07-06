@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
+import numpy as np
 import torch
 
 from ..state import State, Forcing
@@ -167,6 +168,13 @@ def read_wrfout_frame(path: str, time_idx: int = 0) -> FrameData:
             column_order="b = j*nx + i (C-order flatten of (south_north, west_east))",
             nccn_fallback=nccn_fallback,
         )
+        # 실사례 격자면 컬럼 위경도를 meta에 노출 — collocation(obs_ingest)용.
+        # (B,) flatten은 state와 동일한 b = j*nx + i C-order.
+        if "XLAT" in ds.variables and "XLONG" in ds.variables:
+            meta["lat"] = torch.tensor(
+                np.asarray(ds.variables["XLAT"][time_idx], dtype=np.float64).reshape(-1))
+            meta["lon"] = torch.tensor(
+                np.asarray(ds.variables["XLONG"][time_idx], dtype=np.float64).reshape(-1))
         return FrameData(state=state, forcing=forcing, xland=xland, meta=meta)
     finally:
         ds.close()
