@@ -125,3 +125,22 @@ def test_rejects_broadcastable_bad_covector_shapes():
             lin.apply_tangent(bad)
         with pytest.raises(ValueError, match="outside"):
             lin.apply_tangent(_unit_state(1), obs_times=[7])
+
+
+def test_nonint_keys_are_normalized_not_dropped():
+    """Codex stop-review 2차 회귀 가드: int() 변환은 되지만 int와 해시-동등하지
+    않은 키(문자열 "2", torch 스칼라)의 관측이 drop되지 않고 소비돼야 한다 —
+    int 키 결과와 정확히 일치. 정규화 충돌은 loud 거부."""
+    x0, forcings = _mk_state(), [_mk_forcing()] * 2
+    u = _unit_state(51)
+    with WindowLinearization(x0, forcings, dt=DT) as lin:
+        ref = lin.apply_adjoint({2: u})
+        via_str = lin.apply_adjoint({"2": u})
+        via_tensor = lin.apply_adjoint({torch.tensor(2): u})
+        with pytest.raises(ValueError, match="collide"):
+            lin.apply_adjoint({2: u, "2": u})
+    for k in State._fields:
+        assert torch.equal(getattr(via_str, k), getattr(ref, k)), k
+        assert torch.equal(getattr(via_tensor, k), getattr(ref, k)), k
+    # 관측이 실제로 소비됐음(0이 아님)도 확인 — drop이면 ref 자체가 0이어야 하는데
+    assert float(ref.th.abs().sum()) > 0.0

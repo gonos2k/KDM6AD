@@ -93,22 +93,34 @@ class WindowLinearization:
         # ((1,K) vs (B,K) 등)는 vjp 내적/누산에서 조용히 broadcast 되어
         # wrong-but-finite adjoint 가 된다 — run_da_window 와 동일한 exact-shape
         # 가드(F1-SHAPE)를 적용. 범위 밖 시각 키도 조용히 무시하지 않는다.
+        # 키 정규화 (Codex stop-review 2차): int(key) 검증만 하고 소비를 원본
+        # 키로 하면, int() 변환은 되지만 int와 해시-동등하지 않은 키("2" 문자열,
+        # torch 스칼라 텐서)가 `t in obs_adj` 조회에 실패해 관측이 여전히 조용히
+        # drop 된다. 검증 시 canonical-int dict 를 만들어 소비도 그것으로 —
+        # 검증과 소비의 키 공간을 하나로 통일한다. 정규화 충돌("2"와 2 동시
+        # 존재)도 침묵 병합 대신 loud 거부.
+        norm: dict[int, State] = {}
         for t_key, u in obs_adj.items():
             tk = int(t_key)
             if not (0 <= tk <= self.T):
                 raise ValueError(
-                    f"obs_adj time key {tk} outside [0, {self.T}]")
+                    f"obs_adj time key {t_key!r} outside [0, {self.T}]")
+            if tk in norm:
+                raise ValueError(
+                    f"obs_adj keys collide after int-normalization at t={tk} "
+                    "(e.g. 2 and '2' both present)")
             ref = self.state_final if tk == self.T else self.checkpoints[tk]
             _validate_state_shapes(u, ref, arg=f"obs_adj[{tk}]",
                                    ref_name="x_t")
-        adj = obs_adj.get(self.T)
+            norm[tk] = u
+        adj = norm.get(self.T)
         adj = (_f64(adj) if adj is not None
                else _zeros_like_state(self.state_final))
         for t in reversed(range(self.T)):
             adj = self._handles[t].vjp(adj, retain_graph=True,
                                        active_fields=active_fields)
-            if t in obs_adj:
-                adj = _add(adj, _f64(obs_adj[t]))
+            if t in norm:
+                adj = _add(adj, _f64(norm[t]))
         return adj
 
     def apply_tangent(self, v0: State,
