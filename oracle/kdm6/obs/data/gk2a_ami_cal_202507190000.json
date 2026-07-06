@@ -1,0 +1,129 @@
+{
+ "meta": {
+  "source": "noaa-gk2a-pds S3, FD fd020ge 202507190000 originals",
+  "extracted": "2026-07-06",
+  "note": "KO(ko020lc) \uc7ac\uaca9\uc790 \uc0b0\ucd9c\ubb3c\uc5d0\ub294 \uac80\uc815 \uc18d\uc131\uc774 \uc5c6\uc5b4 \uac19\uc740 \ub0a0\uc9dc FD \uc6d0\ubcf8\uc5d0\uc11c \ucd94\ucd9c (\uc6d0\ubcf8 ela020ge\uc5d0\uc11c \uc7ac\uaca9\uc790\ub428)"
+ },
+ "channels": {
+  "sw038": {
+   "DN_to_Radiance_Gain": -0.00108296517282724,
+   "DN_to_Radiance_Offset": 17.699987411499,
+   "Teff_to_Tbb_c0": -0.447843939824124,
+   "Teff_to_Tbb_c1": 1.00065568090389,
+   "Teff_to_Tbb_c2": -6.33824089912448e-08,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "3.8",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "wv063": {
+   "DN_to_Radiance_Gain": -0.0108914673328399,
+   "DN_to_Radiance_Offset": 44.1777038574218,
+   "Teff_to_Tbb_c0": -1.76279494011147,
+   "Teff_to_Tbb_c1": 1.00414910562278,
+   "Teff_to_Tbb_c2": -9.83310914319385e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "6.3",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "wv069": {
+   "DN_to_Radiance_Gain": -0.00818779878318309,
+   "DN_to_Radiance_Offset": 66.7480773925781,
+   "Teff_to_Tbb_c0": -0.334311414359106,
+   "Teff_to_Tbb_c1": 1.00097359874468,
+   "Teff_to_Tbb_c2": -4.94603070252304e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "6.9",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "wv073": {
+   "DN_to_Radiance_Gain": -0.0096982717514038,
+   "DN_to_Radiance_Offset": 79.0608520507812,
+   "Teff_to_Tbb_c0": -0.0613124859696595,
+   "Teff_to_Tbb_c1": 1.00019008722941,
+   "Teff_to_Tbb_c2": -1.05863656750499e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "7.3",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir087": {
+   "DN_to_Radiance_Gain": -0.0144806550815701,
+   "DN_to_Radiance_Offset": 118.050903320312,
+   "Teff_to_Tbb_c0": -0.141418528203155,
+   "Teff_to_Tbb_c1": 1.00052232906885,
+   "Teff_to_Tbb_c2": -3.6287276076109e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "8.7",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir096": {
+   "DN_to_Radiance_Gain": -0.0178435463458299,
+   "DN_to_Radiance_Offset": 145.464874267578,
+   "Teff_to_Tbb_c0": -0.114017728158198,
+   "Teff_to_Tbb_c1": 1.00047380585402,
+   "Teff_to_Tbb_c2": -3.74931509928403e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "9.6",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir105": {
+   "DN_to_Radiance_Gain": -0.0198196955025196,
+   "DN_to_Radiance_Offset": 161.580139160156,
+   "Teff_to_Tbb_c0": -0.142866448475177,
+   "Teff_to_Tbb_c1": 1.00064069572049,
+   "Teff_to_Tbb_c2": -5.50443294960498e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "10.5",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir112": {
+   "DN_to_Radiance_Gain": -0.0216744858771562,
+   "DN_to_Radiance_Offset": 176.713439941406,
+   "Teff_to_Tbb_c0": -0.249111718496148,
+   "Teff_to_Tbb_c1": 1.00121166873756,
+   "Teff_to_Tbb_c2": -1.13167964011665e-06,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "11.2",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir123": {
+   "DN_to_Radiance_Gain": -0.023379972204566,
+   "DN_to_Radiance_Offset": 190.649627685546,
+   "Teff_to_Tbb_c0": -0.458113885722738,
+   "Teff_to_Tbb_c1": 1.00245520975535,
+   "Teff_to_Tbb_c2": -2.53064314720476e-06,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "12.3",
+   "number_of_valid_bits_per_pixel": null
+  },
+  "ir133": {
+   "DN_to_Radiance_Gain": -0.0243037566542625,
+   "DN_to_Radiance_Offset": 198.224365234375,
+   "Teff_to_Tbb_c0": -0.0938521568527657,
+   "Teff_to_Tbb_c1": 1.00053982112966,
+   "Teff_to_Tbb_c2": -5.94913715312849e-07,
+   "Plank_constant_h": 6.62606957e-34,
+   "light_speed": 299792458.0,
+   "Boltzmann_constant_k": 1.3806488e-23,
+   "channel_center_wavelength": "13.3",
+   "number_of_valid_bits_per_pixel": null
+  }
+ }
+}
