@@ -84,8 +84,7 @@ def make_parameters(
     ignored). The frozen-default path is byte-identical to the constant path
     (gate: test_param_grad_g4). Window accumulation: WindowConfig.param_grads.
     The C++ tree remains un-wired (C ABI param_grad_flags stays reserved).
-    # G4 note: params wired into the warm builders (oracle side) so ∂loss/∂param
-    # flows; add a param-leaf gradient test. Until then the flags are reserved, not live.
+    """
     # 우선 PEAUT가 가장 자주 튜닝되는 표면이라 이것부터 노출
     return Parameters(
         peaut=_mkparam(c.PEAUT, device=device, dtype=dtype, requires_grad=peaut_grad or all_grad),
