@@ -128,3 +128,11 @@ Tier 0+1 조립 직후 실프레임(SS wrfout t=1) + live RTTOV-14로 실측:
   유지 ✓. **10분 실시간 티어가 샤딩만으로 달성됨을 실측 확인.** 병렬≡순차
   bitwise 게이트는 test_da_parallel이 보증. (주의: 스크립트 소비자는
   `if __name__ == "__main__"` 가드 필수 — spawn이 메인 모듈을 재실행.)
+- **cross-tree adjoint parity 실측** (§4 게이트 착수, 2026-07-06): C++ fp64
+  `kdm6_step_ad_c` vs 오라클 Handle, 동일 IC/covector — smooth 점(dt=20)에서
+  VJP/JVP 전 성분 **~5e-8 일치** (< 1e-6 게이트). 다중 subcycle(dt=300)에선
+  미분-레벨 kink 발산 존재: forward 출력은 zero-패턴까지 일치하나 내부 게이트
+  분기 선택이 트리별로 갈려 cell0의 소수 성분이 발산(VJP {ni,bg}, JVP
+  {qc,qr,nc,nr}+knock-on {th,qv}) — 발자국을 회귀 스냅샷으로 고정
+  (test_cross_tree_adjoint_parity). **DA 소비 규칙 확정: 사이클은 한 트리로
+  자기일관되게(증분 계산·적용 동일 트리); 트리 교차는 smooth 성분에서만.**
