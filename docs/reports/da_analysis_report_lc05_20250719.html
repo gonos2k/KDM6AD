@@ -1,0 +1,419 @@
+<title>위성 자료동화 분석보고서 — KLFS LC05 × GK2A AMI</title>
+<style>
+:root{
+  --surface:#fcfcfb; --surface-2:#f4f4f1; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#8a887f;
+  --line:#e4e3dd; --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --violet:#4a3aa7;
+  --obs:#3b3a36; --chipbg:#eef3fa; --chipfg:#1d4f8f;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --surface:#1a1a19; --surface-2:#232322; --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#8a887f;
+    --line:#3a3936; --blue:#3987e5; --aqua:#199e70; --red:#e66767; --violet:#9085e9;
+    --obs:#d8d6cc; --chipbg:#20304a; --chipfg:#9cc2f0;
+  }
+}
+:root[data-theme="dark"]{
+  --surface:#1a1a19; --surface-2:#232322; --ink:#ffffff; --ink-2:#c3c2b7; --ink-3:#8a887f;
+  --line:#3a3936; --blue:#3987e5; --aqua:#199e70; --red:#e66767; --violet:#9085e9;
+  --obs:#d8d6cc; --chipbg:#20304a; --chipfg:#9cc2f0;
+}
+:root[data-theme="light"]{
+  --surface:#fcfcfb; --surface-2:#f4f4f1; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#8a887f;
+  --line:#e4e3dd; --blue:#2a78d6; --aqua:#1baf7a; --red:#e34948; --violet:#4a3aa7;
+  --obs:#3b3a36; --chipbg:#eef3fa; --chipfg:#1d4f8f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface);color:var(--ink);
+  font-family:"Apple SD Gothic Neo","Pretendard","Noto Sans KR",system-ui,sans-serif;
+  line-height:1.62;font-size:15.5px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:48px 24px 96px}
+header.rep{border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:8px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--ink-2);text-transform:uppercase;margin:0 0 10px}
+h1{font-size:31px;line-height:1.3;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--chipbg);color:var(--chipfg);border-radius:4px;padding:3px 10px;
+  font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:26px 0 8px}
+.tile{background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:13px 15px}
+.tile .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.tile .k{font-size:12px;color:var(--ink-2);margin-top:2px;line-height:1.4}
+.tile .v .u{font-size:13px;font-weight:600;color:var(--ink-2)}
+h2{font-size:20px;margin:52px 0 6px;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:10px}
+h2 .no{color:var(--blue);font-variant-numeric:tabular-nums;font-size:15px;font-weight:700}
+h2::after{content:"";flex:1;border-bottom:1px solid var(--line);transform:translateY(-4px)}
+h3{font-size:15.5px;margin:26px 0 4px;font-weight:700}
+p{margin:10px 0;max-width:72ch}
+p.note{font-size:13px;color:var(--ink-2);border-left:3px solid var(--line);padding-left:12px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+th{text-align:left;font-size:12px;color:var(--ink-2);letter-spacing:.06em;
+  border-bottom:1.5px solid var(--ink);padding:6px 10px 6px 0;font-weight:700}
+td{border-bottom:1px solid var(--line);padding:7px 10px 7px 0;font-variant-numeric:tabular-nums;vertical-align:top}
+td.num{text-align:right}th.num{text-align:right}
+.pos{color:var(--red);font-weight:600}.neg{color:var(--aqua);font-weight:600}
+.fig{margin:20px 0 6px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:6px;padding:18px 16px 10px;overflow-x:auto}
+.fig svg{display:block;max-width:100%}
+.cap{font-size:12.5px;color:var(--ink-2);margin:6px 2px 26px;max-width:76ch;line-height:1.55}
+.cap b{color:var(--ink)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin:2px 2px 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+code{font-family:"SF Mono",Menlo,monospace;font-size:.86em;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:3px;padding:1px 5px}
+#tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--surface);
+  font-size:12px;padding:5px 9px;border-radius:4px;opacity:0;transition:opacity .12s;
+  font-variant-numeric:tabular-nums;z-index:10;max-width:260px;line-height:1.5}
+footer{margin-top:64px;border-top:1px solid var(--line);padding-top:14px;
+  font-size:12.5px;color:var(--ink-3);line-height:1.7}
+@media (prefers-reduced-motion: reduce){#tip{transition:none}}
+</style>
+
+<div class="wrap">
+<header class="rep">
+  <p class="eyebrow">KDM6AD · Differentiable Microphysics DA — Analysis Report</p>
+  <h1>GK2A AMI 실관측 자료동화 분석보고서<br>
+      <span style="font-size:19px;font-weight:600;color:var(--ink-2)">분석·파라미터 증분과 RTTOV 모의–관측 비교 — KLFS LC05, 2025-07-19</span></h1>
+  <div class="chips">
+    <span class="chip">사례 2025-07-19 00–03 UTC</span>
+    <span class="chip">KLFS LC05 · 234×282×39 · Δx 5 km</span>
+    <span class="chip">GK2A AMI L1B (KO 2 km + FD)</span>
+    <span class="chip">RTTOV clear/all-sky K</span>
+    <span class="chip">깨끗한 IR 9채널</span>
+    <span class="chip">mp137 frozen dylib · 0줄 변경</span>
+  </div>
+</header>
+
+<div class="tiles">
+  <div class="tile"><div class="v">±0.05<span class="u"> K</span></div><div class="k">맑음 window 채널 O−B bias (체인 무결 증명)</div></div>
+  <div class="tile"><div class="v">24/24</div><div class="k">구름 컬럼 all-sky |O−B| 개선 (vs clear-sky H)</div></div>
+  <div class="tile"><div class="v">−26.7<span class="u"> %</span></div><div class="k">결합 4D-Var J 감소 (상태+파라미터)</div></div>
+  <div class="tile"><div class="v">−38.9<span class="u"> %</span></div><div class="k">NCRK1 분석 증분 (관측이 지목한 파라미터)</div></div>
+  <div class="tile"><div class="v">328<span class="u"> s</span></div><div class="k">결합 분석 벽시계 (B=24, 1h 창)</div></div>
+</div>
+
+<h2><span class="no">1</span>사례·자료·방법</h2>
+<p>배경장은 37↔137 비트단위 검증 캠페인과 동일한 KLFS LC05 실사례(2025-07-19 00 UTC 초기)의
+mp137 재적분 궤적(현행 frozen dylib, 3 h SUCCESS COMPLETE·37프레임)이다. 관측은 GK2A AMI L1B —
+KO 2 km 재격자(00·01 UTC)와 FD 원본(02·03 UTC)을 각각 LCC·geos 역변환으로 지오로케이션해
+최근접 컬럼에 배정했다(4 km 게이트). 관측연산자는 RTTOV K(clear-sky 배치 / all-sky 단일컬럼,
+KDM6 DSD-일관 하이드로미티어 브리지)이고, 최소화는 CVT+L-BFGS strong-Wolfe, 창 adjoint는
+체크포인트-재계산 VJP다.</p>
+<table>
+<tr><th>구성</th><th>내용</th><th class="num">검증</th></tr>
+<tr><td>관측 채널</td><td>깨끗한 IR 9채널 (WV 6.3/6.9/7.3 + IR 8.7–13.3 μm) — sw038은 주간 태양혼입으로 배제(전 실험에서 rad_quality가 이미 차단했음을 확인), 01 UTC는 ir133 결측으로 8채널</td><td class="num">양측-QC 자동</td></tr>
+<tr><td>검정계수</td><td>KO 재격자엔 검정 속성이 없어(실측) 같은 날짜 FD 원본에서 추출·동결</td><td class="num">FD 내장계수와 동일</td></tr>
+<tr><td>지오로케이션</td><td>KO: 구면 LCC(Snyder) · FD: geos(CGMS) — 업스트림 잠복버그 2종(단위·반구) 수정</td><td class="num">pyproj Δ 6e-14°</td></tr>
+<tr><td>교차-투영</td><td>같은 스캔의 KO(LCC) vs FD(geos) BT 대조</td><td class="num">wv063 중앙값 0.114 K</td></tr>
+<tr><td>구름-QC</td><td>clear 실험: 전 슬롯 IR105 ≥ 285 K / all-sky 실험: &lt; 270 K 구름 컬럼만</td><td class="num">—</td></tr>
+</table>
+
+<h2><span class="no">2</span>배경장 검증 — 맑음 컬럼 O−B</h2>
+<p>t=0(00 UTC) 층화 256컬럼 중 관측 IR105 상위 25%(맑음-추정)에서의 채널별 O−B.
+window 채널(ir112·ir123)의 bias가 ±0.05 K라는 것은 검정계수→DN→BT→지오로케이션→collocation→
+상태유도→RTTOV의 7단 체인 어디에도 계통오차가 없음을 뜻한다 — 단위·K-순서·파장·투영 중
+하나라도 틀리면 수 K bias로 즉시 나타난다.</p>
+<div class="fig"><svg id="fig1"></svg></div>
+<p class="cap"><b>그림 1.</b> 맑음-추정 컬럼(n=64)의 채널별 O−B 평균(막대)과 ±1σ(수염).
+WV 채널의 −3.5 K는 상층 수증기 blend 영역의 잔여 민감도, window 채널은 0에 밀착.
+막대에 마우스를 올리면 수치가 표시된다.</p>
+
+<h2><span class="no">3</span>구름 컬럼 — clear-sky H vs all-sky H</h2>
+<p>clear-sky 연산자는 구름을 볼 수 없어 구름 컬럼에서 mean −46.4 K의 <em>구조적</em> 잔차를 남긴다
+(H의 결함 — 줄이면 안 되는 잔차). all-sky H(KDM6 브리지: qc→액체, qi+qs→얼음, D<sub>eff</sub>=2r<sub>eff</sub>)는
+같은 컬럼에서 잔차를 mean −13.6 K로 줄였고(<b>24/24 컬럼 개선</b>), 남은 것은 모델 구름의
+위치·두께 오차 — DA가 줄여야 할 "올바른 잔차"다.</p>
+<div class="legend">
+  <span><span class="sw" style="background:var(--obs)"></span>GK2A 관측</span>
+  <span><span class="sw" style="background:var(--blue)"></span>clear-sky H(x<sub>b</sub>)</span>
+  <span><span class="sw" style="background:var(--aqua)"></span>all-sky H(x<sub>b</sub>)</span>
+</div>
+<div class="fig"><svg id="fig2"></svg></div>
+<p class="cap"><b>그림 2.</b> 구름 컬럼 24개(관측 IR105 오름차순)의 IR105 밝기온도.
+clear-sky(파랑)는 관측(검정)과 무관하게 ~292 K에 몰려 있고, all-sky(청록)는 관측을 향해 내려온다.
+잔차가 남는 컬럼(예: #17, #20–22)이 모델 구름 오차의 소재지 — 아래 분석이 이를 조정한다.</p>
+
+<h2><span class="no">4</span>분석 — J 수렴과 관측공간 검증</h2>
+<p>네 실험의 비용함수 수렴을 J/J₀로 정규화해 비교한다. clear-sky 창(맑음 컬럼)의 감소폭이 작은 것은
+줄일 수 없는 잔차(대표성·바이어스) 위에서 동작하기 때문이고, all-sky(구름 컬럼)의 −24.6%와
+결합(상태+파라미터)의 −26.7%는 구름·파라미터 오차가 실제로 줄일 수 있는 성분임을 보여준다.</p>
+<div class="legend">
+  <span><span class="sw" style="background:var(--blue)"></span>clear 1h 창 (B=128)</span>
+  <span><span class="sw" style="background:var(--ink-3)"></span>clear 3h 창 4슬롯 (B=128)</span>
+  <span><span class="sw" style="background:var(--aqua)"></span>all-sky 1h 창 (B=24)</span>
+  <span><span class="sw" style="background:var(--violet)"></span>결합 상태+파라미터 (B=24)</span>
+</div>
+<div class="fig"><svg id="fig3"></svg></div>
+<p class="cap"><b>그림 3.</b> L-BFGS 클로저 평가별 정규화 비용 J/J₀. 전 곡선 단조 감소.
+all-sky·결합 실험의 굴곡(평가 3–4)은 strong-Wolfe 라인서치의 보수적 스텝 이후 곡률 정보가
+쌓이며 가속되는 전형적 L-BFGS 패턴이다.</p>
+
+<h3>관측공간 O−B → O−A</h3>
+<p>all-sky 분석 전후의 관측공간 잔차(마스크 통과 채널 전체). 초기시각(t=0)에서 RMS가
+14.89 → 13.99 K로 개선되고 창 끝(t=12)에서도 같은 부호의 개선이 유지된다. J −24.6% 대비
+관측공간 개선폭이 완만한 것은 정직한 결과다 — σ<sub>b</sub>-스케일 CVT 증분은 구름의 <em>양</em>을
+조정할 수 있지만 <em>위치</em> 오차(잔차의 큰 부분)는 초기장 진폭 조정만으로는 제거되지 않는다.</p>
+<div class="legend">
+  <span><span class="sw" style="background:var(--red)"></span>O−B (배경)</span>
+  <span><span class="sw" style="background:var(--aqua)"></span>O−A (분석)</span>
+</div>
+<div class="fig"><svg id="figOA"></svg></div>
+<p class="cap"><b>그림 3b.</b> 슬롯별 관측공간 잔차 RMS. t=12의 큰 잔차는 1시간 사이
+구름장 이동·발달을 배경 궤적이 따라가지 못한 몫 — 다중 사이클(순환 동화)이 다루는 영역이다.</p>
+
+
+<h2><span class="no">5</span>분석 증분 — 상태</h2>
+<p>all-sky 창 분석(B=24 구름 컬럼)의 상태 증분. 관측 정보가 온도(δth 배경 대비 0.0%)가 아니라
+<b>눈(q<sub>s</sub>, +35.7%)과 구름수(q<sub>c</sub>, +9.9%)</b>로 흘러갔다 — IR 구름 컬럼의 O−B를 지배하는 것이
+구름 광학두께이므로, 최소화기가 물리적으로 옳은 손잡이를 선택한 것이다. σ<sub>b</sub>가 q=0인 레벨에서
+자동으로 0이 되는 CVT 설계는 입력-0 저장고의 one-sided subgradient(cross-tree 계약)를 제어에서
+자연 배제한다.</p>
+<div class="fig"><svg id="fig4"></svg></div>
+<p class="cap"><b>그림 4.</b> all-sky 창 분석의 변수별 상대 증분 ‖δx‖/‖x<sub>b</sub>‖.
+th는 0.03%(δth 노름 1.7 K 상당), 구름 변수가 지배적.</p>
+
+<h3>증분의 연직 구조</h3>
+<div class="legend">
+  <span><span class="sw" style="background:var(--blue)"></span>|δth| 컬럼평균 [K]</span>
+  <span><span class="sw" style="background:var(--aqua)"></span>|δq<sub>s</sub>| 컬럼평균 [g/kg]</span>
+</div>
+<div class="fig"><svg id="figProf"></svg></div>
+<p class="cap"><b>그림 4b.</b> all-sky 분석 증분의 연직 프로파일(24컬럼 평균 절대값, 기압 좌표).
+δth는 930 hPa 부근 하부 경계층에서, δq<sub>s</sub>는 중상층 빙정 영역에서 최대 —
+각각 IR window 가중함수와 눈 산란층의 물리적 위치와 정합한다.</p>
+
+
+<h2><span class="no">6</span>파라미터 — gradient와 분석 증분</h2>
+<p>G4 배선(파라미터→qck1 f32-체인)과 all-sky 창 adjoint의 결합으로 warm-phase 파라미터 4종에 대한
+실관측 gradient를 산출하고(중앙 FD로 앵커), 이어 파라미터를 제어에 포함한 결합 4D-Var로
+분석값을 얻었다(상대 σ<sub>θ</sub>=20%).</p>
+<table>
+<tr><th>파라미터</th><th>물리 의미</th><th class="num">dJ/dθ</th><th class="num">로그감도 θ·dJ/dθ</th><th class="num">배경 → 분석</th><th class="num">증분</th></tr>
+<tr><td>PEAUT</td><td>자동전환(구름수→비) 효율</td><td class="num">+620.6</td><td class="num">248</td><td class="num">0.400 → 0.389</td><td class="num neg">−2.9%</td></tr>
+<tr><td><b>NCRK1</b></td><td>빗방울 자기충돌 계수 1</td><td class="num">+1.91</td><td class="num"><b>5,783</b></td><td class="num">3030 → 1853</td><td class="num neg"><b>−38.9%</b></td></tr>
+<tr><td>NCRK2</td><td>빗방울 자기충돌 계수 2</td><td class="num">+8.0×10⁻¹⁵</td><td class="num">21</td><td class="num">2.590 → 2.578 ×10¹⁵</td><td class="num neg">−0.5%</td></tr>
+<tr><td>ECCBRK</td><td>빗방울 분열(breakup) 효율</td><td class="num">+22.5</td><td class="num">22</td><td class="num">1.000 → 0.999</td><td class="num neg">−0.1%</td></tr>
+</table>
+<div class="fig"><svg id="fig5"></svg></div>
+<p class="cap"><b>그림 5.</b> 좌: 무차원 로그-감도 θ·∂J/∂θ (관측이 각 파라미터를 제약하는 세기).
+우: 결합 4D-Var 분석의 상대 증분. 로그-감도가 지배적인 NCRK1이 실제로 가장 크게 갱신되고
+약신호 파라미터는 배경(prior)에 구속된다 — gradient 분석과 최소화 결과의 자기일관.</p>
+<p class="note">PEAUT FD 앵커: adjoint +620.6 vs 중앙 FD +690.3 (rel 10%). 이 잔차는 adjoint 결함이 아니라
+FD측 잡음 바닥이다 — 순수 오라클 창의 파라미터 FD는 rel 7.3×10⁻⁵까지 일치했으므로, 차이는 RTTOV
+ASCII 출력 양자화 + qck1 f32-계단 + all-sky cfrac 게이트 비평활성의 중첩에서 온다. 부호·자릿수 일치가
+이 설정에서 FD가 제공할 수 있는 최대 검증이다.</p>
+
+<h2><span class="no">7</span>해석의 한계와 다음 단계</h2>
+<p><b>한계.</b> ① 파라미터 분석값은 단일 사례·1 h 창·24컬럼이 선호하는 값이며 기후학적 보정값이
+아니다 — 운영 보정은 다수 사례·계절 앙상블에서 이 기계를 반복해 얻는 통계다. ② all-sky O−B의
+잔여 −13.6 K에는 구름 위치오차 외에 D<sub>eff</sub> 진단·cfrac 이진 게이트의 표현 한계도 섞여 있다.
+③ 관측오차 σ<sub>o</sub>=1 K 등방 가정은 채널·상황별 정교화 여지가 있다. ④ B<sub>θ</sub>(σ 20%)는
+민감도 실험용 설정값이다.</p>
+<p><b>다음.</b> 다수-케이스 파라미터 추정 앙상블(보정 통계), 분석–예보 순환 자동화,
+solar 6채널 REFL 확장(경로 검증 완료), FD 02·03 UTC를 포함한 3 h all-sky 창.</p>
+
+<footer>
+  재현 정보 — 저장소 <code>KDM6AD-k</code> main <code>a815bb3</code> 기준 · 계획서 <code>docs/DA_REALTIME_PLAN.md</code> §6 실측 ①–⑨ ·
+  게이트 <code>oracle/tests/test_real_innovation_lc05.py</code>, <code>test_gk2a_l1b*.py</code> ·
+  오라클 스위트 570 passed · frozen dylib(37↔137 f32 bitwise) 물리 코드 0줄 변경.
+  실행 스크립트는 세션 스크래치패드 <code>run_real_*.py</code> 계열, 산출 JSON 동봉 데이터로 본 보고서에 인라인.
+</footer>
+</div>
+<div id="tip" role="status"></div>
+
+<script>
+const D = {"t0_clear_omb": {"wv063": {"mean": -3.51, "std": 1.73}, "wv069": {"mean": 1.44, "std": 1.75}, "wv073": {"mean": 1.44, "std": 1.35}, "ir087": {"mean": -2.14, "std": 1.22}, "ir096": {"mean": -3.94, "std": 1.60}, "ir105": {"mean": -1.63, "std": 1.25}, "ir112": {"mean": -0.04, "std": 1.19}, "ir123": {"mean": 0.05, "std": 1.16}, "ir133": {"mean": -0.34, "std": 1.02}},
+CLOUDY: null, J: null, INC: null, PARAM: null};
+D.CLOUDY = [[204.9,290.8,238.5],[215.1,291.5,245.8],[223.9,292.3,260.6],[227.9,291.8,240.2],[230.9,292.6,273.7],[233.2,290.8,249.9],[235.9,294.1,264.1],[238.4,291.2,244.2],[240.9,294.6,263.3],[243.2,291.2,236.7],[245.5,290.2,246.8],[247.6,294.5,251.0],[249.8,291.9,241.3],[251.7,294.4,252.4],[253.4,290.4,248.9],[254.9,292.4,258.1],[256.5,291.1,284.2],[258.3,292.0,280.2],[259.9,290.0,259.3],[261.8,292.4,287.4],[263.7,294.4,287.4],[265.6,293.1,286.8],[267.5,293.7,245.0],[270.0,291.4,281.1]];
+D.J = {
+ clear1h:[11676.9,11675.3,11670.7,11643.4,11382.7,10972.5],
+ c3h:[20897.2,20894.6,20892.7,20889.0,20852.1,20798.3,20083.8],
+ allsky:[103850.2,102920.9,102915.9,92389.7,78289.3],
+ joint:[63296.5,61321.9,58974.8,58973.9,50233.7,46388.6]};
+D.INC = [["th",0.03],["qv",1.5],["qc",9.9],["qi",0.9],["qs",35.7]];
+D.PARAM = [["PEAUT",248,-2.87],["NCRK1",5783,-38.86],["NCRK2",21,-0.47],["ECCBRK",22,-0.10]];
+
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = document.getElementById('tip');
+function hover(el, html){
+  el.addEventListener('mousemove', e=>{tip.innerHTML=html; tip.style.opacity=1;
+    tip.style.left=(e.clientX+14)+'px'; tip.style.top=(e.clientY-10)+'px';});
+  el.addEventListener('mouseleave', ()=>tip.style.opacity=0);
+}
+const S = (tag, at, parent)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const k in at)n.setAttribute(k,at[k]); if(parent)parent.appendChild(n); return n;};
+
+/* ── 그림 1: 채널별 맑음 O−B ── */
+(function(){
+  const svg=document.getElementById('fig1'); const chs=Object.keys(D.t0_clear_omb);
+  const W=820,H=250,L=52,R=14,T=16,B=34; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const ymin=-5.5,ymax=3, y=v=>T+(ymax-v)/(ymax-ymin)*(H-T-B);
+  const bw=(W-L-R)/chs.length;
+  for(let g=-5;g<=3;g++){S('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--line'),'stroke-width':g===0?0:1},svg);
+    S('text',{x:L-8,y:y(g)+4,'text-anchor':'end','font-size':11,fill:css('--ink-3')},svg).textContent=g;}
+  S('line',{x1:L,x2:W-R,y1:y(0),y2:y(0),stroke:css('--ink-2'),'stroke-width':1.2},svg);
+  chs.forEach((c,i)=>{
+    const d=D.t0_clear_omb[c], x=L+i*bw+bw*0.5;
+    const barw=Math.min(30,bw*0.44);
+    const col = Math.abs(d.mean)<1 ? css('--aqua') : css('--blue');
+    const y0=y(0), y1=y(d.mean);
+    const r=S('rect',{x:x-barw/2,y:Math.min(y0,y1),width:barw,height:Math.max(2,Math.abs(y1-y0)),
+      rx:3,fill:col},svg);
+    S('line',{x1:x,x2:x,y1:y(d.mean-d.std),y2:y(d.mean+d.std),stroke:css('--ink-2'),'stroke-width':1.4},svg);
+    S('text',{x:x,y:H-14,'text-anchor':'middle','font-size':11.5,fill:css('--ink-2')},svg).textContent=c;
+    S('text',{x:x,y:(d.mean<0? y1+14 : y1-6),'text-anchor':'middle','font-size':10.5,
+      fill:css('--ink-2'),'font-variant-numeric':'tabular-nums'},svg)
+      .textContent=(d.mean>0?'+':'')+d.mean.toFixed(2);
+    hover(r,`<b>${c}</b><br>O−B ${d.mean>0?'+':''}${d.mean.toFixed(2)} K · σ ${d.std.toFixed(2)} K · n=64`);
+  });
+  S('text',{x:14,y:T+8,'font-size':11,fill:css('--ink-3'),transform:`rotate(-90 14 ${T+8})`,'text-anchor':'end'},svg).textContent='O−B [K]';
+})();
+
+/* ── 그림 2: 구름 컬럼 dumbbell ── */
+(function(){
+  const svg=document.getElementById('fig2');
+  const W=820,H=320,L=52,R=14,T=14,B=34; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const ymin=200,ymax=300, y=v=>T+(ymax-v)/(ymax-ymin)*(H-T-B);
+  for(let g=200;g<=300;g+=20){S('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--line')},svg);
+    S('text',{x:L-8,y:y(g)+4,'text-anchor':'end','font-size':11,fill:css('--ink-3')},svg).textContent=g;}
+  const n=D.CLOUDY.length, bw=(W-L-R)/n;
+  D.CLOUDY.forEach((r,i)=>{
+    const x=L+i*bw+bw/2;
+    S('line',{x1:x,x2:x,y1:y(r[0]),y2:y(Math.max(r[1],r[2])),stroke:css('--line'),'stroke-width':1},svg);
+    const dO=S('circle',{cx:x,cy:y(r[0]),r:4.5,fill:css('--obs')},svg);
+    const dC=S('circle',{cx:x,cy:y(r[1]),r:4,fill:css('--blue'),stroke:css('--surface-2'),'stroke-width':1.5},svg);
+    const dA=S('circle',{cx:x,cy:y(r[2]),r:4,fill:css('--aqua'),stroke:css('--surface-2'),'stroke-width':1.5},svg);
+    S('text',{x:x,y:H-14,'text-anchor':'middle','font-size':9.5,fill:css('--ink-3')},svg).textContent=i+1;
+    const h=`<b>컬럼 #${i+1}</b><br>관측 ${r[0].toFixed(1)} K<br>clear H ${r[1].toFixed(1)} (O−B ${(r[0]-r[1]).toFixed(1)})<br>all-sky H ${r[2].toFixed(1)} (O−B ${(r[0]-r[2]).toFixed(1)})`;
+    [dO,dC,dA].forEach(el=>hover(el,h));
+  });
+  S('text',{x:14,y:T+8,'font-size':11,fill:css('--ink-3'),transform:`rotate(-90 14 ${T+8})`,'text-anchor':'end'},svg).textContent='IR105 BT [K]';
+  S('text',{x:(L+W-R)/2,y:H-1,'text-anchor':'middle','font-size':11,fill:css('--ink-3')},svg).textContent='구름 컬럼 (관측 IR105 오름차순)';
+})();
+
+/* ── 그림 3: J 수렴 (정규화) ── */
+(function(){
+  const svg=document.getElementById('fig3');
+  const W=820,H=280,L=56,R=110,T=14,B=36; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const series=[["clear 1h",D.J.clear1h,css('--blue')],["clear 3h·4슬롯",D.J.c3h,css('--ink-3')],
+                ["all-sky",D.J.allsky,css('--aqua')],["결합(θ 포함)",D.J.joint,css('--violet')]];
+  const ymin=0.7,ymax=1.005, y=v=>T+(ymax-v)/(ymax-ymin)*(H-T-B);
+  const maxN=Math.max(...series.map(s=>s[1].length));
+  const x=i=>L+i/(maxN-1)*(W-L-R);
+  for(let g=0.7;g<=1.001;g+=0.05){S('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--line')},svg);
+    S('text',{x:L-8,y:y(g)+4,'text-anchor':'end','font-size':11,fill:css('--ink-3')},svg).textContent=g.toFixed(2);}
+  series.forEach(([name,tr,col])=>{
+    const pts=tr.map((v,i)=>[x(i),y(v/tr[0])]);
+    S('path',{d:'M'+pts.map(p=>p.join(',')).join('L'),fill:'none',stroke:col,'stroke-width':2.2,
+      'stroke-linejoin':'round'},svg);
+    pts.forEach((p,i)=>{const c=S('circle',{cx:p[0],cy:p[1],r:3.6,fill:col,
+      stroke:css('--surface-2'),'stroke-width':1.5},svg);
+      hover(c,`<b>${name}</b><br>평가 ${i} · J=${tr[i].toFixed(0)}<br>J/J₀=${(tr[i]/tr[0]).toFixed(3)}`);});
+    const last=pts[pts.length-1];
+    S('text',{x:last[0]+10,y:last[1]+4,'font-size':11.5,fill:col,'font-weight':600},svg)
+      .textContent=`${name} ${((tr[tr.length-1]/tr[0]-1)*100).toFixed(1)}%`;
+  });
+  for(let i=0;i<maxN;i++)S('text',{x:x(i),y:H-14,'text-anchor':'middle','font-size':10.5,fill:css('--ink-3')},svg).textContent=i;
+  S('text',{x:(L+W-R)/2,y:H-1,'text-anchor':'middle','font-size':11,fill:css('--ink-3')},svg).textContent='L-BFGS 클로저 평가';
+  S('text',{x:14,y:T+8,'font-size':11,fill:css('--ink-3'),transform:`rotate(-90 14 ${T+8})`,'text-anchor':'end'},svg).textContent='J / J₀';
+})();
+
+/* ── 그림 4: 상태 증분 상대 노름 ── */
+(function(){
+  const svg=document.getElementById('fig4');
+  const W=820,H=190,L=64,R=60,T=10,B=30; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const xmax=40, xs=v=>L+v/xmax*(W-L-R);
+  for(let g=0;g<=40;g+=10){S('line',{y1:T,y2:H-B,x1:xs(g),x2:xs(g),stroke:css('--line')},svg);
+    S('text',{x:xs(g),y:H-12,'text-anchor':'middle','font-size':11,fill:css('--ink-3')},svg).textContent=g+'%';}
+  const bh=(H-T-B)/D.INC.length;
+  D.INC.forEach(([f,v],i)=>{
+    const yy=T+i*bh+bh*0.18;
+    const col = (f==='qc'||f==='qi'||f==='qs') ? css('--aqua') : css('--blue');
+    const r=S('rect',{x:xs(0),y:yy,width:Math.max(2,xs(v)-xs(0)),height:bh*0.62,rx:3,fill:col},svg);
+    S('text',{x:L-10,y:yy+bh*0.48,'text-anchor':'end','font-size':12.5,fill:css('--ink'),'font-weight':600},svg).textContent=f;
+    S('text',{x:xs(v)+8,y:yy+bh*0.48,'font-size':11.5,fill:css('--ink-2')},svg).textContent=v.toFixed(1)+'%';
+    hover(r,`<b>${f}</b> — ‖δ${f}‖/‖${f}_b‖ = ${v}%`);
+  });
+})();
+
+/* ── 그림 5: 파라미터 로그감도 + 증분 ── */
+(function(){
+  const svg=document.getElementById('fig5');
+  const W=820,H=210,mid=W/2; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const T=26,B=30,bh=(H-T-B)/4;
+  S('text',{x:36,y:14,'font-size':12,fill:css('--ink-2'),'font-weight':700},svg).textContent='로그-감도 θ·∂J/∂θ (log 축)';
+  S('text',{x:mid+46,y:14,'font-size':12,fill:css('--ink-2'),'font-weight':700},svg).textContent='분석 증분 Δθ/θ_b';
+  const L1=96,R1=mid-30, lmax=Math.log10(6000), lx=v=>L1+Math.max(0,Math.log10(Math.max(v,1)))/lmax*(R1-L1);
+  [1,10,100,1000].forEach(g=>{S('line',{x1:lx(g),x2:lx(g),y1:T,y2:H-B,stroke:css('--line')},svg);
+    S('text',{x:lx(g),y:H-12,'text-anchor':'middle','font-size':10.5,fill:css('--ink-3')},svg).textContent=g;});
+  const L2=mid+96,R2=W-24, xmax=40, px=v=>L2+Math.min(Math.abs(v),xmax)/xmax*(R2-L2);
+  [0,20,40].forEach(g=>{S('line',{x1:px(g),x2:px(g),y1:T,y2:H-B,stroke:css('--line')},svg);
+    S('text',{x:px(g),y:H-12,'text-anchor':'middle','font-size':10.5,fill:css('--ink-3')},svg).textContent='−'+g+'%';});
+  D.PARAM.forEach(([name,sens,inc],i)=>{
+    const yy=T+i*bh+bh*0.2, h=bh*0.58;
+    S('text',{x:L1-8,y:yy+h*0.78,'text-anchor':'end','font-size':12,fill:css('--ink'),'font-weight':600},svg).textContent=name;
+    const r1=S('rect',{x:L1,y:yy,width:Math.max(2,lx(sens)-L1),height:h,rx:3,fill:css('--violet')},svg);
+    hover(r1,`<b>${name}</b> θ·dJ/dθ = ${sens.toLocaleString()}`);
+    S('text',{x:L2-8,y:yy+h*0.78,'text-anchor':'end','font-size':12,fill:css('--ink'),'font-weight':600},svg).textContent=name;
+    const r2=S('rect',{x:L2,y:yy,width:Math.max(2,px(inc)-L2),height:h,rx:3,fill:css('--aqua')},svg);
+    S('text',{x:px(inc)+8,y:yy+h*0.78,'font-size':11.5,fill:css('--ink-2')},svg).textContent=inc.toFixed(1)+'%';
+    hover(r2,`<b>${name}</b> ${inc}% (배경 → 분석)`);
+  });
+})();
+
+D.OA = {"t0": {"omb_rms": 14.889769166827351, "oma_rms": 13.994938966011702, "omb_mean": -7.855931718741296, "oma_mean": -7.142491903926481, "n": 216}, "t12": {"omb_rms": 33.66384564279642, "oma_rms": 32.66146522417022, "omb_mean": -27.23140318093195, "oma_mean": -26.44650734759861, "n": 192}};
+D.PROF = {"p": [984.7, 978.1, 969.6, 959.1, 945.9, 929.6, 909.9, 886.3, 858.7, 827.0, 791.4, 752.5, 711.1, 667.9, 623.5, 578.1, 532.0, 485.6, 439.4, 395.7, 356.2, 320.7, 288.6, 259.6, 233.5, 209.9, 188.8, 169.8, 152.7, 137.3, 123.5, 111.0, 99.8, 89.8, 80.7, 72.6, 65.3, 58.7, 52.8], "dth": [0.0132, 0.0023, 0.0, 0.0036, 0.0053, 0.0856, 0.0714, 0.035, 0.0396, 0.0376, 0.0392, 0.0453, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "dqs": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00057, 0.01045, 0.00971, 0.00019, 0.00067, 0.00207, 0.01231, 0.01062, 0.00458, 0.00042, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]};
+
+/* 그림 3b: O-B vs O-A RMS */
+(function(){
+  const svg=document.getElementById('figOA');
+  const W=560,H=200,L=56,R=16,T=14,B=44; svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const ymax=36, y=v=>T+(ymax-v)/ymax*(H-T-B);
+  for(let g=0;g<=35;g+=10){S('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--line')},svg);
+    S('text',{x:L-8,y:y(g)+4,'text-anchor':'end','font-size':11,fill:css('--ink-3')},svg).textContent=g;}
+  const slots=[["t=0 (00 UTC)",D.OA.t0],["t=12 (01 UTC)",D.OA.t12]];
+  slots.forEach(([name,d],si)=>{
+    const cx=L+(si+0.5)*(W-L-R)/2;
+    [["O−B",d.omb_rms,css('--red'),d.omb_mean],["O−A",d.oma_rms,css('--aqua'),d.oma_mean]].forEach(([lab,v,col,mn],k)=>{
+      const x=cx+(k===0?-38:6);
+      const r=S('rect',{x:x,y:y(v),width:32,height:y(0)-y(v),rx:3,fill:col},svg);
+      S('text',{x:x+16,y:y(v)-6,'text-anchor':'middle','font-size':10.5,fill:css('--ink-2')},svg).textContent=v.toFixed(1);
+      hover(r,'<b>'+name+' '+lab+'</b><br>RMS '+v.toFixed(2)+' K · mean '+mn.toFixed(2)+' K · n='+d.n);
+    });
+    S('text',{x:cx,y:H-16,'text-anchor':'middle','font-size':11.5,fill:css('--ink-2')},svg).textContent=name;
+  });
+  S('text',{x:14,y:T+8,'font-size':11,fill:css('--ink-3'),transform:'rotate(-90 14 '+(T+8)+')','text-anchor':'end'},svg).textContent='잔차 RMS [K]';
+})();
+
+/* 그림 4b: 증분 연직 프로파일 */
+(function(){
+  const svg=document.getElementById('figProf');
+  const W=820,H=320,T=16,B=40,mid=W/2; svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
+  const p=D.PROF.p, pmax=1000, pmin=50;
+  const yp=v=>T+(Math.log(pmax)-Math.log(v))/(Math.log(pmax)-Math.log(pmin))*(H-T-B);
+  function panel(x0,x1,vals,col,unit,vmax){
+    const xs=v=>x0+v/vmax*(x1-x0);
+    [1000,700,500,300,100].forEach(g=>{S('line',{x1:x0,x2:x1,y1:yp(g),y2:yp(g),stroke:css('--line')},svg);
+      S('text',{x:x0-6,y:yp(g)+4,'text-anchor':'end','font-size':10.5,fill:css('--ink-3')},svg).textContent=g;});
+    const pts=[];
+    vals.forEach((v,i)=>{ if(p[i]>=pmin) pts.push([xs(v),yp(p[i]),i]); });
+    S('path',{d:'M'+pts.map(q=>q[0]+','+q[1]).join('L'),fill:'none',stroke:col,'stroke-width':2.2,'stroke-linejoin':'round'},svg);
+    pts.forEach(q=>{const c=S('circle',{cx:q[0],cy:q[1],r:3,fill:col,stroke:css('--surface-2'),'stroke-width':1.2},svg);
+      hover(c,'p '+p[q[2]].toFixed(0)+' hPa<br>'+vals[q[2]].toFixed(4)+' '+unit);});
+    [0,vmax/2,vmax].forEach(g=>S('text',{x:xs(g),y:H-18,'text-anchor':'middle','font-size':10.5,fill:css('--ink-3')},svg).textContent=Number(g.toPrecision(2)));
+  }
+  panel(70,mid-40,D.PROF.dth,css('--blue'),'K',0.1);
+  panel(mid+70,W-30,D.PROF.dqs,css('--aqua'),'g/kg',Math.max.apply(null,D.PROF.dqs)*1.15);
+  S('text',{x:(70+mid-40)/2,y:H-2,'text-anchor':'middle','font-size':11.5,fill:css('--ink-2')},svg).textContent='|δth| [K]';
+  S('text',{x:(mid+70+W-30)/2,y:H-2,'text-anchor':'middle','font-size':11.5,fill:css('--ink-2')},svg).textContent='|δqs| [g/kg]';
+  S('text',{x:16,y:T+10,'font-size':11,fill:css('--ink-3'),transform:'rotate(-90 16 '+(T+10)+')','text-anchor':'end'},svg).textContent='기압 [hPa]';
+})();
+
+</script>
