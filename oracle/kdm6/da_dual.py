@@ -83,6 +83,12 @@ def params_from_vtheta(prior: ParamPrior, v_theta: torch.Tensor,
                        *, live: bool = False) -> Parameters:
     """θ_i = θb_i · exp(σ_i · v_θ,i) — live=True면 leaf(grad용)로 생성."""
     theta = prior.theta_b * torch.exp(prior.sigma_log * v_theta)
+    if not bool(torch.isfinite(theta).all()):
+        # log-CVT는 양수성은 보장하지만 finite는 아님 — L-BFGS 라인서치의 큰
+        # 시도 스텝에서 exp 오버플로 가능 (재검토 #5)
+        raise FloatingPointError(
+            f"theta(v_theta) became non-finite (v_theta={v_theta.tolist()}); "
+            "reduce sigma_log or bound v_theta")
     leaves = []
     for i in range(4):
         t = theta[i].detach().clone()
@@ -120,6 +126,7 @@ def run_dual_minimizer(
     max_iter: int = 20,
     history_size: int = 8,
     tolerance_grad: float = 1.0e-10,
+    require_signature: bool = True,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -164,6 +171,12 @@ def run_dual_minimizer(
             if len(out) == 4:
                 j_t, adj_t, n_valid, sig = out
             else:
+                if require_signature:
+                    raise RuntimeError(
+                        "production dual obs_eval must return a valid/regime "
+                        "signature (4th element) — without it same-count mask "
+                        "substitution is undetectable; pass "
+                        "require_signature=False only for synthetic tests")
                 j_t, adj_t, n_valid = out
                 sig = None
             n_valid_acc[t] = (int(n_valid), sig)
@@ -216,6 +229,11 @@ def run_dual_minimizer(
                         gp[i] = res.grad_params[n].to(torch.float64)
             theta_now = torch.stack([params_live[i].detach() for i in range(4)])
             g_th = v_th.detach() + param_prior.sigma_log * theta_now * gp
+            for name, tt_ in (("j_obs", j_obs), ("g_x", g_x), ("g_th", g_th)):
+                if not bool(torch.isfinite(tt_).all()):
+                    raise FloatingPointError(
+                        f"{name} became non-finite in the dual closure — "
+                        "corrupted loss/gradient must not reach L-BFGS")
             v_x.grad = g_x
             v_th.grad = g_th
             j = j_b + j_th + j_obs
@@ -244,28 +262,30 @@ def run_dual_minimizer(
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               y_by_time: dict, obs_cfg,
-                              window_config: WindowConfig) -> Callable:
-    """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명 (재검토 #3).
+                              window_config: WindowConfig,
+                              param_prior: ParamPrior) -> Callable:
+    """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명.
 
-    동결 기준은 **배경 궤적** (stop-review 수정): 슬롯 t>0의 mask는 x_b가 아니라
-    값-전용 창 전방으로 얻은 M(x_b → t)에서 H를 평가해 동결한다 — 창 동안
-    구름이 이동/생성/소멸하므로 x_b 기준 t>0 mask는 틀린 regime이다 (전 도메인
-    드라이버의 XB12 관례와 동일). mask = (관측 quality==0) ∧ (배경궤적
-    rad_quality==0), 내부 루프에서는 BT만 재평가 — 반환
-    (j, adj, n_valid, sha256(mask)).
+    동결 기준은 **θ_b 배경 궤적**: run_da_window 자체를 no-op adjoint 프로브로
+    사용해 (η/η_pre·cloud-gate 등 궤적 의미론 보존) M(x_b→t; θ_b)의 슬롯 상태를
+    채취하고, 거기서 rad_quality를 평가해 mask = (관측 quality==0) ∧ (배경
+    rad_quality==0) 를 동결한다. θ_b는 **param_prior에서** 취한다 (재검토 #3:
+    window_config.params와 prior.theta_b의 조용한 불일치 차단 — 프로브 params를
+    prior 기준으로 강제 주입).
 
-    y_by_time: {t(창 스텝 인덱스): (y_bt (B,nch), y_rq (B,nch))} — superob 권장.
-    window_config: 궤적 전방용 dt/params (θ_b 기준 동결).
+    손실은 compute_obs_loss (Huber + full-shape/bias/sigma/masked-NaN 방어,
+    재검토 blocker-1) — 수제 quadratic이 우회하던 안전장치 복원. gradient는
+    clear-sky connected 필드(th/qv)에 대해 autograd.grad(allow_unused=False) —
+    구조적 그래프 단절을 조용한 0 대신 거부 (blocker-2).
+
+    y_by_time: {t: (y_bt (B,nch), y_rq (B,nch)[, bias])} — superob 권장.
+    반환 obs_eval: (j, adj, n_valid, sha256(mask)).
     """
     import dataclasses
     import hashlib
     from .da_driver import batched_clear_bt
+    from .obs.obs_loss import compute_obs_loss
 
-    # 배경 궤적: run_da_window 자체를 프로브로 사용 (stop-review 수정) —
-    # 수제 kdm6_step 루프는 WindowConfig의 궤적 의미론(η/η_pre 약한구속 증분,
-    # cloud-gate 스킵, obs_active 결합 등)을 놓친다. no-op obs_adjoint(전부
-    # None)로 실제 창과 **동일한 전방 궤적**의 슬롯 상태를 채취한다
-    # (covector 전무 → backward 스윕은 skip 경로, param_grads=False).
     traj = {}
 
     def _probe(tt, x_t):
@@ -273,7 +293,10 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
             traj[tt] = State(*(f.detach().clone() for f in x_t))
         return None
 
-    probe_cfg = dataclasses.replace(window_config, param_grads=False)
+    theta_b_params = params_from_vtheta(param_prior, torch.zeros(4, **_F64),
+                                        live=False)
+    probe_cfg = dataclasses.replace(window_config, params=theta_b_params,
+                                    param_grads=False)
     run_da_window(xb, forcings, _probe, probe_cfg)
     missing = set(y_by_time) - set(traj)
     if missing:
@@ -282,7 +305,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
             f"(T={len(forcings)}) — check y_by_time step indices")
 
     frozen: dict = {}
-    for t, (y_bt, y_rq) in y_by_time.items():
+    for t, entry in y_by_time.items():
+        y_bt, y_rq = entry[0], entry[1]
         with torch.no_grad():
             _, rad_q, _ = batched_clear_bt(traj[t],
                                            forcings[min(t, len(forcings) - 1)],
@@ -294,15 +318,26 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     def obs_eval(t, x_t):
         if t not in frozen:
             return None
-        y_bt, _ = y_by_time[t]
+        entry = y_by_time[t]
+        y_bt = entry[0]
+        bias = entry[2] if len(entry) > 2 else None
         mask, n_valid, sig = frozen[t]
         bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
                                          obs_cfg)
-        j = 0.5 * ((mask * (bt.to(torch.float64) - y_bt) / obs_cfg.obs_sigma) ** 2).sum()
-        j.backward()
-        adj = State(*(getattr(leaves, f).grad if getattr(leaves, f).grad is not None
-                      else torch.zeros_like(getattr(x_t, f))
-                      for f in State._fields))
+        obs = {"bt": y_bt}
+        if bias is not None:
+            obs["bias"] = bias
+        j = compute_obs_loss(bt.to(torch.float64), obs, mask,
+                             sigma=obs_cfg.obs_sigma)
+        zeros = torch.zeros_like(leaves.th)
+        if n_valid > 0:
+            # clear-sky connected 필드는 th/qv — None grad는 구조적 단절
+            g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv],
+                                             allow_unused=False)
+        else:
+            g_th, g_qv = zeros, zeros
+        adj = State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
+                    qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
         return float(j.detach()), adj, n_valid, sig
 
     return obs_eval

@@ -59,7 +59,7 @@ def _quad_obs(y_target):
         j = 0.5 * (d * d).sum()
         adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
                       for f in State._fields))
-        return float(j), adj, int(d.numel())
+        return float(j), adj, int(d.numel()), "synthetic-quad"
     return obs_eval
 
 
@@ -175,7 +175,7 @@ def test_mask_gaming_gate():
         j = 0.5 * (d * d).sum()
         adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
                       for f in State._fields))
-        return float(j), adj, n_valid
+        return float(j), adj, n_valid, "sig-const"
 
     with pytest.raises(RuntimeError, match="n_valid changed"):
         run_dual_minimizer(xb, [fc, fc], gaming_obs, WindowConfig(dt=DT),
@@ -210,7 +210,7 @@ def test_mask_gaming_gate_none_bypass():
         d = x_t.th - y
         adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
                       for f in State._fields))
-        return float(0.5 * (d * d).sum()), adj, int(d.numel())
+        return float(0.5 * (d * d).sum()), adj, int(d.numel()), "sig-const"
 
     with pytest.raises(RuntimeError, match="slots changed"):
         run_dual_minimizer(xb, [fc, fc], vanishing_obs, WindowConfig(dt=DT),
@@ -267,28 +267,65 @@ def test_param_prior_finite_and_active_validation():
 
 
 def test_frozen_adapter_uses_background_trajectory(monkeypatch):
-    """stop-review: t>0 슬롯의 동결 mask는 x_b가 아니라 배경 궤적 M(x_b→t)에서
-    평가돼야 한다 — 어댑터가 t=2 동결 시 진화된 상태를 넘기는지 구조 검증."""
+    """재검토 #3/#7 + stop-review: ① t>0 동결이 배경 궤적 M(x_b→t) 상태로 평가
+    ② mask가 궤적-기준 rad_quality로 선택됨(수치 검증) ③ 내부 루프에서 x_t가
+    바뀌어도 반환 서명·n_valid 불변."""
     import kdm6.da_dual as dd
     xb, fc = _mk_state(), _mk_forcing()
     y_bt = torch.full((1, 16), 250.0, **_F64)
     y_rq = torch.zeros((1, 16), **_F64)
-    seen = {}
 
     def fake_clear_bt(x_state, fc_t, cfg):
-        seen[len(seen)] = x_state.th.detach().clone()
-        bt = torch.full((1, 16), 260.0, **_F64).requires_grad_(True)
-        rq = torch.zeros((1, 16), **_F64)
+        # xb 그대로면 rad_quality=1(무효), 진화 상태면 0(유효) — 동결이 궤적
+        # 기준인지 수치로 구분된다
+        is_xb = torch.equal(x_state.th, xb.th)
+        rq = torch.ones((1, 16), **_F64) if is_xb else torch.zeros((1, 16), **_F64)
         leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
-        # bt를 leaves.th에 인위적으로 연결 (backward 성립용)
-        bt2 = bt + 0.0 * leaves.th.sum()
-        return bt2, rq, leaves
+        bt = (torch.full((1, 16), 260.0, **_F64)
+              + 0.0 * (leaves.th.sum() + leaves.qv.sum()))   # th·qv 연결
+        return bt, rq, leaves
 
     import kdm6.da_driver as drv
     monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
     obs = dd.make_dual_frozen_obs_eval(
         xb, [fc, fc], {0: (y_bt, y_rq), 2: (y_bt, y_rq)},
-        type("C", (), {"obs_sigma": 1.0})(), WindowConfig(dt=DT))
-    # 동결 단계에서 두 번 호출: seen[0]=t0(=xb), seen[1]=t2(진화 상태)
-    assert torch.equal(seen[0], xb.th)
-    assert not torch.equal(seen[1], xb.th), "t=2 동결이 x_b로 평가됨 (궤적 미사용)"
+        type("C", (), {"obs_sigma": 1.0})(), WindowConfig(dt=DT),
+        dd.default_param_prior(0.2))
+    # ② t=0 동결은 x_b(rq=1→무효 0개), t=2 동결은 진화 상태(rq=0→16개 유효)
+    out0 = obs(0, xb)
+    out2 = obs(2, xb)
+    assert out0[2] == 0, "t=0 n_valid는 x_b 기준 0이어야"
+    assert out2[2] == 16, "t=2 n_valid가 16이 아니면 궤적 아닌 x_b에서 동결된 것"
+    # ③ 내부 상태가 바뀌어도 서명·n_valid 동결 유지
+    x_moved = State(*(f + 0.01 for f in xb))
+    out2b = obs(2, x_moved)
+    assert out2b[2] == out2[2] and out2b[3] == out2[3]
+
+
+def test_three_tuple_requires_optout():
+    """재검토 #4: 서명 없는 3-튜플은 기본값에서 거부, 명시적 opt-out만 허용."""
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def sigless_obs(t, x_t):
+        if t != 2:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return float(0.5 * (d * d).sum()), adj, int(d.numel())
+
+    with pytest.raises(RuntimeError, match="signature"):
+        run_dual_minimizer(xb, [fc, fc], sigless_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+    res = run_dual_minimizer(xb, [fc, fc], sigless_obs, WindowConfig(dt=DT),
+                             _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                             require_signature=False)
+    assert res.j_trace
+
+
+def test_theta_overflow_guard():
+    """재검토 #5: exp 오버플로 θ → FloatingPointError (조용한 Inf 차단)."""
+    from kdm6.da_dual import params_from_vtheta
+    prior = default_param_prior(0.2)
+    with pytest.raises(FloatingPointError, match="non-finite"):
+        params_from_vtheta(prior, torch.full((4,), 1.0e5, **_F64))
