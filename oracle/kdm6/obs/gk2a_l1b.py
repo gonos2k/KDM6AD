@@ -147,6 +147,10 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
     unknown = set(by_ch) - set(AMI_CHANNELS)
     if unknown:
         raise ValueError(f"unknown AMI channels: {sorted(unknown)}")
+    # cal-table 완비 검증도 파일 열기 전에 (검증-우선 계약, stop-review)
+    missing_cal = [ch for ch in sorted(by_ch) if cal_table["channels"].get(ch) is None]
+    if missing_cal:
+        raise ValueError(f"cal table has no channel(s) {missing_cal}")
 
     lat = lon = None
     bt_all: dict[str, np.ndarray] = {}
@@ -159,10 +163,7 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
             if lat is None:
                 attrs = {a: ds.getncattr(a) for a in ds.ncattrs()}
                 lat, lon = ko_grid_latlon(attrs)
-            cal = cal_table["channels"].get(ch)
-            if cal is None:
-                raise ValueError(f"cal table has no channel {ch!r}")
-            bt, q = dn_to_bt(raw, cal)
+            bt, q = dn_to_bt(raw, cal_table["channels"][ch])
             bt_all[ch], q_all[ch] = bt, q
         finally:
             ds.close()
