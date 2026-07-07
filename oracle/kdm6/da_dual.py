@@ -157,8 +157,21 @@ def run_dual_minimizer(
 
         res = run_da_window(x0, forcings, obs_adjoint, cfg_i)
         counters["windows"] += 1
-        for t, nv in n_valid_acc.items():
-            frozen_n_valid.setdefault(t, nv)
+        # 우회 봉쇄 (stop-review): n_valid 감소 대신 슬롯 자체를 None으로
+        # 사라지게 하면 항 전체가 조용히 J에서 탈락한다 — 보고 슬롯 집합의
+        # 변화(소멸·신규 모두)도 게이밍으로 간주해 거부한다.
+        if counters["windows"] == 1:
+            frozen_n_valid.update(n_valid_acc)
+        else:
+            missing = set(frozen_n_valid) - set(n_valid_acc)
+            appeared = set(n_valid_acc) - set(frozen_n_valid)
+            if missing or appeared:
+                raise RuntimeError(
+                    f"observation slots changed during minimization "
+                    f"(disappeared: {sorted(missing)}, appeared: {sorted(appeared)}) "
+                    "— a slot returning None mid-loop drops its whole J term "
+                    "silently (mask-gaming bypass). Slots must be stable; freeze "
+                    "the obs set before minimizing.")
 
         with torch.no_grad():
             j_obs = (torch.stack(jobs_acc).sum() if jobs_acc

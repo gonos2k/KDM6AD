@@ -192,3 +192,26 @@ def test_j_trace_machine_readable():
     assert all(set(e) >= {"total", "j_state", "j_theta", "j_obs"} for e in res.j_trace)
     assert res.j_trace[-1]["total"] <= res.j_trace[0]["total"]   # 감소(또는 동일)
     assert json.loads(s)[0]["n_valid"] == {"2": 2} or res.j_trace[0]["n_valid"] == {2: 2}
+
+
+def test_mask_gaming_gate_none_bypass():
+    """우회 봉쇄 (stop-review): n_valid를 줄이는 대신 슬롯을 None으로 소멸시키는
+    obs_eval — 슬롯 집합 변화로 RuntimeError."""
+    xb, fc = _mk_state(), _mk_forcing()
+    y = xb.th + 0.3
+    calls = [0]
+
+    def vanishing_obs(t, x_t):
+        if t != 2:
+            return None
+        calls[0] += 1
+        if calls[0] > 1:
+            return None                              # 2번째 클로저부터 슬롯 소멸
+        d = x_t.th - y
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return float(0.5 * (d * d).sum()), adj, int(d.numel())
+
+    with pytest.raises(RuntimeError, match="slots changed"):
+        run_dual_minimizer(xb, [fc, fc], vanishing_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=4)
