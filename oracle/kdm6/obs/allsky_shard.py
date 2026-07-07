@@ -75,11 +75,17 @@ def _allsky_columns_worker(args: dict) -> dict:
         ql = _blend_above_model_top(prof.q_lay.unsqueeze(0), q_ref, prof.p_lay,
                                     p_top, octaves=4.0).squeeze(0)
         above = (prof.p_lay < p_top).double().detach()
+        case_dir = f"{args['case_root']}/w{args['worker_id']}_{i}"
         bt_i, rq_i = RttovObsOp.apply(
-            make_live_run_k(f"{args['case_root']}/w{args['worker_id']}_{i}"),
+            make_live_run_k(case_dir),
             icfg, tl, ql, None, prof.p_half,
             prof.clw * (1 - above), prof.ciw * (1 - above),
             prof.deff_liq, prof.deff_ice, prof.cfrac)
+        # 디스크 고갈 방지: K는 forward에서 ctx.k_dict로 파싱 완료 — 케이스
+        # 디렉토리(~14MB)는 즉시 삭제 (전 도메인 실행 실측: 20만 케이스 = 107GB
+        # 로 /tmp 고갈·크래시).
+        import shutil
+        shutil.rmtree(case_dir, ignore_errors=True)
         bt_v = bt_i.reshape(-1).to(torch.float64)
         bt_out[i] = bt_v.detach().numpy()
         rq_out[i] = rq_i.reshape(-1).numpy()
