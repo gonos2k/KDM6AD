@@ -257,25 +257,29 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     y_by_time: {t(창 스텝 인덱스): (y_bt (B,nch), y_rq (B,nch))} — superob 권장.
     window_config: 궤적 전방용 dt/params (θ_b 기준 동결).
     """
+    import dataclasses
     import hashlib
     from .da_driver import batched_clear_bt
-    from .runtime import kdm6_step
 
-    # 배경 궤적: 값-전용 전방으로 관측시각 상태 채취
-    t_max = max(y_by_time)
+    # 배경 궤적: run_da_window 자체를 프로브로 사용 (stop-review 수정) —
+    # 수제 kdm6_step 루프는 WindowConfig의 궤적 의미론(η/η_pre 약한구속 증분,
+    # cloud-gate 스킵, obs_active 결합 등)을 놓친다. no-op obs_adjoint(전부
+    # None)로 실제 창과 **동일한 전방 궤적**의 슬롯 상태를 채취한다
+    # (covector 전무 → backward 스윕은 skip 경로, param_grads=False).
     traj = {}
-    x_t = xb
-    if 0 in y_by_time:
-        traj[0] = xb
-    for tt in range(t_max):
-        x_t, h = kdm6_step(x_t, forcings[min(tt, len(forcings) - 1)],
-                           window_config.params, window_config.dt,
-                           value_only=True, xland=window_config.xland,
-                           ncmin_land=window_config.ncmin_land,
-                           ncmin_sea=window_config.ncmin_sea)
-        h.close()
-        if tt + 1 in y_by_time:
-            traj[tt + 1] = x_t
+
+    def _probe(tt, x_t):
+        if tt in y_by_time:
+            traj[tt] = State(*(f.detach().clone() for f in x_t))
+        return None
+
+    probe_cfg = dataclasses.replace(window_config, param_grads=False)
+    run_da_window(xb, forcings, _probe, probe_cfg)
+    missing = set(y_by_time) - set(traj)
+    if missing:
+        raise ValueError(
+            f"obs times {sorted(missing)} not visited by the window trajectory "
+            f"(T={len(forcings)}) — check y_by_time step indices")
 
     frozen: dict = {}
     for t, (y_bt, y_rq) in y_by_time.items():
