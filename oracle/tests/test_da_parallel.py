@@ -163,3 +163,15 @@ def test_sharded_forward_window_bitwise():
     ref = torch.stack(list(x))
     xs = sharded_forward_window(x0, fcs, 300.0, n_workers=2)
     assert torch.equal(ref, torch.stack(list(xs)))
+    # xland/ncmin 경로 (Codex stop-review: 행동-변경 입력 관통 게이트)
+    xland = fr.xland[sel]
+    x2 = x0
+    for t in range(12):
+        x2, h = kdm6_step(x2, fcs[t], None, 300.0, value_only=True,
+                          xland=xland, ncmin_land=10.0, ncmin_sea=5.0)
+        h.close()
+    ref2 = torch.stack(list(x2))
+    xs2 = sharded_forward_window(x0, fcs, 300.0, xland=xland,
+                                 ncmin_land=10.0, ncmin_sea=5.0, n_workers=2)
+    assert torch.equal(ref2, torch.stack(list(xs2)))
+    assert not torch.equal(ref, ref2)      # xland 경로가 실제로 행동을 바꿈을 확인

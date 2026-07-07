@@ -178,19 +178,28 @@ def _forward_window_worker(args: dict) -> "np.ndarray":
     theta = args.get("theta")
     params = None if theta is None else Parameters(
         *(_torch.tensor(v, dtype=_torch.float64) for v in theta))
+    xland = args.get("xland")
+    xland_t = None if xland is None else _torch.as_tensor(xland, dtype=_torch.float64)
     x = State(*(st[i] for i in range(12)))
     T = fcs.shape[0]
     for tt in range(T):
         fc = Forcing(*(fcs[tt, i] for i in range(4)))
-        x, h = kdm6_step(x, fc, params, args["dt"], value_only=True)
+        x, h = kdm6_step(x, fc, params, args["dt"], value_only=True,
+                         xland=xland_t, ncmin_land=args.get("ncmin_land", 0.0),
+                         ncmin_sea=args.get("ncmin_sea", 0.0))
         h.close()
     return _torch.stack(list(x)).numpy()
 
 
 def sharded_forward_window(state: "State", forcings, dt: float, *,
-                           theta=None, n_workers: int = 8, pool=None) -> "State":
-    """값-전용 창 전방을 컬럼 샤딩으로 — 결과는 단일 프로세스와 bitwise 동일
-    (컬럼 독립; 게이트 테스트로 고정). theta: (4,) 파라미터 값 목록 | None."""
+                           theta=None, xland=None, ncmin_land: float = 0.0,
+                           ncmin_sea: float = 0.0, n_workers: int = 8,
+                           pool=None) -> "State":
+    """값-전용 창 전방을 컬럼 샤딩으로 — 단일 프로세스와 bitwise 동일 게이트.
+
+    theta: (4,) 파라미터 값 | None. xland/ncmin_*: kdm6_step의 land/sea
+    number-floor 경로 — 누락 시 조용한 no-xland 분기가 되므로 반드시 관통
+    (Codex stop-review: 행동-변경 입력의 침묵 탈락 방지)."""
     import multiprocessing as mp
     import numpy as np
     from kdm6.state import State as _State
@@ -201,8 +210,11 @@ def sharded_forward_window(state: "State", forcings, dt: float, *,
     chunks = np.array_split(np.arange(B), n_workers)
     import os as _os
     oracle_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    xl = None if xland is None else torch.as_tensor(xland, dtype=torch.float64)
     jobs = [dict(state=st[:, ch], forcings=fcs[:, :, ch], dt=dt,
                  theta=None if theta is None else [float(v) for v in theta],
+                 xland=None if xl is None else xl[ch].numpy(),
+                 ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                  oracle_root=oracle_root)
             for ch in chunks if len(ch)]
     own = pool is None
