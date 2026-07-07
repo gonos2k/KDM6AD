@@ -55,6 +55,10 @@ class ParamPrior:
     def __post_init__(self):
         if self.theta_b.shape != (4,) or self.sigma_log.shape != (4,):
             raise ValueError("theta_b/sigma_log must be shape (4,) in PNAMES order")
+        if not bool(torch.isfinite(self.theta_b).all()):
+            raise ValueError("theta_b must be finite (NaN/Inf pass sign checks)")
+        if not bool(torch.isfinite(self.sigma_log).all()):
+            raise ValueError("sigma_log must be finite")
         if bool((self.theta_b <= 0).any()):
             raise ValueError("theta_b must be positive (log-CVT domain)")
         if bool((self.sigma_log < 0).any()):
@@ -64,6 +68,11 @@ class ParamPrior:
 def default_param_prior(sigma_log: float = 0.2,
                         active: tuple = PNAMES) -> ParamPrior:
     """기본 prior: 현행 상수 θ_b + 활성 파라미터에 동일 σ_log."""
+    unknown = set(active) - set(PNAMES)
+    if unknown:
+        raise ValueError(
+            f"unknown parameter names in active: {sorted(unknown)} — a typo here "
+            "silently pins every parameter to theta_b (sigma_log=0)")
     base = make_parameters()
     tb = torch.stack([getattr(base, n).to(torch.float64) for n in PNAMES])
     sl = torch.tensor([sigma_log if n in active else 0.0 for n in PNAMES], **_F64)
@@ -89,6 +98,8 @@ class DualMinimizeResult:
     theta_analysis: Parameters
     v_state: torch.Tensor
     v_theta: torch.Tensor
+    # closure-평가 trace — L-BFGS strong-Wolfe의 라인서치 시도점 평가도 포함
+    # (accepted-iterate 궤적이 아님; 수렴 플롯에는 마지막 값과 감소 여부만 신뢰)
     j_trace: list                          # [{total, j_state, j_theta, j_obs, n_valid}]
     jb_final: float
     jtheta_final: float
@@ -112,8 +123,12 @@ def run_dual_minimizer(
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
-    obs_eval: (t, x_t) -> (j_t, adj_t) 또는 (j_t, adj_t, n_valid_t) | None.
-    n_valid 를 주면 클로저 간 불변 게이트가 걸린다 (mask-게이밍 방어).
+    obs_eval: (t, x_t) -> (j_t, adj_t, n_valid_t[, signature_t]) | None.
+    **2-튜플은 거부된다** (재검토 blocker-1: 기존 상태의존-mask obs_eval을 그대로
+    꽂으면 게이밍 방어가 전부 우회됨 — dual에서는 n_valid 필수). signature_t
+    (예: mask의 sha256, all-sky면 cfrac-regime 해시 결합)를 주면 **동일-개수
+    치환 게이밍**(어려운 항을 빼고 쉬운 항을 넣어 n_valid 유지)도 잡는다
+    (blocker-2). 표준 clear-sky 경로는 make_dual_frozen_obs_eval 어댑터 사용.
     """
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
@@ -140,18 +155,32 @@ def run_dual_minimizer(
             out = obs_eval(t, x_t)
             if out is None:
                 return None
-            if len(out) == 3:
+            if len(out) == 2:
+                raise RuntimeError(
+                    "dual minimizer requires obs_eval to return "
+                    "(j, adj, n_valid[, signature]) — a 2-tuple obs_eval "
+                    "bypasses the mask-gaming defenses (use "
+                    "make_dual_frozen_obs_eval for the clear-sky path)")
+            if len(out) == 4:
+                j_t, adj_t, n_valid, sig = out
+            else:
                 j_t, adj_t, n_valid = out
-                n_valid_acc[t] = int(n_valid)
-                # mask-게이밍 게이트: 유효 관측항 수는 최소화 전 과정 불변이어야
-                if t in frozen_n_valid and frozen_n_valid[t] != int(n_valid):
+                sig = None
+            n_valid_acc[t] = (int(n_valid), sig)
+            frozen = frozen_n_valid.get(t)
+            if frozen is not None:
+                if frozen[0] != int(n_valid):
                     raise RuntimeError(
                         f"n_valid changed during minimization at t={t}: "
-                        f"{frozen_n_valid[t]} -> {int(n_valid)} — the QC mask is "
-                        "moving inside the loop (mask-gaming risk). Freeze the "
-                        "mask at H(x_b) in obs_eval (outer-loop QC).")
-            else:
-                j_t, adj_t = out
+                        f"{frozen[0]} -> {int(n_valid)} — the QC mask is moving "
+                        "inside the loop (mask-gaming risk). Freeze the mask at "
+                        "H(x_b) in obs_eval (outer-loop QC).")
+                if frozen[1] != sig:
+                    raise RuntimeError(
+                        f"valid/regime signature changed during minimization at "
+                        f"t={t} — same-count mask substitution or cfrac-regime "
+                        "drift (mask-gaming variant). Freeze the mask AND the "
+                        "operator regime before minimizing.")
             jobs_acc.append(torch.as_tensor(j_t, dtype=torch.float64).detach())
             return adj_t
 
@@ -192,7 +221,7 @@ def run_dual_minimizer(
             j = j_b + j_th + j_obs
             trace.append(dict(total=float(j), j_state=float(j_b),
                               j_theta=float(j_th), j_obs=float(j_obs),
-                              n_valid=dict(n_valid_acc) or None))
+                              n_valid={k: v[0] for k, v in n_valid_acc.items()} or None))
             last.update(jb=float(j_b), jth=float(j_th), jobs=float(j_obs),
                         gx=float(g_x.norm()), gth=float(g_th.norm()))
         return j
@@ -211,3 +240,43 @@ def run_dual_minimizer(
         jb_final=last["jb"], jtheta_final=last["jth"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"],
         grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"])
+
+
+def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
+                              y_by_time: dict, obs_cfg) -> Callable:
+    """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명 (재검토 #3).
+
+    구성 시 H(x_b)를 각 관측시각에 1회 평가해 mask = (관측 quality==0) ∧
+    (배경 rad_quality==0) 를 동결한다. 내부 루프에서는 BT만 재평가하고 손실은
+    항상 동결 mask로 계산 — 반환 (j, adj, n_valid, sha256(mask)).
+
+    y_by_time: {t: (y_bt (B,nch), y_rq (B,nch))} — superob 산출물 권장.
+    obs_cfg: OsseObsConfig (batched_clear_bt 규약).
+    """
+    import hashlib
+    from .da_driver import batched_clear_bt
+
+    frozen: dict = {}
+    for t, (y_bt, y_rq) in y_by_time.items():
+        with torch.no_grad():
+            _, rad_q, _ = batched_clear_bt(xb, forcings[min(t, len(forcings) - 1)],
+                                           obs_cfg)
+        m = ((y_rq == 0) & (rad_q.to(torch.float64) == 0)).double()
+        sig = hashlib.sha256(m.cpu().numpy().tobytes()).hexdigest()
+        frozen[t] = (m, int(m.sum()), sig)
+
+    def obs_eval(t, x_t):
+        if t not in frozen:
+            return None
+        y_bt, _ = y_by_time[t]
+        mask, n_valid, sig = frozen[t]
+        bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
+                                         obs_cfg)
+        j = 0.5 * ((mask * (bt.to(torch.float64) - y_bt) / obs_cfg.obs_sigma) ** 2).sum()
+        j.backward()
+        adj = State(*(getattr(leaves, f).grad if getattr(leaves, f).grad is not None
+                      else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return float(j.detach()), adj, n_valid, sig
+
+    return obs_eval

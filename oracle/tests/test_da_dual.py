@@ -215,3 +215,52 @@ def test_mask_gaming_gate_none_bypass():
     with pytest.raises(RuntimeError, match="slots changed"):
         run_dual_minimizer(xb, [fc, fc], vanishing_obs, WindowConfig(dt=DT),
                            _b_sigma(xb), default_param_prior(0.2), max_iter=4)
+
+
+def test_two_tuple_obs_eval_rejected():
+    """재검토 blocker-1: 2-튜플 obs_eval(기존 상태의존-mask 경로)은 dual에서 거부."""
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def legacy_obs(t, x_t):
+        if t != 2:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return float(0.5 * (d * d).sum()), adj          # 2-튜플
+
+    with pytest.raises(RuntimeError, match="2-tuple obs_eval bypasses"):
+        run_dual_minimizer(xb, [fc, fc], legacy_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+
+
+def test_signature_substitution_gate():
+    """재검토 blocker-2: n_valid 동일·mask 치환(서명 변경) → RuntimeError."""
+    xb, fc = _mk_state(), _mk_forcing()
+    calls = [0]
+
+    def substituting_obs(t, x_t):
+        if t != 2:
+            return None
+        calls[0] += 1
+        d = x_t.th - (xb.th + 0.3)
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        sig = "maskA" if calls[0] <= 1 else "maskB"     # 개수 유지, 정체 치환
+        return float(0.5 * (d * d).sum()), adj, 2, sig
+
+    with pytest.raises(RuntimeError, match="signature changed"):
+        run_dual_minimizer(xb, [fc, fc], substituting_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=4)
+
+
+def test_param_prior_finite_and_active_validation():
+    """재검토 #5/#6: NaN/Inf theta·sigma 거부, active 오타 거부."""
+    with pytest.raises(ValueError, match="finite"):
+        ParamPrior(theta_b=torch.tensor([float("nan"), 1.0, 1.0, 1.0], **_F64),
+                   sigma_log=torch.zeros(4, **_F64))
+    with pytest.raises(ValueError, match="finite"):
+        ParamPrior(theta_b=torch.ones(4, **_F64),
+                   sigma_log=torch.tensor([float("inf"), 0, 0, 0], **_F64))
+    with pytest.raises(ValueError, match="unknown parameter names"):
+        default_param_prior(0.2, active=("peuat",))     # 오타 → loud

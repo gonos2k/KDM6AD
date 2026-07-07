@@ -76,16 +76,18 @@ def _allsky_columns_worker(args: dict) -> dict:
                                     p_top, octaves=4.0).squeeze(0)
         above = (prof.p_lay < p_top).double().detach()
         case_dir = f"{args['case_root']}/w{args['worker_id']}_{i}"
-        bt_i, rq_i = RttovObsOp.apply(
-            make_live_run_k(case_dir),
-            icfg, tl, ql, None, prof.p_half,
-            prof.clw * (1 - above), prof.ciw * (1 - above),
-            prof.deff_liq, prof.deff_ice, prof.cfrac)
-        # 디스크 고갈 방지: K는 forward에서 ctx.k_dict로 파싱 완료 — 케이스
-        # 디렉토리(~14MB)는 즉시 삭제 (전 도메인 실행 실측: 20만 케이스 = 107GB
-        # 로 /tmp 고갈·크래시).
-        import shutil
-        shutil.rmtree(case_dir, ignore_errors=True)
+        try:
+            bt_i, rq_i = RttovObsOp.apply(
+                make_live_run_k(case_dir),
+                icfg, tl, ql, None, prof.p_half,
+                prof.clw * (1 - above), prof.ciw * (1 - above),
+                prof.deff_liq, prof.deff_ice, prof.cfrac)
+        finally:
+            # 디스크 고갈 방지 — 실패 경로 포함(finally; 재검토 #6): K는
+            # forward에서 ctx.k_dict로 파싱 완료라 케이스(~14MB)는 즉시 삭제
+            # 가능 (실측: 20만 케이스 = 107GB → /tmp 고갈·크래시).
+            import shutil
+            shutil.rmtree(case_dir, ignore_errors=True)
         bt_v = bt_i.reshape(-1).to(torch.float64)
         bt_out[i] = bt_v.detach().numpy()
         rq_out[i] = rq_i.reshape(-1).numpy()
@@ -93,6 +95,17 @@ def _allsky_columns_worker(args: dict) -> dict:
             j_i = 0.5 * ((mask[i] * (bt_v - y_bt[i])) ** 2).sum()
             j_i.backward()
             j_cols[i] = float(j_i.detach())
+            # connected-field sever 검사 (재검토 #9): all-sky 연산자에 직접
+            # 연결되는 필드의 None grad는 구조적 그래프 단절 — 조용한 0 대신
+            # 거부. (qr/qg/nccn/nr/bg는 직접 경로 없음 — 0 허용.)
+            _CONNECTED = (0, 1, 2, 4, 5, 8, 9)   # th qv qc qi qs nc ni
+            if float(mask[i].sum()) > 0:
+                for f in _CONNECTED:
+                    if leaves[f].grad is None:
+                        raise RuntimeError(
+                            f"connected field index {f} has None grad at column "
+                            f"{i} — structural graph sever in the all-sky path "
+                            "(silent zero would corrupt the adjoint)")
             for f in range(12):
                 g = leaves[f].grad
                 if g is not None:
