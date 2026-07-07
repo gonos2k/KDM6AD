@@ -139,6 +139,7 @@ def run_dual_minimizer(
     history_size: int = 8,
     tolerance_grad: float = 1.0e-10,
     require_signature: bool = True,
+    allow_zero_valid_slots: bool = False,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -217,6 +218,17 @@ def run_dual_minimizer(
         # 사라지게 하면 항 전체가 조용히 J에서 탈락한다 — 보고 슬롯 집합의
         # 변화(소멸·신규 모두)도 게이밍으로 간주해 거부한다.
         if counters["windows"] == 1:
+            # zero-valid 슬롯 거부를 최소화기 레벨로 (stop-review: 어댑터만의
+            # 거부는 커스텀 obs_eval로 우회 가능) — 보고는 하되 유효 항이 0인
+            # 슬롯은 "prior-only 성공" 위장 경로이므로 기본 거부
+            if not allow_zero_valid_slots:
+                empty = [tt for tt, (nv, _) in n_valid_acc.items() if nv == 0]
+                if empty:
+                    raise RuntimeError(
+                        f"obs slots {sorted(empty)} report n_valid=0 — an "
+                        "all-masked slot disguises configuration errors as a "
+                        "prior-only success; pass allow_zero_valid_slots=True "
+                        "only if these slots are expected empty")
             frozen_n_valid.update(n_valid_acc)
         else:
             missing = set(frozen_n_valid) - set(n_valid_acc)

@@ -356,3 +356,23 @@ def test_theta_overflow_guard():
     prior = default_param_prior(0.2)
     with pytest.raises(FloatingPointError, match="non-finite"):
         params_from_vtheta(prior, torch.full((4,), 1.0e5, **_F64))
+
+
+def test_zero_valid_slot_rejected_at_minimizer():
+    """stop-review: 어댑터 밖(커스텀 obs_eval)의 n_valid=0 슬롯도 최소화기가
+    기본 거부; opt-in 시 통과."""
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def empty_obs(t, x_t):
+        if t != 2:
+            return None
+        adj = State(*(torch.zeros_like(getattr(x_t, f)) for f in State._fields))
+        return 0.0, adj, 0, "empty-sig"
+
+    with pytest.raises(RuntimeError, match="n_valid=0"):
+        run_dual_minimizer(xb, [fc, fc], empty_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+    res = run_dual_minimizer(xb, [fc, fc], empty_obs, WindowConfig(dt=DT),
+                             _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                             allow_zero_valid_slots=True)
+    assert float(res.v_state.abs().max()) == 0.0        # 관측 없음 → 배경 유지
