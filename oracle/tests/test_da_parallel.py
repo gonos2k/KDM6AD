@@ -21,6 +21,10 @@ from tests.test_rttov_case_writer import (
 
 _REPO = Path(__file__).resolve().parents[2]
 _WRFOUT = _REPO / "host" / "KIM-meso_v1.0" / "run" / "wrfout.37.quarter_ss.nc"
+needs_fcst = pytest.mark.skipif(
+    not __import__("pathlib").Path(
+        "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000").exists(),
+    reason="LC05 3h fcst 부재")
 needs_all = pytest.mark.skipif(
     not (_WRFOUT.exists() and _HAVE_EXE),
     reason="needs local SS wrfout + live RTTOV (AD-RTTOV)")
@@ -132,3 +136,30 @@ def test_partition_guard_rejects_trailing_gap(tmp_path):
     assert specs[0].b_total == 4
     with pytest.raises(RuntimeError, match="union"):
         run_sharded_sensitivity(specs, n_workers=1, parallel=False)
+
+
+@needs_fcst
+def test_sharded_forward_window_bitwise():
+    """값-전용 창 전방의 컬럼 샤딩 ≡ 단일 프로세스 (bitwise) — 프로브/영상 병렬화
+    게이트. (stdin-spawn 함정 회피를 위해 pytest 파일 기반으로 고정.)"""
+    import torch
+    from kdm6.da_parallel import sharded_forward_window
+    from kdm6.io.frame_reader import read_wrfout_frame
+    from kdm6.runtime import kdm6_step
+    from kdm6.state import Forcing, State
+
+    FCST = "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000"
+    fr = read_wrfout_frame(FCST, 0)
+    sel = torch.arange(30000, 30128)
+    x0 = State(*(f[sel] for f in fr.state))
+    fcs = []
+    for t in range(12):
+        frt = read_wrfout_frame(FCST, t)
+        fcs.append(Forcing(*(f[sel] for f in frt.forcing)))
+    x = x0
+    for t in range(12):
+        x, h = kdm6_step(x, fcs[t], None, 300.0, value_only=True)
+        h.close()
+    ref = torch.stack(list(x))
+    xs = sharded_forward_window(x0, fcs, 300.0, n_workers=2)
+    assert torch.equal(ref, torch.stack(list(xs)))

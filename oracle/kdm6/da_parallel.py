@@ -154,3 +154,67 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             obs_sigma=obs_sigma, t_ref=t_ref, q_ref=q_ref,
             q_blend_octaves=q_blend_octaves))
     return specs
+
+
+# ─── 값-전용 창 전방의 컬럼 샤딩 (영상/프로브용) ────────────────────────────
+# 미세물리 창은 컬럼 독립 → 값-전용 forward도 컬럼 분할로 병렬화 가능.
+# (run_da_window의 adjoint 기계 없이 kdm6_step value_only 루프만 — 전 도메인
+# B=66k 프로브가 단일 프로세스 ~6분 → NW 워커로 ~/NW.)
+
+
+def _forward_window_worker(args: dict) -> "np.ndarray":
+    import os
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    import sys
+    sys.path.insert(0, args["oracle_root"])
+    import numpy as _np
+    import torch as _torch
+    _torch.set_num_threads(1)
+    from kdm6.runtime import kdm6_step, Parameters
+    from kdm6.state import State, Forcing
+
+    st = _torch.as_tensor(args["state"], dtype=_torch.float64)     # (12, n, K)
+    fcs = _torch.as_tensor(args["forcings"], dtype=_torch.float64) # (T, 4, n, K)
+    theta = args.get("theta")
+    params = None if theta is None else Parameters(
+        *(_torch.tensor(v, dtype=_torch.float64) for v in theta))
+    x = State(*(st[i] for i in range(12)))
+    T = fcs.shape[0]
+    for tt in range(T):
+        fc = Forcing(*(fcs[tt, i] for i in range(4)))
+        x, h = kdm6_step(x, fc, params, args["dt"], value_only=True)
+        h.close()
+    return _torch.stack(list(x)).numpy()
+
+
+def sharded_forward_window(state: "State", forcings, dt: float, *,
+                           theta=None, n_workers: int = 8, pool=None) -> "State":
+    """값-전용 창 전방을 컬럼 샤딩으로 — 결과는 단일 프로세스와 bitwise 동일
+    (컬럼 독립; 게이트 테스트로 고정). theta: (4,) 파라미터 값 목록 | None."""
+    import multiprocessing as mp
+    import numpy as np
+    from kdm6.state import State as _State
+
+    B = state.th.shape[0]
+    st = torch.stack(list(state)).numpy()
+    fcs = np.stack([torch.stack(list(fc)).numpy() for fc in forcings])   # (T,4,B,K)
+    chunks = np.array_split(np.arange(B), n_workers)
+    import os as _os
+    oracle_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    jobs = [dict(state=st[:, ch], forcings=fcs[:, :, ch], dt=dt,
+                 theta=None if theta is None else [float(v) for v in theta],
+                 oracle_root=oracle_root)
+            for ch in chunks if len(ch)]
+    own = pool is None
+    if own:
+        pool = mp.get_context("spawn").Pool(n_workers)
+    try:
+        outs = pool.map(_forward_window_worker, jobs)
+    finally:
+        if own:
+            pool.close(); pool.join()
+    K = st.shape[2]
+    full = np.zeros((12, B, K))
+    for out, ch in zip(outs, [c for c in chunks if len(c)]):
+        full[:, ch] = out
+    return _State(*(torch.as_tensor(full[i]) for i in range(12)))
