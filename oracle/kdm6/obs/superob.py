@@ -52,29 +52,11 @@ def superob_to_model_grid(payload: ObsPayload, grid_lat: torch.Tensor,
     max_dist_km: 배정 게이트 — 모델 셀 반대각(Δx·√2/2)보다 약간 크게 주면
     도메인 내부 화소는 전부 배정되고 밖은 떨어진다 (5 km 격자 → 4 km 권장).
     """
-    B = int(grid_lat.numel())
-    nch = payload.nch
-    idx, dist = collocate(payload.lat, payload.lon, grid_lat, grid_lon)
-    near = dist <= max_dist_km
-
-    bt = torch.zeros((B, nch), **_F64)
-    quality = torch.ones((B, nch), **_F64)
-    n_pix = torch.zeros((B, nch), **_F64)
-    for j in range(nch):
-        okp = near & (payload.obs_quality[:, j] == 0)
-        n_ok = int(okp.sum())
-        if n_ok == 0:
-            continue
-        s = torch.zeros(B, **_F64).index_add_(0, idx[okp], payload.bt[okp, j])
-        n = torch.zeros(B, **_F64).index_add_(0, idx[okp],
-                                              torch.ones(n_ok, **_F64))
-        good = n >= min_pixels
-        bt[good, j] = s[good] / n[good]
-        quality[good, j] = 0.0
-        n_pix[:, j] = n
-    return SuperObs(bt=bt, obs_quality=quality, n_pixels=n_pix,
-                    n_assigned_pixels=int(near.sum()),
-                    n_dropped_far=int((~near).sum()))
+    # KD-트리 사상 + index_add 조합 — 전 경로가 O(N log B) (brute-force 제거).
+    mapping = build_pixel_mapping(payload.lat, payload.lon, grid_lat, grid_lon,
+                                  max_dist_km=max_dist_km)
+    return superob_with_mapping(payload, mapping, int(grid_lat.numel()),
+                                min_pixels=min_pixels)
 
 
 def save_superobs(so: SuperObs, path) -> None:
