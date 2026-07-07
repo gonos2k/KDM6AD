@@ -122,13 +122,38 @@ def preprocess_gk2a_ko_slot(gk2a_root, timestamp: str, channels,
 # 이후 슬롯 전처리는 haversine 없이 index_add 만으로 수행된다 (실측 188s → ~1s).
 
 
+def _unit_xyz(lat: torch.Tensor, lon: torch.Tensor):
+    la, lo = torch.deg2rad(lat), torch.deg2rad(lon)
+    cl = torch.cos(la)
+    return torch.stack([cl * torch.cos(lo), cl * torch.sin(lo),
+                        torch.sin(la)], dim=-1).numpy()
+
+
 def build_pixel_mapping(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
                         grid_lat: torch.Tensor, grid_lon: torch.Tensor,
                         *, max_dist_km: float) -> torch.Tensor:
-    """화소별 배정 컬럼 인덱스 (far 는 -1) — 슬롯 간 재사용 사상."""
-    idx, dist = collocate(obs_lat, obs_lon, grid_lat, grid_lon)
-    mapping = idx.clone()
-    mapping[dist > max_dist_km] = -1
+    """화소별 배정 컬럼 인덱스 (far 는 -1) — 슬롯 간 재사용 사상.
+
+    알고리즘: KD-트리 (단위구면 3-D 좌표) — 현거리(chord)와 대원거리는 단조
+    동치라 최근접이 동일하다. O(N log B); brute-force 전쌍 haversine
+    (O(N·B) = 2.7e10 평가, 실측 187 s)의 교체 — 실측 ~1 s, 사상 결과 동일.
+    scipy 부재 시 chunked brute-force 로 폴백 (결과 동일, 느림).
+    """
+    import math
+    try:
+        from scipy.spatial import cKDTree
+    except ImportError:                                    # pragma: no cover
+        idx, dist = collocate(obs_lat, obs_lon, grid_lat, grid_lon)
+        mapping = idx.clone()
+        mapping[dist > max_dist_km] = -1
+        return mapping
+    tree = cKDTree(_unit_xyz(grid_lat, grid_lon))
+    d_chord, idx = tree.query(_unit_xyz(obs_lat, obs_lon), k=1)
+    # 대원거리 게이트를 현거리로 환산: chord = 2·sin(d_gc/2R)
+    R = 6371.0088
+    chord_max = 2.0 * math.sin(max_dist_km / (2.0 * R))
+    mapping = torch.as_tensor(idx, dtype=torch.int64)
+    mapping[torch.as_tensor(d_chord) > chord_max] = -1
     return mapping
 
 
