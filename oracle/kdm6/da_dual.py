@@ -12,10 +12,13 @@
 
 (데모의 상대-선형 θ = θb(1+σv)는 큰 |v|에서 음수 θ 가능 — log-CVT로 대체.)
 
-mask-게이밍 방어 (검토 blocker-2): obs_eval 이 (j, adj, n_valid) 3-튜플을
-반환하면 n_valid(유효 관측항 수)를 trace에 기록하고, **클로저 간 변화 시 즉시
-RuntimeError** — 루프-내 QC 이동을 구조적으로 금지한다. QC mask 자체의 동결은
-obs_eval 작성자의 책임이며(H(x_b)에서 1회 평가), 이 게이트가 위반을 잡는다.
+mask-게이밍 방어: production obs_eval 은 ObsEvalResult(또는 (j, adj,
+n_valid, signature) 4-튜플)가 필수 — n_valid(유효 항 수)·signature(mask/regime
+정체 해시)·보고-슬롯 집합이 첫 클로저에서 동결되고, 이후 변화는 즉시
+RuntimeError (루프-내 QC 이동·동일-개수 치환·슬롯 소멸 전부 구조적 금지).
+서명 없는 3-튜플은 require_signature=False(합성 테스트 전용)에서만 허용.
+QC mask 자체의 동결 기준은 **θ_b 배경 궤적 M(x_b→t; θ_b)** 이며(표준 어댑터
+make_dual_frozen_obs_eval), 이 게이트들이 위반을 잡는다.
 
 all-sky cfrac 한계 (검토 blocker-3, 명시적 제한): 현 all-sky 경로의 cfrac는
 detached 이진 게이트 — 값은 문턱을 넘나들지만 gradient는 0이다. 본 API로
@@ -98,6 +101,15 @@ def params_from_vtheta(prior: ParamPrior, v_theta: torch.Tensor,
     return Parameters(*leaves)
 
 
+@dataclass(frozen=True)
+class ObsEvalResult:
+    """obs_eval의 선호 반환형 — 튜플 인덱스 실수 차단 (튜플도 호환 수용)."""
+    j: "torch.Tensor | float"
+    adj: State
+    n_valid: int
+    signature: str
+
+
 @dataclass
 class DualMinimizeResult:
     x_analysis: State
@@ -162,6 +174,8 @@ def run_dual_minimizer(
             out = obs_eval(t, x_t)
             if out is None:
                 return None
+            if isinstance(out, ObsEvalResult):
+                out = (out.j, out.adj, out.n_valid, out.signature)
             if len(out) == 2:
                 raise RuntimeError(
                     "dual minimizer requires obs_eval to return "
@@ -229,14 +243,16 @@ def run_dual_minimizer(
                         gp[i] = res.grad_params[n].to(torch.float64)
             theta_now = torch.stack([params_live[i].detach() for i in range(4)])
             g_th = v_th.detach() + param_prior.sigma_log * theta_now * gp
-            for name, tt_ in (("j_obs", j_obs), ("g_x", g_x), ("g_th", g_th)):
+            j = j_b + j_th + j_obs
+            for name, tt_ in (("j_state", j_b), ("j_theta", j_th),
+                              ("j_obs", j_obs), ("j_total", j),
+                              ("g_x", g_x), ("g_th", g_th)):
                 if not bool(torch.isfinite(tt_).all()):
                     raise FloatingPointError(
                         f"{name} became non-finite in the dual closure — "
                         "corrupted loss/gradient must not reach L-BFGS")
             v_x.grad = g_x
             v_th.grad = g_th
-            j = j_b + j_th + j_obs
             trace.append(dict(total=float(j), j_state=float(j_b),
                               j_theta=float(j_th), j_obs=float(j_obs),
                               n_valid={k: v[0] for k, v in n_valid_acc.items()} or None))
@@ -263,7 +279,8 @@ def run_dual_minimizer(
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               y_by_time: dict, obs_cfg,
                               window_config: WindowConfig,
-                              param_prior: ParamPrior) -> Callable:
+                              param_prior: ParamPrior, *,
+                              allow_zero_valid_slots: bool = False) -> Callable:
     """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명.
 
     동결 기준은 **θ_b 배경 궤적**: run_da_window 자체를 no-op adjoint 프로브로
@@ -311,9 +328,29 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
             _, rad_q, _ = batched_clear_bt(traj[t],
                                            forcings[min(t, len(forcings) - 1)],
                                            obs_cfg)
+        # shape 엄격 검증 (재검토 H1): [nch]·[B,1] 등이 broadcasting으로 조용히
+        # [B,nch] mask가 되는 경로 차단 — superob 규약은 full-shape (B,nch)
+        for nm, arr in (("y_bt", y_bt), ("y_rq", y_rq)):
+            if tuple(arr.shape) != tuple(rad_q.shape):
+                raise ValueError(
+                    f"{nm} shape {tuple(arr.shape)} != H(x) rad_quality "
+                    f"{tuple(rad_q.shape)} at t={t} — pass the full [B,nch] "
+                    "field (silent broadcast is forbidden)")
         m = ((y_rq == 0) & (rad_q.to(torch.float64) == 0)).double()
-        sig = hashlib.sha256(m.cpu().numpy().tobytes()).hexdigest()
-        frozen[t] = (m, int(m.sum()), sig)
+        n_valid = int(m.sum())
+        if n_valid == 0 and not allow_zero_valid_slots:
+            # zero-valid 슬롯의 조용한 no-op은 설정 오류(채널 매핑·단위·계수)를
+            # "관측 없는 성공"으로 위장시킨다 (재검토 H3) — 명시적 opt-in만 허용
+            raise RuntimeError(
+                f"frozen mask has zero valid obs at t={t} — likely a channel/"
+                "unit/coefficient misconfiguration; pass "
+                "allow_zero_valid_slots=True only if this slot is expected empty")
+        # 서명에 시각·shape·dtype 메타데이터 포함 (재검토 M1) — 사후 재검증과
+        # all-sky regime 해시 합성을 위한 정체 고정
+        payload = (f"t={t}|shape={tuple(m.shape)}|dtype={m.dtype}|".encode()
+                   + m.cpu().numpy().tobytes())
+        sig = hashlib.sha256(payload).hexdigest()
+        frozen[t] = (m, n_valid, sig)
 
     def obs_eval(t, x_t):
         if t not in frozen:
@@ -338,6 +375,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
             g_th, g_qv = zeros, zeros
         adj = State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
                     qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
-        return float(j.detach()), adj, n_valid, sig
+        return ObsEvalResult(j=float(j.detach()), adj=adj,
+                             n_valid=n_valid, signature=sig)
 
     return obs_eval

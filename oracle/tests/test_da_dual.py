@@ -267,39 +267,66 @@ def test_param_prior_finite_and_active_validation():
 
 
 def test_frozen_adapter_uses_background_trajectory(monkeypatch):
-    """재검토 #3/#7 + stop-review: ① t>0 동결이 배경 궤적 M(x_b→t) 상태로 평가
-    ② mask가 궤적-기준 rad_quality로 선택됨(수치 검증) ③ 내부 루프에서 x_t가
-    바뀌어도 반환 서명·n_valid 불변."""
+    """재검토 #3/#7: ① t>0 동결이 배경 궤적 상태로 평가(수치 검증: t0=0/t2=16)
+    ② 내부 루프에서 x_t가 바뀌어도 서명·n_valid 불변 ③ zero-valid 슬롯은
+    opt-in 없으면 거부 ④ y_rq shape 불일치 거부."""
     import kdm6.da_dual as dd
     xb, fc = _mk_state(), _mk_forcing()
     y_bt = torch.full((1, 16), 250.0, **_F64)
     y_rq = torch.zeros((1, 16), **_F64)
 
     def fake_clear_bt(x_state, fc_t, cfg):
-        # xb 그대로면 rad_quality=1(무효), 진화 상태면 0(유효) — 동결이 궤적
-        # 기준인지 수치로 구분된다
         is_xb = torch.equal(x_state.th, xb.th)
         rq = torch.ones((1, 16), **_F64) if is_xb else torch.zeros((1, 16), **_F64)
         leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
         bt = (torch.full((1, 16), 260.0, **_F64)
-              + 0.0 * (leaves.th.sum() + leaves.qv.sum()))   # th·qv 연결
+              + 0.0 * (leaves.th.sum() + leaves.qv.sum()))
         return bt, rq, leaves
 
     import kdm6.da_driver as drv
     monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    prior = dd.default_param_prior(0.2)
+    # ③ t=0은 x_b 기준 rq=1 → 유효 0 → 기본값에서 거부 (H3)
+    with pytest.raises(RuntimeError, match="zero valid obs"):
+        dd.make_dual_frozen_obs_eval(xb, [fc, fc],
+                                     {0: (y_bt, y_rq), 2: (y_bt, y_rq)},
+                                     cfg_obs, WindowConfig(dt=DT), prior)
     obs = dd.make_dual_frozen_obs_eval(
         xb, [fc, fc], {0: (y_bt, y_rq), 2: (y_bt, y_rq)},
-        type("C", (), {"obs_sigma": 1.0})(), WindowConfig(dt=DT),
-        dd.default_param_prior(0.2))
-    # ② t=0 동결은 x_b(rq=1→무효 0개), t=2 동결은 진화 상태(rq=0→16개 유효)
-    out0 = obs(0, xb)
-    out2 = obs(2, xb)
-    assert out0[2] == 0, "t=0 n_valid는 x_b 기준 0이어야"
-    assert out2[2] == 16, "t=2 n_valid가 16이 아니면 궤적 아닌 x_b에서 동결된 것"
-    # ③ 내부 상태가 바뀌어도 서명·n_valid 동결 유지
+        cfg_obs, WindowConfig(dt=DT), prior, allow_zero_valid_slots=True)
+    # ① t=0 동결은 x_b(무효 0개), t=2는 진화 상태(16개) — 궤적 기준의 수치 증거
+    out0, out2 = obs(0, xb), obs(2, xb)
+    assert out0.n_valid == 0 and out2.n_valid == 16
+    # ② 내부 상태 이동에도 서명·n_valid 동결
     x_moved = State(*(f + 0.01 for f in xb))
     out2b = obs(2, x_moved)
-    assert out2b[2] == out2[2] and out2b[3] == out2[3]
+    assert out2b.n_valid == out2.n_valid and out2b.signature == out2.signature
+    # ④ y_rq shape (16,) → broadcasting 침묵 통과 대신 거부 (H1)
+    with pytest.raises(ValueError, match="silent broadcast"):
+        dd.make_dual_frozen_obs_eval(
+            xb, [fc, fc], {2: (y_bt, torch.zeros(16, **_F64))},
+            cfg_obs, WindowConfig(dt=DT), prior)
+
+
+def test_obs_eval_result_dataclass_accepted():
+    """재검토 M2: ObsEvalResult 반환이 튜플과 동등하게 수용·게이트됨."""
+    from kdm6.da_dual import ObsEvalResult
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def dc_obs(t, x_t):
+        if t != 2:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return ObsEvalResult(j=float(0.5 * (d * d).sum()), adj=adj,
+                             n_valid=int(d.numel()), signature="dc-sig")
+
+    res = run_dual_minimizer(xb, [fc, fc], dc_obs, WindowConfig(dt=DT),
+                             _b_sigma(xb), default_param_prior(0.2, active=("peaut",)),
+                             max_iter=2)
+    assert res.j_trace[-1]["total"] <= res.j_trace[0]["total"]
 
 
 def test_three_tuple_requires_optout():
