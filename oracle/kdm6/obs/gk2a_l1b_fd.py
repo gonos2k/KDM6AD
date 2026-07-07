@@ -102,8 +102,6 @@ def read_fd_slot(files: Sequence[str | Path], *,
     검정계수는 각 파일의 내장 속성에서 직접. 타임스탬프 혼합·비 2km 해상도 거부.
     stride 4 → 8km 솎음 (KO stride 4와 동일 밀도).
     """
-    import netCDF4
-
     by_ch: dict[str, Path] = {}
     stamp = None
     for f in files:
@@ -124,6 +122,7 @@ def read_fd_slot(files: Sequence[str | Path], *,
     bt_all: dict[str, np.ndarray] = {}
     q_all: dict[str, np.ndarray] = {}
     for ch, path in sorted(by_ch.items()):
+        import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
         try:
             if win is None:

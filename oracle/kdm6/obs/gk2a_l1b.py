@@ -132,8 +132,6 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
     파싱하고 타임스탬프 불일치는 거부. stride: 픽셀 솎음 (8 → 16 km 간격,
     900² → ~12.7k 관측; collocation/thinning의 상류 단계).
     """
-    import netCDF4
-
     by_ch: dict[str, Path] = {}
     stamp = None
     for f in files:
@@ -154,6 +152,7 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
     bt_all: dict[str, np.ndarray] = {}
     q_all: dict[str, np.ndarray] = {}
     for ch, path in sorted(by_ch.items()):
+        import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
         try:
             raw = np.ma.filled(ds.variables["image_pixel_values"][:], 0).astype(np.uint16)
