@@ -267,3 +267,14 @@ def test_interp_batched_exact_knots_and_endpoint_clamp():
     assert torch.equal(out_b, torch.stack(rows))
     # 의미 검증(row0): 정확 knot은 그 값 그대로, 범위 밖은 endpoint 클램프
     assert torch.equal(out_b[0], torch.tensor([1.0, 1.0, 2.0, 4.0, 4.0], **_F64))
+
+
+def test_k_index_width_guard():
+    """K 출력 인덱스 4자리 한계 가드 — nprof×nch > 9999 는 '****' 오버플로로
+    파서가 거부하게 되므로 케이스 생성 단계에서 loud 거부 (전 도메인 999-chunk
+    ×16ch 실측 발견의 회귀 고정)."""
+    import pytest
+    from kdm6.obs.rttov_case_writer import _guard_k_index_width
+    _guard_k_index_width(624, 16)                      # 9984 ≤ 9999 통과
+    with pytest.raises(ValueError, match="4 digits"):
+        _guard_k_index_width(999, 16)                  # 15984 거부

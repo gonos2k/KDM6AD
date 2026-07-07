@@ -799,6 +799,18 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
         raise
 
 
+def _guard_k_index_width(nprof: int, nch: int) -> None:
+    """K 출력 인덱스 한계 가드: PROFILES_K(i)의 i = 프로파일×채널 엔트리 번호가
+    Fortran 4자리 필드를 넘으면 '****'로 출력돼 파서가 (옳게) 거부한다 — 전
+    도메인 999-chunk × 16ch = 15,984 엔트리에서 실측 발견. 입력측 999 가드와
+    별개의 출력측 한계이므로 명시적으로 거부한다."""
+    if nprof * nch > 9999:
+        raise ValueError(
+            f"nprofiles*nchannels = {nprof}*{nch} = {nprof*nch} > 9999 -- the "
+            "RTTOV K output profile-index field is 4 digits and overflows to "
+            "'****'; chunk the batch (e.g. <=624 profiles for 16 channels)")
+
+
 def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=()) -> Path:
     """Overlay the RttovInput onto the freshly-copied case ``out`` and return out/out.
 
@@ -819,6 +831,7 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
             _verify_solar_channel_types(out, used_solar)   # reject thermal/mixed ids
 
     nprof = rttov_input.nprofiles
+    _guard_k_index_width(nprof, len(rttov_input.config.channels))
     prof_root = out / "in" / "profiles"
     prof_ids = sorted(d.name for d in prof_root.iterdir() if d.is_dir())
     t_all = rttov_input.profile["T"]
