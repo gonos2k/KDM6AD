@@ -264,3 +264,31 @@ def test_param_prior_finite_and_active_validation():
                    sigma_log=torch.tensor([float("inf"), 0, 0, 0], **_F64))
     with pytest.raises(ValueError, match="unknown parameter names"):
         default_param_prior(0.2, active=("peuat",))     # 오타 → loud
+
+
+def test_frozen_adapter_uses_background_trajectory(monkeypatch):
+    """stop-review: t>0 슬롯의 동결 mask는 x_b가 아니라 배경 궤적 M(x_b→t)에서
+    평가돼야 한다 — 어댑터가 t=2 동결 시 진화된 상태를 넘기는지 구조 검증."""
+    import kdm6.da_dual as dd
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+    seen = {}
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        seen[len(seen)] = x_state.th.detach().clone()
+        bt = torch.full((1, 16), 260.0, **_F64).requires_grad_(True)
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        # bt를 leaves.th에 인위적으로 연결 (backward 성립용)
+        bt2 = bt + 0.0 * leaves.th.sum()
+        return bt2, rq, leaves
+
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    obs = dd.make_dual_frozen_obs_eval(
+        xb, [fc, fc], {0: (y_bt, y_rq), 2: (y_bt, y_rq)},
+        type("C", (), {"obs_sigma": 1.0})(), WindowConfig(dt=DT))
+    # 동결 단계에서 두 번 호출: seen[0]=t0(=xb), seen[1]=t2(진화 상태)
+    assert torch.equal(seen[0], xb.th)
+    assert not torch.equal(seen[1], xb.th), "t=2 동결이 x_b로 평가됨 (궤적 미사용)"

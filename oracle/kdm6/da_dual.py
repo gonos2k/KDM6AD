@@ -243,23 +243,45 @@ def run_dual_minimizer(
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
-                              y_by_time: dict, obs_cfg) -> Callable:
+                              y_by_time: dict, obs_cfg,
+                              window_config: WindowConfig) -> Callable:
     """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명 (재검토 #3).
 
-    구성 시 H(x_b)를 각 관측시각에 1회 평가해 mask = (관측 quality==0) ∧
-    (배경 rad_quality==0) 를 동결한다. 내부 루프에서는 BT만 재평가하고 손실은
-    항상 동결 mask로 계산 — 반환 (j, adj, n_valid, sha256(mask)).
+    동결 기준은 **배경 궤적** (stop-review 수정): 슬롯 t>0의 mask는 x_b가 아니라
+    값-전용 창 전방으로 얻은 M(x_b → t)에서 H를 평가해 동결한다 — 창 동안
+    구름이 이동/생성/소멸하므로 x_b 기준 t>0 mask는 틀린 regime이다 (전 도메인
+    드라이버의 XB12 관례와 동일). mask = (관측 quality==0) ∧ (배경궤적
+    rad_quality==0), 내부 루프에서는 BT만 재평가 — 반환
+    (j, adj, n_valid, sha256(mask)).
 
-    y_by_time: {t: (y_bt (B,nch), y_rq (B,nch))} — superob 산출물 권장.
-    obs_cfg: OsseObsConfig (batched_clear_bt 규약).
+    y_by_time: {t(창 스텝 인덱스): (y_bt (B,nch), y_rq (B,nch))} — superob 권장.
+    window_config: 궤적 전방용 dt/params (θ_b 기준 동결).
     """
     import hashlib
     from .da_driver import batched_clear_bt
+    from .runtime import kdm6_step
+
+    # 배경 궤적: 값-전용 전방으로 관측시각 상태 채취
+    t_max = max(y_by_time)
+    traj = {}
+    x_t = xb
+    if 0 in y_by_time:
+        traj[0] = xb
+    for tt in range(t_max):
+        x_t, h = kdm6_step(x_t, forcings[min(tt, len(forcings) - 1)],
+                           window_config.params, window_config.dt,
+                           value_only=True, xland=window_config.xland,
+                           ncmin_land=window_config.ncmin_land,
+                           ncmin_sea=window_config.ncmin_sea)
+        h.close()
+        if tt + 1 in y_by_time:
+            traj[tt + 1] = x_t
 
     frozen: dict = {}
     for t, (y_bt, y_rq) in y_by_time.items():
         with torch.no_grad():
-            _, rad_q, _ = batched_clear_bt(xb, forcings[min(t, len(forcings) - 1)],
+            _, rad_q, _ = batched_clear_bt(traj[t],
+                                           forcings[min(t, len(forcings) - 1)],
                                            obs_cfg)
         m = ((y_rq == 0) & (rad_q.to(torch.float64) == 0)).double()
         sig = hashlib.sha256(m.cpu().numpy().tobytes()).hexdigest()
