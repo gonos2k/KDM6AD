@@ -102,6 +102,15 @@ def params_from_vtheta(prior: ParamPrior, v_theta: torch.Tensor,
 
 
 @dataclass(frozen=True)
+class ObsGatePolicy:
+    """dual 관측 게이트 정책 — 어댑터·최소화기가 **같은 객체**를 공유해
+    opt-in 상태의 이중 분산을 막는다 (재검토 H3). trace에도 기록됨."""
+    require_signature: bool = True
+    allow_zero_valid_slots: bool = False
+    require_obs_slots: bool = True
+
+
+@dataclass(frozen=True)
 class ObsEvalResult:
     """obs_eval의 선호 반환형 — 튜플 인덱스 실수 차단 (튜플도 호환 수용)."""
     j: "torch.Tensor | float"
@@ -140,6 +149,8 @@ def run_dual_minimizer(
     tolerance_grad: float = 1.0e-10,
     require_signature: bool = True,
     allow_zero_valid_slots: bool = False,
+    require_obs_slots: bool = True,
+    policy: "ObsGatePolicy | None" = None,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -150,6 +161,10 @@ def run_dual_minimizer(
     치환 게이밍**(어려운 항을 빼고 쉬운 항을 넣어 n_valid 유지)도 잡는다
     (blocker-2). 표준 clear-sky 경로는 make_dual_frozen_obs_eval 어댑터 사용.
     """
+    if policy is None:
+        policy = ObsGatePolicy(require_signature=require_signature,
+                               allow_zero_valid_slots=allow_zero_valid_slots,
+                               require_obs_slots=require_obs_slots)
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
@@ -177,6 +192,10 @@ def run_dual_minimizer(
                 return None
             if isinstance(out, ObsEvalResult):
                 out = (out.j, out.adj, out.n_valid, out.signature)
+            else:
+                import warnings
+                warnings.warn("tuple obs_eval returns are deprecated — return "
+                              "ObsEvalResult", DeprecationWarning, stacklevel=2)
             if len(out) == 2:
                 raise RuntimeError(
                     "dual minimizer requires obs_eval to return "
@@ -185,8 +204,17 @@ def run_dual_minimizer(
                     "make_dual_frozen_obs_eval for the clear-sky path)")
             if len(out) == 4:
                 j_t, adj_t, n_valid, sig = out
+                if policy.require_signature:
+                    # blocker: (…, None)/빈 문자열 서명은 "서명 있음"으로 위장해
+                    # 동일-개수 치환 방어를 사실상 끈다 — 비어있지 않은
+                    # str/bytes 강제
+                    if not isinstance(sig, (str, bytes)) or len(sig) == 0:
+                        raise RuntimeError(
+                            "production dual obs_eval must return a NON-EMPTY "
+                            "str/bytes valid/regime signature (got "
+                            f"{type(sig).__name__}: {sig!r})")
             else:
-                if require_signature:
+                if policy.require_signature:
                     raise RuntimeError(
                         "production dual obs_eval must return a valid/regime "
                         "signature (4th element) — without it same-count mask "
@@ -218,10 +246,17 @@ def run_dual_minimizer(
         # 사라지게 하면 항 전체가 조용히 J에서 탈락한다 — 보고 슬롯 집합의
         # 변화(소멸·신규 모두)도 게이밍으로 간주해 거부한다.
         if counters["windows"] == 1:
+            # H1: 슬롯이 하나도 보고되지 않는 것도 "prior-only 성공" 위장 —
+            # 관측시각 인덱스 불일치·y_by_time 연결 오류가 조용히 성공처럼 보임
+            if policy.require_obs_slots and not n_valid_acc:
+                raise RuntimeError(
+                    "no observation slots reported in the first closure — "
+                    "likely an obs-time index mismatch; pass "
+                    "require_obs_slots=False only for deliberate no-obs runs")
             # zero-valid 슬롯 거부를 최소화기 레벨로 (stop-review: 어댑터만의
             # 거부는 커스텀 obs_eval로 우회 가능) — 보고는 하되 유효 항이 0인
             # 슬롯은 "prior-only 성공" 위장 경로이므로 기본 거부
-            if not allow_zero_valid_slots:
+            if not policy.allow_zero_valid_slots:
                 empty = [tt for tt, (nv, _) in n_valid_acc.items() if nv == 0]
                 if empty:
                     raise RuntimeError(
@@ -267,7 +302,8 @@ def run_dual_minimizer(
             v_th.grad = g_th
             trace.append(dict(total=float(j), j_state=float(j_b),
                               j_theta=float(j_th), j_obs=float(j_obs),
-                              n_valid={k: v[0] for k, v in n_valid_acc.items()} or None))
+                              n_valid={k: v[0] for k, v in n_valid_acc.items()} or None,
+                              signature={k: v[1] for k, v in n_valid_acc.items()} or None))
             last.update(jb=float(j_b), jth=float(j_th), jobs=float(j_obs),
                         gx=float(g_x.norm()), gth=float(g_th.norm()))
         return j
@@ -292,7 +328,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               y_by_time: dict, obs_cfg,
                               window_config: WindowConfig,
                               param_prior: ParamPrior, *,
-                              allow_zero_valid_slots: bool = False) -> Callable:
+                              allow_zero_valid_slots: bool = False,
+                              policy: "ObsGatePolicy | None" = None) -> Callable:
     """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명.
 
     동결 기준은 **θ_b 배경 궤적**: run_da_window 자체를 no-op adjoint 프로브로

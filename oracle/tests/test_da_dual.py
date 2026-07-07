@@ -69,7 +69,7 @@ def test_no_observation_dual_prior():
     prior = default_param_prior(0.2)
     res = run_dual_minimizer(xb, [fc, fc], lambda t, x: None,
                              WindowConfig(dt=DT), _b_sigma(xb), prior,
-                             max_iter=3)
+                             max_iter=3, require_obs_slots=False)
     for f in State._fields:
         assert torch.equal(getattr(res.x_analysis, f), getattr(xb, f)), f
     for i, n in enumerate(PNAMES):
@@ -376,3 +376,58 @@ def test_zero_valid_slot_rejected_at_minimizer():
                              _b_sigma(xb), default_param_prior(0.2), max_iter=2,
                              allow_zero_valid_slots=True)
     assert float(res.v_state.abs().max()) == 0.0        # 관측 없음 → 배경 유지
+
+
+def test_no_slots_rejected_by_default():
+    """재검토 H1: 슬롯이 전혀 보고되지 않는 custom obs_eval은 기본 거부 —
+    관측시각 인덱스 불일치가 'prior-only 성공'으로 위장하는 경로 차단."""
+    xb, fc = _mk_state(), _mk_forcing()
+    with pytest.raises(RuntimeError, match="no observation slots"):
+        run_dual_minimizer(xb, [fc, fc], lambda t, x: None,
+                           WindowConfig(dt=DT), _b_sigma(xb),
+                           default_param_prior(0.2), max_iter=2)
+
+
+def test_none_or_empty_signature_rejected():
+    """재검토 blocker: 4-튜플의 서명이 None/빈 문자열이면 '서명 있음' 위장 —
+    비어있지 않은 str/bytes 강제."""
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def make_obs(sig):
+        def obs(t, x_t):
+            if t != 2:
+                return None
+            d = x_t.th - (xb.th + 0.3)
+            adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                          for f in State._fields))
+            return float(0.5 * (d * d).sum()), adj, int(d.numel()), sig
+        return obs
+
+    for bad in (None, "", 123):
+        with pytest.raises(RuntimeError, match="NON-EMPTY"):
+            run_dual_minimizer(xb, [fc, fc], make_obs(bad), WindowConfig(dt=DT),
+                               _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+
+
+def test_collect_window_trajectory_matches_probe():
+    """재검토 H2: forward-전용 수집기 ≡ run_da_window 프로브 (bitwise) —
+    η/η_pre 약한구속 증분이 있는 창에서 관측-시점 상태 규약까지 동일."""
+    from kdm6.da_window import collect_window_trajectory, run_da_window
+    xb, fc = _mk_state(), _mk_forcing()
+    eta = [State(*(0.001 * torch.ones_like(f) if n == "th" else torch.zeros_like(f)
+                   for n, f in zip(State._fields, xb))) for _ in range(2)]
+    eta_pre = [State(*(0.0005 * torch.ones_like(f) if n == "qv" else torch.zeros_like(f)
+                       for n, f in zip(State._fields, xb))) for _ in range(2)]
+    cfg = WindowConfig(dt=DT, eta=eta, eta_pre=eta_pre)
+
+    probe_states = {}
+    def probe(tt, x_t):
+        probe_states[tt] = State(*(f.detach().clone() for f in x_t))
+        return None
+    run_da_window(xb, [fc, fc], probe, cfg)
+    traj = collect_window_trajectory(xb, [fc, fc], cfg, {0, 1, 2})
+    for tt in (0, 1, 2):
+        for i, f in enumerate(State._fields):
+            assert torch.equal(traj[tt][i], probe_states[tt][i]), (tt, f)
+    with pytest.raises(ValueError, match="outside window"):
+        collect_window_trajectory(xb, [fc, fc], cfg, {5})

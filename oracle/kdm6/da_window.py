@@ -146,6 +146,48 @@ class WindowResult:
     grad_params: "dict[str, torch.Tensor] | None" = None  # [G4] Σ_t 파라미터 수반
 
 
+def collect_window_trajectory(x0: State, forcings: Sequence[Forcing],
+                              config: WindowConfig,
+                              wanted_times: "set[int] | Sequence[int]",
+                              ) -> "dict[int, State]":
+    """전방-전용 궤적 수집기 — run_da_window의 forward 의미론(η/η_pre 적용,
+    관측 시점 규약: 슬롯 상태 = η_pre 적용 **전**의 x_t, t=T는 최종 상태)을
+    그대로 미러하되 backward 스윕이 없다 (적대 검토: 동결-mask 프로브가
+    run_da_window를 쓰면 전 스텝 VJP 비용을 낸다 — 수집만 하는 데 부당).
+    run_da_window 프로브와의 bitwise 동일성은 게이트 테스트로 고정.
+    """
+    params = config.params if config.params is not None else make_parameters()
+    T = len(forcings)
+    wanted = set(int(w) for w in wanted_times)
+    x = _to_f64(x0)
+    if config.eta is not None:
+        if len(config.eta) != T:
+            raise ValueError(f"eta length {len(config.eta)} != window length {T}")
+    if config.eta_pre is not None:
+        if len(config.eta_pre) != T:
+            raise ValueError(f"eta_pre length {len(config.eta_pre)} != window length {T}")
+    f64_forcings = [_to_f64(f) for f in forcings]
+    out_traj: dict[int, State] = {}
+    for t in range(T):
+        if t in wanted:
+            out_traj[t] = State(*(f.detach().clone() for f in x))
+        if config.eta_pre is not None:
+            x = _add_states(x, _to_f64(config.eta_pre[t]))
+        out, h = kdm6_step(x, f64_forcings[t], params, config.dt,
+                           value_only=True, xland=config.xland,
+                           ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
+        h.close()
+        x = State(*(f.detach() for f in out))
+        if config.eta is not None:
+            x = _add_states(x, _to_f64(config.eta[t]))
+    if T in wanted:
+        out_traj[T] = State(*(f.detach().clone() for f in x))
+    missing = wanted - set(out_traj)
+    if missing:
+        raise ValueError(f"wanted times {sorted(missing)} outside window [0, {T}]")
+    return out_traj
+
+
 def run_da_window(
     x0: State,
     forcings: Sequence[Forcing],
