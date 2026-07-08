@@ -469,3 +469,74 @@ def test_adapter_policy_and_entry_validation(monkeypatch):
         xb, [fc, fc], {2: (y_bt, y_rq)}, cfg_obs, WindowConfig(dt=DT), prior,
         policy=ObsGatePolicy(allow_zero_valid_slots=True))
     assert obs(2, xb).n_valid == 0
+
+
+def test_frozen_adapter_calls_collector_not_probe(monkeypatch):
+    """재검토 M3: 어댑터가 collect_window_trajectory를 실제 호출하고
+    run_da_window 프로브는 호출하지 않음 — 미배선 회귀의 직접 spy."""
+    import kdm6.da_dual as dd
+    import kdm6.da_window as dw
+    xb, fc = _mk_state(), _mk_forcing()
+    called = {"collect": 0}
+    real_collect = dw.collect_window_trajectory
+
+    def spy_collect(*a, **k):
+        called["collect"] += 1
+        return real_collect(*a, **k)
+
+    def forbid_run(*a, **k):
+        raise AssertionError("adapter must not call run_da_window (full-VJP probe)")
+
+    monkeypatch.setattr(dw, "collect_window_trajectory", spy_collect)
+    monkeypatch.setattr(dd, "run_da_window", forbid_run)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = torch.full((1, 16), 260.0, **_F64) + 0.0 * (leaves.th.sum() + leaves.qv.sum())
+        return bt, rq, leaves
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    dd.make_dual_frozen_obs_eval(
+        xb, [fc, fc], {2: (torch.full((1, 16), 250.0, **_F64),
+                           torch.zeros((1, 16), **_F64))},
+        type("C", (), {"obs_sigma": 1.0})(), WindowConfig(dt=DT),
+        dd.default_param_prior(0.2))
+    assert called["collect"] == 1
+
+
+def test_bytes_signature_normalized_and_strict_n_valid():
+    """재검토 H1/H2: bytes 서명은 hex로 정규화돼 trace가 JSON 직렬화되고,
+    bool/float/음수 n_valid는 거부."""
+    xb, fc = _mk_state(), _mk_forcing()
+
+    def make_obs(n_valid, sig=b"maskhash"):
+        def obs(t, x_t):
+            if t != 2:
+                return None
+            d = x_t.th - (xb.th + 0.3)
+            adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                          for f in State._fields))
+            return float(0.5 * (d * d).sum()), adj, n_valid, sig
+        return obs
+
+    res = run_dual_minimizer(xb, [fc, fc], make_obs(2), WindowConfig(dt=DT),
+                             _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+    json.dumps(res.j_trace)                               # bytes였다면 실패
+    assert res.j_trace[0]["signature"]["2"] if isinstance(
+        list(res.j_trace[0]["signature"])[0], str) else res.j_trace[0]["signature"][2]
+    for bad in (True, 1.7, -1):
+        with pytest.raises((TypeError, ValueError)):
+            run_dual_minimizer(xb, [fc, fc], make_obs(bad), WindowConfig(dt=DT),
+                               _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+
+
+def test_policy_kwarg_conflict_rejected():
+    """재검토 M1: policy와 non-default legacy kwarg 동시 지정 → 거부."""
+    from kdm6.da_dual import ObsGatePolicy
+    xb, fc = _mk_state(), _mk_forcing()
+    with pytest.raises(ValueError, match="not both"):
+        run_dual_minimizer(xb, [fc, fc], lambda t, x: None, WindowConfig(dt=DT),
+                           _b_sigma(xb), default_param_prior(0.2),
+                           require_signature=False,
+                           policy=ObsGatePolicy(require_obs_slots=False))

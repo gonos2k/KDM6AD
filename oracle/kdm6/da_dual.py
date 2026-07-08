@@ -165,6 +165,10 @@ def run_dual_minimizer(
         policy = ObsGatePolicy(require_signature=require_signature,
                                allow_zero_valid_slots=allow_zero_valid_slots,
                                require_obs_slots=require_obs_slots)
+    elif (require_signature, allow_zero_valid_slots, require_obs_slots) != (True, False, True):
+        raise ValueError(
+            "pass gate options through ObsGatePolicy OR legacy kwargs, not both "
+            "— conflicting double specification would be silently ignored")
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
@@ -192,7 +196,8 @@ def run_dual_minimizer(
                 return None
             if isinstance(out, ObsEvalResult):
                 out = (out.j, out.adj, out.n_valid, out.signature)
-            else:
+            elif not counters.get("warned_tuple"):
+                counters["warned_tuple"] = True          # 호출당 1회 (라인서치 반복 소음 방지)
                 import warnings
                 warnings.warn("tuple obs_eval returns are deprecated — return "
                               "ObsEvalResult", DeprecationWarning, stacklevel=2)
@@ -213,6 +218,8 @@ def run_dual_minimizer(
                             "production dual obs_eval must return a NON-EMPTY "
                             "str/bytes valid/regime signature (got "
                             f"{type(sig).__name__}: {sig!r})")
+                if isinstance(sig, bytes):
+                    sig = sig.hex()          # trace JSON 직렬화 보장 (재검토 H1)
             else:
                 if policy.require_signature:
                     raise RuntimeError(
@@ -222,7 +229,14 @@ def run_dual_minimizer(
                         "require_signature=False only for synthetic tests")
                 j_t, adj_t, n_valid = out
                 sig = None
-            n_valid_acc[t] = (int(n_valid), sig)
+            # n_valid 엄격 검증 (재검토 H2): bool은 int 서브클래스, float은 조용한
+            # truncation, 음수는 zero-valid 게이트 우회 — 전부 거부
+            if isinstance(n_valid, bool) or not isinstance(n_valid, int):
+                raise TypeError(
+                    f"n_valid must be a plain int (got {type(n_valid).__name__})")
+            if n_valid < 0:
+                raise ValueError(f"n_valid must be >= 0 (got {n_valid})")
+            n_valid_acc[t] = (n_valid, sig)
             frozen = frozen_n_valid.get(t)
             if frozen is not None:
                 if frozen[0] != int(n_valid):
