@@ -332,10 +332,10 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               policy: "ObsGatePolicy | None" = None) -> Callable:
     """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명.
 
-    동결 기준은 **θ_b 배경 궤적**: run_da_window 자체를 no-op adjoint 프로브로
-    사용해 (η/η_pre·cloud-gate 등 궤적 의미론 보존) M(x_b→t; θ_b)의 슬롯 상태를
-    채취하고, 거기서 rad_quality를 평가해 mask = (관측 quality==0) ∧ (배경
-    rad_quality==0) 를 동결한다. θ_b는 **param_prior에서** 취한다 (재검토 #3:
+    동결 기준은 **θ_b 배경 궤적**: collect_window_trajectory(전방-전용,
+    run_da_window와 bitwise 동일 forward 의미론 — η/η_pre 포함)로 M(x_b→t; θ_b)
+    슬롯 상태를 채취하고, 거기서 rad_quality를 평가해 mask = (관측 quality==0)
+    ∧ (배경 rad_quality==0) 를 동결한다. θ_b는 **param_prior에서** 취한다 (재검토 #3:
     window_config.params와 prior.theta_b의 조용한 불일치 차단 — 프로브 params를
     prior 기준으로 강제 주입).
 
@@ -345,30 +345,34 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     구조적 그래프 단절을 조용한 0 대신 거부 (blocker-2).
 
     y_by_time: {t: (y_bt (B,nch), y_rq (B,nch)[, bias])} — superob 권장.
-    반환 obs_eval: (j, adj, n_valid, sha256(mask)).
+    반환 obs_eval: ObsEvalResult(j, adj, n_valid, sha256(t|shape|dtype|mask)).
     """
     import dataclasses
     import hashlib
     from .da_driver import batched_clear_bt
+    from .da_window import collect_window_trajectory
     from .obs.obs_loss import compute_obs_loss
 
-    traj = {}
-
-    def _probe(tt, x_t):
-        if tt in y_by_time:
-            traj[tt] = State(*(f.detach().clone() for f in x_t))
-        return None
+    if policy is not None:
+        allow_zero_valid_slots = policy.allow_zero_valid_slots
+    for t, entry in y_by_time.items():
+        if len(entry) not in (2, 3):                    # M3: 초과 원소 침묵 무시 금지
+            raise ValueError(
+                f"y_by_time[{t}] must be (y_bt, y_rq[, bias]) — got "
+                f"{len(entry)} elements")
 
     theta_b_params = params_from_vtheta(param_prior, torch.zeros(4, **_F64),
                                         live=False)
     probe_cfg = dataclasses.replace(window_config, params=theta_b_params,
                                     param_grads=False)
-    run_da_window(xb, forcings, _probe, probe_cfg)
-    missing = set(y_by_time) - set(traj)
-    if missing:
+    # forward-전용 수집기 (재검토 H2): run_da_window 프로브는 전 스텝 VJP
+    # 비용을 낸다 — 동일 forward 의미론(bitwise 게이트 고정), backward 없음
+    try:
+        traj = collect_window_trajectory(xb, forcings, probe_cfg,
+                                         set(y_by_time))
+    except ValueError as e:
         raise ValueError(
-            f"obs times {sorted(missing)} not visited by the window trajectory "
-            f"(T={len(forcings)}) — check y_by_time step indices")
+            f"{e} — check y_by_time step indices (T={len(forcings)})") from e
 
     frozen: dict = {}
     for t, entry in y_by_time.items():

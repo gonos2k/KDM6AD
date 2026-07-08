@@ -431,3 +431,34 @@ def test_collect_window_trajectory_matches_probe():
             assert torch.equal(traj[tt][i], probe_states[tt][i]), (tt, f)
     with pytest.raises(ValueError, match="outside window"):
         collect_window_trajectory(xb, [fc, fc], cfg, {5})
+
+
+def test_adapter_policy_and_entry_validation(monkeypatch):
+    """4차 배선 게이트: ① 어댑터가 ObsGatePolicy.allow_zero_valid_slots를 실제
+    소비 ② y_by_time 초과 원소 거부 (미배선이면 즉시 실패하는 항목들)."""
+    import kdm6.da_dual as dd
+    from kdm6.da_dual import ObsGatePolicy
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.ones((1, 16), **_F64)                # 전 채널 무효 → zero-valid
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = torch.full((1, 16), 260.0, **_F64) + 0.0 * (leaves.th.sum() + leaves.qv.sum())
+        return bt, rq, leaves
+
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    prior = dd.default_param_prior(0.2)
+    # ② 초과 원소 (4개) → 거부
+    with pytest.raises(ValueError, match="y_by_time"):
+        dd.make_dual_frozen_obs_eval(xb, [fc, fc],
+                                     {2: (y_bt, y_rq, None, "extra")},
+                                     cfg_obs, WindowConfig(dt=DT), prior)
+    # ① policy.allow_zero_valid_slots=True가 어댑터 zero-valid 거부를 해제
+    obs = dd.make_dual_frozen_obs_eval(
+        xb, [fc, fc], {2: (y_bt, y_rq)}, cfg_obs, WindowConfig(dt=DT), prior,
+        policy=ObsGatePolicy(allow_zero_valid_slots=True))
+    assert obs(2, xb).n_valid == 0
