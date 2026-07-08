@@ -26,6 +26,12 @@ DT = 20.0
 _F64 = dict(dtype=torch.float64)
 
 
+def _P(**kw):
+    """합성 테스트용 정책: tuple 반환 opt-in (production 기본은 dataclass-only)."""
+    from kdm6.da_dual import ObsGatePolicy
+    return ObsGatePolicy(allow_tuple_returns=True, **kw)
+
+
 def _t2(a, b):
     return torch.tensor([[a, b]], **_F64)
 
@@ -179,7 +185,8 @@ def test_mask_gaming_gate():
 
     with pytest.raises(RuntimeError, match="n_valid changed"):
         run_dual_minimizer(xb, [fc, fc], gaming_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=4)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=4,
+                           policy=_P())
 
 
 def test_j_trace_machine_readable():
@@ -187,7 +194,7 @@ def test_j_trace_machine_readable():
     res = run_dual_minimizer(xb, [fc, fc], _quad_obs(xb.th + 0.3),
                              WindowConfig(dt=DT), _b_sigma(xb),
                              default_param_prior(0.2, active=("peaut",)),
-                             max_iter=2)
+                             max_iter=2, policy=_P())
     s = json.dumps(res.j_trace)                     # 직렬화 가능해야
     assert all(set(e) >= {"total", "j_state", "j_theta", "j_obs"} for e in res.j_trace)
     assert res.j_trace[-1]["total"] <= res.j_trace[0]["total"]   # 감소(또는 동일)
@@ -214,7 +221,8 @@ def test_mask_gaming_gate_none_bypass():
 
     with pytest.raises(RuntimeError, match="slots changed"):
         run_dual_minimizer(xb, [fc, fc], vanishing_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=4)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=4,
+                           policy=_P())
 
 
 def test_two_tuple_obs_eval_rejected():
@@ -231,7 +239,8 @@ def test_two_tuple_obs_eval_rejected():
 
     with pytest.raises(RuntimeError, match="2-tuple obs_eval bypasses"):
         run_dual_minimizer(xb, [fc, fc], legacy_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                           policy=_P())
 
 
 def test_signature_substitution_gate():
@@ -251,7 +260,8 @@ def test_signature_substitution_gate():
 
     with pytest.raises(RuntimeError, match="signature changed"):
         run_dual_minimizer(xb, [fc, fc], substituting_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=4)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=4,
+                           policy=_P())
 
 
 def test_param_prior_finite_and_active_validation():
@@ -343,10 +353,11 @@ def test_three_tuple_requires_optout():
 
     with pytest.raises(RuntimeError, match="signature"):
         run_dual_minimizer(xb, [fc, fc], sigless_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                           policy=_P())
     res = run_dual_minimizer(xb, [fc, fc], sigless_obs, WindowConfig(dt=DT),
                              _b_sigma(xb), default_param_prior(0.2), max_iter=2,
-                             require_signature=False)
+                             policy=_P(require_signature=False))
     assert res.j_trace
 
 
@@ -371,10 +382,11 @@ def test_zero_valid_slot_rejected_at_minimizer():
 
     with pytest.raises(RuntimeError, match="n_valid=0"):
         run_dual_minimizer(xb, [fc, fc], empty_obs, WindowConfig(dt=DT),
-                           _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                           _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                           policy=_P())
     res = run_dual_minimizer(xb, [fc, fc], empty_obs, WindowConfig(dt=DT),
                              _b_sigma(xb), default_param_prior(0.2), max_iter=2,
-                             allow_zero_valid_slots=True)
+                             policy=_P(allow_zero_valid_slots=True))
     assert float(res.v_state.abs().max()) == 0.0        # 관측 없음 → 배경 유지
 
 
@@ -406,7 +418,8 @@ def test_none_or_empty_signature_rejected():
     for bad in (None, "", 123):
         with pytest.raises(RuntimeError, match="NON-EMPTY"):
             run_dual_minimizer(xb, [fc, fc], make_obs(bad), WindowConfig(dt=DT),
-                               _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                               _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                               policy=_P())
 
 
 def test_collect_window_trajectory_matches_probe():
@@ -521,14 +534,16 @@ def test_bytes_signature_normalized_and_strict_n_valid():
         return obs
 
     res = run_dual_minimizer(xb, [fc, fc], make_obs(2), WindowConfig(dt=DT),
-                             _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                             _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                             policy=_P())
     json.dumps(res.j_trace)                               # bytes였다면 실패
     assert res.j_trace[0]["signature"]["2"] if isinstance(
         list(res.j_trace[0]["signature"])[0], str) else res.j_trace[0]["signature"][2]
     for bad in (True, 1.7, -1):
         with pytest.raises((TypeError, ValueError)):
             run_dual_minimizer(xb, [fc, fc], make_obs(bad), WindowConfig(dt=DT),
-                               _b_sigma(xb), default_param_prior(0.2), max_iter=2)
+                               _b_sigma(xb), default_param_prior(0.2), max_iter=2,
+                               policy=_P())
 
 
 def test_policy_kwarg_conflict_rejected():
@@ -540,3 +555,66 @@ def test_policy_kwarg_conflict_rejected():
                            _b_sigma(xb), default_param_prior(0.2),
                            require_signature=False,
                            policy=ObsGatePolicy(require_obs_slots=False))
+
+
+def test_round5_contract_gates(monkeypatch):
+    """5차 검토 게이트: ① 관측값 동결 — 어댑터 생성 후 y_by_time in-place 수정이
+    목적함수에 무영향 ② 시각 키 bool/float 거부 ③ 어댑터 policy/kwarg 충돌 거부
+    ④ result.policy 감사 기록 ⑤ tuple 반환 기본 거부(dataclass-only)."""
+    import kdm6.da_dual as dd
+    from kdm6.da_dual import ObsGatePolicy, ObsEvalResult
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = torch.full((1, 16), 260.0, **_F64) + 0.0 * (leaves.th.sum() + leaves.qv.sum())
+        return bt, rq, leaves
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    prior = dd.default_param_prior(0.2)
+
+    # ① 관측값 동결
+    ybt_mut = y_bt.clone()
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc, fc], {2: (ybt_mut, y_rq)},
+                                       cfg_obs, WindowConfig(dt=DT), prior)
+    j_before = obs(2, xb).j
+    ybt_mut += 100.0                                    # 외부 in-place 오염 시도
+    assert obs(2, xb).j == j_before, "관측값이 동결되지 않음"
+
+    # ② 시각 키 엄격
+    for bad_key in (1.7, True):
+        with pytest.raises((TypeError, ValueError)):
+            dd.make_dual_frozen_obs_eval(xb, [fc, fc], {bad_key: (y_bt, y_rq)},
+                                         cfg_obs, WindowConfig(dt=DT), prior)
+
+    # ③ 어댑터 충돌 거부
+    with pytest.raises(ValueError, match="not both"):
+        dd.make_dual_frozen_obs_eval(xb, [fc, fc], {2: (y_bt, y_rq)},
+                                     cfg_obs, WindowConfig(dt=DT), prior,
+                                     allow_zero_valid_slots=True,
+                                     policy=ObsGatePolicy())
+
+    # ④ result.policy 기록 + ⑤ dataclass-only 기본
+    def dc_obs(t, x_t):
+        if t != 2:
+            return None
+        d_ = x_t.th - (xb.th + 0.3)
+        adj = State(*(d_.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return ObsEvalResult(j=float(0.5 * (d_ * d_).sum()), adj=adj,
+                             n_valid=2, signature="s")
+    res = run_dual_minimizer(xb, [fc, fc], dc_obs, WindowConfig(dt=DT),
+                             _b_sigma(xb), prior, max_iter=2)
+    assert res.policy == dict(require_signature=True, allow_zero_valid_slots=False,
+                              require_obs_slots=True, allow_tuple_returns=False)
+
+    def tup_obs(t, x_t):
+        out = dc_obs(t, x_t)
+        return None if out is None else (out.j, out.adj, out.n_valid, out.signature)
+    with pytest.raises(TypeError, match="ObsEvalResult"):
+        run_dual_minimizer(xb, [fc, fc], tup_obs, WindowConfig(dt=DT),
+                           _b_sigma(xb), prior, max_iter=2)

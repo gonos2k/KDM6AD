@@ -158,7 +158,10 @@ def collect_window_trajectory(x0: State, forcings: Sequence[Forcing],
     """
     params = config.params if config.params is not None else make_parameters()
     T = len(forcings)
-    wanted = set(int(w) for w in wanted_times)
+    for w in wanted_times:
+        if isinstance(w, bool) or not isinstance(w, int):
+            raise TypeError(f"wanted time must be a plain int step index; got {w!r}")
+    wanted = set(wanted_times)
     x = _to_f64(x0)
     if config.eta is not None:
         if len(config.eta) != T:

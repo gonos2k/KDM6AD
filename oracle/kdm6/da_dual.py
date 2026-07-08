@@ -104,19 +104,35 @@ def params_from_vtheta(prior: ParamPrior, v_theta: torch.Tensor,
 @dataclass(frozen=True)
 class ObsGatePolicy:
     """dual 관측 게이트 정책 — 어댑터·최소화기가 **같은 객체**를 공유해
-    opt-in 상태의 이중 분산을 막는다 (재검토 H3). trace에도 기록됨."""
+    opt-in 상태의 이중 분산을 막는다. trace 첫 entry에 기록됨."""
     require_signature: bool = True
     allow_zero_valid_slots: bool = False
     require_obs_slots: bool = True
+    # production 기본은 ObsEvalResult만 — 튜플 반환은 명시 opt-in (인덱스
+    # 실수 방지; 합성 테스트 전용)
+    allow_tuple_returns: bool = False
+
+    def as_dict(self) -> dict:
+        return dict(require_signature=self.require_signature,
+                    allow_zero_valid_slots=self.allow_zero_valid_slots,
+                    require_obs_slots=self.require_obs_slots,
+                    allow_tuple_returns=self.allow_tuple_returns)
 
 
 @dataclass(frozen=True)
 class ObsEvalResult:
-    """obs_eval의 선호 반환형 — 튜플 인덱스 실수 차단 (튜플도 호환 수용)."""
+    """obs_eval의 표준 반환형. signature는 str만 (bytes 정규화는 튜플 호환
+    경로 전용 — 타입 계약과 런타임 허용 범위 일치, 재검토 M3)."""
     j: "torch.Tensor | float"
     adj: State
     n_valid: int
     signature: str
+
+    def __post_init__(self):
+        if not isinstance(self.signature, str) or not self.signature:
+            raise TypeError("ObsEvalResult.signature must be a non-empty str")
+        if isinstance(self.n_valid, bool) or not isinstance(self.n_valid, int):
+            raise TypeError("ObsEvalResult.n_valid must be a plain int")
 
 
 @dataclass
@@ -134,6 +150,7 @@ class DualMinimizeResult:
     n_window_evals: int
     grad_norm_final: float
     grad_theta_norm_final: float
+    policy: dict = None                    # 게이트 opt-in 상태 (감사, 재검토 M1)
 
 
 def run_dual_minimizer(
@@ -196,6 +213,11 @@ def run_dual_minimizer(
                 return None
             if isinstance(out, ObsEvalResult):
                 out = (out.j, out.adj, out.n_valid, out.signature)
+            elif not policy.allow_tuple_returns:
+                raise TypeError(
+                    "production dual obs_eval must return ObsEvalResult — "
+                    "tuple returns are error-prone; opt in via "
+                    "ObsGatePolicy(allow_tuple_returns=True) for synthetic tests")
             elif not counters.get("warned_tuple"):
                 counters["warned_tuple"] = True          # 호출당 1회 (라인서치 반복 소음 방지)
                 import warnings
@@ -335,7 +357,8 @@ def run_dual_minimizer(
         v_state=v_x.detach(), v_theta=v_th.detach(), j_trace=trace,
         jb_final=last["jb"], jtheta_final=last["jth"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"],
-        grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"])
+        grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"],
+        policy=policy.as_dict())
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
@@ -367,10 +390,22 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     from .da_window import collect_window_trajectory
     from .obs.obs_loss import compute_obs_loss
 
+    # H3: policy/legacy kwarg 동시 지정 충돌 거부 (최소화기와 동일 규율)
     if policy is not None:
+        if allow_zero_valid_slots is not False:
+            raise ValueError(
+                "pass zero-valid policy through ObsGatePolicy OR the legacy "
+                "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
+    T_win = len(forcings)
     for t, entry in y_by_time.items():
-        if len(entry) not in (2, 3):                    # M3: 초과 원소 침묵 무시 금지
+        # H2: 시각 키는 plain int 스텝 인덱스 — bool은 int 서브클래스, float은
+        # 수집기 int() 캐스팅과 어댑터 조회 키가 어긋나 KeyError 계열 혼란
+        if isinstance(t, bool) or not isinstance(t, int):
+            raise TypeError(f"obs time key must be a plain int step index; got {t!r}")
+        if t < 0 or t > T_win:
+            raise ValueError(f"obs time {t} outside window [0, {T_win}]")
+        if len(entry) not in (2, 3):                    # 초과 원소 침묵 무시 금지
             raise ValueError(
                 f"y_by_time[{t}] must be (y_bt, y_rq[, bias]) — got "
                 f"{len(entry)} elements")
@@ -412,20 +447,25 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 f"frozen mask has zero valid obs at t={t} — likely a channel/"
                 "unit/coefficient misconfiguration; pass "
                 "allow_zero_valid_slots=True only if this slot is expected empty")
-        # 서명에 시각·shape·dtype 메타데이터 포함 (재검토 M1) — 사후 재검증과
-        # all-sky regime 해시 합성을 위한 정체 고정
+        # H1: 관측값·bias도 생성 시점에 동결(clone) — 외부 in-place 수정이
+        # 서명은 그대로 둔 채 목적함수를 바꾸는 경로 차단; obs_hash를 서명에
+        # 합성해 관측 정체까지 고정
+        entry = y_by_time[t]
+        y_bt_f = torch.as_tensor(entry[0], dtype=torch.float64).detach().clone()
+        bias_f = (None if len(entry) < 3 or entry[2] is None
+                  else torch.as_tensor(entry[2], dtype=torch.float64).detach().clone())
         payload = (f"t={t}|shape={tuple(m.shape)}|dtype={m.dtype}|".encode()
-                   + m.cpu().numpy().tobytes())
+                   + m.cpu().numpy().tobytes()
+                   + b"|obs|" + y_bt_f.cpu().numpy().tobytes()
+                   + (b"" if bias_f is None
+                      else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()
-        frozen[t] = (m, n_valid, sig)
+        frozen[t] = (m, n_valid, sig, y_bt_f, bias_f)
 
     def obs_eval(t, x_t):
         if t not in frozen:
             return None
-        entry = y_by_time[t]
-        y_bt = entry[0]
-        bias = entry[2] if len(entry) > 2 else None
-        mask, n_valid, sig = frozen[t]
+        mask, n_valid, sig, y_bt, bias = frozen[t]      # 전부 동결본 (H1)
         bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
                                          obs_cfg)
         obs = {"bt": y_bt}
