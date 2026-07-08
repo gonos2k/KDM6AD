@@ -163,9 +163,13 @@ def collect_window_trajectory(x0: State, forcings: Sequence[Forcing],
     if config.eta is not None:
         if len(config.eta) != T:
             raise ValueError(f"eta length {len(config.eta)} != window length {T}")
+        for t, e in enumerate(config.eta):              # shape 가드 — run_da_window와
+            _validate_state_shapes(e, x, arg=f"eta[{t}]", ref_name="state")
     if config.eta_pre is not None:
         if len(config.eta_pre) != T:
             raise ValueError(f"eta_pre length {len(config.eta_pre)} != window length {T}")
+        for t, e in enumerate(config.eta_pre):          # 동일 (broadcast 침묵 오염 차단)
+            _validate_state_shapes(e, x, arg=f"eta_pre[{t}]", ref_name="state")
     f64_forcings = [_to_f64(f) for f in forcings]
     out_traj: dict[int, State] = {}
     for t in range(T):

@@ -431,6 +431,13 @@ def test_collect_window_trajectory_matches_probe():
             assert torch.equal(traj[tt][i], probe_states[tt][i]), (tt, f)
     with pytest.raises(ValueError, match="outside window"):
         collect_window_trajectory(xb, [fc, fc], cfg, {5})
+    # shape 가드 (stop-review): 잘못된 shape의 η는 broadcast로 침묵 오염되는
+    # 대신 run_da_window와 동일하게 거부돼야 한다
+    bad_eta = [State(*(torch.zeros(1, 1, dtype=torch.float64)
+                       for _ in State._fields)) for _ in range(2)]
+    with pytest.raises(ValueError, match="eta"):
+        collect_window_trajectory(xb, [fc, fc],
+                                  WindowConfig(dt=DT, eta=bad_eta), {2})
 
 
 def test_adapter_policy_and_entry_validation(monkeypatch):
