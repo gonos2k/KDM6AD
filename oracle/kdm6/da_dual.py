@@ -105,7 +105,7 @@ def params_from_vtheta(prior: ParamPrior, v_theta: torch.Tensor,
 @dataclass(frozen=True)
 class ObsGatePolicy:
     """dual 관측 게이트 정책 — 어댑터·최소화기가 **같은 객체**를 공유해
-    opt-in 상태의 이중 분산을 막는다. trace 첫 entry에 기록됨."""
+    opt-in 상태의 이중 분산을 막는다. DualMinimizeResult.policy에 기록됨."""
     require_signature: bool = True
     allow_zero_valid_slots: bool = False
     require_obs_slots: bool = True
@@ -198,15 +198,19 @@ def _freeze_obs_cfg_value(value):
         return tuple(_freeze_obs_cfg_value(v) for v in value)
     if isinstance(value, dict):
         return {copy.deepcopy(k): _freeze_obs_cfg_value(v) for k, v in value.items()}
+    if callable(value):
+        return _FrozenCallable(
+            value, _freeze_obs_cfg_value(getattr(value, "solar_channels", None)))
     return copy.deepcopy(value)
 
 
 def _freeze_obs_cfg(obs_cfg):
     """Freeze the observation operator config used by the dual adapter.
 
-    The standard OsseObsConfig is a dataclass; tests also use small dataclasses.
-    Generic objects are copied by public attributes so post-construction mutation of
-    the caller-owned config cannot silently change H(x) while the signature stays fixed.
+    Supported production shapes are dataclass, namedtuple, and attribute-only
+    objects. Tensor fields are detached/cloned; sequence and dict fields are
+    recursively copied. Generic descriptors/properties are intentionally not
+    evaluated here — keep production obs configs data-only/fail-explicit.
     """
     if is_dataclass(obs_cfg) and not isinstance(obs_cfg, type):
         return type(obs_cfg)(**{f.name: _freeze_obs_cfg_value(getattr(obs_cfg, f.name))
@@ -219,6 +223,47 @@ def _freeze_obs_cfg(obs_cfg):
     attrs.update({k: _freeze_obs_cfg_value(v) for k, v in vars(obs_cfg).items()
                   if not k.startswith("_")})
     return type(f"Frozen{type(obs_cfg).__name__}", (), attrs)()
+
+
+def _fingerprint_obj(value):
+    """Stable value summary for the obs-operator fields that define H(x)."""
+    if isinstance(value, torch.Tensor):
+        v = value.detach().to(torch.float64).cpu()
+        return ("tensor", tuple(v.shape), str(v.dtype), v.numpy().tobytes().hex())
+    if is_dataclass(value) and not isinstance(value, type):
+        return (type(value).__name__, tuple((f.name, _fingerprint_obj(getattr(value, f.name)))
+                                           for f in fields(value)))
+    if hasattr(value, "_fields") and isinstance(value, tuple):
+        return (type(value).__name__, tuple((name, _fingerprint_obj(getattr(value, name)))
+                                           for name in value._fields))
+    if isinstance(value, (tuple, list)):
+        return tuple(_fingerprint_obj(v) for v in value)
+    if isinstance(value, dict):
+        return tuple(sorted((repr(k), _fingerprint_obj(v)) for k, v in value.items()))
+    return value
+
+
+def _obs_cfg_fingerprint(obs_cfg) -> str:
+    """Digest the dual-relevant operator identity used by batched_clear_bt."""
+    import hashlib
+    fields_to_hash = (
+        "profile_cfg", "input_cfg", "t_ref", "q_ref",
+        "t_blend_octaves", "q_blend_octaves")
+    payload = tuple((name, _fingerprint_obj(getattr(obs_cfg, name, None)))
+                    for name in fields_to_hash)
+    run_k = getattr(obs_cfg, "run_k", None)
+    run_k_solar = getattr(run_k, "solar_channels", None)
+    payload += (("run_k.solar_channels", _fingerprint_obj(run_k_solar)),)
+    return hashlib.sha256(repr(payload).encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class _FrozenCallable:
+    fn: object
+    solar_channels: object = None
+
+    def __call__(self, *args, **kwargs):
+        return self.fn(*args, **kwargs)
 
 
 @dataclass
@@ -491,6 +536,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
     obs_cfg_f = _freeze_obs_cfg(obs_cfg)
+    operator_fingerprint = _obs_cfg_fingerprint(obs_cfg_f)
     obs_sigma_f = torch.as_tensor(obs_cfg_f.obs_sigma, dtype=torch.float64).detach().clone()
     T_win = len(forcings)
     for t, entry in y_by_time.items():
@@ -565,6 +611,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                    + (f"|sigma_shape={tuple(obs_sigma_f.shape)}|"
                       f"sigma_dtype={obs_sigma_f.dtype}|".encode())
                    + obs_sigma_f.cpu().numpy().tobytes()
+                   + b"|operator|" + operator_fingerprint.encode()
                    + (b"" if bias_f is None
                       else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()

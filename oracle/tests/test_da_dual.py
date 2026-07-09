@@ -631,6 +631,71 @@ def test_frozen_adapter_freezes_operator_config_reference(monkeypatch):
     assert obs(1, xb).j == j_before
 
 
+def test_freeze_real_osse_obs_cfg_semantics():
+    """Real OsseObsConfig fields that define H(x) survive freeze and fingerprinting."""
+    import kdm6.da_dual as dd
+    from kdm6.da_driver import OsseObsConfig
+    from kdm6.obs.model_profile_builder import RttovProfileConfig
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+
+    def run_k(_rin):
+        raise AssertionError("not called")
+    run_k.solar_channels = (1,)
+    p_lay = torch.tensor([100.0, 200.0], **_F64)
+    p_half = torch.tensor([50.0, 150.0, 250.0], **_F64)
+    cfg = OsseObsConfig(
+        run_k=run_k,
+        profile_cfg=RttovProfileConfig(2, "mixing_ratio_kgkg_dry", p_lay, p_half),
+        input_cfg=RttovInputConfig("coef-a", (1, 2), surface={"z": 1.0}),
+        obs_sigma=torch.tensor([1.0, 2.0], **_F64),
+        t_ref=torch.tensor([250.0, 251.0], **_F64),
+        q_ref=torch.tensor([10.0, 11.0], **_F64),
+        t_blend_octaves=1.5,
+        q_blend_octaves=3.5)
+    frozen = dd._freeze_obs_cfg(cfg)
+    assert frozen.input_cfg.coef_id == "coef-a"
+    assert frozen.input_cfg.channels == (1, 2)
+    assert frozen.profile_cfg.qv_convention == "mixing_ratio_kgkg_dry"
+    assert torch.equal(frozen.profile_cfg.rttov_layer_pressure, p_lay)
+    assert torch.equal(frozen.obs_sigma, torch.tensor([1.0, 2.0], **_F64))
+    fp_before = dd._obs_cfg_fingerprint(frozen)
+    cfg.input_cfg.surface["z"] = 99.0
+    cfg.t_ref[0] = -999.0
+    run_k.solar_channels = (2,)
+    assert torch.equal(frozen.t_ref, torch.tensor([250.0, 251.0], **_F64))
+    assert frozen.input_cfg.surface["z"] == 1.0
+    assert dd._obs_cfg_fingerprint(frozen) == fp_before
+    import dataclasses
+    changed = dataclasses.replace(
+        frozen, input_cfg=frozen.input_cfg._replace(coef_id="coef-b"))
+    assert dd._obs_cfg_fingerprint(changed) != fp_before
+
+
+def test_frozen_adapter_sigma_value_changes_signature(monkeypatch):
+    """Frozen signatures include the actual obs_sigma value, not only shape/dtype."""
+    import kdm6.da_dual as dd
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = torch.full((1, 16), 260.0, **_F64) + 0.0 * (leaves.th.sum() + leaves.qv.sum())
+        return bt, rq, leaves
+
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    prior = dd.default_param_prior(0.2)
+    obs_1 = dd.make_dual_frozen_obs_eval(
+        xb, [fc], {1: (y_bt, y_rq)}, type("C", (), {"obs_sigma": 1.0})(),
+        WindowConfig(dt=DT), prior)
+    obs_2 = dd.make_dual_frozen_obs_eval(
+        xb, [fc], {1: (y_bt, y_rq)}, type("C", (), {"obs_sigma": 2.0})(),
+        WindowConfig(dt=DT), prior)
+    assert obs_1(1, xb).signature != obs_2(1, xb).signature
+
+
 def test_frozen_adapter_y_rq_domain_validation(monkeypatch):
     """superob quality flags are frozen non-negative codes; 0 keeps, nonzero drops."""
     import kdm6.da_dual as dd
