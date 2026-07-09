@@ -48,6 +48,10 @@ def parse_rttov_ascii_blocks(path: str | Path) -> dict[str, list[float]]:
             continue
 
         if line.strip() == ")":
+            if current_key in blocks:
+                raise ValueError(
+                    f"duplicate RTTOV ASCII block: {current_key!r} -- refusing to "
+                    "overwrite an earlier block with the same key.")
             blocks[current_key] = current_values
             current_key = None
             current_values = []

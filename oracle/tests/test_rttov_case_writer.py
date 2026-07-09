@@ -828,6 +828,26 @@ def test_live_run_k_reproduces_fixture_bt(tmp_path):
 
 
 @needs_live
+def test_live_run_k_rejects_fixture_output_echo(tmp_path):
+    """Perturbing the live input must change the returned BT.
+
+    The fixture round-trip above proves overlay+runK can reproduce a known-good
+    case.  This canary proves the live path is not merely echoing that stored
+    fixture radiance for every input: a visible T perturbation must move at least
+    one IR channel away from the fixture reference.
+    """
+    t_vec, q_vec = _fixture_tq()
+    rin = _rttov_input_from_arrays(t_vec + 5.0, q_vec)
+    bt, _, _ = make_live_run_k(tmp_path / "live_case_perturbed")(rin)
+    bt = np.asarray(bt)
+
+    ref = parse_rttov_radiance(_FIX / "out" / "k" / "radiance.txt", nchannels=16)
+    ref_bt0 = np.asarray(ref["bt"][0])
+    assert not np.allclose(bt[0, 6:], ref_bt0[6:], rtol=1e-4, atol=1e-2), (
+        bt[0], ref_bt0)
+
+
+@needs_live
 def test_live_run_k_honors_subset_channels(tmp_path):
     """Requesting a SUBSET of channels actually runs THOSE channels: BT for IR
     channels (7,8,9,10) must equal the fixture full-run's channels 7..10 (indices

@@ -223,6 +223,41 @@ def test_live_batched_runk_matches_individual_runs(tmp_path):
             f"batched {bt_b[p_idx]}\nsingle  {bt1[0]}")
 
 
+@needs_live
+def test_live_batched_runk_preserves_profile_row_identity(tmp_path):
+    """A shape-preserving row swap must not be hidden by batching.
+
+    Use two deliberately separated profiles so the IR BT rows are distinguishable,
+    then compare the batched rows against independent single-profile runs.  This is
+    the RTTOV analog of the Step4 swapped-order negative control, without inventing
+    a new keyed Step4 API.
+    """
+    from kdm6.obs.model_profile_builder import RttovProfileTensors
+    t_vec, q_vec = _fixture_tq()
+    ph = torch.as_tensor(_fixture_p_half(), **_F64)
+    prof = RttovProfileTensors(
+        t_lay=torch.tensor(np.stack([t_vec, t_vec + 5.0]), **_F64),
+        q_lay=torch.tensor(np.stack([q_vec, q_vec]), **_F64),
+        p_lay=None, p_half=ph.unsqueeze(0).expand(2, -1))
+    batched = pack_rttov_input(prof, RttovInputConfig(coef_id="ami_501_test",
+                                                      channels=_CHANNELS))
+    bt_b = np.asarray(make_live_run_k(tmp_path / "rowid_batched")(batched)[0])
+    assert bt_b.shape == (2, 16)
+    assert np.max(np.abs(bt_b[0, 6:] - bt_b[1, 6:])) > 0.1
+
+    singles = []
+    for idx, t_row in enumerate((t_vec, t_vec + 5.0)):
+        prof1 = RttovProfileTensors(
+            t_lay=torch.tensor(t_row, **_F64),
+            q_lay=torch.tensor(q_vec, **_F64),
+            p_lay=None, p_half=ph)
+        rin1 = pack_rttov_input(prof1, RttovInputConfig(coef_id="ami_501_test",
+                                                        channels=_CHANNELS))
+        singles.append(np.asarray(make_live_run_k(tmp_path / f"rowid_single{idx}")(rin1)[0])[0])
+    assert np.allclose(bt_b[0], singles[0], rtol=0, atol=2.0e-3)
+    assert np.allclose(bt_b[1], singles[1], rtol=0, atol=2.0e-3)
+
+
 @needs_fixture
 def test_case_writer_accepts_batched_builder_output_with_p_witness(tmp_path):
     """Codex stop-review 회귀 가드: 배치 builder의 공유 layer-grid witness(P)는

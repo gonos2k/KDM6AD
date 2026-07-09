@@ -34,6 +34,17 @@ def _stack(s: State) -> torch.Tensor:
     return torch.stack([getattr(s, f).to(torch.float64) for f in _FIELDS])
 
 
+def _validate_state_shapes(state: State, ref: State, *, arg: str, ref_name: str) -> None:
+    """Reject broadcastable-but-wrong State field shapes before CVT math."""
+    for f in _FIELDS:
+        got = tuple(getattr(state, f).shape)
+        exp = tuple(getattr(ref, f).shape)
+        if got != exp:
+            raise ValueError(
+                f"{arg}.{f} shape {got} != {ref_name}.{f} shape {exp} "
+                "(silent broadcasting is forbidden)")
+
+
 def _unstack(t: torch.Tensor) -> State:
     return State(**{f: t[i] for i, f in enumerate(_FIELDS)})
 
@@ -77,6 +88,7 @@ def run_minimizer(
         필드/셀별 배경오차 표준편차 σ_b (= diagonal B^{1/2}). 0 → 그 성분은
         제어에서 제외(배경 고정).
     """
+    _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
     sig = _stack(b_sigma)
     xb64 = _unstack(_stack(xb))                       # fp64 정규화 사본
     v = torch.zeros_like(sig, requires_grad=True)     # v=0 에서 시작 (x0 = xb)

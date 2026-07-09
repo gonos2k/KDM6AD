@@ -183,6 +183,13 @@ def parse_rttov_profiles_k(path, *, nchannels):
     PURE PARSER: RETURNS the parsed ``nprofiles``; the truncation guard is
     enforced at the case/run boundary (no optional opt-out here). Empty/non-finite
     fields and a P_HALF/T level/layer mismatch are rejected.
+
+    Row-identity contract: PROFILES_K rows carry explicit chanprof labels and are
+    therefore keyed by ``PROFILES_K(i)`` below.  RADIANCE rows do NOT carry such a
+    key; they are consumed positionally as profile-major/channel-minor rows that
+    must match the ``channels.txt``/``lprofiles.txt`` authored for the case.  A
+    shape-preserving profile permutation is therefore guarded by live row-canary
+    tests, not parser metadata.
     """
     _assert_finite_ascii(path)  # reject NaN/Inf/overflow tokens before they drop
     blocks = parse_rttov_ascii_blocks(path)
@@ -193,7 +200,13 @@ def parse_rttov_profiles_k(path, *, nchannels):
             continue
         idx = int(m.group(1))
         field = re.sub(r"\s+", "", key[m.end():].strip().lstrip("%"))
-        by_field.setdefault(field, {})[idx] = values
+        rows = by_field.setdefault(field, {})
+        if idx in rows:
+            raise ValueError(
+                f"{path}: duplicate PROFILES_K row for field {field!r}, "
+                f"chanprof index {idx} (raw key {key!r}) -- refusing to "
+                "overwrite an earlier K row.")
+        rows[idx] = values
     if not by_field:
         raise ValueError(f"{path}: no PROFILES_K blocks found.")
 

@@ -36,7 +36,7 @@ from typing import Callable, Optional, Sequence
 
 import torch
 
-from .da_minimizer import _stack, cvt_to_state
+from .da_minimizer import _stack, cvt_to_state, _validate_state_shapes
 from .da_window import WindowConfig, run_da_window
 from .runtime import Parameters, make_parameters
 from .state import Forcing, State
@@ -112,6 +112,12 @@ class ObsGatePolicy:
     # 실수 방지; 합성 테스트 전용)
     allow_tuple_returns: bool = False
 
+    def __post_init__(self):
+        for name in ("require_signature", "allow_zero_valid_slots",
+                     "require_obs_slots", "allow_tuple_returns"):
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"{name} must be bool")
+
     def as_dict(self) -> dict:
         return dict(require_signature=self.require_signature,
                     allow_zero_valid_slots=self.allow_zero_valid_slots,
@@ -133,6 +139,8 @@ class ObsEvalResult:
             raise TypeError("ObsEvalResult.signature must be a non-empty str")
         if isinstance(self.n_valid, bool) or not isinstance(self.n_valid, int):
             raise TypeError("ObsEvalResult.n_valid must be a plain int")
+        if self.n_valid < 0:
+            raise ValueError("ObsEvalResult.n_valid must be >= 0")
 
 
 @dataclass
@@ -186,6 +194,7 @@ def run_dual_minimizer(
         raise ValueError(
             "pass gate options through ObsGatePolicy OR legacy kwargs, not both "
             "— conflicting double specification would be silently ignored")
+    _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
@@ -273,7 +282,13 @@ def run_dual_minimizer(
                         f"t={t} — same-count mask substitution or cfrac-regime "
                         "drift (mask-gaming variant). Freeze the mask AND the "
                         "operator regime before minimizing.")
-            jobs_acc.append(torch.as_tensor(j_t, dtype=torch.float64).detach())
+            j_tensor = torch.as_tensor(j_t, dtype=torch.float64)
+            if j_tensor.ndim != 0:
+                raise ValueError(
+                    f"obs_eval j must be scalar; got shape {tuple(j_tensor.shape)}")
+            if not bool(torch.isfinite(j_tensor)):
+                raise FloatingPointError("obs_eval j is non-finite")
+            jobs_acc.append(j_tensor.detach())
             return adj_t
 
         res = run_da_window(x0, forcings, obs_adjoint, cfg_i)
@@ -397,6 +412,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "pass zero-valid policy through ObsGatePolicy OR the legacy "
                 "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
+    obs_sigma_f = torch.as_tensor(obs_cfg.obs_sigma, dtype=torch.float64).detach().clone()
     T_win = len(forcings)
     for t, entry in y_by_time.items():
         # H2: 시각 키는 plain int 스텝 인덱스 — bool은 int 서브클래스, float은
@@ -438,7 +454,15 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                     f"{nm} shape {tuple(arr.shape)} != H(x) rad_quality "
                     f"{tuple(rad_q.shape)} at t={t} — pass the full [B,nch] "
                     "field (silent broadcast is forbidden)")
-        m = ((y_rq == 0) & (rad_q.to(torch.float64) == 0)).double()
+        # y_rq는 superob quality flag의 동결본이다. keep-mask/weight가 아니므로
+        # 0은 사용 가능, nonzero는 플래그됨(RTTOV/obs 관례)으로 해석한다.
+        # NaN/Inf와 음수만 설정 오류로 거부한다.
+        y_rq_f = torch.as_tensor(y_rq, dtype=torch.float64).detach().clone()
+        if not bool(torch.isfinite(y_rq_f).all()):
+            raise ValueError(f"y_rq at t={t} must be finite")
+        if bool((y_rq_f < 0.0).any()):
+            raise ValueError(f"y_rq at t={t} must be non-negative quality flags")
+        m = ((y_rq_f == 0) & (rad_q.to(torch.float64) == 0)).double()
         n_valid = int(m.sum())
         if n_valid == 0 and not allow_zero_valid_slots:
             # zero-valid 슬롯의 조용한 no-op은 설정 오류(채널 매핑·단위·계수)를
@@ -457,6 +481,9 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         payload = (f"t={t}|shape={tuple(m.shape)}|dtype={m.dtype}|".encode()
                    + m.cpu().numpy().tobytes()
                    + b"|obs|" + y_bt_f.cpu().numpy().tobytes()
+                   + (f"|sigma_shape={tuple(obs_sigma_f.shape)}|"
+                      f"sigma_dtype={obs_sigma_f.dtype}|".encode())
+                   + obs_sigma_f.cpu().numpy().tobytes()
                    + (b"" if bias_f is None
                       else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()
@@ -472,7 +499,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         if bias is not None:
             obs["bias"] = bias
         j = compute_obs_loss(bt.to(torch.float64), obs, mask,
-                             sigma=obs_cfg.obs_sigma)
+                             sigma=obs_sigma_f)
         zeros = torch.zeros_like(leaves.th)
         if n_valid > 0:
             # clear-sky connected 필드는 th/qv — None grad는 구조적 단절

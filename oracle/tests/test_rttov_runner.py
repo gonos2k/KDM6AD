@@ -87,6 +87,18 @@ def test_wrong_nchannels_rejected():
         parse_rttov_radiance(_FIX / "direct" / "radiance.txt", nchannels=7)
 
 
+def test_parse_radiance_profile_major_orientation_sentinel(tmp_path):
+    """Fixture-free sentinel for the profile-major/channel-minor reshape contract."""
+    f = tmp_path / "radiance.txt"
+    f.write_text(
+        "RADIANCE%BT = (\n 101 102 103 201 202 203\n)\n"
+        "RADIANCE%QUALITY = (\n 0 0 0 1 1 1\n)\n")
+    rad = parse_rttov_radiance(f, nchannels=3)
+    assert rad["nprofiles"] == 2
+    assert rad["bt"] == [[101.0, 102.0, 103.0], [201.0, 202.0, 203.0]]
+    assert rad["rad_quality"] == [[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]]
+
+
 def test_missing_quality_block_raises(tmp_path):
     """RADIANCE%QUALITY is required: without it the design section-8 quality mask
     cannot be enforced, so the runner must raise (not silently return no quality)."""
@@ -137,7 +149,53 @@ def test_expected_nprofiles_catches_uniform_truncation(tmp_path):
         parse_rttov_k_case(tmp_path, nchannels=16, expected_nprofiles=6)
 
 
-def test_empty_k_field_raises(tmp_path):
+def test_profiles_k_order_is_keyed_not_positional(tmp_path):
+    """PROFILES_K block order must not define profile/channel placement.
+
+    RTTOV labels each row by chanprof index i.  The parser should honor that key,
+    not the textual order of blocks, so a shuffled file still maps row 1 ->
+    profile0/channel0 and row 2 -> profile0/channel1.  This is the RTTOV analog
+    of the Step4 case_row_from_a0 keyed-lookup review item.
+    """
+    f = tmp_path / "profiles_k.txt"
+    f.write_text(
+        "PROFILES_K(   2)%T = (\n 20.0 21.0\n)\n"
+        "PROFILES_K(   1)%T = (\n 10.0 11.0\n)\n")
+    k, nprofiles = parse_rttov_profiles_k(f, nchannels=2)
+    assert nprofiles == 1
+    assert k["T"] == [[[10.0, 11.0], [20.0, 21.0]]]
+
+
+def test_duplicate_profiles_k_block_rejected(tmp_path):
+    """Duplicate raw RTTOV blocks must reject, not overwrite.
+
+    Without this guard, a repeated PROFILES_K(i)%FIELD block can silently replace
+    the first row in the dict returned by the ASCII parser.  That is equivalent to
+    accepting duplicate case rows and choosing one without auditability.
+    """
+    f = tmp_path / "profiles_k.txt"
+    f.write_text(
+        "PROFILES_K(   1)%T = (\n 1.0\n)\n"
+        "PROFILES_K(   1)%T = (\n 9.0\n)\n")
+    with pytest.raises(ValueError, match="duplicate RTTOV ASCII block"):
+        parse_rttov_profiles_k(f, nchannels=1)
+
+
+def test_duplicate_profiles_k_canonical_row_rejected(tmp_path):
+    """Duplicate canonical (chanprof, field) rows must reject, even if raw keys differ.
+
+    The lower-level ASCII parser can only see raw block strings.  The K parser must
+    also guard after RTTOV key normalization, because spacing variants like
+    ``%T`` vs ``% T`` identify the same K row and field.
+    """
+    f = tmp_path / "profiles_k.txt"
+    f.write_text(
+        "PROFILES_K(   1)%T = (\n 1.0\n)\n"
+        "PROFILES_K(   1) % T = (\n 9.0\n)\n")
+    with pytest.raises(ValueError, match="duplicate PROFILES_K row"):
+        parse_rttov_profiles_k(f, nchannels=1)
+
+
     f = tmp_path / "profiles_k.txt"
     f.write_text("PROFILES_K(   1)%T = (\n)\nPROFILES_K(   2)%T = (\n)\n")
     with pytest.raises(ValueError, match=r"is empty \(L=0\)"):

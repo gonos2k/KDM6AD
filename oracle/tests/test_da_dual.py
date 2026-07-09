@@ -69,6 +69,64 @@ def _quad_obs(y_target):
     return obs_eval
 
 
+def _bad_b_sigma_shape(xb):
+    good = _b_sigma(xb)
+    vals = []
+    for f in State._fields:
+        v = getattr(good, f)
+        if f == "th":
+            vals.append(torch.zeros((1, 1), **_F64))       # broadcastable but wrong
+        else:
+            vals.append(v)
+    return State(*vals)
+
+
+def test_b_sigma_shape_rejected_in_minimizers():
+    """b_sigma must match xb field shapes exactly; broadcasting corrupts CVT."""
+    xb, fc = _mk_state(), _mk_forcing()
+    bad = _bad_b_sigma_shape(xb)
+    from kdm6.da_minimizer import run_minimizer
+    with pytest.raises(ValueError, match="b_sigma.th shape"):
+        run_minimizer(xb, [fc], lambda t, x: None, WindowConfig(dt=DT), bad, max_iter=1)
+    with pytest.raises(ValueError, match="b_sigma.th shape"):
+        run_dual_minimizer(xb, [fc], lambda t, x: None, WindowConfig(dt=DT), bad,
+                           default_param_prior(0.2), max_iter=1,
+                           require_obs_slots=False)
+
+
+def test_policy_and_result_boundary_validation():
+    from kdm6.da_dual import ObsGatePolicy, ObsEvalResult
+    with pytest.raises(TypeError, match="require_signature must be bool"):
+        ObsGatePolicy(require_signature="no")
+    xb = _mk_state()
+    adj = State(*(torch.zeros_like(getattr(xb, f)) for f in State._fields))
+    with pytest.raises(ValueError, match="n_valid must be >= 0"):
+        ObsEvalResult(j=0.0, adj=adj, n_valid=-1, signature="sig")
+
+
+def test_custom_obs_eval_j_scalar_and_finite_required():
+    xb, fc = _mk_state(), _mk_forcing()
+    adj = State(*(torch.zeros_like(getattr(xb, f)) for f in State._fields))
+
+    def vector_j(t, x_t):
+        if t != 1:
+            return None
+        return torch.tensor([1.0, 2.0], **_F64), adj, 2, "sig"
+
+    with pytest.raises(ValueError, match="obs_eval j must be scalar"):
+        run_dual_minimizer(xb, [fc], vector_j, WindowConfig(dt=DT), _b_sigma(xb),
+                           default_param_prior(0.2), max_iter=1, policy=_P())
+
+    def nan_j(t, x_t):
+        if t != 1:
+            return None
+        return torch.tensor(float("nan"), **_F64), adj, 2, "sig"
+
+    with pytest.raises(FloatingPointError, match="obs_eval j is non-finite"):
+        run_dual_minimizer(xb, [fc], nan_j, WindowConfig(dt=DT), _b_sigma(xb),
+                           default_param_prior(0.2), max_iter=1, policy=_P())
+
+
 def test_no_observation_dual_prior():
     """무관측 → 분석 = 배경 (상태·파라미터 모두 정확히)."""
     xb, fc = _mk_state(), _mk_forcing()
@@ -517,6 +575,33 @@ def test_frozen_adapter_calls_collector_not_probe(monkeypatch):
         dd.default_param_prior(0.2))
     assert called["collect"] == 1
 
+def test_frozen_adapter_y_rq_domain_validation(monkeypatch):
+    """superob quality flags are frozen non-negative codes; 0 keeps, nonzero drops."""
+    import kdm6.da_dual as dd
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = torch.full((1, 16), 260.0, **_F64) + 0.0 * (leaves.th.sum() + leaves.qv.sum())
+        return bt, rq, leaves
+
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    prior = dd.default_param_prior(0.2)
+    flagged = torch.zeros((1, 16), **_F64); flagged[0, 0] = 2.0
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc], {1: (y_bt, flagged)},
+                                       cfg_obs, WindowConfig(dt=DT), prior)
+    assert obs(1, xb).n_valid == 15
+    bad_nan = torch.zeros((1, 16), **_F64); bad_nan[0, 0] = float("nan")
+    bad_negative = torch.zeros((1, 16), **_F64); bad_negative[0, 0] = -1.0
+    for bad, match in ((bad_nan, "finite"), (bad_negative, "non-negative")):
+        with pytest.raises(ValueError, match=match):
+            dd.make_dual_frozen_obs_eval(xb, [fc], {1: (y_bt, bad)},
+                                         cfg_obs, WindowConfig(dt=DT), prior)
+
 
 def test_bytes_signature_normalized_and_strict_n_valid():
     """재검토 H1/H2: bytes 서명은 hex로 정규화돼 trace가 JSON 직렬화되고,
@@ -545,7 +630,6 @@ def test_bytes_signature_normalized_and_strict_n_valid():
                                _b_sigma(xb), default_param_prior(0.2), max_iter=2,
                                policy=_P())
 
-
 def test_policy_kwarg_conflict_rejected():
     """재검토 M1: policy와 non-default legacy kwarg 동시 지정 → 거부."""
     from kdm6.da_dual import ObsGatePolicy
@@ -558,9 +642,9 @@ def test_policy_kwarg_conflict_rejected():
 
 
 def test_round5_contract_gates(monkeypatch):
-    """5차 검토 게이트: ① 관측값 동결 — 어댑터 생성 후 y_by_time in-place 수정이
-    목적함수에 무영향 ② 시각 키 bool/float 거부 ③ 어댑터 policy/kwarg 충돌 거부
-    ④ result.policy 감사 기록 ⑤ tuple 반환 기본 거부(dataclass-only)."""
+    """5차 검토 게이트: ① 관측값/sigma 동결 — 어댑터 생성 후 외부 in-place/
+    cfg 수정이 목적함수에 무영향 ② 시각 키 bool/float 거부 ③ 어댑터 policy/kwarg
+    충돌 거부 ④ result.policy 감사 기록 ⑤ tuple 반환 기본 거부(dataclass-only)."""
     import kdm6.da_dual as dd
     from kdm6.da_dual import ObsGatePolicy, ObsEvalResult
     xb, fc = _mk_state(), _mk_forcing()
@@ -577,13 +661,18 @@ def test_round5_contract_gates(monkeypatch):
     cfg_obs = type("C", (), {"obs_sigma": 1.0})()
     prior = dd.default_param_prior(0.2)
 
-    # ① 관측값 동결
+    # ① 관측값 + sigma 동결
     ybt_mut = y_bt.clone()
     obs = dd.make_dual_frozen_obs_eval(xb, [fc, fc], {2: (ybt_mut, y_rq)},
                                        cfg_obs, WindowConfig(dt=DT), prior)
-    j_before = obs(2, xb).j
+    out_before = obs(2, xb)
+    j_before = out_before.j
+    sig_before = out_before.signature
     ybt_mut += 100.0                                    # 외부 in-place 오염 시도
-    assert obs(2, xb).j == j_before, "관측값이 동결되지 않음"
+    cfg_obs.obs_sigma = 7.0                             # live cfg 오염 시도
+    out_after = obs(2, xb)
+    assert out_after.j == j_before, "관측값/sigma가 동결되지 않음"
+    assert out_after.signature == sig_before
 
     # ② 시각 키 엄격
     for bad_key in (1.7, True):
