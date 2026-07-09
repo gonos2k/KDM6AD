@@ -30,8 +30,9 @@ j_trace 는 dict 목록(total/j_state/j_theta/j_obs/n_valid) — JSON 직렬화 
 """
 from __future__ import annotations
 
+import copy
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from typing import Callable, Optional, Sequence
 
 import torch
@@ -149,7 +150,9 @@ class _FrozenObsSlot:
 
     Tensors are detached clones made at adapter construction time. Grouping them
     by name keeps the frozen mask/obs/bias/sigma contract auditable without
-    reintroducing tuple-index coupling inside the production adapter.
+    reintroducing tuple-index coupling inside the production adapter. sigma is a
+    detached scalar/per-channel/full-field tensor accepted by compute_obs_loss
+    broadcast rules.
     """
     mask: torch.Tensor
     n_valid: int
@@ -157,6 +160,65 @@ class _FrozenObsSlot:
     y_bt: torch.Tensor
     bias: "torch.Tensor | None"
     sigma: torch.Tensor
+
+    def __post_init__(self):
+        if not isinstance(self.signature, str) or not self.signature:
+            raise TypeError("_FrozenObsSlot.signature must be a non-empty str")
+        if isinstance(self.n_valid, bool) or not isinstance(self.n_valid, int):
+            raise TypeError("_FrozenObsSlot.n_valid must be a plain int")
+        if self.n_valid < 0:
+            raise ValueError("_FrozenObsSlot.n_valid must be >= 0")
+        if tuple(self.mask.shape) != tuple(self.y_bt.shape):
+            raise ValueError(
+                "_FrozenObsSlot mask and y_bt shape mismatch: "
+                f"{tuple(self.mask.shape)} != {tuple(self.y_bt.shape)}")
+        if self.bias is not None:
+            try:
+                bias_shape = torch.broadcast_shapes(self.bias.shape, self.y_bt.shape)
+            except RuntimeError:
+                bias_shape = None
+            if bias_shape != tuple(self.y_bt.shape):
+                raise ValueError(
+                    "_FrozenObsSlot bias does not broadcast to y_bt: "
+                    f"{tuple(self.bias.shape)} -> {tuple(self.y_bt.shape)}")
+
+
+def _freeze_obs_cfg_value(value):
+    """Best-effort construction-time freeze for obs operator config fields."""
+    if isinstance(value, torch.Tensor):
+        return value.detach().clone()
+    if is_dataclass(value) and not isinstance(value, type):
+        return type(value)(**{f.name: _freeze_obs_cfg_value(getattr(value, f.name))
+                             for f in fields(value)})
+    if hasattr(value, "_fields") and isinstance(value, tuple):
+        return type(value)(*(_freeze_obs_cfg_value(v) for v in value))
+    if isinstance(value, tuple):
+        return tuple(_freeze_obs_cfg_value(v) for v in value)
+    if isinstance(value, list):
+        return tuple(_freeze_obs_cfg_value(v) for v in value)
+    if isinstance(value, dict):
+        return {copy.deepcopy(k): _freeze_obs_cfg_value(v) for k, v in value.items()}
+    return copy.deepcopy(value)
+
+
+def _freeze_obs_cfg(obs_cfg):
+    """Freeze the observation operator config used by the dual adapter.
+
+    The standard OsseObsConfig is a dataclass; tests also use small dataclasses.
+    Generic objects are copied by public attributes so post-construction mutation of
+    the caller-owned config cannot silently change H(x) while the signature stays fixed.
+    """
+    if is_dataclass(obs_cfg) and not isinstance(obs_cfg, type):
+        return type(obs_cfg)(**{f.name: _freeze_obs_cfg_value(getattr(obs_cfg, f.name))
+                               for f in fields(obs_cfg)})
+    if hasattr(obs_cfg, "_fields") and isinstance(obs_cfg, tuple):
+        return type(obs_cfg)(*(_freeze_obs_cfg_value(v) for v in obs_cfg))
+    attrs = {k: _freeze_obs_cfg_value(v)
+             for k, v in vars(type(obs_cfg)).items()
+             if not k.startswith("_") and not callable(v)}
+    attrs.update({k: _freeze_obs_cfg_value(v) for k, v in vars(obs_cfg).items()
+                  if not k.startswith("_")})
+    return type(f"Frozen{type(obs_cfg).__name__}", (), attrs)()
 
 
 @dataclass
@@ -428,7 +490,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "pass zero-valid policy through ObsGatePolicy OR the legacy "
                 "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
-    obs_sigma_f = torch.as_tensor(obs_cfg.obs_sigma, dtype=torch.float64).detach().clone()
+    obs_cfg_f = _freeze_obs_cfg(obs_cfg)
+    obs_sigma_f = torch.as_tensor(obs_cfg_f.obs_sigma, dtype=torch.float64).detach().clone()
     T_win = len(forcings)
     for t, entry in y_by_time.items():
         # H2: 시각 키는 plain int 스텝 인덱스 — bool은 int 서브클래스, float은
@@ -461,7 +524,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         with torch.no_grad():
             _, rad_q, _ = batched_clear_bt(traj[t],
                                            forcings[min(t, len(forcings) - 1)],
-                                           obs_cfg)
+                                           obs_cfg_f)
         # shape 엄격 검증 (재검토 H1): [nch]·[B,1] 등이 broadcasting으로 조용히
         # [B,nch] mask가 되는 경로 차단 — superob 규약은 full-shape (B,nch)
         for nm, arr in (("y_bt", y_bt), ("y_rq", y_rq)):
@@ -489,7 +552,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "allow_zero_valid_slots=True only if this slot is expected empty")
         # H1: 관측값·bias도 생성 시점에 동결(clone) — 외부 in-place 수정이
         # 서명은 그대로 둔 채 목적함수를 바꾸는 경로 차단; obs_hash를 서명에
-        # 합성해 관측 정체까지 고정
+        # 합성해 관측 정체까지 고정. y_rq는 계산상 binary usable/flagged로만
+        # 해석하지만, 원본 quality-code bytes도 감사용 signature에는 보존한다.
         entry = y_by_time[t]
         y_bt_f = torch.as_tensor(entry[0], dtype=torch.float64).detach().clone()
         bias_f = (None if len(entry) < 3 or entry[2] is None
@@ -497,6 +561,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         payload = (f"t={t}|shape={tuple(m.shape)}|dtype={m.dtype}|".encode()
                    + m.cpu().numpy().tobytes()
                    + b"|obs|" + y_bt_f.cpu().numpy().tobytes()
+                   + b"|y_rq|" + y_rq_f.cpu().numpy().tobytes()
                    + (f"|sigma_shape={tuple(obs_sigma_f.shape)}|"
                       f"sigma_dtype={obs_sigma_f.dtype}|".encode())
                    + obs_sigma_f.cpu().numpy().tobytes()
@@ -511,7 +576,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         if slot is None:
             return None
         bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
-                                         obs_cfg)
+                                         obs_cfg_f)
         obs = {"bt": slot.y_bt}
         if slot.bias is not None:
             obs["bias"] = slot.bias

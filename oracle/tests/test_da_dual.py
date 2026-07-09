@@ -542,6 +542,30 @@ def test_adapter_policy_and_entry_validation(monkeypatch):
     assert obs(2, xb).n_valid == 0
 
 
+def test_frozen_obs_slot_boundary_validation():
+    """Frozen slot contract is enforced at the dataclass boundary, not only upstream."""
+    from kdm6.da_dual import _FrozenObsSlot
+    mask = torch.ones((1, 2), **_F64)
+    y_bt = torch.full((1, 2), 250.0, **_F64)
+    sigma = torch.tensor(1.0, **_F64)
+
+    _FrozenObsSlot(mask=mask, n_valid=2, signature="sig", y_bt=y_bt,
+                   bias=torch.zeros((2,), **_F64), sigma=sigma)
+    for bad_n_valid in (True, 1.0, -1):
+        with pytest.raises((TypeError, ValueError), match="n_valid"):
+            _FrozenObsSlot(mask=mask, n_valid=bad_n_valid, signature="sig",
+                           y_bt=y_bt, bias=None, sigma=sigma)
+    with pytest.raises(TypeError, match="signature"):
+        _FrozenObsSlot(mask=mask, n_valid=2, signature="", y_bt=y_bt,
+                       bias=None, sigma=sigma)
+    with pytest.raises(ValueError, match="mask.*y_bt"):
+        _FrozenObsSlot(mask=torch.ones((2,), **_F64), n_valid=2, signature="sig",
+                       y_bt=y_bt, bias=None, sigma=sigma)
+    with pytest.raises(ValueError, match="bias"):
+        _FrozenObsSlot(mask=mask, n_valid=2, signature="sig", y_bt=y_bt,
+                       bias=torch.zeros((3,), **_F64), sigma=sigma)
+
+
 def test_frozen_adapter_calls_collector_not_probe(monkeypatch):
     """재검토 M3: 어댑터가 collect_window_trajectory를 실제 호출하고
     run_da_window 프로브는 호출하지 않음 — 미배선 회귀의 직접 spy."""
@@ -575,6 +599,38 @@ def test_frozen_adapter_calls_collector_not_probe(monkeypatch):
         dd.default_param_prior(0.2))
     assert called["collect"] == 1
 
+
+def test_frozen_adapter_freezes_operator_config_reference(monkeypatch):
+    """Adapter construction freezes the obs operator config used by the inner H(x)."""
+    import dataclasses
+    import kdm6.da_dual as dd
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+
+    @dataclasses.dataclass
+    class Cfg:
+        obs_sigma: float = 1.0
+        operator_offset: float = 10.0
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        rq = torch.zeros((1, 16), **_F64)
+        leaves = State(*(f.detach().clone().requires_grad_(True) for f in x_state))
+        bt = (torch.full((1, 16), 250.0 + float(cfg.operator_offset), **_F64)
+              + 0.0 * (leaves.th.sum() + leaves.qv.sum()))
+        return bt, rq, leaves
+
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = Cfg()
+    prior = dd.default_param_prior(0.2)
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc], {1: (y_bt, y_rq)},
+                                       cfg_obs, WindowConfig(dt=DT), prior)
+    j_before = obs(1, xb).j
+    cfg_obs.operator_offset = 50.0
+    assert obs(1, xb).j == j_before
+
+
 def test_frozen_adapter_y_rq_domain_validation(monkeypatch):
     """superob quality flags are frozen non-negative codes; 0 keeps, nonzero drops."""
     import kdm6.da_dual as dd
@@ -595,6 +651,11 @@ def test_frozen_adapter_y_rq_domain_validation(monkeypatch):
     obs = dd.make_dual_frozen_obs_eval(xb, [fc], {1: (y_bt, flagged)},
                                        cfg_obs, WindowConfig(dt=DT), prior)
     assert obs(1, xb).n_valid == 15
+    flagged_alt = torch.zeros((1, 16), **_F64); flagged_alt[0, 0] = 3.0
+    obs_alt = dd.make_dual_frozen_obs_eval(xb, [fc], {1: (y_bt, flagged_alt)},
+                                           cfg_obs, WindowConfig(dt=DT), prior)
+    assert obs_alt(1, xb).n_valid == 15
+    assert obs_alt(1, xb).signature != obs(1, xb).signature
     bad_nan = torch.zeros((1, 16), **_F64); bad_nan[0, 0] = float("nan")
     bad_negative = torch.zeros((1, 16), **_F64); bad_negative[0, 0] = -1.0
     for bad, match in ((bad_nan, "finite"), (bad_negative, "non-negative")):
