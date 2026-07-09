@@ -70,6 +70,17 @@ def test_parse_profiles_k_shape_and_finite():
     assert "P_HALF" in k and len(k["P_HALF"][0][0]) == 70
 
 
+def test_expected_nprofiles_must_be_positive(tmp_path):
+    k = tmp_path / "k"
+    k.mkdir()
+    (k / "radiance.txt").write_text("RADIANCE%BT = (\n 300 301\n)\n" + _QUAL2)
+    (k / "profiles_k.txt").write_text(
+        "PROFILES_K(   1)%T = (\n 1.0\n)\n"
+        "PROFILES_K(   2)%T = (\n 2.0\n)\n")
+    with pytest.raises(ValueError, match="expected_nprofiles must be > 0"):
+        parse_rttov_k_case(tmp_path, nchannels=2, expected_nprofiles=0)
+
+
 @skip_no_fixture
 def test_parse_rttov_k_case_assembles_output():
     out = parse_rttov_k_case(_FIX, nchannels=AMI_NCHANNELS, expected_nprofiles=6)
@@ -77,6 +88,7 @@ def test_parse_rttov_k_case_assembles_output():
     assert out.nprofiles == 6 and out.nchannels == 16
     assert len(out.bt) == 6 and len(out.bt[0]) == 16
     assert out.rad_quality is not None
+    assert out.evidence_level == "wiring_only"
     assert out.k["T"][0][6] is not None and len(out.k["T"][0][6]) == 69
 
 

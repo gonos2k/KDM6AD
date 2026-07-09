@@ -1127,6 +1127,12 @@ def test_live_solar_reflectance_observable_and_refl_k(tmp_path):
     assert float(g_dl.abs().sum()) > 0.0, "liquid Deff REFL adjoint dead"
 
 
+def test_make_live_run_k_marks_fixture_wiring_only(tmp_path):
+    """Fixture-backed run_k closures must not present themselves as independent evidence."""
+    run_k = make_live_run_k(tmp_path / "case")
+    assert run_k.evidence_level == "wiring_only"
+
+
 # ------------------------------------------------------------- LIVE FD anchors
 # (DA_REALTIME_PLAN T0-2) Every earlier live-K gradient test asserts only
 # finite/nonzero/localized -- a WRONG-BUT-FINITE gradient from a K-unit

@@ -93,6 +93,8 @@ class RttovKOutput(NamedTuple):
     to match the design's consumer contract); ``k`` maps each RTTOV PROFILES_K
     field (``T``, ``Q``, ``O3``, ``SKIN(1)%T``, ...) to a
     ``[nprofiles, nchannels, L_field]`` array. All numpy (non-torch boundary).
+    ``evidence_level`` is always ``"wiring_only"`` because fixture-backed RTTOV
+    output validates parser/wiring contracts, not independent physical evidence.
     """
     bt: "list"               # [nprofiles][nchannels]
     rad_quality: "list"      # [nprofiles][nchannels] (design 'rad_quality', section 8)
@@ -100,6 +102,7 @@ class RttovKOutput(NamedTuple):
     nprofiles: int
     nchannels: int
     refl: object = None      # [nprofiles][nchannels] solar reflectance (Phase 7); None if no solar
+    evidence_level: str = "wiring_only"
 
 
 def _reshape_profile_major(flat, nprofiles, nchannels):
@@ -257,6 +260,10 @@ def parse_rttov_k_case(out_dir, *, nchannels, expected_nprofiles):
     profile counts are both validated against it, so a uniformly-truncated output
     (whole profiles dropped, BT/K truncating alike) is rejected here.
     """
+    if expected_nprofiles <= 0:
+        raise ValueError(
+            f"expected_nprofiles must be > 0 (got {expected_nprofiles}) -- "
+            "a fixture-backed run with zero cases is not evidence.")
     out_dir = Path(out_dir)
     rad = parse_rttov_radiance(out_dir / "k" / "radiance.txt", nchannels=nchannels)
     k, nprofiles_k = parse_rttov_profiles_k(

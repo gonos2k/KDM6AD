@@ -1071,4 +1071,5 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), t
     # it matches ObsOperatorConfig.solar_channels -- a mismatch (e.g. cfg says solar but
     # this run_k merges pure BT) would be a silent config-mismatch wrong gradient.
     _run_k.solar_channels = tuple(int(c) for c in solar_channels)
+    _run_k.evidence_level = "wiring_only"
     return _run_k
