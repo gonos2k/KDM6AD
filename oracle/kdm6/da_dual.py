@@ -143,6 +143,22 @@ class ObsEvalResult:
             raise ValueError("ObsEvalResult.n_valid must be >= 0")
 
 
+@dataclass(frozen=True)
+class _FrozenObsSlot:
+    """Frozen observation contract for one reported time slot.
+
+    Tensors are detached clones made at adapter construction time. Grouping them
+    by name keeps the frozen mask/obs/bias/sigma contract auditable without
+    reintroducing tuple-index coupling inside the production adapter.
+    """
+    mask: torch.Tensor
+    n_valid: int
+    signature: str
+    y_bt: torch.Tensor
+    bias: "torch.Tensor | None"
+    sigma: torch.Tensor
+
+
 @dataclass
 class DualMinimizeResult:
     x_analysis: State
@@ -487,21 +503,22 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                    + (b"" if bias_f is None
                       else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()
-        frozen[t] = (m, n_valid, sig, y_bt_f, bias_f)
+        frozen[t] = _FrozenObsSlot(mask=m, n_valid=n_valid, signature=sig,
+                                   y_bt=y_bt_f, bias=bias_f, sigma=obs_sigma_f)
 
     def obs_eval(t, x_t):
-        if t not in frozen:
+        slot = frozen.get(t)
+        if slot is None:
             return None
-        mask, n_valid, sig, y_bt, bias = frozen[t]      # 전부 동결본 (H1)
         bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
                                          obs_cfg)
-        obs = {"bt": y_bt}
-        if bias is not None:
-            obs["bias"] = bias
-        j = compute_obs_loss(bt.to(torch.float64), obs, mask,
-                             sigma=obs_sigma_f)
+        obs = {"bt": slot.y_bt}
+        if slot.bias is not None:
+            obs["bias"] = slot.bias
+        j = compute_obs_loss(bt.to(torch.float64), obs, slot.mask,
+                             sigma=slot.sigma)
         zeros = torch.zeros_like(leaves.th)
-        if n_valid > 0:
+        if slot.n_valid > 0:
             # clear-sky connected 필드는 th/qv — None grad는 구조적 단절
             g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv],
                                              allow_unused=False)
@@ -510,6 +527,6 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         adj = State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
                     qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
         return ObsEvalResult(j=float(j.detach()), adj=adj,
-                             n_valid=n_valid, signature=sig)
+                             n_valid=slot.n_valid, signature=slot.signature)
 
     return obs_eval
