@@ -240,6 +240,18 @@ def make_default_cvt(xb: State, *,
     spec = CvtSpec(mode=mode,
                    eps=tuple(float(eo.get(f, 0.0)) for f in _FIELDS))
 
+    # 원시 σ 값을 per-cell zeroing보다 먼저 검증 — clamp 필드에서 무효 값
+    # (NaN/음수/절대단위 오인)이 V3/V4 마스크에 소독되어 '조용한 전-셀 pin'으로
+    # 위장되는 것을 차단 (정상 σ의 headroom zeroing과 구성 오류를 구분)
+    for i, f in enumerate(_FIELDS):
+        v = float(base[f])
+        if not math.isfinite(v) or v < 0:
+            raise ValueError(f"{f}: sigma must be finite and >= 0 (got {v!r})")
+        if mode[i] == "mul" and v > _SIGMA_LOG_MAX:
+            raise ValueError(
+                f"{f}: sigma {v} > {_SIGMA_LOG_MAX} — 'mul' fields take a "
+                "log-space sigma (absolute-units sigma passed by mistake?)")
+
     sigs = {}
     for i, f in enumerate(_FIELDS):
         xbf = getattr(xb, f).to(torch.float64)

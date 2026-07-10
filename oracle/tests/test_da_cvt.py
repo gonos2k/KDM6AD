@@ -217,6 +217,16 @@ def test_validate_cvt_rejects():
     # (m) 빌더는 범위 밖 override를 스스로 거부 (by-construction 보증의 실체)
     with pytest.raises(ValueError):
         make_default_cvt(xb, sigma_overrides={"qc": 5.0})
+    # (n) clamp 필드(ni/nccn)의 무효 override가 V3/V4 zeroing으로 소독되어
+    #     '조용한 pin'으로 위장되지 않아야 함 — 원시 σ 값을 zeroing 전에 검증
+    #     (Codex P2: nan은 where의 NaN 비교로, 3.0은 headroom 폭주로 전부
+    #      0이 되어 validate_cvt가 통과해 버리던 회귀)
+    with pytest.raises(ValueError):
+        make_default_cvt(xb, sigma_overrides={"nccn": float("nan")})
+    with pytest.raises(ValueError):
+        make_default_cvt(xb, sigma_overrides={"nccn": 3.0})
+    with pytest.raises(ValueError):
+        make_default_cvt(xb, sigma_overrides={"ni": -0.3})
 
 
 def test_spec_fingerprint_and_record_roundtrip():
