@@ -162,11 +162,14 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             max_clear: "int | None" = None,
                             coef_clear: str = "ami_501_test",
                             coef_cloud: str = "ami_cloud",
-                            channels: tuple = ()) -> dict:
+                            channels: tuple = (),
+                            save_fields: "str | None" = None) -> dict:
     """v9 전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
     (테스트 헬퍼 또는 케이스 자산에서 공급; 모듈은 tests에 의존하지 않는다).
+    save_fields: npz 경로 — 영상화/후속 분석용 배경·분석 부분공간 필드와
+    도메인 인덱스(sub_idx, nx, ny) 저장 (norm만 담는 보고 dict의 보완).
     """
     from .obs.model_profile_builder import RttovProfileConfig
     from .obs.rttov_case_writer import make_live_run_k
@@ -232,6 +235,16 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     finally:
         pool.close()
         pool.join()
+
+    if save_fields is not None:
+        np.savez_compressed(
+            save_fields, sub_idx=sub.numpy(),
+            nx=int(fr.meta["nx"]), ny=int(fr.meta["ny"]),
+            n_cloudy=int(cloudy_pos.numel()), mask=mask.numpy(),
+            y_bt=y_bt.numpy(),
+            **{f"xb_{f}": getattr(xb, f).numpy() for f in State._fields},
+            **{f"xa_{f}": getattr(res.x_analysis, f).numpy()
+               for f in State._fields})
 
     dnorm = {f: float((getattr(res.x_analysis, f) - getattr(xb, f)).norm())
              for f in State._fields}

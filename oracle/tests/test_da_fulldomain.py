@@ -41,9 +41,12 @@ def test_fulldomain_smoke_capped(tmp_path):
     rep = run_fulldomain_analysis(
         fr, co, grids, str(tmp_path / "v9smoke"),
         n_workers=2, max_iter=2, max_cloudy=12, max_clear=50,
-        channels=_CHANNELS)
+        channels=_CHANNELS, save_fields=str(tmp_path / "fields.npz"))
 
     json.dumps(rep)                                     # 보고 직렬화 가능
+    fields = np.load(tmp_path / "fields.npz")           # 영상화 데이터 저장 확인
+    assert fields["xa_qc"].shape == fields["xb_qc"].shape
+    assert int(fields["n_cloudy"]) == 12
     assert rep["n_cloudy"] == 12 and rep["caps"]["max_cloudy"] == 12
     assert rep["n_valid"] > 0
     assert rep["j_trace"][-1]["total"] < rep["j_trace"][0]["total"]
