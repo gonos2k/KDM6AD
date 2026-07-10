@@ -23,15 +23,12 @@ from typing import Callable, Sequence
 
 import torch
 
+from .da_cvt import (CvtSpec, _stack, _unstack, build_cvt_record, cvt_apply,
+                     validate_cvt)
 from .da_window import WindowConfig, run_da_window
 from .state import State, Forcing
 
 _FIELDS = State._fields                     # 12필드 순서 고정
-
-
-def _stack(s: State) -> torch.Tensor:
-    """State → (12, B, K) fp64 텐서."""
-    return torch.stack([getattr(s, f).to(torch.float64) for f in _FIELDS])
 
 
 def _validate_state_shapes(state: State, ref: State, *, arg: str, ref_name: str) -> None:
@@ -45,13 +42,12 @@ def _validate_state_shapes(state: State, ref: State, *, arg: str, ref_name: str)
                 "(silent broadcasting is forbidden)")
 
 
-def _unstack(t: torch.Tensor) -> State:
-    return State(**{f: t[i] for i, f in enumerate(_FIELDS)})
+def cvt_to_state(xb: State, b_sigma: State, v: torch.Tensor,
+                 spec: "CvtSpec | None" = None) -> State:
+    """CVT 역변환 — spec=None(기본)은 선형 x0 = xb + σ_b ⊙ v. v: (12, B, K).
 
-
-def cvt_to_state(xb: State, b_sigma: State, v: torch.Tensor) -> State:
-    """x0 = xb + σ_b ⊙ v  (CVT 역변환). v: (12, B, K)."""
-    return _unstack(_stack(xb) + _stack(b_sigma) * v)
+    spec 지정 시 필드별 하이브리드 add/mul 변환 (da_cvt.cvt_apply 참조)."""
+    return cvt_apply(xb, b_sigma, v, spec)[0]
 
 
 @dataclass
@@ -63,6 +59,7 @@ class MinimizeResult:
     jobs_final: float
     n_window_evals: int                  # 창 적분(forward+adjoint) 횟수
     grad_norm_final: float
+    cvt: "dict | None" = None            # 감사 레코드 (spec 경로만; 레거시 None)
 
 
 def run_minimizer(
@@ -75,6 +72,7 @@ def run_minimizer(
     max_iter: int = 20,
     history_size: int = 8,
     tolerance_grad: float = 1.0e-10,
+    cvt: "CvtSpec | None" = None,
 ) -> MinimizeResult:
     """J(v) = ½‖v‖² + Σ_t J_obs,t(x_t(v)) 를 CVT 공간에서 L-BFGS로 최소화.
 
@@ -86,9 +84,15 @@ def run_minimizer(
         추가한 형태 — 래퍼가 j_t를 누적하고 adj_t만 창으로 넘긴다.)
     b_sigma : State
         필드/셀별 배경오차 표준편차 σ_b (= diagonal B^{1/2}). 0 → 그 성분은
-        제어에서 제외(배경 고정).
+        제어에서 제외(배경 고정). cvt의 mul 필드에서는 log-공간 σ (무차원).
+    cvt : CvtSpec | None
+        None(기본) = 기존 선형 CVT, byte-identical 레거시 경로 (미검증 유지).
+        spec 지정 = 필드별 add/mul 하이브리드 (da_cvt) — validate_cvt로
+        fail-fast 검증 후, 체인룰은 ∂J/∂v = v + jac ⊙ adj_x0 (jac = ∂x0/∂v).
     """
     _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
+    if cvt is not None:
+        validate_cvt(xb, b_sigma, cvt, window_config.active_fields)
     sig = _stack(b_sigma)
     xb64 = _unstack(_stack(xb))                       # fp64 정규화 사본
     v = torch.zeros_like(sig, requires_grad=True)     # v=0 에서 시작 (x0 = xb)
@@ -101,7 +105,7 @@ def run_minimizer(
         # CVT 산술만 no_grad — run_da_window는 내부 backward 스윕에서 스스로
         # local-graph를 재구축하므로(grad 컨텍스트 자가 관리) 감싸면 안 된다.
         with torch.no_grad():
-            x0 = cvt_to_state(xb64, b_sigma, v)
+            x0, jac = cvt_apply(xb64, b_sigma, v, cvt)
         jobs_acc: list[torch.Tensor] = []
 
         def obs_adjoint(t: int, x_t: State):
@@ -119,8 +123,8 @@ def run_minimizer(
             j_obs = (torch.stack(jobs_acc).sum() if jobs_acc
                      else torch.zeros((), dtype=torch.float64))
             j_b = 0.5 * (v * v).sum()
-            # ∂J/∂v = v + σ_b ⊙ ∂J_obs/∂x0  (CVT 체인룰; J_b 항은 v 그대로)
-            grad = v.detach() + sig * _stack(res.adj_x0)
+            # ∂J/∂v = v + jac ⊙ ∂J_obs/∂x0  (CVT 체인룰; 선형이면 jac = σ_b)
+            grad = v.detach() + jac * _stack(res.adj_x0)
             v.grad = grad                              # 수동 할당 (autograd 미사용)
             j = j_b + j_obs
             trace.append(float(j))
@@ -134,8 +138,11 @@ def run_minimizer(
     opt.step(closure)
 
     with torch.no_grad():
-        x_a = cvt_to_state(xb64, b_sigma, v)
+        x_a, _ = cvt_apply(xb64, b_sigma, v, cvt)
+        cvt_rec = (build_cvt_record(cvt, b_sigma, xb64, x_a)
+                   if cvt is not None else None)
     return MinimizeResult(
         x_analysis=x_a, v=v.detach(), j_trace=trace,
         jb_final=last["jb"], jobs_final=last["jobs"],
-        n_window_evals=counters["windows"], grad_norm_final=last["gnorm"])
+        n_window_evals=counters["windows"], grad_norm_final=last["gnorm"],
+        cvt=cvt_rec)

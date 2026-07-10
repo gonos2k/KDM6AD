@@ -201,3 +201,59 @@ def test_flip_direction_physical_asymmetry(tmp_path):
     assert d_sfc > 5.0 * max(d_top, 1.0e-6), (
         f"surface-vs-top BT asymmetry wrong: |dBT_sfc|={d_sfc:.4f} vs "
         f"|dBT_top|={d_top:.4f} — WRF<->RTTOV flip direction suspect")
+
+
+@needs_all
+def test_osse_full_field_cvt_descent(tmp_path):
+    """T23: 전 필드 하이브리드 CVT — 실프레임 + live RTTOV end-to-end 게이트.
+
+    하강 + th 오차 감소 + mul 필드 양수성 + record 감사(n_created=0,
+    ratio_minmax ∈ [e^{-6σ}, e^{6σ}], 정직 DOF 집계)를 한 번에 잠근다.
+    """
+    import math
+
+    from kdm6.da_cvt import make_default_cvt
+    from kdm6.da_driver import run_osse_analysis
+
+    frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
+    idx = torch.linspace(0, frame.state.th.shape[0] - 1, 4).long()
+    x_true, f = _sub(frame, idx)
+    forcings = [f] * 2                                    # 짧은 창 (테스트 비용)
+    cfg = WindowConfig(dt=DT)
+    obs_cfg = _obs_cfg(tmp_path)
+
+    th_b = x_true.th.clone(); th_b[:, :10] += 0.8
+    qv_b = x_true.qv.clone(); qv_b[:, :10] *= 1.05
+    x_bg = x_true._replace(th=th_b, qv=qv_b)
+
+    spec, b_sigma = make_default_cvt(x_bg)
+    rep = run_osse_analysis(x_true, x_bg, forcings, [2], cfg, obs_cfg,
+                            b_sigma, max_iter=4, cvt=spec)
+
+    m = rep.minimize
+    assert m.j_trace[-1] < m.j_trace[0], m.j_trace
+    assert rep.th_err_an < rep.th_err_bg, (rep.th_err_an, rep.th_err_bg)
+
+    rec = m.cvt
+    assert rec is not None
+    assert all(n == 0 for n in rec["n_created"].values())
+    # mul 필드 양수성 (xb>0 셀) + σ≡0 필드(nccn/bg) 배경 고정 bitwise
+    for i, fname in enumerate(State._fields):
+        if spec.mode[i] == "mul":
+            xbf = getattr(x_bg, fname).to(torch.float64)
+            xaf = getattr(m.x_analysis, fname)
+            assert bool((xaf[xbf > 0] > 0).all()), fname
+    for fname in ("nccn", "bg"):
+        assert rec["n_controlled"][fname] == 0
+        assert torch.equal(getattr(m.x_analysis, fname),
+                           getattr(x_bg, fname).to(torch.float64)), fname
+    # ratio 병리 게이트 (느슨): 제어된 mul 필드의 x_a/xb ∈ [e^{-6σ}, e^{6σ}]
+    for fname, (rmin, rmax) in rec["ratio_minmax"].items():
+        sf = float(getattr(b_sigma, fname).max())
+        if sf > 0:
+            assert math.exp(-6 * sf) <= rmin <= rmax <= math.exp(6 * sf), \
+                (fname, rmin, rmax)
+    # 정직 DOF 감사: record 집계 == 반환 σ에서 직접 계산
+    for fname in State._fields:
+        assert rec["n_controlled"][fname] == \
+            int((getattr(b_sigma, fname) > 0).sum()), fname

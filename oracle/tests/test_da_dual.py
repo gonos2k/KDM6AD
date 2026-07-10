@@ -833,3 +833,214 @@ def test_round5_contract_gates(monkeypatch):
     with pytest.raises(TypeError, match="ObsEvalResult"):
         run_dual_minimizer(xb, [fc, fc], tup_obs, WindowConfig(dt=DT),
                            _b_sigma(xb), prior, max_iter=2)
+
+
+# ── full-field KDM6 CVT (hybrid add/mul spec) — dual 경로 ────────────────────
+
+
+def test_dual_fd_with_spec():
+    """T17: 하이브리드 spec의 결합 클로저 gradient — 상태(add+mul) FD 대조 +
+    (불변인) θ 체인이 spec 활성 상태에서도 기존 게이트를 유지하는지."""
+    import dataclasses
+
+    from kdm6.da_cvt import cvt_apply, make_default_cvt
+    from kdm6.da_minimizer import _stack
+    from kdm6.da_window import run_da_window
+    from _cvt_test_util import fd_check
+
+    xb, fc = _mk_state(), _mk_forcing()
+    forcings = [fc, fc]
+    obs = _quad_obs(xb.th + 0.3)
+    prior = default_param_prior(0.2, active=("peaut",))
+    spec, b_sigma = make_default_cvt(xb, enable_indirect=True)
+    cfg = WindowConfig(dt=DT)
+
+    def J_at(v_x, v_th):
+        x0, _ = cvt_apply(xb, b_sigma, v_x, spec)
+        params = params_from_vtheta(prior, v_th, live=False)
+        jobs = [0.0]
+
+        def oa(t, x_t):
+            out = obs(t, x_t)
+            if out is None:
+                return None
+            jobs[0] += out[0]
+            return out[1]
+
+        run_da_window(x0, forcings, oa, dataclasses.replace(cfg, params=params))
+        return (0.5 * float((v_x ** 2).sum()) + 0.5 * float((v_th ** 2).sum())
+                + jobs[0])
+
+    v_x0 = torch.zeros((12, 1, 2), **_F64)
+    for f in ("th", "qv", "qc"):                   # add 1개 + mul 2개 프로브
+        v_x0[State._fields.index(f), 0, 0] = 0.1
+    v_th0 = torch.zeros(4, **_F64)
+
+    x0, jac = cvt_apply(xb, b_sigma, v_x0, spec)
+    params_live = params_from_vtheta(prior, v_th0, live=True)
+    jobs_acc = [0.0]
+
+    def oa2(t, x_t):
+        out = obs(t, x_t)
+        if out is None:
+            return None
+        jobs_acc[0] += out[0]
+        return out[1]
+
+    r = run_da_window(x0, forcings, oa2,
+                      dataclasses.replace(cfg, params=params_live,
+                                          param_grads=True))
+    g_x = v_x0 + jac * _stack(r.adj_x0)
+
+    tiers = {}
+    for f in ("th", "qv", "qc"):
+        idx = (State._fields.index(f), 0, 0)
+        tiers[f] = fd_check(lambda vv: J_at(vv, v_th0), v_x0, idx,
+                            float(g_x[idx]))
+    assert tiers["th"] == "strong", tiers
+
+    # θ 체인(불변)이 spec 활성에서도 기존 2e-3 게이트 유지
+    gp = torch.zeros(4, **_F64)
+    if r.grad_params:
+        for i, n in enumerate(PNAMES):
+            if n in r.grad_params:
+                gp[i] = r.grad_params[n].to(torch.float64)
+    theta0 = torch.stack([params_live[i].detach() for i in range(4)])
+    g_th = v_th0 + prior.sigma_log * theta0 * gp
+    hth = 5.0e-3
+    vp = v_th0.clone(); vp[0] += hth
+    vm = v_th0.clone(); vm[0] -= hth
+    fd_th = (J_at(v_x0, vp) - J_at(v_x0, vm)) / (2 * hth)
+    rel_th = abs(fd_th - float(g_th[0])) / max(abs(fd_th), 1e-30)
+    assert rel_th < 2.0e-3, (fd_th, float(g_th[0]), rel_th)
+
+
+def test_dual_no_obs_prior_pinned_spec():
+    """T18: 전 필드 spec + 무관측 → 상태·θ 모두 배경 고정 (bitwise/정확)."""
+    from kdm6.da_cvt import make_default_cvt
+    xb, fc = _mk_state(), _mk_forcing()
+    prior = default_param_prior(0.2)
+    spec, b_sigma = make_default_cvt(xb, enable_indirect=True)
+    res = run_dual_minimizer(xb, [fc, fc], lambda t, x: None,
+                             WindowConfig(dt=DT), b_sigma, prior,
+                             max_iter=3, require_obs_slots=False, cvt=spec)
+    for f in State._fields:
+        assert torch.equal(getattr(res.x_analysis, f), getattr(xb, f)), f
+    for i, n in enumerate(PNAMES):
+        assert float(res.theta_analysis[i]) == float(prior.theta_b[i]), n
+    assert float(res.v_state.abs().max()) == 0.0
+    assert float(res.v_theta.abs().max()) == 0.0
+
+
+def test_dual_all_add_spec_bitwise_matches_none():
+    """T19: dual에서 cvt=None vs CVT_LINEAR — run 수준 bitwise 잠금."""
+    from kdm6.da_cvt import CVT_LINEAR
+    xb, fc = _mk_state(), _mk_forcing()
+    obs_y = xb.th + 0.3
+    prior = default_param_prior(0.2, active=("peaut",))
+    r0 = run_dual_minimizer(xb, [fc, fc], _quad_obs(obs_y), WindowConfig(dt=DT),
+                            _b_sigma(xb), prior, max_iter=6, policy=_P())
+    r1 = run_dual_minimizer(xb, [fc, fc], _quad_obs(obs_y), WindowConfig(dt=DT),
+                            _b_sigma(xb), prior, max_iter=6, policy=_P(),
+                            cvt=CVT_LINEAR)
+    for f in State._fields:
+        assert torch.equal(getattr(r0.x_analysis, f),
+                           getattr(r1.x_analysis, f)), f
+    assert torch.equal(r0.v_state, r1.v_state)
+    assert torch.equal(r0.v_theta, r1.v_theta)
+    assert r0.j_trace == r1.j_trace
+    assert r0.cvt is None and r1.cvt is not None
+
+
+def _obs_th_slot_at(t_obs, xb, tag):
+    """t_obs 단일 슬롯 th 관측 (connected_fields 표기 포함)."""
+    def obs_eval(t, x_t):
+        if t != t_obs:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        j = 0.5 * (d * d).sum()
+        adj = State(*(d.clone() if f == "th" else torch.zeros_like(getattr(x_t, f))
+                      for f in State._fields))
+        return float(j), adj, int(d.numel()), tag
+    obs_eval.connected_fields = ("th",)
+    return obs_eval
+
+
+def test_dual_t0_only_dead_fields_raise():
+    """T20/V7: t=0 단독 슬롯 + connected 밖 σ>0 → 확정 기울기-0 필드를
+    '제어됨'으로 위장하는 구성 거부; t≥1 슬롯이 있으면 M^T 도달 가능 → 통과."""
+    from kdm6.da_cvt import make_default_cvt
+    xb, fc = _mk_state(), _mk_forcing()
+    prior = default_param_prior(0.2)
+    spec, b_sigma = make_default_cvt(xb)           # qv/qc/... σ>0, connected 밖
+
+    with pytest.raises(ValueError, match="qv"):
+        run_dual_minimizer(xb, [fc, fc], _obs_th_slot_at(0, xb, "t0"),
+                           WindowConfig(dt=DT), b_sigma, prior,
+                           max_iter=2, policy=_P(), cvt=spec)
+
+    res = run_dual_minimizer(xb, [fc, fc], _obs_th_slot_at(1, xb, "t1"),
+                             WindowConfig(dt=DT), b_sigma, prior,
+                             max_iter=2, policy=_P(), cvt=spec)
+    assert res.cvt is not None
+
+    # 유효 0개 t≥1 슬롯은 M^T 결합 증거가 아님 — V7 우회 불가
+    # (allow_zero_valid_slots opt-in 하에서도 기울기-보유 슬롯만 센다)
+    def obs_t0_plus_empty_t1(t, x_t):
+        if t == 0:
+            d = x_t.th - (xb.th + 0.3)
+            j = 0.5 * (d * d).sum()
+            adj = State(*(d.clone() if f == "th"
+                          else torch.zeros_like(getattr(x_t, f))
+                          for f in State._fields))
+            return float(j), adj, int(d.numel()), "t0-full"
+        if t == 1:
+            zadj = State(*(torch.zeros_like(getattr(x_t, f))
+                           for f in State._fields))
+            return 0.0, zadj, 0, "t1-empty"
+        return None
+    obs_t0_plus_empty_t1.connected_fields = ("th",)
+    with pytest.raises(ValueError, match="qv"):
+        run_dual_minimizer(xb, [fc, fc], obs_t0_plus_empty_t1,
+                           WindowConfig(dt=DT), b_sigma, prior, max_iter=2,
+                           policy=_P(allow_zero_valid_slots=True), cvt=spec)
+
+
+def test_frozen_adapter_exposes_connected_fields(monkeypatch):
+    """T21: clear-sky 동결 어댑터가 connected_fields=("th","qv")를 표기."""
+    import kdm6.da_dual as dd
+    import kdm6.da_driver as drv
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+
+    def fake_clear_bt(x_state, fc_t, cfg):
+        leaves = State(*(f.detach().clone().requires_grad_(True)
+                         for f in x_state))
+        bt = (torch.full((1, 16), 260.0, **_F64)
+              + 0.0 * (leaves.th.sum() + leaves.qv.sum()))
+        return bt, torch.zeros((1, 16), **_F64), leaves
+
+    monkeypatch.setattr(drv, "batched_clear_bt", fake_clear_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc, fc], {2: (y_bt, y_rq)},
+                                       cfg_obs, WindowConfig(dt=DT),
+                                       dd.default_param_prior(0.2))
+    assert obs.connected_fields == ("th", "qv")
+
+
+def test_dual_result_records_cvt():
+    """T22: spec 경로는 round-trip 가능한 cvt 레코드, 레거시는 None."""
+    from kdm6.da_cvt import CvtSpec, make_default_cvt
+    xb, fc = _mk_state(), _mk_forcing()
+    obs_y = xb.th + 0.3
+    prior = default_param_prior(0.2)
+    spec, b_sigma = make_default_cvt(xb, enable_indirect=True)
+    res = run_dual_minimizer(xb, [fc, fc], _quad_obs(obs_y), WindowConfig(dt=DT),
+                             b_sigma, prior, max_iter=3, policy=_P(), cvt=spec)
+    assert res.cvt is not None
+    assert CvtSpec.from_dict(res.cvt["spec"]) == spec
+    json.dumps(res.cvt)                             # 직렬화 가능해야 함
+    res0 = run_dual_minimizer(xb, [fc, fc], _quad_obs(obs_y), WindowConfig(dt=DT),
+                              _b_sigma(xb), prior, max_iter=2, policy=_P())
+    assert res0.cvt is None

@@ -37,7 +37,8 @@ from typing import Callable, Optional, Sequence
 
 import torch
 
-from .da_minimizer import _stack, cvt_to_state, _validate_state_shapes
+from .da_cvt import CvtSpec, build_cvt_record, cvt_apply, validate_cvt
+from .da_minimizer import _stack, _validate_state_shapes
 from .da_window import WindowConfig, run_da_window
 from .runtime import Parameters, make_parameters
 from .state import Forcing, State
@@ -282,6 +283,7 @@ class DualMinimizeResult:
     grad_norm_final: float
     grad_theta_norm_final: float
     policy: dict = None                    # 게이트 opt-in 상태 (감사, 재검토 M1)
+    cvt: "dict | None" = None              # CVT 감사 레코드 (spec 경로만)
 
 
 def run_dual_minimizer(
@@ -299,6 +301,7 @@ def run_dual_minimizer(
     allow_zero_valid_slots: bool = False,
     require_obs_slots: bool = True,
     policy: "ObsGatePolicy | None" = None,
+    cvt: "CvtSpec | None" = None,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -308,6 +311,15 @@ def run_dual_minimizer(
     (예: mask의 sha256, all-sky면 cfrac-regime 해시 결합)를 주면 **동일-개수
     치환 게이밍**(어려운 항을 빼고 쉬운 항을 넣어 n_valid 유지)도 잡는다
     (blocker-2). 표준 clear-sky 경로는 make_dual_frozen_obs_eval 어댑터 사용.
+
+    cvt: None(기본) = 기존 선형 상태-CVT, byte-identical 레거시 경로.
+    spec 지정 = 필드별 add/mul 하이브리드 (da_cvt) — 체인룰이
+    ∂J/∂v_x = v_x + jac ⊙ adj_x0 로 바뀐다 (jac = ∂x0/∂v_x, 매 closure 재평가).
+    obs_eval 서명은 **v-독립**(θ_b/배경 궤적 동결)이어야 한다 — live-state
+    regime을 해시하는 어댑터는 어떤 상태 CVT와도 양립 불가 (서명 게이트는
+    obs-구성 드리프트를 잡는 것이지 분석 증분을 잡는 게 아니다). obs_eval에
+    connected_fields 속성(직접 H-민감 필드 tuple)이 있으면 t=0 단독 슬롯
+    구성에서 확정 기울기-0 필드의 σ>0 지정을 거부한다 (V7).
     """
     if policy is None:
         policy = ObsGatePolicy(require_signature=require_signature,
@@ -318,6 +330,12 @@ def run_dual_minimizer(
             "pass gate options through ObsGatePolicy OR legacy kwargs, not both "
             "— conflicting double specification would be silently ignored")
     _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
+    if cvt is not None:
+        validate_cvt(xb, b_sigma, cvt, window_config.active_fields)
+    _connected = getattr(obs_eval, "connected_fields", None)
+    _sigma_pos = (tuple(f for f in State._fields
+                        if bool((getattr(b_sigma, f) > 0).any()))
+                  if cvt is not None else ())
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
@@ -329,7 +347,7 @@ def run_dual_minimizer(
 
     def closure() -> torch.Tensor:
         with torch.no_grad():
-            x0 = cvt_to_state(xb, b_sigma, v_x)
+            x0, jac_x = cvt_apply(xb, b_sigma, v_x, cvt)
         params_live = params_from_vtheta(param_prior, v_th.detach(), live=True)
         any_active = bool((param_prior.sigma_log > 0).any())
         import dataclasses as _dc
@@ -439,6 +457,22 @@ def run_dual_minimizer(
                         "prior-only success; pass allow_zero_valid_slots=True "
                         "only if these slots are expected empty")
             frozen_n_valid.update(n_valid_acc)
+            # V7 (spec 경로 전용): 기울기-보유(n_valid>0) 슬롯이 전부 t=0이면
+            # M^T 결합이 없어 직접 H-민감(connected) 밖 필드의 adj_x0가 확정 0
+            # — prior가 v=0으로 pin하면서 '제어됨'으로 기록되는 위장 구성을
+            # 거부. 기울기-보유 t≥1 슬롯이 있으면 모든 필드가 M^T-도달 가능
+            # (유효 0개 슬롯은 J에 기여하지 않으므로 증거로 세지 않는다).
+            if cvt is not None and _connected is not None:
+                bearing = [t for t, (nv, _) in frozen_n_valid.items()
+                           if nv > 0]
+                dead = ([f for f in _sigma_pos if f not in _connected]
+                        if bearing and all(t == 0 for t in bearing) else [])
+                if dead:
+                    raise ValueError(
+                        f"b_sigma > 0 for fields {dead} with only t=0 obs "
+                        f"slots and connected_fields={_connected} — their "
+                        "gradient is guaranteed exact-zero (no M^T coupling); "
+                        "zero their sigma or add a t>=1 observation")
         else:
             missing = set(frozen_n_valid) - set(n_valid_acc)
             appeared = set(n_valid_acc) - set(frozen_n_valid)
@@ -455,7 +489,8 @@ def run_dual_minimizer(
                      else torch.zeros((), **_F64))
             j_b = 0.5 * (v_x * v_x).sum()
             j_th = 0.5 * (v_th * v_th).sum()
-            g_x = v_x.detach() + sig_x * _stack(res.adj_x0)
+            # ∂J/∂v_x = v_x + jac ⊙ ∂J/∂x0 (선형이면 jac = σ_b — 기존과 동일)
+            g_x = v_x.detach() + jac_x * _stack(res.adj_x0)
             # ∂J/∂v_θ = v_θ + σ_log · θ · ∂J/∂θ  (θ = θb·exp(σv) 체인)
             gp = torch.zeros(4, **_F64)
             if res.grad_params is not None:
@@ -488,15 +523,17 @@ def run_dual_minimizer(
     opt.step(closure)
 
     with torch.no_grad():
-        x_a = cvt_to_state(xb, b_sigma, v_x)
+        x_a, _ = cvt_apply(xb, b_sigma, v_x, cvt)
         theta_a = params_from_vtheta(param_prior, v_th.detach(), live=False)
+        cvt_rec = (build_cvt_record(cvt, b_sigma, xb, x_a)
+                   if cvt is not None else None)
     return DualMinimizeResult(
         x_analysis=x_a, theta_analysis=theta_a,
         v_state=v_x.detach(), v_theta=v_th.detach(), j_trace=trace,
         jb_final=last["jb"], jtheta_final=last["jth"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"],
         grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"],
-        policy=policy.as_dict())
+        policy=policy.as_dict(), cvt=cvt_rec)
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
@@ -641,4 +678,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         return ObsEvalResult(j=float(j.detach()), adj=adj,
                              n_valid=slot.n_valid, signature=slot.signature)
 
+    # 직접 H-민감 필드 표기 — run_dual_minimizer V7 (t=0 단독 슬롯 검사) 소비.
+    # 서명은 여기서 θ_b/배경 궤적에 동결되어 v-독립이다 — 상태 CVT 종류와
+    # 무관하게 유효한 계약 (live-state regime 해시는 어떤 CVT와도 양립 불가).
+    obs_eval.connected_fields = ("th", "qv")
     return obs_eval

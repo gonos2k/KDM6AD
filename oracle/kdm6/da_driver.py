@@ -22,6 +22,7 @@ from typing import Sequence
 
 import torch
 
+from .da_cvt import CvtSpec
 from .da_window import WindowConfig, WindowResult, run_da_window
 from .state import State, Forcing
 
@@ -219,7 +220,8 @@ def run_osse_analysis(x_truth: State, x_background: State,
                       forcings: Sequence[Forcing], obs_times: Sequence[int],
                       window_cfg: WindowConfig, obs_cfg: OsseObsConfig,
                       b_sigma: State, *, max_iter: int = 5,
-                      history_size: int = 6) -> OsseAnalysisReport:
+                      history_size: int = 6,
+                      cvt: "CvtSpec | None" = None) -> OsseAnalysisReport:
     """조인트 DA 분석 사이클 1회: 진실→y, 배경→CVT+L-BFGS 최소화→분석.
 
     run_minimizer(T1-4)와 배치 RTTOV innovation 항(T1-5)의 결합. 각 L-BFGS
@@ -240,7 +242,7 @@ def run_osse_analysis(x_truth: State, x_background: State,
     res = run_minimizer(x_background, forcings,
                         make_osse_obs_eval(forcings, y_store, obs_cfg),
                         window_cfg, b_sigma,
-                        max_iter=max_iter, history_size=history_size)
+                        max_iter=max_iter, history_size=history_size, cvt=cvt)
 
     def _err(a, b):
         return float((a - b).norm())
