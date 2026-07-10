@@ -541,8 +541,16 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               window_config: WindowConfig,
                               param_prior: ParamPrior, *,
                               allow_zero_valid_slots: bool = False,
-                              policy: "ObsGatePolicy | None" = None) -> Callable:
-    """clear-sky 표준 dual obs_eval — 동결 QC + n_valid + mask 서명.
+                              policy: "ObsGatePolicy | None" = None,
+                              cloud: bool = False,
+                              xland: "torch.Tensor | None" = None) -> Callable:
+    """표준 dual obs_eval — 동결 QC + n_valid + mask 서명 (clear-sky/all-sky).
+
+    cloud=False(기본): batched_clear_bt, covector는 th/qv (CLEAR_SKY_CONNECTED).
+    cloud=True: batched_allsky_bt(컬럼별 RTTOV, profile_cfg.cloud=True 필수) —
+    covector가 hydrometeor 직접 민감도를 포함(ALL_SKY_CONNECTED 7필드)하므로
+    hybrid CVT의 qc/qi/qs/nc/ni가 t=0 단독 창에서도 직접 제어된다 (V7의
+    connected_fields 태그가 이를 반영). xland는 all-sky Deff 하한용(선택).
 
     동결 기준은 **θ_b 배경 궤적**: collect_window_trajectory(전방-전용,
     run_da_window와 bitwise 동일 forward 의미론 — η/η_pre 포함)로 M(x_b→t; θ_b)
@@ -561,9 +569,18 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     """
     import dataclasses
     import hashlib
-    from .da_driver import batched_clear_bt
+    from . import da_driver as _drv
     from .da_window import collect_window_trajectory
     from .obs.obs_loss import compute_obs_loss
+
+    conn = (("th", "qv", "qc", "qi", "qs", "nc", "ni") if cloud
+            else ("th", "qv"))
+
+    def _h(state_t, forcing_t):
+        if cloud:
+            return _drv.batched_allsky_bt(state_t, forcing_t, obs_cfg_f,
+                                          xland=xland)
+        return _drv.batched_clear_bt(state_t, forcing_t, obs_cfg_f)
 
     # H3: policy/legacy kwarg 동시 지정 충돌 거부 (최소화기와 동일 규율)
     if policy is not None:
@@ -605,9 +622,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     for t, entry in y_by_time.items():
         y_bt, y_rq = entry[0], entry[1]
         with torch.no_grad():
-            _, rad_q, _ = batched_clear_bt(traj[t],
-                                           forcings[min(t, len(forcings) - 1)],
-                                           obs_cfg_f)
+            _, rad_q, _ = _h(traj[t], forcings[min(t, len(forcings) - 1)])
         # shape 엄격 검증 (재검토 H1): [nch]·[B,1] 등이 broadcasting으로 조용히
         # [B,nch] mask가 되는 경로 차단 — superob 규약은 full-shape (B,nch)
         for nm, arr in (("y_bt", y_bt), ("y_rq", y_rq)):
@@ -649,6 +664,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                       f"sigma_dtype={obs_sigma_f.dtype}|".encode())
                    + obs_sigma_f.cpu().numpy().tobytes()
                    + b"|operator|" + operator_fingerprint.encode()
+                   + (b"|mode|allsky" if cloud else b"")   # 모드 혼동 서명 충돌 차단
                    + (b"" if bias_f is None
                       else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()
@@ -659,8 +675,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         slot = frozen.get(t)
         if slot is None:
             return None
-        bt, _, leaves = batched_clear_bt(x_t, forcings[min(t, len(forcings) - 1)],
-                                         obs_cfg_f)
+        bt, _, leaves = _h(x_t, forcings[min(t, len(forcings) - 1)])
         obs = {"bt": slot.y_bt}
         if slot.bias is not None:
             obs["bias"] = slot.bias
@@ -668,18 +683,19 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                              sigma=slot.sigma)
         zeros = torch.zeros_like(leaves.th)
         if slot.n_valid > 0:
-            # clear-sky connected 필드는 th/qv — None grad는 구조적 단절
-            g_th, g_qv = torch.autograd.grad(j, [leaves.th, leaves.qv],
-                                             allow_unused=False)
+            # connected 필드(모드별 th/qv 또는 +hydrometeors)의 None grad는
+            # 구조적 단절 — allow_unused=False로 조용한 0 대신 거부
+            gs = torch.autograd.grad(j, [getattr(leaves, f) for f in conn],
+                                     allow_unused=False)
+            gmap = dict(zip(conn, gs))
         else:
-            g_th, g_qv = zeros, zeros
-        adj = State(th=g_th, qv=g_qv, qc=zeros, qr=zeros, qi=zeros, qs=zeros,
-                    qg=zeros, nccn=zeros, nc=zeros, ni=zeros, nr=zeros, bg=zeros)
+            gmap = {}
+        adj = State(*(gmap.get(f, zeros) for f in State._fields))
         return ObsEvalResult(j=float(j.detach()), adj=adj,
                              n_valid=slot.n_valid, signature=slot.signature)
 
     # 직접 H-민감 필드 표기 — run_dual_minimizer V7 (t=0 단독 슬롯 검사) 소비.
     # 서명은 여기서 θ_b/배경 궤적에 동결되어 v-독립이다 — 상태 CVT 종류와
     # 무관하게 유효한 계약 (live-state regime 해시는 어떤 CVT와도 양립 불가).
-    obs_eval.connected_fields = ("th", "qv")
+    obs_eval.connected_fields = conn
     return obs_eval

@@ -105,6 +105,55 @@ def batched_clear_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig):
     return bt, rad_quality, leaves
 
 
+def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
+                      *, xland: "torch.Tensor | None" = None):
+    """B-컬럼 상태의 all-sky BT — 컬럼별 RTTOV 호출 (leaves에 구름 연결 grad).
+
+    batched_clear_bt의 all-sky 짝: profile_cfg.cloud=True 필수. all-sky는
+    배칭 레버가 ~1.3×(산란 계산 지배; allsky_shard docstring 실측)이라
+    컬럼별 직렬 호출이 표준 형태다 — 대규모는 sharded_allsky로 병렬화.
+    leaves는 전 필드 requires_grad (obs_adjoint_callback 관례) — RTTOV 경로가
+    있는 필드는 ALL_SKY_CONNECTED(th·qv·qc·qi·qs·nc·ni)이고, 나머지의 None
+    grad는 assemble_obs_covector가 정당한 0으로 판정한다.
+    반환: (bt (B,nch), rad_quality (B,nch), leaves).
+    """
+    from .obs.model_profile_builder import model_to_rttov_tensors
+    from .obs.rttov_obs_operator import RttovObsOp
+
+    if not getattr(obs_cfg.profile_cfg, "cloud", False):
+        raise ValueError(
+            "batched_allsky_bt requires profile_cfg.cloud=True — a clear-sky "
+            "profile config would silently omit the hydrometeor inputs")
+    leaves = State(*(f.detach().clone().to(torch.float64).requires_grad_(True)
+                     for f in x_t))
+    flip_forcing = Forcing(rho=_flip(forcing.rho), pii=_flip(forcing.pii),
+                           p=_flip(forcing.p) / 100.0, delz=_flip(forcing.delz))
+    flip_leaves = State(*(_flip(f) for f in leaves))
+    bts, rqs = [], []
+    for i in range(leaves.th.shape[0]):
+        col = State(*(f[i] for f in flip_leaves))
+        fcol = Forcing(*(getattr(flip_forcing, k)[i] for k in Forcing._fields))
+        xl = None if xland is None else xland[i]
+        prof = model_to_rttov_tensors(col, fcol, obs_cfg.profile_cfg, xland=xl)
+        t_lay, q_lay = prof.t_lay, prof.q_lay
+        p_top = fcol.p[0].reshape(1)
+        if obs_cfg.t_ref is not None:
+            t_lay = _blend_above_model_top(
+                t_lay.unsqueeze(0), obs_cfg.t_ref, prof.p_lay, p_top,
+                octaves=obs_cfg.t_blend_octaves).squeeze(0)
+            q_lay = _blend_above_model_top(
+                q_lay.unsqueeze(0), obs_cfg.q_ref, prof.p_lay, p_top,
+                octaves=obs_cfg.q_blend_octaves).squeeze(0)
+        above = (prof.p_lay < p_top).to(torch.float64).detach()   # 모델 상단 위 구름 제거
+        bt_i, rq_i = RttovObsOp.apply(
+            obs_cfg.run_k, obs_cfg.input_cfg, t_lay, q_lay, None, prof.p_half,
+            prof.clw * (1 - above), prof.ciw * (1 - above),
+            prof.deff_liq, prof.deff_ice, prof.cfrac)
+        bts.append(bt_i.reshape(-1).to(torch.float64))
+        rqs.append(rq_i.reshape(-1))
+    return torch.stack(bts), torch.stack(rqs), leaves
+
+
 def make_truth_bt_recorder(forcings: Sequence[Forcing], obs_times: set,
                            obs_cfg: OsseObsConfig, store: dict):
     """진실 창 forward에서 관측시각 BT를 기록하는 obs_adjoint (covector 없음)."""

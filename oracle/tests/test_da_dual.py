@@ -1044,3 +1044,68 @@ def test_dual_result_records_cvt():
     res0 = run_dual_minimizer(xb, [fc, fc], _quad_obs(obs_y), WindowConfig(dt=DT),
                               _b_sigma(xb), prior, max_iter=2, policy=_P())
     assert res0.cvt is None
+
+
+# ── all-sky 직접 hydrometeor 민감도 — dual 동결 어댑터 (cloud=True) ─────────
+
+
+def _fake_allsky_bt(x_state, fc_t, cfg, xland=None):
+    """all-sky H 모사: bt가 7개 연결 필드에 실제로 의존 (autograd 경로 보유)."""
+    from kdm6.obs.rttov_obs_operator import ALL_SKY_CONNECTED
+    leaves = State(*(t.detach().clone().requires_grad_(f in ALL_SKY_CONNECTED)
+                     for f, t in zip(State._fields, x_state)))
+    sig = (leaves.th.sum(-1) * 1.0e-3 + leaves.qv.sum(-1) * 10.0
+           + (leaves.qc + leaves.qi).sum(-1) * 1.0e4
+           + leaves.qs.sum(-1) * 1.0e3
+           + (leaves.nc + leaves.ni).sum(-1) * 1.0e-9)
+    bt = 260.0 + sig[:, None].expand(-1, 16)
+    return bt, torch.zeros((leaves.th.shape[0], 16), **_F64), leaves
+
+
+def test_dual_allsky_adapter_connected_and_covector(monkeypatch):
+    """cloud=True 어댑터: connected 7필드 태그 + hydrometeor covector ≠ 0 +
+    동결 규율(상태 이동에 서명·n_valid 불변) 유지."""
+    import kdm6.da_dual as dd
+    import kdm6.da_driver as drv
+    monkeypatch.setattr(drv, "batched_allsky_bt", _fake_allsky_bt)
+    xb, fc = _mk_state(), _mk_forcing()
+    y_bt = torch.full((1, 16), 250.0, **_F64)
+    y_rq = torch.zeros((1, 16), **_F64)
+    cfg_obs = type("C", (), {"obs_sigma": 1.0})()
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc, fc], {0: (y_bt, y_rq)},
+                                       cfg_obs, WindowConfig(dt=DT),
+                                       dd.default_param_prior(0.2), cloud=True)
+    assert obs.connected_fields == ("th", "qv", "qc", "qi", "qs", "nc", "ni")
+    out = obs(0, xb)
+    assert float(out.adj.qc.abs().max()) > 0.0        # 직접 민감도 도달
+    assert float(out.adj.qi.abs().max()) > 0.0
+    assert float(out.adj.qr.abs().max()) == 0.0       # 비연결 필드는 정당한 0
+    out2 = obs(0, State(*(f * 1.01 for f in xb)))
+    assert out2.n_valid == out.n_valid and out2.signature == out.signature
+
+
+def test_dual_allsky_direct_qc_control(monkeypatch):
+    """능력 잠금 해제: all-sky H + hybrid CVT — t=0 단독 관측으로 qc/qi를
+    직접 제어 (V7 통과: 전 σ>0 필드가 connected), σ=0 필드는 pin 유지."""
+    import kdm6.da_dual as dd
+    import kdm6.da_driver as drv
+    from kdm6.da_cvt import make_default_cvt
+    monkeypatch.setattr(drv, "batched_allsky_bt", _fake_allsky_bt)
+    xb, fc = _mk_state(), _mk_forcing()
+    prior = default_param_prior(0.2)
+    spec, b_sigma = make_default_cvt(xb)               # σ>0 ⊆ connected
+    with torch.no_grad():
+        bt0, _, _ = _fake_allsky_bt(xb, fc, None)
+    y_bt = bt0.detach() + 2.0                          # 응결량 증가 방향 견인
+    y_rq = torch.zeros_like(y_bt)
+    cfg_obs = type("C", (), {"obs_sigma": 0.5})()
+    obs = dd.make_dual_frozen_obs_eval(xb, [fc, fc], {0: (y_bt, y_rq)},
+                                       cfg_obs, WindowConfig(dt=DT), prior,
+                                       cloud=True)
+    res = run_dual_minimizer(xb, [fc, fc], obs, WindowConfig(dt=DT), b_sigma,
+                             prior, max_iter=8, cvt=spec)
+    assert not torch.equal(res.x_analysis.qc, xb.qc)   # 직접 제어 성립
+    assert bool((res.x_analysis.qc > 0).all())         # mul CVT 양수성
+    assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
+    for f in ("qr", "qg", "nr", "nccn", "bg"):         # σ=0 필드 pin
+        assert torch.equal(getattr(res.x_analysis, f), getattr(xb, f)), f

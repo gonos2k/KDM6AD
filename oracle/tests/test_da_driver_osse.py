@@ -257,3 +257,33 @@ def test_osse_full_field_cvt_descent(tmp_path):
     for fname in State._fields:
         assert rec["n_controlled"][fname] == \
             int((getattr(b_sigma, fname) > 0).sum()), fname
+
+
+@needs_all
+def test_batched_allsky_bt_live_gradients(tmp_path):
+    """all-sky 컬럼별 H 라이브 스모크: bt 유한 + 연결 필드 grad 생존 +
+    covector 조립(구조 단절 sever 검사 포함)이 실제 RTTOV 경로에서 성립."""
+    from kdm6.da_driver import batched_allsky_bt
+    from kdm6.obs.rttov_obs_operator import (ALL_SKY_CONNECTED,
+                                             assemble_obs_covector)
+
+    frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
+    idx = torch.argsort(frame.state.qc.sum(-1), descending=True)[:2]
+    x, f = _sub(frame, idx)                              # 응결수 최다 컬럼 2개
+    cfg = _obs_cfg(tmp_path)
+    cfg.profile_cfg = cfg.profile_cfg._replace(cloud=True)
+
+    bt, rq, leaves = batched_allsky_bt(x, f, cfg)
+    assert bt.shape[0] == 2 and bool(torch.isfinite(bt).all())
+    mask = (rq == 0).to(torch.float64)
+    assert float(mask.sum()) > 0                         # 유효 채널 존재
+    j = 0.5 * ((mask * (bt - 250.0)) ** 2).sum()
+    grads = torch.autograd.grad(j, tuple(leaves), allow_unused=True)
+    adj = assemble_obs_covector(leaves, grads,
+                                connected_fields=ALL_SKY_CONNECTED)
+    assert float(adj.th.abs().max()) > 0.0
+    assert float(adj.qv.abs().max()) > 0.0
+    if float(x.qc.sum()) > 0:                            # 구름 있으면 직접 민감도
+        hydro = max(float(getattr(adj, k).abs().max())
+                    for k in ("qc", "qi", "qs", "nc", "ni"))
+        assert hydro > 0.0
