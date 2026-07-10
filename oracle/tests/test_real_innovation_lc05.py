@@ -200,3 +200,83 @@ def test_real_allsky_beats_clear_on_cloudy_columns(lc05_collocated, tmp_path):
             qi_norm2 += float(g.norm()) ** 2
     assert better >= 4, f"all-sky가 clear보다 나은 컬럼 {better}/6 (≥4 기대)"
     assert qi_norm2 > 0.0, "∂J/∂qi 전부 0 — 관측→구름상태 역전파 경로 부재"
+
+
+@needs_all
+def test_real_allsky_dual_cvt_analysis(lc05_collocated, tmp_path):
+    """실관측 all-sky dual DA 분석 게이트 (23cf245 능력의 실측 E2E):
+    구름 컬럼 실 GK2A 관측 + cloud=True 동결 어댑터 + hybrid CVT →
+    (a) J 하강, (b) O−A < O−B (마스크된 잔차), (c) hydrometeor 증분 비영
+    + mul 양수성, (d) σ=0 필드 배경 pin.
+    """
+    import numpy as np
+    from kdm6.da_cvt import make_default_cvt
+    from kdm6.da_driver import OsseObsConfig, batched_allsky_bt
+    from kdm6.da_dual import (default_param_prior, make_dual_frozen_obs_eval,
+                              run_dual_minimizer)
+    from kdm6.da_window import WindowConfig
+    from kdm6.obs.model_profile_builder import RttovProfileConfig
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure, make_live_run_k
+    from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.state import Forcing, State
+    from test_rttov_case_writer import (_CHANNELS, _HAVE_CLOUD_EXE,
+                                        _fixture_p_half, _fixture_tq)
+    if not _HAVE_CLOUD_EXE:
+        pytest.skip("live cloud RTTOV (ami_cloud) 부재")
+
+    fr, co = lc05_collocated
+    qtot = (fr.state.qc + fr.state.qi + fr.state.qs).sum(1)
+    cloudy = torch.where((co.obs_quality[:, 12] == 0) & (co.bt[:, 12] < 270.0)
+                         & (qtot > 1e-5))[0]
+    order = cloudy[torch.argsort(co.bt[cloudy, 12])]
+    sel = order[torch.linspace(0, len(order) - 1, 4).long()]     # B=4 경량
+    xb = State(**{k: v[sel] for k, v in fr.state._asdict().items()})
+    fc = Forcing(**{k: v[sel] for k, v in fr.forcing._asdict().items()})
+    xland = fr.xland[sel]
+    y_bt, y_rq = co.bt[sel], co.obs_quality[sel]
+
+    tr, qr = _fixture_tq()
+    obs_cfg = OsseObsConfig(
+        run_k=make_live_run_k(tmp_path / "dual_allsky"),
+        profile_cfg=RttovProfileConfig(
+            gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
+            rttov_layer_pressure=torch.as_tensor(
+                np.asarray(fixture_layer_pressure(), dtype=float), **_F64),
+            rttov_level_pressure=torch.as_tensor(
+                np.asarray(_fixture_p_half(), dtype=float), **_F64),
+            cloud=True),
+        input_cfg=RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS),
+        obs_sigma=1.0,
+        t_ref=torch.as_tensor(np.asarray(tr, dtype=float), **_F64),
+        q_ref=torch.as_tensor(np.asarray(qr, dtype=float), **_F64))
+
+    cfg = WindowConfig(dt=300.0)
+    prior = default_param_prior(0.2)                 # θ 비활성 아님 — joint
+    spec, b_sigma = make_default_cvt(xb)
+    obs = make_dual_frozen_obs_eval(xb, [fc], {0: (y_bt, y_rq)}, obs_cfg,
+                                    cfg, prior, cloud=True, xland=xland)
+    res = run_dual_minimizer(xb, [fc], obs, cfg, b_sigma, prior,
+                             max_iter=3, cvt=spec)
+
+    # (a) J 하강
+    assert res.j_trace[-1]["total"] < res.j_trace[0]["total"], res.j_trace
+    # (b) O−A < O−B: 동결 mask로 같은 채널 집합 비교
+    with torch.no_grad():
+        bt_b, rq_b, _ = batched_allsky_bt(xb, fc, obs_cfg, xland=xland)
+        bt_a, _, _ = batched_allsky_bt(res.x_analysis, fc, obs_cfg, xland=xland)
+    mask = ((y_rq == 0) & (rq_b == 0)).double()
+    omb = float((mask * (y_bt - bt_b)).abs().sum() / mask.sum())
+    oma = float((mask * (y_bt - bt_a)).abs().sum() / mask.sum())
+    assert oma < omb, (oma, omb)
+    # (c) hydrometeor 증분 비영 + mul 양수성 (xb>0 셀)
+    dq = max(float((getattr(res.x_analysis, f) - getattr(xb, f)).abs().max())
+             for f in ("qc", "qi", "qs", "nc"))
+    assert dq > 0.0, "hydrometeor 증분 전무 — 직접 제어 미작동"
+    for i, f in enumerate(State._fields):
+        if spec.mode[i] == "mul":
+            xbf, xaf = getattr(xb, f), getattr(res.x_analysis, f)
+            assert bool((xaf[xbf > 0] > 0).all()), f
+    # (d) σ=0 필드 pin
+    for f in ("qr", "qg", "nr", "nccn", "bg"):
+        assert torch.equal(getattr(res.x_analysis, f),
+                           getattr(xb, f).to(torch.float64)), f
