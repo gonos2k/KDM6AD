@@ -70,6 +70,25 @@ def _quad_j_and_masked_bt(bt, y, mask):
     return 0.5 * ((mask * (bt - y)) ** 2).sum()
 
 
+_K_INDEX_MAX = 9999          # RTTOV K 출력 profile-index 4자리 한계 (case_writer 가드)
+
+
+def _clear_slices(n: int, nch: int):
+    """clear 배치 H의 nprof×nch ≤ 9999 청킹 (v8 실측 함정의 구조적 회피)."""
+    step = max(1, _K_INDEX_MAX // max(1, nch))
+    return [torch.arange(a, min(a + step, n)) for a in range(0, n, step)]
+
+
+def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int):
+    """청킹된 clear-sky BT/rq (no-grad 용도 — 동결 프로브·보고)."""
+    bts, rqs = [], []
+    for sl in _clear_slices(x_cl.th.shape[0], nch):
+        bt, rq, _ = batched_clear_bt(_take(x_cl, sl), _take(fc_cl, sl), cfg)
+        bts.append(bt.to(torch.float64))
+        rqs.append(rq)
+    return torch.cat(bts), torch.cat(rqs)
+
+
 def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              xland_sub, cloudy_pos, clear_pos,
                              clear_cfg: OsseObsConfig, rttov_cfg: dict,
@@ -80,9 +99,11 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     sharded_allsky(xb, grad=False)의 rad_quality. covector는 맑음 th/qv +
     구름 12필드(all-sky 연결 7필드만 비영)를 부분공간 위치에 산개 합성.
     """
+    nch = y_bt.shape[1]
     with torch.no_grad():
-        _, rq_clear, _ = batched_clear_bt(_take(xb_sub, clear_pos),
-                                          _take(fc_sub, clear_pos), clear_cfg)
+        _, rq_clear = _clear_bt_chunked(_take(xb_sub, clear_pos),
+                                        _take(fc_sub, clear_pos),
+                                        clear_cfg, nch)
         probe = sharded_allsky(xb_sub, fc_sub, cloudy_pos, y_bt,
                                torch.zeros_like(y_bt), xland_sub, rttov_cfg,
                                f"{case_root}/probe", n_workers=n_workers,
@@ -106,19 +127,26 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         out = sharded_allsky(x_t, fc_sub, cloudy_pos, y_bt, mask, xland_sub,
                              rttov_cfg, f"{case_root}/c{counters['call']}",
                              n_workers=n_workers, grad=True, pool=pool)
-        x_cl = _take(x_t, clear_pos)
-        bt_cl, _, leaves = batched_clear_bt(x_cl, _take(fc_sub, clear_pos),
-                                            clear_cfg)
-        j_cl = _quad_j_and_masked_bt(bt_cl.to(torch.float64),
-                                     y_bt[clear_pos], mask[clear_pos])
-        g_th, g_qv = torch.autograd.grad(j_cl, [leaves.th, leaves.qv],
+        x_cl, fc_cl = _take(x_t, clear_pos), _take(fc_sub, clear_pos)
+        y_cl, m_cl = y_bt[clear_pos], mask[clear_pos]
+        g_th = torch.zeros_like(x_cl.th)
+        g_qv = torch.zeros_like(x_cl.qv)
+        j_parts = []
+        for sl in _clear_slices(x_cl.th.shape[0], nch):     # K-인덱스 4자리 청킹
+            bt_c, _, leaves = batched_clear_bt(_take(x_cl, sl),
+                                               _take(fc_cl, sl), clear_cfg)
+            j_c = _quad_j_and_masked_bt(bt_c.to(torch.float64),
+                                        y_cl[sl], m_cl[sl])
+            gt, gq = torch.autograd.grad(j_c, [leaves.th, leaves.qv],
                                          allow_unused=False)
+            g_th[sl], g_qv[sl] = gt, gq
+            j_parts.append(float(j_c.detach()))
         adj = {f: torch.zeros_like(getattr(xb_sub, f)) for f in State._fields}
         for fi, f in enumerate(State._fields):
             adj[f][cloudy_pos] = out["adj"][fi]
         adj["th"][clear_pos] += g_th
         adj["qv"][clear_pos] += g_qv
-        j = math.fsum([float(out["j"]), float(j_cl.detach())])
+        j = math.fsum([float(out["j"])] + j_parts)
         return ObsEvalResult(j=j, adj=State(**adj), n_valid=n_valid,
                              signature=signature)
 
@@ -193,9 +221,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                                    grad=False, pool=pool)
                 bt = torch.zeros_like(y_bt)
                 bt[cloudy_pos] = o["bt"]
-                bt_cl, _, _ = batched_clear_bt(_take(x_state, clear_pos),
-                                               _take(fc, clear_pos), clear_cfg)
-                bt[clear_pos] = bt_cl.to(torch.float64)
+                bt_cl, _ = _clear_bt_chunked(_take(x_state, clear_pos),
+                                             _take(fc, clear_pos), clear_cfg,
+                                             y_bt.shape[1])
+                bt[clear_pos] = bt_cl
             return float((mask * (y_bt - bt)).abs().sum() / mask.sum())
 
         omb = _masked_abs_mean(xb)
