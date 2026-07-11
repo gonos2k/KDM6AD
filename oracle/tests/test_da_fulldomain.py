@@ -81,7 +81,13 @@ def test_fulldomain_smoke_capped(tmp_path):
     assert rep["oma"] <= rep["omb"], (rep["oma"], rep["omb"])
     hydro = max(rep["increment_norms"][f] for f in ("qc", "qi", "qs", "nc"))
     assert hydro > 0.0, "no hydrometeor increment at t0"
-    assert rep["pathology"] == {}, rep["pathology"]      # physical caps hold
+    # Physical caps hold at BOTH audit times — t0 (analysis initial state)
+    # and the slot state the observation actually saw (re-review #7).
+    assert rep["pathology_t0"] == {}, rep["pathology_t0"]
+    assert rep["pathology_slot"] == {}, rep["pathology_slot"]
+    assert rep["nonfinite_fields_t0"] == [] and rep["nonfinite_fields_slot"] == []
+    assert rep["offset_source"] == "data" and rep["obs_valid_time_utc"]
+    assert "xslot_a_qc" in fields                       # slot states archived
     for f in ("qr", "qg", "nr", "nccn", "bg"):           # default-off fields
         assert rep["increment_norms"][f] == 0.0, f
 
@@ -307,3 +313,63 @@ def test_post_cap_empty_subspace_rejected():
         run_fulldomain_analysis(fr, co, grids, "/tmp/unused",
                                 boundary=0, max_cloudy=0, max_clear=0,
                                 channels=tuple(range(16)))
+
+
+def test_driver_input_validation_caps_qvlevels_xland():
+    """Re-review residuals: caps must be None or int>=0 (negative slices
+    silently truncate), qv_levels must be an int in [0, K], xland must be
+    the WRF {1, 2} contract. Reuses the CI-safe synthetic frame."""
+    import pytest
+    import torch
+    from kdm6 import thermo
+    from kdm6.da_fulldomain import run_fulldomain_analysis
+    from kdm6.state import Forcing, State
+
+    th = torch.tensor([[296.8, 282.4]], dtype=torch.float64)
+    pii = torch.tensor([[0.9704, 0.9031]], dtype=torch.float64)
+    p = torch.tensor([[9.0e4, 7.0e4]], dtype=torch.float64)
+    qs = thermo.compute_qs_water(th * pii, p,
+                                 params=thermo.default_thermo_params())
+    z = torch.zeros_like(th)
+    state = State(th=th, qv=0.9 * qs, qc=z.clone(), qr=z.clone(),
+                  qi=z.clone(), qs=z.clone(), qg=z.clone(),
+                  nccn=torch.full_like(th, 1.0e9), nc=z.clone(),
+                  ni=z.clone(), nr=z.clone(), bg=z.clone())
+    forcing = Forcing(rho=torch.full_like(th, 1.0), pii=pii, p=p,
+                      delz=torch.full_like(th, 500.0))
+
+    class Frame:
+        pass
+    fr = Frame()
+    fr.state, fr.forcing = state, forcing
+    fr.xland = torch.ones(1, dtype=torch.float64)
+    fr.meta = dict(nx=1, ny=1, kme=2, valid_time_utc="2025-07-19_00:00:00")
+
+    class Obs:
+        pass
+    co = Obs()
+    co.bt = torch.full((1, 16), 260.0, dtype=torch.float64)
+    co.obs_quality = torch.zeros((1, 16), dtype=torch.float64)
+    co.valid_time_utc = "202507190005"
+    grids = dict(p_lay=[500.0], p_half=[450.0, 550.0],
+                 t_ref=[250.0], q_ref=[10.0])
+
+    def run(**kw):
+        return run_fulldomain_analysis(fr, co, grids, "/tmp/unused",
+                                       boundary=0, channels=tuple(range(16)),
+                                       **kw)
+
+    with pytest.raises(ValueError, match="max_cloudy"):
+        run(max_cloudy=-1)
+    with pytest.raises(ValueError, match="max_clear"):
+        run(max_clear=-2)
+    for bad in (-1, 1.5, True):
+        with pytest.raises(ValueError, match="qv_levels"):
+            run(qv_levels=bad)
+    fr.xland = torch.tensor([-999.0])
+    with pytest.raises(ValueError, match="xland"):
+        run()
+    fr.xland = torch.ones(1, dtype=torch.float64)
+    # explicit offset conflicting with data-derived one must fail closed
+    with pytest.raises(ValueError, match="obs_offset_s"):
+        run(obs_offset_s=0.0)          # data says 300 s, caller says 0

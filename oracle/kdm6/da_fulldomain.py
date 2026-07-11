@@ -379,21 +379,48 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     for name, v in (("ncmin_land", ncmin_land), ("ncmin_sea", ncmin_sea)):
         if not (math.isfinite(v) and v >= 0.0):
             raise ValueError(f"{name} must be finite and >= 0 (got {v!r})")
-    if not bool(torch.isfinite(xland).all()):
-        raise ValueError("xland contains non-finite values")
+    # WRF contract: xland in {1 (land), 2 (water)} — anything else would be
+    # silently binarized by the <1.5 threshold (e.g. -999 fill values).
+    if not bool(((xland == 1.0) | (xland == 2.0)).all()):
+        raise ValueError("xland must be WRF {1, 2} (land/water) — got values "
+                         "outside the contract (fill values? wrong field?)")
+    for name, v in (("max_cloudy", max_cloudy), ("max_clear", max_clear)):
+        if v is not None and (isinstance(v, bool) or not isinstance(v, int)
+                              or v < 0):
+            raise ValueError(f"{name} must be None or a plain int >= 0 "
+                             f"(got {v!r}) — negative values are Python "
+                             "slices, not caps")
+    # qv_levels means "lowest N levels"; N > K naturally selects all levels
+    # (the builder's k < qv_levels mask) — only the type/sign is enforced.
+    if (isinstance(qv_levels, bool) or not isinstance(qv_levels, int)
+            or qv_levels < 0):
+        raise ValueError(f"qv_levels must be a plain int >= 0 "
+                         f"(got {qv_levels!r})")
     # Valid-time alignment (review #1): the offset comes from the DATA
     # (GK2A slot stamp vs WRF Times); an explicit obs_offset_s overrides.
     # A displacement beyond the tolerance is a time-representativeness
     # decision the caller must state (larger tolerance), never a default.
+    obs_vt = getattr(co, "valid_time_utc", None)
+    frame_vt = fr.meta.get("valid_time_utc")
+    derived = (derive_obs_offset_s(obs_vt, frame_vt)
+               if obs_vt is not None and frame_vt is not None else None)
     if obs_offset_s is None:
-        obs_vt = getattr(co, "valid_time_utc", None)
-        frame_vt = fr.meta.get("valid_time_utc")
-        if obs_vt is None or frame_vt is None:
+        if derived is None:
             raise ValueError(
                 "cannot derive the obs-frame time offset: obs valid_time_utc "
                 f"({obs_vt!r}) or frame valid_time_utc ({frame_vt!r}) missing "
                 "— pass obs_offset_s explicitly")
-        obs_offset_s = derive_obs_offset_s(obs_vt, frame_vt)
+        obs_offset_s = derived
+        offset_source = "data"
+    else:
+        # An explicit override that contradicts the data timestamps is a
+        # configuration error, not a preference — fail closed.
+        if derived is not None and obs_offset_s != derived:
+            raise ValueError(
+                f"explicit obs_offset_s={obs_offset_s:g}s contradicts the "
+                f"data-derived offset {derived:g}s "
+                f"({obs_vt!r} vs {frame_vt!r}) — drop the override")
+        offset_source = "explicit"
     check_obs_time_alignment(obs_time, dt, obs_offset_s=obs_offset_s,
                              time_tolerance_s=time_tolerance_s)
 
@@ -535,8 +562,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             omb=_masked_abs_mean(bt_b, rows), oma=_masked_abs_mean(bt_a, rows),
             dqtot_slot_mean=(float(dqtot_slot[rows].mean())
                              if rows.numel() else 0.0),
-            dth_mean=(float((res.x_analysis.th - xb.th)[rows].mean())
-                      if rows.numel() else 0.0))
+            dth_t0_mean=(float((res.x_analysis.th - xb.th)[rows].mean())
+                         if rows.numel() else 0.0),
+            dth_slot_mean=(float((x_slot_a.th - x_slot_bg.th)[rows].mean())
+                           if rows.numel() else 0.0))
 
     if save_fields is not None:
         np.savez_compressed(
@@ -546,8 +575,14 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             n_allsky=int(allsky_pos.numel()), mask=mask.numpy(),
             y_bt=y_bt.numpy(), bt_b=bt_b.numpy(), bt_a=bt_a.numpy(),
             regime=code.numpy(),
+            theta_b=np.array([float(t) for t in prior.theta_b]),
+            theta_a=np.array([float(t) for t in res.theta_analysis]),
             **{f"xb_{f}": getattr(xb, f).numpy() for f in State._fields},
             **{f"xa_{f}": getattr(res.x_analysis, f).numpy()
+               for f in State._fields},
+            **{f"xslot_b_{f}": getattr(x_slot_bg, f).numpy()
+               for f in State._fields},
+            **{f"xslot_a_{f}": getattr(x_slot_a, f).numpy()
                for f in State._fields})
 
     dnorm = {f: float((getattr(res.x_analysis, f) - getattr(xb, f)).norm())
@@ -555,11 +590,24 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     dnorm_slot = {f: float((getattr(x_slot_a, f)
                             - getattr(x_slot_bg, f)).norm())
                   for f in State._fields}
-    # Physical plausibility flag (P0-3 acceptance gate, report-level): any
-    # analysis hydrometeor beyond a hard physical cap is named, not hidden.
-    pathology = {f: float(getattr(res.x_analysis, f).max())
-                 for f in ("qc", "qr", "qi", "qs", "qg")
-                 if float(getattr(res.x_analysis, f).max()) > 0.05}
+
+    # Physical plausibility gates (P0-3): BOTH the analysis initial state
+    # AND the slot state the observation actually saw — a slot-time
+    # explosion created by M would otherwise pass unseen (re-review #7).
+    _HYDRO = ("qc", "qr", "qi", "qs", "qg")
+
+    def _hydro_audit(state):
+        minmax = {f: [float(getattr(state, f).min()),
+                      float(getattr(state, f).max())] for f in _HYDRO}
+        pathology = {f: dict(max=mm[1],
+                             n_over=int((getattr(state, f) > 0.05).sum()))
+                     for f, mm in minmax.items() if mm[1] > 0.05}
+        nonfinite = [f for f in State._fields
+                     if not bool(torch.isfinite(getattr(state, f)).all())]
+        return minmax, pathology, nonfinite
+
+    hydro_minmax_t0, pathology_t0, nonfinite_t0 = _hydro_audit(res.x_analysis)
+    hydro_minmax_slot, pathology_slot, nonfinite_slot = _hydro_audit(x_slot_a)
     return dict(
         n_domain=int(fr.state.th.shape[0]), n_subspace=int(sub.numel()),
         n_model_cloudy=int(model_cloudy_pos.numel()),
@@ -568,11 +616,17 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         n_valid=int(mask.sum()),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
         obs_time=obs_time, dt=dt, obs_offset_s=obs_offset_s,
+        obs_valid_time_utc=obs_vt, frame_valid_time_utc=frame_vt,
+        offset_source=offset_source,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
         grad_theta_norm_final=res.grad_theta_norm_final,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
         theta=[float(t) for t in res.theta_analysis],
+        theta_b=[float(t) for t in prior.theta_b],
         increment_norms=dnorm, increment_norms_slot=dnorm_slot,
-        pathology=pathology, cvt=res.cvt,
+        hydro_minmax_t0=hydro_minmax_t0, hydro_minmax_slot=hydro_minmax_slot,
+        pathology_t0=pathology_t0, pathology_slot=pathology_slot,
+        nonfinite_fields_t0=nonfinite_t0, nonfinite_fields_slot=nonfinite_slot,
+        cvt=res.cvt,
         wall_s=time.time() - t0)
