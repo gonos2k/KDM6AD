@@ -44,21 +44,23 @@ def test_fulldomain_smoke_capped(tmp_path):
         channels=_CHANNELS, pseudo_rh=True,
         save_fields=str(tmp_path / "fields.npz"))
 
-    json.dumps(rep)                                     # 보고 직렬화 가능
-    fields = np.load(tmp_path / "fields.npz")           # 영상화 데이터 저장 확인
+    json.dumps(rep)                                      # report serializable
+    fields = np.load(tmp_path / "fields.npz")            # imagery archive
     assert fields["xa_qc"].shape == fields["xb_qc"].shape
-    assert int(fields["n_cloudy"]) == 12
-    assert fields["bt_b"].shape == fields["y_bt"].shape  # regime 진단 데이터
-    # P0 검토 반영: 관측이 M을 관통(θ 기울기 활성) + Huber 기본 + pseudo 배선
+    assert fields["bt_b"].shape == fields["y_bt"].shape  # regime diagnostics
+    # P0 review: obs through M (theta gradient alive) + Huber default +
+    # regime-2 routing evidence — the all-sky partition grows by the pseudo
+    # columns (replaces the vacuous n_pseudo_cols >= 0 assertion)
     assert rep["obs_time"] == 1 and rep["huber_delta"] == 3.0
-    assert rep["grad_theta_norm_final"] != 0.0, "θ 기울기 사망 — M 미관통"
-    assert rep["n_pseudo_cols"] >= 0                     # regime-2 배선 기록
-    # 4-regime 층화 보고: n 합 = 분류 가능 컬럼 수, 키 완비
+    assert rep["grad_theta_norm_final"] != 0.0
+    assert rep["n_cloudy"] == 12 + rep["n_pseudo_cols"]
+    assert int(fields["n_cloudy"]) == rep["n_cloudy"]
+    # 4-regime stratified report: keys complete, counts bounded
     assert set(rep["regimes"]) == {"clear_clear", "clear_cloudy",
                                    "cloudy_cloudy", "cloudy_clear"}
     assert sum(r["n"] for r in rep["regimes"].values()) <= rep["n_subspace"]
     assert any(r["n"] > 0 for r in rep["regimes"].values())
-    assert rep["n_cloudy"] == 12 and rep["caps"]["max_cloudy"] == 12
+    assert rep["caps"]["max_cloudy"] == 12
     assert rep["n_valid"] > 0
     assert rep["j_trace"][-1]["total"] < rep["j_trace"][0]["total"]
     assert rep["oma"] <= rep["omb"], (rep["oma"], rep["omb"])
@@ -121,3 +123,56 @@ def test_part_loss_masked_nonfinite_safe():
     y_inf = torch.tensor([[float("inf"), 255.0]], dtype=torch.float64)
     for delta in (None, 3.0):
         assert bool(torch.isfinite(_part_loss(bt, y_inf, mask, delta))), delta
+
+
+def test_part_loss_rejects_bad_delta():
+    """Review #6: huber_delta=0 silently zeroes the obs cost/gradient and a
+    negative delta allows negative cost — only None or finite>0 is legal
+    (same validation as compute_obs_loss)."""
+    import pytest
+    import torch
+    from kdm6.da_fulldomain import _part_loss
+
+    bt = torch.zeros((1, 2), dtype=torch.float64)
+    y = torch.ones((1, 2), dtype=torch.float64)
+    m = torch.ones((1, 2), dtype=torch.float64)
+    for bad in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            _part_loss(bt, y, m, bad)
+
+
+def test_obs_time_alignment_check():
+    """Review #1: the obs slot time t0 + obs_time*dt must match the obs
+    valid-time offset within tolerance — a silent 5-min displacement must
+    fail loudly when outside the stated tolerance."""
+    import pytest
+    from kdm6.da_fulldomain import check_obs_time_alignment
+
+    check_obs_time_alignment(1, 300.0, obs_offset_s=0.0,
+                             time_tolerance_s=300.0)      # boundary: pass
+    with pytest.raises(ValueError, match="obs valid time"):
+        check_obs_time_alignment(1, 300.0, obs_offset_s=0.0,
+                                 time_tolerance_s=299.0)
+    with pytest.raises(ValueError, match="obs valid time"):
+        check_obs_time_alignment(2, 600.0, obs_offset_s=0.0,
+                                 time_tolerance_s=600.0)
+
+
+def test_pseudo_qv_overlap_validation():
+    """Review #5: a pseudo-RH level with sigma_qv == 0 everywhere in a
+    column has exactly zero CVT gradient — the composition must be rejected
+    instead of silently doing nothing."""
+    import pytest
+    import torch
+    from kdm6.da_fulldomain import validate_pseudo_qv_overlap
+
+    sigma_qv = torch.zeros((3, 5), dtype=torch.float64)
+    sigma_qv[:, :2] = 0.08                       # only levels 0-1 controlled
+    cols = torch.tensor([0, 2])
+    levels_ok = torch.tensor([[True, False, False, False, False],
+                              [True, True, False, False, False]])
+    validate_pseudo_qv_overlap(sigma_qv, cols, levels_ok)  # passes
+    levels_dead = torch.tensor([[False, False, False, True, False],
+                                [True, False, False, False, False]])
+    with pytest.raises(ValueError, match="no CVT-controlled qv level"):
+        validate_pseudo_qv_overlap(sigma_qv, cols, levels_dead)

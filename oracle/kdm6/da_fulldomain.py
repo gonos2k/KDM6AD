@@ -89,11 +89,49 @@ def _part_loss(bt, y, mask, delta: "float | None"):
     loss is applied — 0*NaN = NaN, so multiplicative masking alone lets a
     non-finite obs/model value at a flagged channel poison j (same
     replace-before-_huber discipline as compute_obs_loss)."""
+    if delta is not None and not (math.isfinite(delta) and delta > 0.0):
+        # delta=0 silently zeroes the obs cost AND its gradient; negative
+        # delta allows negative cost (same validation as compute_obs_loss).
+        raise ValueError(f"huber_delta must be None or finite > 0 "
+                         f"(got {delta!r})")
     r = torch.where(mask > 0, mask * (bt - y), torch.zeros_like(bt))
     if delta is None:
         return 0.5 * (r * r).sum()
     from .obs.obs_loss import _huber
     return _huber(r, float(delta)).sum()
+
+
+def check_obs_time_alignment(obs_time: int, dt: float, *,
+                             obs_offset_s: float,
+                             time_tolerance_s: float) -> None:
+    """Enforce |obs_time*dt - obs_offset_s| <= time_tolerance_s.
+
+    obs_offset_s is the obs valid time minus the frame valid time (seconds).
+    The slot state x_{obs_time} is valid at t0 + obs_time*dt; comparing a
+    displaced observation silently biases the innovation (review #1 — the
+    LC05 fixture pairs a 00:00 UTC obs with the 00:05 slot at the defaults,
+    which passes only because the tolerance says so, explicitly)."""
+    err = abs(obs_time * dt - obs_offset_s)
+    if err > time_tolerance_s:
+        raise ValueError(
+            f"obs valid time offset {obs_offset_s:g}s vs slot time "
+            f"{obs_time * dt:g}s differ by {err:g}s > tolerance "
+            f"{time_tolerance_s:g}s — align obs_time/dt with the obs slot "
+            "or state the tolerance explicitly")
+
+
+def validate_pseudo_qv_overlap(sigma_qv: torch.Tensor, cols: torch.Tensor,
+                               levels: torch.Tensor) -> None:
+    """Reject pseudo-RH columns whose selected levels are all outside the
+    CVT-controlled qv levels (sigma_qv == 0 there => exactly zero gradient,
+    i.e. the bootstrap silently does nothing — review #5)."""
+    active = (sigma_qv[cols] > 0) & levels
+    dead = ~active.any(dim=1)
+    if bool(dead.any()):
+        raise ValueError(
+            f"pseudo-RH columns {cols[dead].tolist()} have no CVT-controlled "
+            "qv level in their target band (sigma_qv == 0 there) — extend "
+            "qv_levels (builder) or drop those columns")
 
 
 def select_regime2_positions(y_bt, y_rq, clear_pos, *,
@@ -248,6 +286,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             coef_cloud: str = "ami_cloud",
                             channels: tuple = (),
                             obs_time: int = 1,
+                            dt: float = 300.0,
+                            obs_offset_s: float = 0.0,
+                            time_tolerance_s: float = 300.0,
+                            ncmin_land: float = 0.0,
+                            ncmin_sea: float = 0.0,
                             huber_delta: "float | None" = 3.0,
                             pseudo_rh: bool = False,
                             pseudo_sigma_p: float = 2.0e-4,
@@ -288,28 +331,41 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             rttov_layer_pressure=p_lay, rttov_level_pressure=p_half),
         input_cfg=RttovInputConfig(coef_id=coef_clear, channels=channels),
         obs_sigma=1.0, t_ref=t_ref, q_ref=q_ref)
+    # M and H must see the SAME land/sea and activation-minimum settings —
+    # a mismatch makes microphysics activation and RTTOV Deff inconsistent
+    # (review #2). ncmin values are pass-through so both sides agree.
     rttov_cfg = dict(t_ref=t_ref.numpy(), q_ref=q_ref.numpy(),
                      p_lay=p_lay.numpy(), p_half=p_half.numpy(),
                      channels=tuple(channels), coef_id=coef_cloud,
+                     ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                      oracle_root=str(Path(__file__).resolve().parents[1]))
 
     prior = default_param_prior(0.2)
-    spec, b_sigma = make_default_cvt(xb)
-    cfg = WindowConfig(dt=300.0)
+    cfg = WindowConfig(dt=dt, xland=xland,
+                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
     if obs_time not in (0, 1):
         raise ValueError(f"obs_time must be 0 or 1 (got {obs_time}) — the "
                          "driver runs a single-step window")
+    check_obs_time_alignment(obs_time, dt, obs_offset_s=obs_offset_s,
+                             time_tolerance_s=time_tolerance_s)  # review #1
 
-    def _slot_state(x_state):
-        """관측 슬롯 시각의 상태 — obs_time=1이면 forward-전용 수집기로
-        M 1스텝 (run_da_window는 VJP 스윕 비용 + 자체 grad 컨텍스트 관리라
-        no_grad로 감싸면 안 됨 — 동결 어댑터와 동일한 프로브 규율)."""
+    import dataclasses
+
+    def _slot_state(x_state, params=None):
+        """State at the obs slot time — one M step via the forward-only
+        collector (run_da_window pays the VJP sweep and manages its own
+        grad contexts, so it must NOT be wrapped in no_grad — same probe
+        discipline as the frozen adapter). params selects theta: None keeps
+        theta_b; pass theta_a for analysis-consistent O-A (review #3)."""
         if obs_time == 0:
             return x_state
         from .da_window import collect_window_trajectory
-        return collect_window_trajectory(x_state, [fc], cfg,
+        cfg_p = cfg if params is None else dataclasses.replace(cfg,
+                                                               params=params)
+        return collect_window_trajectory(x_state, [fc], cfg_p,
                                          {obs_time})[obs_time]
 
+    x_slot_bg = _slot_state(xb)
     pseudo = None
     n_pseudo_cols = 0
     if pseudo_rh:
@@ -317,11 +373,29 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         r2 = select_regime2_positions(y_bt, y_rq, clear_pos)
         n_pseudo_cols = int(r2.numel())
         if n_pseudo_cols:
+            # Route regime-2 columns through the ALL-SKY part: once M creates
+            # condensate, cfrac flips live and the BT term takes over the
+            # amount refinement — with clear-sky H that path never exists
+            # (review #4). Frozen targets/levels come from the slot-time
+            # background state (the obs applies to x_slot, not x0).
+            keep = torch.ones(y_bt.shape[0], dtype=torch.bool)
+            keep[r2] = False
+            cloudy_pos = torch.cat([cloudy_pos, r2])
+            clear_pos = clear_pos[keep[clear_pos]]
             pseudo = dict(cols=r2,
-                          target=frozen_saturation_target(xb, fc, r2),
-                          levels=cloud_top_levels(xb, fc, r2,
+                          target=frozen_saturation_target(x_slot_bg, fc, r2),
+                          levels=cloud_top_levels(x_slot_bg, fc, r2,
                                                   y_bt[r2, IR105_COL]),
                           sigma_p=pseudo_sigma_p)
+
+    # Upper-level cloud tops need qv control above the clear-sky default of
+    # 12 levels; otherwise the pseudo gradient is exactly zero there
+    # (review #5 — validated below, fail-fast).
+    spec, b_sigma = make_default_cvt(
+        xb, qv_levels=(xb.th.shape[1] if pseudo is not None else 12))
+    if pseudo is not None:
+        validate_pseudo_qv_overlap(b_sigma.qv, pseudo["cols"],
+                                   pseudo["levels"])
 
     ctx = mp.get_context("spawn")
     pool = ctx.Pool(n_workers)
@@ -330,14 +404,16 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             xb, fc, y_bt, y_rq, xland, cloudy_pos, clear_pos,
             clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool,
             obs_time=obs_time, huber_delta=huber_delta,
-            x_slot_bg=_slot_state(xb), pseudo=pseudo)
+            x_slot_bg=x_slot_bg, pseudo=pseudo)
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec)
 
-        # O−B / O−A: 동결 mask, 관측 슬롯 시각 상태로 동일 채널 집합 비교
+        # O-B / O-A on the frozen mask at the obs slot time. O-A must use the
+        # OPTIMIZED theta_a — H(M(x_a; theta_b)) is not the analysis pair and
+        # disagrees with the joint objective (review #3).
         mask = obs_eval.mask
-        def _h_bt(x_state):
-            x_slot = _slot_state(x_state)
+        def _h_bt(x_state, params=None):
+            x_slot = _slot_state(x_state, params=params)
             with torch.no_grad():
                 o = sharded_allsky(x_slot, fc, cloudy_pos, y_bt,
                                    torch.zeros_like(y_bt), xland, rttov_cfg,
@@ -351,7 +427,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                 bt[clear_pos] = bt_cl
             return bt
 
-        bt_b, bt_a = _h_bt(xb), _h_bt(res.x_analysis)
+        bt_b = _h_bt(xb)
+        bt_a = _h_bt(res.x_analysis, params=res.theta_analysis)
     finally:
         pool.close()
         pool.join()
@@ -395,7 +472,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         n_cloudy=int(cloudy_pos.numel()), n_clear=int(clear_pos.numel()),
         n_valid=int(mask.sum()),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
-        obs_time=obs_time, huber_delta=huber_delta,
+        obs_time=obs_time, dt=dt, obs_offset_s=obs_offset_s,
+        time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
+        ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
         n_pseudo_cols=n_pseudo_cols,
         grad_theta_norm_final=res.grad_theta_norm_final,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,

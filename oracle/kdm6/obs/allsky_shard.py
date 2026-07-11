@@ -68,7 +68,9 @@ def _allsky_columns_worker(args: dict) -> dict:
         fcol = Forcing(rho=torch.flip(fc[0, i], [-1]), pii=torch.flip(fc[1, i], [-1]),
                        p=torch.flip(fc[2, i], [-1]) / 100.0,
                        delz=torch.flip(fc[3, i], [-1]))
-        prof = model_to_rttov_tensors(leaves, fcol, pcfg, xland=xland[i])
+        prof = model_to_rttov_tensors(leaves, fcol, pcfg, xland=xland[i],
+                                      ncmin_land=args.get("ncmin_land", 0.0),
+                                      ncmin_sea=args.get("ncmin_sea", 0.0))
         p_top = fcol.p[0].reshape(1)
         tl = _blend_above_model_top(prof.t_lay.unsqueeze(0), t_ref, prof.p_lay,
                                     p_top, octaves=1.0).squeeze(0)
