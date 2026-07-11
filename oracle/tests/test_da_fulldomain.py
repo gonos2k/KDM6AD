@@ -176,3 +176,22 @@ def test_pseudo_qv_overlap_validation():
                                 [True, False, False, False, False]])
     with pytest.raises(ValueError, match="no CVT-controlled qv level"):
         validate_pseudo_qv_overlap(sigma_qv, cols, levels_dead)
+
+
+def test_obs_time_alignment_rejects_nonfinite():
+    """Codex regression: NaN comparisons are False, so non-finite dt/offset/
+    tolerance silently passed the alignment check (fail-open) — must raise."""
+    import pytest
+    from kdm6.da_fulldomain import check_obs_time_alignment
+
+    nan, inf = float("nan"), float("inf")
+    for kw in (dict(dt=nan, obs_offset_s=0.0, time_tolerance_s=300.0),
+               dict(dt=300.0, obs_offset_s=nan, time_tolerance_s=300.0),
+               dict(dt=300.0, obs_offset_s=0.0, time_tolerance_s=nan),
+               dict(dt=inf, obs_offset_s=0.0, time_tolerance_s=300.0),
+               dict(dt=-300.0, obs_offset_s=0.0, time_tolerance_s=300.0),
+               dict(dt=300.0, obs_offset_s=0.0, time_tolerance_s=-1.0)):
+        with pytest.raises(ValueError):
+            check_obs_time_alignment(1, kw["dt"],
+                                     obs_offset_s=kw["obs_offset_s"],
+                                     time_tolerance_s=kw["time_tolerance_s"])

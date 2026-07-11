@@ -111,6 +111,15 @@ def check_obs_time_alignment(obs_time: int, dt: float, *,
     displaced observation silently biases the innovation (review #1 — the
     LC05 fixture pairs a 00:00 UTC obs with the 00:05 slot at the defaults,
     which passes only because the tolerance says so, explicitly)."""
+    # NaN comparisons are False, so non-finite inputs would fail OPEN here
+    # (Codex) — validate before comparing.
+    if not (math.isfinite(dt) and dt > 0.0):
+        raise ValueError(f"dt must be finite and > 0 (got {dt!r})")
+    if not math.isfinite(obs_offset_s):
+        raise ValueError(f"obs_offset_s must be finite (got {obs_offset_s!r})")
+    if not (math.isfinite(time_tolerance_s) and time_tolerance_s >= 0.0):
+        raise ValueError(f"time_tolerance_s must be finite and >= 0 "
+                         f"(got {time_tolerance_s!r})")
     err = abs(obs_time * dt - obs_offset_s)
     if err > time_tolerance_s:
         raise ValueError(
