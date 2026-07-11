@@ -427,6 +427,12 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     if max_clear is not None:
         cl = cl[:max_clear]
     keep = torch.cat([mc, cl])
+    if keep.numel() == 0:
+        raise ValueError(
+            "empty working subspace after the caps "
+            f"(max_cloudy={max_cloudy}, max_clear={max_clear}; "
+            f"partition {int(mc.numel())} cloudy / {int(cl.numel())} clear "
+            "before caps) — nothing to minimize")
     xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
     x_slot_bg = _take(x_slot_bg, keep)
     y_bt, y_rq = y_bt[keep], y_rq[keep]

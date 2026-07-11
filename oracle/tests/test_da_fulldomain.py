@@ -257,3 +257,50 @@ def test_pseudo_sigma_p_validated():
     for bad in (0.0, -1.0, float("nan"), float("inf")):
         with pytest.raises(ValueError):
             pseudo_rh_term(x, cols, target, sigma_p=bad)
+
+
+def test_post_cap_empty_subspace_rejected():
+    """Codex regression: caps can empty the working subspace after the
+    slot-time partition (e.g. max_cloudy=0, max_clear=0) — reject instead
+    of running the minimizer over zero columns. CI-safe: reaches the check
+    before any RTTOV call (the slot forward is the pure-torch oracle)."""
+    import pytest
+    import torch
+    from kdm6 import thermo
+    from kdm6.da_fulldomain import run_fulldomain_analysis
+    from kdm6.state import Forcing, State
+
+    K = 2
+    th = torch.tensor([[296.8, 282.4]], dtype=torch.float64)
+    pii = torch.tensor([[0.9704, 0.9031]], dtype=torch.float64)
+    p = torch.tensor([[9.0e4, 7.0e4]], dtype=torch.float64)
+    qs = thermo.compute_qs_water(th * pii, p,
+                                 params=thermo.default_thermo_params())
+    z = torch.zeros_like(th)
+    state = State(th=th, qv=0.9 * qs, qc=z.clone(), qr=z.clone(),
+                  qi=z.clone(), qs=z.clone(), qg=z.clone(),
+                  nccn=torch.full_like(th, 1.0e9), nc=z.clone(),
+                  ni=z.clone(), nr=z.clone(), bg=z.clone())
+    forcing = Forcing(rho=torch.full_like(th, 1.0), pii=pii, p=p,
+                      delz=torch.full_like(th, 500.0))
+
+    class Frame:
+        pass
+    fr = Frame()
+    fr.state, fr.forcing = state, forcing
+    fr.xland = torch.ones(1, dtype=torch.float64)
+    fr.meta = dict(nx=1, ny=1, kme=K, valid_time_utc="2025-07-19_00:00:00")
+
+    class Obs:
+        pass
+    co = Obs()
+    co.bt = torch.full((1, 16), 260.0, dtype=torch.float64)
+    co.obs_quality = torch.zeros((1, 16), dtype=torch.float64)
+    co.valid_time_utc = "202507190005"
+
+    grids = dict(p_lay=[500.0], p_half=[450.0, 550.0],
+                 t_ref=[250.0], q_ref=[10.0])
+    with pytest.raises(ValueError, match="empty working subspace"):
+        run_fulldomain_analysis(fr, co, grids, "/tmp/unused",
+                                boundary=0, max_cloudy=0, max_clear=0,
+                                channels=tuple(range(16)))
