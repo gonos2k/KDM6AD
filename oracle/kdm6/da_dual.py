@@ -39,6 +39,9 @@ import torch
 
 from .da_cvt import CvtSpec, build_cvt_record, cvt_apply, validate_cvt
 from .da_minimizer import _stack, _validate_state_shapes
+from .da_partition import (CHANNELS, PartitionSpec, apply_partition_chain,
+                           build_partition_caps, build_partition_record,
+                           chain_with_pullback, validate_partition)
 from .da_window import WindowConfig, run_da_window
 from .runtime import Parameters, make_parameters
 from .state import Forcing, State
@@ -284,6 +287,8 @@ class DualMinimizeResult:
     grad_theta_norm_final: float
     policy: dict = None                    # 게이트 opt-in 상태 (감사, 재검토 M1)
     cvt: "dict | None" = None              # CVT 감사 레코드 (spec 경로만)
+    w: "torch.Tensor | None" = None        # partition controls (n_ch, B, K), opt-in
+    partition: "dict | None" = None        # partition audit record (da_partition)
 
 
 def run_dual_minimizer(
@@ -302,6 +307,7 @@ def run_dual_minimizer(
     require_obs_slots: bool = True,
     policy: "ObsGatePolicy | None" = None,
     cvt: "CvtSpec | None" = None,
+    partition: "PartitionSpec | None" = None,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -339,6 +345,13 @@ def run_dual_minimizer(
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
+    caps = w = None
+    if partition is not None:
+        # caps frozen from the background (v/w-independent B)
+        caps = build_partition_caps(xb, partition)
+        validate_partition(caps, window_config.active_fields)
+        w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape),
+                        dtype=torch.float64, requires_grad=True)
 
     trace: list = []
     counters = {"windows": 0}
@@ -347,7 +360,11 @@ def run_dual_minimizer(
 
     def closure() -> torch.Tensor:
         with torch.no_grad():
-            x0, jac_x = cvt_apply(xb, b_sigma, v_x, cvt)
+            y, jac_x = cvt_apply(xb, b_sigma, v_x, cvt)
+        if partition is None:
+            x0, pullback = y, None
+        else:
+            x0, pullback = chain_with_pullback(y, forcings[0], w, caps)
         params_live = params_from_vtheta(param_prior, v_th.detach(), live=True)
         any_active = bool((param_prior.sigma_log > 0).any())
         import dataclasses as _dc
@@ -473,6 +490,26 @@ def run_dual_minimizer(
                         f"slots and connected_fields={_connected} — their "
                         "gradient is guaranteed exact-zero (no M^T coupling); "
                         "zero their sigma or add a t>=1 observation")
+            # V7 analogue for partition channels: with t=0-only bearing slots
+            # a live channel whose touched fields never intersect the direct
+            # H sensitivity has guaranteed-zero g_w (no M^T coupling) — the
+            # prior would pin w=0 while the channel is recorded as controlled.
+            if partition is not None and _connected is not None:
+                bearing = [t for t, (nv, _) in frozen_n_valid.items()
+                           if nv > 0]
+                if bearing and all(t == 0 for t in bearing):
+                    for i, (name, don, rec_f, latent) in enumerate(CHANNELS):
+                        if not bool(caps.active[i].any()):
+                            continue
+                        touched = {don, rec_f} | (
+                            {"th"} if latent is not None else set())
+                        if not touched & set(_connected):
+                            raise ValueError(
+                                f"partition channel {name} (touched fields "
+                                f"{sorted(touched)}) has only t=0 obs slots "
+                                f"and connected_fields={_connected} — its "
+                                "gradient is guaranteed exact-zero; add a "
+                                "t>=1 observation or drop the partition")
         else:
             missing = set(frozen_n_valid) - set(n_valid_acc)
             appeared = set(n_valid_acc) - set(frozen_n_valid)
@@ -489,8 +526,15 @@ def run_dual_minimizer(
                      else torch.zeros((), **_F64))
             j_b = 0.5 * (v_x * v_x).sum()
             j_th = 0.5 * (v_th * v_th).sum()
-            # ∂J/∂v_x = v_x + jac ⊙ ∂J/∂x0 (선형이면 jac = σ_b — 기존과 동일)
-            g_x = v_x.detach() + jac_x * _stack(res.adj_x0)
+            if partition is None:
+                # ∂J/∂v_x = v_x + jac ⊙ ∂J/∂x0 (선형이면 jac = σ_b — 기존과 동일)
+                g_x = v_x.detach() + jac_x * _stack(res.adj_x0)
+                g_w = None
+            else:
+                adj_y, g_w_obs = pullback(res.adj_x0)  # local pullback through P
+                g_x = v_x.detach() + jac_x * adj_y
+                g_w = w.detach() + g_w_obs
+                j_b = j_b + 0.5 * (w * w).sum()
             # ∂J/∂v_θ = v_θ + σ_log · θ · ∂J/∂θ  (θ = θb·exp(σv) 체인)
             gp = torch.zeros(4, **_F64)
             if res.grad_params is not None:
@@ -500,15 +544,20 @@ def run_dual_minimizer(
             theta_now = torch.stack([params_live[i].detach() for i in range(4)])
             g_th = v_th.detach() + param_prior.sigma_log * theta_now * gp
             j = j_b + j_th + j_obs
-            for name, tt_ in (("j_state", j_b), ("j_theta", j_th),
-                              ("j_obs", j_obs), ("j_total", j),
-                              ("g_x", g_x), ("g_th", g_th)):
+            guarded = [("j_state", j_b), ("j_theta", j_th),
+                       ("j_obs", j_obs), ("j_total", j),
+                       ("g_x", g_x), ("g_th", g_th)]
+            if g_w is not None:
+                guarded.append(("g_w", g_w))
+            for name, tt_ in guarded:
                 if not bool(torch.isfinite(tt_).all()):
                     raise FloatingPointError(
                         f"{name} became non-finite in the dual closure — "
                         "corrupted loss/gradient must not reach L-BFGS")
             v_x.grad = g_x
             v_th.grad = g_th
+            if g_w is not None:
+                w.grad = g_w
             trace.append(dict(total=float(j), j_state=float(j_b),
                               j_theta=float(j_th), j_obs=float(j_obs),
                               n_valid={k: v[0] for k, v in n_valid_acc.items()} or None,
@@ -518,12 +567,19 @@ def run_dual_minimizer(
         return j
 
     opt = torch.optim.LBFGS(
-        [v_x, v_th], max_iter=max_iter, history_size=history_size,
+        [v_x, v_th] if partition is None else [v_x, v_th, w],
+        max_iter=max_iter, history_size=history_size,
         line_search_fn="strong_wolfe", tolerance_grad=tolerance_grad)
     opt.step(closure)
 
     with torch.no_grad():
         x_a, _ = cvt_apply(xb, b_sigma, v_x, cvt)
+        part_rec = None
+        if partition is not None:
+            # reconstruct the analysis with the COMPOSED decoder — cvt_apply
+            # alone would drop the partition increments
+            x_a = apply_partition_chain(x_a, forcings[0], w.detach(), caps)
+            part_rec = build_partition_record(partition, caps, w.detach())
         theta_a = params_from_vtheta(param_prior, v_th.detach(), live=False)
         cvt_rec = (build_cvt_record(cvt, b_sigma, xb, x_a)
                    if cvt is not None else None)
@@ -533,7 +589,8 @@ def run_dual_minimizer(
         jb_final=last["jb"], jtheta_final=last["jth"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"],
         grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"],
-        policy=policy.as_dict(), cvt=cvt_rec)
+        policy=policy.as_dict(), cvt=cvt_rec,
+        w=None if w is None else w.detach(), partition=part_rec)
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],

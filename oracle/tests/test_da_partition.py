@@ -533,3 +533,97 @@ def test_partition_record_saturation_and_counts():
     assert rec["sat_max"]["vap2liq"] > 0.999
     assert rec["sat_max"]["snow2graupel"] == 0.0
     assert len(rec["caps_sha256"]) == 64
+
+
+# ── dual minimizer integration (run_dual_minimizer partition= seam) ──────────
+
+from kdm6.da_dual import default_param_prior, run_dual_minimizer
+
+
+def _P(**kw):
+    from kdm6.da_dual import ObsGatePolicy
+    return ObsGatePolicy(allow_tuple_returns=True, **kw)
+
+
+def _quad_th_obs(t_obs: int, y_target: torch.Tensor):
+    """Synthetic dual obs term: J = 0.5*sum((th_t - y)^2), frozen signature."""
+    def obs_eval(t, x_t):
+        if t != t_obs:
+            return None
+        d = x_t.th - y_target
+        adj = _zeros_state(x_t)._replace(th=d.clone())
+        return float(0.5 * (d * d).sum()), adj, int(d.numel()), "synthetic-quad"
+    return obs_eval
+
+
+def test_dual_partition_none_is_legacy():
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    spec, b_sigma = _conserving_cvt(xb)
+    prior = default_param_prior(0.2)
+    truth = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final
+    obs = _quad_th_obs(2, truth.th + 0.3)
+    res_a = run_dual_minimizer(xb, forcings, obs, cfg, b_sigma, prior,
+                               max_iter=3, cvt=spec, policy=_P())
+    res_b = run_dual_minimizer(xb, forcings, obs, cfg, b_sigma, prior,
+                               max_iter=3, cvt=spec, policy=_P(),
+                               partition=None)
+    assert [e["total"] for e in res_a.j_trace] == \
+           [e["total"] for e in res_b.j_trace]
+    for k in State._fields:
+        assert torch.equal(getattr(res_a.x_analysis, k),
+                           getattr(res_b.x_analysis, k)), k
+    assert res_b.w is None and res_b.partition is None
+
+
+def test_dual_partition_e2e_water_invariant():
+    """Dual twin reachable by partitions only (state sigma all zero): J falls
+    through w, total water invariant, composed analysis + audit record."""
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    spec, b_sigma = make_default_cvt(
+        xb, th_sigma=0.0, qv_sigma=0.0,
+        sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    prior = default_param_prior(0.2)
+    pspec = PartitionSpec()
+    caps = build_partition_caps(xb, pspec)
+    w_true = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
+    w_true[0], w_true[1] = 4.0e-4, 1.0e-4
+    with torch.no_grad():
+        x_true = apply_partition_chain(xb, forcings[0], w_true, caps)
+    y = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
+    res = run_dual_minimizer(xb, forcings, _quad_th_obs(2, y), cfg, b_sigma,
+                             prior, max_iter=10, cvt=spec, policy=_P(),
+                             partition=pspec)
+    assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
+    assert res.w is not None and float(res.w.abs().max()) > 0.0
+    assert torch.allclose(_total_water(res.x_analysis), _total_water(xb),
+                          rtol=0.0, atol=1.0e-16)
+    assert res.partition["fingerprint"] == pspec.fingerprint()
+
+
+def test_dual_partition_dead_channel_t0_only_rejected():
+    """V7 analogue for channels: with t=0-only bearing slots and clear-sky
+    connected_fields=(th,qv), the mass-only channels (qc/qr, qs/qg) have
+    guaranteed-zero gradient — reject loudly instead of prior-pinning w."""
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    # nc/ni sigma = 0 too so the pre-existing field-level V7 passes and the
+    # CHANNEL gate is what fires
+    spec, b_sigma = make_default_cvt(
+        xb, sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    obs = _quad_th_obs(0, xb.th + 0.3)
+    obs.connected_fields = ("th", "qv")
+    with pytest.raises(ValueError, match="cloud2rain"):
+        run_dual_minimizer(xb, forcings, obs, cfg, b_sigma,
+                           default_param_prior(0.2), max_iter=2, cvt=spec,
+                           policy=_P(), partition=PartitionSpec())
+    # a t>=1 bearing slot makes every channel M^T-reachable: no rejection
+    obs2 = _quad_th_obs(2, xb.th + 0.3)
+    obs2.connected_fields = ("th", "qv")
+    run_dual_minimizer(xb, forcings, obs2, cfg, b_sigma,
+                       default_param_prior(0.2), max_iter=2, cvt=spec,
+                       policy=_P(), partition=PartitionSpec())
