@@ -1,16 +1,22 @@
-"""전 도메인 t=0 all-sky dual CVT 분석 (v9) — J-부분공간, clear/cloudy 분할.
+"""전 도메인 all-sky dual CVT 분석 — J-부분공간, clear/cloudy 분할.
 
-v8(교대 dual-estimation, 계획 ⑩)과의 차이: 창을 t=0 단일 슬롯로 줄이고
-(all-sky dual 어댑터의 직접 민감도 — 계획 ⑪), 상태 CVT를 hybrid add/mul
-전 물리량으로 건다. 제어는 J-부분공간(유효 관측 배정 + 경계 제외 컬럼)만:
-비관측 컬럼은 prior가 v=0으로 pin하므로 부분공간 절단은 무손실이고 상태
-텐서가 12×B_sub×K로 줄어든다 (전 도메인 65,988 → 수천).
+상태 CVT는 hybrid add/mul 전 물리량(계획 ⑪), 제어는 J-부분공간(유효 관측
+배정 + 경계 제외 컬럼)만: 비관측 컬럼은 prior가 v=0으로 pin하므로 부분공간
+절단은 무손실이고 상태 텐서가 12×B_sub×K로 줄어든다 (65,988 → 수천).
+
+기본 구성 (P0 검토 반영):
+- obs_time=1: 관측 슬롯이 M(미세물리 1스텝) 뒤 — 관측항이 M을 관통해
+  θ·결합 기울기가 활성 (obs_time=0은 3D-Var형 직접 조정으로 퇴화; v9/v9.1의
+  j_theta≡0 실측이 그 증거).
+- huber_delta=3K: 양 파트 관측손실 Huber — 순수 이차 + 무상한 mul-CVT
+  결합의 비물리 증분 유인 제거 (v9.1 qi ratio 4e11 실측의 처방).
+- pseudo_rh 옵션: 모델-맑음/관측-구름 컬럼에 da_regime2 동결 부트스트랩
+  합성 (3중 gate로 기울기가 닫힌 regime-2의 생성 경로).
 
 파이프라인: frame + GK2A slot collocation → J-부분공간 → 구름/맑음 분할 →
-동결 mask(배경 H) + 서명 → 결합 obs_eval(맑음: 배치 clear-sky, th/qv
-covector; 구름: sharded all-sky, 7필드 covector) → run_dual_minimizer
-(hybrid CVT) → O−B/O−A 보고. 손실은 두 파트 모두 σo=1K 순수 이차
-(sharded_allsky 내부 관례와 동일) — 파트 간 가중 일관성.
+동결 mask(배경 슬롯 시각 H) + 서명 → 결합 obs_eval(맑음: 배치 clear-sky,
+th/qv covector; 구름: sharded all-sky, 7필드 covector; 선택적 pseudo-RH) →
+run_dual_minimizer(hybrid CVT) → 슬롯 시각 O−B/O−A + 4-regime 층화 보고.
 """
 from __future__ import annotations
 
@@ -30,6 +36,11 @@ from .state import Forcing, State
 
 _F64 = dict(dtype=torch.float64)
 ALLSKY_FIELDS = ("th", "qv", "qc", "qi", "qs", "nc", "ni")
+_K_INDEX_MAX = 9999          # RTTOV K 출력 profile-index 4자리 한계 (case_writer 가드)
+IR105_COL = 12               # CLEAN_IR 채널 배열 내 ir105 위치 (LC05 게이트 관례)
+OBS_CLOUD_BT = 270.0         # 관측 구름 판정: ir105 BT < 270K (LC05 게이트 관례)
+REGIME_NAMES = {1: "clear_clear", 2: "clear_cloudy",
+                3: "cloudy_cloudy", 4: "cloudy_clear"}
 
 
 def _take(s, idx):
@@ -65,16 +76,30 @@ def select_subspace(fr, co, *, boundary: int = 10, qtot_min: float = 1.0e-5,
             torch.arange(len(cloudy), len(sub)))
 
 
-def _quad_j_and_masked_bt(bt, y, mask):
-    """σo=1K 순수 이차 파트 손실 (sharded_allsky 내부 관례와 동일 산식)."""
-    return 0.5 * ((mask * (bt - y)) ** 2).sum()
+def _part_loss(bt, y, mask, delta: "float | None"):
+    """파트 손실 — δ=None: σo=1K 순수 이차(구계약), δ>0: Huber (P0-3).
+
+    순수 이차는 대형 innovation(구름 위치오차 등) 적합을 무한 보상해 무상한
+    mul-CVT와 결합 시 비물리 증분을 유발한다 (v9.1 실측: qi ratio 4e11 —
+    ratio_minmax 감사 적발). Huber는 |r|>δ의 유인을 선형으로 꺾는다."""
+    r = mask * (bt - y)
+    if delta is None:
+        return 0.5 * (r * r).sum()
+    from .obs.obs_loss import _huber
+    return _huber(r, float(delta)).sum()
 
 
-_K_INDEX_MAX = 9999          # RTTOV K 출력 profile-index 4자리 한계 (case_writer 가드)
-IR105_COL = 12               # CLEAN_IR 채널 배열 내 ir105 위치 (LC05 게이트 관례)
-OBS_CLOUD_BT = 270.0         # 관측 구름 판정: ir105 BT < 270K (LC05 게이트 관례)
-REGIME_NAMES = {1: "clear_clear", 2: "clear_cloudy",
-                3: "cloudy_cloudy", 4: "cloudy_clear"}
+def select_regime2_positions(y_bt, y_rq, clear_pos, *,
+                             ir_col: int = IR105_COL,
+                             bt_cloud: float = OBS_CLOUD_BT) -> torch.Tensor:
+    """모델-맑음(clear_pos) ∧ 관측-구름(ir 유효 & BT<bt_cloud) 부분공간 위치.
+
+    pseudo-RH 부트스트랩(da_regime2)의 동결 C2 선정 — 배경·관측만 사용
+    (v-독립)."""
+    obs_cloudy = (y_rq[:, ir_col] == 0) & (y_bt[:, ir_col] < bt_cloud)
+    keep = torch.zeros(y_bt.shape[0], dtype=torch.bool)
+    keep[clear_pos] = True
+    return torch.where(obs_cloudy & keep)[0]
 
 
 def classify_regimes(n_sub: int, y_bt, mask, cloudy_pos, *,
@@ -119,19 +144,30 @@ def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int)
 def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              xland_sub, cloudy_pos, clear_pos,
                              clear_cfg: OsseObsConfig, rttov_cfg: dict,
-                             case_root: str, *, n_workers: int, pool):
-    """동결 mask 결합 obs_eval — t=0 전용, ObsEvalResult 반환.
+                             case_root: str, *, n_workers: int, pool,
+                             obs_time: int = 1,
+                             huber_delta: "float | None" = 3.0,
+                             x_slot_bg: "State | None" = None,
+                             pseudo: "dict | None" = None):
+    """동결 mask 결합 obs_eval — 슬롯 t=obs_time, ObsEvalResult 반환.
 
-    동결 기준은 배경 H: 맑음 파트는 batched_clear_bt(xb), 구름 파트는
-    sharded_allsky(xb, grad=False)의 rad_quality. covector는 맑음 th/qv +
-    구름 12필드(all-sky 연결 7필드만 비영)를 부분공간 위치에 산개 합성.
+    동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
+    맑음 파트는 batched_clear_bt, 구름 파트는 sharded_allsky(grad=False)의
+    rad_quality. covector는 맑음 th/qv + 구름 12필드(all-sky 연결 7필드만
+    비영)를 부분공간 위치에 산개 합성. obs_time≥1이면 관측항이 M(미세물리)을
+    관통해 θ·전 필드 결합 기울기가 살아난다 (P0-1). huber_delta는 양 파트
+    공통 (P0-3). pseudo = dict(cols, target, levels, sigma_p) — regime-2
+    부트스트랩 항 합성 (P0-2; 동결 구성은 서명에 합성).
     """
+    from .da_regime2 import pseudo_rh_term
+
     nch = y_bt.shape[1]
+    x_probe = xb_sub if x_slot_bg is None else x_slot_bg
     with torch.no_grad():
-        _, rq_clear = _clear_bt_chunked(_take(xb_sub, clear_pos),
+        _, rq_clear = _clear_bt_chunked(_take(x_probe, clear_pos),
                                         _take(fc_sub, clear_pos),
                                         clear_cfg, nch)
-        probe = sharded_allsky(xb_sub, fc_sub, cloudy_pos, y_bt,
+        probe = sharded_allsky(x_probe, fc_sub, cloudy_pos, y_bt,
                                torch.zeros_like(y_bt), xland_sub, rttov_cfg,
                                f"{case_root}/probe", n_workers=n_workers,
                                grad=False, pool=pool)
@@ -143,17 +179,25 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     h.update(mask.numpy().tobytes())
     h.update(cloudy_pos.numpy().tobytes() + clear_pos.numpy().tobytes())
     h.update(f"|{clear_cfg.input_cfg.coef_id}|{rttov_cfg['coef_id']}|".encode())
+    h.update(f"|t={obs_time}|huber={huber_delta}|".encode())
+    if pseudo is not None:
+        h.update(b"|pseudo|" + pseudo["cols"].to(torch.int64).numpy().tobytes()
+                 + pseudo["target"].to(torch.float64).numpy().tobytes()
+                 + pseudo["levels"].to(torch.uint8).numpy().tobytes()
+                 + f"|{float(pseudo['sigma_p']).hex()}".encode())
+        n_valid += int(pseudo["levels"].sum())
     signature = h.hexdigest()
 
     counters = {"call": 0}
 
     def obs_eval(t: int, x_t: State):
-        if t != 0:
+        if t != obs_time:
             return None
         counters["call"] += 1
         out = sharded_allsky(x_t, fc_sub, cloudy_pos, y_bt, mask, xland_sub,
                              rttov_cfg, f"{case_root}/c{counters['call']}",
-                             n_workers=n_workers, grad=True, pool=pool)
+                             n_workers=n_workers, grad=True,
+                             huber_delta=huber_delta, pool=pool)
         x_cl, fc_cl = _take(x_t, clear_pos), _take(fc_sub, clear_pos)
         y_cl, m_cl = y_bt[clear_pos], mask[clear_pos]
         g_th = torch.zeros_like(x_cl.th)
@@ -162,8 +206,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         for sl in _clear_slices(x_cl.th.shape[0], nch):     # K-인덱스 4자리 청킹
             bt_c, _, leaves = batched_clear_bt(_take(x_cl, sl),
                                                _take(fc_cl, sl), clear_cfg)
-            j_c = _quad_j_and_masked_bt(bt_c.to(torch.float64),
-                                        y_cl[sl], m_cl[sl])
+            j_c = _part_loss(bt_c.to(torch.float64), y_cl[sl], m_cl[sl],
+                             huber_delta)
             gt, gq = torch.autograd.grad(j_c, [leaves.th, leaves.qv],
                                          allow_unused=False)
             g_th[sl], g_qv[sl] = gt, gq
@@ -173,6 +217,12 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
             adj[f][cloudy_pos] = out["adj"][fi]
         adj["th"][clear_pos] += g_th
         adj["qv"][clear_pos] += g_qv
+        if pseudo is not None:                              # regime-2 부트스트랩
+            j_p, adj_p = pseudo_rh_term(x_t, pseudo["cols"], pseudo["target"],
+                                        sigma_p=pseudo["sigma_p"],
+                                        levels=pseudo["levels"])
+            adj["qv"] = adj["qv"] + adj_p.qv
+            j_parts.append(float(j_p))
         j = math.fsum([float(out["j"])] + j_parts)
         return ObsEvalResult(j=j, adj=State(**adj), n_valid=n_valid,
                              signature=signature)
@@ -190,13 +240,21 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             coef_clear: str = "ami_501_test",
                             coef_cloud: str = "ami_cloud",
                             channels: tuple = (),
+                            obs_time: int = 1,
+                            huber_delta: "float | None" = 3.0,
+                            pseudo_rh: bool = False,
+                            pseudo_sigma_p: float = 2.0e-4,
                             save_fields: "str | None" = None) -> dict:
-    """v9 전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
+    """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
     (테스트 헬퍼 또는 케이스 자산에서 공급; 모듈은 tests에 의존하지 않는다).
-    save_fields: npz 경로 — 영상화/후속 분석용 배경·분석 부분공간 필드와
-    도메인 인덱스(sub_idx, nx, ny) 저장 (norm만 담는 보고 dict의 보완).
+    obs_time=1(기본): 관측이 M(미세물리 1스텝)을 관통 — θ·결합 기울기 활성
+    (P0-1; obs_time=0은 3D-Var형 직접 조정으로 퇴화, θ는 prior에 pin).
+    huber_delta: 양 파트 관측손실의 Huber δ[K] (P0-3; None=구계약 순수 이차).
+    pseudo_rh=True: 모델-맑음/관측-구름 컬럼에 동결 pseudo-RH 부트스트랩
+    합성 (P0-2; da_regime2 — 구름정상 온도매칭 층, 상전이-인지 동결 목표).
+    save_fields: npz 경로 — 영상화/후속 분석용 배경·분석 필드 + bt/regime.
     """
     from .obs.model_profile_builder import RttovProfileConfig
     from .obs.rttov_case_writer import make_live_run_k
@@ -231,27 +289,56 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     prior = default_param_prior(0.2)
     spec, b_sigma = make_default_cvt(xb)
     cfg = WindowConfig(dt=300.0)
+    if obs_time not in (0, 1):
+        raise ValueError(f"obs_time must be 0 or 1 (got {obs_time}) — the "
+                         "driver runs a single-step window")
+
+    def _slot_state(x_state):
+        """관측 슬롯 시각의 상태 — obs_time=1이면 forward-전용 수집기로
+        M 1스텝 (run_da_window는 VJP 스윕 비용 + 자체 grad 컨텍스트 관리라
+        no_grad로 감싸면 안 됨 — 동결 어댑터와 동일한 프로브 규율)."""
+        if obs_time == 0:
+            return x_state
+        from .da_window import collect_window_trajectory
+        return collect_window_trajectory(x_state, [fc], cfg,
+                                         {obs_time})[obs_time]
+
+    pseudo = None
+    n_pseudo_cols = 0
+    if pseudo_rh:
+        from .da_regime2 import cloud_top_levels, frozen_saturation_target
+        r2 = select_regime2_positions(y_bt, y_rq, clear_pos)
+        n_pseudo_cols = int(r2.numel())
+        if n_pseudo_cols:
+            pseudo = dict(cols=r2,
+                          target=frozen_saturation_target(xb, fc, r2),
+                          levels=cloud_top_levels(xb, fc, r2,
+                                                  y_bt[r2, IR105_COL]),
+                          sigma_p=pseudo_sigma_p)
 
     ctx = mp.get_context("spawn")
     pool = ctx.Pool(n_workers)
     try:
         obs_eval = make_fulldomain_obs_eval(
             xb, fc, y_bt, y_rq, xland, cloudy_pos, clear_pos,
-            clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool)
+            clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool,
+            obs_time=obs_time, huber_delta=huber_delta,
+            x_slot_bg=_slot_state(xb), pseudo=pseudo)
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec)
 
-        # O−B / O−A: 동결 mask로 동일 채널 집합 비교 (배경/분석 각 1회 H)
+        # O−B / O−A: 동결 mask, 관측 슬롯 시각 상태로 동일 채널 집합 비교
         mask = obs_eval.mask
         def _h_bt(x_state):
+            x_slot = _slot_state(x_state)
             with torch.no_grad():
-                o = sharded_allsky(x_state, fc, cloudy_pos, y_bt,
+                o = sharded_allsky(x_slot, fc, cloudy_pos, y_bt,
                                    torch.zeros_like(y_bt), xland, rttov_cfg,
                                    f"{case_root}/rep", n_workers=n_workers,
                                    grad=False, pool=pool)
                 bt = torch.zeros_like(y_bt)
                 bt[cloudy_pos] = o["bt"]
-                bt_cl, _ = _clear_bt_chunked(_take(x_state, clear_pos),
+                bt_cl, _ = _clear_bt_chunked(_take(x_slot, clear_pos),
                                              _take(fc, clear_pos), clear_cfg,
                                              y_bt.shape[1])
                 bt[clear_pos] = bt_cl
@@ -301,6 +388,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         n_cloudy=int(cloudy_pos.numel()), n_clear=int(clear_pos.numel()),
         n_valid=int(mask.sum()),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
+        obs_time=obs_time, huber_delta=huber_delta,
+        n_pseudo_cols=n_pseudo_cols,
+        grad_theta_norm_final=res.grad_theta_norm_final,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
         theta=[float(t) for t in res.theta_analysis],
         increment_norms=dnorm, cvt=res.cvt,

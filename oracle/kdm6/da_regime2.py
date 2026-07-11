@@ -4,15 +4,17 @@
 미포화에서 ∂pcond/∂qv ≡ 0) — 로 기울기가 완전히 닫힌 regime-2 컬럼에,
 관측 슬롯 시각의 상태에 대한 매끄러운 습도 pseudo-obs를 합성한다:
 
-  j_p = ½ Σ_{c∈cols, k∈levels} (clamp(qsat(T_t) − qv_t, min=0) / σ_p)²
+  j_p = ½ Σ_{c∈cols, k∈levels} (clamp(q* − qv_t, min=0) / σ_p)²
 
-qsat은 live 진단(thermo.compute_qs_water) — 기울기가 qv(가습)와 th(냉각 →
-포화; ∂qsat/∂T > 0) 모두에 걸리며 둘 다 RH→100% 방향, 즉 물리적 구름 형성
-경로다. 부족분 hinge(단측)라 과포화에는 0 — 과잉 가습을 밀지 않는다.
-qv가 포화를 넘는 순간 satadj가 qc를 응결시키고 cfrac(live-value)이 flip,
-BT 항의 기울기가 활성화되어 구름량 정련을 이어받는다 — 운영 구름분석의
-pseudo-RH 주입(cloud initialization)의 미분가능 구현. 시험: test_da_regime2
-(T-R2a 음성 대조 / T-R2b 부트스트랩).
+목표 q*는 frozen_saturation_target의 **배경-동결·상전이-인지·과녁-너머**
+상수다 (판정 패널 수정 3건 반영): live qsat(T)의 냉각-보상 채널을 제거해
+기울기는 qv 행에만 걸리고(covector 자명 일관), 과녁이 gate '너머'라
+정지점이 설계상 포화 위다. 부족분 hinge(단측)라 과포화에는 0 — 과잉
+가습을 밀지 않는다. qv가 포화를 넘는 순간 satadj(온난)/빙정 핵생성(한랭,
+RH_ice>1.08)이 응결수를 만들고 cfrac(live-value)이 flip, BT 항의 기울기가
+활성화되어 구름량 정련을 이어받는다 — 운영 구름분석의 pseudo-RH 주입
+(cloud initialization)의 미분가능 구현. 시험: test_da_regime2
+(T-R2a 음성 대조 / T-R2b 부트스트랩 / T-R2c 실관측).
 
 동결 규율: cols/levels는 호출자가 배경에서 동결해 넘긴다 (v-독립 —
 dual 어댑터 합성 시 C2/k* 선정·서명 합성도 배경 기준).

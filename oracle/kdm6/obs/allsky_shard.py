@@ -92,7 +92,13 @@ def _allsky_columns_worker(args: dict) -> dict:
         bt_out[i] = bt_v.detach().numpy()
         rq_out[i] = rq_i.reshape(-1).numpy()
         if grad:
-            j_i = 0.5 * ((mask[i] * (bt_v - y_bt[i])) ** 2).sum()
+            r = mask[i] * (bt_v - y_bt[i])
+            delta = args.get("huber_delta")
+            if delta is None:                      # 구계약: σo=1K 순수 이차
+                j_i = 0.5 * (r ** 2).sum()
+            else:                                  # Huber — 대형 departure 완화
+                from kdm6.obs.obs_loss import _huber
+                j_i = _huber(r, float(delta)).sum()
             j_i.backward()
             j_cols[i] = float(j_i.detach())
             # connected-field sever 검사 (재검토 #9): all-sky 연산자에 직접
@@ -120,6 +126,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
                    y_bt: torch.Tensor, mask: torch.Tensor,
                    xland: torch.Tensor, rttov_cfg: dict, case_root: str,
                    *, n_workers: int = 8, grad: bool = True,
+                   huber_delta: "float | None" = None,
                    pool=None) -> dict:
     """구름 컬럼 집합 cidx의 all-sky H(+adjoint)를 n_workers로 샤딩.
 
@@ -140,7 +147,8 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
         jobs.append(dict(rttov_cfg, state=st[:, ch], forcing=fc[:, ch],
                          xland=xland[cidx][ch].numpy(),
                          y_bt=y_bt[cidx][ch].numpy(), mask=mask[cidx][ch].numpy(),
-                         case_root=case_root, worker_id=w, grad=grad))
+                         case_root=case_root, worker_id=w, grad=grad,
+                         huber_delta=huber_delta))
     own = pool is None
     if own:
         ctx = mp.get_context("spawn")
