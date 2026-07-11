@@ -71,6 +71,33 @@ def _quad_j_and_masked_bt(bt, y, mask):
 
 
 _K_INDEX_MAX = 9999          # RTTOV K 출력 profile-index 4자리 한계 (case_writer 가드)
+IR105_COL = 12               # CLEAN_IR 채널 배열 내 ir105 위치 (LC05 게이트 관례)
+OBS_CLOUD_BT = 270.0         # 관측 구름 판정: ir105 BT < 270K (LC05 게이트 관례)
+REGIME_NAMES = {1: "clear_clear", 2: "clear_cloudy",
+                3: "cloudy_cloudy", 4: "cloudy_clear"}
+
+
+def classify_regimes(n_sub: int, y_bt, mask, cloudy_pos, *,
+                     ir_col: int = IR105_COL,
+                     bt_cloud: float = OBS_CLOUD_BT) -> torch.Tensor:
+    """모델/관측 구름 4-regime 코드 (B_sub,) — 1:맑음/맑음 2:맑음/구름
+    3:구름/구름 4:구름/맑음, 0:ir 채널 무효(분류 불가).
+
+    모델 구름 = select_subspace의 qtot 분할(cloudy_pos), 관측 구름 =
+    동결 mask 유효한 ir105 BT < bt_cloud. 보정 방향성 검토의 층화 축:
+    (2)는 생성 불가 regime(ε=0 구조 + cfrac gate)이라 th/qv aliasing 감시,
+    (4)는 mul 제거 방향(Δq<0) 확인이 목적.
+    """
+    model_cloudy = torch.zeros(n_sub, dtype=torch.bool)
+    model_cloudy[cloudy_pos] = True
+    valid = mask[:, ir_col] > 0
+    obs_cloudy = y_bt[:, ir_col] < bt_cloud
+    code = torch.zeros(n_sub, dtype=torch.int64)
+    code[valid & ~model_cloudy & ~obs_cloudy] = 1
+    code[valid & ~model_cloudy & obs_cloudy] = 2
+    code[valid & model_cloudy & obs_cloudy] = 3
+    code[valid & model_cloudy & ~obs_cloudy] = 4
+    return code
 
 
 def _clear_slices(n: int, nch: int):
@@ -216,7 +243,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
 
         # O−B / O−A: 동결 mask로 동일 채널 집합 비교 (배경/분석 각 1회 H)
         mask = obs_eval.mask
-        def _masked_abs_mean(x_state):
+        def _h_bt(x_state):
             with torch.no_grad():
                 o = sharded_allsky(x_state, fc, cloudy_pos, y_bt,
                                    torch.zeros_like(y_bt), xland, rttov_cfg,
@@ -228,20 +255,41 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                                              _take(fc, clear_pos), clear_cfg,
                                              y_bt.shape[1])
                 bt[clear_pos] = bt_cl
-            return float((mask * (y_bt - bt)).abs().sum() / mask.sum())
+            return bt
 
-        omb = _masked_abs_mean(xb)
-        oma = _masked_abs_mean(res.x_analysis)
+        bt_b, bt_a = _h_bt(xb), _h_bt(res.x_analysis)
     finally:
         pool.close()
         pool.join()
+
+    def _masked_abs_mean(bt, rows=None):
+        m = mask if rows is None else mask[rows]
+        r = (y_bt - bt) if rows is None else (y_bt[rows] - bt[rows])
+        return float((m * r).abs().sum() / m.sum()) if float(m.sum()) else 0.0
+
+    omb, oma = _masked_abs_mean(bt_b), _masked_abs_mean(bt_a)
+
+    # 모델/관측 구름 4-regime 층화 — 보정 방향성 감사
+    code = classify_regimes(int(sub.numel()), y_bt, mask, cloudy_pos)
+    dqtot = ((res.x_analysis.qc + res.x_analysis.qi + res.x_analysis.qs)
+             - (xb.qc + xb.qi + xb.qs)).sum(-1)
+    regimes = {}
+    for c, name in REGIME_NAMES.items():
+        rows = torch.where(code == c)[0]
+        regimes[name] = dict(
+            n=int(rows.numel()),
+            omb=_masked_abs_mean(bt_b, rows), oma=_masked_abs_mean(bt_a, rows),
+            dqtot_mean=(float(dqtot[rows].mean()) if rows.numel() else 0.0),
+            dth_mean=(float((res.x_analysis.th - xb.th)[rows].mean())
+                      if rows.numel() else 0.0))
 
     if save_fields is not None:
         np.savez_compressed(
             save_fields, sub_idx=sub.numpy(),
             nx=int(fr.meta["nx"]), ny=int(fr.meta["ny"]),
             n_cloudy=int(cloudy_pos.numel()), mask=mask.numpy(),
-            y_bt=y_bt.numpy(),
+            y_bt=y_bt.numpy(), bt_b=bt_b.numpy(), bt_a=bt_a.numpy(),
+            regime=code.numpy(),
             **{f"xb_{f}": getattr(xb, f).numpy() for f in State._fields},
             **{f"xa_{f}": getattr(res.x_analysis, f).numpy()
                for f in State._fields})
@@ -253,7 +301,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         n_cloudy=int(cloudy_pos.numel()), n_clear=int(clear_pos.numel()),
         n_valid=int(mask.sum()),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
-        j_trace=res.j_trace, omb=omb, oma=oma,
+        j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
         theta=[float(t) for t in res.theta_analysis],
         increment_norms=dnorm, cvt=res.cvt,
         wall_s=time.time() - t0)

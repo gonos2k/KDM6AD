@@ -47,6 +47,12 @@ def test_fulldomain_smoke_capped(tmp_path):
     fields = np.load(tmp_path / "fields.npz")           # 영상화 데이터 저장 확인
     assert fields["xa_qc"].shape == fields["xb_qc"].shape
     assert int(fields["n_cloudy"]) == 12
+    assert fields["bt_b"].shape == fields["y_bt"].shape  # regime 진단 데이터
+    # 4-regime 층화 보고: n 합 = 분류 가능 컬럼 수, 키 완비
+    assert set(rep["regimes"]) == {"clear_clear", "clear_cloudy",
+                                   "cloudy_cloudy", "cloudy_clear"}
+    assert sum(r["n"] for r in rep["regimes"].values()) <= rep["n_subspace"]
+    assert any(r["n"] > 0 for r in rep["regimes"].values())
     assert rep["n_cloudy"] == 12 and rep["caps"]["max_cloudy"] == 12
     assert rep["n_valid"] > 0
     assert rep["j_trace"][-1]["total"] < rep["j_trace"][0]["total"]
