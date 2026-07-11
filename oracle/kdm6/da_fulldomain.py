@@ -77,12 +77,19 @@ def select_subspace(fr, co, *, boundary: int = 10, qtot_min: float = 1.0e-5,
 
 
 def _part_loss(bt, y, mask, delta: "float | None"):
-    """파트 손실 — δ=None: σo=1K 순수 이차(구계약), δ>0: Huber (P0-3).
+    """Partition loss — delta=None: sigma_o=1K pure quadratic (legacy
+    contract), delta>0: Huber (P0-3).
 
-    순수 이차는 대형 innovation(구름 위치오차 등) 적합을 무한 보상해 무상한
-    mul-CVT와 결합 시 비물리 증분을 유발한다 (v9.1 실측: qi ratio 4e11 —
-    ratio_minmax 감사 적발). Huber는 |r|>δ의 유인을 선형으로 꺾는다."""
-    r = mask * (bt - y)
+    A pure quadratic rewards fitting huge innovations (cloud displacement
+    etc.) without bound, which combined with the unbounded mul-CVT drives
+    unphysical increments (v9.1 measured qi ratio 4e11 — caught by the
+    ratio_minmax audit). Huber turns the incentive linear beyond |r|>delta.
+
+    Masked (invalid) channel residuals are REPLACED with zero before the
+    loss is applied — 0*NaN = NaN, so multiplicative masking alone lets a
+    non-finite obs/model value at a flagged channel poison j (same
+    replace-before-_huber discipline as compute_obs_loss)."""
+    r = torch.where(mask > 0, mask * (bt - y), torch.zeros_like(bt))
     if delta is None:
         return 0.5 * (r * r).sum()
     from .obs.obs_loss import _huber

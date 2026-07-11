@@ -92,13 +92,10 @@ def _allsky_columns_worker(args: dict) -> dict:
         bt_out[i] = bt_v.detach().numpy()
         rq_out[i] = rq_i.reshape(-1).numpy()
         if grad:
-            r = mask[i] * (bt_v - y_bt[i])
-            delta = args.get("huber_delta")
-            if delta is None:                      # 구계약: σo=1K 순수 이차
-                j_i = 0.5 * (r ** 2).sum()
-            else:                                  # Huber — 대형 departure 완화
-                from kdm6.obs.obs_loss import _huber
-                j_i = _huber(r, float(delta)).sum()
+            # Masked-residual replacement + Huber/quadratic selection share
+            # one implementation (_part_loss) — single fix point.
+            from kdm6.da_fulldomain import _part_loss
+            j_i = _part_loss(bt_v, y_bt[i], mask[i], args.get("huber_delta"))
             j_i.backward()
             j_cols[i] = float(j_i.detach())
             # connected-field sever 검사 (재검토 #9): all-sky 연산자에 직접

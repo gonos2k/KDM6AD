@@ -103,3 +103,21 @@ def test_select_regime2_positions():
     clear_pos = torch.tensor([1, 3, 4, 5])
     r2 = select_regime2_positions(y_bt, y_rq, clear_pos)
     assert r2.tolist() == [1]
+
+
+def test_part_loss_masked_nonfinite_safe():
+    """Codex regression: a non-finite obs value in a masked (invalid) channel
+    must not poison j via 0*NaN=NaN — same replace-before-_huber discipline
+    as compute_obs_loss."""
+    import torch
+    from kdm6.da_fulldomain import _part_loss
+
+    bt = torch.tensor([[250.0, 260.0]], dtype=torch.float64)
+    y = torch.tensor([[float("nan"), 255.0]], dtype=torch.float64)
+    mask = torch.tensor([[0.0, 1.0]], dtype=torch.float64)   # NaN 채널은 무효
+    for delta in (None, 3.0):
+        j = _part_loss(bt, y, mask, delta)
+        assert bool(torch.isfinite(j)), (delta, float(j))
+    y_inf = torch.tensor([[float("inf"), 255.0]], dtype=torch.float64)
+    for delta in (None, 3.0):
+        assert bool(torch.isfinite(_part_loss(bt, y_inf, mask, delta))), delta
