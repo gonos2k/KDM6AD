@@ -249,3 +249,33 @@ def test_dual_pseudo_wrapper_reports_count_and_connectivity():
         assert out.n_valid == 7 + expect, (levels, out.n_valid)
         assert "qv" in w.connected_fields
         assert "th" in w.connected_fields
+
+
+def test_dual_pseudo_wrapper_rejects_duplicates():
+    """Codex 지적 회귀: 중복 cols/인덱스형 levels는 j 이중 계상 + 비누적
+    scatter의 covector 불일치(adj ≠ ∇j)와 n_valid 과대 집계 — 즉시 거부."""
+    import pytest
+    from kdm6.da_dual import ObsEvalResult
+    from kdm6.da_regime2 import (frozen_saturation_target,
+                                 wrap_dual_obs_eval_with_pseudo_rh,
+                                 wrap_obs_eval_with_pseudo_rh)
+
+    xb = _mk_clear_state(rh=0.97)
+    fc = _mk_forcing()
+    cols = torch.tensor([0])
+    target = frozen_saturation_target(xb, fc, cols)
+
+    def base(t, x_t):
+        return None
+    with pytest.raises(ValueError, match="duplicate"):
+        wrap_dual_obs_eval_with_pseudo_rh(
+            base, t_obs=1, cols=cols, target=target, sigma_p=2.0e-4,
+            levels=torch.tensor([1, 1]))
+    with pytest.raises(ValueError, match="duplicate"):
+        wrap_dual_obs_eval_with_pseudo_rh(
+            base, t_obs=1, cols=torch.tensor([0, 0]),
+            target=target.repeat(2, 1), sigma_p=2.0e-4)
+    with pytest.raises(ValueError, match="duplicate"):
+        wrap_obs_eval_with_pseudo_rh(
+            base, t_obs=1, cols=torch.tensor([0, 0]),
+            target=target.repeat(2, 1), sigma_p=2.0e-4)

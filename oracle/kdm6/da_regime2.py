@@ -84,6 +84,17 @@ def pseudo_rh_term(x_t: State, cols: torch.Tensor, target: torch.Tensor,
     return j.detach(), adj
 
 
+def _reject_duplicates(name: str, t: "torch.Tensor | None") -> None:
+    """중복 인덱스 fail-fast — j에는 셀이 이중 계상되는데 비누적 scatter는
+    마지막 쓰기만 남겨 covector ≠ ∇j (adjoint 정확성 위반) + n_valid 과대."""
+    if t is not None and t.dtype != torch.bool \
+            and int(t.numel()) != int(torch.unique(t).numel()):
+        raise ValueError(
+            f"{name} has duplicate entries — pseudo cells would be "
+            "double-counted in j while the covector scatter drops all but "
+            "the last write (adj != grad j); pass unique indices")
+
+
 def wrap_obs_eval_with_pseudo_rh(base_obs_eval, *, t_obs: int,
                                  cols: torch.Tensor, target: torch.Tensor,
                                  sigma_p: float,
@@ -93,6 +104,9 @@ def wrap_obs_eval_with_pseudo_rh(base_obs_eval, *, t_obs: int,
     base가 None을 반환하는 슬롯이라도 pseudo는 t_obs에서 항상 활성
     (regime-2 컬럼은 BT mask가 전멸해도 부트스트랩은 유효해야 한다).
     """
+    _reject_duplicates("cols", cols)
+    _reject_duplicates("levels", levels)
+
     def obs_eval(t: int, x_t: State):
         out = base_obs_eval(t, x_t)
         if t != t_obs:
@@ -136,6 +150,8 @@ def wrap_dual_obs_eval_with_pseudo_rh(base_obs_eval, *, t_obs: int,
 
     from .da_dual import ObsEvalResult
 
+    _reject_duplicates("cols", cols)
+    _reject_duplicates("levels", levels)
     h = hashlib.sha256(b"pseudo-rh-v1.1|")
     h.update(cols.to(torch.int64).numpy().tobytes())
     h.update(target.to(torch.float64).numpy().tobytes())
