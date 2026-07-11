@@ -300,7 +300,10 @@ def test_post_cap_empty_subspace_rejected():
 
     grids = dict(p_lay=[500.0], p_half=[450.0, 550.0],
                  t_ref=[250.0], q_ref=[10.0])
-    with pytest.raises(ValueError, match="empty working subspace"):
+    # The message must carry the PRE-cap partition sizes (this synthetic
+    # scene is 0 cloudy / 1 clear before the caps zero it out).
+    with pytest.raises(ValueError,
+                       match=r"partition 0 cloudy / 1 clear before caps"):
         run_fulldomain_analysis(fr, co, grids, "/tmp/unused",
                                 boundary=0, max_cloudy=0, max_clear=0,
                                 channels=tuple(range(16)))

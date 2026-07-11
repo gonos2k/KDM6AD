@@ -422,6 +422,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     qtot_slot = (x_slot_bg.qc + x_slot_bg.qi + x_slot_bg.qs).sum(-1)
     mc = torch.where(qtot_slot > QTOT_MIN)[0]
     cl = torch.where(qtot_slot <= QTOT_MIN)[0]
+    n_mc_precap, n_cl_precap = int(mc.numel()), int(cl.numel())
     if max_cloudy is not None:
         mc = mc[:max_cloudy]
     if max_clear is not None:
@@ -431,7 +432,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         raise ValueError(
             "empty working subspace after the caps "
             f"(max_cloudy={max_cloudy}, max_clear={max_clear}; "
-            f"partition {int(mc.numel())} cloudy / {int(cl.numel())} clear "
+            f"partition {n_mc_precap} cloudy / {n_cl_precap} clear "
             "before caps) — nothing to minimize")
     xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
     x_slot_bg = _take(x_slot_bg, keep)
