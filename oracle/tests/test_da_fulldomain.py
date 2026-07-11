@@ -114,7 +114,7 @@ def test_part_loss_masked_nonfinite_safe():
 
     bt = torch.tensor([[250.0, 260.0]], dtype=torch.float64)
     y = torch.tensor([[float("nan"), 255.0]], dtype=torch.float64)
-    mask = torch.tensor([[0.0, 1.0]], dtype=torch.float64)   # NaN 채널은 무효
+    mask = torch.tensor([[0.0, 1.0]], dtype=torch.float64)   # NaN channel is masked out
     for delta in (None, 3.0):
         j = _part_loss(bt, y, mask, delta)
         assert bool(torch.isfinite(j)), (delta, float(j))
