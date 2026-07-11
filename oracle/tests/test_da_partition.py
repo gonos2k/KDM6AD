@@ -627,3 +627,46 @@ def test_dual_partition_dead_channel_t0_only_rejected():
     run_dual_minimizer(xb, forcings, obs2, cfg, b_sigma,
                        default_param_prior(0.2), max_iter=2, cvt=spec,
                        policy=_P(), partition=PartitionSpec())
+
+
+def test_dual_partition_composes_with_pseudo_rh():
+    """Design v1.1 test 6: creation stays with the pseudo-RH bootstrap,
+    refinement with the conserving channels — both opt-ins compose in one
+    dual run (wrapper keeps n_valid/signature/connected contracts; channels
+    stay alive because qv is in the composite connected set)."""
+    from kdm6.da_dual import ObsEvalResult
+    from kdm6.da_regime2 import (frozen_saturation_target,
+                                 wrap_dual_obs_eval_with_pseudo_rh)
+
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    spec, b_sigma = make_default_cvt(
+        xb, sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    prior = default_param_prior(0.2)
+    truth = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final
+
+    def base_obs(t, x_t):
+        if t != 2:
+            return None
+        d = x_t.th - (truth.th + 0.3)
+        adj = _zeros_state(x_t)._replace(th=d.clone())
+        return ObsEvalResult(j=float(0.5 * (d * d).sum()), adj=adj,
+                             n_valid=int(d.numel()), signature="synthetic")
+    base_obs.connected_fields = ("th", "qv")
+
+    cols = torch.tensor([0])
+    target = frozen_saturation_target(xb, forcings[0], cols)
+    obs = wrap_dual_obs_eval_with_pseudo_rh(
+        base_obs, t_obs=2, cols=cols, target=target, sigma_p=1.0e-3)
+    res = run_dual_minimizer(xb, forcings, obs, cfg, b_sigma, prior,
+                             max_iter=6, cvt=spec,
+                             partition=PartitionSpec())
+    assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
+    assert res.w is not None
+    # qv mul stays live here (moisture correction is the deliberate
+    # non-conserving dof): total water changes EXACTLY by the diagonal qv
+    # increment — the partition stage itself adds nothing
+    y_a, _ = cvt_apply(xb, b_sigma, res.v_state, spec)
+    assert torch.allclose(_total_water(res.x_analysis) - _total_water(xb),
+                          y_a.qv - xb.qv, rtol=0.0, atol=1.0e-15)
