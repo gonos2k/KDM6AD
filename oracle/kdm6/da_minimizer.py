@@ -25,6 +25,9 @@ import torch
 
 from .da_cvt import (CvtSpec, _stack, _unstack, build_cvt_record, cvt_apply,
                      validate_cvt)
+from .da_partition import (CHANNELS, PartitionSpec, apply_partition_chain,
+                           build_partition_caps, build_partition_record,
+                           chain_with_pullback, validate_partition)
 from .da_window import WindowConfig, run_da_window
 from .state import State, Forcing
 
@@ -60,6 +63,8 @@ class MinimizeResult:
     n_window_evals: int                  # 창 적분(forward+adjoint) 횟수
     grad_norm_final: float
     cvt: "dict | None" = None            # 감사 레코드 (spec 경로만; 레거시 None)
+    w: "torch.Tensor | None" = None      # partition controls (n_ch, B, K), opt-in
+    partition: "dict | None" = None      # partition audit record (da_partition)
 
 
 def run_minimizer(
@@ -73,6 +78,7 @@ def run_minimizer(
     history_size: int = 8,
     tolerance_grad: float = 1.0e-10,
     cvt: "CvtSpec | None" = None,
+    partition: "PartitionSpec | None" = None,
 ) -> MinimizeResult:
     """J(v) = ½‖v‖² + Σ_t J_obs,t(x_t(v)) 를 CVT 공간에서 L-BFGS로 최소화.
 
@@ -89,6 +95,12 @@ def run_minimizer(
         None(기본) = 기존 선형 CVT, byte-identical 레거시 경로 (미검증 유지).
         spec 지정 = 필드별 add/mul 하이브리드 (da_cvt) — validate_cvt로
         fail-fast 검증 후, 체인룰은 ∂J/∂v = v + jac ⊙ adj_x0 (jac = ∂x0/∂v).
+    partition : PartitionSpec | None
+        None (default) = byte-identical legacy path. Spec given = compose the
+        conserving signed partition stage P_w after the diagonal CVT
+        (da_partition): x0 = P_w(D_v(xb)), J_b += ½‖w‖²; gradients via the
+        local-autograd pullback — g_w = w + ∂J_obs/∂w and
+        g_v = v + jac ⊙ adj_y where adj_y is the y-pullback through P.
     """
     _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
     if cvt is not None:
@@ -96,6 +108,13 @@ def run_minimizer(
     sig = _stack(b_sigma)
     xb64 = _unstack(_stack(xb))                       # fp64 정규화 사본
     v = torch.zeros_like(sig, requires_grad=True)     # v=0 에서 시작 (x0 = xb)
+    caps = w = None
+    if partition is not None:
+        # caps frozen from the background (v/w-independent B)
+        caps = build_partition_caps(xb64, partition)
+        validate_partition(caps, window_config.active_fields)
+        w = torch.zeros((len(CHANNELS),) + tuple(xb64.th.shape),
+                        dtype=torch.float64, requires_grad=True)
 
     trace: list[float] = []
     counters = {"windows": 0}
@@ -105,7 +124,11 @@ def run_minimizer(
         # CVT 산술만 no_grad — run_da_window는 내부 backward 스윕에서 스스로
         # local-graph를 재구축하므로(grad 컨텍스트 자가 관리) 감싸면 안 된다.
         with torch.no_grad():
-            x0, jac = cvt_apply(xb64, b_sigma, v, cvt)
+            y, jac = cvt_apply(xb64, b_sigma, v, cvt)
+        if partition is None:
+            x0, pullback = y, None
+        else:
+            x0, pullback = chain_with_pullback(y, forcings[0], w, caps)
         jobs_acc: list[torch.Tensor] = []
 
         def obs_adjoint(t: int, x_t: State):
@@ -123,26 +146,43 @@ def run_minimizer(
             j_obs = (torch.stack(jobs_acc).sum() if jobs_acc
                      else torch.zeros((), dtype=torch.float64))
             j_b = 0.5 * (v * v).sum()
-            # ∂J/∂v = v + jac ⊙ ∂J_obs/∂x0  (CVT 체인룰; 선형이면 jac = σ_b)
-            grad = v.detach() + jac * _stack(res.adj_x0)
+            if partition is None:
+                # ∂J/∂v = v + jac ⊙ ∂J_obs/∂x0  (CVT 체인룰; 선형이면 jac = σ_b)
+                grad = v.detach() + jac * _stack(res.adj_x0)
+            else:
+                adj_y, g_w_obs = pullback(res.adj_x0)  # local pullback through P
+                grad = v.detach() + jac * adj_y
+                w.grad = w.detach() + g_w_obs
+                j_b = j_b + 0.5 * (w * w).sum()
             v.grad = grad                              # 수동 할당 (autograd 미사용)
             j = j_b + j_obs
             trace.append(float(j))
             last["jb"], last["jobs"] = float(j_b), float(j_obs)
-            last["gnorm"] = float(grad.norm())
+            gsq = grad.pow(2).sum()
+            if partition is not None:
+                gsq = gsq + w.grad.pow(2).sum()
+            last["gnorm"] = float(gsq.sqrt())
         return j
 
     opt = torch.optim.LBFGS(
-        [v], max_iter=max_iter, history_size=history_size,
+        [v] if partition is None else [v, w],
+        max_iter=max_iter, history_size=history_size,
         line_search_fn="strong_wolfe", tolerance_grad=tolerance_grad)
     opt.step(closure)
 
     with torch.no_grad():
         x_a, _ = cvt_apply(xb64, b_sigma, v, cvt)
+        part_rec = None
+        if partition is not None:
+            # reconstruct the analysis with the COMPOSED decoder — cvt_apply
+            # alone would drop the partition increments
+            x_a = apply_partition_chain(x_a, forcings[0], w.detach(), caps)
+            part_rec = build_partition_record(partition, caps, w.detach())
         cvt_rec = (build_cvt_record(cvt, b_sigma, xb64, x_a)
                    if cvt is not None else None)
     return MinimizeResult(
         x_analysis=x_a, v=v.detach(), j_trace=trace,
         jb_final=last["jb"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"], grad_norm_final=last["gnorm"],
-        cvt=cvt_rec)
+        cvt=cvt_rec, w=None if w is None else w.detach(),
+        partition=part_rec)
