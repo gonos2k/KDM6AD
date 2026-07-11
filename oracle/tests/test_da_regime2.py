@@ -216,3 +216,36 @@ def test_regime2_live_bootstrap_lc05(tmp_path):
     # σ=0 필드 pin 유지 (regime-2 경로가 다른 계약을 흔들지 않음)
     for f in ("qr", "qg", "nr", "nccn", "bg"):
         assert torch.equal(getattr(res.x_analysis, f), getattr(xb, f)), f
+
+
+def test_dual_pseudo_wrapper_reports_count_and_connectivity():
+    """Codex 지적 회귀: ① n_valid 가산 = 실제 활성 pseudo 셀 수 (인덱스
+    목록 levels 포함), ② 합성 connected_fields에 qv가 반드시 포함
+    (base 태그에 없어도 — pseudo가 qv 직접 민감도를 부여하므로)."""
+    from kdm6.da_dual import ObsEvalResult
+    from kdm6.da_regime2 import (frozen_saturation_target,
+                                 wrap_dual_obs_eval_with_pseudo_rh)
+
+    xb = _mk_clear_state(rh=0.97)
+    fc = _mk_forcing()
+    cols = torch.tensor([0])
+    target = frozen_saturation_target(xb, fc, cols)
+
+    def base(t, x_t):                        # th 전용 커스텀 base (qv 태그 없음)
+        if t != 1:
+            return None
+        adj = _zeros(x_t)
+        return ObsEvalResult(j=1.0, adj=adj, n_valid=7, signature="base-sig")
+    base.connected_fields = ("th",)
+
+    K = xb.th.shape[1]
+    for levels, expect in ((None, 1 * K),                      # 전층
+                           (torch.tensor([1]), 1),             # 인덱스 목록
+                           (torch.tensor([[True, False]]), 1)):  # bool mask
+        w = wrap_dual_obs_eval_with_pseudo_rh(
+            base, t_obs=1, cols=cols, target=target, sigma_p=2.0e-4,
+            levels=levels)
+        out = w(1, xb)
+        assert out.n_valid == 7 + expect, (levels, out.n_valid)
+        assert "qv" in w.connected_fields
+        assert "th" in w.connected_fields

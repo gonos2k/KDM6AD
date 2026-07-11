@@ -145,8 +145,12 @@ def wrap_dual_obs_eval_with_pseudo_rh(base_obs_eval, *, t_obs: int,
                  else levels.to(torch.int64).numpy().tobytes())
     h.update(f"|{float(sigma_p).hex()}|{t_obs}".encode())
     pseudo_sig = h.hexdigest()
-    n_pseudo = (int(levels.sum()) if levels is not None
-                and levels.dtype == torch.bool else None)
+    if levels is None:
+        n_pseudo = None                              # 전층 — K는 첫 호출에서
+    elif levels.dtype == torch.bool:
+        n_pseudo = int(levels.sum())                 # 컬럼별 mask의 활성 셀 수
+    else:
+        n_pseudo = int(cols.numel()) * int(levels.numel())   # 인덱스 목록
 
     def obs_eval(t: int, x_t: State):
         out = base_obs_eval(t, x_t)
@@ -166,6 +170,10 @@ def wrap_dual_obs_eval_with_pseudo_rh(base_obs_eval, *, t_obs: int,
             adj=State(*(a + b for a, b in zip(out.adj, adj_p))),
             n_valid=out.n_valid + n_p,
             signature=f"{out.signature}|{pseudo_sig}")
-    obs_eval.connected_fields = getattr(base_obs_eval, "connected_fields",
-                                        None)
+    # pseudo가 qv에 '직접' 민감도를 부여하므로 합성 태그에 qv를 보장 —
+    # base 태그에 없으면 V7이 σ_qv>0을 거짓 사망 판정할 수 있다 (Codex 지적)
+    base_conn = getattr(base_obs_eval, "connected_fields", None)
+    if base_conn is not None and "qv" not in base_conn:
+        base_conn = tuple(base_conn) + ("qv",)
+    obs_eval.connected_fields = base_conn
     return obs_eval
