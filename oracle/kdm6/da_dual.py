@@ -308,6 +308,7 @@ def run_dual_minimizer(
     policy: "ObsGatePolicy | None" = None,
     cvt: "CvtSpec | None" = None,
     partition: "PartitionSpec | None" = None,
+    partition_forcing: "Forcing | None" = None,
 ) -> DualMinimizeResult:
     """결합 J(v_x, v_θ) 를 단일 L-BFGS 로 최소화 (모듈 docstring 참조).
 
@@ -345,11 +346,21 @@ def run_dual_minimizer(
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
     v_th = torch.zeros(4, **_F64, requires_grad=True)
+    if partition is None and partition_forcing is not None:
+        raise ValueError(
+            "partition_forcing given without partition — a stray forcing "
+            "would be silently ignored (config error)")
     caps = w = None
     if partition is not None:
         # caps frozen from the background (v/w-independent B)
         caps = build_partition_caps(xb, partition)
         validate_partition(caps, window_config.active_fields)
+        if partition_forcing is None:
+            if not len(forcings):
+                raise ValueError(
+                    "partition latent terms need the t0 forcing (Exner) — "
+                    "pass partition_forcing for a zero-step window")
+            partition_forcing = forcings[0]
         w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape),
                         dtype=torch.float64, requires_grad=True)
 
@@ -364,7 +375,7 @@ def run_dual_minimizer(
         if partition is None:
             x0, pullback = y, None
         else:
-            x0, pullback = chain_with_pullback(y, forcings[0], w, caps)
+            x0, pullback = chain_with_pullback(y, partition_forcing, w, caps)
         params_live = params_from_vtheta(param_prior, v_th.detach(), live=True)
         any_active = bool((param_prior.sigma_log > 0).any())
         import dataclasses as _dc
@@ -578,7 +589,8 @@ def run_dual_minimizer(
         if partition is not None:
             # reconstruct the analysis with the COMPOSED decoder — cvt_apply
             # alone would drop the partition increments
-            x_a = apply_partition_chain(x_a, forcings[0], w.detach(), caps)
+            x_a = apply_partition_chain(x_a, partition_forcing, w.detach(),
+                                        caps)
             part_rec = build_partition_record(partition, caps, w.detach())
         theta_a = params_from_vtheta(param_prior, v_th.detach(), live=False)
         cvt_rec = (build_cvt_record(cvt, b_sigma, xb, x_a)

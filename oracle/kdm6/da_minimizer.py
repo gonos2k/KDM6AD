@@ -79,6 +79,7 @@ def run_minimizer(
     tolerance_grad: float = 1.0e-10,
     cvt: "CvtSpec | None" = None,
     partition: "PartitionSpec | None" = None,
+    partition_forcing: "Forcing | None" = None,
 ) -> MinimizeResult:
     """J(v) = ½‖v‖² + Σ_t J_obs,t(x_t(v)) 를 CVT 공간에서 L-BFGS로 최소화.
 
@@ -101,10 +102,18 @@ def run_minimizer(
         (da_partition): x0 = P_w(D_v(xb)), J_b += ½‖w‖²; gradients via the
         local-autograd pullback — g_w = w + ∂J_obs/∂w and
         g_v = v + jac ⊙ adj_y where adj_y is the y-pullback through P.
+    partition_forcing : Forcing | None
+        t0 forcing for the partition latent terms (Exner pii). Defaults to
+        forcings[0]; REQUIRED for a zero-step window (obs at t=0 only),
+        which has no step forcings but is a valid legacy configuration.
     """
     _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
     if cvt is not None:
         validate_cvt(xb, b_sigma, cvt, window_config.active_fields)
+    if partition is None and partition_forcing is not None:
+        raise ValueError(
+            "partition_forcing given without partition — a stray forcing "
+            "would be silently ignored (config error)")
     sig = _stack(b_sigma)
     xb64 = _unstack(_stack(xb))                       # fp64 정규화 사본
     v = torch.zeros_like(sig, requires_grad=True)     # v=0 에서 시작 (x0 = xb)
@@ -113,6 +122,12 @@ def run_minimizer(
         # caps frozen from the background (v/w-independent B)
         caps = build_partition_caps(xb64, partition)
         validate_partition(caps, window_config.active_fields)
+        if partition_forcing is None:
+            if not len(forcings):
+                raise ValueError(
+                    "partition latent terms need the t0 forcing (Exner) — "
+                    "pass partition_forcing for a zero-step window")
+            partition_forcing = forcings[0]
         w = torch.zeros((len(CHANNELS),) + tuple(xb64.th.shape),
                         dtype=torch.float64, requires_grad=True)
 
@@ -128,7 +143,7 @@ def run_minimizer(
         if partition is None:
             x0, pullback = y, None
         else:
-            x0, pullback = chain_with_pullback(y, forcings[0], w, caps)
+            x0, pullback = chain_with_pullback(y, partition_forcing, w, caps)
         jobs_acc: list[torch.Tensor] = []
 
         def obs_adjoint(t: int, x_t: State):
@@ -176,7 +191,8 @@ def run_minimizer(
         if partition is not None:
             # reconstruct the analysis with the COMPOSED decoder — cvt_apply
             # alone would drop the partition increments
-            x_a = apply_partition_chain(x_a, forcings[0], w.detach(), caps)
+            x_a = apply_partition_chain(x_a, partition_forcing, w.detach(),
+                                        caps)
             part_rec = build_partition_record(partition, caps, w.detach())
         cvt_rec = (build_cvt_record(cvt, b_sigma, xb64, x_a)
                    if cvt is not None else None)

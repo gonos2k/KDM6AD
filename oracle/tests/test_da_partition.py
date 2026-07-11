@@ -670,3 +670,81 @@ def test_dual_partition_composes_with_pseudo_rh():
     y_a, _ = cvt_apply(xb, b_sigma, res.v_state, spec)
     assert torch.allclose(_total_water(res.x_analysis) - _total_water(xb),
                           y_a.qv - xb.qv, rtol=0.0, atol=1.0e-15)
+
+
+# ── zero-step (t=0-only, 3D-Var-style) windows (Codex stop-review) ───────────
+
+def _obs_th_t0(xb):
+    def obs_eval(t, x_t):
+        if t != 0:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        return 0.5 * (d * d).sum(), _zeros_state(x_t)._replace(th=d.clone())
+    return obs_eval
+
+
+def test_partition_zero_step_window_explicit_forcing():
+    """A zero-step window (obs at t=0 only) is valid in the legacy path and
+    must stay valid with partition: the t0 forcing (Exner) is passed
+    explicitly since forcings[] has no steps. The latent theta term gives
+    the channels direct t0 sensitivity, so J falls through w too."""
+    xb = _mk_state()
+    f0 = _mk_forcing(xb)
+    spec, b_sigma = make_default_cvt(
+        xb, th_sigma=0.0, qv_sigma=0.0,
+        sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    res = run_minimizer(xb, [], _obs_th_t0(xb), WindowConfig(dt=DT), b_sigma,
+                        max_iter=5, cvt=spec, partition=PartitionSpec(),
+                        partition_forcing=f0)
+    assert res.j_trace[-1] < res.j_trace[0], res.j_trace
+    assert float(res.w.abs().max()) > 0.0
+    assert torch.allclose(_total_water(res.x_analysis), _total_water(xb),
+                          rtol=0.0, atol=1.0e-16)
+
+
+def test_partition_zero_step_window_without_forcing_rejected():
+    """No steps and no explicit t0 forcing: loud contract error, never an
+    IndexError from forcings[0]."""
+    xb = _mk_state()
+    spec, b_sigma = _conserving_cvt(xb)
+    with pytest.raises(ValueError, match="partition_forcing"):
+        run_minimizer(xb, [], _obs_th_t0(xb), WindowConfig(dt=DT), b_sigma,
+                      max_iter=2, cvt=spec, partition=PartitionSpec())
+
+
+def test_partition_forcing_without_partition_rejected():
+    """A stray partition_forcing with partition=None is a config error, not
+    a silent no-op."""
+    xb = _mk_state()
+    spec, b_sigma = _conserving_cvt(xb)
+    with pytest.raises(ValueError, match="partition_forcing"):
+        run_minimizer(xb, [_mk_forcing(xb)], _obs_th_t0(xb),
+                      WindowConfig(dt=DT), b_sigma, max_iter=2, cvt=spec,
+                      partition_forcing=_mk_forcing(xb))
+
+
+def test_dual_partition_zero_step_window():
+    """Same contract on the dual path (obs term carries n_valid/signature;
+    no connected_fields tag => the channel gate does not apply)."""
+    xb = _mk_state()
+    f0 = _mk_forcing(xb)
+    spec, b_sigma = make_default_cvt(
+        xb, th_sigma=0.0, qv_sigma=0.0,
+        sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+
+    def obs(t, x_t):
+        if t != 0:
+            return None
+        d = x_t.th - (xb.th + 0.3)
+        adj = _zeros_state(x_t)._replace(th=d.clone())
+        return float(0.5 * (d * d).sum()), adj, int(d.numel()), "synthetic"
+
+    res = run_dual_minimizer(xb, [], obs, WindowConfig(dt=DT), b_sigma,
+                             default_param_prior(0.2), max_iter=5, cvt=spec,
+                             policy=_P(), partition=PartitionSpec(),
+                             partition_forcing=f0)
+    assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
+    with pytest.raises(ValueError, match="partition_forcing"):
+        run_dual_minimizer(xb, [], obs, WindowConfig(dt=DT), b_sigma,
+                           default_param_prior(0.2), max_iter=2, cvt=spec,
+                           policy=_P(), partition=PartitionSpec())
