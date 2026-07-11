@@ -168,6 +168,9 @@ def read_wrfout_frame(path: str, time_idx: int = 0) -> FrameData:
             column_order="b = j*nx + i (C-order flatten of (south_north, west_east))",
             nccn_fallback=nccn_fallback,
         )
+        if "Times" in ds.variables:      # WRF valid time (YYYY-MM-DD_HH:MM:SS)
+            meta["valid_time_utc"] = (
+                ds.variables["Times"][time_idx].tobytes().decode().strip())
         # 실사례 격자면 컬럼 위경도를 meta에 노출 — collocation(obs_ingest)용.
         # (B,) flatten은 state와 동일한 b = j*nx + i C-order.
         if "XLAT" in ds.variables and "XLONG" in ds.variables:

@@ -182,7 +182,8 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
         bt=torch.as_tensor(bt_full, **_F64),
         obs_quality=torch.as_tensor(q_full, **_F64),
         lat=torch.as_tensor(np.ascontiguousarray(lat_s), **_F64),
-        lon=torch.as_tensor(np.ascontiguousarray(lon_s), **_F64))
+        lon=torch.as_tensor(np.ascontiguousarray(lon_s), **_F64),
+        valid_time_utc=stamp)   # data-derived slot time (filename stamp)
 
 
 def slot_files(root: str | Path, timestamp: str,

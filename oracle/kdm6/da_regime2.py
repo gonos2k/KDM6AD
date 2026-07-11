@@ -68,6 +68,9 @@ def pseudo_rh_term(x_t: State, cols: torch.Tensor, target: torch.Tensor,
     ∂j_p/∂x_t = −deficit/σ_p² (qv 행만 비영; 목표 상수라 th 행은 정확히 0)
     — 창 M^T가 x0로 수송한다. 부족분 hinge 제곱은 C¹ (교차점 kink 없음).
     """
+    import math as _math
+    if not (_math.isfinite(sigma_p) and sigma_p > 0.0):
+        raise ValueError(f"sigma_p must be finite and > 0 (got {sigma_p!r})")
     lv_qv = x_t.qv[cols].detach().clone().requires_grad_(True)
     deficit = torch.clamp(target - lv_qv, min=0.0)
     if levels is not None:

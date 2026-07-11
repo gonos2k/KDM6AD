@@ -46,6 +46,7 @@ class ObsPayload:
     lon: torch.Tensor
     bias: Optional[torch.Tensor] = None
     channel_gate: Optional[torch.Tensor] = None
+    valid_time_utc: Optional[str] = None    # data-derived slot stamp (yyyymmddHHMM)
 
     def __post_init__(self):
         bt = self.bt
@@ -132,6 +133,7 @@ class ColumnObs:
     n_dropped_far: int
     n_dropped_collision: int
     col_of_obs: torch.Tensor           # (n_obs,) — 배정 컬럼 (-1 = dropped)
+    valid_time_utc: "str | None" = None   # propagated from ObsPayload
 
 
 def payload_to_column_obs(payload: ObsPayload, grid_lat: torch.Tensor,
@@ -172,4 +174,5 @@ def payload_to_column_obs(payload: ObsPayload, grid_lat: torch.Tensor,
     return ColumnObs(bt=bt, obs_quality=quality,
                      n_assigned=int((col_of_obs >= 0).sum()),
                      n_dropped_far=n_far, n_dropped_collision=n_coll,
-                     col_of_obs=col_of_obs)
+                     col_of_obs=col_of_obs,
+                     valid_time_utc=payload.valid_time_utc)

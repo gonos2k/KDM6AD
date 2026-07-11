@@ -48,32 +48,22 @@ def _take(s, idx):
     return type(s)(*(f[idx] for f in s))
 
 
-def select_subspace(fr, co, *, boundary: int = 10, qtot_min: float = 1.0e-5,
-                    max_cloudy: "int | None" = None,
-                    max_clear: "int | None" = None):
-    """J-부분공간(경계 제외 + 유효채널 보유) → (sub_idx, cloudy_pos, clear_pos).
+QTOT_MIN = 1.0e-5            # model-cloud condensate threshold [kg/kg summed]
 
-    반환 인덱스 규약: sub_idx는 전 도메인 컬럼 번호, cloudy/clear_pos는
-    부분공간 내 위치 (구름 먼저). max_*는 스모크/예산 캡 — 캡 적용 시 보고
-    dict에 기록되므로 침묵 절단이 아니다.
-    """
+
+def select_membership(fr, co, *, boundary: int = 10) -> torch.Tensor:
+    """J-subspace membership: interior columns with at least one valid
+    channel. Returns full-domain column indices.
+
+    The cloudy/clear PHYSICAL partition is computed later from the slot-time
+    background state (review #3) — membership itself is time-independent."""
     nx, ny = int(fr.meta["nx"]), int(fr.meta["ny"])
     b = torch.arange(fr.state.th.shape[0])
     i, j = b % nx, b // nx
     interior = ((i >= boundary) & (i < nx - boundary)
                 & (j >= boundary) & (j < ny - boundary))
     has_obs = (co.obs_quality == 0).any(dim=1)
-    jset = torch.where(interior & has_obs)[0]
-    qtot = (fr.state.qc + fr.state.qi + fr.state.qs).sum(-1)
-    cm = qtot[jset] > qtot_min
-    cloudy, clear = jset[cm], jset[~cm]
-    if max_cloudy is not None:
-        cloudy = cloudy[:max_cloudy]
-    if max_clear is not None:
-        clear = clear[:max_clear]
-    sub = torch.cat([cloudy, clear])
-    return (sub, torch.arange(len(cloudy)),
-            torch.arange(len(cloudy), len(sub)))
+    return torch.where(interior & has_obs)[0]
 
 
 def _part_loss(bt, y, mask, delta: "float | None"):
@@ -99,6 +89,29 @@ def _part_loss(bt, y, mask, delta: "float | None"):
         return 0.5 * (r * r).sum()
     from .obs.obs_loss import _huber
     return _huber(r, float(delta)).sum()
+
+
+def parse_utc_s(s: str) -> float:
+    """Parse a UTC time string to epoch seconds.
+
+    Accepts the two in-repo formats: GK2A slot stamps (yyyymmddHHMM, from
+    read_ko_slot filenames) and WRF Times (YYYY-MM-DD_HH:MM:SS)."""
+    from datetime import datetime, timezone
+    for fmt in ("%Y%m%d%H%M", "%Y-%m-%d_%H:%M:%S"):
+        try:
+            return datetime.strptime(s, fmt).replace(
+                tzinfo=timezone.utc).timestamp()
+        except ValueError:
+            continue
+    raise ValueError(f"unrecognized UTC time string {s!r} — expected "
+                     "yyyymmddHHMM (GK2A stamp) or YYYY-MM-DD_HH:MM:SS "
+                     "(WRF Times)")
+
+
+def derive_obs_offset_s(obs_valid_time: str, frame_valid_time: str) -> float:
+    """Obs valid time minus frame valid time [s], both from the DATA —
+    the alignment check must not depend on caller-typed numbers (review #1)."""
+    return parse_utc_s(obs_valid_time) - parse_utc_s(frame_valid_time)
 
 
 def check_obs_time_alignment(obs_time: int, dt: float, *,
@@ -159,13 +172,15 @@ def select_regime2_positions(y_bt, y_rq, clear_pos, *,
 def classify_regimes(n_sub: int, y_bt, mask, cloudy_pos, *,
                      ir_col: int = IR105_COL,
                      bt_cloud: float = OBS_CLOUD_BT) -> torch.Tensor:
-    """모델/관측 구름 4-regime 코드 (B_sub,) — 1:맑음/맑음 2:맑음/구름
-    3:구름/구름 4:구름/맑음, 0:ir 채널 무효(분류 불가).
+    """Model/obs cloud 4-regime codes (B_sub,) — 1: clear/clear,
+    2: clear/cloudy, 3: cloudy/cloudy, 4: cloudy/clear; 0: ir channel
+    invalid (unclassifiable).
 
-    모델 구름 = select_subspace의 qtot 분할(cloudy_pos), 관측 구름 =
-    동결 mask 유효한 ir105 BT < bt_cloud. 보정 방향성 검토의 층화 축:
-    (2)는 생성 불가 regime(ε=0 구조 + cfrac gate)이라 th/qv aliasing 감시,
-    (4)는 mul 제거 방향(Δq<0) 확인이 목적.
+    Model cloud = the PHYSICAL slot-time condensate partition (pass
+    model_cloudy_pos, NOT the all-sky routing set which absorbs regime-2
+    columns — review #2). Obs cloud = frozen-mask-valid ir105 BT < bt_cloud.
+    Stratification axes for the directionality audit: (2) watches th/qv
+    aliasing (creation-gated regime), (4) checks the removal direction.
     """
     model_cloudy = torch.zeros(n_sub, dtype=torch.bool)
     model_cloudy[cloudy_pos] = True
@@ -186,7 +201,12 @@ def _clear_slices(n: int, nch: int):
 
 
 def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int):
-    """청킹된 clear-sky BT/rq (no-grad 용도 — 동결 프로브·보고)."""
+    """Chunked clear-sky BT/rq (no-grad use — frozen probe and report).
+
+    An empty clear partition (all-cloudy / all-regime2 scene) returns
+    (0, nch) tensors without touching RTTOV — review #6."""
+    if x_cl.th.shape[0] == 0:
+        return (torch.zeros((0, nch), **_F64), torch.ones((0, nch), **_F64))
     bts, rqs = [], []
     for sl in _clear_slices(x_cl.th.shape[0], nch):
         bt, rq, _ = batched_clear_bt(_take(x_cl, sl), _take(fc_cl, sl), cfg)
@@ -296,10 +316,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             channels: tuple = (),
                             obs_time: int = 1,
                             dt: float = 300.0,
-                            obs_offset_s: float = 0.0,
-                            time_tolerance_s: float = 300.0,
-                            ncmin_land: float = 0.0,
-                            ncmin_sea: float = 0.0,
+                            obs_offset_s: "float | None" = None,
+                            time_tolerance_s: float = 60.0,
+                            ncmin_land: float = 100.0,
+                            ncmin_sea: float = 10.0,
+                            qv_levels: int = 12,
                             huber_delta: "float | None" = 3.0,
                             pseudo_rh: bool = False,
                             pseudo_sigma_p: float = 2.0e-4,
@@ -322,12 +343,14 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     import numpy as np
 
     t0 = time.time()
-    sub, cloudy_pos, clear_pos = select_subspace(
-        fr, co, boundary=boundary, max_cloudy=max_cloudy, max_clear=max_clear)
-    xb = _take(fr.state, sub)
-    fc = _take(fr.forcing, sub)
-    xland = fr.xland[sub]
-    y_bt, y_rq = co.bt[sub], co.obs_quality[sub]
+    jset = select_membership(fr, co, boundary=boundary)
+    if jset.numel() == 0:
+        raise ValueError("empty J-subspace — no interior column carries a "
+                         "valid observation channel")
+    xb = _take(fr.state, jset)
+    fc = _take(fr.forcing, jset)
+    xland = fr.xland[jset]
+    y_bt, y_rq = co.bt[jset], co.obs_quality[jset]
 
     p_lay = torch.as_tensor(np.asarray(grids["p_lay"], dtype=float), **_F64)
     p_half = torch.as_tensor(np.asarray(grids["p_half"], dtype=float), **_F64)
@@ -350,17 +373,33 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                      oracle_root=str(Path(__file__).resolve().parents[1]))
 
     prior = default_param_prior(0.2)
-    cfg = WindowConfig(dt=dt, xland=xland,
-                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
     if obs_time not in (0, 1):
         raise ValueError(f"obs_time must be 0 or 1 (got {obs_time}) — the "
                          "driver runs a single-step window")
+    for name, v in (("ncmin_land", ncmin_land), ("ncmin_sea", ncmin_sea)):
+        if not (math.isfinite(v) and v >= 0.0):
+            raise ValueError(f"{name} must be finite and >= 0 (got {v!r})")
+    if not bool(torch.isfinite(xland).all()):
+        raise ValueError("xland contains non-finite values")
+    # Valid-time alignment (review #1): the offset comes from the DATA
+    # (GK2A slot stamp vs WRF Times); an explicit obs_offset_s overrides.
+    # A displacement beyond the tolerance is a time-representativeness
+    # decision the caller must state (larger tolerance), never a default.
+    if obs_offset_s is None:
+        obs_vt = getattr(co, "valid_time_utc", None)
+        frame_vt = fr.meta.get("valid_time_utc")
+        if obs_vt is None or frame_vt is None:
+            raise ValueError(
+                "cannot derive the obs-frame time offset: obs valid_time_utc "
+                f"({obs_vt!r}) or frame valid_time_utc ({frame_vt!r}) missing "
+                "— pass obs_offset_s explicitly")
+        obs_offset_s = derive_obs_offset_s(obs_vt, frame_vt)
     check_obs_time_alignment(obs_time, dt, obs_offset_s=obs_offset_s,
-                             time_tolerance_s=time_tolerance_s)  # review #1
+                             time_tolerance_s=time_tolerance_s)
 
     import dataclasses
 
-    def _slot_state(x_state, params=None):
+    def _forward_to_slot(x_state, fc_, cfg_, params=None):
         """State at the obs slot time — one M step via the forward-only
         collector (run_da_window pays the VJP sweep and manages its own
         grad contexts, so it must NOT be wrapped in no_grad — same probe
@@ -369,39 +408,60 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         if obs_time == 0:
             return x_state
         from .da_window import collect_window_trajectory
-        cfg_p = cfg if params is None else dataclasses.replace(cfg,
-                                                               params=params)
-        return collect_window_trajectory(x_state, [fc], cfg_p,
+        cfg_p = cfg_ if params is None else dataclasses.replace(
+            cfg_, params=params)
+        return collect_window_trajectory(x_state, [fc_], cfg_p,
                                          {obs_time})[obs_time]
 
-    x_slot_bg = _slot_state(xb)
+    # PHYSICAL model-cloud partition from the SLOT-TIME background state —
+    # the observation applies to x_slot = M(x0), so cloud created/destroyed
+    # within the step must classify and route accordingly (review #3).
+    cfg = WindowConfig(dt=dt, xland=xland,
+                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+    x_slot_bg = _forward_to_slot(xb, fc, cfg)
+    qtot_slot = (x_slot_bg.qc + x_slot_bg.qi + x_slot_bg.qs).sum(-1)
+    mc = torch.where(qtot_slot > QTOT_MIN)[0]
+    cl = torch.where(qtot_slot <= QTOT_MIN)[0]
+    if max_cloudy is not None:
+        mc = mc[:max_cloudy]
+    if max_clear is not None:
+        cl = cl[:max_clear]
+    keep = torch.cat([mc, cl])
+    xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
+    x_slot_bg = _take(x_slot_bg, keep)
+    y_bt, y_rq = y_bt[keep], y_rq[keep]
+    model_cloudy_pos = torch.arange(mc.numel())
+    model_clear_pos = torch.arange(mc.numel(), keep.numel())
+    cfg = WindowConfig(dt=dt, xland=xland,
+                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+
+    def _slot_state(x_state, params=None):
+        return _forward_to_slot(x_state, fc, cfg, params=params)
+
+    # Operator ROUTING set is distinct from the physical classification
+    # (review #2): regime-2 columns go through all-sky H so that M-created
+    # condensate flips cfrac live and the BT term can refine — but they stay
+    # model-clear for the 4-regime report.
     pseudo = None
-    n_pseudo_cols = 0
+    r2 = torch.empty(0, dtype=torch.int64)
     if pseudo_rh:
         from .da_regime2 import cloud_top_levels, frozen_saturation_target
-        r2 = select_regime2_positions(y_bt, y_rq, clear_pos)
-        n_pseudo_cols = int(r2.numel())
-        if n_pseudo_cols:
-            # Route regime-2 columns through the ALL-SKY part: once M creates
-            # condensate, cfrac flips live and the BT term takes over the
-            # amount refinement — with clear-sky H that path never exists
-            # (review #4). Frozen targets/levels come from the slot-time
-            # background state (the obs applies to x_slot, not x0).
-            keep = torch.ones(y_bt.shape[0], dtype=torch.bool)
-            keep[r2] = False
-            cloudy_pos = torch.cat([cloudy_pos, r2])
-            clear_pos = clear_pos[keep[clear_pos]]
+        r2 = select_regime2_positions(y_bt, y_rq, model_clear_pos)
+        if r2.numel():
             pseudo = dict(cols=r2,
                           target=frozen_saturation_target(x_slot_bg, fc, r2),
                           levels=cloud_top_levels(x_slot_bg, fc, r2,
                                                   y_bt[r2, IR105_COL]),
                           sigma_p=pseudo_sigma_p)
+    allsky_pos = torch.cat([model_cloudy_pos, r2])
+    in_r2 = torch.zeros(keep.numel(), dtype=torch.bool)
+    in_r2[r2] = True
+    clear_op_pos = model_clear_pos[~in_r2[model_clear_pos]]
 
-    # Upper-level cloud tops need qv control above the clear-sky default of
-    # 12 levels; otherwise the pseudo gradient is exactly zero there
-    # (review #5 — validated below, fail-fast).
-    spec, b_sigma = make_default_cvt(
-        xb, qv_levels=(xb.th.shape[1] if pseudo is not None else 12))
+    # B support is fixed a priori by the caller (qv_levels) — NOT switched by
+    # the observed cloud (observation-dependent B is forbidden, review #8).
+    # The overlap validation fail-fasts when the pseudo band falls outside.
+    spec, b_sigma = make_default_cvt(xb, qv_levels=qv_levels)
     if pseudo is not None:
         validate_pseudo_qv_overlap(b_sigma.qv, pseudo["cols"],
                                    pseudo["levels"])
@@ -410,7 +470,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     pool = ctx.Pool(n_workers)
     try:
         obs_eval = make_fulldomain_obs_eval(
-            xb, fc, y_bt, y_rq, xland, cloudy_pos, clear_pos,
+            xb, fc, y_bt, y_rq, xland, allsky_pos, clear_op_pos,
             clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool,
             obs_time=obs_time, huber_delta=huber_delta,
             x_slot_bg=x_slot_bg, pseudo=pseudo)
@@ -421,23 +481,25 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         # OPTIMIZED theta_a — H(M(x_a; theta_b)) is not the analysis pair and
         # disagrees with the joint objective (review #3).
         mask = obs_eval.mask
-        def _h_bt(x_state, params=None):
-            x_slot = _slot_state(x_state, params=params)
+        def _h_bt(x_slot):
             with torch.no_grad():
-                o = sharded_allsky(x_slot, fc, cloudy_pos, y_bt,
+                o = sharded_allsky(x_slot, fc, allsky_pos, y_bt,
                                    torch.zeros_like(y_bt), xland, rttov_cfg,
                                    f"{case_root}/rep", n_workers=n_workers,
                                    grad=False, pool=pool)
                 bt = torch.zeros_like(y_bt)
-                bt[cloudy_pos] = o["bt"]
-                bt_cl, _ = _clear_bt_chunked(_take(x_slot, clear_pos),
-                                             _take(fc, clear_pos), clear_cfg,
-                                             y_bt.shape[1])
-                bt[clear_pos] = bt_cl
+                bt[allsky_pos] = o["bt"]
+                bt_cl, _ = _clear_bt_chunked(_take(x_slot, clear_op_pos),
+                                             _take(fc, clear_op_pos),
+                                             clear_cfg, y_bt.shape[1])
+                bt[clear_op_pos] = bt_cl
             return bt
 
-        bt_b = _h_bt(xb)
-        bt_a = _h_bt(res.x_analysis, params=res.theta_analysis)
+        # Slot-time analysis state uses the OPTIMIZED theta_a — otherwise the
+        # reported O-A is H(M(x_a; theta_b)), not the analysis pair (review
+        # #3). The slot states are kept for slot-time increment reporting.
+        x_slot_a = _slot_state(res.x_analysis, params=res.theta_analysis)
+        bt_b, bt_a = _h_bt(x_slot_bg), _h_bt(x_slot_a)
     finally:
         pool.close()
         pool.join()
@@ -449,17 +511,23 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
 
     omb, oma = _masked_abs_mean(bt_b), _masked_abs_mean(bt_a)
 
-    # 모델/관측 구름 4-regime 층화 — 보정 방향성 감사
-    code = classify_regimes(int(sub.numel()), y_bt, mask, cloudy_pos)
-    dqtot = ((res.x_analysis.qc + res.x_analysis.qi + res.x_analysis.qs)
-             - (xb.qc + xb.qi + xb.qs)).sum(-1)
+    # 4-regime stratification uses the PHYSICAL model-cloud set — the all-sky
+    # ROUTING set (which absorbs regime-2 columns) must not leak into the
+    # classification (review #2). Increments are reported at BOTH times:
+    # t0 (control increments) and the slot time (what the obs actually saw —
+    # pseudo-created condensate only exists at the slot, review #4).
+    sub = jset[keep]
+    code = classify_regimes(int(sub.numel()), y_bt, mask, model_cloudy_pos)
+    dqtot_slot = ((x_slot_a.qc + x_slot_a.qi + x_slot_a.qs)
+                  - (x_slot_bg.qc + x_slot_bg.qi + x_slot_bg.qs)).sum(-1)
     regimes = {}
     for c, name in REGIME_NAMES.items():
         rows = torch.where(code == c)[0]
         regimes[name] = dict(
             n=int(rows.numel()),
             omb=_masked_abs_mean(bt_b, rows), oma=_masked_abs_mean(bt_a, rows),
-            dqtot_mean=(float(dqtot[rows].mean()) if rows.numel() else 0.0),
+            dqtot_slot_mean=(float(dqtot_slot[rows].mean())
+                             if rows.numel() else 0.0),
             dth_mean=(float((res.x_analysis.th - xb.th)[rows].mean())
                       if rows.numel() else 0.0))
 
@@ -467,7 +535,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         np.savez_compressed(
             save_fields, sub_idx=sub.numpy(),
             nx=int(fr.meta["nx"]), ny=int(fr.meta["ny"]),
-            n_cloudy=int(cloudy_pos.numel()), mask=mask.numpy(),
+            n_model_cloudy=int(model_cloudy_pos.numel()),
+            n_allsky=int(allsky_pos.numel()), mask=mask.numpy(),
             y_bt=y_bt.numpy(), bt_b=bt_b.numpy(), bt_a=bt_a.numpy(),
             regime=code.numpy(),
             **{f"xb_{f}": getattr(xb, f).numpy() for f in State._fields},
@@ -476,17 +545,27 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
 
     dnorm = {f: float((getattr(res.x_analysis, f) - getattr(xb, f)).norm())
              for f in State._fields}
+    dnorm_slot = {f: float((getattr(x_slot_a, f)
+                            - getattr(x_slot_bg, f)).norm())
+                  for f in State._fields}
+    # Physical plausibility flag (P0-3 acceptance gate, report-level): any
+    # analysis hydrometeor beyond a hard physical cap is named, not hidden.
+    pathology = {f: float(getattr(res.x_analysis, f).max())
+                 for f in ("qc", "qr", "qi", "qs", "qg")
+                 if float(getattr(res.x_analysis, f).max()) > 0.05}
     return dict(
         n_domain=int(fr.state.th.shape[0]), n_subspace=int(sub.numel()),
-        n_cloudy=int(cloudy_pos.numel()), n_clear=int(clear_pos.numel()),
+        n_model_cloudy=int(model_cloudy_pos.numel()),
+        n_allsky_routed=int(allsky_pos.numel()),
+        n_regime2=int(r2.numel()), n_clear_operator=int(clear_op_pos.numel()),
         n_valid=int(mask.sum()),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
         obs_time=obs_time, dt=dt, obs_offset_s=obs_offset_s,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
-        ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
-        n_pseudo_cols=n_pseudo_cols,
+        ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
         grad_theta_norm_final=res.grad_theta_norm_final,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
         theta=[float(t) for t in res.theta_analysis],
-        increment_norms=dnorm, cvt=res.cvt,
+        increment_norms=dnorm, increment_norms_slot=dnorm_slot,
+        pathology=pathology, cvt=res.cvt,
         wall_s=time.time() - t0)
