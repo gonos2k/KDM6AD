@@ -156,6 +156,29 @@ def validate_pseudo_qv_overlap(sigma_qv: torch.Tensor, cols: torch.Tensor,
             "qv_levels (builder) or drop those columns")
 
 
+def evaluate_artifact_gates(rep: dict) -> dict:
+    """Acceptance gates for an evidence artifact — ENFORCED, not advisory.
+
+    A run whose slot-time state exploded, whose J did not descend, or whose
+    diagnostics went non-finite must be rejected (runner exits nonzero); a
+    reported-but-unenforced pathology produces passing-looking artifacts.
+    Returns {gate_name: bool, ..., "accepted": bool}."""
+    jt = [d["total"] for d in rep["j_trace"]]
+    gates = dict(
+        j_descended=(len(jt) >= 2 and jt[-1] < jt[0]
+                     and all(math.isfinite(v) for v in jt)),
+        oma_le_omb=(math.isfinite(rep["oma"]) and math.isfinite(rep["omb"])
+                    and rep["oma"] <= rep["omb"]),
+        pathology_t0_empty=(rep["pathology_t0"] == {}),
+        pathology_slot_empty=(rep["pathology_slot"] == {}),
+        no_nonfinite_t0=(rep["nonfinite_fields_t0"] == []),
+        no_nonfinite_slot=(rep["nonfinite_fields_slot"] == []),
+        finite_diagnostics=math.isfinite(rep["grad_theta_norm_final"]),
+    )
+    gates["accepted"] = all(gates.values())
+    return gates
+
+
 def select_regime2_positions(y_bt, y_rq, clear_pos, *,
                              ir_col: int = IR105_COL,
                              bt_cloud: float = OBS_CLOUD_BT) -> torch.Tensor:

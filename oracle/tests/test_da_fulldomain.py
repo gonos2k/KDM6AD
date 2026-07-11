@@ -373,3 +373,32 @@ def test_driver_input_validation_caps_qvlevels_xland():
     # explicit offset conflicting with data-derived one must fail closed
     with pytest.raises(ValueError, match="obs_offset_s"):
         run(obs_offset_s=0.0)          # data says 300 s, caller says 0
+
+
+def test_evaluate_artifact_gates():
+    """Codex regression: the evidence runner must ENFORCE the acceptance
+    gates, not merely report them — a run with slot-time pathology or a
+    non-descending J must be rejected (exit nonzero), never a
+    passing-looking artifact."""
+    from kdm6.da_fulldomain import evaluate_artifact_gates
+
+    good = dict(j_trace=[dict(total=100.0), dict(total=90.0)],
+                omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
+                nonfinite_fields_t0=[], nonfinite_fields_slot=[],
+                grad_theta_norm_final=0.1)
+    gates = evaluate_artifact_gates(good)
+    assert gates["accepted"] is True
+    assert all(v for k, v in gates.items() if k != "accepted")
+
+    for corrupt, expect_fail in (
+            (dict(pathology_slot={"qi": dict(max=2541.0, n_over=91)}),
+             "pathology_slot_empty"),
+            (dict(j_trace=[dict(total=100.0), dict(total=101.0)]),
+             "j_descended"),
+            (dict(oma=6.0), "oma_le_omb"),
+            (dict(nonfinite_fields_slot=["qc"]), "no_nonfinite_slot"),
+            (dict(grad_theta_norm_final=float("nan")), "finite_diagnostics")):
+        rep = dict(good, **corrupt)
+        gates = evaluate_artifact_gates(rep)
+        assert gates["accepted"] is False, corrupt
+        assert gates[expect_fail] is False, corrupt

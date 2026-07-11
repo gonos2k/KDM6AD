@@ -94,7 +94,10 @@ def main(out_json, case_root):
         qv_levels=int(fr.meta["kme"]),
         save_fields=out_json + ".fields.npz")
 
+    from kdm6.da_fulldomain import evaluate_artifact_gates
+
     rep["artifact_role"] = "pathology_stress"
+    rep["gates"] = evaluate_artifact_gates(rep)   # ENFORCED below, not advisory
     rep["manifest"] = build_manifest(
         f"python oracle/scripts/run_fulldomain_lc05.py {out_json} "
         f"{case_root}", gk2a_files)
@@ -111,8 +114,12 @@ def main(out_json, case_root):
           f"J {rep['j_trace'][0]['total']:.1f}->"
           f"{rep['j_trace'][-1]['total']:.1f} "
           f"O-B {rep['omb']:.3f}K -> O-A {rep['oma']:.3f}K "
-          f"pathology_t0={rep['pathology_t0']} "
-          f"pathology_slot={rep['pathology_slot']}", flush=True)
+          f"gates={rep['gates']}", flush=True)
+    if not rep["gates"]["accepted"]:
+        failed = [k for k, v in rep["gates"].items() if not v]
+        print(f"[v9.2] ARTIFACT REJECTED — failed gates: {failed}",
+              flush=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
