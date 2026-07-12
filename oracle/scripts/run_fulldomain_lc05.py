@@ -72,23 +72,41 @@ def _code_state():
     sha = _git("rev-parse", "HEAD")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise RuntimeError(f"malformed git SHA: {sha!r}")
-    porcelain = _git("status", "--porcelain")
+    # -z form: NUL-separated and UNQUOTED — the default porcelain C-quotes
+    # special filenames ('?? "my file.txt"'), which a literal parser would
+    # look up verbatim and silently skip the content hash
+    porcelain = _git("status", "--porcelain", "-z")
     if not porcelain:
         return sha, False, None
     h = hashlib.sha256(porcelain.encode())
     h.update(_git("diff", "HEAD").encode())
     # untracked content: porcelain only NAMES these paths and git diff
     # does not carry their bytes — hash the files themselves
-    for line in porcelain.splitlines():
-        if not line.startswith("?? "):
-            continue
-        root = _ORACLE.parent / line[3:]
+    for path in _untracked_paths(porcelain):
+        root = _ORACLE.parent / path
         files = (sorted(q for q in root.rglob("*") if q.is_file())
                  if root.is_dir() else [root])
         for q in files:
             h.update(str(q).encode())
             h.update(_sha256(q).encode() if q.is_file() else b"|missing|")
     return sha, True, h.hexdigest()
+
+
+def _untracked_paths(porcelain_z):
+    """Untracked paths from `status --porcelain -z`: entries are
+    NUL-separated 'XY path'; rename/copy entries carry ONE extra
+    NUL-separated origin record that must be skipped."""
+    toks = porcelain_z.split("\0")
+    out, i = [], 0
+    while i < len(toks):
+        t = toks[i]
+        if t:
+            if t[:2] == "??":
+                out.append(t[3:])
+            elif t[0] in "RC":
+                i += 1                        # skip the origin record
+        i += 1
+    return out
 
 
 def snapshot_provenance(gk2a_files):

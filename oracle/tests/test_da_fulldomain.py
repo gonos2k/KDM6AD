@@ -857,6 +857,43 @@ def test_runner_dirty_content_drift_detected(monkeypatch, tmp_path):
     assert "code_dirty_sha256" in drift
 
 
+def test_runner_untracked_special_filenames_hashed(monkeypatch, tmp_path):
+    """Codex: git's default porcelain C-quotes special filenames
+    ('?? "my file.txt"') — a literal-line parser looks up the quoted
+    string, finds nothing, and silently skips the content hash. The -z
+    porcelain form is unquoted/NUL-separated; rename entries carry an
+    extra origin record that must be skipped."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "wrfin", tmp_path / "cal.json"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"{}")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    repo = tmp_path / "repo"
+    (repo / "oracle").mkdir(parents=True)
+    special = repo / "my file.txt"
+    special.write_bytes(b"v1")
+    monkeypatch.setattr(mod, "_ORACLE", repo / "oracle")
+
+    def fake_git(*a):
+        if a[0] == "rev-parse":
+            return "a" * 40
+        if a == ("status", "--porcelain", "-z"):
+            # NUL-separated, unquoted; rename entry with origin record
+            return "R  new.py\0old.py\0?? my file.txt\0"
+        if a[0] == "status":
+            # default porcelain C-quotes the special name
+            return 'R  old.py -> new.py\n?? "my file.txt"'
+        return "-a\n+b"
+    monkeypatch.setattr(mod, "_git", fake_git)
+
+    man = mod.snapshot_provenance([])
+    assert mod.check_provenance_drift(man) == {}
+    special.write_bytes(b"v2-CHANGED")            # content drift must be seen
+    drift = mod.check_provenance_drift(man)
+    assert "code_dirty_sha256" in drift, drift
+
+
 def test_runner_git_failures_are_loud(monkeypatch, tmp_path):
     """_git must raise on nonzero return codes and reject malformed SHAs —
     a failed git call must never be recorded as empty-SHA/dirty=False."""
