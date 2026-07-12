@@ -404,39 +404,96 @@ def test_evaluate_artifact_gates():
         assert gates[expect_fail] is False, corrupt
 
 
+def _good_conserving_report():
+    """A COMPLETE conserving evidence report (every field the strengthened
+    gates require) — the base for the negative fail-closed matrix."""
+    return dict(
+        artifact_role="conserving_stress", conserving=True,
+        j_trace=[dict(total=100.0), dict(total=91.0), dict(total=90.0)],
+        n_window_evals=2, n_audit_evals=1,
+        jb_final=1.5, jtheta_final=0.5, jobs_final=88.0,   # sums to 90.0
+        grad_theta_norm_final=0.1, grad_w_norm_final=2.0,
+        omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
+        nonfinite_fields_t0=[], nonfinite_fields_slot=[],
+        water_budget=dict(pw_stage_err_max=3.0e-16,
+                          dtw_qv_diag_max=1.0e-4,
+                          dtw_qv_diag_mean=2.0e-5),
+        partition=dict(spec=dict(version=2)),
+        cvt=dict(n_controlled=dict(qc=0, qr=0, qi=0, qs=0, qg=0,
+                                   th=100, qv=100)))
+
+
 def test_evaluate_artifact_gates_conserving_and_audit():
-    """Conserving evidence artifacts add two enforced gates: the P_w stage
-    must conserve total water to roundoff (column-integral error), and the
-    final report must come from exactly one authoritative audit closure."""
+    """Conserving evidence artifacts carry three additional ENFORCED gates:
+    P_w water conservation, the strengthened final-audit consistency, and
+    the conserving contract (partition schema v2 + zero mass-hydro diagonal
+    controls)."""
     from kdm6.da_fulldomain import evaluate_artifact_gates
 
-    good = dict(j_trace=[dict(total=100.0), dict(total=90.0)],
-                omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
-                nonfinite_fields_t0=[], nonfinite_fields_slot=[],
-                grad_theta_norm_final=0.1,
-                n_audit_evals=1,
-                water_budget=dict(pw_stage_err_max=3.0e-16,
-                                  dtw_qv_diag_max=1.0e-4,
-                                  dtw_qv_diag_mean=2.0e-5))
-    gates = evaluate_artifact_gates(good)
+    gates = evaluate_artifact_gates(_good_conserving_report())
     assert gates["accepted"] is True
-    assert gates["pw_conserved"] is True and gates["final_audited"] is True
+    assert gates["pw_conserved"] is True
+    assert gates["final_audited"] is True
+    assert gates["conserving_contract"] is True
 
-    bad_pw = dict(good, water_budget=dict(good["water_budget"],
-                                          pw_stage_err_max=1.0e-6))
-    gates = evaluate_artifact_gates(bad_pw)
-    assert gates["accepted"] is False and gates["pw_conserved"] is False
-
-    bad_audit = dict(good, n_audit_evals=0)
-    gates = evaluate_artifact_gates(bad_audit)
-    assert gates["accepted"] is False and gates["final_audited"] is False
-
-    # legacy reports (no conserving keys) keep their gate set unchanged
-    legacy = {k: v for k, v in good.items()
-              if k not in ("water_budget", "n_audit_evals")}
+    # legacy reports (no conserving keys at all) keep their gate set
+    legacy = dict(j_trace=[dict(total=100.0), dict(total=90.0)],
+                  omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
+                  nonfinite_fields_t0=[], nonfinite_fields_slot=[],
+                  grad_theta_norm_final=0.1)
     gates = evaluate_artifact_gates(legacy)
     assert gates["accepted"] is True
-    assert "pw_conserved" not in gates and "final_audited" not in gates
+    for k in ("pw_conserved", "final_audited", "conserving_contract"):
+        assert k not in gates
+
+
+def test_conserving_gates_fail_closed_on_missing_fields():
+    """Reviewer P1: a conserving run whose evidence fields REGRESS AWAY must
+    fail the gates, never silently pass with a smaller gate set — every
+    missing/None/malformed field evaluates to False."""
+    from kdm6.da_fulldomain import evaluate_artifact_gates
+
+    base = _good_conserving_report()
+
+    def gate_of(mutation, gate):
+        rep = json.loads(json.dumps(base))          # deep copy
+        mutation(rep)
+        gates = evaluate_artifact_gates(rep)
+        assert gates["accepted"] is False, (gate, mutation)
+        assert gates[gate] is False, (gate, mutation)
+
+    # pw_conserved fail-closed
+    gate_of(lambda r: r.pop("water_budget"), "pw_conserved")
+    gate_of(lambda r: r.update(water_budget=None), "pw_conserved")
+    gate_of(lambda r: r["water_budget"].pop("pw_stage_err_max"),
+            "pw_conserved")
+    gate_of(lambda r: r["water_budget"].update(pw_stage_err_max=1.0e-6),
+            "pw_conserved")
+    gate_of(lambda r: r["water_budget"].update(
+        pw_stage_err_max=float("nan")), "pw_conserved")
+    # final_audited fail-closed + consistency
+    gate_of(lambda r: r.pop("n_audit_evals"), "final_audited")
+    gate_of(lambda r: r.update(n_audit_evals=0), "final_audited")
+    gate_of(lambda r: r.pop("n_window_evals"), "final_audited")
+    gate_of(lambda r: r.update(n_window_evals=5), "final_audited")
+    gate_of(lambda r: r.pop("jb_final"), "final_audited")
+    gate_of(lambda r: r.update(jb_final=1.6), "final_audited")   # sum breaks
+    gate_of(lambda r: r.update(grad_w_norm_final=float("inf")),
+            "final_audited")
+    # conserving contract fail-closed
+    gate_of(lambda r: r.pop("partition"), "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].update(version=1),
+            "conserving_contract")
+    gate_of(lambda r: r["cvt"]["n_controlled"].update(qc=5),
+            "conserving_contract")
+    gate_of(lambda r: r.pop("cvt"), "conserving_contract")
+
+    # the trigger is conserving=True OR artifact_role — role alone suffices
+    rep = json.loads(json.dumps(base))
+    del rep["conserving"]
+    del rep["water_budget"]
+    gates = evaluate_artifact_gates(rep)
+    assert gates["accepted"] is False and gates["pw_conserved"] is False
 
 
 @needs_all
@@ -482,6 +539,11 @@ def test_fulldomain_smoke_conserving_capped(tmp_path):
     # change is carried by the qv diagonal dof alone
     wb = rep["water_budget"]
     assert wb["pw_stage_err_max"] < 1.0e-12
+    assert wb["definition"] == "unweighted_vertical_level_sum"
+    assert wb["dtw_qv_diag_mean_abs"] >= abs(wb["dtw_qv_diag_mean"])
+    # 4-regime coverage honesty (reviewer caveat 3)
+    assert rep["n_unclassified_ir105"] >= 0
+    assert 0.0 <= rep["regime_coverage"] <= 1.0
     # conserving contract: mass-hydro diagonal controls are OFF; species
     # move only through partitions (channels touch qc/qi at t0)
     assert rep["cvt"]["n_controlled"]["qc"] == 0

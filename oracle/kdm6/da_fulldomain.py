@@ -176,15 +176,74 @@ def evaluate_artifact_gates(rep: dict) -> dict:
         no_nonfinite_slot=(rep["nonfinite_fields_slot"] == []),
         finite_diagnostics=math.isfinite(rep["grad_theta_norm_final"]),
     )
-    # conserving-artifact gates (present only when the report carries the
-    # corresponding keys — legacy reports keep their gate set unchanged)
-    if rep.get("water_budget") is not None:
-        err = rep["water_budget"]["pw_stage_err_max"]
-        gates["pw_conserved"] = math.isfinite(err) and err < 1.0e-12
-    if "n_audit_evals" in rep:
-        gates["final_audited"] = rep["n_audit_evals"] == 1
+    # Conserving-artifact gates — FAIL-CLOSED (reviewer P1): once a report
+    # declares itself conserving (flag or artifact_role), ALL conserving
+    # gates are generated unconditionally, and a missing/None/malformed
+    # evidence field evaluates to False — a regression that drops a field
+    # must never shrink the gate set into a silent pass. Legacy reports
+    # (no conserving markers/keys) keep their gate set unchanged.
+    conserving = (rep.get("conserving") is True
+                  or rep.get("artifact_role") == "conserving_stress")
+    if conserving or rep.get("water_budget") is not None:
+        gates["pw_conserved"] = _gate_pw_conserved(rep)
+    if conserving or "n_audit_evals" in rep:
+        gates["final_audited"] = _gate_final_audited(rep)
+    if conserving:
+        gates["conserving_contract"] = _gate_conserving_contract(rep)
     gates["accepted"] = all(gates.values())
     return gates
+
+
+def _is_finite_number(x) -> bool:
+    return (isinstance(x, (int, float)) and not isinstance(x, bool)
+            and math.isfinite(x))
+
+
+def _gate_pw_conserved(rep: dict) -> bool:
+    """P_w stage total-water error (unweighted vertical level sum) at the
+    roundoff floor. False on any missing/malformed field (fail-closed)."""
+    wb = rep.get("water_budget")
+    if not isinstance(wb, dict):
+        return False
+    err = wb.get("pw_stage_err_max")
+    return _is_finite_number(err) and err < 1.0e-12
+
+
+def _gate_final_audited(rep: dict) -> bool:
+    """The report's finals come from exactly one authoritative audit closure
+    and are internally consistent: trace length = optimizer evals + 1 audit,
+    the trace tail equals the sum of the final J components exactly, and
+    every final/gradient diagnostic is finite. False on any missing or
+    malformed field (fail-closed)."""
+    try:
+        jt = rep["j_trace"]
+        total = jt[-1]["total"]
+        finals = [rep["jb_final"], rep["jtheta_final"], rep["jobs_final"],
+                  rep["grad_theta_norm_final"]]
+        if rep.get("grad_w_norm_final") is not None:
+            finals.append(rep["grad_w_norm_final"])
+        return (rep["n_audit_evals"] == 1
+                and len(jt) == rep["n_window_evals"] + 1
+                and all(_is_finite_number(v) for v in finals)
+                and _is_finite_number(total)
+                and rep["jb_final"] + rep["jtheta_final"]
+                + rep["jobs_final"] == total)
+    except (KeyError, TypeError, IndexError):
+        return False
+
+
+def _gate_conserving_contract(rep: dict) -> bool:
+    """The conserving contract held in the recorded configuration: the
+    partition ran under the v2 (dimensionless-w) schema and every mass
+    hydrometeor diagonal control was OFF. False on missing/malformed
+    records (fail-closed)."""
+    try:
+        if rep["partition"]["spec"]["version"] != 2:
+            return False
+        nc = rep["cvt"]["n_controlled"]
+        return all(nc[f] == 0 for f in ("qc", "qr", "qi", "qs", "qg"))
+    except (KeyError, TypeError):
+        return False
 
 
 def select_regime2_positions(y_bt, y_rq, clear_pos, *,
@@ -594,6 +653,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # pseudo-created condensate only exists at the slot, review #4).
     sub = jset[keep]
     code = classify_regimes(int(sub.numel()), y_bt, mask, model_cloudy_pos)
+    # the 4-regime table covers only IR105-classifiable profiles; the
+    # unclassified remainder still contributes other-channel radiances to
+    # the GLOBAL O-B/O-A (reviewer caveat 3) — report the coverage honestly
+    n_unclassified = int((code == 0).sum())
     dqtot_slot = ((x_slot_a.qc + x_slot_a.qi + x_slot_a.qs)
                   - (x_slot_bg.qc + x_slot_bg.qi + x_slot_bg.qs)).sum(-1)
     regimes = {}
@@ -662,11 +725,17 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             return (s.qv + s.qc + s.qr + s.qi + s.qs + s.qg).sum(-1)
         with torch.no_grad():
             y_diag, _ = cvt_apply(xb, b_sigma, res.v_state, spec)
+            dtw = _tw(y_diag) - _tw(xb)
             water_budget = dict(
+                # unweighted vertical LEVEL SUM of q_t per column — NOT a
+                # pressure-weighted column water path (reviewer caveat 5;
+                # a dp/g-weighted kg/m^2 variant is roadmap)
+                definition="unweighted_vertical_level_sum",
                 pw_stage_err_max=float(
                     (_tw(res.x_analysis) - _tw(y_diag)).abs().max()),
-                dtw_qv_diag_max=float((_tw(y_diag) - _tw(xb)).abs().max()),
-                dtw_qv_diag_mean=float((_tw(y_diag) - _tw(xb)).mean()))
+                dtw_qv_diag_max=float(dtw.abs().max()),
+                dtw_qv_diag_mean=float(dtw.mean()),
+                dtw_qv_diag_mean_abs=float(dtw.abs().mean()))
 
     return dict(
         n_domain=int(fr.state.th.shape[0]), n_subspace=int(sub.numel()),
@@ -687,6 +756,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         conserving=conserving, partition=res.partition,
         grad_w_norm_final=res.grad_w_norm_final, water_budget=water_budget,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
+        n_unclassified_ir105=n_unclassified,
+        regime_coverage=(float((int(sub.numel()) - n_unclassified)
+                               / int(sub.numel())) if sub.numel() else 0.0),
         theta=[float(t) for t in res.theta_analysis],
         theta_b=[float(t) for t in prior.theta_b],
         increment_norms=dnorm, increment_norms_slot=dnorm_slot,
