@@ -175,19 +175,24 @@ def evaluate_artifact_gates(rep: dict, *,
     Returns {gate_name: bool, ..., "accepted": bool}."""
     try:
         jt = [d["total"] for d in rep["j_trace"]]
+        # every trace total is a nonnegative finite non-bool number —
+        # a True/-1 total is a malformed report, not a descent
         j_ok = (len(jt) >= 2 and jt[-1] < jt[0]
-                and all(math.isfinite(v) for v in jt))
+                and all(_is_finite_number(v) and v >= 0.0 for v in jt))
     except (KeyError, TypeError, AttributeError):
         j_ok = False                       # malformed trace fails, not crashes
     gates = dict(
         j_descended=j_ok,
-        oma_le_omb=(math.isfinite(rep["oma"]) and math.isfinite(rep["omb"])
-                    and rep["oma"] <= rep["omb"]),
-        pathology_t0_empty=(rep["pathology_t0"] == {}),
-        pathology_slot_empty=(rep["pathology_slot"] == {}),
-        no_nonfinite_t0=(rep["nonfinite_fields_t0"] == []),
-        no_nonfinite_slot=(rep["nonfinite_fields_slot"] == []),
-        finite_diagnostics=math.isfinite(rep["grad_theta_norm_final"]),
+        oma_le_omb=(_is_finite_number(rep.get("oma"))
+                    and _is_finite_number(rep.get("omb"))
+                    and 0.0 <= rep["oma"] <= rep["omb"]),
+        pathology_t0_empty=(rep.get("pathology_t0") == {}),
+        pathology_slot_empty=(rep.get("pathology_slot") == {}),
+        no_nonfinite_t0=(rep.get("nonfinite_fields_t0") == []),
+        no_nonfinite_slot=(rep.get("nonfinite_fields_slot") == []),
+        finite_diagnostics=(
+            _is_finite_number(rep.get("grad_theta_norm_final"))
+            and rep["grad_theta_norm_final"] >= 0.0),
     )
     # Conserving-artifact gates — FAIL-CLOSED (reviewer P1): once the run
     # is conserving (runner contract OR report self-declaration), ALL
@@ -197,18 +202,27 @@ def evaluate_artifact_gates(rep: dict, *,
     # reports (no conserving markers/keys, no contract) keep their gate set.
     declared = (rep.get("conserving") is True
                 or rep.get("artifact_role") == "conserving_stress")
-    conserving = declared or expected_conserving is True
+    conserving = (expected_conserving if expected_conserving is not None
+                  else declared)
     if expected_conserving is not None:
-        # the report must agree with the runner-known mode in BOTH
-        # directions (lost markers AND mode confusion fail)
-        gates["conserving_marker"] = (declared if expected_conserving
-                                      else not declared)
+        # under the external contract BOTH markers are checked individually
+        # and exactly — the OR inference would hide a missing marker, a
+        # role typo, or a mutual contradiction (reviewer P1); inference
+        # stays OR-based only on the no-contract archived path
+        expected_role = ("conserving_stress" if expected_conserving
+                         else "pathology_stress")
+        gates["conserving_marker"] = (
+            type(rep.get("conserving")) is bool
+            and rep["conserving"] is expected_conserving
+            and rep.get("artifact_role") == expected_role)
     if conserving or rep.get("water_budget") is not None:
         gates["pw_conserved"] = _gate_pw_conserved(rep)
-    if conserving or "n_audit_evals" in rep:
-        # a conserving run has a live partition, so its w-gradient
-        # diagnostic is REQUIRED (a legacy report's None stays legitimate);
-        # under the external contract the v-block gradient is required too
+    if (conserving or expected_conserving is not None
+            or "n_audit_evals" in rep):
+        # the EXISTENCE of the external contract enforces the audit gate —
+        # dropping the whole audit block from a non-conserving report must
+        # fail the gate, not delete it (reviewer P1). A conserving run's
+        # w-gradient is required; under the contract the v-block too.
         gates["final_audited"] = _gate_final_audited(
             rep, require_w=conserving,
             require_v=expected_conserving is not None)
@@ -259,12 +273,16 @@ def _gate_final_audited(rep: dict, *, require_w: bool = False,
             vals.append(rep["grad_w_norm_final"])     # KeyError/None -> False
         elif rep.get("grad_w_norm_final") is not None:
             vals.append(rep["grad_w_norm_final"])
+        comps = [tail["j_state"], tail["j_theta"], tail["j_obs"],
+                 tail["total"]]
         return (type(rep["n_audit_evals"]) is int
                 and rep["n_audit_evals"] == 1
                 and type(rep["n_window_evals"]) is int
                 and len(jt) == rep["n_window_evals"] + 1
                 and all(_is_finite_number(v) and v >= 0.0 for v in vals)
-                and _is_finite_number(tail["total"])
+                # tail components must be genuine numbers BEFORE the exact
+                # comparison — True == 1.0 numerically (bool masquerade)
+                and all(_is_finite_number(c) and c >= 0.0 for c in comps)
                 and tail["j_state"] == rep["jb_final"]
                 and tail["j_theta"] == rep["jtheta_final"]
                 and tail["j_obs"] == rep["jobs_final"]

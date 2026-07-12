@@ -541,6 +541,23 @@ def test_conserving_gates_fail_closed_on_missing_fields():
     gate_of(lambda r: r["cvt"].update(n_controlled=[0, 0, 0, 0, 0]),
             "conserving_contract")
     gate_of(lambda r: r.update(j_trace=5), "final_audited")
+    # OMA/OMB and every trace total/component are nonnegative finite
+    # non-bool numbers (reviewer round: -1 K stats and True totals passed)
+    gate_of(lambda r: r.update(omb=-1.0), "oma_le_omb")
+    gate_of(lambda r: r.update(oma=-2.0, omb=-1.0), "oma_le_omb")
+    gate_of(lambda r: r.update(oma=None), "oma_le_omb")      # False, no crash
+    gate_of(lambda r: r["j_trace"][1].update(total=-1.0), "j_descended")
+    gate_of(lambda r: r["j_trace"][1].update(total=True), "j_descended")
+    def _bool_tail(r):
+        r.update(jb_final=1.0, jobs_final=88.5)
+        r["j_trace"][-1].update(j_state=True, j_obs=88.5)
+        # True == 1.0 numerically — the component type check must reject
+    gate_of(_bool_tail, "final_audited")
+    # bool alpha_total (True == 1.0) with a consistently-recomputed
+    # fingerprint must still fail: PartitionSpec rejects bool
+    def _bool_alpha(r):
+        r["partition"]["spec"].update(alpha_total=True)
+    gate_of(_bool_alpha, "conserving_contract")
     gate_of(lambda r: r.update(j_trace=[]), "final_audited")
     gate_of(lambda r: r["j_trace"].__setitem__(-1, 90.0), "final_audited")
 
@@ -580,8 +597,23 @@ def test_expected_conserving_external_contract():
     gates = evaluate_artifact_gates(base, expected_conserving=False)
     assert gates["conserving_marker"] is False and gates["accepted"] is False
 
-    # legacy non-conserving report under the external contract passes
-    legacy = dict(j_trace=[dict(total=100.0), dict(total=91.0),
+    # under the external contract BOTH markers are checked individually
+    # (the OR inference hid absence/typos/mutual contradiction)
+    for mutate in (
+            lambda r: r.pop("conserving"),               # flag missing
+            lambda r: r.pop("artifact_role"),            # role missing
+            lambda r: r.update(conserving=False),        # contradiction
+            lambda r: r.update(artifact_role="typo_stress")):
+        rep = json.loads(json.dumps(base))
+        mutate(rep)
+        gates = evaluate_artifact_gates(rep, expected_conserving=True)
+        assert gates["conserving_marker"] is False, mutate
+        assert gates["accepted"] is False
+
+    # non-conserving report under the external contract: markers must be
+    # exactly (False, pathology_stress) and the audit gate stays enforced
+    legacy = dict(conserving=False, artifact_role="pathology_stress",
+                  j_trace=[dict(total=100.0), dict(total=91.0),
                            dict(total=90.0, j_state=1.5, j_theta=0.5,
                                 j_obs=88.0)],
                   n_window_evals=2, n_audit_evals=1,
@@ -593,11 +625,27 @@ def test_expected_conserving_external_contract():
     assert gates["accepted"] is True
     assert gates["conserving_marker"] is True
     assert "conserving_contract" not in gates
+    for mutate in (lambda r: r.pop("conserving"),
+                   lambda r: r.pop("artifact_role"),
+                   lambda r: r.update(artifact_role="typo_stress")):
+        rep = json.loads(json.dumps(legacy))
+        mutate(rep)
+        gates = evaluate_artifact_gates(rep, expected_conserving=False)
+        assert gates["conserving_marker"] is False, mutate
     # under the external contract the v-block gradient is REQUIRED evidence
     nov = json.loads(json.dumps(legacy))
     del nov["grad_norm_final"]
     gates = evaluate_artifact_gates(nov, expected_conserving=False)
     assert gates["accepted"] is False and gates["final_audited"] is False
+    # reviewer P1: dropping the WHOLE audit block under a non-conserving
+    # external contract must not delete the gate — it must fail
+    noaudit = json.loads(json.dumps(legacy))
+    for k in ("n_audit_evals", "n_window_evals", "jb_final",
+              "jtheta_final", "jobs_final", "grad_norm_final"):
+        del noaudit[k]
+    gates = evaluate_artifact_gates(noaudit, expected_conserving=False)
+    assert "final_audited" in gates
+    assert gates["final_audited"] is False and gates["accepted"] is False
 
 
 @needs_all

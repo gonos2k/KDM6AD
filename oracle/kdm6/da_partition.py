@@ -100,10 +100,14 @@ class PartitionSpec:
     def __post_init__(self):
         for name in ("alpha_total", "sigma_scale"):
             a = getattr(self, name)
-            if not (isinstance(a, (int, float)) and math.isfinite(a)
+            # bool is an int subclass: True == 1.0 would slip through the
+            # range check and defeat exact-schema gate comparisons
+            if isinstance(a, bool) or not (
+                    isinstance(a, (int, float)) and math.isfinite(a)
                     and 0.0 < a <= 1.0):
                 raise ValueError(
-                    f"{name} must be finite in (0, 1] (got {a!r})")
+                    f"{name} must be a non-bool finite number in (0, 1] "
+                    f"(got {a!r})")
             object.__setattr__(self, name, float(a))
 
     def as_dict(self) -> dict:

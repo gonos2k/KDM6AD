@@ -329,6 +329,12 @@ def test_partition_spec_validation():
     for bad in (0.0, -0.1, 1.5, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="sigma_scale"):
             PartitionSpec(sigma_scale=bad)
+    # bool is an int subclass (True == 1.0): must be rejected for the
+    # exact-schema gate comparisons to be meaningful
+    with pytest.raises(ValueError, match="alpha_total"):
+        PartitionSpec(alpha_total=True)
+    with pytest.raises(ValueError, match="sigma_scale"):
+        PartitionSpec(sigma_scale=True)
 
 
 def test_partition_spec_fingerprint():
