@@ -21,12 +21,21 @@ vap<->liq(-d) + vap<->ice(+d), whose net latent is exactly xls - xl(T) = L_f
 latent constants (melt xlf0 vs freeze xls-xl) out of the CVT entirely, so no
 sign branch and no kink at the optimizer's w=0 start.
 
-Bounded map (C^1, exact zero):  delta(w) = w / (1 + relu(w)/cap_fwd
-+ relu(-w)/cap_rev).  delta(0) = 0 exactly and delta'(0) = 1 from both sides;
+Bounded map (C^1, exact zero):  delta(u) = u / (1 + relu(u)/cap_fwd
++ relu(-u)/cap_rev).  delta(0) = 0 exactly and delta'(0) = 1 from both sides;
 saturates at +cap_fwd / -cap_rev. Cells where EITHER frozen donor cap is 0
 kill the WHOLE channel (exact-0 value and gradient both sides — the sigma=0
 whole-dof death pattern; a one-sided mask would put a kink at w=0, and a bare
 torch.where over the raw map is the 0*inf where-backward NaN trap).
+
+Controls are DIMENSIONLESS (like the diagonal CVT's v): the chain feeds
+u = sigma * w with sigma = sigma_scale * min(cap_fwd, cap_rev) frozen from
+the background — the partition-B standard deviation in physical units. The
+prior 0.5*||w||^2 therefore states delta ~ N(0, sigma^2) near the origin
+(saturation shrinks the tails), and every L-BFGS leaf (v, v_theta, w) shares
+an identity prior Hessian — no kg/kg-vs-dimensionless conditioning skew.
+sigma = 0 exactly on dead cells (min cap 0), reproducing the zero-row
+invariant: u = 0, delta = 0, g_w row = w -> the prior pins w = 0 forever.
 
 Caps are frozen from the background (v/w-independent — observation-
 independent B) with a per-DONOR budget: all channel sides draining one donor
@@ -78,34 +87,41 @@ for _n, _don, _rec, _l in CHANNELS:
 class PartitionSpec:
     """Frozen partition-stage config. alpha_total is the per-DONOR budget:
     the caps of all channel sides draining one donor sum to
-    alpha_total * q_donor(xb)."""
+    alpha_total * q_donor(xb). sigma_scale sets the dimensionless-control
+    scale sigma = sigma_scale * min(cap_fwd, cap_rev) — the physical 1-sigma
+    of the partition increment under the 0.5*||w||^2 prior."""
     alpha_total: float = 0.5
+    sigma_scale: float = 0.25
 
     def __post_init__(self):
-        a = self.alpha_total
-        if not (isinstance(a, (int, float)) and math.isfinite(a)
-                and 0.0 < a <= 1.0):
-            raise ValueError(
-                f"alpha_total must be finite in (0, 1] (got {a!r})")
-        object.__setattr__(self, "alpha_total", float(a))
+        for name in ("alpha_total", "sigma_scale"):
+            a = getattr(self, name)
+            if not (isinstance(a, (int, float)) and math.isfinite(a)
+                    and 0.0 < a <= 1.0):
+                raise ValueError(
+                    f"{name} must be finite in (0, 1] (got {a!r})")
+            object.__setattr__(self, name, float(a))
 
     def as_dict(self) -> dict:
         return {"version": 1, "alpha_total": self.alpha_total,
+                "sigma_scale": self.sigma_scale,
                 "channels": [c[0] for c in CHANNELS]}
 
     def fingerprint(self) -> str:
         """Name-bound sha256 — sensitive to channel order/pairing/latent
-        convention and to alpha (the chain is non-commuting through T)."""
+        convention and to alpha/sigma_scale (the chain is non-commuting
+        through T; sigma_scale changes the control metric)."""
         payload = "partition-v1|" + "|".join(
             f"{n}:{d}>{r}:{l}" for n, d, r, l in CHANNELS)
-        payload += f"|{self.alpha_total.hex()}"
+        payload += f"|{self.alpha_total.hex()}|{self.sigma_scale.hex()}"
         return hashlib.sha256(payload.encode()).hexdigest()
 
 
 class PartitionCaps(NamedTuple):
-    """Frozen per-channel caps (n_ch, B, K) + whole-channel activation."""
+    """Frozen per-channel caps and control scale (n_ch, B, K)."""
     cap_fwd: torch.Tensor
     cap_rev: torch.Tensor
+    sigma: torch.Tensor         # sigma_scale * min(caps); 0 <=> channel dead
     active: torch.Tensor        # bool — both donor caps positive
 
 
@@ -124,7 +140,8 @@ def build_partition_caps(xb: State, spec: PartitionSpec) -> PartitionCaps:
                 a = spec.alpha_total / _DRAINERS[src]
                 out.append(torch.where(q > 0, a * q, torch.zeros_like(q)))
         cf, cr = torch.stack(fwd), torch.stack(rev)
-        return PartitionCaps(cap_fwd=cf, cap_rev=cr,
+        sigma = spec.sigma_scale * torch.minimum(cf, cr)
+        return PartitionCaps(cap_fwd=cf, cap_rev=cr, sigma=sigma,
                              active=(cf > 0) & (cr > 0))
 
 
@@ -155,8 +172,8 @@ def apply_partition_chain(y: State, forcing: Forcing, w: torch.Tensor,
     fld = {f: getattr(y, f)
            for f in ("th", "qv", "qc", "qr", "qi", "qs", "qg")}
     for i, (_name, don, rec, latent) in enumerate(CHANNELS):
-        d = bounded_delta(w[i], caps.cap_fwd[i], caps.cap_rev[i],
-                          caps.active[i])
+        d = bounded_delta(caps.sigma[i] * w[i], caps.cap_fwd[i],
+                          caps.cap_rev[i], caps.active[i])
         if latent is not None:
             cpm = compute_cpm(fld["qv"], params=tp)
             lat = (compute_xl(fld["th"] * forcing.pii, params=tp)
@@ -193,6 +210,45 @@ def chain_with_pullback(y: State, forcing: Forcing, w: torch.Tensor,
     return x0, pullback
 
 
+# the 5 hydrometeor MASS fields — diagonal mul sigma must be 0 when the
+# partition stage is active (conserving contract, enforced)
+MASS_HYDRO_FIELDS = ("qc", "qr", "qi", "qs", "qg")
+
+
+def validate_conserving_sigma(b_sigma: State) -> None:
+    """Enforced conserving contract: a live diagonal mul control on a mass
+    hydrometeor field double-controls the species (degenerate with the
+    channels) and silently breaks the total-water invariance the partition
+    stage exists to provide. qv stays allowed — it is the deliberate
+    total-water dof (moisture correction)."""
+    bad = [f for f in MASS_HYDRO_FIELDS
+           if bool((getattr(b_sigma, f) != 0).any())]
+    if bad:
+        raise ValueError(
+            f"partition given but b_sigma is nonzero for mass hydrometeor "
+            f"fields {bad} — the conserving contract requires their diagonal "
+            "sigma == 0 (species move only through partition channels)")
+
+
+def validate_partition_forcing(forcing: Forcing, xb: State) -> None:
+    """The chain reads forcing.pii (Exner) for its latent terms. On the
+    zero-step path this bypasses the model's own forcing validation, so a
+    wrong-shape pii would silently broadcast and a 0/NaN pii makes
+    non-finite theta increments — exact contract enforced here."""
+    pii = forcing.pii
+    if tuple(pii.shape) != tuple(xb.th.shape):
+        raise ValueError(
+            f"partition forcing pii shape {tuple(pii.shape)} != state shape "
+            f"{tuple(xb.th.shape)} (silent broadcasting is forbidden)")
+    if pii.device != xb.th.device:
+        raise ValueError(
+            f"partition forcing pii device {pii.device} != state device "
+            f"{xb.th.device}")
+    if not bool(torch.isfinite(pii).all()) or bool((pii <= 0).any()):
+        raise ValueError(
+            "partition forcing pii must be finite and > 0 (Exner function)")
+
+
 def validate_partition(caps: PartitionCaps,
                        active_fields: "tuple | None") -> None:
     """V8: runtime.py zero-masks adjoint rows outside active_fields — a live
@@ -224,7 +280,8 @@ def build_partition_record(spec: PartitionSpec, caps: PartitionCaps,
         for i, (name, _don, _rec, _lat) in enumerate(CHANNELS):
             act = caps.active[i]
             rec["n_active"][name] = int(act.sum())
-            d = bounded_delta(w[i], caps.cap_fwd[i], caps.cap_rev[i], act)
+            d = bounded_delta(caps.sigma[i] * w[i], caps.cap_fwd[i],
+                              caps.cap_rev[i], act)
             side = torch.where(d >= 0, caps.cap_fwd[i], caps.cap_rev[i])
             sat = (d.abs() / side)[act]
             rec["sat_max"][name] = float(sat.max()) if sat.numel() else 0.0

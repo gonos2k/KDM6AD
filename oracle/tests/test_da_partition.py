@@ -156,13 +156,15 @@ def test_chain_total_water_invariant_any_w():
 @pytest.mark.parametrize("sign", [+1.0, -1.0])
 def test_vap2liq_latent_budget_exact(sign):
     """Channel 0 alone: dth == xl(T_pre)/(cpm_pre*pi) * delta bitwise — the
-    SAME xl both directions (parametrized sign) is the symmetry claim."""
+    SAME xl both directions (parametrized sign) is the symmetry claim.
+    w is DIMENSIONLESS: the chain feeds u = sigma * w to the bounded map."""
     y, f, _spec, caps = _mk_all()
     w = torch.zeros((len(CHANNELS),) + tuple(y.th.shape), **_F64)
-    w[0] = sign * 3.0e-4
+    w[0] = sign * 0.6
     out = apply_partition_chain(y, f, w, caps)
     tp = thermo.default_thermo_params()
-    d = bounded_delta(w[0], caps.cap_fwd[0], caps.cap_rev[0], caps.active[0])
+    d = bounded_delta(caps.sigma[0] * w[0], caps.cap_fwd[0], caps.cap_rev[0],
+                      caps.active[0])
     xl = thermo.compute_xl(y.th * f.pii, params=tp)
     cpm = thermo.compute_cpm(y.qv, params=tp)
     assert torch.equal(out.th, y.th + xl / (cpm * f.pii) * d)
@@ -177,10 +179,11 @@ def test_vap2ice_latent_budget_exact(sign):
     sublimation latent, exactly the same both directions)."""
     y, f, _spec, caps = _mk_all()
     w = torch.zeros((len(CHANNELS),) + tuple(y.th.shape), **_F64)
-    w[1] = sign * 3.0e-4
+    w[1] = sign * 0.6
     out = apply_partition_chain(y, f, w, caps)
     tp = thermo.default_thermo_params()
-    d = bounded_delta(w[1], caps.cap_fwd[1], caps.cap_rev[1], caps.active[1])
+    d = bounded_delta(caps.sigma[1] * w[1], caps.cap_fwd[1], caps.cap_rev[1],
+                      caps.active[1])
     cpm = thermo.compute_cpm(y.qv, params=tp)
     assert torch.equal(out.th, y.th + tp.xls / (cpm * f.pii) * d)
     assert torch.equal(out.qv, y.qv - d)
@@ -193,10 +196,12 @@ def test_vap2ice_latent_budget_exact(sign):
 def test_mass_only_channels_no_theta():
     y, f, _spec, caps = _mk_all()
     w = torch.zeros((len(CHANNELS),) + tuple(y.th.shape), **_F64)
-    w[2], w[3] = 2.0e-5, -1.0e-5
+    w[2], w[3] = 0.5, -0.3
     out = apply_partition_chain(y, f, w, caps)
-    d2 = bounded_delta(w[2], caps.cap_fwd[2], caps.cap_rev[2], caps.active[2])
-    d3 = bounded_delta(w[3], caps.cap_fwd[3], caps.cap_rev[3], caps.active[3])
+    d2 = bounded_delta(caps.sigma[2] * w[2], caps.cap_fwd[2],
+                       caps.cap_rev[2], caps.active[2])
+    d3 = bounded_delta(caps.sigma[3] * w[3], caps.cap_fwd[3],
+                       caps.cap_rev[3], caps.active[3])
     assert torch.equal(out.th, y.th)
     assert torch.equal(out.qv, y.qv)
     assert torch.equal(out.qc, y.qc - d2)
@@ -211,11 +216,13 @@ def test_composed_liq_to_ice_nets_freeze_latent():
     to O(d^2). This is why v1 drops the direct liq<->ice channel."""
     y, f, _spec, caps = _mk_all()
     d = 1.0e-5
-    # invert the bounded map for the exact target deltas
-    w0 = -d / (1.0 - d / caps.cap_rev[0])            # delta(w0) = -d
-    w1 = d / (1.0 - d / caps.cap_fwd[1])             # delta(w1) = +d
+    # invert the bounded map for the exact target deltas (u = sigma * w);
+    # cell 0 only — cell 1 has sigma[1] = 0 (dead vap2ice)
+    u0 = -d / (1.0 - d / caps.cap_rev[0])            # delta(u0) = -d
+    u1 = d / (1.0 - d / caps.cap_fwd[1])             # delta(u1) = +d
     w = torch.zeros((len(CHANNELS),) + tuple(y.th.shape), **_F64)
-    w[0], w[1] = w0, w1
+    w[0, 0, 0] = float(u0[0, 0] / caps.sigma[0][0, 0])
+    w[1, 0, 0] = float(u1[0, 0] / caps.sigma[1][0, 0])
     out = apply_partition_chain(y, f, w, caps)
     c = 0                                             # cell 0 (all active)
     # tolerances = a few ulp of the carrier fields (qc~1e-3, qv~1.4e-2)
@@ -242,7 +249,7 @@ def test_chain_local_autograd_pullback_smoke():
     y0, f, _spec, caps = _mk_all()
     leaves = State(**{fl: getattr(y0, fl).detach().clone().requires_grad_(True)
                       for fl in State._fields})
-    w = (1.0e-4 * torch.ones((len(CHANNELS),) + tuple(y0.th.shape), **_F64)
+    w = (0.5 * torch.ones((len(CHANNELS),) + tuple(y0.th.shape), **_F64)
          ).requires_grad_(True)
     out = apply_partition_chain(leaves, f, w, caps)
     torch.manual_seed(3)
@@ -279,6 +286,11 @@ def test_caps_per_donor_budget_and_activation():
     assert torch.equal(caps.cap_fwd[3], exp(y.qs, 0.5))
     assert torch.equal(caps.cap_rev[3], exp(y.qg, 0.5))
     assert torch.equal(caps.active, (caps.cap_fwd > 0) & (caps.cap_rev > 0))
+    # dimensionless-control scale: sigma = sigma_scale * min(caps), so the
+    # prior 1/2*||w||^2 states delta ~ N(0, sigma^2) near the origin
+    assert torch.equal(caps.sigma,
+                       0.25 * torch.minimum(caps.cap_fwd, caps.cap_rev))
+    assert torch.equal(caps.active, caps.sigma > 0)
     # cell 1: qi=0, qr=0 -> vap2ice and cloud2rain dead there
     assert not bool(caps.active[1, 0, 1]) and not bool(caps.active[2, 0, 1])
     assert bool(caps.active[0, 0, 1]) and bool(caps.active[3, 0, 1])
@@ -314,14 +326,19 @@ def test_partition_spec_validation():
     for bad in (0.0, -0.1, 1.5, float("nan"), float("inf")):
         with pytest.raises(ValueError, match="alpha_total"):
             PartitionSpec(alpha_total=bad)
+    for bad in (0.0, -0.1, 1.5, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="sigma_scale"):
+            PartitionSpec(sigma_scale=bad)
 
 
 def test_partition_spec_fingerprint():
     f1 = PartitionSpec().fingerprint()
     assert f1 == PartitionSpec(alpha_total=0.5).fingerprint()
     assert f1 != PartitionSpec(alpha_total=0.4).fingerprint()
+    assert f1 != PartitionSpec(sigma_scale=0.1).fingerprint()
     d = PartitionSpec().as_dict()
     assert d["alpha_total"] == 0.5
+    assert d["sigma_scale"] == 0.25
     assert d["channels"] == [c[0] for c in CHANNELS]
 
 
@@ -386,6 +403,7 @@ def test_minimizer_partition_none_is_legacy_bitwise():
         assert torch.equal(getattr(res_a.x_analysis, k),
                            getattr(res_b.x_analysis, k)), k
     assert res_b.w is None and res_b.partition is None
+    assert res_b.grad_w_norm_final is None
 
 
 def test_chain_pullback_matches_fd_through_window():
@@ -417,10 +435,10 @@ def test_chain_pullback_matches_fd_through_window():
     # probe point away from the relu corner (|w0| >> fd h)
     v0 = torch.zeros((12,) + tuple(xb.th.shape), **_F64)
     v0[0, 0, 0], v0[1, 0, 1] = 0.2, -0.1
-    # ch1 reverse cap is 0.5*qi_bg = 1e-4: keep |w0[1]| well below the
-    # saturation knee, else FD truncation error exceeds the 1e-5 gate
+    # w is dimensionless (u = sigma*w, sigma = 0.25*min(caps)): |w| < ~1
+    # keeps the probe well below the saturation knee (FD truncation gate)
     w0 = torch.zeros((nch,) + tuple(xb.th.shape), **_F64)
-    w0[0], w0[1] = 1.5e-4, -3.0e-5
+    w0[0], w0[1] = 0.3, -0.4
 
     with torch.no_grad():
         y, jac = cvt_apply(xb, b_sigma, v0, spec)
@@ -447,7 +465,7 @@ def test_chain_pullback_matches_fd_through_window():
     for idx in ((0, 0, 0), (1, 0, 1)):                    # th, qv controls
         fd_check(j_of_v, v0, idx, float(g_v[idx]))
     for idx in ((0, 0, 0), (1, 0, 0)):                    # vap channels
-        fd_check(j_of_w, w0, idx, float(g_w[idx]), h=3.0e-7)
+        fd_check(j_of_w, w0, idx, float(g_w[idx]))
 
 
 def test_minimizer_conserving_e2e_water_invariant():
@@ -462,15 +480,19 @@ def test_minimizer_conserving_e2e_water_invariant():
         sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
     pspec = PartitionSpec()
     caps = build_partition_caps(xb, pspec)
+    # w_true within the saturating range; sigma_o small enough that the obs
+    # term dominates the w-prior DESPITE the supersaturated background's
+    # satadj absorbing most of the t0 latent signal by t=2 (measured ~100x)
     w_true = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
-    w_true[0], w_true[1] = 4.0e-4, 1.0e-4
+    w_true[0], w_true[1] = 3.0, 2.0                        # dimensionless
     with torch.no_grad():
         x_true = apply_partition_chain(xb, forcings[0], w_true, caps)
     y = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
-    res = run_minimizer(xb, forcings, _obs_th_at(2, y, sigma_o=0.05),
+    res = run_minimizer(xb, forcings, _obs_th_at(2, y, sigma_o=2.0e-4),
                         cfg, b_sigma, max_iter=10, cvt=spec, partition=pspec)
     assert res.j_trace[-1] < res.j_trace[0], res.j_trace
     assert res.w is not None and float(res.w.abs().max()) > 0.0
+    assert res.grad_w_norm_final is not None and res.grad_w_norm_final >= 0.0
     xa = res.x_analysis
     assert torch.allclose(_total_water(xa), _total_water(xb),
                           rtol=0.0, atol=1.0e-16)
@@ -492,6 +514,7 @@ def test_partition_requires_touched_fields_active():
     # dead-everywhere channels impose nothing
     dead = PartitionCaps(cap_fwd=torch.zeros_like(caps.cap_fwd),
                          cap_rev=torch.zeros_like(caps.cap_rev),
+                         sigma=torch.zeros_like(caps.sigma),
                          active=torch.zeros_like(caps.active))
     validate_partition(dead, ("th",))
 
@@ -545,14 +568,14 @@ def _P(**kw):
     return ObsGatePolicy(allow_tuple_returns=True, **kw)
 
 
-def _quad_th_obs(t_obs: int, y_target: torch.Tensor):
-    """Synthetic dual obs term: J = 0.5*sum((th_t - y)^2), frozen signature."""
+def _quad_th_obs(t_obs: int, y_target: torch.Tensor, sigma_o: float = 1.0):
+    """Synthetic dual obs term: J = 0.5*sum(((th_t - y)/sigma_o)^2)."""
     def obs_eval(t, x_t):
         if t != t_obs:
             return None
-        d = x_t.th - y_target
-        adj = _zeros_state(x_t)._replace(th=d.clone())
-        return float(0.5 * (d * d).sum()), adj, int(d.numel()), "synthetic-quad"
+        r = (x_t.th - y_target) / sigma_o
+        adj = _zeros_state(x_t)._replace(th=r / sigma_o)
+        return float(0.5 * (r * r).sum()), adj, int(r.numel()), "synthetic-quad"
     return obs_eval
 
 
@@ -575,6 +598,7 @@ def test_dual_partition_none_is_legacy():
         assert torch.equal(getattr(res_a.x_analysis, k),
                            getattr(res_b.x_analysis, k)), k
     assert res_b.w is None and res_b.partition is None
+    assert res_b.grad_w_norm_final is None
 
 
 def test_dual_partition_e2e_water_invariant():
@@ -589,16 +613,18 @@ def test_dual_partition_e2e_water_invariant():
     prior = default_param_prior(0.2)
     pspec = PartitionSpec()
     caps = build_partition_caps(xb, pspec)
+    # obs-dominated twin (see the single-minimizer E2E note on satadj wash)
     w_true = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
-    w_true[0], w_true[1] = 4.0e-4, 1.0e-4
+    w_true[0], w_true[1] = 3.0, 2.0                        # dimensionless
     with torch.no_grad():
         x_true = apply_partition_chain(xb, forcings[0], w_true, caps)
     y = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
-    res = run_dual_minimizer(xb, forcings, _quad_th_obs(2, y), cfg, b_sigma,
-                             prior, max_iter=10, cvt=spec, policy=_P(),
-                             partition=pspec)
+    res = run_dual_minimizer(xb, forcings, _quad_th_obs(2, y, sigma_o=2.0e-4),
+                             cfg, b_sigma, prior, max_iter=10, cvt=spec,
+                             policy=_P(), partition=pspec)
     assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
     assert res.w is not None and float(res.w.abs().max()) > 0.0
+    assert res.grad_w_norm_final is not None and res.grad_w_norm_final >= 0.0
     assert torch.allclose(_total_water(res.x_analysis), _total_water(xb),
                           rtol=0.0, atol=1.0e-16)
     assert res.partition["fingerprint"] == pspec.fingerprint()
@@ -746,5 +772,62 @@ def test_dual_partition_zero_step_window():
     assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
     with pytest.raises(ValueError, match="partition_forcing"):
         run_dual_minimizer(xb, [], obs, WindowConfig(dt=DT), b_sigma,
+                           default_param_prior(0.2), max_iter=2, cvt=spec,
+                           policy=_P(), partition=PartitionSpec())
+
+
+# ── forcing contract + conserving-sigma contract (review follow-ups) ─────────
+
+def test_partition_forcing_pii_validated():
+    """The zero-step path bypasses the model's own forcing validation: a
+    wrong-shape pii would silently broadcast and 0/NaN pii makes non-finite
+    theta increments — exact-shape/finite/positive contract enforced."""
+    xb = _mk_state()
+    spec, b_sigma = _conserving_cvt(xb)
+    good = _mk_forcing(xb)
+    bad_shape = good._replace(pii=torch.full((1, 1), 0.95, **_F64))
+    bad_zero = good._replace(pii=torch.zeros_like(good.pii))
+    bad_nan = good._replace(
+        pii=good.pii.clone().index_fill_(1, torch.tensor([0]), float("nan")))
+    for bad in (bad_shape, bad_zero, bad_nan):
+        with pytest.raises(ValueError, match="pii"):
+            run_minimizer(xb, [], _obs_th_t0(xb), WindowConfig(dt=DT),
+                          b_sigma, max_iter=2, cvt=spec,
+                          partition=PartitionSpec(), partition_forcing=bad)
+
+
+def test_partition_forcing_must_match_step_forcing():
+    """A non-zero window with an explicit partition_forcing whose pii differs
+    from forcings[0].pii bifurcates the physics configuration — bitwise
+    equality enforced; a matching explicit forcing stays allowed."""
+    xb = _mk_state()
+    f0 = _mk_forcing(xb)
+    spec, b_sigma = _conserving_cvt(xb)
+    other = f0._replace(pii=f0.pii * 1.0001)
+    with pytest.raises(ValueError, match="forcings\\[0\\]"):
+        run_minimizer(xb, [f0, f0], _obs_th_t0(xb), WindowConfig(dt=DT),
+                      b_sigma, max_iter=2, cvt=spec,
+                      partition=PartitionSpec(), partition_forcing=other)
+    run_minimizer(xb, [f0, f0], _obs_th_t0(xb), WindowConfig(dt=DT), b_sigma,
+                  max_iter=2, cvt=spec, partition=PartitionSpec(),
+                  partition_forcing=f0)
+
+
+def test_partition_enforces_mass_hydro_sigma_zero():
+    """Conserving contract is ENFORCED, not conventional: a live diagonal mul
+    control on any of qc/qr/qi/qs/qg double-controls the species and breaks
+    the total-water invariance the partition stage exists to provide."""
+    xb = _mk_state()
+    f0 = _mk_forcing(xb)
+    spec, b_sigma = make_default_cvt(
+        xb, sigma_overrides={"qc": 0.5, "qi": 0.0, "qs": 0.0,
+                             "nc": 0.0, "ni": 0.0})
+    with pytest.raises(ValueError, match="qc"):
+        run_minimizer(xb, [f0, f0], _obs_th_t0(xb), WindowConfig(dt=DT),
+                      b_sigma, max_iter=2, cvt=spec,
+                      partition=PartitionSpec())
+    with pytest.raises(ValueError, match="qc"):
+        run_dual_minimizer(xb, [f0, f0], lambda t, x: None,
+                           WindowConfig(dt=DT), b_sigma,
                            default_param_prior(0.2), max_iter=2, cvt=spec,
                            policy=_P(), partition=PartitionSpec())

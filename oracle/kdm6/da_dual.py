@@ -41,7 +41,8 @@ from .da_cvt import CvtSpec, build_cvt_record, cvt_apply, validate_cvt
 from .da_minimizer import _stack, _validate_state_shapes
 from .da_partition import (CHANNELS, PartitionSpec, apply_partition_chain,
                            build_partition_caps, build_partition_record,
-                           chain_with_pullback, validate_partition)
+                           chain_with_pullback, validate_conserving_sigma,
+                           validate_partition, validate_partition_forcing)
 from .da_window import WindowConfig, run_da_window
 from .runtime import Parameters, make_parameters
 from .state import Forcing, State
@@ -289,6 +290,7 @@ class DualMinimizeResult:
     cvt: "dict | None" = None              # CVT 감사 레코드 (spec 경로만)
     w: "torch.Tensor | None" = None        # partition controls (n_ch, B, K), opt-in
     partition: "dict | None" = None        # partition audit record (da_partition)
+    grad_w_norm_final: "float | None" = None   # |g_w| at the last closure
 
 
 def run_dual_minimizer(
@@ -355,18 +357,27 @@ def run_dual_minimizer(
         # caps frozen from the background (v/w-independent B)
         caps = build_partition_caps(xb, partition)
         validate_partition(caps, window_config.active_fields)
+        validate_conserving_sigma(b_sigma)
         if partition_forcing is None:
             if not len(forcings):
                 raise ValueError(
                     "partition latent terms need the t0 forcing (Exner) — "
                     "pass partition_forcing for a zero-step window")
             partition_forcing = forcings[0]
+        elif len(forcings) and not torch.equal(partition_forcing.pii,
+                                               forcings[0].pii):
+            raise ValueError(
+                "explicit partition_forcing pii differs from forcings[0].pii "
+                "— a bifurcated physics configuration (bitwise match "
+                "required on a non-zero-step window)")
+        validate_partition_forcing(partition_forcing, xb)
         w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape),
                         dtype=torch.float64, requires_grad=True)
 
     trace: list = []
     counters = {"windows": 0}
-    last = {"jb": 0.0, "jth": 0.0, "jobs": 0.0, "gx": 0.0, "gth": 0.0}
+    last = {"jb": 0.0, "jth": 0.0, "jobs": 0.0, "gx": 0.0, "gth": 0.0,
+            "gw": None}
     frozen_n_valid: dict = {}
 
     def closure() -> torch.Tensor:
@@ -575,6 +586,8 @@ def run_dual_minimizer(
                               signature={k: v[1] for k, v in n_valid_acc.items()} or None))
             last.update(jb=float(j_b), jth=float(j_th), jobs=float(j_obs),
                         gx=float(g_x.norm()), gth=float(g_th.norm()))
+            if g_w is not None:
+                last["gw"] = float(g_w.norm())
         return j
 
     opt = torch.optim.LBFGS(
@@ -602,7 +615,8 @@ def run_dual_minimizer(
         n_window_evals=counters["windows"],
         grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"],
         policy=policy.as_dict(), cvt=cvt_rec,
-        w=None if w is None else w.detach(), partition=part_rec)
+        w=None if w is None else w.detach(), partition=part_rec,
+        grad_w_norm_final=last["gw"])
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],

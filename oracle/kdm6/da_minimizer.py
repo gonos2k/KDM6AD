@@ -27,7 +27,8 @@ from .da_cvt import (CvtSpec, _stack, _unstack, build_cvt_record, cvt_apply,
                      validate_cvt)
 from .da_partition import (CHANNELS, PartitionSpec, apply_partition_chain,
                            build_partition_caps, build_partition_record,
-                           chain_with_pullback, validate_partition)
+                           chain_with_pullback, validate_conserving_sigma,
+                           validate_partition, validate_partition_forcing)
 from .da_window import WindowConfig, run_da_window
 from .state import State, Forcing
 
@@ -65,6 +66,7 @@ class MinimizeResult:
     cvt: "dict | None" = None            # 감사 레코드 (spec 경로만; 레거시 None)
     w: "torch.Tensor | None" = None      # partition controls (n_ch, B, K), opt-in
     partition: "dict | None" = None      # partition audit record (da_partition)
+    grad_w_norm_final: "float | None" = None   # |g_w| at the last closure
 
 
 def run_minimizer(
@@ -122,18 +124,26 @@ def run_minimizer(
         # caps frozen from the background (v/w-independent B)
         caps = build_partition_caps(xb64, partition)
         validate_partition(caps, window_config.active_fields)
+        validate_conserving_sigma(b_sigma)
         if partition_forcing is None:
             if not len(forcings):
                 raise ValueError(
                     "partition latent terms need the t0 forcing (Exner) — "
                     "pass partition_forcing for a zero-step window")
             partition_forcing = forcings[0]
+        elif len(forcings) and not torch.equal(partition_forcing.pii,
+                                               forcings[0].pii):
+            raise ValueError(
+                "explicit partition_forcing pii differs from forcings[0].pii "
+                "— a bifurcated physics configuration (bitwise match "
+                "required on a non-zero-step window)")
+        validate_partition_forcing(partition_forcing, xb64)
         w = torch.zeros((len(CHANNELS),) + tuple(xb64.th.shape),
                         dtype=torch.float64, requires_grad=True)
 
     trace: list[float] = []
     counters = {"windows": 0}
-    last = {"jb": 0.0, "jobs": 0.0, "gnorm": 0.0}
+    last = {"jb": 0.0, "jobs": 0.0, "gnorm": 0.0, "gw": None}
 
     def closure() -> torch.Tensor:
         # CVT 산술만 no_grad — run_da_window는 내부 backward 스윕에서 스스로
@@ -173,10 +183,9 @@ def run_minimizer(
             j = j_b + j_obs
             trace.append(float(j))
             last["jb"], last["jobs"] = float(j_b), float(j_obs)
-            gsq = grad.pow(2).sum()
+            last["gnorm"] = float(grad.norm())
             if partition is not None:
-                gsq = gsq + w.grad.pow(2).sum()
-            last["gnorm"] = float(gsq.sqrt())
+                last["gw"] = float(w.grad.norm())
         return j
 
     opt = torch.optim.LBFGS(
@@ -201,4 +210,4 @@ def run_minimizer(
         jb_final=last["jb"], jobs_final=last["jobs"],
         n_window_evals=counters["windows"], grad_norm_final=last["gnorm"],
         cvt=cvt_rec, w=None if w is None else w.detach(),
-        partition=part_rec)
+        partition=part_rec, grad_w_norm_final=last["gw"])
