@@ -761,7 +761,8 @@ def test_runner_manifest_argv_lossless(monkeypatch, tmp_path):
                         ["oracle/scripts/run_fulldomain_lc05.py",
                          "/tmp/out dir/v.json", "case root/x",
                          "--conserving"])
-    man = mod.snapshot_provenance([])
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    man = mod.snapshot_provenance([], allow_dirty=True)
     argv = [_sys.executable, *_sys.argv]
     assert man["argv"] == argv                # lossless authoritative record
     assert shlex.split(man["command"]) == argv  # display form round-trips
@@ -792,7 +793,10 @@ def test_runner_provenance_snapshot_and_drift(monkeypatch, tmp_path):
     git_state = {"sha": "a" * 40, "dirty": ""}
     monkeypatch.setattr(mod, "_git", lambda *a: (
         git_state["sha"] if a[0] == "rev-parse" else git_state["dirty"]))
+    monkeypatch.setattr(mod, "_git_bytes", lambda *a: (
+        b"" if a[0] == "ls-files" else git_state["dirty"].encode()))
 
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
     man = mod.snapshot_provenance([])
     assert man["code_sha"] == "a" * 40 and man["code_dirty"] is False
     assert man["argv"][0] and isinstance(man["argv"], list)
@@ -832,8 +836,13 @@ def test_runner_dirty_content_drift_detected(monkeypatch, tmp_path):
         git_state["sha"] if a[0] == "rev-parse"
         else git_state["status"] if a[0] == "status"
         else git_state["diff"]))
+    monkeypatch.setattr(mod, "_git_bytes", lambda *a: (
+        b"" if a[0] == "ls-files"
+        else git_state["status"].encode() if a[0] == "status"
+        else git_state["diff"].encode()))
 
-    man = mod.snapshot_provenance([])
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    man = mod.snapshot_provenance([], allow_dirty=True)
     assert man["code_dirty"] is True
     assert isinstance(man["code_dirty_sha256"], str)
     assert mod.check_provenance_drift(man) == {}
@@ -850,7 +859,7 @@ def test_runner_dirty_content_drift_detected(monkeypatch, tmp_path):
     monkeypatch.setattr(mod, "_ORACLE", repo / "oracle")
     git_state["diff"] = "-a\n+b"
     git_state["status"] = "?? untracked.txt"
-    man2 = mod.snapshot_provenance([])
+    man2 = mod.snapshot_provenance([], allow_dirty=True)
     assert mod.check_provenance_drift(man2) == {}
     (repo / "untracked.txt").write_bytes(b"v2-CHANGED")
     drift = mod.check_provenance_drift(man2)
@@ -875,19 +884,20 @@ def test_runner_untracked_special_filenames_hashed(monkeypatch, tmp_path):
     special.write_bytes(b"v1")
     monkeypatch.setattr(mod, "_ORACLE", repo / "oracle")
 
-    def fake_git(*a):
-        if a[0] == "rev-parse":
-            return "a" * 40
-        if a == ("status", "--porcelain", "-z"):
-            # NUL-separated, unquoted; rename entry with origin record
-            return "R  new.py\0old.py\0?? my file.txt\0"
-        if a[0] == "status":
-            # default porcelain C-quotes the special name
-            return 'R  old.py -> new.py\n?? "my file.txt"'
-        return "-a\n+b"
-    monkeypatch.setattr(mod, "_git", fake_git)
+    monkeypatch.setattr(mod, "_git", lambda *a: "a" * 40)
 
-    man = mod.snapshot_provenance([])
+    def fake_git_bytes(*a):
+        if a[0] == "ls-files":
+            return b""
+        if a[0] == "status":
+            # -z form: NUL-separated, UNQUOTED (the default porcelain would
+            # C-quote the special name); rename entry with origin record
+            return b"R  new.py\0old.py\0?? my file.txt\0"
+        return b"-a\n+b"
+    monkeypatch.setattr(mod, "_git_bytes", fake_git_bytes)
+
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    man = mod.snapshot_provenance([], allow_dirty=True)
     assert mod.check_provenance_drift(man) == {}
     special.write_bytes(b"v2-CHANGED")            # content drift must be seen
     drift = mod.check_provenance_drift(man)
@@ -912,6 +922,8 @@ def test_runner_git_failures_are_loud(monkeypatch, tmp_path):
         mod._git("rev-parse", "HEAD")
     monkeypatch.setattr(mod, "_git",
                         lambda *a: "" if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(mod, "_git_bytes", lambda *a: b"")
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
     with pytest.raises(RuntimeError, match="SHA"):
         mod.snapshot_provenance([])
 
@@ -930,3 +942,163 @@ def test_runner_cli_rejects_prefix_abbreviation():
                            capture_output=True, text=True, timeout=60)
         assert r.returncode == 2, bad
         assert bad in r.stderr, bad
+
+
+def _mk_fixture_tree(root, exe):
+    """Synthetic RTTOV fixture: run.sh naming the exe, coef prefix/name,
+    hydrotable — the same resolution surface the real fixtures expose."""
+    (root / "out").mkdir(parents=True)
+    (root / "in").mkdir()
+    (root / "out" / "run.sh").write_text(f"{exe} > log\n")
+    coefdir = root / "coefs"
+    coefdir.mkdir()
+    (coefdir / "rt.dat").write_text("COEF-V1")
+    (coefdir / "hydro.dat").write_text("HYDRO-V1")
+    (root / "out" / "rttov_test.txt").write_text(
+        f"  defn%coef_prefix = '{coefdir}'\n")
+    (root / "in" / "coef.txt").write_text(
+        "  defn%f_coef = 'rt.dat'\n  defn%f_hydrotable = 'hydro.dat'\n")
+
+
+def test_rttov_provenance_assets_hashed_and_drift(monkeypatch, tmp_path):
+    """Reviewer P1-1: the science actually consumes the RTTOV exe, rtcoef,
+    hydrotable, and the whole fixture tree — all must be resolved once,
+    hashed into the manifest (Merkle over the tree), env recorded, and
+    re-checked at the end."""
+    mod = _load_runner()
+    exe = tmp_path / "rttov_test.exe"
+    exe.write_bytes(b"EXE-V1")
+    clear, cloud = tmp_path / "clear", tmp_path / "cloud"
+    _mk_fixture_tree(clear, exe)
+    _mk_fixture_tree(cloud, exe)
+    monkeypatch.setenv("AD_RTTOV_HOME", str(tmp_path / "adr"))
+    monkeypatch.delenv("KDM6_RTTOV_RUNTIME", raising=False)
+
+    rt = mod.rttov_provenance(fixtures={"clear_fixture": clear,
+                                        "cloud_fixture": cloud})
+    assert rt["env"]["AD_RTTOV_HOME"] == str(tmp_path / "adr")
+    assert rt["env"]["KDM6_RTTOV_RUNTIME"] is None
+    for name in ("clear_fixture", "cloud_fixture"):
+        e = rt[name]
+        assert e["path"] and len(e["tree_sha256"]) == 64
+        assert e["exe"]["path"] == str(exe) and len(e["exe"]["sha256"]) == 64
+        assert e["coef"]["path"].endswith("rt.dat")
+        assert e["hydrotable"]["path"].endswith("hydro.dat")
+
+    # end-of-run recheck: exe/coef/hydrotable/tree content drift is caught
+    ok = mod._rttov_recheck(rt)
+    assert ok == {}
+    exe.write_bytes(b"EXE-CHANGED")
+    drift = mod._rttov_recheck(rt)
+    assert any("exe" in k for k in drift), drift
+    exe.write_bytes(b"EXE-V1")
+    (clear / "in" / "extra.txt").write_text("new file")   # tree drift
+    drift = mod._rttov_recheck(rt)
+    assert any("clear_fixture" in k for k in drift), drift
+
+
+def test_snapshot_requires_clean_tree_by_default(monkeypatch, tmp_path):
+    """Reviewer P1-3: evidence runs enforce code_dirty=False — a dirty tree
+    aborts the snapshot unless --allow-dirty is given explicitly."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "a", tmp_path / "b"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"y")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    monkeypatch.setattr(mod, "_git", lambda *a: (
+        "a" * 40 if a[0] == "rev-parse" else " M x.py"))
+    monkeypatch.setattr(mod, "_git_bytes", lambda *a: b" M x.py\0")
+    with pytest.raises(RuntimeError, match="dirty"):
+        mod.snapshot_provenance([])
+    man = mod.snapshot_provenance([], allow_dirty=True)
+    assert man["code_dirty"] is True
+
+
+def test_snapshot_rejects_index_hint_bypass(monkeypatch, tmp_path):
+    """Reviewer P1-3: assume-unchanged / skip-worktree entries make a
+    modified file invisible to status/diff — detect via ls-files -v and
+    reject the snapshot."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "a", tmp_path / "b"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"y")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    for tag in ("h code.py", "S code.py"):
+        monkeypatch.setattr(mod, "_git", lambda *a: "a" * 40)
+        monkeypatch.setattr(mod, "_git_bytes", lambda *a, _t=tag: (
+            _t.encode() if a[0] == "ls-files" else b""))
+        with pytest.raises(RuntimeError, match="assume-unchanged|skip-worktree"):
+            mod.snapshot_provenance([])
+
+
+def test_missing_input_is_drift_not_crash(monkeypatch, tmp_path):
+    """Reviewer P2: an input deleted mid-run must surface as inputs_changed
+    drift (so the rejection manifest is still written), not abort with
+    FileNotFoundError."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "a", tmp_path / "b"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"y")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    monkeypatch.setattr(mod, "rttov_provenance", lambda: {"stub": True})
+    monkeypatch.setattr(mod, "_git", lambda *a: (
+        "a" * 40 if a[0] == "rev-parse" else ""))
+    monkeypatch.setattr(mod, "_git_bytes", lambda *a: b"")
+    man = mod.snapshot_provenance([])
+    f1.unlink()
+    drift = mod.check_provenance_drift(man)
+    assert str(f1) in drift["inputs_changed"]
+
+
+def test_output_paths_must_be_disjoint_from_inputs(tmp_path):
+    """Reviewer P2: out/case paths equal to, inside, or containing an input
+    path would let the run overwrite its own provenance inputs."""
+    mod = _load_runner()
+    inp = tmp_path / "inputs" / "wrfin"
+    inp.parent.mkdir()
+    inp.write_bytes(b"x")
+    mod._assert_disjoint([str(tmp_path / "out" / "v.json")], [str(inp)])
+    mod._assert_disjoint([str(inp.parent / "sibling")], [str(inp)])
+    for bad in (str(inp), str(tmp_path / "inputs"), str(tmp_path)):
+        with pytest.raises(ValueError, match="disjoint"):
+            mod._assert_disjoint([bad], [str(inp)])
+
+
+def test_finalize_artifact_quarantines_rejected(tmp_path):
+    """Reviewer P1-2: a drift/gate-rejected run must NOT leave files under
+    the canonical approved names — gates carry provenance_stable, accepted
+    is recomputed, and every artifact lands under *.rejected."""
+    mod = _load_runner()
+    staging = tmp_path / "v.json.fields.npz.staging"
+    staging.write_bytes(b"NPZ")
+    out = str(tmp_path / "v.json")
+    rep = dict(gates={"j_descended": True, "accepted": True}, wall_s=1.0)
+    man = dict(inputs={})
+
+    ok = mod.finalize_artifact(rep, man, {}, out, str(staging))
+    assert ok is True
+    assert rep["gates"]["provenance_stable"] is True
+    assert (tmp_path / "v.json").exists()
+    assert (tmp_path / "v.json.fields.npz").exists()
+    assert (tmp_path / "v.json.manifest.json").exists()
+
+    staging.write_bytes(b"NPZ2")
+    out2 = str(tmp_path / "w.json")
+    rep2 = dict(gates={"j_descended": True, "accepted": True}, wall_s=1.0)
+    drift = dict(code_sha=("a" * 40, "b" * 40))
+    ok = mod.finalize_artifact(rep2, dict(inputs={}), drift, out2,
+                               str(staging))
+    assert ok is False
+    assert rep2["gates"]["provenance_stable"] is False
+    assert rep2["gates"]["accepted"] is False
+    assert not (tmp_path / "w.json").exists()          # no approved-looking name
+    assert (tmp_path / "w.json.rejected").exists()
+    assert (tmp_path / "w.json.fields.npz.rejected").exists()
+    assert (tmp_path / "w.json.manifest.json.rejected").exists()
+    rejected = json.loads((tmp_path / "w.json.rejected").read_text())
+    assert rejected["gates"]["accepted"] is False
