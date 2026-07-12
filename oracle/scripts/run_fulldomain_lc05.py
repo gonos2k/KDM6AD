@@ -65,10 +65,30 @@ def _git(*args):
 
 
 def _code_state():
+    """(sha, dirty, dirty_digest) — the digest hashes the dirty CONTENT
+    (porcelain + tracked diff + untracked file bytes), because a Boolean
+    alone misses drift within a dirty tree: True -> True with an unchanged
+    HEAD would hide a mid-run edit to the uncommitted changes."""
     sha = _git("rev-parse", "HEAD")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise RuntimeError(f"malformed git SHA: {sha!r}")
-    return sha, bool(_git("status", "--porcelain"))
+    porcelain = _git("status", "--porcelain")
+    if not porcelain:
+        return sha, False, None
+    h = hashlib.sha256(porcelain.encode())
+    h.update(_git("diff", "HEAD").encode())
+    # untracked content: porcelain only NAMES these paths and git diff
+    # does not carry their bytes — hash the files themselves
+    for line in porcelain.splitlines():
+        if not line.startswith("?? "):
+            continue
+        root = _ORACLE.parent / line[3:]
+        files = (sorted(q for q in root.rglob("*") if q.is_file())
+                 if root.is_dir() else [root])
+        for q in files:
+            h.update(str(q).encode())
+            h.update(_sha256(q).encode() if q.is_file() else b"|missing|")
+    return sha, True, h.hexdigest()
 
 
 def snapshot_provenance(gk2a_files):
@@ -79,10 +99,10 @@ def snapshot_provenance(gk2a_files):
 
     import numpy
     import torch
-    sha, dirty = _code_state()
+    sha, dirty, dirty_digest = _code_state()
     argv = [sys.executable, *sys.argv]
     return dict(
-        code_sha=sha, code_dirty=dirty,
+        code_sha=sha, code_dirty=dirty, code_dirty_sha256=dirty_digest,
         # argv array is the authoritative LOSSLESS record (a joined string
         # cannot round-trip paths with spaces); command is the shlex-quoted
         # display form, which splits back to the exact argv. process_argv
@@ -107,11 +127,14 @@ def check_provenance_drift(manifest):
     manifest no longer describes what the run used. Returns {} when clean;
     the runner REJECTS the artifact otherwise."""
     drift = {}
-    sha, dirty = _code_state()
+    sha, dirty, dirty_digest = _code_state()
     if sha != manifest["code_sha"]:
         drift["code_sha"] = (manifest["code_sha"], sha)
     if dirty != manifest["code_dirty"]:
         drift["code_dirty"] = (manifest["code_dirty"], dirty)
+    if dirty_digest != manifest["code_dirty_sha256"]:
+        drift["code_dirty_sha256"] = (manifest["code_dirty_sha256"],
+                                      dirty_digest)
     changed = [p for p, h in manifest["inputs"].items()
                if _sha256(p) != h]
     if changed:

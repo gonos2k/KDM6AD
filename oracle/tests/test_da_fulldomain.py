@@ -816,6 +816,47 @@ def test_runner_provenance_snapshot_and_drift(monkeypatch, tmp_path):
     assert drift["code_dirty"] == (False, True)
 
 
+def test_runner_dirty_content_drift_detected(monkeypatch, tmp_path):
+    """Codex: a Boolean dirty flag misses drift WITHIN a dirty tree — the
+    same True/True with an unchanged HEAD hides a mid-run edit to the
+    uncommitted changes (and to untracked file content, which porcelain
+    names but git diff does not carry)."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "wrfin", tmp_path / "cal.json"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"{}")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    git_state = {"sha": "a" * 40, "status": " M x.py", "diff": "-a\n+b"}
+    monkeypatch.setattr(mod, "_git", lambda *a: (
+        git_state["sha"] if a[0] == "rev-parse"
+        else git_state["status"] if a[0] == "status"
+        else git_state["diff"]))
+
+    man = mod.snapshot_provenance([])
+    assert man["code_dirty"] is True
+    assert isinstance(man["code_dirty_sha256"], str)
+    assert mod.check_provenance_drift(man) == {}
+
+    git_state["diff"] = "-a\n+CHANGED"     # dirty stays True, SHA unchanged
+    drift = mod.check_provenance_drift(man)
+    assert "code_dirty_sha256" in drift and "code_dirty" not in drift
+
+    # untracked content: porcelain only NAMES it — the digest must hash
+    # the file bytes so a mid-run rewrite is visible
+    repo = tmp_path / "repo"
+    (repo / "oracle").mkdir(parents=True)
+    (repo / "untracked.txt").write_bytes(b"v1")
+    monkeypatch.setattr(mod, "_ORACLE", repo / "oracle")
+    git_state["diff"] = "-a\n+b"
+    git_state["status"] = "?? untracked.txt"
+    man2 = mod.snapshot_provenance([])
+    assert mod.check_provenance_drift(man2) == {}
+    (repo / "untracked.txt").write_bytes(b"v2-CHANGED")
+    drift = mod.check_provenance_drift(man2)
+    assert "code_dirty_sha256" in drift
+
+
 def test_runner_git_failures_are_loud(monkeypatch, tmp_path):
     """_git must raise on nonzero return codes and reject malformed SHAs —
     a failed git call must never be recorded as empty-SHA/dirty=False."""
