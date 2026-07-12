@@ -187,7 +187,10 @@ def evaluate_artifact_gates(rep: dict) -> dict:
     if conserving or rep.get("water_budget") is not None:
         gates["pw_conserved"] = _gate_pw_conserved(rep)
     if conserving or "n_audit_evals" in rep:
-        gates["final_audited"] = _gate_final_audited(rep)
+        # a conserving run has a live partition, so its w-gradient
+        # diagnostic is REQUIRED (a legacy report's None stays legitimate)
+        gates["final_audited"] = _gate_final_audited(rep,
+                                                     require_w=conserving)
     if conserving:
         gates["conserving_contract"] = _gate_conserving_contract(rep)
     gates["accepted"] = all(gates.values())
@@ -209,18 +212,21 @@ def _gate_pw_conserved(rep: dict) -> bool:
     return _is_finite_number(err) and err < 1.0e-12
 
 
-def _gate_final_audited(rep: dict) -> bool:
+def _gate_final_audited(rep: dict, *, require_w: bool = False) -> bool:
     """The report's finals come from exactly one authoritative audit closure
     and are internally consistent: trace length = optimizer evals + 1 audit,
     the trace tail equals the sum of the final J components exactly, and
-    every final/gradient diagnostic is finite. False on any missing or
-    malformed field (fail-closed)."""
+    every final/gradient diagnostic is finite. require_w (conserving runs):
+    grad_w_norm_final must be PRESENT and finite — a missing/None w-gradient
+    diagnostic fails closed. False on any missing or malformed field."""
     try:
         jt = rep["j_trace"]
         total = jt[-1]["total"]
         finals = [rep["jb_final"], rep["jtheta_final"], rep["jobs_final"],
                   rep["grad_theta_norm_final"]]
-        if rep.get("grad_w_norm_final") is not None:
+        if require_w:
+            finals.append(rep["grad_w_norm_final"])   # KeyError/None -> False
+        elif rep.get("grad_w_norm_final") is not None:
             finals.append(rep["grad_w_norm_final"])
         return (rep["n_audit_evals"] == 1
                 and len(jt) == rep["n_window_evals"] + 1

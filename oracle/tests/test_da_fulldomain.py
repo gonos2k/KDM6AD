@@ -480,6 +480,11 @@ def test_conserving_gates_fail_closed_on_missing_fields():
     gate_of(lambda r: r.update(jb_final=1.6), "final_audited")   # sum breaks
     gate_of(lambda r: r.update(grad_w_norm_final=float("inf")),
             "final_audited")
+    # a CONSERVING run has a live partition: grad_w_norm_final must exist
+    # and be finite — a missing/None w-gradient diagnostic is fail-closed
+    # (Codex: the is-not-None skip made this pass silently)
+    gate_of(lambda r: r.pop("grad_w_norm_final"), "final_audited")
+    gate_of(lambda r: r.update(grad_w_norm_final=None), "final_audited")
     # conserving contract fail-closed
     gate_of(lambda r: r.pop("partition"), "conserving_contract")
     gate_of(lambda r: r["partition"]["spec"].update(version=1),
