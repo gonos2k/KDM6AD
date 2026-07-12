@@ -757,8 +757,98 @@ def test_runner_manifest_argv_lossless(monkeypatch, tmp_path):
     f2.write_bytes(b"{}")
     monkeypatch.setattr(mod, "WRFIN", str(f1))
     monkeypatch.setattr(mod, "CAL", str(f2))
-    argv = [_sys.executable, "oracle/scripts/run_fulldomain_lc05.py",
-            "/tmp/out dir/v.json", "case root/x", "--conserving"]
-    man = mod.build_manifest(argv, [])
+    monkeypatch.setattr(_sys, "argv",
+                        ["oracle/scripts/run_fulldomain_lc05.py",
+                         "/tmp/out dir/v.json", "case root/x",
+                         "--conserving"])
+    man = mod.snapshot_provenance([])
+    argv = [_sys.executable, *_sys.argv]
     assert man["argv"] == argv                # lossless authoritative record
     assert shlex.split(man["command"]) == argv  # display form round-trips
+
+
+def _load_runner():
+    import importlib.util
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1]
+              / "scripts" / "run_fulldomain_lc05.py")
+    spec = importlib.util.spec_from_file_location("rfl05x", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_runner_provenance_snapshot_and_drift(monkeypatch, tmp_path):
+    """Reviewer P1: provenance must be SNAPSHOT before the analysis reads
+    anything and re-checked at the end — a mid-run HEAD/input change makes
+    the manifest describe code/inputs the run never used. The drift check
+    reports every mismatch; a clean end state reports none."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "wrfin", tmp_path / "cal.json"
+    f1.write_bytes(b"input-a")
+    f2.write_bytes(b"{}")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    git_state = {"sha": "a" * 40, "dirty": ""}
+    monkeypatch.setattr(mod, "_git", lambda *a: (
+        git_state["sha"] if a[0] == "rev-parse" else git_state["dirty"]))
+
+    man = mod.snapshot_provenance([])
+    assert man["code_sha"] == "a" * 40 and man["code_dirty"] is False
+    assert man["argv"][0] and isinstance(man["argv"], list)
+    assert "cwd" in man and man["cwd"]
+    # -O provenance: sys.flags works on every supported interpreter;
+    # sys.orig_argv is recorded when the interpreter provides it (3.10+)
+    assert man["python_optimize"] == 0
+    assert "process_argv" in man
+    assert mod.check_provenance_drift(man) == {}      # clean end state
+
+    f1.write_bytes(b"input-CHANGED")                  # mid-run input drift
+    drift = mod.check_provenance_drift(man)
+    assert str(f1) in drift["inputs_changed"]
+    f1.write_bytes(b"input-a")
+    git_state["sha"] = "b" * 40                       # mid-run HEAD move
+    drift = mod.check_provenance_drift(man)
+    assert drift["code_sha"] == ("a" * 40, "b" * 40)
+    git_state["sha"] = "a" * 40
+    git_state["dirty"] = " M x.py"                    # tree went dirty
+    drift = mod.check_provenance_drift(man)
+    assert drift["code_dirty"] == (False, True)
+
+
+def test_runner_git_failures_are_loud(monkeypatch, tmp_path):
+    """_git must raise on nonzero return codes and reject malformed SHAs —
+    a failed git call must never be recorded as empty-SHA/dirty=False."""
+    mod = _load_runner()
+    f1, f2 = tmp_path / "a", tmp_path / "b"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"y")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+
+    class R:
+        returncode = 128
+        stdout, stderr = "", "fatal: not a git repository"
+    monkeypatch.setattr(mod.subprocess, "run", lambda *a, **k: R())
+    with pytest.raises(RuntimeError, match="git"):
+        mod._git("rev-parse", "HEAD")
+    monkeypatch.setattr(mod, "_git",
+                        lambda *a: "" if a[0] == "rev-parse" else "")
+    with pytest.raises(RuntimeError, match="SHA"):
+        mod.snapshot_provenance([])
+
+
+def test_runner_cli_rejects_prefix_abbreviation():
+    """allow_abbrev=False: --conserv must NOT silently expand to
+    --conserving (exit code exactly 2, flag named in stderr) — same for
+    the typo case."""
+    import subprocess
+    import sys as _sys
+    from pathlib import Path
+    script = str(Path(__file__).resolve().parents[1]
+                 / "scripts" / "run_fulldomain_lc05.py")
+    for bad in ("--conserv", "--conservng"):
+        r = subprocess.run([_sys.executable, script, "o.json", "c", bad],
+                           capture_output=True, text=True, timeout=60)
+        assert r.returncode == 2, bad
+        assert bad in r.stderr, bad

@@ -22,6 +22,7 @@ the partition v2 record, and the pw_conserved/final_audited gates.
 """
 import hashlib
 import json
+import re
 import platform
 import subprocess
 import sys
@@ -53,27 +54,69 @@ def _sha256(path, cap_bytes=None):
 
 
 def _git(*args):
-    return subprocess.run(["git", "-C", str(_ORACLE.parent), *args],
-                          capture_output=True, text=True).stdout.strip()
+    r = subprocess.run(["git", "-C", str(_ORACLE.parent), *args],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        # a failed git call recorded as empty-SHA/dirty=False would forge
+        # clean provenance — fail loudly instead
+        raise RuntimeError(f"git {' '.join(args)} failed "
+                           f"(rc={r.returncode}): {r.stderr.strip()}")
+    return r.stdout.strip()
 
 
-def build_manifest(cmd_argv, gk2a_files):
+def _code_state():
+    sha = _git("rev-parse", "HEAD")
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise RuntimeError(f"malformed git SHA: {sha!r}")
+    return sha, bool(_git("status", "--porcelain"))
+
+
+def snapshot_provenance(gk2a_files):
+    """START-of-run provenance: taken BEFORE the analysis reads anything,
+    so the hashes describe the code/inputs the run actually consumes (an
+    end-of-run manifest can silently describe a different tree)."""
     import shlex
 
     import numpy
     import torch
+    sha, dirty = _code_state()
+    argv = [sys.executable, *sys.argv]
     return dict(
-        code_sha=_git("rev-parse", "HEAD"),
-        code_dirty=bool(_git("status", "--porcelain")),
+        code_sha=sha, code_dirty=dirty,
         # argv array is the authoritative LOSSLESS record (a joined string
         # cannot round-trip paths with spaces); command is the shlex-quoted
-        # display form, which splits back to the exact argv
-        argv=list(cmd_argv),
-        command=shlex.join(cmd_argv),
+        # display form, which splits back to the exact argv. process_argv
+        # keeps interpreter options (-O strips the state.py shape asserts);
+        # sys.orig_argv needs 3.10+, so the -O fact is also recorded via
+        # sys.flags for older interpreters.
+        argv=argv,
+        command=shlex.join(argv),
+        process_argv=(list(sys.orig_argv)
+                      if hasattr(sys, "orig_argv") else None),
+        python_optimize=int(sys.flags.optimize),
+        cwd=str(Path.cwd()),
         python=platform.python_version(),
         torch=torch.__version__, numpy=numpy.__version__,
         inputs={str(p): _sha256(p) for p in
                 [WRFIN, CAL, *map(str, gk2a_files)]})
+
+
+def check_provenance_drift(manifest):
+    """END-of-run re-check: code SHA/dirty and every input hash must match
+    the start snapshot — a mid-run HEAD move or input rewrite means the
+    manifest no longer describes what the run used. Returns {} when clean;
+    the runner REJECTS the artifact otherwise."""
+    drift = {}
+    sha, dirty = _code_state()
+    if sha != manifest["code_sha"]:
+        drift["code_sha"] = (manifest["code_sha"], sha)
+    if dirty != manifest["code_dirty"]:
+        drift["code_dirty"] = (manifest["code_dirty"], dirty)
+    changed = [p for p, h in manifest["inputs"].items()
+               if _sha256(p) != h]
+    if changed:
+        drift["inputs_changed"] = changed
+    return drift
 
 
 def main(out_json, case_root, conserving=False):
@@ -87,9 +130,12 @@ def main(out_json, case_root, conserving=False):
                                         _fixture_tq)
 
     t0 = time.time()
+    # snapshot provenance BEFORE any input is read (slot_files only lists
+    # the directory; the frame/cal/L1B reads all happen after the hashes)
+    gk2a_files = slot_files(GK2A, SLOT, channels=CLEAN_IR_CHANNELS)
+    manifest = snapshot_provenance(gk2a_files)
     fr = read_wrfout_frame(WRFIN, 0)
     cal = load_cal_table(CAL)
-    gk2a_files = slot_files(GK2A, SLOT, channels=CLEAN_IR_CHANNELS)
     pl = read_ko_slot(gk2a_files, cal, stride=8)
     co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"],
                                max_dist_km=4.0)
@@ -114,9 +160,10 @@ def main(out_json, case_root, conserving=False):
     # if every self-declaration marker regressed away)
     rep["gates"] = evaluate_artifact_gates(
         rep, expected_conserving=conserving)      # ENFORCED below
-    # record the ACTUAL invocation (a reconstructed command would hide
-    # typos the parser rejected or normalized)
-    rep["manifest"] = build_manifest([sys.executable, *sys.argv], gk2a_files)
+    # end-of-run drift re-check (start/end mismatch rejects the artifact)
+    drift = check_provenance_drift(manifest)
+    manifest["provenance_drift"] = drift or None
+    rep["manifest"] = manifest
     with open(out_json, "w") as f:
         json.dump(rep, f, indent=1)
     rep["manifest"]["outputs"] = {
@@ -140,12 +187,17 @@ def main(out_json, case_root, conserving=False):
         print(f"[{tag}] ARTIFACT REJECTED — failed gates: {failed}",
               flush=True)
         sys.exit(1)
+    if drift:
+        print(f"[{tag}] ARTIFACT REJECTED — provenance drift during the "
+              f"run: {drift}", flush=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     import argparse
+    # allow_abbrev=False: --conserv must not silently expand
     ap = argparse.ArgumentParser(
-        description="LC05 full-domain evidence runner")
+        description="LC05 full-domain evidence runner", allow_abbrev=False)
     ap.add_argument("out_json")
     ap.add_argument("case_root")
     # strict parsing: a --conservng typo must fail loudly, never run
