@@ -736,3 +736,29 @@ def test_runner_cli_rejects_typo_flags():
                        timeout=60)
     assert r.returncode != 0
     assert "conservng" in r.stderr
+
+
+def test_runner_manifest_argv_lossless(monkeypatch, tmp_path):
+    """The manifest must record the ACTUAL argv losslessly: a joined string
+    cannot round-trip paths with spaces (Codex). The authoritative record
+    is the argv array; the display command is shlex-quoted so it splits
+    back to the exact argv."""
+    import importlib.util
+    import shlex
+    import sys as _sys
+    from pathlib import Path
+    script = (Path(__file__).resolve().parents[1]
+              / "scripts" / "run_fulldomain_lc05.py")
+    spec = importlib.util.spec_from_file_location("rfl05", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)              # __main__ guard: nothing runs
+    f1, f2 = tmp_path / "wrfin", tmp_path / "cal.json"
+    f1.write_bytes(b"x")
+    f2.write_bytes(b"{}")
+    monkeypatch.setattr(mod, "WRFIN", str(f1))
+    monkeypatch.setattr(mod, "CAL", str(f2))
+    argv = [_sys.executable, "oracle/scripts/run_fulldomain_lc05.py",
+            "/tmp/out dir/v.json", "case root/x", "--conserving"]
+    man = mod.build_manifest(argv, [])
+    assert man["argv"] == argv                # lossless authoritative record
+    assert shlex.split(man["command"]) == argv  # display form round-trips

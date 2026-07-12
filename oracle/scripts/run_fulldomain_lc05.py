@@ -57,13 +57,19 @@ def _git(*args):
                           capture_output=True, text=True).stdout.strip()
 
 
-def build_manifest(cmd, gk2a_files):
+def build_manifest(cmd_argv, gk2a_files):
+    import shlex
+
     import numpy
     import torch
     return dict(
         code_sha=_git("rev-parse", "HEAD"),
         code_dirty=bool(_git("status", "--porcelain")),
-        command=cmd,
+        # argv array is the authoritative LOSSLESS record (a joined string
+        # cannot round-trip paths with spaces); command is the shlex-quoted
+        # display form, which splits back to the exact argv
+        argv=list(cmd_argv),
+        command=shlex.join(cmd_argv),
         python=platform.python_version(),
         torch=torch.__version__, numpy=numpy.__version__,
         inputs={str(p): _sha256(p) for p in
@@ -108,11 +114,9 @@ def main(out_json, case_root, conserving=False):
     # if every self-declaration marker regressed away)
     rep["gates"] = evaluate_artifact_gates(
         rep, expected_conserving=conserving)      # ENFORCED below
-    # record the ACTUAL argv (a reconstructed command would hide typos the
-    # parser rejected or normalized)
-    rep["manifest"] = build_manifest(
-        "python oracle/scripts/run_fulldomain_lc05.py "
-        + " ".join(sys.argv[1:]), gk2a_files)
+    # record the ACTUAL invocation (a reconstructed command would hide
+    # typos the parser rejected or normalized)
+    rep["manifest"] = build_manifest([sys.executable, *sys.argv], gk2a_files)
     with open(out_json, "w") as f:
         json.dump(rep, f, indent=1)
     rep["manifest"]["outputs"] = {
