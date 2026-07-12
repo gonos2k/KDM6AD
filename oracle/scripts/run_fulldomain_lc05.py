@@ -341,12 +341,23 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
     json_path = out_json + sfx
     npz_path = out_json + ".fields.npz" + sfx
     man_path = out_json + ".manifest.json" + sfx
-    Path(staging_npz).rename(npz_path)
-    with open(json_path, "w") as f:
+    # TOCTOU guard: paths created AFTER the start-of-run freshness check
+    # (or by a concurrent runner that passed the same check) must never be
+    # silently replaced — link(2) is atomic no-replace (rename overwrites
+    # on POSIX; staging survives a collision), and the JSON/manifest use
+    # exclusive create.
+    try:
+        os.link(staging_npz, npz_path)
+    except FileExistsError:
+        raise FileExistsError(
+            f"output {npz_path} appeared during the run (TOCTOU) — "
+            f"refusing to overwrite; staging kept at {staging_npz}")
+    os.unlink(staging_npz)
+    with open(json_path, "x") as f:
         json.dump(rep, f, indent=1)
     manifest["outputs"] = {json_path: _sha256(json_path),
                            npz_path: _sha256(npz_path)}
-    with open(man_path, "w") as f:
+    with open(man_path, "x") as f:
         json.dump(manifest, f, indent=1)
     return accepted
 

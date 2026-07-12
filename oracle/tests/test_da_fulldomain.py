@@ -1122,3 +1122,28 @@ def test_runner_refuses_existing_outputs(tmp_path):
             mod._assert_fresh_outputs(out)
         p.unlink()
     mod._assert_fresh_outputs(out)
+
+
+def test_finalize_artifact_never_overwrites(tmp_path):
+    """Codex TOCTOU: paths created AFTER the fresh-outputs check (hour-long
+    run window, or a concurrent runner passing the same check) must not be
+    silently replaced — final placement is exclusive-create (open 'x') and
+    atomic no-replace (link+unlink instead of rename)."""
+    mod = _load_runner()
+    staging = tmp_path / "x.json.fields.npz.staging"
+    staging.write_bytes(b"NEW")
+    out = str(tmp_path / "x.json")
+    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+
+    (tmp_path / "x.json.fields.npz").write_bytes(b"OLD")   # appeared mid-run
+    with pytest.raises(FileExistsError):
+        mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    assert staging.exists()                                # staging preserved
+    assert (tmp_path / "x.json.fields.npz").read_bytes() == b"OLD"
+    (tmp_path / "x.json.fields.npz").unlink()
+
+    (tmp_path / "x.json").write_text("OLD-JSON")           # json appeared
+    rep2 = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+    with pytest.raises(FileExistsError):
+        mod.finalize_artifact(rep2, dict(inputs={}), {}, out, str(staging))
+    assert (tmp_path / "x.json").read_text() == "OLD-JSON"
