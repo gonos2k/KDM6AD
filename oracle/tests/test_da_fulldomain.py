@@ -1199,3 +1199,28 @@ def test_finalize_collision_rollback_no_partials(tmp_path):
                                str(staging))
     assert ok is True and not staging.exists()
     assert (tmp_path / "y.json.fields.npz").read_bytes() == b"NEW"
+
+
+def test_rollback_only_removes_owned_files(tmp_path):
+    """Codex: rollback-by-path can delete ANOTHER process's file if ours
+    was swapped in the window, and a vanished file masks the original
+    collision with FileNotFoundError. Rollback must verify ownership —
+    the final must still be the SAME inode as the owned temp it was
+    linked from — and never raise."""
+    import os
+    mod = _load_runner()
+    tmp = tmp_path / "t1"
+    tmp.write_bytes(b"X")
+    final = tmp_path / "f1"
+    os.link(tmp, final)                                # ours: same inode
+    other_tmp = tmp_path / "t2"
+    other_tmp.write_bytes(b"Y")
+    foreign = tmp_path / "f2"
+    foreign.write_bytes(b"THEIRS")                     # NOT ours (swapped)
+    gone_tmp = tmp_path / "t3"
+    gone_tmp.write_bytes(b"Z")
+    mod._rollback_linked([(str(tmp), str(final)),
+                          (str(other_tmp), str(foreign)),
+                          (str(gone_tmp), str(tmp_path / "missing"))])
+    assert not final.exists()                          # owned -> removed
+    assert foreign.read_bytes() == b"THEIRS"           # foreign -> untouched

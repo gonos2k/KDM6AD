@@ -341,35 +341,60 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
     json_path = out_json + sfx
     npz_path = out_json + ".fields.npz" + sfx
     man_path = out_json + ".manifest.json" + sfx
-    # TOCTOU guard, ALL-OR-NOTHING: paths created after the start-of-run
-    # freshness check (or by a concurrent runner) must never be silently
-    # replaced, and a LATE collision must not leave a partial artifact set
-    # nor consume the retry staging. Order: exclusive-create the files we
-    # can roll back (json, manifest — the npz hash comes from the staging
-    # bytes, identical under link), then the atomic no-replace link LAST;
-    # on any collision, unlink only what THIS call created and re-raise
-    # with the staging intact.
-    manifest["outputs"] = {json_path: None,        # filled below
+    # TOCTOU guard, ALL-OR-NOTHING with OWNED temps: every payload is
+    # written to a unique mkstemp file in the target directory (ours by
+    # construction) and placed via link(2) — atomic no-replace. On a late
+    # collision the finals linked so far are rolled back with inode-
+    # verified ownership (_rollback_linked): a final swapped by another
+    # process in the window is left untouched, and a vanished final never
+    # masks the original exception. The retry staging survives every
+    # failure mode (its link is last and it is never our unlink target
+    # until success).
+    import tempfile
+    outdir = str(Path(out_json).parent)
+
+    def _owned_tmp(payload_dict):
+        fd, tmp = tempfile.mkstemp(dir=outdir, suffix=".tmp")
+        with os.fdopen(fd, "w") as f:
+            json.dump(payload_dict, f, indent=1)
+        return tmp
+
+    tmp_json = _owned_tmp(rep)
+    manifest["outputs"] = {json_path: _sha256(tmp_json),
                            npz_path: _sha256(staging_npz)}
-    created = []
+    tmp_man = _owned_tmp(manifest)
+    linked = []
     try:
-        with open(json_path, "x") as f:
-            json.dump(rep, f, indent=1)
-        created.append(json_path)
-        manifest["outputs"][json_path] = _sha256(json_path)
-        with open(man_path, "x") as f:
-            json.dump(manifest, f, indent=1)
-        created.append(man_path)
-        os.link(staging_npz, npz_path)             # atomic no-replace
+        for tmp, final in ((tmp_json, json_path), (tmp_man, man_path),
+                           (staging_npz, npz_path)):
+            os.link(tmp, final)                    # atomic no-replace
+            linked.append((tmp, final))
     except FileExistsError:
-        for p in created:
-            os.unlink(p)
+        _rollback_linked(linked)
         raise FileExistsError(
             "an output path appeared during the run (TOCTOU) — refusing "
-            f"to overwrite; rolled back {created or 'nothing'}, staging "
+            f"to overwrite; rolled back {[f for _, f in linked]}, staging "
             f"kept at {staging_npz}")
+    finally:
+        os.unlink(tmp_json)
+        os.unlink(tmp_man)
     os.unlink(staging_npz)
     return accepted
+
+
+def _rollback_linked(linked):
+    """Unlink only finals PROVEN ours: the final must still be the same
+    (dev, inode) as the owned temp it was hard-linked from — a file
+    swapped in by another process is left untouched, and any OSError
+    (already gone, permissions) is swallowed so the ORIGINAL collision
+    exception is never masked."""
+    for tmp, final in linked:
+        try:
+            st, sf = os.stat(tmp), os.stat(final)
+            if (st.st_dev, st.st_ino) == (sf.st_dev, sf.st_ino):
+                os.unlink(final)
+        except OSError:
+            pass
 
 
 def main(out_json, case_root, conserving=False, allow_dirty=False):
