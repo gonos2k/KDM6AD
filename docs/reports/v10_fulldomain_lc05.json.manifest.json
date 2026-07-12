@@ -1,0 +1,25 @@
+{
+ "code_sha": "6ae90f97e7f8668c9f9cbf38147949494cdf9c9c",
+ "code_dirty": false,
+ "command": "python oracle/scripts/run_fulldomain_lc05.py /private/tmp/claude-501/-Users-yhlee-KDM6AD-k/a70eb5e1-4885-409a-85a2-ba57d186451a/scratchpad/v10_fulldomain_lc05.json /private/tmp/claude-501/-Users-yhlee-KDM6AD-k/a70eb5e1-4885-409a-85a2-ba57d186451a/scratchpad/v10_case --conserving",
+ "python": "3.9.10",
+ "torch": "2.8.0",
+ "numpy": "1.23.5",
+ "inputs": {
+  "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+  "/Users/yhlee/KDM6AD-k/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json": "8cae9d4a8239db301903c14df223013e888c89918fff1f8c4ef1ad962ad1d033",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv063_ko020lc_202507190000.nc": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv069_ko020lc_202507190000.nc": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+  "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600"
+ },
+ "outputs": {
+  "/private/tmp/claude-501/-Users-yhlee-KDM6AD-k/a70eb5e1-4885-409a-85a2-ba57d186451a/scratchpad/v10_fulldomain_lc05.json": "54770792d68a57695110cc22edc0dc4beda0a511d97f13e6d7404aec3c30f8cc",
+  "/private/tmp/claude-501/-Users-yhlee-KDM6AD-k/a70eb5e1-4885-409a-85a2-ba57d186451a/scratchpad/v10_fulldomain_lc05.json.fields.npz": "818906fa1a989918b61bca56518e20c9f592c82c49ed5450eca9edfdd4fd1c07"
+ }
+}
