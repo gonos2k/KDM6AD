@@ -173,10 +173,14 @@ def evaluate_artifact_gates(rep: dict, *,
     gradient diagnostic becomes required evidence. None (default) infers
     the mode from the report alone (archived-artifact re-evaluation).
     Returns {gate_name: bool, ..., "accepted": bool}."""
-    jt = [d["total"] for d in rep["j_trace"]]
+    try:
+        jt = [d["total"] for d in rep["j_trace"]]
+        j_ok = (len(jt) >= 2 and jt[-1] < jt[0]
+                and all(math.isfinite(v) for v in jt))
+    except (KeyError, TypeError, AttributeError):
+        j_ok = False                       # malformed trace fails, not crashes
     gates = dict(
-        j_descended=(len(jt) >= 2 and jt[-1] < jt[0]
-                     and all(math.isfinite(v) for v in jt)),
+        j_descended=j_ok,
         oma_le_omb=(math.isfinite(rep["oma"]) and math.isfinite(rep["omb"])
                     and rep["oma"] <= rep["omb"]),
         pathology_t0_empty=(rep["pathology_t0"] == {}),
@@ -266,7 +270,7 @@ def _gate_final_audited(rep: dict, *, require_w: bool = False,
                 and tail["j_obs"] == rep["jobs_final"]
                 and rep["jb_final"] + rep["jtheta_final"]
                 + rep["jobs_final"] == tail["total"])
-    except (KeyError, TypeError, IndexError):
+    except (KeyError, TypeError, IndexError, AttributeError):
         return False
 
 
@@ -289,7 +293,7 @@ def _gate_conserving_contract(rep: dict) -> bool:
         nc = rep["cvt"]["n_controlled"]
         return all(type(nc[f]) is int and nc[f] == 0
                    for f in ("qc", "qr", "qi", "qs", "qg"))
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError, ValueError, AttributeError):
         return False
 
 

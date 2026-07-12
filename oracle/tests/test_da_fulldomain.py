@@ -533,6 +533,16 @@ def test_conserving_gates_fail_closed_on_missing_fields():
             "conserving_contract")            # fingerprint no longer matches
     gate_of(lambda r: r["partition"].update(fingerprint="deadbeef"),
             "conserving_contract")
+    # malformed CONTAINER types must evaluate False, not crash the gate
+    # (Codex: a non-dict spec raised AttributeError out of the try)
+    gate_of(lambda r: r["partition"].update(spec="v2"), "conserving_contract")
+    gate_of(lambda r: r["partition"].update(spec=[2]), "conserving_contract")
+    gate_of(lambda r: r.update(partition="conserving"), "conserving_contract")
+    gate_of(lambda r: r["cvt"].update(n_controlled=[0, 0, 0, 0, 0]),
+            "conserving_contract")
+    gate_of(lambda r: r.update(j_trace=5), "final_audited")
+    gate_of(lambda r: r.update(j_trace=[]), "final_audited")
+    gate_of(lambda r: r["j_trace"].__setitem__(-1, 90.0), "final_audited")
 
     # the trigger is conserving=True OR artifact_role — role alone suffices
     rep = json.loads(json.dumps(base))
