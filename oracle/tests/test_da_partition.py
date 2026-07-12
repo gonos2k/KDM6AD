@@ -811,8 +811,9 @@ def test_partition_forcing_pii_validated():
 
 def test_partition_forcing_must_match_step_forcing():
     """A non-zero window with an explicit partition_forcing whose pii differs
-    from forcings[0].pii bifurcates the physics configuration — bitwise
-    equality enforced; a matching explicit forcing stays allowed."""
+    from forcings[0].pii bifurcates the physics configuration — same dtype +
+    exact elementwise value match enforced; a matching explicit forcing
+    stays allowed."""
     xb = _mk_state()
     f0 = _mk_forcing(xb)
     spec, b_sigma = _conserving_cvt(xb)
@@ -893,46 +894,120 @@ def test_final_report_is_authoritative_at_returned_controls():
 
 
 def test_dual_final_report_is_authoritative():
-    """Dual analogue: jb/jtheta finals must equal the pure prior functions of
-    the RETURNED control vectors (a rejected last trial would differ)."""
+    """Dual analogue with FULL independence: J_obs is recomputed by re-running
+    the window at the RETURNED (v_state, v_theta, w) — not read back from the
+    audit cache — and every equality is exact float ==."""
+    import dataclasses
+
+    from kdm6.da_dual import params_from_vtheta
+
     xb = _mk_state()
     forcings = [_mk_forcing(xb)] * 2
     cfg = WindowConfig(dt=DT)
     spec, b_sigma = make_default_cvt(
         xb, sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    pspec = PartitionSpec()
+    caps = build_partition_caps(xb, pspec)
+    prior = default_param_prior(0.2)
     truth = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final
-    res = run_dual_minimizer(xb, forcings,
-                             _quad_th_obs(2, truth.th + 0.3, sigma_o=0.05),
-                             cfg, b_sigma, default_param_prior(0.2),
+    obs_eval = _quad_th_obs(2, truth.th + 0.3, sigma_o=0.05)
+    res = run_dual_minimizer(xb, forcings, obs_eval, cfg, b_sigma, prior,
                              max_iter=10, cvt=spec, policy=_P(),
-                             partition=PartitionSpec())
+                             partition=pspec)
+
+    # independent recomputation at the RETURNED controls/parameters
+    with torch.no_grad():
+        y_a, _ = cvt_apply(xb, b_sigma, res.v_state, spec)
+        x0 = apply_partition_chain(y_a, forcings[0], res.w, caps)
+    cfg_a = dataclasses.replace(
+        cfg, params=params_from_vtheta(prior, res.v_theta), param_grads=False)
+    acc = []
+
+    def obs_adjoint(t, x_t):
+        out = obs_eval(t, x_t)
+        if out is None:
+            return None
+        acc.append(float(out[0]))
+        return out[1]
+
+    run_da_window(x0, forcings, obs_adjoint, cfg_a)
+    jobs = sum(acc)
     jb = float(0.5 * (res.v_state * res.v_state).sum()
                + 0.5 * (res.w * res.w).sum())
     jth = float(0.5 * (res.v_theta * res.v_theta).sum())
+    assert res.jobs_final == jobs, (res.jobs_final, jobs)
     assert res.jb_final == jb, (res.jb_final, jb)
     assert res.jtheta_final == jth, (res.jtheta_final, jth)
-    assert res.j_trace[-1]["total"] == pytest.approx(
-        jb + jth + res.jobs_final, abs=0.0)
+    assert res.j_trace[-1]["total"] == jb + jth + jobs
+    assert res.n_audit_evals == 1
+    assert len(res.j_trace) == res.n_window_evals + res.n_audit_evals
 
 
-def test_satadj_damping_ratio_regression():
-    """Pins the measured M-damping this twin design relies on: the
-    supersaturated background's saturation adjustment absorbs the t0
+@pytest.mark.parametrize("w0,w1,lo,hi", [(0.8, 0.5, 30.0, 500.0),
+                                         (3.0, 2.0, 30.0, 500.0),
+                                         (8.0, 5.0, 30.0, 500.0)])
+def test_model_window_damping_ratio_regression(w0, w1, lo, hi):
+    """Pins the measured MODEL-WINDOW damping the twin design relies on: the
+    2-step window from this supersaturated-background fixture absorbs the t0
     partition latent signal by roughly two orders of magnitude by t=2
-    (measured ~137x/118x/109x across amplitudes on this fixture)."""
+    (measured 137x/118x/109x at these three amplitudes; max-norm on th).
+    NOTE: this is the whole-window damping ratio — saturation adjustment is
+    the physically expected main absorber, but no single-process ablation is
+    claimed here."""
     xb = _mk_state()
     f0 = _mk_forcing(xb)
     forcings = [f0] * 2
     cfg = WindowConfig(dt=DT)
     caps = build_partition_caps(xb, PartitionSpec())
     w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
-    w[0], w[1] = 3.0, 2.0
+    w[0], w[1] = w0, w1
     with torch.no_grad():
         x_true = apply_partition_chain(xb, f0, w, caps)
     dth0 = float((x_true.th - xb.th).abs().max())
     th_t = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
     th_b = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final.th
     resid = float((th_t - th_b).abs().max())
-    assert dth0 > 0.1                                # signal present at t0
+    assert dth0 > 0.05                               # signal present at t0
     ratio = dth0 / resid
-    assert 30.0 < ratio < 500.0, (dth0, resid, ratio)
+    assert lo < ratio < hi, (w0, w1, dth0, resid, ratio)
+
+
+def test_composed_latent_second_order_and_order_dependent():
+    """Completes the 'tested' claim on the composed-L_f statement: the energy
+    error vs the freeze convention is GENUINELY second order (halving d
+    quarters the error — an exactly-L_f implementation would fail the
+    nonzero-error check) and the composition is order-dependent (deposit-
+    then-evaporate differs from the chain's evaporate-then-deposit)."""
+    y, f, _spec, caps = _mk_all()
+    tp = thermo.default_thermo_params()
+    xl = thermo.compute_xl(y.th * f.pii, params=tp)
+    cpm = thermo.compute_cpm(y.qv, params=tp)
+    c = 0
+
+    def net_dth_err(d):
+        u0 = -d / (1.0 - d / caps.cap_rev[0])
+        u1 = d / (1.0 - d / caps.cap_fwd[1])
+        w = torch.zeros((len(CHANNELS),) + tuple(y.th.shape), **_F64)
+        w[0, 0, c] = float(u0[0, c] / caps.sigma[0][0, c])
+        w[1, 0, c] = float(u1[0, c] / caps.sigma[1][0, c])
+        out = apply_partition_chain(y, f, w, caps)
+        lf_dth = float(((tp.xls - xl) / (cpm * f.pii) * d)[0, c])
+        return float(out.th[0, c] - y.th[0, c]) - lf_dth, w
+
+    d = 1.0e-5
+    err_d, w_full = net_dth_err(d)
+    err_d2, _ = net_dth_err(d / 2.0)
+    assert err_d != 0.0                              # NOT exactly L_f
+    ratio = err_d / err_d2
+    assert 3.5 < ratio < 4.5, (err_d, err_d2, ratio)  # O(d^2) convergence
+    # order dependence: deposit first (ch1), then evaporate (ch0) in a
+    # second chain call — differs from the fixed-order single chain
+    w_dep = torch.zeros_like(w_full)
+    w_dep[1] = w_full[1]
+    w_evap = torch.zeros_like(w_full)
+    w_evap[0] = w_full[0]
+    mid = apply_partition_chain(y, f, w_dep, caps)
+    rev = apply_partition_chain(mid, f, w_evap, caps)
+    fwd = apply_partition_chain(y, f, w_full, caps)
+    assert float(fwd.th[0, c]) != float(rev.th[0, c])
+    assert abs(float(fwd.th[0, c] - rev.th[0, c])) < 10.0 * abs(err_d)
