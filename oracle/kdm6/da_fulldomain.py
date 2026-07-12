@@ -215,6 +215,15 @@ def evaluate_artifact_gates(rep: dict, *,
             type(rep.get("conserving")) is bool
             and rep["conserving"] is expected_conserving
             and rep.get("artifact_role") == expected_role)
+    if expected_conserving is False:
+        # runner says non-conserving: conserving-only payload in the report
+        # is a mode/payload contradiction (the driver always emits these
+        # keys as None in non-conserving mode) — reviewer P1
+        gates["nonconserving_payload_absent"] = (
+            "partition" in rep and rep["partition"] is None
+            and "water_budget" in rep and rep["water_budget"] is None
+            and "grad_w_norm_final" in rep
+            and rep["grad_w_norm_final"] is None)
     if conserving or rep.get("water_budget") is not None:
         gates["pw_conserved"] = _gate_pw_conserved(rep)
     if (conserving or expected_conserving is not None
@@ -233,8 +242,12 @@ def evaluate_artifact_gates(rep: dict, *,
 
 
 def _is_finite_number(x) -> bool:
-    return (isinstance(x, (int, float)) and not isinstance(x, bool)
-            and math.isfinite(x))
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        return False
+    try:
+        return math.isfinite(x)
+    except OverflowError:          # JSON-valid huge int (e.g. 10**309)
+        return False
 
 
 def _gate_pw_conserved(rep: dict) -> bool:

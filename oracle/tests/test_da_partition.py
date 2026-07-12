@@ -335,6 +335,8 @@ def test_partition_spec_validation():
         PartitionSpec(alpha_total=True)
     with pytest.raises(ValueError, match="sigma_scale"):
         PartitionSpec(sigma_scale=True)
+    with pytest.raises(ValueError, match="alpha_total"):
+        PartitionSpec(alpha_total=10**309)      # isfinite OverflowError
 
 
 def test_partition_spec_fingerprint():

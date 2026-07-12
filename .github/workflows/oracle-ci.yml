@@ -6,8 +6,8 @@ permissions:
 
 # Gates the PORTABLE, pure-Python part of the oracle suite (oracle/kdm6 — the f64
 # algorithm-definition / parity reference) so an oracle refactor can't drift its values
-# without CI catching it. On this Python-only runner ~442 tests run; the remainder SKIP by
-# design and are gated elsewhere (so this job does NOT claim the full 495-test run):
+# without CI catching it. On this Python-only runner the pure-Python subset runs; the remainder SKIP by
+# design and are gated elsewhere (so this job does NOT claim the full suite):
 #   - test_cpp_parity (oracle↔C++ forward parity) needs the built C++ port — it is gated by
 #     port-ci (ci.yml), which builds libtorch and runs that test after ctest.
 #   - test_rttov_runner needs a local RTTOV reference dataset not shipped in this public repo.

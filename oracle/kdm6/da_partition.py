@@ -101,10 +101,15 @@ class PartitionSpec:
         for name in ("alpha_total", "sigma_scale"):
             a = getattr(self, name)
             # bool is an int subclass: True == 1.0 would slip through the
-            # range check and defeat exact-schema gate comparisons
-            if isinstance(a, bool) or not (
-                    isinstance(a, (int, float)) and math.isfinite(a)
-                    and 0.0 < a <= 1.0):
+            # range check and defeat exact-schema gate comparisons; huge
+            # ints overflow math.isfinite — normalize to the same rejection
+            try:
+                finite = (not isinstance(a, bool)
+                          and isinstance(a, (int, float))
+                          and math.isfinite(a))
+            except OverflowError:
+                finite = False
+            if not (finite and 0.0 < a <= 1.0):
                 raise ValueError(
                     f"{name} must be a non-bool finite number in (0, 1] "
                     f"(got {a!r})")

@@ -108,9 +108,11 @@ def main(out_json, case_root, conserving=False):
     # if every self-declaration marker regressed away)
     rep["gates"] = evaluate_artifact_gates(
         rep, expected_conserving=conserving)      # ENFORCED below
+    # record the ACTUAL argv (a reconstructed command would hide typos the
+    # parser rejected or normalized)
     rep["manifest"] = build_manifest(
-        f"python oracle/scripts/run_fulldomain_lc05.py {out_json} "
-        f"{case_root}" + (" --conserving" if conserving else ""), gk2a_files)
+        "python oracle/scripts/run_fulldomain_lc05.py "
+        + " ".join(sys.argv[1:]), gk2a_files)
     with open(out_json, "w") as f:
         json.dump(rep, f, indent=1)
     rep["manifest"]["outputs"] = {
@@ -137,5 +139,13 @@ def main(out_json, case_root, conserving=False):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2],
-         conserving="--conserving" in sys.argv[3:])
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="LC05 full-domain evidence runner")
+    ap.add_argument("out_json")
+    ap.add_argument("case_root")
+    # strict parsing: a --conservng typo must fail loudly, never run
+    # silently as non-conserving
+    ap.add_argument("--conserving", action="store_true")
+    args = ap.parse_args()
+    main(args.out_json, args.case_root, conserving=args.conserving)

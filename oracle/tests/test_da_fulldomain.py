@@ -553,6 +553,10 @@ def test_conserving_gates_fail_closed_on_missing_fields():
         r["j_trace"][-1].update(j_state=True, j_obs=88.5)
         # True == 1.0 numerically — the component type check must reject
     gate_of(_bool_tail, "final_audited")
+    # JSON-valid huge ints overflow math.isfinite — normalized to False
+    gate_of(lambda r: r["water_budget"].update(pw_stage_err_max=10**309),
+            "pw_conserved")
+    gate_of(lambda r: r.update(jobs_final=10**309), "final_audited")
     # bool alpha_total (True == 1.0) with a consistently-recomputed
     # fingerprint must still fail: PartitionSpec rejects bool
     def _bool_alpha(r):
@@ -619,12 +623,28 @@ def test_expected_conserving_external_contract():
                   n_window_evals=2, n_audit_evals=1,
                   jb_final=1.5, jtheta_final=0.5, jobs_final=88.0,
                   grad_norm_final=3.0, grad_theta_norm_final=0.1,
+                  partition=None, water_budget=None, grad_w_norm_final=None,
                   omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
                   nonfinite_fields_t0=[], nonfinite_fields_slot=[])
     gates = evaluate_artifact_gates(legacy, expected_conserving=False)
     assert gates["accepted"] is True
     assert gates["conserving_marker"] is True
+    assert gates["nonconserving_payload_absent"] is True
     assert "conserving_contract" not in gates
+    # runner says non-conserving: any conserving-only payload is a
+    # mode/payload contradiction — each item alone must fail (reviewer P1)
+    for mutate in (lambda r: r.update(partition=dict(spec=dict(version=2))),
+                   lambda r: r.update(grad_w_norm_final=2.0),
+                   lambda r: r.update(water_budget=dict(
+                       pw_stage_err_max=1.0e-16)),
+                   lambda r: r.pop("partition"),
+                   lambda r: r.pop("water_budget"),
+                   lambda r: r.pop("grad_w_norm_final")):
+        rep = json.loads(json.dumps(legacy))
+        mutate(rep)
+        gates = evaluate_artifact_gates(rep, expected_conserving=False)
+        assert gates["nonconserving_payload_absent"] is False, mutate
+        assert gates["accepted"] is False
     for mutate in (lambda r: r.pop("conserving"),
                    lambda r: r.pop("artifact_role"),
                    lambda r: r.update(artifact_role="typo_stress")):
@@ -701,3 +721,18 @@ def test_fulldomain_smoke_conserving_capped(tmp_path):
     assert rep["cvt"]["n_controlled"]["qc"] == 0
     assert rep["cvt"]["n_controlled"]["qi"] == 0
     assert rep["cvt"]["n_controlled"]["qs"] == 0
+
+
+def test_runner_cli_rejects_typo_flags():
+    """A --conservng typo must fail loudly (argparse), never run silently
+    as non-conserving; the light top-level imports keep this CI-safe."""
+    import subprocess
+    import sys as _sys
+    from pathlib import Path
+    script = str(Path(__file__).resolve().parents[1]
+                 / "scripts" / "run_fulldomain_lc05.py")
+    r = subprocess.run([_sys.executable, script, "out.json", "case",
+                        "--conservng"], capture_output=True, text=True,
+                       timeout=60)
+    assert r.returncode != 0
+    assert "conservng" in r.stderr
