@@ -1079,6 +1079,8 @@ def test_finalize_artifact_quarantines_rejected(tmp_path):
     out = str(tmp_path / "v.json")
     rep = dict(gates={"j_descended": True, "accepted": True}, wall_s=1.0)
     man = dict(inputs={})
+    import os
+    os.mkdir(out + ".lock")                         # caller holds the run lock
 
     ok = mod.finalize_artifact(rep, man, {}, out, str(staging))
     assert ok is True
@@ -1091,6 +1093,7 @@ def test_finalize_artifact_quarantines_rejected(tmp_path):
     out2 = str(tmp_path / "w.json")
     rep2 = dict(gates={"j_descended": True, "accepted": True}, wall_s=1.0)
     drift = dict(code_sha=("a" * 40, "b" * 40))
+    os.mkdir(out2 + ".lock")
     ok = mod.finalize_artifact(rep2, dict(inputs={}), drift, out2,
                                str(staging))
     assert ok is False
@@ -1129,10 +1132,12 @@ def test_finalize_artifact_never_overwrites(tmp_path):
     run window, or a concurrent runner passing the same check) must not be
     silently replaced — final placement is exclusive-create (open 'x') and
     atomic no-replace (link+unlink instead of rename)."""
+    import os
     mod = _load_runner()
     staging = tmp_path / "x.json.fields.npz.staging"
     staging.write_bytes(b"NEW")
     out = str(tmp_path / "x.json")
+    os.mkdir(out + ".lock")                         # caller holds the run lock
     rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
 
     (tmp_path / "x.json.fields.npz").write_bytes(b"OLD")   # appeared mid-run
@@ -1160,6 +1165,9 @@ def test_finalize_collisions_never_delete_and_manifest_commits(tmp_path):
     staging = tmp_path / "y.json.fields.npz.staging"
     out = str(tmp_path / "y.json")
 
+    import os
+    os.mkdir(out + ".lock")                         # caller holds the run lock
+
     def fresh_rep():
         return dict(gates={"g": True, "accepted": True}, wall_s=1.0)
 
@@ -1174,7 +1182,7 @@ def test_finalize_collisions_never_delete_and_manifest_commits(tmp_path):
     assert (tmp_path / "y.json.manifest.json").read_text() == "OLD-MAN"
     assert not (tmp_path / "y.json.fields.npz").exists()
     assert not (tmp_path / "y.json").exists()
-    assert not (tmp_path / "y.json.lock").exists()     # lock released
+    assert (tmp_path / "y.json.lock").is_dir()         # lock still held
 
     # TRUE late collision (appears between the in-lock re-check and the
     # links — simulated by disabling the re-check): the manifest link
@@ -1189,7 +1197,7 @@ def test_finalize_collisions_never_delete_and_manifest_commits(tmp_path):
     assert (tmp_path / "y.json.manifest.json").read_text() == "OLD-MAN"
     assert (tmp_path / "y.json.fields.npz").exists()   # uncommitted partial
     assert (tmp_path / "y.json").exists()
-    assert not (tmp_path / "y.json.lock").exists()
+    assert (tmp_path / "y.json.lock").is_dir()
 
     # retry refuses while the uncommitted partial is in place
     with pytest.raises(FileExistsError):
@@ -1203,119 +1211,39 @@ def test_finalize_collisions_never_delete_and_manifest_commits(tmp_path):
                                str(staging))
     assert ok is True and not staging.exists()
     assert (tmp_path / "y.json.manifest.json").exists()  # committed
-    assert not (tmp_path / "y.json.lock").exists()
+    assert (tmp_path / "y.json.lock").is_dir()
 
 
-def test_finalize_lock_serializes_concurrent_runners(tmp_path):
-    """A concurrent finalize holds the mkdir lock — the second caller must
-    fail loudly WITHOUT touching anything (stale locks are removed by a
-    human, never automatically)."""
+def test_run_lock_excludes_concurrent_runners(tmp_path):
+    """Codex: the lock must cover the WHOLE run, not just finalize — two
+    concurrent runners over the same OUT_JSON would otherwise share (and
+    clobber) the same staging path for the entire hour. The run lock is
+    acquired at start; a second acquisition fails loudly; stale locks are
+    removed by a human, never automatically."""
+    import os
+    mod = _load_runner()
+    out = str(tmp_path / "z.json")
+    mod._acquire_run_lock(out)
+    with pytest.raises(FileExistsError, match="lock"):
+        mod._acquire_run_lock(out)
+    mod._release_run_lock(out)
+    mod._acquire_run_lock(out)                      # reacquire after release
+    mod._release_run_lock(out)
+
+
+def test_finalize_requires_the_run_lock(tmp_path):
+    """finalize must refuse to place anything unless the caller holds the
+    run lock (it no longer acquires its own — the lock spans the run)."""
     import os
     mod = _load_runner()
     staging = tmp_path / "z.json.fields.npz.staging"
     staging.write_bytes(b"N")
     out = str(tmp_path / "z.json")
+    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+    with pytest.raises(RuntimeError, match="run lock"):
+        mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    assert staging.exists() and not (tmp_path / "z.json").exists()
     os.mkdir(out + ".lock")
-    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
-    with pytest.raises(FileExistsError, match="lock"):
-        mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
-    assert staging.exists()
-    assert not (tmp_path / "z.json").exists()
-    os.rmdir(out + ".lock")
-
-
-def test_runner_refuses_existing_outputs(tmp_path):
-    """Codex: a rejected rerun over the same OUT_JSON would leave the
-    PREVIOUS run's approved artifacts at the canonical names next to the
-    new *.rejected files — an archive step would collect stale evidence.
-    Evidence artifacts are immutable: the runner fails fast BEFORE the
-    (hour-long) run if ANY candidate output name already exists."""
-    mod = _load_runner()
-    out = str(tmp_path / "v.json")
-    mod._assert_fresh_outputs(out)                     # clean dir: fine
-    for stale in ("", ".rejected", ".fields.npz", ".fields.npz.rejected",
-                  ".manifest.json", ".manifest.json.rejected",
-                  ".fields.npz.staging"):
-        p = tmp_path / ("v.json" + stale)
-        p.write_bytes(b"old")
-        with pytest.raises(FileExistsError, match="already exists"):
-            mod._assert_fresh_outputs(out)
-        p.unlink()
-    mod._assert_fresh_outputs(out)
-
-
-def test_finalize_artifact_never_overwrites(tmp_path):
-    """Codex TOCTOU: paths created AFTER the fresh-outputs check (hour-long
-    run window, or a concurrent runner passing the same check) must not be
-    silently replaced — final placement is exclusive-create (open 'x') and
-    atomic no-replace (link+unlink instead of rename)."""
-    mod = _load_runner()
-    staging = tmp_path / "x.json.fields.npz.staging"
-    staging.write_bytes(b"NEW")
-    out = str(tmp_path / "x.json")
-    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
-
-    (tmp_path / "x.json.fields.npz").write_bytes(b"OLD")   # appeared mid-run
-    with pytest.raises(FileExistsError):
-        mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
-    assert staging.exists()                                # staging preserved
-    assert (tmp_path / "x.json.fields.npz").read_bytes() == b"OLD"
-    (tmp_path / "x.json.fields.npz").unlink()
-
-    (tmp_path / "x.json").write_text("OLD-JSON")           # json appeared
-    rep2 = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
-    with pytest.raises(FileExistsError):
-        mod.finalize_artifact(rep2, dict(inputs={}), {}, out, str(staging))
-    assert (tmp_path / "x.json").read_text() == "OLD-JSON"
-
-
-def test_finalize_collision_rollback_no_partials(tmp_path):
-    """Codex: a LATE json/manifest collision must not leave a partial
-    artifact set nor consume the retry staging — placement is
-    all-or-nothing (own files rolled back, staging preserved, atomic
-    npz link last)."""
-    mod = _load_runner()
-    staging = tmp_path / "y.json.fields.npz.staging"
-    out = str(tmp_path / "y.json")
-
-    def fresh_rep():
-        return dict(gates={"g": True, "accepted": True}, wall_s=1.0)
-
-    # manifest collision: the json we created is rolled back, npz unplaced
-    staging.write_bytes(b"NEW")
-    (tmp_path / "y.json.manifest.json").write_text("OLD-MAN")
-    with pytest.raises(FileExistsError):
-        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
-                              str(staging))
-    assert staging.exists()
-    assert not (tmp_path / "y.json").exists()          # rolled back
-    assert not (tmp_path / "y.json.fields.npz").exists()
-    assert (tmp_path / "y.json.manifest.json").read_text() == "OLD-MAN"
-    (tmp_path / "y.json.manifest.json").unlink()
-
-    # npz collision: json AND manifest rolled back, staging preserved
-    (tmp_path / "y.json.fields.npz").write_bytes(b"OLD-NPZ")
-    with pytest.raises(FileExistsError):
-        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
-                              str(staging))
-    assert staging.exists()
-    assert not (tmp_path / "y.json").exists()
-    assert not (tmp_path / "y.json.manifest.json").exists()
-    assert (tmp_path / "y.json.fields.npz").read_bytes() == b"OLD-NPZ"
-    (tmp_path / "y.json.fields.npz").unlink()
-
-    # json collision: staging preserved, npz unplaced (no partials)
-    (tmp_path / "y.json").write_text("OLD-JSON")
-    with pytest.raises(FileExistsError):
-        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
-                              str(staging))
-    assert staging.exists()
-    assert not (tmp_path / "y.json.fields.npz").exists()
-    assert not (tmp_path / "y.json.manifest.json").exists()
-    (tmp_path / "y.json").unlink()
-
-    # clean retry after any collision succeeds with the SAME staging
-    ok = mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
-                               str(staging))
-    assert ok is True and not staging.exists()
-    assert (tmp_path / "y.json.fields.npz").read_bytes() == b"NEW"
+    ok = mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    assert ok is True
+    assert (tmp_path / "z.json.lock").is_dir()      # released by CALLER

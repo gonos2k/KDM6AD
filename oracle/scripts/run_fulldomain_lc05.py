@@ -356,13 +356,11 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
     # unlink happens only after the manifest committed).
     import tempfile
     outdir = str(Path(out_json).parent)
-    lockdir = out_json + ".lock"
-    try:
-        os.mkdir(lockdir)
-    except FileExistsError:
-        raise FileExistsError(
-            f"finalize lock {lockdir} exists — another finalize is in "
-            "progress (or a stale lock: verify and remove it manually)")
+    if not os.path.isdir(out_json + ".lock"):
+        raise RuntimeError(
+            "finalize requires the run lock to be held — acquire it with "
+            "_acquire_run_lock at run start (the lock must span the WHOLE "
+            "run: concurrent runners would otherwise share the staging)")
     tmp_json = tmp_man = None
     try:
         _assert_fresh_outputs(out_json, include_staging=False)
@@ -391,9 +389,26 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
         for tmp in (tmp_json, tmp_man):
             if tmp is not None:
                 os.unlink(tmp)
-        os.rmdir(lockdir)
     os.unlink(staging_npz)
     return accepted
+
+
+def _acquire_run_lock(out_json):
+    """WHOLE-RUN mutex for one OUT_JSON (Codex: a finalize-only lock let
+    two concurrent runners share — and clobber — the same staging path for
+    the entire hour). mkdir is atomic; a stale lock from a crashed run is
+    verified and removed by a human, never automatically."""
+    try:
+        os.mkdir(out_json + ".lock")
+    except FileExistsError:
+        raise FileExistsError(
+            f"run lock {out_json}.lock exists — another run over this "
+            "OUT_JSON is in progress (or a stale lock from a crashed run: "
+            "verify and remove it manually)")
+
+
+def _release_run_lock(out_json):
+    os.rmdir(out_json + ".lock")
 
 
 def main(out_json, case_root, conserving=False, allow_dirty=False):
@@ -409,61 +424,67 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
 
     t0 = time.time()
     _assert_fresh_outputs(out_json)
-    # snapshot provenance BEFORE any input is read (slot_files only lists
-    # the directory; the frame/cal/L1B reads all happen after the hashes)
-    gk2a_files = slot_files(GK2A, SLOT, channels=CLEAN_IR_CHANNELS)
-    manifest = snapshot_provenance(gk2a_files, allow_dirty=allow_dirty)
-    _assert_disjoint(
-        [out_json, case_root],
-        [WRFIN, CAL, GK2A] + [e["path"] for e in manifest["rttov"].values()
-                              if isinstance(e, dict) and "path" in e])
-    fr = read_wrfout_frame(WRFIN, 0)
-    cal = load_cal_table(CAL)
-    pl = read_ko_slot(gk2a_files, cal, stride=8)
-    co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"],
-                               max_dist_km=4.0)
-    print(f"[run] load+collocate {time.time() - t0:.0f}s "
-          f"n_assigned={co.n_assigned} obs_vt={co.valid_time_utc} "
-          f"frame_vt={fr.meta.get('valid_time_utc')}", flush=True)
+    # the run lock spans the WHOLE run — without it two concurrent runners
+    # over the same OUT_JSON would pass the freshness check together and
+    # share (clobber) the same staging path for the entire hour
+    _acquire_run_lock(out_json)
+    try:
+        # snapshot provenance BEFORE any input is read (slot_files only lists
+        # the directory; the frame/cal/L1B reads all happen after the hashes)
+        gk2a_files = slot_files(GK2A, SLOT, channels=CLEAN_IR_CHANNELS)
+        manifest = snapshot_provenance(gk2a_files, allow_dirty=allow_dirty)
+        _assert_disjoint(
+            [out_json, case_root],
+            [WRFIN, CAL, GK2A] + [e["path"] for e in manifest["rttov"].values()
+                                  if isinstance(e, dict) and "path" in e])
+        fr = read_wrfout_frame(WRFIN, 0)
+        cal = load_cal_table(CAL)
+        pl = read_ko_slot(gk2a_files, cal, stride=8)
+        co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"],
+                                   max_dist_km=4.0)
+        print(f"[run] load+collocate {time.time() - t0:.0f}s "
+              f"n_assigned={co.n_assigned} obs_vt={co.valid_time_utc} "
+              f"frame_vt={fr.meta.get('valid_time_utc')}", flush=True)
 
-    tr, qr = _fixture_tq()
-    grids = dict(p_lay=fixture_layer_pressure(), p_half=_fixture_p_half(),
-                 t_ref=tr, q_ref=qr)
-    staging_npz = out_json + ".fields.npz.staging"
-    rep = run_fulldomain_analysis(
-        fr, co, grids, case_root, n_workers=8, max_iter=MAX_ITER,
-        channels=_CHANNELS, pseudo_rh=True, time_tolerance_s=300.0,
-        qv_levels=int(fr.meta["kme"]), conserving=conserving,
-        save_fields=staging_npz)
+        tr, qr = _fixture_tq()
+        grids = dict(p_lay=fixture_layer_pressure(), p_half=_fixture_p_half(),
+                     t_ref=tr, q_ref=qr)
+        staging_npz = out_json + ".fields.npz.staging"
+        rep = run_fulldomain_analysis(
+            fr, co, grids, case_root, n_workers=8, max_iter=MAX_ITER,
+            channels=_CHANNELS, pseudo_rh=True, time_tolerance_s=300.0,
+            qv_levels=int(fr.meta["kme"]), conserving=conserving,
+            save_fields=staging_npz)
 
-    rep["artifact_role"] = ("conserving_stress" if conserving
-                            else "pathology_stress")
-    # the runner-known mode is the external gate contract (fail-closed even
-    # if every self-declaration marker regressed away)
-    rep["gates"] = evaluate_artifact_gates(rep,
-                                           expected_conserving=conserving)
-    drift = check_provenance_drift(manifest)
-    accepted = finalize_artifact(rep, manifest, drift, out_json, staging_npz)
+        rep["artifact_role"] = ("conserving_stress" if conserving
+                                else "pathology_stress")
+        # the runner-known mode is the external gate contract (fail-closed even
+        # if every self-declaration marker regressed away)
+        rep["gates"] = evaluate_artifact_gates(rep,
+                                               expected_conserving=conserving)
+        drift = check_provenance_drift(manifest)
+        accepted = finalize_artifact(rep, manifest, drift, out_json, staging_npz)
 
-    tag = "v10" if conserving else "v9.2"
-    if not accepted:
-        failed = [k for k, v in rep["gates"].items() if not v]
-        print(f"[{tag}] ARTIFACT REJECTED (quarantined under *.rejected) — "
-              f"failed gates: {failed}"
-              + (f"; provenance drift: {drift}" if drift else ""),
-              flush=True)
-        sys.exit(1)
-    wb = rep.get("water_budget")
-    print(f"[{tag}] DONE wall={rep['wall_s']:.0f}s sub={rep['n_subspace']} "
-          f"(mc {rep['n_model_cloudy']} / r2 {rep['n_regime2']} / clr "
-          f"{rep['n_clear_operator']}) "
-          f"J {rep['j_trace'][0]['total']:.1f}->"
-          f"{rep['j_trace'][-1]['total']:.1f} "
-          f"O-B {rep['omb']:.3f}K -> O-A {rep['oma']:.3f}K "
-          f"audit={rep['n_audit_evals']} "
-          + (f"water_budget={wb} " if wb else "")
-          + f"gates={rep['gates']}", flush=True)
-
+        tag = "v10" if conserving else "v9.2"
+        if not accepted:
+            failed = [k for k, v in rep["gates"].items() if not v]
+            print(f"[{tag}] ARTIFACT REJECTED (quarantined under *.rejected) — "
+                  f"failed gates: {failed}"
+                  + (f"; provenance drift: {drift}" if drift else ""),
+                  flush=True)
+            sys.exit(1)
+        wb = rep.get("water_budget")
+        print(f"[{tag}] DONE wall={rep['wall_s']:.0f}s sub={rep['n_subspace']} "
+              f"(mc {rep['n_model_cloudy']} / r2 {rep['n_regime2']} / clr "
+              f"{rep['n_clear_operator']}) "
+              f"J {rep['j_trace'][0]['total']:.1f}->"
+              f"{rep['j_trace'][-1]['total']:.1f} "
+              f"O-B {rep['omb']:.3f}K -> O-A {rep['oma']:.3f}K "
+              f"audit={rep['n_audit_evals']} "
+              + (f"water_budget={wb} " if wb else "")
+              + f"gates={rep['gates']}", flush=True)
+    finally:
+        _release_run_lock(out_json)
 
 if __name__ == "__main__":
     import argparse
