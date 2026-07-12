@@ -13,6 +13,8 @@ import torch
 
 from test_real_innovation_lc05 import _CAL, _GK2A, _WRFIN, needs_all
 
+from kdm6.da_partition import PartitionSpec
+
 
 @needs_all
 def test_fulldomain_smoke_capped(tmp_path):
@@ -407,18 +409,22 @@ def test_evaluate_artifact_gates():
 def _good_conserving_report():
     """A COMPLETE conserving evidence report (every field the strengthened
     gates require) — the base for the negative fail-closed matrix."""
+    tail = dict(total=90.0, j_state=1.5, j_theta=0.5, j_obs=88.0)
     return dict(
         artifact_role="conserving_stress", conserving=True,
-        j_trace=[dict(total=100.0), dict(total=91.0), dict(total=90.0)],
+        j_trace=[dict(total=100.0), dict(total=91.0), tail],
         n_window_evals=2, n_audit_evals=1,
         jb_final=1.5, jtheta_final=0.5, jobs_final=88.0,   # sums to 90.0
+        grad_norm_final=3.0,
         grad_theta_norm_final=0.1, grad_w_norm_final=2.0,
         omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
         nonfinite_fields_t0=[], nonfinite_fields_slot=[],
         water_budget=dict(pw_stage_err_max=3.0e-16,
                           dtw_qv_diag_max=1.0e-4,
                           dtw_qv_diag_mean=2.0e-5),
-        partition=dict(spec=dict(version=2)),
+        partition=dict(
+            spec=PartitionSpec().as_dict(),
+            fingerprint=PartitionSpec().fingerprint()),
         cvt=dict(n_controlled=dict(qc=0, qr=0, qi=0, qs=0, qg=0,
                                    th=100, qv=100)))
 
@@ -493,12 +499,95 @@ def test_conserving_gates_fail_closed_on_missing_fields():
             "conserving_contract")
     gate_of(lambda r: r.pop("cvt"), "conserving_contract")
 
+    # numeric-domain strictness: impossible values fail (reviewer P2)
+    gate_of(lambda r: r["water_budget"].update(pw_stage_err_max=-1.0),
+            "pw_conserved")
+    gate_of(lambda r: r.update(grad_theta_norm_final=-0.1), "final_audited")
+    gate_of(lambda r: r.update(grad_norm_final=-3.0), "final_audited")
+    # negative J component compensated inside the total: per-component
+    # trace-tail comparison catches it
+    def _compensate(r):
+        r.update(jb_final=-1.5, jobs_final=91.0)
+        r["j_trace"][-1].update(j_state=-1.5, j_obs=91.0)
+    gate_of(_compensate, "final_audited")
+    gate_of(lambda r: r["j_trace"][-1].update(j_obs=87.0), "final_audited")
+    # type strictness: bool/float masquerading as counts/version
+    gate_of(lambda r: r.update(n_audit_evals=True), "final_audited")
+    gate_of(lambda r: r.update(n_audit_evals=1.0), "final_audited")
+    gate_of(lambda r: r.update(n_window_evals=2.0), "final_audited")
+    gate_of(lambda r: r["partition"]["spec"].update(version=2.0),
+            "conserving_contract")
+    gate_of(lambda r: r["cvt"]["n_controlled"].update(qc=False),
+            "conserving_contract")
+    gate_of(lambda r: r["cvt"]["n_controlled"].update(qc=0.0),
+            "conserving_contract")
+    # deep v2 schema: every spec field and the fingerprint are load-bearing
+    gate_of(lambda r: r["partition"]["spec"].pop("control_units"),
+            "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].pop("sigma_rule"),
+            "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].update(
+        channels=list(reversed(r["partition"]["spec"]["channels"]))),
+            "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].update(alpha_total=0.4),
+            "conserving_contract")            # fingerprint no longer matches
+    gate_of(lambda r: r["partition"].update(fingerprint="deadbeef"),
+            "conserving_contract")
+
     # the trigger is conserving=True OR artifact_role — role alone suffices
     rep = json.loads(json.dumps(base))
     del rep["conserving"]
     del rep["water_budget"]
     gates = evaluate_artifact_gates(rep)
     assert gates["accepted"] is False and gates["pw_conserved"] is False
+
+
+def test_expected_conserving_external_contract():
+    """Reviewer P1: the runner-known mode is an EXTERNAL contract — losing
+    BOTH self-declaration markers must not shrink the gate set when the
+    runner says the run was conserving."""
+    from kdm6.da_fulldomain import evaluate_artifact_gates
+
+    base = _good_conserving_report()
+    gates = evaluate_artifact_gates(base, expected_conserving=True)
+    assert gates["accepted"] is True and gates["conserving_marker"] is True
+
+    # both markers lost + contract corrupted: with the external contract the
+    # full conserving gate set is STILL generated and fails
+    rep = json.loads(json.dumps(base))
+    del rep["conserving"]
+    rep["artifact_role"] = "pathology_stress"
+    del rep["grad_w_norm_final"]
+    rep["cvt"]["n_controlled"]["qc"] = 1
+    gates = evaluate_artifact_gates(rep, expected_conserving=True)
+    assert gates["accepted"] is False
+    assert gates["conserving_marker"] is False
+    assert gates["final_audited"] is False        # grad_w required
+    assert gates["conserving_contract"] is False  # qc controlled
+
+    # mode confusion the other way: runner says non-conserving but the
+    # report declares conserving
+    gates = evaluate_artifact_gates(base, expected_conserving=False)
+    assert gates["conserving_marker"] is False and gates["accepted"] is False
+
+    # legacy non-conserving report under the external contract passes
+    legacy = dict(j_trace=[dict(total=100.0), dict(total=91.0),
+                           dict(total=90.0, j_state=1.5, j_theta=0.5,
+                                j_obs=88.0)],
+                  n_window_evals=2, n_audit_evals=1,
+                  jb_final=1.5, jtheta_final=0.5, jobs_final=88.0,
+                  grad_norm_final=3.0, grad_theta_norm_final=0.1,
+                  omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
+                  nonfinite_fields_t0=[], nonfinite_fields_slot=[])
+    gates = evaluate_artifact_gates(legacy, expected_conserving=False)
+    assert gates["accepted"] is True
+    assert gates["conserving_marker"] is True
+    assert "conserving_contract" not in gates
+    # under the external contract the v-block gradient is REQUIRED evidence
+    nov = json.loads(json.dumps(legacy))
+    del nov["grad_norm_final"]
+    gates = evaluate_artifact_gates(nov, expected_conserving=False)
+    assert gates["accepted"] is False and gates["final_audited"] is False
 
 
 @needs_all

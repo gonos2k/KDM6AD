@@ -104,7 +104,10 @@ def main(out_json, case_root, conserving=False):
 
     rep["artifact_role"] = ("conserving_stress" if conserving
                             else "pathology_stress")
-    rep["gates"] = evaluate_artifact_gates(rep)   # ENFORCED below, not advisory
+    # the runner-known mode is the external gate contract (fail-closed even
+    # if every self-declaration marker regressed away)
+    rep["gates"] = evaluate_artifact_gates(
+        rep, expected_conserving=conserving)      # ENFORCED below
     rep["manifest"] = build_manifest(
         f"python oracle/scripts/run_fulldomain_lc05.py {out_json} "
         f"{case_root}" + (" --conserving" if conserving else ""), gk2a_files)

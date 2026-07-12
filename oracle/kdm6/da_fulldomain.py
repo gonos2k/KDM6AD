@@ -157,12 +157,21 @@ def validate_pseudo_qv_overlap(sigma_qv: torch.Tensor, cols: torch.Tensor,
             "qv_levels (builder) or drop those columns")
 
 
-def evaluate_artifact_gates(rep: dict) -> dict:
+def evaluate_artifact_gates(rep: dict, *,
+                            expected_conserving: "bool | None" = None
+                            ) -> dict:
     """Acceptance gates for an evidence artifact — ENFORCED, not advisory.
 
     A run whose slot-time state exploded, whose J did not descend, or whose
     diagnostics went non-finite must be rejected (runner exits nonzero); a
     reported-but-unenforced pathology produces passing-looking artifacts.
+
+    expected_conserving: the RUNNER-KNOWN execution mode as an external
+    contract (reviewer P1) — the report's self-declaration must agree
+    (conserving_marker gate), the full conserving gate set is generated
+    even if every self-declaration marker regressed away, and the v-block
+    gradient diagnostic becomes required evidence. None (default) infers
+    the mode from the report alone (archived-artifact re-evaluation).
     Returns {gate_name: bool, ..., "accepted": bool}."""
     jt = [d["total"] for d in rep["j_trace"]]
     gates = dict(
@@ -176,21 +185,29 @@ def evaluate_artifact_gates(rep: dict) -> dict:
         no_nonfinite_slot=(rep["nonfinite_fields_slot"] == []),
         finite_diagnostics=math.isfinite(rep["grad_theta_norm_final"]),
     )
-    # Conserving-artifact gates — FAIL-CLOSED (reviewer P1): once a report
-    # declares itself conserving (flag or artifact_role), ALL conserving
-    # gates are generated unconditionally, and a missing/None/malformed
-    # evidence field evaluates to False — a regression that drops a field
-    # must never shrink the gate set into a silent pass. Legacy reports
-    # (no conserving markers/keys) keep their gate set unchanged.
-    conserving = (rep.get("conserving") is True
-                  or rep.get("artifact_role") == "conserving_stress")
+    # Conserving-artifact gates — FAIL-CLOSED (reviewer P1): once the run
+    # is conserving (runner contract OR report self-declaration), ALL
+    # conserving gates are generated unconditionally, and a missing/None/
+    # malformed evidence field evaluates to False — a regression that drops
+    # a field must never shrink the gate set into a silent pass. Legacy
+    # reports (no conserving markers/keys, no contract) keep their gate set.
+    declared = (rep.get("conserving") is True
+                or rep.get("artifact_role") == "conserving_stress")
+    conserving = declared or expected_conserving is True
+    if expected_conserving is not None:
+        # the report must agree with the runner-known mode in BOTH
+        # directions (lost markers AND mode confusion fail)
+        gates["conserving_marker"] = (declared if expected_conserving
+                                      else not declared)
     if conserving or rep.get("water_budget") is not None:
         gates["pw_conserved"] = _gate_pw_conserved(rep)
     if conserving or "n_audit_evals" in rep:
         # a conserving run has a live partition, so its w-gradient
-        # diagnostic is REQUIRED (a legacy report's None stays legitimate)
-        gates["final_audited"] = _gate_final_audited(rep,
-                                                     require_w=conserving)
+        # diagnostic is REQUIRED (a legacy report's None stays legitimate);
+        # under the external contract the v-block gradient is required too
+        gates["final_audited"] = _gate_final_audited(
+            rep, require_w=conserving,
+            require_v=expected_conserving is not None)
     if conserving:
         gates["conserving_contract"] = _gate_conserving_contract(rep)
     gates["accepted"] = all(gates.values())
@@ -204,51 +221,75 @@ def _is_finite_number(x) -> bool:
 
 def _gate_pw_conserved(rep: dict) -> bool:
     """P_w stage total-water error (unweighted vertical level sum) at the
-    roundoff floor. False on any missing/malformed field (fail-closed)."""
+    roundoff floor — finite AND non-negative (a negative "error" is a
+    malformed report, not a pass). False on any missing/malformed field."""
     wb = rep.get("water_budget")
     if not isinstance(wb, dict):
         return False
     err = wb.get("pw_stage_err_max")
-    return _is_finite_number(err) and err < 1.0e-12
+    return _is_finite_number(err) and 0.0 <= err < 1.0e-12
 
 
-def _gate_final_audited(rep: dict, *, require_w: bool = False) -> bool:
+def _gate_final_audited(rep: dict, *, require_w: bool = False,
+                        require_v: bool = False) -> bool:
     """The report's finals come from exactly one authoritative audit closure
     and are internally consistent: trace length = optimizer evals + 1 audit,
-    the trace tail equals the sum of the final J components exactly, and
-    every final/gradient diagnostic is finite. require_w (conserving runs):
-    grad_w_norm_final must be PRESENT and finite — a missing/None w-gradient
-    diagnostic fails closed. False on any missing or malformed field."""
+    each trace-tail J component equals its final exactly (a compensated
+    corruption inside the total cannot hide), every J component and
+    gradient norm is finite and non-negative, and counts are plain ints
+    (bool/float masquerading fails). require_w (conserving runs):
+    grad_w_norm_final must be PRESENT and finite. require_v (runner
+    contract): grad_norm_final (v-block) is required evidence too — the
+    inference path stays lenient so archived pre-key artifacts remain
+    re-evaluable. False on any missing or malformed field."""
     try:
         jt = rep["j_trace"]
-        total = jt[-1]["total"]
-        finals = [rep["jb_final"], rep["jtheta_final"], rep["jobs_final"],
-                  rep["grad_theta_norm_final"]]
+        tail = jt[-1]
+        vals = [rep["jb_final"], rep["jtheta_final"], rep["jobs_final"],
+                rep["grad_theta_norm_final"]]
+        if require_v:
+            vals.append(rep["grad_norm_final"])       # KeyError -> False
+        elif rep.get("grad_norm_final") is not None:
+            vals.append(rep["grad_norm_final"])
         if require_w:
-            finals.append(rep["grad_w_norm_final"])   # KeyError/None -> False
+            vals.append(rep["grad_w_norm_final"])     # KeyError/None -> False
         elif rep.get("grad_w_norm_final") is not None:
-            finals.append(rep["grad_w_norm_final"])
-        return (rep["n_audit_evals"] == 1
+            vals.append(rep["grad_w_norm_final"])
+        return (type(rep["n_audit_evals"]) is int
+                and rep["n_audit_evals"] == 1
+                and type(rep["n_window_evals"]) is int
                 and len(jt) == rep["n_window_evals"] + 1
-                and all(_is_finite_number(v) for v in finals)
-                and _is_finite_number(total)
+                and all(_is_finite_number(v) and v >= 0.0 for v in vals)
+                and _is_finite_number(tail["total"])
+                and tail["j_state"] == rep["jb_final"]
+                and tail["j_theta"] == rep["jtheta_final"]
+                and tail["j_obs"] == rep["jobs_final"]
                 and rep["jb_final"] + rep["jtheta_final"]
-                + rep["jobs_final"] == total)
+                + rep["jobs_final"] == tail["total"])
     except (KeyError, TypeError, IndexError):
         return False
 
 
 def _gate_conserving_contract(rep: dict) -> bool:
     """The conserving contract held in the recorded configuration: the
-    partition ran under the v2 (dimensionless-w) schema and every mass
-    hydrometeor diagonal control was OFF. False on missing/malformed
-    records (fail-closed)."""
+    partition record round-trips EXACTLY through PartitionSpec (v2 schema
+    with control_units/sigma_rule/channel order, int version) with a
+    matching recomputed fingerprint, and every mass hydrometeor diagonal
+    control was OFF (plain-int zero). False on missing/malformed records."""
     try:
-        if rep["partition"]["spec"]["version"] != 2:
+        spec_d = rep["partition"]["spec"]
+        if type(spec_d.get("version")) is not int or spec_d["version"] != 2:
+            return False
+        ref = PartitionSpec(alpha_total=spec_d["alpha_total"],
+                            sigma_scale=spec_d["sigma_scale"])
+        if ref.as_dict() != spec_d:
+            return False
+        if rep["partition"]["fingerprint"] != ref.fingerprint():
             return False
         nc = rep["cvt"]["n_controlled"]
-        return all(nc[f] == 0 for f in ("qc", "qr", "qi", "qs", "qg"))
-    except (KeyError, TypeError):
+        return all(type(nc[f]) is int and nc[f] == 0
+                   for f in ("qc", "qr", "qi", "qs", "qg"))
+    except (KeyError, TypeError, ValueError):
         return False
 
 
@@ -755,6 +796,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         offset_source=offset_source,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
+        grad_norm_final=res.grad_norm_final,
         grad_theta_norm_final=res.grad_theta_norm_final,
         jb_final=res.jb_final, jtheta_final=res.jtheta_final,
         jobs_final=res.jobs_final,
