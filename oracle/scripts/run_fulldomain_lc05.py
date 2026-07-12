@@ -341,24 +341,34 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
     json_path = out_json + sfx
     npz_path = out_json + ".fields.npz" + sfx
     man_path = out_json + ".manifest.json" + sfx
-    # TOCTOU guard: paths created AFTER the start-of-run freshness check
-    # (or by a concurrent runner that passed the same check) must never be
-    # silently replaced — link(2) is atomic no-replace (rename overwrites
-    # on POSIX; staging survives a collision), and the JSON/manifest use
-    # exclusive create.
+    # TOCTOU guard, ALL-OR-NOTHING: paths created after the start-of-run
+    # freshness check (or by a concurrent runner) must never be silently
+    # replaced, and a LATE collision must not leave a partial artifact set
+    # nor consume the retry staging. Order: exclusive-create the files we
+    # can roll back (json, manifest — the npz hash comes from the staging
+    # bytes, identical under link), then the atomic no-replace link LAST;
+    # on any collision, unlink only what THIS call created and re-raise
+    # with the staging intact.
+    manifest["outputs"] = {json_path: None,        # filled below
+                           npz_path: _sha256(staging_npz)}
+    created = []
     try:
-        os.link(staging_npz, npz_path)
+        with open(json_path, "x") as f:
+            json.dump(rep, f, indent=1)
+        created.append(json_path)
+        manifest["outputs"][json_path] = _sha256(json_path)
+        with open(man_path, "x") as f:
+            json.dump(manifest, f, indent=1)
+        created.append(man_path)
+        os.link(staging_npz, npz_path)             # atomic no-replace
     except FileExistsError:
+        for p in created:
+            os.unlink(p)
         raise FileExistsError(
-            f"output {npz_path} appeared during the run (TOCTOU) — "
-            f"refusing to overwrite; staging kept at {staging_npz}")
+            "an output path appeared during the run (TOCTOU) — refusing "
+            f"to overwrite; rolled back {created or 'nothing'}, staging "
+            f"kept at {staging_npz}")
     os.unlink(staging_npz)
-    with open(json_path, "x") as f:
-        json.dump(rep, f, indent=1)
-    manifest["outputs"] = {json_path: _sha256(json_path),
-                           npz_path: _sha256(npz_path)}
-    with open(man_path, "x") as f:
-        json.dump(manifest, f, indent=1)
     return accepted
 
 

@@ -1147,3 +1147,55 @@ def test_finalize_artifact_never_overwrites(tmp_path):
     with pytest.raises(FileExistsError):
         mod.finalize_artifact(rep2, dict(inputs={}), {}, out, str(staging))
     assert (tmp_path / "x.json").read_text() == "OLD-JSON"
+
+
+def test_finalize_collision_rollback_no_partials(tmp_path):
+    """Codex: a LATE json/manifest collision must not leave a partial
+    artifact set nor consume the retry staging — placement is
+    all-or-nothing (own files rolled back, staging preserved, atomic
+    npz link last)."""
+    mod = _load_runner()
+    staging = tmp_path / "y.json.fields.npz.staging"
+    out = str(tmp_path / "y.json")
+
+    def fresh_rep():
+        return dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+
+    # manifest collision: the json we created is rolled back, npz unplaced
+    staging.write_bytes(b"NEW")
+    (tmp_path / "y.json.manifest.json").write_text("OLD-MAN")
+    with pytest.raises(FileExistsError):
+        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
+                              str(staging))
+    assert staging.exists()
+    assert not (tmp_path / "y.json").exists()          # rolled back
+    assert not (tmp_path / "y.json.fields.npz").exists()
+    assert (tmp_path / "y.json.manifest.json").read_text() == "OLD-MAN"
+    (tmp_path / "y.json.manifest.json").unlink()
+
+    # npz collision: json AND manifest rolled back, staging preserved
+    (tmp_path / "y.json.fields.npz").write_bytes(b"OLD-NPZ")
+    with pytest.raises(FileExistsError):
+        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
+                              str(staging))
+    assert staging.exists()
+    assert not (tmp_path / "y.json").exists()
+    assert not (tmp_path / "y.json.manifest.json").exists()
+    assert (tmp_path / "y.json.fields.npz").read_bytes() == b"OLD-NPZ"
+    (tmp_path / "y.json.fields.npz").unlink()
+
+    # json collision: staging preserved, npz unplaced (no partials)
+    (tmp_path / "y.json").write_text("OLD-JSON")
+    with pytest.raises(FileExistsError):
+        mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
+                              str(staging))
+    assert staging.exists()
+    assert not (tmp_path / "y.json.fields.npz").exists()
+    assert not (tmp_path / "y.json.manifest.json").exists()
+    (tmp_path / "y.json").unlink()
+
+    # clean retry after any collision succeeds with the SAME staging
+    ok = mod.finalize_artifact(fresh_rep(), dict(inputs={}), {}, out,
+                               str(staging))
+    assert ok is True and not staging.exists()
+    assert (tmp_path / "y.json.fields.npz").read_bytes() == b"NEW"
