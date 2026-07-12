@@ -283,14 +283,15 @@ class DualMinimizeResult:
     jb_final: float
     jtheta_final: float
     jobs_final: float
-    n_window_evals: int
-    grad_norm_final: float
-    grad_theta_norm_final: float
+    n_window_evals: int                    # optimizer-driven window integrations
+    grad_norm_final: float                 # v_x-block gradient norm only
+    grad_theta_norm_final: float           # v_theta-block gradient norm
     policy: dict = None                    # 게이트 opt-in 상태 (감사, 재검토 M1)
     cvt: "dict | None" = None              # CVT 감사 레코드 (spec 경로만)
     w: "torch.Tensor | None" = None        # partition controls (n_ch, B, K), opt-in
     partition: "dict | None" = None        # partition audit record (da_partition)
-    grad_w_norm_final: "float | None" = None   # |g_w| at the last closure
+    grad_w_norm_final: "float | None" = None   # |g_w| at the accepted point
+    n_audit_evals: int = 0                 # final-audit closure calls
 
 
 def run_dual_minimizer(
@@ -347,7 +348,7 @@ def run_dual_minimizer(
                   if cvt is not None else ())
     sig_x = _stack(b_sigma)
     v_x = torch.zeros_like(sig_x, requires_grad=True)
-    v_th = torch.zeros(4, **_F64, requires_grad=True)
+    v_th = torch.zeros(4, **_F64, device=xb.th.device, requires_grad=True)
     if partition is None and partition_forcing is not None:
         raise ValueError(
             "partition_forcing given without partition — a stray forcing "
@@ -364,15 +365,18 @@ def run_dual_minimizer(
                     "partition latent terms need the t0 forcing (Exner) — "
                     "pass partition_forcing for a zero-step window")
             partition_forcing = forcings[0]
-        elif len(forcings) and not torch.equal(partition_forcing.pii,
-                                               forcings[0].pii):
+        elif len(forcings) and (
+                partition_forcing.pii.dtype != forcings[0].pii.dtype
+                or not torch.equal(partition_forcing.pii, forcings[0].pii)):
             raise ValueError(
                 "explicit partition_forcing pii differs from forcings[0].pii "
-                "— a bifurcated physics configuration (bitwise match "
-                "required on a non-zero-step window)")
+                "— a bifurcated physics configuration (exact elementwise "
+                "value match with the same dtype is required on a "
+                "non-zero-step window)")
         validate_partition_forcing(partition_forcing, xb)
         w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape),
-                        dtype=torch.float64, requires_grad=True)
+                        dtype=torch.float64, device=xb.th.device,
+                        requires_grad=True)
 
     trace: list = []
     counters = {"windows": 0}
@@ -558,7 +562,7 @@ def run_dual_minimizer(
                 g_w = w.detach() + g_w_obs
                 j_b = j_b + 0.5 * (w * w).sum()
             # ∂J/∂v_θ = v_θ + σ_log · θ · ∂J/∂θ  (θ = θb·exp(σv) 체인)
-            gp = torch.zeros(4, **_F64)
+            gp = torch.zeros(4, **_F64, device=v_th.device)
             if res.grad_params is not None:
                 for i, n in enumerate(PNAMES):          # 비활성(σ=0)은 키 부재 → 0
                     if n in res.grad_params:
@@ -595,6 +599,13 @@ def run_dual_minimizer(
         max_iter=max_iter, history_size=history_size,
         line_search_fn="strong_wolfe", tolerance_grad=tolerance_grad)
     opt.step(closure)
+    n_opt = counters["windows"]
+    # Final audit at the ACCEPTED controls — strong-Wolfe can restore a
+    # previous bracket point without re-calling the closure, so the last
+    # closure's (J components, grad norms, j_trace tail) may belong to a
+    # rejected trial. Counted separately in n_audit_evals.
+    with torch.enable_grad():
+        closure()
 
     with torch.no_grad():
         x_a, _ = cvt_apply(xb, b_sigma, v_x, cvt)
@@ -612,11 +623,12 @@ def run_dual_minimizer(
         x_analysis=x_a, theta_analysis=theta_a,
         v_state=v_x.detach(), v_theta=v_th.detach(), j_trace=trace,
         jb_final=last["jb"], jtheta_final=last["jth"], jobs_final=last["jobs"],
-        n_window_evals=counters["windows"],
+        n_window_evals=n_opt,
         grad_norm_final=last["gx"], grad_theta_norm_final=last["gth"],
         policy=policy.as_dict(), cvt=cvt_rec,
         w=None if w is None else w.detach(), partition=part_rec,
-        grad_w_norm_final=last["gw"])
+        grad_w_norm_final=last["gw"],
+        n_audit_evals=counters["windows"] - n_opt)
 
 
 def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],

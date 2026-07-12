@@ -61,12 +61,14 @@ class MinimizeResult:
     j_trace: list[float]                 # closure 호출별 J = J_b + J_obs
     jb_final: float
     jobs_final: float
-    n_window_evals: int                  # 창 적분(forward+adjoint) 횟수
-    grad_norm_final: float
+    n_window_evals: int                  # optimizer-driven window integrations
+    grad_norm_final: float               # v-block gradient norm (w block is
+                                         # reported separately below)
     cvt: "dict | None" = None            # 감사 레코드 (spec 경로만; 레거시 None)
     w: "torch.Tensor | None" = None      # partition controls (n_ch, B, K), opt-in
     partition: "dict | None" = None      # partition audit record (da_partition)
-    grad_w_norm_final: "float | None" = None   # |g_w| at the last closure
+    grad_w_norm_final: "float | None" = None   # |g_w| at the accepted point
+    n_audit_evals: int = 0               # final-audit closure calls (see below)
 
 
 def run_minimizer(
@@ -131,15 +133,18 @@ def run_minimizer(
                     "partition latent terms need the t0 forcing (Exner) — "
                     "pass partition_forcing for a zero-step window")
             partition_forcing = forcings[0]
-        elif len(forcings) and not torch.equal(partition_forcing.pii,
-                                               forcings[0].pii):
+        elif len(forcings) and (
+                partition_forcing.pii.dtype != forcings[0].pii.dtype
+                or not torch.equal(partition_forcing.pii, forcings[0].pii)):
             raise ValueError(
                 "explicit partition_forcing pii differs from forcings[0].pii "
-                "— a bifurcated physics configuration (bitwise match "
-                "required on a non-zero-step window)")
+                "— a bifurcated physics configuration (exact elementwise "
+                "value match with the same dtype is required on a "
+                "non-zero-step window)")
         validate_partition_forcing(partition_forcing, xb64)
         w = torch.zeros((len(CHANNELS),) + tuple(xb64.th.shape),
-                        dtype=torch.float64, requires_grad=True)
+                        dtype=torch.float64, device=xb64.th.device,
+                        requires_grad=True)
 
     trace: list[float] = []
     counters = {"windows": 0}
@@ -193,6 +198,14 @@ def run_minimizer(
         max_iter=max_iter, history_size=history_size,
         line_search_fn="strong_wolfe", tolerance_grad=tolerance_grad)
     opt.step(closure)
+    n_opt = counters["windows"]
+    # Final audit: strong-Wolfe may reject the last trial and restore a
+    # previous bracket point WITHOUT re-calling the closure there, so the
+    # last closure's (J, grads) can belong to a rejected trial. One more
+    # closure at the ACCEPTED controls makes j_trace[-1] and every *_final
+    # authoritative (counted separately in n_audit_evals).
+    with torch.enable_grad():
+        closure()
 
     with torch.no_grad():
         x_a, _ = cvt_apply(xb64, b_sigma, v, cvt)
@@ -208,6 +221,7 @@ def run_minimizer(
     return MinimizeResult(
         x_analysis=x_a, v=v.detach(), j_trace=trace,
         jb_final=last["jb"], jobs_final=last["jobs"],
-        n_window_evals=counters["windows"], grad_norm_final=last["gnorm"],
+        n_window_evals=n_opt, grad_norm_final=last["gnorm"],
         cvt=cvt_rec, w=None if w is None else w.detach(),
-        partition=part_rec, grad_w_norm_final=last["gw"])
+        partition=part_rec, grad_w_norm_final=last["gw"],
+        n_audit_evals=counters["windows"] - n_opt)

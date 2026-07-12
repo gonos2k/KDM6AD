@@ -16,10 +16,12 @@ order is part of the fingerprint):
     snow<->graupel qs <-> qg   mass-only
 
 liq<->ice has NO direct channel: it is reachable by composition
-vap<->liq(-d) + vap<->ice(+d), whose net latent is exactly xls - xl(T) = L_f
-— identical to the freeze operator. This keeps the §37 branch-conditional
-latent constants (melt xlf0 vs freeze xls-xl) out of the CVT entirely, so no
-sign branch and no kink at the optimizer's w=0 start.
+vap<->liq(-d) + vap<->ice(+d), whose net latent equals the freeze operator's
+L_f = xls - xl(T) to FIRST order — the second op re-evaluates its pre-op
+T/cpm, so finite increments carry an O(delta^2), order-dependent energy
+difference (tested). This keeps the §37 branch-conditional latent constants
+(melt xlf0 vs freeze xls-xl) out of the CVT entirely, so no sign branch and
+no kink at the optimizer's w=0 start.
 
 Bounded map (C^1, exact zero):  delta(u) = u / (1 + relu(u)/cap_fwd
 + relu(-u)/cap_rev).  delta(0) = 0 exactly and delta'(0) = 1 from both sides;
@@ -30,8 +32,9 @@ torch.where over the raw map is the 0*inf where-backward NaN trap).
 
 Controls are DIMENSIONLESS (like the diagonal CVT's v): the chain feeds
 u = sigma * w with sigma = sigma_scale * min(cap_fwd, cap_rev) frozen from
-the background — the partition-B standard deviation in physical units. The
-prior 0.5*||w||^2 therefore states delta ~ N(0, sigma^2) near the origin
+the background — the TANGENT-SPACE 1-sigma of the increment at w = 0 (not
+Std(delta) of the pushed-forward nonlinear asymmetric map). The prior
+0.5*||w||^2 therefore states delta ~ N(0, sigma^2) near the origin only
 (saturation shrinks the tails), and every L-BFGS leaf (v, v_theta, w) shares
 an identity prior Hessian — no kg/kg-vs-dimensionless conditioning skew.
 sigma = 0 exactly on dead cells (min cap 0), reproducing the zero-row
@@ -88,8 +91,9 @@ class PartitionSpec:
     """Frozen partition-stage config. alpha_total is the per-DONOR budget:
     the caps of all channel sides draining one donor sum to
     alpha_total * q_donor(xb). sigma_scale sets the dimensionless-control
-    scale sigma = sigma_scale * min(cap_fwd, cap_rev) — the physical 1-sigma
-    of the partition increment under the 0.5*||w||^2 prior."""
+    scale sigma = sigma_scale * min(cap_fwd, cap_rev) — the tangent-space
+    1-sigma of the partition increment at w = 0 under the 0.5*||w||^2
+    prior."""
     alpha_total: float = 0.5
     sigma_scale: float = 0.25
 
@@ -103,15 +107,20 @@ class PartitionSpec:
             object.__setattr__(self, name, float(a))
 
     def as_dict(self) -> dict:
-        return {"version": 1, "alpha_total": self.alpha_total,
+        # version 2: w changed meaning from physical (kg/kg) to
+        # dimensionless — the schema names the control metric explicitly
+        return {"version": 2, "alpha_total": self.alpha_total,
                 "sigma_scale": self.sigma_scale,
+                "control_units": "dimensionless",
+                "sigma_rule": "sigma_scale*min(cap_fwd,cap_rev)",
                 "channels": [c[0] for c in CHANNELS]}
 
     def fingerprint(self) -> str:
         """Name-bound sha256 — sensitive to channel order/pairing/latent
         convention and to alpha/sigma_scale (the chain is non-commuting
-        through T; sigma_scale changes the control metric)."""
-        payload = "partition-v1|" + "|".join(
+        through T; sigma_scale changes the control metric). v2 = the
+        dimensionless-w metric (v1 was physical kg/kg controls)."""
+        payload = "partition-v2|" + "|".join(
             f"{n}:{d}>{r}:{l}" for n, d, r, l in CHANNELS)
         payload += f"|{self.alpha_total.hex()}|{self.sigma_scale.hex()}"
         return hashlib.sha256(payload.encode()).hexdigest()

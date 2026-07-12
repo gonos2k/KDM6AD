@@ -337,8 +337,10 @@ def test_partition_spec_fingerprint():
     assert f1 != PartitionSpec(alpha_total=0.4).fingerprint()
     assert f1 != PartitionSpec(sigma_scale=0.1).fingerprint()
     d = PartitionSpec().as_dict()
+    assert d["version"] == 2                # v2 = dimensionless-w metric
     assert d["alpha_total"] == 0.5
     assert d["sigma_scale"] == 0.25
+    assert d["control_units"] == "dimensionless"
     assert d["channels"] == [c[0] for c in CHANNELS]
 
 
@@ -493,6 +495,11 @@ def test_minimizer_conserving_e2e_water_invariant():
     assert res.j_trace[-1] < res.j_trace[0], res.j_trace
     assert res.w is not None and float(res.w.abs().max()) > 0.0
     assert res.grad_w_norm_final is not None and res.grad_w_norm_final >= 0.0
+    # observable-space recovery gate: H(M(x_a)) approaches the truth
+    # observable — w is the ONLY live control here (all diagonal sigma 0),
+    # so the reduction is attributable to w (measured ratio 0.0029)
+    assert res.jobs_final < 0.1 * res.j_trace[0], \
+        (res.jobs_final, res.j_trace[0])
     xa = res.x_analysis
     assert torch.allclose(_total_water(xa), _total_water(xb),
                           rtol=0.0, atol=1.0e-16)
@@ -602,15 +609,16 @@ def test_dual_partition_none_is_legacy():
 
 
 def test_dual_partition_e2e_water_invariant():
-    """Dual twin reachable by partitions only (state sigma all zero): J falls
-    through w, total water invariant, composed analysis + audit record."""
+    """Dual W-ONLY twin: theta frozen (active=()) and every diagonal sigma 0,
+    so the observable recovery is attributable to w ALONE (causal isolation
+    — with theta active the J descent could be explained by parameters)."""
     xb = _mk_state()
     forcings = [_mk_forcing(xb)] * 2
     cfg = WindowConfig(dt=DT)
     spec, b_sigma = make_default_cvt(
         xb, th_sigma=0.0, qv_sigma=0.0,
         sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
-    prior = default_param_prior(0.2)
+    prior = default_param_prior(0.2, active=())          # theta pinned
     pspec = PartitionSpec()
     caps = build_partition_caps(xb, pspec)
     # obs-dominated twin (see the single-minimizer E2E note on satadj wash)
@@ -625,6 +633,11 @@ def test_dual_partition_e2e_water_invariant():
     assert res.j_trace[-1]["total"] < res.j_trace[0]["total"]
     assert res.w is not None and float(res.w.abs().max()) > 0.0
     assert res.grad_w_norm_final is not None and res.grad_w_norm_final >= 0.0
+    # w-only causal isolation: theta must not have moved at all
+    assert float(res.v_theta.abs().max()) == 0.0
+    # observable-space recovery gate (measured ratio 0.0029 — 34x margin)
+    assert res.jobs_final < 0.1 * res.j_trace[0]["total"], \
+        (res.jobs_final, res.j_trace[0]["total"])
     assert torch.allclose(_total_water(res.x_analysis), _total_water(xb),
                           rtol=0.0, atol=1.0e-16)
     assert res.partition["fingerprint"] == pspec.fingerprint()
@@ -831,3 +844,95 @@ def test_partition_enforces_mass_hydro_sigma_zero():
                            WindowConfig(dt=DT), b_sigma,
                            default_param_prior(0.2), max_iter=2, cvt=spec,
                            policy=_P(), partition=PartitionSpec())
+
+
+# ── final-report authority + observable recovery (review round 3) ────────────
+
+def test_final_report_is_authoritative_at_returned_controls():
+    """Strong-Wolfe may reject the last trial and restore a previous bracket
+    point WITHOUT re-calling the closure there — the reported *_final and
+    j_trace[-1] must nevertheless be the values AT the returned controls
+    (final audit evaluation). Checked by independent recomputation."""
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    spec, b_sigma = make_default_cvt(
+        xb, th_sigma=0.0, qv_sigma=0.0,
+        sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    pspec = PartitionSpec()
+    caps = build_partition_caps(xb, pspec)
+    w_true = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
+    w_true[0], w_true[1] = 3.0, 2.0
+    with torch.no_grad():
+        x_true = apply_partition_chain(xb, forcings[0], w_true, caps)
+    y = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
+    obs_eval = _obs_th_at(2, y, sigma_o=2.0e-4)
+    res = run_minimizer(xb, forcings, obs_eval, cfg, b_sigma, max_iter=10,
+                        cvt=spec, partition=pspec)
+
+    # independent recomputation at the RETURNED controls
+    with torch.no_grad():
+        y_a, _ = cvt_apply(xb, b_sigma, res.v, spec)
+        x0 = apply_partition_chain(y_a, forcings[0], res.w, caps)
+    acc = []
+
+    def obs_adjoint(t, x_t):
+        out = obs_eval(t, x_t)
+        if out is None:
+            return None
+        acc.append(out[0].detach())
+        return out[1]
+
+    run_da_window(x0, forcings, obs_adjoint, cfg)
+    j_obs = float(torch.stack(acc).sum())
+    j_b = float(0.5 * (res.v * res.v).sum() + 0.5 * (res.w * res.w).sum())
+    assert res.jobs_final == j_obs, (res.jobs_final, j_obs)
+    assert res.jb_final == j_b, (res.jb_final, j_b)
+    assert res.j_trace[-1] == j_b + j_obs, (res.j_trace[-1], j_b + j_obs)
+    assert res.n_audit_evals == 1
+
+
+def test_dual_final_report_is_authoritative():
+    """Dual analogue: jb/jtheta finals must equal the pure prior functions of
+    the RETURNED control vectors (a rejected last trial would differ)."""
+    xb = _mk_state()
+    forcings = [_mk_forcing(xb)] * 2
+    cfg = WindowConfig(dt=DT)
+    spec, b_sigma = make_default_cvt(
+        xb, sigma_overrides={f: 0.0 for f in ("qc", "qi", "qs", "nc", "ni")})
+    truth = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final
+    res = run_dual_minimizer(xb, forcings,
+                             _quad_th_obs(2, truth.th + 0.3, sigma_o=0.05),
+                             cfg, b_sigma, default_param_prior(0.2),
+                             max_iter=10, cvt=spec, policy=_P(),
+                             partition=PartitionSpec())
+    jb = float(0.5 * (res.v_state * res.v_state).sum()
+               + 0.5 * (res.w * res.w).sum())
+    jth = float(0.5 * (res.v_theta * res.v_theta).sum())
+    assert res.jb_final == jb, (res.jb_final, jb)
+    assert res.jtheta_final == jth, (res.jtheta_final, jth)
+    assert res.j_trace[-1]["total"] == pytest.approx(
+        jb + jth + res.jobs_final, abs=0.0)
+
+
+def test_satadj_damping_ratio_regression():
+    """Pins the measured M-damping this twin design relies on: the
+    supersaturated background's saturation adjustment absorbs the t0
+    partition latent signal by roughly two orders of magnitude by t=2
+    (measured ~137x/118x/109x across amplitudes on this fixture)."""
+    xb = _mk_state()
+    f0 = _mk_forcing(xb)
+    forcings = [f0] * 2
+    cfg = WindowConfig(dt=DT)
+    caps = build_partition_caps(xb, PartitionSpec())
+    w = torch.zeros((len(CHANNELS),) + tuple(xb.th.shape), **_F64)
+    w[0], w[1] = 3.0, 2.0
+    with torch.no_grad():
+        x_true = apply_partition_chain(xb, f0, w, caps)
+    dth0 = float((x_true.th - xb.th).abs().max())
+    th_t = run_da_window(x_true, forcings, lambda t, x: None, cfg).state_final.th
+    th_b = run_da_window(xb, forcings, lambda t, x: None, cfg).state_final.th
+    resid = float((th_t - th_b).abs().max())
+    assert dth0 > 0.1                                # signal present at t0
+    ratio = dth0 / resid
+    assert 30.0 < ratio < 500.0, (dth0, resid, ratio)
