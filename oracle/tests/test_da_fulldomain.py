@@ -1102,3 +1102,23 @@ def test_finalize_artifact_quarantines_rejected(tmp_path):
     assert (tmp_path / "w.json.manifest.json.rejected").exists()
     rejected = json.loads((tmp_path / "w.json.rejected").read_text())
     assert rejected["gates"]["accepted"] is False
+
+
+def test_runner_refuses_existing_outputs(tmp_path):
+    """Codex: a rejected rerun over the same OUT_JSON would leave the
+    PREVIOUS run's approved artifacts at the canonical names next to the
+    new *.rejected files — an archive step would collect stale evidence.
+    Evidence artifacts are immutable: the runner fails fast BEFORE the
+    (hour-long) run if ANY candidate output name already exists."""
+    mod = _load_runner()
+    out = str(tmp_path / "v.json")
+    mod._assert_fresh_outputs(out)                     # clean dir: fine
+    for stale in ("", ".rejected", ".fields.npz", ".fields.npz.rejected",
+                  ".manifest.json", ".manifest.json.rejected",
+                  ".fields.npz.staging"):
+        p = tmp_path / ("v.json" + stale)
+        p.write_bytes(b"old")
+        with pytest.raises(FileExistsError, match="already exists"):
+            mod._assert_fresh_outputs(out)
+        p.unlink()
+    mod._assert_fresh_outputs(out)

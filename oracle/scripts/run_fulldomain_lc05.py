@@ -296,6 +296,22 @@ def check_provenance_drift(manifest):
     return drift
 
 
+def _assert_fresh_outputs(out_json):
+    """Evidence artifacts are immutable: a rerun over an existing OUT_JSON
+    would either overwrite approved evidence or (when rejected) leave the
+    PREVIOUS run's approved files at the canonical names next to the new
+    *.rejected ones — an archive step would collect stale evidence. Fail
+    fast BEFORE the hour-long run if any candidate name exists."""
+    for sfx in ("", ".rejected", ".fields.npz", ".fields.npz.rejected",
+                ".manifest.json", ".manifest.json.rejected",
+                ".fields.npz.staging"):
+        p = Path(out_json + sfx)
+        if p.exists():
+            raise FileExistsError(
+                f"output {p} already exists — evidence artifacts are "
+                "immutable; choose a new OUT_JSON or move the old run away")
+
+
 def _assert_disjoint(out_paths, in_paths):
     """Output/case paths must not equal, contain, or live inside any input
     path — the run must be unable to overwrite its own provenance inputs."""
@@ -347,6 +363,7 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
                                         _fixture_tq)
 
     t0 = time.time()
+    _assert_fresh_outputs(out_json)
     # snapshot provenance BEFORE any input is read (slot_files only lists
     # the directory; the frame/cal/L1B reads all happen after the hashes)
     gk2a_files = slot_files(GK2A, SLOT, channels=CLEAN_IR_CHANNELS)
