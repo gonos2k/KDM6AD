@@ -402,3 +402,88 @@ def test_evaluate_artifact_gates():
         gates = evaluate_artifact_gates(rep)
         assert gates["accepted"] is False, corrupt
         assert gates[expect_fail] is False, corrupt
+
+
+def test_evaluate_artifact_gates_conserving_and_audit():
+    """Conserving evidence artifacts add two enforced gates: the P_w stage
+    must conserve total water to roundoff (column-integral error), and the
+    final report must come from exactly one authoritative audit closure."""
+    from kdm6.da_fulldomain import evaluate_artifact_gates
+
+    good = dict(j_trace=[dict(total=100.0), dict(total=90.0)],
+                omb=5.0, oma=4.0, pathology_t0={}, pathology_slot={},
+                nonfinite_fields_t0=[], nonfinite_fields_slot=[],
+                grad_theta_norm_final=0.1,
+                n_audit_evals=1,
+                water_budget=dict(pw_stage_err_max=3.0e-16,
+                                  dtw_qv_diag_max=1.0e-4,
+                                  dtw_qv_diag_mean=2.0e-5))
+    gates = evaluate_artifact_gates(good)
+    assert gates["accepted"] is True
+    assert gates["pw_conserved"] is True and gates["final_audited"] is True
+
+    bad_pw = dict(good, water_budget=dict(good["water_budget"],
+                                          pw_stage_err_max=1.0e-6))
+    gates = evaluate_artifact_gates(bad_pw)
+    assert gates["accepted"] is False and gates["pw_conserved"] is False
+
+    bad_audit = dict(good, n_audit_evals=0)
+    gates = evaluate_artifact_gates(bad_audit)
+    assert gates["accepted"] is False and gates["final_audited"] is False
+
+    # legacy reports (no conserving keys) keep their gate set unchanged
+    legacy = {k: v for k, v in good.items()
+              if k not in ("water_budget", "n_audit_evals")}
+    gates = evaluate_artifact_gates(legacy)
+    assert gates["accepted"] is True
+    assert "pw_conserved" not in gates and "final_audited" not in gates
+
+
+@needs_all
+def test_fulldomain_smoke_conserving_capped(tmp_path):
+    """Conserving-mode driver smoke: mass-hydro diagonal sigma zeroed, the
+    partition stage live, water budget split into the P_w stage error
+    (roundoff) and the deliberate qv-diagonal change, finals authoritative
+    (single audit closure)."""
+    from kdm6.da_fulldomain import run_fulldomain_analysis
+    from kdm6.io.frame_reader import read_wrfout_frame
+    from kdm6.obs.gk2a_l1b import (CLEAN_IR_CHANNELS, load_cal_table,
+                                   read_ko_slot, slot_files)
+    from kdm6.obs.obs_ingest import payload_to_column_obs
+    from kdm6.obs.rttov_case_writer import fixture_layer_pressure
+    from test_rttov_case_writer import (_CHANNELS, _HAVE_CLOUD_EXE,
+                                        _fixture_p_half, _fixture_tq)
+    if not _HAVE_CLOUD_EXE:
+        pytest.skip("live cloud RTTOV (ami_cloud) 부재")
+
+    fr = read_wrfout_frame(str(_WRFIN), 0)
+    cal = load_cal_table(_CAL)
+    pl = read_ko_slot(slot_files(_GK2A, "202507190000",
+                                 channels=CLEAN_IR_CHANNELS), cal, stride=8)
+    co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"],
+                               max_dist_km=4.0)
+    tr, qr = _fixture_tq()
+    grids = dict(p_lay=fixture_layer_pressure(), p_half=_fixture_p_half(),
+                 t_ref=tr, q_ref=qr)
+    rep = run_fulldomain_analysis(
+        fr, co, grids, str(tmp_path / "v10smoke"),
+        n_workers=2, max_iter=2, max_cloudy=12, max_clear=50,
+        channels=_CHANNELS, pseudo_rh=True, time_tolerance_s=300.0,
+        qv_levels=int(fr.meta["kme"]), conserving=True)
+
+    json.dumps(rep)
+    assert rep["conserving"] is True
+    assert rep["partition"]["spec"]["version"] == 2
+    assert rep["n_audit_evals"] == 1
+    assert len(rep["j_trace"]) == rep["n_window_evals"] + 1
+    assert rep["j_trace"][-1]["total"] == pytest.approx(
+        rep["jb_final"] + rep["jtheta_final"] + rep["jobs_final"], rel=1e-15)
+    # water budget separation: P_w stage conserves to roundoff; total-water
+    # change is carried by the qv diagonal dof alone
+    wb = rep["water_budget"]
+    assert wb["pw_stage_err_max"] < 1.0e-12
+    # conserving contract: mass-hydro diagonal controls are OFF; species
+    # move only through partitions (channels touch qc/qi at t0)
+    assert rep["cvt"]["n_controlled"]["qc"] == 0
+    assert rep["cvt"]["n_controlled"]["qi"] == 0
+    assert rep["cvt"]["n_controlled"]["qs"] == 0

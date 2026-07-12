@@ -28,6 +28,7 @@ from pathlib import Path
 import torch
 
 from .da_cvt import make_default_cvt
+from .da_partition import PartitionSpec
 from .da_driver import OsseObsConfig, batched_clear_bt
 from .da_dual import ObsEvalResult, default_param_prior, run_dual_minimizer
 from .da_window import WindowConfig
@@ -175,6 +176,13 @@ def evaluate_artifact_gates(rep: dict) -> dict:
         no_nonfinite_slot=(rep["nonfinite_fields_slot"] == []),
         finite_diagnostics=math.isfinite(rep["grad_theta_norm_final"]),
     )
+    # conserving-artifact gates (present only when the report carries the
+    # corresponding keys — legacy reports keep their gate set unchanged)
+    if rep.get("water_budget") is not None:
+        err = rep["water_budget"]["pw_stage_err_max"]
+        gates["pw_conserved"] = math.isfinite(err) and err < 1.0e-12
+    if "n_audit_evals" in rep:
+        gates["final_audited"] = rep["n_audit_evals"] == 1
     gates["accepted"] = all(gates.values())
     return gates
 
@@ -347,6 +355,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             huber_delta: "float | None" = 3.0,
                             pseudo_rh: bool = False,
                             pseudo_sigma_p: float = 2.0e-4,
+                            conserving: bool = False,
                             save_fields: "str | None" = None) -> dict:
     """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
@@ -357,6 +366,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     huber_delta: 양 파트 관측손실의 Huber δ[K] (P0-3; None=구계약 순수 이차).
     pseudo_rh=True: 모델-맑음/관측-구름 컬럼에 동결 pseudo-RH 부트스트랩
     합성 (P0-2; da_regime2 — 구름정상 온도매칭 층, 상전이-인지 동결 목표).
+    conserving=True: P1-1 conserving CVT — mass-hydro diagonal sigma zeroed,
+    species move only through the signed partition channels (da_partition);
+    the report separates the P_w-stage water error (roundoff) from the
+    deliberate qv-diagonal total-water change, and finals come from the
+    single authoritative audit closure.
     save_fields: npz 경로 — 영상화/후속 분석용 배경·분석 필드 + bt/regime.
     """
     from .obs.model_profile_builder import RttovProfileConfig
@@ -518,7 +532,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # B support is fixed a priori by the caller (qv_levels) — NOT switched by
     # the observed cloud (observation-dependent B is forbidden, review #8).
     # The overlap validation fail-fasts when the pseudo band falls outside.
-    spec, b_sigma = make_default_cvt(xb, qv_levels=qv_levels)
+    spec, b_sigma = make_default_cvt(
+        xb, qv_levels=qv_levels,
+        sigma_overrides=({"qc": 0.0, "qi": 0.0, "qs": 0.0}
+                         if conserving else None))
+    pspec = PartitionSpec() if conserving else None
     if pseudo is not None:
         validate_pseudo_qv_overlap(b_sigma.qv, pseudo["cols"],
                                    pseudo["levels"])
@@ -532,7 +550,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             obs_time=obs_time, huber_delta=huber_delta,
             x_slot_bg=x_slot_bg, pseudo=pseudo)
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
-                                 max_iter=max_iter, cvt=spec)
+                                 max_iter=max_iter, cvt=spec,
+                                 partition=pspec)
 
         # O-B / O-A on the frozen mask at the obs slot time. O-A must use the
         # OPTIMIZED theta_a — H(M(x_a; theta_b)) is not the analysis pair and
@@ -631,6 +650,24 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
 
     hydro_minmax_t0, pathology_t0, nonfinite_t0 = _hydro_audit(res.x_analysis)
     hydro_minmax_slot, pathology_slot, nonfinite_slot = _hydro_audit(x_slot_a)
+
+    # Conserving water budget: separate the P_w-stage error (roundoff by
+    # construction) from the DELIBERATE qv-diagonal total-water change —
+    # column-integral (sum over K) per column, reviewer-mandated split.
+    water_budget = None
+    if conserving:
+        from .da_cvt import cvt_apply
+
+        def _tw(s):
+            return (s.qv + s.qc + s.qr + s.qi + s.qs + s.qg).sum(-1)
+        with torch.no_grad():
+            y_diag, _ = cvt_apply(xb, b_sigma, res.v_state, spec)
+            water_budget = dict(
+                pw_stage_err_max=float(
+                    (_tw(res.x_analysis) - _tw(y_diag)).abs().max()),
+                dtw_qv_diag_max=float((_tw(y_diag) - _tw(xb)).abs().max()),
+                dtw_qv_diag_mean=float((_tw(y_diag) - _tw(xb)).mean()))
+
     return dict(
         n_domain=int(fr.state.th.shape[0]), n_subspace=int(sub.numel()),
         n_model_cloudy=int(model_cloudy_pos.numel()),
@@ -644,6 +681,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
         grad_theta_norm_final=res.grad_theta_norm_final,
+        jb_final=res.jb_final, jtheta_final=res.jtheta_final,
+        jobs_final=res.jobs_final,
+        n_window_evals=res.n_window_evals, n_audit_evals=res.n_audit_evals,
+        conserving=conserving, partition=res.partition,
+        grad_w_norm_final=res.grad_w_norm_final, water_budget=water_budget,
         j_trace=res.j_trace, omb=omb, oma=oma, regimes=regimes,
         theta=[float(t) for t in res.theta_analysis],
         theta_b=[float(t) for t in prior.theta_b],

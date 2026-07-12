@@ -13,6 +13,12 @@ performance (that requires a 23:55 frame or R inflation — roadmap).
 
 Usage:
     python oracle/scripts/run_fulldomain_lc05.py OUT_JSON CASE_ROOT
+        [--conserving]
+
+--conserving (v10): P1-1 conserving CVT — mass-hydro diagonal sigma zeroed,
+species move only through the signed partition channels; the artifact adds
+the water-budget split (P_w stage error vs deliberate qv-diagonal change),
+the partition v2 record, and the pw_conserved/final_audited gates.
 """
 import hashlib
 import json
@@ -64,7 +70,7 @@ def build_manifest(cmd, gk2a_files):
                 [WRFIN, CAL, *map(str, gk2a_files)]})
 
 
-def main(out_json, case_root):
+def main(out_json, case_root, conserving=False):
     from kdm6.da_fulldomain import run_fulldomain_analysis
     from kdm6.io.frame_reader import read_wrfout_frame
     from kdm6.obs.gk2a_l1b import (CLEAN_IR_CHANNELS, load_cal_table,
@@ -91,16 +97,17 @@ def main(out_json, case_root):
     rep = run_fulldomain_analysis(
         fr, co, grids, case_root, n_workers=8, max_iter=MAX_ITER,
         channels=_CHANNELS, pseudo_rh=True, time_tolerance_s=300.0,
-        qv_levels=int(fr.meta["kme"]),
+        qv_levels=int(fr.meta["kme"]), conserving=conserving,
         save_fields=out_json + ".fields.npz")
 
     from kdm6.da_fulldomain import evaluate_artifact_gates
 
-    rep["artifact_role"] = "pathology_stress"
+    rep["artifact_role"] = ("conserving_stress" if conserving
+                            else "pathology_stress")
     rep["gates"] = evaluate_artifact_gates(rep)   # ENFORCED below, not advisory
     rep["manifest"] = build_manifest(
         f"python oracle/scripts/run_fulldomain_lc05.py {out_json} "
-        f"{case_root}", gk2a_files)
+        f"{case_root}" + (" --conserving" if conserving else ""), gk2a_files)
     with open(out_json, "w") as f:
         json.dump(rep, f, indent=1)
     rep["manifest"]["outputs"] = {
@@ -108,19 +115,24 @@ def main(out_json, case_root):
         out_json + ".fields.npz": _sha256(out_json + ".fields.npz")}
     with open(out_json + ".manifest.json", "w") as f:
         json.dump(rep["manifest"], f, indent=1)
-    print(f"[v9.2] DONE wall={rep['wall_s']:.0f}s sub={rep['n_subspace']} "
+    tag = "v10" if conserving else "v9.2"
+    wb = rep.get("water_budget")
+    print(f"[{tag}] DONE wall={rep['wall_s']:.0f}s sub={rep['n_subspace']} "
           f"(mc {rep['n_model_cloudy']} / r2 {rep['n_regime2']} / clr "
           f"{rep['n_clear_operator']}) "
           f"J {rep['j_trace'][0]['total']:.1f}->"
           f"{rep['j_trace'][-1]['total']:.1f} "
           f"O-B {rep['omb']:.3f}K -> O-A {rep['oma']:.3f}K "
-          f"gates={rep['gates']}", flush=True)
+          f"audit={rep['n_audit_evals']} "
+          + (f"water_budget={wb} " if wb else "")
+          + f"gates={rep['gates']}", flush=True)
     if not rep["gates"]["accepted"]:
         failed = [k for k, v in rep["gates"].items() if not v]
-        print(f"[v9.2] ARTIFACT REJECTED — failed gates: {failed}",
+        print(f"[{tag}] ARTIFACT REJECTED — failed gates: {failed}",
               flush=True)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2],
+         conserving="--conserving" in sys.argv[3:])
