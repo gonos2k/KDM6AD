@@ -1,0 +1,100 @@
+name: pr1a-macos26-load-smoke
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pr1a-macos26-smoke.yml'
+      - 'libtorch/**'
+  workflow_dispatch:
+
+jobs:
+  dylib-load-smoke:
+    name: macOS 26 arm64 hooks-OFF dylib load + C ABI smoke
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pinned PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'torch==2.8.0'
+
+      - name: Record reference-adjacent runner and toolchain
+        run: |
+          sw_vers
+          uname -a
+          uname -m
+          sysctl -n machdep.cpu.brand_string || true
+          clang++ --version | head -1
+          cmake --version | head -1
+          python -c 'import platform, torch; print("python", platform.python_version(), "torch", torch.__version__)'
+          command -v gfortran && gfortran --version | head -1 || true
+
+      - name: Configure shipped dylib (test hooks OFF)
+        run: |
+          TORCH_ROOT=$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')
+          cmake -S libtorch -B libtorch/build-macos26-smoke \
+            -DCMAKE_PREFIX_PATH="$TORCH_ROOT" \
+            -DCMAKE_INSTALL_PREFIX="$PWD/libtorch/install-macos26-smoke" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP \
+            -DKDM6_ENABLE_TEST_HOOKS=OFF
+
+      - name: Build shared library and C ABI test serially
+        run: |
+          cmake --build libtorch/build-macos26-smoke \
+            --target kdm6_c test_c_abi -j1
+          cmake --install libtorch/build-macos26-smoke
+
+      - name: Prove arm64 dylib and absence of the test seam
+        run: |
+          LIB=libtorch/build-macos26-smoke/libkdm6_c.dylib
+          test -f "$LIB"
+          file "$LIB"
+          file "$LIB" | grep -q 'arm64'
+          otool -L "$LIB"
+          if strings "$LIB" | grep -Fq 'KDM6_TEST_FORCE_THREAD_CONFIG_FAIL'; then
+            echo 'FAIL: test fault seam leaked into hooks-OFF dylib'
+            exit 1
+          fi
+          echo 'PASS: hooks-OFF dylib contains no fault seam'
+
+      - name: Load installed dylib in a fresh process
+        run: |
+          TORCH_LIB=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')
+          export DYLD_LIBRARY_PATH="$TORCH_LIB:${DYLD_LIBRARY_PATH:-}"
+          python - <<'PY'
+          import ctypes
+          from pathlib import Path
+          p = Path('libtorch/install-macos26-smoke/lib/libkdm6_c.dylib').resolve()
+          ctypes.CDLL(str(p))
+          print('PASS: ctypes loaded', p)
+          PY
+
+      - name: Run C ABI smoke through the real shared library
+        run: |
+          TORCH_LIB=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')
+          export DYLD_LIBRARY_PATH="$TORCH_LIB:${DYLD_LIBRARY_PATH:-}"
+          ctest --test-dir libtorch/build-macos26-smoke \
+            -R '^c_abi$' -V --output-on-failure
+
+      - name: Run Fortran ISO_C smoke when the runner provides a compiler
+        run: |
+          if cmake --build libtorch/build-macos26-smoke --target help | grep -q test_fortran_smoke; then
+            cmake --build libtorch/build-macos26-smoke --target test_fortran_smoke -j1
+            TORCH_LIB=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')
+            export DYLD_LIBRARY_PATH="$TORCH_LIB:${DYLD_LIBRARY_PATH:-}"
+            ctest --test-dir libtorch/build-macos26-smoke \
+              -R '^fortran_smoke$' -V --output-on-failure
+          else
+            echo 'SKIP: no Fortran compiler on this hosted macOS runner'
+          fi
