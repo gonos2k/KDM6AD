@@ -22,6 +22,11 @@ enum {
     KDM6_ERR_HANDLE_CLOSED   = -4,
     KDM6_ERR_VALUE_ONLY      = -5,
     KDM6_ERR_INVALID_ARG     = -6,   // an argument is outside its documented domain
+    KDM6_ERR_THREAD_CONFIG   = -7,   // libtorch/OpenMP could not be pinned to a single
+                                     // thread — bitwise determinism requires 1 intra-op
+                                     // AND 1 inter-op thread; the call is refused BEFORE
+                                     // any tensor creation (fail-closed: handle NULL,
+                                     // output buffers untouched)
     KDM6_ERR_INTERNAL        = -100,
 };
 
