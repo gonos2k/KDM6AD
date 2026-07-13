@@ -59,6 +59,20 @@ target_link_libraries(kdm6_c PUBLIC kdm6)
 # Fortran-friendly: no name mangling, C linkage symbols visible
 set_target_properties(kdm6_c PROPERTIES C_VISIBILITY_PRESET default)
 
+# ── PR1-A: test-only fault-injection hooks (OFF for shipped builds) ──────────
+# The thread-fence fail-closed path is exercised from the pure-C ABI test via
+# an env seam; that seam must NEVER be present in the operational dylib (a
+# shipped binary honoring a test env var is a foot-gun). Gated OFF by default;
+# CI/dev enable -DKDM6_ENABLE_TEST_HOOKS=ON only to run the fail-path test.
+option(KDM6_ENABLE_TEST_HOOKS
+    "Compile test-only fault-injection hooks into kdm6_c (never for shipped builds)" OFF)
+if(KDM6_ENABLE_TEST_HOOKS)
+    # PRIVATE — never propagates to the kdm6 physics core or an installed header.
+    target_compile_definitions(kdm6_c PRIVATE KDM6_ENABLE_TEST_HOOKS)
+    message(WARNING "KDM6_ENABLE_TEST_HOOKS=ON: test-only ABI fault hooks are "
+                    "compiled into kdm6_c — DEV/CI ONLY, never a shipped build.")
+endif()
+
 # ── tests ───────────────────────────────────────────────────────────────────
 enable_testing()
 add_executable(test_smoke tests/test_smoke.cpp)
@@ -104,6 +118,9 @@ target_link_libraries(test_cloud_dsd PRIVATE kdm6)
 add_test(NAME cloud_dsd COMMAND test_cloud_dsd)
 add_executable(test_c_abi tests/test_c_abi.cpp)
 target_link_libraries(test_c_abi PRIVATE kdm6_c)
+if(KDM6_ENABLE_TEST_HOOKS)
+    target_compile_definitions(test_c_abi PRIVATE KDM6_ENABLE_TEST_HOOKS)
+endif()
 add_test(NAME c_abi COMMAND test_c_abi)
 add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
 target_link_libraries(test_autograd_endtoend PRIVATE kdm6)

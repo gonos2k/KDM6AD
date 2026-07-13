@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <vector>
@@ -690,8 +691,135 @@ void test_c_abi_closep_nulls_handle() {
     } END_TEST();
 }
 
+// PR1-A: thread-determinism fail-closed. Single-thread pinning is a
+// PRECONDITION for the operational f32 bitwise determinism, so if libtorch/
+// OpenMP cannot be pinned to 1/1 the call must be REFUSED with
+// KDM6_ERR_THREAD_CONFIG BEFORE any tensor creation — never silently run
+// multi-threaded. The pure-C ABI test cannot spin a real >1 thread pool
+// (it links only kdm6_c, no torch headers), so the fail path is exercised
+// via a test-only env seam that lives entirely inside the thread fence and
+// touches no numerical path.
+void test_c_abi_thread_config_fail_closed_step_c() {
+    TEST(test_c_abi_thread_config_fail_closed_step_c) {
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,1.0e-2f), qc(im,kme,jme,5.0e-4f);
+        FortranBuf qr(im,kme,jme,1.0e-4f), qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
+        FortranBuf nccn(im,kme,jme,1.0e9f), nc(im,kme,jme,1.0e8f), ni(im,kme,jme), nr(im,kme,jme,1.0e4f);
+        FortranBuf bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme,1.0f), pii(im,kme,jme,0.97f), p(im,kme,jme,9.0e4f), delz(im,kme,jme,500.0f);
+        // sentinel outputs — a fail-closed refusal must leave them UNTOUCHED
+        const float SENT = -12345.0f;
+        FortranBuf th_o(im,kme,jme,SENT), qv_o(im,kme,jme,SENT), qc_o(im,kme,jme,SENT), qr_o(im,kme,jme,SENT);
+        FortranBuf qi_o(im,kme,jme,SENT), qs_o(im,kme,jme,SENT), qg_o(im,kme,jme,SENT), nccn_o(im,kme,jme,SENT);
+        FortranBuf nc_o(im,kme,jme,SENT), ni_o(im,kme,jme,SENT), nr_o(im,kme,jme,SENT), bg_o(im,kme,jme,SENT);
+
+        // ALL optional outputs provided non-NULL + sentinel too, so a future
+        // regression that moves the fence BELOW any output write is caught
+        // (rain/snow/graupel are (im,jme); rhog_out is (im,kme,jme)).
+        FortranBuf rain_o(im,1,jme,SENT), snow_o(im,1,jme,SENT), graup_o(im,1,jme,SENT);
+        FortranBuf rhog_o(im,kme,jme,SENT);
+#ifdef KDM6_ENABLE_TEST_HOOKS
+        auto all_outputs_are_sentinel = [&]() {
+            for (auto* buf : {&th_o, &qv_o, &qc_o, &qr_o, &qi_o, &qs_o, &qg_o,
+                              &nccn_o, &nc_o, &ni_o, &nr_o, &bg_o,
+                              &rain_o, &snow_o, &graup_o, &rhog_o})
+                for (size_t i = 0; i < buf->size(); ++i)
+                    if (buf->data[i] != SENT) return false;
+            return true;
+        };
+        auto call = [&](int im_, int value_only_, int pgf, const float* th_in,
+                        kdm6_handle_t** hh) {
+            return kdm6_step_c(
+                th_in, qv.ptr(), qc.ptr(), qr.ptr(), qi.ptr(), qs.ptr(), qg.ptr(),
+                nccn.ptr(), nc.ptr(), ni.ptr(), nr.ptr(), bg.ptr(),
+                rho.ptr(), pii.ptr(), p.ptr(), delz.ptr(),
+                im_, kme, jme, /*dt=*/60.0, pgf, value_only_,
+                th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(), qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
+                nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
+                hh, nullptr, 0.0, 0.0,
+                rain_o.ptr(), snow_o.ptr(), graup_o.ptr(), rhog_o.ptr());
+        };
+
+        // fail-closed: fault injected, all args valid -> THREAD_CONFIG, handle
+        // nulled, EVERY output (incl. optional) untouched
+        setenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL", "1", 1);
+        kdm6_handle_t* handle = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(im, /*value_only=*/1, /*pgf=*/0, th.ptr(), &handle) == KDM6_ERR_THREAD_CONFIG);
+        assert(handle == nullptr);
+        assert(all_outputs_are_sentinel());
+
+        // precedence: with the fault STILL injected, every existing argument
+        // error is reported BEFORE the thread fence (fence is step 5) and no
+        // output is touched
+        kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(/*im=*/0, 1, 0, th.ptr(), &h) == KDM6_ERR_INVALID_DIM);
+        assert(h == nullptr && all_outputs_are_sentinel());
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(im, /*value_only=*/2, 0, th.ptr(), &h) == KDM6_ERR_INVALID_ARG);
+        assert(h == nullptr && all_outputs_are_sentinel());
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(im, 1, 0, /*th=*/nullptr, &h) == KDM6_ERR_NULL_POINTER);
+        assert(h == nullptr && all_outputs_are_sentinel());
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(im, 1, /*pgf=*/1, th.ptr(), &h) == KDM6_ERR_NOT_IMPLEMENTED);
+        assert(h == nullptr && all_outputs_are_sentinel());
+        unsetenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL");
+
+        // no fault -> the normal value_only call still succeeds
+        kdm6_handle_t* h3 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(call(im, 1, 0, th.ptr(), &h3) == KDM6_OK && h3 == nullptr);
+#else
+        std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
+        (void)SENT; (void)rain_o; (void)snow_o; (void)graup_o; (void)rhog_o;
+#endif
+    } END_TEST();
+}
+
+void test_c_abi_thread_config_fail_closed_step_ad_c() {
+    TEST(test_c_abi_thread_config_fail_closed_step_ad_c) {
+#ifdef KDM6_ENABLE_TEST_HOOKS
+        const int im = 1, kme = 1, jme = 1;
+        const size_t NF = 12, BK = static_cast<size_t>(im) * kme * jme;
+        std::vector<double> st(NF * BK, 0.0), fz(4 * BK, 0.0);
+        st[0*BK] = 290.0; st[1*BK] = 1.0e-2; st[2*BK] = 5.0e-4; st[3*BK] = 1.0e-4;
+        st[7*BK] = 1.0e9; st[8*BK] = 1.0e8; st[10*BK] = 1.0e4;
+        fz[0*BK] = 0.97; fz[1*BK] = 1.0; fz[2*BK] = 9.0e4; fz[3*BK] = 500.0;
+        const double SENT = -777.0;
+        std::vector<double> out(NF * BK, SENT);
+        auto out_all_sentinel = [&]() {
+            for (double v : out) if (v != SENT) return false;   // ALL, not just [0]
+            return true;
+        };
+
+        // fail-closed: THREAD_CONFIG, handle nulled, whole packed buffer untouched
+        setenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL", "1", 1);
+        kdm6_handle_t* handle = reinterpret_cast<kdm6_handle_t*>(0x1);
+        int rc = kdm6_step_ad_c(st.data(), fz.data(), im, kme, jme, /*dt=*/20.0,
+                                /*value_only=*/1, out.data(), &handle, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_ERR_THREAD_CONFIG && handle == nullptr && out_all_sentinel());
+
+        // precedence with the fault still injected: dim / value_only / null all
+        // win before the fence
+        kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(st.data(), fz.data(), /*im=*/0, kme, jme, 20.0, 1, out.data(), &h, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_ERR_INVALID_DIM && h == nullptr && out_all_sentinel());
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(st.data(), fz.data(), im, kme, jme, 20.0, /*value_only=*/2, out.data(), &h, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_ERR_INVALID_ARG && h == nullptr && out_all_sentinel());
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_c(/*state_in=*/nullptr, fz.data(), im, kme, jme, 20.0, 1, out.data(), &h, nullptr, 0.0, 0.0);
+        assert(rc == KDM6_ERR_NULL_POINTER && h == nullptr && out_all_sentinel());
+        unsetenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL");
+#else
+        std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
+#endif
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
+    test_c_abi_thread_config_fail_closed_step_c();
+    test_c_abi_thread_config_fail_closed_step_ad_c();
     test_c_abi_closep_nulls_handle();
     test_c_abi_step_runs_microphysics();
     test_c_abi_invalid_dim();

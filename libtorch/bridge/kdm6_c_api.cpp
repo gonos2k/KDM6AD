@@ -70,21 +70,56 @@ void call_runtime_setter(const char* name, int value) {
     }
 }
 
-void ensure_libtorch_singlethread() {
-    static std::once_flag flag;
-    std::call_once(flag, []() {
-        call_runtime_setter("omp_set_dynamic", 0);
-        call_runtime_setter("omp_set_num_threads", 1);
-        call_runtime_setter("omp_set_max_active_levels", 1);
-        call_runtime_setter("kmp_set_blocktime", 0);
-        at::set_num_threads(1);
-        try { at::set_num_interop_threads(1); } catch (...) { /* pool already started */ }
-        // np4 flaky-NaN forensics: report the EFFECTIVE threading (set_* is a no-op
-        // if a pool already spun up before this fence ran).
-        fprintf(stderr, "[kdm6ad-diag] intra=%d interop=%d\n",
-                at::get_num_threads(), at::get_num_interop_threads());
-        fflush(stderr);
-    });
+// Returns true iff libtorch is EFFECTIVELY pinned to a single thread (1 intra-op
+// AND 1 inter-op). Bitwise determinism REQUIRES this, so the callers refuse the
+// step (KDM6_ERR_THREAD_CONFIG) when it returns false — fail-closed, not the
+// former swallow-and-continue. The one-time setup stays in call_once (the set_*
+// are idempotent), but the EFFECTIVE-value check runs on EVERY call: a set_* is a
+// no-op if a pool already spun up, and an inter-op pool could even appear after a
+// first good call. The interop setter throwing is NOT itself failure — a pool that
+// is already 1 succeeds; the effective value is the sole source of truth.
+// noexcept: this is called OUTSIDE the entry-point try blocks, so any exception
+// escaping here would cross the C ABI boundary (undefined behavior). The one-time
+// setters run in call_once; the EFFECTIVE getters + final boolean run on EVERY
+// call OUTSIDE call_once (a cached result would keep returning true after later
+// process-global drift). A setter throwing is not itself failure — the effective
+// value is the sole contract (an already-1 inter-op pool succeeds even if the
+// setter refused).
+bool ensure_libtorch_singlethread() noexcept {
+    try {
+        static std::once_flag flag;
+        std::call_once(flag, []() noexcept {
+            try {
+                call_runtime_setter("omp_set_dynamic", 0);
+                call_runtime_setter("omp_set_num_threads", 1);
+                call_runtime_setter("omp_set_max_active_levels", 1);
+                call_runtime_setter("kmp_set_blocktime", 0);
+                try { at::set_num_threads(1); } catch (...) { /* effective check decides */ }
+                try { at::set_num_interop_threads(1); } catch (...) { /* pool already started */ }
+                // np4 flaky-NaN forensics: report the EFFECTIVE threading (set_* is a
+                // no-op if a pool already spun up before this fence ran).
+                fprintf(stderr, "[kdm6ad-diag] intra=%d interop=%d\n",
+                        at::get_num_threads(), at::get_num_interop_threads());
+                fflush(stderr);
+            } catch (...) { /* final effective check below returns false */ }
+        });
+        bool ok = at::get_num_threads() == 1 && at::get_num_interop_threads() == 1;
+#ifdef KDM6_ENABLE_TEST_HOOKS
+        // Test-only fault injection (PR1-A): exercise the fail-closed path from the
+        // pure-C ABI test, which cannot spin a real >1 thread pool. COMPILED OUT of
+        // shipped builds (KDM6_ENABLE_TEST_HOOKS is OFF by default) so the
+        // operational dylib never honors this env var. Overrides only THIS call's
+        // return (never the cached setup), and requires the EXACT opt-in value "1"
+        // (so a stray =0 does not activate it). Touches NO numerical path.
+        if (const char* f = getenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL");
+            f && strcmp(f, "1") == 0) {
+            ok = false;
+        }
+#endif
+        return ok;
+    } catch (...) {
+        return false;
+    }
 }
 
 // FP-environment fence (Codex deep-review lead, 2026-06-22): libtorch / its BLAS
@@ -147,7 +182,10 @@ extern "C" int kdm6_step_c(
     // verified a no-op on this build (ARM FPCR unchanged), kept to insulate the host dynamics.
     FpEnvGuard kdm6_fpenv_guard;
 
-    ensure_libtorch_singlethread();
+    // Fail-closed thread fence (PR1-A): single-thread pinning is a precondition
+    // for bitwise determinism. Refuse BEFORE any tensor creation — the handle is
+    // already NULL (top of function) and no output buffer has been written yet.
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
 
     try {
         kdm6::FortranArrayDescriptor desc{
@@ -340,7 +378,9 @@ extern "C" int kdm6_step_ad_c(
     // calls into libtorch/BLAS, which could perturb FTZ/rounding and leak into host
     // dynamics when a DA workflow interleaves with the Fortran/WRF integration.
     FpEnvGuard kdm6_fpenv_guard;
-    ensure_libtorch_singlethread();
+    // Fail-closed thread fence (PR1-A) — same contract as kdm6_step_c: handle is
+    // already NULL and the packed output buffer is untouched at this point.
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
     try {
         // fp64 DA forward (design §0.1.A): same physics, float64 graph.
         auto state_in = unpack_packed_state(state_in_packed, im, kme, jme,
