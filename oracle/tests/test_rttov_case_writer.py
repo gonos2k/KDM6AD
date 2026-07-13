@@ -69,22 +69,14 @@ needs_cloud_fixture = pytest.mark.skipif(
 needs_cloud_live = pytest.mark.skipif(
     not _HAVE_CLOUD_EXE, reason="RTTOV cloud exe absent (live cloud run)")
 
-_CHANNELS = tuple(range(1, 17))   # ami/501: 16 AMI channels
-
-
-def _fixture_nlayers() -> int:
-    return len(np.loadtxt(_FIX / "in" / "profiles" / "001" / "atm" / "t.txt"))
-
-
-def _fixture_tq(profile="001"):
-    """Read the fixture profile's T (K) and Q (ppmv moist) vectors."""
-    atm = _FIX / "in" / "profiles" / profile / "atm"
-    return np.loadtxt(atm / "t.txt"), np.loadtxt(atm / "q.txt")
-
-
-def _fixture_p_half(profile="001"):
-    """The fixture profile's p_half grid (the grid the run uses; model T/Q ride it)."""
-    return np.loadtxt(_FIX / "in" / "profiles" / profile / "atm" / "p_half.txt")
+# The fixture accessors now live in the PACKAGE (kdm6.obs.rttov_fixture) so the
+# production evidence runner does not import them from the test tree (external
+# review P2-1). Re-exported here under the historical names for this module's
+# other test consumers.
+from kdm6.obs.rttov_fixture import (CHANNELS as _CHANNELS,
+                                    fixture_nlayers as _fixture_nlayers,
+                                    fixture_p_half as _fixture_p_half,
+                                    fixture_tq as _fixture_tq)
 
 
 def _namelist_counts(case_root):

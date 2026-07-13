@@ -46,7 +46,8 @@ from pathlib import Path
 
 _ORACLE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_ORACLE))
-sys.path.insert(0, str(_ORACLE / "tests"))
+# NOTE: production must NOT put oracle/tests on sys.path (external review P2-1)
+# — the RTTOV fixture accessors are imported from the kdm6.obs package below.
 
 WRFIN = ("/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/"
          "ss_real_case_20260619_063620/SS/wrfinput_d01")
@@ -513,8 +514,9 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
                                    read_ko_slot, slot_files)
     from kdm6.obs.obs_ingest import payload_to_column_obs
     from kdm6.obs.rttov_case_writer import fixture_layer_pressure
-    from test_rttov_case_writer import (_CHANNELS, _fixture_p_half,
-                                        _fixture_tq)
+    from kdm6.obs.rttov_fixture import (CHANNELS as _CHANNELS,
+                                        fixture_p_half as _fixture_p_half,
+                                        fixture_tq as _fixture_tq)
 
     t0 = time.time()
     _assert_fresh_outputs(out_json)
