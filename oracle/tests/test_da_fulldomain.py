@@ -1330,3 +1330,67 @@ def test_redact_manifest_strips_local_paths():
     assert red["inputs"]["oracle/kdm6/x.py"] == "h3"    # repo-relative
     assert red["code_sha"] == "a" * 40                  # provenance preserved
     assert man["inputs"][mod.WRFIN] == "h1"             # original untouched
+
+
+def test_finalize_fsyncs_staging_npz_before_link(tmp_path, monkeypatch):
+    """Codex: the JSON/manifest temps were fsync'd but the STAGING NPZ (the
+    largest payload) was linked without being made durable first — a crash
+    could leave the manifest name visible with the fields payload not on
+    stable storage. The staging file must be fsync'd before its link."""
+    import os
+    mod = _load_runner()
+    fsynced_paths = []
+    orig = mod._fsync_file
+
+    def spy(p):
+        fsynced_paths.append(str(p))
+        return orig(p)
+    monkeypatch.setattr(mod, "_fsync_file", spy)
+
+    staging = tmp_path / "s.json.fields.npz.staging"
+    staging.write_bytes(b"FIELDS-PAYLOAD")
+    out = str(tmp_path / "s.json")
+    os.mkdir(out + ".lock")
+    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+    ok = mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    assert ok is True
+    assert str(staging) in fsynced_paths                 # staging made durable
+    assert (tmp_path / "s.json.fields.npz").read_bytes() == b"FIELDS-PAYLOAD"
+    os.rmdir(out + ".lock")
+
+
+def test_finalize_dir_fsync_brackets_manifest_commit(tmp_path, monkeypatch):
+    """Codex crash-consistency: the manifest is the commit marker, so if it
+    is durable after a crash the payloads MUST be too. A single post-commit
+    dir fsync cannot guarantee that ordering — the payload dir-entries must
+    be fsync'd BEFORE the manifest link, and the commit fsync'd AFTER."""
+    import os
+    mod = _load_runner()
+    events = []
+    orig_link, orig_dir = mod.os.link, mod._fsync_dir
+
+    def spy_link(src, dst):
+        events.append(("link", os.path.basename(dst)))
+        return orig_link(src, dst)
+
+    def spy_dir(p):
+        events.append(("fsync_dir", None))
+        return orig_dir(p)
+    monkeypatch.setattr(mod.os, "link", spy_link)
+    monkeypatch.setattr(mod, "_fsync_dir", spy_dir)
+
+    staging = tmp_path / "b.json.fields.npz.staging"
+    staging.write_bytes(b"NPZ")
+    out = str(tmp_path / "b.json")
+    os.mkdir(out + ".lock")
+    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+    mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    os.rmdir(out + ".lock")
+
+    kinds = [e[0] for e in events]
+    man_i = next(i for i, e in enumerate(events)
+                 if e[0] == "link" and e[1].endswith(".manifest.json"))
+    # a dir fsync precedes the manifest commit (payloads durable) ...
+    assert "fsync_dir" in kinds[:man_i]
+    # ... and a dir fsync follows it (the commit marker durable)
+    assert "fsync_dir" in kinds[man_i + 1:]

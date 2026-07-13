@@ -380,11 +380,20 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
         manifest["outputs"] = {json_path: _sha256(tmp_json),
                                npz_path: _sha256(staging_npz)}
         tmp_man = _owned_tmp(manifest)
+        # the staging NPZ is the largest payload and was written by
+        # np.savez upstream (not fsync'd) — make it durable BEFORE its link,
+        # else a crash can leave the manifest name visible with the fields
+        # payload not on stable storage (Codex durability gap)
+        _fsync_file(staging_npz)
         try:
             os.link(staging_npz, npz_path)         # atomic no-replace
             os.link(tmp_json, json_path)
+            # crash-consistency: the payload directory entries must be
+            # durable BEFORE the manifest (commit marker) entry, so a crash
+            # that leaves the manifest visible guarantees the payloads too
+            _fsync_dir(outdir)
             os.link(tmp_man, man_path)             # COMMIT marker, last
-            _fsync_dir(outdir)                     # durable directory entry
+            _fsync_dir(outdir)                     # commit marker durable
         except FileExistsError:
             raise FileExistsError(
                 "an output path appeared during the run (TOCTOU) — "
@@ -434,6 +443,15 @@ def _release_run_lock(out_json):
 
 def _fsync_dir(path):
     """fsync a directory so a rename/link into it is durable across a crash."""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _fsync_file(path):
+    """fsync an existing file's contents to stable storage."""
     fd = os.open(path, os.O_RDONLY)
     try:
         os.fsync(fd)
