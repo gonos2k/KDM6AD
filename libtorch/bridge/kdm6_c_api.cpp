@@ -275,6 +275,134 @@ extern "C" int kdm6_step_c(
     }
 }
 
+// ── PR2: stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ──────────────────────────
+// v2 is ADDITIVE: kdm6_step_c (above) is untouched. kdm6_step_v2_c reads the
+// options struct and calls the SAME internal physics core (kdm6::kdm6_step),
+// so v1 and v2 are bitwise-equivalent (pinned by test_c_abi_v2_matches_v1).
+
+extern "C" int kdm6_get_abi_version_c(void) { return (int)KDM6_ABI_VERSION; }
+
+extern "C" uint32_t kdm6_step_v2_args_size_c(void) {
+    return (uint32_t)sizeof(kdm6_step_v2_args);
+}
+
+extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
+    if (args == nullptr) return KDM6_ERR_NULL_POINTER;
+    // FRAMING read-order (design §4): read struct_size (offset 0) FIRST and
+    // reject below the two framing fields BEFORE abi_version (offset 4) is read.
+    if (args->struct_size < KDM6_STEP_V2_MIN_SIZE) return KDM6_ERR_INVALID_ARG;
+    if (args->abi_version != KDM6_ABI_VERSION) return KDM6_ERR_INVALID_ARG;
+    // struct_size must cover every REQUIRED field (everything up to the first
+    // optional field, `xland`). The optional tail may be absent (older caller).
+    if (args->struct_size < (uint32_t)offsetof(kdm6_step_v2_args, xland))
+        return KDM6_ERR_INVALID_ARG;
+
+    // Read an optional field ONLY if struct_size extends through it — never
+    // read past min(struct_size, sizeof) (design §4).
+#define KDM6_V2_HAS(f) \
+    (args->struct_size >= (uint32_t)(offsetof(kdm6_step_v2_args, f) + sizeof(args->f)))
+    const float* xland = KDM6_V2_HAS(xland) ? args->xland : nullptr;
+    double ncmin_land = KDM6_V2_HAS(ncmin_land) ? args->ncmin_land : 0.0;
+    double ncmin_sea  = KDM6_V2_HAS(ncmin_sea)  ? args->ncmin_sea  : 0.0;
+    float* rain_increment    = KDM6_V2_HAS(rain_increment)    ? args->rain_increment    : nullptr;
+    float* snow_increment    = KDM6_V2_HAS(snow_increment)    ? args->snow_increment    : nullptr;
+    float* graupel_increment = KDM6_V2_HAS(graupel_increment) ? args->graupel_increment : nullptr;
+    float* rhog_out          = KDM6_V2_HAS(rhog_out)          ? args->rhog_out          : nullptr;
+#undef KDM6_V2_HAS
+
+    const int im = args->im, kme = args->kme, jme = args->jme;
+    const int value_only = args->value_only;
+    kdm6_handle_t** handle = args->handle;
+
+    // Same validation precedence + fail-closed contract as kdm6_step_c.
+    if (handle) *handle = nullptr;
+    if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;
+    if (any_null({args->th, args->qv, args->qc, args->qr, args->qi, args->qs,
+                  args->qg, args->nccn, args->nc, args->ni, args->nr, args->bg,
+                  args->rho, args->pii, args->p, args->delz,
+                  args->th_out, args->qv_out, args->qc_out, args->qr_out,
+                  args->qi_out, args->qs_out, args->qg_out, args->nccn_out,
+                  args->nc_out, args->ni_out, args->nr_out, args->bg_out,
+                  handle})) {
+        return KDM6_ERR_NULL_POINTER;
+    }
+    if (args->param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+
+    FpEnvGuard kdm6_fpenv_guard;
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
+
+    try {
+        kdm6::FortranArrayDescriptor desc{
+            args->th, args->qv, args->qc, args->qr, args->qi, args->qs, args->qg,
+            args->nccn, args->nc, args->ni, args->nr, args->bg, im, kme, jme};
+        bool requires_grad = (value_only == 0);
+        auto state_in = kdm6::from_fortran_arrays(desc, requires_grad);
+        auto forcing = kdm6::forcing_from_fortran_arrays(
+            args->rho, args->pii, args->p, args->delz, im, kme, jme);
+        auto params = kdm6::make_parameters(args->param_grad_flags);
+
+        c10::optional<torch::Tensor> xland_t = c10::nullopt;
+        if (xland != nullptr) {
+            auto opts = torch::TensorOptions().dtype(torch::kFloat32);
+            auto view2d = torch::from_blob(const_cast<float*>(xland),
+                                           {jme, im}, opts)
+                              .permute({1, 0}).contiguous();
+            xland_t = view2d.reshape({im * jme});
+        }
+
+        auto result = kdm6::kdm6_step(state_in, forcing, params, args->dt,
+                                      value_only != 0, xland_t,
+                                      ncmin_land, ncmin_sea);
+
+        kdm6::to_fortran_arrays(result.state_out, im, jme,
+            args->th_out, args->qv_out, args->qc_out, args->qr_out, args->qi_out,
+            args->qs_out, args->qg_out, args->nccn_out, args->nc_out,
+            args->ni_out, args->nr_out, args->bg_out);
+
+        if (rhog_out != nullptr) {
+            if (result.rhog.defined()) {
+                kdm6::copy_back_to_fortran(result.rhog, im, jme, rhog_out);
+            } else {
+                const size_t n_rhog = static_cast<size_t>(im) * kme * jme;
+                for (size_t idx = 0; idx < n_rhog; ++idx) rhog_out[idx] = 0.0f;
+            }
+        }
+
+        auto copy_increment = [im, jme](const torch::Tensor& inc, float* dst) {
+            if (dst == nullptr) return;
+            auto inc_cpu = inc.contiguous().to(torch::kCPU, torch::kFloat32);
+            auto inc_2d = inc_cpu.reshape({im, jme});
+            const float* src = inc_2d.data_ptr<float>();
+            for (int i = 0; i < im; ++i)
+                for (int j = 0; j < jme; ++j)
+                    dst[i + im * j] = src[i * jme + j];
+        };
+        copy_increment(result.rain_increment,    rain_increment);
+        copy_increment(result.snow_increment,    snow_increment);
+        copy_increment(result.graupel_increment, graupel_increment);
+
+        if (value_only != 0) {
+            *handle = nullptr;
+        } else {
+            auto* h = new kdm6_handle_t{};
+            h->impl = std::move(result.handle);
+            h->im = im; h->kme = kme; h->jme = jme;
+            h->dtype = c10::ScalarType::Float;
+            *handle = h;
+        }
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_step_v2_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) {
+        std::fprintf(stderr, "kdm6_step_v2_c: unknown non-std exception\n");
+        return KDM6_ERR_INTERNAL;
+    }
+}
+
 namespace {
 
 // PACKED DERIVATIVE LAYOUT (Codex stop-review fix — "wrong for nontrivial tiles"):
