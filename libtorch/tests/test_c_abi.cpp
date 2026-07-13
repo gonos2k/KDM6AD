@@ -966,6 +966,18 @@ void test_c_abi_v2_matches_v1_bitwise() {
                 for (int f = 0; f < 12; ++f)
                     assert(std::memcmp(o1[f].ptr(), o2[f].ptr(),
                                        o1[f].size()*sizeof(float)) == 0);  // BITWISE
+                // Physics actually ran: the evolved output is NOT a bitwise copy
+                // of the input seed, so "v1==v2 bitwise" is over genuinely-
+                // evolved state — not a shared degenerate no-op.
+                const float* in_seed[12] = {
+                    th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),
+                    qg.ptr(),nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr()};
+                bool any_evolved = false;
+                for (int f = 0; f < 12; ++f)
+                    if (std::memcmp(o2[f].ptr(), in_seed[f],
+                                    o2[f].size()*sizeof(float)) != 0)
+                        any_evolved = true;
+                assert(any_evolved);
                 if (c.use_precip) {
                     assert(std::memcmp(r1.ptr(),r2.ptr(),r1.size()*sizeof(float))==0);
                     assert(std::memcmp(s1.ptr(),s2.ptr(),s1.size()*sizeof(float))==0);
@@ -1029,12 +1041,38 @@ void test_c_abi_v2_small_struct_size_runs_with_defaults() {
         assert(rc1 == KDM6_OK && rc2 == KDM6_OK);
         for (int f = 0; f < 12; ++f)
             assert(std::memcmp(o1[f].ptr(), o2[f].ptr(), o1[f].size()*sizeof(float)) == 0);
+
+        // POSITIVE control — the gate is load-bearing: with a FULL struct_size
+        // that DOES cover the optional tail, a supplied optional (rhog_out) IS
+        // read and written. Without this, the negative above would be vacuous
+        // (an impl that ignores every optional would also "pass").
+        {
+            auto o3 = outs();
+            kdm6_handle_t* h3 = nullptr;
+            FortranBuf rhog(im, kme, jme, -777.0f);   // sentinel
+            auto a3 = mk_v2_args(
+                th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,1,
+                o3[0].ptr(),o3[1].ptr(),o3[2].ptr(),o3[3].ptr(),o3[4].ptr(),o3[5].ptr(),o3[6].ptr(),
+                o3[7].ptr(),o3[8].ptr(),o3[9].ptr(),o3[10].ptr(),o3[11].ptr(), &h3);
+            a3.rhog_out = rhog.ptr();                 // full struct_size covers it
+            assert(kdm6_step_v2_c(&a3) == KDM6_OK);
+            assert(rhog.data[0] != -777.0f);          // covered optional was written
+        }
     } END_TEST();
 }
 
-// A larger/future struct_size (caller struct bigger than the library's) with a
-// POISONED tail beyond sizeof: the library reads at most min(struct_size, LIB)
-// bytes, so the result is unaffected by the poison (design §4/§7).
+// A larger/future struct_size (caller struct bigger than the library's). The
+// forward-compat contract has two genuinely-testable halves:
+//   (1) struct_size > LIB is ACCEPTED, not rejected (catches an exact-match
+//       `struct_size != sizeof` guard that would break future callers);
+//   (2) every field WITHIN the library struct is still honored despite the
+//       oversized claim — proven by a supplied in-LIB optional (rhog_out) that
+//       must be written, plus the 12 state outputs matching a normal call.
+// (The poisoned bytes beyond LIB are unreachable by construction — the library
+// only accesses named members at offset < sizeof — so their presence is only a
+// no-crash smoke, NOT the load-bearing assertion.)
 void test_c_abi_v2_large_struct_size_ignores_tail() {
     TEST(test_c_abi_v2_large_struct_size_ignores_tail) {
         const int im = 1, kme = 1, jme = 1;
@@ -1062,14 +1100,17 @@ void test_c_abi_v2_large_struct_size_ignores_tail() {
         // oversized buffer: a valid full struct in front + 64 poisoned bytes.
         const size_t LIB = sizeof(kdm6_step_v2_args);
         std::vector<unsigned char> buf(LIB + 64, 0xAB);
+        FortranBuf rhog(im, kme, jme, -777.0f);          // in-LIB optional, sentinel
         auto abig = fill(obig, &hbig);
+        abig.rhog_out = rhog.ptr();                       // covered by the real struct
         std::memcpy(buf.data(), &abig, LIB);
         auto* pbig = reinterpret_cast<kdm6_step_v2_args*>(buf.data());
         pbig->struct_size = (uint32_t)(LIB + 64);        // claims bigger than LIB
-        int rc = kdm6_step_v2_c(pbig);                    // must ignore the tail
-        assert(rc == KDM6_OK);
-        for (int f = 0; f < 12; ++f)
+        int rc = kdm6_step_v2_c(pbig);
+        assert(rc == KDM6_OK);                            // (1) accepted, not rejected
+        for (int f = 0; f < 12; ++f)                      // (2a) state fields honored
             assert(std::memcmp(oref[f].ptr(), obig[f].ptr(), oref[f].size()*sizeof(float)) == 0);
+        assert(rhog.data[0] != -777.0f);                 // (2b) in-LIB optional honored
     } END_TEST();
 }
 
