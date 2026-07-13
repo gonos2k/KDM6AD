@@ -13,7 +13,7 @@ on:
 
 jobs:
   dylib-load-smoke:
-    name: macOS 26 arm64 hooks-OFF dylib load + C ABI smoke
+    name: macOS 26 arm64 hooks-OFF dylib load + C/Fortran ABI smoke
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -37,22 +37,26 @@ jobs:
           clang++ --version | head -1
           cmake --version | head -1
           python -c 'import platform, torch; print("python", platform.python_version(), "torch", torch.__version__)'
-          command -v gfortran && gfortran --version | head -1 || true
+          command -v gfortran-15
+          gfortran-15 --version | head -1
 
-      - name: Configure shipped dylib (test hooks OFF)
+      - name: Configure shipped dylib (test hooks OFF, explicit Fortran compiler)
         run: |
           TORCH_ROOT=$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')
+          FC=$(command -v gfortran-15)
+          test -n "$FC"
           cmake -S libtorch -B libtorch/build-macos26-smoke \
             -DCMAKE_PREFIX_PATH="$TORCH_ROOT" \
             -DCMAKE_INSTALL_PREFIX="$PWD/libtorch/install-macos26-smoke" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP \
+            -DCMAKE_Fortran_COMPILER="$FC" \
             -DKDM6_ENABLE_TEST_HOOKS=OFF
 
-      - name: Build shared library and C ABI test serially
+      - name: Build shared library and both ABI tests serially
         run: |
           cmake --build libtorch/build-macos26-smoke \
-            --target kdm6_c test_c_abi -j1
+            --target kdm6_c test_c_abi test_fortran_smoke -j1
           cmake --install libtorch/build-macos26-smoke
 
       - name: Prove arm64 dylib and absence of the test seam
@@ -87,14 +91,9 @@ jobs:
           ctest --test-dir libtorch/build-macos26-smoke \
             -R '^c_abi$' -V --output-on-failure
 
-      - name: Run Fortran ISO_C smoke when the runner provides a compiler
+      - name: Run Fortran ISO_C smoke through the real shared library
         run: |
-          if cmake --build libtorch/build-macos26-smoke --target help | grep -q test_fortran_smoke; then
-            cmake --build libtorch/build-macos26-smoke --target test_fortran_smoke -j1
-            TORCH_LIB=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')
-            export DYLD_LIBRARY_PATH="$TORCH_LIB:${DYLD_LIBRARY_PATH:-}"
-            ctest --test-dir libtorch/build-macos26-smoke \
-              -R '^fortran_smoke$' -V --output-on-failure
-          else
-            echo 'SKIP: no Fortran compiler on this hosted macOS runner'
-          fi
+          TORCH_LIB=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))')
+          export DYLD_LIBRARY_PATH="$TORCH_LIB:${DYLD_LIBRARY_PATH:-}"
+          ctest --test-dir libtorch/build-macos26-smoke \
+            -R '^fortran_smoke$' -V --output-on-failure
