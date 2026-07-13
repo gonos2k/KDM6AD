@@ -18,6 +18,7 @@ module kdm6_iso_c
   integer(c_int), parameter, public :: KDM6_ERR_HANDLE_CLOSED   = -4
   integer(c_int), parameter, public :: KDM6_ERR_VALUE_ONLY      = -5
   integer(c_int), parameter, public :: KDM6_ERR_INVALID_ARG     = -6
+  integer(c_int), parameter, public :: KDM6_ERR_THREAD_CONFIG   = -7
   integer(c_int), parameter, public :: KDM6_ERR_INTERNAL        = -100
 
   ! ── param_grad_flags 비트마스크 ────────────────────────────────────────────

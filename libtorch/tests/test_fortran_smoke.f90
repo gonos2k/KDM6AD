@@ -33,6 +33,16 @@ program test_fortran_smoke
 
   print *, "kdm6 Fortran ISO_C_BINDING smoke test"
 
+  ! ABI error-code sync guard (PR1-A): kdm6_iso_c.f90 hand-mirrors the C enum,
+  ! so a new C error code that is not mirrored here would leave the host unable
+  ! to name it. Pin the newest one against its C value.
+  if (KDM6_ERR_THREAD_CONFIG /= -7_c_int) then
+     print *, "FAIL: Fortran/C ABI KDM6_ERR_THREAD_CONFIG mismatch (want -7, got ", &
+              KDM6_ERR_THREAD_CONFIG, ")"
+     stop 1
+  end if
+  print *, "  PASS: KDM6_ERR_THREAD_CONFIG synced (-7)"
+
   ! ── Allocate ────────────────────────────────────────────────────────────────
   allocate(th(im, kme, jme), qv(im, kme, jme), qc(im, kme, jme), qr(im, kme, jme))
   allocate(qi(im, kme, jme), qs(im, kme, jme), qg(im, kme, jme))

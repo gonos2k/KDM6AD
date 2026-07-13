@@ -67,7 +67,10 @@ set_target_properties(kdm6_c PROPERTIES C_VISIBILITY_PRESET default)
 option(KDM6_ENABLE_TEST_HOOKS
     "Compile test-only fault-injection hooks into kdm6_c (never for shipped builds)" OFF)
 if(KDM6_ENABLE_TEST_HOOKS)
+    # PRIVATE — never propagates to the kdm6 physics core or an installed header.
     target_compile_definitions(kdm6_c PRIVATE KDM6_ENABLE_TEST_HOOKS)
+    message(WARNING "KDM6_ENABLE_TEST_HOOKS=ON: test-only ABI fault hooks are "
+                    "compiled into kdm6_c — DEV/CI ONLY, never a shipped build.")
 endif()
 
 # ── tests ───────────────────────────────────────────────────────────────────

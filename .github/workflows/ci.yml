@@ -90,26 +90,46 @@ jobs:
           python -c 'import torch; print("torch", torch.__version__)'
           pip --version   # installer version (deps are pinned; pip itself is not)
 
-      - name: Configure (CMake, point at the pip libtorch)
+      # PR1-A dual-gate: the representative CI build is the SHIPPED config
+      # (KDM6_ENABLE_TEST_HOOKS=OFF) — full build + install + all 16 CTest +
+      # parity + a seam-absence check on the built library. Only AFTER that does
+      # a second pass reconfigure the SAME tree ON to run the fault-path test
+      # through the real shared library, so the production-equivalent artifact
+      # is what CI validates and the "no test seam in the shipped dylib"
+      # property is a continuous gate, not a one-off manual check.
+      - name: Configure (CMake, SHIPPED config — test hooks OFF)
         run: |
           cd libtorch && mkdir -p build && cd build
           cmake .. \
             -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
             -DCMAKE_INSTALL_PREFIX=../install \
-            -DKDM6_ENABLE_TEST_HOOKS=ON \
+            -DKDM6_ENABLE_TEST_HOOKS=OFF \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
-        # KDM6_ENABLE_TEST_HOOKS=ON so the PR1-A thread-fence fail-path test
-        # RUNS here (it SKIPs in a shipped OFF build). The hook is compiled
-        # into this CI/dev library only, NEVER into an operational dylib.
 
-      - name: Build
+      - name: Build (shipped)
         run: cmake --build libtorch/build -j
 
       - name: Install (file-copy)
         run: cmake --install libtorch/build
 
-      - name: ctest
+      - name: ctest (shipped, all 16)
         run: ctest --test-dir libtorch/build --output-on-failure
+
+      - name: Assert the test fault seam is ABSENT from the shipped library
+        run: |
+          LIB=$(ls libtorch/build/libkdm6_c.so libtorch/build/libkdm6_c.dylib 2>/dev/null | head -1)
+          echo "checking $LIB"
+          if strings "$LIB" | grep -Fq 'KDM6_TEST_FORCE_THREAD_CONFIG_FAIL'; then
+            echo "FAIL: test fault seam leaked into the shipped library"; exit 1
+          fi
+          echo "OK: no test fault seam in the shipped library"
+
+      - name: Reconfigure ON + run the fault-path test through the shared lib
+        run: |
+          cd libtorch/build
+          cmake .. -DKDM6_ENABLE_TEST_HOOKS=ON
+          cmake --build . --target kdm6_c test_c_abi -j
+          ctest -R '^c_abi$' -V --output-on-failure
 
       # oracle↔C++ forward-parity regression bound: the f64 Python oracle vs this built C++
       # port (worst_rel < 1e-6, not strict equality — the f32 mirror carries O(1e-8) roundoff).
