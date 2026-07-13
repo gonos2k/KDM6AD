@@ -90,16 +90,37 @@ Design rules:
   depend on `int`/`long` width across host toolchains.
 * **`struct_size` and `abi_version` are the first two fields, never reordered
   or removed** — every version can read them from any pointer.
+* **`struct_size` MUST be at offset 0 and read FIRST** (see the framing
+  read-order rule in §4): it bounds every subsequent read, so it cannot itself
+  depend on any other field being present.
 * **Only additive growth**: new fields are appended, never inserted or
   reordered; a field is never repurposed. Removing/reordering a field is a v3,
   not a v2 change.
 * **`args == NULL` ⇒ `KDM6_ERR_NULL_POINTER`** (checked before dereferencing
-  anything, including `struct_size`).
+  any field). After the NULL check, `struct_size` at offset 0 is the first —
+  and, until validated, the ONLY — field the library may read.
+
+```c
+/* the two framing fields the caller MUST always allocate */
+#define KDM6_STEP_V2_MIN_SIZE (2u * sizeof(uint32_t))   /* struct_size + abi_version */
+```
 
 ## 4. `struct_size` / `abi_version` handling
 
+**Framing read-order (crash-safety — Codex):** the caller MUST allocate at
+least the two framing fields (`KDM6_STEP_V2_MIN_SIZE` bytes). After the NULL
+check the library reads `struct_size` at offset 0 FIRST and immediately
+verifies `struct_size >= KDM6_STEP_V2_MIN_SIZE`. If it is smaller, the call is
+rejected with `KDM6_ERR_INVALID_ARG` **before `abi_version` (offset 4) is
+read** — otherwise a caller that declared a 4-byte struct would have
+`abi_version` read past its buffer. `abi_version` (and every later field) is
+read ONLY after `struct_size` has bounded the accessible region. The library
+accesses at most `min(struct_size, LIB)` bytes, so no version skew ever reads
+uninitialized caller memory.
+
 Let `LIB = sizeof(kdm6_step_v2_args)` as the LIBRARY sees it, and `S =
-args->struct_size` as the CALLER passed it.
+args->struct_size` as the CALLER passed it (already known `>= KDM6_STEP_V2_MIN_SIZE`
+by the framing check above).
 
 * `S < offsetof(fields required by this version)` → `KDM6_ERR_INVALID_ARG`
   (the caller's struct is too small to even contain the required inputs).
@@ -125,14 +146,16 @@ Extends the v1 precedence (`[[kdm6_c_api.h]]` VALIDATION PRECEDENCE), with the
 struct framing checked first:
 
 1. `args == NULL` → `KDM6_ERR_NULL_POINTER`
-2. `abi_version` major mismatch → `KDM6_ERR_INVALID_ARG`
-3. `struct_size` too small for the required fields → `KDM6_ERR_INVALID_ARG`
-4. dimensions → `KDM6_ERR_INVALID_DIM`
-5. `value_only ∈ {0,1}` → `KDM6_ERR_INVALID_ARG`
-6. required pointers → `KDM6_ERR_NULL_POINTER`
-7. `param_grad_flags != 0` → `KDM6_ERR_NOT_IMPLEMENTED`
-8. single-thread fence → `KDM6_ERR_THREAD_CONFIG` (from PR1-A)
-9. tensor creation / microphysics
+2. read `struct_size` (offset 0); `struct_size < KDM6_STEP_V2_MIN_SIZE` →
+   `KDM6_ERR_INVALID_ARG` (**before** any other field, incl. `abi_version`, is read)
+3. read `abi_version`; major mismatch → `KDM6_ERR_INVALID_ARG`
+4. `struct_size` too small for the required fields → `KDM6_ERR_INVALID_ARG`
+5. dimensions → `KDM6_ERR_INVALID_DIM`
+6. `value_only ∈ {0,1}` → `KDM6_ERR_INVALID_ARG`
+7. required pointers → `KDM6_ERR_NULL_POINTER`
+8. `param_grad_flags != 0` → `KDM6_ERR_NOT_IMPLEMENTED`
+9. single-thread fence → `KDM6_ERR_THREAD_CONFIG` (from PR1-A)
+10. tensor creation / microphysics
 
 Same fail-closed contract on every error: `*handle == NULL`, no output buffer
 written.
@@ -173,8 +196,13 @@ so a layout drift between the C and Fortran structs fails the smoke test.
 Through the pure-C `test_c_abi.cpp` consumer (ABI isolation preserved):
 
 * `args == NULL` → `NULL_POINTER`.
-* `abi_version` wrong major → `INVALID_ARG`.
-* `struct_size = 0` and `struct_size` below the required-field cutoff →
+* **framing minimum (Codex):** `struct_size ∈ {0, 4}` (below
+  `KDM6_STEP_V2_MIN_SIZE`) → `INVALID_ARG`, and `abi_version` is NOT read —
+  exercised by putting the args object at the end of a mmap'd page whose next
+  page is unmapped (or poisoning bytes 4..7): the call must return the error,
+  never fault or depend on the `abi_version` bytes.
+* `abi_version` wrong major (with `struct_size >= min`) → `INVALID_ARG`.
+* `struct_size` at the framing minimum but below the required-field cutoff →
   `INVALID_ARG`.
 * small-but-valid `struct_size` (caller omits the optional tail) → runs, with
   the omitted optionals treated as NULL/zero, result **bitwise-equal** to a v1
