@@ -148,8 +148,13 @@ by the framing check above).
 * `abi_version` major mismatch (caller major ≠ library major) →
   `KDM6_ERR_INVALID_ARG`. Within the same major, `struct_size` governs.
 
-The key invariant: **the library accesses at most `min(S, LIB)` bytes**, so a
-version skew never reads uninitialized caller memory.
+The key invariant (as corrected above, floor included): after the mandatory
+4-byte `struct_size` read, **the library reads no field ending beyond
+`min(S, LIB)`** — total bytes touched ≤ `max(sizeof(uint32_t), min(S, LIB))`.
+Once a valid `struct_size` (`>= KDM6_STEP_V2_MIN_SIZE`, so `min(S, LIB) >= 8 >
+4`) is established, this reduces to "no read past `min(S, LIB)`", and a version
+skew never reads uninitialized caller memory. The bare "`min(S, LIB)` bytes"
+form is avoided because it is false for the degenerate `S < 4` (see §4 top).
 
 ## 5. Validation precedence (v2)
 
