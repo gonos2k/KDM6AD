@@ -81,3 +81,43 @@ def test_superob_full_model_domain_real():
     assert 180.0 < float(so.bt[ok, 12].min()) and float(so.bt[ok, 12].max()) < 320.0
     # superob 평활 효과: 셀 평균이므로 원화소보다 극값이 안쪽
     assert float(so.bt[ok, 12].min()) >= float(pl.bt[:, 12].min()) - 1e-9
+
+
+# ── input-validation contract (external review P1-3) ────────────────────────
+
+def test_superob_min_pixels_must_be_positive():
+    """min_pixels < 1 makes `good = n >= 0` include EMPTY cells -> 0/0 mean
+    and a spuriously usable quality flag; reject at the boundary."""
+    glat = torch.tensor([35.0, 36.0], **_F64)
+    glon = torch.tensor([125.0, 125.0], **_F64)
+    pl = _payload(lat=[35.001], lon=[125.0], bt_vals=[250.0])
+    for bad in (0, -1):
+        with pytest.raises(ValueError, match="min_pixels"):
+            superob_to_model_grid(pl, glat, glon, max_dist_km=4.0,
+                                  min_pixels=bad)
+
+
+def test_superob_max_dist_must_be_finite_positive():
+    glat = torch.tensor([35.0], **_F64)
+    glon = torch.tensor([125.0], **_F64)
+    pl = _payload(lat=[35.001], lon=[125.0], bt_vals=[250.0])
+    for bad in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="max_dist_km"):
+            superob_to_model_grid(pl, glat, glon, max_dist_km=bad,
+                                  min_pixels=1)
+
+
+def test_superob_with_mapping_validates_B_and_mapping_range():
+    from kdm6.obs.superob import superob_with_mapping
+    pl = _payload(lat=[35.0, 36.0], lon=[125.0, 125.0], bt_vals=[250.0, 251.0])
+    good = torch.tensor([0, 1], dtype=torch.int64)
+    with pytest.raises(ValueError, match="B"):
+        superob_with_mapping(pl, good, 0, min_pixels=1)
+    with pytest.raises(ValueError, match="min_pixels"):
+        superob_with_mapping(pl, good, 2, min_pixels=0)
+    bad_hi = torch.tensor([0, 2], dtype=torch.int64)   # >= B: out of range
+    with pytest.raises(ValueError, match="mapping"):
+        superob_with_mapping(pl, bad_hi, 2, min_pixels=1)
+    bad_lo = torch.tensor([0, -2], dtype=torch.int64)  # < -1: out of range
+    with pytest.raises(ValueError, match="mapping"):
+        superob_with_mapping(pl, bad_lo, 2, min_pixels=1)

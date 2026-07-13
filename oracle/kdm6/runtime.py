@@ -431,12 +431,34 @@ def _kdm6_pure(
     Returns ``State`` only (no surface rain/snow/graupel increments — those are a C++ ABI
     concern; ``_kdm6_pure``'s job is the differentiable state evolution).
     """
+    # Input-validation contract (external review P1-2/P1-3, Python boundary —
+    # the operational C++/ABI path is frozen for f32 parity, so the guards
+    # live here). For VALID inputs the numerical path below is unchanged.
+    import math as _math
+    if not _math.isfinite(dt):
+        raise ValueError(f"dt must be finite (got {dt!r})")
+    for _nm, _v in (("ncmin_land", ncmin_land), ("ncmin_sea", ncmin_sea)):
+        if not (_math.isfinite(_v) and _v >= 0.0):
+            raise ValueError(f"{_nm} must be finite and >= 0 (got {_v!r})")
+    if xland is not None:
+        B = state.qc.shape[0]
+        if xland.numel() != B:
+            raise ValueError(
+                f"xland must have exactly one value per column (numel "
+                f"{xland.numel()} != B {B}) — a scalar would broadcast one "
+                "land/sea regime over the whole domain")
+        if not bool(torch.isfinite(xland).all()):
+            raise ValueError("xland must be finite")
+
+    # delt<=0 → EXACT no-op: return the input state unchanged. (The former
+    # _coord_to_state round-trip recomputed th = (th*pii)/pii, which is not
+    # bitwise identity in general — review P1-2.) Positive dt is the physical
+    # contract; dtcld=0 would also NaN the per-rate mass/dtcld divisions.
+    if dt <= 0.0:
+        return state
+
     cs = _state_to_coord(state, forcing)
     cf = _build_coord_forcing(forcing)
-
-    # delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions). Mirror C++ :239.
-    if dt <= 0.0:
-        return _coord_to_state(cs, state, forcing)
 
     full_p = _coord.default_coordinator_params()
     # G4: 파라미터가 "살아 있으면" warm 번들에 연결 — live = requires_grad 켜짐

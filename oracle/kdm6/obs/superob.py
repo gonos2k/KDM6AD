@@ -24,6 +24,8 @@
 """
 from __future__ import annotations
 
+import math
+
 from dataclasses import dataclass
 
 import torch
@@ -52,6 +54,12 @@ def superob_to_model_grid(payload: ObsPayload, grid_lat: torch.Tensor,
     max_dist_km: 배정 게이트 — 모델 셀 반대각(Δx·√2/2)보다 약간 크게 주면
     도메인 내부 화소는 전부 배정되고 밖은 떨어진다 (5 km 격자 → 4 km 권장).
     """
+    # Input-validation contract (external review P1-3): a non-finite or
+    # non-positive gate silently mis-collocates (min_pixels is validated in
+    # superob_with_mapping, the shared chokepoint).
+    if not (math.isfinite(max_dist_km) and max_dist_km > 0.0):
+        raise ValueError(
+            f"max_dist_km must be finite and > 0 (got {max_dist_km!r})")
     # KD-트리 사상 + index_add 조합 — 전 경로가 O(N log B) (brute-force 제거).
     mapping = build_pixel_mapping(payload.lat, payload.lon, grid_lat, grid_lon,
                                   max_dist_km=max_dist_km)
@@ -150,6 +158,18 @@ def superob_with_mapping(payload: ObsPayload, mapping: torch.Tensor, B: int,
         raise ValueError(
             f"payload pixel count {payload.n_obs} != mapping {mapping.numel()} "
             "-- mapping was built for a different pixel set/stride")
+    # Input-validation contract (external review P1-3): min_pixels < 1 makes
+    # `good = n >= min_pixels` accept EMPTY cells (0/0 mean + usable quality);
+    # an out-of-range mapping index scatters out of bounds (or silently
+    # wraps). Reject at the boundary rather than mis-compute.
+    if not (isinstance(B, int) and B > 0):
+        raise ValueError(f"B (column count) must be a positive int (got {B!r})")
+    if not (isinstance(min_pixels, int) and min_pixels >= 1):
+        raise ValueError(f"min_pixels must be an int >= 1 (got {min_pixels!r})")
+    if bool(((mapping >= B) | (mapping < -1)).any()):
+        raise ValueError(
+            f"mapping contains column indices outside [-1, {B}) — a stale "
+            "mapping or wrong B would scatter out of range")
     near = mapping >= 0
     idx = mapping[near]
     nch = payload.nch
