@@ -932,8 +932,19 @@ void test_c_abi_v2_matches_v1_bitwise() {
             FortranBuf xl(im,1,jme,2.0f); if (im>1) xl.data[0]=1.0f;  // mixed land/sea
             const float* xland = c.use_xland ? xl.ptr() : nullptr;
 
+            // Output buffers are pre-seeded with the INPUT state (not a -1.0f
+            // sentinel) so the non-triviality guard below is non-vacuous: o2
+            // differs from the input ONLY if physics actually wrote an evolved
+            // value. A no-op that leaves the buffer untouched, or one that
+            // writes the input straight back, leaves o2 == input → guard fails.
+            const FortranBuf* insrc[12] = {
+                &th,&qv,&qc,&qr,&qi,&qs,&qg,&nccn,&nc,&ni,&nr,&bg};
             for (int value_only : {1, 0}) {
-                auto outs = [&](){ return std::vector<FortranBuf>(12, FortranBuf(im,kme,jme,-1.0f)); };
+                auto outs = [&](){
+                    std::vector<FortranBuf> v; v.reserve(12);
+                    for (int f = 0; f < 12; ++f) v.push_back(*insrc[f]);  // baseline = input
+                    return v;
+                };
                 auto o1 = outs(); auto o2 = outs();
                 FortranBuf r1(im,1,jme,-1.0f), s1(im,1,jme,-1.0f), g1(im,1,jme,-1.0f), rg1(im,kme,jme,-1.0f);
                 FortranBuf r2(im,1,jme,-1.0f), s2(im,1,jme,-1.0f), g2(im,1,jme,-1.0f), rg2(im,kme,jme,-1.0f);
@@ -966,15 +977,13 @@ void test_c_abi_v2_matches_v1_bitwise() {
                 for (int f = 0; f < 12; ++f)
                     assert(std::memcmp(o1[f].ptr(), o2[f].ptr(),
                                        o1[f].size()*sizeof(float)) == 0);  // BITWISE
-                // Physics actually ran: the evolved output is NOT a bitwise copy
-                // of the input seed, so "v1==v2 bitwise" is over genuinely-
-                // evolved state — not a shared degenerate no-op.
-                const float* in_seed[12] = {
-                    th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),
-                    qg.ptr(),nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr()};
+                // Physics actually ran: at least one output moved off its input
+                // baseline (see the input-seeded outs() above), so "v1==v2
+                // bitwise" is over genuinely-evolved state — not a shared no-op
+                // that left the buffers untouched or echoed the input back.
                 bool any_evolved = false;
                 for (int f = 0; f < 12; ++f)
-                    if (std::memcmp(o2[f].ptr(), in_seed[f],
+                    if (std::memcmp(o2[f].ptr(), insrc[f]->ptr(),
                                     o2[f].size()*sizeof(float)) != 0)
                         any_evolved = true;
                 assert(any_evolved);
