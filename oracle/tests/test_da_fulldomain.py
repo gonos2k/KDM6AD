@@ -1247,3 +1247,86 @@ def test_finalize_requires_the_run_lock(tmp_path):
     ok = mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
     assert ok is True
     assert (tmp_path / "z.json.lock").is_dir()      # released by CALLER
+
+
+def test_run_lock_records_metadata(tmp_path, monkeypatch):
+    """Review P2-2: the lock dir should carry PID/host/start/command so a
+    stale lock from a crashed run can be triaged before manual removal."""
+    import json as _json
+    import os
+    import sys as _sys
+    mod = _load_runner()
+    out = str(tmp_path / "z.json")
+    monkeypatch.setattr(_sys, "argv",
+                        ["oracle/scripts/run_fulldomain_lc05.py", out, "case"])
+    mod._acquire_run_lock(out)
+    try:
+        info = _json.loads((tmp_path / "z.json.lock" / "info.json").read_text())
+        assert isinstance(info["pid"], int) and info["pid"] > 0
+        assert info["host"] and isinstance(info["host"], str)
+        assert info["started"] and isinstance(info["started"], str)
+        assert "run_fulldomain_lc05.py" in info["command"]
+    finally:
+        mod._release_run_lock(out)                     # must handle non-empty
+    assert not (tmp_path / "z.json.lock").exists()
+
+
+def test_finalize_fsyncs_payload_and_directory(tmp_path, monkeypatch):
+    """Review P2-2: evidence placement must be durable — the temp payloads
+    are fsync'd before linking and the output directory is fsync'd after the
+    manifest commit, so a crash cannot leave the manifest name visible with
+    the payload not yet on stable storage."""
+    import os
+    mod = _load_runner()
+    fsynced = {"fds": 0, "dirs": 0}
+    real_fsync = os.fsync
+
+    def spy_fsync(fd):
+        # a directory fd vs a file fd — both are ints; count dir fsyncs by
+        # checking the path via os.fstat is overkill, so count total and
+        # assert the helper path ran
+        fsynced["fds"] += 1
+        return real_fsync(fd)
+    monkeypatch.setattr(mod.os, "fsync", spy_fsync)
+    orig_dir = mod._fsync_dir
+
+    def spy_dir(p):
+        fsynced["dirs"] += 1
+        return orig_dir(p)
+    monkeypatch.setattr(mod, "_fsync_dir", spy_dir)
+
+    staging = tmp_path / "d.json.fields.npz.staging"
+    staging.write_bytes(b"NPZ")
+    out = str(tmp_path / "d.json")
+    os.mkdir(out + ".lock")
+    rep = dict(gates={"g": True, "accepted": True}, wall_s=1.0)
+    ok = mod.finalize_artifact(rep, dict(inputs={}), {}, out, str(staging))
+    assert ok is True
+    assert fsynced["fds"] >= 2                          # both temp payloads
+    assert fsynced["dirs"] >= 1                         # output dir after commit
+    os.rmdir(out + ".lock")
+
+
+def test_redact_manifest_strips_local_paths():
+    """Review P2-5: a public manifest must not leak the local username or
+    absolute paths — repo files become repo-relative, external inputs
+    become logical IDs, and hashes are preserved (reproducibility)."""
+    mod = _load_runner()
+    repo = str(mod._ORACLE.parent)
+    man = dict(
+        code_sha="a" * 40,
+        cwd=repo + "/oracle",
+        command=f"{repo}/.venv/bin/python oracle/scripts/run_fulldomain_lc05.py o c",
+        argv=[repo + "/.venv/bin/python", "oracle/scripts/x.py"],
+        inputs={mod.WRFIN: "h1", mod.CAL: "h2",
+                repo + "/oracle/kdm6/x.py": "h3"},
+        rttov={"clear_fixture": {"path": repo + "/rttov_runtime/cases/ami/501",
+                                 "tree_sha256": "t1"}})
+    red = mod.redact_manifest(man)
+    blob = json.dumps(red)
+    assert "/Users/" not in blob                        # no username / abs path
+    assert red["inputs"]["<WRFIN>"] == "h1"             # logical id, hash kept
+    assert red["inputs"]["<CAL>"] == "h2"
+    assert red["inputs"]["oracle/kdm6/x.py"] == "h3"    # repo-relative
+    assert red["code_sha"] == "a" * 40                  # provenance preserved
+    assert man["inputs"][mod.WRFIN] == "h1"             # original untouched

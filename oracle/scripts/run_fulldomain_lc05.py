@@ -366,9 +366,14 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
         _assert_fresh_outputs(out_json, include_staging=False)
 
         def _owned_tmp(payload_dict):
+            # flush + fsync the payload BEFORE linking (review P2-2): the
+            # manifest name must never become visible with the payload not
+            # yet on stable storage across a crash
             fd, tmp = tempfile.mkstemp(dir=outdir, suffix=".tmp")
             with os.fdopen(fd, "w") as f:
                 json.dump(payload_dict, f, indent=1)
+                f.flush()
+                os.fsync(f.fileno())
             return tmp
 
         tmp_json = _owned_tmp(rep)
@@ -379,6 +384,7 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
             os.link(staging_npz, npz_path)         # atomic no-replace
             os.link(tmp_json, json_path)
             os.link(tmp_man, man_path)             # COMMIT marker, last
+            _fsync_dir(outdir)                     # durable directory entry
         except FileExistsError:
             raise FileExistsError(
                 "an output path appeared during the run (TOCTOU) — "
@@ -397,18 +403,88 @@ def _acquire_run_lock(out_json):
     """WHOLE-RUN mutex for one OUT_JSON (Codex: a finalize-only lock let
     two concurrent runners share — and clobber — the same staging path for
     the entire hour). mkdir is atomic; a stale lock from a crashed run is
-    verified and removed by a human, never automatically."""
+    verified and removed by a human, never automatically. The lock records
+    PID/host/start/command (review P2-2) so a stale lock can be triaged
+    before manual removal."""
+    import datetime
+    import shlex
+    import socket
+    lockdir = out_json + ".lock"
     try:
-        os.mkdir(out_json + ".lock")
+        os.mkdir(lockdir)
     except FileExistsError:
         raise FileExistsError(
-            f"run lock {out_json}.lock exists — another run over this "
-            "OUT_JSON is in progress (or a stale lock from a crashed run: "
-            "verify and remove it manually)")
+            f"run lock {lockdir} exists — another run over this OUT_JSON is "
+            "in progress (or a stale lock from a crashed run: verify via "
+            f"{lockdir}/info.json and remove it manually)")
+    info = dict(pid=os.getpid(), host=socket.gethostname(),
+                started=datetime.datetime.now().isoformat(timespec="seconds"),
+                command=shlex.join([sys.executable, *sys.argv]))
+    with open(os.path.join(lockdir, "info.json"), "w") as f:
+        json.dump(info, f, indent=1)
 
 
 def _release_run_lock(out_json):
-    os.rmdir(out_json + ".lock")
+    lockdir = out_json + ".lock"
+    info = os.path.join(lockdir, "info.json")
+    if os.path.exists(info):
+        os.unlink(info)
+    os.rmdir(lockdir)
+
+
+def _fsync_dir(path):
+    """fsync a directory so a rename/link into it is durable across a crash."""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+# external inputs whose absolute paths + username must not leak into a
+# PUBLIC manifest (review P2-5) — mapped to logical IDs, hashes preserved
+def _logical_input_map():
+    return {WRFIN: "<WRFIN>", CAL: "<CAL>", GK2A: "<GK2A>"}
+
+
+def redact_manifest(manifest):
+    """Public-safe copy of a manifest: repo-absolute paths become
+    repo-relative, the known external inputs become logical IDs, and the
+    interpreter/user prefix is dropped — every hash is preserved so the
+    redacted manifest still certifies reproducibility (review P2-5). The
+    original (with absolute paths) is retained privately by the operator."""
+    import copy
+    repo = str(_ORACLE.parent)
+    logical = _logical_input_map()
+
+    def rel(p):
+        s = str(p)
+        if s in logical:
+            return logical[s]
+        if s.startswith(repo + os.sep):
+            return os.path.relpath(s, repo)
+        # strip a leading interpreter path in a command/argv token
+        return os.path.basename(s) if s.startswith(os.sep) else s
+
+    m = copy.deepcopy(manifest)
+    if "cwd" in m:
+        m["cwd"] = rel(m["cwd"])
+    if "argv" in m and isinstance(m["argv"], list):
+        m["argv"] = [rel(a) if a.startswith(os.sep) else a for a in m["argv"]]
+    if "command" in m:
+        m["command"] = " ".join(rel(t) if t.startswith(os.sep) else t
+                                for t in m["command"].split(" "))
+    if isinstance(m.get("inputs"), dict):
+        m["inputs"] = {rel(k): v for k, v in m["inputs"].items()}
+    if isinstance(m.get("rttov"), dict):
+        for name, e in m["rttov"].items():
+            if isinstance(e, dict) and "path" in e:
+                e["path"] = rel(e["path"])
+            for part in ("exe", "coef", "hydrotable"):
+                rec = e.get(part) if isinstance(e, dict) else None
+                if isinstance(rec, dict) and "path" in rec:
+                    rec["path"] = rel(rec["path"])
+    return m
 
 
 def main(out_json, case_root, conserving=False, allow_dirty=False):
