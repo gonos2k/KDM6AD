@@ -30,6 +30,7 @@ program test_fortran_smoke
 
   type(c_ptr) :: handle
   integer(c_int) :: rc
+  type(kdm6_step_v2_args_t) :: v2args   ! PR2: C/Fortran struct-layout guard
 
   print *, "kdm6 Fortran ISO_C_BINDING smoke test"
 
@@ -42,6 +43,21 @@ program test_fortran_smoke
      stop 1
   end if
   print *, "  PASS: KDM6_ERR_THREAD_CONFIG synced (-7)"
+
+  ! PR2 ABI v2: the Fortran kdm6_step_v2_args_t must have the SAME size/layout
+  ! as the C kdm6_step_v2_args (a field reorder/type drift would change it), and
+  ! the module's KDM6_ABI_VERSION must match the library's.
+  if (kdm6_get_abi_version_c() /= KDM6_ABI_VERSION) then
+     print *, "FAIL: ABI version mismatch (module ", KDM6_ABI_VERSION, &
+              " vs library ", kdm6_get_abi_version_c(), ")"
+     stop 1
+  end if
+  if (int(c_sizeof(v2args), c_int32_t) /= kdm6_step_v2_args_size_c()) then
+     print *, "FAIL: kdm6_step_v2_args_t layout drift (Fortran ", &
+              c_sizeof(v2args), " vs C ", kdm6_step_v2_args_size_c(), ")"
+     stop 1
+  end if
+  print *, "  PASS: ABI v2 version + struct layout synced"
 
   ! ── Allocate ────────────────────────────────────────────────────────────────
   allocate(th(im, kme, jme), qv(im, kme, jme), qc(im, kme, jme), qr(im, kme, jme))

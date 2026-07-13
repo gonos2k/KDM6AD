@@ -28,10 +28,55 @@ module kdm6_iso_c
   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
 
+  ! ── stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ───────────────────────────────
+  integer(c_int), parameter, public :: KDM6_ABI_VERSION = 2
+
+  ! Interoperable mirror of the C `kdm6_step_v2_args` — field ORDER and types
+  ! MUST match the C struct exactly; a size/layout drift is caught at run time
+  ! by asserting c_sizeof(this) == kdm6_step_v2_args_size_c() (test_fortran_smoke).
+  type, bind(C), public :: kdm6_step_v2_args_t
+     integer(c_int32_t) :: struct_size
+     integer(c_int32_t) :: abi_version
+     integer(c_int32_t) :: im, kme, jme
+     real(c_double)     :: dt
+     integer(c_int32_t) :: value_only
+     integer(c_int32_t) :: param_grad_flags
+     type(c_ptr) :: th, qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg
+     type(c_ptr) :: rho, pii, p, delz
+     type(c_ptr) :: th_out, qv_out, qc_out, qr_out, qi_out, qs_out, qg_out
+     type(c_ptr) :: nccn_out, nc_out, ni_out, nr_out, bg_out
+     type(c_ptr) :: handle
+     type(c_ptr) :: xland
+     real(c_double) :: ncmin_land, ncmin_sea
+     type(c_ptr) :: rain_increment, snow_increment, graupel_increment
+     type(c_ptr) :: rhog_out
+  end type kdm6_step_v2_args_t
+
   public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+  public :: kdm6_get_abi_version_c, kdm6_step_v2_args_size_c, kdm6_step_v2_c
 
   ! ── C ABI interfaces ───────────────────────────────────────────────────────
   interface
+    ! v2 (additive): version + struct-size introspection and the v2 forward.
+    function kdm6_get_abi_version_c() &
+        bind(C, name="kdm6_get_abi_version_c") result(v)
+      import :: c_int
+      integer(c_int) :: v
+    end function kdm6_get_abi_version_c
+
+    function kdm6_step_v2_args_size_c() &
+        bind(C, name="kdm6_step_v2_args_size_c") result(sz)
+      import :: c_int32_t
+      integer(c_int32_t) :: sz
+    end function kdm6_step_v2_args_size_c
+
+    function kdm6_step_v2_c(args) &
+        bind(C, name="kdm6_step_v2_c") result(rc)
+      import :: c_int, kdm6_step_v2_args_t
+      type(kdm6_step_v2_args_t), intent(in) :: args
+      integer(c_int) :: rc
+    end function kdm6_step_v2_c
+
     function kdm6_step_c( &
         th, qv, qc, qr, qi, qs, qg, &
         nccn, nc, ni, nr, bg, &

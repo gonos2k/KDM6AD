@@ -701,6 +701,9 @@ void test_c_abi_closep_nulls_handle() {
 // touches no numerical path.
 void test_c_abi_thread_config_fail_closed_step_c() {
     TEST(test_c_abi_thread_config_fail_closed_step_c) {
+        // The whole body is gated on the test hook (moved up to avoid
+        // unused-variable warnings under a future -Werror test build).
+#ifdef KDM6_ENABLE_TEST_HOOKS
         const int im = 1, kme = 1, jme = 1;
         FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,1.0e-2f), qc(im,kme,jme,5.0e-4f);
         FortranBuf qr(im,kme,jme,1.0e-4f), qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
@@ -712,13 +715,11 @@ void test_c_abi_thread_config_fail_closed_step_c() {
         FortranBuf th_o(im,kme,jme,SENT), qv_o(im,kme,jme,SENT), qc_o(im,kme,jme,SENT), qr_o(im,kme,jme,SENT);
         FortranBuf qi_o(im,kme,jme,SENT), qs_o(im,kme,jme,SENT), qg_o(im,kme,jme,SENT), nccn_o(im,kme,jme,SENT);
         FortranBuf nc_o(im,kme,jme,SENT), ni_o(im,kme,jme,SENT), nr_o(im,kme,jme,SENT), bg_o(im,kme,jme,SENT);
-
         // ALL optional outputs provided non-NULL + sentinel too, so a future
         // regression that moves the fence BELOW any output write is caught
         // (rain/snow/graupel are (im,jme); rhog_out is (im,kme,jme)).
         FortranBuf rain_o(im,1,jme,SENT), snow_o(im,1,jme,SENT), graup_o(im,1,jme,SENT);
         FortranBuf rhog_o(im,kme,jme,SENT);
-#ifdef KDM6_ENABLE_TEST_HOOKS
         auto all_outputs_are_sentinel = [&]() {
             for (auto* buf : {&th_o, &qv_o, &qc_o, &qr_o, &qi_o, &qs_o, &qg_o,
                               &nccn_o, &nc_o, &ni_o, &nr_o, &bg_o,
@@ -770,7 +771,6 @@ void test_c_abi_thread_config_fail_closed_step_c() {
         assert(call(im, 1, 0, th.ptr(), &h3) == KDM6_OK && h3 == nullptr);
 #else
         std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
-        (void)SENT; (void)rain_o; (void)snow_o; (void)graup_o; (void)rhog_o;
 #endif
     } END_TEST();
 }
@@ -816,8 +816,184 @@ void test_c_abi_thread_config_fail_closed_step_ad_c() {
     } END_TEST();
 }
 
+// ── PR2: stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ──────────────────────────
+
+// Fill a v2 args struct from the v1 positional inputs used across these tests.
+static kdm6_step_v2_args mk_v2_args(
+    const float* th, const float* qv, const float* qc, const float* qr,
+    const float* qi, const float* qs, const float* qg, const float* nccn,
+    const float* nc, const float* ni, const float* nr, const float* bg,
+    const float* rho, const float* pii, const float* p, const float* delz,
+    int im, int kme, int jme, double dt, int value_only,
+    float* th_o, float* qv_o, float* qc_o, float* qr_o, float* qi_o,
+    float* qs_o, float* qg_o, float* nccn_o, float* nc_o, float* ni_o,
+    float* nr_o, float* bg_o, kdm6_handle_t** handle) {
+    kdm6_step_v2_args a;
+    std::memset(&a, 0, sizeof(a));
+    a.struct_size = kdm6_step_v2_args_size_c();
+    a.abi_version = KDM6_ABI_VERSION;
+    a.im = im; a.kme = kme; a.jme = jme; a.dt = dt;
+    a.value_only = value_only; a.param_grad_flags = 0;
+    a.th = th; a.qv = qv; a.qc = qc; a.qr = qr; a.qi = qi; a.qs = qs; a.qg = qg;
+    a.nccn = nccn; a.nc = nc; a.ni = ni; a.nr = nr; a.bg = bg;
+    a.rho = rho; a.pii = pii; a.p = p; a.delz = delz;
+    a.th_out = th_o; a.qv_out = qv_o; a.qc_out = qc_o; a.qr_out = qr_o;
+    a.qi_out = qi_o; a.qs_out = qs_o; a.qg_out = qg_o; a.nccn_out = nccn_o;
+    a.nc_out = nc_o; a.ni_out = ni_o; a.nr_out = nr_o; a.bg_out = bg_o;
+    a.handle = handle;
+    return a;
+}
+
+void test_c_abi_v2_version_and_size() {
+    TEST(test_c_abi_v2_version_and_size) {
+        assert(kdm6_get_abi_version_c() == (int)KDM6_ABI_VERSION);
+        assert(kdm6_step_v2_args_size_c() == (uint32_t)sizeof(kdm6_step_v2_args));
+        assert(KDM6_STEP_V2_MIN_SIZE == 8u);   // struct_size + abi_version
+    } END_TEST();
+}
+
+void test_c_abi_v2_framing() {
+    TEST(test_c_abi_v2_framing) {
+        // args == NULL → NULL_POINTER (no dereference)
+        assert(kdm6_step_v2_c(nullptr) == KDM6_ERR_NULL_POINTER);
+
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf one(im, kme, jme, 1.0f);
+        FortranBuf o(im, kme, jme, -9.0f);
+        kdm6_handle_t* h = nullptr;
+        auto base = mk_v2_args(
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(), im,kme,jme,60.0,1,
+            o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),
+            o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(), &h);
+
+        // struct_size below the framing minimum → INVALID_ARG, abi_version NOT read
+        for (uint32_t bad : {0u, 4u, 7u}) {
+            kdm6_step_v2_args a = base;
+            a.struct_size = bad;
+            a.abi_version = 999999u;              // must be ignored (not read)
+            assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG);
+        }
+        // wrong abi_version major (with a valid struct_size) → INVALID_ARG
+        {
+            kdm6_step_v2_args a = base; a.abi_version = KDM6_ABI_VERSION + 1u;
+            assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG);
+        }
+        // struct_size >= framing minimum but below the required-fields cutoff
+        {
+            kdm6_step_v2_args a = base; a.struct_size = KDM6_STEP_V2_MIN_SIZE;
+            assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG);
+        }
+    } END_TEST();
+}
+
+void test_c_abi_v2_precedence() {
+    TEST(test_c_abi_v2_precedence) {
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf one(im, kme, jme, 1.0f);
+        FortranBuf o(im, kme, jme, -9.0f);
+        kdm6_handle_t* h = nullptr;
+        auto base = mk_v2_args(
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(),one.ptr(),
+            one.ptr(),one.ptr(),one.ptr(),one.ptr(), im,kme,jme,60.0,1,
+            o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(),
+            o.ptr(),o.ptr(),o.ptr(),o.ptr(),o.ptr(), &h);
+        { kdm6_step_v2_args a = base; a.im = 0;
+          assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_DIM); }
+        { kdm6_step_v2_args a = base; a.value_only = 2;
+          assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG); }
+        { kdm6_step_v2_args a = base; a.th = nullptr;
+          assert(kdm6_step_v2_c(&a) == KDM6_ERR_NULL_POINTER); }
+        { kdm6_step_v2_args a = base; a.param_grad_flags = 1;
+          assert(kdm6_step_v2_c(&a) == KDM6_ERR_NOT_IMPLEMENTED); }
+    } END_TEST();
+}
+
+// The load-bearing test: v2 == v1 BITWISE (same physics core), across a
+// single cell, an asymmetric multi-cell tile, mixed xland, and with the
+// optional precip/rhog outputs — for both value_only paths.
+void test_c_abi_v2_matches_v1_bitwise() {
+    TEST(test_c_abi_v2_matches_v1_bitwise) {
+        struct Case { int im, kme, jme; bool use_xland, use_precip; };
+        for (Case c : {Case{1,1,1,false,false}, Case{2,3,4,true,true},
+                       Case{3,1,2,true,false}}) {
+            const int im=c.im, kme=c.kme, jme=c.jme;
+            auto seed = [&](FortranBuf& b, float v){ for (auto& x: b.data) x = v; };
+            FortranBuf th(im,kme,jme), qv(im,kme,jme), qc(im,kme,jme), qr(im,kme,jme);
+            FortranBuf qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme), nccn(im,kme,jme);
+            FortranBuf nc(im,kme,jme), ni(im,kme,jme), nr(im,kme,jme), bg(im,kme,jme);
+            FortranBuf rho(im,kme,jme), pii(im,kme,jme), p(im,kme,jme), delz(im,kme,jme);
+            seed(th,290.0f); seed(qv,1.0e-2f); seed(qc,5.0e-4f); seed(qr,1.0e-4f);
+            seed(nccn,1.0e9f); seed(nc,1.0e8f); seed(nr,1.0e4f);
+            seed(rho,1.0f); seed(pii,0.97f); seed(p,9.0e4f); seed(delz,500.0f);
+            FortranBuf xl(im,1,jme,2.0f); if (im>1) xl.data[0]=1.0f;  // mixed land/sea
+            const float* xland = c.use_xland ? xl.ptr() : nullptr;
+
+            for (int value_only : {1, 0}) {
+                auto outs = [&](){ return std::vector<FortranBuf>(12, FortranBuf(im,kme,jme,-1.0f)); };
+                auto o1 = outs(); auto o2 = outs();
+                FortranBuf r1(im,1,jme,-1.0f), s1(im,1,jme,-1.0f), g1(im,1,jme,-1.0f), rg1(im,kme,jme,-1.0f);
+                FortranBuf r2(im,1,jme,-1.0f), s2(im,1,jme,-1.0f), g2(im,1,jme,-1.0f), rg2(im,kme,jme,-1.0f);
+                float *R1=c.use_precip?r1.ptr():nullptr, *S1=c.use_precip?s1.ptr():nullptr,
+                      *G1=c.use_precip?g1.ptr():nullptr, *RG1=c.use_precip?rg1.ptr():nullptr;
+                float *R2=c.use_precip?r2.ptr():nullptr, *S2=c.use_precip?s2.ptr():nullptr,
+                      *G2=c.use_precip?g2.ptr():nullptr, *RG2=c.use_precip?rg2.ptr():nullptr;
+                kdm6_handle_t *h1=nullptr, *h2=nullptr;
+
+                int rc1 = kdm6_step_c(
+                    th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                    nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                    rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,0,value_only,
+                    o1[0].ptr(),o1[1].ptr(),o1[2].ptr(),o1[3].ptr(),o1[4].ptr(),o1[5].ptr(),o1[6].ptr(),
+                    o1[7].ptr(),o1[8].ptr(),o1[9].ptr(),o1[10].ptr(),o1[11].ptr(),
+                    &h1, xland, 30.0, 10.0, R1, S1, G1, RG1);
+
+                auto a = mk_v2_args(
+                    th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                    nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                    rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,value_only,
+                    o2[0].ptr(),o2[1].ptr(),o2[2].ptr(),o2[3].ptr(),o2[4].ptr(),o2[5].ptr(),o2[6].ptr(),
+                    o2[7].ptr(),o2[8].ptr(),o2[9].ptr(),o2[10].ptr(),o2[11].ptr(), &h2);
+                a.xland = xland; a.ncmin_land = 30.0; a.ncmin_sea = 10.0;
+                a.rain_increment = R2; a.snow_increment = S2;
+                a.graupel_increment = G2; a.rhog_out = RG2;
+                int rc2 = kdm6_step_v2_c(&a);
+
+                assert(rc1 == KDM6_OK && rc2 == KDM6_OK);
+                for (int f = 0; f < 12; ++f)
+                    assert(std::memcmp(o1[f].ptr(), o2[f].ptr(),
+                                       o1[f].size()*sizeof(float)) == 0);  // BITWISE
+                if (c.use_precip) {
+                    assert(std::memcmp(r1.ptr(),r2.ptr(),r1.size()*sizeof(float))==0);
+                    assert(std::memcmp(s1.ptr(),s2.ptr(),s1.size()*sizeof(float))==0);
+                    assert(std::memcmp(g1.ptr(),g2.ptr(),g1.size()*sizeof(float))==0);
+                    assert(std::memcmp(rg1.ptr(),rg2.ptr(),rg1.size()*sizeof(float))==0);
+                }
+                if (value_only) { assert(h1==nullptr && h2==nullptr); }
+                else {
+                    assert(h1!=nullptr && h2!=nullptr);
+                    // same VJP for a unit seed on th (bitwise fp64)
+                    const size_t NP = 12u*im*kme*jme;
+                    std::vector<double> u(NP,0.0), g_1(NP,0.0), g_2(NP,0.0);
+                    u[0]=1.0;
+                    assert(kdm6_handle_vjp_c(h1,u.data(),g_1.data())==KDM6_OK);
+                    assert(kdm6_handle_vjp_c(h2,u.data(),g_2.data())==KDM6_OK);
+                    assert(std::memcmp(g_1.data(),g_2.data(),NP*sizeof(double))==0);
+                    kdm6_handle_closep_c(&h1); kdm6_handle_closep_c(&h2);
+                }
+            }
+        }
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
+    test_c_abi_v2_version_and_size();
+    test_c_abi_v2_framing();
+    test_c_abi_v2_precedence();
+    test_c_abi_v2_matches_v1_bitwise();
     test_c_abi_thread_config_fail_closed_step_c();
     test_c_abi_thread_config_fail_closed_step_ad_c();
     test_c_abi_closep_nulls_handle();

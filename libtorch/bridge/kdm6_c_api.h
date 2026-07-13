@@ -112,6 +112,79 @@ int kdm6_step_c(
     float* rhog_out
 );
 
+/* ══ Stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ═══════════════════════════════
+ *
+ * v1 kdm6_step_c grew by APPENDING trailing C parameters, which is not binary-
+ * compatible (an old-signature caller passes undefined values). v2 moves all
+ * inputs into an options struct whose growth is expressed by `struct_size`, so
+ * the function signature never changes again. kdm6_step_c (v1) stays FROZEN and
+ * byte-identical; kdm6_step_v2_c shares the SAME internal physics core, so the
+ * two are bitwise-equivalent (pinned by test_c_abi). */
+
+#include <stdint.h>
+
+#define KDM6_ABI_VERSION 2u
+/* the two framing fields a valid caller MUST allocate. struct_size is read
+ * first as a bare uint32_t; a value below this is rejected before abi_version
+ * (offset 4) — otherwise a 4-byte caller would have abi_version read past its
+ * buffer (see docs/PR2_ABI_V2_DESIGN.md §4). */
+#define KDM6_STEP_V2_MIN_SIZE ((uint32_t)(2u * sizeof(uint32_t)))
+
+typedef struct {
+    /* ── ABI framing: MUST be the first two fields, never reordered/removed ── */
+    uint32_t struct_size;    /* sizeof(kdm6_step_v2_args) AS THE CALLER SAW IT */
+    uint32_t abi_version;    /* KDM6_ABI_VERSION the caller was built against  */
+
+    /* ── dimensions / dt ── */
+    int32_t  im, kme, jme;
+    double   dt;
+
+    /* ── control flags ── */
+    int32_t  value_only;       /* 0/1 only */
+    int32_t  param_grad_flags; /* RESERVED, must be 0 (as v1) */
+
+    /* ── required inputs: 12 state + 4 forcing (Fortran (im,kme,jme) col-major) ── */
+    const float *th, *qv, *qc, *qr, *qi, *qs, *qg,
+                *nccn, *nc, *ni, *nr, *bg;
+    const float *rho, *pii, *p, *delz;
+
+    /* ── required outputs: 12 state (caller-allocated) ── */
+    float *th_out, *qv_out, *qc_out, *qr_out, *qi_out, *qs_out, *qg_out,
+          *nccn_out, *nc_out, *ni_out, *nr_out, *bg_out;
+
+    /* ── derivative handle (out) ── */
+    kdm6_handle_t** handle;
+
+    /* ── OPTIONAL: NULL ⇒ "not provided", identical semantics to v1 ── */
+    const float *xland;        /* NULL ⇒ maritime */
+    double       ncmin_land, ncmin_sea;
+    float       *rain_increment, *snow_increment, *graupel_increment; /* NULL ⇒ skip */
+    float       *rhog_out;     /* NULL ⇒ skip */
+
+    /* Future fields are APPENDED here only; a smaller struct_size means the
+     * caller did not supply them and the library uses their documented
+     * NULL/zero default. */
+} kdm6_step_v2_args;
+
+/** The ABI version this library implements (== KDM6_ABI_VERSION at its build). */
+int kdm6_get_abi_version_c(void);
+
+/** sizeof(kdm6_step_v2_args) as the LIBRARY sees it — lets a Fortran/other
+ *  caller assert its own struct layout matches at run time. */
+uint32_t kdm6_step_v2_args_size_c(void);
+
+/**
+ * v2 forward entry. All inputs live in *args (see the struct + the design doc).
+ * Validation precedence: args==NULL → NULL_POINTER; struct_size <
+ * KDM6_STEP_V2_MIN_SIZE → INVALID_ARG (BEFORE abi_version is read); abi_version
+ * major mismatch → INVALID_ARG; struct_size too small for the required fields →
+ * INVALID_ARG; then the v1 checks (dims/value_only/pointers/param_grad) and the
+ * PR1-A thread fence. The library reads at most min(struct_size, sizeof) bytes.
+ * Same fail-closed contract as v1: *handle=NULL and no output written on error.
+ * @return KDM6_OK or a negative error code.
+ */
+int kdm6_step_v2_c(const kdm6_step_v2_args* args);
+
 /**
  * [DA §0.1.A] fp64 DA adjoint forward — kdm6_step_ad_c.
  *
