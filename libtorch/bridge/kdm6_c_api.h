@@ -36,6 +36,11 @@ enum {
 //   2. value_only ∈ {0,1} → KDM6_ERR_INVALID_ARG
 //   3. required pointers → KDM6_ERR_NULL_POINTER
 //   4. param_grad_flags (step_c only) → KDM6_ERR_NOT_IMPLEMENTED
+//   5. single-thread fence → KDM6_ERR_THREAD_CONFIG (AFTER all argument checks, BEFORE
+//      any tensor creation): libtorch/OpenMP could not be pinned to 1 intra-op AND 1
+//      inter-op thread, which bitwise determinism requires. Fail-closed — the output
+//      handle stays NULL and NO output buffer is written, so a THREAD_CONFIG refusal is
+//      side-effect-free and the caller's output buffers keep their pre-call values.
 // So an argument-domain error (e.g. value_only=2) may be reported BEFORE a null-pointer
 // error when both are present. On ANY error the output handle is left NULL.
 

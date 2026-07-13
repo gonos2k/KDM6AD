@@ -96,7 +96,11 @@ jobs:
           cmake .. \
             -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
             -DCMAKE_INSTALL_PREFIX=../install \
+            -DKDM6_ENABLE_TEST_HOOKS=ON \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
+        # KDM6_ENABLE_TEST_HOOKS=ON so the PR1-A thread-fence fail-path test
+        # RUNS here (it SKIPs in a shipped OFF build). The hook is compiled
+        # into this CI/dev library only, NEVER into an operational dylib.
 
       - name: Build
         run: cmake --build libtorch/build -j

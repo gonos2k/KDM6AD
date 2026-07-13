@@ -93,13 +93,17 @@ bool ensure_libtorch_singlethread() {
                 at::get_num_threads(), at::get_num_interop_threads());
         fflush(stderr);
     });
+#ifdef KDM6_ENABLE_TEST_HOOKS
     // Test-only fault injection (PR1-A): exercise the fail-closed path from the
-    // pure-C ABI test, which cannot spin a real >1 thread pool. Lives entirely
-    // inside the thread fence and touches NO numerical path; off by default.
+    // pure-C ABI test, which cannot spin a real >1 thread pool. COMPILED OUT of
+    // shipped builds (KDM6_ENABLE_TEST_HOOKS is OFF by default) so the
+    // operational dylib never honors this env var. Lives entirely inside the
+    // thread fence and touches NO numerical path.
     if (const char* f = getenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL");
         f && f[0] == '1') {
         return false;
     }
+#endif
     return at::get_num_threads() == 1 && at::get_num_interop_threads() == 1;
 }
 

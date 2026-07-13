@@ -713,6 +713,7 @@ void test_c_abi_thread_config_fail_closed_step_c() {
         FortranBuf qi_o(im,kme,jme,SENT), qs_o(im,kme,jme,SENT), qg_o(im,kme,jme,SENT), nccn_o(im,kme,jme,SENT);
         FortranBuf nc_o(im,kme,jme,SENT), ni_o(im,kme,jme,SENT), nr_o(im,kme,jme,SENT), bg_o(im,kme,jme,SENT);
 
+#ifdef KDM6_ENABLE_TEST_HOOKS
         // sentinel handle (non-NULL) — must be nulled on the failure path
         kdm6_handle_t* handle = reinterpret_cast<kdm6_handle_t*>(0x1);
         setenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL", "1", 1);
@@ -762,11 +763,16 @@ void test_c_abi_thread_config_fail_closed_step_c() {
             nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(),
             &h3, nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
         assert(rc3 == KDM6_OK && h3 == nullptr);       // value_only path
+#else
+        std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
+        (void)SENT;
+#endif
     } END_TEST();
 }
 
 void test_c_abi_thread_config_fail_closed_step_ad_c() {
     TEST(test_c_abi_thread_config_fail_closed_step_ad_c) {
+#ifdef KDM6_ENABLE_TEST_HOOKS
         const int im = 1, kme = 1, jme = 1;
         const size_t NF = 12, BK = static_cast<size_t>(im) * kme * jme;
         std::vector<double> st(NF * BK, 0.0), fz(4 * BK, 0.0);
@@ -784,6 +790,9 @@ void test_c_abi_thread_config_fail_closed_step_ad_c() {
         assert(rc == KDM6_ERR_THREAD_CONFIG);          // same fail-closed contract
         assert(handle == nullptr);
         for (size_t i = 0; i < out.size(); ++i) assert(out[i] == SENT);   // untouched
+#else
+        std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
+#endif
     } END_TEST();
 }
 
