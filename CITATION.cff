@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "KDM6AD — differentiable KDM6 microphysics for 4D-Var / adjoint"
+abstract: >-
+  A differentiable reimplementation of the KIM-meso v1.0 KDM6 microphysics
+  (PyTorch fp64 autograd oracle + libtorch C++ operational path with an
+  ISO_C_BINDING host bridge), built for radiance data assimilation
+  (VJP/JVP/HVP, CVT, 4D-Var). The operational float32 path is bitwise-matched
+  to the Fortran forward (mp37 <-> mp137); the fp64 path carries the
+  differentiable assimilation.
+authors:
+  - family-names: "Lee"
+    email: "gonos2k@gmail.com"
+    alias: "gonos2k"
+repository-code: "https://github.com/gonos2k/KDM6AD"
+keywords:
+  - data assimilation
+  - 4D-Var
+  - differentiable physics
+  - cloud microphysics
+  - automatic differentiation
+  - numerical weather prediction
+# NOTE: repository LICENSE is a pending owner decision — this port derives
+# from KDM6/WRF-lineage code whose downstream licensing must be established
+# before a license grant is asserted here (external review P2-5).

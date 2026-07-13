@@ -410,11 +410,12 @@ def _kdm6_pure(
     the state tuple. CCN activation (pcact/ncact + complete-evap NC→NCCN + the [NCCN_MIN,
     NCCN_MAX] clamp) runs inside apply_satadj_step exactly as C++ apply_satadj_step.
 
-    Remaining documented simplification:
-      - **mstep**: ``sedimentation_chain_torch`` takes a SCALAR mstep (= max over columns =
-        C++ ``mstepmax``), not a per-column tensor — identical for a single column / mstep=1
-        (the parity above is B=1). Heterogeneous-mstep multi-column columns carry the #10
-        residual until the per-column tensor is threaded.
+    mstep: ``sedimentation_chain_torch`` now takes a PER-COLUMN ``mstep_col`` (B,)
+    tensor (built below as ``mstep_col_main`` = clamp(nint(vmax·dtcld+0.5),1,100)),
+    with ``mstepmax`` only the outer loop bound — so heterogeneous-mstep
+    multi-column batches are handled (the former scalar-mstep #10 residual is
+    closed). falk divides the NUMERATOR by ``mstep_col`` (single f32 rounding,
+    matching Fortran F:1125), not by a precomputed reciprocal.
 
     Control inputs (mirroring C++ ``kdm6_fn(..., xland, ncmin_land, ncmin_sea)``):
       - ``xland`` (None → maritime, the C++ no-xland branch) sets the land/sea ``sea_mask``,
