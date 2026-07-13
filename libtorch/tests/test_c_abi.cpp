@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -988,11 +989,97 @@ void test_c_abi_v2_matches_v1_bitwise() {
     } END_TEST();
 }
 
+// A small-but-valid struct_size (ends at the required-fields cutoff, no
+// optional tail): the call RUNS with the optionals defaulted (xland NULL,
+// ncmin 0, no precip) — bitwise-equal to a v1 call with those same defaults.
+void test_c_abi_v2_small_struct_size_runs_with_defaults() {
+    TEST(test_c_abi_v2_small_struct_size_runs_with_defaults) {
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,1.0e-2f), qc(im,kme,jme,5.0e-4f);
+        FortranBuf qr(im,kme,jme,1.0e-4f), qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
+        FortranBuf nccn(im,kme,jme,1.0e9f), nc(im,kme,jme,1.0e8f), ni(im,kme,jme), nr(im,kme,jme,1.0e4f);
+        FortranBuf bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme,1.0f), pii(im,kme,jme,0.97f), p(im,kme,jme,9.0e4f), delz(im,kme,jme,500.0f);
+        auto outs = [&](){ return std::vector<FortranBuf>(12, FortranBuf(im,kme,jme,-1.0f)); };
+        auto o1 = outs(); auto o2 = outs();
+        kdm6_handle_t *h1=nullptr, *h2=nullptr;
+
+        int rc1 = kdm6_step_c(
+            th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+            nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+            rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,0,/*value_only=*/1,
+            o1[0].ptr(),o1[1].ptr(),o1[2].ptr(),o1[3].ptr(),o1[4].ptr(),o1[5].ptr(),o1[6].ptr(),
+            o1[7].ptr(),o1[8].ptr(),o1[9].ptr(),o1[10].ptr(),o1[11].ptr(),
+            &h1, /*xland*/nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+
+        auto a = mk_v2_args(
+            th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+            nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+            rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,1,
+            o2[0].ptr(),o2[1].ptr(),o2[2].ptr(),o2[3].ptr(),o2[4].ptr(),o2[5].ptr(),o2[6].ptr(),
+            o2[7].ptr(),o2[8].ptr(),o2[9].ptr(),o2[10].ptr(),o2[11].ptr(), &h2);
+        // caller supplies NO optional tail — struct_size ends at the first
+        // optional field. The optionals (poisoned to a nonsense pointer) MUST
+        // NOT be read.
+        a.struct_size = (uint32_t)offsetof(kdm6_step_v2_args, xland);
+        a.xland = reinterpret_cast<const float*>(0x1);   // must be ignored
+        a.rain_increment = reinterpret_cast<float*>(0x1);
+        int rc2 = kdm6_step_v2_c(&a);
+
+        assert(rc1 == KDM6_OK && rc2 == KDM6_OK);
+        for (int f = 0; f < 12; ++f)
+            assert(std::memcmp(o1[f].ptr(), o2[f].ptr(), o1[f].size()*sizeof(float)) == 0);
+    } END_TEST();
+}
+
+// A larger/future struct_size (caller struct bigger than the library's) with a
+// POISONED tail beyond sizeof: the library reads at most min(struct_size, LIB)
+// bytes, so the result is unaffected by the poison (design §4/§7).
+void test_c_abi_v2_large_struct_size_ignores_tail() {
+    TEST(test_c_abi_v2_large_struct_size_ignores_tail) {
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,1.0e-2f), qc(im,kme,jme,5.0e-4f);
+        FortranBuf qr(im,kme,jme,1.0e-4f), qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
+        FortranBuf nccn(im,kme,jme,1.0e9f), nc(im,kme,jme,1.0e8f), ni(im,kme,jme), nr(im,kme,jme,1.0e4f);
+        FortranBuf bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme,1.0f), pii(im,kme,jme,0.97f), p(im,kme,jme,9.0e4f), delz(im,kme,jme,500.0f);
+        auto outs = [&](){ return std::vector<FortranBuf>(12, FortranBuf(im,kme,jme,-1.0f)); };
+        auto oref = outs(); auto obig = outs();
+        kdm6_handle_t *href=nullptr, *hbig=nullptr;
+
+        auto fill = [&](std::vector<FortranBuf>& o, kdm6_handle_t** h) {
+            return mk_v2_args(
+                th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,1,
+                o[0].ptr(),o[1].ptr(),o[2].ptr(),o[3].ptr(),o[4].ptr(),o[5].ptr(),o[6].ptr(),
+                o[7].ptr(),o[8].ptr(),o[9].ptr(),o[10].ptr(),o[11].ptr(), h);
+        };
+        // reference: a normal full-size v2 call
+        auto aref = fill(oref, &href);
+        assert(kdm6_step_v2_c(&aref) == KDM6_OK);
+
+        // oversized buffer: a valid full struct in front + 64 poisoned bytes.
+        const size_t LIB = sizeof(kdm6_step_v2_args);
+        std::vector<unsigned char> buf(LIB + 64, 0xAB);
+        auto abig = fill(obig, &hbig);
+        std::memcpy(buf.data(), &abig, LIB);
+        auto* pbig = reinterpret_cast<kdm6_step_v2_args*>(buf.data());
+        pbig->struct_size = (uint32_t)(LIB + 64);        // claims bigger than LIB
+        int rc = kdm6_step_v2_c(pbig);                    // must ignore the tail
+        assert(rc == KDM6_OK);
+        for (int f = 0; f < 12; ++f)
+            assert(std::memcmp(oref[f].ptr(), obig[f].ptr(), oref[f].size()*sizeof(float)) == 0);
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
     test_c_abi_v2_version_and_size();
     test_c_abi_v2_framing();
     test_c_abi_v2_precedence();
+    test_c_abi_v2_small_struct_size_runs_with_defaults();
+    test_c_abi_v2_large_struct_size_ignores_tail();
     test_c_abi_v2_matches_v1_bitwise();
     test_c_abi_thread_config_fail_closed_step_c();
     test_c_abi_thread_config_fail_closed_step_ad_c();

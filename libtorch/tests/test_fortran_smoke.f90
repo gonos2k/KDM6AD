@@ -16,13 +16,17 @@ program test_fortran_smoke
   real(c_double), parameter :: dt = 60.0_c_double
 
   ! native float32 operational ABI (arrays c_float; dt/ncmin scalars stay c_double)
-  real(c_float), allocatable, dimension(:,:,:) :: th, qv, qc, qr, qi, qs, qg
-  real(c_float), allocatable, dimension(:,:,:) :: nccn, nc, ni, nr, bg
-  real(c_float), allocatable, dimension(:,:,:) :: rho, pii, p, delz
+  ! TARGET so the PR2 v2 forward call below can take c_loc of each array.
+  real(c_float), allocatable, target, dimension(:,:,:) :: th, qv, qc, qr, qi, qs, qg
+  real(c_float), allocatable, target, dimension(:,:,:) :: nccn, nc, ni, nr, bg
+  real(c_float), allocatable, target, dimension(:,:,:) :: rho, pii, p, delz
   real(c_float), allocatable, dimension(:,:,:) :: th_o, qv_o, qc_o, qr_o, qi_o, qs_o, qg_o
   real(c_float), allocatable, dimension(:,:,:) :: nccn_o, nc_o, ni_o, nr_o, bg_o
+  ! v2-forward output set (target for c_loc); compared bitwise against v1's th_o…
+  real(c_float), allocatable, target, dimension(:,:,:) :: th2, qv2, qc2, qr2, qi2, qs2, qg2
+  real(c_float), allocatable, target, dimension(:,:,:) :: nccn2, nc2, ni2, nr2, bg2
   ! Phase 3 ABI extension — land/sea mask + per-regime ncmin scalars.
-  real(c_float), allocatable, dimension(:,:) :: xland
+  real(c_float), allocatable, target, dimension(:,:) :: xland
   ! Phase 4 ABI extension — sedimentation surface increments (im, jme) [mm].
   real(c_float), allocatable, dimension(:,:) :: rain_inc, snow_inc, graupel_inc
   ! Graupel density diagnostic (im, kme, jme) → WRF diag_rhog/RHOPO3D.
@@ -30,7 +34,8 @@ program test_fortran_smoke
 
   type(c_ptr) :: handle
   integer(c_int) :: rc
-  type(kdm6_step_v2_args_t) :: v2args   ! PR2: C/Fortran struct-layout guard
+  type(kdm6_step_v2_args_t), target :: v2args   ! PR2: C/Fortran struct guard + forward
+  type(c_ptr), target :: v2handle
 
   print *, "kdm6 Fortran ISO_C_BINDING smoke test"
 
@@ -69,6 +74,9 @@ program test_fortran_smoke
   allocate(qi_o(im, kme, jme), qs_o(im, kme, jme), qg_o(im, kme, jme))
   allocate(nccn_o(im, kme, jme), nc_o(im, kme, jme), ni_o(im, kme, jme), nr_o(im, kme, jme))
   allocate(bg_o(im, kme, jme))
+  allocate(th2(im,kme,jme), qv2(im,kme,jme), qc2(im,kme,jme), qr2(im,kme,jme))
+  allocate(qi2(im,kme,jme), qs2(im,kme,jme), qg2(im,kme,jme))
+  allocate(nccn2(im,kme,jme), nc2(im,kme,jme), ni2(im,kme,jme), nr2(im,kme,jme), bg2(im,kme,jme))
   allocate(xland(im, jme))
   allocate(rain_inc(im, jme), snow_inc(im, jme), graupel_inc(im, jme))
   allocate(rhog_o(im, kme, jme))
@@ -142,6 +150,53 @@ program test_fortran_smoke
      stop 1
   end if
   print *, "  PASS: kdm6_handle_close rc=KDM6_OK"
+
+  ! ── PR2 v2 FORWARD through the real shared library ──────────────────────────
+  ! Builds the interoperable args struct from c_loc of the SAME inputs and
+  ! calls kdm6_step_v2_c; the output must equal v1's th_o… BITWISE (same core).
+  ! This proves the Fortran bind(C) struct FIELD ORDERING end-to-end, not just
+  ! its size (the size guard above cannot catch a size-preserving reorder).
+  v2_fwd: block
+    integer(c_int) :: rc2
+    v2args%struct_size = kdm6_step_v2_args_size_c()
+    v2args%abi_version = int(KDM6_ABI_VERSION, c_int32_t)
+    v2args%im = int(im, c_int32_t); v2args%kme = int(kme, c_int32_t)
+    v2args%jme = int(jme, c_int32_t); v2args%dt = dt
+    v2args%value_only = 1_c_int32_t; v2args%param_grad_flags = 0_c_int32_t
+    v2args%th=c_loc(th); v2args%qv=c_loc(qv); v2args%qc=c_loc(qc); v2args%qr=c_loc(qr)
+    v2args%qi=c_loc(qi); v2args%qs=c_loc(qs); v2args%qg=c_loc(qg)
+    v2args%nccn=c_loc(nccn); v2args%nc=c_loc(nc); v2args%ni=c_loc(ni)
+    v2args%nr=c_loc(nr); v2args%bg=c_loc(bg)
+    v2args%rho=c_loc(rho); v2args%pii=c_loc(pii); v2args%p=c_loc(p); v2args%delz=c_loc(delz)
+    v2args%th_out=c_loc(th2); v2args%qv_out=c_loc(qv2); v2args%qc_out=c_loc(qc2)
+    v2args%qr_out=c_loc(qr2); v2args%qi_out=c_loc(qi2); v2args%qs_out=c_loc(qs2)
+    v2args%qg_out=c_loc(qg2); v2args%nccn_out=c_loc(nccn2); v2args%nc_out=c_loc(nc2)
+    v2args%ni_out=c_loc(ni2); v2args%nr_out=c_loc(nr2); v2args%bg_out=c_loc(bg2)
+    v2handle = c_null_ptr
+    v2args%handle = c_loc(v2handle)
+    v2args%xland = c_loc(xland)
+    v2args%ncmin_land = 100.0_c_double; v2args%ncmin_sea = 10.0_c_double
+    v2args%rain_increment = c_null_ptr; v2args%snow_increment = c_null_ptr
+    v2args%graupel_increment = c_null_ptr; v2args%rhog_out = c_null_ptr
+
+    rc2 = kdm6_step_v2_c(v2args)
+    if (rc2 /= KDM6_OK) then
+       print *, "FAIL: kdm6_step_v2_c returned ", rc2
+       stop 1
+    end if
+    if (any(th2 /= th_o) .or. any(qv2 /= qv_o) .or. any(qc2 /= qc_o) .or. &
+        any(qr2 /= qr_o) .or. any(qi2 /= qi_o) .or. any(qs2 /= qs_o) .or. &
+        any(qg2 /= qg_o) .or. any(nccn2 /= nccn_o) .or. any(nc2 /= nc_o) .or. &
+        any(ni2 /= ni_o) .or. any(nr2 /= nr_o) .or. any(bg2 /= bg_o)) then
+       print *, "FAIL: v2 forward output != v1 (Fortran struct field order?)"
+       stop 1
+    end if
+    if (c_associated(v2handle)) then
+       print *, "FAIL: value_only=1 must leave the v2 handle NULL"
+       stop 1
+    end if
+    print *, "  PASS: kdm6_step_v2_c forward == v1 (Fortran struct interop)"
+  end block v2_fwd
 
   ! ── [DA] fp64 adjoint-forward wrapper: kdm6_step_ad + kdm6_handle_vjp ─────────
   ! Single-cell MECHANICS of the 4D assumed-shape `contiguous` Fortran wrapper:
