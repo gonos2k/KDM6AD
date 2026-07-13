@@ -97,26 +97,37 @@ Design rules:
   reordered; a field is never repurposed. Removing/reordering a field is a v3,
   not a v2 change.
 * **`args == NULL` ⇒ `KDM6_ERR_NULL_POINTER`** (checked before dereferencing
-  any field). After the NULL check, `struct_size` at offset 0 is the first —
-  and, until validated, the ONLY — field the library may read.
+  any field). After the NULL check, reading the 4-byte `struct_size` field at
+  offset 0 is the irreducible first access (you cannot size the struct without
+  it); it is the ONLY field read until `struct_size` itself is validated.
 
 ```c
-/* the two framing fields the caller MUST always allocate */
+/* the two framing fields a valid caller must allocate (struct_size is read
+ * first as a bare uint32_t; a value below this is rejected before abi_version) */
 #define KDM6_STEP_V2_MIN_SIZE (2u * sizeof(uint32_t))   /* struct_size + abi_version */
 ```
 
 ## 4. `struct_size` / `abi_version` handling
 
-**Framing read-order (crash-safety — Codex):** the caller MUST allocate at
-least the two framing fields (`KDM6_STEP_V2_MIN_SIZE` bytes). After the NULL
-check the library reads `struct_size` at offset 0 FIRST and immediately
-verifies `struct_size >= KDM6_STEP_V2_MIN_SIZE`. If it is smaller, the call is
-rejected with `KDM6_ERR_INVALID_ARG` **before `abi_version` (offset 4) is
-read** — otherwise a caller that declared a 4-byte struct would have
-`abi_version` read past its buffer. `abi_version` (and every later field) is
-read ONLY after `struct_size` has bounded the accessible region. The library
-accesses at most `min(struct_size, LIB)` bytes, so no version skew ever reads
-uninitialized caller memory.
+**Framing read-order (crash-safety — Codex):** there is one irreducible ABI
+precondition — reading the `struct_size` field is itself a `sizeof(uint32_t)`
+= 4-byte access at offset 0, and you cannot know the struct's size without it.
+So the caller MUST allocate at least those 4 bytes; the library reads exactly
+them FIRST (after the NULL check) and this 4-byte read is the unavoidable
+floor. It then verifies `struct_size >= KDM6_STEP_V2_MIN_SIZE` (8). A smaller
+value — **including a degenerate `struct_size < 4`** — is rejected with
+`KDM6_ERR_INVALID_ARG` immediately after that floor read, **before
+`abi_version` (offset 4) or any other field is read** (a 4-byte-struct caller
+must not have `abi_version` read past its buffer).
+
+Exact access bound (the corrected invariant): the library reads the 4-byte
+`struct_size` field unconditionally, and thereafter **never reads any field
+whose end exceeds `min(struct_size, LIB)`**. Equivalently, total bytes touched
+≤ `max(sizeof(uint32_t), min(struct_size, LIB))`. The naive "≤
+`min(struct_size, LIB)` bytes" is false for `struct_size < 4` precisely because
+the mandatory `struct_size` read is already 4 bytes — hence the explicit floor.
+No version skew with a valid (`>= 8`) `struct_size` ever reads uninitialized
+caller memory.
 
 Let `LIB = sizeof(kdm6_step_v2_args)` as the LIBRARY sees it, and `S =
 args->struct_size` as the CALLER passed it (already known `>= KDM6_STEP_V2_MIN_SIZE`
