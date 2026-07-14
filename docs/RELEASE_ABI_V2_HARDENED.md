@@ -102,9 +102,8 @@ Mismatch set:     empty
 Hooks: OFF (shipped).   Seam: absent.
 ```
 
-Fill the manifest hash from the privately-retained host-parity record before
-merging PR #7 — no unfilled owner placeholder should remain in the merged doc
-(the §3.4 canonical artifact hashes likewise).
+Fill the manifest hash before merging PR #7. It is the only remaining
+owner-supplied release value.
 
 ## 5. Tag + rollback
 
