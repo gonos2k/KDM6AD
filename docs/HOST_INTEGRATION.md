@@ -33,6 +33,16 @@ LIB_LOCAL       = $(KDM6AD_PREFIX)/lib/libkdm6_c.dylib \
                   $(KDM6AD_TORCH_LIB)/libc10.dylib
 LIB             = ... $(LIB_LOCAL) ...                # ensure LIB_LOCAL is in the final link line
 ```
+> **Versioned library (PR3).** The install ships a `SOVERSION 2` library. The
+> real file is `libkdm6_c.2.0.0.dylib` (macOS) / `libkdm6_c.so.2.0.0` (Linux),
+> with a soname/compat symlink `libkdm6_c.2.dylib` / `libkdm6_c.so.2` and an
+> unversioned dev symlink `libkdm6_c.dylib` / `libkdm6_c.so`. Keep linking the
+> unversioned `libkdm6_c.dylib` above — the link resolves through the symlink and
+> records the versioned install-name `@rpath/libkdm6_c.2.dylib` (macOS) / soname
+> `libkdm6_c.so.2` (Linux), so `wrf.exe` loads the versioned library at runtime
+> while the Makefile path is unchanged. Major `2` matches `KDM6_ABI_VERSION`
+> (`kdm6_get_abi_version_c()`).
+
 The C++ side must be compiled with `-ffp-contract=off` (it is, via CMakeLists) and the
 Fortran mp modules likewise (`configure.wrf` per-file rule) for bitwise parity.
 
