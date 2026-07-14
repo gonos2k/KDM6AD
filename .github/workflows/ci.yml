@@ -132,6 +132,21 @@ jobs:
           LIB=$(ls libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
           python libtorch/tests/check_c_abi_exports.py "$LIB"
 
+      # PR3-B: SOVERSION 2 / VERSION 2.0.0 must produce the SONAME libkdm6_c.so.2
+      # and the .so -> .so.2 -> .so.2.0.0 symlink chain, so a consumer links the
+      # major-versioned soname (a future incompatible v3 is not picked up silently).
+      - name: Assert SONAME + versioned symlink chain (PR3-B)
+        run: |
+          cd libtorch/install/lib
+          ls -l libkdm6_c.so*
+          test -f libkdm6_c.so.2.0.0 || { echo "FAIL: missing real libkdm6_c.so.2.0.0"; exit 1; }
+          test -L libkdm6_c.so.2     || { echo "FAIL: missing SONAME symlink libkdm6_c.so.2"; exit 1; }
+          test -L libkdm6_c.so       || { echo "FAIL: missing dev symlink libkdm6_c.so"; exit 1; }
+          SON=$(objdump -p libkdm6_c.so.2.0.0 | awk '/SONAME/{print $2}')
+          echo "SONAME: $SON"
+          test "$SON" = "libkdm6_c.so.2" || { echo "FAIL: SONAME '$SON' != libkdm6_c.so.2"; exit 1; }
+          echo "OK: SONAME libkdm6_c.so.2, chain .so -> .so.2 -> .so.2.0.0"
+
       - name: Reconfigure ON + run the fault-path test through the shared lib
         run: |
           cd libtorch/build
@@ -219,6 +234,21 @@ jobs:
         working-directory: libtorch/build
         run: |
           python -c "import ctypes; lib=ctypes.CDLL('./libkdm6_c.dylib'); [getattr(lib,s) for s in 'kdm6_step_c kdm6_step_ad_c kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c kdm6_handle_jvp_c kdm6_handle_close_c kdm6_handle_closep_c'.split()]; print('OK all 9 resolve, abi =', lib.kdm6_get_abi_version_c())"
+
+      # PR3-B: SOVERSION 2 / VERSION 2.0.0 must produce the versioned install-name
+      # @rpath/libkdm6_c.2.dylib and the .dylib -> .2.dylib -> .2.0.0.dylib chain,
+      # so the host links the unversioned dev symlink but loads the versioned lib.
+      - name: Assert versioned install-name + symlink chain (PR3-B)
+        run: |
+          cd libtorch/install/lib
+          ls -l libkdm6_c*.dylib
+          test -f libkdm6_c.2.0.0.dylib || { echo "FAIL: missing real libkdm6_c.2.0.0.dylib"; exit 1; }
+          test -L libkdm6_c.2.dylib     || { echo "FAIL: missing compat symlink libkdm6_c.2.dylib"; exit 1; }
+          test -L libkdm6_c.dylib       || { echo "FAIL: missing dev symlink libkdm6_c.dylib"; exit 1; }
+          IN=$(otool -D libkdm6_c.2.0.0.dylib | tail -1)
+          echo "install_name: $IN"
+          test "$IN" = "@rpath/libkdm6_c.2.dylib" || { echo "FAIL: install_name '$IN' != @rpath/libkdm6_c.2.dylib"; exit 1; }
+          echo "OK: versioned install-name @rpath/libkdm6_c.2.dylib, chain .dylib -> .2.dylib -> .2.0.0.dylib"
 
       - name: Reconfigure ON + run the fault-path test through the shared lib
         run: |

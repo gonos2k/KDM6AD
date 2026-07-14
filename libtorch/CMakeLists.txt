@@ -91,6 +91,15 @@ elseif(UNIX)
     set_target_properties(kdm6_c PROPERTIES LINK_DEPENDS "${_kdm6_c_version_script}")
 endif()
 
+# ── PR3-B: versioned library (docs/PR3_VISIBILITY_DESIGN.md §5) ──────────────
+# SOVERSION sets the ELF SONAME (libkdm6_c.so.2) / macOS compatibility version;
+# VERSION sets the on-disk file version + the symlink chain. Major 2 ==
+# KDM6_ABI_VERSION (kdm6_get_abi_version_c()), so the soname and the runtime ABI
+# agree. This is packaging only — export table / install-name, no numerics.
+set_target_properties(kdm6_c PROPERTIES
+    VERSION   2.0.0
+    SOVERSION 2)
+
 # ── PR1-A: test-only fault-injection hooks (OFF for shipped builds) ──────────
 # The thread-fence fail-closed path is exercised from the pure-C ABI test via
 # an env seam; that seam must NEVER be present in the operational dylib (a
