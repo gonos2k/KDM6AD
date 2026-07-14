@@ -62,6 +62,16 @@ it. A parent `UNSET` stays unset; an explicit `TRUE`/`FALSE` is preserved verbat
 The single-thread fence (`OMP_NUM_THREADS`/`MKL`/`VECLIB`/`OMP_THREAD_LIMIT=1`) is
 unchanged, as is the thread-determinism fail-closed fence and the FP-env guard.
 
+## Post-removal local confirmation
+
+After removing the constructor's `setenv(...,"TRUE",0)` and rebuilding the same
+hooks-OFF / 9-symbol / versioned dylib, the fresh-process contract holds
+(`UNSET`→unset, `FALSE`→`FALSE`, `TRUE`→`TRUE`, 9 symbols resolve, ABI==2), and
+the **new `UNSET` default is trajectory-neutral**: `UNSET mp37 ↔ UNSET mp137` is
+all-frame strict-bitwise PASS, and each scheme's `UNSET` output is **byte-identical**
+to its sealed `TRUE` run. This is strong local evidence; the owner-host check below
+remains authoritative for release.
+
 ## Merge caveat (owner-host)
 
 The source-free result establishes that an **explicit `FALSE`** is safe and

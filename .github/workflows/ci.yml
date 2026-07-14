@@ -132,6 +132,15 @@ jobs:
           LIB=$(ls libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
           python libtorch/tests/check_c_abi_exports.py "$LIB"
 
+      # PR1-B: the shipped library must NOT inject KMP_DUPLICATE_LIB_OK. Fresh-process
+      # contract: an UNSET value stays unset; an explicit FALSE/TRUE is preserved; the
+      # 9 C ABI symbols resolve and the ABI version is 2.
+      - name: Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)
+        run: |
+          LIB=$(ls libtorch/build/libkdm6_c.so.2.0.0 libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
+          export LD_LIBRARY_PATH="$(python -c 'import torch,os;print(os.path.join(os.path.dirname(torch.__file__),"lib"))'):$LD_LIBRARY_PATH"
+          python libtorch/tests/check_kmp_duplicate_env.py "$LIB"
+
       # PR3-B: SOVERSION 2 / VERSION 2.0.0 must produce the SONAME libkdm6_c.so.2
       # and the .so -> .so.2 -> .so.2.0.0 symlink chain, so a consumer links the
       # major-versioned soname (a future incompatible v3 is not picked up silently).
@@ -234,6 +243,11 @@ jobs:
         working-directory: libtorch/build
         run: |
           python -c "import ctypes; lib=ctypes.CDLL('./libkdm6_c.dylib'); [getattr(lib,s) for s in 'kdm6_step_c kdm6_step_ad_c kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c kdm6_handle_jvp_c kdm6_handle_close_c kdm6_handle_closep_c'.split()]; print('OK all 9 resolve, abi =', lib.kdm6_get_abi_version_c())"
+
+      # PR1-B: the shipped library must NOT inject KMP_DUPLICATE_LIB_OK. Fresh-process
+      # contract: an UNSET value stays unset; an explicit FALSE/TRUE is preserved.
+      - name: Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)
+        run: python libtorch/tests/check_kmp_duplicate_env.py libtorch/build/libkdm6_c.dylib
 
       # PR3-B: SOVERSION 2 / VERSION 2.0.0 must produce the versioned install-name
       # @rpath/libkdm6_c.2.dylib and the .dylib -> .2.dylib -> .2.0.0.dylib chain,

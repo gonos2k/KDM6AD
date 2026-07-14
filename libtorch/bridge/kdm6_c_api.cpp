@@ -60,7 +60,12 @@ static void kdm6_singlethread_env_fence() {
     setenv("MKL_NUM_THREADS", "1", 0);
     setenv("VECLIB_MAXIMUM_THREADS", "1", 0);
     setenv("KMP_BLOCKTIME", "0", 0);
-    setenv("KMP_DUPLICATE_LIB_OK", "TRUE", 0);
+    // KMP_DUPLICATE_LIB_OK is intentionally NOT set here: it is caller-owned. Only a
+    // process that loads two different OpenMP runtimes needs it; the shipped build
+    // loads a single consistent libomp (PR1-B source-free diagnostic). Forcing TRUE
+    // would silently mask a genuine duplicate-runtime condition. A caller that truly
+    // needs it can still export it (an external value was already respected here).
+    // See docs/PR1B_OPENMP_DIAGNOSTIC.md.
 }
 
 void call_runtime_setter(const char* name, int value) {
