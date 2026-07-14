@@ -97,7 +97,7 @@ retained manifest:
 Owner-attested: mp37↔mp137 short strict-bitwise parity at a53503e — PASS.
 Detailed host manifest (host tree SHA; clang / gfortran / OpenMPI / netCDF /
 Torch versions; case; frames/steps; variable count) retained privately.
-Manifest SHA-256: <OWNER-FILL>
+Manifest SHA-256: 583727745ab85c8bab7217bade6253c21102118fcc37b94451a545b7c0ec8022
 Mismatch set:     empty
 Hooks: OFF (shipped).   Seam: absent.
 ```
