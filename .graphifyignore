@@ -1,0 +1,27 @@
+# graphify scan-scope control — keep the graph to the real knowledge corpus
+# (wiki + docs + oracle/kdm6 + libtorch + .github), matching the 2026-07-05
+# semantic build. detect_incremental does NOT honor .gitignore, so exclude here.
+
+# oracle numerical/test DATA dumps (~12.6k .txt), not documents
+oracle/c/
+oracle/case/
+oracle/**/*.txt
+
+# gitignored WRF host integration tree (~4.7k Fortran/C files) — not knowledge content
+host/
+host_fortran/
+
+# tool caches, agent state, editor + graph artifacts (filtered in the 07-05 build)
+.omo/
+.omx/
+.remember/
+.obsidian/
+graphify-out/
+
+# evidence/report artifacts + data outputs (not knowledge content)
+docs/reports/
+oracle/**/data/
+.claude/
+# graph-report mirror is derived FROM the graph — never ingest it back in
+wiki/graph-report.md
+wiki/graph-report-*.md

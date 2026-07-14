@@ -1,12 +1,13 @@
 ---
 title: Hot Cache
 type: meta
-date_modified: 2026-07-02
+date_modified: 2026-07-14
 ---
 # Hot Cache
 
 ## Current Focus
 - [[KDM6AD Forward Parity]] between mp37 [[KDM6]] and mp137 [[KDM6AD]].
+- [[LC05 5km SS Case]] — the real 5 km (234×282) case that is the single real-time DA target (`host/lc05_da_run/`); do not confuse with the 100 km ideal / 1 km experiments.
 - [[KDM6AD Automatic Differentiation ABI]] boundaries, especially forward-only diagnostics.
 - [[Differentiable Bulk Microphysics Research Gap]] for a new paper on parity-preserving differentiable KDM/WDM-family microphysics.
 - [[kdm6ad-code-story-literature-review-2026-06-25]] as the current code-explanation storyline.
@@ -17,6 +18,8 @@ date_modified: 2026-07-02
 - [[KDM6 Literature Genealogy]] and [[KDM6AD Literature Claim Map]] as the two main paper-link hubs.
 
 ## Recent Activity
+- 2026-07-14 INGESTED `docs/HOST_RUN_LAYOUT.md`: created [[LC05 5km SS Case]] (entity — the real **5 km** 234×282 SS case = the single real-time DA target; `host/lc05_da_run/`, GK2A 2025-07-19, superob 65988=234×282, v10 evidence) + [[host-run-dir-confusion-2026-07-14]] (experience — 3 host cases confused: 5km-real / 100km-ideal / 1km; an ideal script `rm`'d a wrfinput, **no real loss**). Updated [[WRF KIM-meso Host]] with a run-dir/case table. Rule: real-time DA = 5 km = `host/lc05_da_run/`; verify with `ncdump … :DX` (=5000); never run `run_parity.sh`/`run_kdm6ad.sh` (ideal-only, `rm`s wrfinput) for the real case.
+- 2026-07-14 INGESTED [[abi-v2-hardening-roadmap-2026-07-14]]: 2026-07-13/14 frozen-code hardening arc → [[KDM6AD C ABI Hardening]] concept, [[Frozen-Code Freeze-Lift Protocol 2026-07-14]] decision, [[abi-v2-hardened baseline 2026-07-14]] experience. PR1-A thread fail-closed (-7), PR2 additive ABI v2 (v1 byte-frozen, bitwise-equiv), PR3 hidden-visibility 9-symbol allowlist + SOVERSION 2 (export 1342→9), PR#6 export-gate. Sealed tag `abi-v2-hardened` @ a53503e. PR1-B (KMP_DUPLICATE_LIB_OK removal) still FROZEN pending host FALSE-mode OpenMP diagnostic. **Correction:** real WRF host = in-repo `host/KIM-meso_v1.0/` (gitignored), loads `libtorch/install/lib/libkdm6_c.dylib`; the sibling `/Users/yhlee/KDM6AD` (eb1c823) is a stale red herring.
 - 2026-07-04 INGESTED [[kdm6ad-differentiable-mathematics-2026-07-04]]: 신규 [[Operational-Raw vs DA-Clamped Dual Path]] 개념 + AD ABI/Audit/Operators/overview 갱신. reflect Insight #1(점프/꺾임)·#2(idiom 페이지)·#3(overview stale) 해소. 12h×np4 달성 반영.
 - 2026-07-02 ACHIEVED full 10-step (→12h np4-tcp gate in progress) STRICT BITWISE parity, all 254 vars, every frame. The 2026-06-30 "irreducible §48 graupel-density floor / accept prognostic parity out-of-scope" verdict is SUPERSEDED: that floor decomposed into ~20 fixable 1:1 classes (§53–§53u). RHO_ICE floor fixed by symmetric clamp-boundary snap at BOTH bounds (§53r); the rest by unconditional rate-loop vt2 (§53k), RAW wilt/sqrt divisions on the f32 op-path (§53n/§53u), qv-clamp removal (§53t), Nrevp in-loop transfer (§53s), Picons/limiter gates (§53q). Also: MPI (np≥2) needs `--mca btl self,tcp` — Open MPI shared-memory BTL SEGVs flakily with the libtorch-loaded ranks. See [[kdm6ad-10step-bitwise-achieved-2026-07-02]]. Traps → fortran-pytorch-port lessons-learned §53–§61.
 - 2026-06-30 fixed frame-2 divergence root cause: rain-NUMBER sedimentation in the C++ port (sedimentation.cpp falk_nr missing f32 store cast; slope.cpp:77 rain vtn f32→f64). Verified nr/qr bitwise; QNRAIN ↓99.5%; RAINNC/VIS resolved. (SUPERSEDED framing: the "remaining §48 graupel-density floor" was NOT irreducible — see 2026-07-02.) See [[kdm6ad-frame2-rain-sed-bitwise-fix-2026-06-30]].
@@ -35,6 +38,8 @@ date_modified: 2026-07-02
 - 2026-06-25 split the `KDM6+` set into 42 individual Korean paper pages under `wiki/papers/`.
 
 ## Key Tensions / Open Questions
+- INSTALL-BASELINE (2026-07-14): the documented mp37↔mp137 12h STRICT parity was verified against the **2026-07-04 pre-hardening** installed dylib (host `wrf.exe` → `libtorch/install/lib/libkdm6_c.dylib`, unversioned 1342-symbol), NOT the sealed `abi-v2-hardened` build. Re-installing the a53503e versioned/9-symbol dylib into `libtorch/install/` + re-running parity is pending — a drop-in (v1 byte-frozen; `wrf.exe` uses only the 9 C symbols via the dev symlink, no relink). See [[abi-v2-hardened baseline 2026-07-14]] / [[KDM6AD C ABI Hardening]].
+- PR1-B FROZEN (2026-07-14): removing the default `KMP_DUPLICATE_LIB_OK=TRUE` is gated on a source-free host OpenMP diagnostic (`KMP_DUPLICATE_LIB_OK=FALSE`, constructor overwrite=0 preserves it) — GO only if host FALSE-mode run + strict parity pass. See [[Frozen-Code Freeze-Lift Protocol 2026-07-14]].
 - Codex session metadata for this thread still carries the old nested cwd; future edits must explicitly use `/Users/yhlee/KDM6AD-k`. See [[Codex Canonical Worktree Decision 2026-06-25]].
 - STALE-FRAMING (2026-07-02): the concept/overview/audit layer still asserts "step-1 (frame index 1) is THE documented gate" and "diag_rhog is an irreducible parity floor." Both are now FALSE — parity holds through 10 steps (→12h) on all 254 vars/all frames, and the RHO_ICE floor was fixable (§53r). [[KDM6AD Forward Parity]], `overview.md`, and [[kdm6ad-frame2-rain-sed-bitwise-fix-2026-06-30]] need their "gate = step-1 only" / "floor accepted out-of-scope" claims rewritten.
 - OP-PATH-RAW vs DA-CLAMPED idiom (emerging, no page): [[KDM6AD Differentiability Audit]] frames min/max clamps as uniformly "piecewise smooth, AD-safe." Parity required REMOVING those clamps on the operational f32 path (Fortran uses raw ÷/sqrt) while keeping smooth clamped forms ONLY on the f64 DA path — a dtype-conditional dual-path idiom now used ~25× (§53n/§53t/§53u/§60). The two framings reconcile via this idiom, which deserves its own concept/heuristic page.

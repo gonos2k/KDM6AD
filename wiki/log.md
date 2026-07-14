@@ -339,3 +339,41 @@ date_modified: 2026-06-25
 - `build_merge` into the existing graph: pruned changed-file old nodes; the 5190 manifest "deletions" (host/ .obsidian/.omx state) matched no graph nodes ("already clean" — host/ was never a subgraph, confirming the 5460↔code-only gap was doc/rationale-vs-code-only, not host/). Deduplicated 1715 nodes (68 exact + 1647 fuzzy).
 - Result: **3926 nodes / 6748 edges / 247 communities**. file_type: code 1844→1871, document 2897→1277, rationale 719→729, concept 0→38, paper 0→11. Semantic layer preserved (2055). Verified healthy before force-writing graph.json (guard tripped on -1534; reduction is dedup+rescope, all key nodes present incl `_lamda_from_qn`, Dual-path, C ABI, Forward Parity).
 - Outputs: graphify-out/{graph.json, graph.html, GRAPH_REPORT.md} regenerated; wiki/graph-report.md mirror synced. ~1.06M subagent tokens (5 agents).
+
+## [2026-07-14] kg-ingest | ABI v2 hardening roadmap (frozen-code arc) → wiki
+- Source: [[abi-v2-hardening-roadmap-2026-07-14]] (docs/RELEASE_ABI_V2_HARDENED.md + PR2/PR3 design docs + git merges 8888be3/e33a6c3/16ebe63/a53503e, tag abi-v2-hardened).
+- Created: [[KDM6AD C ABI Hardening]] (concept), [[Frozen-Code Freeze-Lift Protocol 2026-07-14]] (decision), [[abi-v2-hardened baseline 2026-07-14]] (experience), source page.
+- Updated: [[WRF KIM-meso Host]] (runtime-linkage + tension), [[KDM6AD Automatic Differentiation ABI]] (9-symbol surface / ABI v2), concepts/decisions/experiences/sources _index.
+- Tension preserved (NOT overwritten): documented mp37↔mp137 12h strict parity was verified against the 2026-07-04 PRE-hardening installed dylib (host wrf.exe → libtorch/install/lib/libkdm6_c.dylib, unversioned 1342-symbol), NOT abi-v2-hardened. Re-install of the a53503e versioned dylib + parity re-run is pending (drop-in: v1 byte-frozen, wrf.exe uses only the 9 C symbols via dev symlink).
+- Correction logged: real host integration is in-repo host/KIM-meso_v1.0/ (gitignored ~2187 files); the sibling /Users/yhlee/KDM6AD tree (eb1c823) is a stale red herring.
+- Claims: 6 key claims, 5 with direct doc/CI/git evidence. Graph NOT refreshed (stale >7d; needs /graphify . --update, not code-only kg-update).
+
+## [2026-07-14] kg-update | code-only incremental rebuild (3926 → 5236 nodes)
+- Source dir: `.` (graphify-out/.graphify_root); graphify 0.8.39.
+- Mode: cli-update (`graphify update .`, AST-only, no LLM, **no --force**).
+- Delta: +1310 nodes / +2993 edges / +69 communities (3926→5236 / 6748→9741 / 247→316). ~277 files scanned (~100 uncached re-extracted, rest via SHA256 cache).
+- Curated graph backed up → `graphify-out/2026-07-14/`. Semantic doc/rationale/concept layer PRESERVED (merged, not force-overwritten) — verified: KG-Wiki community + Dual-path/AD-ABI/Forward-Parity concept nodes still present. Growth is more-complete code extraction (incl. wrftladj adjoint, kdm6_handle_jvp_c, Python oracle), not semantic loss.
+- Wiki sync: NONE — per AGENTS.md §147-148 the raw `GRAPH_REPORT.md` is NOT mirrored into `wiki/` (kept only in `graphify-out/`). [My initial cp was reverted.] `index.md` has no `## Graph snapshot` section → untouched.
+- Caveat: code-only — the 2026-07-14 doc ingest (4 new wiki pages: C ABI Hardening, Freeze-Lift Protocol, abi-v2-hardened baseline, roadmap source) is NOT yet graphed; run `/graphify . --update` (LLM) to extract new docs + re-run fuzzy dedup. graph.html skipped (5236 > 5000 viz limit).
+
+## [2026-07-14] graphify --update | semantic incremental — ingest pages graphed (5236 → 5159 nodes)
+- Scoped via new `.graphifyignore` (oracle/c, oracle/case data ~12.6k .txt; gitignored host/ ~4.7k; .omo/.omx/.remember/.obsidian/graphify-out; docs/reports, oracle/**/data; wiki/graph-report mirror) — detect_incremental went 17.7k → 100 real files.
+- 75 code re-extracted via AST + 22 knowledge docs via 2 general-purpose subagents (no Gemini key). Semantic: 31 nodes / 79 edges / 5 hyperedges.
+- build_merge: fuzzy-deduped 128 nodes (cleaned the code-only update's re-inflation), pruned 17,715 excluded sources (already clean). Net -77 = +51 real new nodes − 128 dedup; force-written after verifying via graph_diff.
+- New content nodes confirmed in graph: KDM6AD C ABI Hardening, Frozen-Code Freeze-Lift Protocol 2026-07-14, abi-v2-hardened baseline, Stable C ABI v2, Export Allowlist (9 symbols), SOVERSION 2, Thread fail-closed (-7), + kdm6_c_api.h / CMake targets.
+- Result: 5159 nodes / 9763 edges / 300 communities; 300/300 prior labels reused. Report kept ONLY in `graphify-out/GRAPH_REPORT.md` — NOT mirrored into `wiki/` per AGENTS.md §147-148 (my initial cp was reverted). 295k input tokens.
+
+## [2026-07-14] kg-ingest | docs/HOST_RUN_LAYOUT.md → host run-dir disambiguation
+- Source: `docs/HOST_RUN_LAYOUT.md` (new; the 5km-real vs 100km-ideal vs 1km case/dir map).
+- Created: [[LC05 5km SS Case]] (entity — the real 5 km 234×282 DA target), [[host-run-dir-confusion-2026-07-14]] (experience — the 3-case confusion + ideal-script wrfinput deletion, no real loss).
+- Updated: [[WRF KIM-meso Host]] (+ "Run directories / cases" table + do-not-run-ideal-scripts warning), entities/experiences _index, index.md (entities 3→4, experiences 3→4), hot.md.
+- Tensions: none (additive; the pre-hardening-dylib parity tension is unrelated and preserved).
+- Claims: all cross-checked live 2026-07-14 (ncdump DX=5000, v10 n_domain=65988=234×282, superob (65988,16), otool @rpath).
+- Graph: new pages not yet graphed → `/graphify . --update` when convenient (LLM). Per AGENTS.md §147-148 no wiki graph-report mirror.
+
+## [2026-07-14] graphify --update | ingest pages graphed (5159 → 5163 nodes)
+- Mode: slash-update (semantic incremental; 9 changed docs via 1 general-purpose subagent, no Gemini key).
+- Delta: **+4 nodes / +16 edges** (5159→5163 / 9763→9779). New nodes: [[LC05 5km SS Case]], Host Run-Dir Disambiguation Rule, [[host-run-dir-confusion-2026-07-14]], Host Run Layout (HOST_RUN_LAYOUT.md); [[WRF KIM-meso Host]] replaced in-place. +1 hyperedge (`host_run_dir_disambiguation`). 304 communities (300 labels reused; 4 renumbered singletons relabeled).
+- Manifest **healed**: the stale 17,624-entry manifest (pre-`.graphifyignore`) is now the ~100-file filtered corpus; those phantom deletions verified "already clean" (0 graph nodes cited ignored trees). Next `--update` will report deleted=0.
+- Wiki sync: NONE — `GRAPH_REPORT.md` kept only in `graphify-out/` per AGENTS.md §147-148. `index.md` has no `## Graph snapshot` → untouched. graph.html skipped (5163 > 5000 viz limit).
+- Cost: 127k input tokens (all-time 1.48M, 3 graphify runs).
