@@ -9,10 +9,11 @@ output on both platforms, so one parser covers both:
     Linux : nm -D --defined-only (dynamic, defined)
 
 We collect EVERY defined external symbol regardless of nm type — not just code
-(`T`/`W`) but data / RTTI / vtable (`D`/`B`/`R`/`V`/`S`) too — so an accidental
-non-function export would also be caught, not silently filtered out. The only
-things skipped are absolute (`A`/`a`) entries, i.e. the Linux `--version-script`
-node (`KDM6_2`), which is not a real export. Per-platform quirks normalized: the
+(`T`/`W`) but data / RTTI / vtable (`D`/`B`/`R`/`V`/`S`) and even a global
+absolute (`A`) — so an accidental non-function export is caught, not silently
+filtered out. The ONLY exclusion is the Linux `--version-script` node
+(`KDM6_2`), removed BY NAME (not by skipping the whole absolute class, which
+would also hide a genuine absolute leak). Per-platform quirks normalized: the
 macOS leading underscore (`_kdm6_step_c`) and the Linux version suffix
 (`kdm6_step_c@@KDM6_2`). Comparing the exported set for exact equality with the 9
 IS the zero-leak check: any leaked symbol makes the set differ.
@@ -32,13 +33,18 @@ ALLOW = {
     "kdm6_handle_close_c", "kdm6_handle_closep_c",
 }
 
+# The Linux --version-script node (kdm6_c.map). When nm surfaces it, it is a
+# verdef label, not a real export, so it is excluded BY NAME — never by skipping
+# the whole absolute class, which would also hide a genuine absolute leak.
+VERSION_NODE = "KDM6_2"
+
 
 def exported_symbols(lib):
     """Every defined external symbol in `lib` (any type), normalized.
 
-    Collecting all types — not just code (`T`/`W`) — means a leaked data / RTTI /
-    vtable symbol is caught too. Only absolute (`A`/`a`) entries are skipped: the
-    Linux `--version-script` node (`KDM6_2`) is absolute and is not an export.
+    All types are collected — code (`T`/`W`), data / RTTI / vtable
+    (`D`/`B`/`R`/`V`/`S`), and a global absolute (`A`) — so any leak is caught.
+    The sole exclusion is the version-script node `KDM6_2`, removed by name.
     """
     system = platform.system()
     if system == "Darwin":
@@ -53,13 +59,13 @@ def exported_symbols(lib):
     for line in out.splitlines():
         parts = line.split()
         if len(parts) < 3:
-            continue                          # undefined / version-node rows (no address)
-        kind, name = parts[1], parts[2]
-        if kind in ("A", "a"):                # absolute (Linux version node), not an export
-            continue
+            continue                          # undefined / verdef rows (no address)
+        name = parts[2]
         name = name.split("@", 1)[0]          # drop Linux @@KDM6_2 version suffix
         if strip_underscore and name.startswith("_"):
             name = name[1:]                   # drop the macOS leading underscore
+        if name == VERSION_NODE:              # verdef label, not a real export
+            continue
         names.add(name)
     return names
 
