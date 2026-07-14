@@ -7,6 +7,25 @@
 // 결정: [C3] opaque handle, [C4] caller-allocated output buffers, [C5] bitmask flags.
 //
 
+// ── Export visibility (PR3, docs/PR3_VISIBILITY_DESIGN.md) ───────────────────
+// The shipped dylib hides ALL internals (kdm6::/libtorch/std) and exports ONLY
+// the C ABI functions below, each marked KDM6_C_API. Build/consumer aware so
+// the one header serves both: Windows marks dllexport in the producing TU
+// (KDM6_C_BUILD, set only on the kdm6_c target) and dllimport in a consumer;
+// macOS/Linux use the identical default-visibility attribute. Windows is NOT a
+// PR3 verification target — the branch exists only to keep the header portable.
+#if defined(_WIN32)
+#  if defined(KDM6_C_BUILD)
+#    define KDM6_C_API __declspec(dllexport)
+#  else
+#    define KDM6_C_API __declspec(dllimport)
+#  endif
+#elif defined(__GNUC__) || defined(__clang__)
+#  define KDM6_C_API __attribute__((visibility("default")))
+#else
+#  define KDM6_C_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,7 +85,7 @@ enum {
  *
  * @return KDM6_OK 또는 음수 에러 코드.
  */
-int kdm6_step_c(
+KDM6_C_API int kdm6_step_c(
     /* in: 12 prognostic state */
     const float* th, const float* qv, const float* qc, const float* qr,
     const float* qi, const float* qs, const float* qg,
@@ -167,11 +186,11 @@ typedef struct {
 } kdm6_step_v2_args;
 
 /** The ABI version this library implements (== KDM6_ABI_VERSION at its build). */
-int kdm6_get_abi_version_c(void);
+KDM6_C_API int kdm6_get_abi_version_c(void);
 
 /** sizeof(kdm6_step_v2_args) as the LIBRARY sees it — lets a Fortran/other
  *  caller assert its own struct layout matches at run time. */
-uint32_t kdm6_step_v2_args_size_c(void);
+KDM6_C_API uint32_t kdm6_step_v2_args_size_c(void);
 
 /**
  * v2 forward entry. All inputs live in *args (see the struct + the design doc).
@@ -183,7 +202,7 @@ uint32_t kdm6_step_v2_args_size_c(void);
  * Same fail-closed contract as v1: *handle=NULL and no output written on error.
  * @return KDM6_OK or a negative error code.
  */
-int kdm6_step_v2_c(const kdm6_step_v2_args* args);
+KDM6_C_API int kdm6_step_v2_c(const kdm6_step_v2_args* args);
 
 /**
  * [DA §0.1.A] fp64 DA adjoint forward — kdm6_step_ad_c.
@@ -218,7 +237,7 @@ int kdm6_step_v2_c(const kdm6_step_v2_args* args);
  * NOTE: this entry does NOT touch the operational path — it is additive; the
  * f32 kdm6_step_c remains bitwise-locked.
  */
-int kdm6_step_ad_c(
+KDM6_C_API int kdm6_step_ad_c(
     const double* state_in_packed,
     const double* forcing_packed,
     int im, int kme, int jme, double dt,
@@ -271,7 +290,7 @@ int kdm6_step_ad_c(
  *   - For reliable, fully-finite fp64 adjoints/tangents use a handle from kdm6_step_ad_c
  *     (the DA design default, kdm6ad+da.md §0.1.A) — same VJP/JVP calls, fp64 graph.
  */
-int kdm6_handle_vjp_c(kdm6_handle_t* h,
+KDM6_C_API int kdm6_handle_vjp_c(kdm6_handle_t* h,
                       const double* u_packed,
                       double* grad_out_packed);
 
@@ -280,7 +299,7 @@ int kdm6_handle_vjp_c(kdm6_handle_t* h,
  * v_packed / tangent_out_packed use the SAME packed layout as the VJP above
  * (field-major × Fortran (im,kme,jme) column-major blocks, fp64).
  */
-int kdm6_handle_jvp_c(kdm6_handle_t* h,
+KDM6_C_API int kdm6_handle_jvp_c(kdm6_handle_t* h,
                       const double* v_packed,
                       double* tangent_out_packed);
 
@@ -295,7 +314,7 @@ int kdm6_handle_jvp_c(kdm6_handle_t* h,
  * (use-after-free). Prefer kdm6_handle_closep_c below, which nulls the caller's
  * pointer so accidental reuse is caught as a NULL (→ KDM6_OK / no-op) instead.
  */
-int kdm6_handle_close_c(kdm6_handle_t* h);
+KDM6_C_API int kdm6_handle_close_c(kdm6_handle_t* h);
 
 /**
  * Handle 닫기 (pointer-nulling form — RECOMMENDED). Frees `*hp` and sets
@@ -304,7 +323,7 @@ int kdm6_handle_close_c(kdm6_handle_t* h);
  * wrapper kdm6_handle_close (kdm6_iso_c) binds to THIS entry with an
  * intent(inout) c_ptr, guaranteeing the Fortran handle is reset to C_NULL_PTR.
  */
-int kdm6_handle_closep_c(kdm6_handle_t** hp);
+KDM6_C_API int kdm6_handle_closep_c(kdm6_handle_t** hp);
 
 #ifdef __cplusplus
 }  // extern "C"

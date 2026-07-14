@@ -45,6 +45,15 @@ target_link_libraries(kdm6 PUBLIC ${TORCH_LIBRARIES})
 target_compile_options(kdm6 PRIVATE -Wall -Wextra -Wpedantic)
 # kdm6_c shared lib에서 링크하려면 PIC 필요
 set_target_properties(kdm6 PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# PR3 (docs/PR3_VISIBILITY_DESIGN.md §4.3): hide the core's symbols at COMPILE
+# time. This STATIC target is absorbed into libkdm6_c; a static target's objects
+# carry ITS visibility preset, so without this its ~166 kdm6:: symbols would be
+# re-exported by the dylib. Hidden visibility governs the dynamic export table
+# only — the test executables that link kdm6 statically still resolve every
+# symbol (static linking is unaffected).
+set_target_properties(kdm6 PROPERTIES
+    CXX_VISIBILITY_PRESET     hidden
+    VISIBILITY_INLINES_HIDDEN ON)
 
 # ── ABI shared library: kdm6_c (Fortran 호출용) ─────────────────────────────
 add_library(kdm6_c SHARED
@@ -56,8 +65,31 @@ target_include_directories(kdm6_c
         $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(kdm6_c PUBLIC kdm6)
-# Fortran-friendly: no name mangling, C linkage symbols visible
-set_target_properties(kdm6_c PROPERTIES C_VISIBILITY_PRESET default)
+
+# ── PR3: symbol visibility / export allowlist (docs/PR3_VISIBILITY_DESIGN.md) ─
+# The shipped dylib must export ONLY the 9 C ABI functions (kdm6_c_api.h), not
+# its ~1342-symbol internal world (kdm6::/libtorch/std). Two layers:
+#  (1) compiler visibility hidden on BOTH this bridge and the static kdm6 core
+#      above — each of the 9 is opted back in via KDM6_C_API in the header;
+#  (2) a linker export allowlist as the load-bearing backstop (macOS
+#      exported_symbols_list / Linux --version-script), which the symbol-surface
+#      CI gate measures. KDM6_C_BUILD makes KDM6_C_API take the producer branch
+#      on Windows (no effect on the macOS/Linux verification targets).
+set_target_properties(kdm6_c PROPERTIES
+    C_VISIBILITY_PRESET       hidden
+    CXX_VISIBILITY_PRESET     hidden
+    VISIBILITY_INLINES_HIDDEN ON)
+target_compile_definitions(kdm6_c PRIVATE KDM6_C_BUILD=1)
+
+if(APPLE)
+    set(_kdm6_c_exports "${CMAKE_CURRENT_SOURCE_DIR}/bridge/kdm6_c.exports")
+    target_link_options(kdm6_c PRIVATE "-Wl,-exported_symbols_list,${_kdm6_c_exports}")
+    set_target_properties(kdm6_c PROPERTIES LINK_DEPENDS "${_kdm6_c_exports}")
+elseif(UNIX)
+    set(_kdm6_c_version_script "${CMAKE_CURRENT_SOURCE_DIR}/bridge/kdm6_c.map")
+    target_link_options(kdm6_c PRIVATE "-Wl,--version-script,${_kdm6_c_version_script}")
+    set_target_properties(kdm6_c PROPERTIES LINK_DEPENDS "${_kdm6_c_version_script}")
+endif()
 
 # ── PR1-A: test-only fault-injection hooks (OFF for shipped builds) ──────────
 # The thread-fence fail-closed path is exercised from the pure-C ABI test via

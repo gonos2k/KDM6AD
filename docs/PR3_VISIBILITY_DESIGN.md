@@ -18,10 +18,19 @@ not just its C ABI. Measured on the built dylib (`nm -gU`, arm64 Release-class):
 |---|---:|
 | **Total external defined** | **1342** |
 | Intended C ABI (`kdm6_*_c`) | **9** |
-| Leaked `kdm6::` internal C++ | 166 |
-| Leaked `at:: / c10:: / torch:: / std::` | 1222 |
+| **Unique unintended** (1342 − 9) | **1333** |
+| — diagnostic: demangled containing `kdm6::` | 166 |
+| — diagnostic: demangled containing `at:: / c10:: / torch:: / std::` | 1222 |
 
-→ **~99.3 % of the exported surface is unintended internal leakage.**
+→ **1333 / 1342 ≈ 99.3 % of the exported surface is unintended internal
+leakage.**
+
+> The two diagnostic sub-counts (166 and 1222) are **overlapping grep buckets
+> over the demangled strings** — one symbol such as
+> `kdm6::warm_phase(… at::Tensor const&)` matches *both* — so they **must not be
+> summed**. The load-bearing figure is the disjoint `total − intended = 1333`
+> unique unintended exports; the sub-counts are only to show the leakage is both
+> our own `kdm6::` internals and re-exported libtorch/`std` symbols.
 
 Why this is a real problem, not cosmetics:
 
@@ -97,20 +106,38 @@ set_target_properties(kdm6_c PROPERTIES C_VISIBILITY_PRESET   hidden
 ```
 
 ```c
-/* kdm6_c_api.h — additive export macro, NO signature change */
+/* kdm6_c_api.h — additive export macro, NO signature change. Build/consumer
+ * aware: on Windows the producing TU marks dllexport and a consumer dllimport,
+ * gated by KDM6_C_BUILD (defined only on the kdm6_c target); on macOS/Linux the
+ * visibility attribute is identical for producer and consumer. Windows is NOT a
+ * PR3 verification target — the branch exists only so the header is portable. */
 #if defined(_WIN32)
-#  define KDM6_C_API __declspec(dllexport)
-#else
+#  if defined(KDM6_C_BUILD)
+#    define KDM6_C_API __declspec(dllexport)
+#  else
+#    define KDM6_C_API __declspec(dllimport)
+#  endif
+#elif defined(__GNUC__) || defined(__clang__)
 #  define KDM6_C_API __attribute__((visibility("default")))
+#else
+#  define KDM6_C_API
 #endif
 
 KDM6_C_API int kdm6_step_c(/* … unchanged … */);
 /* … the other 8, each prefixed with KDM6_C_API … */
 ```
 
+```cmake
+# Define KDM6_C_BUILD only when compiling the library itself (so the dllexport
+# branch is taken in the producer TU, dllimport in a consumer). No effect on the
+# macOS/Linux verification targets.
+target_compile_definitions(kdm6_c PRIVATE KDM6_C_BUILD=1)
+```
+
 The macro is purely additive to the declarations; it changes no parameter,
 type, or order. A consumer that includes the header still sees the identical
-9 prototypes.
+9 prototypes. **Verification targets for PR3 are macOS (arm64) and Linux
+(x86-64); Windows is out of scope and only kept compiling.**
 
 ### 4.2 Linker allowlist (robust backstop, platform-specific)
 
@@ -144,9 +171,22 @@ inline that ignores the preset), pin the export set at link time:
       *;
   };
   ```
-  `local: *` localizes all internals; the version node also stamps the soname
-  version. Wire both via `target_link_options(kdm6_c PRIVATE …)` guarded by
-  `APPLE` / `UNIX AND NOT APPLE`.
+  `local: *` localizes all internals; the version-script produces exactly the
+  9 exported symbols. Wire both via `target_link_options(kdm6_c PRIVATE …)`
+  guarded by `APPLE` / `UNIX AND NOT APPLE`.
+
+**Three distinct concerns — do not conflate them:**
+
+| Concern | Mechanism |
+|---|---|
+| Which symbols are exported (+ optional symbol versioning) | linker allowlist: macOS `exported_symbols_list` / Linux `--version-script` (`KDM6_2` node) |
+| ELF **SONAME** (`libkdm6_c.so.2`) | CMake **`SOVERSION 2`** — **PR3-B**, *not* the version script |
+| On-disk file version + symlink chain (`.so` → `.so.2` → `.so.2.0.0`) | CMake **`VERSION 2.0.0`** — **PR3-B** |
+
+The version-script's `KDM6_2 { … }` node is **symbol versioning**, which is
+independent of the SONAME; the SONAME is set solely by `SOVERSION`. PR3-A adds
+only the allowlist (no SONAME); PR3-B adds `SOVERSION`/`VERSION` in a separate
+commit (§9).
 
 The linker allowlist is the **load-bearing** mechanism (it is what the CI gate
 measures); the compiler visibility is defense in depth and shrinks the binary.
@@ -207,8 +247,18 @@ The load-bearing new check is a **measured symbol-surface assertion**, scripted
 in CI (mirrors the PR1-A "seam-absent strings" gate):
 
 * **Exported set == allowlist.** After a shipped (`KDM6_ENABLE_TEST_HOOKS=OFF`)
-  Release build: `nm -gU libkdm6_c.dylib` (macOS) / `nm -D --defined-only
-  libkdm6_c.so.2` (Linux) yields **exactly the 9** `kdm6_*_c` symbols.
+  Release build, the new symbol-surface checker
+  (`libtorch/tests/check_c_abi_exports.py`) yields **exactly the 9** `kdm6_*_c`
+  symbols. It is cross-platform and normalizes each toolchain's quirks:
+  * **macOS** — `nm -gU <lib>` (external defined); strip the leading `_`.
+  * **Linux** — `readelf --dyn-syms --wide <lib>` (or normalized
+    `nm -D --defined-only`). Because the `--version-script` stamps a symbol
+    version, an exported name appears as `kdm6_step_c@@KDM6_2`; the checker
+    **strips the `@@KDM6_2` / `@KDM6_2` suffix**, **excludes the `KDM6_2`
+    version-node ABS entry**, keeps only **defined `GLOBAL`/`WEAK`, `DEFAULT`
+    visibility `FUNC`** symbols, then sorts + de-dups before the exact compare.
+    A raw string compare against the 9 without this normalization would falsely
+    fail.
 * **Zero internal leakage.** The same listing contains **no** `kdm6::` and
   **no** `at::/c10::/torch::/std::` symbol (grep count == 0). Pins the 1342→9
   reduction and fails if a future edit re-widens the surface.
@@ -249,11 +299,19 @@ in CI (mirrors the PR1-A "seam-absent strings" gate):
 ## 9. Sequencing
 
 1. PR2 merged (`e33a6c3`) — done.
-2. **Owner freeze-lift for PR3**, scoped to §6's allowed files.
-3. Implement from this design (visibility presets, export macro, `.exports` +
-   `.map`, `SOVERSION`, CI symbol-surface gate), under the same
-   freeze-lift-then-verify discipline.
-4. Owner host-parity gate (clean OFF rebuild, macOS load smoke, short
-   mp37↔mp137 parity, dylib links into the real WRF/KIM-meso build with the new
-   install_name) → merge PR3.
-5. PR1-B (`KMP_DUPLICATE_LIB_OK` removal) remains FROZEN — a separate decision.
+2. **Owner freeze-lift for PR3** (received), scoped to §6's allowed files.
+3. **PR3-A** (one commit): hidden visibility on both targets, `KDM6_C_API`
+   export macro on the 9 declarations, `kdm6_c.exports` + `kdm6_c.map` linker
+   allowlist, the cross-platform symbol-surface checker, and the CI gate. **No
+   `SOVERSION`/`VERSION` in this commit.** Gate: exported set is exactly the 9,
+   zero internal leakage, all existing tests + parity green (bitwise-identical
+   to `e33a6c3`).
+4. **PR3-B** (separate commit, only after PR3-A is green): add
+   `VERSION 2.0.0` + `SOVERSION 2` and the SONAME / symlink-chain CI checks —
+   nothing else (no visibility / macro / allowlist change), so the install-name
+   and host-link behavior are verified independently.
+5. Owner host-parity gate (clean OFF rebuild; host Makefile links the
+   unversioned dev symlink; real `wrf.exe` loads the versioned install-name
+   dylib; all 9 symbols resolve; short mp37↔mp137 strict-bitwise parity;
+   optional 12 h MPI np4 campaign) → merge PR3.
+6. PR1-B (`KMP_DUPLICATE_LIB_OK` removal) remains FROZEN — a separate decision.

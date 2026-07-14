@@ -117,12 +117,20 @@ jobs:
 
       - name: Assert the test fault seam is ABSENT from the shipped library
         run: |
-          LIB=$(ls libtorch/build/libkdm6_c.so libtorch/build/libkdm6_c.dylib 2>/dev/null | head -1)
+          LIB=$(ls libtorch/build/libkdm6_c.so* libtorch/build/libkdm6_c.dylib 2>/dev/null | head -1)
           echo "checking $LIB"
           if strings "$LIB" | grep -Fq 'KDM6_TEST_FORCE_THREAD_CONFIG_FAIL'; then
             echo "FAIL: test fault seam leaked into the shipped library"; exit 1
           fi
           echo "OK: no test fault seam in the shipped library"
+
+      # PR3: the shipped dylib must export EXACTLY the 9 C ABI functions and leak
+      # ZERO internal (kdm6::/libtorch/std) symbols. Uses readelf on Linux with
+      # the version-suffix normalization the checker handles (see the script).
+      - name: Assert exported symbol surface is exactly the 9 C ABI functions
+        run: |
+          LIB=$(ls libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
+          python libtorch/tests/check_c_abi_exports.py "$LIB"
 
       - name: Reconfigure ON + run the fault-path test through the shared lib
         run: |
@@ -142,3 +150,79 @@ jobs:
           # log them too — the "Record toolchain versions" step above runs before this install
           python -c 'import numpy, pytest; print("numpy", numpy.__version__, "| pytest", pytest.__version__)'
           cd oracle && python -m pytest tests/test_cpp_parity.py -rs -q
+
+  # PR3: the symbol-visibility / export-allowlist work is platform-specific
+  # (macOS exported_symbols_list vs Linux --version-script), so the export
+  # surface must be gated on BOTH. This macOS/arm64 job mirrors the shipped
+  # dual-gate + the reference-adjacent host checks (arch, install-name, a
+  # fresh-process ctypes load). The owner-environment mp37↔mp137 bitwise parity
+  # remains a separate merge gate (docs/PR3_VISIBILITY_DESIGN.md §9).
+  build-and-test-macos:
+    name: build + symbol surface + smoke (macOS arm64, libtorch CPU)
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install gfortran + PyTorch (macOS arm64)
+        run: |
+          brew install gcc          # provides gfortran (not preinstalled on the runner)
+          python -m pip install --upgrade pip
+          # macOS arm64 default wheel is CPU-only; pin to the ENVIRONMENT.md reference.
+          pip install "torch==2.8.0"
+
+      - name: Record toolchain versions
+        run: |
+          cmake --version | head -1
+          clang --version | head -1
+          gfortran --version | head -1
+          python -c 'import torch; print("torch", torch.__version__)'
+
+      - name: Configure (CMake, SHIPPED config — test hooks OFF, Release)
+        run: |
+          cd libtorch && mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
+            -DCMAKE_INSTALL_PREFIX=../install \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKDM6_ENABLE_TEST_HOOKS=OFF \
+            -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
+
+      - name: Build (shipped)
+        run: cmake --build libtorch/build -j
+
+      - name: Install (file-copy)
+        run: cmake --install libtorch/build
+
+      - name: ctest (shipped, all 16)
+        run: ctest --test-dir libtorch/build --output-on-failure
+
+      - name: Assert arch (arm64) + fault seam ABSENT + install-name
+        run: |
+          LIB=libtorch/build/libkdm6_c.dylib
+          file "$LIB" | grep -q arm64 || { echo "FAIL: not arm64"; exit 1; }
+          if strings "$LIB" | grep -Fq 'KDM6_TEST_FORCE_THREAD_CONFIG_FAIL'; then
+            echo "FAIL: test fault seam leaked into the shipped library"; exit 1
+          fi
+          echo "install-name:"; otool -D "$LIB"
+          echo "linked libs:";  otool -L "$LIB" | head -5
+          echo "OK: arm64, no seam"
+
+      - name: Assert exported symbol surface is exactly the 9 C ABI functions
+        run: python libtorch/tests/check_c_abi_exports.py libtorch/build/libkdm6_c.dylib
+
+      - name: Fresh-process ctypes load resolves all 9
+        working-directory: libtorch/build
+        run: |
+          python -c "import ctypes; lib=ctypes.CDLL('./libkdm6_c.dylib'); [getattr(lib,s) for s in 'kdm6_step_c kdm6_step_ad_c kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c kdm6_handle_jvp_c kdm6_handle_close_c kdm6_handle_closep_c'.split()]; print('OK all 9 resolve, abi =', lib.kdm6_get_abi_version_c())"
+
+      - name: Reconfigure ON + run the fault-path test through the shared lib
+        run: |
+          cd libtorch/build
+          cmake .. -DKDM6_ENABLE_TEST_HOOKS=ON
+          cmake --build . --target kdm6_c test_c_abi -j
+          ctest -R '^c_abi$' -V --output-on-failure
