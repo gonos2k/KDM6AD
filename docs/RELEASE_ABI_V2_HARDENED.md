@@ -64,20 +64,19 @@ the 9 C ABI symbols, zero internal leakage". Zero `kdm6::`/`at::`/`c10::`/
 
 ### 3.4 Installed-artifact SHA-256
 
-A macOS dylib embeds a per-link `LC_UUID`, so the shipped-artifact hash is
-**build-specific, not bitwise-reproducible across machines**. Record the hash of
-the canonical release build:
+This is a **source/tag baseline**. No canonical macOS or Linux binary artifact is
+distributed as part of this release — the release identity is the tag, not a
+binary. A macOS dylib also embeds a per-link `LC_UUID`, so a shipped-artifact
+hash is a build-specific diagnostic, not release identity.
 
-```sh
-shasum -a 256 <install>/lib/libkdm6_c.2.0.0.dylib   # macOS
-sha256sum      <install>/lib/libkdm6_c.so.2.0.0      # Linux
-```
-
-* Canonical release-build SHA-256 (macOS): `<OWNER-FILL — from the release build>`
-* Canonical release-build SHA-256 (Linux): `<OWNER-FILL — from the release build>`
+* Canonical macOS binary: `Not designated — source/tag release only`
+* Canonical Linux binary: `Not designated — source/tag release only`
 * Reference (non-canonical, macOS arm64, Homebrew clang 22.1.4 / cmake 3.24.4 /
   torch 2.8.0, hooks-OFF Release):
   `c773d6019e00e4068d59891cc18cb4f4929a365b817d0b9f21df702a4f53afe0`
+
+(If binaries are later distributed as release assets, build them from the
+`abi-v2-hardened` tag and record their hashes here.)
 
 ### 3.5 Public CI (both platforms green on `a53503e`)
 
