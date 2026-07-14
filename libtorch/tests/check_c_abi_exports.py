@@ -8,9 +8,14 @@ output on both platforms, so one parser covers both:
     macOS : nm -gU              (external, defined)
     Linux : nm -D --defined-only (dynamic, defined)
 
-The only per-platform quirks are the macOS leading underscore (`_kdm6_step_c`)
-and the Linux version suffix the --version-script adds (`kdm6_step_c@@KDM6_2`),
-both normalized away. Comparing the exported set for exact equality with the 9
+We collect EVERY defined external symbol regardless of nm type — not just code
+(`T`/`W`) but data / RTTI / vtable (`D`/`B`/`R`/`V`/`S`) and even a global
+absolute (`A`) — so an accidental non-function export is caught, not silently
+filtered out. The ONLY exclusion is the Linux `--version-script` node
+(`KDM6_2`), removed BY NAME (not by skipping the whole absolute class, which
+would also hide a genuine absolute leak). Per-platform quirks normalized: the
+macOS leading underscore (`_kdm6_step_c`) and the Linux version suffix
+(`kdm6_step_c@@KDM6_2`). Comparing the exported set for exact equality with the 9
 IS the zero-leak check: any leaked symbol makes the set differ.
 
 Usage: check_c_abi_exports.py <libkdm6_c.{dylib,so,so.N}>   (exit 0 iff == the 9)
@@ -28,9 +33,19 @@ ALLOW = {
     "kdm6_handle_close_c", "kdm6_handle_closep_c",
 }
 
+# The Linux --version-script node (kdm6_c.map). When nm surfaces it, it is a
+# verdef label, not a real export, so it is excluded BY NAME — never by skipping
+# the whole absolute class, which would also hide a genuine absolute leak.
+VERSION_NODE = "KDM6_2"
 
-def exported_functions(lib):
-    """Exported (defined, external) function names in `lib`, normalized."""
+
+def exported_symbols(lib):
+    """Every defined external symbol in `lib` (any type), normalized.
+
+    All types are collected — code (`T`/`W`), data / RTTI / vtable
+    (`D`/`B`/`R`/`V`/`S`), and a global absolute (`A`) — so any leak is caught.
+    The sole exclusion is the version-script node `KDM6_2`, removed by name.
+    """
     system = platform.system()
     if system == "Darwin":
         cmd, strip_underscore = ["nm", "-gU", lib], True
@@ -44,13 +59,13 @@ def exported_functions(lib):
     for line in out.splitlines():
         parts = line.split()
         if len(parts) < 3:
-            continue                          # undefined rows have no address
-        kind, name = parts[1], parts[2]
-        if kind not in ("T", "W"):            # external code (function) symbols
-            continue
+            continue                          # undefined / verdef rows (no address)
+        name = parts[2]
         name = name.split("@", 1)[0]          # drop Linux @@KDM6_2 version suffix
         if strip_underscore and name.startswith("_"):
             name = name[1:]                   # drop the macOS leading underscore
+        if name == VERSION_NODE:              # verdef label, not a real export
+            continue
         names.add(name)
     return names
 
@@ -59,7 +74,7 @@ def main():
     if len(sys.argv) != 2:
         sys.exit("usage: check_c_abi_exports.py <lib>")
     lib = sys.argv[1]
-    exported = exported_functions(lib)
+    exported = exported_symbols(lib)
     missing = sorted(ALLOW - exported)
     leaked = sorted(exported - ALLOW)
 
