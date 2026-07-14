@@ -54,6 +54,17 @@ tightened to the actual contract; all since fixed.)
 - The WRF/KIM-meso host tree (not in this repo; see README → Full host integration).
 - GPU: the port is CPU/float32 for parity; no CUDA/Metal path is claimed here.
 
+## OpenMP runtime (`KMP_DUPLICATE_LIB_OK`)
+
+`KMP_DUPLICATE_LIB_OK` is **caller-owned** — not set by the dylib or the parity
+runner. A parent `UNSET` stays unset; an explicit `TRUE`/`FALSE` is preserved. The
+default `TRUE` injection was removed after a source-free diagnostic showed a single
+consistent OpenMP runtime (`libomp`) with no duplicate-runtime abort and
+byte-identical `TRUE`/`FALSE` trajectories. See
+[docs/PR1B_OPENMP_DIAGNOSTIC.md](docs/PR1B_OPENMP_DIAGNOSTIC.md). The single-thread
+fence (`OMP_NUM_THREADS`/`MKL_NUM_THREADS`/`VECLIB_MAXIMUM_THREADS`/`OMP_THREAD_LIMIT=1`)
+is unchanged.
+
 ## CI toolchain (separate from this reference environment)
 
 The `port-ci` GitHub Actions workflow verifies the **port-only `ctest` suite** on a

@@ -66,6 +66,12 @@ cd <WRF> && ./compile -j 4 em_real            # SS real case → em_real; → ma
 ```
 Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137`) on an SS real case.
 
+**`KMP_DUPLICATE_LIB_OK` is caller-owned.** Neither the dylib nor the runner forces
+it: a parent `UNSET` stays unset, an explicit `TRUE`/`FALSE` is preserved. Set it in
+your launch environment only if your process genuinely loads two OpenMP runtimes.
+The single-thread fence (`OMP_NUM_THREADS`/`MKL_NUM_THREADS`/`VECLIB_MAXIMUM_THREADS`/
+`OMP_THREAD_LIMIT=1`) is still applied. See [PR1B_OPENMP_DIAGNOSTIC](PR1B_OPENMP_DIAGNOSTIC.md).
+
 ## Source note
 In the full/private host tree (NOT this public repo — see the banner at the top),
 the `host_fortran/` files were copied from the archived tracked KDM6AD tree at

@@ -40,6 +40,21 @@ def remove_keys(text: str, keys: set[str]) -> str:
     return "\n".join(out)+"\n"
 
 
+def build_child_env() -> dict:
+    # Single-thread fence for strict-bitwise parity. KMP_DUPLICATE_LIB_OK is
+    # intentionally NOT set here: it is caller-owned — a parent UNSET stays unset,
+    # an explicit parent TRUE/FALSE is preserved verbatim. The runner never forces it.
+    env=os.environ.copy()
+    env.update({
+        'OMP_NUM_THREADS':'1',
+        'VECLIB_MAXIMUM_THREADS':'1',
+        'MKL_NUM_THREADS':'1',
+        'OMP_THREAD_LIMIT':'1',
+        'GFORTRAN_ERROR_BACKTRACE':'1',
+    })
+    return env
+
+
 def main() -> int:
     ap=argparse.ArgumentParser()
     ap.add_argument('--mp', choices=['37','137'], required=True)
@@ -100,15 +115,7 @@ def main() -> int:
         for p in run.glob(pat):
             if p.is_file() or p.is_symlink():
                 p.unlink()
-    env=os.environ.copy()
-    env.update({
-        'OMP_NUM_THREADS':'1',
-        'VECLIB_MAXIMUM_THREADS':'1',
-        'MKL_NUM_THREADS':'1',
-        'OMP_THREAD_LIMIT':'1',
-        'KMP_DUPLICATE_LIB_OK':'TRUE',
-        'GFORTRAN_ERROR_BACKTRACE':'1',
-    })
+    env=build_child_env()
     stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
     proc=None
     try:
