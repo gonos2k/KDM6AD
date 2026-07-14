@@ -1,7 +1,7 @@
 ---
 title: KDM6AD Automatic Differentiation ABI
 type: concept
-date_modified: 2026-06-25
+date_modified: 2026-07-14
 ---
 # KDM6AD Automatic Differentiation ABI
 
@@ -27,6 +27,12 @@ Separating operational forward from AD handle calls keeps WRF execution determin
 - Diagnostics used for WRF output parity may not automatically have derivative semantics.
 - The WRF mp137 operational runtime remains value-only even though the separate AD ABI exists.
 - A complete DA system still needs dynamics, observation operators, covariance models, checkpointing, and minimization outside this microphysics ABI.
+
+## ABI hardening (2026-07-14)
+
+- `kdm6_step_ad_c`, `kdm6_handle_vjp_c`, and `kdm6_handle_jvp_c` are 3 of the **exactly 9** exported symbols after the [[KDM6AD C ABI Hardening]] (`abi-v2-hardened`, export surface 1342 → 9).
+- A stable additive **ABI v2** (`kdm6_step_v2_c`, options struct framed by `struct_size`/`abi_version`) now carries inputs so the signature never changes again; v1 stays byte-frozen and v1↔v2 are bitwise-equivalent.
+- The AD (fp64) buffers stay `double` by design; only the operational state/forcing ABI went native f32 for mp37 parity — unchanged by the hardening.
 
 ## Update (2026-07-04): VJP/JVP/HVP 메커니즘 정식화
 
