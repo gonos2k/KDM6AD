@@ -87,22 +87,25 @@ sha256sum      <install>/lib/libkdm6_c.so.2.0.0      # Linux
   export surface == 9, fresh-process ctypes load resolving all 9, versioned dylib
   chain, hooks-ON fault-path.
 
-## 4. Owner-host parity provenance (owner-attested)
+## 4. Owner-host parity (owner-attested)
 
 Public CI does not exercise the WRF/KIM-meso host or the mp37↔mp137 strict
-bitwise parity — those are owner-host evidence, recorded here for the release:
+bitwise parity — those are owner-host evidence. Rather than publish the private
+host manifest, the release attests the result and publishes a hash of the
+retained manifest:
 
-| Field | Value |
-|---|---|
-| KDM6AD SHA | `a53503e` |
-| Host tree SHA | `<OWNER-FILL>` |
-| Toolchain (clang / gfortran / OpenMPI / netCDF / torch) | `<OWNER-FILL>` |
-| Case | `<OWNER-FILL>` |
-| Compared frames / steps | `<OWNER-FILL>` |
-| Variable count | `<OWNER-FILL>` |
-| Mismatch set | `<OWNER-FILL — expected: empty>` |
-| Hooks | OFF (shipped) |
-| Seam | absent |
+```text
+Owner-attested: mp37↔mp137 short strict-bitwise parity at a53503e — PASS.
+Detailed host manifest (host tree SHA; clang / gfortran / OpenMPI / netCDF /
+Torch versions; case; frames/steps; variable count) retained privately.
+Manifest SHA-256: <OWNER-FILL>
+Mismatch set:     empty
+Hooks: OFF (shipped).   Seam: absent.
+```
+
+Fill the manifest hash from the privately-retained host-parity record before
+merging PR #7 — no unfilled owner placeholder should remain in the merged doc
+(the §3.4 canonical artifact hashes likewise).
 
 ## 5. Tag + rollback
 
@@ -119,4 +122,6 @@ git checkout abi-v2-hardened     # or: git reset --hard a53503e
 It requires a scoped owner freeze-lift AND is gated on a source-free OpenMP
 dependency diagnostic first (the constructor uses `setenv(..., overwrite=0)`, so
 an external `KMP_DUPLICATE_LIB_OK=FALSE` at launch measures the dependency with
-no code change). See `[[frozen-code-freeze-lift-protocol]]`.
+no code change). For the freeze/scope boundaries and the freeze-lift-then-verify
+sequencing this follows, see [PR3 visibility design](PR3_VISIBILITY_DESIGN.md)
+§6 and §9, and [PR2 ABI v2 design](PR2_ABI_V2_DESIGN.md) §8–§9.
