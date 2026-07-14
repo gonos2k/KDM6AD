@@ -247,18 +247,18 @@ The load-bearing new check is a **measured symbol-surface assertion**, scripted
 in CI (mirrors the PR1-A "seam-absent strings" gate):
 
 * **Exported set == allowlist.** After a shipped (`KDM6_ENABLE_TEST_HOOKS=OFF`)
-  Release build, the new symbol-surface checker
+  Release build, the symbol-surface checker
   (`libtorch/tests/check_c_abi_exports.py`) yields **exactly the 9** `kdm6_*_c`
-  symbols. It is cross-platform and normalizes each toolchain's quirks:
-  * **macOS** — `nm -gU <lib>` (external defined); strip the leading `_`.
-  * **Linux** — `readelf --dyn-syms --wide <lib>` (or normalized
-    `nm -D --defined-only`). Because the `--version-script` stamps a symbol
-    version, an exported name appears as `kdm6_step_c@@KDM6_2`; the checker
-    **strips the `@@KDM6_2` / `@KDM6_2` suffix**, **excludes the `KDM6_2`
-    version-node ABS entry**, keeps only **defined `GLOBAL`/`WEAK`, `DEFAULT`
-    visibility `FUNC`** symbols, then sorts + de-dups before the exact compare.
-    A raw string compare against the 9 without this normalization would falsely
-    fail.
+  symbols. `nm` gives the same `addr TYPE name` output on both platforms, so one
+  parser (keep external code symbols — type `T`/`W`) covers both, with two small
+  normalizations:
+  * **macOS** — `nm -gU <lib>`; strip the leading `_` (`_kdm6_step_c`).
+  * **Linux** — `nm -D --defined-only <lib>`; the `--version-script` stamps a
+    symbol version, so an export reads `kdm6_step_c@@KDM6_2` — strip the
+    `@…` suffix. (The `KDM6_2` version node is not a defined `nm` symbol, so
+    nothing extra needs excluding.)
+  The exact-set compare against the 9 **is** the zero-leak assertion — any
+  leaked internal makes the set differ.
 * **Zero internal leakage.** The same listing contains **no** `kdm6::` and
   **no** `at::/c10::/torch::/std::` symbol (grep count == 0). Pins the 1342→9
   reduction and fails if a future edit re-widens the surface.
