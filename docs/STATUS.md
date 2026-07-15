@@ -58,11 +58,15 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
 - The differentiated map is the **branch-local fp64** map, not the literal f32 adjoint.
 - Gradients across jumps/kinks and across CFL `mstep` changes are not sensitivities through the switch.
 - `threshold cleanup` zeroes sub-threshold hydrometeor mass **and** paired number without
-  returning mass to `qv` or applying a latent-heat/T correction — a small biased sink to track
-  in the water/energy budget.
-- Column water budget should be `ρΔz`-weighted with an explicit cleanup-sink term (the earlier
-  "water budget" was an unweighted layer-sum).
+  returning mass to `qv` or applying a latent-heat/T correction. Measured (P0-4): at the
+  single-step level this sink is roundoff-small (`~0`), not a meaningful bias — microphysics
+  conserves column water to fp64 (`max|ΔW_micro| = 7e-15`). See [`P0-4_water_budget.md`](P0-4_water_budget.md).
+- The WRF `rain_increment` surface diagnostic is **not** the column-water surface term: the mass
+  sedimentation removes (`−ΔW_sed`) differs from it by a non-constant O(1) amount (e.g. 6.80 vs
+  2.00 kg/m² for a heavy-rain column). Characterizing/reconciling this gap is P0-4b (deferred).
+- Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
+  default); the earlier "water budget" was an unweighted layer-sum.
 
 Provenance for the closed hardening line: [`RELEASE_ABI_V2_HARDENED.md`](RELEASE_ABI_V2_HARDENED.md),
 [`PR1B_OPENMP_DIAGNOSTIC.md`](PR1B_OPENMP_DIAGNOSTIC.md). External deep review that motivated
-this table: `wiki/sources/kdm6ad-deep-review-2026-07-15`.
+this table: [`../wiki/sources/kdm6ad-deep-review-2026-07-15.md`](../wiki/sources/kdm6ad-deep-review-2026-07-15.md).
