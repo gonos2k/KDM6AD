@@ -377,3 +377,21 @@ date_modified: 2026-06-25
 - Manifest **healed**: the stale 17,624-entry manifest (pre-`.graphifyignore`) is now the ~100-file filtered corpus; those phantom deletions verified "already clean" (0 graph nodes cited ignored trees). Next `--update` will report deleted=0.
 - Wiki sync: NONE — `GRAPH_REPORT.md` kept only in `graphify-out/` per AGENTS.md §147-148. `index.md` has no `## Graph snapshot` → untouched. graph.html skipped (5163 > 5000 viz limit).
 - Cost: 127k input tokens (all-time 1.48M, 3 graphify runs).
+
+## [2026-07-15] kg-update | code-only rebuild after PR1-B (5163 → 5003 nodes)
+- Source dir: `.` (graphify-out/.graphify_root); graphify 0.8.39.
+- Mode: cli-update (`graphify update .`, AST-only, no LLM; 270/270 files, SHA256-cached where unchanged).
+- Delta: **−160 nodes / −182 edges** (5163→5003 / 9779→9597), 303 communities (was 304). graph_diff: removed 253, added 93.
+- PR1-B code extracted: `run_ss_case`(15) · `kdm6_c_api`(32) · `check_kmp_duplicate_env`(3, new) · `test_run_ss_case_env`(8, new).
+- The −160 is **cleanup, not loss**: removed nodes are all `.remember/` transient-history + stale `wiki/graph-report.md` mirror artifacts (`wiki_graph_report_community_*`). Semantic content layer intact (lc05_5km, host_run_dir, abi_hardening/abi_v2, freeze_lift, forward_parity, dual_path all present).
+- Wiki sync: NONE — `GRAPH_REPORT.md` kept only in `graphify-out/`, NOT mirrored into `wiki/` per AGENTS.md §147-148. `wiki/index.md` has no `## Graph snapshot` section → untouched. graph.html skipped (5003 > 5000 viz limit).
+- Caveat: code-only — no doc/wiki semantic re-extraction this run (none changed since the 2026-07-14 ingest). PR1-B docs (`docs/PR1B_OPENMP_DIAGNOSTIC.md`) not yet semantically graphed; run `/graphify . --update` (LLM) if wiki-level linkage of that doc is wanted.
+
+## [2026-07-15] kg-ingest | external deep review (math/meteorology/engineering) @ e1c701e
+- Source: pasted external deep review of KDM6AD at origin/main@e1c701e.
+- Created: [[kdm6ad-deep-review-2026-07-15]] (source; 7 load-bearing claims verified against tree on ingest — all accurate except §3.3 xland "no shape" which is imprecise: shape IS documented, runtime enforcement is not).
+- Also created (P0-2 action, non-frozen): README `## Scope & differentiation contract` + `docs/STATUS.md` (capability matrix separating current contract from the chronological log).
+- Tensions: none contradicting validated claims — the review corroborates existing tensions (dual-path, jump/kink, forcing-fixed, unweighted-budget) and reframes the system as prescribed-forcing microphysics-window VA (not full 4D-Var). Preserved, not overwritten.
+- Linked: [[Operational-Raw vs DA-Clamped Dual Path]], [[KDM6AD Differentiability Audit]], [[KDM6AD Automatic Differentiation ABI]], [[KDM6AD Forward Parity]], `docs/STATUS.md`.
+- Candidate heuristics flagged (NOT auto-promoted): adjoint-identity≠physical-correctness; compare sensitivities in control/nondim space.
+- Frozen boundary: P0-3 (forcing/diagnostic VJP), P2 AD-ABI-v2 descriptor, C-ABI domain validation touch libtorch/bridge + src → owner freeze-lift required; not started.
