@@ -390,6 +390,7 @@ def _kdm6_pure(
     ncmin_land: float = 0.0,
     ncmin_sea: float = 0.0,
     controls=None,   # [DA §5.2] ProcessControls — fp64 DA only; None → byte-identical oracle
+    budget=None,     # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
@@ -545,6 +546,8 @@ def _kdm6_pure(
 
     cur = cs  # WRF K-order, evolves across sub-cycles
     for _ in range(loops):
+        if budget is not None:
+            _wb_pre_sed = cur  # [P0-4] column water before sedimentation
         # 1. SEDIMENT(dtcld) at the TOP of the sub-cycle (flipped to K=0-top order).
         cur_flip = _coord.CoordinatorState(
             qv=_flip_k(cur.qv), qc=_flip_k(cur.qc), qr=_flip_k(cur.qr), qs=_flip_k(cur.qs),
@@ -592,6 +595,10 @@ def _kdm6_pure(
             nc=_flip_k(sed.state.nc), nr=_flip_k(sed.state.nr), ni=_flip_k(sed.state.ni),
             brs=_flip_k(sed.state.brs), t=_flip_k(sed.state.t),
         )
+        if budget is not None:
+            # [P0-4] ΔW_sed + surface diagnostic (rain_increment = total fallout)
+            budget.add_sed(_wb_pre_sed, cur, sed.rain_increment, cf)
+            _wb_pre_mic = cur  # column water before the microphysics pass
         # 2. Re-slope + aux on the POST-FALL state (WRF order), Fortran :1422-1480.
         rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, params=cloud_p,
                                                ncmin_tensor=ncmin_tensor)
@@ -605,8 +612,10 @@ def _kdm6_pure(
             cur, cf, aux, sea_mask,
             full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
             dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
-            controls=controls,
+            controls=controls, budget=budget,
         )
+        if budget is not None:
+            budget.add_micro(_wb_pre_mic, cur, cf)  # [P0-4] ΔW_micro (≈0)
 
     return _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
 

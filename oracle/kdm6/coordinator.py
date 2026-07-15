@@ -1923,6 +1923,7 @@ def kdm62d_one_step_torch(
                          # None → no activation (returns bare state). Threaded by the driver.
     controls=None,       # [DA §5.2] ProcessControls (fp64 DA path only). None → ZERO
                          # added ops (byte-identical oracle); see process_controls.py.
+    budget=None,         # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
 ) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
 
@@ -2195,7 +2196,11 @@ def kdm62d_one_step_torch(
         new_state = sat_result
     # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
+    if budget is not None:
+        _wb_pre_clean = new_state  # [P0-4] measure the cleanup sink at the exact boundary
     new_state = apply_threshold_cleanup_torch(new_state)
+    if budget is not None:
+        budget.add_cleanup(_wb_pre_clean, new_state, forcing)
     # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
     new_state = apply_dsd_number_limiters_torch(new_state, forcing.den, ncmin_tensor=ncmin_tensor)
     return (new_state, nccn) if _activate else new_state
