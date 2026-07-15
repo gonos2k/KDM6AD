@@ -17,21 +17,24 @@ coord space `den·delz`). **Not** `forcing.dend` — `_build_coord_forcing` sets
 concentrations (`nc,nr,ni,nccn`) and the graupel-volume proxy `bg`/`brs` are **not**
 water and are excluded (`qg` already carries graupel mass).
 
-## Closure by decomposition (the actual, exact identity)
+## Operator-decomposition ledger (self-consistency, not a conservation proof)
 
 Each sub-cycle the driver applies sedimentation then one microphysics pass. The
 budget records both:
 
     W_out − W_in  =  ΔW_sed + ΔW_micro                       (exact, admissible inputs)
 
-with `sed_removed = −ΔW_sed` (mass sedimentation removes from the column) and the
-reported residual
+with `sed_column_loss = −ΔW_sed` (the **operator-implied net column-water loss**) and
 
-    residual = W_out − W_in + sed_removed − ΔW_micro  ≈ 0.
+    decomposition_residual = W_out − W_in + sed_column_loss − ΔW_micro  ≈ 0.
 
-For admissible (all-q ≥ 0) inputs the entry nonneg-clamp is a no-op, so this holds
-to machine zero. Measured: `residual = 0.00e+00` (heavy rain, dt=120) and
-`max|residual| = 0.00e+00` over a 3-sub-cycle dt=300 case.
+**This closing to zero is a ledger self-consistency check** — that no hook or
+sub-cycle was missed — **not** an independent physical-conservation proof (the same
+pre/post states are measured in each segment and summed, so the identity holds by
+construction). For admissible (all-q ≥ 0) inputs the entry nonneg-clamp is a no-op,
+so it closes to machine zero: `decomposition_residual = 0.00e+00` (heavy rain,
+dt=120) and `max = 0.00e+00` over a 3-sub-cycle dt=300 case. The two *independent*
+scientific results are findings 1 and 3 below.
 
 ## Verified findings
 
@@ -55,21 +58,23 @@ sub-threshold hydrometeor mass + paired number, leaving `qv`/T — no vapor retu
 latent correction), but at single-step scale it is roundoff-small, not a meaningful
 bias. Its long-integration accumulation over a full domain remains worth watching.
 
-**3. The WRF `rain_increment` surface diagnostic is NOT the column-water surface
-term.** The column mass sedimentation actually removes (`sed_removed = −ΔW_sed`)
-differs from the reported `rain_increment` (WRF RAINNCV convention, the *total*
-fallout `fall_qr+fall_qs+fall_qg+fall_qi`) by a non-constant amount:
+**3. `sed_column_loss` and the WRF `rain_increment` diagnostic disagree.** The
+operator-implied net column-water loss (`sed_column_loss = −ΔW_sed`) differs from the
+reported `rain_increment` (WRF RAINNCV convention, the *total* fallout
+`fall_qr+fall_qs+fall_qg+fall_qi`) by a non-constant amount:
 
-| case (heavy rain, dt=120) | sed_removed | rain_increment | gap = diag − removed |
+| case (heavy rain, dt=120) | sed_column_loss (−ΔW_sed) | rain_increment | gap = diag − loss |
 |---|---:|---:|---:|
 | col0 | 6.8014 | 2.0001 | −4.8012 |
 | col1 | 9.0335 | 3.0153 | −6.0181 |
 
-The ratio is not constant, so it is not a unit scale. This is a genuine gap between
-the diagnostic accumulator and the conservative column budget — most likely inherited
-faithfully from Fortran KDM6's fall-flux/RAINNCV formulation (consistent with the
-bitwise parity). **The physically correct column-water surface term is `sed_removed`
-(= −ΔW_sed)**; `rain_increment` is a separate WRF-facing diagnostic. Characterizing
+The ratio is not constant, so it is not a unit scale. **Which side is at fault is
+unresolved** — candidates: the RAINNCV accumulator under-reporting the bottom-boundary
+flux; a clamp/cap or metric loss in the sedimentation state update; a semantic
+mismatch between the `fall` accumulator and the state mass measure; or uncapped
+bottom-layer flux vs. capped depletion. `sed_column_loss` is the operator-implied
+column loss; `rain_increment` is the WRF-facing total-fallout diagnostic; their
+measured discrepancy is a finding, not yet an attribution. Characterizing
 or reconciling this gap (P0-4b) requires reading the sedimentation substep flux vs.
 the bottom-layer accumulation formula — deferred; exposed here rather than hidden by
 redefining the surface term.
@@ -85,8 +90,9 @@ moist-enthalpy state function cannot be assumed to reproduce every branch heatin
     from kdm6.water_budget import kdm6_step_with_water_budget, column_water_kg_m2
     out_state, budget = kdm6_step_with_water_budget(state, forcing, dt=120.0)
     #  budget: ColumnWaterBudget — every field per-column (B,), detached:
-    #    water_in/out, sed_removed, micro_dW, surface_precip_diag,
-    #    cleanup_by_species/cleanup_total, residual, sed_surface_diag_gap, n_subcycles
+    #    water_in/out, sed_column_loss, micro_dW, surface_precip_diag,
+    #    cleanup_by_species/cleanup_total, decomposition_residual,
+    #    sed_surface_diag_gap, n_subcycles
 
 All acceptance is per-column `(B,)`; a domain sum could hide opposite-sign column
 errors and is never used as a gate.
