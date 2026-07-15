@@ -2196,8 +2196,8 @@ def kdm62d_one_step_torch(
         new_state = sat_result
     # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
-    if budget is not None:
-        _wb_pre_clean = new_state  # [P0-4] measure the cleanup sink at the exact boundary
+    # [P0-4] measure the cleanup sink at the exact boundary (None → no diagnostic)
+    _wb_pre_clean = new_state if budget is not None else None
     new_state = apply_threshold_cleanup_torch(new_state)
     if budget is not None:
         budget.add_cleanup(_wb_pre_clean, new_state, forcing)

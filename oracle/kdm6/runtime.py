@@ -545,6 +545,7 @@ def _kdm6_pure(
     )
 
     cur = cs  # WRF K-order, evolves across sub-cycles
+    _wb_pre_sed = _wb_pre_mic = None  # [P0-4] budget-hook locals (static-analysis init)
     for _ in range(loops):
         if budget is not None:
             _wb_pre_sed = cur  # [P0-4] column water before sedimentation

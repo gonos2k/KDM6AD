@@ -3,16 +3,20 @@
 Column total water  W(x;f) = Σ_k ρ_k Δz_k (q_v+q_c+q_r+q_i+q_s+q_g)_k  [kg/m²].
 
 The diagnostic decomposes a single ``kdm6_step`` into the two operators the driver
-applies per sub-cycle and closes the budget by the DECOMPOSITION IDENTITY
+applies per sub-cycle. Closing it is an OPERATOR-DECOMPOSITION IDENTITY (a ledger
+self-consistency check that no hook / sub-cycle was missed), NOT an independent
+physical-conservation proof:
 
     W_out − W_in  =  ΔW_sed + ΔW_micro          (exact for admissible inputs)
 
-Empirical facts this exposes (see docs/STATUS.md → P0-4):
+The two independent scientific results are:
   * ΔW_micro ≈ 0 — microphysics (incl. threshold cleanup) conserves column water
     to fp64 roundoff. The cleanup sink, measured at the exact
     ``apply_threshold_cleanup`` boundary, accounts for that (tiny) non-conservation.
-  * The WRF-style ``rain_increment`` surface diagnostic is NOT the column mass
-    sedimentation removes (−ΔW_sed): ``sed_surface_diag_gap`` characterizes it.
+  * ``sed_column_loss`` (= −ΔW_sed, the operator-implied net column-water loss) and
+    ``rain_increment`` (the WRF-facing total-fallout diagnostic) DISAGREE. Which side
+    is at fault (RAINNCV under-report vs. a sedimentation clamp/cap) is unresolved —
+    ``sed_surface_diag_gap`` characterizes it, pending P0-4b.
 
 All quantities are per-column ``(B,)`` and detached (no autograd / no effect on the
 forward path). The diagnostic is opt-in: the default ``kdm6_step`` path is unchanged.
@@ -52,13 +56,13 @@ def hydrometeor_mass_sink_kg_m2(pre, post, rho_dz) -> dict:
 class ColumnWaterBudget:
     water_in_kg_m2: torch.Tensor          # (B,)
     water_out_kg_m2: torch.Tensor         # (B,)
-    sed_removed_kg_m2: torch.Tensor       # (B,) = −ΔW_sed (mass sedimentation removes)
+    sed_column_loss_kg_m2: torch.Tensor   # (B,) = −ΔW_sed, operator-implied net column-water loss
     micro_dW_kg_m2: torch.Tensor          # (B,) = ΔW_micro (≈0: microphysics conserves)
-    surface_precip_diag_kg_m2: torch.Tensor  # (B,) = Σ rain_increment (WRF RAINNCV, total)
+    surface_precip_diag_kg_m2: torch.Tensor  # (B,) = Σ rain_increment (WRF RAINNCV total-fallout diag)
     cleanup_by_species_kg_m2: dict        # species -> (B,)
     cleanup_total_kg_m2: torch.Tensor     # (B,) = Σ_species cleanup
-    residual_kg_m2: torch.Tensor          # (B,) = W_out−W_in+sed_removed−micro_dW (≈0)
-    sed_surface_diag_gap_kg_m2: torch.Tensor  # (B,) = surface_precip_diag − sed_removed
+    decomposition_residual_kg_m2: torch.Tensor  # (B,) = W_out−W_in+sed_column_loss−micro_dW (ledger self-consistency, ≈0)
+    sed_surface_diag_gap_kg_m2: torch.Tensor  # (B,) = surface_precip_diag − sed_column_loss (unresolved, → P0-4b)
     n_subcycles: int
 
 
@@ -120,19 +124,20 @@ def kdm6_step_with_water_budget(
     z = torch.zeros_like(win)
     cleanup = {x: (ledger.cleanup[x] if ledger.cleanup[x] is not None else z)
                for x in MASS_FIELDS}
-    cleanup_total = sum(cleanup.values(), torch.zeros_like(win))
+    cleanup_total = torch.stack([cleanup[x] for x in MASS_FIELDS]).sum(dim=0)
     surface = ledger.surface if ledger.surface is not None else z
     sed_dW = ledger.sed_dW if ledger.sed_dW is not None else z
     micro_dW = ledger.micro_dW if ledger.micro_dW is not None else z
-    sed_removed = -sed_dW
-    residual = wout - win + sed_removed - micro_dW
-    gap = surface - sed_removed
+    sed_column_loss = -sed_dW
+    decomposition_residual = wout - win + sed_column_loss - micro_dW
+    gap = surface - sed_column_loss
 
     return out, ColumnWaterBudget(
         water_in_kg_m2=win, water_out_kg_m2=wout,
-        sed_removed_kg_m2=sed_removed, micro_dW_kg_m2=micro_dW,
+        sed_column_loss_kg_m2=sed_column_loss, micro_dW_kg_m2=micro_dW,
         surface_precip_diag_kg_m2=surface,
         cleanup_by_species_kg_m2=cleanup, cleanup_total_kg_m2=cleanup_total,
-        residual_kg_m2=residual, sed_surface_diag_gap_kg_m2=gap,
+        decomposition_residual_kg_m2=decomposition_residual,
+        sed_surface_diag_gap_kg_m2=gap,
         n_subcycles=ledger.n_subcycles,
     )
