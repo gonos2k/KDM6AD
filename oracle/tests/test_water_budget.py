@@ -123,8 +123,8 @@ def test_budget_decomposition_is_complete():
     _, b = wb.kdm6_step_with_water_budget(s, f, dt=120.0)
     # W_out - W_in == -sed_removed + micro_dW, exactly (admissible ⇒ no entry clip)
     lhs = b.water_out_kg_m2 - b.water_in_kg_m2
-    rhs = -b.sed_removed_kg_m2 + b.micro_dW_kg_m2
-    tol = _roundoff_bound(b.water_in_kg_m2, b.water_out_kg_m2, b.sed_removed_kg_m2)
+    rhs = -b.sed_column_loss_kg_m2 + b.micro_dW_kg_m2
+    tol = _roundoff_bound(b.water_in_kg_m2, b.water_out_kg_m2, b.sed_column_loss_kg_m2)
     assert torch.all((lhs - rhs).abs() <= tol), (lhs, rhs)
 
 
@@ -135,7 +135,7 @@ def test_sedimentation_surface_diagnostic_gap_is_exposed():
     # gap := diagnostic - actual removal ; both finite, and NON-trivial in heavy rain
     gap = b.sed_surface_diag_gap_kg_m2
     assert torch.isfinite(gap).all()
-    assert torch.equal(gap, b.surface_precip_diag_kg_m2 - b.sed_removed_kg_m2)
+    assert torch.equal(gap, b.surface_precip_diag_kg_m2 - b.sed_column_loss_kg_m2)
     # documents the finding: the WRF RAINNCV diagnostic is not the column-water
     # surface term (differs by >> roundoff for a precipitating column).
     assert torch.any(gap.abs() > 1e-3), gap
@@ -148,8 +148,8 @@ def test_multisubcycle_terms_accumulate():
     assert int(b.n_subcycles) >= 2
     # decomposition still exact across all subcycles
     lhs = b.water_out_kg_m2 - b.water_in_kg_m2
-    rhs = -b.sed_removed_kg_m2 + b.micro_dW_kg_m2
-    tol = _roundoff_bound(b.water_in_kg_m2, b.water_out_kg_m2, b.sed_removed_kg_m2)
+    rhs = -b.sed_column_loss_kg_m2 + b.micro_dW_kg_m2
+    tol = _roundoff_bound(b.water_in_kg_m2, b.water_out_kg_m2, b.sed_column_loss_kg_m2)
     assert torch.all((lhs - rhs).abs() <= tol)
     # surface precip is accumulated over subcycles (not just the last)
     assert torch.all(b.surface_precip_diag_kg_m2 >= 0)
@@ -161,7 +161,7 @@ def test_budget_is_columnwise_not_domain_sum_only():
     _, b = wb.kdm6_step_with_water_budget(s, f, dt=60.0)
     # every reported quantity is per-column (B,), not a scalar
     B = s.qv.shape[0]
-    for name in ("water_in_kg_m2", "water_out_kg_m2", "sed_removed_kg_m2",
+    for name in ("water_in_kg_m2", "water_out_kg_m2", "sed_column_loss_kg_m2",
                  "micro_dW_kg_m2", "surface_precip_diag_kg_m2",
                  "cleanup_total_kg_m2", "sed_surface_diag_gap_kg_m2"):
         t = getattr(b, name)

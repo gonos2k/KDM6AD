@@ -61,9 +61,9 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
   returning mass to `qv` or applying a latent-heat/T correction. Measured (P0-4): at the
   single-step level this sink is roundoff-small (`~0`), not a meaningful bias — microphysics
   conserves column water to fp64 (`max|ΔW_micro| = 7e-15`). See [`P0-4_water_budget.md`](P0-4_water_budget.md).
-- The WRF `rain_increment` surface diagnostic is **not** the column-water surface term: the mass
-  sedimentation removes (`−ΔW_sed`) differs from it by a non-constant O(1) amount (e.g. 6.80 vs
-  2.00 kg/m² for a heavy-rain column). Characterizing/reconciling this gap is P0-4b (deferred).
+- The operator-implied column-water loss (`sed_column_loss = −ΔW_sed`) and the WRF `rain_increment`
+  total-fallout diagnostic **disagree** by a non-constant O(1) amount (e.g. 6.80 vs 2.00 kg/m² for a
+  heavy-rain column). Which side is at fault is unresolved — attributing/reconciling it is P0-4b.
 - Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
   default); the earlier "water budget" was an unweighted layer-sum.
 
