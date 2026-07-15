@@ -12,7 +12,7 @@ date_modified: 2026-07-14
 - [[papers/_index|KDM6AD 논문 페이지 색인]]
 
 ## Content
-- [[sources/_index|Sources]] - 8 pages
+- [[sources/_index|Sources]] - 9 pages
 - [[entities/_index|Entities]] - 4 pages
 - [[concepts/_index|Concepts]] - 10 pages
 - [[papers/_index|Papers]] - 42 pages

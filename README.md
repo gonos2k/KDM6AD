@@ -20,6 +20,31 @@ full mathematical and AD-engineering writeup.
 > [Full host integration](#full-host-integration-requires-the-wrfkim-meso-tree). The
 > **port-only build + tests below are fully reproducible from this repo alone.**
 
+## Scope & differentiation contract
+
+To keep claims precise (see [`docs/STATUS.md`](docs/STATUS.md) for the capability matrix):
+
+- **Two distinct maps, not one at two precisions.** The operational **f32 forward**
+  reproduces KDM6 bit-for-bit (raw divisions/sqrt, f32 rounding/underflow). The **f64 DA
+  map** keeps smooth clamps on some denominators/roots so the adjoint stays finite. They are
+  *different functions*, reconciled by the dtype-conditional dual-path idiom
+  (`concepts/Operational-Raw vs DA-Clamped Dual Path`).
+- **The differentiated map is the f64 one.** VJP/JVP are **branch-local fp64** derivatives —
+  a "differentiable shadow model," **not** the literal adjoint of the f32 machine map. The f32
+  handle is a **mechanics/diagnostics** path; use `kdm6_step_ad_c` for DA.
+- **Derivatives across discontinuities are not physical sensitivities.** Autograd returns the
+  active branch's partial through jumps (full evaporation → number move, reclassification,
+  threshold cleanup) and one subgradient at kinks; neither is a sensitivity *through* the switch.
+  `mstep`/subcycle counts are chosen no-grad, so tangents fix the current substep topology.
+- **Forcing is fixed.** Only the **12 prognostic state** fields are differentiated; the **4
+  forcing** fields (ρ, Π, p, Δz) are inputs with no VJP. There is no `M_f` (forcing) or host
+  metric/pressure adjoint here.
+- **Output space is the 12 states.** Surface precip increments, graupel density, reflectivity,
+  and effective radii are **diagnostic-only** — not seedable in the packed AD ABI yet.
+- **The current DA window is prescribed-forcing microphysics-only.** Each step applies
+  `kdm6_step` on a fixed thermodynamic/grid/dynamics background — a *microphysics-window
+  variational assimilation*, **not** a fully-coupled WRF/KIM 4D-Var.
+
 ## Public-repo quickstart (port-only, no host needed)
 
 Builds the C++ port + ISO_C ABI library and runs the unit / ABI / autograd test suite.
