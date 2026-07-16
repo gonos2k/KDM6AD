@@ -39,8 +39,8 @@ the host integration".
 
 | measure | value |
 |---|---|
-| columns firing, every frame | **53.6–60.7%** of the domain |
-| steady-state domain sink (fr ≥ 6) | 54–96 kg/m² per step ≈ **2–5% of surface fallout** |
+| columns firing, every frame | **51.4–60.7%** of the domain (threshold: sink > 1e-9 kg/m² — a deliberately permissive "any defect" count; the magnitude distribution below is the materiality measure) |
+| domain sink, frames ≥ 1 | 54–104 kg/m² per step = **2.1–4.6% of surface fallout** |
 | **frame 0 (analysis-IC-like state)** | **2,917 kg/m² = 41% of total hydrometeor mass in ONE step; 40× the surface diagnostic** |
 | 3 h per-column cumulative (replay) | p50 0.010 · p90 0.219 · **p99 1.33 · max 10.0** kg/m² |
 | species share (3 h aggregate) | **qi 65%** · qr 24% · qg 10% · qs ≈ 0 |
@@ -49,8 +49,10 @@ the host integration".
 
 Two readings matter for the decision:
 
-- **In equilibrated precipitation the sink is modest domain-wide** (few % of
-  fallout) **with a heavy tail** (p99 1.3 kg/m² per 3 h; max 10).
+- **In equilibrated precipitation the sink is modest domain-wide** (2.1–4.6% of
+  fallout on every frame except the IC) **with a heavy tail** (p99 1.3 kg/m² per
+  3 h; max 10). Only frame 0 is an outlier — frames 1–5 already sit in the
+  normal 75–104 kg/m² band.
 - **Freshly-initialized states are maximally susceptible**: frame 0 — the
   analysis IC, with unequilibrated hydrometeor profiles — loses 41% of its
   hydrometeor mass to the sink in a single step. This is precisely the state
@@ -81,10 +83,13 @@ defaults to legacy). Acceptance — all green (6 RED-first tests):
   bottom diagnostic was accurate); the previously-vanishing ~6 kg/m² **stays in
   the upper column** (the upper-level q profile stays uniform instead of
   draining into nothing), with knock-on into qc/qv/th via satadj/warm.
-- **LC05 heaviest-256-column window** (prescribed per-frame forcing):
-  cumulative surface precipitation ratio conservative/legacy = **1.379 (1 h)**,
-  **1.336 (3 h)** — the retained mass largely converts to **+34% surface
-  precipitation** as columns rain out (final hydro both → ~0).
+- **LC05 heaviest-256-column window** (prescribed per-frame forcing): aggregate
+  cumulative surface precipitation ratio conservative/legacy (ratio of the
+  256-column mean totals) = **1.306 (1 h)**, **1.286 (3 h)** — the retained mass
+  largely converts to **≈ +29% aggregate surface precipitation** as columns rain
+  out (final hydro both → ~0). The mean of the per-column ratios is higher
+  (1.379 / 1.336) because lighter-precip columns gain proportionally more —
+  both statistics are in the artifact; the aggregate ratio is the headline.
 - **Gradients**: VJP norms ≈ **2×** under the conservative variant (the legacy
   cap severs sensitivity paths); no NaN/Inf in either variant.
 - All-sky BT / obs-cost comparison **deferred** (needs the local RTTOV runtime);
@@ -92,10 +97,10 @@ defaults to legacy). Acceptance — all green (6 RED-first tests):
 
 ## 5. Recommendation (owner decides)
 
-The prevalence is structural (phase map), broad (>53% of real columns every
-step), and material where it matters most (analysis-IC states: 41%/step;
-convective tails: p99 1.3 kg/m²/3 h; trajectory effect: +34% cumulative precip
-on heavy columns; 2× adjoint sensitivity). Per the pre-stated policy this
+The prevalence is structural (phase map), broad (>51% of real columns every
+step, at the permissive >1e-9 threshold), and material where it matters most (analysis-IC states: 41%/step;
+convective tails: p99 1.3 kg/m²/3 h; trajectory effect: ≈ +29% aggregate
+cumulative precip on heavy columns; 2× adjoint sensitivity). Per the pre-stated policy this
 supports the **new conservative physics variant** path — NOT a silent baseline
 change:
 

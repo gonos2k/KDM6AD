@@ -136,7 +136,8 @@
   "cum_precip_kg_m2": {
    "legacy_diag_mean": 4.816665800501945,
    "conservative_actual_mean": 6.291775845512816,
-   "ratio_mean": 1.3790681580299466
+   "ratio_of_means": 1.306251275489603,
+   "mean_of_per_column_ratios": 1.3790681580299466
   },
   "final_hydro_mass_kg_m2": {
    "legacy_mean": 0.40328824316299666,
@@ -185,7 +186,8 @@
   "cum_precip_kg_m2": {
    "legacy_diag_mean": 5.132866417407983,
    "conservative_actual_mean": 6.599820021407155,
-   "ratio_mean": 1.3364807414545683
+   "ratio_of_means": 1.2857961779453362,
+   "mean_of_per_column_ratios": 1.3364807414545683
   },
   "final_hydro_mass_kg_m2": {
    "legacy_mean": 0.014877453934717393,

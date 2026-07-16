@@ -68,10 +68,10 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
   `module_mp_kdm6.F`; oracle/C++/Fortran identical), identity closes to the fp64 floor; the bottom
   diagnostic itself is accurate (`B ≈ 0`). Any fix is a freeze-lift decision (changes trajectories).
   See [`P0-4b_sedimentation_attribution.md`](P0-4b_sedimentation_attribution.md).
-  **Prevalence measured (P0-4b.1)**: fires in 53–61% of real LC05 columns every step (steady-state
-  ≈ 2–5% of fallout, p99 tail 1.3 kg/m²/3 h; analysis-IC states lose up to 41%/step); a
-  conservative counterfactual (`kdm6/sed_conservative.py`, analysis-only opt-in) closes the budget
-  to fp64 and yields +34% cumulative precip on heavy columns. Decision package:
+  **Prevalence measured (P0-4b.1)**: fires (>1e-9 kg/m²) in 51–61% of real LC05 columns every
+  step (2.1–4.6% of fallout on frames ≥ 1, p99 tail 1.3 kg/m²/3 h; the analysis-IC frame loses
+  41% in one step); a conservative counterfactual (`kdm6/sed_conservative.py`, analysis-only
+  opt-in) closes the budget to fp64 and yields ≈ +29% aggregate cumulative precip on heavy columns. Decision package:
   [`P0-4b1_interface_sink_prevalence.md`](P0-4b1_interface_sink_prevalence.md).
 - Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
   default); the earlier "water budget" was an unweighted layer-sum.

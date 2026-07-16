@@ -124,7 +124,9 @@ def window_comparison(n_steps, sel_n=256):
         "n_steps": n_steps, "n_columns": sel_n,
         "cum_precip_kg_m2": {"legacy_diag_mean": float(precL.mean()),
                              "conservative_actual_mean": float(precC.mean()),
-                             "ratio_mean": float((precC / precL.clamp(min=1e-12)).mean())},
+                             "ratio_of_means": float(precC.mean() / precL.mean()),
+                             "mean_of_per_column_ratios": float(
+                                 (precC / precL.clamp(min=1e-12)).mean())},
         "final_hydro_mass_kg_m2": {"legacy_mean": float(hL.mean()),
                                    "conservative_mean": float(hC.mean())},
         "final_state_diffs": {x: field_stats(getattr(xL, x), getattr(xC, x))
@@ -158,8 +160,8 @@ def main():
           "→ conservative", o["hydro_mass_retained_kg_m2"]["conservative"])
     if "window_3h_lc05_heaviest256" in art:
         w3 = art["window_3h_lc05_heaviest256"]
-        print(f"3h window: cum precip ratio (cons/legacy) = "
-              f"{w3['cum_precip_kg_m2']['ratio_mean']:.3f}")
+        print(f"3h window: aggregate cum precip ratio (cons/legacy) = "
+              f"{w3['cum_precip_kg_m2']['ratio_of_means']:.3f}")
     print("artifact:", OUT / "p0_4b1_impact_comparison.json")
 
 
