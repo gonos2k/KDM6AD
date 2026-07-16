@@ -213,10 +213,11 @@ def window_comparison(n_steps, sel_n=256):
 
 
 def main():
+    prov = provenance()        # startup hashes — taken before any computation
     art = {
         "artifact": "p0_4b1_impact_comparison",
         "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4, P0-4b.2 corrected)",
-        "provenance": provenance(),
+        "provenance": prov,
         "one_step_heavy_rain_dt120": one_step_comparison(),
     }
     try:

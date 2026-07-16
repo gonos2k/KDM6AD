@@ -72,16 +72,18 @@ def _kdm6_tree_sha256():
     return h.hexdigest()
 
 
-def provenance(traj_sha=None, script_sha=None, kdm6_sha=None):
+def provenance(traj_sha, script_sha, kdm6_sha):
+    """Content hashes are REQUIRED and must be the startup values — computing
+    them lazily at artifact-write time could record a tree edited mid-run."""
     root = pathlib.Path(__file__).resolve().parents[2]
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
     return {
         "code_sha": code_sha,
-        "script_sha256": script_sha or _sha256(__file__),
-        "kdm6_tree_sha256": kdm6_sha or _kdm6_tree_sha256(),
+        "script_sha256": script_sha,
+        "kdm6_tree_sha256": kdm6_sha,
         "trajectory": FCST,
-        "trajectory_sha256": traj_sha or _sha256(FCST),
+        "trajectory_sha256": traj_sha,
         "restore_manifest_sha256": _sha256(MANIFEST),
         "trajectory_provenance": ("faithful reconstruction (regenerated 3h/5-min run per "
                                   "RESTORE_MANIFEST), not the byte-identical original"),
@@ -119,12 +121,13 @@ def main():
     # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
     ckpt = os.environ.get("P0_4B1_REPLAY_CKPT")
     start_frame = 0
-    traj_sha = script_sha = kdm6_sha = ck_meta = None
-    if ckpt:
-        script_sha = _sha256(__file__)
-        kdm6_sha = _kdm6_tree_sha256()    # the physics package, not just this script
-        traj_sha = _sha256(FCST)          # content hash, computed once at startup
-        ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha)
+    # All content hashes are taken at STARTUP (checkpointing or not): the
+    # provenance must record what was on disk when this run launched, not
+    # whatever the tree looks like ~45 min later at artifact-write time.
+    script_sha = _sha256(__file__)
+    kdm6_sha = _kdm6_tree_sha256()        # the physics package, not just this script
+    traj_sha = _sha256(FCST)              # trajectory content, not its path
+    ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha) if ckpt else None
     if ckpt and pathlib.Path(ckpt).exists():
         ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
         ok = (ck.get("meta") == ck_meta
