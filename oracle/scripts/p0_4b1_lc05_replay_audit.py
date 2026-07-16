@@ -143,21 +143,23 @@ def main():
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
-        # Keep the ORIGINAL launch identity, but never on trust: the stored
-        # provenance must agree with THIS session's startup identity on every
-        # field except the legitimately session-varying ones (repo HEAD may
-        # move between sessions while the content hashes stay pinned).
+        # Never trust the checkpoint's stored provenance: it must equal THIS
+        # session's freshly computed startup identity on every field — code_sha
+        # included, because a claimed "original commit" is unverifiable on
+        # trust. Consequence: resuming requires the same repo HEAD; if HEAD
+        # moved between sessions, restart instead of resuming. The only field
+        # allowed to differ is the resume counter itself.
         stored = ck.get("provenance")
-        varying = {"code_sha", "checkpoint_resumes"}
+        varying = {"checkpoint_resumes"}
         if (not isinstance(stored, dict)
                 or {k: v for k, v in stored.items() if k not in varying}
                 != {k: v for k, v in prov.items() if k not in varying}):
             raise RuntimeError(
                 f"checkpoint at {ckpt} carries a provenance that does not match "
-                "this run's startup identity (content hashes, config, manifest, "
-                "or runtime versions differ) — refusing to resume")
-        prov = stored
-        prov["checkpoint_resumes"] = int(prov.get("checkpoint_resumes", 0)) + 1
+                "this run's startup identity (repo HEAD, content hashes, config, "
+                "manifest, or runtime versions differ) — refusing to resume; "
+                "delete the checkpoint and rerun from frame 0")
+        prov["checkpoint_resumes"] = int(stored.get("checkpoint_resumes", 0)) + 1
         print(f"resuming from checkpoint: {start_frame} frames done", flush=True)
     t0 = time.time()
     N_SHARDS = 16    # mstep-aware sharding: batch-global mstepmax makes ONE heavy
