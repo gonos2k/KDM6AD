@@ -1,0 +1,232 @@
+{
+ "artifact": "p0_4b1_impact_comparison",
+ "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4)",
+ "one_step_heavy_rain_dt120": {
+  "surface_precip_kg_m2": {
+   "legacy_diag": [
+    2.000138647448952,
+    3.0153478068152717
+   ],
+   "conservative_actual": [
+    2.000138647448952,
+    3.0153478068152717
+   ]
+  },
+  "column_loss_kg_m2": {
+   "legacy": [
+    6.801386474489526,
+    9.033478068152718
+   ],
+   "conservative": [
+    2.0001386474489564,
+    3.015347806815278
+   ]
+  },
+  "closure_residual": {
+   "legacy_gap": [
+    -4.801247827040574,
+    -6.018130261337446
+   ],
+   "conservative_gap": [
+    -4.440892098500626e-15,
+    -6.217248937900877e-15
+   ]
+  },
+  "state_field_diffs": {
+   "qr": {
+    "max_abs_diff": 0.0059929985199938494,
+    "mean_diff": 0.003476028310068841,
+    "rel_l2": 0.50128151253658
+   },
+   "qs": {
+    "max_abs_diff": 0.0,
+    "mean_diff": 0.0,
+    "rel_l2": 0.0
+   },
+   "qg": {
+    "max_abs_diff": 0.0,
+    "mean_diff": 0.0,
+    "rel_l2": 0.0
+   },
+   "qi": {
+    "max_abs_diff": 0.0,
+    "mean_diff": 0.0,
+    "rel_l2": 0.0
+   },
+   "qc": {
+    "max_abs_diff": 0.0010434648017991692,
+    "mean_diff": -0.00014118938659758284,
+    "rel_l2": 0.24543700363074133
+   },
+   "qv": {
+    "max_abs_diff": 0.0008938517165093599,
+    "mean_diff": -0.0002611519665456873,
+    "rel_l2": 0.03921850113012791
+   },
+   "nr": {
+    "max_abs_diff": 77905.01027439484,
+    "mean_diff": -12777.52432250669,
+    "rel_l2": 0.04759836140254529
+   },
+   "nc": {
+    "max_abs_diff": 1019431812.2312634,
+    "mean_diff": -252428976.52890792,
+    "rel_l2": 0.6948203433635868
+   },
+   "ni": {
+    "max_abs_diff": 0.0,
+    "mean_diff": 0.0,
+    "rel_l2": 0.0
+   },
+   "bg": {
+    "max_abs_diff": 0.0,
+    "mean_diff": 0.0,
+    "rel_l2": 0.0
+   },
+   "th": {
+    "max_abs_diff": 2.2270665611752634,
+    "mean_diff": 0.6506703531882465,
+    "rel_l2": 0.003820984873729799
+   }
+  },
+  "hydro_mass_retained_kg_m2": {
+   "legacy": [
+    10.59775315454257,
+    16.719127212786034
+   ],
+   "conservative": [
+    16.81524254464745,
+    22.737257474123478
+   ]
+  },
+  "qr_profile_col0": {
+   "legacy": [
+    0.008361845580082699,
+    0.007265082830132519,
+    0.005889295277508741,
+    0.002569578930365064
+   ],
+   "conservative": [
+    0.01188229379750259,
+    0.01188229379750259,
+    0.01188229379750259,
+    0.002569578930365064
+   ]
+  },
+  "nan_inf": {
+   "legacy": false,
+   "conservative": false
+  },
+  "vjp_norm_wrt_qr_qv_th": {
+   "legacy": [
+    0.033314616359369296,
+    0.0215211947710302,
+    1.1407241805915849e-05
+   ],
+   "conservative": [
+    0.06594987386178547,
+    0.03346686486649032,
+    1.4619814981673747e-05
+   ]
+  }
+ },
+ "window_1h_lc05_heaviest256": {
+  "n_steps": 12,
+  "n_columns": 256,
+  "cum_precip_kg_m2": {
+   "legacy_diag_mean": 4.816665800501945,
+   "conservative_actual_mean": 6.291775845512816,
+   "ratio_mean": 1.3790681580299466
+  },
+  "final_hydro_mass_kg_m2": {
+   "legacy_mean": 0.40328824316299666,
+   "conservative_mean": 0.41446613190617865
+  },
+  "final_state_diffs": {
+   "qr": {
+    "max_abs_diff": 0.00015376960982693735,
+    "mean_diff": 4.074322567259727e-06,
+    "rel_l2": 0.33724658556200776
+   },
+   "qs": {
+    "max_abs_diff": 0.00026962381125559496,
+    "mean_diff": -1.87450751388827e-06,
+    "rel_l2": 0.42274113618661696
+   },
+   "qg": {
+    "max_abs_diff": 8.469461916539928e-05,
+    "mean_diff": 4.479670576750033e-08,
+    "rel_l2": 3.2449479624318998
+   },
+   "qi": {
+    "max_abs_diff": 2.7237919328152777e-06,
+    "mean_diff": -5.044799156671411e-09,
+    "rel_l2": 1.03133962212232
+   },
+   "qv": {
+    "max_abs_diff": 0.0004255538127224288,
+    "mean_diff": -5.564314146023321e-06,
+    "rel_l2": 0.003030808433281376
+   },
+   "th": {
+    "max_abs_diff": 1.0457504284397032,
+    "mean_diff": 0.0011240818889063676,
+    "rel_l2": 0.00023008761961431254
+   }
+  },
+  "qv_th_knockon": {
+   "qv_mean_diff": -5.564314146023321e-06,
+   "th_mean_diff": 0.0011240818889063676
+  }
+ },
+ "window_3h_lc05_heaviest256": {
+  "n_steps": 36,
+  "n_columns": 256,
+  "cum_precip_kg_m2": {
+   "legacy_diag_mean": 5.132866417407983,
+   "conservative_actual_mean": 6.599820021407155,
+   "ratio_mean": 1.3364807414545683
+  },
+  "final_hydro_mass_kg_m2": {
+   "legacy_mean": 0.014877453934717393,
+   "conservative_mean": 0.007967678173007154
+  },
+  "final_state_diffs": {
+   "qr": {
+    "max_abs_diff": 9.139738677623573e-06,
+    "mean_diff": -5.094416144954411e-07,
+    "rel_l2": 0.507706856548108
+   },
+   "qs": {
+    "max_abs_diff": 7.698179038732151e-06,
+    "mean_diff": -7.532415269070694e-08,
+    "rel_l2": 0.6120361069786381
+   },
+   "qg": {
+    "max_abs_diff": 7.460045270544666e-09,
+    "mean_diff": -2.566500801623958e-11,
+    "rel_l2": 0.9938747451014558
+   },
+   "qi": {
+    "max_abs_diff": 8.198549146915829e-07,
+    "mean_diff": -2.7999895971728255e-09,
+    "rel_l2": 1.002966809476297
+   },
+   "qv": {
+    "max_abs_diff": 0.00044562184356718854,
+    "mean_diff": -3.3315093418859034e-06,
+    "rel_l2": 0.0027964164061343873
+   },
+   "th": {
+    "max_abs_diff": 1.0084793389128777,
+    "mean_diff": -0.004815979474958863,
+    "rel_l2": 0.0002077818556539173
+   }
+  },
+  "qv_th_knockon": {
+   "qv_mean_diff": -3.3315093418859034e-06,
+   "th_mean_diff": -0.004815979474958863
+  }
+ },
+ "allsky_bt_comparison": "deferred: requires the local RTTOV runtime/science assets (host-coupled); state-space impacts above are the merge-decision inputs"
+}
