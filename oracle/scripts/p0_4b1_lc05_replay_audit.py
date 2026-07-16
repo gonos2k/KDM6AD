@@ -20,6 +20,7 @@ Analysis-only; no repo behavior change.
 """
 import hashlib
 import json
+import os
 import pathlib
 import platform
 import subprocess
@@ -91,11 +92,21 @@ def main():
     cum36_sink = None                                  # per-column, frames 0..35 only
     cum36_species = {sp: 0.0 for sp in SPECIES}        # domain sums, frames 0..35
     cum36_proj = 0.0
+    # Optional per-frame checkpoint/resume (a ~45 min run should survive an
+    # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
+    ckpt = os.environ.get("P0_4B1_REPLAY_CKPT")
+    start_frame = 0
+    if ckpt and pathlib.Path(ckpt).exists():
+        ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
+        frames, cum36_sink = ck["frames"], ck["cum36_sink"]
+        cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
+        start_frame = len(frames)
+        print(f"resuming from checkpoint: {start_frame} frames done", flush=True)
     t0 = time.time()
     N_SHARDS = 16    # mstep-aware sharding: batch-global mstepmax makes ONE heavy
     #                  column dominate the whole domain's substep count (the da_shard
     #                  rationale) — audit per shard, then concatenate per-column stats.
-    for fr_i in range(37):
+    for fr_i in range(start_frame, 37):
         fr = read_wrfout_frame(FCST, fr_i)
         s_full = State(*fr.state)
         f_full = Forcing(*fr.forcing)
@@ -187,6 +198,10 @@ def main():
                 "p_hPa_at_mode_half_level": float(p_iface.mean() / 100.0),
             }
         frames.append(rec)
+        if ckpt:
+            torch.save({"frames": frames, "cum36_sink": cum36_sink,
+                        "cum36_species": cum36_species, "cum36_proj": cum36_proj},
+                       ckpt)
         print(f"frame {fr_i:2d} ({fr_i*5:3d} min): affected {n_aff}/{B} "
               f"({100*n_aff/B:.1f}%), sink_sum={float(sink_tot.sum()):.3f} kg/m² "
               f"diag_sum={float(diag_tot.sum()):.3f} "
@@ -234,6 +249,8 @@ def main():
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "p0_4b1_lc05_replay_audit.json").write_text(json.dumps(art, indent=1))
+    if ckpt:
+        pathlib.Path(ckpt).unlink(missing_ok=True)
     print("\nartifact:", OUT / "p0_4b1_lc05_replay_audit.json")
     print(f"total wall: {time.time()-t0:.0f}s")
 
