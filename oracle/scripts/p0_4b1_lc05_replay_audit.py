@@ -61,15 +61,15 @@ def _sha256(path, chunk=1 << 24):
     return h.hexdigest()
 
 
-def provenance():
+def provenance(traj_sha=None, script_sha=None):
     root = pathlib.Path(__file__).resolve().parents[2]
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
     return {
         "code_sha": code_sha,
-        "script_sha256": _sha256(__file__),
+        "script_sha256": script_sha or _sha256(__file__),
         "trajectory": FCST,
-        "trajectory_sha256": _sha256(FCST),
+        "trajectory_sha256": traj_sha or _sha256(FCST),
         "restore_manifest_sha256": _sha256(MANIFEST),
         "trajectory_provenance": ("faithful reconstruction (regenerated 3h/5-min run per "
                                   "RESTORE_MANIFEST), not the byte-identical original"),
@@ -86,10 +86,13 @@ def provenance():
     }
 
 
-def _ckpt_meta():
-    """Config fingerprint — a checkpoint from a different trajectory/config
-    must never be silently resumed."""
-    return {"artifact": "p0_4b1_lc05_replay_audit", "trajectory": FCST, "dt": DT,
+def _ckpt_meta(traj_sha, script_sha):
+    """Config + content + code fingerprint — a checkpoint from a different
+    trajectory (by BYTES, not path), a different script revision, or a
+    different config must never be silently resumed."""
+    return {"artifact": "p0_4b1_lc05_replay_audit",
+            "trajectory": FCST, "trajectory_sha256": traj_sha,
+            "script_sha256": script_sha, "dt": DT,
             "ncmin_land": NCMIN_LAND, "ncmin_sea": NCMIN_SEA,
             "n_cum_steps": N_CUM_STEPS}
 
@@ -104,16 +107,21 @@ def main():
     # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
     ckpt = os.environ.get("P0_4B1_REPLAY_CKPT")
     start_frame = 0
+    traj_sha = script_sha = ck_meta = None
+    if ckpt:
+        script_sha = _sha256(__file__)
+        traj_sha = _sha256(FCST)          # content hash, computed once at startup
+        ck_meta = _ckpt_meta(traj_sha, script_sha)
     if ckpt and pathlib.Path(ckpt).exists():
         ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
-        ok = (ck.get("meta") == _ckpt_meta()
+        ok = (ck.get("meta") == ck_meta
               and 0 < len(ck.get("frames", [])) <= 37
               and [r["frame"] for r in ck["frames"]] == list(range(len(ck["frames"]))))
         if not ok:
             raise RuntimeError(
                 f"stale or mismatched replay checkpoint at {ckpt} (different "
-                "trajectory/config or non-contiguous frames) — delete it or "
-                "point P0_4B1_REPLAY_CKPT elsewhere")
+                "trajectory bytes, script revision, or config; or non-contiguous "
+                "frames) — delete it or point P0_4B1_REPLAY_CKPT elsewhere")
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
@@ -216,7 +224,7 @@ def main():
         frames.append(rec)
         if ckpt:
             # atomic: a kill mid-write must never leave a truncated checkpoint
-            torch.save({"meta": _ckpt_meta(), "frames": frames,
+            torch.save({"meta": ck_meta, "frames": frames,
                         "cum36_sink": cum36_sink, "cum36_species": cum36_species,
                         "cum36_proj": cum36_proj}, ckpt + ".tmp")
             os.replace(ckpt + ".tmp", ckpt)
@@ -260,7 +268,7 @@ def main():
     art = {
         "artifact": "p0_4b1_lc05_replay_audit",
         "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
-        "provenance": provenance(),
+        "provenance": provenance(traj_sha=traj_sha, script_sha=script_sha),
         "dt_seconds": DT,
         "frames": frames,
         "cumulative_replay": cum,
