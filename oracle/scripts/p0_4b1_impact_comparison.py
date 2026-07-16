@@ -51,6 +51,17 @@ def _sha256(path, chunk=1 << 24):
     return h.hexdigest()
 
 
+def _kdm6_tree_sha256():
+    """Combined content hash of the imported kdm6 package (working tree, every
+    .py, sorted and path-tagged) — the physics lives there, not in this script."""
+    root = pathlib.Path(__file__).resolve().parents[1] / "kdm6"
+    h = hashlib.sha256()
+    for p in sorted(root.rglob("*.py")):
+        h.update(str(p.relative_to(root)).encode())
+        h.update(p.read_bytes())
+    return h.hexdigest()
+
+
 def provenance():
     root = pathlib.Path(__file__).resolve().parents[2]
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
@@ -58,6 +69,7 @@ def provenance():
     return {
         "code_sha": code_sha,
         "script_sha256": _sha256(__file__),
+        "kdm6_tree_sha256": _kdm6_tree_sha256(),
         "trajectory": FCST,
         "trajectory_sha256": _sha256(FCST),
         "restore_manifest_sha256": _sha256(MANIFEST),

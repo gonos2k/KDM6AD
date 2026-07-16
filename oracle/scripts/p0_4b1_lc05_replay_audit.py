@@ -61,13 +61,25 @@ def _sha256(path, chunk=1 << 24):
     return h.hexdigest()
 
 
-def provenance(traj_sha=None, script_sha=None):
+def _kdm6_tree_sha256():
+    """Combined content hash of the imported kdm6 package (working tree, every
+    .py, sorted and path-tagged) — the physics lives there, not in this script."""
+    root = pathlib.Path(__file__).resolve().parents[1] / "kdm6"
+    h = hashlib.sha256()
+    for p in sorted(root.rglob("*.py")):
+        h.update(str(p.relative_to(root)).encode())
+        h.update(p.read_bytes())
+    return h.hexdigest()
+
+
+def provenance(traj_sha=None, script_sha=None, kdm6_sha=None):
     root = pathlib.Path(__file__).resolve().parents[2]
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
     return {
         "code_sha": code_sha,
         "script_sha256": script_sha or _sha256(__file__),
+        "kdm6_tree_sha256": kdm6_sha or _kdm6_tree_sha256(),
         "trajectory": FCST,
         "trajectory_sha256": traj_sha or _sha256(FCST),
         "restore_manifest_sha256": _sha256(MANIFEST),
@@ -86,13 +98,13 @@ def provenance(traj_sha=None, script_sha=None):
     }
 
 
-def _ckpt_meta(traj_sha, script_sha):
+def _ckpt_meta(traj_sha, script_sha, kdm6_sha):
     """Config + content + code fingerprint — a checkpoint from a different
-    trajectory (by BYTES, not path), a different script revision, or a
-    different config must never be silently resumed."""
+    trajectory (by BYTES, not path), a different script revision, a different
+    kdm6 physics tree, or a different config must never be silently resumed."""
     return {"artifact": "p0_4b1_lc05_replay_audit",
             "trajectory": FCST, "trajectory_sha256": traj_sha,
-            "script_sha256": script_sha, "dt": DT,
+            "script_sha256": script_sha, "kdm6_tree_sha256": kdm6_sha, "dt": DT,
             "ncmin_land": NCMIN_LAND, "ncmin_sea": NCMIN_SEA,
             "n_cum_steps": N_CUM_STEPS}
 
@@ -107,11 +119,12 @@ def main():
     # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
     ckpt = os.environ.get("P0_4B1_REPLAY_CKPT")
     start_frame = 0
-    traj_sha = script_sha = ck_meta = None
+    traj_sha = script_sha = kdm6_sha = ck_meta = None
     if ckpt:
         script_sha = _sha256(__file__)
+        kdm6_sha = _kdm6_tree_sha256()    # the physics package, not just this script
         traj_sha = _sha256(FCST)          # content hash, computed once at startup
-        ck_meta = _ckpt_meta(traj_sha, script_sha)
+        ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha)
     if ckpt and pathlib.Path(ckpt).exists():
         ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
         ok = (ck.get("meta") == ck_meta
@@ -268,7 +281,8 @@ def main():
     art = {
         "artifact": "p0_4b1_lc05_replay_audit",
         "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
-        "provenance": provenance(traj_sha=traj_sha, script_sha=script_sha),
+        "provenance": provenance(traj_sha=traj_sha, script_sha=script_sha,
+                                 kdm6_sha=kdm6_sha),
         "dt_seconds": DT,
         "frames": frames,
         "cumulative_replay": cum,
