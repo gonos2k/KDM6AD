@@ -2287,6 +2287,8 @@ def sedimentation_chain_torch(
     mstep_col_main: "torch.Tensor | None" = None,       # (B,) per-column mstep (1:1 fix #10);
     mstep_col_ice: "torch.Tensor | None" = None,        # None → scalar mstep_main/mstep_ice (legacy)
     ledger=None,   # [P0-4b] duck-typed SedimentationLedger; threading only, None → byte-identical
+    substep_fn=None,       # [P0-4b.1] main-substep override (None → legacy _sed.substep_advection_torch)
+    ice_substep_fn=None,   # [P0-4b.1] ice-substep override (None → legacy); analysis-only injection
 ) -> SedimentationOutputs:
     """F2b — sedimentation 통합 chain.
 
@@ -2330,7 +2332,7 @@ def sedimentation_chain_torch(
     w1_qi, wn_qi = work1_qi, workn_qi
     _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
     for n in range(1, mstep_main + 1):
-        out = _sed.substep_advection_torch(
+        out = (substep_fn if substep_fn is not None else _sed.substep_advection_torch)(
             adv_state,
             fall_qr, fall_nr, fall_qs, fall_qg, fall_brs,
             w1_qr, wn_qr, w1_qs, w1_qg,
@@ -2377,7 +2379,7 @@ def sedimentation_chain_torch(
     fall_ni = torch.zeros_like(state.qr)
     # w1_qi/wn_qi carry the main-loop handoff (or the passed-in initial if reslope is off).
     for n in range(1, mstep_ice + 1):
-        out_i = _sed.ice_substep_advection_torch(
+        out_i = (ice_substep_fn if ice_substep_fn is not None else _sed.ice_substep_advection_torch)(
             ice_state, fall_qi, fall_ni,
             w1_qi, wn_qi, forcing.delz, forcing.dend,
             mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
