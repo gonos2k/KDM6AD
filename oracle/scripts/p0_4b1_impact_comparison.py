@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""P0-4b.1 component 4 — legacy vs conservative impact comparison.
+"""P0-4b.1 component 4 — legacy vs conservative impact comparison (P0-4b.2 rev).
 
 Runs the legacy_reference and conservative_experiment sedimentation on the SAME
 inputs and reports where the previously-vanishing mass goes: surface
 precipitation, per-level hydrometeor profiles, species, numbers, graupel volume
 proxy, gradients — for one step (synthetic heavy rain) and a 1 h / 3 h
-microphysics-window trajectory on real LC05 columns (prescribed forcing).
+microphysics-window trajectory on real LC05 columns (prescribed forcing, with
+the operational xland + ncmin_land=100 / ncmin_sea=10 configuration).
 
 All-sky BT / observation-cost comparison requires the local RTTOV runtime; if
 unavailable this script records "deferred" rather than fabricating numbers.
@@ -13,8 +14,12 @@ unavailable this script records "deferred" rather than fabricating numbers.
 Output: docs/reports/p0_4b1_impact_comparison.json
 Analysis-only; no repo behavior change.
 """
+import hashlib
 import json
+import math
 import pathlib
+import platform
+import subprocess
 import sys
 
 import torch
@@ -26,8 +31,59 @@ from kdm6.water_budget import kdm6_step_with_water_budget          # noqa: E402
 from kdm6.sed_conservative import kdm6_step_conservative_experiment  # noqa: E402
 
 FCST = "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000"
+MANIFEST = "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.RESTORE_MANIFEST.json"
 OUT = pathlib.Path(__file__).resolve().parents[2] / "docs" / "reports"
 HYDRO = ("qr", "qs", "qg", "qi")
+# Operational LC05 all-sky/DA land-sea configuration (windows only; the
+# synthetic one-step case has no land/sea geography)
+NCMIN_LAND = 100.0
+NCMIN_SEA = 10.0
+
+
+def _sha256(path, chunk=1 << 24):
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while True:
+            b = fh.read(chunk)
+            if not b:
+                break
+            h.update(b)
+    return h.hexdigest()
+
+
+def _kdm6_tree_sha256():
+    """Combined content hash of the imported kdm6 package (working tree, every
+    .py, sorted and path-tagged) — the physics lives there, not in this script."""
+    root = pathlib.Path(__file__).resolve().parents[1] / "kdm6"
+    h = hashlib.sha256()
+    for p in sorted(root.rglob("*.py")):
+        h.update(str(p.relative_to(root)).encode())
+        h.update(p.read_bytes())
+    return h.hexdigest()
+
+
+def provenance():
+    root = pathlib.Path(__file__).resolve().parents[2]
+    code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                              capture_output=True, text=True).stdout.strip()
+    return {
+        "code_sha": code_sha,
+        "script_sha256": _sha256(__file__),
+        "kdm6_tree_sha256": _kdm6_tree_sha256(),
+        "trajectory": FCST,
+        "trajectory_sha256": _sha256(FCST),
+        "restore_manifest_sha256": _sha256(MANIFEST),
+        "trajectory_provenance": ("faithful reconstruction (regenerated 3h/5-min run per "
+                                  "RESTORE_MANIFEST), not the byte-identical original"),
+        "torch_version": torch.__version__,
+        "python_version": platform.python_version(),
+        "window_dt": 300.0,
+        "one_step_dt": 120.0,
+        "xland_used_in_windows": True,
+        "xland_used_in_one_step": False,
+        "ncmin_land": NCMIN_LAND,
+        "ncmin_sea": NCMIN_SEA,
+    }
 
 
 def _mk(cv, K):
@@ -79,7 +135,10 @@ def one_step_comparison():
         "nan_inf": {"legacy": bool(sum(~torch.isfinite(getattr(outL, x)).all() for x in outL._fields)),
                     "conservative": bool(sum(~torch.isfinite(getattr(outC, x)).all() for x in outC._fields))},
     }
-    # gradient comparison (VJP norm through each variant)
+    # gradient comparison (VJP norm through each variant).
+    # SCOPE (P0-4b.2): synthetic heavy-rain SINGLE-step VJP norms w.r.t.
+    # (qr, qv, th) — a sensitivity-path indicator, NOT an LC05-window or
+    # observation-space adjoint measurement (those remain unmeasured).
     def grad_norm(step_fn):
         s2, f2 = _heavy_rain()
         s2 = State(*(t.clone().requires_grad_(t.dtype.is_floating_point) for t in s2))
@@ -89,23 +148,37 @@ def one_step_comparison():
                                  allow_unused=True)
         return [float(g.norm()) if g is not None else None for g in gs]
 
-    rec["vjp_norm_wrt_qr_qv_th"] = {
-        "legacy": grad_norm(lambda s2, f2: _kdm6_pure(s2, f2, make_parameters(), 120.0)),
-        "conservative": grad_norm(
-            lambda s2, f2: kdm6_step_conservative_experiment(s2, f2, dt=120.0)[0]),
+    nL = grad_norm(lambda s2, f2: _kdm6_pure(s2, f2, make_parameters(), 120.0))
+    nC = grad_norm(lambda s2, f2: kdm6_step_conservative_experiment(s2, f2, dt=120.0)[0])
+    combL = math.sqrt(sum(v * v for v in nL if v is not None))
+    combC = math.sqrt(sum(v * v for v in nC if v is not None))
+    rec["vjp_synthetic_one_step"] = {
+        "note": ("synthetic heavy-rain single-step VJP norms wrt (qr, qv, th); "
+                 "LC05/observation-space adjoint impact is unmeasured"),
+        "inputs": ["qr", "qv", "th"],
+        "legacy": nL,
+        "conservative": nC,
+        "per_input_ratio": [(nC[i] / nL[i]) if (nL[i] and nC[i] is not None) else None
+                            for i in range(len(nL))],
+        "combined_euclidean_norm": {
+            "legacy": combL, "conservative": combC,
+            "ratio": (combC / combL) if combL else None,
+        },
     }
     return rec
 
 
 def window_comparison(n_steps, sel_n=256):
     """1h/3h microphysics-window trajectory on real LC05 precipitating columns
-    (prescribed per-frame forcing, like the DA window)."""
+    (prescribed per-frame forcing, like the DA window). n_steps intervals use
+    forcing frames 0..n_steps-1 (36 intervals span the full 3 h trajectory)."""
     from kdm6.io.frame_reader import read_wrfout_frame
     fr0 = read_wrfout_frame(FCST, 0)
     s0 = State(*fr0.state)
     f0 = Forcing(*fr0.forcing)
     hydro0 = ((f0.rho * f0.delz) * (s0.qr + s0.qs + s0.qg + s0.qi)).sum(-1)
     sel = torch.argsort(hydro0, descending=True)[:sel_n]          # heaviest columns
+    xl = fr0.xland[sel]                # fixed land/sea mask, same for both variants
     xL = State(*(t[sel] for t in fr0.state))
     xC = State(*(t[sel] for t in fr0.state))
     p = make_parameters()
@@ -113,8 +186,10 @@ def window_comparison(n_steps, sel_n=256):
     for t in range(n_steps):
         frt = read_wrfout_frame(FCST, min(t, 36))
         ft = Forcing(*(x[sel] for x in frt.forcing))
-        xL, budL = kdm6_step_with_water_budget(xL, ft, p, dt=300.0)
-        xC, budC, _ = kdm6_step_conservative_experiment(xC, ft, p, dt=300.0)
+        xL, budL = kdm6_step_with_water_budget(
+            xL, ft, p, dt=300.0, xland=xl, ncmin_land=NCMIN_LAND, ncmin_sea=NCMIN_SEA)
+        xC, budC, _ = kdm6_step_conservative_experiment(
+            xC, ft, p, dt=300.0, xland=xl, ncmin_land=NCMIN_LAND, ncmin_sea=NCMIN_SEA)
         precL = budL.surface_precip_diag_kg_m2 if precL is None else precL + budL.surface_precip_diag_kg_m2
         precC = budC.surface_precip_diag_kg_m2 if precC is None else precC + budC.surface_precip_diag_kg_m2
     w = ft.rho * ft.delz
@@ -122,6 +197,7 @@ def window_comparison(n_steps, sel_n=256):
     hC = (w * (xC.qr + xC.qs + xC.qg + xC.qi)).sum(-1)
     return {
         "n_steps": n_steps, "n_columns": sel_n,
+        "xland_used": True, "ncmin_land": NCMIN_LAND, "ncmin_sea": NCMIN_SEA,
         "cum_precip_kg_m2": {"legacy_diag_mean": float(precL.mean()),
                              "conservative_actual_mean": float(precC.mean()),
                              "ratio_of_means": float(precC.mean() / precL.mean()),
@@ -137,9 +213,11 @@ def window_comparison(n_steps, sel_n=256):
 
 
 def main():
+    prov = provenance()        # startup hashes — taken before any computation
     art = {
         "artifact": "p0_4b1_impact_comparison",
-        "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4)",
+        "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4, P0-4b.2 corrected)",
+        "provenance": prov,
         "one_step_heavy_rain_dt120": one_step_comparison(),
     }
     try:
@@ -158,6 +236,9 @@ def main():
           "→ conservative", o["surface_precip_kg_m2"]["conservative_actual"])
     print("retained hydro: legacy", o["hydro_mass_retained_kg_m2"]["legacy"],
           "→ conservative", o["hydro_mass_retained_kg_m2"]["conservative"])
+    v = o["vjp_synthetic_one_step"]["combined_euclidean_norm"]
+    print(f"VJP combined norm (synthetic 1-step): legacy {v['legacy']:.5f} → "
+          f"conservative {v['conservative']:.5f} (ratio {v['ratio']:.3f})")
     if "window_3h_lc05_heaviest256" in art:
         w3 = art["window_3h_lc05_heaviest256"]
         print(f"3h window: aggregate cum precip ratio (cons/legacy) = "

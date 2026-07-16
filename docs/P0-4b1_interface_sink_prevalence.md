@@ -11,6 +11,19 @@ frozen code was touched; the legacy path stays byte-identical
 Artifacts: `docs/reports/p0_4b1_cfl_sink_phase_map.json` (+`.png`),
 `p0_4b1_lc05_replay_audit.json`, `p0_4b1_impact_comparison.json`.
 
+**P0-4b.2 evidence corrections**: the replay and impact artifacts were
+regenerated with (1) the operational LC05 land/sea configuration (`xland`,
+`ncmin_land=100` / `ncmin_sea=10`) instead of defaults, (2) the corrected
+vertical coordinate mapping (attribution `k` is top-first; pressure is now the
+flipped **half-level** value at the interface — the previous "530–580 hPa" was
+a coordinate mismatch), (3) the 36-interval convention ("3 h cumulative" =
+replay steps from frames 0..35; frame 36 reported separately as the endpoint),
+and (4) decision-grade provenance embedded in both artifacts (code/script/kdm6
+-tree/trajectory/manifest hashes, versions, config). Under the operational
+config every qualitative conclusion is unchanged and the headline numbers move
+by <1% — except the worst-interface pressure, which was wrong by coordinate
+flip and is materially different (see §2).
+
 ## 1. CFL–sink phase map (synthetic, legacy substep)
 
 With per-substep fall ratio `c = vt·Δt_sub/Δz`:
@@ -30,39 +43,44 @@ With per-substep fall ratio `c = vt·Δt_sub/Δz`:
 ## 2. LC05 frame-replay susceptibility audit
 
 One oracle step (dt = 300 s) replayed on each of the 37 restored LC05 frames
-(65,988 columns × 39 levels; sharded 16-way — batch-global `mstepmax` otherwise
-lets single heavy columns dominate the whole domain's substep count).
+(65,988 columns × 39 levels; operational `xland` + `ncmin_land=100` /
+`ncmin_sea=10`; sharded 16-way — batch-global `mstepmax` otherwise lets single
+heavy columns dominate the whole domain's substep count).
 
 **Naming contract**: WRF history frames are not the exact pre-physics host
 states; these are susceptibility measurements, **not** "water actually lost in
-the host integration".
+the host integration". **Interval convention**: 37 frames span 36 five-minute
+intervals; "3 h cumulative" sums the 36 replay steps started from frames 0–35,
+and frame 36 (the endpoint state, sink 68.9 kg/m²) is reported separately.
 
 | measure | value |
 |---|---|
 | columns firing, every frame | **51.4–60.7%** of the domain (threshold: sink > 1e-9 kg/m² — a deliberately permissive "any defect" count; the magnitude distribution below is the materiality measure) |
-| domain sink, frames ≥ 1 | 54–104 kg/m² per step; as a fraction of surface fallout: **12.4% → 2.7% declining over the first 30 min of spin-up (fr 1–5), then 2.1–4.6% in equilibrated precipitation (fr ≥ 6)** |
-| **frame 0 (analysis-IC-like state)** | **2,917 kg/m² = 41% of total hydrometeor mass in ONE step; 40× the surface diagnostic** |
-| 3 h per-column cumulative (replay) | p50 0.010 · p90 0.219 · **p99 1.33 · max 10.0** kg/m² |
-| species share (3 h aggregate) | **qi 65%** · qr 24% · qg 10% · qs ≈ 0 |
-| worst interface | k = 15–16 ≈ **530–580 hPa** (mid-troposphere ice/mixed-phase) |
-| positivity projection A | **≡ 0 across all frames** — the real-space sink is entirely the interface defect D |
+| domain sink, frames ≥ 1 | 54–104 kg/m² per step; as a fraction of surface fallout: **12.4% (fr 1) → 3.0% (fr 5) declining through spin-up, then 2.1–4.6% in equilibrated precipitation (fr ≥ 6)** |
+| **frame 0 (analysis-IC-like state)** | **2,914 kg/m² = 41% of total hydrometeor mass in ONE step; 40× the surface diagnostic** |
+| 3 h per-column cumulative (36 replay steps, fr 0–35) | p50 0.010 · p90 0.216 · **p99 1.32 · max 10.0** kg/m² |
+| species share (3 h cumulative) | **qi 65.6%** · qr 24.2% · qg 10.1% · qs ≈ 0 |
+| worst interface | k = 15–16 top-first ≈ **274–305 hPa half-level** (upper-troposphere ice region; the previously reported 530–580 hPa applied a top-first index to bottom-up pressure) |
+| positivity projection A | frames 1–36: **exactly 0**; frame 0: domain-total **1.86×10⁻³ kg/m² ≈ 6.4×10⁻⁷ of the defect** — the real-space sink is effectively, though not mathematically exactly, all interface defect D |
 
 Two readings matter for the decision:
 
 - **In equilibrated precipitation (fr ≥ 6) the sink is modest domain-wide**
   (2.1–4.6% of fallout) **with a heavy tail** (p99 1.3 kg/m² per 3 h; max 10).
   The absolute sink is steady from frame 1 on (54–104 kg/m²), but its share of
-  fallout is larger while precipitation spins up (12.4% at fr 1 → 2.7% by
-  fr 6); frame 0 (the IC) is the extreme of that same pattern.
+  fallout is larger while precipitation spins up (12.4% at fr 1 → 3.0% by
+  fr 5); frame 0 (the IC) is the extreme of that same pattern.
 - **Freshly-initialized states are maximally susceptible**: frame 0 — the
   analysis IC, with unequilibrated hydrometeor profiles — loses 41% of its
   hydrometeor mass to the sink in a single step. This is precisely the state
   class a DA system hands the model after every analysis increment, so the
   defect bites hardest exactly where DA fidelity matters.
-- The qi dominance (65%) flows through the mp37-faithful raw ice-velocity
+- The qi dominance (65.6%) flows through the mp37-faithful raw ice-velocity
   handoff (the documented "mp37 loses 37%/step of qi" pathway) meeting the
-  interface cap at mid-levels; this is a *second* reference-faithful behavior
-  that a variant decision should scope explicitly.
+  interface cap in the **upper troposphere** (~274–305 hPa at the modal worst
+  interface — the ice region, physically consistent with an ice-velocity-driven
+  transfer defect); this is a *second* reference-faithful behavior that a
+  variant decision should scope explicitly.
 
 ## 3. Conservative counterfactual (analysis-only)
 
@@ -84,15 +102,21 @@ defaults to legacy). Acceptance — all green (6 RED-first tests):
   bottom diagnostic was accurate); the previously-vanishing ~6 kg/m² **stays in
   the upper column** (the upper-level q profile stays uniform instead of
   draining into nothing), with knock-on into qc/qv/th via satadj/warm.
-- **LC05 heaviest-256-column window** (prescribed per-frame forcing): aggregate
-  cumulative surface precipitation ratio conservative/legacy (ratio of the
-  256-column mean totals) = **1.306 (1 h)**, **1.286 (3 h)** — the retained mass
-  largely converts to **≈ +29% aggregate surface precipitation** as columns rain
-  out (final hydro both → ~0). The mean of the per-column ratios is higher
-  (1.379 / 1.336) because lighter-precip columns gain proportionally more —
-  both statistics are in the artifact; the aggregate ratio is the headline.
-- **Gradients**: VJP norms ≈ **2×** under the conservative variant (the legacy
-  cap severs sensitivity paths); no NaN/Inf in either variant.
+- **LC05 heaviest-256-column window** (prescribed per-frame forcing, operational
+  land/sea configuration: `xland` with `ncmin_land=100` / `ncmin_sea=10`, fixed
+  and identical for both variants): aggregate cumulative surface precipitation
+  ratio conservative/legacy (ratio of the 256-column mean totals) =
+  **1.306 (1 h)**, **1.285 (3 h)** — the retained mass largely converts to
+  **≈ +29% aggregate surface precipitation** as columns rain out (final hydro
+  both → ~0). The mean of the per-column ratios is higher (1.379 / 1.336)
+  because lighter-precip columns gain proportionally more — both statistics are
+  in the artifact; the aggregate ratio is the headline.
+- **Gradients** (synthetic heavy-rain **single step**, VJPs w.r.t. (q_r, q_v, θ)):
+  the combined Euclidean norm is **1.86×** under the conservative variant
+  (per-input: q_r **1.98×**, q_v 1.56×, θ 1.28×) — the legacy cap severs
+  sensitivity paths. The LC05-window / observation-space adjoint impact is
+  **unmeasured**; this must not be read as "the DA adjoint doubles". No NaN/Inf
+  in either variant.
 - All-sky BT / obs-cost comparison **deferred** (needs the local RTTOV runtime);
   the state-space impacts above are the merge-decision inputs.
 
@@ -101,7 +125,8 @@ defaults to legacy). Acceptance — all green (6 RED-first tests):
 The prevalence is structural (phase map), broad (>51% of real columns every
 step, at the permissive >1e-9 threshold), and material where it matters most (analysis-IC states: 41%/step;
 convective tails: p99 1.3 kg/m²/3 h; trajectory effect: ≈ +29% aggregate
-cumulative precip on heavy columns; 2× adjoint sensitivity). Per the pre-stated policy this
+cumulative precip on heavy columns; 1.86× combined single-step gradient norm
+on the synthetic case — obs-space adjoint unmeasured). Per the pre-stated policy this
 supports the **new conservative physics variant** path — NOT a silent baseline
 change:
 
