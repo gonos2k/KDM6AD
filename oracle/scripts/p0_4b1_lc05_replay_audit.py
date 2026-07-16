@@ -86,6 +86,14 @@ def provenance():
     }
 
 
+def _ckpt_meta():
+    """Config fingerprint — a checkpoint from a different trajectory/config
+    must never be silently resumed."""
+    return {"artifact": "p0_4b1_lc05_replay_audit", "trajectory": FCST, "dt": DT,
+            "ncmin_land": NCMIN_LAND, "ncmin_sea": NCMIN_SEA,
+            "n_cum_steps": N_CUM_STEPS}
+
+
 def main():
     torch.set_grad_enabled(False)
     frames = []
@@ -98,6 +106,14 @@ def main():
     start_frame = 0
     if ckpt and pathlib.Path(ckpt).exists():
         ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
+        ok = (ck.get("meta") == _ckpt_meta()
+              and 0 < len(ck.get("frames", [])) <= 37
+              and [r["frame"] for r in ck["frames"]] == list(range(len(ck["frames"]))))
+        if not ok:
+            raise RuntimeError(
+                f"stale or mismatched replay checkpoint at {ckpt} (different "
+                "trajectory/config or non-contiguous frames) — delete it or "
+                "point P0_4B1_REPLAY_CKPT elsewhere")
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
@@ -199,9 +215,11 @@ def main():
             }
         frames.append(rec)
         if ckpt:
-            torch.save({"frames": frames, "cum36_sink": cum36_sink,
-                        "cum36_species": cum36_species, "cum36_proj": cum36_proj},
-                       ckpt)
+            # atomic: a kill mid-write must never leave a truncated checkpoint
+            torch.save({"meta": _ckpt_meta(), "frames": frames,
+                        "cum36_sink": cum36_sink, "cum36_species": cum36_species,
+                        "cum36_proj": cum36_proj}, ckpt + ".tmp")
+            os.replace(ckpt + ".tmp", ckpt)
         print(f"frame {fr_i:2d} ({fr_i*5:3d} min): affected {n_aff}/{B} "
               f"({100*n_aff/B:.1f}%), sink_sum={float(sink_tot.sum()):.3f} kg/m² "
               f"diag_sum={float(diag_tot.sum()):.3f} "
