@@ -121,12 +121,14 @@ def main():
     # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
     ckpt = os.environ.get("P0_4B1_REPLAY_CKPT")
     start_frame = 0
-    # All content hashes are taken at STARTUP (checkpointing or not): the
-    # provenance must record what was on disk when this run launched, not
-    # whatever the tree looks like ~45 min later at artifact-write time.
+    # The ENTIRE provenance identity (content hashes, git HEAD, manifest hash)
+    # is captured at STARTUP, checkpointing or not: the artifact must record
+    # what identified this run when it launched, not whatever the tree/repo
+    # looks like ~45 min later at artifact-write time.
     script_sha = _sha256(__file__)
     kdm6_sha = _kdm6_tree_sha256()        # the physics package, not just this script
     traj_sha = _sha256(FCST)              # trajectory content, not its path
+    prov = provenance(traj_sha, script_sha, kdm6_sha)
     ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha) if ckpt else None
     if ckpt and pathlib.Path(ckpt).exists():
         ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
@@ -141,6 +143,10 @@ def main():
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
+        # keep the ORIGINAL launch identity (the fingerprint already guarantees
+        # content identity across sessions); count the resume for honesty
+        prov = ck.get("provenance", prov)
+        prov["checkpoint_resumes"] = int(prov.get("checkpoint_resumes", 0)) + 1
         print(f"resuming from checkpoint: {start_frame} frames done", flush=True)
     t0 = time.time()
     N_SHARDS = 16    # mstep-aware sharding: batch-global mstepmax makes ONE heavy
@@ -240,7 +246,7 @@ def main():
         frames.append(rec)
         if ckpt:
             # atomic: a kill mid-write must never leave a truncated checkpoint
-            torch.save({"meta": ck_meta, "frames": frames,
+            torch.save({"meta": ck_meta, "provenance": prov, "frames": frames,
                         "cum36_sink": cum36_sink, "cum36_species": cum36_species,
                         "cum36_proj": cum36_proj}, ckpt + ".tmp")
             os.replace(ckpt + ".tmp", ckpt)
@@ -284,8 +290,7 @@ def main():
     art = {
         "artifact": "p0_4b1_lc05_replay_audit",
         "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
-        "provenance": provenance(traj_sha=traj_sha, script_sha=script_sha,
-                                 kdm6_sha=kdm6_sha),
+        "provenance": prov,
         "dt_seconds": DT,
         "frames": frames,
         "cumulative_replay": cum,
