@@ -305,3 +305,19 @@ def test_dt_nonpositive_noop_returns_zero_attribution():
         assert torch.count_nonzero(att.attributed_gap_kg_m2) == 0
         assert torch.count_nonzero(att.unattributed_residual_kg_m2) == 0
         assert torch.count_nonzero(budget.sed_surface_diag_gap_kg_m2) == 0
+
+
+# ── positive-dt instrumentation failure must NOT be masked by the zero-fill ──
+def test_positive_dt_empty_ledger_raises(monkeypatch):
+    """The dt<=0 zero-fill is ONLY for the supported no-op. If dt>0 and the
+    ledger recorded nothing (silent instrumentation failure — e.g. the chain
+    threading was dropped), the wrapper must raise, not report a zero gap."""
+    s, f = _heavy_rain_batch()
+    monkeypatch.setattr(wb.SedimentationLedger, "record",
+                        lambda self, *a, **k: None)   # simulate silent failure
+    try:
+        wb.kdm6_step_with_sed_attribution(s, f, dt=120.0)
+    except ValueError as e:
+        assert "no sedimentation substep recorded" in str(e)
+    else:
+        raise AssertionError("positive-dt empty ledger was silently masked")

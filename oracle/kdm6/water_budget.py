@@ -290,4 +290,7 @@ def kdm6_step_with_sed_attribution(
     out, budget = _run_with_budget(state, forcing, params, dt, xland=xland,
                                    ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                                    controls=controls, sed_ledger=sed)
-    return out, budget, sed.finalize(like=state.qr)
+    # The zero-fill reference is passed ONLY on _kdm6_pure's supported dt<=0
+    # bit-exact no-op (nothing to record). For dt>0 an empty ledger is an
+    # instrumentation failure and finalize() must raise, not report a zero gap.
+    return out, budget, sed.finalize(like=state.qr if dt <= 0.0 else None)
