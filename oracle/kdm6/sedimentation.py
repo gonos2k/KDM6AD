@@ -45,6 +45,64 @@ def normalize_work_by_delz_torch(
 # ─── Step E2: One-substep advection (rain/snow/graupel + brs + nrs) ──────────
 
 
+class _SubstepCapture:
+    """[P0-4b] Per-substep, per-level attribution capture (guarded, detached).
+
+    Records, in mixing-ratio units per level, the outflow actually used in the
+    update (top cell: the RAW uncapped subtraction; interior: the entry-capped
+    min), the inflow actually used, and the positivity-projection addition —
+    then commits them mass-weighted (ρΔz) to a duck-typed ledger
+    (water_budget.SedimentationLedger). Never touches the forward path.
+    """
+
+    def __init__(self, species):
+        self.species = tuple(species)
+        self.out = {s: [] for s in self.species}
+        self.inn = {s: [] for s in self.species}
+        self.proj = {s: [] for s in self.species}
+        self.oflag = {s: None for s in self.species}
+        self.iflag = {s: None for s in self.species}
+        self.tflag = {s: None for s in self.species}
+
+    def top(self, s, entry, raw):
+        self.out[s].append(raw.detach())
+        self.inn[s].append(torch.zeros_like(raw))
+        # exact clamp addition: post = clamp(entry − raw, 0) ⇒ A = clamp(raw − entry, 0)
+        self.proj[s].append(torch.clamp(raw - entry, min=0.0).detach())
+        self.tflag[s] = (raw > entry).to(torch.int64)
+
+    def interior(self, s, entry, out, inn, unc_out, unc_in, above_post):
+        self.out[s].append(out.detach())
+        self.inn[s].append(inn.detach())
+        # same association as the update: x = entry − out + inn; A = clamp(−x, 0)
+        self.proj[s].append(torch.clamp(-(entry - out + inn), min=0.0).detach())
+        of = (unc_out > entry).to(torch.int64)
+        fi = (unc_in > above_post).to(torch.int64)
+        self.oflag[s] = of if self.oflag[s] is None else self.oflag[s] + of
+        self.iflag[s] = fi if self.iflag[s] is None else self.iflag[s] + fi
+
+    def commit(self, ledger, *, weight, delz_bottom, dtcld, falk_bottom,
+               entry_state, post_state):
+        for s in self.species:
+            out = torch.stack(self.out[s], dim=-1)     # (B, K)
+            inn = torch.stack(self.inn[s], dim=-1)
+            proj = torch.stack(self.proj[s], dim=-1)
+            zB = torch.zeros(out.shape[0], dtype=torch.int64)
+            ledger.record(
+                s,
+                out_mass=(weight * out).detach(),
+                in_mass=(weight * inn).detach(),
+                proj_mass=(weight * proj).detach(),
+                diag_inc=(falk_bottom[s] * delz_bottom * dtcld).detach(),
+                state_loss=(weight * (entry_state[s] - post_state[s])).sum(dim=-1).detach(),
+                flags={
+                    "outflow_cap": self.oflag[s] if self.oflag[s] is not None else zB,
+                    "inflow_cap": self.iflag[s] if self.iflag[s] is not None else zB,
+                    "top_clamp": self.tflag[s] if self.tflag[s] is not None else zB,
+                },
+            )
+
+
 class SubstepAdvectionParams(NamedTuple):
     """E2 시간불변 스칼라."""
     qcrmin: float
@@ -91,6 +149,7 @@ def substep_advection_torch(
     n_current: int = 1,            # current substep index (1-indexed) for per-column gate
     dtcld: float,
     params: SubstepAdvectionParams,
+    ledger=None,   # [P0-4b] duck-typed SedimentationLedger; None → no diagnostic (byte-identical)
 ) -> SubstepAdvectionOutputs:
     """Fortran 1148-1205 — one substep of NISLFV-PLM advection.
 
@@ -134,6 +193,8 @@ def substep_advection_torch(
     fall_qg_cols = [fall_qg_in[:, k] for k in range(K)]
     fall_brs_cols = [fall_brs_in[:, k] for k in range(K)]
 
+    _cap = _SubstepCapture(("qr", "qs", "qg")) if ledger is not None else None
+
     # ── Top cell (k=0) ─────────────────────────────────────────────────
     falk_qr_top = dend[:, 0] * qr_cols[0] * work1_qr[:, 0] / mstep_col_safe * gate
     falk_nr_top = nr_cols[0] * workn_qr[:, 0] / mstep_col_safe * gate
@@ -147,6 +208,10 @@ def substep_advection_torch(
     fall_qg_cols[0] = fall_qg_cols[0] + falk_qg_top
     fall_brs_cols[0] = fall_brs_cols[0] + falk_brs_top
 
+    if _cap is not None:
+        _cap.top("qr", qr_cols[0], falk_qr_top * dtcld / dend_safe[:, 0])
+        _cap.top("qs", qs_cols[0], falk_qs_top * dtcld / dend_safe[:, 0])
+        _cap.top("qg", qg_cols[0], falk_qg_top * dtcld / dend_safe[:, 0])
     qr_cols[0] = torch.clamp(qr_cols[0] - falk_qr_top * dtcld / dend_safe[:, 0], min=0.0)
     nr_cols[0] = torch.clamp(nr_cols[0] - falk_nr_top * dtcld, min=0.0)
     qs_cols[0] = torch.clamp(qs_cols[0] - falk_qs_top * dtcld / dend_safe[:, 0], min=0.0)
@@ -199,6 +264,19 @@ def substep_advection_torch(
         dbrs_above = torch.minimum(
             falk_brs_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k], brs_cols[k - 1])
 
+        if _cap is not None:
+            _cap.interior("qr", qr_cols[k], dqr_k, dqr_above,
+                          falk_qr_k * dtcld / dend_safe[:, k],
+                          falk_qr_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k],
+                          qr_cols[k - 1])
+            _cap.interior("qs", qs_cols[k], dqs_k, dqs_above,
+                          falk_qs_k * dtcld / dend_safe[:, k],
+                          falk_qs_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k],
+                          qs_cols[k - 1])
+            _cap.interior("qg", qg_cols[k], dqg_k, dqg_above,
+                          falk_qg_k * dtcld / dend_safe[:, k],
+                          falk_qg_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k],
+                          qg_cols[k - 1])
         qr_cols[k] = torch.clamp(qr_cols[k] - dqr_k + dqr_above, min=0.0)
         nr_cols[k] = torch.clamp(nr_cols[k] - dnr_k + dnr_above, min=0.0)
         qs_cols[k] = torch.clamp(qs_cols[k] - dqs_k + dqs_above, min=0.0)
@@ -220,6 +298,17 @@ def substep_advection_torch(
     fall_qs = torch.stack(fall_qs_cols, dim=-1)
     fall_qg = torch.stack(fall_qg_cols, dim=-1)
     fall_brs = torch.stack(fall_brs_cols, dim=-1)
+
+    if _cap is not None:
+        _cap.commit(
+            ledger,
+            weight=(dend * delz).detach(),
+            delz_bottom=delz[:, -1],
+            dtcld=dtcld,
+            falk_bottom={"qr": falk_qr_prev, "qs": falk_qs_prev, "qg": falk_qg_prev},
+            entry_state={"qr": state.qr, "qs": state.qs, "qg": state.qg},
+            post_state={"qr": qr, "qs": qs, "qg": qg},
+        )
 
     return SubstepAdvectionOutputs(
         state=SubstepAdvectionState(qr=qr, nr=nr, qs=qs, qg=qg, brs=brs),
@@ -256,6 +345,7 @@ def ice_substep_advection_torch(
     n_current: int = 1,            # current substep index (1-indexed)
     dtcld: float,
     params: SubstepAdvectionParams,
+    ledger=None,   # [P0-4b] duck-typed SedimentationLedger; None → no diagnostic (byte-identical)
 ) -> IceSubstepOutputs:
     """Fortran 1240-1271 — ice (qi/ni) sedimentation substep.
 
@@ -277,11 +367,15 @@ def ice_substep_advection_torch(
     fall_qi_cols = [fall_qi_in[:, k] for k in range(K)]
     fall_ni_cols = [fall_ni_in[:, k] for k in range(K)]
 
+    _cap = _SubstepCapture(("qi",)) if ledger is not None else None
+
     # Top cell
     falk_qi_top = dend[:, 0] * qi_cols[0] * work1_qi[:, 0] / mstep_col_safe * gate
     falk_ni_top = ni_cols[0] * workn_qi[:, 0] / mstep_col_safe * gate
     fall_qi_cols[0] = fall_qi_cols[0] + falk_qi_top
     fall_ni_cols[0] = fall_ni_cols[0] + falk_ni_top
+    if _cap is not None:
+        _cap.top("qi", qi_cols[0], falk_qi_top * dtcld / dend_safe[:, 0])
     qi_cols[0] = torch.clamp(qi_cols[0] - falk_qi_top * dtcld / dend_safe[:, 0], min=0.0)
     ni_cols[0] = torch.clamp(ni_cols[0] - falk_ni_top * dtcld, min=0.0)
 
@@ -304,13 +398,29 @@ def ice_substep_advection_torch(
         dni_above = torch.minimum(
             falk_ni_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld, ni_cols[k - 1])
 
+        if _cap is not None:
+            _cap.interior("qi", qi_cols[k], dqi_k, dqi_above,
+                          falk_qi_k * dtcld / dend_safe[:, k],
+                          falk_qi_prev * delz[:, k - 1] / delz_safe[:, k] * dtcld / dend_safe[:, k],
+                          qi_cols[k - 1])
         qi_cols[k] = torch.clamp(qi_cols[k] - dqi_k + dqi_above, min=0.0)
         ni_cols[k] = torch.clamp(ni_cols[k] - dni_k + dni_above, min=0.0)
 
         falk_qi_prev, falk_ni_prev = falk_qi_k, falk_ni_k  # carry stored falk to next cell
 
+    qi_stacked = torch.stack(qi_cols, dim=-1)
+    if _cap is not None:
+        _cap.commit(
+            ledger,
+            weight=(dend * delz).detach(),
+            delz_bottom=delz[:, -1],
+            dtcld=dtcld,
+            falk_bottom={"qi": falk_qi_prev},
+            entry_state={"qi": state.qi},
+            post_state={"qi": qi_stacked},
+        )
     return IceSubstepOutputs(
-        state=IceSubstepState(qi=torch.stack(qi_cols, dim=-1),
+        state=IceSubstepState(qi=qi_stacked,
                               ni=torch.stack(ni_cols, dim=-1)),
         fall_qi=torch.stack(fall_qi_cols, dim=-1),
         fall_ni=torch.stack(fall_ni_cols, dim=-1),
