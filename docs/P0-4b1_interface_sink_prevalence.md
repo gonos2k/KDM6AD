@@ -40,7 +40,7 @@ the host integration".
 | measure | value |
 |---|---|
 | columns firing, every frame | **51.4–60.7%** of the domain (threshold: sink > 1e-9 kg/m² — a deliberately permissive "any defect" count; the magnitude distribution below is the materiality measure) |
-| domain sink, frames ≥ 1 | 54–104 kg/m² per step = **2.1–4.6% of surface fallout** |
+| domain sink, frames ≥ 1 | 54–104 kg/m² per step; as a fraction of surface fallout: **12.4% → 2.7% declining over the first 30 min of spin-up (fr 1–5), then 2.1–4.6% in equilibrated precipitation (fr ≥ 6)** |
 | **frame 0 (analysis-IC-like state)** | **2,917 kg/m² = 41% of total hydrometeor mass in ONE step; 40× the surface diagnostic** |
 | 3 h per-column cumulative (replay) | p50 0.010 · p90 0.219 · **p99 1.33 · max 10.0** kg/m² |
 | species share (3 h aggregate) | **qi 65%** · qr 24% · qg 10% · qs ≈ 0 |
@@ -49,10 +49,11 @@ the host integration".
 
 Two readings matter for the decision:
 
-- **In equilibrated precipitation the sink is modest domain-wide** (2.1–4.6% of
-  fallout on every frame except the IC) **with a heavy tail** (p99 1.3 kg/m² per
-  3 h; max 10). Only frame 0 is an outlier — frames 1–5 already sit in the
-  normal 75–104 kg/m² band.
+- **In equilibrated precipitation (fr ≥ 6) the sink is modest domain-wide**
+  (2.1–4.6% of fallout) **with a heavy tail** (p99 1.3 kg/m² per 3 h; max 10).
+  The absolute sink is steady from frame 1 on (54–104 kg/m²), but its share of
+  fallout is larger while precipitation spins up (12.4% at fr 1 → 2.7% by
+  fr 6); frame 0 (the IC) is the extreme of that same pattern.
 - **Freshly-initialized states are maximally susceptible**: frame 0 — the
   analysis IC, with unequilibrated hydrometeor profiles — loses 41% of its
   hydrometeor mass to the sink in a single step. This is precisely the state
