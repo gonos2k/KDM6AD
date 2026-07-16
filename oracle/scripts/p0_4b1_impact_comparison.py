@@ -67,7 +67,7 @@ def provenance():
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
     return {
-        "code_sha": code_sha,
+        "producer_code_sha": code_sha,
         "script_sha256": _sha256(__file__),
         "kdm6_tree_sha256": _kdm6_tree_sha256(),
         "trajectory": FCST,

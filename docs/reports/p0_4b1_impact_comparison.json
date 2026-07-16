@@ -2,7 +2,6 @@
  "artifact": "p0_4b1_impact_comparison",
  "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4, P0-4b.2 corrected)",
  "provenance": {
-  "code_sha": "a3c6fd77b3b58fb3fb8a339f9ebde59b68465253",
   "script_sha256": "f476786c073026fea1d225efeb5cbb3bd031cef8fc28b26aad4c1c80964627b5",
   "kdm6_tree_sha256": "ac22d0f1246deaa81c7d28bf02d1a6ecd41a88b12dc3c67340eb717a2eb75d4d",
   "trajectory": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000",
@@ -16,7 +15,8 @@
   "xland_used_in_windows": true,
   "xland_used_in_one_step": false,
   "ncmin_land": 100.0,
-  "ncmin_sea": 10.0
+  "ncmin_sea": 10.0,
+  "producer_code_sha": "a3c6fd77b3b58fb3fb8a339f9ebde59b68465253"
  },
  "one_step_heavy_rain_dt120": {
   "surface_precip_kg_m2": {
@@ -269,5 +269,11 @@
    "th_mean_diff": -0.004871719106595497
   }
  },
- "allsky_bt_comparison": "deferred: requires the local RTTOV runtime/science assets (host-coupled); state-space impacts above are the merge-decision inputs"
+ "allsky_bt_comparison": "deferred: requires the local RTTOV runtime/science assets (host-coupled); state-space impacts above are the merge-decision inputs",
+ "migration": {
+  "original_artifact_sha256": "4a7f992b23cff93dd48f8e79e033116ab864f2ec38be278e14d8645ddd3b1310",
+  "migration_script_sha256": "a3e80a8352c67946dd3f563226f002e2433144532c6bdc5631ff70b9ce4da310",
+  "migration_head_sha": "247bc7fa87ab30088860cda78d5cd630fd6f0222",
+  "note": "deterministic key/label migration (PR #16 review): numeric values byte-identical to the original artifact"
+ }
 }

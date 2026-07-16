@@ -34,9 +34,12 @@ With per-substep fall ratio `c = vt·Δt_sub/Δz`:
 - **Structural exposure**: the operational substep rule
   `mstep = floor(C_total + 1)` guarantees per-substep `c < 1` but **not**
   `c < ½` — it lands in the sink-active region `c_sub > ½` for **54/60** of the
-  swept `C_total` grid (all `C_total ≥ 0.6`). Virtually the entire
-  precipitating regime operates where the sink can fire; the synthetic
-  heavy-rain case was not a coincidence.
+  swept `C_total` grid. The inactive samples are `C_total ∈ {0.1…0.5}` and the
+  exact boundary point `C_total = 1.0` (where `mstep = 2` gives `c_sub = ½`
+  precisely, not `> ½`); as a continuous range the rule is sink-active for
+  `C_total ∈ (0.5, 1.0) ∪ (1.0, ∞)`. Virtually the entire precipitating regime
+  operates where the sink can fire; the synthetic heavy-rain case was not a
+  coincidence.
 - Worst sampled point (c = 1.5): 75% of the initial hydrometeor mass deleted at
   a single interface in one substep.
 
@@ -53,28 +56,39 @@ the host integration". **Interval convention**: 37 frames span 36 five-minute
 intervals; "3 h cumulative" sums the 36 replay steps started from frames 0–35,
 and frame 36 (the endpoint state, sink 68.9 kg/m²) is reported separately.
 
+**Units**: a per-column sink is kg/m²; summed over 65,988 columns it is a
+**sum of column water-equivalents** (kg/m²-equivalents × columns), *not* a
+per-area domain mass — ratios below always compare same-summed quantities.
+
 | measure | value |
 |---|---|
 | columns firing, every frame | **51.4–60.7%** of the domain (threshold: sink > 1e-9 kg/m² — a deliberately permissive "any defect" count; the magnitude distribution below is the materiality measure) |
-| domain sink, frames ≥ 1 | 54–104 kg/m² per step; as a fraction of surface fallout: **12.4% (fr 1) → 3.0% (fr 5) declining through spin-up, then 2.1–4.6% in equilibrated precipitation (fr ≥ 6)** |
-| **frame 0 (analysis-IC-like state)** | **2,914 kg/m² = 41% of total hydrometeor mass in ONE step; 40× the surface diagnostic** |
+| summed column-equivalent sink, frames ≥ 1 | 54–104 per step; as a fraction of same-summed surface fallout: **12.4% (fr 1) → 3.0% (fr 5) declining through spin-up, then 2.1–4.6% in equilibrated precipitation (fr ≥ 6)** |
+| **frame 0 (unspun initial-condition stress state)** | per-column mean **0.044 kg/m²**; summed column equivalents **≈ 2,914 = 41% of the same-summed hydrometeor water-equivalent in ONE step; 40× the surface diagnostic** |
 | 3 h per-column cumulative (36 replay steps, fr 0–35) | p50 0.010 · p90 0.216 · **p99 1.32 · max 10.0** kg/m² |
 | species share (3 h cumulative) | **qi 65.6%** · qr 24.2% · qg 10.1% · qs ≈ 0 |
 | worst interface | k = 15–16 top-first ≈ **274–305 hPa half-level** (upper-troposphere ice region; the previously reported 530–580 hPa applied a top-first index to bottom-up pressure) |
-| positivity projection A | frames 1–36: **exactly 0**; frame 0: domain-total **1.86×10⁻³ kg/m² ≈ 6.4×10⁻⁷ of the defect** — the real-space sink is effectively, though not mathematically exactly, all interface defect D |
+| positivity projection A | frames 1–36: **exactly 0**; frame 0: total **1.86×10⁻³ ≈ 6.4×10⁻⁷ of the defect** — the real-space sink is effectively, though not mathematically exactly, all interface defect D |
 
 Two readings matter for the decision:
 
 - **In equilibrated precipitation (fr ≥ 6) the sink is modest domain-wide**
   (2.1–4.6% of fallout) **with a heavy tail** (p99 1.3 kg/m² per 3 h; max 10).
-  The absolute sink is steady from frame 1 on (54–104 kg/m²), but its share of
-  fallout is larger while precipitation spins up (12.4% at fr 1 → 3.0% by
-  fr 5); frame 0 (the IC) is the extreme of that same pattern.
-- **Freshly-initialized states are maximally susceptible**: frame 0 — the
-  analysis IC, with unequilibrated hydrometeor profiles — loses 41% of its
-  hydrometeor mass to the sink in a single step. This is precisely the state
-  class a DA system hands the model after every analysis increment, so the
-  defect bites hardest exactly where DA fidelity matters.
+  The absolute sink is steady from frame 1 on (54–104 summed equivalents), but
+  its share of fallout is larger while precipitation spins up (12.4% at fr 1 →
+  3.0% by fr 5); frame 0 is the extreme of that same pattern.
+- **Unspun states are maximally susceptible — with a scope caveat**: frame 0
+  is an unspun initial-condition **stress case**, and it shows a one-step sink
+  susceptibility of 41% of its summed hydrometeor water-equivalent. It is
+  *plausibly similar to* the unequilibrated states a DA system hands the model
+  after an analysis increment, but it is **not a direct measurement of a
+  post-analysis state** (actual analyses depend on the CVT, partition
+  controls, background, observations, and the optimizer). Before "DA fidelity"
+  is used as a production justification, a replay of actual analysis outputs
+  is needed (background state / accepted analysis state / conservative
+  counterfactual, comparing sink-to-hydro ratio, species share, cap-active
+  interfaces, and one-step BT + observation cost) — not a precondition for
+  starting the variant implementation.
 - The qi dominance (65.6%) flows through the mp37-faithful raw ice-velocity
   handoff (the documented "mp37 loses 37%/step of qi" pathway) meeting the
   interface cap in the **upper troposphere** (~274–305 hPa at the modal worst
@@ -123,10 +137,12 @@ defaults to legacy). Acceptance — all green (6 RED-first tests):
 ## 5. Recommendation (owner decides)
 
 The prevalence is structural (phase map), broad (>51% of real columns every
-step, at the permissive >1e-9 threshold), and material where it matters most (analysis-IC states: 41%/step;
-convective tails: p99 1.3 kg/m²/3 h; trajectory effect: ≈ +29% aggregate
-cumulative precip on heavy columns; 1.86× combined single-step gradient norm
-on the synthetic case — obs-space adjoint unmeasured). Per the pre-stated policy this
+step, at the permissive >1e-9 threshold), and material where it matters most
+(unspun initialization-like states: 41%/step susceptibility — direct
+post-analysis-state replay still pending; convective tails: p99 1.3 kg/m²/3 h;
+trajectory effect: ≈ +29% aggregate cumulative precip on heavy columns; 1.86×
+combined single-step gradient norm on the synthetic case — obs-space adjoint
+unmeasured). Per the pre-stated policy this
 supports the **new conservative physics variant** path — NOT a silent baseline
 change:
 

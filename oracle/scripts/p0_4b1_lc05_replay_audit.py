@@ -79,7 +79,7 @@ def provenance(traj_sha, script_sha, kdm6_sha):
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
     return {
-        "code_sha": code_sha,
+        "producer_code_sha": code_sha,
         "script_sha256": script_sha,
         "kdm6_tree_sha256": kdm6_sha,
         "trajectory": FCST,
@@ -111,6 +111,44 @@ def _ckpt_meta(traj_sha, script_sha, kdm6_sha):
             "n_cum_steps": N_CUM_STEPS}
 
 
+def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
+    """Full identity validation of a loaded checkpoint. Pure — unit-tested in
+    oracle/tests/test_p0_4b1_checkpoint_identity.py without host assets.
+
+    Refuses (RuntimeError) unless the checkpoint matches THIS session's
+    startup identity on the fingerprint (trajectory bytes, script, kdm6 tree,
+    config), frame contiguity, and EVERY provenance field — repo HEAD and
+    runtime versions included; a claimed "original commit" is unverifiable on
+    trust. The only tolerated difference is the resume counter. Returns the
+    incremented counter."""
+    ok = (ck.get("meta") == ck_meta
+          and 0 < len(ck.get("frames", [])) <= n_frames_total
+          and [r["frame"] for r in ck["frames"]] == list(range(len(ck["frames"]))))
+    if not ok:
+        raise RuntimeError(
+            "stale or mismatched replay checkpoint (different trajectory bytes, "
+            "script revision, or config; or non-contiguous frames) — refusing "
+            "to resume; delete the checkpoint and rerun from frame 0")
+    stored = ck.get("provenance")
+    varying = {"checkpoint_resumes"}
+    if (not isinstance(stored, dict)
+            or {k: v for k, v in stored.items() if k not in varying}
+            != {k: v for k, v in prov.items() if k not in varying}):
+        raise RuntimeError(
+            "checkpoint carries a provenance that does not match this run's "
+            "startup identity (repo HEAD, content hashes, config, manifest, or "
+            "runtime versions differ) — refusing to resume; delete the "
+            "checkpoint and rerun from frame 0")
+    return int(stored.get("checkpoint_resumes", 0)) + 1
+
+
+def _load_and_validate_checkpoint(path, ck_meta, prov, n_frames_total=37):
+    """torch.load + full identity validation; corrupt/truncated files fail
+    loud in torch.load. Returns (checkpoint, incremented resume counter)."""
+    ck = torch.load(path, weights_only=True)   # tensors + plain containers only
+    return ck, _validate_resume(ck, ck_meta, prov, n_frames_total)
+
+
 def main():
     torch.set_grad_enabled(False)
     frames = []
@@ -131,35 +169,11 @@ def main():
     prov = provenance(traj_sha, script_sha, kdm6_sha)
     ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha) if ckpt else None
     if ckpt and pathlib.Path(ckpt).exists():
-        ck = torch.load(ckpt, weights_only=True)   # tensors + plain containers only
-        ok = (ck.get("meta") == ck_meta
-              and 0 < len(ck.get("frames", [])) <= 37
-              and [r["frame"] for r in ck["frames"]] == list(range(len(ck["frames"]))))
-        if not ok:
-            raise RuntimeError(
-                f"stale or mismatched replay checkpoint at {ckpt} (different "
-                "trajectory bytes, script revision, or config; or non-contiguous "
-                "frames) — delete it or point P0_4B1_REPLAY_CKPT elsewhere")
+        ck, resumes = _load_and_validate_checkpoint(ckpt, ck_meta, prov)
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
-        # Never trust the checkpoint's stored provenance: it must equal THIS
-        # session's freshly computed startup identity on every field — code_sha
-        # included, because a claimed "original commit" is unverifiable on
-        # trust. Consequence: resuming requires the same repo HEAD; if HEAD
-        # moved between sessions, restart instead of resuming. The only field
-        # allowed to differ is the resume counter itself.
-        stored = ck.get("provenance")
-        varying = {"checkpoint_resumes"}
-        if (not isinstance(stored, dict)
-                or {k: v for k, v in stored.items() if k not in varying}
-                != {k: v for k, v in prov.items() if k not in varying}):
-            raise RuntimeError(
-                f"checkpoint at {ckpt} carries a provenance that does not match "
-                "this run's startup identity (repo HEAD, content hashes, config, "
-                "manifest, or runtime versions differ) — refusing to resume; "
-                "delete the checkpoint and rerun from frame 0")
-        prov["checkpoint_resumes"] = int(stored.get("checkpoint_resumes", 0)) + 1
+        prov["checkpoint_resumes"] = resumes
         print(f"resuming from checkpoint: {start_frame} frames done", flush=True)
     t0 = time.time()
     N_SHARDS = 16    # mstep-aware sharding: batch-global mstepmax makes ONE heavy
@@ -220,7 +234,7 @@ def main():
             "n_affected": n_aff,
             "affected_fraction": n_aff / B,
             "sink_per_column_mean_kg_m2": float(sink_tot.mean()),
-            "sink_domain_sum_kg_m2": float(sink_tot.sum()),
+            "sink_sum_of_column_equivalents_kg_m2": float(sink_tot.sum()),
             "species_sink_sum_kg_m2": {sp: float(sink_by_sp[sp].sum()) for sp in SPECIES},
             "sink_stats_kg_m2": {
                 "mean": float(sink_tot.mean()),
@@ -271,17 +285,18 @@ def main():
 
     # cumulative replay sums (susceptibility measure, NOT in-host loss)
     sp_sum_total = sum(cum36_species.values())
+    _SUM = "sink_sum_of_column_equivalents_kg_m2"
     cum = {
         "note": "sum over frame replays — NOT in-host accumulated loss (frames are "
                 "5-min history states, each replayed for one dt=300 oracle step). "
                 "The 3 h window has 36 intervals: cumulative sums cover replay "
                 "steps started from frames 0..35; frame 36 is the endpoint state.",
-        "cum_1h_domain_sum_kg_m2": float(sum(fr_["sink_domain_sum_kg_m2"]
-                                             for fr_ in frames[:12])),
+        "cum_1h_sum_of_column_equivalents_kg_m2": float(sum(fr_[_SUM]
+                                                            for fr_ in frames[:12])),
         "cumulative_3h": {
             "n_replay_steps": N_CUM_STEPS,
-            "domain_sum_kg_m2": float(sum(fr_["sink_domain_sum_kg_m2"]
-                                          for fr_ in frames[:N_CUM_STEPS])),
+            "sum_of_column_equivalents_kg_m2": float(sum(fr_[_SUM]
+                                                         for fr_ in frames[:N_CUM_STEPS])),
             "per_column_kg_m2": {
                 "mean": float(cum36_sink.mean()), **q(cum36_sink, (0.50, 0.90, 0.99)),
                 "max": float(cum36_sink.max()),
@@ -294,15 +309,19 @@ def main():
         },
         "endpoint_frame36": {
             "note": "frame 36 (t=3 h endpoint state) replay, NOT part of the 3 h cumulative",
-            "sink_domain_sum_kg_m2": frames[36]["sink_domain_sum_kg_m2"],
+            "sink_sum_of_column_equivalents_kg_m2": frames[36][_SUM],
             "affected_fraction": frames[36]["affected_fraction"],
         },
-        "all_37_frame_replay_domain_sum_kg_m2": float(sum(fr_["sink_domain_sum_kg_m2"]
-                                                          for fr_ in frames)),
+        "all_37_frame_replay_sum_of_column_equivalents_kg_m2": float(sum(fr_[_SUM]
+                                                                         for fr_ in frames)),
     }
     art = {
         "artifact": "p0_4b1_lc05_replay_audit",
         "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
+        "units_note": ("every *_sum field aggregates per-column kg/m2 water-equivalents "
+                       "over the column set (65,988 columns unless stated) — a SUM OF "
+                       "COLUMN EQUIVALENTS, not a per-area domain mass; a true domain "
+                       "mass in kg would require per-cell areas (WRF map factors)"),
         "provenance": prov,
         "dt_seconds": DT,
         "frames": frames,
