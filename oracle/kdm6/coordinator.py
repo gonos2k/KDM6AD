@@ -2286,6 +2286,7 @@ def sedimentation_chain_torch(
     sea_mask: "torch.Tensor | None" = None,             # (B,K) bool for preamble_torch (qcr only; not vt)
     mstep_col_main: "torch.Tensor | None" = None,       # (B,) per-column mstep (1:1 fix #10);
     mstep_col_ice: "torch.Tensor | None" = None,        # None → scalar mstep_main/mstep_ice (legacy)
+    ledger=None,   # [P0-4b] duck-typed SedimentationLedger; threading only, None → byte-identical
 ) -> SedimentationOutputs:
     """F2b — sedimentation 통합 chain.
 
@@ -2335,6 +2336,7 @@ def sedimentation_chain_torch(
             w1_qr, wn_qr, w1_qs, w1_qg,
             forcing.delz, forcing.dend,
             mstep=mstep_main, mstep_col=mstep_col_main, n_current=n, dtcld=dtcld, params=params,
+            ledger=ledger,
         )
         adv_state = out.state
         fall_qr = out.fall_qr
@@ -2379,6 +2381,7 @@ def sedimentation_chain_torch(
             ice_state, fall_qi, fall_ni,
             w1_qi, wn_qi, forcing.delz, forcing.dend,
             mstep=mstep_ice, mstep_col=mstep_col_ice, n_current=n, dtcld=dtcld, params=params,
+            ledger=ledger,
         )
         ice_state = out_i.state
         fall_qi = out_i.fall_qi

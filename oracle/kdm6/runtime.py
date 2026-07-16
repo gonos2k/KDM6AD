@@ -588,6 +588,7 @@ def _kdm6_pure(
             mstep_main=mstep_main, mstep_ice=mstep_ice, dtcld=dtcld,
             params=sed_params, reslope_params=full_p, sea_mask=sea_mask,
             mstep_col_main=mstep_col_main, mstep_col_ice=mstep_col_ice,
+            ledger=(getattr(budget, "sed_ledger", None) if budget is not None else None),
         )
         # flip back to WRF K-order
         cur = _coord.CoordinatorState(
