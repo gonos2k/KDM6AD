@@ -391,6 +391,7 @@ def _kdm6_pure(
     ncmin_sea: float = 0.0,
     controls=None,   # [DA §5.2] ProcessControls — fp64 DA only; None → byte-identical oracle
     budget=None,     # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
+    sed_substep_fns=None,  # [P0-4b.1] (substep_fn, ice_substep_fn) override; None → legacy (byte-identical)
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
@@ -589,6 +590,8 @@ def _kdm6_pure(
             params=sed_params, reslope_params=full_p, sea_mask=sea_mask,
             mstep_col_main=mstep_col_main, mstep_col_ice=mstep_col_ice,
             ledger=(getattr(budget, "sed_ledger", None) if budget is not None else None),
+            substep_fn=(sed_substep_fns[0] if sed_substep_fns is not None else None),
+            ice_substep_fn=(sed_substep_fns[1] if sed_substep_fns is not None else None),
         )
         # flip back to WRF K-order
         cur = _coord.CoordinatorState(
