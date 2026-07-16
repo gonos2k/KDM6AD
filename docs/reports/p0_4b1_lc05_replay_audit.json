@@ -1,0 +1,1796 @@
+{
+ "artifact": "p0_4b1_lc05_replay_audit",
+ "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2)",
+ "trajectory": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000",
+ "dt_seconds": 300.0,
+ "frames": [
+  {
+   "frame": 0,
+   "minutes": 0,
+   "n_columns": 65988,
+   "n_affected": 40023,
+   "affected_fraction": 0.6065193671576651,
+   "sink_total_domain_kg_m2_mean": 0.04420852604612815,
+   "sink_stats_kg_m2": {
+    "mean": 0.04420852604612815,
+    "p50": 0.0006118678574357985,
+    "p90": 0.051002758487229426,
+    "p99": 1.0518631916598151,
+    "max": 2.8439561144375713
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0728891666708648,
+    "p50": 0.002764778094314941,
+    "p90": 0.17970652640490356,
+    "p99": 1.2799219102994512,
+    "max": 2.8439561144375713
+   },
+   "species_share": {
+    "qr": 0.19299732891175167,
+    "qs": 3.8016345296573417e-19,
+    "qg": 0.005321550137968803,
+    "qi": 0.8016811209502795
+   },
+   "projection_total_kg_m2_sum": 0.001860023725241979,
+   "sink_over_hydro_mass": {
+    "domain": 0.4120218594425584,
+    "affected_mean": 269550126.26348555
+   },
+   "sink_over_diag": {
+    "domain": 40.048723417454454
+   },
+   "cap_binds": {
+    "qr_inflow": 17446,
+    "qs_inflow": 0,
+    "qg_inflow": 1928,
+    "qi_inflow": 580813
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.1258381000574
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 72.84207754448637
+  },
+  {
+   "frame": 1,
+   "minutes": 5,
+   "n_columns": 65988,
+   "n_affected": 33946,
+   "affected_fraction": 0.5144268654906953,
+   "sink_total_domain_kg_m2_mean": 0.0011430411396130531,
+   "sink_stats_kg_m2": {
+    "mean": 0.0011430411396130531,
+    "p50": 1.6554105247370367e-05,
+    "p90": 0.00293569506254051,
+    "p99": 0.008226177106465612,
+    "max": 0.45272325040066574
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002221990592787382,
+    "p50": 0.001370377832729725,
+    "p90": 0.003951892791274305,
+    "p99": 0.009962545356837875,
+    "max": 0.45272325040066574
+   },
+   "species_share": {
+    "qr": 0.047207416693605044,
+    "qs": 2.138080802014438e-18,
+    "qg": 0.0039755368768470255,
+    "qi": 0.948817046429548
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.01527140164847009,
+    "affected_mean": 11700278.693782983
+   },
+   "sink_over_diag": {
+    "domain": 0.12395046860000619
+   },
+   "cap_binds": {
+    "qr_inflow": 63356,
+    "qs_inflow": 0,
+    "qg_inflow": 272,
+    "qi_inflow": 377728
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.602206684911
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 608.5253212248233
+  },
+  {
+   "frame": 2,
+   "minutes": 10,
+   "n_columns": 65988,
+   "n_affected": 34178,
+   "affected_fraction": 0.5179426562405286,
+   "sink_total_domain_kg_m2_mean": 0.0013093251989810951,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013093251989810951,
+    "p50": 1.6324439632046623e-05,
+    "p90": 0.002983482893040135,
+    "p99": 0.0097278612598193,
+    "max": 1.444987983098004
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.00252799538415138,
+    "p50": 0.0009636127740770101,
+    "p90": 0.004080258785285758,
+    "p99": 0.02847681596668479,
+    "max": 1.444987983098004
+   },
+   "species_share": {
+    "qr": 0.08851205848134826,
+    "qs": -7.895114876438061e-18,
+    "qg": 0.003069894719898538,
+    "qi": 0.908418046798753
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.013187410646945103,
+    "affected_mean": 12320017.646728223
+   },
+   "sink_over_diag": {
+    "domain": 0.08372065033074641
+   },
+   "cap_binds": {
+    "qr_inflow": 34746,
+    "qs_inflow": 0,
+    "qg_inflow": 389,
+    "qi_inflow": 399544
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.4973535355479
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1032.0004788428428
+  },
+  {
+   "frame": 3,
+   "minutes": 15,
+   "n_columns": 65988,
+   "n_affected": 34806,
+   "affected_fraction": 0.527459538097836,
+   "sink_total_domain_kg_m2_mean": 0.0013859470701651502,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013859470701651502,
+    "p50": 2.1499690224724e-05,
+    "p90": 0.0028486962200744512,
+    "p99": 0.013147546338198726,
+    "max": 2.01634359676224
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002627928485940403,
+    "p50": 0.0008769297020589919,
+    "p90": 0.004236213916971605,
+    "p99": 0.028763194308418855,
+    "max": 2.01634359676224
+   },
+   "species_share": {
+    "qr": 0.19655189114932314,
+    "qs": 9.379449869951671e-18,
+    "qg": 0.01146590340615599,
+    "qi": 0.7919822054445209
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.010237209638083987,
+    "affected_mean": 12318969.887229223
+   },
+   "sink_over_diag": {
+    "domain": 0.049907531929668444
+   },
+   "cap_binds": {
+    "qr_inflow": 30578,
+    "qs_inflow": 0,
+    "qg_inflow": 1375,
+    "qi_inflow": 414371
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.294226616344
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1832.506472068003
+  },
+  {
+   "frame": 4,
+   "minutes": 20,
+   "n_columns": 65988,
+   "n_affected": 35527,
+   "affected_fraction": 0.5383857671091714,
+   "sink_total_domain_kg_m2_mean": 0.0015711107110802315,
+   "sink_stats_kg_m2": {
+    "mean": 0.0015711107110802315,
+    "p50": 4.362845713623985e-05,
+    "p90": 0.002849418771415541,
+    "p99": 0.01291578130273691,
+    "max": 9.335278768878725
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0029185547856623068,
+    "p50": 0.0007965893307795866,
+    "p90": 0.004271017969618049,
+    "p99": 0.026027456519437275,
+    "max": 9.335278768878725
+   },
+   "species_share": {
+    "qr": 0.30589468706540296,
+    "qs": -2.8812019383830688e-18,
+    "qg": 0.04628812648409504,
+    "qi": 0.6478171864505022
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.009058603198629047,
+    "affected_mean": 12661044.48466522
+   },
+   "sink_over_diag": {
+    "domain": 0.039606150235127806
+   },
+   "cap_binds": {
+    "qr_inflow": 31395,
+    "qs_inflow": 0,
+    "qg_inflow": 3596,
+    "qi_inflow": 419408
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.0487634620615
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2617.6352154219353
+  },
+  {
+   "frame": 5,
+   "minutes": 25,
+   "n_columns": 65988,
+   "n_affected": 36373,
+   "affected_fraction": 0.5512062799296842,
+   "sink_total_domain_kg_m2_mean": 0.001445749923282361,
+   "sink_stats_kg_m2": {
+    "mean": 0.001445749923282361,
+    "p50": 6.6334863672744e-05,
+    "p90": 0.0027972811084359074,
+    "p99": 0.015088698049786955,
+    "max": 2.965625250648453
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002623347840870677,
+    "p50": 0.0007355483222665457,
+    "p90": 0.0040674558095662675,
+    "p99": 0.027394121783762992,
+    "max": 2.965625250648453
+   },
+   "species_share": {
+    "qr": 0.21734545097763786,
+    "qs": -9.942848409183506e-18,
+    "qg": 0.142556987968082,
+    "qi": 0.6400975610542801
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.006775301171090409,
+    "affected_mean": 13539012.424204273
+   },
+   "sink_over_diag": {
+    "domain": 0.03045029738479675
+   },
+   "cap_binds": {
+    "qr_inflow": 34114,
+    "qs_inflow": 0,
+    "qg_inflow": 5691,
+    "qi_inflow": 424160
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 532.5656215992493
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3133.044801893754
+  },
+  {
+   "frame": 6,
+   "minutes": 30,
+   "n_columns": 65988,
+   "n_affected": 36942,
+   "affected_fraction": 0.5598290598290598,
+   "sink_total_domain_kg_m2_mean": 0.0013518338983769405,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013518338983769405,
+    "p50": 7.995476356902978e-05,
+    "p90": 0.0025639718271245125,
+    "p99": 0.015812512461402355,
+    "max": 2.3350163133081527
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0024149797556035765,
+    "p50": 0.0006986962019934554,
+    "p90": 0.0036958697184761805,
+    "p99": 0.03709429876570111,
+    "max": 2.3350163133081527
+   },
+   "species_share": {
+    "qr": 0.12636764802529457,
+    "qs": 6.3251946216163235e-18,
+    "qg": 0.256157412397975,
+    "qi": 0.6174749395767304
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.005224350239391343,
+    "affected_mean": 13390065.855640685
+   },
+   "sink_over_diag": {
+    "domain": 0.026642583470342762
+   },
+   "cap_binds": {
+    "qr_inflow": 34997,
+    "qs_inflow": 0,
+    "qg_inflow": 6758,
+    "qi_inflow": 425660
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 532.3735356036301
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3348.204403127649
+  },
+  {
+   "frame": 7,
+   "minutes": 35,
+   "n_columns": 65988,
+   "n_affected": 37128,
+   "affected_fraction": 0.5626477541371159,
+   "sink_total_domain_kg_m2_mean": 0.0013679030113154186,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013679030113154186,
+    "p50": 8.051232525923578e-05,
+    "p90": 0.0022971628527225603,
+    "p99": 0.018013840620281052,
+    "max": 1.8417160164445416
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0024320825751521493,
+    "p50": 0.0006458021740509484,
+    "p90": 0.003384751660347368,
+    "p99": 0.04199815548685518,
+    "max": 1.8417160164445416
+   },
+   "species_share": {
+    "qr": 0.10485101691996686,
+    "qs": 6.168052899873402e-17,
+    "qg": 0.34496724039320836,
+    "qi": 0.5501817426868248
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.004452711444527276,
+    "affected_mean": 13469500.032094907
+   },
+   "sink_over_diag": {
+    "domain": 0.026833989274317203
+   },
+   "cap_binds": {
+    "qr_inflow": 37626,
+    "qs_inflow": 0,
+    "qg_inflow": 7114,
+    "qi_inflow": 417227
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 532.3605234888175
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3363.837668261819
+  },
+  {
+   "frame": 8,
+   "minutes": 40,
+   "n_columns": 65988,
+   "n_affected": 37880,
+   "affected_fraction": 0.5740437655331272,
+   "sink_total_domain_kg_m2_mean": 0.001442178806738715,
+   "sink_stats_kg_m2": {
+    "mean": 0.001442178806738715,
+    "p50": 8.299171179646796e-05,
+    "p90": 0.002125621412734483,
+    "p99": 0.019547494618492266,
+    "max": 0.6682090683993425
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002512836358888243,
+    "p50": 0.000557635220994673,
+    "p90": 0.003163339110645229,
+    "p99": 0.03846516636477866,
+    "max": 0.6682090683993425
+   },
+   "species_share": {
+    "qr": 0.22546417757567636,
+    "qs": 1.6396493167555116e-17,
+    "qg": 0.30220983853335026,
+    "qi": 0.47232598389097336
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.004117951285084728,
+    "affected_mean": 14317569.484675517
+   },
+   "sink_over_diag": {
+    "domain": 0.028509810780617855
+   },
+   "cap_binds": {
+    "qr_inflow": 44729,
+    "qs_inflow": 0,
+    "qg_inflow": 6706,
+    "qi_inflow": 399431
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 532.5800166872573
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3338.0261914530993
+  },
+  {
+   "frame": 9,
+   "minutes": 45,
+   "n_columns": 65988,
+   "n_affected": 38064,
+   "affected_fraction": 0.5768321513002365,
+   "sink_total_domain_kg_m2_mean": 0.0015590240192411172,
+   "sink_stats_kg_m2": {
+    "mean": 0.0015590240192411172,
+    "p50": 7.322372545140706e-05,
+    "p90": 0.0020209064874050237,
+    "p99": 0.016442087808154364,
+    "max": 1.0199148881315154
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.00270291728137164,
+    "p50": 0.00048121537713181943,
+    "p90": 0.003127198015420583,
+    "p99": 0.035981158967387024,
+    "max": 1.0199148881315154
+   },
+   "species_share": {
+    "qr": 0.4312544952588455,
+    "qs": 5.282179783985457e-18,
+    "qg": 0.19385357248420867,
+    "qi": 0.3748919322569459
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.004150577845360417,
+    "affected_mean": 16759790.684016619
+   },
+   "sink_over_diag": {
+    "domain": 0.03157241643230667
+   },
+   "cap_binds": {
+    "qr_inflow": 49925,
+    "qs_inflow": 0,
+    "qg_inflow": 5335,
+    "qi_inflow": 378687
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 532.8625981252005
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3258.441659106379
+  },
+  {
+   "frame": 10,
+   "minutes": 50,
+   "n_columns": 65988,
+   "n_affected": 37452,
+   "affected_fraction": 0.5675577377705038,
+   "sink_total_domain_kg_m2_mean": 0.0012548325180847092,
+   "sink_stats_kg_m2": {
+    "mean": 0.0012548325180847092,
+    "p50": 4.5536149140577206e-05,
+    "p90": 0.001948357134767371,
+    "p99": 0.010583074107170236,
+    "max": 0.7291660760811873
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002211258318619054,
+    "p50": 0.00044736005860834273,
+    "p90": 0.0030744538654832137,
+    "p99": 0.02696025832811718,
+    "max": 0.7291660760811873
+   },
+   "species_share": {
+    "qr": 0.39580456493433847,
+    "qs": 9.139375466220812e-17,
+    "qg": 0.16835904154906525,
+    "qi": 0.43583639351659625
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.003283411996463418,
+    "affected_mean": 19224189.67984356
+   },
+   "sink_over_diag": {
+    "domain": 0.02675325578395131
+   },
+   "cap_binds": {
+    "qr_inflow": 48512,
+    "qs_inflow": 0,
+    "qg_inflow": 4026,
+    "qi_inflow": 366110
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.1648611216792
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 3095.0957473013814
+  },
+  {
+   "frame": 11,
+   "minutes": 55,
+   "n_columns": 65988,
+   "n_affected": 37076,
+   "affected_fraction": 0.5618597320724981,
+   "sink_total_domain_kg_m2_mean": 0.0009960078096233622,
+   "sink_stats_kg_m2": {
+    "mean": 0.0009960078096233622,
+    "p50": 2.3015218065384122e-05,
+    "p90": 0.0019567813533574395,
+    "p99": 0.009544967441199445,
+    "max": 2.5879755155154336
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0017730985795261936,
+    "p50": 0.00043488936406757057,
+    "p90": 0.00301656719735048,
+    "p99": 0.018974505575694398,
+    "max": 2.5879755155154336
+   },
+   "species_share": {
+    "qr": 0.28783319444530975,
+    "qs": -1.9707602300144155e-16,
+    "qg": 0.167362095643434,
+    "qi": 0.5448047099112563
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0026377331761932147,
+    "affected_mean": 20815572.870546915
+   },
+   "sink_over_diag": {
+    "domain": 0.023261746013960673
+   },
+   "cap_binds": {
+    "qr_inflow": 49713,
+    "qs_inflow": 0,
+    "qg_inflow": 3212,
+    "qi_inflow": 364052
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.4958072533614
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2825.4355155447684
+  },
+  {
+   "frame": 12,
+   "minutes": 60,
+   "n_columns": 65988,
+   "n_affected": 37120,
+   "affected_fraction": 0.5625265199733285,
+   "sink_total_domain_kg_m2_mean": 0.0008202379658244747,
+   "sink_stats_kg_m2": {
+    "mean": 0.0008202379658244747,
+    "p50": 2.1371561083689732e-05,
+    "p90": 0.001960471819720568,
+    "p99": 0.008729076570497464,
+    "max": 0.3161593159058994
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0014591201815780258,
+    "p50": 0.0004416695844309547,
+    "p90": 0.0029089943737345874,
+    "p99": 0.011300591675564882,
+    "max": 0.3161593159058994
+   },
+   "species_share": {
+    "qr": 0.24746828230747134,
+    "qs": 1.5332837060341175e-16,
+    "qg": 0.09399262190546222,
+    "qi": 0.6585390957870663
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.002211398642805814,
+    "affected_mean": 21334424.24206642
+   },
+   "sink_over_diag": {
+    "domain": 0.021276672892053317
+   },
+   "cap_binds": {
+    "qr_inflow": 49476,
+    "qs_inflow": 0,
+    "qg_inflow": 2852,
+    "qi_inflow": 370262
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.6780855763179
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2543.9063317573987
+  },
+  {
+   "frame": 13,
+   "minutes": 65,
+   "n_columns": 65988,
+   "n_affected": 36870,
+   "affected_fraction": 0.5587379523549736,
+   "sink_total_domain_kg_m2_mean": 0.0008297458104750036,
+   "sink_stats_kg_m2": {
+    "mean": 0.0008297458104750036,
+    "p50": 1.680315088412731e-05,
+    "p90": 0.0020620781753473718,
+    "p99": 0.008588838126333867,
+    "max": 1.264322334219044
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.001485525297002954,
+    "p50": 0.00044057082004682314,
+    "p90": 0.0028938155839178105,
+    "p99": 0.011835519638903865,
+    "max": 1.264322334219044
+   },
+   "species_share": {
+    "qr": 0.18933137944584794,
+    "qs": -1.2914798682656176e-17,
+    "qg": 0.15330775359315035,
+    "qi": 0.6573608669610016
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0022726445948136787,
+    "affected_mean": 20864432.829399865
+   },
+   "sink_over_diag": {
+    "domain": 0.024138110694172935
+   },
+   "cap_binds": {
+    "qr_inflow": 46391,
+    "qs_inflow": 0,
+    "qg_inflow": 3374,
+    "qi_inflow": 373844
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.7288486882684
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2268.332730566285
+  },
+  {
+   "frame": 14,
+   "minutes": 70,
+   "n_columns": 65988,
+   "n_affected": 37045,
+   "affected_fraction": 0.5613899496878221,
+   "sink_total_domain_kg_m2_mean": 0.0008781159750908677,
+   "sink_stats_kg_m2": {
+    "mean": 0.0008781159750908677,
+    "p50": 1.9970381981001165e-05,
+    "p90": 0.002085521626591669,
+    "p99": 0.008882637217164882,
+    "max": 0.7275836421459314
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.001564863843760781,
+    "p50": 0.0004496340509121455,
+    "p90": 0.0028777364609744627,
+    "p99": 0.014584945993354345,
+    "max": 0.7275836421459314
+   },
+   "species_share": {
+    "qr": 0.2014069738498201,
+    "qs": -2.9218325950276153e-18,
+    "qg": 0.1747890420541781,
+    "qi": 0.6238039840960019
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0024319391846853683,
+    "affected_mean": 18910369.555582233
+   },
+   "sink_over_diag": {
+    "domain": 0.029028067903539886
+   },
+   "cap_binds": {
+    "qr_inflow": 44552,
+    "qs_inflow": 0,
+    "qg_inflow": 4087,
+    "qi_inflow": 379849
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.7831398437315
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1996.1754656509515
+  },
+  {
+   "frame": 15,
+   "minutes": 75,
+   "n_columns": 65988,
+   "n_affected": 37230,
+   "affected_fraction": 0.5641934897254046,
+   "sink_total_domain_kg_m2_mean": 0.0010089807580165742,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010089807580165742,
+    "p50": 2.4163849816773174e-05,
+    "p90": 0.0020498642675264023,
+    "p99": 0.009567366384625048,
+    "max": 1.5997465424045865
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0017891244787677683,
+    "p50": 0.0004423552683193212,
+    "p90": 0.0029395273305635717,
+    "p99": 0.019831438598256475,
+    "max": 1.5997465424045865
+   },
+   "species_share": {
+    "qr": 0.2547149198677519,
+    "qs": 8.130830267599012e-17,
+    "qg": 0.21533027802304455,
+    "qi": 0.5299548021092034
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0027919681127864917,
+    "affected_mean": 17597447.100915585
+   },
+   "sink_over_diag": {
+    "domain": 0.03647509523779995
+   },
+   "cap_binds": {
+    "qr_inflow": 43246,
+    "qs_inflow": 0,
+    "qg_inflow": 4372,
+    "qi_inflow": 379049
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.7219338654978
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1825.3721292823031
+  },
+  {
+   "frame": 16,
+   "minutes": 80,
+   "n_columns": 65988,
+   "n_affected": 37019,
+   "affected_fraction": 0.5609959386555131,
+   "sink_total_domain_kg_m2_mean": 0.001164901076549456,
+   "sink_stats_kg_m2": {
+    "mean": 0.001164901076549456,
+    "p50": 1.8717140154006572e-05,
+    "p90": 0.002050310910919076,
+    "p99": 0.010181176196285297,
+    "max": 4.625631086055404
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002076962660054438,
+    "p50": 0.0004473082486065031,
+    "p90": 0.0029889852515506223,
+    "p99": 0.024916394391611425,
+    "max": 4.625631086055404
+   },
+   "species_share": {
+    "qr": 0.3437875003593662,
+    "qs": -2.8183890180686964e-19,
+    "qg": 0.19851855806658,
+    "qi": 0.45769394157405363
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0031797605244270094,
+    "affected_mean": 16177348.88109801
+   },
+   "sink_over_diag": {
+    "domain": 0.04437090840678661
+   },
+   "cap_binds": {
+    "qr_inflow": 41912,
+    "qs_inflow": 0,
+    "qg_inflow": 4274,
+    "qi_inflow": 375309
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.7789186482273
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1732.4299862111493
+  },
+  {
+   "frame": 17,
+   "minutes": 85,
+   "n_columns": 65988,
+   "n_affected": 36682,
+   "affected_fraction": 0.5558889495059708,
+   "sink_total_domain_kg_m2_mean": 0.0011764238339863084,
+   "sink_stats_kg_m2": {
+    "mean": 0.0011764238339863084,
+    "p50": 1.665317474414542e-05,
+    "p90": 0.0020569853173198612,
+    "p99": 0.013589150520122144,
+    "max": 1.0761104797254313
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0021181154752827275,
+    "p50": 0.0004472247012577887,
+    "p90": 0.0031485878745033647,
+    "p99": 0.031126261725572157,
+    "max": 1.0761104797254313
+   },
+   "species_share": {
+    "qr": 0.3018596787723575,
+    "qs": 9.88347740033738e-17,
+    "qg": 0.25025775979329484,
+    "qi": 0.44788256143434746
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0031440997089898525,
+    "affected_mean": 15681145.089274889
+   },
+   "sink_over_diag": {
+    "domain": 0.044253774044925004
+   },
+   "cap_binds": {
+    "qr_inflow": 43117,
+    "qs_inflow": 0,
+    "qg_inflow": 4131,
+    "qi_inflow": 371145
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.7563280251229
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1754.1974132710397
+  },
+  {
+   "frame": 18,
+   "minutes": 90,
+   "n_columns": 65988,
+   "n_affected": 36744,
+   "affected_fraction": 0.5568285142753228,
+   "sink_total_domain_kg_m2_mean": 0.0013120068294271195,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013120068294271195,
+    "p50": 1.6414362705967314e-05,
+    "p90": 0.0021237751057275813,
+    "p99": 0.018775893716481955,
+    "max": 0.7929072844419932
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0023567876880863274,
+    "p50": 0.00043024519796490044,
+    "p90": 0.003323930491155825,
+    "p99": 0.04272869633629882,
+    "max": 0.7929072844419932
+   },
+   "species_share": {
+    "qr": 0.37736635963968723,
+    "qs": 5.909888154512737e-17,
+    "qg": 0.21810273276635908,
+    "qi": 0.4045309075939537
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0034264010274898467,
+    "affected_mean": 16009184.043448042
+   },
+   "sink_over_diag": {
+    "domain": 0.046152295921781786
+   },
+   "cap_binds": {
+    "qr_inflow": 41308,
+    "qs_inflow": 0,
+    "qg_inflow": 4170,
+    "qi_inflow": 369768
+   },
+   "worst_interface": {
+    "k_mode_affected": 16,
+    "p_hPa_at_mode": 533.6928074694687
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1875.891652431889
+  },
+  {
+   "frame": 19,
+   "minutes": 95,
+   "n_columns": 65988,
+   "n_affected": 36530,
+   "affected_fraction": 0.553585500394011,
+   "sink_total_domain_kg_m2_mean": 0.0012976475676624692,
+   "sink_stats_kg_m2": {
+    "mean": 0.0012976475676624692,
+    "p50": 1.534730633830585e-05,
+    "p90": 0.0021507709352099613,
+    "p99": 0.01867035470760321,
+    "max": 0.5590978492821097
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0023455735780837303,
+    "p50": 0.00043776477884944717,
+    "p90": 0.0033623758798169926,
+    "p99": 0.043790666868448916,
+    "max": 0.5590978492821097
+   },
+   "species_share": {
+    "qr": 0.3573504510833132,
+    "qs": 2.1222046830240856e-17,
+    "qg": 0.2217226380738577,
+    "qi": 0.4209269108428289
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0033130717270860722,
+    "affected_mean": 16459691.336850133
+   },
+   "sink_over_diag": {
+    "domain": 0.0428433677541809
+   },
+   "cap_binds": {
+    "qr_inflow": 41023,
+    "qs_inflow": 0,
+    "qg_inflow": 4443,
+    "qi_inflow": 369200
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.2049166090956
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 1998.6563191348291
+  },
+  {
+   "frame": 20,
+   "minutes": 100,
+   "n_columns": 65988,
+   "n_affected": 36049,
+   "affected_fraction": 0.5462962962962963,
+   "sink_total_domain_kg_m2_mean": 0.0013032621430808112,
+   "sink_stats_kg_m2": {
+    "mean": 0.0013032621430808112,
+    "p50": 9.801074708452201e-06,
+    "p90": 0.002114944943689129,
+    "p99": 0.01807671025102144,
+    "max": 0.7260729874705704
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002386331144981209,
+    "p50": 0.00044766058648676015,
+    "p90": 0.003342767057549435,
+    "p99": 0.03981301330797668,
+    "max": 0.7260729874705704
+   },
+   "species_share": {
+    "qr": 0.34666806045676773,
+    "qs": -1.760660487630386e-16,
+    "qg": 0.23698306518221054,
+    "qi": 0.4163488743610221
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0032583169564211097,
+    "affected_mean": 16672492.00389787
+   },
+   "sink_over_diag": {
+    "domain": 0.04153804827386631
+   },
+   "cap_binds": {
+    "qr_inflow": 41176,
+    "qs_inflow": 0,
+    "qg_inflow": 4546,
+    "qi_inflow": 372358
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.1297627202513
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2070.3828386593527
+  },
+  {
+   "frame": 21,
+   "minutes": 105,
+   "n_columns": 65988,
+   "n_affected": 35806,
+   "affected_fraction": 0.5426138085712554,
+   "sink_total_domain_kg_m2_mean": 0.001425750382084825,
+   "sink_stats_kg_m2": {
+    "mean": 0.001425750382084825,
+    "p50": 7.369848371161562e-06,
+    "p90": 0.002070907079577759,
+    "p99": 0.018011890538383677,
+    "max": 1.9764071396275247
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0026281943244612278,
+    "p50": 0.0004535384538979726,
+    "p90": 0.003393392608079156,
+    "p99": 0.04340640245516416,
+    "max": 1.9764071396275247
+   },
+   "species_share": {
+    "qr": 0.3492445770665337,
+    "qs": -1.5955998595468114e-16,
+    "qg": 0.26911022779471105,
+    "qi": 0.3816451951387554
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.003490572451612941,
+    "affected_mean": 17191762.113435745
+   },
+   "sink_over_diag": {
+    "domain": 0.0438282110213186
+   },
+   "cap_binds": {
+    "qr_inflow": 40857,
+    "qs_inflow": 0,
+    "qg_inflow": 4937,
+    "qi_inflow": 376605
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.8682791359496
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2146.617761040955
+  },
+  {
+   "frame": 22,
+   "minutes": 110,
+   "n_columns": 65988,
+   "n_affected": 35649,
+   "affected_fraction": 0.5402345881069285,
+   "sink_total_domain_kg_m2_mean": 0.001508315267368065,
+   "sink_stats_kg_m2": {
+    "mean": 0.001508315267368065,
+    "p50": 5.739980731886444e-06,
+    "p90": 0.0020933987017062155,
+    "p99": 0.020566191466695017,
+    "max": 2.4403649395904883
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0027939087347030613,
+    "p50": 0.00044401765817796395,
+    "p90": 0.003519987153001898,
+    "p99": 0.049606052621369676,
+    "max": 2.4403649395904883
+   },
+   "species_share": {
+    "qr": 0.35520951306734244,
+    "qs": 4.645296123797145e-17,
+    "qg": 0.28868790064066313,
+    "qi": 0.3561025862919944
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.003609690881853219,
+    "affected_mean": 17096185.604447715
+   },
+   "sink_over_diag": {
+    "domain": 0.04357055375970345
+   },
+   "cap_binds": {
+    "qr_inflow": 40872,
+    "qs_inflow": 0,
+    "qg_inflow": 5244,
+    "qi_inflow": 377498
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.6677640266021
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2284.357192520596
+  },
+  {
+   "frame": 23,
+   "minutes": 115,
+   "n_columns": 65988,
+   "n_affected": 35569,
+   "affected_fraction": 0.5390222464690549,
+   "sink_total_domain_kg_m2_mean": 0.0015469425038652773,
+   "sink_stats_kg_m2": {
+    "mean": 0.0015469425038652773,
+    "p50": 5.223984677606676e-06,
+    "p90": 0.002130390862200226,
+    "p99": 0.020635595633253682,
+    "max": 4.441824796692978
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002871125233868326,
+    "p50": 0.00043150562757059314,
+    "p90": 0.0035000840872844888,
+    "p99": 0.04684124193668126,
+    "max": 4.441824796692978
+   },
+   "species_share": {
+    "qr": 0.3680397229876085,
+    "qs": -4.19326522760336e-17,
+    "qg": 0.2888516378159356,
+    "qi": 0.34310863919645596
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.003617972199200295,
+    "affected_mean": 17221174.11715487
+   },
+   "sink_over_diag": {
+    "domain": 0.041276382008671036
+   },
+   "cap_binds": {
+    "qr_inflow": 40876,
+    "qs_inflow": 0,
+    "qg_inflow": 5260,
+    "qi_inflow": 373072
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.5220899456923
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2473.0762963579946
+  },
+  {
+   "frame": 24,
+   "minutes": 120,
+   "n_columns": 65988,
+   "n_affected": 35392,
+   "affected_fraction": 0.5363399405952597,
+   "sink_total_domain_kg_m2_mean": 0.0014483785296959303,
+   "sink_stats_kg_m2": {
+    "mean": 0.0014483785296959303,
+    "p50": 4.820398736981045e-06,
+    "p90": 0.0021404958587057633,
+    "p99": 0.01720865525871143,
+    "max": 0.8815693524973433
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0027016645750652345,
+    "p50": 0.0004099488631327667,
+    "p90": 0.003480996598229193,
+    "p99": 0.04288841305125183,
+    "max": 0.8815693524973433
+   },
+   "species_share": {
+    "qr": 0.34146406482267394,
+    "qs": 1.5552227484687376e-17,
+    "qg": 0.2983550279000771,
+    "qi": 0.36018090727724883
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0033156815017693474,
+    "affected_mean": 17417236.84584391
+   },
+   "sink_over_diag": {
+    "domain": 0.03571876672362301
+   },
+   "cap_binds": {
+    "qr_inflow": 42616,
+    "qs_inflow": 0,
+    "qg_inflow": 4878,
+    "qi_inflow": 365193
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.5187571225497
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2675.781142084199
+  },
+  {
+   "frame": 25,
+   "minutes": 125,
+   "n_columns": 65988,
+   "n_affected": 35151,
+   "affected_fraction": 0.5326877614111657,
+   "sink_total_domain_kg_m2_mean": 0.0014176403056061463,
+   "sink_stats_kg_m2": {
+    "mean": 0.0014176403056061463,
+    "p50": 3.980081134871358e-06,
+    "p90": 0.0020513546975003427,
+    "p99": 0.0131854389372062,
+    "max": 1.6455081335321757
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0026640101279922883,
+    "p50": 0.0003732615121973792,
+    "p90": 0.003326548789468878,
+    "p99": 0.03518088740189687,
+    "max": 1.6455081335321757
+   },
+   "species_share": {
+    "qr": 0.35550463626859047,
+    "qs": 1.3464601343865152e-17,
+    "qg": 0.28790130206461517,
+    "qi": 0.3565940616667944
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.003190533992564431,
+    "affected_mean": 17990220.473251447
+   },
+   "sink_over_diag": {
+    "domain": 0.03281179099440716
+   },
+   "cap_binds": {
+    "qr_inflow": 43180,
+    "qs_inflow": 0,
+    "qg_inflow": 4337,
+    "qi_inflow": 355243
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.5316609449653
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2851.0253677491637
+  },
+  {
+   "frame": 26,
+   "minutes": 130,
+   "n_columns": 65988,
+   "n_affected": 34866,
+   "affected_fraction": 0.5283687943262412,
+   "sink_total_domain_kg_m2_mean": 0.0012609141886693407,
+   "sink_stats_kg_m2": {
+    "mean": 0.0012609141886693407,
+    "p50": 1.6090092186079964e-06,
+    "p90": 0.002000736387777616,
+    "p99": 0.010521123298386155,
+    "max": 1.6081836110603827
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0023912163123190784,
+    "p50": 0.0003615689188745777,
+    "p90": 0.0032317847647051574,
+    "p99": 0.03270669117238653,
+    "max": 1.6081836110603827
+   },
+   "species_share": {
+    "qr": 0.351306683693789,
+    "qs": 1.347072561916781e-16,
+    "qg": 0.24223964319235075,
+    "qi": 0.40645367311386027
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0028039188305719882,
+    "affected_mean": 18909562.996120222
+   },
+   "sink_over_diag": {
+    "domain": 0.028355177619353817
+   },
+   "cap_binds": {
+    "qr_inflow": 43684,
+    "qs_inflow": 0,
+    "qg_inflow": 3677,
+    "qi_inflow": 345258
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.668581769351
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2934.391968862885
+  },
+  {
+   "frame": 27,
+   "minutes": 135,
+   "n_columns": 65988,
+   "n_affected": 34663,
+   "affected_fraction": 0.525292477420137,
+   "sink_total_domain_kg_m2_mean": 0.0011310235901938795,
+   "sink_stats_kg_m2": {
+    "mean": 0.0011310235901938795,
+    "p50": 1.1837766651892671e-06,
+    "p90": 0.001946364819768704,
+    "p99": 0.010275482767239006,
+    "max": 1.1443847502576672
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002155946085146388,
+    "p50": 0.00035287147462769613,
+    "p90": 0.003187344499666766,
+    "p99": 0.02722111550965485,
+    "max": 1.1443847502576672
+   },
+   "species_share": {
+    "qr": 0.35443898279086,
+    "qs": 9.827152584618924e-17,
+    "qg": 0.20443009508868173,
+    "qi": 0.4411309221204581
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0024995335851007773,
+    "affected_mean": 20528477.679438435
+   },
+   "sink_over_diag": {
+    "domain": 0.02518245877356696
+   },
+   "cap_binds": {
+    "qr_inflow": 44695,
+    "qs_inflow": 0,
+    "qg_inflow": 2874,
+    "qi_inflow": 338375
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 579.8509806883576
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2963.7290520675488
+  },
+  {
+   "frame": 28,
+   "minutes": 140,
+   "n_columns": 65988,
+   "n_affected": 34896,
+   "affected_fraction": 0.5288234224404437,
+   "sink_total_domain_kg_m2_mean": 0.0010474631148001973,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010474631148001973,
+    "p50": 1.215368487602647e-06,
+    "p90": 0.0019053035116773063,
+    "p99": 0.010094889426778435,
+    "max": 0.7434478844796885
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.00198300099164951,
+    "p50": 0.00034681825038790457,
+    "p90": 0.0032360250338566814,
+    "p99": 0.02412246353655282,
+    "max": 0.7434478844796885
+   },
+   "species_share": {
+    "qr": 0.3390587153410351,
+    "qs": 2.1891475156539265e-17,
+    "qg": 0.189953946838692,
+    "qi": 0.4709873378202731
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0023254082558890753,
+    "affected_mean": 20769347.3236252
+   },
+   "sink_over_diag": {
+    "domain": 0.023283378180769112
+   },
+   "cap_binds": {
+    "qr_inflow": 46388,
+    "qs_inflow": 0,
+    "qg_inflow": 2619,
+    "qi_inflow": 335643
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.009184921612
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2968.641211889305
+  },
+  {
+   "frame": 29,
+   "minutes": 145,
+   "n_columns": 65988,
+   "n_affected": 35342,
+   "affected_fraction": 0.5355822270715888,
+   "sink_total_domain_kg_m2_mean": 0.0009796691406225634,
+   "sink_stats_kg_m2": {
+    "mean": 0.0009796691406225634,
+    "p50": 2.5509328502677958e-06,
+    "p90": 0.0019088270615475614,
+    "p99": 0.009042530458494971,
+    "max": 0.664902003989124
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.001835035890544939,
+    "p50": 0.0003342175265310639,
+    "p90": 0.0032271707845077245,
+    "p99": 0.01800213302700863,
+    "max": 0.664902003989124
+   },
+   "species_share": {
+    "qr": 0.3184640231762262,
+    "qs": 1.4451679086741456e-16,
+    "qg": 0.18135417425351372,
+    "qi": 0.5001818025702599
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0022063248432127288,
+    "affected_mean": 20363275.987420574
+   },
+   "sink_over_diag": {
+    "domain": 0.022466876505861245
+   },
+   "cap_binds": {
+    "qr_inflow": 46206,
+    "qs_inflow": 0,
+    "qg_inflow": 2487,
+    "qi_inflow": 336631
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.1282995550497
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2877.409649469365
+  },
+  {
+   "frame": 30,
+   "minutes": 150,
+   "n_columns": 65988,
+   "n_affected": 35400,
+   "affected_fraction": 0.5364611747590471,
+   "sink_total_domain_kg_m2_mean": 0.0009867411904025325,
+   "sink_stats_kg_m2": {
+    "mean": 0.0009867411904025325,
+    "p50": 3.2023083114012306e-06,
+    "p90": 0.00190031654356584,
+    "p99": 0.009127171007196334,
+    "max": 1.0187121271080772
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.00184102166704831,
+    "p50": 0.0003401011432314972,
+    "p90": 0.0032767597529051234,
+    "p99": 0.017558877773218875,
+    "max": 1.0187121271080772
+   },
+   "species_share": {
+    "qr": 0.30466419911779835,
+    "qs": -1.4216493694629557e-16,
+    "qg": 0.20637677023655576,
+    "qi": 0.48895903064564605
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0022597440669369613,
+    "affected_mean": 21445420.68699098
+   },
+   "sink_over_diag": {
+    "domain": 0.02332599192223022
+   },
+   "cap_binds": {
+    "qr_inflow": 45790,
+    "qs_inflow": 0,
+    "qg_inflow": 2670,
+    "qi_inflow": 338382
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.290157598051
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2791.438747358393
+  },
+  {
+   "frame": 31,
+   "minutes": 155,
+   "n_columns": 65988,
+   "n_affected": 35463,
+   "affected_fraction": 0.5374158937988726,
+   "sink_total_domain_kg_m2_mean": 0.0010125981142837044,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010125981142837044,
+    "p50": 3.3438810876358676e-06,
+    "p90": 0.0018825319231254554,
+    "p99": 0.009638555821863317,
+    "max": 1.7151981077281937
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0018916445128209986,
+    "p50": 0.00032513224950921787,
+    "p90": 0.0032870383810331937,
+    "p99": 0.020981131038323282,
+    "max": 1.7151981077281937
+   },
+   "species_share": {
+    "qr": 0.3252432566277392,
+    "qs": -6.877185959523395e-17,
+    "qg": 0.19905094802305232,
+    "qi": 0.47570579534920865
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0023654087655668224,
+    "affected_mean": 22083703.869907867
+   },
+   "sink_over_diag": {
+    "domain": 0.024363849828370303
+   },
+   "cap_binds": {
+    "qr_inflow": 45427,
+    "qs_inflow": 0,
+    "qg_inflow": 2885,
+    "qi_inflow": 339890
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.4193693695411
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2742.5601797769177
+  },
+  {
+   "frame": 32,
+   "minutes": 160,
+   "n_columns": 65988,
+   "n_affected": 35253,
+   "affected_fraction": 0.5342334969994544,
+   "sink_total_domain_kg_m2_mean": 0.0011151169424872636,
+   "sink_stats_kg_m2": {
+    "mean": 0.0011151169424872636,
+    "p50": 3.0007450345168396e-06,
+    "p90": 0.001858610853925803,
+    "p99": 0.00940858869212865,
+    "max": 1.6332349599407814
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.002089634314808322,
+    "p50": 0.00033834983866915815,
+    "p90": 0.0032903834565217688,
+    "p99": 0.021425077114049264,
+    "max": 1.6332349599407814
+   },
+   "species_share": {
+    "qr": 0.3646709656522711,
+    "qs": 1.0777256182393987e-16,
+    "qg": 0.2018361381454175,
+    "qi": 0.43349289620231146
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.002673213790026805,
+    "affected_mean": 22878772.224744428
+   },
+   "sink_over_diag": {
+    "domain": 0.02758827544495375
+   },
+   "cap_binds": {
+    "qr_inflow": 45016,
+    "qs_inflow": 0,
+    "qg_inflow": 3034,
+    "qi_inflow": 343572
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.3717372619019
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2667.2322069449638
+  },
+  {
+   "frame": 33,
+   "minutes": 165,
+   "n_columns": 65988,
+   "n_affected": 35120,
+   "affected_fraction": 0.5322179790264897,
+   "sink_total_domain_kg_m2_mean": 0.0010559466709159707,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010559466709159707,
+    "p50": 2.554840627816997e-06,
+    "p90": 0.0018847117382711483,
+    "p99": 0.009750059258484921,
+    "max": 0.6937254362968723
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.001984589492731641,
+    "p50": 0.0003365726677091325,
+    "p90": 0.003240930248700972,
+    "p99": 0.022396986886620944,
+    "max": 0.6937254362968723
+   },
+   "species_share": {
+    "qr": 0.3086556302478095,
+    "qs": 2.3607258570772673e-17,
+    "qg": 0.22950308096765173,
+    "qi": 0.4618412887845388
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.00259814634794009,
+    "affected_mean": 23277132.93462747
+   },
+   "sink_over_diag": {
+    "domain": 0.02760857019805814
+   },
+   "cap_binds": {
+    "qr_inflow": 42742,
+    "qs_inflow": 0,
+    "qg_inflow": 3164,
+    "qi_inflow": 345776
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.308013294019
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2523.8470670713705
+  },
+  {
+   "frame": 34,
+   "minutes": 170,
+   "n_columns": 65988,
+   "n_affected": 35259,
+   "affected_fraction": 0.534324422622295,
+   "sink_total_domain_kg_m2_mean": 0.0010866447748359568,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010866447748359568,
+    "p50": 3.1280342219690916e-06,
+    "p90": 0.0018470486119309432,
+    "p99": 0.00927747576869101,
+    "max": 1.3625324978538451
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0020346554017433576,
+    "p50": 0.0003244110764270375,
+    "p90": 0.0031192638481930654,
+    "p99": 0.022900730702863446,
+    "max": 1.3625324978538451
+   },
+   "species_share": {
+    "qr": 0.34350501903867575,
+    "qs": 4.699100552283724e-17,
+    "qg": 0.21233507126250709,
+    "qi": 0.444159909698817
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.002734752202982124,
+    "affected_mean": 23946887.690053772
+   },
+   "sink_over_diag": {
+    "domain": 0.029722749037850996
+   },
+   "cap_binds": {
+    "qr_inflow": 41764,
+    "qs_inflow": 0,
+    "qg_inflow": 3157,
+    "qi_inflow": 344128
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.343089386896
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2412.479253199641
+  },
+  {
+   "frame": 35,
+   "minutes": 175,
+   "n_columns": 65988,
+   "n_affected": 35234,
+   "affected_fraction": 0.5339455658604595,
+   "sink_total_domain_kg_m2_mean": 0.0011768817023440716,
+   "sink_stats_kg_m2": {
+    "mean": 0.0011768817023440716,
+    "p50": 3.0463238799894063e-06,
+    "p90": 0.00183411989506205,
+    "p99": 0.0093610979464379,
+    "max": 2.6720520357327513
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.0022060504784323274,
+    "p50": 0.00031961977513216255,
+    "p90": 0.0030453594607601346,
+    "p99": 0.023873140749497403,
+    "max": 2.6720520357327513
+   },
+   "species_share": {
+    "qr": 0.3973079141584061,
+    "qs": 1.1280607990657012e-16,
+    "qg": 0.19509139679524187,
+    "qi": 0.4076006890463518
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0030163767505915337,
+    "affected_mean": 25201064.154559016
+   },
+   "sink_over_diag": {
+    "domain": 0.03327039130220211
+   },
+   "cap_binds": {
+    "qr_inflow": 40861,
+    "qs_inflow": 0,
+    "qg_inflow": 3103,
+    "qi_inflow": 340836
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.3644577286404
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2334.209690198036
+  },
+  {
+   "frame": 36,
+   "minutes": 180,
+   "n_columns": 65988,
+   "n_affected": 35361,
+   "affected_fraction": 0.5358701582105837,
+   "sink_total_domain_kg_m2_mean": 0.0010447965674462774,
+   "sink_stats_kg_m2": {
+    "mean": 0.0010447965674462774,
+    "p50": 3.5079267812780915e-06,
+    "p90": 0.001857471645814403,
+    "p99": 0.009170501194565228,
+    "max": 0.6638297457923195
+   },
+   "sink_stats_affected_only_kg_m2": {
+    "mean": 0.001951970513823476,
+    "p50": 0.0003253367863869696,
+    "p90": 0.003056989889455084,
+    "p99": 0.0202790104248778,
+    "max": 0.6638297457923195
+   },
+   "species_share": {
+    "qr": 0.3258052387887923,
+    "qs": -6.8345508162603706e-18,
+    "qg": 0.208699636648177,
+    "qi": 0.46549512456303055
+   },
+   "projection_total_kg_m2_sum": 0.0,
+   "sink_over_hydro_mass": {
+    "domain": 0.0027169050237196663,
+    "affected_mean": 25535328.73823398
+   },
+   "sink_over_diag": {
+    "domain": 0.02996604171800511
+   },
+   "cap_binds": {
+    "qr_inflow": 40823,
+    "qs_inflow": 0,
+    "qg_inflow": 2947,
+    "qi_inflow": 346321
+   },
+   "worst_interface": {
+    "k_mode_affected": 15,
+    "p_hPa_at_mode": 580.3878838376767
+   },
+   "n_subcycles": 3,
+   "surface_precip_diag_sum_kg_m2": 2300.738834359291
+  }
+ ],
+ "cumulative_replay": {
+  "note": "sum over frame replays \u2014 NOT in-host accumulated loss (frames are 5-min history states, each replayed for one dt=300 oracle step)",
+  "cum_1h_domain_sum_kg_m2": 3895.6332643117685,
+  "cum_3h_domain_sum_kg_m2": 5811.670396990936,
+  "cum_3h_per_column_kg_m2": {
+   "mean": 0.08807162509836539,
+   "p50": 0.010497714199207066,
+   "p90": 0.2189193383023449,
+   "p99": 1.329810916349783,
+   "max": 10.021061505973156
+  }
+ }
+}
