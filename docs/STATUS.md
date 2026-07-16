@@ -63,7 +63,11 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
   conserves column water to fp64 (`max|ΔW_micro| = 7e-15`). See [`P0-4_water_budget.md`](P0-4_water_budget.md).
 - The operator-implied column-water loss (`sed_column_loss = −ΔW_sed`) and the WRF `rain_increment`
   total-fallout diagnostic **disagree** by a non-constant O(1) amount (e.g. 6.80 vs 2.00 kg/m² for a
-  heavy-rain column). Which side is at fault is unresolved — attributing/reconciling it is P0-4b.
+  heavy-rain column). **Attributed (P0-4b): 100% is the internal interface defect from the
+  post-update-reservoir inflow cap** — reference-faithful (verbatim in Fortran
+  `module_mp_kdm6.F`; oracle/C++/Fortran identical), identity closes to the fp64 floor; the bottom
+  diagnostic itself is accurate (`B ≈ 0`). Any fix is a freeze-lift decision (changes trajectories).
+  See [`P0-4b_sedimentation_attribution.md`](P0-4b_sedimentation_attribution.md).
 - Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
   default); the earlier "water budget" was an unweighted layer-sum.
 
