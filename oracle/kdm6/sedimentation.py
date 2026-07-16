@@ -87,7 +87,7 @@ class _SubstepCapture:
             out = torch.stack(self.out[s], dim=-1)     # (B, K)
             inn = torch.stack(self.inn[s], dim=-1)
             proj = torch.stack(self.proj[s], dim=-1)
-            zB = torch.zeros(out.shape[0], dtype=torch.int64)
+            zB = torch.zeros(out.shape[0], dtype=torch.int64, device=out.device)
             ledger.record(
                 s,
                 out_mass=(weight * out).detach(),

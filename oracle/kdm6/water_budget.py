@@ -14,9 +14,12 @@ The two independent scientific results are:
     to fp64 roundoff. The cleanup sink, measured at the exact
     ``apply_threshold_cleanup`` boundary, accounts for that (tiny) non-conservation.
   * ``sed_column_loss`` (= −ΔW_sed, the operator-implied net column-water loss) and
-    ``rain_increment`` (the WRF-facing total-fallout diagnostic) DISAGREE. Which side
-    is at fault (RAINNCV under-report vs. a sedimentation clamp/cap) is unresolved —
-    ``sed_surface_diag_gap`` characterizes it, pending P0-4b.
+    ``rain_increment`` (the WRF-facing total-fallout diagnostic) DISAGREE.
+    ATTRIBUTED (P0-4b): 100% is the internal interface defect from the
+    post-update-reservoir inflow cap — reference-faithful (verbatim in Fortran
+    module_mp_kdm6.F); the bottom diagnostic itself is accurate. See
+    SedimentationLedger / kdm6_step_with_sed_attribution below and
+    docs/P0-4b_sedimentation_attribution.md.
 
 All quantities are per-column ``(B,)`` and detached (no autograd / no effect on the
 forward path). The diagnostic is opt-in: the default ``kdm6_step`` path is unchanged.
@@ -221,8 +224,8 @@ class SedimentationLedger:
         ref = next(iter(self._acc.values()))["out"]     # (B, K) shape/dtype reference
         B, K = ref.shape
         zBK = torch.zeros_like(ref)
-        zB = torch.zeros(B, dtype=ref.dtype)
-        zL = torch.zeros(B, dtype=torch.int64)
+        zB = torch.zeros(B, dtype=ref.dtype, device=ref.device)
+        zL = torch.zeros(B, dtype=torch.int64, device=ref.device)
 
         loss, diag, gap = {}, {}, {}
         o_bot, b_gap, d_sum, a_sum = {}, {}, {}, {}
