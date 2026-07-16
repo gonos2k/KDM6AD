@@ -286,3 +286,22 @@ def test_sed_attribution_does_not_change_forward_outputs():
     out, _, _ = wb.kdm6_step_with_sed_attribution(s, f, p, dt=120.0)
     for field in s._fields:
         assert torch.equal(getattr(out, field), getattr(ref, field)), field
+
+
+# ── dt<=0 no-op contract: wrapper must not break, attribution all-zero ───────
+def test_dt_nonpositive_noop_returns_zero_attribution():
+    s, f = _heavy_rain_batch()
+    for dt in (0.0, -60.0):
+        out, budget, att = wb.kdm6_step_with_sed_attribution(s, f, dt=dt)
+        # bit-exact no-op (the hardened _kdm6_pure contract)
+        for field in s._fields:
+            assert torch.equal(getattr(out, field), getattr(s, field)), (dt, field)
+        B, K = s.qr.shape
+        for sp in ("qr", "qs", "qg", "qi"):
+            assert torch.count_nonzero(att.gap_by_species_kg_m2[sp]) == 0, (dt, sp)
+            assert torch.count_nonzero(att.column_loss_by_species_kg_m2[sp]) == 0
+            assert att.interface_defect_detail_kg_m2[sp].shape == (B, K - 1)
+            assert att.projection_detail_kg_m2[sp].shape == (B, K)
+        assert torch.count_nonzero(att.attributed_gap_kg_m2) == 0
+        assert torch.count_nonzero(att.unattributed_residual_kg_m2) == 0
+        assert torch.count_nonzero(budget.sed_surface_diag_gap_kg_m2) == 0

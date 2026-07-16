@@ -65,7 +65,7 @@ class ColumnWaterBudget:
     cleanup_by_species_kg_m2: dict        # species -> (B,)
     cleanup_total_kg_m2: torch.Tensor     # (B,) = Σ_species cleanup
     decomposition_residual_kg_m2: torch.Tensor  # (B,) = W_out−W_in+sed_column_loss−micro_dW (ledger self-consistency, ≈0)
-    sed_surface_diag_gap_kg_m2: torch.Tensor  # (B,) = surface_precip_diag − sed_column_loss (unresolved, → P0-4b)
+    sed_surface_diag_gap_kg_m2: torch.Tensor  # (B,) = surface_precip_diag − sed_column_loss (attributed: P0-4b interface defect)
     n_subcycles: int
 
 
@@ -218,10 +218,15 @@ class SedimentationLedger:
         for k, v in flags.items():
             d["flags"][k] = v if k not in d["flags"] else d["flags"][k] + v
 
-    def finalize(self) -> SedimentationAttribution:
-        if not self._acc:
+    def finalize(self, like=None) -> SedimentationAttribution:
+        if self._acc:
+            ref = next(iter(self._acc.values()))["out"]  # (B, K) shape/dtype reference
+        elif like is not None:
+            # nothing recorded (e.g. the supported dt<=0 bit-exact no-op) —
+            # zero attribution shaped like the given (B, K) state field.
+            ref = torch.zeros_like(like.detach())
+        else:
             raise ValueError("SedimentationLedger: no sedimentation substep recorded")
-        ref = next(iter(self._acc.values()))["out"]     # (B, K) shape/dtype reference
         B, K = ref.shape
         zBK = torch.zeros_like(ref)
         zB = torch.zeros(B, dtype=ref.dtype, device=ref.device)
@@ -285,4 +290,4 @@ def kdm6_step_with_sed_attribution(
     out, budget = _run_with_budget(state, forcing, params, dt, xland=xland,
                                    ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                                    controls=controls, sed_ledger=sed)
-    return out, budget, sed.finalize()
+    return out, budget, sed.finalize(like=state.qr)
