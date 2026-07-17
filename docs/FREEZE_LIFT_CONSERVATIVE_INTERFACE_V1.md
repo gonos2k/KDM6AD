@@ -168,28 +168,42 @@ permanently untouched.
   Gate A/B/D logs; `artifacts/` is gitignored so the docs copy is the
   committed one). Contract tests:
   `harness/tests/test_check_cons_fortran_scope.py` (6/6).
-- **Gate B (independent column parity driver)**: private host
+- **Gate B (independent column parity driver)** — G1/G2/G3 substitution
+  **owner-APPROVED (2026-07-17 adjudication), standalone Gate B only; it
+  does NOT relax Gate D or C5 strict-bitwise**. Private host
   `test/kdm6_cons_gateb/` runs identical fixture arrays through the
   corrected Fortran and C++ v2 (variant=1), reusing the C3 closure
   columns + single-layer / species-isolation / mstep-mix regimes, PLUS a
   **legacy-pair control** (mp37 `kdm6` vs variant=0) on the same fixtures.
-  Measured finding (2026-07-17): **all single-subcycle fixtures
-  (dt ≤ DTCLDCR=120 — the operational regime; the host always runs
-  dt=20) are f32 RAW-BIT identical for BOTH pairs**, but at dt=300
-  (3 KDM sub-cycles) the **LEGACY pair itself drifts Fortran↔C++ on
-  cap-active columns** — a pre-existing drift in the shared sub-cycle
-  machinery, never exercised by the dt=20 host and mirrored by the C3.4
-  `FS64_MULTI` oracle↔C++ op-order drift. Both sides of that drift are
-  frozen (legacy Fortran; libtorch src), so dt=300 raw-bit equality is
-  not achievable within this freeze-lift's scope. The driver therefore
-  gates: **G1** raw-bit on all single-subcycle fixtures (both pairs);
-  **G2** per-column water closure kappa32 ≤ 8 on both conservative paths,
-  all fixtures (the legacy control FAILS closure on cap-active columns —
-  the documented defect, re-confirmed against real legacy Fortran for the
-  first time); **G3** no-new-divergence — the conservative pair must be
-  bitwise-clean on every column where the legacy pair is (measured
-  divergence column sets are IDENTICAL). ⚠ G1/G3 in lieu of literal
-  dt=300 raw-bit is an **owner-adjudication item**.
+  Rationale: at 3 KDM sub-cycles the LEGACY pair itself drifts
+  Fortran↔C++ on cap-active columns (pre-existing shared sub-cycle
+  machinery drift, never exercised by the single-subcycle host, mirrored
+  by C3.4 `FS64_MULTI`), so multi-subcycle raw-bit does not isolate
+  variant regressions and both sides of the drift are frozen.
+  - **G1 (single KDM subcycle, dtcld ≤ DTCLDCR = 120 s): PASS** — 12
+    states + mass/number/rime bookkeeping + the three surface increments
+    f32 RAW-BIT identical on all fixtures, for BOTH the conservative and
+    legacy-control pairs.
+  - **G2 (multi-subcycle physical invariants, dt=300): PASS** — per-column
+    `W_out − W_in + P_actual = O(ε32)` with measured kappa32 ≤ 0.26 on
+    both conservative paths; all hydrometeors/numbers/rime nonnegative;
+    `rain_increment` = actual total bottom outflow with snow/graupel
+    increments as its defined subsets; no NaN/Inf. (The legacy control
+    FAILS closure on cap-active columns — the documented interface
+    defect, re-confirmed against real legacy Fortran for the first time.)
+  - **G3 (no-new-divergence, `harness/gateb_g3_check.py` on the driver's
+    machine-readable diff listing): G3.1 differing-FIELD subset PASS,
+    G3.2 differing-CELL-mask subset PASS, G3.4 no non-finite PASS;
+    G3.3 ULP-envelope EXCEEDED pre-fix** — cons max ULP 77,852 vs legacy
+    envelope 77,312 (closure3, +0.7%) and 2,188 vs 1,164 (species-iso),
+    concentrated in the rain family (qr/nr/qv/rain_increment/th).
+    Whether this is chaotic same-mechanism amplification or the same
+    root cause as the Gate D residual is exactly what the approved
+    diagnostic bisection determines; **G3.3 is re-measured after the
+    variant-only fix** before Gate B claims the owner's final wording:
+    "PASS — single-subcycle raw-bit parity; multi-subcycle closure and
+    no-new-divergence certified. Standalone dt=300 raw-bit parity is not
+    claimed."
 - **Gate C (host compile/registration)**: em_real clean build with both
   new schemes wired (Registry packages select; `kdm6init_cons` dispatch;
   `-ffp-contract=off` explicit rules on both new objects;

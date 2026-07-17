@@ -47,6 +47,8 @@ def main() -> int:
     ap.add_argument("--host", type=Path, default=REPO / "host" / "KIM-meso_v1.0")
     ap.add_argument("--gateb-log", type=Path, default=None,
                     help="Gate B driver output to embed")
+    ap.add_argument("--g3-report", type=Path, default=None,
+                    help="gateb_g3_check.py JSON report to embed")
     ap.add_argument("--gated-log", type=Path, action="append", default=[],
                     help="Gate D strict_bitwise_nc output(s) to embed (repeatable)")
     ap.add_argument("--out", type=Path, default=REPO / "artifacts" / "c4" /
@@ -119,6 +121,31 @@ def main() -> int:
         "report": json.loads(scope.stdout),
     }
 
+    # Owner adjudication (2026-07-17) + the established cross-tree rate-dump
+    # comparison scopes (compare_rate_dump.py refuses anything beyond these
+    # without an explicit --min-fields opt-in).
+    manifest["adjudication_2026_07_17"] = {
+        "gate_b_g1_g2_g3_substitution": "APPROVED — standalone Gate B only; "
+                                        "Gate D and C5 remain strict bitwise",
+        "frozen_libtorch_instrumentation": "APPROVED — diagnostic-only, "
+                                           "compile-time OFF default, separate "
+                                           "diag branch, non-invasiveness gate",
+        "production_numeric_changes_before_dump_evidence": "HELD",
+        "fifth_fortran_physics_edit": "NOT pre-approved (reference stays "
+                                      "reference; Case B requires re-opened "
+                                      "Gate A adjudication)",
+        "gate_d_conservative": "HOLD (1-4 ULP residual blocking)",
+    }
+    manifest["rate_dump_scope"] = {
+        "graupel": {"fields": 8, "scope": "full list established", "verdict": "BITWISE"},
+        "warmrates": {"fields": "first 8 of fort's 10 (--min-fields 8)",
+                      "verdict": "BITWISE"},
+        "ncrates": {"fields": "first 13 of fort 34 / cpp 23 (--min-fields 13; "
+                              "trailing dbg_*/aux captures are capture-point "
+                              "artifacts, not rates)",
+                    "verdict": "BITWISE"},
+    }
+
     if args.gateb_log and args.gateb_log.exists():
         text = args.gateb_log.read_text()
         manifest["gate_b"] = {
@@ -126,6 +153,8 @@ def main() -> int:
             "pass": "GATE B: PASS" in text,
             "output": text,
         }
+    if args.g3_report and args.g3_report.exists():
+        manifest["gate_b_g3"] = json.loads(args.g3_report.read_text())
     if args.gated_log:
         manifest["gate_d"] = [
             {"log": str(p), "output": p.read_text()}
