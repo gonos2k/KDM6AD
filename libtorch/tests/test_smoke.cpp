@@ -340,6 +340,50 @@ void test_unknown_physics_variant_throws() {
         }
         assert(threw);
 
+        // (a2) kdm6_fn options overload rejects an unknown selector BEFORE its
+        // dt<=0 no-op early return — an invalid variant with dt=0.0 or dt=-1.0
+        // must throw, never silently succeed (fail-loud contract of the
+        // installed C++ API).
+        threw = false;
+        try {
+            (void)kdm6_fn(s, f, params, /*dt=*/0.0, c10::nullopt,
+                          /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0, bad);
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+        threw = false;
+        try {
+            (void)kdm6_fn(s, f, params, /*dt=*/-1.0, c10::nullopt,
+                          /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0, bad);
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+
+        // (a3) valid variants keep the dt<=0 no-op contract: no throw, state
+        // out == state in bitwise. (The no-op round-trips th through
+        // th*pii/pii; with the pii/th values above that round-trip is
+        // fp64-exact, and every other field is passed through untouched.)
+        for (auto v : {PhysicsVariant::Legacy,
+                       PhysicsVariant::ConservativeInterface}) {
+            PhysicsOptions good;
+            good.variant = v;
+            auto noop = kdm6_fn(s, f, params, /*dt=*/0.0, c10::nullopt,
+                                /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0, good);
+            auto in_fields  = s.fields();
+            auto out_fields = noop.state_out.fields();
+            for (size_t i = 0; i < in_fields.size(); ++i) {
+                assert(torch::equal(*out_fields[i], *in_fields[i]));
+            }
+            assert(torch::equal(noop.rain_increment,
+                                torch::zeros_like(noop.rain_increment)));
+            assert(torch::equal(noop.snow_increment,
+                                torch::zeros_like(noop.snow_increment)));
+            assert(torch::equal(noop.graupel_increment,
+                                torch::zeros_like(noop.graupel_increment)));
+        }
+
         // (b) sedimentation_chain's defensive gate (reachable by direct C++
         // callers of the chain, bypassing kdm6_step).
         auto z = torch::zeros({B, K}, opts);
