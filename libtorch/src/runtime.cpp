@@ -542,6 +542,19 @@ FnResult kdm6_fn(const State& state,
     };
 }
 
+// Legacy-signature overload (pre-variant mangled symbol) — thin forwarder to
+// the options overload with PhysicsOptions{} (Legacy). See runtime.h.
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& params,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland,
+                 double ncmin_land,
+                 double ncmin_sea) {
+    return kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
+                   PhysicsOptions{});
+}
+
 // ── Handle::Impl ────────────────────────────────────────────────────────────
 struct Handle::Impl {
     State state_in;
@@ -725,6 +738,19 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const c10::optional<torch::Tensor>& xland,
                      double ncmin_land, double ncmin_sea,
                      const PhysicsOptions& physics) {
+    // Fail-loud variant gate (C3): an explicit switch, never an if/else that
+    // silently maps unknown values to legacy — a C++ caller passing e.g.
+    // static_cast<PhysicsVariant>(2) must throw here. (The v2 C bridge
+    // validates the raw uint32 separately and returns KDM6_ERR_INVALID_ARG
+    // before ever constructing PhysicsOptions.)
+    switch (physics.variant) {
+        case PhysicsVariant::Legacy:
+        case PhysicsVariant::ConservativeInterface:
+            break;
+        default:
+            TORCH_CHECK(false, "kdm6_step: unsupported PhysicsVariant: ",
+                        static_cast<uint32_t>(physics.variant));
+    }
     // Parameters are RESERVED / NOT WIRED (see runtime.h): kdm6_fn ignores them, so a
     // requires_grad parameter leaf would silently produce no sensitivity. Fast-fail rather
     // than mislead a C++ direct caller who passed make_parameters(ParamGradFlags::…).
@@ -757,6 +783,17 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
         /*graupel_increment=*/std::move(fn_out.graupel_increment),
         /*rhog=*/std::move(fn_out.rhog),
     };
+}
+
+// Legacy-signature overload (pre-variant mangled symbol) — thin forwarder to
+// the options overload with PhysicsOptions{} (Legacy). The v1 C bridge and
+// kdm6_step_ad_c bind here. See runtime.h.
+StepResult kdm6_step(const State& state, const Forcing& forcing,
+                     const Parameters& params, double dt, bool value_only,
+                     const c10::optional<torch::Tensor>& xland,
+                     double ncmin_land, double ncmin_sea) {
+    return kdm6_step(state, forcing, params, dt, value_only, xland,
+                     ncmin_land, ncmin_sea, PhysicsOptions{});
 }
 
 }  // namespace kdm6

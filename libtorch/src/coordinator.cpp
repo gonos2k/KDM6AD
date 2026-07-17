@@ -2610,14 +2610,24 @@ SedimentationOutputs sedimentation_chain(
 
     // conservative-interface-v1: pick the substep pair ONCE (identical
     // signatures), before the substep loops — no per-substep branching inside
-    // the legacy path. Default Legacy keeps the chain bitwise-unchanged.
+    // the legacy path. Legacy keeps the chain bitwise-unchanged.
     using MainSubstepFn = sed::SubstepAdvectionOutputs (*)(
         const sed::SubstepAdvectionInputs&, const torch::Tensor&, int, int,
         double, const sed::SubstepAdvectionParams&);
     using IceSubstepFn = sed::IceSubstepOutputs (*)(
         const sed::IceSubstepInputs&, const torch::Tensor&, int, int,
         double, const sed::SubstepAdvectionParams&);
-    const bool conservative = (variant == PhysicsVariant::ConservativeInterface);
+    // Fail-loud variant gate (C3, defensive — kdm6_step validates upstream):
+    // an explicit switch, never an equality test that silently maps unknown
+    // enum values to the legacy pair.
+    bool conservative = false;
+    switch (variant) {
+        case PhysicsVariant::Legacy:                conservative = false; break;
+        case PhysicsVariant::ConservativeInterface: conservative = true;  break;
+        default:
+            TORCH_CHECK(false, "sedimentation_chain: unsupported PhysicsVariant: ",
+                        static_cast<uint32_t>(variant));
+    }
     const MainSubstepFn main_substep_fn =
         conservative ? sed::substep_advection_conservative : sed::substep_advection_torch;
     const IceSubstepFn ice_substep_fn =
@@ -2762,6 +2772,32 @@ SedimentationOutputs sedimentation_chain(
         /*snow_increment=*/surface.snow_increment,
         /*graupel_increment=*/surface.graupel_increment,
     };
+}
+
+// Legacy-signature overload (pre-variant mangled symbol) — thin forwarder to
+// the variant overload with PhysicsVariant::Legacy. See coordinator.h.
+SedimentationOutputs sedimentation_chain(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const torch::Tensor& work1_qr,
+    const torch::Tensor& workn_qr,
+    const torch::Tensor& work1_qs,
+    const torch::Tensor& work1_qg,
+    const torch::Tensor& work1_qi,
+    const torch::Tensor& workn_qi,
+    const torch::Tensor& mstep_col_main,
+    int mstepmax_main,
+    const torch::Tensor& mstep_col_ice,
+    int mstepmax_ice,
+    double dtcld,
+    const sed::SubstepAdvectionParams& params,
+    const CoordinatorParams* reslope_params,
+    progb::ProgBOutputs* progb_ret
+) {
+    return sedimentation_chain(
+        state, forcing, work1_qr, workn_qr, work1_qs, work1_qg, work1_qi,
+        workn_qi, mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice,
+        dtcld, params, reslope_params, progb_ret, PhysicsVariant::Legacy);
 }
 
 }  // namespace kdm6

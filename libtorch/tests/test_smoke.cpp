@@ -296,6 +296,80 @@ void test_kdm6_step_xland_direct_cpp_caller() {
     } END_TEST();
 }
 
+// C3 fail-loud gate: the installed C++ options overload must throw (TORCH_CHECK)
+// on any PhysicsVariant value it does not know — a caller passing
+// static_cast<PhysicsVariant>(2) must never silently run legacy. The C bridge
+// has its own uint32 validation (v2 returns KDM6_ERR_INVALID_ARG before
+// constructing PhysicsOptions); this covers the direct C++ surface the bridge
+// cannot reach. Also checks the defensive gate inside sedimentation_chain.
+void test_unknown_physics_variant_throws() {
+    TEST(test_unknown_physics_variant_throws) {
+        const int B = 1, K = 1;
+        auto opts = torch::dtype(torch::kFloat64);
+
+        State s;
+        s.th   = torch::full({B, K}, 285.0 / 1.1, opts);
+        s.qv   = torch::full({B, K}, 6.5e-3, opts);
+        s.qc   = torch::full({B, K}, 5.0e-4, opts);
+        s.qr   = torch::full({B, K}, 1.0e-4, opts);
+        s.qi   = torch::zeros({B, K}, opts);
+        s.qs   = torch::zeros({B, K}, opts);
+        s.qg   = torch::zeros({B, K}, opts);
+        s.nccn = torch::full({B, K}, 5.0e8, opts);
+        s.nc   = torch::full({B, K}, 1.0e8, opts);
+        s.ni   = torch::zeros({B, K}, opts);
+        s.nr   = torch::full({B, K}, 1.0e5, opts);
+        s.bg   = torch::zeros({B, K}, opts);
+        Forcing f;
+        f.rho  = torch::full({B, K}, 1.0, opts);
+        f.pii  = torch::full({B, K}, 1.1, opts);
+        f.p    = torch::full({B, K}, 8.0e4, opts);
+        f.delz = torch::full({B, K}, 550.0, opts);
+        auto params = make_parameters(/*grad_flags=*/0);
+
+        // (a) kdm6_step options overload rejects an unknown selector at entry.
+        PhysicsOptions bad;
+        bad.variant = static_cast<PhysicsVariant>(2);
+        bool threw = false;
+        try {
+            (void)kdm6_step(s, f, params, /*dt=*/60.0, /*value_only=*/true,
+                            c10::nullopt, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
+                            bad);
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+
+        // (b) sedimentation_chain's defensive gate (reachable by direct C++
+        // callers of the chain, bypassing kdm6_step).
+        auto z = torch::zeros({B, K}, opts);
+        CoordinatorState cs{z, z, z, z, z, z, z, z, z, z, z,
+                            torch::full({B, K}, 280.0, opts)};
+        CoordinatorForcing cf{torch::full({B, K}, 8.0e4, opts),
+                              torch::full({B, K}, 1.0, opts),
+                              torch::full({B, K}, 550.0, opts),
+                              torch::full({B, K}, 1.0, opts)};
+        auto mcol = torch::ones({B}, opts);
+        threw = false;
+        try {
+            (void)sedimentation_chain(
+                cs, cf, z, z, z, z, z, z, mcol, /*mstepmax_main=*/1,
+                mcol, /*mstepmax_ice=*/1, /*dtcld=*/60.0,
+                sed::default_substep_advection_params(),
+                /*reslope_params=*/nullptr, /*progb_ret=*/nullptr,
+                static_cast<PhysicsVariant>(7));
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+
+        // (c) the legacy overloads (no PhysicsOptions/variant argument) still
+        // resolve and run — the overload refactor kept the old signatures.
+        auto ok = kdm6_step(s, f, params, /*dt=*/60.0, /*value_only=*/true);
+        assert(torch::all(torch::isfinite(ok.state_out.qc)).item<bool>());
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch smoke tests\n";
     test_constants_have_expected_values();
@@ -309,6 +383,7 @@ int main() {
     test_layout_roundtrip();
     test_kdm6_step_wired_runs_microphysics();
     test_kdm6_step_xland_direct_cpp_caller();
+    test_unknown_physics_variant_throws();
     std::cout << "All tests passed.\n";
     return 0;
 }

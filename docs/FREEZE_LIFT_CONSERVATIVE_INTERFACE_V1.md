@@ -1,6 +1,7 @@
 # Freeze-lift authorization — conservative-interface-v1
 
 **Status**: AUTHORIZED (owner, 2026-07-17) · **Branch**: `physics/conservative-interface-v1`
+**Checkpoint**: C1/C1b/C2 landed via PR #22 (`main@d8057ab`) as an EXPERIMENTAL checkpoint — no tag, release, or host promotion before C3–C5.
 **Decision basis**: P0-4b attribution + P0-4b.1/b.2 corrected decision package
 ([`P0-4b_sedimentation_attribution.md`](P0-4b_sedimentation_attribution.md),
 [`P0-4b1_interface_sink_prevalence.md`](P0-4b1_interface_sink_prevalence.md); PRs #14–#17).
