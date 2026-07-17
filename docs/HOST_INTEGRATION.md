@@ -91,7 +91,7 @@ The operational f32 path is strict-bitwise identical between `mp_physics=37`
 - Earlier milestones: SS step-1 254/254 (253 BITWISE-MATCH + Times; RHO_ICE 0 diffs),
   then a 10-step run.
 
-C++ unit suite (`ctest`): **green — 16/16** on the pinned *local* macOS/clang reference toolchain
+C++ unit suite (`ctest`): **green — 17/17** on the pinned *local* macOS/clang reference toolchain
 (ENVIRONMENT.md), and independently on Ubuntu/gcc with `torch==2.8.0` via the repo's `port-ci`
 GitHub Actions workflow (which runs on pushes to `main` and on pull requests targeting `main`
 that touch `libtorch/`, the workflow, or the ctest-claim docs — branch + path filters; a

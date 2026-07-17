@@ -62,10 +62,12 @@ cmake --build . -j4 && cmake --install . && ctest --output-on-failure
 `ctest` covers module-level physics tests, the C ABI (`test_c_abi`), autograd end-to-end,
 and the handle VJP/JVP tests (VJP=backward, `⟨Jv,u⟩=⟨v,Jᵀu⟩` adjoint identity to rel<1e-12,
 masked-adjoint identity, double-backward readiness, f32 value-vs-graph determinism, shape
-rejection, and handle lifecycle guards). If a Fortran compiler is present, an ISO_C smoke
-test is added.
+rejection, and handle lifecycle guards), plus the conservative-interface C3 certification
+gates (`test_conservative_interface`: non-uniform-metric interface identity, per-column
+mstep, multi-subcycle closure, AD gates, legacy old-signature invariance). If a Fortran
+compiler is present, an ISO_C smoke test is added.
 
-> **ctest is green (16/16)** — verified two ways: on the pinned *local* macOS/clang reference
+> **ctest is green (17/17)** — verified two ways: on the pinned *local* macOS/clang reference
 > toolchain ([ENVIRONMENT.md](ENVIRONMENT.md)), and independently by the **port-ci** badge above,
 > which builds + runs the suite on Ubuntu/gcc with `torch==2.8.0` on pushes to `main` and on
 > pull requests targeting `main`, when the change touches the port (`libtorch/`), the workflow,

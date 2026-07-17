@@ -22,7 +22,7 @@ on:
     paths:
       - 'libtorch/**'
       - '.github/workflows/**'
-      # docs that carry the "ctest is green 16/16" claim — re-run so the badge
+      # docs that carry the "ctest is green 17/17" claim — re-run so the badge
       # stays tied to the current commit, not just the last libtorch/** change.
       - 'README.md'
       - 'ENVIRONMENT.md'
@@ -39,7 +39,7 @@ on:
     paths:
       - 'libtorch/**'
       - '.github/workflows/**'
-      # docs that carry the "ctest is green 16/16" claim — re-run so the badge
+      # docs that carry the "ctest is green 17/17" claim — re-run so the badge
       # stays tied to the current commit, not just the last libtorch/** change.
       - 'README.md'
       - 'ENVIRONMENT.md'
@@ -91,7 +91,7 @@ jobs:
           pip --version   # installer version (deps are pinned; pip itself is not)
 
       # PR1-A dual-gate: the representative CI build is the SHIPPED config
-      # (KDM6_ENABLE_TEST_HOOKS=OFF) — full build + install + all 16 CTest +
+      # (KDM6_ENABLE_TEST_HOOKS=OFF) — full build + install + all 17 CTest +
       # parity + a seam-absence check on the built library. Only AFTER that does
       # a second pass reconfigure the SAME tree ON to run the fault-path test
       # through the real shared library, so the production-equivalent artifact
@@ -112,7 +112,7 @@ jobs:
       - name: Install (file-copy)
         run: cmake --install libtorch/build
 
-      - name: ctest (shipped, all 16)
+      - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
 
       - name: Assert the test fault seam is ABSENT from the shipped library
@@ -224,7 +224,7 @@ jobs:
       - name: Install (file-copy)
         run: cmake --install libtorch/build
 
-      - name: ctest (shipped, all 16)
+      - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
 
       - name: Assert arch (arm64) + fault seam ABSENT + install-name
