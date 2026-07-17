@@ -121,14 +121,21 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
     runtime versions included; a claimed "original commit" is unverifiable on
     trust. The only tolerated difference is the resume counter. Returns the
     incremented counter."""
-    ok = (ck.get("meta") == ck_meta
-          and 0 < len(ck.get("frames", [])) <= n_frames_total
-          and [r["frame"] for r in ck["frames"]] == list(range(len(ck["frames"]))))
-    if not ok:
+    frames = ck.get("frames") if isinstance(ck, dict) else None
+    valid_frames = (
+        isinstance(frames, list)
+        and 0 < len(frames) <= n_frames_total
+        # type(...) is int: bool is an int subclass and False == 0, so a bool
+        # "frame" would otherwise pass silently as frame 0
+        and all(isinstance(r, dict) and type(r.get("frame")) is int
+                for r in frames)
+        and [r["frame"] for r in frames] == list(range(len(frames)))
+    )
+    if not (isinstance(ck, dict) and ck.get("meta") == ck_meta and valid_frames):
         raise RuntimeError(
-            "stale or mismatched replay checkpoint (different trajectory bytes, "
-            "script revision, or config; or non-contiguous frames) — refusing "
-            "to resume; delete the checkpoint and rerun from frame 0")
+            "stale, malformed, or mismatched replay checkpoint (identity/config "
+            "mismatch or invalid frame sequence) — refusing to resume; delete "
+            "the checkpoint and rerun from frame 0")
     stored = ck.get("provenance")
     varying = {"checkpoint_resumes"}
     if (not isinstance(stored, dict)
@@ -153,7 +160,7 @@ def main():
     torch.set_grad_enabled(False)
     frames = []
     cum36_sink = None                                  # per-column, frames 0..35 only
-    cum36_species = {sp: 0.0 for sp in SPECIES}        # domain sums, frames 0..35
+    cum36_species = {sp: 0.0 for sp in SPECIES}   # sums of per-column water-equivalents, frames 0..35
     cum36_proj = 0.0
     # Optional per-frame checkpoint/resume (a ~45 min run should survive an
     # interrupted host): set P0_4B1_REPLAY_CKPT to a writable path to enable.
@@ -278,8 +285,8 @@ def main():
                         "cum36_proj": cum36_proj}, ckpt + ".tmp")
             os.replace(ckpt + ".tmp", ckpt)
         print(f"frame {fr_i:2d} ({fr_i*5:3d} min): affected {n_aff}/{B} "
-              f"({100*n_aff/B:.1f}%), sink_sum={float(sink_tot.sum()):.3f} kg/m² "
-              f"diag_sum={float(diag_tot.sum()):.3f} "
+              f"({100*n_aff/B:.1f}%), sink_col_eq_sum={float(sink_tot.sum()):.3f}, "
+              f"diag_col_eq_sum={float(diag_tot.sum()):.3f} "
               f"[{time.time()-t0:.0f}s]", flush=True)
         del parts, sink_by_sp, sink_tot, det
 

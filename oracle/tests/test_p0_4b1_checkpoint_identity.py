@@ -118,6 +118,36 @@ def test_empty_or_overlong_frame_set_refuses(mod, identity, frame_ids):
         mod._validate_resume(_ck(meta, prov, frame_ids=frame_ids), meta, prov)
 
 
+# ── refuse: malformed checkpoints (valid torch files, broken semantics) ──────
+
+def test_checkpoint_root_not_dict_refuses(mod, identity):
+    meta, prov = identity
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume("not-a-dict", meta, prov)
+
+
+def test_frames_not_list_refuses(mod, identity):
+    meta, prov = identity
+    ck = _ck(meta, prov)
+    ck["frames"] = "abc"
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(ck, meta, prov)
+
+
+@pytest.mark.parametrize("frames", [
+    [None],                      # record is not a dict
+    [{}],                        # frame key missing
+    [{"frame": False}],          # bool must NOT pass as frame 0 (bool < int)
+    [{"frame": "0"}],            # string index
+], ids=["record-none", "key-missing", "bool-frame", "string-frame"])
+def test_malformed_frame_records_refuse(mod, identity, frames):
+    meta, prov = identity
+    ck = _ck(meta, prov)
+    ck["frames"] = frames
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(ck, meta, prov)
+
+
 # ── loud failure: corrupt checkpoint file ────────────────────────────────────
 
 def test_truncated_checkpoint_fails_loud(mod, identity, tmp_path):
