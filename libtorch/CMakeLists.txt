@@ -181,6 +181,12 @@ add_executable(test_conservative_interface
     tests/legacy_signature_caller.cpp)
 target_link_libraries(test_conservative_interface PRIVATE kdm6 kdm6_c)
 add_test(NAME conservative_interface COMMAND test_conservative_interface)
+# Oracle cross-check dump tool (NOT a ctest test): hexfloat fixture dumps of
+# the conservative-interface variant, consumed as a subprocess by
+# oracle/tests/test_cpp_conservative_interface_parity.py (port-ci runs it
+# after ctest, mirroring the test_cpp_parity <-> test_autograd_endtoend flow).
+add_executable(dump_conservative_interface tests/dump_conservative_interface.cpp)
+target_link_libraries(dump_conservative_interface PRIVATE kdm6)
 
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.

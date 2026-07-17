@@ -30,9 +30,10 @@ on:
       # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
       # binary), so an oracle refactor that drifts from the C++ port is caught here.
       - 'oracle/kdm6/**'
-      # the parity test this job now runs + the conftest that puts `kdm6` on sys.path for it —
-      # trigger when either changes too (they are direct inputs to the parity run).
+      # the parity tests this job now runs + the conftest that puts `kdm6` on sys.path for them —
+      # trigger when any changes too (they are direct inputs to the parity run).
       - 'oracle/tests/test_cpp_parity.py'
+      - 'oracle/tests/test_cpp_conservative_interface_parity.py'
       - 'oracle/conftest.py'
   pull_request:
     branches: [main]
@@ -47,9 +48,10 @@ on:
       # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
       # binary), so an oracle refactor that drifts from the C++ port is caught here.
       - 'oracle/kdm6/**'
-      # the parity test this job now runs + the conftest that puts `kdm6` on sys.path for it —
-      # trigger when either changes too (they are direct inputs to the parity run).
+      # the parity tests this job now runs + the conftest that puts `kdm6` on sys.path for them —
+      # trigger when any changes too (they are direct inputs to the parity run).
       - 'oracle/tests/test_cpp_parity.py'
+      - 'oracle/tests/test_cpp_conservative_interface_parity.py'
       - 'oracle/conftest.py'
   workflow_dispatch:
 
@@ -167,13 +169,17 @@ jobs:
       # port (worst_rel < 1e-6, not strict equality — the f32 mirror carries O(1e-8) roundoff).
       # It lives here (not in oracle-ci) because it needs the compiled test_autograd_endtoend
       # binary the build step produced; torch is already installed for the C++ build.
-      - name: oracle↔C++ forward-parity regression bound (test_cpp_parity)
+      - name: oracle↔C++ parity regression bounds (test_cpp_parity + conservative-interface)
         run: |
           # pinned to the last green combo (torch 2.8.0 is already installed above)
           pip install "numpy==2.4.6" "pytest==9.1.1"
           # log them too — the "Record toolchain versions" step above runs before this install
           python -c 'import numpy, pytest; print("numpy", numpy.__version__, "| pytest", pytest.__version__)'
-          cd oracle && python -m pytest tests/test_cpp_parity.py -rs -q
+          # test_cpp_conservative_interface_parity drives the dump_conservative_interface
+          # binary built above against oracle/kdm6/sed_conservative.py (the freeze-lift's
+          # authoritative reference): direct substeps fp64 rtol<=1e-10 (measured bitwise),
+          # controlled f32 (measured bitwise), full-step regression bound.
+          cd oracle && python -m pytest tests/test_cpp_parity.py tests/test_cpp_conservative_interface_parity.py -rs -q
 
   # PR3: the symbol-visibility / export-allowlist work is platform-specific
   # (macOS exported_symbols_list vs Linux --version-script), so the export

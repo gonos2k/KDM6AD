@@ -8,8 +8,9 @@ permissions:
 # algorithm-definition / parity reference) so an oracle refactor can't drift its values
 # without CI catching it. On this Python-only runner the pure-Python subset runs; the remainder SKIP by
 # design and are gated elsewhere (so this job does NOT claim the full suite):
-#   - test_cpp_parity (oracle↔C++ forward parity) needs the built C++ port — it is gated by
-#     port-ci (ci.yml), which builds libtorch and runs that test after ctest.
+#   - test_cpp_parity (oracle↔C++ forward parity) and test_cpp_conservative_interface_parity
+#     (conservative-interface oracle cross-check) need the built C++ port — they are gated by
+#     port-ci (ci.yml), which builds libtorch and runs them after ctest.
 #   - test_rttov_runner needs a local RTTOV reference dataset not shipped in this public repo.
 # `-rs` prints the skip reasons so the pass/skip split is visible in the log. torch pinned to
 # the ENVIRONMENT.md reference (2.8.0); rttov_bridge is pure Python (no RTTOV .so).
