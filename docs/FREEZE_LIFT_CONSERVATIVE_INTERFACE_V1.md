@@ -208,10 +208,15 @@ permanently untouched.
     post-step frames diverge in QCLOUD/QICE/QSNOW/QVAPOR/REFL_10CM only,
     ~40 cells of 2.57M per field at **1–4 ULP**, all in supercooled
     (235–273 K) **graupel-marginal** cells (median qg≈2.6e-9) at k=15–23.
-    Dump-bisection (per-substep + rate dumps): divergence is born between
-    the `postfreeze` and `poststateupdate` stages; all 12 state fields at
-    entry/postmelt/postfreeze AND every dumped rate (graupel 8, number
-    rates) are BITWISE — the seed is an un-dumped qc→qi-family mass rate.
+    Dump-bisection (per-substep + rate dumps, via the guarded
+    `harness/compare_rate_dump.py`): divergence is born between the
+    `postfreeze` and `poststateupdate` stages; all 12 state fields at
+    entry/postmelt/postfreeze are BITWISE, and every rate with an
+    ESTABLISHED cross-tree field correspondence is BITWISE (graupel 8;
+    warm/number 8 of fort's 10; ncrates' first 13 — the trees' dump
+    lists differ beyond that, `--min-fields` opt-in, and the trailing
+    dbg_*/aux captures are capture-point artifacts, not rates). The seed
+    is an un-dumped qc→qi-family mass rate.
     Prime suspect class: the §35 `rhox` retain-shadow / §20 brs-underflow
     engineering, whose C++ mask was calibrated against LEGACY's
     `max(...,0.)` f32-underflow behavior that the conservative no-clamp
