@@ -1189,14 +1189,32 @@ void test_c_abi_v2_physics_variant_gate() {
         // full new size, explicit variant 0 → legacy bitwise.
         expect_legacy_bitwise(kdm6_step_v2_args_size_c(), KDM6_PHYSICS_LEGACY);
 
-        // fail-loud rejection: handle nulled, output buffers untouched.
+        // fail-loud rejection: handle nulled, output buffers untouched — in
+        // BOTH value_only modes, and including the four OPTIONAL outputs
+        // (rain/snow/graupel increments + rhog_out), which a rejected call
+        // must never write either.
         auto expect_rejected = [&](uint32_t variant, int want_rc) {
-            auto o = outs(-777.0f);
-            kdm6_handle_t* h = (kdm6_handle_t*)0x1;   // must be fail-closed to NULL
-            assert(run_v2(o, &h, kdm6_step_v2_args_size_c(), variant) == want_rc);
-            assert(h == nullptr);
-            for (int f = 0; f < 12; ++f)
-                for (float x : o[f].data) assert(x == -777.0f);   // untouched
+            for (int value_only : {1, 0}) {
+                auto o = outs(-777.0f);
+                FortranBuf rain(im,1,jme,-777.0f), snow(im,1,jme,-777.0f);
+                FortranBuf graup(im,1,jme,-777.0f), rhog(im,kme,jme,-777.0f);
+                kdm6_handle_t* h = (kdm6_handle_t*)0x1;   // must be fail-closed to NULL
+                auto a = mk_v2_args(
+                    th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                    nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                    rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,value_only,
+                    o[0].ptr(),o[1].ptr(),o[2].ptr(),o[3].ptr(),o[4].ptr(),o[5].ptr(),
+                    o[6].ptr(),o[7].ptr(),o[8].ptr(),o[9].ptr(),o[10].ptr(),o[11].ptr(), &h);
+                a.physics_variant = variant;
+                a.rain_increment = rain.ptr(); a.snow_increment = snow.ptr();
+                a.graupel_increment = graup.ptr(); a.rhog_out = rhog.ptr();
+                assert(kdm6_step_v2_c(&a) == want_rc);
+                assert(h == nullptr);           // fail-closed NULL in both modes
+                for (int f = 0; f < 12; ++f)
+                    for (float x : o[f].data) assert(x == -777.0f);   // untouched
+                for (const FortranBuf* b : {&rain, &snow, &graup, &rhog})
+                    for (float x : b->data) assert(x == -777.0f);     // optionals untouched
+            }
         };
         // unknown values fail loud.
         expect_rejected(2u, KDM6_ERR_INVALID_ARG);

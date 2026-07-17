@@ -17,6 +17,17 @@
 // 모든 C++ 예외는 *catch all* → int 에러 코드로 변환. 절대 외부로 던지지 않음.
 //
 
+// The C ABI selector enum (kdm6_c_api.h kdm6_physics_variant) and the internal
+// C++ enum (kdm6::PhysicsVariant, coordinator.h) must never diverge:
+// kdm6_step_v2_c maps one onto the other by numeric value. Pin them at
+// compile time so a drift is a build error, not a silent physics swap.
+static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::Legacy) ==
+                  (uint32_t)KDM6_PHYSICS_LEGACY,
+              "C/C++ physics-variant enum drift (Legacy)");
+static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::ConservativeInterface) ==
+                  (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+              "C/C++ physics-variant enum drift (ConservativeInterface)");
+
 extern "C" struct kdm6_handle_t {
     std::unique_ptr<kdm6::Handle> impl;
     // [DA Phase 3] shape metadata for the packed VJP/JVP ABI:

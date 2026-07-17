@@ -204,7 +204,13 @@ typedef struct {
 KDM6_C_API int kdm6_get_abi_version_c(void);
 
 /** sizeof(kdm6_step_v2_args) as the LIBRARY sees it — lets a Fortran/other
- *  caller assert its own struct layout matches at run time. */
+ *  caller assert its own struct layout matches at run time.
+ *  WARNING: this is a library-side size DIAGNOSTIC only. Callers must NOT
+ *  copy its return into their struct_size field — struct_size is the
+ *  CALLER-owned half of the ABI contract and must be the caller's own
+ *  compiled sizeof/c_sizeof(args). An old caller that copied a newer
+ *  library's (larger) size would claim tail fields it never allocated,
+ *  making the library read past the caller's buffer. */
 KDM6_C_API uint32_t kdm6_step_v2_args_size_c(void);
 
 /**
