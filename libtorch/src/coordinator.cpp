@@ -162,6 +162,29 @@ inline void kdm6_dump_c4diag(
     kdm6_dump_field_be(f, pmulcg); kdm6_dump_field_be(f, pmulrs);
     kdm6_dump_field_be(f, pmulrg); kdm6_dump_field_be(f, rhox);
 }
+// c4diag iteration 2: the six direct piacw inputs, captured at the
+// cold_phase call site (the values the rates actually consumed). Doubles
+// are f32-cast identically on both sides. Order:
+// rslope3_i rslopeb_i rslopemu_i n0i avedia_i denfac.
+inline void kdm6_dump_c4diag2(
+    const torch::Tensor& rslope3_i, const torch::Tensor& rslopeb_i,
+    const torch::Tensor& rslopemu_i, const torch::Tensor& n0i,
+    const torch::Tensor& avedia_i, const torch::Tensor& denfac) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_c4diag2.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(n0i.size(0));
+    int32_t K = static_cast<int32_t>(n0i.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, rslope3_i);  kdm6_dump_field_be(f, rslopeb_i);
+    kdm6_dump_field_be(f, rslopemu_i); kdm6_dump_field_be(f, n0i);
+    kdm6_dump_field_be(f, avedia_i);   kdm6_dump_field_be(f, denfac);
+}
 #endif  // KDM6_C4_DIAGNOSTIC_DUMP
 #endif  // KDM6_SUBSTEP_DUMP
 
@@ -1107,6 +1130,14 @@ CoordinatorState kdm62d_one_step(
     working.nr = torch::where(warm_out.rain_complete_evap,
                               torch::zeros_like(working.nr), working.nr);
 
+#if defined(KDM6_SUBSTEP_DUMP) && defined(KDM6_C4_DIAGNOSTIC_DUMP)
+    // c4diag iteration 2: capture the piacw inputs the cold phase consumes.
+    if (kdm6_dump_on) {
+        kdm6_dump_c4diag2(pre2.slope.rslope3_i, pre2.slope.rslopeb_i,
+                          pre2.slope.rslopemu_i, aux2.n0i,
+                          aux2.avedia_i, pre2.denfac);
+    }
+#endif
     // F1c: cold phase (C1-C6') on the WORKING state + rebuilt pre2/aux2.
     auto cold_out = cold_phase(
         working, forcing, pre_cold_view(pre2),
