@@ -185,6 +185,38 @@ inline void kdm6_dump_c4diag2(
     kdm6_dump_field_be(f, rslopemu_i); kdm6_dump_field_be(f, n0i);
     kdm6_dump_field_be(f, avedia_i);   kdm6_dump_field_be(f, denfac);
 }
+inline uint64_t kdm6_bswap64(uint64_t x) { return __builtin_bswap64(x); }
+inline void kdm6_dump_field_be64(std::ofstream& f, const torch::Tensor& t) {
+    // RAW 64-bit pattern (no cast when already f64; f32 widened exactly).
+    auto c = t.detach().to(torch::kFloat64).contiguous().cpu();
+    const int64_t n = c.numel();
+    const double* p = c.data_ptr<double>();
+    std::vector<uint64_t> buf(static_cast<size_t>(n));
+    for (int64_t i = 0; i < n; ++i) {
+        uint64_t u; std::memcpy(&u, &p[i], 8); buf[static_cast<size_t>(i)] = kdm6_bswap64(u);
+    }
+    f.write(reinterpret_cast<const char*>(buf.data()), n * 8);
+}
+// c4diag iteration 3: the four DOUBLE piacw inputs at raw 64-bit precision
+// (their f32 casts already matched — the divergence is double-level).
+// Order: rslope3_i rslopeb_i rslopemu_i n0i.
+inline void kdm6_dump_c4diag3(
+    const torch::Tensor& rslope3_i, const torch::Tensor& rslopeb_i,
+    const torch::Tensor& rslopemu_i, const torch::Tensor& n0i) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_c4diag3.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(n0i.size(0));
+    int32_t K = static_cast<int32_t>(n0i.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be64(f, rslope3_i);  kdm6_dump_field_be64(f, rslopeb_i);
+    kdm6_dump_field_be64(f, rslopemu_i); kdm6_dump_field_be64(f, n0i);
+}
 #endif  // KDM6_C4_DIAGNOSTIC_DUMP
 #endif  // KDM6_SUBSTEP_DUMP
 
@@ -1136,6 +1168,8 @@ CoordinatorState kdm62d_one_step(
         kdm6_dump_c4diag2(pre2.slope.rslope3_i, pre2.slope.rslopeb_i,
                           pre2.slope.rslopemu_i, aux2.n0i,
                           aux2.avedia_i, pre2.denfac);
+        kdm6_dump_c4diag3(pre2.slope.rslope3_i, pre2.slope.rslopeb_i,
+                          pre2.slope.rslopemu_i, aux2.n0i);
     }
 #endif
     // F1c: cold phase (C1-C6') on the WORKING state + rebuilt pre2/aux2.
