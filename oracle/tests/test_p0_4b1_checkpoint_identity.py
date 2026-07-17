@@ -194,6 +194,19 @@ def test_invalid_resume_counter_refuses(mod, identity, counter):
         mod._validate_resume(_ck(meta, prov, resumes=counter), meta, prov)
 
 
+# ── refuse: accumulator length vs the fingerprinted trajectory ───────────────
+
+def test_wrong_length_cum36_sink_refuses(mod, identity):
+    meta, prov = identity   # _ck builds cum36_sink with numel 4
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(_ck(meta, prov), meta, prov, n_columns=8)
+
+
+def test_matching_length_cum36_sink_resumes(mod, identity):
+    meta, prov = identity
+    assert mod._validate_resume(_ck(meta, prov), meta, prov, n_columns=4) == 1
+
+
 # ── loud failure: corrupt checkpoint file ────────────────────────────────────
 
 def test_truncated_checkpoint_fails_loud(mod, identity, tmp_path):
