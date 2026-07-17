@@ -50,6 +50,9 @@ module kdm6_iso_c
      real(c_double) :: ncmin_land, ncmin_sea
      type(c_ptr) :: rain_increment, snow_increment, graupel_increment
      type(c_ptr) :: rhog_out
+     ! conservative-interface-v1 selector: 0 = legacy (default), 1 =
+     ! conservative interface variant; other values are rejected by the C side.
+     integer(c_int32_t) :: physics_variant
   end type kdm6_step_v2_args_t
 
   public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close

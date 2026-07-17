@@ -163,6 +163,7 @@ program test_fortran_smoke
     v2args%im = int(im, c_int32_t); v2args%kme = int(kme, c_int32_t)
     v2args%jme = int(jme, c_int32_t); v2args%dt = dt
     v2args%value_only = 1_c_int32_t; v2args%param_grad_flags = 0_c_int32_t
+    v2args%physics_variant = 0_c_int32_t   ! legacy — the smoke pins the default path
     v2args%th=c_loc(th); v2args%qv=c_loc(qv); v2args%qc=c_loc(qc); v2args%qr=c_loc(qr)
     v2args%qi=c_loc(qi); v2args%qs=c_loc(qs); v2args%qg=c_loc(qg)
     v2args%nccn=c_loc(nccn); v2args%nc=c_loc(nc); v2args%ni=c_loc(ni)

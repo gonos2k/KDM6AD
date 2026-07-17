@@ -1123,11 +1123,97 @@ void test_c_abi_v2_large_struct_size_ignores_tail() {
     } END_TEST();
 }
 
+// ── conservative-interface-v1 freeze-lift: physics_variant selector ─────────
+// (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md). The selector is an
+// append-only v2 tail field with a LEGACY default; every legacy access path
+// must stay bitwise-identical, and unknown values must fail loud with the
+// fail-closed handle/output contract.
+void test_c_abi_v2_physics_variant_gate() {
+    TEST(test_c_abi_v2_physics_variant_gate) {
+        const int im = 2, kme = 3, jme = 2;
+        auto seed = [&](FortranBuf& b, float v){ for (auto& x: b.data) x = v; };
+        FortranBuf th(im,kme,jme), qv(im,kme,jme), qc(im,kme,jme), qr(im,kme,jme);
+        FortranBuf qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme), nccn(im,kme,jme);
+        FortranBuf nc(im,kme,jme), ni(im,kme,jme), nr(im,kme,jme), bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme), pii(im,kme,jme), p(im,kme,jme), delz(im,kme,jme);
+        seed(th,290.0f); seed(qv,1.0e-2f); seed(qc,5.0e-4f); seed(qr,1.0e-4f);
+        seed(nccn,1.0e9f); seed(nc,1.0e8f); seed(nr,1.0e4f);
+        seed(rho,1.0f); seed(pii,0.97f); seed(p,9.0e4f); seed(delz,500.0f);
+
+        auto outs = [&](float v){
+            std::vector<FortranBuf> o;
+            for (int f = 0; f < 12; ++f) o.emplace_back(im,kme,jme,v);
+            return o;
+        };
+        auto run_v2 = [&](std::vector<FortranBuf>& o, kdm6_handle_t** h,
+                          uint32_t struct_size, uint32_t variant_in_memory) {
+            auto a = mk_v2_args(
+                th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,1,
+                o[0].ptr(),o[1].ptr(),o[2].ptr(),o[3].ptr(),o[4].ptr(),o[5].ptr(),
+                o[6].ptr(),o[7].ptr(),o[8].ptr(),o[9].ptr(),o[10].ptr(),o[11].ptr(), h);
+            a.struct_size = struct_size;
+            a.physics_variant = variant_in_memory;
+            return kdm6_step_v2_c(&a);
+        };
+
+        // v1 reference — kdm6_step_c has no selector and is permanently legacy.
+        auto oref = outs(-9.0f);
+        kdm6_handle_t* href = nullptr;
+        int rcref = kdm6_step_c(
+            th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+            nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+            rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(), im,kme,jme,60.0,0,1,
+            oref[0].ptr(),oref[1].ptr(),oref[2].ptr(),oref[3].ptr(),oref[4].ptr(),
+            oref[5].ptr(),oref[6].ptr(),oref[7].ptr(),oref[8].ptr(),oref[9].ptr(),
+            oref[10].ptr(),oref[11].ptr(), &href,
+            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+        assert(rcref == KDM6_OK);
+
+        const uint32_t off = (uint32_t)offsetof(kdm6_step_v2_args, physics_variant);
+        auto expect_legacy_bitwise = [&](uint32_t struct_size, uint32_t poison) {
+            auto o = outs(-9.0f);
+            kdm6_handle_t* h = nullptr;
+            assert(run_v2(o, &h, struct_size, poison) == KDM6_OK);
+            for (int f = 0; f < 12; ++f)
+                assert(std::memcmp(oref[f].ptr(), o[f].ptr(),
+                                   oref[f].size()*sizeof(float)) == 0);  // BITWISE
+        };
+        // old-v2 caller: struct_size ends BEFORE the field → legacy, even with
+        // a poison value physically present in memory past the declared size.
+        expect_legacy_bitwise(off, KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+        // one byte short of covering the field → field NOT read → legacy.
+        expect_legacy_bitwise(off + (uint32_t)sizeof(uint32_t) - 1u,
+                              KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+        // full new size, explicit variant 0 → legacy bitwise.
+        expect_legacy_bitwise(kdm6_step_v2_args_size_c(), KDM6_PHYSICS_LEGACY);
+
+        // fail-loud rejection: handle nulled, output buffers untouched.
+        auto expect_rejected = [&](uint32_t variant, int want_rc) {
+            auto o = outs(-777.0f);
+            kdm6_handle_t* h = (kdm6_handle_t*)0x1;   // must be fail-closed to NULL
+            assert(run_v2(o, &h, kdm6_step_v2_args_size_c(), variant) == want_rc);
+            assert(h == nullptr);
+            for (int f = 0; f < 12; ++f)
+                for (float x : o[f].data) assert(x == -777.0f);   // untouched
+        };
+        // conservative selector is ACCEPTED as a value; the physics lands in a
+        // later commit of this PR — until then it must refuse loudly, not fall
+        // back to legacy silently.
+        expect_rejected(KDM6_PHYSICS_CONSERVATIVE_INTERFACE, KDM6_ERR_NOT_IMPLEMENTED);
+        // unknown values fail loud.
+        expect_rejected(2u, KDM6_ERR_INVALID_ARG);
+        expect_rejected(UINT32_MAX, KDM6_ERR_INVALID_ARG);
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
     test_c_abi_v2_version_and_size();
     test_c_abi_v2_framing();
     test_c_abi_v2_precedence();
+    test_c_abi_v2_physics_variant_gate();
     test_c_abi_v2_small_struct_size_runs_with_defaults();
     test_c_abi_v2_large_struct_size_ignores_tail();
     test_c_abi_v2_matches_v1_bitwise();

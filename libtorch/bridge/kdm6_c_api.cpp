@@ -313,6 +313,11 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     float* snow_increment    = KDM6_V2_HAS(snow_increment)    ? args->snow_increment    : nullptr;
     float* graupel_increment = KDM6_V2_HAS(graupel_increment) ? args->graupel_increment : nullptr;
     float* rhog_out          = KDM6_V2_HAS(rhog_out)          ? args->rhog_out          : nullptr;
+    // conservative-interface-v1 selector: absent field ⇒ legacy (the append-
+    // only contract every pre-existing caller relies on).
+    const uint32_t physics_variant =
+        KDM6_V2_HAS(physics_variant) ? args->physics_variant
+                                     : (uint32_t)KDM6_PHYSICS_LEGACY;
 #undef KDM6_V2_HAS
 
     const int im = args->im, kme = args->kme, jme = args->jme;
@@ -333,6 +338,16 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
         return KDM6_ERR_NULL_POINTER;
     }
     if (args->param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+    // Variant validation: fail-loud BEFORE the thread fence and any tensor
+    // work; *handle is already fail-closed to NULL above and no output has
+    // been written. Unknown values must never fall back to legacy silently.
+    if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+        return KDM6_ERR_INVALID_ARG;
+    if (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+        // Accepted selector value; the conservative sedimentation lands in a
+        // later commit of this freeze-lift PR — refuse loudly until then.
+        return KDM6_ERR_NOT_IMPLEMENTED;
 
     FpEnvGuard kdm6_fpenv_guard;
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
