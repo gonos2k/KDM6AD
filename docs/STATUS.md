@@ -53,6 +53,15 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
 | C-ABI scientific-domain validation (dt>0, ρ/p/Π/Δz>0, finiteness) | partial (Python side ✓) |
 | LICENSE / SPDX / third-party notices | – (owner/provenance decision) |
 
+### Experimental physics variants
+
+Landed variants are opt-in and carry NO release/default eligibility until their
+full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
+
+| Variant | C++ implementation | Public v2 selector | Fortran reference variant | 12h × MPI certification | Release / default-DA eligibility |
+|---|---|---|---|---|---|
+| conservative-interface-v1 | experimental | implemented | pending | pending | no |
+
 ## Known scope boundaries (see README → Scope & differentiation contract)
 
 - The differentiated map is the **branch-local fp64** map, not the literal f32 adjoint.

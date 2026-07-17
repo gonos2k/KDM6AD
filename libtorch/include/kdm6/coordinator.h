@@ -725,8 +725,8 @@ struct SedimentationOutputs {
 };
 
 // Physics-variant selector (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
-// Mirrors the C ABI enum kdm6_physics_variant; Legacy is the default
-// everywhere, so every pre-existing call path stays bitwise-identical.
+// Mirrors the C ABI enum kdm6_physics_variant; Legacy is what every
+// pre-existing call path binds to, so it stays bitwise-identical.
 // ConservativeInterface swaps ONLY the sedimentation substep functions for the
 // conservative-interface pair (sedimentation_conservative.h) — selected once
 // per chain, never branched per-substep inside legacy code.
@@ -735,6 +735,9 @@ enum class PhysicsVariant : uint32_t {
     ConservativeInterface = 1,
 };
 
+// Legacy-signature overload — EXACT pre-variant signature (stable mangled
+// symbol for already-compiled callers); forwards to the variant overload with
+// PhysicsVariant::Legacy.
 SedimentationOutputs sedimentation_chain(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,
@@ -751,8 +754,32 @@ SedimentationOutputs sedimentation_chain(
     double dtcld,
     const sed::SubstepAdvectionParams& params,
     const CoordinatorParams* reslope_params = nullptr,  // 1:1 fix #9: per-substep re-slope (null ⇒ time-invariant work1)
-    progb::ProgBOutputs* progb_ret = nullptr,  // §53d in/out: persistent ProgB arrays, merged at each per-substep ProgB (F:1224 retention)
-    PhysicsVariant variant = PhysicsVariant::Legacy  // conservative-interface-v1: substep-function selector (default = legacy, bitwise-unchanged)
+    progb::ProgBOutputs* progb_ret = nullptr  // §53d in/out: persistent ProgB arrays, merged at each per-substep ProgB (F:1224 retention)
+);
+
+// Variant overload — explicit physics-variant selection. NO defaults: a
+// defaulted trailing `variant` would silently re-route legacy call sites to a
+// new mangled symbol on recompile. Fail-louds (TORCH_CHECK) on any
+// PhysicsVariant value it does not know — an unknown selector must never
+// silently run the legacy pair.
+SedimentationOutputs sedimentation_chain(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const torch::Tensor& work1_qr,
+    const torch::Tensor& workn_qr,
+    const torch::Tensor& work1_qs,
+    const torch::Tensor& work1_qg,
+    const torch::Tensor& work1_qi,
+    const torch::Tensor& workn_qi,
+    const torch::Tensor& mstep_col_main,  // (B,) per-column, integer-valued float
+    int mstepmax_main,                     // loop bound = max(mstep_col_main)
+    const torch::Tensor& mstep_col_ice,   // (B,) per-column, integer-valued float
+    int mstepmax_ice,                      // loop bound = max(mstep_col_ice)
+    double dtcld,
+    const sed::SubstepAdvectionParams& params,
+    const CoordinatorParams* reslope_params,   // 1:1 fix #9: per-substep re-slope (null ⇒ time-invariant work1)
+    progb::ProgBOutputs* progb_ret,            // §53d in/out: persistent ProgB arrays, merged at each per-substep ProgB (F:1224 retention)
+    PhysicsVariant variant                     // conservative-interface-v1: substep-function selector
 );
 
 }  // namespace kdm6

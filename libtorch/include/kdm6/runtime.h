@@ -58,10 +58,15 @@ Parameters make_parameters(int grad_flags = 0,
 //
 // Physics options (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
 // `variant` selects the sedimentation interface-transfer physics: Legacy
-// (default — bitwise-identical to every pre-existing call path) or
-// ConservativeInterface (the freeze-lifted conservative variant; oracle
-// reference oracle/kdm6/sed_conservative.py). Threaded as a defaulted trailing
-// parameter through kdm6_fn / kdm6_step so existing call sites are unchanged.
+// (bitwise-identical to every pre-existing call path) or ConservativeInterface
+// (the freeze-lifted conservative variant; oracle reference
+// oracle/kdm6/sed_conservative.py). Selection is a separate kdm6_fn/kdm6_step
+// OVERLOAD, not a defaulted trailing parameter: default arguments are
+// caller-compile-time, so already-compiled C++ objects linking the installed
+// kdm6 archive keep referencing the pre-variant mangled symbols. Those exact
+// signatures are preserved below as thin overloads that forward here with
+// PhysicsOptions{} (Legacy); the options overload has NO default argument and
+// fail-louds (TORCH_CHECK) on any PhysicsVariant value it does not know.
 struct PhysicsOptions {
     PhysicsVariant variant = PhysicsVariant::Legacy;
 };
@@ -77,14 +82,28 @@ struct FnResult {
     torch::Tensor rhog;               // (im*jme, kme) graupel density [kg m^-3] → WRF diag_rhog/RHOPO3D
 };
 
+// Legacy-signature overload — EXACT pre-variant signature (stable mangled
+// symbol for already-compiled callers); forwards to the options overload with
+// PhysicsOptions{} (Legacy).
 FnResult kdm6_fn(const State& state,
                  const Forcing& forcing,
                  const Parameters& params,
                  double dt,
                  const c10::optional<torch::Tensor>& xland = c10::nullopt,
                  double ncmin_land = 0.0,
-                 double ncmin_sea = 0.0,
-                 const PhysicsOptions& physics = {});
+                 double ncmin_sea = 0.0);
+
+// Options overload — explicit physics-variant selection. NO defaults: a
+// defaulted trailing PhysicsOptions would silently re-route legacy call sites
+// to a new mangled symbol on recompile.
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& params,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland,
+                 double ncmin_land,
+                 double ncmin_sea,
+                 const PhysicsOptions& physics);
 
 // ── [G3] GraphOptions — DA derivative-call options (kdm6ad+da.md §8.1/§8.2) ──
 //
@@ -183,6 +202,9 @@ struct StepResult {
 // into the Phase Params' `ncmin_tensor` field (see warm.h, cold.h, melt_freeze.h).
 // When `xland == nullopt`, the function preserves the pre-extension behavior
 // (sea_mask all-true, scalar constants::NCMIN in every Params struct).
+// Legacy-signature overload — EXACT pre-variant signature (stable mangled
+// symbol for already-compiled callers); forwards to the options overload with
+// PhysicsOptions{} (Legacy). The v1 C bridge and kdm6_step_ad_c bind here.
 StepResult kdm6_step(const State& state,
                      const Forcing& forcing,
                      const Parameters& params,
@@ -190,7 +212,20 @@ StepResult kdm6_step(const State& state,
                      bool value_only = false,
                      const c10::optional<torch::Tensor>& xland = c10::nullopt,
                      double ncmin_land = 0.0,
-                     double ncmin_sea = 0.0,
-                     const PhysicsOptions& physics = {});
+                     double ncmin_sea = 0.0);
+
+// Options overload — explicit physics-variant selection (v2 C bridge binds
+// here). NO defaults (see kdm6_fn note). Fail-louds (TORCH_CHECK) at entry on
+// any PhysicsVariant value it does not know — an unknown selector must never
+// silently run legacy.
+StepResult kdm6_step(const State& state,
+                     const Forcing& forcing,
+                     const Parameters& params,
+                     double dt,
+                     bool value_only,
+                     const c10::optional<torch::Tensor>& xland,
+                     double ncmin_land,
+                     double ncmin_sea,
+                     const PhysicsOptions& physics);
 
 }  // namespace kdm6

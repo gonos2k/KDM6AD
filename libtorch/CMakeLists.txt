@@ -170,6 +170,23 @@ add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
 add_executable(test_handle_vjp tests/test_handle_vjp.cpp)
 target_link_libraries(test_handle_vjp PRIVATE kdm6)
 add_test(NAME handle_vjp COMMAND test_handle_vjp)
+# conservative-interface-v1 C3 certification gates. Links BOTH kdm6 (direct
+# substep + internal fp64/AD gates) and kdm6_c (public v2 f32 + kdm6_step_ad_c
+# pin) — the dylib exports only the 9 C symbols, so no kdm6:: duplication.
+# legacy_signature_caller.cpp is a SEPARATE TU calling the pre-PR22 signatures
+# (kdm6_step 8-param / kdm6_fn 7-param): linking it proves the old mangled
+# symbols still resolve, like a real already-compiled consumer (C3.6).
+add_executable(test_conservative_interface
+    tests/test_conservative_interface.cpp
+    tests/legacy_signature_caller.cpp)
+target_link_libraries(test_conservative_interface PRIVATE kdm6 kdm6_c)
+add_test(NAME conservative_interface COMMAND test_conservative_interface)
+# Oracle cross-check dump tool (NOT a ctest test): hexfloat fixture dumps of
+# the conservative-interface variant, consumed as a subprocess by
+# oracle/tests/test_cpp_conservative_interface_parity.py (port-ci runs it
+# after ctest, mirroring the test_cpp_parity <-> test_autograd_endtoend flow).
+add_executable(dump_conservative_interface tests/dump_conservative_interface.cpp)
+target_link_libraries(dump_conservative_interface PRIVATE kdm6)
 
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.
@@ -199,7 +216,8 @@ endif()
 foreach(t IN ITEMS
         test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
-        test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp)
+        test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp
+        test_conservative_interface)
     if(TARGET ${t})
         target_compile_options(${t} PRIVATE -UNDEBUG)
     endif()

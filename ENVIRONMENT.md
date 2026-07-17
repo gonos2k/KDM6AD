@@ -5,7 +5,7 @@ the exact environment matters. Below is the **reference environment** on which t
 `mp37 ↔ mp137` STRICT BITWISE parity was produced. Other versions may work but are not
 guaranteed to reproduce bit-for-bit.
 
-**C++ unit-test status on this reference toolchain: `ctest` is green (16/16).** The operational
+**C++ unit-test status on this reference toolchain: `ctest` is green (17/17).** The operational
 **float32** derivative handle (`kdm6_step_c` value_only=0) is a mechanics/diagnostics path whose
 VJP/JVP may be non-finite at inactive-ice corners (f32 underflow that propagates to graph-connected
 inputs — which fields exactly is toolchain-dependent); `test_c_abi` asserts only the packed-ABI
@@ -73,5 +73,5 @@ with only `torch` pinned to the reference (`2.8.0`). It is a *portability* gate 
 f64-deterministic / tolerance / ABI-mechanics, so it is not libm-sensitive); it does **not**
 reproduce the macOS/clang reference above, and it does **not** exercise the host bitwise
 parity (that is a macOS-pinned, host-coupled property checked with `harness/strict_bitwise_nc.py`,
-not in CI). So "ctest is green 16/16" is validated twice: on this local reference toolchain, and
+not in CI). So "ctest is green 17/17" is validated twice: on this local reference toolchain, and
 independently on the CI toolchain.
