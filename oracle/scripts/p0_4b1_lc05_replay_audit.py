@@ -61,6 +61,19 @@ def _sha256(path, chunk=1 << 24):
     return h.hexdigest()
 
 
+def _trajectory_n_columns(path=FCST):
+    """Column count B = south_north × west_east, read from the trajectory's
+    netCDF header only (cheap — no frame data is loaded). Used to pin the
+    resumed accumulator length against the fingerprinted trajectory itself."""
+    import netCDF4
+    ds = netCDF4.Dataset(path)
+    try:
+        return int(ds.dimensions["south_north"].size
+                   * ds.dimensions["west_east"].size)
+    finally:
+        ds.close()
+
+
 def _kdm6_tree_sha256():
     """Combined content hash of the imported kdm6 package (working tree, every
     .py, sorted and path-tagged) — the physics lives there, not in this script."""
@@ -111,7 +124,7 @@ def _ckpt_meta(traj_sha, script_sha, kdm6_sha):
             "n_cum_steps": N_CUM_STEPS}
 
 
-def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
+def _validate_resume(ck, ck_meta, prov, n_frames_total=37, n_columns=None):
     """Full identity validation of a loaded checkpoint. Pure — unit-tested in
     oracle/tests/test_p0_4b1_checkpoint_identity.py without host assets.
 
@@ -147,7 +160,11 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
         and isinstance(ck.get("cum36_sink"), torch.Tensor)
         and ck["cum36_sink"].dtype == torch.float64
         and ck["cum36_sink"].dim() == 1
-        and ck["cum36_sink"].numel() > 1
+        # exact length against the fingerprinted trajectory when known (the
+        # header-derived column count); numel>1 alone still lets a wrong-length
+        # accumulator through to a late shape error outside the contract
+        and (ck["cum36_sink"].numel() == n_columns if n_columns is not None
+             else ck["cum36_sink"].numel() > 1)
         and isinstance(ck.get("cum36_species"), dict)
         and set(ck["cum36_species"]) == set(SPECIES)
         and all(type(v) is float for v in ck["cum36_species"].values())
@@ -177,11 +194,12 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
     return resumes + 1
 
 
-def _load_and_validate_checkpoint(path, ck_meta, prov, n_frames_total=37):
+def _load_and_validate_checkpoint(path, ck_meta, prov, n_frames_total=37,
+                                  n_columns=None):
     """torch.load + full identity validation; corrupt/truncated files fail
     loud in torch.load. Returns (checkpoint, incremented resume counter)."""
     ck = torch.load(path, weights_only=True)   # tensors + plain containers only
-    return ck, _validate_resume(ck, ck_meta, prov, n_frames_total)
+    return ck, _validate_resume(ck, ck_meta, prov, n_frames_total, n_columns)
 
 
 def main():
@@ -204,7 +222,8 @@ def main():
     prov = provenance(traj_sha, script_sha, kdm6_sha)
     ck_meta = _ckpt_meta(traj_sha, script_sha, kdm6_sha) if ckpt else None
     if ckpt and pathlib.Path(ckpt).exists():
-        ck, resumes = _load_and_validate_checkpoint(ckpt, ck_meta, prov)
+        ck, resumes = _load_and_validate_checkpoint(
+            ckpt, ck_meta, prov, n_columns=_trajectory_n_columns())
         frames, cum36_sink = ck["frames"], ck["cum36_sink"]
         cum36_species, cum36_proj = ck["cum36_species"], ck["cum36_proj"]
         start_frame = len(frames)
