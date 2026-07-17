@@ -1304,12 +1304,226 @@ void test_c_abi_v2_physics_variant_gate() {
     } END_TEST();
 }
 
+// ── conservative-interface-v1 C2 minimal gates (owner's list) ───────────────
+// Owner's C2 gates not covered by the variant-gate test above; C3 will extend
+// (variable ρ/Δz metric, multi-mstep/subcycle stress, oracle cross-check,
+// VJP/JVP/FD derivative gates). All runs go through kdm6_step_v2_c with
+// physics_variant = KDM6_PHYSICS_CONSERVATIVE_INTERFACE on small hand tiles.
+//
+// Conventions used throughout (see runtime.cpp / sedimentation.cpp):
+//  - ABI (im,kme,jme) buffers are WRF-staged: k=0 is the SURFACE layer and
+//    k=kme-1 the top (the runtime flips to the internal top-down order).
+//  - rain_increment is the WDM6 TOTAL surface fallout (qr+qs+qg+qi bottom
+//    flux), numerically kg m^-2 ≡ mm; snow/graupel are its qs+qi / qg parts.
+//  - Micro conserves TOTAL water per layer to roundoff (P0-4), so per-layer
+//    ρ·Δz·Δ(qv+qc+qr+qi+qs+qg) is purely the sedimentation transfer.
+void test_c_abi_conservative_c2_minimal_gates() {
+    TEST(test_c_abi_conservative_c2_minimal_gates) {
+        const int IM = 1, JME = 1;   // single column; kme varies per gate
+        // input order for the `in` vector built by make_in()
+        enum { TH, QV, QC, QR, QI, QS, QG, NCCN, NC, NI, NR, BG,
+               RHO, PII, P, DELZ };
+        auto make_in = [&](int kme) {
+            std::vector<FortranBuf> in;
+            for (int f = 0; f < 16; ++f) in.emplace_back(IM, kme, JME, 0.0f);
+            return in;
+        };
+
+        struct ConsOut {
+            std::vector<FortranBuf> o;   // 12 state outputs (state field order)
+            float rain, snow, graup;     // surface increments [mm ≡ kg m^-2]
+        };
+        // One value_only=1 column run; asserts the invariants shared by every
+        // conservative run here: rc OK, all outputs finite, increments finite
+        // and nonnegative (gate 5), nr/ni/bg outputs nonnegative (gate 6).
+        auto run_col = [&](int kme, std::vector<FortranBuf>& in,
+                           uint32_t variant) {
+            ConsOut r{{}, -1.0f, -1.0f, -1.0f};
+            for (int f = 0; f < 12; ++f) r.o.emplace_back(IM, kme, JME, -9.0f);
+            kdm6_handle_t* h = nullptr;
+            auto a = mk_v2_args(
+                in[TH].ptr(), in[QV].ptr(), in[QC].ptr(), in[QR].ptr(),
+                in[QI].ptr(), in[QS].ptr(), in[QG].ptr(), in[NCCN].ptr(),
+                in[NC].ptr(), in[NI].ptr(), in[NR].ptr(), in[BG].ptr(),
+                in[RHO].ptr(), in[PII].ptr(), in[P].ptr(), in[DELZ].ptr(),
+                IM, kme, JME, /*dt=*/60.0, /*value_only=*/1,
+                r.o[0].ptr(), r.o[1].ptr(), r.o[2].ptr(), r.o[3].ptr(),
+                r.o[4].ptr(), r.o[5].ptr(), r.o[6].ptr(), r.o[7].ptr(),
+                r.o[8].ptr(), r.o[9].ptr(), r.o[10].ptr(), r.o[11].ptr(), &h);
+            a.physics_variant = variant;
+            a.rain_increment = &r.rain; a.snow_increment = &r.snow;
+            a.graupel_increment = &r.graup;
+            assert(kdm6_step_v2_c(&a) == KDM6_OK);
+            assert(h == nullptr);
+            for (int f = 0; f < 12; ++f)
+                for (float x : r.o[f].data) assert(std::isfinite(x));
+            for (float v : {r.rain, r.snow, r.graup}) {
+                assert(std::isfinite(v));
+                assert(v >= 0.0f);                       // gate (5)
+            }
+            for (int f : {NI, NR, BG})                   // gate (6)
+                for (float x : r.o[f].data) assert(x >= 0.0f);
+            return r;
+        };
+
+        // per-layer water [kg m^-2]: ρ·Δz·(qv+qc+qr+qi+qs+qg) at level k,
+        // from the inputs (out == nullptr) or from a run's 12 output fields.
+        auto layer_water = [&](const std::vector<FortranBuf>& in, int k,
+                               const std::vector<FortranBuf>* out) {
+            const std::vector<FortranBuf>& q = out ? *out : in;
+            double w = 0.0;
+            for (int f : {QV, QC, QR, QI, QS, QG}) w += (double)q[f].data[k];
+            return w * (double)in[RHO].data[k] * (double)in[DELZ].data[k];
+        };
+
+        // 2-layer sink-active rain tile (gates 3 and 9): heavy rain in the
+        // UPPER layer (k=1) over thin layers — vt·dtcld/Δz > 1/2, the regime
+        // where the legacy post-update interface re-cap binds. The LOWER layer
+        // carries light rain so the surface diagnostic term is active too:
+        // per-substep outflow is computed from each cell's PRE-inflow entry
+        // state (1:1 with the oracle), so an empty surface layer would report
+        // zero bottom outflow within the step and precip would drop out of the
+        // layer-resolved closure.
+        auto make_rain2 = [&]() {
+            auto in = make_in(2);
+            for (int k = 0; k < 2; ++k) {
+                in[TH].data[k] = 290.0f;  in[QV].data[k] = 1.0e-3f;  // warm, dry
+                in[NCCN].data[k] = 1.0e9f;
+                in[RHO].data[k] = 1.0f;   in[PII].data[k] = 0.97f;
+                in[P].data[k] = 9.0e4f;   in[DELZ].data[k] = 400.0f;
+            }
+            in[QR].data[1] = 5.0e-3f;   // upper: sink-active heavy rain
+            in[NR].data[1] = 1.0e4f;
+            in[QR].data[0] = 1.0e-3f;   // lower: light rain → bottom outflow > 0
+            in[NR].data[0] = 1.0e4f;
+            return in;
+        };
+
+        // ── Gate (3): internal-interface mass identity, 2-layer sink-active ──
+        // The conservative identity ρ₁Δz₁·dq_out(upper) == ρ₀Δz₀·dq_in(lower)
+        // is verified via state algebra: per-layer total water changes only by
+        // sedimentation, so ΔW_upper = −(mass out of upper) and ΔW_lower =
+        // (received − its own outflow), while precip = actual bottom outflow.
+        // The identity therefore IS the layer-resolved closure
+        //   ΔW_lower + ΔW_upper + P_actual = 0   (f32 tolerance).
+        {
+            auto in = make_rain2();
+            auto cons = run_col(2, in, KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+            auto leg  = run_col(2, in, KDM6_PHYSICS_LEGACY);
+
+            // the cap actually bound: uncapped, legacy is already exactly
+            // conservative and the two variants coincide — a state difference
+            // proves the capped interface transfer was exercised.
+            bool any_diff = false;
+            for (int f = 0; f < 12 && !any_diff; ++f)
+                any_diff = std::memcmp(cons.o[f].ptr(), leg.o[f].ptr(),
+                                       cons.o[f].size() * sizeof(float)) != 0;
+            assert(any_diff);
+
+            const double w_in = layer_water(in, 0, nullptr)
+                              + layer_water(in, 1, nullptr);
+            const double dw_lower =
+                layer_water(in, 0, &cons.o) - layer_water(in, 0, nullptr);
+            const double dw_upper =
+                layer_water(in, 1, &cons.o) - layer_water(in, 1, nullptr);
+            assert(cons.rain > 0.0f);   // mass actually reached the surface
+            assert(dw_upper < 0.0);     // upper layer lost mass (sink active)
+            // layer-resolved conservative closure (== the interface identity)
+            assert(std::fabs(dw_lower + dw_upper + (double)cons.rain)
+                   <= 1.0e-5 * w_in);
+        }
+
+        // ── Gate (4): single sedimenting layer (kme=1) — the rain_increment
+        // surface diagnostic must equal the actual bottom outflow. Total water
+        // leaves the column ONLY through the bottom interface, so the actual
+        // bottom outflow == W_in − W_out identically (f32 tolerance).
+        {
+            auto in = make_in(1);
+            in[TH].data[0] = 290.0f;  in[QV].data[0] = 1.0e-3f;
+            in[NCCN].data[0] = 1.0e9f;
+            in[QR].data[0] = 5.0e-3f; in[NR].data[0] = 1.0e4f;
+            in[RHO].data[0] = 1.0f;   in[PII].data[0] = 0.97f;
+            in[P].data[0] = 9.0e4f;   in[DELZ].data[0] = 400.0f;
+            auto r = run_col(1, in, KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+            const double w_in  = layer_water(in, 0, nullptr);
+            const double w_out = layer_water(in, 0, &r.o);
+            assert(r.rain > 0.0f);
+            assert(std::fabs((double)r.rain - (w_in - w_out)) <= 1.0e-5 * w_in);
+        }
+
+        // ── Gates (5)+(6): per-species smoke — four runs, each seeding ONLY
+        // one of qr/qs/qg/qi plus the number/rime it needs to sediment (nr for
+        // qr, ni for qi, bg for qg; snow is single-moment). run_col already
+        // asserts KDM6_OK + finite + increments >= 0 (5) and nr/ni/bg >= 0
+        // (6); "decreases or converts consistently" is the column-water
+        // closure against the TOTAL surface fallout, plus actual fallout > 0.
+        {
+            struct SpeciesCase { int q, n; float qval, nval; bool warm; };
+            for (SpeciesCase sc : {
+                     SpeciesCase{QR, NR, 5.0e-3f, 1.0e4f, true},
+                     SpeciesCase{QS, -1, 2.0e-3f, 0.0f,   false},
+                     SpeciesCase{QG, BG, 2.0e-3f, 5.0e-6f, false},  // bg ⇒ ρ_g = 400
+                     SpeciesCase{QI, NI, 1.0e-3f, 1.0e6f, false}}) {
+                auto in = make_in(2);
+                for (int k = 0; k < 2; ++k) {
+                    // warm (T≈281K) for rain; cold (T≈255K) for the ice phases
+                    in[TH].data[k]  = sc.warm ? 290.0f : 282.4f;
+                    in[PII].data[k] = sc.warm ? 0.97f  : 0.9031f;
+                    in[QV].data[k]  = 5.0e-4f;          // dry — quiescent micro
+                    in[NCCN].data[k] = 1.0e9f;
+                    in[RHO].data[k]  = 1.0f;
+                    in[P].data[k]    = sc.warm ? 9.0e4f : 7.0e4f;
+                    in[DELZ].data[k] = 400.0f;
+                    in[sc.q].data[k] = sc.qval;
+                    if (sc.n >= 0) in[sc.n].data[k] = sc.nval;
+                }
+                auto r = run_col(2, in, KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+                assert(r.rain > 0.0f);   // the seeded species did sediment
+                double w_in = 0.0, w_out = 0.0;
+                for (int k = 0; k < 2; ++k) {
+                    w_in  += layer_water(in, k, nullptr);
+                    w_out += layer_water(in, k, &r.o);
+                }
+                // conversion-consistent: whatever converted stayed in the
+                // column; only the surface fallout left it.
+                assert(std::fabs(w_out - w_in + (double)r.rain) <= 1.0e-5 * w_in);
+                assert(w_out < w_in);    // column mass strictly decreased
+            }
+        }
+
+        // ── Gate (9): value_only=0 conservative call — KDM6_OK with a LIVE
+        // derivative handle (the conservative substeps are autograd-clean),
+        // closed through the standard pointer-nulling API used everywhere.
+        {
+            auto in = make_rain2();
+            std::vector<FortranBuf> o;
+            for (int f = 0; f < 12; ++f) o.emplace_back(IM, 2, JME, -9.0f);
+            kdm6_handle_t* h = nullptr;
+            auto a = mk_v2_args(
+                in[TH].ptr(), in[QV].ptr(), in[QC].ptr(), in[QR].ptr(),
+                in[QI].ptr(), in[QS].ptr(), in[QG].ptr(), in[NCCN].ptr(),
+                in[NC].ptr(), in[NI].ptr(), in[NR].ptr(), in[BG].ptr(),
+                in[RHO].ptr(), in[PII].ptr(), in[P].ptr(), in[DELZ].ptr(),
+                IM, /*kme=*/2, JME, /*dt=*/60.0, /*value_only=*/0,
+                o[0].ptr(), o[1].ptr(), o[2].ptr(), o[3].ptr(),
+                o[4].ptr(), o[5].ptr(), o[6].ptr(), o[7].ptr(),
+                o[8].ptr(), o[9].ptr(), o[10].ptr(), o[11].ptr(), &h);
+            a.physics_variant = KDM6_PHYSICS_CONSERVATIVE_INTERFACE;
+            assert(kdm6_step_v2_c(&a) == KDM6_OK);
+            assert(h != nullptr);                          // live handle
+            assert(kdm6_handle_closep_c(&h) == KDM6_OK);   // standard close
+            assert(h == nullptr);
+        }
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
     test_c_abi_v2_version_and_size();
     test_c_abi_v2_framing();
     test_c_abi_v2_precedence();
     test_c_abi_v2_physics_variant_gate();
+    test_c_abi_conservative_c2_minimal_gates();
     test_c_abi_v2_small_struct_size_runs_with_defaults();
     test_c_abi_v2_large_struct_size_ignores_tail();
     test_c_abi_v2_matches_v1_bitwise();
