@@ -361,27 +361,31 @@ void test_unknown_physics_variant_throws() {
         }
         assert(threw);
 
-        // (a3) valid variants keep the dt<=0 no-op contract: no throw, state
-        // out == state in bitwise. (The no-op round-trips th through
-        // th*pii/pii; with the pii/th values above that round-trip is
-        // fp64-exact, and every other field is passed through untouched.)
+        // (a3) valid variants keep the dt<=0 no-op contract — for BOTH the
+        // dt=0 boundary and a strictly negative dt: no throw, state out ==
+        // state in bitwise, all three precip increments exactly zero. (The
+        // no-op round-trips th through th*pii/pii; with the pii/th values
+        // above that round-trip is fp64-exact, and every other field is
+        // passed through untouched.)
         for (auto v : {PhysicsVariant::Legacy,
                        PhysicsVariant::ConservativeInterface}) {
             PhysicsOptions good;
             good.variant = v;
-            auto noop = kdm6_fn(s, f, params, /*dt=*/0.0, c10::nullopt,
-                                /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0, good);
-            auto in_fields  = s.fields();
-            auto out_fields = noop.state_out.fields();
-            for (size_t i = 0; i < in_fields.size(); ++i) {
-                assert(torch::equal(*out_fields[i], *in_fields[i]));
+            for (double dt : {0.0, -1.0}) {
+                auto noop = kdm6_fn(s, f, params, dt, c10::nullopt,
+                                    /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0, good);
+                auto in_fields  = s.fields();
+                auto out_fields = noop.state_out.fields();
+                for (size_t i = 0; i < in_fields.size(); ++i) {
+                    assert(torch::equal(*out_fields[i], *in_fields[i]));
+                }
+                assert(torch::equal(noop.rain_increment,
+                                    torch::zeros_like(noop.rain_increment)));
+                assert(torch::equal(noop.snow_increment,
+                                    torch::zeros_like(noop.snow_increment)));
+                assert(torch::equal(noop.graupel_increment,
+                                    torch::zeros_like(noop.graupel_increment)));
             }
-            assert(torch::equal(noop.rain_increment,
-                                torch::zeros_like(noop.rain_increment)));
-            assert(torch::equal(noop.snow_increment,
-                                torch::zeros_like(noop.snow_increment)));
-            assert(torch::equal(noop.graupel_increment,
-                                torch::zeros_like(noop.graupel_increment)));
         }
 
         // (b) sedimentation_chain's defensive gate (reachable by direct C++

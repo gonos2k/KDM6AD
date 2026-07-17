@@ -11,16 +11,19 @@ asserts agreement:
 
   DS64_*  direct conservative substeps at fp64 (uniform cap-inactive / uniform
           cap-active / variable rho-delz / mixed per-column mstep / per-species
-          isolation incl. nr/ni/brs bookkeeping): rtol <= 1e-10, atol <= 1e-12.
+          isolation incl. nr/ni/brs bookkeeping): PER-ELEMENT contract
+          |py - cpp| <= 1e-12 + 1e-10*|py| (exact bound, no aggregate slack).
           Both trees run the identical torch op sequence, so this is expected
           to be bitwise (the tolerance is the certification bound, not slack).
-  DS32_*  controlled f32 direct substeps: tried BITWISE first; on divergence
-          the max float32 ULP distance is computed and gated (see the comment
-          at the assertion for the first-divergence analysis).
+  DS32_*  controlled f32 direct substeps: BITWISE (max float32 ULP == 0) —
+          measured on the reference toolchains; see the assertion comment for
+          the policy on any future divergence.
   FS64_*  full conservative kdm6_step (internal C++ fp64, PhysicsOptions
           ConservativeInterface) vs kdm6_step_conservative_experiment: 12
-          state fields + rain_increment (== budget surface diagnostic) under
-          the same worst-rel regression bound style as test_cpp_parity.
+          state fields + ALL THREE precip increments (rain/snow/graupel,
+          rebuilt from the attribution's per-species bottom-fallout
+          diagnostics) under the same worst-rel regression bound style as
+          test_cpp_parity.
 
 The fixture ICs below are hardcoded in LOCKSTEP with
 libtorch/tests/dump_conservative_interface.cpp — change one, change both.
@@ -140,12 +143,20 @@ def _run_cpp_dumps() -> dict:
     env = {**os.environ, "OMP_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1"}
     proc = subprocess.run([str(_BIN)], capture_output=True, text=True, env=env,
                           timeout=600)
+    assert proc.returncode == 0, (
+        f"{_BIN} exited with code {proc.returncode}\n"
+        f"stdout tail: {proc.stdout[-500:]!r}\n"
+        f"stderr tail: {proc.stderr[-500:]!r}")
     dumps: dict = {}
     for line in proc.stdout.splitlines():
         parts = line.split()
         if len(parts) >= 3 and (parts[0].startswith("DS") or parts[0].startswith("FS")):
-            dumps.setdefault(parts[0], {})[parts[1]] = [float.fromhex(x)
-                                                        for x in parts[2:]]
+            tag, field = parts[0], parts[1]
+            # a duplicate (tag, field) line would silently shadow the earlier
+            # dump and could mask a broken dump tool — fail loud instead.
+            assert field not in dumps.setdefault(tag, {}), \
+                f"duplicate dump line for ({tag}, {field})"
+            dumps[tag][field] = [float.fromhex(x) for x in parts[2:]]
     assert dumps, f"no dumps parsed from {_BIN} (stderr: {proc.stderr[-500:]})"
     return dumps
 
@@ -213,8 +224,7 @@ def _py_full(cols, dt):
               nr=field("nr"), bg=field("bg"))
     f = Forcing(rho=field("rho"), pii=field("pii"), p=field("p"),
                 delz=field("delz"))
-    out, budget, _att = kdm6_step_conservative_experiment(s, f, None, dt)
-    return out, budget
+    return kdm6_step_conservative_experiment(s, f, None, dt)
 
 
 def _ulp64(a: float, b: float) -> float:
@@ -244,8 +254,12 @@ def _ulp32(a: float, b: float) -> float:
     return abs(mono(a) - mono(b))
 
 
-def _compare_fields(tag, cpp_fields, py_fields):
-    """Return (worst_rel, worst_abs, worst_ulp, n_bitwise, n_total, worst_where)."""
+def _compare_fields(tag, cpp_fields, py_fields, elem_tol=None):
+    """Return (worst_rel, worst_abs, worst_ulp, n_bitwise, n_total, worst_where).
+
+    elem_tol=(atol, rtol): additionally enforce the PER-ELEMENT contract
+    |py - cpp| <= atol + rtol*|py| on every element (exact bound — no
+    aggregate averaging can hide a single bad element)."""
     worst_rel = worst_abs = 0.0
     worst_ulp, nbit, ntot = 0, 0, 0
     where = ""
@@ -267,6 +281,11 @@ def _compare_fields(tag, cpp_fields, py_fields):
                 nbit += 1
             worst_ulp = max(worst_ulp, u)
             a = abs(p - c)
+            if elem_tol is not None:
+                atol, rtol = elem_tol
+                assert a <= atol + rtol * abs(p), (
+                    f"{tag}.{name}[{i}]: |py-cpp|={a:.3e} > "
+                    f"{atol:g} + {rtol:g}*|py| (py={p:.17g} cpp={c:.17g})")
             r = a / (abs(p) if abs(p) > 0 else 1.0)
             if a > worst_abs:
                 worst_abs = a
@@ -276,41 +295,43 @@ def _compare_fields(tag, cpp_fields, py_fields):
 
 
 def test_direct_substep_fp64_parity():
-    """Direct conservative substeps, fp64: rtol <= 1e-10 / atol <= 1e-12."""
+    """Direct conservative substeps, fp64: per-element
+    |py - cpp| <= 1e-12 + 1e-10*|py| (exact contract, enforced inside
+    _compare_fields — measured bitwise 330/330 on the reference toolchains)."""
     dumps = _run_cpp_dumps()
+    _ELEM_TOL = (1e-12, 1e-10)
     worst = (0.0, "")
     with torch.no_grad():
         for tag, fix in _MAIN_FIXTURES.items():
             if fix[-1] is not torch.float64:
                 continue
             py = _py_main(fix)
-            rel, abs_, ulp, nbit, ntot, where = _compare_fields(tag, dumps[tag], py)
+            rel, abs_, ulp, nbit, ntot, where = _compare_fields(
+                tag, dumps[tag], py, elem_tol=_ELEM_TOL)
             print(f"{tag}: worst rel={rel:.3e} abs={abs_:.3e} ulp={ulp} "
                   f"bitwise {nbit}/{ntot}")
-            assert rel <= 1e-10 and abs_ <= max(1e-12, rel), where
             if rel > worst[0]:
                 worst = (rel, where)
         for tag, fix in _ICE_FIXTURES.items():
             if fix[-1] is not torch.float64:
                 continue
             py = _py_ice(fix)
-            rel, abs_, ulp, nbit, ntot, where = _compare_fields(tag, dumps[tag], py)
+            rel, abs_, ulp, nbit, ntot, where = _compare_fields(
+                tag, dumps[tag], py, elem_tol=_ELEM_TOL)
             print(f"{tag}: worst rel={rel:.3e} abs={abs_:.3e} ulp={ulp} "
                   f"bitwise {nbit}/{ntot}")
-            assert rel <= 1e-10 and abs_ <= max(1e-12, rel), where
+            if rel > worst[0]:
+                worst = (rel, where)
     print(f"fp64 direct-substep worst: {worst[0]:.3e} ({worst[1] or 'bitwise'})")
 
 
 def test_direct_substep_f32_controlled():
-    """Controlled f32 direct substeps: bitwise first, else max float32 ULP.
+    """Controlled f32 direct substeps: BITWISE (max float32 ULP == 0).
 
     Measured on the reference toolchains: BITWISE (max f32 ULP = 0). Both
     trees execute the identical torch f32 op sequence — same evaluation order
     (dend*q*w1/mstep*gate; min-cap; the C++ ``.to(state dtype)`` falk store is
     a no-op when the whole chain is already f32) — so no divergence op exists.
-    The <= 4 ULP fallback bound exists ONLY for a future kernel change in
-    torch itself; if it ever fires, find the first-divergence op by bisecting
-    the substep expression chain (falk -> dq_out -> fall -> dq_in -> state).
     """
     dumps = _run_cpp_dumps()
     max_ulp, where = 0, ""
@@ -328,12 +349,27 @@ def test_direct_substep_f32_controlled():
                     if u > max_ulp:
                         max_ulp, where = u, f"{tag}.{name}[{i}] py={p!r} cpp={c!r}"
     print(f"f32 direct-substep max ULP32 = {max_ulp} {where}")
-    assert max_ulp == 0 or max_ulp <= 4, f"f32 parity beyond ULP bound: {where}"
+    # BITWISE is the contract. Any future nonzero ULP must be ROOT-CAUSED in
+    # the PR that introduces it (bisect the substep expression chain
+    # falk -> dq_out -> fall -> dq_in -> state to the first-divergence op) and
+    # an explicit per-toolchain allowlist added here UNDER REVIEW — a nonzero
+    # distance must never be auto-accepted by widening this gate.
+    assert max_ulp == 0, f"f32 parity not bitwise: {where}"
 
 
 def test_full_step_conservative_parity():
     """Full conservative kdm6_step (internal C++ fp64) vs the oracle
-    kdm6_step_conservative_experiment: 12 state fields + rain_increment.
+    kdm6_step_conservative_experiment: 12 state fields + ALL THREE precip
+    increments (rain/snow/graupel).
+
+    The increments are rebuilt from the attribution's per-species bottom
+    fallout P_s = att.wrf_fallout_diag_by_species_kg_m2 (owner-decreed
+    definitions, matching sed::surface_accumulation_torch):
+        rain    = P_qr + P_qs + P_qg + P_qi   (TOTAL fallout, mm == kg m^-2)
+        snow    = P_qs + P_qi
+        graupel = P_qg
+    snow/graupel are SUBSETS of rain (adding them to rain double-counts);
+    here each is compared as its own parity field at the same bound as state.
 
     Regression bound (mirrors the test_cpp_parity philosophy). Measured on the
     reference toolchain: FS64_CAP worst rel 8.0e-16 (single sub-cycle,
@@ -348,26 +384,24 @@ def test_full_step_conservative_parity():
     worst_rel, where = 0.0, ""
     with torch.no_grad():
         for tag, (cols, dt) in _FULL_FIXTURES.items():
-            out, budget = _py_full(cols, dt)
+            out, budget, att = _py_full(cols, dt)
             fields = {n: getattr(out, n) for n in
                       ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                        "nccn", "nc", "ni", "nr", "bg")}
-            # rain_increment (WDM6 TOTAL surface fallout, mm == kg m^-2)
-            # accumulated over sub-cycles == the budget surface diagnostic.
-            fields["rain_increment"] = budget.surface_precip_diag_kg_m2
+            sp = att.wrf_fallout_diag_by_species_kg_m2
+            rain = sp["qr"] + sp["qs"] + sp["qg"] + sp["qi"]
+            # oracle-internal identity: the attribution total IS the budget
+            # surface diagnostic (same quantity, different summation order).
+            assert torch.allclose(rain, budget.surface_precip_diag_kg_m2,
+                                  rtol=1e-12, atol=1e-15)
+            fields["rain_increment"] = rain
+            fields["snow_increment"] = sp["qs"] + sp["qi"]
+            fields["graupel_increment"] = sp["qg"]
             rel, abs_, ulp, nbit, ntot, w = _compare_fields(tag, dumps[tag], fields)
             print(f"{tag}: worst rel={rel:.3e} abs={abs_:.3e} ulp={ulp} "
                   f"bitwise {nbit}/{ntot}")
             if rel > worst_rel:
                 worst_rel, where = rel, w
-            # subset sanity on the C++-only increments: snow/graupel are PARTS
-            # of the total rain_increment (adding them would double-count).
-            for j in range(len(cols)):
-                r = dumps[tag]["rain_increment"][j]
-                sn = dumps[tag]["snow_increment"][j]
-                gr = dumps[tag]["graupel_increment"][j]
-                assert math.isfinite(r) and math.isfinite(sn) and math.isfinite(gr)
-                assert 0.0 <= sn <= r + 1e-12 and 0.0 <= gr <= r + 1e-12
     assert worst_rel < 1e-5, f"conservative full-step parity regressed — {where}"
 
 

@@ -11,7 +11,9 @@
 //   C3.2  per-column mstep gating/conservation/batch-independence on the
 //         direct substeps (main + ice chains)
 //   C3.3  dt=300 multi-subcycle per-column closure W_out - W_in + P = O(eps),
-//         internal C++ fp64 AND public v2 f32 (kappa recorded + gated)
+//         internal C++ fp64 AND public v2 f32 (kappa recorded + gated);
+//         cap-inactive column legacy==conservative pinned BITWISE on both
+//         paths (measured; see the gate comments)
 //   C3.5  AD gates: fp64 adjoint identity / repeated JVP->JVP->VJP / 3-point
 //         FD sweep on the internal options overload; public v2 f32 graph
 //         mechanics; kdm6_step_ad_c pinned to Legacy physics
@@ -615,7 +617,9 @@ void test_c32_per_column_mstep() {
 // increments are SUBSETS of it — adding them would double-count).
 // Gates: internal C++ fp64 tight closure; public v2 f32 kappa recorded and
 // gated at measured-max with margin; finiteness/nonnegativity; cap-inactive
-// column legacy≈conservative tight; cap-active columns materially different.
+// column legacy==conservative BITWISE (measured on this toolchain, pinned
+// exactly on both the internal fp64 and public v2 f32 paths); cap-active
+// columns materially different.
 
 void test_c33_multisubcycle_closure_internal_fp64() {
     TEST(test_c33_multisubcycle_closure_internal_fp64) {
@@ -663,14 +667,29 @@ void test_c33_multisubcycle_closure_internal_fp64() {
             assert(kappa <= 8.0);
         }
 
-        // col 0 (cap-inactive): legacy ≈ conservative tight — uncapped, the
-        // two interfaces are the SAME transfer in different rounding order.
+        // col 0 (cap-inactive): legacy vs conservative measured BITWISE on
+        // this toolchain (rel = 0, |dP| = 0) — uncapped, the two interfaces
+        // perform the SAME transfer and the fp64 rounding coincides here.
+        // Pin it exactly (state AND all three precip increments): a future
+        // nonzero difference on the cap-inactive column must be root-caused,
+        // never absorbed into a tolerance.
         const double d0 = max_state_rel_diff(res_l.state_out, res_c.state_out, 0);
         const double p0 = std::fabs(res_l.rain_increment[0].item<double>()
                                     - res_c.rain_increment[0].item<double>());
         std::cout << "    [C3.3 fp64] col 0 legacy-vs-cons rel=" << d0
                   << " |dP|=" << p0 << "\n";
-        assert(d0 <= 1.0e-9);
+        {
+            auto lp = res_l.state_out.fields();
+            auto cp = res_c.state_out.fields();
+            for (size_t i = 0; i < lp.size(); ++i)
+                assert(torch::equal(lp[i]->index({0}), cp[i]->index({0})));
+            assert(torch::equal(res_l.rain_increment.index({0}),
+                                res_c.rain_increment.index({0})));
+            assert(torch::equal(res_l.snow_increment.index({0}),
+                                res_c.snow_increment.index({0})));
+            assert(torch::equal(res_l.graupel_increment.index({0}),
+                                res_c.graupel_increment.index({0})));
+        }
         // cols 1/2 (cap-active): materially different physics.
         for (int64_t b : {1, 2}) {
             const double db = max_state_rel_diff(res_l.state_out, res_c.state_out, b);
@@ -739,6 +758,41 @@ void test_c33_multisubcycle_closure_public_v2_f32() {
                 for (int k = 0; k < KME && !any_diff; ++k)
                     any_diff = rc_cons.o[fld].at(0, k, j) != rc_leg.o[fld].at(0, k, j);
             assert(any_diff);
+        }
+
+        // cap-inactive pin through the PUBLIC v2 f32 path: v2 runs whole
+        // tiles, so build a SINGLE-COLUMN tile of the cap-inactive column
+        // (in the 3-column tile above, the cap-ACTIVE columns 1/2
+        // legitimately differ between variants). Legacy (variant 0) vs
+        // conservative (variant 1) measured BITWISE on this toolchain —
+        // memcmp-pin all 12 output buffers AND the three increments; a
+        // future nonzero difference on the cap-inactive column must be
+        // root-caused, never absorbed into a tolerance.
+        {
+            V2Tile t0(1, KME, 1);
+            t0.fill_col(0, kClosureCols[0]);
+            auto r_leg  = run_v2(t0, KDM6_PHYSICS_LEGACY, 300.0, 1);
+            auto r_cons = run_v2(t0, KDM6_PHYSICS_CONSERVATIVE_INTERFACE, 300.0, 1);
+            assert(r_leg.rc == KDM6_OK && r_cons.rc == KDM6_OK);
+            float max_abs = 0.0f;
+            for (int fld = 0; fld < 12; ++fld)
+                for (int k = 0; k < KME; ++k)
+                    max_abs = std::max(max_abs,
+                                       std::fabs(r_leg.o[fld].at(0, k, 0)
+                                                 - r_cons.o[fld].at(0, k, 0)));
+            std::cout << "    [C3.3 f32] cap-inactive v2 legacy-vs-cons max|d state|="
+                      << max_abs << " |dP|="
+                      << std::fabs(r_leg.rain[0] - r_cons.rain[0]) << "\n";
+            for (int fld = 0; fld < 12; ++fld)
+                assert(std::memcmp(r_leg.o[fld].data.data(),
+                                   r_cons.o[fld].data.data(),
+                                   r_leg.o[fld].data.size() * sizeof(float)) == 0);
+            assert(std::memcmp(r_leg.rain.data(), r_cons.rain.data(),
+                               sizeof(float)) == 0);
+            assert(std::memcmp(r_leg.snow.data(), r_cons.snow.data(),
+                               sizeof(float)) == 0);
+            assert(std::memcmp(r_leg.graup.data(), r_cons.graup.data(),
+                               sizeof(float)) == 0);
         }
     } END_TEST();
 }
