@@ -2,7 +2,6 @@
  "artifact": "p0_4b1_lc05_replay_audit",
  "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
  "provenance": {
-  "code_sha": "a3c6fd77b3b58fb3fb8a339f9ebde59b68465253",
   "script_sha256": "e0e2c804623b8a9e21a0f8331541118eb7b1e3c475e7e6f3eeb968f7d079e214",
   "kdm6_tree_sha256": "ac22d0f1246deaa81c7d28bf02d1a6ecd41a88b12dc3c67340eb717a2eb75d4d",
   "trajectory": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/klfs_lc05_fcst.202507190000",
@@ -18,7 +17,8 @@
   "xland_used": true,
   "ncmin_land": 100.0,
   "ncmin_sea": 10.0,
-  "n_shards": 16
+  "n_shards": 16,
+  "producer_code_sha": "a3c6fd77b3b58fb3fb8a339f9ebde59b68465253"
  },
  "dt_seconds": 300.0,
  "frames": [
@@ -29,7 +29,6 @@
    "n_affected": 40023,
    "affected_fraction": 0.6065193671576651,
    "sink_per_column_mean_kg_m2": 0.04415495022991038,
-   "sink_domain_sum_kg_m2": 2913.696855771326,
    "species_sink_sum_kg_m2": {
     "qr": 559.4826646839877,
     "qs": 1.1027909101238921e-15,
@@ -75,7 +74,8 @@
     "p_hPa_at_mode_half_level": 274.0863337537614
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 72.8407318790606
+   "surface_precip_diag_sum_kg_m2": 72.8407318790606,
+   "sink_sum_of_column_equivalents_kg_m2": 2913.696855771326
   },
   {
    "frame": 1,
@@ -84,7 +84,6 @@
    "n_affected": 33923,
    "affected_fraction": 0.5140783172698067,
    "sink_per_column_mean_kg_m2": 0.001140236978677041,
-   "sink_domain_sum_kg_m2": 75.24195774894059,
    "species_sink_sum_kg_m2": {
     "qr": 3.3763306836564015,
     "qs": 1.648749136870489e-16,
@@ -130,7 +129,8 @@
     "p_hPa_at_mode_half_level": 274.0472136392316
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 605.9834922693381
+   "surface_precip_diag_sum_kg_m2": 605.9834922693381,
+   "sink_sum_of_column_equivalents_kg_m2": 75.24195774894059
   },
   {
    "frame": 2,
@@ -139,7 +139,6 @@
    "n_affected": 34150,
    "affected_fraction": 0.5175183366672729,
    "sink_per_column_mean_kg_m2": 0.0013075892916029955,
-   "sink_domain_sum_kg_m2": 86.28520217429846,
    "species_sink_sum_kg_m2": {
     "qr": 7.544345577917388,
     "qs": -8.762566703972952e-16,
@@ -185,7 +184,8 @@
     "p_hPa_at_mode_half_level": 274.05931983912234
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1029.502691699217
+   "surface_precip_diag_sum_kg_m2": 1029.502691699217,
+   "sink_sum_of_column_equivalents_kg_m2": 86.28520217429846
   },
   {
    "frame": 3,
@@ -194,7 +194,6 @@
    "n_affected": 34791,
    "affected_fraction": 0.5272322240407347,
    "sink_per_column_mean_kg_m2": 0.001383817640456839,
-   "sink_domain_sum_kg_m2": 91.31535845846588,
    "species_sink_sum_kg_m2": {
     "qr": 17.83825692822055,
     "qs": -5.049953412816224e-16,
@@ -240,7 +239,8 @@
     "p_hPa_at_mode_half_level": 274.07876965254053
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1830.1561521981334
+   "surface_precip_diag_sum_kg_m2": 1830.1561521981334,
+   "sink_sum_of_column_equivalents_kg_m2": 91.31535845846588
   },
   {
    "frame": 4,
@@ -249,7 +249,6 @@
    "n_affected": 35518,
    "affected_fraction": 0.5382493786749106,
    "sink_per_column_mean_kg_m2": 0.0015691575399804226,
-   "sink_domain_sum_kg_m2": 103.54556774822812,
    "species_sink_sum_kg_m2": {
     "qr": 31.58643995555022,
     "qs": -9.803915145567147e-16,
@@ -295,7 +294,8 @@
     "p_hPa_at_mode_half_level": 274.0652280138971
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2615.41784747115
+   "surface_precip_diag_sum_kg_m2": 2615.41784747115,
+   "sink_sum_of_column_equivalents_kg_m2": 103.54556774822812
   },
   {
    "frame": 5,
@@ -304,7 +304,6 @@
    "n_affected": 36380,
    "affected_fraction": 0.5513123598229981,
    "sink_per_column_mean_kg_m2": 0.0014448384596987308,
-   "sink_domain_sum_kg_m2": 95.34200027859985,
    "species_sink_sum_kg_m2": {
     "qr": 20.682562088751745,
     "qs": -6.246735344872285e-16,
@@ -350,7 +349,8 @@
     "p_hPa_at_mode_half_level": 304.6041070489267
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3131.0952886486903
+   "surface_precip_diag_sum_kg_m2": 3131.0952886486903,
+   "sink_sum_of_column_equivalents_kg_m2": 95.34200027859985
   },
   {
    "frame": 6,
@@ -359,7 +359,6 @@
    "n_affected": 36952,
    "affected_fraction": 0.559980602533794,
    "sink_per_column_mean_kg_m2": 0.0013497722304139927,
-   "sink_domain_sum_kg_m2": 89.06876994055855,
    "species_sink_sum_kg_m2": {
     "qr": 11.1716580178738,
     "qs": -1.2096726786023535e-15,
@@ -405,7 +404,8 @@
     "p_hPa_at_mode_half_level": 304.60065029420645
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3346.7449223557014
+   "surface_precip_diag_sum_kg_m2": 3346.7449223557014,
+   "sink_sum_of_column_equivalents_kg_m2": 89.06876994055855
   },
   {
    "frame": 7,
@@ -414,7 +414,6 @@
    "n_affected": 37148,
    "affected_fraction": 0.5629508395465842,
    "sink_per_column_mean_kg_m2": 0.0013670470967624376,
-   "sink_domain_sum_kg_m2": 90.20870382115973,
    "species_sink_sum_kg_m2": {
     "qr": 9.427684690175337,
     "qs": 5.8557476764414265e-15,
@@ -460,7 +459,8 @@
     "p_hPa_at_mode_half_level": 304.6092823624268
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3362.7070936990212
+   "surface_precip_diag_sum_kg_m2": 3362.7070936990212,
+   "sink_sum_of_column_equivalents_kg_m2": 90.20870382115973
   },
   {
    "frame": 8,
@@ -469,7 +469,6 @@
    "n_affected": 37908,
    "affected_fraction": 0.574468085106383,
    "sink_per_column_mean_kg_m2": 0.0014416223707710179,
-   "sink_domain_sum_kg_m2": 95.12977700243793,
    "species_sink_sum_kg_m2": {
     "qr": 21.435252570595928,
     "qs": 5.905719098660996e-16,
@@ -515,7 +514,8 @@
     "p_hPa_at_mode_half_level": 304.61625927083094
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3337.0526899262786
+   "surface_precip_diag_sum_kg_m2": 3337.0526899262786,
+   "sink_sum_of_column_equivalents_kg_m2": 95.12977700243793
   },
   {
    "frame": 9,
@@ -524,7 +524,6 @@
    "n_affected": 38082,
    "affected_fraction": 0.5771049281687579,
    "sink_per_column_mean_kg_m2": 0.0015587721830393902,
-   "sink_domain_sum_kg_m2": 102.86025881440328,
    "species_sink_sum_kg_m2": {
     "qr": 44.31826526652839,
     "qs": 2.001320038442419e-15,
@@ -570,7 +569,8 @@
     "p_hPa_at_mode_half_level": 304.6269399052287
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3257.3449178614637
+   "surface_precip_diag_sum_kg_m2": 3257.3449178614637,
+   "sink_sum_of_column_equivalents_kg_m2": 102.86025881440328
   },
   {
    "frame": 10,
@@ -579,7 +579,6 @@
    "n_affected": 37479,
    "affected_fraction": 0.567966903073286,
    "sink_per_column_mean_kg_m2": 0.0012539372508245284,
-   "sink_domain_sum_kg_m2": 82.74481130740898,
    "species_sink_sum_kg_m2": {
     "qr": 32.716351443810765,
     "qs": 4.897793331207408e-15,
@@ -625,7 +624,8 @@
     "p_hPa_at_mode_half_level": 304.6531673321763
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 3093.9975835976284
+   "surface_precip_diag_sum_kg_m2": 3093.9975835976284,
+   "sink_sum_of_column_equivalents_kg_m2": 82.74481130740898
   },
   {
    "frame": 11,
@@ -634,7 +634,6 @@
    "n_affected": 37105,
    "affected_fraction": 0.5622992059162272,
    "sink_per_column_mean_kg_m2": 0.0009977939457026495,
-   "sink_domain_sum_kg_m2": 65.84242688902644,
    "species_sink_sum_kg_m2": {
     "qr": 18.929466247143665,
     "qs": -1.1499527838334826e-14,
@@ -680,7 +679,8 @@
     "p_hPa_at_mode_half_level": 304.6839996796906
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2824.4351400055657
+   "surface_precip_diag_sum_kg_m2": 2824.4351400055657,
+   "sink_sum_of_column_equivalents_kg_m2": 65.84242688902644
   },
   {
    "frame": 12,
@@ -689,7 +689,6 @@
    "n_affected": 37140,
    "affected_fraction": 0.5628296053827969,
    "sink_per_column_mean_kg_m2": 0.0008197513365279211,
-   "sink_domain_sum_kg_m2": 54.093751194804454,
    "species_sink_sum_kg_m2": {
     "qr": 13.344494381708728,
     "qs": 7.584014952459137e-15,
@@ -735,7 +734,8 @@
     "p_hPa_at_mode_half_level": 304.6936299232874
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2543.191877947803
+   "surface_precip_diag_sum_kg_m2": 2543.191877947803,
+   "sink_sum_of_column_equivalents_kg_m2": 54.093751194804454
   },
   {
    "frame": 13,
@@ -744,7 +744,6 @@
    "n_affected": 36888,
    "affected_fraction": 0.5590107292234952,
    "sink_per_column_mean_kg_m2": 0.00082924813367244,
-   "sink_domain_sum_kg_m2": 54.72042584477697,
    "species_sink_sum_kg_m2": {
     "qr": 10.33285103557014,
     "qs": -9.314468107612393e-16,
@@ -790,7 +789,8 @@
     "p_hPa_at_mode_half_level": 304.68865635119766
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2267.7701425420323
+   "surface_precip_diag_sum_kg_m2": 2267.7701425420323,
+   "sink_sum_of_column_equivalents_kg_m2": 54.72042584477697
   },
   {
    "frame": 14,
@@ -799,7 +799,6 @@
    "n_affected": 37067,
    "affected_fraction": 0.5617233436382373,
    "sink_per_column_mean_kg_m2": 0.0008775780244789796,
-   "sink_domain_sum_kg_m2": 57.9096186793189,
    "species_sink_sum_kg_m2": {
     "qr": 11.633385803851223,
     "qs": -4.143760527849608e-17,
@@ -845,7 +844,8 @@
     "p_hPa_at_mode_half_level": 304.6906058125364
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1995.6882883361855
+   "surface_precip_diag_sum_kg_m2": 1995.6882883361855,
+   "sink_sum_of_column_equivalents_kg_m2": 57.9096186793189
   },
   {
    "frame": 15,
@@ -854,7 +854,6 @@
    "n_affected": 37246,
    "affected_fraction": 0.5644359580529793,
    "sink_per_column_mean_kg_m2": 0.001008370272591419,
-   "sink_domain_sum_kg_m2": 66.54033754776256,
    "species_sink_sum_kg_m2": {
     "qr": 16.91188592304968,
     "qs": 6.229752997550319e-15,
@@ -900,7 +899,8 @@
     "p_hPa_at_mode_half_level": 304.69270744574874
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1824.7213096544046
+   "surface_precip_diag_sum_kg_m2": 1824.7213096544046,
+   "sink_sum_of_column_equivalents_kg_m2": 66.54033754776256
   },
   {
    "frame": 16,
@@ -909,7 +909,6 @@
    "n_affected": 37029,
    "affected_fraction": 0.5611474813602473,
    "sink_per_column_mean_kg_m2": 0.0011638618796644936,
-   "sink_domain_sum_kg_m2": 76.8009177153006,
    "species_sink_sum_kg_m2": {
     "qr": 26.371511164022532,
     "qs": 1.0083068220618795e-15,
@@ -955,7 +954,8 @@
     "p_hPa_at_mode_half_level": 304.69977380026677
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1731.6571780475088
+   "surface_precip_diag_sum_kg_m2": 1731.6571780475088,
+   "sink_sum_of_column_equivalents_kg_m2": 76.8009177153006
   },
   {
    "frame": 17,
@@ -964,7 +964,6 @@
    "n_affected": 36692,
    "affected_fraction": 0.556040492210705,
    "sink_per_column_mean_kg_m2": 0.0011751823508062114,
-   "sink_domain_sum_kg_m2": 77.54793296500029,
    "species_sink_sum_kg_m2": {
     "qr": 23.337134287340653,
     "qs": 6.291266395597918e-15,
@@ -1010,7 +1009,8 @@
     "p_hPa_at_mode_half_level": 304.69361106319616
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1753.2238476035063
+   "surface_precip_diag_sum_kg_m2": 1753.2238476035063,
+   "sink_sum_of_column_equivalents_kg_m2": 77.54793296500029
   },
   {
    "frame": 18,
@@ -1019,7 +1019,6 @@
    "n_affected": 36756,
    "affected_fraction": 0.5570103655210038,
    "sink_per_column_mean_kg_m2": 0.0013117411045413384,
-   "sink_domain_sum_kg_m2": 86.55917200647384,
    "species_sink_sum_kg_m2": {
     "qr": 32.61906631184945,
     "qs": 4.578795455097485e-15,
@@ -1065,7 +1064,8 @@
     "p_hPa_at_mode_half_level": 304.6854693722022
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1874.7685183429044
+   "surface_precip_diag_sum_kg_m2": 1874.7685183429044,
+   "sink_sum_of_column_equivalents_kg_m2": 86.55917200647384
   },
   {
    "frame": 19,
@@ -1074,7 +1074,6 @@
    "n_affected": 36563,
    "affected_fraction": 0.5540855913196339,
    "sink_per_column_mean_kg_m2": 0.0012964466354199007,
-   "sink_domain_sum_kg_m2": 85.5499205780884,
    "species_sink_sum_kg_m2": {
     "qr": 30.511919009869757,
     "qs": 1.4479130385584758e-16,
@@ -1120,7 +1119,8 @@
     "p_hPa_at_mode_half_level": 274.0841642312744
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 1997.42945210986
+   "surface_precip_diag_sum_kg_m2": 1997.42945210986,
+   "sink_sum_of_column_equivalents_kg_m2": 85.5499205780884
   },
   {
    "frame": 20,
@@ -1129,7 +1129,6 @@
    "n_affected": 36072,
    "affected_fraction": 0.546644844517185,
    "sink_per_column_mean_kg_m2": 0.0013023062607113753,
-   "sink_domain_sum_kg_m2": 85.93658553182223,
    "species_sink_sum_kg_m2": {
     "qr": 29.74402435702981,
     "qs": -1.3533058195538777e-14,
@@ -1175,7 +1174,8 @@
     "p_hPa_at_mode_half_level": 274.08688237164154
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2068.987366867934
+   "surface_precip_diag_sum_kg_m2": 2068.987366867934,
+   "sink_sum_of_column_equivalents_kg_m2": 85.93658553182223
   },
   {
    "frame": 21,
@@ -1184,7 +1184,6 @@
    "n_affected": 35820,
    "affected_fraction": 0.5428259683578832,
    "sink_per_column_mean_kg_m2": 0.001425974083085484,
-   "sink_domain_sum_kg_m2": 94.09717779464492,
    "species_sink_sum_kg_m2": {
     "qr": 32.87096684762705,
     "qs": -1.3403605923488602e-14,
@@ -1230,7 +1229,8 @@
     "p_hPa_at_mode_half_level": 274.08293775511345
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2144.944345278226
+   "surface_precip_diag_sum_kg_m2": 2144.944345278226,
+   "sink_sum_of_column_equivalents_kg_m2": 94.09717779464492
   },
   {
    "frame": 22,
@@ -1239,7 +1239,6 @@
    "n_affected": 35676,
    "affected_fraction": 0.5406437534097108,
    "sink_per_column_mean_kg_m2": 0.0015073372598635763,
-   "sink_domain_sum_kg_m2": 99.46617110387767,
    "species_sink_sum_kg_m2": {
     "qr": 35.250671798308055,
     "qs": 3.8210853602044814e-15,
@@ -1285,7 +1284,8 @@
     "p_hPa_at_mode_half_level": 274.0773954965971
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2282.3505181585783
+   "surface_precip_diag_sum_kg_m2": 2282.3505181585783,
+   "sink_sum_of_column_equivalents_kg_m2": 99.46617110387767
   },
   {
    "frame": 23,
@@ -1294,7 +1294,6 @@
    "n_affected": 35585,
    "affected_fraction": 0.5392647147966297,
    "sink_per_column_mean_kg_m2": 0.0015447743882998463,
-   "sink_domain_sum_kg_m2": 101.93657233513026,
    "species_sink_sum_kg_m2": {
     "qr": 37.450106089119465,
     "qs": -6.2703306702641376e-15,
@@ -1340,7 +1339,8 @@
     "p_hPa_at_mode_half_level": 274.07462421102804
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2470.977629919659
+   "surface_precip_diag_sum_kg_m2": 2470.977629919659,
+   "sink_sum_of_column_equivalents_kg_m2": 101.93657233513026
   },
   {
    "frame": 24,
@@ -1349,7 +1349,6 @@
    "n_affected": 35417,
    "affected_fraction": 0.5367187973570953,
    "sink_per_column_mean_kg_m2": 0.0014459584085149018,
-   "sink_domain_sum_kg_m2": 95.41590346108134,
    "species_sink_sum_kg_m2": {
     "qr": 32.4633360711196,
     "qs": 3.337205169055056e-15,
@@ -1395,7 +1394,8 @@
     "p_hPa_at_mode_half_level": 274.07674543450884
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2673.5803323469663
+   "surface_precip_diag_sum_kg_m2": 2673.5803323469663,
+   "sink_sum_of_column_equivalents_kg_m2": 95.41590346108134
   },
   {
    "frame": 25,
@@ -1404,7 +1404,6 @@
    "n_affected": 35175,
    "affected_fraction": 0.5330514639025278,
    "sink_per_column_mean_kg_m2": 0.001422139034635795,
-   "sink_domain_sum_kg_m2": 93.84411061754685,
    "species_sink_sum_kg_m2": {
     "qr": 33.573889743982846,
     "qs": 2.4672888807584583e-15,
@@ -1450,7 +1449,8 @@
     "p_hPa_at_mode_half_level": 274.07873499748877
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2848.863977882257
+   "surface_precip_diag_sum_kg_m2": 2848.863977882257,
+   "sink_sum_of_column_equivalents_kg_m2": 93.84411061754685
   },
   {
    "frame": 26,
@@ -1459,7 +1459,6 @@
    "n_affected": 34894,
    "affected_fraction": 0.5287931138994969,
    "sink_per_column_mean_kg_m2": 0.0012598391326495797,
-   "sink_domain_sum_kg_m2": 83.13426468528047,
    "species_sink_sum_kg_m2": {
     "qr": 29.150380559258902,
     "qs": 1.5747364800860878e-14,
@@ -1505,7 +1504,8 @@
     "p_hPa_at_mode_half_level": 274.08076870970274
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2932.346498980765
+   "surface_precip_diag_sum_kg_m2": 2932.346498980765,
+   "sink_sum_of_column_equivalents_kg_m2": 83.13426468528047
   },
   {
    "frame": 27,
@@ -1514,7 +1514,6 @@
    "n_affected": 34694,
    "affected_fraction": 0.525762259804813,
    "sink_per_column_mean_kg_m2": 0.0011297410335308522,
-   "sink_domain_sum_kg_m2": 74.54935132063387,
    "species_sink_sum_kg_m2": {
     "qr": 26.391105794081625,
     "qs": 4.9123843751281256e-15,
@@ -1560,7 +1559,8 @@
     "p_hPa_at_mode_half_level": 274.082770298695
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2961.787356384775
+   "surface_precip_diag_sum_kg_m2": 2961.787356384775,
+   "sink_sum_of_column_equivalents_kg_m2": 74.54935132063387
   },
   {
    "frame": 28,
@@ -1569,7 +1569,6 @@
    "n_affected": 34925,
    "affected_fraction": 0.5292628962841729,
    "sink_per_column_mean_kg_m2": 0.0010469108719875777,
-   "sink_domain_sum_kg_m2": 69.08355462071627,
    "species_sink_sum_kg_m2": {
     "qr": 23.381034415410745,
     "qs": 3.943724469218237e-15,
@@ -1615,7 +1614,8 @@
     "p_hPa_at_mode_half_level": 274.08636776737313
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2966.745863788274
+   "surface_precip_diag_sum_kg_m2": 2966.745863788274,
+   "sink_sum_of_column_equivalents_kg_m2": 69.08355462071627
   },
   {
    "frame": 29,
@@ -1624,7 +1624,6 @@
    "n_affected": 35359,
    "affected_fraction": 0.5358398496696369,
    "sink_per_column_mean_kg_m2": 0.0009778546072374459,
-   "sink_domain_sum_kg_m2": 64.52666982238458,
    "species_sink_sum_kg_m2": {
     "qr": 20.518644527140758,
     "qs": 8.671024242911087e-15,
@@ -1670,7 +1669,8 @@
     "p_hPa_at_mode_half_level": 274.09092200372436
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2875.6925950468853
+   "surface_precip_diag_sum_kg_m2": 2875.6925950468853,
+   "sink_sum_of_column_equivalents_kg_m2": 64.52666982238458
   },
   {
    "frame": 30,
@@ -1679,7 +1679,6 @@
    "n_affected": 35421,
    "affected_fraction": 0.5367794144389889,
    "sink_per_column_mean_kg_m2": 0.0009854041445247633,
-   "sink_domain_sum_kg_m2": 65.02484868890008,
    "species_sink_sum_kg_m2": {
     "qr": 19.790849122488268,
     "qs": -7.353792429775265e-15,
@@ -1725,7 +1724,8 @@
     "p_hPa_at_mode_half_level": 274.0946717181484
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2789.8662878960286
+   "surface_precip_diag_sum_kg_m2": 2789.8662878960286,
+   "sink_sum_of_column_equivalents_kg_m2": 65.02484868890008
   },
   {
    "frame": 31,
@@ -1734,7 +1734,6 @@
    "n_affected": 35486,
    "affected_fraction": 0.5377644420197611,
    "sink_per_column_mean_kg_m2": 0.001012601934671874,
-   "sink_domain_sum_kg_m2": 66.81957646512762,
    "species_sink_sum_kg_m2": {
     "qr": 21.742262197572725,
     "qs": -7.177007763355406e-15,
@@ -1780,7 +1779,8 @@
     "p_hPa_at_mode_half_level": 274.0957756398528
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2741.113560868266
+   "surface_precip_diag_sum_kg_m2": 2741.113560868266,
+   "sink_sum_of_column_equivalents_kg_m2": 66.81957646512762
   },
   {
    "frame": 32,
@@ -1789,7 +1789,6 @@
    "n_affected": 35273,
    "affected_fraction": 0.5345365824089229,
    "sink_per_column_mean_kg_m2": 0.001114497670352212,
-   "sink_domain_sum_kg_m2": 73.54347227120176,
    "species_sink_sum_kg_m2": {
     "qr": 26.79514947960676,
     "qs": 8.715198001892422e-15,
@@ -1835,7 +1834,8 @@
     "p_hPa_at_mode_half_level": 274.09437907317687
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2665.864691060845
+   "surface_precip_diag_sum_kg_m2": 2665.864691060845,
+   "sink_sum_of_column_equivalents_kg_m2": 73.54347227120176
   },
   {
    "frame": 33,
@@ -1844,7 +1844,6 @@
    "n_affected": 35145,
    "affected_fraction": 0.5325968357883252,
    "sink_per_column_mean_kg_m2": 0.0010557252778901152,
-   "sink_domain_sum_kg_m2": 69.66519963741293,
    "species_sink_sum_kg_m2": {
     "qr": 21.496587009620622,
     "qs": 9.601367576658442e-16,
@@ -1890,7 +1889,8 @@
     "p_hPa_at_mode_half_level": 274.09354599767374
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2522.553150528245
+   "surface_precip_diag_sum_kg_m2": 2522.553150528245,
+   "sink_sum_of_column_equivalents_kg_m2": 69.66519963741293
   },
   {
    "frame": 34,
@@ -1899,7 +1899,6 @@
    "n_affected": 35286,
    "affected_fraction": 0.5347335879250773,
    "sink_per_column_mean_kg_m2": 0.0010850908181792823,
-   "sink_domain_sum_kg_m2": 71.60297291001447,
    "species_sink_sum_kg_m2": {
     "qr": 24.546248667291675,
     "qs": 4.6705653062246045e-15,
@@ -1945,7 +1944,8 @@
     "p_hPa_at_mode_half_level": 274.0938428854669
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2411.2396553844537
+   "surface_precip_diag_sum_kg_m2": 2411.2396553844537,
+   "sink_sum_of_column_equivalents_kg_m2": 71.60297291001447
   },
   {
    "frame": 35,
@@ -1954,7 +1954,6 @@
    "n_affected": 35247,
    "affected_fraction": 0.5341425713766139,
    "sink_per_column_mean_kg_m2": 0.0011783614765147224,
-   "sink_domain_sum_kg_m2": 77.7577171122535,
    "species_sink_sum_kg_m2": {
     "qr": 30.882319865572747,
     "qs": 7.58816984058577e-15,
@@ -2000,7 +1999,8 @@
     "p_hPa_at_mode_half_level": 274.09293375634405
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2333.0201584060305
+   "surface_precip_diag_sum_kg_m2": 2333.0201584060305,
+   "sink_sum_of_column_equivalents_kg_m2": 77.7577171122535
   },
   {
    "frame": 36,
@@ -2009,7 +2009,6 @@
    "n_affected": 35386,
    "affected_fraction": 0.5362490149724193,
    "sink_per_column_mean_kg_m2": 0.0010443082246102446,
-   "sink_domain_sum_kg_m2": 68.91181112558081,
    "species_sink_sum_kg_m2": {
     "qr": 22.42577689833544,
     "qs": 1.2272026414343225e-15,
@@ -2055,15 +2054,14 @@
     "p_hPa_at_mode_half_level": 274.0927047958932
    },
    "n_subcycles": 3,
-   "surface_precip_diag_sum_kg_m2": 2299.5106253971253
+   "surface_precip_diag_sum_kg_m2": 2299.5106253971253,
+   "sink_sum_of_column_equivalents_kg_m2": 68.91181112558081
   }
  ],
  "cumulative_replay": {
   "note": "sum over frame replays \u2014 NOT in-host accumulated loss (frames are 5-min history states, each replayed for one dt=300 oracle step). The 3 h window has 36 intervals: cumulative sums cover replay steps started from frames 0..35; frame 36 is the endpoint state.",
-  "cum_1h_domain_sum_kg_m2": 3891.281689954853,
   "cumulative_3h": {
    "n_replay_steps": 36,
-   "domain_sum_kg_m2": 5737.40791486441,
    "per_column_kg_m2": {
     "mean": 0.08694623135819253,
     "p50": 0.01027028372291593,
@@ -2084,13 +2082,22 @@
     "qi": 0.6564136081262115
    },
    "projection_sum_kg_m2": 0.001860023725241979,
-   "interface_defect_sum_kg_m2": 5737.407914864409
+   "interface_defect_sum_kg_m2": 5737.407914864409,
+   "sum_of_column_equivalents_kg_m2": 5737.40791486441
   },
   "endpoint_frame36": {
    "note": "frame 36 (t=3 h endpoint state) replay, NOT part of the 3 h cumulative",
-   "sink_domain_sum_kg_m2": 68.91181112558081,
-   "affected_fraction": 0.5362490149724193
+   "affected_fraction": 0.5362490149724193,
+   "sink_sum_of_column_equivalents_kg_m2": 68.91181112558081
   },
-  "all_37_frame_replay_domain_sum_kg_m2": 5806.319725989991
+  "cum_1h_sum_of_column_equivalents_kg_m2": 3891.281689954853,
+  "all_37_frame_replay_sum_of_column_equivalents_kg_m2": 5806.319725989991
+ },
+ "units_note": "every *_sum field aggregates per-column kg/m2 water-equivalents over the column set (65,988 columns unless stated) \u2014 a SUM OF COLUMN EQUIVALENTS, not a per-area domain mass; a true domain mass in kg would require per-cell areas (WRF map factors)",
+ "migration": {
+  "original_artifact_sha256": "cc232e7650c9cc121eee6510c597746c1f59586a50f3cc03212d3e553f96e538",
+  "migration_script_sha256": "a3e80a8352c67946dd3f563226f002e2433144532c6bdc5631ff70b9ce4da310",
+  "migration_head_sha": "247bc7fa87ab30088860cda78d5cd630fd6f0222",
+  "note": "deterministic key/label migration (PR #16 review): numeric values byte-identical to the original artifact"
  }
 }

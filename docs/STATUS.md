@@ -72,7 +72,10 @@ seedable AD output) · host = validated only on the private WRF/KIM-meso host (n
   fixed vertical-coordinate mapping, 36-interval convention, decision-grade provenance**)**:
   fires (>1e-9 kg/m²) in 51–61% of real LC05 columns every step (2.1–4.6% of fallout once
   precipitation is equilibrated, fr ≥ 6 — up to 12.4% during spin-up, p99 tail 1.3 kg/m²/3 h;
-  the analysis-IC frame loses 41% in one step); worst interfaces at ~274–305 hPa half-level
+  the unspun initial-condition frame shows a 41%-of-hydrometeor one-step sink susceptibility —
+  a stress case, not a measured post-analysis state; analysis-output replay pending); summed
+  figures are sums of column water-equivalents over 65,988 columns, not per-area domain
+  masses; worst interfaces at ~274–305 hPa half-level
   (upper-troposphere ice region — qi carries 65.6% of the sink); positivity projection A is
   exactly 0 on frames 1–36 and 1.9e-3 kg/m² (6.4e-7 of the defect) on frame 0. A conservative
   counterfactual (`kdm6/sed_conservative.py`, analysis-only opt-in) closes the budget to fp64
