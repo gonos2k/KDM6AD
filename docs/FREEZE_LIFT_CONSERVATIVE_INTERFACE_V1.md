@@ -218,26 +218,42 @@ permanently untouched.
     all 254 variables STRICT BITWISE (this also re-validates the pending
     INSTALL-BASELINE item: the hardened SOVERSION-2 dylib now backs the
     parity).
-  - **cons 237↔337: NOT yet bitwise** — frame 0 bitwise (253/253 numeric);
-    post-step frames diverge in QCLOUD/QICE/QSNOW/QVAPOR/REFL_10CM only,
-    ~40 cells of 2.57M per field at **1–4 ULP**, all in supercooled
-    (235–273 K) **graupel-marginal** cells (median qg≈2.6e-9) at k=15–23.
-    Dump-bisection (per-substep + rate dumps, via the guarded
-    `harness/compare_rate_dump.py`): divergence is born between the
-    `postfreeze` and `poststateupdate` stages; all 12 state fields at
-    entry/postmelt/postfreeze are BITWISE, and every rate with an
-    ESTABLISHED cross-tree field correspondence is BITWISE (graupel 8;
-    warm/number 8 of fort's 10; ncrates' first 13 — the trees' dump
-    lists differ beyond that, `--min-fields` opt-in, and the trailing
-    dbg_*/aux captures are capture-point artifacts, not rates). The seed
-    is an un-dumped qc→qi-family mass rate.
-    Prime suspect class: the §35 `rhox` retain-shadow / §20 brs-underflow
-    engineering, whose C++ mask was calibrated against LEGACY's
-    `max(...,0.)` f32-underflow behavior that the conservative no-clamp
-    update changes in graupel-empty cells. **Next bisection rung requires
-    paired mass-rate/rhox dumps, i.e. temporary instrumentation of the
-    frozen libtorch source → owner freeze-lift decision** (adjudication
-    item #2, alongside the Gate-B dt=300 substitution).
+  - **cons 237↔337: NOT yet bitwise — ROOT CAUSE PROVEN (2026-07-17
+    diagnostic bisection under the approved diagnostic-only freeze-lift,
+    branch `diag/c4-poststateupdate-bisection`)**: frame 0 bitwise; post-
+    step frames diverge in QCLOUD/QICE/QSNOW/QVAPOR/REFL_10CM, ~40 cells
+    of 2.57M per field at 1–4 ULP, supercooled k=15–23.
+    Bisection ladder: states bitwise at entry/postmelt/postfreeze; every
+    established-correspondence rate bitwise; paired c4diag dumps → the
+    seed is **`piacw`** (cloud-water accretion by ice, qc→qi): 1-ULP
+    uniform, fort>cpp, in 28,729 of 85,236 active cells; all 100
+    poststateupdate qc/qi flip cells ⊂ the piacw-diff set (zero
+    exceptions; straddle statistics quantitatively consistent). All
+    piacw inputs verified bitwise to the last DOUBLE bit (f32 casts +
+    raw-64-bit dumps). Offline ladder replication over ALL 28,729
+    diverging cells: Fortran's value == the chain with **REAL(4) π**
+    (28729/28729 exact) and C++'s value == the chain with **raw f64
+    `PI`** (28729/28729 exact; cross-assignments 0). **First-diverging
+    op: the ×π multiply in `cloud_water_riming_torch`'s piacw chain —
+    the same latent class the function already fixes for
+    psacw/pgacw/paacw via the path-conditional `pi_t`, left on raw `PI`
+    for piacw.** The §35 rhox suspect is REFUTED (rhox bitwise).
+    Classification: **neither Case A nor Case B — a legacy-SHARED latent
+    deviation** (present in the legacy pair at rate level, invisible in
+    legacy certifications because legacy trajectories produced zero
+    straddle flips; the variant's enhanced supercooled cloud-ice
+    population exposed it). The correct-by-construction fix (piacw raw
+    `PI` → `pi_t`) touches SHARED legacy C++ code — outside the Case-A
+    pre-approval ("conservative path only") — and provably moves legacy
+    C++ piacw ONTO legacy Fortran exactly (strengthens legacy parity)
+    but requires legacy re-certification scope. **Owner adjudication
+    required** on: (a) shared-code pi_t fix + legacy re-cert (ctest 17,
+    oracle parity, C3.6 old-signature gates, legacy 1/10-step host
+    bitwise; 12h re-cert = owner call), vs (b) variant-gated π plumbing
+    (keeps legacy rate-level bits frozen; invasive and wrong long-term).
+    Instrumentation fully reverted from the working tree (Gate A scope
+    check re-verified PASS; clean dylib sha re-pinned); the diagnostic
+    code and full proof live on the diag branch only.
   - 1-step np4 smoke: decomposition behaves identically to np1 (same
     residual class; frame 0 bitwise).
   - **No 12 h campaign in C4** (that is C5).

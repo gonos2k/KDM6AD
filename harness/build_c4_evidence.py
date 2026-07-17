@@ -136,6 +136,36 @@ def main() -> int:
                                       "Gate A adjudication)",
         "gate_d_conservative": "HOLD (1-4 ULP residual blocking)",
     }
+    manifest["gate_d_bisection_verdict_2026_07_17"] = {
+        "seed_rate": "piacw (cloud-water accretion by ice, qc->qi)",
+        "first_diverging_op": "the ×π multiply in cloud_water_riming_torch's "
+                              "piacw chain: C++ raw f64 PI vs Fortran REAL(4) pi",
+        "proof": "all inputs bitwise to the last double bit (paired f32 + "
+                 "raw-64-bit dumps); offline ladder replication over ALL "
+                 "28729 diverging cells: fort==f32-π chain 28729/28729, "
+                 "cpp==f64-π chain 28729/28729, cross-assignments 0; all "
+                 "100 state-flip cells ⊂ piacw-diff set",
+        "classification": "legacy-SHARED latent class (not Case A / not "
+                          "Case B): same idiom already fixed for psacw/"
+                          "pgacw/paacw via path-conditional pi_t; piacw "
+                          "left on raw PI; invisible in legacy "
+                          "certifications (zero straddle flips), exposed "
+                          "by the variant's supercooled cloud-ice "
+                          "population",
+        "rhox_suspect": "REFUTED (rhox bitwise in paired dumps)",
+        "fix_pending_owner_adjudication": "piacw raw PI -> pi_t touches "
+                                          "SHARED legacy C++ (outside the "
+                                          "Case-A conservative-only "
+                                          "pre-approval); provably moves "
+                                          "legacy C++ piacw ONTO legacy "
+                                          "Fortran; legacy re-cert scope "
+                                          "required",
+        "instrumentation": "diag/c4-poststateupdate-bisection only; "
+                           "working tree reverted; Gate A re-verified "
+                           "PASS; clean dylib sha reproduced; restored "
+                           "237/337 runs STRICT BITWISE == pre-diag "
+                           "baselines",
+    }
     manifest["rate_dump_scope"] = {
         "graupel": {"fields": 8, "scope": "full list established", "verdict": "BITWISE"},
         "warmrates": {"fields": "first 8 of fort's 10 (--min-fields 8)",
