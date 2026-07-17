@@ -125,17 +125,40 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
     valid_frames = (
         isinstance(frames, list)
         and 0 < len(frames) <= n_frames_total
-        # type(...) is int: bool is an int subclass and False == 0, so a bool
-        # "frame" would otherwise pass silently as frame 0
-        and all(isinstance(r, dict) and type(r.get("frame")) is int
+        # type(...) is int / is float: bool is an int subclass and False == 0,
+        # so a bool "frame" would otherwise pass silently as frame 0; the
+        # sink-sum and affected_fraction fields are consumed verbatim when the
+        # resumed artifact is assembled, so they must exist and be floats HERE
+        # — not fail as KeyError/TypeError at artifact-write time.
+        and all(isinstance(r, dict)
+                and type(r.get("frame")) is int
+                and type(r.get("sink_sum_of_column_equivalents_kg_m2")) is float
+                and type(r.get("affected_fraction")) is float
                 for r in frames)
         and [r["frame"] for r in frames] == list(range(len(frames)))
     )
-    if not (isinstance(ck, dict) and ck.get("meta") == ck_meta and valid_frames):
+    # Accumulator payload the resumed run keeps adding into: every later
+    # failure mode must be caught here as the promised RuntimeError — a
+    # missing key would be a KeyError, a list a TypeError, and a SCALAR
+    # tensor would broadcast into any batch silently (numel()==1 is the one
+    # shape torch adds without complaint).
+    valid_payload = (
+        isinstance(ck, dict)
+        and isinstance(ck.get("cum36_sink"), torch.Tensor)
+        and ck["cum36_sink"].dtype == torch.float64
+        and ck["cum36_sink"].dim() == 1
+        and ck["cum36_sink"].numel() > 1
+        and isinstance(ck.get("cum36_species"), dict)
+        and set(ck["cum36_species"]) == set(SPECIES)
+        and all(type(v) is float for v in ck["cum36_species"].values())
+        and type(ck.get("cum36_proj")) is float
+    )
+    if not (isinstance(ck, dict) and ck.get("meta") == ck_meta
+            and valid_frames and valid_payload):
         raise RuntimeError(
             "stale, malformed, or mismatched replay checkpoint (identity/config "
-            "mismatch or invalid frame sequence) — refusing to resume; delete "
-            "the checkpoint and rerun from frame 0")
+            "mismatch, invalid frame sequence, or invalid accumulator payload) "
+            "— refusing to resume; delete the checkpoint and rerun from frame 0")
     stored = ck.get("provenance")
     varying = {"checkpoint_resumes"}
     if (not isinstance(stored, dict)
@@ -146,7 +169,12 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37):
             "startup identity (repo HEAD, content hashes, config, manifest, or "
             "runtime versions differ) — refusing to resume; delete the "
             "checkpoint and rerun from frame 0")
-    return int(stored.get("checkpoint_resumes", 0)) + 1
+    resumes = stored.get("checkpoint_resumes", 0)
+    if type(resumes) is not int or resumes < 0:   # bool is an int subclass too
+        raise RuntimeError(
+            "checkpoint carries an invalid resume counter — refusing to "
+            "resume; delete the checkpoint and rerun from frame 0")
+    return resumes + 1
 
 
 def _load_and_validate_checkpoint(path, ck_meta, prov, n_frames_total=37):

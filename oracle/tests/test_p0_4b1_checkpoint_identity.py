@@ -48,9 +48,15 @@ def identity(mod):
     return meta, prov
 
 
+def _rec(i):
+    """A frame record carrying every field the resumed run consumes later."""
+    return {"frame": i, "sink_sum_of_column_equivalents_kg_m2": 1.0,
+            "affected_fraction": 0.5}
+
+
 def _ck(meta, prov, n_frames=3, resumes=None, frame_ids=None):
-    frames = [{"frame": i} for i in (frame_ids if frame_ids is not None
-                                     else range(n_frames))]
+    frames = [_rec(i) for i in (frame_ids if frame_ids is not None
+                                else range(n_frames))]
     stored = dict(prov)
     if resumes is not None:
         stored["checkpoint_resumes"] = resumes
@@ -146,6 +152,46 @@ def test_malformed_frame_records_refuse(mod, identity, frames):
     ck["frames"] = frames
     with pytest.raises(RuntimeError, match="refusing to resume"):
         mod._validate_resume(ck, meta, prov)
+
+
+# ── refuse: payload schema (fields the resumed run consumes later) ───────────
+
+def test_frame_record_missing_consumed_fields_refuses(mod, identity):
+    meta, prov = identity
+    ck = _ck(meta, prov)
+    ck["frames"] = [{"frame": 0}]          # no sink sum / affected_fraction
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(ck, meta, prov)
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda ck: ck.pop("cum36_sink"),
+    lambda ck: ck.__setitem__("cum36_sink", [0.0, 0.0]),                  # not a tensor
+    lambda ck: ck.__setitem__("cum36_sink", torch.zeros((), dtype=torch.float64)),  # scalar broadcasts silently
+    lambda ck: ck.__setitem__("cum36_sink", torch.zeros(4, dtype=torch.float32)),   # wrong dtype
+    lambda ck: ck.pop("cum36_species"),
+    lambda ck: ck.__setitem__("cum36_species", {"qr": 0.0}),              # species missing
+    lambda ck: ck.__setitem__("cum36_species",
+                              {sp: 0 for sp in ("qr", "qs", "qg", "qi")}),  # int, not float
+    lambda ck: ck.pop("cum36_proj"),
+    lambda ck: ck.__setitem__("cum36_proj", "0.0"),
+], ids=["sink-missing", "sink-not-tensor", "sink-scalar", "sink-f32",
+        "species-missing", "species-incomplete", "species-int", "proj-missing",
+        "proj-string"])
+def test_malformed_payload_refuses(mod, identity, mutate):
+    meta, prov = identity
+    ck = _ck(meta, prov)
+    mutate(ck)
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(ck, meta, prov)
+
+
+@pytest.mark.parametrize("counter", ["2", True, -1, 2.0],
+                         ids=["string", "bool", "negative", "float"])
+def test_invalid_resume_counter_refuses(mod, identity, counter):
+    meta, prov = identity
+    with pytest.raises(RuntimeError, match="refusing to resume"):
+        mod._validate_resume(_ck(meta, prov, resumes=counter), meta, prov)
 
 
 # ── loud failure: corrupt checkpoint file ────────────────────────────────────
