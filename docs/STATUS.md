@@ -60,7 +60,7 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
 
 | Variant | C++ implementation | Public v2 selector | Fortran reference variant | 12h × MPI certification | Release / default-DA eligibility |
 |---|---|---|---|---|---|
-| conservative-interface-v1 | experimental | implemented | pending | pending | no |
+| conservative-interface-v1 | experimental | implemented | implemented (C4: host mp237/mp337; Gates A/B/C PASS; Gate D: legacy invariance FULL PASS, cons pair ~40 cells×1-ULP residual bisected to the §35 rhox-retain / §20 brs-underflow class — two owner-adjudication items open; see FREEZE_LIFT §C4) | pending (C5) | no |
 
 ## Known scope boundaries (see README → Scope & differentiation contract)
 

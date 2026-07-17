@@ -143,9 +143,85 @@ parity) and oracle-ci GREEN; the macOS arm64 job was still in flight at
 merge time (auto-cancelled by the merge — the authoritative macOS
 validation is the main-push run).
 
-**HOLD (unchanged)**: C4 (corrected Fortran variant + Fortran↔C++ parity),
-C5 (12 h × MPI certification), P0-4c, and any tag / release / default-DA /
-host promotion remain HOLD until their gates are green.
+**HOLD (unchanged)**: C5 (12 h × MPI certification), P0-4c, and any tag /
+release / default-DA / host promotion remain HOLD until their gates are green.
+
+## C4 — corrected Fortran reference variant (branch `physics/conservative-interface-v1-c4`, base `main@48d8c32`)
+
+Scheme IDs (host Registry, collision-scanned): **237** corrected Fortran
+reference (`module_mp_kdm6_cons.F`) / **337** C++ conservative v2 wrapper
+(`module_mp_kdm6ad_cons.F` → `kdm6_step_v2_c`, `physics_variant=1`,
+`value_only=1`, dual first-call layout gate, rc-fatal). Registry packages
+use state arrays byte-identical to 37/137; `kdm6_iso_c.F` gained the
+**append-only** v2 mirror (proven: zero deleted lines vs the legacy
+reference). Legacy mp37/mp137 and the raw ice-velocity handoff are
+permanently untouched.
+
+- **Gate A (source scope): PASS.** `harness/check_cons_fortran_scope.py`
+  proves `module_mp_kdm6_cons.F` == legacy + whole-word renames + EXACTLY
+  the four pinned edits in `harness/cons_fortran_scope_manifest.json`
+  (header comment, REAL(4) metric temporaries, sed main chain, sed ice
+  chain); both raw ice-velocity handoff blocks byte-identical in both
+  modules; legacy sha256 pins match. Evidence:
+  [`c4_evidence_manifest.json`](c4_evidence_manifest.json) (public/host
+  SHAs, libkdm6_c binary sha256, toolchain, fixture hashes, embedded
+  Gate A/B/D logs; `artifacts/` is gitignored so the docs copy is the
+  committed one). Contract tests:
+  `harness/tests/test_check_cons_fortran_scope.py` (6/6).
+- **Gate B (independent column parity driver)**: private host
+  `test/kdm6_cons_gateb/` runs identical fixture arrays through the
+  corrected Fortran and C++ v2 (variant=1), reusing the C3 closure
+  columns + single-layer / species-isolation / mstep-mix regimes, PLUS a
+  **legacy-pair control** (mp37 `kdm6` vs variant=0) on the same fixtures.
+  Measured finding (2026-07-17): **all single-subcycle fixtures
+  (dt ≤ DTCLDCR=120 — the operational regime; the host always runs
+  dt=20) are f32 RAW-BIT identical for BOTH pairs**, but at dt=300
+  (3 KDM sub-cycles) the **LEGACY pair itself drifts Fortran↔C++ on
+  cap-active columns** — a pre-existing drift in the shared sub-cycle
+  machinery, never exercised by the dt=20 host and mirrored by the C3.4
+  `FS64_MULTI` oracle↔C++ op-order drift. Both sides of that drift are
+  frozen (legacy Fortran; libtorch src), so dt=300 raw-bit equality is
+  not achievable within this freeze-lift's scope. The driver therefore
+  gates: **G1** raw-bit on all single-subcycle fixtures (both pairs);
+  **G2** per-column water closure kappa32 ≤ 8 on both conservative paths,
+  all fixtures (the legacy control FAILS closure on cap-active columns —
+  the documented defect, re-confirmed against real legacy Fortran for the
+  first time); **G3** no-new-divergence — the conservative pair must be
+  bitwise-clean on every column where the legacy pair is (measured
+  divergence column sets are IDENTICAL). ⚠ G1/G3 in lieu of literal
+  dt=300 raw-bit is an **owner-adjudication item**.
+- **Gate C (host compile/registration)**: em_real clean build with both
+  new schemes wired (Registry packages select; `kdm6init_cons` dispatch;
+  `-ffp-contract=off` explicit rules on both new objects;
+  `apply_kdm6ad_config.sh` rerun idempotent — it also now carries
+  `-Wno-error=incompatible-pointer-types` for `external/RSL_LITE` under
+  Xcode clang 16+, a diagnostic-severity-only flag). 9-symbol export +
+  SOVERSION 2 unchanged (installed dylib sha pinned in the manifest).
+- **Gate D (SS host short campaign) — measured 2026-07-17**, via
+  `harness/run_ss_case.py` (`--mp 37|137|237|337`, `--seconds`, `--np`) +
+  `harness/strict_bitwise_nc.py` on the fresh clean build:
+  - **legacy 37↔137: FULL PASS** — 1 step and 10 steps np1, every frame,
+    all 254 variables STRICT BITWISE (this also re-validates the pending
+    INSTALL-BASELINE item: the hardened SOVERSION-2 dylib now backs the
+    parity).
+  - **cons 237↔337: NOT yet bitwise** — frame 0 bitwise (253/253 numeric);
+    post-step frames diverge in QCLOUD/QICE/QSNOW/QVAPOR/REFL_10CM only,
+    ~40 cells of 2.57M per field at **1–4 ULP**, all in supercooled
+    (235–273 K) **graupel-marginal** cells (median qg≈2.6e-9) at k=15–23.
+    Dump-bisection (per-substep + rate dumps): divergence is born between
+    the `postfreeze` and `poststateupdate` stages; all 12 state fields at
+    entry/postmelt/postfreeze AND every dumped rate (graupel 8, number
+    rates) are BITWISE — the seed is an un-dumped qc→qi-family mass rate.
+    Prime suspect class: the §35 `rhox` retain-shadow / §20 brs-underflow
+    engineering, whose C++ mask was calibrated against LEGACY's
+    `max(...,0.)` f32-underflow behavior that the conservative no-clamp
+    update changes in graupel-empty cells. **Next bisection rung requires
+    paired mass-rate/rhox dumps, i.e. temporary instrumentation of the
+    frozen libtorch source → owner freeze-lift decision** (adjudication
+    item #2, alongside the Gate-B dt=300 substitution).
+  - 1-step np4 smoke: decomposition behaves identically to np1 (same
+    residual class; frame 0 bitwise).
+  - **No 12 h campaign in C4** (that is C5).
 
 ## P0-4c status
 

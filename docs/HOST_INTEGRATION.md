@@ -11,15 +11,19 @@
 The KDM6/KDM6AD microphysics integration source builds into a full **KIM-meso/WRF host tree**
 (the foreign host model, not bundled here). This doc records the exact wiring so those `.F`
 files can be dropped into a host and produce `wrf.exe` with selectable
-`mp_physics=37` (KDM6 Fortran) / `mp_physics=137` (KDM6AD libtorch port).
+`mp_physics=37` (KDM6 Fortran) / `mp_physics=137` (KDM6AD libtorch port), and — since C4 —
+the conservative-interface-v1 variant pair `mp_physics=237` (corrected Fortran reference) /
+`mp_physics=337` (C++ v2 `physics_variant=1`).
 
 ## Files (drop into `<WRF>/phys/`)
 | File | Role |
 |---|---|
-| `module_mp_kdm6.F` | KDM6 mp37 reference scheme (incl. the diag_rhog gate+snap, commit eb1c823) |
-| `module_mp_kdm6ad.F` | KDM6AD mp137 wrapper — calls the C++ ABI; computes re_*/diag_rhog/REFL_10CM diagnostics |
-| `kdm6_iso_c.F` | ISO_C_BINDING interface declaring `kdm6_step_c` etc. (Fortran ↔ C++ ABI) |
-| `module_microphysics_driver.F` | dispatches mp37 vs mp137 |
+| `module_mp_kdm6.F` | KDM6 mp37 reference scheme (incl. the diag_rhog gate+snap, commit eb1c823) — **never modified** |
+| `module_mp_kdm6ad.F` | KDM6AD mp137 wrapper — calls the C++ ABI; computes re_*/diag_rhog/REFL_10CM diagnostics — **never modified** |
+| `kdm6_iso_c.F` | ISO_C_BINDING interface declaring `kdm6_step_c` etc.; C4 adds the **append-only** v2 mirror (`kdm6_step_v2_args`, `kdm6_step_v2_c`, `kdm6_step_v2_args_size_c`, variant enums) |
+| `module_mp_kdm6_cons.F` | **C4** corrected Fortran conservative reference (mp237): byte-identical copy of `module_mp_kdm6.F` except renames + the pinned sedimentation interface-transfer edits (Gate A manifest) |
+| `module_mp_kdm6ad_cons.F` | **C4** thin separate wrapper (mp337): calls `kdm6_step_v2_c` with `physics_variant=1`, `value_only=1`; first-call `abi_version` + `struct_size` layout gate (fatal on mismatch — a stale mirror must never silently run legacy) |
+| `module_microphysics_driver.F` | dispatches mp37 / mp137 / mp237 / mp337 (additive CASEs only) |
 
 ## Build wiring (in the WRF host)
 
@@ -55,6 +59,37 @@ module_mp_kdm6ad.o: module_mp_kdm6.o kdm6_iso_c.o    # kdm6ad reuses effectRad_k
 `mp_physics==137` must be registered as the KDM6AD scheme (state arrays identical to
 the mp37 KDM6 package: moist/scalar/nc/ni/nccn/bg + diag_rhog/RHOPO3D, re_*, REFL_10CM).
 
+## Conservative-interface variant wiring (C4)
+
+Scheme IDs (collision-scanned against the host Registry + driver; the
+`Fortran ID + 100 = C++ ID` rule mirrors 37/137):
+
+| ID | Package | Backend |
+|---|---|---|
+| 237 | `kdm6consscheme` | corrected Fortran reference (`module_mp_kdm6_cons.F`) |
+| 337 | `kdm6adconsscheme` | C++ conservative-interface-v1 (`kdm6_step_v2_c`, `physics_variant=1`) |
+
+- Registry packages use **state arrays byte-identical** to the 37/137 packages.
+- `MP_PHYSICS` is written to history output (`rconfig ... irh`), so the scheme ID
+  itself records which backend produced a file; the ID→backend map above plus the
+  C4 evidence manifest are the sidecar provenance.
+- `module_physics_init.F`: both new IDs dispatch to `kdm6init_cons` (additive CASEs).
+- `phys/Makefile`: both new objects get the same explicit `-ffp-contract=off`
+  strict-IEEE rules as the legacy kdm6 objects; `main/depend.common` adds
+  `module_mp_kdm6ad_cons.o: kdm6_iso_c.o module_mp_kdm6_cons.o`.
+- `apply_kdm6ad_config.sh` is unchanged: it only restores the `configure.wrf`
+  link/compile hook; all cons wiring lives in Registry/Makefiles that survive
+  `./configure`, so a rerun preserves the variant wiring (Gate C check).
+- **Gate A scope proof**: `harness/check_cons_fortran_scope.py` (public) verifies
+  the private `module_mp_kdm6_cons.F` is legacy + renames + EXACTLY the pinned
+  manifest edits (`harness/cons_fortran_scope_manifest.json`), that the raw
+  ice-velocity handoff blocks are byte-identical, and that the two legacy modules
+  match their pinned sha256.
+- **Gate B driver**: `<WRF>/test/kdm6_cons_gateb/` (private host) runs the same
+  fixture arrays through `kdm6_cons` and `kdm6_step_v2_c(physics_variant=1)` and
+  gates f32 raw-bit equality (12 states + rain/snow/graupel increments + rhog)
+  plus per-column water closure on both paths.
+
 ## Build & run
 `em_b_wave` below is only a **generic build-target example**. **The SS real-case parity runs
 build `em_real`** (`./compile -j 4 em_real`) — a REAL case must not use the idealized
@@ -64,7 +99,9 @@ cd <WRF> && ./compile -j 4 em_real            # SS real case → em_real; → ma
 # (idealized/dry toy cases would use em_b_wave etc.)
 # touch phys/module_mp_kdm6*.F if only .F changed; no clean unless Registry changed.
 ```
-Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137`) on an SS real case.
+Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137|237|337`) on an
+SS real case. The Fortran schemes (37/237) write `fort_*` substep dumps when the env-gated
+dump is enabled; the C++ schemes (137/337) write `cpp_*`.
 
 **`KMP_DUPLICATE_LIB_OK` is caller-owned.** Neither the dylib nor the runner forces
 it: a parent `UNSET` stays unset, an explicit `TRUE`/`FALSE` is preserved. Set it in
