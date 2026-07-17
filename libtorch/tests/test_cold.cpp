@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 using namespace kdm6;
@@ -817,6 +818,123 @@ void test_graupel_evap_grad_finite() {
     } END_TEST();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// C4-S1 shared parity exception (Case C, owner adjudication 2026-07-17):
+// piacw must stage π path-conditionally (pi_t), like psacw/pgacw/paacw —
+// operational f32 gets Fortran's REAL(4) π, the fp64 DA path keeps double π.
+// ═══════════════════════════════════════════════════════════════════════════
+namespace {
+
+// same value as cold.cpp's TU-local PI
+constexpr double kPI = 3.14159265358979323846;
+
+// Witness inputs: a synthetic straddle cell where the f32-π and f64-π ladders
+// round to DIFFERENT f32 bits (found by offline scan; cap non-binding).
+// Mixed dtypes mirror the operational path: f32 states/slopes, f64
+// rslopemu/n0*, so the chain promotes to f64 exactly as in production.
+cold::CloudWaterRimingInputs make_piacw_pi_witness(torch::Dtype state_dt) {
+    auto so = torch::TensorOptions().dtype(state_dt);
+    auto o64 = torch::TensorOptions().dtype(torch::kFloat64);
+    auto sv = [&](double v) { return torch::full({1, 1}, v, so); };
+    auto dv = [&](double v) { return torch::full({1, 1}, v, o64); };
+    return cold::CloudWaterRimingInputs{
+        /*qc=*/sv(1.0e-5), /*nc=*/sv(0.0),
+        /*qs=*/sv(0.0), /*qg=*/sv(0.0), /*qi=*/sv(2.0e-4),
+        /*den=*/sv(1.0), /*denfac=*/sv(1.1),
+        /*n0so=*/dv(1.0), /*n0go=*/dv(1.0), /*n0i=*/dv(1.0), /*n0c=*/dv(1.0),
+        /*n0sfac=*/sv(1.0),
+        /*avtg=*/sv(0.0), /*g3pbg=*/sv(1.0),
+        /*avedia_i=*/sv(1.0e-4),          // >= DI50 = 0.5e-4 → gate open
+        /*supcol=*/sv(5.0),
+        /*rslope3_s=*/sv(0.0), /*rslopeb_s=*/sv(0.0), /*rslopemu_s=*/dv(1.0),
+        /*rslope3_g=*/sv(0.0), /*rslopeb_g=*/sv(0.0), /*rslopemu_g=*/dv(1.0),
+        /*rslope3_i=*/sv(2.0e-4), /*rslopeb_i=*/sv(1.8e-4), /*rslopemu_i=*/dv(1.0),
+        /*rslopec=*/sv(1.0), /*rslopecmu=*/dv(1.0),
+    };
+}
+
+// The piacw chain replicated left-to-right in double with a chosen π value
+// (the production op order; wilt via f32 raw ratio, squared in f32).
+double piacw_ref_chain(const cold::CloudWaterRimingParams& p, double pi_val) {
+    const float r3 = 2.0e-4f, rb = 1.8e-4f, qc = 1.0e-5f, qi = 2.0e-4f,
+                denfac = 1.1f;
+    const double rmu = 1.0, n0i = 1.0;
+    double ch = static_cast<double>(r3 * rb);           // f32 first multiply
+    ch = ch * rmu;
+    ch = ch * pi_val;                                   // ← the op under test
+    ch = ch * n0i;
+    ch = ch * static_cast<double>(p.avti);
+    ch = ch * p.g3pbi;
+    ch = ch * 0.25;
+    ch = ch * p.eacic;
+    float w = qi / qc;
+    w = std::fmin(std::fmax(w, 0.0f), 1.0f);
+    w = w * w;
+    ch = ch * static_cast<double>(w);
+    ch = ch * static_cast<double>(qc);
+    ch = ch * static_cast<double>(denfac);
+    return ch;
+}
+
+}  // namespace
+
+void test_cwr_piacw_pi_staging_f32_witness() {
+    TEST(test_cwr_piacw_pi_staging_f32_witness) {
+        torch::NoGradGuard ng;
+        auto p = cold::default_cloud_water_riming_params();
+        auto in = make_piacw_pi_witness(torch::kFloat32);
+        auto out = cold::cloud_water_riming_torch(in, p, /*dtcld=*/20.0);
+        const float got = out.piacw.item<float>();
+
+        const double pi32 = static_cast<double>(static_cast<float>(kPI));
+        const float ref32 = static_cast<float>(piacw_ref_chain(p, pi32));
+        const float ref64 = static_cast<float>(piacw_ref_chain(p, kPI));
+        const float cap = 1.0e-5f / 20.0f;
+
+        uint32_t bg, b32, b64;
+        std::memcpy(&bg, &got, 4);
+        std::memcpy(&b32, &ref32, 4);
+        std::memcpy(&b64, &ref64, 4);
+        std::cout << "    piacw got=" << got << " ref(f32-pi)=" << ref32
+                  << " ref(f64-pi)=" << ref64 << "\n";
+        // the witness genuinely discriminates the two ladders, off-cap:
+        assert(b32 != b64);
+        assert(ref32 < 0.9f * cap && ref64 < 0.9f * cap);
+        // operational f32 must land on the Fortran REAL(4)-π ladder, raw-bit:
+        assert(bg == b32);
+    } END_TEST();
+}
+
+void test_cwr_piacw_pi_staging_fp64_invariance() {
+    TEST(test_cwr_piacw_pi_staging_fp64_invariance) {
+        auto p = cold::default_cloud_water_riming_params();
+        // fp64 DA path: pi_t holds the SAME double π, so the function must be
+        // value- and gradient-identical to the raw-scalar-π expression.
+        auto in = make_piacw_pi_witness(torch::kFloat64);
+        in.qc.requires_grad_(true);
+        auto out = cold::cloud_water_riming_torch(in, p, /*dtcld=*/20.0);
+
+        // scalar-π reference expression, same torch ops in f64:
+        auto qc_safe = torch::clamp(in.qc, /*min=*/p.qcrmin);
+        auto ratio = in.qi / qc_safe;   // fp64 path uses the SAFE ratio (§53n raw is f32-only)
+        auto clamped = torch::fmin(torch::fmax(ratio, torch::zeros_like(ratio)),
+                                   torch::ones_like(ratio));
+        auto wilt = clamped * clamped;
+        auto raw = in.rslope3_i * in.rslopeb_i * in.rslopemu_i
+                   * kPI * in.n0i * p.avti * p.g3pbi * 0.25 * p.eacic
+                   * wilt * in.qc * in.denfac;
+        auto ref = torch::minimum(raw.to(in.qc.scalar_type()), in.qc / 20.0);
+
+        assert(torch::equal(out.piacw, ref));
+        auto g_fn = torch::autograd::grad({out.piacw.sum()}, {in.qc},
+                                          /*grad_outputs=*/{}, /*retain_graph=*/true,
+                                          /*create_graph=*/false, /*allow_unused=*/false)[0];
+        auto g_ref = torch::autograd::grad({ref.sum()}, {in.qc})[0];
+        assert(torch::all(torch::isfinite(g_fn)).item<bool>());
+        assert(torch::equal(g_fn, g_ref));
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch cold tests\n";
     test_ice_accretion_params_finite_and_positive();
@@ -833,6 +951,8 @@ int main() {
     test_cwr_piacw_pk97_di50_threshold();
     test_cwr_paacw_weighted_average();
     test_cwr_grad_finite();
+    test_cwr_piacw_pi_staging_f32_witness();
+    test_cwr_piacw_pi_staging_fp64_invariance();
     test_rsgc_pracs_zero_when_warm();
     test_rsgc_nracs_always_zero();
     test_rsgc_grad_finite();

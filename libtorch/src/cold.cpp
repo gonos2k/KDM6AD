@@ -524,9 +524,13 @@ CloudWaterRimingOutputs cloud_water_riming_torch(
         in.avedia_i >= p.di50
     );
     auto piacw_active = torch::logical_and(cold_ice, in.qc > p.qmin);
+    // C4-S1 shared parity exception (Case C, owner adjudication 2026-07-17):
+    // π staged path-conditionally like psacw — pi_t is Fortran REAL(4) π on
+    // the operational f32 path and double π on the fp64 DA path. Raw f64 PI
+    // here was the proven 1-ULP piacw class (28729/28729 ladder assignment).
     auto piacw_raw =
         (in.rslope3_i * in.rslopeb_i * in.rslopemu_i
-        * PI * in.n0i * p.avti * p.g3pbi * 0.25 * p.eacic
+        * pi_t * in.n0i * p.avti * p.g3pbi * 0.25 * p.eacic
         * wilt_reduction(wilt_arg(in.den.scalar_type() == torch::kFloat32, in.qi, in.qc, in.qi, qc_safe))
         * in.qc * in.denfac).to(in.qc.scalar_type());  // f64 n0i chain, f32 store
     auto piacw_capped = torch::minimum(piacw_raw, in.qc / dtcld);
