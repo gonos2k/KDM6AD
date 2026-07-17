@@ -1198,13 +1198,91 @@ void test_c_abi_v2_physics_variant_gate() {
             for (int f = 0; f < 12; ++f)
                 for (float x : o[f].data) assert(x == -777.0f);   // untouched
         };
-        // conservative selector is ACCEPTED as a value; the physics lands in a
-        // later commit of this PR — until then it must refuse loudly, not fall
-        // back to legacy silently.
-        expect_rejected(KDM6_PHYSICS_CONSERVATIVE_INTERFACE, KDM6_ERR_NOT_IMPLEMENTED);
         // unknown values fail loud.
         expect_rejected(2u, KDM6_ERR_INVALID_ARG);
         expect_rejected(UINT32_MAX, KDM6_ERR_INVALID_ARG);
+
+        // ── conservative variant ACTIVE (freeze-lift commit 2) ───────────────
+        // Taller tile in the cap-binding regime: heavy rain (qr = 5e-3) over
+        // thin layers (delz = 400 m) gives vt·dtcld/(mstep·delz) > 1/2 per
+        // substep, so the legacy post-update interface re-cap BINDS and deletes
+        // mass at internal interfaces — exactly what the conservative-interface
+        // variant fixes. Oracle reference: oracle/kdm6/sed_conservative.py.
+        {
+            const int cim = 1, ckme = 4, cjme = 1;
+            FortranBuf cth(cim,ckme,cjme, 290.0f),  cqv(cim,ckme,cjme, 1.0e-2f);
+            FortranBuf cqc(cim,ckme,cjme, 5.0e-4f), cqr(cim,ckme,cjme, 5.0e-3f);
+            FortranBuf cqi(cim,ckme,cjme), cqs(cim,ckme,cjme), cqg(cim,ckme,cjme);
+            FortranBuf cnccn(cim,ckme,cjme, 1.0e9f), cnc(cim,ckme,cjme, 1.0e8f);
+            FortranBuf cni(cim,ckme,cjme), cnr(cim,ckme,cjme, 1.0e4f), cbg(cim,ckme,cjme);
+            FortranBuf crho(cim,ckme,cjme, 1.0f),   cpii(cim,ckme,cjme, 0.97f);
+            FortranBuf cp(cim,ckme,cjme, 9.0e4f),   cdelz(cim,ckme,cjme, 400.0f);
+
+            auto couts = [&]{
+                std::vector<FortranBuf> o;
+                for (int f = 0; f < 12; ++f) o.emplace_back(cim, ckme, cjme, -9.0f);
+                return o;
+            };
+            auto run_variant = [&](std::vector<FortranBuf>& o, uint32_t variant,
+                                   float* rain_inc) {
+                kdm6_handle_t* h = nullptr;
+                auto a = mk_v2_args(
+                    cth.ptr(),cqv.ptr(),cqc.ptr(),cqr.ptr(),cqi.ptr(),cqs.ptr(),cqg.ptr(),
+                    cnccn.ptr(),cnc.ptr(),cni.ptr(),cnr.ptr(),cbg.ptr(),
+                    crho.ptr(),cpii.ptr(),cp.ptr(),cdelz.ptr(), cim,ckme,cjme,60.0,1,
+                    o[0].ptr(),o[1].ptr(),o[2].ptr(),o[3].ptr(),o[4].ptr(),o[5].ptr(),
+                    o[6].ptr(),o[7].ptr(),o[8].ptr(),o[9].ptr(),o[10].ptr(),o[11].ptr(), &h);
+                a.physics_variant = variant;
+                a.rain_increment = rain_inc;   // total surface fallout [mm ≡ kg m^-2]
+                return kdm6_step_v2_c(&a);
+            };
+
+            auto oleg = couts();
+            assert(run_variant(oleg, KDM6_PHYSICS_LEGACY, nullptr) == KDM6_OK);
+
+            // (a) the conservative selector now runs the physics.
+            std::vector<float> rain(static_cast<size_t>(cim) * cjme, -1.0f);
+            auto ocons = couts();
+            assert(run_variant(ocons, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                               rain.data()) == KDM6_OK);
+            for (float r : rain) assert(r > 0.0f);   // sedimentation actually fired
+
+            // (b) it is a DIFFERENT physics: with the interface cap binding,
+            // at least one state field must differ from the legacy run.
+            bool any_diff = false;
+            for (int f = 0; f < 12 && !any_diff; ++f)
+                any_diff = std::memcmp(oleg[f].ptr(), ocons[f].ptr(),
+                                       oleg[f].size() * sizeof(float)) != 0;
+            assert(any_diff);
+
+            // (c) per-column water closure for the conservative run:
+            //   Σ_k ρ·Δz·Δ(qv+qc+qr+qi+qs+qg) + P_actual ≈ 0.
+            // rain_increment [mm] is numerically kg m^-2 (surface_accumulation:
+            // fallsum·Δz/DENR·dtcld·1000 with DENR = 1000). The C core stores
+            // through f32, so the residual carries accumulated f32 roundoff from
+            // the full micro+sed chain — gate at rtol 1e-5 of the column water
+            // (≈100× the single-op f32 eps, orders of magnitude below the
+            // legacy interface deletion this variant removes).
+            for (int j = 0; j < cjme; ++j) {
+                for (int i = 0; i < cim; ++i) {
+                    double w_in = 0.0, w_out = 0.0;
+                    for (int k = 0; k < ckme; ++k) {
+                        const size_t idx = (size_t)i
+                            + (size_t)cim * ((size_t)k + (size_t)ckme * j);
+                        const double rdz =
+                            (double)crho.data[idx] * (double)cdelz.data[idx];
+                        w_in += rdz * ((double)cqv.data[idx] + cqc.data[idx]
+                            + cqr.data[idx] + cqi.data[idx]
+                            + cqs.data[idx] + cqg.data[idx]);
+                        w_out += rdz * ((double)ocons[1].data[idx] + ocons[2].data[idx]
+                            + ocons[3].data[idx] + ocons[4].data[idx]
+                            + ocons[5].data[idx] + ocons[6].data[idx]);
+                    }
+                    const double precip = (double)rain[i + cim * j];  // kg m^-2
+                    assert(std::fabs(w_out - w_in + precip) <= 1.0e-5 * w_in);
+                }
+            }
+        }
     } END_TEST();
 }
 

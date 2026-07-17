@@ -30,6 +30,7 @@ add_library(kdm6 STATIC
     src/cold.cpp
     src/melt_freeze.cpp
     src/sedimentation.cpp
+    src/sedimentation_conservative.cpp
     src/thermo.cpp
     src/state.cpp
     src/runtime.cpp

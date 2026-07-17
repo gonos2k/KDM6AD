@@ -56,6 +56,16 @@ Parameters make_parameters(int grad_flags = 0,
 // 1차 prototype 단계에서는 NotImplementedError-equivalent (TORCH_CHECK fails).
 // slope/core/sedimentation 모듈이 채워지면 본 함수가 그 합성.
 //
+// Physics options (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
+// `variant` selects the sedimentation interface-transfer physics: Legacy
+// (default — bitwise-identical to every pre-existing call path) or
+// ConservativeInterface (the freeze-lifted conservative variant; oracle
+// reference oracle/kdm6/sed_conservative.py). Threaded as a defaulted trailing
+// parameter through kdm6_fn / kdm6_step so existing call sites are unchanged.
+struct PhysicsOptions {
+    PhysicsVariant variant = PhysicsVariant::Legacy;
+};
+
 // Pure differentiable forward result — state + sedimentation increments.
 // The increments are computed inside kdm6_fn via sedimentation_chain (after
 // kdm62d_step) so they participate in the autograd graph alongside state.
@@ -73,7 +83,8 @@ FnResult kdm6_fn(const State& state,
                  double dt,
                  const c10::optional<torch::Tensor>& xland = c10::nullopt,
                  double ncmin_land = 0.0,
-                 double ncmin_sea = 0.0);
+                 double ncmin_sea = 0.0,
+                 const PhysicsOptions& physics = {});
 
 // ── [G3] GraphOptions — DA derivative-call options (kdm6ad+da.md §8.1/§8.2) ──
 //
@@ -179,6 +190,7 @@ StepResult kdm6_step(const State& state,
                      bool value_only = false,
                      const c10::optional<torch::Tensor>& xland = c10::nullopt,
                      double ncmin_land = 0.0,
-                     double ncmin_sea = 0.0);
+                     double ncmin_sea = 0.0,
+                     const PhysicsOptions& physics = {});
 
 }  // namespace kdm6

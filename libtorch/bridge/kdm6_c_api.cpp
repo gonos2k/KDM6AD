@@ -344,10 +344,14 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
         physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
         return KDM6_ERR_INVALID_ARG;
-    if (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
-        // Accepted selector value; the conservative sedimentation lands in a
-        // later commit of this freeze-lift PR — refuse loudly until then.
-        return KDM6_ERR_NOT_IMPLEMENTED;
+    // Validated selector → C++ PhysicsOptions, threaded into kdm6::kdm6_step
+    // below. 0 keeps the legacy default (bitwise-identical); 1 swaps the
+    // sedimentation substeps for the conservative-interface pair.
+    kdm6::PhysicsOptions physics;
+    physics.variant =
+        (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+            ? kdm6::PhysicsVariant::ConservativeInterface
+            : kdm6::PhysicsVariant::Legacy;
 
     FpEnvGuard kdm6_fpenv_guard;
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
@@ -373,7 +377,7 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, args->dt,
                                       value_only != 0, xland_t,
-                                      ncmin_land, ncmin_sea);
+                                      ncmin_land, ncmin_sea, physics);
 
         kdm6::to_fortran_arrays(result.state_out, im, jme,
             args->th_out, args->qv_out, args->qc_out, args->qr_out, args->qi_out,
