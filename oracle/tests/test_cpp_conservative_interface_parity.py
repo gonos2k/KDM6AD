@@ -256,6 +256,11 @@ def _compare_fields(tag, cpp_fields, py_fields):
         assert len(cs) == py.numel(), f"{tag}.{name}: size mismatch"
         for i, c in enumerate(cs):
             p = py[i].item()
+            # NaN/Inf must never pass parity: every comparison below is a
+            # False-on-NaN predicate (a>b, /), so a shared-NaN regression on
+            # both trees would otherwise register as "0 error" and slip through.
+            assert math.isfinite(p) and math.isfinite(c), \
+                f"{tag}.{name}[{i}]: non-finite value (py={p!r} cpp={c!r})"
             ntot += 1
             u = _ulp64(p, c)
             if u == 0:
@@ -316,6 +321,9 @@ def test_direct_substep_f32_controlled():
                 py_flat = py_t.detach().reshape(-1)
                 for i, c in enumerate(dumps[tag][name]):
                     p = py_flat[i].item()   # exact f32 -> f64 widening
+                    # identical NaN bit patterns would compare as ULP 0
+                    assert math.isfinite(p) and math.isfinite(c), \
+                        f"{tag}.{name}[{i}]: non-finite value (py={p!r} cpp={c!r})"
                     u = _ulp32(p, c)
                     if u > max_ulp:
                         max_ulp, where = u, f"{tag}.{name}[{i}] py={p!r} cpp={c!r}"
