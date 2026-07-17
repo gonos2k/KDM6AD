@@ -17,6 +17,17 @@
 // 모든 C++ 예외는 *catch all* → int 에러 코드로 변환. 절대 외부로 던지지 않음.
 //
 
+// The C ABI selector enum (kdm6_c_api.h kdm6_physics_variant) and the internal
+// C++ enum (kdm6::PhysicsVariant, coordinator.h) must never diverge:
+// kdm6_step_v2_c maps one onto the other by numeric value. Pin them at
+// compile time so a drift is a build error, not a silent physics swap.
+static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::Legacy) ==
+                  (uint32_t)KDM6_PHYSICS_LEGACY,
+              "C/C++ physics-variant enum drift (Legacy)");
+static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::ConservativeInterface) ==
+                  (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+              "C/C++ physics-variant enum drift (ConservativeInterface)");
+
 extern "C" struct kdm6_handle_t {
     std::unique_ptr<kdm6::Handle> impl;
     // [DA Phase 3] shape metadata for the packed VJP/JVP ABI:
@@ -313,6 +324,11 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     float* snow_increment    = KDM6_V2_HAS(snow_increment)    ? args->snow_increment    : nullptr;
     float* graupel_increment = KDM6_V2_HAS(graupel_increment) ? args->graupel_increment : nullptr;
     float* rhog_out          = KDM6_V2_HAS(rhog_out)          ? args->rhog_out          : nullptr;
+    // conservative-interface-v1 selector: absent field ⇒ legacy (the append-
+    // only contract every pre-existing caller relies on).
+    const uint32_t physics_variant =
+        KDM6_V2_HAS(physics_variant) ? args->physics_variant
+                                     : (uint32_t)KDM6_PHYSICS_LEGACY;
 #undef KDM6_V2_HAS
 
     const int im = args->im, kme = args->kme, jme = args->jme;
@@ -333,6 +349,20 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
         return KDM6_ERR_NULL_POINTER;
     }
     if (args->param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+    // Variant validation: fail-loud BEFORE the thread fence and any tensor
+    // work; *handle is already fail-closed to NULL above and no output has
+    // been written. Unknown values must never fall back to legacy silently.
+    if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+        return KDM6_ERR_INVALID_ARG;
+    // Validated selector → C++ PhysicsOptions, threaded into kdm6::kdm6_step
+    // below. 0 keeps the legacy default (bitwise-identical); 1 swaps the
+    // sedimentation substeps for the conservative-interface pair.
+    kdm6::PhysicsOptions physics;
+    physics.variant =
+        (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+            ? kdm6::PhysicsVariant::ConservativeInterface
+            : kdm6::PhysicsVariant::Legacy;
 
     FpEnvGuard kdm6_fpenv_guard;
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
@@ -358,7 +388,7 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, args->dt,
                                       value_only != 0, xland_t,
-                                      ncmin_land, ncmin_sea);
+                                      ncmin_land, ncmin_sea, physics);
 
         kdm6::to_fortran_arrays(result.state_out, im, jme,
             args->th_out, args->qv_out, args->qc_out, args->qr_out, args->qi_out,

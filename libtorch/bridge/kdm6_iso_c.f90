@@ -31,6 +31,13 @@ module kdm6_iso_c
   ! ── stable ABI v2 (docs/PR2_ABI_V2_DESIGN.md) ───────────────────────────────
   integer(c_int), parameter, public :: KDM6_ABI_VERSION = 2
 
+  ! ── physics_variant selector values (kdm6_c_api.h kdm6_physics_variant) ────
+  ! 0 = legacy (default), 1 = conservative interface variant
+  ! (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md); any other value is
+  ! rejected by the C side with KDM6_ERR_INVALID_ARG.
+  integer(c_int32_t), parameter, public :: KDM6_PHYSICS_LEGACY = 0_c_int32_t
+  integer(c_int32_t), parameter, public :: KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1_c_int32_t
+
   ! Interoperable mirror of the C `kdm6_step_v2_args` — field ORDER and types
   ! MUST match the C struct exactly; a size/layout drift is caught at run time
   ! by asserting c_sizeof(this) == kdm6_step_v2_args_size_c() (test_fortran_smoke).
@@ -50,6 +57,9 @@ module kdm6_iso_c
      real(c_double) :: ncmin_land, ncmin_sea
      type(c_ptr) :: rain_increment, snow_increment, graupel_increment
      type(c_ptr) :: rhog_out
+     ! conservative-interface-v1 selector: 0 = legacy (default), 1 =
+     ! conservative interface variant; other values are rejected by the C side.
+     integer(c_int32_t) :: physics_variant
   end type kdm6_step_v2_args_t
 
   public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close

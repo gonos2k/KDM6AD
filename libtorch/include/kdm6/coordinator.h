@@ -724,6 +724,17 @@ struct SedimentationOutputs {
     torch::Tensor graupel_increment;
 };
 
+// Physics-variant selector (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
+// Mirrors the C ABI enum kdm6_physics_variant; Legacy is the default
+// everywhere, so every pre-existing call path stays bitwise-identical.
+// ConservativeInterface swaps ONLY the sedimentation substep functions for the
+// conservative-interface pair (sedimentation_conservative.h) — selected once
+// per chain, never branched per-substep inside legacy code.
+enum class PhysicsVariant : uint32_t {
+    Legacy = 0,
+    ConservativeInterface = 1,
+};
+
 SedimentationOutputs sedimentation_chain(
     const CoordinatorState& state,
     const CoordinatorForcing& forcing,
@@ -740,7 +751,8 @@ SedimentationOutputs sedimentation_chain(
     double dtcld,
     const sed::SubstepAdvectionParams& params,
     const CoordinatorParams* reslope_params = nullptr,  // 1:1 fix #9: per-substep re-slope (null ⇒ time-invariant work1)
-    progb::ProgBOutputs* progb_ret = nullptr  // §53d in/out: persistent ProgB arrays, merged at each per-substep ProgB (F:1224 retention)
+    progb::ProgBOutputs* progb_ret = nullptr,  // §53d in/out: persistent ProgB arrays, merged at each per-substep ProgB (F:1224 retention)
+    PhysicsVariant variant = PhysicsVariant::Legacy  // conservative-interface-v1: substep-function selector (default = legacy, bitwise-unchanged)
 );
 
 }  // namespace kdm6

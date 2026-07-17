@@ -143,6 +143,15 @@ KDM6_C_API int kdm6_step_c(
 #include <stdint.h>
 
 #define KDM6_ABI_VERSION 2u
+
+/* Physics-variant selector (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
+ * Selected via the append-only v2 tail field `physics_variant`; callers whose
+ * struct_size ends before the field get KDM6_PHYSICS_LEGACY. v1 kdm6_step_c
+ * is PERMANENTLY legacy. Unknown values → KDM6_ERR_INVALID_ARG (fail-loud). */
+typedef enum {
+    KDM6_PHYSICS_LEGACY = 0,
+    KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1
+} kdm6_physics_variant;
 /* the two framing fields a valid caller MUST allocate. struct_size is read
  * first as a bare uint32_t; a value below this is rejected before abi_version
  * (offset 4) — otherwise a 4-byte caller would have abi_version read past its
@@ -180,6 +189,12 @@ typedef struct {
     float       *rain_increment, *snow_increment, *graupel_increment; /* NULL ⇒ skip */
     float       *rhog_out;     /* NULL ⇒ skip */
 
+    /* ── OPTIONAL (conservative-interface-v1 freeze-lift): physics variant.
+     * Absent (smaller struct_size) or 0 ⇒ KDM6_PHYSICS_LEGACY, bitwise-
+     * identical to every pre-existing call. Values outside the
+     * kdm6_physics_variant enum ⇒ KDM6_ERR_INVALID_ARG. ── */
+    uint32_t     physics_variant;
+
     /* Future fields are APPENDED here only; a smaller struct_size means the
      * caller did not supply them and the library uses their documented
      * NULL/zero default. */
@@ -189,7 +204,13 @@ typedef struct {
 KDM6_C_API int kdm6_get_abi_version_c(void);
 
 /** sizeof(kdm6_step_v2_args) as the LIBRARY sees it — lets a Fortran/other
- *  caller assert its own struct layout matches at run time. */
+ *  caller assert its own struct layout matches at run time.
+ *  WARNING: this is a library-side size DIAGNOSTIC only. Callers must NOT
+ *  copy its return into their struct_size field — struct_size is the
+ *  CALLER-owned half of the ABI contract and must be the caller's own
+ *  compiled sizeof/c_sizeof(args). An old caller that copied a newer
+ *  library's (larger) size would claim tail fields it never allocated,
+ *  making the library read past the caller's buffer. */
 KDM6_C_API uint32_t kdm6_step_v2_args_size_c(void);
 
 /**

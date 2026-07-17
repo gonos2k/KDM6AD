@@ -313,7 +313,8 @@ FnResult kdm6_fn(const State& state,
                  double dt,
                  const c10::optional<torch::Tensor>& xland,
                  double ncmin_land,
-                 double ncmin_sea) {
+                 double ncmin_sea,
+                 const PhysicsOptions& physics) {
     // F4 wiring: wrapper State → CoordinatorState → kdm62d_step → State.
     // params (PEAUT/NCRK1/NCRK2/ECCBRK)는 현재 default cold/warm/mf-phase params에서
     // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
@@ -484,7 +485,8 @@ FnResult kdm6_fn(const State& state,
             cur_pyc, cf_pyc, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
             mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params,
             /*reslope_params=*/&full_p,   // 1:1 fix #9: per-substep fall-speed re-slope (F:1189-1205)
-            /*progb_ret=*/&progb_ret);    // §53d: F:1224/F:1290 per-substep ProgB retention
+            /*progb_ret=*/&progb_ret,     // §53d: F:1224/F:1290 per-substep ProgB retention
+            /*variant=*/physics.variant); // conservative-interface-v1 selector (default Legacy)
         cur = CoordinatorState{
             flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
             flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),
@@ -721,7 +723,8 @@ State Handle::jvp(const State& v, const GraphOptions& opts) const {
 StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const Parameters& params, double dt, bool value_only,
                      const c10::optional<torch::Tensor>& xland,
-                     double ncmin_land, double ncmin_sea) {
+                     double ncmin_land, double ncmin_sea,
+                     const PhysicsOptions& physics) {
     // Parameters are RESERVED / NOT WIRED (see runtime.h): kdm6_fn ignores them, so a
     // requires_grad parameter leaf would silently produce no sensitivity. Fast-fail rather
     // than mislead a C++ direct caller who passed make_parameters(ParamGradFlags::…).
@@ -735,7 +738,7 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                 "differentiable. See runtime.h.");
     if (value_only) {
         torch::NoGradGuard no_grad;
-        auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
+        auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics);
         return StepResult{
             /*state_out=*/std::move(fn_out.state_out), /*handle=*/nullptr,
             /*rain_increment=*/std::move(fn_out.rain_increment),
@@ -744,7 +747,7 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
             /*rhog=*/std::move(fn_out.rhog),
         };
     }
-    auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea);
+    auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics);
     auto handle = std::make_unique<Handle>(
         state, fn_out.state_out, forcing, params, dt, /*value_only=*/false);
     return StepResult{

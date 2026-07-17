@@ -8,6 +8,7 @@
 #include "kdm6/constants.h"
 #include "kdm6/ops.h"
 #include "kdm6/fconst.h"
+#include "kdm6/sedimentation_conservative.h"
 
 #include <cmath>
 #include <cstdint>
@@ -2600,11 +2601,27 @@ SedimentationOutputs sedimentation_chain(
     double dtcld,
     const sed::SubstepAdvectionParams& params,
     const CoordinatorParams* reslope_params,
-    progb::ProgBOutputs* progb_ret
+    progb::ProgBOutputs* progb_ret,
+    PhysicsVariant variant
 ) {
     const int64_t K = state.qr.size(-1);
     // delz floor matches runtime.cpp:291 (the initial work1 normalization).
     auto delz_safe = torch::clamp(forcing.delz, /*min=*/1.0e-9);
+
+    // conservative-interface-v1: pick the substep pair ONCE (identical
+    // signatures), before the substep loops — no per-substep branching inside
+    // the legacy path. Default Legacy keeps the chain bitwise-unchanged.
+    using MainSubstepFn = sed::SubstepAdvectionOutputs (*)(
+        const sed::SubstepAdvectionInputs&, const torch::Tensor&, int, int,
+        double, const sed::SubstepAdvectionParams&);
+    using IceSubstepFn = sed::IceSubstepOutputs (*)(
+        const sed::IceSubstepInputs&, const torch::Tensor&, int, int,
+        double, const sed::SubstepAdvectionParams&);
+    const bool conservative = (variant == PhysicsVariant::ConservativeInterface);
+    const MainSubstepFn main_substep_fn =
+        conservative ? sed::substep_advection_conservative : sed::substep_advection_torch;
+    const IceSubstepFn ice_substep_fn =
+        conservative ? sed::ice_substep_advection_conservative : sed::ice_substep_advection_torch;
 
     // ── Rain/snow/graupel/brs substepping ───────────────────────────────────
     sed::SubstepAdvectionState adv_state{state.qr, state.nr, state.qs, state.qg, state.brs};
@@ -2634,7 +2651,7 @@ SedimentationOutputs sedimentation_chain(
             w1_qr, wn_qr, w1_qs, w1_qg,
             forcing.delz, forcing.dend,
         };
-        auto out = sed::substep_advection_torch(sin, mstep_col_main, mstepmax_main, n, dtcld, params);
+        auto out = main_substep_fn(sin, mstep_col_main, mstepmax_main, n, dtcld, params);
         adv_state = out.state;
         fall_qr = out.fall_qr;
         fall_nr = out.fall_nr;
@@ -2689,7 +2706,7 @@ SedimentationOutputs sedimentation_chain(
             w1_qi, wn_qi,
             forcing.delz, forcing.dend,
         };
-        auto out_i = sed::ice_substep_advection_torch(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
+        auto out_i = ice_substep_fn(iin, mstep_col_ice, mstepmax_ice, n, dtcld, params);
         ice_state = out_i.state;
         fall_qi = out_i.fall_qi;
         fall_ni = out_i.fall_ni;
