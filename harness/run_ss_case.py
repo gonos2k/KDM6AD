@@ -57,9 +57,16 @@ def build_child_env() -> dict:
 
 def main() -> int:
     ap=argparse.ArgumentParser()
-    ap.add_argument('--mp', choices=['37','137'], required=True)
+    # 37/137: legacy KDM6 Fortran / KDM6AD C++.
+    # 237/337: conservative-interface-v1 corrected Fortran reference / C++ v2
+    # (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md, C4).
+    ap.add_argument('--mp', choices=['37','137','237','337'], required=True)
     ap.add_argument('--minutes', type=int, default=10)
+    ap.add_argument('--seconds', type=int, default=0,
+                    help='extra run_seconds — step-granular runs (dt=20: 1 step = --minutes 0 --seconds 20)')
     ap.add_argument('--history', type=int, default=1)
+    ap.add_argument('--np', type=int, default=1,
+                    help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
     ap.add_argument('--fixed-dt', action='store_true', help='Disable adaptive time step for parity smoke runs')
     args=ap.parse_args()
@@ -83,7 +90,7 @@ def main() -> int:
         ('run_days','0'),
         ('run_hours','0'),
         ('run_minutes',str(args.minutes)),
-        ('run_seconds','0'),
+        ('run_seconds',str(args.seconds)),
         ('input_inname','"wrfinput_d<domain>"'),
         ('bdy_inname','"wrfbdy_d<domain>"'),
         ('auxinput24_inname','"wrfchainp_d<domain>"'),
@@ -100,9 +107,11 @@ def main() -> int:
     nml.write_text(text)
 
     stamp=time.strftime('%Y%m%d_%H%M%S')
-    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min_hist{args.history}_{stamp}"
+    _np_tag = f"_np{args.np}" if args.np != 1 else ''
+    _sec_tag = f"{args.seconds}s" if args.seconds else ''
+    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_np_tag}_{stamp}"
     out.mkdir(parents=True, exist_ok=True)
-    for pat in ['rsl.error.0000','rsl.out.0000','rsl.out.stderr','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
+    for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for p in run.glob(pat):
             if p.is_file() or p.is_symlink():
                 p.unlink()
@@ -110,7 +119,9 @@ def main() -> int:
     # they accumulate (duplicate-record corruption) unless cleaned each run. Clean ONLY the current run's
     # own tree (mp37=KDM6 writes fort_*, mp137=KDM6AD writes cpp_*) — NEVER the other tree's, which the
     # cross-tree comparison still needs. No-op when the dump macro is off (no such files exist).
-    _dump_prefix = 'fort' if args.mp == '37' else 'cpp'
+    # Fortran schemes (37 legacy, 237 conservative reference) write fort_*;
+    # C++ schemes (137 legacy, 337 conservative v2) write cpp_*.
+    _dump_prefix = 'fort' if args.mp in ('37','237') else 'cpp'
     for pat in [_dump_prefix + '_*.bin']:  # ALL own-tree dumps (append-mode; stale mixed-schema records corrupt readers)
         for p in run.glob(pat):
             if p.is_file() or p.is_symlink():
@@ -129,7 +140,10 @@ def main() -> int:
             # surface as itself rather than be mislabeled and mapped to rc=127. Likewise the
             # provenance copy below is outside it so a copy error is not swallowed.
             try:
-                proc=subprocess.run(['mpirun','-np','1',str(run/'wrf.exe')], cwd=run, env=env,
+                mpi_cmd=['mpirun','-np',str(args.np)]
+                if args.np > 1:
+                    mpi_cmd += ['--mca','btl','self,tcp']
+                proc=subprocess.run(mpi_cmd+[str(run/'wrf.exe')], cwd=run, env=env,
                                     stdout=f, stderr=subprocess.STDOUT, check=False)
             except OSError as e:
                 # Record the launch failure in BOTH stderr and the run's own stdout log, so the
@@ -139,7 +153,8 @@ def main() -> int:
                 print(msg, file=f)
         # Provenance: archive the EXACT namelist used (before we restore the pristine one).
         if proc is not None:
-            for src in [nml, run/'rsl.error.0000', run/'rsl.out.0000']:
+            rsl=[p for pat in ('rsl.error.*','rsl.out.*') for p in run.glob(pat)]
+            for src in [nml]+rsl:
                 if src.exists(): shutil.copy2(src, out/src.name)
     finally:
         # Restore the pristine working namelist so the next run / git-diff is not polluted
