@@ -130,6 +130,39 @@ inline void kdm6_dump_warm_rates(
     kdm6_dump_field_be(f, pmulrs); kdm6_dump_field_be(f, pmulrg);
     kdm6_dump_field_be(f, pmulcs); kdm6_dump_field_be(f, pmulcg);
 }
+#ifdef KDM6_C4_DIAGNOSTIC_DUMP
+// C4 Gate-D residual bisection writer (diagnostic-only freeze-lift,
+// 2026-07-17 adjudication). Field order mirrors fort_c4diag.bin:
+// praut pracw prevp piacw psaut psaci pinud pidep psdep
+// pmulcs pmulcg pmulrs pmulrg rhox. Default OFF.
+inline void kdm6_dump_c4diag(
+    const torch::Tensor& praut, const torch::Tensor& pracw,
+    const torch::Tensor& prevp, const torch::Tensor& piacw,
+    const torch::Tensor& psaut, const torch::Tensor& psaci,
+    const torch::Tensor& pinud, const torch::Tensor& pidep,
+    const torch::Tensor& psdep, const torch::Tensor& pmulcs,
+    const torch::Tensor& pmulcg, const torch::Tensor& pmulrs,
+    const torch::Tensor& pmulrg, const torch::Tensor& rhox) {
+    const char* env = std::getenv("KDM6_SUBSTEP_DUMP");
+    if (env == nullptr) return;
+    std::string path = std::string(env) + "/cpp_c4diag.bin";
+    std::ofstream f(path, std::ios::binary);
+    if (!f) return;
+    int32_t B = static_cast<int32_t>(praut.size(0));
+    int32_t K = static_cast<int32_t>(praut.size(1));
+    uint32_t Bb = kdm6_bswap32(static_cast<uint32_t>(B));
+    uint32_t Kb = kdm6_bswap32(static_cast<uint32_t>(K));
+    f.write(reinterpret_cast<const char*>(&Bb), 4);
+    f.write(reinterpret_cast<const char*>(&Kb), 4);
+    kdm6_dump_field_be(f, praut);  kdm6_dump_field_be(f, pracw);
+    kdm6_dump_field_be(f, prevp);  kdm6_dump_field_be(f, piacw);
+    kdm6_dump_field_be(f, psaut);  kdm6_dump_field_be(f, psaci);
+    kdm6_dump_field_be(f, pinud);  kdm6_dump_field_be(f, pidep);
+    kdm6_dump_field_be(f, psdep);  kdm6_dump_field_be(f, pmulcs);
+    kdm6_dump_field_be(f, pmulcg); kdm6_dump_field_be(f, pmulrs);
+    kdm6_dump_field_be(f, pmulrg); kdm6_dump_field_be(f, rhox);
+}
+#endif  // KDM6_C4_DIAGNOSTIC_DUMP
 #endif  // KDM6_SUBSTEP_DUMP
 
 // Fortran rgmma(x) = exp(GAMMLN(x)) = Γ(x). review6 audit fix (1/Γ 아님).
@@ -1829,6 +1862,19 @@ CoordinatorState state_update(
         kdm6_dump_graupel_rates(cold.psacr_adj, cold.pracs, cold.pgdep, cold.piacr,
                                 cold.praci, cold.pgaci, cold.paacw_adj, cold.pgacr_adj);
     }
+#if defined(KDM6_C4_DIAGNOSTIC_DUMP)
+    // C4 Gate-D residual bisection (diagnostic-only freeze-lift, 2026-07-17
+    // adjudication): paired capture of the un-dumped qc→qi-family mass rates
+    // + rhox/pvtg at the SAME budget point — mirrors fort_c4diag.bin. Raw-bit
+    // copies of existing tensors only (no numeric reordering, no .item(), no
+    // dtype cast on the compute path); default OFF in shipped builds.
+    if (dump_graupel) {
+        kdm6_dump_c4diag(warm.praut, warm.pracw, warm.prevp,
+                         cold.piacw, cold.psaut, cold.psaci, cold.pinud,
+                         cold.pidep, cold.psdep, cold.pmulcs, cold.pmulcg,
+                         cold.pmulrs, cold.pmulrg, pre.rhox);
+    }
+#endif
 #endif
     auto one_m_d2 = 1.0 - delta2;
     auto one_m_d3 = 1.0 - delta3;
