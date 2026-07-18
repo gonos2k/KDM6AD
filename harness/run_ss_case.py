@@ -65,6 +65,12 @@ def main() -> int:
     ap.add_argument('--seconds', type=int, default=0,
                     help='extra run_seconds — step-granular runs (dt=20: 1 step = --minutes 0 --seconds 20)')
     ap.add_argument('--history', type=int, default=1)
+    ap.add_argument('--history-s', type=int, default=None, dest='history_s',
+                    help='history_interval_s (seconds). Effective output interval '
+                         '= history_interval*60 + history_interval_s, so the base '
+                         '=20 drifts +20s/frame and never lands on the run-end '
+                         'time; pass 0 for EXACT hourly frames that include the '
+                         'terminal state. Default: leave the namelist value.')
     ap.add_argument('--np', type=int, default=1,
                     help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
@@ -101,6 +107,8 @@ def main() -> int:
         ('nio_groups','1'),
     ]:
         text=replace_line(text,key,value)
+    if args.history_s is not None:
+        text=replace_line(text, 'history_interval_s', str(args.history_s))
     if args.fixed_dt:
         text=replace_line(text, 'use_adaptive_time_step', '.false.')
         text=replace_line(text, 'step_to_output_time', '.false.')
