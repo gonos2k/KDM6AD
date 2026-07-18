@@ -38,15 +38,15 @@ the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
 
 | case | field | cons rel | legacy rel | ratio |
 |---|---|---|---|---|
-| closure3 | qr | 6.697e-03 | 6.537e-03 | **1.02** |
-| closure3 | nr | 1.955e-04 | 1.113e-04 | 1.76 |
-| closure3 | qv | 4.052e-04 | 1.582e-04 | 2.56 |
-| species-iso | qr | 1.378e-04 | 1.282e-04 | **1.08** |
+| closure3-C3.3 | qr | 6.697e-03 | 6.537e-03 | **1.02** |
+| closure3-C3.3 | nr | 1.955e-04 | 1.113e-04 | 1.76 |
+| closure3-C3.3 | qv | 4.052e-04 | 1.582e-04 | 2.56 |
+| species-iso | qr | 1.378e-04 | 1.282e-04 | **1.07** |
 | species-iso | nr | 1.033e-05 | 9.839e-06 | 1.05 |
 | species-iso | qv | 5.636e-07 | 5.634e-07 | **1.00** |
 
 - For the **dominant field `qr`** the relative drift is **essentially identical**
-  between the two pairs (ratio 1.02 / 1.08). The 77,852-vs-77,312 ULP gap is
+  between the two pairs (ratio 1.02 / 1.07). The 77,852-vs-77,312 ULP gap is
   purely that the conservative `qr` sits at a slightly different magnitude — the
   underlying relative-precision drift is the same inherited effect.
 - This holds **per cell, not just at the max** — every shared `qr` cell has a
@@ -55,10 +55,10 @@ the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
 
   | case | cell (j,k) | cons rel | legacy rel | ratio |
   |---|---|---|---|---|
-  | closure3 | (2,1) | 1.095e-03 | 1.916e-03 | 0.57 |
-  | closure3 | (2,2) | 2.982e-03 | 2.860e-03 | 1.04 |
-  | closure3 | (2,3) | 6.697e-03 | 6.537e-03 | 1.02 |
-  | species-iso | (1,1) | 1.378e-04 | 1.282e-04 | 1.08 |
+  | closure3-C3.3 | (2,1) | 1.095e-03 | 1.916e-03 | 0.57 |
+  | closure3-C3.3 | (2,2) | 2.982e-03 | 2.860e-03 | 1.04 |
+  | closure3-C3.3 | (2,3) | 6.697e-03 | 6.537e-03 | 1.02 |
+  | species-iso | (1,1) | 1.378e-04 | 1.282e-04 | 1.07 |
   | species-iso | (1,2) | 6.246e-05 | 6.273e-05 | 1.00 |
   | species-iso | (1,3) | 1.791e-05 | 1.747e-05 | 1.03 |
   | species-iso | (1,4) | 2.802e-06 | 2.802e-06 | 1.00 |
