@@ -27,7 +27,7 @@ two items block closeout:
 | Gate B G3.1/G3.2/G3.4 | PASS |
 | **Gate B G3.3 legacy ULP envelope** | **OPEN / FAIL** — the `piacw` fix did NOT change it (closure3 cons 77,852 > legacy 77,312; species-iso 2,188 > 1,164, identical pre/post). Attribution pending on `analysis/c4-g3.3-first-divergence`. **Gate B is NOT closed as "G1/G2/G3".** |
 | Legacy 12 h × np4 37↔137 recert — **all generated frames** | **PASS** — both mp37 & mp137 completed to `12:00:00 SUCCESS`, independently verified fail-closed (exit 0, exactly 4 rank logs all SUCCESS, 0 fatal/NaN), and STRICT raw-bit identical across **all 12 generated history frames** (253 numeric vars **+ `Times` exact-equal** = 254, 0 diff). The merged `piacw` `pi_t` fix did NOT perturb legacy 37↔137 f32 parity. `docs/c4_evidence_manifest.json` → `legacy_12h_np4_recertification` (`strict_bitwise: true`). (An orchestrator run logged a false "TRUNCATED 12<13" from a stale frame-count gate — corrected; see cadence note + the log's authoritative correction.) |
-| Legacy 12 h **terminal (12:00:00) state** parity | **NOT PROVEN** — the history cadence emits its last frame at **11:03:40**; there is no 12:00:00 history state to compare (`legacy_12h_np4_recertification.terminal_state.terminal_time_compared: false`). The recert proves **run completion + all-generated-frame parity**, NOT terminal-state parity: it cannot exclude a post-11:03:40 divergence that still completes. Closing it needs a 12:00 history/restart frame (follow-up), not this run's history. |
+| Legacy 12 h **terminal (12:00:00) state** parity | **PASS** — a dedicated exact-hourly re-run (`history_interval_s=0` ⇒ 13 frames **00:00:00 … 12:00:00**, dt 20 \| 3600) for both mp37 & mp137 (12 h × np4, fail-closed verified) is STRICT raw-bit identical on **every frame including the 12:00:00 terminal state**, `Times` exact (254 vars, 0 diff). `terminal_state_parity.terminal_parity: true`, `terminal_time_compared: true`. Closes the coverage gap the drifted 12-frame recert (last 11:03:40) left open — the legacy 37↔137 f32 parity holds bitwise through the terminal state. |
 | C4 overall / C5 / tag / release / default-DA / P0-4c | **HOLD** |
 
 **Cadence note (12 frames, not 13) — and its coverage limit:** `--history 60`
@@ -38,11 +38,13 @@ with the case's base `history_interval_s=20` emits hourly frames drifting
 marker, NOT a frame count — the recert gates on that marker + equal frame counts
 + every frame 254-var raw-bit (`Times` now exact-compared, not skipped).
 **Important:** "complete output" is *output* completeness, NOT *terminal-state*
-coverage — this cadence writes no frame AT 12:00:00, so the last comparable
-state is 11:03:40 and terminal-state parity is a separate, still-open item (see
-the row above). To claim terminal parity, add a 12:00 history frame
-(`history_interval_s=0` ⇒ exact hourly 00:00…12:00) or a 12:00 restart, and
-compare its prognostic state raw-bit with `Times` exact-equal.
+coverage — this drifted cadence writes no frame AT 12:00:00, so its last
+comparable state is 11:03:40. Terminal-state parity was therefore proven
+SEPARATELY (see the row above) by a dedicated exact-hourly re-run
+(`history_interval_s=0` ⇒ interval 3600 s = 180 steps at dt 20 ⇒ frames
+00:00:00 … 12:00:00), whose 12:00:00 frame compares raw-bit + `Times` exact.
+Both certifications now stand: all-generated-frame parity (drifted recert) AND
+terminal 12:00:00-state parity (exact-hourly re-run).
 
 ## What the variant fixes
 

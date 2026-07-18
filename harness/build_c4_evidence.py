@@ -246,6 +246,51 @@ def legacy_12h_block(runs_dir: Path) -> dict:
     return block
 
 
+def terminal_parity_block(runs_dir: Path) -> dict:
+    """Assemble the fail-closed TERMINAL-STATE parity block from the latest
+    mp37/mp137 *_termparity_* run dirs (12 h x np4, history_interval_s=0 => exact
+    hourly frames 00:00:00 … 12:00:00). Unlike the recert (whose last frame is
+    11:03:40), this REQUIRES the last compared frame to be exactly 12:00:00 —
+    closing the terminal-coverage gap. PASS iff both runs verify AND every frame
+    (incl. the 12:00:00 terminal) is raw-bit + Times exact."""
+    def latest(glob):
+        cands = sorted(runs_dir.glob(glob))
+        return cands[-1] if cands else None
+    d37 = latest("mp37_termparity_*")
+    d137 = latest("mp137_termparity_*")
+    if not (d37 and d137):
+        return {"terminal_run_present": False, "terminal_parity": False,
+                "note": "no terminal-parity run yet (run_terminal_parity.sh); "
+                        "the 12h recert proves all-generated-frame parity only, "
+                        "NOT terminal 12:00:00-state parity"}
+    block: dict = {
+        "terminal_run_present": True,
+        "mp37_run": str(d37), "mp137_run": str(d137),
+        "mp37": verify_recert_run(d37), "mp137": verify_recert_run(d137),
+    }
+    both_verified = bool(block["mp37"].get("verified")
+                         and block["mp137"].get("verified"))
+    if both_verified:
+        cmp = strict_bitwise_all_frames(block["mp37"]["fcst"], block["mp137"]["fcst"])
+        run_end = block["mp37"].get("run_end_time")
+        last_t = cmp.get("last_compared_time")
+        reached = bool(run_end and last_t and last_t.endswith(run_end))
+        block["comparison"] = cmp
+        block["run_end_time"] = run_end
+        block["last_compared_time"] = last_t
+        block["times_equal_all_frames"] = bool(cmp.get("times_equal"))
+        block["terminal_time_compared"] = reached
+        # terminal parity requires BOTH the all-frame raw-bit AND that the last
+        # compared frame actually IS the terminal state.
+        block["terminal_parity"] = bool(cmp["strict_bitwise"] and reached)
+    else:
+        block["comparison"] = None
+        block["terminal_parity"] = False
+        block["note"] = ("terminal run INCOMPLETE — both runs must verify before "
+                         "a terminal-state verdict is recorded")
+    return block
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--host", type=Path, default=REPO / "host" / "KIM-meso_v1.0")
@@ -260,6 +305,11 @@ def main() -> int:
                          "the fail-closed legacy 12h x np4 recertification block")
     ap.add_argument("--recert-log", type=Path, default=None,
                     help="legacy12h_recert.log to embed verbatim")
+    ap.add_argument("--terminal-runs", type=Path, default=None,
+                    help="SS runs/ dir holding mp37/mp137_termparity_* — assembles "
+                         "the fail-closed TERMINAL-STATE (12:00:00) parity block")
+    ap.add_argument("--terminal-log", type=Path, default=None,
+                    help="terminal_parity.log to embed verbatim")
     ap.add_argument("--out", type=Path, default=REPO / "artifacts" / "c4" /
                     "evidence_manifest.json")
     args = ap.parse_args()
@@ -407,6 +457,10 @@ def main() -> int:
         manifest["legacy_12h_np4_recertification"] = legacy_12h_block(args.recert_runs)
         if args.recert_log and args.recert_log.exists():
             manifest["legacy_12h_np4_recertification"]["log"] = args.recert_log.read_text()
+    if args.terminal_runs is not None:
+        manifest["terminal_state_parity"] = terminal_parity_block(args.terminal_runs)
+        if args.terminal_log and args.terminal_log.exists():
+            manifest["terminal_state_parity"]["log"] = args.terminal_log.read_text()
     manifest["gate_d_bisection_verdict_2026_07_17"] = {
         "seed_rate": "piacw (cloud-water accretion by ice, qc->qi)",
         "first_diverging_op": "the ×π multiply in cloud_water_riming_torch's "
