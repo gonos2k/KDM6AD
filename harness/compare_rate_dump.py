@@ -37,8 +37,16 @@ def die(msg, code=2):
     sys.exit(code)
 
 
+def u32(a):
+    # Raw-bit uint32 view. .view() needs a C-contiguous last axis; slices and
+    # transposes here are non-contiguous, so make a contiguous copy first
+    # (small arrays; correctness over the micro-cost).
+    return np.ascontiguousarray(a).view(np.uint32)
+
+
 def read_fortran(path):
-    data = open(path, "rb").read()
+    with open(path, "rb") as fh:
+        data = fh.read()
     if len(data) < 24:
         die(f"fortran dump missing/too small: {path}")
     hdr = np.frombuffer(data[:20], dtype=">i4")
@@ -90,7 +98,8 @@ def read_fortran(path):
 
 
 def read_cpp(path):
-    data = open(path, "rb").read()
+    with open(path, "rb") as fh:
+        data = fh.read()
     if len(data) < 12:
         die(f"cpp dump missing/too small: {path}")
     B, K = (int(x) for x in np.frombuffer(data[:8], dtype=">i4"))
@@ -147,7 +156,7 @@ def main():
     best = None
     for flip in (False, True):
         Cx = Cr[:, :, ::-1, :] if flip else Cr
-        tot = int(np.count_nonzero(Ft[:nf].view(np.uint32) != Cx[:nf].view(np.uint32)))
+        tot = int(np.count_nonzero(u32(Ft[:nf]) != u32(Cx[:nf])))
         if best is None or tot < best[1]:
             best = (flip, tot, Cx)
     flip, tot, Cx = best
@@ -156,12 +165,12 @@ def main():
     # only meaningful if some compared field actually varies along K —
     # otherwise the dump is empty/uniform/never-fired and PASS is spurious.
     other_tot = int(np.count_nonzero(
-        Ft[:nf].view(np.uint32) !=
-        (Cr[:, :, ::-1, :] if not flip else Cr)[:nf].view(np.uint32)))
+        u32(Ft[:nf]) !=
+        u32((Cr[:, :, ::-1, :] if not flip else Cr)[:nf])))
     if tot == 0 and other_tot == 0:
         kvar = any(
-            int(np.count_nonzero(Ft[f][:, :-1, :].view(np.uint32) !=
-                                 Ft[f][:, 1:, :].view(np.uint32))) > 0
+            int(np.count_nonzero(u32(Ft[f][:, :-1, :]) !=
+                                 u32(Ft[f][:, 1:, :]))) > 0
             for f in range(nf))
         if not kvar:
             die("DEGENERATE: 0 diffs under BOTH K-flips and no compared field "
@@ -174,11 +183,11 @@ def main():
     ok = True
     for f in range(nf):
         nm = args.names[f] if f < len(args.names) else f"field{f}"
-        nd = int(np.count_nonzero(Ft[f].view(np.uint32) != Cx[f].view(np.uint32)))
+        nd = int(np.count_nonzero(u32(Ft[f]) != u32(Cx[f])))
         if nd:
             ok = False
             k_lv = sorted(set(np.nonzero(
-                Ft[f].view(np.uint32) != Cx[f].view(np.uint32))[1].tolist()))
+                u32(Ft[f]) != u32(Cx[f]))[1].tolist()))
             print(f"  {nm:12s} DIVERGES {nd}/{Ft[f].size}  k={k_lv[:10]}")
         else:
             print(f"  {nm:12s} BITWISE-MATCH")

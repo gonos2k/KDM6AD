@@ -80,6 +80,12 @@ def run_checker(tmp: pathlib.Path, legacy: str, cons: str, manifest: dict):
          "--manifest", str(tmp / "manifest.json"),
          "--json-out", str(out)],
         capture_output=True, text=True)
+    if not out.exists():
+        # the checker crashed before writing its report — fail with the real
+        # cause (traceback/stderr) instead of a bare FileNotFoundError.
+        raise AssertionError(
+            f"checker wrote no report (rc={proc.returncode}); "
+            f"stdout={proc.stdout!r} stderr={proc.stderr!r}")
     return proc.returncode, json.loads(out.read_text())
 
 

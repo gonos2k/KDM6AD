@@ -48,7 +48,9 @@ def ulp(a_bits: int, b_bits: int) -> int:
 def load(path):
     diffs = defaultdict(lambda: defaultdict(dict))   # case -> field -> (j,k) -> ulp
     nonfinite = []
-    for raw in open(path):
+    with open(path) as fh:
+        lines = fh.readlines()
+    for raw in lines:
         raw = raw.rstrip("\n")
         if not raw.strip():
             continue
@@ -65,7 +67,13 @@ def load(path):
         if len(toks) != 4:
             print(f"ERROR: malformed diff record: {raw!r}")
             sys.exit(2)
-        j, k, ia, ib = (int(t) for t in toks)
+        # j k ia ib — all DECIMAL (the driver writes Fortran `I0`, not hex);
+        # ia/ib are int32 transfers of the f32 bits (may be negative).
+        try:
+            j, k, ia, ib = (int(t) for t in toks)
+        except ValueError:
+            print(f"ERROR: non-integer diff record: {raw!r}")
+            sys.exit(2)
         diffs[case][field][(j, k)] = ulp(ia, ib)
     return diffs, nonfinite
 

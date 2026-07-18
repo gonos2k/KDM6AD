@@ -36,8 +36,9 @@ def sha256(path: Path) -> str:
 
 def cmd_out(args: list[str]) -> str:
     try:
-        return subprocess.run(args, capture_output=True, text=True,
-                              timeout=60).stdout.strip().splitlines()[0]
+        lines = subprocess.run(args, capture_output=True, text=True,
+                               timeout=60).stdout.strip().splitlines()
+        return lines[0] if lines else "UNAVAILABLE (no output)"
     except Exception as e:  # toolchain probe only — record the failure, don't die
         return f"UNAVAILABLE ({e})"
 
@@ -116,9 +117,16 @@ def main() -> int:
          "--cons", str(phys / "module_mp_kdm6_cons.F"),
          "--legacy-wrapper", str(phys / "module_mp_kdm6ad.F")],
         capture_output=True, text=True)
+    try:
+        scope_report = json.loads(scope.stdout)
+    except json.JSONDecodeError:
+        # the checker crashed before emitting its JSON report — surface the
+        # raw output instead of masking it with a JSONDecodeError traceback.
+        scope_report = {"error": "scope checker produced no JSON",
+                        "stdout": scope.stdout, "stderr": scope.stderr}
     manifest["gate_a_scope_check"] = {
         "returncode": scope.returncode,
-        "report": json.loads(scope.stdout),
+        "report": scope_report,
     }
 
     # Owner adjudication (2026-07-17) + the established cross-tree rate-dump
