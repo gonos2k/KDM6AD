@@ -49,6 +49,23 @@ the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
   between the two pairs (ratio 1.02 / 1.08). The 77,852-vs-77,312 ULP gap is
   purely that the conservative `qr` sits at a slightly different magnitude — the
   underlying relative-precision drift is the same inherited effect.
+- This holds **per cell, not just at the max** — every shared `qr` cell has a
+  cons/legacy relative-error ratio ≈ 1 (and one cell where the conservative is
+  LOWER):
+
+  | case | cell (j,k) | cons rel | legacy rel | ratio |
+  |---|---|---|---|---|
+  | closure3 | (2,1) | 1.095e-03 | 1.916e-03 | 0.57 |
+  | closure3 | (2,2) | 2.982e-03 | 2.860e-03 | 1.04 |
+  | closure3 | (2,3) | 6.697e-03 | 6.537e-03 | 1.02 |
+  | species-iso | (1,1) | 1.378e-04 | 1.282e-04 | 1.08 |
+  | species-iso | (1,2) | 6.246e-05 | 6.273e-05 | 1.00 |
+  | species-iso | (1,3) | 1.791e-05 | 1.747e-05 | 1.03 |
+  | species-iso | (1,4) | 2.802e-06 | 2.802e-06 | 1.00 |
+
+  The `qr` field — the one that breaches the ULP envelope — carries the SAME
+  relative cross-tree drift in both pairs, cell for cell. The breach is an
+  absolute-ULP-vs-magnitude artifact, not a new divergence.
 - The larger `nr`/`qv` ratios (closure3 ~1.8–2.6×) are the conservative feeding
   **more rain mass** into the number/vapour couplings (rain evaporation → qv,
   rain-number carry → nr) through the SAME drifting sub-cycle machinery — a
