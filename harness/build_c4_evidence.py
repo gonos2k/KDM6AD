@@ -86,16 +86,23 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
         r["fcst"] = str(fcst[0])
     else:
         r["frames"] = 0
-    r["verified"] = (ec == "0" and n_success == np and fatal == 0
-                     and r["reached_full_duration"] and r["frames"] >= 1)
+    r["verified"] = (ec == "0" and len(rank_logs) == np and n_success == np
+                     and fatal == 0 and r["reached_full_duration"]
+                     and r["frames"] >= 1)
     return r
 
 
-def strict_bitwise_all_frames(f37: str, f137: str) -> dict:
+def strict_bitwise_all_frames(f37: str, f137: str,
+                              min_common_numeric: int = 250) -> dict:
     """254-var raw-bit (uint-view) comparison across EVERY common frame.
-    strict_bitwise is True only if every frame matches on every common numeric
-    variable and the variable sets are identical (mirrors strict_bitwise_nc.py,
-    fail-closed)."""
+    FAIL-CLOSED — strict_bitwise is True ONLY if:
+      * the variable SETS are identical (no only_a / only_b),
+      * the frame counts are identical (na == nb, same cadence),
+      * the number of common NUMERIC variables meets min_common_numeric — a
+        malformed/degenerate file pair with a tiny common set must never pass,
+      * and for EVERY frame, every one of those numeric variables was actually
+        compared and matched (n_match == numeric_common AND n_diff == 0). A
+        frame where variables were only skipped (nothing compared) fails."""
     import numpy as np
     import netCDF4 as nc
     a = nc.Dataset(f37); b = nc.Dataset(f137)
@@ -106,12 +113,12 @@ def strict_bitwise_all_frames(f37: str, f137: str) -> dict:
     common = sorted(set(a.variables) & set(b.variables))
     only_a = sorted(set(a.variables) - set(b.variables))
     only_b = sorted(set(b.variables) - set(a.variables))
+    numeric_common = [v for v in common
+                      if a.variables[v].dtype.kind in ("f", "i", "u")]
+    ncnum = len(numeric_common)
     per_frame = []
-    # Completeness comes from the per-run SUCCESS-COMPLETE-WRF check (12h
-    # reached); here we require identical variable sets AND identical frame
-    # counts (same namelist ⇒ same cadence ⇒ same frames), then every common
-    # frame must be raw-bit identical.
-    all_ok = (not only_a) and (not only_b) and (na == nb) and nframes >= 1
+    all_ok = ((not only_a) and (not only_b) and (na == nb) and nframes >= 1
+              and ncnum >= min_common_numeric)
     itype = {1: np.uint8, 2: np.uint16, 4: np.uint32, 8: np.uint64}
     for fr in range(nframes):
         n_match = n_diff = n_skip = 0
@@ -128,11 +135,16 @@ def strict_bitwise_all_frames(f37: str, f137: str) -> dict:
                 n_match += 1
             else:
                 n_diff += 1
-        per_frame.append({"frame": fr, "match": n_match, "diff": n_diff, "skip": n_skip})
-        if n_diff != 0:
+        per_frame.append({"frame": fr, "match": n_match, "diff": n_diff,
+                          "skip": n_skip, "numeric": ncnum})
+        # a frame is clean ONLY if every numeric common var was compared and
+        # matched — never on an empty/all-skipped comparison.
+        if not (n_diff == 0 and n_match == ncnum and n_match > 0):
             all_ok = False
     a.close(); b.close()
     return {"frames_compared": nframes, "common_variables": len(common),
+            "common_numeric_variables": ncnum,
+            "min_common_numeric_required": min_common_numeric,
             "only_in_mp37": only_a, "only_in_mp137": only_b,
             "per_frame": per_frame, "strict_bitwise": all_ok}
 
@@ -152,7 +164,8 @@ def legacy_12h_block(runs_dir: Path) -> dict:
         "mp37": verify_recert_run(d37) if d37 else {"verified": False, "note": "no mp37 recert run"},
         "mp137": verify_recert_run(d137) if d137 else {"verified": False, "note": "no mp137 recert run"},
     }
-    both_verified = block["mp37"].get("verified") and block["mp137"].get("verified")
+    both_verified = bool(block["mp37"].get("verified")
+                         and block["mp137"].get("verified"))
     if both_verified:
         cmp = strict_bitwise_all_frames(block["mp37"]["fcst"], block["mp137"]["fcst"])
         block["comparison"] = cmp
@@ -161,8 +174,9 @@ def legacy_12h_block(runs_dir: Path) -> dict:
         block["comparison"] = None
         block["strict_bitwise"] = False
         block["note"] = ("recertification INCOMPLETE — both runs must verify "
-                         "(exit_code=0, 4/4 SUCCESS, 0 fatal, >=13 frames) "
-                         "before a bitwise verdict is recorded")
+                         "(exit_code=0, exactly np rank logs all with SUCCESS "
+                         "COMPLETE WRF, reached 12:00:00, 0 fatal/NaN) before a "
+                         "bitwise verdict is recorded")
     return block
 
 
