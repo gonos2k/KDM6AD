@@ -119,13 +119,18 @@ def main() -> int:
         capture_output=True, text=True)
     try:
         scope_report = json.loads(scope.stdout)
+        scope_json_ok = True
     except json.JSONDecodeError:
         # the checker crashed before emitting its JSON report — surface the
         # raw output instead of masking it with a JSONDecodeError traceback.
-        scope_report = {"error": "scope checker produced no JSON",
+        # Invalid JSON is itself a Gate A FAILURE (see the `ok` gate below):
+        # a rc=0 with garbage output must NEVER read as PASS.
+        scope_report = {"error": "scope checker produced no valid JSON",
                         "stdout": scope.stdout, "stderr": scope.stderr}
+        scope_json_ok = False
     manifest["gate_a_scope_check"] = {
         "returncode": scope.returncode,
+        "json_valid": scope_json_ok,
         "report": scope_report,
     }
 
@@ -201,7 +206,13 @@ def main() -> int:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(manifest, indent=2) + "\n")
-    ok = scope.returncode == 0
+    # Gate A passes ONLY if the checker exited 0 AND emitted a VALID JSON
+    # report AND that report self-reports pass:true. A rc=0 with invalid or
+    # non-passing JSON must fail loud — never a silent PASS.
+    ok = (scope.returncode == 0
+          and scope_json_ok
+          and isinstance(scope_report, dict)
+          and scope_report.get("pass") is True)
     print(f"wrote {args.out}  (gate A scope: {'PASS' if ok else 'FAIL'})")
     return 0 if ok else 1
 
