@@ -28,7 +28,19 @@ def main():
     for v in common:
         va, vb = a.variables[v], b.variables[v]
         if va.dtype.kind not in ("f", "i", "u"):
-            n_skip += 1; continue
+            # char/string vars (e.g. Times) are EXACT-equality checked, NOT
+            # skipped: two files with identical numeric arrays but different
+            # timestamps must FAIL, not silently pass.
+            if va.dtype.kind in ("S", "U"):
+                ca = np.asarray(va[frame]) if "Time" in va.dimensions else np.asarray(va[:])
+                cb = np.asarray(vb[frame]) if "Time" in vb.dimensions else np.asarray(vb[:])
+                if ca.shape != cb.shape or ca.tobytes() != cb.tobytes():
+                    diffs.append((v, "CHAR MISMATCH")); n_diff += 1
+                else:
+                    n_match += 1
+            else:
+                n_skip += 1
+            continue
         if va.dimensions != vb.dimensions:
             diffs.append((v, f"DIM MISMATCH {va.dimensions} vs {vb.dimensions}")); n_diff += 1; continue
         if "Time" in va.dimensions:
