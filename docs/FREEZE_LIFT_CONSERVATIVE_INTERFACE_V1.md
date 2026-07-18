@@ -26,7 +26,7 @@ two items block closeout:
 | Gate B G2 multi-subcycle closure | PASS |
 | Gate B G3.1/G3.2/G3.4 | PASS |
 | **Gate B G3.3 legacy ULP envelope** | **OPEN / FAIL** — the `piacw` fix did NOT change it (closure3 cons 77,852 > legacy 77,312; species-iso 2,188 > 1,164, identical pre/post). Attribution pending on `analysis/c4-g3.3-first-divergence`. **Gate B is NOT closed as "G1/G2/G3".** |
-| Legacy 12 h × np4 37↔137 recert | **IN PROGRESS** — mp37 completed to `12:00:00 SUCCESS` (12 hourly frames — see cadence note); mp137 running. Verdict recorded fail-closed in `docs/c4_evidence_manifest.json` only after both runs verify + all-frames raw-bit. |
+| Legacy 12 h × np4 37↔137 recert | **PASS** — both mp37 & mp137 completed to `12:00:00 SUCCESS`, independently verified fail-closed (exit 0, exactly 4 rank logs all SUCCESS, 0 fatal/NaN), and STRICT raw-bit identical across **all 12 frames** (253 numeric vars, 0 diff, 1 non-numeric skipped). The merged `piacw` `pi_t` fix did NOT perturb legacy 37↔137 f32 parity. Recorded fail-closed in `docs/c4_evidence_manifest.json` → `legacy_12h_np4_recertification` (`strict_bitwise: true`). (An orchestrator run logged a false "TRUNCATED 12<13" FAIL from a stale frame-count gate — corrected; see cadence note + the log's authoritative correction.) |
 | C4 overall / C5 / tag / release / default-DA / P0-4c | **HOLD** |
 
 **Cadence note (12 frames, not 13):** `--history 60` with the case's base

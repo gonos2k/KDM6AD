@@ -166,7 +166,12 @@ def strict_bitwise_all_frames(f37: str, f137: str,
 def legacy_12h_block(runs_dir: Path) -> dict:
     """Assemble the fail-closed legacy 12h x np4 recertification block from the
     latest mp37/mp137 recert run dirs. strict_bitwise is recorded True ONLY
-    when both runs verify AND every one of the 13 frames is 254-var raw-bit."""
+    when both runs verify AND EVERY common frame is 254-var raw-bit. The frame
+    count is cadence-derived, not hardcoded: this case's --history 60 + base
+    history_interval_s=20 emits 12 hourly frames drifting +20s/frame
+    (00:00:00 … 11:03:40); the 13th at ~12:04:00 falls past the 12:00:00 end,
+    so 12 IS the complete count. Completeness is proven by the per-run
+    `_12:00:00 wrf: SUCCESS COMPLETE WRF` marker, never by a frame threshold."""
     def latest(glob):
         cands = sorted(runs_dir.glob(glob))
         return cands[-1] if cands else None
