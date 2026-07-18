@@ -21,11 +21,15 @@ on:
     paths:
       - 'oracle/**'
       - '.github/workflows/oracle-ci.yml'
+  # No paths filter on pull_request: "oracle pytest (f64 reference)" is a
+  # REQUIRED status check in the main ruleset, so it must REPORT on every PR
+  # to main. Path-filtering it (oracle/** only) left non-oracle PRs blocked
+  # forever — GitHub waits for a required context that never runs, and a
+  # manual workflow_dispatch run is not credited to the PR merge-box. The job
+  # is a ~1-2 min pure-Python pytest; running it on all PRs is cheap and makes
+  # the gate always satisfiable. (push stays oracle-scoped — post-merge only.)
   pull_request:
     branches: [main]
-    paths:
-      - 'oracle/**'
-      - '.github/workflows/oracle-ci.yml'
   workflow_dispatch:
 
 jobs:

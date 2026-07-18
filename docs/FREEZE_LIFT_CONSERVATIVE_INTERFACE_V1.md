@@ -153,3 +153,50 @@ HOLD until BOTH: (1) conservative Fortran ↔ C++ forward parity, and
 (2) conservative column-water closure green from single-column through
 12 h × MPI. Actual analysis-state replay and all-sky BT/obs-cost remain the
 production-promotion gates, not implementation preconditions.
+
+## C4-S1 shared parity exception (owner adjudication 2026-07-17)
+
+**Classification**: Case C — shared C++ reference-parity defect. The Fortran
+reference and the conservative interface algorithm are both correct; ONE
+operational-f32 constant staging in the shared C++ cold-rate implementation
+differed from Fortran.
+
+**Change** (`fix/shared-piacw-pi-staging`, exactly one production line):
+`libtorch/src/cold.cpp` `cloud_water_riming_torch` piacw chain — raw f64
+`PI` → the existing path-conditional `pi_t` (operational f32 gets Fortran's
+REAL(4) π; the fp64 DA path keeps double π). Proof of the defect: all piacw
+inputs bitwise to the last double bit; offline ladder replication assigned
+fort==f32-π chain and cpp==f64-π chain 28729/28729 with 0 cross-assignments;
+all 100 Gate-D state-flip cells ⊂ the piacw-diff set.
+
+**Why shared (not variant-gated)**: operational f32 must match Fortran
+REAL(4) π; fp64 DA retains double π; no intended physics or
+Fortran-reference change. Variant-gating would leave a proven Fortran
+mismatch in legacy C++ and entangle unrelated cold-rate staging with the
+sedimentation selector.
+
+**Certification set**: targeted f32 witness ladder
+(`test_cwr_piacw_pi_staging_f32_witness` — RED pre-fix, GREEN post-fix) ·
+fp64 value/AD invariance (`test_cwr_piacw_pi_staging_fp64_invariance`) ·
+C3 full suite (ctest 17/17) · legacy short host parity · **legacy 12 h ×
+np4 recertification (mandatory — the shared operational f32 source
+changed; the prior 12 h certificate does not transfer to the new binary)**
+· conservative Gate B/D rerun. `abi-v2-hardened@a53503e` and all past
+commits stay immovable; no new tag before C5.
+
+### Raw-PI sibling sweep (audit-only; auto-fix NOT authorized beyond piacw)
+
+| Site | Rate/chain | Fortran π | C++ use | Evidence | Verdict |
+|---|---|---|---|---|---|
+| cold.cpp pi_t (psacw/pgacw/paacw, now piacw) | riming | REAL(4) | `pi_t` | psacw class fixed historically; piacw C4-S1 proof | correct |
+| cold.cpp:502 | ngacw number chain | REAL(4)? | raw `PI` | indirect only (naacw dump-bitwise) | **suspect-latent** |
+| cloud_dsd.cpp cmc | cloud DSD constant | REAL(4) cmc? | raw `PI` | warm rates dump-bitwise (indirect) | suspect-latent |
+| cold.cpp:567 cms | snow mass constant | f32-faithful? | raw `PI` | psaut/psaci dump-bitwise (indirect) | suspect-latent |
+| coordinator.cpp cmi/cmr (4 sites), slope.cpp cmi/cmr | sed/slope constants | fconst f32-faithful exists elsewhere | raw `PI` | legacy 12 h + Gate-D legacy bitwise (indirect) | suspect-latent |
+| melt_freeze.cpp psmlt/pgmlt | melt chains | — | raw `PI` | postmelt STAGE dump bitwise (direct stage-level) | correct-evidenced |
+| melt_freeze.cpp pinuc/ninuc | nucleation | — | raw `PI` | pinud/ninud RATE dump bitwise (direct) | correct-evidenced |
+| progb.cpp cmg | graupel density chain | — | raw `PI` | graupel 8 rates dump bitwise (indirect-strong) | correct-evidenced |
+| warm.cpp precr1/precr2 | rain evap prefixes | f32 prefix | f32-stepwise variants present | §53h idiom | correct |
+
+Any suspect-latent row that later produces a measured mismatch gets its own
+evidence package and a separate mini-adjudication — no bulk replacement.
