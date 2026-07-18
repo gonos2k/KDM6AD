@@ -2,9 +2,9 @@
   "artifact": "conservative-interface-v1 C4 evidence",
   "public_repo": {
     "base_commit": "48d8c32",
-    "producer_commit": "760cc1b8164723960c1feda807a3f6381f00a5a6",
-    "head_commit": "760cc1b8164723960c1feda807a3f6381f00a5a6",
-    "main_commit": "eeef289eb3bdf29f277bb9493086bc2cf2c48492",
+    "producer_commit": "a8cd83cda19632f45f6aeb437ffddcb41ea81124",
+    "head_commit": "a8cd83cda19632f45f6aeb437ffddcb41ea81124",
+    "main_commit": "abb470f1288aa24fdcbcf76ff756680ade0c2ad3",
     "tracked_tree_dirty_vs_head": false
   },
   "private_host": {
@@ -318,6 +318,177 @@
       "coverage_note": "history cadence emits no frame AT the run-end time; the last comparable state precedes it, so terminal-state parity is NOT asserted by this recert \u2014 only run completion + all-generated-frame bitwise parity are"
     },
     "log": "== mp37 12h np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 10\uc2dc 01\ubd84 24\ucd08 JST\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_recert12h_720min_hist60_np4_20260718_100124 (rc=0)\n   mp37 12h np4 VERIFIED on attempt 1\n== mp137 12h np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 11\uc2dc 07\ubd84 45\ucd08 JST\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_recert12h_720min_hist60_np4_20260718_110745 (rc=0)\n   mp137 12h np4 VERIFIED on attempt 1\n[12h recert] common frames = 12\nLEGACY 12h RECERT: FAIL (TRUNCATED, 12<13 frames \u2014 did not reach 12 h)\n\n================================================================================\nAUTHORITATIVE CORRECTION (fail-closed re-verification via build_c4_evidence.py)\n================================================================================\nThe \"LEGACY 12h RECERT: FAIL (TRUNCATED, 12<13 frames)\" line above is a FALSE\nFAIL from a STALE frame-count gate in the orchestrator that ran (recert_nohup):\nit hardcoded nf>=13, but this case's --history 60 + base history_interval_s=20\nemits 12 hourly frames drifting +20s/frame (00:00:00 \u2026 11:03:40); the 13th at\n~12:04:00 falls PAST the 12:00:00 run end, so 12 IS the complete count. The\non-disk run_legacy12h_recert.sh is already corrected (cadence-independent gate;\ncompleteness proven by the 12:00:00 SUCCESS marker, never by a frame threshold).\n\nBoth runs are genuinely COMPLETE and VERIFIED (independent fail-closed checks):\n  mp37  = runs/mp37_recert12h_720min_hist60_np4_20260718_100124\n  mp137 = runs/mp137_recert12h_720min_hist60_np4_20260718_110745\n  - exit_code = 0 (both)\n  - exactly 4 rank logs (rsl.error.0000..0003), all with SUCCESS COMPLETE WRF\n  - master rank reached \"_12:00:00 wrf: SUCCESS COMPLETE WRF\" (both)\n  - 0 fatal/NaN markers\n  - history: 12 frames each, 00:00:00 \u2026 11:03:40, file size 3814780628 B (equal)\n  - disk 71 GB free at verification (no truncation)\n\nAuthoritative STRICT raw-bit (uint-view, zero tolerance) comparison, ALL frames:\n  every one of the 12 common frames: 254 common vars, 253 BITWISE-MATCH,\n  0 DIFFER, 1 non-numeric (Times, skipped); variable sets identical.\n\nVERDICT (authoritative): LEGACY 12h x np4 37<->137 RECERT: STRICT BITWISE PASS.\nThe merged piacw pi_t fix (PR #26, 0b767e2) did NOT perturb legacy 37<->137 f32\nraw-bit parity. Machine-readable proof: docs/c4_evidence_manifest.json ->\nlegacy_12h_np4_recertification.comparison.per_frame.\n================================================================================\n"
+  },
+  "terminal_state_parity": {
+    "terminal_run_present": true,
+    "mp37_run": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_termparity_720min_hist60_np4_20260718_173818",
+    "mp137_run": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625",
+    "mp37": {
+      "rundir": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_termparity_720min_hist60_np4_20260718_173818",
+      "exists": true,
+      "exit_code": "0",
+      "rank_logs": [
+        "rsl.error.0000",
+        "rsl.error.0001",
+        "rsl.error.0002",
+        "rsl.error.0003"
+      ],
+      "rank_ids_ok": true,
+      "missing_ranks": [],
+      "extra_rank_logs": [],
+      "success_ranks": 4,
+      "reached_full_duration": true,
+      "run_end_time": "12:00:00",
+      "fatal_markers": 0,
+      "frames": 13,
+      "fcst": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_termparity_720min_hist60_np4_20260718_173818/klfs_lc05_fcst.202507190000",
+      "verified": true
+    },
+    "mp137": {
+      "rundir": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625",
+      "exists": true,
+      "exit_code": "0",
+      "rank_logs": [
+        "rsl.error.0000",
+        "rsl.error.0001",
+        "rsl.error.0002",
+        "rsl.error.0003"
+      ],
+      "rank_ids_ok": true,
+      "missing_ranks": [],
+      "extra_rank_logs": [],
+      "success_ranks": 4,
+      "reached_full_duration": true,
+      "run_end_time": "12:00:00",
+      "fatal_markers": 0,
+      "frames": 13,
+      "fcst": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/klfs_lc05_fcst.202507190000",
+      "verified": true
+    },
+    "comparison": {
+      "frames_compared": 13,
+      "common_variables": 254,
+      "common_numeric_variables": 253,
+      "common_char_variables": 1,
+      "min_common_numeric_required": 250,
+      "only_in_mp37": [],
+      "only_in_mp137": [],
+      "times_equal": true,
+      "last_compared_time": "2025-07-19_12:00:00",
+      "per_frame": [
+        {
+          "frame": 0,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 1,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 2,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 3,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 4,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 5,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 6,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 7,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 8,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 9,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 10,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 11,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        },
+        {
+          "frame": 12,
+          "match": 253,
+          "diff": 0,
+          "skip": 1,
+          "numeric": 253,
+          "char_diff": 0
+        }
+      ],
+      "strict_bitwise": true
+    },
+    "run_end_time": "12:00:00",
+    "last_compared_time": "2025-07-19_12:00:00",
+    "times_equal_all_frames": true,
+    "terminal_time_compared": true,
+    "terminal_parity": true,
+    "log": "== mp37 12h-terminal np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 17\uc2dc 38\ubd84 18\ucd08 JST\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_termparity_720min_hist60_np4_20260718_173818 (rc=0)\n   mp37 12h-terminal np4 VERIFIED on attempt 1\n== mp137 12h-terminal np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 18\uc2dc 38\ubd84 49\ucd08 JST\n\n   mp137 12h-terminal np4 VERIFIED (re-run via nohup after the orchestrator hit\n   the background-task lifetime limit mid-mp137; mp37 was already complete).\n================================================================================\nAUTHORITATIVE TERMINAL-STATE PARITY VERDICT\n================================================================================\nBoth runs (EXACT hourly, history_interval_s=0 => 13 frames 00:00:00 \u2026 12:00:00):\n  mp37  = mp37_termparity_720min_hist60_np4_20260718_173818\n  mp137 = mp137_termparity_720min_hist60_np4_20260718_185625\n  - exit_code = 0 (both); exactly 4 rank logs all SUCCESS COMPLETE WRF; 0 fatal\n  - 13 frames each; FIRST 00:00:00, LAST exactly 12:00:00 (the terminal state)\nStrict raw-bit (uint-view) + Times exact, EVERY frame incl. the 12:00:00 terminal:\n  all 13 frames: 254 common vars, 254 BITWISE-MATCH, 0 DIFFER (253 numeric + Times).\nVERDICT: TERMINAL PARITY: PASS. The legacy 37<->137 f32 parity holds bitwise\nthrough the terminal 12:00:00 state (Times exact), closing the coverage gap the\n12-frame recert (last frame 11:03:40) left open.\n================================================================================\n"
   },
   "gate_d_bisection_verdict_2026_07_17": {
     "seed_rate": "piacw (cloud-water accretion by ice, qc->qi)",
