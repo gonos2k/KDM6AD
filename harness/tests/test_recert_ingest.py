@@ -97,6 +97,19 @@ def test_verify_rejects_bad_and_accepts_good():
         # no history file
         nofc = _mk_rundir(tmp, "mp37_nofc")
         assert m.verify_recert_run(nofc, np=4)["verified"] is False
+        # WRONG rank identities: 4 logs but ranks {0,1,2,5} — rank 3 missing,
+        # a stale 0005 present. Count==4 & all SUCCESS, but identities wrong.
+        wid = _mk_rundir(tmp, "mp37_wid", ranks=3)   # 0000..0002
+        (wid / "rsl.error.0005").write_text(
+            "d01 2025-07-19_12:00:00 wrf: SUCCESS COMPLETE WRF\n")
+        _mk_fcst(wid / "klfs_lc05_fcst.x")
+        v = m.verify_recert_run(wid, np=4)
+        assert v["verified"] is False and v["missing_ranks"] == ["rsl.error.0003"]
+        # EXTRA rank log beyond np: 0000..0004 for np=4 (stale np5 decomposition)
+        ext = _mk_rundir(tmp, "mp37_ext", ranks=5)
+        _mk_fcst(ext / "klfs_lc05_fcst.x")
+        v = m.verify_recert_run(ext, np=4)
+        assert v["verified"] is False and v["extra_rank_logs"] == ["rsl.error.0004"]
 
 
 def test_strict_bitwise_fail_closed():

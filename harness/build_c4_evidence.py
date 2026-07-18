@@ -65,16 +65,27 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
         return r
     ec = (rundir / "exit_code").read_text().strip() if (rundir / "exit_code").exists() else None
     r["exit_code"] = ec
-    rank_logs = sorted(rundir.glob("rsl.error.*"))
-    r["rank_logs"] = len(rank_logs)
-    n_success = sum(1 for p in rank_logs if "SUCCESS COMPLETE WRF" in p.read_text(errors="replace"))
+    # Validate rank IDENTITIES, not just the count: the run dir must contain
+    # EXACTLY the rsl.error.0000 … {np-1} logs — no missing rank (a rank that
+    # crashed without writing) and no stray extra (a stale log from a different
+    # np decomposition would let a bare count slip through).
+    found_ranks = {p.name for p in rundir.glob("rsl.error.*")}
+    required_ranks = {f"rsl.error.{i:04d}" for i in range(np)}
+    r["rank_logs"] = sorted(found_ranks)
+    r["rank_ids_ok"] = (found_ranks == required_ranks)
+    r["missing_ranks"] = sorted(required_ranks - found_ranks)
+    r["extra_rank_logs"] = sorted(found_ranks - required_ranks)
+    n_success = sum(
+        1 for i in range(np)
+        if (rundir / f"rsl.error.{i:04d}").exists()
+        and "SUCCESS COMPLETE WRF" in (rundir / f"rsl.error.{i:04d}").read_text(errors="replace"))
     r["success_ranks"] = n_success
-    # full-duration proof: the master rank reached SUCCESS at the run end time.
+    # full-duration proof: the master rank (0000) reached SUCCESS at run end.
     master = rundir / "rsl.error.0000"
     r["reached_full_duration"] = bool(master.exists() and re.search(
         r"_12:00:00 wrf: SUCCESS COMPLETE WRF", master.read_text(errors="replace")))
     fatal = 0
-    for p in list(rank_logs) + list(rundir.glob("*.stdout")):
+    for p in sorted(rundir.glob("rsl.error.*")) + sorted(rundir.glob("*.stdout")):
         if FATAL_RE.search(p.read_text(errors="replace")):
             fatal += 1
     r["fatal_markers"] = fatal
@@ -86,7 +97,7 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
         r["fcst"] = str(fcst[0])
     else:
         r["frames"] = 0
-    r["verified"] = (ec == "0" and len(rank_logs) == np and n_success == np
+    r["verified"] = (ec == "0" and r["rank_ids_ok"] and n_success == np
                      and fatal == 0 and r["reached_full_duration"]
                      and r["frames"] >= 1)
     return r
