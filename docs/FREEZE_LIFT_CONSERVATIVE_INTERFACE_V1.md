@@ -26,16 +26,23 @@ two items block closeout:
 | Gate B G2 multi-subcycle closure | PASS |
 | Gate B G3.1/G3.2/G3.4 | PASS |
 | **Gate B G3.3 legacy ULP envelope** | **OPEN / FAIL** — the `piacw` fix did NOT change it (closure3 cons 77,852 > legacy 77,312; species-iso 2,188 > 1,164, identical pre/post). Attribution pending on `analysis/c4-g3.3-first-divergence`. **Gate B is NOT closed as "G1/G2/G3".** |
-| Legacy 12 h × np4 37↔137 recert | **PASS** — both mp37 & mp137 completed to `12:00:00 SUCCESS`, independently verified fail-closed (exit 0, exactly 4 rank logs all SUCCESS, 0 fatal/NaN), and STRICT raw-bit identical across **all 12 frames** (253 numeric vars, 0 diff, 1 non-numeric skipped). The merged `piacw` `pi_t` fix did NOT perturb legacy 37↔137 f32 parity. Recorded fail-closed in `docs/c4_evidence_manifest.json` → `legacy_12h_np4_recertification` (`strict_bitwise: true`). (An orchestrator run logged a false "TRUNCATED 12<13" FAIL from a stale frame-count gate — corrected; see cadence note + the log's authoritative correction.) |
+| Legacy 12 h × np4 37↔137 recert — **all generated frames** | **PASS** — both mp37 & mp137 completed to `12:00:00 SUCCESS`, independently verified fail-closed (exit 0, exactly 4 rank logs all SUCCESS, 0 fatal/NaN), and STRICT raw-bit identical across **all 12 generated history frames** (253 numeric vars **+ `Times` exact-equal** = 254, 0 diff). The merged `piacw` `pi_t` fix did NOT perturb legacy 37↔137 f32 parity. `docs/c4_evidence_manifest.json` → `legacy_12h_np4_recertification` (`strict_bitwise: true`). (An orchestrator run logged a false "TRUNCATED 12<13" from a stale frame-count gate — corrected; see cadence note + the log's authoritative correction.) |
+| Legacy 12 h **terminal (12:00:00) state** parity | **NOT PROVEN** — the history cadence emits its last frame at **11:03:40**; there is no 12:00:00 history state to compare (`legacy_12h_np4_recertification.terminal_state.terminal_time_compared: false`). The recert proves **run completion + all-generated-frame parity**, NOT terminal-state parity: it cannot exclude a post-11:03:40 divergence that still completes. Closing it needs a 12:00 history/restart frame (follow-up), not this run's history. |
 | C4 overall / C5 / tag / release / default-DA / P0-4c | **HOLD** |
 
-**Cadence note (12 frames, not 13):** `--history 60` with the case's base
-`history_interval_s=20` emits hourly frames drifting +20 s/frame
-(00:00:00 … 11:03:40); the 13th frame at ~12:04:00 falls past the 12:00:00
-run end, so **12 frames is the COMPLETE output** for a full 12 h run. The
-completeness proof is the `_12:00:00 wrf: SUCCESS COMPLETE WRF` marker, NOT a
-frame count — the recert gates on that marker + equal frame counts + every
-frame 254-var raw-bit.
+**Cadence note (12 frames, not 13) — and its coverage limit:** `--history 60`
+with the case's base `history_interval_s=20` emits hourly frames drifting
++20 s/frame (00:00:00 … 11:03:40); the 13th frame at ~12:04:00 falls past the
+12:00:00 run end, so **12 frames is the COMPLETE *history output*** for a full
+12 h run. The run-completion proof is the `_12:00:00 wrf: SUCCESS COMPLETE WRF`
+marker, NOT a frame count — the recert gates on that marker + equal frame counts
++ every frame 254-var raw-bit (`Times` now exact-compared, not skipped).
+**Important:** "complete output" is *output* completeness, NOT *terminal-state*
+coverage — this cadence writes no frame AT 12:00:00, so the last comparable
+state is 11:03:40 and terminal-state parity is a separate, still-open item (see
+the row above). To claim terminal parity, add a 12:00 history frame
+(`history_interval_s=0` ⇒ exact hourly 00:00…12:00) or a 12:00 restart, and
+compare its prognostic state raw-bit with `Times` exact-equal.
 
 ## What the variant fixes
 
@@ -173,6 +180,14 @@ validation is the main-push run).
 release / default-DA / host promotion remain HOLD until their gates are green.
 
 ## C4 — corrected Fortran reference variant (branch `physics/conservative-interface-v1-c4`, base `main@48d8c32`)
+
+> **Historical investigation record (pre-adjudication).** The sections from here
+> down capture the C4 build-out and the investigation *as it unfolded* — including
+> pre-fix Gate D residual isolation and pre-fix G3.3 numbers. Where any statement
+> conflicts with the **Current status** block at the top of this file, the top
+> block wins (it post-dates the shared `piacw` fix, the 12 h recert, the G3.3
+> analysis, and the provenance corrections). Read this section as history, not as
+> the present state.
 
 Scheme IDs (host Registry, collision-scanned): **237** corrected Fortran
 reference (`module_mp_kdm6_cons.F`) / **337** C++ conservative v2 wrapper

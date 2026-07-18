@@ -83,8 +83,14 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
                     if "SUCCESS COMPLETE WRF" in rank_texts.get(name, ""))
     r["success_ranks"] = n_success
     # full-duration proof: the master rank (0000) reached SUCCESS at run end.
+    # Require the 12:00:00 marker (this is the 12h recert) AND capture the sim
+    # end time so the caller can test whether the LAST history frame actually
+    # reaches it (the history cadence may stop short of the terminal state).
     r["reached_full_duration"] = bool(re.search(
         r"_12:00:00 wrf: SUCCESS COMPLETE WRF", rank_texts.get("rsl.error.0000", "")))
+    m_end = re.search(r"_(\d\d:\d\d:\d\d) wrf: SUCCESS COMPLETE WRF",
+                      rank_texts.get("rsl.error.0000", ""))
+    r["run_end_time"] = m_end.group(1) if m_end else None
     fatal = sum(1 for t in rank_texts.values() if FATAL_RE.search(t))
     for p in sorted(rundir.glob("*.stdout")):
         if FATAL_RE.search(p.read_text(errors="replace")):
@@ -128,12 +134,27 @@ def strict_bitwise_all_frames(f37: str, f137: str,
     numeric_common = [v for v in common
                       if a.variables[v].dtype.kind in ("f", "i", "u")]
     ncnum = len(numeric_common)
+    # 'Times' (and any char var) is EXACT-equality checked, not skipped: two
+    # files with identical numeric arrays but different timestamps must NOT be
+    # certified identical. char_diff feeds both `times_equal` and `strict_bitwise`.
+    char_common = [v for v in common if a.variables[v].dtype.kind in ("S", "U")]
     per_frame = []
+    times_equal = True
+    last_time = None
     all_ok = ((not only_a) and (not only_b) and (na == nb) and nframes >= 1
               and ncnum >= min_common_numeric)
     itype = {1: np.uint8, 2: np.uint16, 4: np.uint32, 8: np.uint64}
     for fr in range(nframes):
-        n_match = n_diff = n_skip = 0
+        n_match = n_diff = n_skip = char_diff = 0
+        for v in char_common:
+            va, vb = a.variables[v], b.variables[v]
+            ca = np.asarray(va[fr]) if "Time" in va.dimensions else np.asarray(va[:])
+            cb = np.asarray(vb[fr]) if "Time" in vb.dimensions else np.asarray(vb[:])
+            if ca.shape != cb.shape or ca.tobytes() != cb.tobytes():
+                char_diff += 1
+        if "Times" in char_common:
+            last_time = np.asarray(a.variables["Times"][fr]).tobytes().decode(
+                errors="replace").strip("\x00 ")
         for v in common:
             va, vb = a.variables[v], b.variables[v]
             if va.dtype.kind not in ("f", "i", "u"):
@@ -150,16 +171,21 @@ def strict_bitwise_all_frames(f37: str, f137: str,
             else:
                 n_diff += 1
         per_frame.append({"frame": fr, "match": n_match, "diff": n_diff,
-                          "skip": n_skip, "numeric": ncnum})
+                          "skip": n_skip, "numeric": ncnum, "char_diff": char_diff})
+        if char_diff:
+            times_equal = False
         # a frame is clean ONLY if every numeric common var was compared and
-        # matched — never on an empty/all-skipped comparison.
-        if not (n_diff == 0 and n_match == ncnum and n_match > 0):
+        # matched AND every char var (Times) is byte-exact — never on an
+        # empty/all-skipped comparison.
+        if not (n_diff == 0 and n_match == ncnum and n_match > 0 and char_diff == 0):
             all_ok = False
     a.close(); b.close()
     return {"frames_compared": nframes, "common_variables": len(common),
             "common_numeric_variables": ncnum,
+            "common_char_variables": len(char_common),
             "min_common_numeric_required": min_common_numeric,
             "only_in_mp37": only_a, "only_in_mp137": only_b,
+            "times_equal": times_equal, "last_compared_time": last_time,
             "per_frame": per_frame, "strict_bitwise": all_ok}
 
 
@@ -189,6 +215,27 @@ def legacy_12h_block(runs_dir: Path) -> dict:
         cmp = strict_bitwise_all_frames(block["mp37"]["fcst"], block["mp137"]["fcst"])
         block["comparison"] = cmp
         block["strict_bitwise"] = bool(cmp["strict_bitwise"])
+        # Terminal-state coverage is NOT implied by run completion: the history
+        # cadence can stop short of the sim end. Record, honestly, whether the
+        # LAST compared history frame actually reaches the run-end time. Here it
+        # does not (last frame 11:03:40 vs run end 12:00:00), so the certified
+        # claim is "all GENERATED history frames are bitwise", NOT "terminal
+        # 12:00:00 state is bitwise". Closing that gap needs a 12:00 history/
+        # restart frame (a separate follow-up), not this run's history.
+        run_end = block["mp37"].get("run_end_time")
+        last_t = cmp.get("last_compared_time")
+        block["terminal_state"] = {
+            "run_end_time": run_end,
+            "last_compared_time": last_t,
+            "times_equal_all_frames": bool(cmp.get("times_equal")),
+            "terminal_time_compared": bool(run_end and last_t
+                                           and last_t.endswith(run_end)),
+            "coverage_note": (
+                "history cadence emits no frame AT the run-end time; the last "
+                "comparable state precedes it, so terminal-state parity is NOT "
+                "asserted by this recert — only run completion + all-generated-"
+                "frame bitwise parity are"),
+        }
     else:
         block["comparison"] = None
         block["strict_bitwise"] = False
@@ -377,13 +424,17 @@ def main() -> int:
                           "by the variant's supercooled cloud-ice "
                           "population",
         "rhox_suspect": "REFUTED (rhox bitwise in paired dumps)",
-        "fix_pending_owner_adjudication": "piacw raw PI -> pi_t touches "
-                                          "SHARED legacy C++ (outside the "
-                                          "Case-A conservative-only "
-                                          "pre-approval); provably moves "
-                                          "legacy C++ piacw ONTO legacy "
-                                          "Fortran; legacy re-cert scope "
-                                          "required",
+        "fix_adjudication_historical": "piacw raw PI -> pi_t touches SHARED "
+                                       "legacy C++ (outside the Case-A "
+                                       "conservative-only pre-approval); "
+                                       "provably moves legacy C++ piacw ONTO "
+                                       "legacy Fortran; legacy re-cert scope "
+                                       "required",
+        "superseded_by": "RESOLVED — owner approved as Case C (2026-07-18); "
+                         "merged PR #26 (0b767e2); legacy 12h x np4 recert PASS "
+                         "(see legacy_12h_np4_recertification). This bisection "
+                         "block is the historical investigation record, not an "
+                         "open item.",
         "instrumentation": "diag/c4-poststateupdate-bisection only; "
                            "working tree reverted; Gate A re-verified "
                            "PASS; clean dylib sha reproduced; restored "

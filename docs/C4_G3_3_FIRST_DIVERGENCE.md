@@ -1,8 +1,11 @@
 # C4 Gate B G3.3 — first-divergence attribution (analysis)
 
 **Branch**: `analysis/c4-g3.3-first-divergence` · diagnostic-only, no production change.
-**Status**: strong evidence for **Case 2 (inherited cross-tree mechanism, variant
-amplifies state magnitude)**; op-level per-subcycle confirmation is the remaining step.
+**Status**: **G3.3 OPEN.** Strong but NOT conclusive evidence for **Case 2
+(inherited cross-tree mechanism, variant amplifies state magnitude)**; the
+op-level per-sub-cycle **G3.3-M** trace (see closure section) is the REQUIRED
+closure and is not yet done. On evidence, the aggregate relative-error argument
+is suggestive only.
 
 ## The exceedance
 
@@ -30,11 +33,16 @@ Per-field cons-vs-legacy over the diff listing (`gateb_diffs.txt`):
   cells; `nr`/`qv` are a cons ⊇ legacy superset (+1 cell each). No wholesale new
   divergence region → not a new conservative-specific failure site.
 
-## Evidence 2 — same RELATIVE cross-tree drift (ULP difference is a magnitude artifact)
+## Evidence 2 — near-identical RELATIVE cross-tree drift in the dominant field
 
-ULP distance scales with magnitude, so comparing max-ULP across two pairs at
-different magnitudes is the wrong invariant. The magnitude-independent measure is
-the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
+**Correction (prior wording was imprecise).** A **ULP count** is already a
+magnitude-normalized distance — the number of representable floats between two
+values — so for the SAME relative error it stays broadly comparable across
+magnitudes, varying only ~2× with exponent-boundary and significand position, NOT
+proportionally with the value. So "ULP distance scales with magnitude" is wrong
+for ULP *count*; a large ULP-count gap is therefore **not automatically** a mere
+magnitude artifact and must be checked against the relative error directly.
+Doing so, the relative cross-tree error `|fort − cpp| / |fort|` at the max cell is:
 
 | case | field | cons rel | legacy rel | ratio |
 |---|---|---|---|---|
@@ -45,10 +53,12 @@ the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
 | species-iso | nr | 1.033e-05 | 9.839e-06 | 1.05 |
 | species-iso | qv | 5.636e-07 | 5.634e-07 | **1.00** |
 
-- For the **dominant field `qr`** the relative drift is **essentially identical**
-  between the two pairs (ratio 1.02 / 1.07). The 77,852-vs-77,312 ULP gap is
-  purely that the conservative `qr` sits at a slightly different magnitude — the
-  underlying relative-precision drift is the same inherited effect.
+- For the **dominant field `qr`** the relative drift is **near-identical**
+  between the two pairs (ratio 1.02 / 1.07). The 77,852-vs-77,312 ULP-count gap
+  corresponds to this near-identical relative drift evaluated at a slightly
+  different `qr` magnitude — consistent with the SAME inherited effect. This is
+  **suggestive, not proof**: an equal aggregate relative drift does not by itself
+  establish a shared first-diverging operation (that is the op-level step below).
 - This holds **per cell, not just at the max** — every shared `qr` cell has a
   cons/legacy relative-error ratio ≈ 1 (and one cell where the conservative is
   LOWER):
@@ -63,13 +73,16 @@ the relative cross-tree error `|fort − cpp| / |fort|` at the max cell:
   | species-iso | (1,3) | 1.791e-05 | 1.747e-05 | 1.03 |
   | species-iso | (1,4) | 2.802e-06 | 2.802e-06 | 1.00 |
 
-  The `qr` field — the one that breaches the ULP envelope — carries the SAME
-  relative cross-tree drift in both pairs, cell for cell. The breach is an
-  absolute-ULP-vs-magnitude artifact, not a new divergence.
-- The larger `nr`/`qv` ratios (closure3 ~1.8–2.6×) are the conservative feeding
-  **more rain mass** into the number/vapour couplings (rain evaporation → qv,
-  rain-number carry → nr) through the SAME drifting sub-cycle machinery — a
-  magnitude effect on coupled fields, not a new op.
+  The `qr` field — the one that breaches the ULP envelope — carries near-identical
+  relative cross-tree drift in both pairs, cell for cell. This is strong evidence
+  the breach reflects an inherited drift at amplified magnitude rather than a new
+  divergence — but it remains evidence, not the op-level proof.
+- The larger `nr`/`qv` ratios (closure3 **1.76× / 2.56×**) are **NOT automatically
+  explained by `qr` magnitude alone**. They are consistent with the conservative
+  feeding more rain mass into the number/vapour couplings (rain evaporation → qv,
+  rain-number carry → nr), but a raised relative error in a coupled field could
+  equally conceal a distinct defect. Ruling that out is precisely the job of the
+  op-level trace — it is NOT settled by the aggregate relative-error argument.
 
 ## Established mechanism
 
@@ -81,31 +94,49 @@ exists with the conservative code entirely inactive.
 
 ## Interim conclusion
 
-Cell-set identity + identical `qr` relative drift + rain-family locality +
-the inherited legacy-control drift point to **Case 2**: the conservative variant
-does not introduce a new cross-tree divergence; it amplifies the state magnitude
+Cell-set identity + near-identical `qr` relative drift + rain-family locality +
+the inherited legacy-control drift point to **Case 2** (not yet proven at op
+level): the conservative variant most likely does not introduce a new cross-tree
+divergence; it amplifies the state magnitude
 (legitimately, by not deleting rain mass at interfaces) feeding an inherited
 multi-subcycle relative-precision drift.
 
-**Remaining step (rigour)**: per-sub-cycle instrumented dump of the Gate B driver
-for the `qr` max cell (closure3 j=2,k=3) in both pairs, to pin the first-diverging
-sub-cycle index + sed op + pre/post raw bits and confirm the op is identical with
-only the input magnitude differing.
+**Remaining step (REQUIRED, not optional)**: the **G3.3-M** per-sub-cycle
+instrumented dump of the Gate B driver (branch `analysis/c4-g3.3-op-provenance`)
+for both pairs, at the `qr` max cell (closure3 j=2,k=3) **and** the `nr`/`qv`
+cells that carry the 1.76×/2.56× ratios, pinning the first-diverging sub-cycle
+index + sed op + pre/post raw bits + branch/clamp/mstep signature — to confirm
+the first divergence is the SAME op on the SAME branch with only input magnitude
+differing (and specifically that the elevated `nr`/`qv` ratios are not a distinct
+op). See the closure section for the pass/fail criterion.
 
-## Proposed a-priori G3.3 metric (for owner adjudication — specified before re-measuring)
+## Closure metric — G3.3-M mechanism-provenance gate (supersedes the withdrawn G3.3′)
 
-The current absolute-max-ULP-envelope is the wrong invariant for a magnitude-
-amplified inherited drift. Proposed replacement, defined a-priori (NOT tuned to
-the 77,852 result):
+An earlier draft proposed a fixture-wide global relative-error envelope
+("G3.3′"). **It is withdrawn** — it is not a sound gate:
 
-> **G3.3′ (relative, magnitude-normalized):** for every (field, cell) diverging
-> in the conservative pair at a multi-subcycle fixture, the relative cross-tree
-> error `|fort − cpp|/max(|fort|, qcrmin)` must be **≤ the maximum relative
-> cross-tree error the LEGACY pair exhibits over the same fixture** (a single
-> per-fixture legacy bound), not a per-cell absolute-ULP comparison. New
-> cons-only cells are held to the same single legacy bound.
+- it bundles fields of different units (`th` [K], `qv`/`qr` [kg/kg], `nr` [#/kg])
+  under one maximum relative error;
+- it applies the mixing-ratio floor `qcrmin` to temperature and number
+  denominators, where that floor has no physical meaning;
+- a large legacy relative error would raise the single bound enough to **mask** a
+  genuine new conservative defect in a different field.
 
-This certifies "the conservative introduces no relative cross-tree error beyond
-the inherited legacy envelope," which is the physically meaningful invariant and
-is decided before its value is measured. Single-subcycle raw-bit (G1) and water
-closure (G2) are unchanged and remain strict.
+The correct closure is **mechanism provenance, not an error envelope**. On branch
+`analysis/c4-g3.3-op-provenance`, a per-sub-cycle instrumented dump must record,
+**identically for both pairs** (legacy `kdm6`↔`variant=0` and conservative
+`237`↔`337`):
+
+> **G3.3-M:** the first divergent outer sub-cycle · the first divergent
+> process / exact operation · the pre-op input raw bits · the post-op output raw
+> bits · the branch/clamp/mstep signature · the downstream `qr/nr/qv/th/precip`
+> propagation. G3.3 closes **PASS-by-mechanism iff both pairs begin diverging at
+> the SAME operation on the SAME branch with NO conservative-only switch**, and
+> the conservative differs ONLY in the input magnitude entering that shared op.
+> Any conservative-only operation or branch at the first divergence is a **FAIL**.
+
+This is decided a-priori (the criterion is structural, not a tuned threshold) and
+does not depend on the imprecise ULP-vs-magnitude argument. Until that trace
+exists G3.3 stays **OPEN**; the absolute-ULP envelope remains the gate in the
+interim. Single-subcycle raw-bit (G1) and water closure (G2) are unchanged and
+remain strict.
