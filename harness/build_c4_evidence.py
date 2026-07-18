@@ -68,24 +68,25 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
     # Validate rank IDENTITIES, not just the count: the run dir must contain
     # EXACTLY the rsl.error.0000 … {np-1} logs — no missing rank (a rank that
     # crashed without writing) and no stray extra (a stale log from a different
-    # np decomposition would let a bare count slip through).
-    found_ranks = {p.name for p in rundir.glob("rsl.error.*")}
+    # np decomposition would let a bare count slip through). The precise
+    # 4-digit glob excludes backup/temp files (rsl.error.0000.bak/.tmp) that a
+    # bare `rsl.error.*` would sweep in. Each rank log is read exactly once.
+    rank_texts = {p.name: p.read_text(errors="replace")
+                  for p in rundir.glob("rsl.error.[0-9][0-9][0-9][0-9]")}
+    found_ranks = set(rank_texts)
     required_ranks = {f"rsl.error.{i:04d}" for i in range(np)}
     r["rank_logs"] = sorted(found_ranks)
     r["rank_ids_ok"] = (found_ranks == required_ranks)
     r["missing_ranks"] = sorted(required_ranks - found_ranks)
     r["extra_rank_logs"] = sorted(found_ranks - required_ranks)
-    n_success = sum(
-        1 for i in range(np)
-        if (rundir / f"rsl.error.{i:04d}").exists()
-        and "SUCCESS COMPLETE WRF" in (rundir / f"rsl.error.{i:04d}").read_text(errors="replace"))
+    n_success = sum(1 for name in required_ranks
+                    if "SUCCESS COMPLETE WRF" in rank_texts.get(name, ""))
     r["success_ranks"] = n_success
     # full-duration proof: the master rank (0000) reached SUCCESS at run end.
-    master = rundir / "rsl.error.0000"
-    r["reached_full_duration"] = bool(master.exists() and re.search(
-        r"_12:00:00 wrf: SUCCESS COMPLETE WRF", master.read_text(errors="replace")))
-    fatal = 0
-    for p in sorted(rundir.glob("rsl.error.*")) + sorted(rundir.glob("*.stdout")):
+    r["reached_full_duration"] = bool(re.search(
+        r"_12:00:00 wrf: SUCCESS COMPLETE WRF", rank_texts.get("rsl.error.0000", "")))
+    fatal = sum(1 for t in rank_texts.values() if FATAL_RE.search(t))
+    for p in sorted(rundir.glob("*.stdout")):
         if FATAL_RE.search(p.read_text(errors="replace")):
             fatal += 1
     r["fatal_markers"] = fatal
@@ -141,7 +142,9 @@ def strict_bitwise_all_frames(f37: str, f137: str,
             xb = np.asarray(vb[fr]) if "Time" in vb.dimensions else np.asarray(vb[:])
             if xa.shape != xb.shape or xa.dtype != xb.dtype:
                 n_diff += 1; continue
-            ua = xa.view(itype[xa.dtype.itemsize]); ub = xb.view(itype[xb.dtype.itemsize])
+            # .view() needs a contiguous buffer; NetCDF slices may not be.
+            ua = np.ascontiguousarray(xa).view(itype[xa.dtype.itemsize])
+            ub = np.ascontiguousarray(xb).view(itype[xb.dtype.itemsize])
             if int(np.count_nonzero(ua != ub)) == 0:
                 n_match += 1
             else:

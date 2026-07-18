@@ -2,8 +2,8 @@
   "artifact": "conservative-interface-v1 C4 evidence",
   "public_repo": {
     "base_commit": "48d8c32",
-    "producer_commit": "81fe8d89755e7e07734b4f88a086bf756dd4df23",
-    "head_commit": "81fe8d89755e7e07734b4f88a086bf756dd4df23",
+    "producer_commit": "be7a19be27feb52606d505abc5aae504dea88b68",
+    "head_commit": "be7a19be27feb52606d505abc5aae504dea88b68",
     "main_commit": "5a06bb10f213bdd61f3997cc26278c7c42e2e517",
     "tracked_tree_dirty_vs_head": true
   },
