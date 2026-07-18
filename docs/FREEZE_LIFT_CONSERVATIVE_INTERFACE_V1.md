@@ -143,9 +143,120 @@ parity) and oracle-ci GREEN; the macOS arm64 job was still in flight at
 merge time (auto-cancelled by the merge — the authoritative macOS
 validation is the main-push run).
 
-**HOLD (unchanged)**: C4 (corrected Fortran variant + Fortran↔C++ parity),
-C5 (12 h × MPI certification), P0-4c, and any tag / release / default-DA /
-host promotion remain HOLD until their gates are green.
+**HOLD (unchanged)**: C5 (12 h × MPI certification), P0-4c, and any tag /
+release / default-DA / host promotion remain HOLD until their gates are green.
+
+## C4 — corrected Fortran reference variant (branch `physics/conservative-interface-v1-c4`, base `main@48d8c32`)
+
+Scheme IDs (host Registry, collision-scanned): **237** corrected Fortran
+reference (`module_mp_kdm6_cons.F`) / **337** C++ conservative v2 wrapper
+(`module_mp_kdm6ad_cons.F` → `kdm6_step_v2_c`, `physics_variant=1`,
+`value_only=1`, dual first-call layout gate, rc-fatal). Registry packages
+use state arrays byte-identical to 37/137; `kdm6_iso_c.F` gained the
+**append-only** v2 mirror (proven: zero deleted lines vs the legacy
+reference). Legacy mp37/mp137 and the raw ice-velocity handoff are
+permanently untouched.
+
+- **Gate A (source scope): PASS.** `harness/check_cons_fortran_scope.py`
+  proves `module_mp_kdm6_cons.F` == legacy + whole-word renames + EXACTLY
+  the four pinned edits in `harness/cons_fortran_scope_manifest.json`
+  (header comment, REAL(4) metric temporaries, sed main chain, sed ice
+  chain); both raw ice-velocity handoff blocks byte-identical in both
+  modules; legacy sha256 pins match. Evidence:
+  [`c4_evidence_manifest.json`](c4_evidence_manifest.json) (public/host
+  SHAs, libkdm6_c binary sha256, toolchain, fixture hashes, embedded
+  Gate A/B/D logs; `artifacts/` is gitignored so the docs copy is the
+  committed one). Contract tests:
+  `harness/tests/test_check_cons_fortran_scope.py` (6/6).
+- **Gate B (independent column parity driver)** — G1/G2/G3 substitution
+  **owner-APPROVED (2026-07-17 adjudication), standalone Gate B only; it
+  does NOT relax Gate D or C5 strict-bitwise**. Private host
+  `test/kdm6_cons_gateb/` runs identical fixture arrays through the
+  corrected Fortran and C++ v2 (variant=1), reusing the C3 closure
+  columns + single-layer / species-isolation / mstep-mix regimes, PLUS a
+  **legacy-pair control** (mp37 `kdm6` vs variant=0) on the same fixtures.
+  Rationale: at 3 KDM sub-cycles the LEGACY pair itself drifts
+  Fortran↔C++ on cap-active columns (pre-existing shared sub-cycle
+  machinery drift, never exercised by the single-subcycle host, mirrored
+  by C3.4 `FS64_MULTI`), so multi-subcycle raw-bit does not isolate
+  variant regressions and both sides of the drift are frozen.
+  - **G1 (single KDM subcycle, dtcld ≤ DTCLDCR = 120 s): PASS** — 12
+    states + mass/number/rime bookkeeping + the three surface increments
+    f32 RAW-BIT identical on all fixtures, for BOTH the conservative and
+    legacy-control pairs.
+  - **G2 (multi-subcycle physical invariants, dt=300): PASS** — per-column
+    `W_out − W_in + P_actual = O(ε32)` with measured kappa32 ≤ 0.26 on
+    both conservative paths; all hydrometeors/numbers/rime nonnegative;
+    `rain_increment` = actual total bottom outflow with snow/graupel
+    increments as its defined subsets; no NaN/Inf. (The legacy control
+    FAILS closure on cap-active columns — the documented interface
+    defect, re-confirmed against real legacy Fortran for the first time.)
+  - **G3 (no-new-divergence, `harness/gateb_g3_check.py` on the driver's
+    machine-readable diff listing): G3.1 differing-FIELD subset PASS,
+    G3.2 differing-CELL-mask subset PASS, G3.4 no non-finite PASS;
+    G3.3 ULP-envelope EXCEEDED pre-fix** — cons max ULP 77,852 vs legacy
+    envelope 77,312 (closure3, +0.7%) and 2,188 vs 1,164 (species-iso),
+    concentrated in the rain family (qr/nr/qv/rain_increment/th).
+    Whether this is chaotic same-mechanism amplification or the same
+    root cause as the Gate D residual is exactly what the approved
+    diagnostic bisection determines; **G3.3 is re-measured after the
+    variant-only fix** before Gate B claims the owner's final wording:
+    "PASS — single-subcycle raw-bit parity; multi-subcycle closure and
+    no-new-divergence certified. Standalone dt=300 raw-bit parity is not
+    claimed."
+- **Gate C (host compile/registration)**: em_real clean build with both
+  new schemes wired (Registry packages select; `kdm6init_cons` dispatch;
+  `-ffp-contract=off` explicit rules on both new objects;
+  `apply_kdm6ad_config.sh` rerun idempotent — it also now carries
+  `-Wno-error=incompatible-pointer-types` for `external/RSL_LITE` under
+  Xcode clang 16+, a diagnostic-severity-only flag). 9-symbol export +
+  SOVERSION 2 unchanged (installed dylib sha pinned in the manifest).
+- **Gate D (SS host short campaign) — measured 2026-07-17**, via
+  `harness/run_ss_case.py` (`--mp 37|137|237|337`, `--seconds`, `--np`) +
+  `harness/strict_bitwise_nc.py` on the fresh clean build:
+  - **legacy 37↔137: FULL PASS** — 1 step and 10 steps np1, every frame,
+    all 254 variables STRICT BITWISE (this also re-validates the pending
+    INSTALL-BASELINE item: the hardened SOVERSION-2 dylib now backs the
+    parity).
+  - **cons 237↔337: NOT yet bitwise — ROOT CAUSE PROVEN (2026-07-17
+    diagnostic bisection under the approved diagnostic-only freeze-lift,
+    branch `diag/c4-poststateupdate-bisection`)**: frame 0 bitwise; post-
+    step frames diverge in QCLOUD/QICE/QSNOW/QVAPOR/REFL_10CM, ~40 cells
+    of 2.57M per field at 1–4 ULP, supercooled k=15–23.
+    Bisection ladder: states bitwise at entry/postmelt/postfreeze; every
+    established-correspondence rate bitwise; paired c4diag dumps → the
+    seed is **`piacw`** (cloud-water accretion by ice, qc→qi): 1-ULP
+    uniform, fort>cpp, in 28,729 of 85,236 active cells; all 100
+    poststateupdate qc/qi flip cells ⊂ the piacw-diff set (zero
+    exceptions; straddle statistics quantitatively consistent). All
+    piacw inputs verified bitwise to the last DOUBLE bit (f32 casts +
+    raw-64-bit dumps). Offline ladder replication over ALL 28,729
+    diverging cells: Fortran's value == the chain with **REAL(4) π**
+    (28729/28729 exact) and C++'s value == the chain with **raw f64
+    `PI`** (28729/28729 exact; cross-assignments 0). **First-diverging
+    op: the ×π multiply in `cloud_water_riming_torch`'s piacw chain —
+    the same latent class the function already fixes for
+    psacw/pgacw/paacw via the path-conditional `pi_t`, left on raw `PI`
+    for piacw.** The §35 rhox suspect is REFUTED (rhox bitwise).
+    Classification: **neither Case A nor Case B — a legacy-SHARED latent
+    deviation** (present in the legacy pair at rate level, invisible in
+    legacy certifications because legacy trajectories produced zero
+    straddle flips; the variant's enhanced supercooled cloud-ice
+    population exposed it). The correct-by-construction fix (piacw raw
+    `PI` → `pi_t`) touches SHARED legacy C++ code — outside the Case-A
+    pre-approval ("conservative path only") — and provably moves legacy
+    C++ piacw ONTO legacy Fortran exactly (strengthens legacy parity)
+    but requires legacy re-certification scope. **Owner adjudication
+    required** on: (a) shared-code pi_t fix + legacy re-cert (ctest 17,
+    oracle parity, C3.6 old-signature gates, legacy 1/10-step host
+    bitwise; 12h re-cert = owner call), vs (b) variant-gated π plumbing
+    (keeps legacy rate-level bits frozen; invasive and wrong long-term).
+    Instrumentation fully reverted from the working tree (Gate A scope
+    check re-verified PASS; clean dylib sha re-pinned); the diagnostic
+    code and full proof live on the diag branch only.
+  - 1-step np4 smoke: decomposition behaves identically to np1 (same
+    residual class; frame 0 bitwise).
+  - **No 12 h campaign in C4** (that is C5).
 
 ## P0-4c status
 
