@@ -60,7 +60,7 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
 
 | Variant | C++ implementation | Public v2 selector | Fortran reference variant | 12h × MPI certification | Release / default-DA eligibility |
 |---|---|---|---|---|---|
-| conservative-interface-v1 | experimental | implemented | implemented (C4: host mp237/mp337; Gates A/C PASS; Gate D SS-short 237↔337 STRICT BITWISE post the merged C4-S1 `piacw` `pi_t` fix, PR #26; Gate B G1/G2/G3.1/G3.2/G3.4 PASS but **G3.3 legacy-ULP-envelope OPEN** (unchanged by the fix); legacy 12h×np4 recert IN PROGRESS. C4 HOLD until G3.3 attributed + 12h recert PASS. See FREEZE_LIFT §Current-status.) | pending (C5) | no |
+| conservative-interface-v1 | experimental | implemented | implemented (C4: host mp237/mp337; Gates A/C PASS; Gate D SS-short 237↔337 STRICT BITWISE post the merged C4-S1 `piacw` `pi_t` fix, PR #26; Gate B G1/G2/G3.1/G3.2/G3.4 PASS but **G3.3 legacy-ULP-envelope OPEN** (unchanged by the fix); legacy 12h×np4 37↔137 recert **STRICT BITWISE PASS** (both runs fail-closed verified; all 12 frames × 253 vars raw-bit identical — the fix did not perturb legacy f32 parity). C4 HOLD until G3.3 attributed. See FREEZE_LIFT §Current-status.) | pending (C5) | no |
 
 ## Known scope boundaries (see README → Scope & differentiation contract)
 
