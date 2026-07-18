@@ -891,10 +891,11 @@ void test_cwr_piacw_pi_staging_f32_witness() {
         const float ref64 = static_cast<float>(piacw_ref_chain(p, kPI));
         const float cap = 1.0e-5f / 20.0f;
 
+        static_assert(sizeof(uint32_t) == sizeof(float), "f32 raw-bit view");
         uint32_t bg, b32, b64;
-        std::memcpy(&bg, &got, 4);
-        std::memcpy(&b32, &ref32, 4);
-        std::memcpy(&b64, &ref64, 4);
+        std::memcpy(&bg, &got, sizeof(float));
+        std::memcpy(&b32, &ref32, sizeof(float));
+        std::memcpy(&b64, &ref64, sizeof(float));
         std::cout << "    piacw got=" << got << " ref(f32-pi)=" << ref32
                   << " ref(f64-pi)=" << ref64 << "\n";
         // the witness genuinely discriminates the two ladders, off-cap:
