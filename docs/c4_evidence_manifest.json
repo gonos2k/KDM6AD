@@ -2,9 +2,9 @@
   "artifact": "conservative-interface-v1 C4 evidence",
   "public_repo": {
     "base_commit": "48d8c32",
-    "producer_commit": "40dfd8e03724f60fe8e7deb729011e17ce1dfcc1",
-    "head_commit": "40dfd8e03724f60fe8e7deb729011e17ce1dfcc1",
-    "main_commit": "66b48f31e58f540b4072115126d79941b3e91cdc",
+    "producer_commit": "760cc1b8164723960c1feda807a3f6381f00a5a6",
+    "head_commit": "760cc1b8164723960c1feda807a3f6381f00a5a6",
+    "main_commit": "eeef289eb3bdf29f277bb9493086bc2cf2c48492",
     "tracked_tree_dirty_vs_head": false
   },
   "private_host": {
@@ -172,6 +172,7 @@
       "extra_rank_logs": [],
       "success_ranks": 4,
       "reached_full_duration": true,
+      "run_end_time": "12:00:00",
       "fatal_markers": 0,
       "frames": 12,
       "fcst": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_recert12h_720min_hist60_np4_20260718_100124/klfs_lc05_fcst.202507190000",
@@ -192,6 +193,7 @@
       "extra_rank_logs": [],
       "success_ranks": 4,
       "reached_full_duration": true,
+      "run_end_time": "12:00:00",
       "fatal_markers": 0,
       "frames": 12,
       "fcst": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_recert12h_720min_hist60_np4_20260718_110745/klfs_lc05_fcst.202507190000",
@@ -201,98 +203,120 @@
       "frames_compared": 12,
       "common_variables": 254,
       "common_numeric_variables": 253,
+      "common_char_variables": 1,
       "min_common_numeric_required": 250,
       "only_in_mp37": [],
       "only_in_mp137": [],
+      "times_equal": true,
+      "last_compared_time": "2025-07-19_11:03:40",
       "per_frame": [
         {
           "frame": 0,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 1,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 2,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 3,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 4,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 5,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 6,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 7,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 8,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 9,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 10,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         },
         {
           "frame": 11,
           "match": 253,
           "diff": 0,
           "skip": 1,
-          "numeric": 253
+          "numeric": 253,
+          "char_diff": 0
         }
       ],
       "strict_bitwise": true
     },
     "strict_bitwise": true,
+    "terminal_state": {
+      "run_end_time": "12:00:00",
+      "last_compared_time": "2025-07-19_11:03:40",
+      "times_equal_all_frames": true,
+      "terminal_time_compared": false,
+      "coverage_note": "history cadence emits no frame AT the run-end time; the last comparable state precedes it, so terminal-state parity is NOT asserted by this recert \u2014 only run completion + all-generated-frame bitwise parity are"
+    },
     "log": "== mp37 12h np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 10\uc2dc 01\ubd84 24\ucd08 JST\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_recert12h_720min_hist60_np4_20260718_100124 (rc=0)\n   mp37 12h np4 VERIFIED on attempt 1\n== mp137 12h np4 attempt 1/3 start 2026\ub144  7\uc6d4 18\uc77c \ud1a0\uc694\uc77c 11\uc2dc 07\ubd84 45\ucd08 JST\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_recert12h_720min_hist60_np4_20260718_110745 (rc=0)\n   mp137 12h np4 VERIFIED on attempt 1\n[12h recert] common frames = 12\nLEGACY 12h RECERT: FAIL (TRUNCATED, 12<13 frames \u2014 did not reach 12 h)\n\n================================================================================\nAUTHORITATIVE CORRECTION (fail-closed re-verification via build_c4_evidence.py)\n================================================================================\nThe \"LEGACY 12h RECERT: FAIL (TRUNCATED, 12<13 frames)\" line above is a FALSE\nFAIL from a STALE frame-count gate in the orchestrator that ran (recert_nohup):\nit hardcoded nf>=13, but this case's --history 60 + base history_interval_s=20\nemits 12 hourly frames drifting +20s/frame (00:00:00 \u2026 11:03:40); the 13th at\n~12:04:00 falls PAST the 12:00:00 run end, so 12 IS the complete count. The\non-disk run_legacy12h_recert.sh is already corrected (cadence-independent gate;\ncompleteness proven by the 12:00:00 SUCCESS marker, never by a frame threshold).\n\nBoth runs are genuinely COMPLETE and VERIFIED (independent fail-closed checks):\n  mp37  = runs/mp37_recert12h_720min_hist60_np4_20260718_100124\n  mp137 = runs/mp137_recert12h_720min_hist60_np4_20260718_110745\n  - exit_code = 0 (both)\n  - exactly 4 rank logs (rsl.error.0000..0003), all with SUCCESS COMPLETE WRF\n  - master rank reached \"_12:00:00 wrf: SUCCESS COMPLETE WRF\" (both)\n  - 0 fatal/NaN markers\n  - history: 12 frames each, 00:00:00 \u2026 11:03:40, file size 3814780628 B (equal)\n  - disk 71 GB free at verification (no truncation)\n\nAuthoritative STRICT raw-bit (uint-view, zero tolerance) comparison, ALL frames:\n  every one of the 12 common frames: 254 common vars, 253 BITWISE-MATCH,\n  0 DIFFER, 1 non-numeric (Times, skipped); variable sets identical.\n\nVERDICT (authoritative): LEGACY 12h x np4 37<->137 RECERT: STRICT BITWISE PASS.\nThe merged piacw pi_t fix (PR #26, 0b767e2) did NOT perturb legacy 37<->137 f32\nraw-bit parity. Machine-readable proof: docs/c4_evidence_manifest.json ->\nlegacy_12h_np4_recertification.comparison.per_frame.\n================================================================================\n"
   },
   "gate_d_bisection_verdict_2026_07_17": {
@@ -301,7 +325,8 @@
     "proof": "all inputs bitwise to the last double bit (paired f32 + raw-64-bit dumps); offline ladder replication over ALL 28729 diverging cells: fort==f32-\u03c0 chain 28729/28729, cpp==f64-\u03c0 chain 28729/28729, cross-assignments 0; all 100 state-flip cells \u2282 piacw-diff set",
     "classification": "legacy-SHARED latent class (not Case A / not Case B): same idiom already fixed for psacw/pgacw/paacw via path-conditional pi_t; piacw left on raw PI; invisible in legacy certifications (zero straddle flips), exposed by the variant's supercooled cloud-ice population",
     "rhox_suspect": "REFUTED (rhox bitwise in paired dumps)",
-    "fix_pending_owner_adjudication": "piacw raw PI -> pi_t touches SHARED legacy C++ (outside the Case-A conservative-only pre-approval); provably moves legacy C++ piacw ONTO legacy Fortran; legacy re-cert scope required",
+    "fix_adjudication_historical": "piacw raw PI -> pi_t touches SHARED legacy C++ (outside the Case-A conservative-only pre-approval); provably moves legacy C++ piacw ONTO legacy Fortran; legacy re-cert scope required",
+    "superseded_by": "RESOLVED \u2014 owner approved as Case C (2026-07-18); merged PR #26 (0b767e2); legacy 12h x np4 recert PASS (see legacy_12h_np4_recertification). This bisection block is the historical investigation record, not an open item.",
     "instrumentation": "diag/c4-poststateupdate-bisection only; working tree reverted; Gate A re-verified PASS; clean dylib sha reproduced; restored 237/337 runs STRICT BITWISE == pre-diag baselines"
   },
   "rate_dump_scope": {
@@ -318,5 +343,146 @@
       "fields": "first 13 of fort 34 / cpp 23 (--min-fields 13; trailing dbg_*/aux captures are capture-point artifacts, not rates)",
       "verdict": "BITWISE"
     }
-  }
+  },
+  "gate_b": {
+    "log": "host/KIM-meso_v1.0/test/kdm6_cons_gateb/gateb_postfix.log",
+    "pass": true,
+    "output": "[kdm6ad-diag] intra=1 interop=1\nsingle-layer     bitwise: PASS (16 fields)\nsingle-layer     [fortran] col 1 R= -1.7681E-08 kappa32=     0.074 P=  3.5449E-04\nsingle-layer     [cpp    ] col 1 R= -1.7681E-08 kappa32=     0.074 P=  3.5449E-04\nsingle-layer     [fortran] col 2 R= -7.1246E-08 kappa32=     0.103 P=  1.7178E+00\nsingle-layer     [cpp    ] col 2 R= -7.1246E-08 kappa32=     0.103 P=  1.7178E+00\nmstep-mix        bitwise: PASS (16 fields)\nmstep-mix        [fortran] col 1 R= -7.5379E-08 kappa32=     0.125 P=  7.0897E-04\nmstep-mix        [cpp    ] col 1 R= -7.5379E-08 kappa32=     0.125 P=  7.0897E-04\nmstep-mix        [fortran] col 2 R= -7.7765E-08 kappa32=     0.112 P=  1.0763E+00\nmstep-mix        [cpp    ] col 2 R= -7.7765E-08 kappa32=     0.112 P=  1.0763E+00\nmstep-mix        [fortran] col 3 R=  2.7240E-07 kappa32=     0.194 P=  4.6459E+00\nmstep-mix        [cpp    ] col 3 R=  2.7240E-07 kappa32=     0.194 P=  4.6459E+00\nLEG single-layer bitwise: PASS (16 fields)\nLEG single-layer [fortran] col 1 R= -1.7681E-08 kappa32=     0.074 P=  3.5449E-04\nLEG single-layer [cpp    ] col 1 R= -1.7681E-08 kappa32=     0.074 P=  3.5449E-04\nLEG single-layer [fortran] col 2 R= -7.1246E-08 kappa32=     0.103 P=  1.7178E+00\nLEG single-layer [cpp    ] col 2 R= -7.1246E-08 kappa32=     0.103 P=  1.7178E+00\nLEG mstep-mix    bitwise: PASS (16 fields)\nLEG mstep-mix    [fortran] col 1 R= -7.5379E-08 kappa32=     0.125 P=  7.0897E-04\nLEG mstep-mix    [cpp    ] col 1 R= -7.5379E-08 kappa32=     0.125 P=  7.0897E-04\nLEG mstep-mix    [fortran] col 2 R= -8.3437E-01 kappa32=********** P=  5.6192E-01\nLEG mstep-mix   : water closure exceeded (fortran) col 2\nLEG mstep-mix    [cpp    ] col 2 R= -8.3437E-01 kappa32=********** P=  5.6192E-01\nLEG mstep-mix   : water closure exceeded (cpp) col 2\nLEG mstep-mix    [fortran] col 3 R= -2.4554E+00 kappa32=********** P=  2.1871E+00\nLEG mstep-mix   : water closure exceeded (fortran) col 3\nLEG mstep-mix    [cpp    ] col 3 R= -2.4554E+00 kappa32=********** P=  2.1871E+00\nLEG mstep-mix   : water closure exceeded (cpp) col 3\nclosure3-C3.3   : MISMATCH th   k=1 j=2 fort=0x438EABB6 cpp=0x438EABD9\nclosure3-C3.3   : MISMATCH th   k=2 j=2 fort=0x438EFA1E cpp=0x438EFA26\nclosure3-C3.3   : MISMATCH th   k=3 j=2 fort=0x438FB646 cpp=0x438FB64D\nclosure3-C3.3   : DIFF th   (5 cells differ)\nclosure3-C3.3   : MISMATCH qv   k=1 j=2 fort=0x3B398ACB cpp=0x3B39778C\nclosure3-C3.3   : MISMATCH qv   k=2 j=2 fort=0x3B29C319 cpp=0x3B29BEB2\nclosure3-C3.3   : MISMATCH qv   k=3 j=2 fort=0x3B03E54E cpp=0x3B03E0CD\nclosure3-C3.3   : DIFF qv   (5 cells differ)\nclosure3-C3.3   : MISMATCH qr   k=1 j=2 fort=0x3947D7D8 cpp=0x39480FDE\nclosure3-C3.3   : MISMATCH qr   k=2 j=2 fort=0x38905ED7 cpp=0x3890CD0A\nclosure3-C3.3   : MISMATCH qr   k=3 j=2 fort=0x37B15EFC cpp=0x37B28F18\nclosure3-C3.3   : DIFF qr   (3 cells differ)\nclosure3-C3.3   : MISMATCH qs   k=3 j=3 fort=0x3ABE83CE cpp=0x3ABE83C8\nclosure3-C3.3   : DIFF qs   (1 cells differ)\nclosure3-C3.3   : MISMATCH qg   k=3 j=3 fort=0x3922A2C4 cpp=0x3922A2C0\nclosure3-C3.3   : DIFF qg   (1 cells differ)\nclosure3-C3.3   : MISMATCH nr   k=1 j=2 fort=0x43CCA85C cpp=0x43CCB29A\nclosure3-C3.3   : MISMATCH nr   k=2 j=2 fort=0x4449E516 cpp=0x4449E9BC\nclosure3-C3.3   : MISMATCH nr   k=3 j=2 fort=0x44A818A9 cpp=0x44A818DF\nclosure3-C3.3   : DIFF nr   (3 cells differ)\nclosure3-C3.3   : MISMATCH bg   k=3 j=3 fort=0x34CA9944 cpp=0x34CA993F\nclosure3-C3.3   : DIFF bg   (1 cells differ)\nclosure3-C3.3   : MISMATCH rain_increment    j=2 fort=0x40BE572A cpp=0x40BE5AF2\nclosure3-C3.3   : DIFF rain_increment    (1 cols differ)\nclosure3-C3.3    bitwise: 8 field diffs (multi-subcycle \u2014 reported, gated via G3)\nclosure3-C3.3    [fortran] col 1 R= -7.6136E-08 kappa32=     0.127 P=  5.9081E-04\nclosure3-C3.3    [cpp    ] col 1 R= -7.6136E-08 kappa32=     0.127 P=  5.9081E-04\nclosure3-C3.3    [fortran] col 2 R=  2.0186E-07 kappa32=     0.084 P=  5.9481E+00\nclosure3-C3.3    [cpp    ] col 2 R=  5.1362E-07 kappa32=     0.213 P=  5.9486E+00\nclosure3-C3.3    [fortran] col 3 R=  3.2803E-07 kappa32=     0.089 P=  7.2013E+00\nclosure3-C3.3    [cpp    ] col 3 R=  3.5131E-07 kappa32=     0.095 P=  7.2013E+00\nspecies-iso     : MISMATCH qv   k=1 j=1 fort=0x3A84C522 cpp=0x3A84C523\nspecies-iso     : MISMATCH qv   k=2 j=1 fort=0x3A84AA87 cpp=0x3A84AA8B\nspecies-iso     : MISMATCH qv   k=3 j=1 fort=0x3A875ED2 cpp=0x3A875ED7\nspecies-iso     : DIFF qv   (3 cells differ)\nspecies-iso     : MISMATCH qr   k=1 j=1 fort=0x347234A0 cpp=0x34722C14\nspecies-iso     : MISMATCH qr   k=2 j=1 fort=0x36A61DDD cpp=0x36A61B35\nspecies-iso     : MISMATCH qr   k=3 j=1 fort=0x379CBE2C cpp=0x379CBD74\nspecies-iso     : DIFF qr   (4 cells differ)\nspecies-iso     : MISMATCH qg   k=1 j=1 fort=0x39E13316 cpp=0x39E13315\nspecies-iso     : MISMATCH qg   k=2 j=1 fort=0x3929166D cpp=0x39291667\nspecies-iso     : MISMATCH qg   k=3 j=1 fort=0x38049871 cpp=0x38049865\nspecies-iso     : DIFF qg   (3 cells differ)\nspecies-iso     : MISMATCH nr   k=1 j=1 fort=0x42636366 cpp=0x426362CC\nspecies-iso     : MISMATCH nr   k=2 j=1 fort=0x44723B02 cpp=0x44723B00\nspecies-iso     : MISMATCH nr   k=3 j=1 fort=0x457D2F6B cpp=0x457D2F77\nspecies-iso     : DIFF nr   (3 cells differ)\nspecies-iso     : MISMATCH bg   k=1 j=1 fort=0x35001D10 cpp=0x35001D0F\nspecies-iso     : MISMATCH bg   k=2 j=1 fort=0x34406255 cpp=0x3440624F\nspecies-iso     : MISMATCH bg   k=3 j=1 fort=0x3316DD3B cpp=0x3316DD2E\nspecies-iso     : DIFF bg   (3 cells differ)\nspecies-iso      bitwise: 5 field diffs (multi-subcycle \u2014 reported, gated via G3)\nspecies-iso      [fortran] col 1 R= -2.8180E-07 kappa32=     0.260 P=  1.5035E+00\nspecies-iso      [cpp    ] col 1 R= -1.0768E-07 kappa32=     0.099 P=  1.5035E+00\nspecies-iso      [fortran] col 2 R=  2.1751E-08 kappa32=     0.014 P=  7.7922E-01\nspecies-iso      [cpp    ] col 2 R=  2.1751E-08 kappa32=     0.014 P=  7.7922E-01\nspecies-iso      [fortran] col 3 R=  4.8358E-09 kappa32=     0.003 P=  2.8890E+00\nspecies-iso      [cpp    ] col 3 R=  4.8358E-09 kappa32=     0.003 P=  2.8890E+00\nspecies-iso      [fortran] col 4 R=  1.1953E-07 kappa32=     0.101 P=  1.2050E+00\nspecies-iso      [cpp    ] col 4 R=  1.1953E-07 kappa32=     0.101 P=  1.2050E+00\nLEG closure3    : MISMATCH th   k=1 j=2 fort=0x438F1CDB cpp=0x438F1CE3\nLEG closure3    : MISMATCH th   k=2 j=2 fort=0x438F6409 cpp=0x438F6415\nLEG closure3    : MISMATCH th   k=3 j=2 fort=0x438FCEC5 cpp=0x438FCECE\nLEG closure3    : DIFF th   (5 cells differ)\nLEG closure3    : MISMATCH qv   k=1 j=2 fort=0x3B22C5A8 cpp=0x3B22C077\nLEG closure3    : MISMATCH qv   k=2 j=2 fort=0x3B147226 cpp=0x3B146BA2\nLEG closure3    : MISMATCH qv   k=3 j=2 fort=0x3AFDEE75 cpp=0x3AFDE42D\nLEG closure3    : DIFF qv   (5 cells differ)\nLEG closure3    : MISMATCH qr   k=1 j=2 fort=0x3915FACE cpp=0x3916445E\nLEG closure3    : MISMATCH qr   k=2 j=2 fort=0x38AE009B cpp=0x38AE8006\nLEG closure3    : MISMATCH qr   k=3 j=2 fort=0x37B47764 cpp=0x37B5A564\nLEG closure3    : DIFF qr   (3 cells differ)\nLEG closure3    : MISMATCH qs   k=3 j=3 fort=0x3AA87E91 cpp=0x3AA87E89\nLEG closure3    : DIFF qs   (1 cells differ)\nLEG closure3    : MISMATCH qg   k=3 j=3 fort=0x39106AFD cpp=0x39106AF9\nLEG closure3    : DIFF qg   (1 cells differ)\nLEG closure3    : MISMATCH nr   k=1 j=2 fort=0x4416CE84 cpp=0x4416D2D0\nLEG closure3    : MISMATCH nr   k=2 j=2 fort=0x4482EF6F cpp=0x4482F0DF\nLEG closure3    : MISMATCH nr   k=3 j=2 fort=0x44BB56C4 cpp=0x44BB5609\nLEG closure3    : DIFF nr   (3 cells differ)\nLEG closure3    : MISMATCH bg   k=3 j=3 fort=0x34B3BAFA cpp=0x34B3BAF6\nLEG closure3    : DIFF bg   (1 cells differ)\nLEG closure3    : MISMATCH rhog k=3 j=3 fort=0x43CDB3D7 cpp=0x43CDB3D6\nLEG closure3    : DIFF rhog (1 cells differ)\nLEG closure3    : MISMATCH rain_increment    j=2 fort=0x4098FF64 cpp=0x40990092\nLEG closure3    : DIFF rain_increment    (1 cols differ)\nLEG closure3     bitwise: 9 field diffs (multi-subcycle \u2014 reported, gated via G3)\nLEG closure3     [fortran] col 1 R= -7.6136E-08 kappa32=     0.127 P=  5.9081E-04\nLEG closure3     [cpp    ] col 1 R= -7.6136E-08 kappa32=     0.127 P=  5.9081E-04\nLEG closure3     [fortran] col 2 R= -1.4763E+00 kappa32=661418.690 P=  4.7812E+00\nLEG closure3    : water closure exceeded (fortran) col 2\nLEG closure3     [cpp    ] col 2 R= -1.4763E+00 kappa32=661424.404 P=  4.7813E+00\nNote: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_DIVIDE_BY_ZERO\nSTOP 0\nLEG closure3    : water closure exceeded (cpp) col 2\nLEG closure3     [fortran] col 3 R=  1.2181E+02 kappa32=********** P=  1.2974E+02\nLEG closure3    : water closure exceeded (fortran) col 3\nLEG closure3     [cpp    ] col 3 R=  1.2181E+02 kappa32=********** P=  1.2974E+02\nLEG closure3    : water closure exceeded (cpp) col 3\nLEG species-iso : MISMATCH th   k=1 j=1 fort=0x438D5678 cpp=0x438D5679\nLEG species-iso : MISMATCH th   k=2 j=1 fort=0x438D55A3 cpp=0x438D55A4\nLEG species-iso : DIFF th   (2 cells differ)\nLEG species-iso : MISMATCH qv   k=2 j=1 fort=0x3A84A8A3 cpp=0x3A84A8A7\nLEG species-iso : MISMATCH qv   k=3 j=1 fort=0x3A876A07 cpp=0x3A876A0C\nLEG species-iso : DIFF qv   (2 cells differ)\nLEG species-iso : MISMATCH qr   k=1 j=1 fort=0x348A8A68 cpp=0x348A85DC\nLEG species-iso : MISMATCH qr   k=2 j=1 fort=0x36B0D3F0 cpp=0x36B0D119\nLEG species-iso : MISMATCH qr   k=3 j=1 fort=0x37A0AC48 cpp=0x37A0AB90\nLEG species-iso : DIFF qr   (4 cells differ)\nLEG species-iso : MISMATCH qg   k=1 j=1 fort=0x39DA08D4 cpp=0x39DA08D1\nLEG species-iso : MISMATCH qg   k=2 j=1 fort=0x39234827 cpp=0x3923481E\nLEG species-iso : MISMATCH qg   k=3 j=1 fort=0x3803272D cpp=0x38032721\nLEG species-iso : DIFF qg   (3 cells differ)\nLEG species-iso : MISMATCH nr   k=1 j=1 fort=0x427062B2 cpp=0x42706217\nLEG species-iso : MISMATCH nr   k=3 j=1 fort=0x457E6D5F cpp=0x457E6D68\nLEG species-iso : DIFF nr   (2 cells differ)\nLEG species-iso : MISMATCH bg   k=1 j=1 fort=0x34F81326 cpp=0x34F81322\nLEG species-iso : MISMATCH bg   k=2 j=1 fort=0x3439C749 cpp=0x3439C73F\nLEG species-iso : MISMATCH bg   k=3 j=1 fort=0x33153917 cpp=0x33153909\nLEG species-iso : DIFF bg   (3 cells differ)\nLEG species-iso  bitwise: 6 field diffs (multi-subcycle \u2014 reported, gated via G3)\nLEG species-iso  [fortran] col 1 R= -2.9253E-02 kappa32= 27113.152 P=  1.4888E+00\nLEG species-iso : water closure exceeded (fortran) col 1\nLEG species-iso  [cpp    ] col 1 R= -2.9253E-02 kappa32= 27113.165 P=  1.4888E+00\nLEG species-iso : water closure exceeded (cpp) col 1\nLEG species-iso  [fortran] col 2 R=  2.6389E-07 kappa32=     0.169 P=  7.7922E-01\nLEG species-iso  [cpp    ] col 2 R=  2.6389E-07 kappa32=     0.169 P=  7.7922E-01\nLEG species-iso  [fortran] col 3 R= -1.1511E-02 kappa32=  7366.367 P=  2.8841E+00\nLEG species-iso : water closure exceeded (fortran) col 3\nLEG species-iso  [cpp    ] col 3 R= -1.1511E-02 kappa32=  7366.367 P=  2.8841E+00\nLEG species-iso : water closure exceeded (cpp) col 3\nLEG species-iso  [fortran] col 4 R=  1.2186E+02 kappa32=********** P=  1.2428E+02\nLEG species-iso : water closure exceeded (fortran) col 4\nLEG species-iso  [cpp    ] col 4 R=  1.2186E+02 kappa32=********** P=  1.2428E+02\nLEG species-iso : water closure exceeded (cpp) col 4\nG3 closure3   cons-clean: T F F  legacy-clean: T F F\nG3 species-iso cons-clean: F T T T  legacy-clean: F T T T\nGATE B: PASS (G1 single-subcycle raw-bit both pairs; G2 conservative water closure; G3 no new divergence)\n"
+  },
+  "gate_b_g3": {
+    "checker": "gateb_g3_check",
+    "pass": false,
+    "failures": [
+      "G3.3 closure3-C3.3: cons max ULP 77852 exceeds legacy envelope 77312",
+      "G3.3 species-iso: cons max ULP 2188 exceeds legacy envelope 1164"
+    ],
+    "cases": {
+      "closure3-C3.3": {
+        "cons_fields": [
+          "bg",
+          "nr",
+          "qg",
+          "qr",
+          "qs",
+          "qv",
+          "rain_increment",
+          "th"
+        ],
+        "legacy_fields": [
+          "bg",
+          "nr",
+          "qg",
+          "qr",
+          "qs",
+          "qv",
+          "rain_increment",
+          "rhog",
+          "th"
+        ],
+        "cons_cells": 7,
+        "legacy_cells": 7,
+        "cons_max_ulp": 77852,
+        "legacy_max_ulp_envelope": 77312,
+        "per_field_max_ulp": {
+          "bg": {
+            "cons": 5,
+            "legacy": 4
+          },
+          "nr": {
+            "cons": 2622,
+            "legacy": 1100
+          },
+          "qg": {
+            "cons": 4,
+            "legacy": 4
+          },
+          "qr": {
+            "cons": 77852,
+            "legacy": 77312
+          },
+          "qs": {
+            "cons": 6,
+            "legacy": 8
+          },
+          "qv": {
+            "cons": 4927,
+            "legacy": 2632
+          },
+          "rain_increment": {
+            "cons": 968,
+            "legacy": 302
+          },
+          "rhog": {
+            "cons": 0,
+            "legacy": 1
+          },
+          "th": {
+            "cons": 35,
+            "legacy": 12
+          }
+        },
+        "field_subset": true,
+        "cell_mask_subset": true,
+        "ulp_within_envelope": false
+      },
+      "species-iso": {
+        "cons_fields": [
+          "bg",
+          "nr",
+          "qg",
+          "qr",
+          "qv"
+        ],
+        "legacy_fields": [
+          "bg",
+          "nr",
+          "qg",
+          "qr",
+          "qv",
+          "th"
+        ],
+        "cons_cells": 4,
+        "legacy_cells": 4,
+        "cons_max_ulp": 2188,
+        "legacy_max_ulp_envelope": 1164,
+        "per_field_max_ulp": {
+          "bg": {
+            "cons": 13,
+            "legacy": 14
+          },
+          "nr": {
+            "cons": 154,
+            "legacy": 155
+          },
+          "qg": {
+            "cons": 12,
+            "legacy": 12
+          },
+          "qr": {
+            "cons": 2188,
+            "legacy": 1164
+          },
+          "qv": {
+            "cons": 5,
+            "legacy": 5
+          },
+          "th": {
+            "cons": 0,
+            "legacy": 1
+          }
+        },
+        "field_subset": true,
+        "cell_mask_subset": true,
+        "ulp_within_envelope": false
+      }
+    },
+    "nonfinite_records": 0,
+    "scope_note": "first-divergence-stage and mstep/branch-signature comparability are host-dump-level checks (compare_substep_stage/compare_rate_dump), not assessable from final-state diffs; recorded as out-of-scope here."
+  },
+  "gate_d": [
+    {
+      "log": "host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/gated_c4_results.log",
+      "output": "== running mp237 (20s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp237_c4gd_0min20s_hist0_20260718_090522 (rc=0)\n== running mp337 (20s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp337_c4gd_0min20s_hist0_20260718_090610 (rc=0)\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 1-step np1] frame 0: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 1-step np1] frame 1: STRICT BITWISE PASS\n== running mp237 (200s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp237_c4gd_0min200s_hist0_20260718_090711 (rc=0)\n== running mp337 (200s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp337_c4gd_0min200s_hist0_20260718_090834 (rc=0)\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 0: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 1: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 2\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 2: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 3\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 3: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 4\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 4: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 5\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 5: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 6\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 6: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 7\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 7: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 8\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 8: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 9\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 9: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 10\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 10-step np1] frame 10: STRICT BITWISE PASS\n== running mp237 (20s np4)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp237_c4gd_0min20s_hist0_np4_20260718_091254 (rc=0)\n== running mp337 (20s np4)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp337_c4gd_0min20s_hist0_np4_20260718_091318 (rc=0)\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 1-step np4 smoke] frame 0: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[cons 1-step np4 smoke] frame 1: STRICT BITWISE PASS\n== running mp37 (20s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_c4gd_0min20s_hist0_20260718_091348 (rc=0)\n== running mp137 (20s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_c4gd_0min20s_hist0_20260718_091435 (rc=0)\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 1-step np1] frame 0: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 1-step np1] frame 1: STRICT BITWISE PASS\n== running mp37 (200s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_c4gd_0min200s_hist0_20260718_091538 (rc=0)\n== running mp137 (200s np1)\n   -> /Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_c4gd_0min200s_hist0_20260718_091704 (rc=0)\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 0: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 1: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 2\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 2: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 3\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 3: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 4\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 4: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 5\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 5: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 6\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 6: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 7\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 7: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 8\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 8: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 9\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 9: STRICT BITWISE PASS\n# klfs_lc05_fcst.202507190000 (frames=11) vs klfs_lc05_fcst.202507190000 (frames=11)\n# strict uint-bitwise compare at selected frame index 10\n\nVARIABLES: 254 common, 253 BITWISE-MATCH, 0 DIFFER, 1 non-numeric\n\nRESULT: STRICT BITWISE PASS\n[legacy 10-step np1] frame 10: STRICT BITWISE PASS\nGATE D: PASS\n"
+    }
+  ]
 }
