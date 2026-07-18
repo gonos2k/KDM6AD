@@ -2,10 +2,10 @@
   "artifact": "conservative-interface-v1 C4 evidence",
   "public_repo": {
     "base_commit": "48d8c32",
-    "producer_commit": "a7879a88a890a0e0770090082d19836182a08f02",
-    "head_commit": "a7879a88a890a0e0770090082d19836182a08f02",
-    "main_commit": "90f9cac0db0814e8de376a3e1a1a0c774331e7ad",
-    "tracked_tree_dirty_vs_head": true
+    "producer_commit": "40dfd8e03724f60fe8e7deb729011e17ce1dfcc1",
+    "head_commit": "40dfd8e03724f60fe8e7deb729011e17ce1dfcc1",
+    "main_commit": "66b48f31e58f540b4072115126d79941b3e91cdc",
+    "tracked_tree_dirty_vs_head": false
   },
   "private_host": {
     "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0",
