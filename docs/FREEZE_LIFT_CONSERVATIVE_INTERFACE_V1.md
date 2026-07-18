@@ -11,6 +11,32 @@ This is the first scoped lift of the frozen-code discipline since
 sedimentation **interface transfer** — as a **new, separately selectable
 variant**. The legacy path stays byte-identical everywhere and forever.
 
+## Current status (2026-07-18) — authoritative, supersedes narrative below
+
+C4 is **HOLD**. The C4-S1 shared `piacw` fix is MERGED and Gate A/C pass, but
+two items block closeout:
+
+| Item | State |
+|---|---|
+| C4-S1 shared `piacw` fix (Case C) | **MERGED** — PR #26 `0b767e2` (`cold.cpp` piacw raw `PI`→`pi_t`, 0 Fortran files); ctest 17/17, oracle 4/4 |
+| Gate A source-scope | **PASS** (fail-closed: rc0 + valid JSON + `pass:true`) |
+| Gate C compile/registration | **PASS** |
+| Gate D SS short (237↔337) | **PASS** post-fix — 1-step/10-step-all-frames/np4 STRICT BITWISE; legacy 37↔137 held |
+| Gate B G1 single-subcycle raw-bit | PASS |
+| Gate B G2 multi-subcycle closure | PASS |
+| Gate B G3.1/G3.2/G3.4 | PASS |
+| **Gate B G3.3 legacy ULP envelope** | **OPEN / FAIL** — the `piacw` fix did NOT change it (closure3 cons 77,852 > legacy 77,312; species-iso 2,188 > 1,164, identical pre/post). Attribution pending on `analysis/c4-g3.3-first-divergence`. **Gate B is NOT closed as "G1/G2/G3".** |
+| Legacy 12 h × np4 37↔137 recert | **IN PROGRESS** — mp37 completed to `12:00:00 SUCCESS` (12 hourly frames — see cadence note); mp137 running. Verdict recorded fail-closed in `docs/c4_evidence_manifest.json` only after both runs verify + all-frames raw-bit. |
+| C4 overall / C5 / tag / release / default-DA / P0-4c | **HOLD** |
+
+**Cadence note (12 frames, not 13):** `--history 60` with the case's base
+`history_interval_s=20` emits hourly frames drifting +20 s/frame
+(00:00:00 … 11:03:40); the 13th frame at ~12:04:00 falls past the 12:00:00
+run end, so **12 frames is the COMPLETE output** for a full 12 h run. The
+completeness proof is the `_12:00:00 wrf: SUCCESS COMPLETE WRF` marker, NOT a
+frame count — the recert gates on that marker + equal frame counts + every
+frame 254-var raw-bit.
+
 ## What the variant fixes
 
 Legacy NISLFV-PLM re-caps the stored raw interface flux by the source cell's
@@ -265,12 +291,14 @@ HOLD until BOTH: (1) conservative Fortran ↔ C++ forward parity, and
 12 h × MPI. Actual analysis-state replay and all-sky BT/obs-cost remain the
 production-promotion gates, not implementation preconditions.
 
-## C4-S1 shared parity exception (owner adjudication 2026-07-17)
+## C4-S1 shared parity exception (owner-approved 2026-07-18; MERGED PR #26 `0b767e2`)
 
 **Classification**: Case C — shared C++ reference-parity defect. The Fortran
 reference and the conservative interface algorithm are both correct; ONE
 operational-f32 constant staging in the shared C++ cold-rate implementation
-differed from Fortran.
+differed from Fortran. **Merged and CI-green**; the residual C4 gates
+(Gate B G3.3, legacy 12 h recert) are tracked in the Current-status block at
+the top of this document.
 
 **Change** (`fix/shared-piacw-pi-staging`, exactly one production line):
 `libtorch/src/cold.cpp` `cloud_water_riming_torch` piacw chain — raw f64
