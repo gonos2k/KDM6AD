@@ -60,9 +60,19 @@ public:
             throw std::runtime_error(
                 "g33: KDM6_G33_COLUMN_MAP is required (declared Fortran(i,j)<->C++ "
                 "flat-B map, protocol 7c) — refusing to fabricate one");
+        cid_ = "L" + std::to_string(ctx->outer_loop_1based) + "_" + chain
+             + "_n" + std::to_string(n);
         std::string path = std::string(dir) + "/cpp_" + ctx->algorithm + "_" + cas
-                         + "_L" + std::to_string(ctx->outer_loop_1based)
-                         + "_" + chain + "_n" + std::to_string(n) + ".g33";
+                         + "_" + cid_ + ".g33";
+        // §7 P0-2: the op_seq window for THIS container is DECLARED by the harness
+        // (run_index.json, fixed before the run), never inferred here. Same reason
+        // as the column map: a range the producer computes for itself cannot
+        // falsify the producer. Absent declaration = invalid run, not a default.
+        long first = 0, last = 0;
+        if (!lookup_op_seq(cid_, first, last))
+            throw std::runtime_error(
+                "g33: KDM6_G33_OP_SEQ_MAP has no entry for container " + cid_
+                + " (declared container set and actual execution disagree)");
         std::ostringstream tid; tid << std::this_thread::get_id();
         std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
             + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
@@ -72,9 +82,12 @@ public:
             + ",\"column_layout_id\":\"" + jesc(g33_env("KDM6_G33_COLUMN_LAYOUT_ID"))
             + "\",\"column_index_map\":" + colmap            // declared, verbatim JSON
             + ",\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + jesc(g33_env("KDM6_G33_RUN_UUID"))
-            + "\",\"process_id\":\"" + std::to_string(long(::getpid()))
-            + "\",\"owner_thread_id\":\"" + jesc(tid.str())
-            + "\",\"record_count_expected\":0}";
+            + "\",\"process_id\":" + std::to_string(long(::getpid()))
+            + ",\"owner_thread_id\":\"" + jesc(tid.str())
+            + "\",\"container_id\":\"" + jesc(cid_)
+            + "\",\"global_op_seq_start\":" + std::to_string(first)
+            + ",\"global_op_seq_end\":" + std::to_string(last)
+            + ",\"record_count_expected\":0}";
         // NO catch here. A configured run whose container cannot be opened —
         // stale .tmp from a killed run, an existing completed container, an
         // unwritable dir — is an INVALID diagnostic run. Swallowing that turned
@@ -127,7 +140,9 @@ public:
         for (int64_t i = 0; i < c.dim(); ++i)
             shape += (i ? "," : "") + std::to_string(c.size(i));
         shape += "]";
+        const uint64_t op_seq_id = ::kdm6::g33::g_op_seq.fetch_add(1);
         std::string key = std::string("{\"seq_no\":") + std::to_string(seq_)
+            + ",\"op_seq_id\":" + std::to_string(op_seq_id)
             + ",\"outer_loop\":" + std::to_string(::kdm6::g33::g_context->outer_loop_1based)
             + ",\"chain\":\"" + jesc(chain_) + "\",\"n\":" + std::to_string(n_)
             + ",\"cell_role\":\"" + jesc(cell_role) + "\",\"k\":" + std::to_string(k)
@@ -141,8 +156,29 @@ public:
     void finalize() { if (w_) { w_->finalize(); w_.reset(); } }   // explicit only
 private:
     static std::string g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
+    // KDM6_G33_OP_SEQ_MAP := "cid:first:last,cid:first:last,..." emitted from
+    // run_index(). Flat on purpose — a JSON parser here would be more code to
+    // audit inside instrumentation that must stay trivially reviewable.
+    static bool lookup_op_seq(const std::string& cid, long& first, long& last) {
+        const char* m = std::getenv("KDM6_G33_OP_SEQ_MAP");
+        if (!m) return false;
+        std::string s(m), tok;
+        std::istringstream in(s);
+        while (std::getline(in, tok, ',')) {
+            auto a = tok.find(':');
+            if (a == std::string::npos) continue;
+            auto b = tok.find(':', a + 1);
+            if (b == std::string::npos) continue;
+            if (tok.substr(0, a) != cid) continue;
+            first = std::stol(tok.substr(a + 1, b - a - 1));
+            last  = std::stol(tok.substr(b + 1));
+            return true;
+        }
+        return false;
+    }
     std::unique_ptr<::kdm6::g33::Writer> w_;
     std::string chain_;                 // OWNED: a const char* member could dangle
+    std::string cid_;                   // container_id, echoed into the header
     int n_; int B_ = 0, K_ = 0, seq_ = 0;
 };
 

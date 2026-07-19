@@ -19,6 +19,7 @@
 
 #ifdef KDM6_G33_OP_DUMP
 
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
@@ -44,6 +45,16 @@ struct DumpContext {
     std::string backend = "cpp";
 };
 inline thread_local DumpContext* g_context = nullptr;
+
+// PROCESS-GLOBAL monotonic op sequence. Every record carries the value it read
+// here, so op_seq_id is MEASURED execution order, not derived from the record's
+// position inside its own container. That distinction is the whole point: a
+// per-container counter restarts at 0 in every container, so two substeps that
+// executed in the wrong order would both look correct locally. The header's
+// declared global range (from run_index.json, fixed before the run) is what the
+// measured value is then checked against — out-of-order execution lands outside
+// the declared window and the reader rejects it.
+inline std::atomic<uint64_t> g_op_seq{0};
 
 struct ScopedDumpContext {
     DumpContext ctx;
@@ -152,7 +163,10 @@ public:
         f_.open(tmp_, std::ios::binary);
         if (!f_) throw std::runtime_error("g33: cannot open " + tmp_);
         f_.write("KDG33OP\n", 8);
-        put_u32(1);                       // format_version
+        // Keep in lockstep with g33_dump.FORMAT_VERSION. The two writers are in
+        // different languages and drift silently; the reader's version check is
+        // what turns that drift into a loud failure rather than a misparse.
+        put_u32(2);                       // format_version
         put_u32(uint32_t(header_json.size())); f_.write(header_json.data(), header_json.size());
         bytes_ = 8 + 4 + 4 + header_json.size();
         if (!f_.good()) throw std::runtime_error("g33: write error writing header");

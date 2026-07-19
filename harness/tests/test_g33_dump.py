@@ -5,13 +5,15 @@ REJECT corrupt / missing / duplicate / stale / provenance-drift evidence, so a
 buggy or tampered dump can never read as valid.
 """
 import json
+import re
 import struct
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 import g33_dump as gd
 import g33_expectation as ge
 
@@ -27,7 +29,9 @@ def _header(**over):
          "B": SCHED["B"], "K": SCHED["K"], "column_layout_id": "lc05-3col",
          "column_index_map": [[i, 0, i, i] for i in range(SCHED["B"])],
          "canonical_k_order": "top-first",
-         "run_uuid": "uuid-1", "process_id": "111", "owner_thread_id": "222",
+         "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
+         "container_id": "L1_main_n1",
+         "global_op_seq_start": 0, "global_op_seq_end": 1_000_000,
          "record_count_expected": 0}
     h.update(over)
     return h
@@ -121,13 +125,16 @@ def test_stale_tmp(tmp_path):
 
 
 def test_duplicate_seq(tmp_path):
+    # seq_no must be EXACTLY its record index, so a repeat is a gap, not merely a
+    # duplicate: a monotonicity-only rule would accept 0,1,1 losing one record.
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 5, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
-         "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "falk_f32"}
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1,
+         "cell_role": "TOP", "species": "qr", "op_id": "QR_FALK", "stage": "op",
+         "field": "falk_f32"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="duplicate seq_no"):
-        w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="seq_no"):
+        w.record({**r, "op_seq_id": 1}, "f32", [1], gd.pack_payload("f32", [1]))
 
 
 def test_nonmonotone_seq(tmp_path):
@@ -135,15 +142,41 @@ def test_nonmonotone_seq(tmp_path):
     w = gd.G33Writer(p, _header())
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
             "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
-    w.record({**base, "seq_no": 10}, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="non-monotone"):
-        w.record({**base, "seq_no": 4}, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="seq_no"):
+        w.record({**base, "seq_no": 10, "op_seq_id": 10}, "f32", [1],
+                 gd.pack_payload("f32", [1]))
+
+
+def test_op_seq_id_must_advance(tmp_path):
+    # op_seq_id is MEASURED global execution order. A repeat or a step backwards
+    # means two records claim the same instant, which would make an out-of-order
+    # replay indistinguishable from the real order.
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header())
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+            "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
+        w.record({**base, "seq_no": 1, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+
+
+def test_op_seq_id_outside_declared_window(tmp_path):
+    # The header window is DECLARED before the run (run_index.json). A record
+    # landing outside it is the signature of a container that executed out of
+    # the declared order — the reason the window is declared rather than derived.
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header(global_op_seq_start=100, global_op_seq_end=200))
+    r = {"seq_no": 0, "op_seq_id": 99, "outer_loop": 1, "chain": "main", "n": 1,
+         "cell_role": "TOP", "species": "qr", "op_id": "QR_FALK", "stage": "op",
+         "field": "f"}
+    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
+        w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
 
 
 def test_payload_size_mismatch_writer(tmp_path):
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     with pytest.raises(gd.G33Corruption, match="payload size"):
         w.record(r, "f32", [4], gd.pack_payload("f32", [1, 2]))  # shape 4 but 2 elems
@@ -154,7 +187,7 @@ def test_finalize_no_clobber(tmp_path):
     # no-overwrite check) must NOT be destroyed by finalize().
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
     p.write_bytes(b"OTHER-COMPLETED-CONTAINER")   # concurrent completed output
@@ -167,7 +200,7 @@ def test_finalize_no_clobber(tmp_path):
 def test_no_footer_without_finalize(tmp_path):
     p = tmp_path / "c.g33"
     with gd.G33Writer(p, _header()) as w:
-        r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+        r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
              "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
         w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
         # leave the context WITHOUT finalize() -> no COMPLETE container appears
@@ -211,7 +244,8 @@ def test_missing_record_detected(tmp_path):
 
 def test_extra_record_detected(tmp_path):
     recs = ge.expected_records(SCHED)
-    extra = dict(recs[0]); extra["field"] = "bogus_extra"; extra["seq_no"] = len(recs)
+    extra = dict(recs[0]); extra["field"] = "bogus_extra"
+    extra["seq_no"] = len(recs); extra["op_seq_id"] = recs[-1]["op_seq_id"] + 1
     recs2 = recs + [extra]
     p = tmp_path / "c.g33"; _write_valid(p, recs2)
     observed = {ge.record_key(r) for r in gd.read_container(p)["records"]}
@@ -290,8 +324,10 @@ def test_bad_species_scope_fails_loudly_instead_of_disabling_the_op_check():
     for bad in ([], ["QR"], ["qr ", "nr"], ["rain"]):
         with pytest.raises(ValueError):
             ge.expected_records({**SCHED, "species_scope": bad})
-    # a degenerate schedule (no substeps) must also be refused, not accepted
-    with pytest.raises(ValueError, match="no op records"):
+    # a degenerate schedule (no substeps) must also be refused, not accepted.
+    # Schedule validation now rejects mstepmax<1 up front, so the vacuous-manifest
+    # guard is never reached from here — assert the refusal, not which layer made it.
+    with pytest.raises(ValueError, match="no op records|< 1"):
         ge.expected_records({**SCHED, "mstepmax_main": [0], "mstepmax_ice": [0]})
     # ... while a valid scope still yields a non-vacuous manifest
     assert any(r["stage"] == "op" for r in ge.expected_records(SCHED))
@@ -413,7 +449,7 @@ def test_post_close_verify_refuses_to_publish_a_corrupt_tmp(tmp_path):
     # full) must keep the .tmp and never reach the final path.
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "k": 0, "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
     # simulate the tail of the file being lost between close and publish
@@ -474,3 +510,80 @@ def test_pack_payload_is_byte_identical_to_the_bitwise_roundtrip():
             ">I", struct.unpack("<I", struct.pack("<f", float(v_)))[0])
         assert gd.pack_payload("f64", [v_]) == struct.pack(
             ">Q", struct.unpack("<Q", struct.pack("<d", float(v_)))[0])
+
+
+# ── schema v2: owner review #4 P0-1..P0-4 ─────────────────────────────────────
+def test_process_id_must_be_an_integer(tmp_path):
+    # P0-1. The C++ overlay emits process_id as a JSON NUMBER (getpid()). A reader
+    # requiring str made every container from the REAL overlay unreadable, so the
+    # whole pipeline was only ever exercised against Python-written fixtures.
+    gd.G33Writer(tmp_path / "ok.g33", _header(process_id=4242))          # accepted
+    for bad in ("4242", True, -1, 1.5, None):
+        with pytest.raises(gd.G33Corruption, match="process_id"):
+            gd.G33Writer(tmp_path / f"bad{hash(str(bad))}.g33", _header(process_id=bad))
+
+
+def test_cpp_and_python_format_versions_agree():
+    # Two writers in two languages drift silently. Pin the C++ constant from the
+    # test suite so the drift fails here, not in the middle of a host campaign.
+    src = (ROOT / "g33_overlay" / "g33_op_dump.h").read_text()
+    m = re.search(r"put_u32\((\d+)\);\s*//\s*format_version", src)
+    assert m, "format_version emission not found in the C++ writer"
+    assert int(m.group(1)) == gd.FORMAT_VERSION
+
+
+def test_malformed_column_maps_are_refused(tmp_path):
+    B = SCHED["B"]
+    good = [[i, 0, i, i] for i in range(B)]
+    bad_maps = [
+        [[0, 0, 0, 0]],                                  # short: not all B columns
+        good + [[B, 0, B, B]],                           # long: B_index out of range
+        [[0, 0, 0, 0], [0, 0, 1, 1], [2, 0, 2, 2]],      # duplicate B_index
+        [[0, 0, 0, 0], [1, 0, 1, 0], [2, 0, 2, 2]],      # duplicate cpp_flat_index
+        [[0, 0, 0, 0], [1, 0, 0, 1], [2, 0, 2, 2]],      # duplicate Fortran (i,j)
+        [[0, 0, 0], [1, 0, 1], [2, 0, 2]],               # wrong arity
+    ]
+    for cmap in bad_maps:
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / "m.g33", _header(column_index_map=cmap))
+
+
+def test_raw_bit_roundtrip_preserves_nan_payloads(tmp_path):
+    # pack_payload goes through Python floats, which canonicalize NaN payloads —
+    # a signalling NaN or a distinct mantissa would silently become the quiet
+    # default, erasing exactly the bit pattern a divergence hunt is looking for.
+    f32_bits = [0x7F800001, 0xFFC00000, 0x7FC0DEAD, 0x80000000]
+    f64_bits = [0x7FF0000000000001, 0xFFF8000000000000, 0x7FF8DEADBEEFCAFE]
+    p = tmp_path / "nan.g33"
+    w = gd.G33Writer(p, _header(record_count_expected=2))
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP", "k": 0,
+            "species": "qr", "op_id": "QR_FALK", "stage": "op"}
+    w.record({**base, "seq_no": 0, "op_seq_id": 0, "field": "a"},
+             "f32", [len(f32_bits)], gd.pack_payload_bits("f32", f32_bits))
+    w.record({**base, "seq_no": 1, "op_seq_id": 1, "field": "b"},
+             "f64", [len(f64_bits)], gd.pack_payload_bits("f64", f64_bits))
+    w.finalize()
+    recs = gd.read_container(p)["records"]
+    assert gd.unpack_payload_bits("f32", recs[0]["payload"]) == f32_bits
+    assert gd.unpack_payload_bits("f64", recs[1]["payload"]) == f64_bits
+
+
+def test_run_index_tiles_the_op_seq_space_exactly():
+    ix = ge.run_index(SCHED)
+    assert sum(c["record_count"] for c in ix["containers"]) == ix["total_records"]
+    cursor = 0
+    for c in ix["containers"]:
+        assert c["first_op_seq_id"] == cursor            # no gap, no overlap
+        assert c["last_op_seq_id"] - c["first_op_seq_id"] + 1 == c["record_count"]
+        cursor = c["last_op_seq_id"] + 1
+    assert cursor == ix["total_records"]
+    assert len({c["container_id"] for c in ix["containers"]}) == len(ix["containers"])
+
+
+def test_op_seq_map_matches_the_run_index():
+    # The env string the overlay consumes must be the run_index verbatim; if it
+    # can drift, the "declared before the run" property is decorative.
+    ix = ge.run_index(SCHED)
+    parsed = [t.split(":") for t in ge.op_seq_map(ix).split(",")]
+    assert [(c["container_id"], str(c["first_op_seq_id"]), str(c["last_op_seq_id"]))
+            for c in ix["containers"]] == [tuple(t) for t in parsed]
