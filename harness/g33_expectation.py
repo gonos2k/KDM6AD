@@ -54,20 +54,38 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
     if op_id == "NR_FALK":     # number family omits dend: nr(f32)*workn(f64) -> f64
         return [("mul_workn", "f64"), ("div_mstep", "f64"),
                 ("falk_precast", "f64"), ("shadow_falk_f32", "f32"), ("falk_f32", "f32")]
-    if op_id == "QR_OUTFLOW":
-        return [("dq_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")]
-    if op_id == "NR_OUTFLOW":
-        return [("dn_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")]
+    # Outflow/inflow MUST expose every arithmetic rung, including the value that
+    # enters the min() (…_pre_cap). Collapsing them to just the final result would
+    # let an incomplete dump match the manifest and would make it impossible to say
+    # WHICH rung first diverged — the exact failure P1-9 forbids.
+    if op_id == "QR_OUTFLOW":         # min(falk*dtcld/dend_safe, q)   [both algorithms]
+        return [("mul_dt", "f32"), ("outflow_pre_cap", "f32"),
+                ("source_reservoir", "f32"), ("cap_active", "u8"), ("dq_out", "f32")]
+    if op_id == "NR_OUTFLOW":         # min(falk_nr*dtcld, nr) — NO /dend for numbers
+        return [("outflow_pre_cap", "f32"), ("source_reservoir", "f32"),
+                ("cap_active", "u8"), ("dn_out", "f32")]
     if op_id == "QR_INFLOW":
-        if algorithm == "conservative":   # prev_out * (dend_safe*delz_RAW)/(dend_safe*delz_SAFE)
-            return [("prev_out", "f32"), ("src_metric", "f32"), ("dst_metric", "f32"),
-                    ("inflow_final", "f32")]
-        return [("stored_falk_prev", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
-                ("inflow_numerator", "f32"), ("inflow_cap_active", "u8"),
-                ("source_reservoir", "f32"), ("inflow_final", "f32")]
+        if algorithm == "conservative":
+            # prev_out * (dend_safe_src*delz_RAW_src) / (dend_safe_dst*delz_SAFE_dst); no cap
+            return [("prev_out", "f32"), ("dend_safe_src", "f32"), ("delz_raw_src", "f32"),
+                    ("dend_safe_dst", "f32"), ("delz_safe_dst", "f32"),
+                    ("src_metric", "f32"), ("dst_metric", "f32"),
+                    ("mul_src", "f32"), ("inflow_final", "f32")]
+        # legacy: min(stored_falk_prev*delz_RAW_src/delz_SAFE_dst*dtcld/dend_safe_dst, q[k-1])
+        return [("stored_falk_prev", "f32"), ("delz_raw_src", "f32"),
+                ("delz_safe_dst", "f32"), ("dend_safe_dst", "f32"),
+                ("mul_delz_src", "f32"), ("div_delz_dst", "f32"), ("mul_dt", "f32"),
+                ("inflow_pre_cap", "f32"), ("source_reservoir", "f32"),
+                ("inflow_cap_active", "u8"), ("inflow_final", "f32")]
     if op_id == "NR_INFLOW":
-        return [("prev_out_nr", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
-                ("inflow_final", "f32")]
+        if algorithm == "conservative":   # prev_out_nr * delz_RAW_src / delz_SAFE_dst; no dtcld, no cap
+            return [("prev_out_nr", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
+                    ("mul_delz_src", "f32"), ("inflow_final", "f32")]
+        # legacy: min(stored_falk_nr_prev*delz_RAW_src/delz_SAFE_dst*dtcld, nr[k-1])
+        return [("stored_falk_nr_prev", "f32"), ("delz_raw_src", "f32"),
+                ("delz_safe_dst", "f32"), ("mul_delz_src", "f32"), ("div_delz_dst", "f32"),
+                ("inflow_pre_cap", "f32"), ("source_reservoir", "f32"),
+                ("inflow_cap_active", "u8"), ("inflow_final", "f32")]
     if op_id == "QR_UPDATE":
         f = [("q_before", "f32"), ("q_minus_out", "f32")]
         if role != "TOP":

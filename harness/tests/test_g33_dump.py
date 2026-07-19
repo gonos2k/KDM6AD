@@ -235,5 +235,44 @@ def test_cell_role_templates():
     assert ge._number_ops("conservative", "INTERIOR") == ["NR_FALK", "NR_OUTFLOW", "NR_INFLOW", "NR_UPDATE"]
 
 
+def test_capped_ops_expose_pre_cap_rung():
+    # P1-9: an op whose result passes through min() MUST expose the value that
+    # ENTERS the min (…_pre_cap), the reservoir it is capped against, and the
+    # cap flag — otherwise an incomplete dump matches the manifest and the first
+    # diverging rung cannot be identified.
+    for algo in ("legacy", "conservative"):
+        for op, final in (("QR_OUTFLOW", "dq_out"), ("NR_OUTFLOW", "dn_out")):
+            f = dict(ge._op_fields(algo, "INTERIOR", op))
+            assert "outflow_pre_cap" in f, (algo, op)
+            assert "source_reservoir" in f and "cap_active" in f and final in f, (algo, op)
+    # legacy inflow is capped; conservative inflow is NOT (no min) — so the cap
+    # fields must be present for legacy and absent for conservative.
+    for op in ("QR_INFLOW", "NR_INFLOW"):
+        leg = dict(ge._op_fields("legacy", "INTERIOR", op))
+        assert "inflow_pre_cap" in leg and "inflow_cap_active" in leg and "source_reservoir" in leg, op
+        con = dict(ge._op_fields("conservative", "INTERIOR", op))
+        assert "inflow_cap_active" not in con and "inflow_pre_cap" not in con, op
+
+
+def test_inflow_ladders_match_the_source_expressions():
+    # every arithmetic rung of the ACTUAL expression must be a separate record.
+    leg_qr = [f for f, _ in ge._op_fields("legacy", "INTERIOR", "QR_INFLOW")]
+    for rung in ("stored_falk_prev", "delz_raw_src", "delz_safe_dst", "dend_safe_dst",
+                 "mul_delz_src", "div_delz_dst", "mul_dt", "inflow_pre_cap", "inflow_final"):
+        assert rung in leg_qr, rung
+    con_qr = [f for f, _ in ge._op_fields("conservative", "INTERIOR", "QR_INFLOW")]
+    for rung in ("prev_out", "src_metric", "dst_metric", "mul_src", "inflow_final"):
+        assert rung in con_qr, rung          # mul_src = the pre-division intermediate
+    # raw vs safe are distinct records (the conservative metric mixes them:
+    # src uses delz_RAW, dst uses delz_SAFE)
+    assert "delz_raw_src" in con_qr and "delz_safe_dst" in con_qr
+    # number chains differ from mass: conservative NR_INFLOW has no dtcld rung
+    con_nr = [f for f, _ in ge._op_fields("conservative", "INTERIOR", "NR_INFLOW")]
+    assert "mul_dt" not in con_nr and "mul_delz_src" in con_nr
+    # and NR_OUTFLOW has no /dend rung (mass does)
+    assert "mul_dt" in [f for f, _ in ge._op_fields("legacy", "INTERIOR", "QR_OUTFLOW")]
+    assert "mul_dt" not in [f for f, _ in ge._op_fields("legacy", "INTERIOR", "NR_OUTFLOW")]
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
