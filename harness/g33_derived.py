@@ -20,9 +20,12 @@ Two deliberate semantic splits, documented rather than hidden:
   raw-bit inequality, which additionally sees value-equal bit-different
   replacements (the class of mechanism a first-divergence gate exists to see).
 
-- min()/clamp() selections are the 3-state BRANCH enum (LEFT_SELECTED /
-  RIGHT_SELECTED / TIE), never a boolean: at a TIE both backends produce the
-  SAME value from DIFFERENT branch semantics, which a boolean hides.
+- min()/clamp() selections are the 4-state BRANCH enum (LEFT_SELECTED /
+  RIGHT_SELECTED / TIE / UNORDERED), never a boolean: at a TIE both backends
+  produce the SAME value from DIFFERENT branch semantics, which a boolean
+  hides — and with a NaN operand both a<b and b<a are false, so a 3-state
+  enum misfiles NaN as TIE. UNORDERED is always recorded; it is a FAIL only
+  in an active, finite-required cell (unordered_failures).
 """
 from __future__ import annotations
 
@@ -33,7 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from g33_dump import (BRANCH_LEFT_SELECTED, BRANCH_RIGHT_SELECTED, BRANCH_TIE,
-                      G33Corruption)
+                      BRANCH_UNORDERED, G33Corruption)
 
 _W = {"f32": 4, "f64": 8, "i32": 4, "u8": 1}
 _FMT = {"f32": ">f", "f64": ">d", "i32": ">i", "u8": ">B"}
@@ -123,20 +126,43 @@ def classify_min(dtype: str, left_payload: bytes, right_payload: bytes) -> list:
 
     At a TIE both backends yield the same value from different branch semantics —
     precisely what a first-divergence gate must see and a boolean cap_active
-    hides. A NaN operand is unclassifiable: min() with NaN is exactly where the
-    two languages' semantics part ways, so it must surface as a failure here,
-    not be folded into either branch.
+    hides. A NaN operand is UNORDERED, not TIE and not an exception: a<b and b<a
+    are both false, so a 3-state enum silently misfiles NaN as TIE, and raising
+    would fail LEGITIMATE dumps — KDM6 evaluates raw divide/sqrt in dead
+    branches and masks afterwards (protocol §236), so NaN operands are expected
+    there. This function reports what the bits say; whether an UNORDERED
+    comparison is a defect depends on the masks — unordered_failures() applies
+    the verdict rule.
     """
     lv, rv = unpack_values(dtype, left_payload), unpack_values(dtype, right_payload)
     if len(lv) != len(rv):
         raise G33Corruption("min operands have different lengths")
     out = []
-    for i, (a, b) in enumerate(zip(lv, rv)):
+    for a, b in zip(lv, rv):
         if isinstance(a, float) and (math.isnan(a) or math.isnan(b)):
-            raise G33Corruption(f"min operand [{i}] is NaN — unclassifiable branch")
-        out.append(BRANCH_LEFT_SELECTED if a < b
-                   else BRANCH_RIGHT_SELECTED if b < a else BRANCH_TIE)
+            out.append(BRANCH_UNORDERED)
+        else:
+            out.append(BRANCH_LEFT_SELECTED if a < b
+                       else BRANCH_RIGHT_SELECTED if b < a else BRANCH_TIE)
     return out
+
+
+def unordered_failures(branches: list, active_mask: list,
+                       finite_required_mask: list) -> list:
+    """Indices where min() was UNORDERED in an active, finite-required cell.
+
+    Owner rule: active && finite_required && UNORDERED is a FAIL — a NaN reached
+    a comparison the physics actually takes, and min()-with-NaN is exactly where
+    the two languages' semantics part ways. UNORDERED in a dead or
+    non-finite-required cell stays recorded in `branches` but is not a failure:
+    that is the documented KDM6 dead-branch pattern, and failing on it would
+    train whoever runs the gate to ignore it.
+    """
+    if not (len(branches) == len(active_mask) == len(finite_required_mask)):
+        raise G33Corruption("branch/mask length mismatch")
+    return [i for i, (br, a, fr)
+            in enumerate(zip(branches, active_mask, finite_required_mask))
+            if br == BRANCH_UNORDERED and a and fr]
 
 
 # fields check_producer_flags MUST find; a cross-check that silently skips an

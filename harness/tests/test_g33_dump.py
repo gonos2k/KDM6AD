@@ -1318,14 +1318,28 @@ def test_floor_activity_has_a_value_view_and_a_bits_view():
     assert fl["bits_changed"] == [1, 0]        # what only a raw-bit view can see
 
 
-def test_min_branches_are_three_state_not_boolean():
+def test_min_branches_are_four_state_not_boolean():
     left = gd.pack_payload("f32", [1.0, 2.0, 3.0])
     right = gd.pack_payload("f32", [2.0, 1.0, 3.0])
     assert gdv.classify_min("f32", left, right) == [
         gd.BRANCH_LEFT_SELECTED, gd.BRANCH_RIGHT_SELECTED, gd.BRANCH_TIE]
-    with pytest.raises(gd.G33Corruption, match="NaN"):
-        gdv.classify_min("f32", gd.pack_payload_bits("f32", [0x7FC00000]),
-                         gd.pack_payload("f32", [1.0]))
+
+
+def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
+    # a<b and b<a are BOTH false for NaN, so a 3-state enum misfiles NaN as TIE.
+    # And raising on NaN fails LEGITIMATE dumps: KDM6 evaluates raw divide/sqrt
+    # in DEAD branches and masks afterwards (§236), so NaN operands are expected
+    # there. UNORDERED is recorded always; it is a FAIL only where the physics
+    # actually takes the comparison (active && finite_required).
+    nan_left = gd.pack_payload_bits("f32", [0x7FC00000, 0x3F800000])
+    ones = gd.pack_payload("f32", [1.0, 1.0])
+    br = gdv.classify_min("f32", nan_left, ones)
+    assert br == [gd.BRANCH_UNORDERED, gd.BRANCH_TIE]
+    assert gdv.unordered_failures(br, [1, 1], [1, 1]) == [0]   # live branch: FAIL
+    assert gdv.unordered_failures(br, [0, 1], [1, 1]) == []    # dead branch: recorded only
+    assert gdv.unordered_failures(br, [1, 1], [0, 1]) == []    # not finite-required
+    with pytest.raises(gd.G33Corruption, match="length mismatch"):
+        gdv.unordered_failures(br, [1], [1, 1])
 
 
 def _substep_pre_fields(**edits):

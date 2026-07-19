@@ -59,11 +59,17 @@ MAX_ELEMS = 64 * 1024 * 1024
 
 # branch-selection enum (P0-6): a bare boolean hides a TIE, where both backends
 # produce the SAME value from DIFFERENT branch semantics — exactly the case a
-# first-divergence gate must not blur.
+# first-divergence gate must not blur. UNORDERED (owner review): with a NaN
+# operand a<b and b<a are BOTH false, so a 3-state enum silently misfiles NaN
+# as TIE — and NaN operands are expected in this scheme, because KDM6 evaluates
+# raw divide/sqrt in dead branches and masks afterwards (protocol §236). The
+# state is recorded here; whether it is a defect depends on the active and
+# finite-required masks and is decided by the comparator, never by default.
 BRANCH_LEFT_SELECTED = 0
 BRANCH_RIGHT_SELECTED = 1
 BRANCH_TIE = 2
-BRANCH_VALUES = (0, 1, 2)
+BRANCH_UNORDERED = 3
+BRANCH_VALUES = (0, 1, 2, 3)
 
 
 class G33Corruption(Exception):
