@@ -395,3 +395,20 @@ date_modified: 2026-06-25
 - Linked: [[Operational-Raw vs DA-Clamped Dual Path]], [[KDM6AD Differentiability Audit]], [[KDM6AD Automatic Differentiation ABI]], [[KDM6AD Forward Parity]], `docs/STATUS.md`.
 - Candidate heuristics flagged (NOT auto-promoted): adjoint-identity≠physical-correctness; compare sensitivities in control/nondim space.
 - Frozen boundary: P0-3 (forcing/diagnostic VJP), P2 AD-ABI-v2 descriptor, C-ABI domain validation touch libtorch/bridge + src → owner freeze-lift required; not started.
+
+## [2026-07-16] kg-update | code-only rebuild after P0-4 (5003 → 5062 nodes)
+- Source dir: `.` (graphify-out/.graphify_root); graphify 0.8.39.
+- Mode: cli-update (`graphify update .`, AST-only, no LLM; 275/275 files, SHA256-cached where unchanged).
+- Delta: **+59 nodes / +86 edges** (5003→5062 / 9597→9683), 316 communities (was 303). graph_diff: +67 added, −8 removed (stale wiki/remember artifacts).
+- P0-4 extracted: 42 `water_budget` nodes — `kdm6_water_budget` module (ColumnWaterBudget, kdm6_step_with_water_budget, column_water_kg_m2, hydrometeor_mass_sink_kg_m2) + `docs/P0-4_water_budget.md` sections. The `budget=` hooks in runtime.py/coordinator.py re-extracted.
+- Wiki sync: NONE — GRAPH_REPORT.md kept only in `graphify-out/`, NOT mirrored into `wiki/` per AGENTS.md §147-148. `wiki/index.md` has no `## Graph snapshot` section → untouched. graph.html skipped (5062 > 5000 viz limit).
+- Caveat: code-only — the P0-4 wiki source (`kdm6ad-deep-review-2026-07-15`) was semantically graphed in the prior `/graphify . --update`; this run is AST-only, no new doc semantics.
+
+## [2026-07-19] kg-update | code-only rebuild after the G3.3-M op-provenance harness (5062 → 5618 nodes)
+- Source dir: `.` (from `graphify-out/.graphify_root`); graphify 0.8.39 (≥0.8.24 required — this corpus is Fortran-bearing).
+- Mode: cli-update (`graphify update .`, AST-only, no LLM; 314/314 files, SHA256-cached where unchanged).
+- Delta: **+556 nodes / +1002 edges** (5062→5618 / 9683→10685), 349 communities (was 316). graph_diff: +577 added, −21 removed.
+- Extracted this cycle — the G3.3-M op-provenance instrumentation harness: 94 `g33_*` nodes (`g33_dump` KDG33OP fail-closed container writer/reader, `g33_expectation` independent expectation manifest, `g33_op_dump.h` C++ writer + RAII dump context), 21 `verify_overlay` nodes (the 4-check overlay verifier: base-SHA pin, macro-off textual identity, macro-ON in-order superset, mutation tripwire), 12 `build_c4_evidence` nodes (`terminal_parity_block`, `run_end_time`), plus 65 doc-section nodes (`C4_G3_3_OP_PROVENANCE_PROTOCOL`, `C4_G3_3_FIRST_DIVERGENCE`).
+- Wiki sync: NONE — GRAPH_REPORT.md kept only in `graphify-out/`, NOT mirrored into `wiki/` per AGENTS.md §146-148. `wiki/index.md` has no `## Graph snapshot` section → untouched (not invented). graph.html skipped (5618 > 5000 viz limit).
+- Caveats: (a) `wiki/graph-report.md` is a PRE-EXISTING raw code-tree mirror dated 2026-07-05 that contradicts AGENTS.md §146-148 — left untouched and NOT refreshed; surfaced for owner decision rather than deleted. (b) Of the 21 removed nodes, 6 names survive under new ids; the remainder are `*_rationale_<n>` comment anchors that re-anchored to different numbers in files that are byte-unchanged (`libtorch/src` is git-clean and `sedimentation.cpp` still matches the SHA pinned by the G3.3-M overlay) — benign, but it makes node-level diffs noisy.
+- Frozen boundary: untouched — this cycle added only harness/docs; no production or reference source changed (C4 remains HOLD on Gate B G3.3-M).

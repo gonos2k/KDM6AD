@@ -1,304 +1,308 @@
-# C4 Gate B G3.3-M — op-level first-divergence instrumentation protocol (hardened)
+# C4 Gate B G3.3-M — op-level first-divergence instrumentation protocol (proof-grade)
 
 **Branch**: `analysis/c4-g3.3-op-provenance` · diagnostic-only, compile-time OFF, **no production change**.
-**Status**: conditionally approved (owner adversarial review 2026-07-19). This revision hardens the
-protocol against **confirmation bias** and **instrumentation-induced false pass** BEFORE any code is
-written. Supersedes the first draft's implicit "falk is the cause" framing.
-**Purpose**: close Gate B G3.3 by *mechanism provenance* — replacing the withdrawn absolute-ULP
-envelope and the withdrawn fixture-wide relative envelope (see
-[`C4_G3_3_FIRST_DIVERGENCE.md`](C4_G3_3_FIRST_DIVERGENCE.md)) — WITHOUT touching production physics or
-the existing checker until the evidence is in hand.
+**Review status**: two owner adversarial reviews incorporated (2026-07-19). Confirmation-bias defenses
+(d186f00) approved; this revision closes the remaining arithmetic-model, record-completeness, and
+provenance-independence gaps. **Approved to start now**: typed/versioned schema + reference parser +
+independent expectation generator + synthetic corruption tests + RAII context skeleton. **After this
+doc is in**: the C++/Fortran numerical-path instrumentation. **Never** before a PASS + owner
+adjudication: any production physics / existing checker change.
+
+**Purpose**: close Gate B G3.3 by *mechanism provenance* — replacing the withdrawn absolute-ULP and
+fixture-wide-relative envelopes (see [`C4_G3_3_FIRST_DIVERGENCE.md`](C4_G3_3_FIRST_DIVERGENCE.md)).
 
 ---
 
-## 0. The question — find first, classify second (P0-1)
+## 0. Method — find first, classify second
 
-The gate does **NOT** assume the first cross-tree divergence is at `falk`. The C++ sedimentation chain
-re-runs `preamble → ProgB → slope` after each main substep, regenerating `work1_qr`/`workn_qr`; the
-`falk` *inputs* can therefore already differ from an earlier re-slope. A real causal order may be:
-
-```
-subcycle-1 q_post divergence → re-slope input divergence → vt/work1 divergence → subcycle-2 falk divergence
-```
-
-so `falk` could be a downstream *carrier*, not the seed. The protocol therefore:
-
-1. **Locates the first cross-tree divergence** over the full recorded space (below), THEN
-2. **Classifies** it as a *shared* operation (present identically in both algorithms) or a
-   *conservative-only* operation.
-
-If the first divergence is **before sedimentation** (`outer_pre_sed` already differs, or `work1`/`mstep`
-already differ at substep entry), the verdict is **INCONCLUSIVE — divergence predates sedimentation**,
-never FAIL, and the instrumentation must widen upstream.
+Do **not** pre-assume the first cross-tree divergence is at `falk`. The C++ chain re-runs
+`preamble → ProgB → slope` after each main substep, regenerating `work1_qr`/`workn_qr`; `falk` *inputs*
+can already differ from an earlier re-slope. The comparator LOCATES the first divergence over the full
+recorded space (canonical total order, §7), THEN classifies it as *shared* or *conservative-only*. If
+it predates sedimentation (`outer_pre_sed`, `work1`/`mstep` already differ) → **INCONCLUSIVE**, never
+FAIL; widen upstream.
 
 ---
 
-## 1. Snapshots required (P0-1, P1-8)
-
-For each outer sub-cycle and each main/ice substep `n`, both backends dump, in order:
+## 1. Snapshots (whole B×K, every value)
 
 ```
-outer_pre_sed        qr nr qv th   + rho delz               (whole B×K)
-  substep_pre_n      qr nr  work1_qr workn_qr  mstep_col mstepmax gate  rho delz
-    <sed op ladders per k — §3>
-  substep_post_n     qr nr  (+ qs qg brs)
-  reslope_input_n    the fields fed to preamble/ProgB/slope
-  reslope_output_n   work1_qr workn_qr (+ the regenerated fall-speed inputs)
+outer_pre_sed        qr nr qv th   rho delz
+  substep_pre_n      qr nr  work1_qr workn_qr  mstep(native) mstepmax gate  rho delz
+    <per-k op ladders — §3>
+  substep_post_n     qr nr qs qg brs
+  reslope_input_n / reslope_output_n     work1_qr workn_qr + regenerated fall-speed inputs
 outer_post_sed       qr nr qv th
 outer_post_micro     qr nr qv th
 ```
-
-- **`qv`/`th` are NOT in `SubstepAdvectionState`** (only `qr nr qs qg brs`), so they are captured **only
-  at the outer-loop boundary**. Sedimentation must leave `qv`/`th` invariant, so
-  `outer_pre_sed.{qv,th} == outer_post_sed.{qv,th}` is itself a checked invariant (a violation is an
-  instrumentation/logic bug, not a physics finding).
-- Every snapshot records the **whole `(B,K)`** field, not just the final-max cell (P0-5).
+`qv`/`th` are absent from `SubstepAdvectionState`, so they are captured only at the outer boundary;
+`outer_pre_sed.{qv,th} == outer_post_sed.{qv,th}` is a checked sed-invariant (violation = instrumentation bug).
 
 ---
 
-## 2. Typed, native-precision dump — never pre-round (P0-2)
+## 2. Typed, native-precision dump — never pre-round
 
-The existing `kdm6_dump_field_be` casts every tensor `.to(torch::kFloat32)` before writing. That
-**destroys native-precision differences**: two backends whose `work1` differ in the last f64 bit but
-round to the same f32 would look "input-bitwise" — a false pass. G3.3-M uses a **typed writer** that
-records each value at its NATIVE width:
+A dedicated typed writer records each value at NATIVE width — the existing `.to(kFloat32)` helper is
+NOT reused (it destroys f64 last-bit differences that round to the same f32 → false "input bitwise").
 
 ```
-real32  → uint32 raw bits          real64 → uint64 raw bits
-int32   → int32                    logical → uint8
+real32 → uint32   real64 → uint64   int32 → int32   logical → uint8
 ```
 
-Minimum per-op fields (mass species, per k):
-
+**mstep is an integer-VALUED float tensor** (clamped, then used as divisor + gate), NOT an int type.
+Storing only `int32(2)` hides `2.0` vs `2.0000002`. Record:
 ```
-q_entry_f32   dend_f32   delz_f32   work1_native_f64   mstep_i32   gate_u8
-falk_precast_native_f64    falk_stored_f32
+mstep_native_dtype  mstep_native_bits(u32/u64)  mstep_decoded_i32  mstep_exact_integer(u8)  mstepmax_i32  gate(u8)
 ```
-
-and, where feasible, the **arithmetic ladder** so the rounding rung of the first divergence is visible:
-
-```
-mul_dend_q → mul_work1 → div_mstep → mul_gate → falk_precast(native) → falk_f32(stored)
-```
+Acceptance: `mstep_exact_integer==true`, `mstep_decoded_i32` in range, `mstep_native_bits` equal
+*within* each pair.
 
 ---
 
-## 3. Per-rung op ladders — pin the exact operation (P0-1, P1-9)
+## 3. Exact per-rung op ladders — pinned to the code (raw/safe, top vs interior, mass vs number)
 
-Recording only `inflow` + `q_post` cannot say WHICH op diverged. Both paths dump the full rung set:
+The "ρΔz conversion" is a concept; the gate records the **operational expression**. Verified against
+`sedimentation.cpp` / `sedimentation_conservative.cpp` at HEAD. `dend_safe=clamp(dend,qcrmin)`,
+`delz_safe=clamp(delz,qcrmin)`; record `dend_raw dend_safe dend_floor_active delz_raw delz_safe delz_floor_active`.
+Every record carries `cell_role ∈ {TOP, INTERIOR, BOTTOM}`; the comparator rejects a record whose op
+template does not match its `cell_role`.
 
-**Conservative** (`sedimentation_conservative.cpp:72-88`, cons.F `:1219-1269`):
+**Shared rung (all templates): `falk`** — but note the NUMBER falk omits the `dend` factor.
 ```
-falk_f32
-dq_out = min(falk*dtcld/dend_safe, q)          cap_active(u8)  source_reservoir=q
-prev_out(from k-1)   src_metric=dend[k-1]*delz[k-1]   dst_metric=dend[k]*delz[k]
-prev_out*src_metric  → /dst_metric = dq_in
-q_before  q_minus_out=q-dq_out  q_plus_in = q_minus_out+dq_in   (NO clamp)   q_post
-```
-
-**Legacy** (`sedimentation.cpp:90-164`, kdm6.F `:1197-1237`):
-```
-falk_f32   (stored falk_prev carried into the interior inflow)
-dqr_k   = min(falk*dtcld/dend_safe, q)          cap_active(u8)
-inflow numerator: stored_falk_prev * delz_src / delz_dst * dt / rho_dst
-dqr_above = min(inflow_numerator, q[k-1])       inflow_cap_active(u8)  source_reservoir=q[k-1]
-q_before  q_minus_out=q-dqr_k  q_plus_in=q_minus_out+dqr_above  clamp_active(u8)  q_post=max(...,0)
+QR_FALK  falk_qr = (dend_raw · q · work1_qr / mstep_safe · gate) → f32     [mass]
+NR_FALK  falk_nr = (        nr · workn_qr / mstep_safe · gate) → f32       [number — NO dend]
 ```
 
-The **shared** rung is `falk` (identical idiom). The **conservative-only** rungs are the ρΔz
-`dq_in` metric conversion and the missing positivity clamp. A FAIL requires the first cross-tree
-difference to fall on a conservative-only rung with proof-grade rung isolation — not an aggregate
-`inflow`/`q_post` diff.
+**Op templates (four mass + four number families):**
+
+`conservative_mass_top` / `conservative_mass_interior` (`sedimentation_conservative.cpp:72-88`)
+```
+QR_OUTFLOW  dq_out = min(falk_qr · dtcld / dend_safe, q)                     cap_active(u8)  source_reservoir=q
+QR_INFLOW   (INTERIOR only) dq_in = prev_out · (dend_safe_src · delz_RAW_src) / (dend_safe_dst · delz_SAFE_dst)
+            src_metric = dend_safe[k-1]·delz_raw[k-1]   dst_metric = dend_safe[k]·delz_safe[k]
+QR_UPDATE   TOP: q_post = q − dq_out          INTERIOR: q_post = q − dq_out + dq_in     (NO clamp)
+```
+`conservative_number_*` (`:93-103`)
+```
+NR_OUTFLOW  dn_out = min(falk_nr · dtcld, nr)                    [NO /dend]
+NR_INFLOW   (INTERIOR) dn_in = prev_out_nr · delz_RAW_src / delz_SAFE_dst      [Δz only, NO density]
+NR_UPDATE   TOP: nr − dn_out    INTERIOR: nr − dn_out + dn_in     (NO clamp)
+```
+`legacy_mass_top` (`sedimentation.cpp:106`) — **no dqr_k, no inflow; direct clamp**
+```
+QR_UPDATE   q_post = max(q − falk_qr · dtcld / dend_safe, 0)
+```
+`legacy_mass_interior` (`:135-164`)
+```
+QR_OUTFLOW  dqr_k    = min(falk_qr · dtcld / dend_safe, q)                    cap_active(u8)
+QR_INFLOW   dqr_above = min(stored_falk_prev · delz_RAW_src / delz_SAFE_dst · dtcld / dend_safe_dst, q[k-1])
+            inflow_cap_active(u8)  source_reservoir=q[k-1]
+QR_UPDATE   q_post = max(q − dqr_k + dqr_above, 0)     clamp_active(u8)
+```
+`legacy_number_*` — number uses `fma_acc(nr, falk_nr, dtcld, −1) → clamp(…,0)` at top
+(`:109-111`), and the `min(falk_nr·dtcld, nr)` / `min(falk_nr_prev·Δz-ratio·dtcld, nr[k-1])` interior
+form (`:136/:151-152`); recorded as its own template.
+
+Each `*_INFLOW`/`*_UPDATE` stores the intermediate rungs (`prev_out`/`stored_falk_prev`,
+`src_metric`, `dst_metric`, `inflow_numerator`, `inflow_pre_cap`, `inflow_cap_active`, `inflow_final`,
+`q_before`, `q_minus_out`, `q_plus_in_preclamp`, `clamp_active`, `q_post`).
 
 ---
 
-## 4. Signature-neutral, macro-local instrumentation (P0-3, P0-4, P1-7)
+## 4. Fall accumulator + surface-diagnostic ladder (P1-12)
 
-### 4a. No signature change (P0-3)
-The proposed trailing `loop` arg is **rejected**: a default arg is source-level only; the mangled
-symbol and the exact function-pointer type used by `sedimentation_chain` to select legacy vs
-conservative would change, so the macro-OFF binary would differ from the committed one — breaking the
-"production SHA unchanged" contract. Instead, carry the sub-cycle/case/pair context in a **macro-local
-thread-local** set by RAII, so public/internal signatures are byte-identical when the macro is off:
-
-```cpp
-#ifdef KDM6_G33_OP_DUMP
-struct G33DumpContext { int outer_loop_1based; const char* case_id;
-                        const char* pair_id;  const char* algorithm; };
-thread_local G33DumpContext* g_g33_context = nullptr;         // set/cleared by ScopedG33DumpContext (RAII)
-#endif
+The final G3.3 diff includes `rain_increment`; the state-update ladder alone can't trace it. Legacy
+adds the raw stored `falk` to the accumulator; conservative adds the actual capped-outflow rate. Record:
 ```
-
-Every `#ifdef KDM6_G33_OP_DUMP` block vanishes entirely from the preprocessor output when undefined.
-
-### 4b. Shadow ladder — never re-associate the active expression (P0-4)
-Splitting `falk`/`dq_in` into temporaries can change compiler evaluation / tensor dispatch (C++) or add
-a REAL storage-rounding point (Fortran), i.e. **change the observed target**. The active expression
-stays verbatim; the ladder is recomputed in **diagnostic-only** variables that never feed state:
-
-```cpp
-auto falk = /* ORIGINAL EXPRESSION, unchanged */;
-#ifdef KDM6_G33_OP_DUMP
-if (g_g33_context) { auto d1 = dend*q; auto d2 = d1*work1; /* … */ g33_dump(...); }  // NOT used in state
-#endif
+fall_before  fall_increment  fall_after
+bottom_fall  delz_bottom  surface_mul1  surface_mul_dt  rain_increment  snow_increment  graupel_increment
 ```
-
-Fortran keeps the original assignment, then recomputes the same ladder into diagnostic-only variables.
-Correctness that the shadow did not perturb state is proven by the 3-way gate (§7).
-
-### 4c. Dedicated macro + env (P1-7)
-Do **not** reuse `KDM6_SUBSTEP_DUMP` (it also drives coordinator/cold/melt-freeze forensic hooks and
-their static counters/IO). Use an independent macro + env:
-
-```
-macro:  KDM6_G33_OP_DUMP
-env:    KDM6_G33_DUMP_DIR   KDM6_G33_CASE_ID   KDM6_G33_PAIR_ID
-```
+so `qr seed → rain_increment` is shown as an actual op path, not mere cell-set inclusion.
 
 ---
 
-## 5. Fortran via temporary build overlay — canonical SHA untouched (P0-10)
+## 5. Signature-neutral, macro-local, shadow-only instrumentation
 
-The private Fortran reference permits exactly the pinned edits; even a diagnostic `#ifdef` changes the
-canonical file SHA and would pollute the Gate A source pin. So the Fortran dump is added on a
-**temporary diagnostic copy**, never the canonical source:
+- **No signature change** — the trailing `loop` arg is rejected (would change the mangled symbol + the
+  function-pointer type `sedimentation_chain` dispatches on). Context is a macro-local `thread_local
+  G33DumpContext {outer_loop_1based, case_id, pair_id, algorithm}` set by RAII (`ScopedG33DumpContext`).
+- **Shadow ladder** — the active expression stays verbatim; the ladder is recomputed into
+  diagnostic-only variables that never feed state (C++ compiler re-association / Fortran REAL temporary
+  rounding would otherwise change the observed target).
+- **Dedicated macro/env** — `KDM6_G33_OP_DUMP` + `KDM6_G33_DUMP_DIR`/`KDM6_G33_CASE_ID`/
+  `KDM6_G33_PAIR_ID`; independent of the shared `KDM6_SUBSTEP_DUMP` (which also drives
+  coordinator/cold/melt-freeze hooks).
+- **C++ via overlay too (P0-8)** — instrument `sedimentation*.cpp` on a **temporary diagnostic source
+  overlay**, not the canonical tree, so the public production source is byte-unchanged and A vs B/C
+  separate cleanly (mirrors the Fortran overlay, §6).
 
+### 5a. Shadow-fidelity gate (P1-10)
+The shadow ladder is only trusted if, at every active cell:
 ```
-canonical host phys/*.F       — UNCHANGED (SHA before == after)
-diagnostic overlay copy       — #ifdef KDM6_G33_OP_DUMP dumps added
-diagnostic build dir          — separate; builds the gateb driver against the diagnostic dylib
+shadow_falk_stored_f32 bits == actual falk_stored_f32 bits
 ```
-
-Equivalently, apply a patch to a throw-away source tree immediately before the diagnostic build. Final
-checks: **canonical Fortran SHA before == after**, and `build_c4_evidence.py` **Gate A scope PASS**.
+AND an independent Python/scalar evaluator, from the raw recorded inputs, reproduces the actual output
+exactly: `actual == shadow == offline`. Any mismatch → that rung is unusable → **INCONCLUSIVE**.
 
 ---
 
-## 6. Dump format — one versioned, self-verifying container per (case, backend) (format §)
+## 6. Canonical Fortran + C++ via temporary build overlay (P0-8, P0-10)
 
-Loose per-`(loop,n)` binaries are replaced by a single container so the comparator can prove
-completeness. **K orientation is fixed once** from the `outer_pre_sed.qr` anchor (top-first) and applied
-to every record — never auto-optimized per file.
-
-```
-HEADER   magic="KDG33OP"  format_version  producer_commit  binary_sha256
-         case_id  pair_id  backend(fortran|cpp)  algorithm(legacy|conservative)
-         B  K  canonical_k_order  record_count_expected
-RECORD*  outer_loop_1based  chain(main|ice)  n_1based  species  stage  field
-         dtype  shape  payload_size  payload
-FOOTER   record_count_actual  payload_sha256  COMPLETE
-```
-
-Write `.tmp → flush/close → verify → atomic rename`. The comparator is **fail-closed** and rejects:
-missing/extra/duplicate record · stale case/pair id · producer-SHA mismatch · dtype/shape mismatch ·
-absent COMPLETE footer · payload-size error · orientation ambiguity · unexpected NaN/Inf · degenerate
-evidence (all-zero or K-uniform).
+The private Fortran reference permits only its pinned edits; a diagnostic `#ifdef` still changes the
+canonical file SHA and would pollute the Gate A source pin. So BOTH the Fortran dumps AND the C++ sed
+dumps live on **temporary diagnostic overlays** (throw-away source copies patched immediately before the
+diagnostic build), never the canonical/public tree. Final checks: canonical Fortran + C++ source SHA
+**before == after**, and `build_c4_evidence.py` Gate A scope **PASS**.
 
 ---
 
-## 7. 3-way non-invasiveness gate — SHA alone is insufficient
+## 7. Dump container + INDEPENDENT expectation + attestation
 
-Comparing only the production dylib SHA is not enough: instrumentation can change register allocation
-or temporary materialization. For **each backend × each fixture** run three builds/configs:
-
+### 7a. Container (versioned, self-verifying) — one per (case, backend)
 ```
-A  macro undefined
-B  macro defined, env unset
-C  macro defined, env set + dump fires
+HEADER  magic="KDG33OP" format_version producer_commit binary_sha256 case_id pair_id
+        backend algorithm B K column_layout_id record_count_expected(informational)
+        column_index_map[B]{B_index, fortran_i, fortran_j, cpp_flat_index}
+        fortran_k_index cpp_k_index canonical_k_index
+        run_uuid process_id owner_thread_id
+RECORD* seq_no outer_loop chain n cell_role species op_id stage field dtype shape payload_size payload
+FOOTER  record_count_actual payload_sha256 COMPLETE
 ```
+Write `.tmp → flush/close → verify → atomic rename`.
 
-and require **strict bitwise** `A_output == B_output == C_output` for:
+### 7b. Independent expectation manifest (P0-5) — completeness is NOT writer self-reported
+A **separate** generator derives, from the fixture + the known substep/re-slope schedule, the exact
+expected record-key set `(case,pair,backend,outer_loop,chain,n,cell_role,species,op_id,field,dtype,shape,op_seq_id)`.
+The comparator requires `observed_keys == independently_expected_keys`; the header's
+`record_count_expected` is informational only. The generator MUST encode the conditional schedule
+(C++ main re-slope after every main substep, **ice re-slope only when `n < mstepmax_ice`**).
 
+### 7c. Column & K identity (P0-6) — declared, then anchor-verified
+`B` must mean the same physical column in Fortran and C++. The `column_index_map` DECLARES the
+Fortran `(i,j)` ↔ C++ flat-B correspondence from the source contracts (not inferred from "better-fitting"
+data); K orientation likewise DECLARED top-first from the source contracts. A nondegenerate anchor
+(`outer_pre_sed.qr`) then VERIFIES the declaration. If the data is too uniform to verify → **INCONCLUSIVE**.
+
+### 7d. External attestation (P0-7) — provenance not self-reported
+The harness independently computes, before the run, a `run_attestation.json`:
 ```
-{legacy Fortran, legacy C++, conservative Fortran, conservative C++} × {closure3-C3.3, species-iso}
+public_source_commit  diagnostic_patch_sha256  canonical_fortran_base_sha256  fortran_overlay_sha256
+cpp_overlay_sha256  diagnostic_dylib_sha256  gateb_exe_sha256  fixture_sha256  env_config_sha256
 ```
+The comparator reads a container ONLY if its header values agree with `run_attestation.json`. The
+running binary is never asked to self-attest.
 
-Additionally, the macro-undefined rebuilt dylib SHA **must equal** the committed production binary SHA.
-Any inequality → the instrumentation is invasive → fix before trusting any dump.
+### 7e. Writer crash/stale/concurrency contract (P1-13)
+Header carries `run_uuid, process_id, owner_thread_id`; records carry monotone `seq_no`. The writer
+fails (never overwrites) if the final file exists; fails on a pre-existing `.tmp` (stale); fails if two
+writers in one process open the same `(case,backend)`; fails on a regressed/duplicate `seq_no`; and
+writes the `COMPLETE` footer ONLY via an explicit `finalize()` — never from `atexit`/destructor (which
+may not run on STOP/exception/abort).
+
+### 7f. Fail-closed comparator rejects
+missing/extra/duplicate key vs the independent manifest · stale case/pair/run id · attestation mismatch
+· dtype/shape mismatch · absent COMPLETE footer · payload-size/`payload_sha256` mismatch · orientation
+unverifiable · NaN/Inf in an active+finite-required cell (§8c) · degenerate container (no active target
+cell, or qr & nr K-uniform, or all falk & q_post zero).
 
 ---
 
-## 8. Verdict is tri-state — PASS / FAIL / INCONCLUSIVE
+## 8. Verdict — tri-state, evidence-graded
 
-Never promote INCONCLUSIVE to PASS.
+### 8a. Canonical total order (P2-14)
+`outer_loop → chain(main before ice) → n → phase(outer_pre, substep_pre, falk_inputs, falk_rungs,
+outflow, inflow, update, substep_post, reslope_input, reslope_output, outer_post_sed, outer_post_micro)
+→ species → cell_role → canonical_k → canonical_column → field`. Each record carries a canonical
+`op_seq_id`; the same LOGICAL op gets the same id even where C++ and Fortran source order differ.
 
-**PASS — inherited shared mechanism.** For EACH pair internally: `outer_pre_sed` inputs bitwise;
-mstep/branch signature bitwise (Fortran==C++ *within the pair*); pre-op inputs bitwise; the first
-cross-tree difference is the **same arithmetic rung of the shared `falk` op**; any conservative-only op
-occurs strictly *after*; and the final rain-family divergence is causal-set-included from that seed.
-BETWEEN variants: the first-divergence **operation class is identical** and the only difference is the
-**intended state magnitude**.
+### 8b. PASS / FAIL / INCONCLUSIVE (P1-9)
+**PASS (inherited shared mechanism).** *Within each pair*: `outer_pre_sed` + pre-op inputs bitwise;
+mstep/branch signature bitwise (Fortran==C++ *within the pair*); the first cross-tree difference is the
+**same shared expression family at the same local rounding law/rung**; every conservative-only op is
+strictly *after* that pair's first divergence; shadow-fidelity holds (§5a); and the final rain-family
+divergence (incl. `rain_increment`, §4) is causal-set-included from the seed. *Between variants*: the
+first-divergence **op_id/class is identical** and the variant state difference is **traceable to the
+already-approved conservative interface-transfer trajectory** (not merely "magnitude only").
 
-**FAIL — conservative-specific mechanism.** The conservative pair's first cross-tree difference is at a
-conservative-only rung: `dq_in` / ρΔz metric conversion / the no-clamp update / a conservative-only
-branch.
+**FAIL (conservative-specific mechanism).** The conservative pair's first cross-tree difference is at a
+conservative-only rung: `dq_in` / the ρΔz `src_metric`·`dst_metric` conversion / the no-clamp update /
+a conservative-only branch.
 
-**INCONCLUSIVE — widen instrumentation.** `outer_pre_sed` already differs · `work1`/`mstep` already
-differ at substep entry · the first difference is at a stage not yet dumped · missing/duplicate records
-or orientation ambiguity · the shadow ladder fails to reproduce the real stored `falk`.
+**INCONCLUSIVE.** Divergence predates sedimentation · `work1`/`mstep` differ at substep entry · first
+difference at an undumped stage · missing/duplicate records or unverifiable orientation · shadow-fidelity
+fails.
 
-### mstep/branch comparison scope (P0-6)
-Legacy and conservative have intentionally different physical states, so `mstep` **may legitimately
-differ between variants** — that is not a defect. Required equality is **within each pair only**
-(Fortran mstep/branch == C++ mstep/branch for legacy; likewise for conservative). Between variants,
-compare only whether the first-divergence **operation class** is the same shared mechanism. Do NOT
-implement "all four runs' mstep equal" — it would false-FAIL a normal conservative trajectory.
+### 8c. Active-mask-aware NaN/degeneracy (P1-11)
+KDM6 evaluates raw divide/sqrt in dead branches then masks. Each record carries `active_mask, gate_mask,
+cap_active, finite_required_mask`. NaN/Inf in an active + finite-required cell → FAIL; in an
+inactive/dead branch → recorded but excluded from the verdict. Degeneracy is judged container-wide
+(§7f), not per-record (a gate-all-1, cap-all-0, or inactive-species-all-0 record is legitimate).
 
 ---
 
-## 9. Checker — additive, never overwrite the existing gate
+## 9. Checker — additive, evidence-graded (P2-15)
 
-Do not edit `gateb_g3_check.py` or any production/checker gate until G3.3-M PASSes AND owner
-adjudication is recorded. Add a **new** `harness/gateb_g33m_check.py` emitting:
-
+New `harness/gateb_g33m_check.py` (the existing ULP gate is UNTOUCHED until a PASS + adjudication):
 ```json
-{ "gate": "G3.3-M", "version": 1, "verdict": "PASS | FAIL | INCONCLUSIVE",
-  "pairs": { "legacy": { "first_divergence": {} },
-             "conservative": { "first_divergence": {} } },
-  "noninvasiveness": {}, "completeness": {} }
+{ "gate":"G3.3-M", "version":1, "verdict":"PASS|FAIL|INCONCLUSIVE",
+  "evidence_strength":"STRONG|PARTIAL",
+  "first_divergence":{"outer_loop":0,"chain":"main","n":0,"op_id":"","species":"","column":0,"k":0},
+  "shadow_fidelity":true, "preop_inputs_bitwise":true,
+  "branch_signature_equal_within_pair":true, "conservative_only_op_precedes_seed":false,
+  "causal_propagation":{"qr":true,"nr":true,"qv":"not-yet-traced","th":"not-yet-traced","rain_increment":true},
+  "noninvasiveness":{}, "completeness":{} }
 ```
-
-The existing absolute-ULP result is retained as a historical diagnostic
-(`G3.3-ULP: failed, superseded as unsuitable`; `G3.3-M: operative gate`). The formal gate replacement
-is documented only after a PASS + owner sign-off.
+If `qv`/`th` are confirmed only by the coarse outer snapshot, mark `evidence_strength: PARTIAL` and the
+respective `causal_propagation` entries `not-yet-traced`; the first-divergence gate may PASS while
+propagation coverage remains separate.
 
 ---
 
-## 10. Implementation order (owner-specified)
+## 10. Non-invasiveness — 3-way, section-aware (P0-8)
 
-```
-1.  docs(c4-g3.3): harden op-provenance protocol            ← THIS commit
-2.  typed/versioned dump schema + synthetic parser tests
-3.  dedicated macro + signature-neutral diagnostic context (RAII)
-4.  outer_pre_sed / re-slope snapshots
-5.  C++ legacy qr/nr shadow ladder                          ← first code instrumentation
-6.  C++ conservative qr/nr shadow ladder
-7.  A/B/C non-invasiveness
-8.  temporary-overlay Fortran legacy instrumentation
-9.  temporary-overlay Fortran conservative instrumentation
-10. fresh process × four cases
-11. fail-closed G3.3-M comparator
-12. causal-propagation report
-13. remove diagnostic code entirely
-14. re-verify production SHA · Gate A · full C3
-15. final C4 manifest
-```
-
-**First instrumentation is scoped to `qr/nr` + re-slope + outer boundary.** Widen to other species /
-upstream processes ONLY if that yields INCONCLUSIVE.
+For each backend × fixture, three configs: **A** macro undefined, **B** defined/env-unset, **C**
+defined/dumping. Require strict-bitwise `A==B==C` outputs across `{legacy F, legacy C++, cons F, cons
+C++} × {closure3-C3.3, species-iso}`. For the dylib: try full-SHA equality vs the committed production
+dylib first; a mismatch is NOT immediately a physics failure (an `#ifdef` line-shift can move Mach-O
+UUID / debug metadata) — fall back to comparing exported symbols, install-name, `.text`/`.rodata`
+section hashes, disassembled production functions, and the C-ABI + C++ symbol sets, plus A/B/C outputs.
+Because C++ is instrumented on an overlay (§6), the canonical build is unchanged and the full-SHA gate
+is expected to hold; the environment it depends on (compiler/linker version, build path, CMake cache
+hash, Torch build hash, deployment target, timestamp policy) is pinned in the attestation.
 
 ---
 
-## 11. Non-invasiveness guarantees (summary)
+## 11. Implementation order (owner-revised, 20 steps)
 
-- All code inside `#ifdef KDM6_G33_OP_DUMP`; macro-off preprocessor output is byte-identical → the
-  production dylib SHA is re-pinned equal to the committed one (§7).
-- No public/internal signature change (§4a); no active-expression re-association (§4b); the shadow
-  ladder never feeds state.
-- Canonical Fortran reference untouched — diagnostic overlay only (§5); Gate A scope re-verified PASS.
-- Verdict is fail-closed and tri-state (§8); the existing gate/checker is untouched until a PASS +
-  owner adjudication (§9).
+```
+1  protocol exact-ladder amendment                     ← THIS commit
+2  canonical schema specification
+3  Python-only container parser/writer reference
+4  independent expectation-manifest generator
+5  corrupt/missing/duplicate/stale/orientation synthetic tests
+6  C++ internal diagnostic writer + RAII context (overlay)
+7  C++ legacy qr/nr shadow ladder
+8  shadow-fidelity self-check
+9  C++ conservative qr/nr ladder
+10 A/B/C non-invasiveness
+11 Fortran temporary-overlay legacy
+12 Fortran temporary-overlay conservative
+13 four fresh-process cases
+14 G3.3-M comparison
+15 conditional expansion to qv/th/surface path
+16 diagnostic code removal from production branch
+17 preserve immutable diagnostic commit/patch hashes
+18 production SHA · symbols · Gate A · full C3 re-verify
+19 owner adjudication
+20 final C4 manifest
+```
+
+**Cleared to start now**: steps 2–5 (typed/versioned schema, reference parser, independent expectation
+generator, synthetic corruption tests) + the step-6 RAII skeleton — all pure harness, no frozen-code
+touch. **After this doc lands**: steps 7+ (the actual sed op-ladder instrumentation on overlays). First
+instrumentation scope is `qr/nr` + re-slope + outer boundary; widen to other species / upstream only on
+INCONCLUSIVE.
 
 > Doc-status note: any pre-C4-S1 narrative (the earlier 3-commit / Gate-D-residual-pending report) is a
-> **historical snapshot**, not current status. Current status lives in
+> historical snapshot, not current status — which lives in
 > `FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md` §Current-status and `docs/c4_evidence_manifest.json`.

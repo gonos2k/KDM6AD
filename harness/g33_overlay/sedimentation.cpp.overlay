@@ -1,0 +1,539 @@
+#include "kdm6/sedimentation.h"
+#include "kdm6/ops.h"
+
+#ifdef KDM6_G33_OP_DUMP
+// ── G3.3-M op-provenance instrumentation (OVERLAY ONLY, diagnostic) ─────────
+// Compiled out entirely when KDM6_G33_OP_DUMP is undefined; this whole block and
+// every G33_* use below vanish, so the macro-off overlay build is byte-identical
+// to the canonical build (protocol §5, §10). Torch adapters live HERE (the
+// harness header stays torch-free).
+//
+// Container granularity: ONE per (case,pair,backend,outer_loop,chain,n), opened
+// at substep entry and EXPLICITLY finalized before the substep returns. This
+// satisfies "COMPLETE footer only via explicit finalize(), never atexit" (§7e)
+// without any process-lifetime lifecycle; the independent expectation manifest
+// enumerates the expected container SET as well as each container's records.
+#include "g33_op_dump.h"
+#include <cstdlib>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <unistd.h>
+
+namespace kdm6 { namespace sed { namespace g33ovl {
+
+// Minimal JSON string escaping. The header/key JSON is built by concatenation,
+// so ANY unescaped value (env-supplied case_id/pair_id, or a field name) could
+// close the string and inject a DUPLICATE key — and json.loads keeps the LAST
+// occurrence, so an injected "producer_commit" would silently override the
+// attested one. Escape everything, and reject control characters outright.
+inline std::string jesc(const std::string& in) {
+    std::string o;
+    for (unsigned char c : in) {
+        if (c == '"' || c == '\\') { o += '\\'; o += char(c); }
+        else if (c < 0x20 || c == 0x7f)
+            throw std::runtime_error("g33: control character in a JSON string value");
+        else o += char(c);
+    }
+    return o;
+}
+
+class Substep {
+public:
+    Substep(const char* chain, int n, const torch::Tensor& probe)
+        : chain_(chain), n_(n) {
+        const char* dir = std::getenv("KDM6_G33_DUMP_DIR");
+        const char* cas = std::getenv("KDM6_G33_CASE_ID");
+        const char* pai = std::getenv("KDM6_G33_PAIR_ID");
+        auto* ctx = ::kdm6::g33::g_context;
+        // Unconfigured => inert (the production path must not require the dump).
+        // But a configured-yet-FAILING writer must NOT be silent: see below.
+        if (!dir || !cas || !pai || !ctx) return;
+        B_ = int(probe.size(0)); K_ = int(probe.size(-1));
+        // §7c: the column map is DECLARED by the harness, never fabricated here.
+        // Inventing it (e.g. fortran_j hardcoded to 0) would make the Fortran<->C++
+        // column correspondence an unverified assumption dressed as evidence.
+        const char* colmap = std::getenv("KDM6_G33_COLUMN_MAP");
+        if (!colmap || !*colmap)
+            throw std::runtime_error(
+                "g33: KDM6_G33_COLUMN_MAP is required (declared Fortran(i,j)<->C++ "
+                "flat-B map, protocol 7c) — refusing to fabricate one");
+        std::string path = std::string(dir) + "/cpp_" + ctx->algorithm + "_" + cas
+                         + "_L" + std::to_string(ctx->outer_loop_1based)
+                         + "_" + chain + "_n" + std::to_string(n) + ".g33";
+        std::ostringstream tid; tid << std::this_thread::get_id();
+        std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
+            + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
+            + "\",\"case_id\":\"" + jesc(cas) + "\",\"pair_id\":\"" + jesc(pai)
+            + "\",\"backend\":\"cpp\",\"algorithm\":\"" + jesc(ctx->algorithm)
+            + "\",\"B\":" + std::to_string(B_) + ",\"K\":" + std::to_string(K_)
+            + ",\"column_layout_id\":\"" + jesc(g33_env("KDM6_G33_COLUMN_LAYOUT_ID"))
+            + "\",\"column_index_map\":" + colmap            // declared, verbatim JSON
+            + ",\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + jesc(g33_env("KDM6_G33_RUN_UUID"))
+            + "\",\"process_id\":\"" + std::to_string(long(::getpid()))
+            + "\",\"owner_thread_id\":\"" + jesc(tid.str())
+            + "\",\"record_count_expected\":0}";
+        // NO catch here. A configured run whose container cannot be opened —
+        // stale .tmp from a killed run, an existing completed container, an
+        // unwritable dir — is an INVALID diagnostic run. Swallowing that turned
+        // the one guard that makes a crashed prior run un-ignorable into a silent
+        // disable: every G33_REC became a no-op, no container was written, and the
+        // run still exited 0 with nothing for the fail-closed reader to reject.
+        w_.reset(new ::kdm6::g33::Writer(path, hdr));
+    }
+    bool on() const { return w_ != nullptr; }
+    // One record at the value's ACTUAL native width and ACTUAL shape.
+    //
+    // The dtype is DERIVED from t.scalar_type() — never passed in and never
+    // converted: an earlier draft took a dtype string and did .to(kFloat64),
+    // relabelling an f32-native rung as "f64" (a precision-PROVENANCE lie).
+    // `k` is the CANONICAL level index and is part of the record identity;
+    // without it every interior level collides and a dump could emit one cell
+    // twice, skip another, and still look complete.
+    void rec(const char* stage, const char* cell_role, int k, const char* species,
+             const char* op_id, const char* field, const torch::Tensor& t) {
+        if (!w_) return;
+        auto c = t.detach().cpu().contiguous();
+        const auto st = c.scalar_type();
+        const char* dtype = nullptr;
+        std::vector<uint8_t> pay;
+        const int64_t n = c.numel();
+        if (st == torch::kFloat64) {
+            dtype = "f64";
+            const double* p = c.data_ptr<double>();
+            for (int64_t i = 0; i < n; ++i) ::kdm6::g33::be_f64(pay, p[i]);
+        } else if (st == torch::kFloat32) {
+            dtype = "f32";
+            const float* p = c.data_ptr<float>();
+            for (int64_t i = 0; i < n; ++i) ::kdm6::g33::be_f32(pay, p[i]);
+        } else if (st == torch::kInt32) {
+            dtype = "i32";
+            const int32_t* p = c.data_ptr<int32_t>();
+            for (int64_t i = 0; i < n; ++i) ::kdm6::g33::be_i32(pay, p[i]);
+        } else if (st == torch::kUInt8 || st == torch::kBool) {
+            dtype = "u8";                       // bool is exactly 0/1 — no loss
+            auto b = c.to(torch::kUInt8);
+            const uint8_t* p = b.data_ptr<uint8_t>();
+            for (int64_t i = 0; i < n; ++i) ::kdm6::g33::be_u8(pay, p[i]);
+        } else {
+            throw std::runtime_error(std::string("g33: unsupported dtype for field ") + field);
+        }
+        // ACTUAL shape, not a flattened numel: the expectation manifest keys on
+        // (B)/(B,K), so a flattened [n] would never match and completeness
+        // checking would be silently vacuous.
+        std::string shape = "[";
+        for (int64_t i = 0; i < c.dim(); ++i)
+            shape += (i ? "," : "") + std::to_string(c.size(i));
+        shape += "]";
+        std::string key = std::string("{\"seq_no\":") + std::to_string(seq_)
+            + ",\"outer_loop\":" + std::to_string(::kdm6::g33::g_context->outer_loop_1based)
+            + ",\"chain\":\"" + jesc(chain_) + "\",\"n\":" + std::to_string(n_)
+            + ",\"cell_role\":\"" + jesc(cell_role) + "\",\"k\":" + std::to_string(k)
+            + ",\"species\":\"" + jesc(species) + "\",\"op_id\":\"" + jesc(op_id)
+            + "\",\"stage\":\"" + jesc(stage) + "\",\"field\":\"" + jesc(field)
+            + "\",\"dtype\":\"" + dtype
+            + "\",\"shape\":" + shape + ",\"payload_size\":" + std::to_string(pay.size()) + "}";
+        w_->record(key, pay);
+        ++seq_;
+    }
+    void finalize() { if (w_) { w_->finalize(); w_.reset(); } }   // explicit only
+private:
+    static std::string g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
+    std::unique_ptr<::kdm6::g33::Writer> w_;
+    std::string chain_;                 // OWNED: a const char* member could dangle
+    int n_; int B_ = 0, K_ = 0, seq_ = 0;
+};
+
+}}}  // namespace kdm6::sed::g33ovl
+#define G33_REC(g, stage, role, k, sp, op, field, t) do { (g).rec(stage, role, k, sp, op, field, t); } while (0)
+#else
+#define G33_REC(g, stage, role, k, sp, op, field, t) do { } while (0)
+#endif  // KDM6_G33_OP_DUMP
+namespace kdm6 {
+namespace sed {
+
+// ═══════════════════════════════════════════════════════════════════════════
+// E1: work / delz normalization
+// ═══════════════════════════════════════════════════════════════════════════
+
+torch::Tensor normalize_work_by_delz(const torch::Tensor& work, const torch::Tensor& delz) {
+    return work / torch::clamp(delz, /*min=*/constants::QCRMIN);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// E2: substep advection (qr/nr/qs/qg/brs)
+// ═══════════════════════════════════════════════════════════════════════════
+
+SubstepAdvectionParams default_substep_advection_params() {
+    return SubstepAdvectionParams{constants::QCRMIN};
+}
+
+namespace {
+
+std::vector<torch::Tensor> split_columns(const torch::Tensor& x, int64_t K) {
+    std::vector<torch::Tensor> cols;
+    cols.reserve(K);
+    for (int64_t k = 0; k < K; ++k) {
+        cols.push_back(x.select(/*dim=*/-1, k));
+    }
+    return cols;
+}
+
+}  // namespace
+
+SubstepAdvectionOutputs substep_advection_torch(
+    const SubstepAdvectionInputs& in,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
+    const SubstepAdvectionParams& p
+) {
+    const int64_t K = in.state.qr.size(-1);
+    auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
+    auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
+    // mstep_col: (B,) float, integer-valued, clamped [1,100] by caller.
+    // Per-column divisor inv_mstep_col = 1/mstep(i)  (Fortran .../mstep(i)).
+    // Per-column gate gate_col = 1 if n<=mstep(i) else 0  (Fortran if(n.le.mstep(i))).
+    // Both are (B,) and broadcast against (B,) per-level slices x.select(-1,k).
+    // NOTE: the gate is per-COLUMN (level-independent) exactly as Fortran; do NOT
+    // index it by k. A (B,1) mask + mask.select(-1,k) would be both physically
+    // wrong and an out-of-bounds runtime crash for k>=1.
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qr.dtype()); // (B,)
+    // Fortran F:1125 falk = num/mstep(i): falk_* below DIVIDE the numerator by mstep_col_safe
+    // (single f32 rounding, matches Fortran) — NOT num*(1/mstep). A precomputed reciprocal
+    // differs 1 ULP for non-power-of-2 mstep (§44 eval-form). gate_col is 0/1 (×exact).
+
+    auto qr_cols = split_columns(in.state.qr, K);
+    auto nr_cols = split_columns(in.state.nr, K);
+    auto qs_cols = split_columns(in.state.qs, K);
+    auto qg_cols = split_columns(in.state.qg, K);
+    auto brs_cols = split_columns(in.state.brs, K);
+    auto fall_qr_cols = split_columns(in.fall_qr_in, K);
+    auto fall_nr_cols = split_columns(in.fall_nr_in, K);
+    auto fall_qs_cols = split_columns(in.fall_qs_in, K);
+    auto fall_qg_cols = split_columns(in.fall_qg_in, K);
+    auto fall_brs_cols = split_columns(in.fall_brs_in, K);
+
+    auto dend_col = [&](int64_t k) { return in.dend.select(-1, k); };
+    auto dend_safe_col = [&](int64_t k) { return dend_safe.select(-1, k); };
+    auto work1_qr_col = [&](int64_t k) { return in.work1_qr.select(-1, k); };
+    auto workn_qr_col = [&](int64_t k) { return in.workn_qr.select(-1, k); };
+    auto work1_qs_col = [&](int64_t k) { return in.work1_qs.select(-1, k); };
+    auto work1_qg_col = [&](int64_t k) { return in.work1_qg.select(-1, k); };
+    auto delz_col = [&](int64_t k) { return in.delz.select(-1, k); };
+    auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
+
+    // falk_*_prev carries the cell-above's STORED falk (from ITS entry q) into the interior
+    // inflow — Fortran F:1144 stores falk(k) from PRE-update qrs(k), and F:1148-1149/1159-1160/
+    // 1165-1166/1171-1172 feed cell k from that STORED falk(k+1), NOT a recompute from the
+    // depleted neighbour. (Mirrors the Python sedimentation fix; audit round-2.)
+    torch::Tensor falk_qr_prev, falk_nr_prev, falk_qs_prev, falk_qg_prev, falk_brs_prev;
+
+#ifdef KDM6_G33_OP_DUMP
+    g33ovl::Substep g33("main", n, in.state.qr);
+    torch::Tensor g33_q_entry, g33_n_entry;   // diagnostic-only pre-update capture
+#endif
+    // Top cell
+    {
+        const int64_t k = 0;
+#ifdef KDM6_G33_OP_DUMP
+        if (g33.on()) {
+            g33_q_entry = qr_cols[k].clone();
+            g33_n_entry = nr_cols[k].clone();
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "work1_qr", work1_qr_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "workn_qr", workn_qr_col(k));
+            // P0-4: int32(2) cannot hide 2.0 vs 2.0000002 — record the NATIVE
+            // bits, the decoded integer, and whether it is exactly integral.
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_native", mstep_col_safe);
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_decoded_i32",
+                    mstep_col_safe.to(torch::kInt32));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_exact_integer",
+                    (mstep_col_safe == mstep_col_safe.round()).to(torch::kUInt8));
+            // gate at NATIVE width (a non-exact 0/1 would be invisible in u8),
+            // plus the exactness flag and the active mask for the NaN policy (P1-11).
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_native", gate_col);
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_exact_01",
+                    ((gate_col == 0).logical_or(gate_col == 1)).to(torch::kUInt8));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "active_mask",
+                    (gate_col != 0).to(torch::kUInt8));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_raw", dend_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_safe", dend_safe_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_raw", delz_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_safe", delz_safe_col(k));
+        }
+#endif
+        // §34: falk REAL(f32) — one f32 rounding of the f64 chain (work1 f64 via vt f64), mirror ice path.
+        auto falk_qr_top = (dend_col(k) * qr_cols[k] * work1_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        // §34/§52: Fortran F:1159 falkn is REAL(4) (decl F:686) — nrs(f32)*workn(f64 vtn)/mstep
+        // stored to REAL(4) = ONE f32 rounding. The cast was present on falk_qr/qs/qg and the
+        // ICE falk_ni (line ~226) but MISSING here, leaving rain-number fall in f64 → nr (and
+        // the falln accumulator) drifted ~7 ULP and seeded the frame-2 sedimentation divergence.
+        auto falk_nr_top = (nr_cols[k] * workn_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qs_top = (dend_col(k) * qs_cols[k] * work1_qs_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qg_top = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_brs_top = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+#ifdef KDM6_G33_OP_DUMP
+        if (g33.on()) {
+            // SHADOW ladder: the ACTIVE expressions above are untouched; these are
+            // diagnostic-only RECOMPUTES that never feed state (§5b). The final
+            // shadow f32 must equal the actual falk bits (shadow-fidelity, §5a).
+            auto s1 = dend_col(k) * g33_q_entry;              // mul_dend_q
+            auto s2 = s1 * work1_qr_col(k);                   // mul_work1
+            auto s3 = s2 / mstep_col_safe;                    // div_mstep
+            auto s4 = s3 * gate_col;                          // falk_precast (native)
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_dend_q",  s1);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_work1",   s2);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "div_mstep",   s3);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_precast", s4);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "shadow_falk_f32",
+                    s4.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_f32", falk_qr_top);  // ACTUAL
+            // number family: falk_nr omits dend (distinct expression family, §3)
+            auto t1 = g33_n_entry * workn_qr_col(k);
+            auto t2 = t1 / mstep_col_safe;
+            auto t3 = t2 * gate_col;
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "mul_workn",   t1);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "div_mstep",   t2);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_precast", t3);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "shadow_falk_f32",
+                    t3.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_f32", falk_nr_top);  // ACTUAL
+        }
+#endif
+
+        fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_top;
+        fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_top;
+        fall_qs_cols[k] = fall_qs_cols[k] + falk_qs_top;
+        fall_qg_cols[k] = fall_qg_cols[k] + falk_qg_top;
+        fall_brs_cols[k] = fall_brs_cols[k] + falk_brs_top;
+
+        qr_cols[k] = torch::clamp(qr_cols[k] - falk_qr_top * dtcld / dend_safe_col(k), 0.0);
+        // F:1128 nrs = max(nrs - falkn*dtcld, 0.) — falkn*dtcld rounds, the subtract
+        // rounds (strict IEEE source order; fma_acc(...,-1.0) = acc - t1*t2).
+        nr_cols[k] = torch::clamp(
+            ops::fma_acc(nr_cols[k], falk_nr_top, torch::full_like(falk_nr_top, dtcld), -1.0),
+            0.0);
+        qs_cols[k] = torch::clamp(qs_cols[k] - falk_qs_top * dtcld / dend_safe_col(k), 0.0);
+        qg_cols[k] = torch::clamp(qg_cols[k] - falk_qg_top * dtcld / dend_safe_col(k), 0.0);
+        brs_cols[k] = torch::clamp(brs_cols[k] - falk_brs_top * dtcld / dend_safe_col(k), 0.0);
+#ifdef KDM6_G33_OP_DUMP
+        if (g33.on()) {
+            // legacy_mass_top: NO separate outflow/inflow rung — the positivity
+            // clamp IS the update (§3). Shadow pre-clamp exposes the rung where a
+            // cross-tree difference would first appear.
+            auto pre = g33_q_entry - falk_qr_top * dtcld / dend_safe_col(k);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_before", g33_q_entry);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_minus_out", pre);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "clamp_active",
+                    (pre < 0.0).to(torch::kUInt8));
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_post", qr_cols[k]);
+            auto npre = ops::fma_acc(g33_n_entry, falk_nr_top,
+                                     torch::full_like(falk_nr_top, dtcld), -1.0);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_before", g33_n_entry);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_minus_out", npre);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "clamp_active",
+                    (npre < 0.0).to(torch::kUInt8));
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
+        }
+#endif
+
+        falk_qr_prev = falk_qr_top;  falk_nr_prev = falk_nr_top;
+        falk_qs_prev = falk_qs_top;  falk_qg_prev = falk_qg_top;  falk_brs_prev = falk_brs_top;
+    }
+
+    // Interior cells
+    for (int64_t k = 1; k < K; ++k) {
+        auto falk_qr_k = (dend_col(k) * qr_cols[k] * work1_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        // §34/§52: rain-number fall to f32 (Fortran F:1180 falkn REAL(4)) — see top-cell note.
+        auto falk_nr_k = (nr_cols[k] * workn_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qs_k = (dend_col(k) * qs_cols[k] * work1_qs_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_qg_k = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto falk_brs_k = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+
+        fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_k;
+        fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_k;
+        fall_qs_cols[k] = fall_qs_cols[k] + falk_qs_k;
+        fall_qg_cols[k] = fall_qg_cols[k] + falk_qg_k;
+        fall_brs_cols[k] = fall_brs_cols[k] + falk_brs_k;
+
+        auto dqr_k = torch::minimum(falk_qr_k * dtcld / dend_safe_col(k), qr_cols[k]);
+        auto dnr_k = torch::minimum(falk_nr_k * dtcld, nr_cols[k]);
+        auto dqs_k = torch::minimum(falk_qs_k * dtcld / dend_safe_col(k), qs_cols[k]);
+        auto dqg_k = torch::minimum(falk_qg_k * dtcld / dend_safe_col(k), qg_cols[k]);
+        auto dbrs_k = torch::minimum(falk_brs_k * dtcld / dend_safe_col(k), brs_cols[k]);
+
+        // Inflow from the cell above: STORED falk of the cell above (falk_*_prev, from ITS entry
+        // q), capped by the cell-above's POST-update reservoir — Fortran min(falk(k+1)*delz_ratio
+        // *dtcld/dend, qrs(k+1)) with the stored falk(k+1). The earlier port recomputed falk from
+        // the depleted qx_cols[k-1], under-advecting interior mass + attenuating the fall gradient.
+        // STEP-88 SEED class: Fortran F:1180-1205 evaluates falk(k+1)*delz(k+1)
+        // /delz(k)*dtcld LEFT-TO-RIGHT in f32 — multiply by raw delz(k+1) FIRST,
+        // then divide. A pre-computed delz_ratio rounds 1 ULP differently when
+        // the inflow min-cap does not bind.
+        auto dqr_above = torch::minimum(
+            falk_qr_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qr_cols[k - 1]);
+        auto dnr_above = torch::minimum(
+            falk_nr_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld, nr_cols[k - 1]);
+        auto dqs_above = torch::minimum(
+            falk_qs_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qs_cols[k - 1]);
+        auto dqg_above = torch::minimum(
+            falk_qg_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qg_cols[k - 1]);
+        auto dbrs_above = torch::minimum(
+            falk_brs_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), brs_cols[k - 1]);
+
+        qr_cols[k] = torch::clamp(qr_cols[k] - dqr_k + dqr_above, 0.0);
+        nr_cols[k] = torch::clamp(nr_cols[k] - dnr_k + dnr_above, 0.0);
+        qs_cols[k] = torch::clamp(qs_cols[k] - dqs_k + dqs_above, 0.0);
+        qg_cols[k] = torch::clamp(qg_cols[k] - dqg_k + dqg_above, 0.0);
+        brs_cols[k] = torch::clamp(brs_cols[k] - dbrs_k + dbrs_above, 0.0);
+
+        // carry this cell's STORED falk (entry q) as the next cell's "above" inflow flux
+        falk_qr_prev = falk_qr_k;  falk_nr_prev = falk_nr_k;
+        falk_qs_prev = falk_qs_k;  falk_qg_prev = falk_qg_k;  falk_brs_prev = falk_brs_k;
+    }
+
+#ifdef KDM6_G33_OP_DUMP
+    // EXPLICIT finalize (§7e) — the COMPLETE footer is written here and nowhere
+    // else. An exception before this point leaves a footerless .tmp, which the
+    // fail-closed reader rejects: an aborted run can never look complete.
+    g33.finalize();
+#endif
+    return SubstepAdvectionOutputs{
+        SubstepAdvectionState{
+            torch::stack(qr_cols, /*dim=*/-1),
+            torch::stack(nr_cols, /*dim=*/-1),
+            torch::stack(qs_cols, /*dim=*/-1),
+            torch::stack(qg_cols, /*dim=*/-1),
+            torch::stack(brs_cols, /*dim=*/-1),
+        },
+        torch::stack(fall_qr_cols, /*dim=*/-1),
+        torch::stack(fall_nr_cols, /*dim=*/-1),
+        torch::stack(fall_qs_cols, /*dim=*/-1),
+        torch::stack(fall_qg_cols, /*dim=*/-1),
+        torch::stack(fall_brs_cols, /*dim=*/-1),
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// E4: Ice substep
+// ═══════════════════════════════════════════════════════════════════════════
+
+IceSubstepOutputs ice_substep_advection_torch(
+    const IceSubstepInputs& in,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
+    const SubstepAdvectionParams& p
+) {
+    const int64_t K = in.state.qi.size(-1);
+    auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
+    auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
+    // Per-column divisor*gate (Fortran .../mstep_i(i) and if(n.le.mstep_i(i))).
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qi.dtype()); // (B,)
+    // Fortran F:1125 falk = num/mstep(i): DIVIDE the numerator (single f32 rounding) — NOT
+    // num*(1/mstep) (§44 eval-form, 1 ULP for non-power-of-2 mstep). gate_col is 0/1 (×exact).
+
+    auto qi_cols = split_columns(in.state.qi, K);
+    auto ni_cols = split_columns(in.state.ni, K);
+    auto fall_qi_cols = split_columns(in.fall_qi_in, K);
+    auto fall_ni_cols = split_columns(in.fall_ni_in, K);
+
+    auto dend_col = [&](int64_t k) { return in.dend.select(-1, k); };
+    auto dend_safe_col = [&](int64_t k) { return dend_safe.select(-1, k); };
+    auto work1_qi_col = [&](int64_t k) { return in.work1_qi.select(-1, k); };
+    auto workn_qi_col = [&](int64_t k) { return in.workn_qi.select(-1, k); };
+    auto delz_col = [&](int64_t k) { return in.delz.select(-1, k); };
+    auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
+
+    // falk_*_prev carries the cell-above's STORED falk (entry q) — same Fortran fix as the
+    // rain substep (F:1228-1232). (audit round-2)
+    torch::Tensor falk_qi_prev, falk_ni_prev;
+
+    // Top
+    {
+        const int64_t k = 0;
+        // Fortran F:1247-1248: falk/falkn are REAL — ONE f32 rounding of the f64
+        // chain f32(dend*qi)*vt_d/mstep (work1(4)/workn(2) DOUBLE; class-7).
+        auto falk_qi_top = (dend_col(k) * qi_cols[k] * work1_qi_col(k) / mstep_col_safe * gate_col)
+                               .to(in.state.qi.scalar_type());
+        auto falk_ni_top = (ni_cols[k] * workn_qi_col(k) / mstep_col_safe * gate_col)
+                               .to(in.state.qi.scalar_type());
+        fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_top;
+        fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_top;
+        qi_cols[k] = torch::clamp(qi_cols[k] - falk_qi_top * dtcld / dend_safe_col(k), 0.0);
+        // F:1220 nci = max(nci - falkn_i*dtcld, 0.) — multiply rounds, subtract rounds
+        // (strict IEEE source order).
+        ni_cols[k] = torch::clamp(
+            ops::fma_acc(ni_cols[k], falk_ni_top, torch::full_like(falk_ni_top, dtcld), -1.0),
+            0.0);
+        falk_qi_prev = falk_qi_top;  falk_ni_prev = falk_ni_top;
+    }
+
+    for (int64_t k = 1; k < K; ++k) {
+        auto falk_qi_k = (dend_col(k) * qi_cols[k] * work1_qi_col(k) / mstep_col_safe * gate_col)
+                             .to(in.state.qi.scalar_type());   // F:1247 REAL store (class-7)
+        auto falk_ni_k = (ni_cols[k] * workn_qi_col(k) / mstep_col_safe * gate_col)
+                             .to(in.state.qi.scalar_type());
+        fall_qi_cols[k] = fall_qi_cols[k] + falk_qi_k;
+        fall_ni_cols[k] = fall_ni_cols[k] + falk_ni_k;
+
+        auto dqi_k = torch::minimum(falk_qi_k * dtcld / dend_safe_col(k), qi_cols[k]);
+        auto dni_k = torch::minimum(falk_ni_k * dtcld, ni_cols[k]);
+
+        // Inflow from above: STORED falk_*_prev (entry q of the cell above), capped by its
+        // POST-update reservoir — not a recompute from the depleted neighbour.
+        // STEP-88 SEED: Fortran F:1264-1269 left-to-right f32 — see main-substep note.
+        auto dqi_above = torch::minimum(
+            falk_qi_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld / dend_safe_col(k), qi_cols[k - 1]);
+        auto dni_above = torch::minimum(
+            falk_ni_prev * delz_col(k - 1) / delz_safe_col(k) * dtcld, ni_cols[k - 1]);
+
+        qi_cols[k] = torch::clamp(qi_cols[k] - dqi_k + dqi_above, 0.0);
+        ni_cols[k] = torch::clamp(ni_cols[k] - dni_k + dni_above, 0.0);
+
+        falk_qi_prev = falk_qi_k;  falk_ni_prev = falk_ni_k;  // carry stored falk
+    }
+
+    return IceSubstepOutputs{
+        IceSubstepState{
+            torch::stack(qi_cols, /*dim=*/-1),
+            torch::stack(ni_cols, /*dim=*/-1),
+        },
+        torch::stack(fall_qi_cols, /*dim=*/-1),
+        torch::stack(fall_ni_cols, /*dim=*/-1),
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// E5: Surface accumulation
+// ═══════════════════════════════════════════════════════════════════════════
+
+SurfaceAccumOutputs surface_accumulation_torch(
+    const torch::Tensor& fall_qr_bottom,
+    const torch::Tensor& fall_qs_bottom,
+    const torch::Tensor& fall_qg_bottom,
+    const torch::Tensor& fall_qi_bottom,
+    const torch::Tensor& delz_bottom,
+    double dtcld
+) {
+    auto fallsum = fall_qr_bottom + fall_qs_bottom + fall_qg_bottom + fall_qi_bottom;
+    auto fallsum_qsi = fall_qs_bottom + fall_qi_bottom;
+    // f32 association MUST match Fortran module_mp_kdm6.F:1412 left-to-right
+    // `fallsum*delz/denr*dtcld*1000.` (fallsum FIRST), NOT a precomputed
+    // `factor=delz/denr*dtcld*1000` then `fallsum*factor` — the grouping differs at
+    // f32 last-ULP and surfaces in RAINNC/SNOWNC/GRAUPELNC/SR (Codex bitwise audit).
+    return SurfaceAccumOutputs{
+        /*rain_increment=*/torch::clamp(fallsum, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
+        /*snow_increment=*/torch::clamp(fallsum_qsi, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
+        /*graupel_increment=*/torch::clamp(fall_qg_bottom, 0.0) * delz_bottom / constants::DENR * dtcld * 1000.0,
+    };
+}
+
+}  // namespace sed
+}  // namespace kdm6
