@@ -108,6 +108,8 @@ def _is_subsequence(small: list[str], big: list[str]) -> int | None:
     return None
 
 
+_RAWSTR = re.compile(r'(?:L|u8|u|U)?R"([^()\\ ]*)\(')
+
 _ASSIGN = re.compile(r"\b([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*(?:\+|-|\*|/)?=(?!=)")
 
 
@@ -176,25 +178,38 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
     # X[k].t().add_(…). Scanning what stands to the LEFT of the mutation catches
     # the whole family regardless of chain length.
     def strip_comment(t):
-        # Must be STRING-LITERAL AWARE. A naive t.find("//") truncates at a `//`
-        # inside a string ("http://x", std::string("//")), discarding everything
-        # after it on the line — including a mutation, which then went unseen.
-        out, i, n, quote = [], 0, len(t), None
+        # Must be a real C++ lexer for literals. Two bugs lived here:
+        #   1. `t.find("//")` truncated at a `//` inside a STRING, discarding the
+        #      rest of the line — mutation included;
+        #   2. RAW strings R"delim( ... )delim" were parsed as ordinary strings, so
+        #      a `"` inside the raw text closed it early and a following `//` was
+        #      read as a comment: R"(a"b//c)"; qr_cols[k] = bogus;  went unseen.
+        # Literal CONTENT is blanked (never executed) so a mutation-looking pattern
+        # inside a string cannot raise a false positive either.
+        out, i, n = [], 0, len(t)
         while i < n:
+            m = _RAWSTR.match(t, i)
+            if m:                                   # raw string literal
+                delim = m.group(1)
+                term = ')' + delim + '"'
+                e = t.find(term, m.end())
+                if e < 0:                           # continues on later lines
+                    out.append('""'); i = n; continue
+                out.append('""'); i = e + len(term); continue
             c = t[i]
-            if quote:
-                out.append(c)
-                if c == "\\" and i + 1 < n:
-                    out.append(t[i + 1]); i += 2; continue
-                if c == quote:
-                    quote = None
-                i += 1; continue
-            if c in ('"', "'"):
-                quote = c; out.append(c); i += 1; continue
+            if c in ('"', "'"):                     # ordinary string / char literal
+                q, j = c, i + 1
+                while j < n:
+                    if t[j] == "\\":
+                        j += 2; continue
+                    if t[j] == q:
+                        j += 1; break
+                    j += 1
+                out.append(q + q); i = j; continue
             if c == "/" and i + 1 < n and t[i + 1] == "/":
-                break                                   # real line comment
+                break                               # real line comment
             if c == "/" and i + 1 < n and t[i + 1] == "*":
-                end = t.find("*/", i + 2)               # same-line block comment
+                end = t.find("*/", i + 2)           # same-line block comment
                 if end < 0:
                     break
                 out.append(" "); i = end + 2; continue

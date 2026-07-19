@@ -141,10 +141,28 @@ def test_comment_stripping_is_string_literal_aware(cpp):
 
 
 @pytest.mark.parametrize("cpp", [
+    '        auto s = R"(http://x)"; qr_cols[k] = bogus;',
+    '        auto s = R"(a"b//c)"; qr_cols[k] = bogus;',      # QUOTE inside the raw text
+    '        auto s = R"tag(a"b//c)tag"; qr_cols[k] = bogus;',  # custom delimiter
+    '        auto s = LR"(a"b//c)"; qr_cols[k] = bogus;',     # encoding prefix
+    '        auto s = R"(a"b)"; qr_cols[k].copy_(b);',        # then an in-place mutation
+])
+def test_raw_string_literals_do_not_hide_mutations(cpp):
+    # A RAW string parsed as an ordinary one closes early at the `"` inside its
+    # text; the following `//` then reads as a comment and the rest of the line —
+    # the mutation — is discarded. R"delim( … )delim" must be lexed properly.
+    assert v.overriding_assignments(CANON, BASE + [cpp]), f"raw-string-hidden mutation missed: {cpp}"
+
+
+@pytest.mark.parametrize("cpp", [
     '        auto s = "a"; // qr_cols[k] = bogus;',          # genuinely commented out
     "        /* qr_cols[k] = x */ auto t = 1;",              # block comment
+    '        auto s = "qr_cols[k] = bogus";',                # inside a string: not code
+    '        auto s = R"(qr_cols[k] = bogus)";',             # inside a raw string
+    '        auto s = R"(abc  qr_cols[k] = bogus;',          # unterminated raw string:
+                                                            # the rest is string content
 ])
-def test_genuinely_commented_code_is_not_flagged(cpp):
+def test_code_that_is_not_executed_is_not_flagged(cpp):
     assert v.overriding_assignments(CANON, BASE + [cpp]) == []
 
 
