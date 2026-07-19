@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prove the G3.3-M C++ overlay is a PURE #ifdef addition (protocol §5, §6, §10).
 
-Three fail-closed checks, run before any diagnostic build:
+Four fail-closed checks, run before any diagnostic build:
   1. the canonical source still matches the pinned base SHA-256 (no drift — the
      overlay was derived from that exact file);
   2. preprocessing the overlay with KDM6_G33_OP_DUMP UNDEFINED reproduces the
@@ -13,18 +13,28 @@ Three fail-closed checks, run before any diagnostic build:
      <different arithmetic> #endif` leaves the macro-off text identical while the
      instrumented build runs different physics. `#ifndef KDM6_G33_OP_DUMP` is now
      rejected outright, an `#else` on a G33 frame may contain directives only, and
-     check 3 catches any deletion or reordering of a production line.
-Exit 0 only if all three hold.
+     check 3 catches any deletion or reordering of a production line;
+  4. no ADDED line ASSIGNS to a production value. Check 3 only proves nothing was
+     DELETED — it is blind to an OVERRIDE, where the canonical line survives (so
+     the subsequence still matches) and an added line reassigns it:
+         auto falk_qr_top = (…canonical…);      // present -> check 3 passes
+         #ifdef KDM6_G33_OP_DUMP
+         falk_qr_top = <different arithmetic>;  // added line overrides it
+         #endif
+     Every identifier the canonical file assigns to is forbidden as an assignment
+     target on any added line.
+Exit 0 only if all four hold.
 
-SCOPE — this proves configuration **A only** (macro undefined). It says NOTHING
-about configurations B (macro defined, env unset) and C (macro defined, dumping):
-executing the shadow ladder could in principle perturb results, so
-`A_output == B_output == C_output` STILL REQUIRES the actual 3-way run (§10).
-Do not cite this check as evidence that the instrumented build is non-invasive.
+SCOPE — these are STATIC checks. They establish no deletion, no substitution and
+no assignment to a production value. They do NOT establish non-invasiveness:
+added code can still perturb state by a route text cannot show (aliasing, a
+mutating method call, tensor layout or dispatch changes). Only the 3-way
+`A_output == B_output == C_output` run (§10) can establish that. Never cite this
+script as a non-invasiveness certificate.
 """
 from __future__ import annotations
 
-import hashlib, sys, difflib
+import hashlib, re, sys, difflib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -93,6 +103,48 @@ def _is_subsequence(small: list[str], big: list[str]) -> int | None:
     return None
 
 
+_ASSIGN = re.compile(r"\b([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*(?:\+|-|\*|/)?=(?!=)")
+
+
+def _assignment_targets(text: str) -> set:
+    """Identifiers the text ASSIGNS TO (including `auto X = ...` declarations)."""
+    return {m.group(1) for m in _ASSIGN.finditer(text)} - {"if", "for", "while", "return"}
+
+
+def _added_lines(canon_lines: list[str], on_lines: list[str]) -> list[tuple]:
+    """Lines present under macro-ON that the canonical subsequence does not consume."""
+    out, ci = [], 0
+    for i, line in enumerate(on_lines, 1):
+        if ci < len(canon_lines) and line == canon_lines[ci]:
+            ci += 1
+        else:
+            out.append((i, line))
+    return out
+
+
+def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
+    """Added lines that ASSIGN to a production value — i.e. substitution by OVERRIDE.
+
+    The subsequence test only proves nothing was DELETED. It cannot see this:
+
+        auto falk_qr_top = (…canonical…);   // still present -> subsequence passes
+        #ifdef KDM6_G33_OP_DUMP
+        falk_qr_top = <different arithmetic>;   // ADDED line silently overrides it
+        #endif
+
+    macro-off text is unchanged, nothing is removed, yet the instrumented build
+    computes different physics. So every ADDED line is additionally forbidden from
+    assigning to any identifier the canonical file assigns to.
+    """
+    targets = _assignment_targets(canon)
+    bad = []
+    for lineno, line in _added_lines(canon.splitlines(), on_lines):
+        for m in _ASSIGN.finditer(line):
+            if m.group(1) in targets:
+                bad.append((lineno, m.group(1), line.strip()))
+    return bad
+
+
 def main() -> int:
     rc = 0
     for canon_rel, overlay_name, sha_name in PAIRS:
@@ -129,12 +181,27 @@ def main() -> int:
                   f"canonical source — production line {bad + 1} is missing or "
                   f"reordered under instrumentation:\n  {canon.splitlines()[bad]!r}")
             rc = 1; continue
+        # Check 4: no ADDED line may assign to a production value. Checks 2+3
+        # cannot see an override (the canonical line stays, an added line
+        # reassigns it), which is substitution in every sense that matters.
+        overrides = overriding_assignments(canon, on_lines)
+        if overrides:
+            print(f"FAIL {canon_rel}: {len(overrides)} added line(s) ASSIGN to a "
+                  f"production value — that overrides the canonical computation "
+                  f"under instrumentation:")
+            for ln, name, txt in overrides[:5]:
+                print(f"  macro-ON line {ln}: assigns {name!r} -> {txt[:90]}")
+            rc = 1; continue
         print(f"OK {canon_rel}: base SHA pinned; macro-OFF TEXTUALLY IDENTICAL to "
-              f"canonical; macro-ON is a strict in-order SUPERSET (pure addition, "
-              f"no substitution)")
+              f"canonical; macro-ON is a strict in-order SUPERSET; no added line "
+              f"assigns to a production value")
     if rc == 0:
-        print("SCOPE: config A (macro-off) only — B/C output equality still requires "
-              "the 3-way A/B/C run (§10); this is NOT a non-invasiveness certificate.")
+        print("SCOPE: static checks only. They prove no deletion, no substitution and "
+              "no assignment to a production value — but NOT that the instrumented "
+              "build is non-invasive: added code could still perturb state through a "
+              "path this cannot see (aliasing, a mutating call, dispatch/layout "
+              "changes). Only the 3-way A==B==C output equality (§10) can establish "
+              "that. Never cite this as a non-invasiveness certificate.")
     return rc
 
 
