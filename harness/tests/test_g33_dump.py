@@ -1060,3 +1060,60 @@ def test_sealed_digest_rejects_an_edited_descriptor(tmp_path):
     env.pop("KDM6_G33_SCHEMA_SHA256")
     assert subprocess.run([str(exe), str(desc), cid], env=env,
                           capture_output=True, text=True).returncode == 2
+
+
+# ── the environment the overlay requires must actually be produced ────────────
+def _overlay_required_env():
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
+    assert block, "required-env table not found"
+    return set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
+
+
+def test_run_env_supplies_exactly_what_the_overlay_requires(tmp_path):
+    # Each tightening of the producer added another required variable and
+    # nothing produced them: the documented invocation named three while the
+    # overlay required eleven, so a diagnostic run could not start. Pinning
+    # producer against consumer is what keeps that from recurring silently.
+    import g33_run_env
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    binary = tmp_path / "libfake.dylib"
+    binary.write_bytes(b"not a real dylib, but a real file with a real digest")
+    env = g33_run_env.build_env(
+        sched, tmp_path, binary=binary,
+        column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+        run_uuid="uuid-under-test", column_layout_id="lc05-3col", repo=ROOT.parent)
+    required = _overlay_required_env()
+    assert required <= set(env), f"never set: {sorted(required - set(env))}"
+    assert set(env) <= required, f"set but unused: {sorted(set(env) - required)}"
+
+
+def test_run_env_seals_what_it_points_at(tmp_path):
+    # The sealed digests must describe the descriptors actually written, and the
+    # op-seq windows the containers actually declare — one schedule, sealed once.
+    import g33_run_env, hashlib as _h
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    binary = tmp_path / "libfake.dylib"
+    binary.write_bytes(b"x" * 64)
+    env = g33_run_env.build_env(
+        sched, tmp_path, binary=binary,
+        column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+        run_uuid="u", column_layout_id="lc05-3col", repo=ROOT.parent)
+
+    schema_dir = Path(env["KDM6_G33_SCHEMA_DIR"])
+    for entry in env["KDM6_G33_SCHEMA_SHA256"].split(","):
+        cid, sha = entry.split(":")
+        assert _h.sha256((schema_dir / f"{cid}.desc").read_bytes()).hexdigest() == sha
+
+    windows = {e.split(":")[0] for e in env["KDM6_G33_OP_SEQ_MAP"].split(",")}
+    assert windows == {c["container_id"] for c in ge.run_index(sched)["containers"]}
+    assert env["KDM6_G33_BINARY_SHA256"] == _h.sha256(binary.read_bytes()).hexdigest()
+
+
+def test_run_env_refuses_a_binary_that_does_not_exist(tmp_path):
+    import g33_run_env
+    with pytest.raises(FileNotFoundError):
+        g33_run_env.build_env(
+            {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}, tmp_path,
+            binary=tmp_path / "absent.dylib", column_map=[[0, 0, 0, 0]],
+            run_uuid="u", column_layout_id="l", repo=ROOT.parent)

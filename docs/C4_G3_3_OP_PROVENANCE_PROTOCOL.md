@@ -129,9 +129,32 @@ so `qr seed → rain_increment` is shown as an actual op path, not mere cell-set
 - **Shadow ladder** — the active expression stays verbatim; the ladder is recomputed into
   diagnostic-only variables that never feed state (C++ compiler re-association / Fortran REAL temporary
   rounding would otherwise change the observed target).
-- **Dedicated macro/env** — `KDM6_G33_OP_DUMP` + `KDM6_G33_DUMP_DIR`/`KDM6_G33_CASE_ID`/
-  `KDM6_G33_PAIR_ID`; independent of the shared `KDM6_SUBSTEP_DUMP` (which also drives
-  coordinator/cold/melt-freeze hooks).
+- **Dedicated macro/env** — `KDM6_G33_OP_DUMP` at compile time; independent of the shared
+  `KDM6_SUBSTEP_DUMP` (which also drives coordinator/cold/melt-freeze hooks). The run
+  environment is ALL-OR-NOTHING: none of the variables set means diagnostics are off, any
+  subset means the run is misconfigured and the producer says so. A half-configured run —
+  `DUMP_DIR` and `CASE_ID` exported, `PAIR_ID` forgotten — otherwise produces no evidence
+  and still exits 0, which is indistinguishable from "diagnostics off".
+
+  Do not export these by hand; `harness/g33_run_env.py` derives all of them from one
+  schedule and seals what they point at, so the declaration the producer checks itself
+  against and the expectation the comparator uses afterwards cannot drift apart:
+
+  | variable | meaning |
+  |---|---|
+  | `KDM6_G33_DUMP_DIR` | where containers are written |
+  | `KDM6_G33_CASE_ID`, `KDM6_G33_PAIR_ID` | case/pair identity, echoed into every header |
+  | `KDM6_G33_RUN_UUID` | ties all containers to one run |
+  | `KDM6_G33_PRODUCER_COMMIT` | resolved from git HEAD |
+  | `KDM6_G33_BINARY_SHA256` | digest of the dylib the run loads, hashed from the file |
+  | `KDM6_G33_COLUMN_LAYOUT_ID`, `KDM6_G33_COLUMN_MAP` | declared Fortran(i,j)↔C++ flat-B map (§7c) |
+  | `KDM6_G33_OP_SEQ_MAP` | each container's declared op_seq window (§7, P0-2) |
+  | `KDM6_G33_SCHEMA_DIR` | sealed per-container expected record streams |
+  | `KDM6_G33_SCHEMA_SHA256` | their digests, delivered by a channel an edit of the files does not reach |
+
+  The last pair is why the descriptor check is not a self-attestation: a producer that
+  hashes the file it just read and reports the result agrees with itself no matter what
+  that file contains.
 - **C++ via overlay too (P0-8)** — instrument `sedimentation*.cpp` on a **temporary diagnostic source
   overlay**, not the canonical tree, so the public production source is byte-unchanged and A vs B/C
   separate cleanly (mirrors the Fortran overlay, §6).
