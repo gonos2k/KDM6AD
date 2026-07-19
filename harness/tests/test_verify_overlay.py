@@ -178,6 +178,35 @@ def test_mutation_in_awkward_syntactic_positions_is_flagged(cpp):
     assert v.overriding_assignments(CANON, BASE + [cpp]), f"missed: {cpp}"
 
 
+@pytest.mark.parametrize("lines", [
+    ['        auto s = R"x(', '        )x" ; qr_cols[k] = bogus;'],
+    ['        auto s = R"(', '        )" ; qr_cols[k].copy_(b);'],
+    ['        /* open', '        end */ qr_cols[k] = bogus;'],
+])
+def test_multiline_literal_state_is_carried_across_lines(lines):
+    # A per-line lexer forgets it is inside a multi-line raw string, so the
+    # terminator line looks like it OPENS a string; with literal content blanked,
+    # everything after — the mutation — vanished unseen.
+    assert v.overriding_assignments(CANON, BASE + lines), f"multi-line bypass: {lines}"
+
+
+@pytest.mark.parametrize("lines", [
+    ['        auto s = R"(', '        qr_cols[k] = bogus;', '        )";'],
+    ['        /* c', '        qr_cols[k] = bogus;', '        */'],
+])
+def test_mutation_inside_a_multiline_literal_or_comment_is_not_flagged(lines):
+    # the same state tracking must not flag text that is string content or a
+    # comment body — it never executes
+    assert v.overriding_assignments(CANON, BASE + lines) == []
+
+
+def test_unterminated_ordinary_literal_is_a_hard_error():
+    # a C++ string/char literal cannot span a line; leaving one open would blank
+    # the rest of the line unchecked, so it must raise rather than pass
+    with pytest.raises(v.OverlayShape, match="unterminated"):
+        v._clean_lines(['        auto s = "oops ; qr_cols[k] = bogus;'])
+
+
 def test_targets_are_derived_from_canonical_not_hardcoded():
     t = v._assignment_targets(CANON)
     assert {"qr_cols", "falk_qr_top", "fall_qr_cols"} <= t

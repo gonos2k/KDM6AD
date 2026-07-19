@@ -96,6 +96,76 @@ def macro_off(text: str) -> list[str]:
             if not l.strip().startswith("#define G33_REC")]
 
 
+
+def _clean_lines(lines: list[str]) -> list[str]:
+    """Lex the WHOLE projection with state carried ACROSS lines.
+
+    A per-line lexer loses track of constructs that span lines. With literal
+    content blanked, that became a BYPASS rather than a nuisance: after
+
+        auto s = R"x(
+        )x" ; qr_cols[k] = bogus;
+
+    the second line was scanned fresh, its `"` opened a NEW ordinary string, and
+    everything after it — the mutation — was blanked away unseen. Raw strings and
+    block comments therefore carry state here. Ordinary string/char literals may
+    NOT span a line in C++, so one left open at end-of-line is a lexical error and
+    is raised rather than silently swallowing the remainder.
+    """
+    out: list[str] = []
+    state = None                      # None | ("raw", delim) | ("block",)
+    for ln, text in enumerate(lines, 1):
+        buf, i, n = [], 0, len(text)
+        while i < n:
+            if state is not None and state[0] == "raw":
+                term = ")" + state[1] + '"'
+                e = text.find(term, i)
+                if e < 0:
+                    i = n; break                       # whole line is raw content
+                buf.append('""'); i = e + len(term); state = None; continue
+            if state is not None and state[0] == "block":
+                e = text.find("*/", i)
+                if e < 0:
+                    i = n; break                       # whole line still comment
+                buf.append(" "); i = e + 2; state = None; continue
+            m = _RAWSTR.match(text, i)
+            if m:
+                delim = m.group(1); term = ")" + delim + '"'
+                e = text.find(term, m.end())
+                buf.append('""')
+                if e < 0:
+                    state = ("raw", delim); i = n; break
+                i = e + len(term); continue
+            c = text[i]
+            if c in ('"', "'"):
+                q, j, closed = c, i + 1, False
+                while j < n:
+                    if text[j] == "\\":
+                        j += 2; continue
+                    if text[j] == q:
+                        j += 1; closed = True; break
+                    j += 1
+                if not closed:
+                    raise OverlayShape(
+                        f"line {ln}: unterminated {q!r} literal — a C++ string or "
+                        f"char literal cannot span a line, and leaving it open "
+                        f"would blank the rest of the line unchecked")
+                buf.append(q + q); i = j; continue
+            if c == "/" and i + 1 < n and text[i + 1] == "/":
+                i = n; break                           # line comment
+            if c == "/" and i + 1 < n and text[i + 1] == "*":
+                e = text.find("*/", i + 2)
+                buf.append(" ")
+                if e < 0:
+                    state = ("block",); i = n; break
+                i = e + 2; continue
+            buf.append(c); i += 1
+        out.append("".join(buf))
+    if state is not None:
+        raise OverlayShape(f"unterminated {state[0]} at end of file")
+    return out
+
+
 def _is_subsequence(small: list[str], big: list[str]) -> int | None:
     """Return None if `small` appears in `big` in order, else the failing index."""
     it = iter(big)
@@ -157,7 +227,7 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
     A==B==C output equality (§10) can establish that the instrumented build did
     not perturb the computation.
     """
-    targets = _assignment_targets(canon)
+    targets = _assignment_targets("\n".join(_clean_lines(canon.splitlines())))
     if not targets:
         return []
     tre = re.compile(r"\b(" + "|".join(sorted(map(re.escape, targets), key=len,
@@ -177,44 +247,7 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
     # chained accessor slipped through: X.at(k).copy_(…), X.select(-1,k).zero_(),
     # X[k].t().add_(…). Scanning what stands to the LEFT of the mutation catches
     # the whole family regardless of chain length.
-    def strip_comment(t):
-        # Must be a real C++ lexer for literals. Two bugs lived here:
-        #   1. `t.find("//")` truncated at a `//` inside a STRING, discarding the
-        #      rest of the line — mutation included;
-        #   2. RAW strings R"delim( ... )delim" were parsed as ordinary strings, so
-        #      a `"` inside the raw text closed it early and a following `//` was
-        #      read as a comment: R"(a"b//c)"; qr_cols[k] = bogus;  went unseen.
-        # Literal CONTENT is blanked (never executed) so a mutation-looking pattern
-        # inside a string cannot raise a false positive either.
-        out, i, n = [], 0, len(t)
-        while i < n:
-            m = _RAWSTR.match(t, i)
-            if m:                                   # raw string literal
-                delim = m.group(1)
-                term = ')' + delim + '"'
-                e = t.find(term, m.end())
-                if e < 0:                           # continues on later lines
-                    out.append('""'); i = n; continue
-                out.append('""'); i = e + len(term); continue
-            c = t[i]
-            if c in ('"', "'"):                     # ordinary string / char literal
-                q, j = c, i + 1
-                while j < n:
-                    if t[j] == "\\":
-                        j += 2; continue
-                    if t[j] == q:
-                        j += 1; break
-                    j += 1
-                out.append(q + q); i = j; continue
-            if c == "/" and i + 1 < n and t[i + 1] == "/":
-                break                               # real line comment
-            if c == "/" and i + 1 < n and t[i + 1] == "*":
-                end = t.find("*/", i + 2)           # same-line block comment
-                if end < 0:
-                    break
-                out.append(" "); i = end + 2; continue
-            out.append(c); i += 1
-        return "".join(out)
+    cleaned = _clean_lines(on_lines)
 
     joined = list(added)
     for idx, (lineno, line) in enumerate(joined):
@@ -227,11 +260,11 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
         # An earlier version joined only when the continuation began with `=`,
         # which missed exactly these compound/in-place splits. Adjacency + the `;`
         # stop keep unrelated regions from being spliced together.
-        probe = strip_comment(line)
+        probe = cleaned[lineno - 1]
         j, prev_no = idx + 1, lineno
         while (";" not in probe and j < len(joined) and j - idx <= 3
                and joined[j][0] == prev_no + 1):
-            probe = probe.rstrip() + " " + strip_comment(joined[j][1]).strip()
+            probe = probe.rstrip() + " " + cleaned[joined[j][0] - 1].strip()
             prev_no = joined[j][0]
             j += 1
         for chunk in probe.split(";"):
