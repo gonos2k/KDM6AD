@@ -8,6 +8,12 @@ Two fail-closed checks, run before any diagnostic build:
      canonical file TEXTUALLY — so every added line lives inside #ifdef and the
      macro-off build cannot differ (not even in line numbers / debug metadata).
 Exit 0 only if both hold.
+
+SCOPE — this proves configuration **A only** (macro undefined). It says NOTHING
+about configurations B (macro defined, env unset) and C (macro defined, dumping):
+executing the shadow ladder could in principle perturb results, so
+`A_output == B_output == C_output` STILL REQUIRES the actual 3-way run (§10).
+Do not cite this check as evidence that the instrumented build is non-invasive.
 """
 import hashlib, sys, difflib
 from pathlib import Path
@@ -57,6 +63,9 @@ def main() -> int:
             rc = 1; continue
         print(f"OK {canon_rel}: base SHA pinned + macro-OFF overlay TEXTUALLY IDENTICAL "
               f"(pure #ifdef addition)")
+    if rc == 0:
+        print("SCOPE: config A (macro-off) only — B/C output equality still requires "
+              "the 3-way A/B/C run (§10); this is NOT a non-invasiveness certificate.")
     return rc
 
 

@@ -58,9 +58,18 @@ _STAGE_FIELDS = {
                         ("rho", "f32"), ("delz", "f32")],
     "outer_post_sed":  [("qr", "f32"), ("nr", "f32"), ("qv", "f32"), ("th", "f32")],
     "outer_post_micro": [("qr", "f32"), ("nr", "f32"), ("qv", "f32"), ("th", "f32")],
-    "substep_pre":     [("qr", "f32"), ("nr", "f32"), ("work1_qr", "f64"), ("workn_qr", "f64"),
-                        ("mstep_native", "f64"), ("mstepmax", "i32"), ("gate", "u8"),
-                        ("rho", "f32"), ("delz", "f32")],
+    # substep_pre is emitted as per-level (B,) slices at the top cell, and its
+    # dtypes are the DECLARED source-contract model (work1/workn are f64 via the
+    # f64 vt chain; mstep/gate are state-dtype f32). The first diagnostic run
+    # VALIDATES this model: a dtype/shape disagreement with the writer surfaces as
+    # a fail-closed key mismatch to be corrected — never a silent pass.
+    "substep_pre":     [("work1_qr", "f64"), ("workn_qr", "f64"),
+                        ("mstep_native", "f32"), ("mstep_decoded_i32", "i32"),
+                        ("mstep_exact_integer", "u8"),
+                        ("gate_native", "f32"), ("gate_exact_01", "u8"),
+                        ("active_mask", "u8"),
+                        ("dend_raw", "f32"), ("dend_safe", "f32"),
+                        ("delz_raw", "f32"), ("delz_safe", "f32")],
     "substep_post":    [("qr", "f32"), ("nr", "f32"), ("qs", "f32"), ("qg", "f32"), ("brs", "f32")],
     "reslope_input":   [("qr", "f32"), ("nr", "f32")],
     "reslope_output":  [("work1_qr", "f64"), ("workn_qr", "f64")],
@@ -107,8 +116,9 @@ def expected_records(schedule: dict) -> list[dict]:
         for chain, mmax_list in (("main", mm_main), ("ice", mm_ice)):
             mmax = int(mmax_list[loop - 1])
             for n in range(1, mmax + 1):
+                # per-level (B,) slices captured at the top cell (matches the overlay)
                 emit("substep_pre", _STAGE_FIELDS["substep_pre"], outer_loop=loop,
-                     chain=chain, n=n, shape=[B, K])
+                     chain=chain, n=n, cell_role="TOP", shape=[B])
                 for k in range(K):
                     role = _cell_role(k, K)
                     for sp in species:
