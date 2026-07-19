@@ -52,10 +52,20 @@ real32 → uint32   real64 → uint64   int32 → int32   logical → uint8
 **mstep is an integer-VALUED float tensor** (clamped, then used as divisor + gate), NOT an int type.
 Storing only `int32(2)` hides `2.0` vs `2.0000002`. Record:
 ```
-mstep_native_dtype  mstep_native_bits(u32/u64)  mstep_decoded_i32  mstep_exact_integer(u8)  mstepmax_i32  gate(u8)
+mstep_native_dtype  mstep_native_bits(u32/u64)  mstep_decoded_i32  mstep_exact_integer(u8)  gate(u8)
 ```
-Acceptance: `mstep_exact_integer==true`, `mstep_decoded_i32` in range, `mstep_native_bits` equal
-*within* each pair.
+`mstepmax` is NOT dumped (owner adjudication): it is `max_b(mstep_b)`, so the comparator
+derives it offline from the `mstep_native` bits (`g33_dump.derive_mstepmax`). Dumping it
+would have required naming `int /*mstepmax*/`, an unnamed production parameter — a
+production edit for a value that is not independent of evidence already recorded, and a
+producer reporting both an operand and a summary OF that operand attests to its own
+arithmetic. For the same reason, every producer-emitted verdict here (`mstep_decoded_i32`,
+`mstep_exact_integer`, `gate_exact_01`, `active_mask`, `*_floor_active`) is a DEBUGGING
+AID: acceptance authority is `g33_derived.py`, which recomputes each from the raw bits and
+cross-checks the producer's version — a disagreement means the producer's arithmetic is
+not what its evidence claims, and the run is invalid before any cross-tree comparison.
+Acceptance: recomputed `exact_integer==true`, recomputed `decoded_i32` in range,
+`mstep_native_bits` equal *within* each pair.
 
 ---
 
@@ -179,6 +189,21 @@ AND an independent Python/scalar evaluator, from the raw recorded inputs, reprod
 exactly: `actual == shadow == offline`. Any mismatch → that rung is unusable → **INCONCLUSIVE**.
 
 ---
+
+### Static verification is a tripwire, not evidence
+
+Nine consecutive review rounds bypassed source-text certification of runtime properties
+(slicing spellings, rank-changing calls, dtype relabels, unknown operands, allowed-name
+collisions, multi-argument `.to()`, comments parsed as syntax — each fix opened the next
+hole one layer down). The static checks' load-bearing role is therefore limited to what
+source text CAN establish: (1) the canonical base SHA pin, (2) macro-OFF textual identity,
+(3) macro-ON in-order superset plus the mutation tripwire. Tensor runtime shape, runtime
+dtype, arithmetic equivalence, and non-mutation through aliases are NOT certifiable from
+source text and must never be cited from it. That authority lives at runtime: the sealed
+per-container expected-descriptor stream (§7) that `rec()` consumes record-by-record with
+the tensor in hand, the producer-side shape guard, and the comparator recomputation of
+every derived flag (`g33_derived.py`). Non-invasiveness is established only by the 3-way
+A/B/C run (§10).
 
 ## 6. Canonical Fortran + C++ via temporary build overlay (P0-8, P0-10)
 
