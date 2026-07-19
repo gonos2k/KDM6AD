@@ -646,3 +646,37 @@ def test_instrumented_scope_must_be_declared_not_defaulted():
     for bad in ([], (), "op", ["outer_pre_sed_typo"]):
         with pytest.raises(ValueError, match="instrumented_stages"):
             ge.expected_records({**SCHED, "instrumented_stages": bad})
+
+
+def test_overlay_substep_pre_emission_matches_the_manifest():
+    """The manifest must be satisfiable by what the overlay ACTUALLY emits.
+
+    test_declared_windows_accept_a_real_overlay_emission_order replays the
+    manifest's own records, so it validates the manifest against itself and
+    passes no matter what the overlay does. It did: at that point the overlay
+    emitted substep_pre as 12 per-level (B,) slices hardcoded to k=0 inside the
+    top-cell block, while the manifest expected 20 whole-K fields at k=-1 — a
+    real container could not satisfy it on identity, shape, count, or field set.
+
+    This reads the emission sequence out of the overlay source instead.
+    """
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = re.findall(
+        r'G33_REC\(g33,\s*"substep_pre",\s*"(-|[A-Z]+)",\s*(-?\d+),'
+        r'\s*[^,]+,\s*[^,]+,\s*"([a-z0-9_]+)",\s*([^;]+)\);', src)
+    assert emitted, "no substep_pre emission found in the overlay"
+
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r for r in ge.expected_records(sched) if r["stage"] == "substep_pre"
+                and r["chain"] == "main" and r["n"] == 1 and r["outer_loop"] == 1]
+
+    assert [f for _, _, f, _ in emitted] == [r["field"] for r in expected], (
+        "overlay substep_pre field ORDER/SET differs from the manifest")
+    assert {int(k) for _, k, _, _ in emitted} == {-1}, (
+        "substep_pre is a whole-K record: k must be -1, not a per-level index")
+    for (_, _, field, expr), r in zip(emitted, expected):
+        # a per-column value is built from a *col* tensor; anything else is whole-K
+        per_column = "col" in expr
+        assert per_column == (r["shape"] == [SCHED["B"]]), (
+            f"{field}: overlay emits {'per-column' if per_column else 'whole-K'} "
+            f"but the manifest expects shape {r['shape']}")

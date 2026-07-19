@@ -137,7 +137,18 @@ _STAGE_FIELDS_BASE = {
                         ("th", "f32", "BK")],
     "outer_post_micro": [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("th", "f32", "BK")],
-    # substep_pre is emitted as per-level (B,) slices at the top cell. Its dtypes
+    # substep_pre is WHOLE-K, emitted once per substep (k=-1). Three fields the
+    # protocol names are NOT here, each for a stated reason rather than omission:
+    #   mstepmax_i32 (§55) — BLOCKED, needs owner adjudication. The value only
+    #     exists as `int /*mstepmax*/`, an UNNAMED parameter of
+    #     substep_advection_torch. Naming it is a production edit and changes the
+    #     macro-OFF projection, breaking the textual-identity guarantee. It cannot
+    #     be dumped under the current freeze.
+    #   gate_mask, finite_required_mask (§236/§237) — the protocol attaches these
+    #     to EACH OP RECORD (the dead-branch/NaN policy is per-operation), not to
+    #     the substep entry state. Demanding them here made the manifest
+    #     unsatisfiable while still not covering the ops they belong to.
+    # Its dtypes
     # are the DECLARED source-contract model: work1/workn are f64 (the f64-vt
     # chain), and mstep_native is therefore ALSO f64 — mstep_col is built as
     # clamp(...).to(w1_qr.dtype()) (runtime.cpp:495), NOT the state f32; only
@@ -154,13 +165,10 @@ _STAGE_FIELDS_BASE = {
                         ("mstep_native", "NATIVE_MSTEP", "B"),
                         ("mstep_decoded_i32", "i32", "B"),
                         ("mstep_exact_integer", "u8", "B"),
-                        ("mstepmax_i32", "i32", "B"),
                         ("gate_native", "NATIVE_GATE", "B"),
                         ("gate_decoded_u8", "u8", "B"),
                         ("gate_exact_01", "u8", "B"),
-                        ("gate_mask", "u8", "B"),
-                        ("active_mask", "u8", "B"),
-                        ("finite_required_mask", "u8", "BK")],
+                        ("active_mask", "u8", "B")],
     "substep_post":    [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qs", "f32", "BK"),
                         ("qg", "f32", "BK"), ("brs", "f32", "BK")],
     "reslope_input":   [("qr", "f32", "BK"), ("nr", "f32", "BK")],
