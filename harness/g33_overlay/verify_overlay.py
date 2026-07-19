@@ -156,36 +156,73 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
     not perturb the computation.
     """
     targets = _assignment_targets(canon)
+    if not targets:
+        return []
+    tre = re.compile(r"\b(" + "|".join(sorted(map(re.escape, targets), key=len,
+                                              reverse=True)) + r")\b")
     added = _added_lines(canon.splitlines(), on_lines)
     bad = []
 
     def flag(lineno, name, line, why):
         bad.append((lineno, f"{name} ({why})", line.strip()))
 
-    # join added lines pairwise so an assignment split across a newline is seen
-    joined = [(ln, txt) for ln, txt in added]
+    def hit(text):
+        m = tre.search(text)
+        return m.group(1) if m else None
+
+    # Match on the RECEIVER / LHS text rather than on a fixed shape after the
+    # target name. A shape-based rule only understood `X` and `X[k]`, so ANY
+    # chained accessor slipped through: X.at(k).copy_(…), X.select(-1,k).zero_(),
+    # X[k].t().add_(…). Scanning what stands to the LEFT of the mutation catches
+    # the whole family regardless of chain length.
+    def strip_comment(t):
+        i = t.find("//")
+        return t if i < 0 else t[:i]
+
+    joined = list(added)
     for idx, (lineno, line) in enumerate(joined):
-        probe = line
-        if idx + 1 < len(joined) and not line.rstrip().endswith(";"):
-            probe = line.rstrip() + " " + joined[idx + 1][1].strip()
-        for m in _ASSIGN.finditer(probe):
-            if m.group(1) in targets:
-                flag(lineno, m.group(1), line, "assignment")
-        for t in targets:
-            tq = re.escape(t)
-            # X.at(i) = …
-            if re.search(rf"\b{tq}\s*\.\s*at\s*\([^)]*\)\s*=(?!=)", probe):
-                flag(lineno, t, line, ".at() assignment")
-            # torch in-place method: trailing underscore, e.g. copy_/add_/zero_
-            if re.search(rf"\b{tq}\s*(?:\[[^\]]*\])?\s*\.\s*[A-Za-z_]\w*_\s*\(", probe):
-                flag(lineno, t, line, "in-place method")
+        probe = strip_comment(line)
+        # Join the next line ONLY for the narrow multi-line-assignment case (the
+        # continuation starts with `=`). A blanket "doesn't end with ;" join
+        # spliced unrelated lines together and manufactured false positives.
+        if idx + 1 < len(joined):
+            nxt = strip_comment(joined[idx + 1][1]).strip()
+            if nxt.startswith("=") and not nxt.startswith("=="):
+                probe = probe.rstrip() + " " + nxt
+        for chunk in probe.split(";"):
+            # assignment (plain or compound): LHS must not name a production value
+            for m in re.finditer(r"(?<![=!<>])=(?!=)", chunk):
+                # bound the LHS to the innermost statement: text after the last
+                # block brace, so an enclosing function signature (whose PARAMETER
+                # names can coincide with production identifiers like `k`) cannot
+                # leak into it.
+                lhs = chunk[:m.start()]
+                cut = max(lhs.rfind("{"), lhs.rfind("}"))
+                who = hit(lhs[cut + 1:])
+                if who:
+                    flag(lineno, who, line, "assignment to production value")
+            # torch IN-PLACE method (trailing underscore) on a production receiver
+            for m in re.finditer(r"\.\s*[A-Za-z_]\w*_\s*\(", chunk):
+                recv = chunk[:m.start()]
+                cut = max(recv.rfind("{"), recv.rfind("}"))
+                who = hit(recv[cut + 1:])
+                if who:
+                    flag(lineno, who, line, "in-place method on production value")
             # std::swap / std::move onto a production value
-            if re.search(rf"\b(?:swap|move)\s*\([^)]*\b{tq}\b", probe):
-                flag(lineno, t, line, "swap/move")
-            # mutable alias: auto& r = X;   auto* p = &X;
-            if re.search(rf"&\s*[A-Za-z_]\w*\s*=\s*[^;]*\b{tq}\b", probe) or \
-               re.search(rf"=\s*&\s*{tq}\b", probe):
-                flag(lineno, t, line, "mutable alias")
+            for m in re.finditer(r"\b(?:swap|move)\s*\(([^;]*)", chunk):
+                who = hit(m.group(1))
+                if who:
+                    flag(lineno, who, line, "swap/move of production value")
+            # mutable alias: auto& r = X;  auto* p = &X;
+            if "&" in chunk:
+                for m in re.finditer(r"&\s*[A-Za-z_]\w*\s*=([^;]*)", chunk):
+                    who = hit(m.group(1))
+                    if who:
+                        flag(lineno, who, line, "mutable reference to production value")
+                for m in re.finditer(r"=\s*&\s*([^;]*)", chunk):
+                    who = hit(m.group(1))
+                    if who:
+                        flag(lineno, who, line, "address of production value")
     # de-duplicate (a line can trip several patterns for the same target)
     seen, out = set(), []
     for item in bad:
