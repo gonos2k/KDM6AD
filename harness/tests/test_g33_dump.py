@@ -219,10 +219,15 @@ def test_extra_record_detected(tmp_path):
 def test_conditional_ice_reslope_schedule():
     # ice re-slope emitted only for n < mstepmax_ice; main for every n.
     keys = ge.expected_key_set(SCHED)                    # tuple idx: 1=chain 2=n 6=stage
-    ice_reslope_n = {k[2] for k in keys if k[1] == "ice" and k[6] == "reslope_output"}
-    assert ice_reslope_n == {1}                          # mstepmax_ice=2 -> only n=1 (n<mmax)
+    # first scope is qr/nr (main chain only): the ice chain transports qi/ni and
+    # so must contribute NO records at all — its substep_pre/reslope fields are
+    # chain-specific (work1_qi), and demanding the qr ones would be unsatisfiable.
+    assert {k for k in keys if k[1] == "ice"} == set()
     main_reslope_n = {k[2] for k in keys if k[1] == "main" and k[6] == "reslope_output"}
     assert main_reslope_n == {1}                         # mstepmax_main=1 -> n=1 (every main n)
+    # the conditional itself (ice re-slope only when n < mstepmax_ice) stays
+    # implemented for when ice enters scope — exercised via the emission rule.
+    assert ge._CHAIN_SPECIES["ice"] == ["qi", "ni"]
 
 
 def test_cell_role_templates():
@@ -261,6 +266,41 @@ def test_capped_ops_expose_pre_cap_rung():
         assert "inflow_pre_cap" in leg and "inflow_cap_active" in leg and "source_reservoir" in leg, op
         con = dict(ge._op_fields("conservative", "INTERIOR", op))
         assert "inflow_cap_active" not in con and "inflow_pre_cap" not in con, op
+
+
+def test_ice_chain_never_demands_qr_nr_ops():
+    # ice_substep_advection_* transports ONLY qi/ni. Demanding QR_*/NR_* there
+    # would require records the writer can never emit, making the completeness
+    # check permanently unsatisfiable (and therefore useless).
+    keys = ge.expected_key_set(SCHED)                    # idx 1=chain 4=species 5=op_id 6=stage
+    ice_ops = {(k[4], k[5]) for k in keys if k[1] == "ice" and k[6] == "op"}
+    assert ice_ops == set(), f"ice chain must emit no qr/nr ops, got {ice_ops}"
+    main_ops = {k[4] for k in keys if k[1] == "main" and k[6] == "op"}
+    assert main_ops == {"qr", "nr"}
+    # widening scope to a species with no op template must fail LOUDLY
+    with pytest.raises(NotImplementedError):
+        ge._ops_for_species("legacy", "INTERIOR", "qs")
+
+
+def test_duplicates_are_caught_by_multiset_not_by_set():
+    recs = ge.expected_records(SCHED)
+    surf = next(r for r in recs if r["stage"] == "surface")
+    dup = dict(surf); dup["seq_no"] = len(recs)          # same KEY, different seq_no
+    observed = recs + [dup]
+    # a SET comparison is blind to this duplicate ...
+    assert {ge.record_key(r) for r in observed} == ge.expected_key_set(SCHED)
+    # ... the multiset comparison catches it
+    d = ge.completeness_diff(observed, SCHED)
+    assert d["duplicated"] == {ge.record_key(surf): 1}
+    assert not d["missing"] and not d["extra"]
+
+
+def test_completeness_diff_clean_and_missing():
+    recs = ge.expected_records(SCHED)
+    d = ge.completeness_diff(recs, SCHED)
+    assert not d["missing"] and not d["extra"] and not d["duplicated"]
+    d2 = ge.completeness_diff(recs[:-2], SCHED)
+    assert sum(d2["missing"].values()) == 2 and not d2["extra"]
 
 
 def test_number_ops_mirror_the_mass_algorithm_split():

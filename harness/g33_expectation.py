@@ -154,6 +154,26 @@ _STAGE_FIELDS = {
 }
 
 
+# Which species each chain ACTUALLY transports. substep_advection_* carries
+# qr/nr/qs/qg/brs; ice_substep_advection_* carries ONLY qi/ni. Demanding QR_*/NR_*
+# records on the ice chain would require operations that do not exist, so the
+# completeness check could never be satisfied — and an unsatisfiable check is a
+# useless one.
+_CHAIN_SPECIES = {"main": ["qr", "nr", "qs", "qg", "brs"], "ice": ["qi", "ni"]}
+
+
+def _ops_for_species(algorithm: str, role: str, species: str) -> list[str]:
+    if species == "qr":
+        return _mass_ops(algorithm, role)
+    if species == "nr":
+        return _number_ops(algorithm, role)
+    # qs/qg/brs/qi/ni are outside the owner-mandated first scope; fail loudly
+    # rather than emit plausible-looking but wrong op ids.
+    raise NotImplementedError(
+        f"species {species!r} is outside the first scope (qr/nr); add its op "
+        f"templates before widening species_scope")
+
+
 def _cell_role(k: int, K: int) -> str:
     # canonical top-first: k=0 is TOP, k=K-1 is BOTTOM
     if k == 0:
@@ -192,15 +212,25 @@ def expected_records(schedule: dict) -> list[dict]:
     for loop in range(1, loops + 1):
         emit("outer_pre_sed", _STAGE_FIELDS["outer_pre_sed"], outer_loop=loop, shape=[B, K])
         for chain, mmax_list in (("main", mm_main), ("ice", mm_ice)):
+            # A chain transporting no in-scope species contributes NOTHING: its
+            # substep_pre/post and re-slope fields are chain-specific too (ice
+            # uses work1_qi/workn_qi, not work1_qr), so emitting them here would
+            # again demand records that cannot exist. The ice re-slope conditional
+            # below stays implemented for when ice enters scope.
+            if not [s for s in _CHAIN_SPECIES[chain] if s in species]:
+                continue
             mmax = int(mmax_list[loop - 1])
             for n in range(1, mmax + 1):
                 # per-level (B,) slices captured at the top cell (matches the overlay)
                 emit("substep_pre", _STAGE_FIELDS["substep_pre"], outer_loop=loop,
                      chain=chain, n=n, cell_role="TOP", shape=[B])
+                # only the species this chain actually transports, intersected
+                # with the requested scope (ice carries qi/ni, never qr/nr)
+                chain_species = [s for s in _CHAIN_SPECIES[chain] if s in species]
                 for k in range(K):
                     role = _cell_role(k, K)
-                    for sp in species:
-                        ops = _mass_ops(algo, role) if sp == "qr" else _number_ops(algo, role)
+                    for sp in chain_species:
+                        ops = _ops_for_species(algo, role, sp)
                         for op_id in ops:
                             emit("op", _op_fields(algo, role, op_id), outer_loop=loop, chain=chain,
                                  n=n, cell_role=role, species_id=sp, op_id=op_id, shape=[B])
@@ -228,3 +258,30 @@ def record_key(rec: dict) -> tuple:
 
 def expected_key_set(schedule: dict) -> set:
     return {record_key(r) for r in expected_records(schedule)}
+
+
+def expected_key_counts(schedule: dict) -> "Counter":
+    """Expected MULTIPLICITY of every key (every key is expected exactly once)."""
+    from collections import Counter
+    return Counter(record_key(r) for r in expected_records(schedule))
+
+
+def completeness_diff(observed_records, schedule: dict) -> dict:
+    """Fail-closed completeness verdict as a MULTISET comparison.
+
+    A set comparison is duplicate-BLIND: two records carrying the same key (e.g.
+    the surface stage emitted once per chain instead of once per outer loop)
+    collapse into one element and the check passes. The container reader only
+    rejects duplicate seq_no, which such records need not share. So completeness
+    must compare counts, not membership.
+
+    Returns {'missing', 'extra', 'duplicated'} as Counters; the run is complete
+    iff all three are empty.
+    """
+    from collections import Counter
+    exp = expected_key_counts(schedule)
+    obs = Counter(record_key(r) for r in observed_records)
+    missing = Counter({k: exp[k] - obs.get(k, 0) for k in exp if obs.get(k, 0) < exp[k]})
+    extra = Counter({k: c for k, c in obs.items() if k not in exp})
+    duplicated = Counter({k: obs[k] - exp[k] for k in exp if obs.get(k, 0) > exp[k]})
+    return {"missing": missing, "extra": extra, "duplicated": duplicated}
