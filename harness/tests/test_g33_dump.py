@@ -14,6 +14,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+import g33_derived as gdv
 import g33_dump as gd
 import g33_expectation as ge
 
@@ -387,8 +388,10 @@ def test_fall_accumulator_and_surface_are_required():
             assert x in con and x in leg
     recs = ge.expected_records(SCHED)
     surf = {r["field"] for r in recs if r["stage"] == "surface"}
-    assert {"bottom_fall", "delz_bottom", "surface_mul1", "surface_mul_dt",
-            "rain_increment"} <= surf
+    # per-species since the surface-causal-path review: the aggregate alone
+    # cannot attribute a qr seed (test_surface_expectation_is_per_species)
+    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom", "surface_mul1",
+            "surface_mul_dt", "rain_increment"} <= surf
     # exactly once per outer loop
     assert len({r["outer_loop"] for r in recs if r["stage"] == "surface"}) == SCHED["loops"]
 
@@ -1279,3 +1282,102 @@ def test_dladdr_resolves_the_artifact_actually_running(tmp_path):
     assert subprocess.run([str(exe), sha], capture_output=True).returncode == 0
     bad = subprocess.run([str(exe), "f" * 64], capture_output=True, text=True)
     assert bad.returncode == 1 and "REJECTED" in bad.stderr
+
+
+# ── comparator-recomputed flag authority (owner adjudication: producer flags
+#    are debugging aids; acceptance authority is recomputed from raw bits) ────
+def test_mstep_exactness_comes_from_the_bits():
+    # int32(2) cannot hide 2.0 vs 2.0000000000000004 — the piacw-class confusion
+    exact = gd.pack_payload_bits("f64", [0x4000000000000000])   # 2.0
+    off = gd.pack_payload_bits("f64", [0x4000000000000001])     # 2.0 + 1 ulp
+    assert gdv.derive_mstep("f64", exact) == {"decoded_i32": [2], "exact_integer": [1]}
+    assert gdv.derive_mstep("f64", off) == {"decoded_i32": [2], "exact_integer": [0]}
+    with pytest.raises(gd.G33Corruption, match="non-finite"):
+        gdv.derive_mstep("f64", gd.pack_payload_bits("f64", [0x7FF0000000000000]))
+    assert gdv.derive_mstep("i32", gd.pack_payload("i32", [3]))["exact_integer"] == [1]
+
+
+def test_gate_flags_come_from_the_bits():
+    g = gdv.derive_gate("f32", gd.pack_payload("f32", [0.0, 1.0, 0.5]))
+    assert g["exact_01"] == [1, 1, 0]
+    assert g["active_mask"] == [0, 1, 1]
+    assert g["decoded_u8"] == [0, 1, None]     # decoding a non-0/1 gate is meaningless
+    # NaN gate: non-exact, but ACTIVE under the producer's (gate != 0) semantics
+    gn = gdv.derive_gate("f32", gd.pack_payload_bits("f32", [0x7FC00000]))
+    assert gn["exact_01"] == [0] and gn["active_mask"] == [1]
+    # -0.0 is value-exact 0 and inactive, though its BITS differ from +0.0
+    neg0 = gdv.derive_gate("f32", gd.pack_payload_bits("f32", [0x80000000]))
+    assert neg0 == {"exact_01": [1], "active_mask": [0], "decoded_u8": [0]}
+
+
+def test_floor_activity_has_a_value_view_and_a_bits_view():
+    raw = gd.pack_payload_bits("f32", [0x00000000, 0x3F800000])    # +0.0, 1.0
+    safe = gd.pack_payload_bits("f32", [0x80000000, 0x3F800000])   # -0.0, 1.0
+    fl = gdv.derive_floor_active("f32", raw, safe)
+    assert fl["value_changed"] == [0, 0]       # what the producer's != computes
+    assert fl["bits_changed"] == [1, 0]        # what only a raw-bit view can see
+
+
+def test_min_branches_are_three_state_not_boolean():
+    left = gd.pack_payload("f32", [1.0, 2.0, 3.0])
+    right = gd.pack_payload("f32", [2.0, 1.0, 3.0])
+    assert gdv.classify_min("f32", left, right) == [
+        gd.BRANCH_LEFT_SELECTED, gd.BRANCH_RIGHT_SELECTED, gd.BRANCH_TIE]
+    with pytest.raises(gd.G33Corruption, match="NaN"):
+        gdv.classify_min("f32", gd.pack_payload_bits("f32", [0x7FC00000]),
+                         gd.pack_payload("f32", [1.0]))
+
+
+def _substep_pre_fields(**edits):
+    f = {
+        "mstep_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
+        "mstep_decoded_i32": ("i32", gd.pack_payload("i32", [1, 2, 3])),
+        "mstep_exact_integer": ("u8", gd.pack_payload("u8", [1, 1, 1])),
+        "gate_native": ("f32", gd.pack_payload("f32", [1.0, 0.0, 1.0])),
+        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "gate_exact_01": ("u8", gd.pack_payload("u8", [1, 1, 1])),
+        "active_mask": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "dend_raw": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
+        "dend_safe": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
+        "dend_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 0])),
+        "delz_raw": ("f32", gd.pack_payload("f32", [5.0, 5.0, 5.0])),
+        "delz_safe": ("f32", gd.pack_payload("f32", [5.0, 5.0, 9.0])),
+        "delz_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 1])),
+    }
+    f.update(edits)
+    return f
+
+
+def test_cross_check_accepts_an_honest_producer():
+    gdv.check_producer_flags(_substep_pre_fields())
+
+
+def test_cross_check_catches_a_lying_producer_flag():
+    # the piacw shape: mstep_native carries 2+1ulp but the producer claims exact
+    with pytest.raises(gd.G33Corruption, match="mstep_exact_integer"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            mstep_native=("f64", gd.pack_payload_bits(
+                "f64", [0x3FF0000000000000, 0x4000000000000001,
+                        0x4008000000000000]))))
+    with pytest.raises(gd.G33Corruption, match="delz_floor_active"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))))
+    with pytest.raises(gd.G33Corruption, match="active_mask"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            active_mask=("u8", gd.pack_payload("u8", [1, 1, 1]))))
+
+
+def test_cross_check_refuses_missing_operands():
+    # a cross-check that silently skips an absent operand is vacuous
+    f = _substep_pre_fields()
+    del f["gate_native"]
+    with pytest.raises(gd.G33Corruption, match="missing operand"):
+        gdv.check_producer_flags(f)
+
+
+def test_surface_expectation_is_per_species():
+    surf = {r["field"] for r in ge.expected_records(SCHED) if r["stage"] == "surface"}
+    for f in ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
+              "bottom_fall_qi", "bottom_fall_total"):
+        assert f in surf
+    assert "bottom_fall" not in surf   # the aggregate alone cannot attribute

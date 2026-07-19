@@ -180,7 +180,17 @@ _STAGE_FIELDS_BASE = {
     # §4 surface diagnostic — emitted once per outer loop after the main+ice
     # chains (surface_accumulation_torch). Without it the qr-seed -> precip
     # divergence can only be asserted by cell-set inclusion, not shown as an op path.
-    "surface":         [("bottom_fall", "f32", "B"), ("delz_bottom", "f32", "B"),
+    # Surface contributions are PER SPECIES (owner review, surface causal path):
+    # rain_increment is the TOTAL fallout of qr+qs+qg+qi, so an aggregate
+    # bottom_fall cannot show that a qr seed produced the final precipitation
+    # difference — a difference in another species could cancel or amplify
+    # inside the total. The comparator recomputes snow_subset (qs+qi) and
+    # graupel_subset (qg) and checks bottom_fall_total against the per-species
+    # sum; the total stays emitted because it is the operand that actually
+    # feeds the increments.
+    "surface":         [("bottom_fall_qr", "f32", "B"), ("bottom_fall_qs", "f32", "B"),
+                        ("bottom_fall_qg", "f32", "B"), ("bottom_fall_qi", "f32", "B"),
+                        ("bottom_fall_total", "f32", "B"), ("delz_bottom", "f32", "B"),
                         ("surface_mul1", "f32", "B"), ("surface_mul_dt", "f32", "B"),
                         ("rain_increment", "f32", "B"), ("snow_increment", "f32", "B"),
                         ("graupel_increment", "f32", "B")],
