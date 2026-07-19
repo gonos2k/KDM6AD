@@ -695,8 +695,14 @@ def _emits_per_column(field: str, expr: str) -> bool:
     # strength of in.dend alone, and `in.dend2` inherited in.dend's certificate
     # by substring. Every token must now be accounted for or the check refuses.
     residue, roots = _strip_roots(expr)
-    leftover = set(re.findall(r"[A-Za-z_]\w*", residue)) - _RANK_PRESERVING \
-        - {"torch"} - set(_TORCH_DTYPE)
+    # Strip by ROLE, not by name. Subtracting the allowed NAMES from the token
+    # set let an unknown OPERAND that happens to be spelled like one through:
+    # `in.dend * abs` and `in.dend * kFloat64` both certified clean, because
+    # `abs` and `kFloat64` were on the allowed list no matter where they stood.
+    residue = re.sub(r"torch\s*::\s*k\w+", " ", residue)          # dtype token
+    residue = re.sub(r"[.:]+\s*(?:%s)\s*\(" % "|".join(sorted(_RANK_PRESERVING)),
+                     " ", residue)                                 # method call
+    leftover = set(re.findall(r"[A-Za-z_]\w*", residue))
     if leftover:
         raise AssertionError(
             f"{field}: unaccounted identifier(s) {sorted(leftover)} in "
@@ -784,3 +790,52 @@ def test_overlay_substep_pre_emission_matches_the_manifest():
         assert _emits_dtype(field, expr) == r["dtype"], (
             f"{field}: overlay emits {_emits_dtype(field, expr)} but the manifest "
             f"declares {r['dtype']} — a dtype relabel is a precision-provenance lie")
+
+
+# Expressions that must NEVER certify as "whole-K f32" — what dend_raw is.
+# Enumerated independently of the certifier's rules, and grown every time the
+# certifier was found fail-open: slicing spellings, rank-changing calls, dtype
+# relabels, unknown operands, and operands SPELLED like allowed tokens. Kept in
+# the repo because five consecutive rounds of ad-hoc falsification each declared
+# the gate sound and each was wrong.
+_MUST_NOT_CERTIFY = [
+    "in.dend.select(-1, k)", "dend_col(k)", "in.dend[k]",
+    "in.dend.narrow(-1,k,1).squeeze(-1)",
+    "in.dend.index({torch::indexing::Slice(), 0})",
+    "in.dend.sum(-1)", "in.dend.mean(-1)", "in.dend.max(-1).values",
+    "in.dend.reshape({-1})", "in.dend.flatten()", "in.dend.unsqueeze(0)",
+    "in.dend.transpose(0, 1)", "in.dend.permute({1,0})",
+    "torch::stack({in.dend, in.dend}, 0)",
+    "in.dend.to(torch::kFloat64)", "in.dend.to(torch::kUInt8)",
+    "in.work1_qr",
+    "some_unknown_tensor", "in.dend2", "helper(in.dend)",
+    "(in.dend * mystery_tensor)", "(mystery * in.dend)",
+    "(in.dend * abs)", "(in.dend * clone)", "(in.dend + to)",
+    "(in.dend * kFloat64)", "(in.dend * torch)", "(in.dend * round)",
+]
+
+
+@pytest.mark.parametrize("expr", _MUST_NOT_CERTIFY)
+def test_certifier_refuses_expressions_that_are_not_whole_k_f32(expr):
+    # dend_raw's contract: whole-K (not per-column) and f32.
+    try:
+        wrong = _emits_per_column("dend_raw", expr) or _emits_dtype("dend_raw", expr) != "f32"
+    except AssertionError:
+        return                     # refused to certify — the correct outcome
+    assert wrong, f"certifier accepted {expr!r} as whole-K f32"
+
+
+def test_certifier_accepts_the_real_emissions():
+    # The corpus above must not be so strict that the actual overlay fails: every
+    # expression the overlay really emits has to certify to its manifest entry.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = re.findall(
+        r'G33_REC\(g33,\s*"substep_pre",\s*"(?:-|[A-Z]+)",\s*-?\d+,'
+        r'\s*[^,]+,\s*[^,]+,\s*"([a-z0-9_]+)",\s*([^;]+)\);', src)
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r for r in ge.expected_records(sched) if r["stage"] == "substep_pre"
+                and r["chain"] == "main" and r["n"] == 1 and r["outer_loop"] == 1]
+    assert len(emitted) == len(expected)
+    for (field, expr), r in zip(emitted, expected):
+        assert _emits_per_column(field, expr) == (r["shape"] == [SCHED["B"]])
+        assert _emits_dtype(field, expr) == r["dtype"]
