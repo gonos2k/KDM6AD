@@ -648,6 +648,35 @@ def test_instrumented_scope_must_be_declared_not_defaulted():
             ge.expected_records({**SCHED, "instrumented_stages": bad})
 
 
+# Roots the substep_pre block may read, and the rank each carries. Explicit
+# rather than inferred: a substring rule ("expression mentions col") only caught
+# slices spelled through the *_col lambdas and passed `in.dend.select(-1, k)` —
+# a real [B] slice — as whole-K. An unknown root fails loudly instead of being
+# guessed, so a future field cannot quietly opt out of the shape check.
+_WHOLE_K_ROOTS = {"in.state.qr", "in.state.nr", "in.work1_qr", "in.workn_qr",
+                  "in.dend", "dend_safe", "in.delz", "delz_safe"}
+_PER_COLUMN_ROOTS = {"mstep_col_safe", "gate_col"}
+# any rank-reducing / slicing form, however spelled
+_SLICING = (".select(", ".narrow(", ".squeeze(", ".slice(", ".index_select(",
+            "_col(", "[k]", "[0]")
+
+
+def _emits_per_column(field: str, expr: str) -> bool:
+    roots = {r for r in _WHOLE_K_ROOTS | _PER_COLUMN_ROOTS if r in expr}
+    if not roots:
+        raise AssertionError(
+            f"{field}: no known tensor root in {expr.strip()!r} — add it to "
+            f"_WHOLE_K_ROOTS or _PER_COLUMN_ROOTS rather than letting the shape "
+            f"check silently pass")
+    if any(tok in expr for tok in _SLICING):
+        return True                      # sliced: no longer whole-K, however spelled
+    if roots <= _PER_COLUMN_ROOTS:
+        return True
+    if roots <= _WHOLE_K_ROOTS:
+        return False
+    raise AssertionError(f"{field}: mixes whole-K and per-column roots: {sorted(roots)}")
+
+
 def test_overlay_substep_pre_emission_matches_the_manifest():
     """The manifest must be satisfiable by what the overlay ACTUALLY emits.
 
@@ -675,8 +704,7 @@ def test_overlay_substep_pre_emission_matches_the_manifest():
     assert {int(k) for _, k, _, _ in emitted} == {-1}, (
         "substep_pre is a whole-K record: k must be -1, not a per-level index")
     for (_, _, field, expr), r in zip(emitted, expected):
-        # a per-column value is built from a *col* tensor; anything else is whole-K
-        per_column = "col" in expr
+        per_column = _emits_per_column(field, expr)
         assert per_column == (r["shape"] == [SCHED["B"]]), (
             f"{field}: overlay emits {'per-column' if per_column else 'whole-K'} "
             f"but the manifest expects shape {r['shape']}")
