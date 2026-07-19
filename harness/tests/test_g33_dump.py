@@ -1007,3 +1007,56 @@ def test_descriptor_load_precedes_header_construction():
     # the header is built silently seals an EMPTY digest.
     src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
     assert src.index("desc_sha_ = dsha.hexdigest();") < src.index("std::string hdr =")
+
+
+# ── the sealed digest must come from an INDEPENDENT channel ───────────────────
+def _build_seal_probe(tmp_path):
+    """Compile the probe that mirrors the overlay's sealed-digest comparison.
+
+    The overlay itself needs libtorch, so it cannot be built here; this exercises
+    the same bundled Sha256 and the same lookup against the harness-supplied
+    reference. Skipped when no compiler is available rather than passing.
+    """
+    import shutil, subprocess
+    cxx = shutil.which("clang++") or shutil.which("g++")
+    if not cxx:
+        pytest.skip("no C++ compiler")
+    exe = tmp_path / "sealt"
+    r = subprocess.run([cxx, "-std=c++17", "-DKDM6_G33_OP_DUMP",
+                        f"-I{ROOT / 'g33_overlay'}",
+                        str(ROOT / "tests" / "seal_digest_probe.cpp"), "-o", str(exe)],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return exe
+
+
+def test_sealed_digest_rejects_an_edited_descriptor(tmp_path):
+    # Before this, the producer hashed whatever file it read and reported that
+    # digest — a self-attestation. Editing the descriptor produced a container
+    # that agreed with itself and nothing failed.
+    import os, subprocess
+    exe = _build_seal_probe(tmp_path)
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    shas = ge.write_descriptors(sched, tmp_path)
+    cid = next(iter(shas))
+    desc = tmp_path / f"{cid}.desc"
+    original = desc.read_bytes()
+    env = {**os.environ, "KDM6_G33_SCHEMA_SHA256": ge.schema_sha_map(shas)}
+
+    def rc():
+        return subprocess.run([str(exe), str(desc), cid], env=env,
+                              capture_output=True, text=True).returncode
+
+    assert rc() == 0                                   # unmodified: accepted
+    for edit in (original.replace(b"|f32|", b"|f64|", 1),          # dtype relabel
+                 original[: original.rindex(b"\n", 0, -1) + 1],    # record dropped
+                 original + b"999|op|-|0|qr|X|f|f32|3\n"):         # record added
+        desc.write_bytes(edit)
+        assert rc() == 1, "an edited descriptor was accepted"
+    desc.write_bytes(original)
+    assert rc() == 0
+
+    # and a container with no sealed digest at all must not proceed
+    env.pop("KDM6_G33_SCHEMA_SHA256")
+    assert subprocess.run([str(exe), str(desc), cid], env=env,
+                          capture_output=True, text=True).returncode == 2

@@ -516,6 +516,19 @@ def write_descriptors(schedule: dict, outdir) -> dict:
     return shas
 
 
+def schema_sha_map(shas: dict) -> str:
+    """KDM6_G33_SCHEMA_SHA256 for the overlay: "cid:sha,cid:sha,...".
+
+    Delivered through the ENVIRONMENT, not alongside the .desc files. A digest
+    the producer computes from the file it just read and then reports is a
+    self-attestation: edit the descriptor and the overlay hashes the edited bytes
+    and agrees with itself. A reference sitting next to the descriptors would be
+    edited in the same step. The independent channel is the harness's own
+    in-memory sealing.
+    """
+    return ",".join(f"{c}:{shas[c]}" for c in sorted(shas))
+
+
 def op_seq_map(index: dict) -> str:
     """KDM6_G33_OP_SEQ_MAP for the overlay: "cid:first:last,...".
 
