@@ -36,21 +36,53 @@ def _number_ops(algorithm: str, role: str) -> list[str]:
     return ["NR_FALK", "NR_OUTFLOW", "NR_INFLOW", "NR_UPDATE"]
 
 
-# fields per op (dtype). Refined alongside the C++ writer (steps 7/9); the KEY
-# SET (op-level completeness) is authoritative now.
-_OP_FIELDS = {
-    "QR_FALK":   [("falk_f32", "f32"), ("falk_precast", "f64")],
-    "QR_OUTFLOW": [("dq_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")],
-    "QR_INFLOW": [("src_metric", "f32"), ("dst_metric", "f32"), ("inflow_numerator", "f32"),
-                  ("inflow_cap_active", "u8"), ("inflow_final", "f32")],
-    "QR_UPDATE": [("q_before", "f32"), ("q_minus_out", "f32"), ("q_plus_in_preclamp", "f32"),
-                  ("clamp_active", "u8"), ("q_post", "f32")],
-    "NR_FALK":   [("falk_f32", "f32"), ("falk_precast", "f64")],
-    "NR_OUTFLOW": [("dn_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")],
-    "NR_INFLOW": [("delz_src", "f32"), ("delz_safe_dst", "f32"), ("inflow_final", "f32")],
-    "NR_UPDATE": [("n_before", "f32"), ("n_minus_out", "f32"), ("n_plus_in_preclamp", "f32"),
-                  ("clamp_active", "u8"), ("n_post", "f32")],
-}
+# Fields per op — keyed by (algorithm, cell_role, op_id), because the field SET
+# genuinely differs by role: legacy TOP clamps directly and therefore has NO
+# inflow rung (so no q_plus_in_preclamp), while INTERIOR does.
+#
+# DTYPES ARE DERIVED FROM THE SOURCE CONTRACT, not guessed:
+#   work1_qr / workn_qr are f64 (the f64-vt chain, sedimentation.cpp §34), and
+#   mstep_col = clamp(...).to(w1_qr.dtype())  (runtime.cpp:495) is therefore ALSO
+#   f64 — NOT the state f32. gate_col = (...).to(state dtype) is f32.
+#   Torch promotion then gives: f32*f32->f32, f32*f64->f64, f64/f64->f64,
+#   f64*f32->f64, and a C++ double SCALAR does not promote an f32 tensor.
+# A disagreement with the writer surfaces as a fail-closed key mismatch.
+def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
+    if op_id == "QR_FALK":     # dend(f32)*q(f32) -> f32; *work1(f64) -> f64; /mstep(f64) -> f64
+        return [("mul_dend_q", "f32"), ("mul_work1", "f64"), ("div_mstep", "f64"),
+                ("falk_precast", "f64"), ("shadow_falk_f32", "f32"), ("falk_f32", "f32")]
+    if op_id == "NR_FALK":     # number family omits dend: nr(f32)*workn(f64) -> f64
+        return [("mul_workn", "f64"), ("div_mstep", "f64"),
+                ("falk_precast", "f64"), ("shadow_falk_f32", "f32"), ("falk_f32", "f32")]
+    if op_id == "QR_OUTFLOW":
+        return [("dq_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")]
+    if op_id == "NR_OUTFLOW":
+        return [("dn_out", "f32"), ("cap_active", "u8"), ("source_reservoir", "f32")]
+    if op_id == "QR_INFLOW":
+        if algorithm == "conservative":   # prev_out * (dend_safe*delz_RAW)/(dend_safe*delz_SAFE)
+            return [("prev_out", "f32"), ("src_metric", "f32"), ("dst_metric", "f32"),
+                    ("inflow_final", "f32")]
+        return [("stored_falk_prev", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
+                ("inflow_numerator", "f32"), ("inflow_cap_active", "u8"),
+                ("source_reservoir", "f32"), ("inflow_final", "f32")]
+    if op_id == "NR_INFLOW":
+        return [("prev_out_nr", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
+                ("inflow_final", "f32")]
+    if op_id == "QR_UPDATE":
+        f = [("q_before", "f32"), ("q_minus_out", "f32")]
+        if role != "TOP":
+            f.append(("q_plus_in_preclamp", "f32"))
+        if algorithm == "legacy":
+            f.append(("clamp_active", "u8"))      # conservative has NO positivity clamp
+        return f + [("q_post", "f32")]
+    if op_id == "NR_UPDATE":
+        f = [("n_before", "f32"), ("n_minus_out", "f32")]
+        if role != "TOP":
+            f.append(("n_plus_in_preclamp", "f32"))
+        if algorithm == "legacy":
+            f.append(("clamp_active", "u8"))
+        return f + [("n_post", "f32")]
+    raise KeyError(op_id)
 
 # stage (non-op) snapshot fields.
 _STAGE_FIELDS = {
@@ -58,13 +90,15 @@ _STAGE_FIELDS = {
                         ("rho", "f32"), ("delz", "f32")],
     "outer_post_sed":  [("qr", "f32"), ("nr", "f32"), ("qv", "f32"), ("th", "f32")],
     "outer_post_micro": [("qr", "f32"), ("nr", "f32"), ("qv", "f32"), ("th", "f32")],
-    # substep_pre is emitted as per-level (B,) slices at the top cell, and its
-    # dtypes are the DECLARED source-contract model (work1/workn are f64 via the
-    # f64 vt chain; mstep/gate are state-dtype f32). The first diagnostic run
-    # VALIDATES this model: a dtype/shape disagreement with the writer surfaces as
-    # a fail-closed key mismatch to be corrected — never a silent pass.
+    # substep_pre is emitted as per-level (B,) slices at the top cell. Its dtypes
+    # are the DECLARED source-contract model: work1/workn are f64 (the f64-vt
+    # chain), and mstep_native is therefore ALSO f64 — mstep_col is built as
+    # clamp(...).to(w1_qr.dtype()) (runtime.cpp:495), NOT the state f32; only
+    # gate_native is state-dtype f32 (gate_col = (...).to(state dtype)). The first
+    # diagnostic run VALIDATES this model: a dtype/shape disagreement with the
+    # writer surfaces as a fail-closed key mismatch — never a silent pass.
     "substep_pre":     [("work1_qr", "f64"), ("workn_qr", "f64"),
-                        ("mstep_native", "f32"), ("mstep_decoded_i32", "i32"),
+                        ("mstep_native", "f64"), ("mstep_decoded_i32", "i32"),
                         ("mstep_exact_integer", "u8"),
                         ("gate_native", "f32"), ("gate_exact_01", "u8"),
                         ("active_mask", "u8"),
@@ -124,7 +158,7 @@ def expected_records(schedule: dict) -> list[dict]:
                     for sp in species:
                         ops = _mass_ops(algo, role) if sp == "qr" else _number_ops(algo, role)
                         for op_id in ops:
-                            emit("op", _OP_FIELDS[op_id], outer_loop=loop, chain=chain,
+                            emit("op", _op_fields(algo, role, op_id), outer_loop=loop, chain=chain,
                                  n=n, cell_role=role, species_id=sp, op_id=op_id, shape=[B])
                 emit("substep_post", _STAGE_FIELDS["substep_post"], outer_loop=loop,
                      chain=chain, n=n, shape=[B, K])
