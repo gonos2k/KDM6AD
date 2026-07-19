@@ -666,6 +666,21 @@ _TORCH_DTYPE = {"kFloat": "f32", "kFloat32": "f32", "kFloat64": "f64",
 _TORCH_NON_DTYPE = {"kCPU", "kCUDA", "kStrided", "kSparse", "kContiguousMemoryFormat"}
 
 
+def _decomment(expr: str) -> str:
+    """Blank C++ comments before any parsing.
+
+    The paren matcher counted comment text as syntax in BOTH directions:
+    `.to(/*)*/ torch::kFloat64)` closed on the ')' inside the comment, hiding the
+    cast so the dtype fell through to the root's f32; and a comment merely
+    MENTIONING `.to(torch::kFloat64)` was parsed as a real cast, failing valid
+    code. Reuses verify_overlay's lexer rather than adding a second comment
+    parser to get wrong independently.
+    """
+    sys.path.insert(0, str(ROOT / "g33_overlay"))
+    from verify_overlay import _clean_lines
+    return "\n".join(_clean_lines(expr.split("\n")))
+
+
 def _to_call_args(expr: str):
     """Argument text of each `.to(...)` call, paren-matched.
 
@@ -674,6 +689,7 @@ def _to_call_args(expr: str):
     dtype fell through to the root's: an f64 relabel of an f32 tensor certified
     as f32, in the gate whose purpose is to catch precision relabels.
     """
+    expr = _decomment(expr)
     args = []
     for m in re.finditer(r"\.\s*to\s*\(", expr):
         depth, i = 1, m.end()
@@ -718,7 +734,7 @@ def _emits_per_column(field: str, expr: str) -> bool:
     # fail-open: `in.dend * mystery_tensor` certified as whole-K f32 on the
     # strength of in.dend alone, and `in.dend2` inherited in.dend's certificate
     # by substring. Every token must now be accounted for or the check refuses.
-    residue, roots = _strip_roots(expr)
+    residue, roots = _strip_roots(_decomment(expr))
     # Strip by ROLE, not by name. Subtracting the allowed NAMES from the token
     # set let an unknown OPERAND that happens to be spelled like one through:
     # `in.dend * abs` and `in.dend * kFloat64` both certified clean, because
@@ -763,6 +779,7 @@ def _emits_dtype(field: str, expr: str) -> str:
     lie" the overlay's own rec() comment warns about, in the one place the whole
     gate exists to detect.
     """
+    expr = _decomment(expr)
     dtype = None
     for arg in _to_call_args(expr):
         toks = re.findall(r"\bk\w+", arg)
@@ -845,6 +862,10 @@ _MUST_NOT_CERTIFY = [
     "in.dend.to(torch::kFloat64, /*non_blocking=*/false)",
     "in.dend.to(torch::kFloat64, torch::kUInt8)",
     "in.dend.to(torch::kBogus)",
+    # comments counted as syntax: the ')' inside the comment closed the paren
+    # match early and hid the cast, so the dtype fell through to the root's f32
+    "in.dend.to(/*)*/ torch::kFloat64)",
+    "in.dend.to(torch::kFloat64 /* ) */)",
     "in.work1_qr",
     "some_unknown_tensor", "in.dend2", "helper(in.dend)",
     "(in.dend * mystery_tensor)", "(mystery * in.dend)",
@@ -861,6 +882,19 @@ def test_certifier_refuses_expressions_that_are_not_whole_k_f32(expr):
     except AssertionError:
         return                     # refused to certify — the correct outcome
     assert wrong, f"certifier accepted {expr!r} as whole-K f32"
+
+
+@pytest.mark.parametrize("expr", [
+    "in.dend /* .to(torch::kFloat64) */",
+    "in.dend  // .to(torch::kFloat64)",
+    "in.dend /* dend_col(k) */",
+])
+def test_comments_do_not_make_valid_emissions_fail(expr):
+    # The mirror of the corpus: a comment that merely MENTIONS a cast or a slice
+    # was parsed as one, so correct code failed. A gate that fires on comments
+    # gets disabled by whoever hits it, which is how a check stops protecting.
+    assert _emits_per_column("dend_raw", expr) is False
+    assert _emits_dtype("dend_raw", expr) == "f32"
 
 
 def test_certifier_accepts_the_real_emissions():
