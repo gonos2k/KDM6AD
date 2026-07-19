@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import json
 import shlex
 import subprocess
@@ -93,17 +94,20 @@ def _check_binary_not_stale(binary: Path, repo: Path) -> None:
     establishes that the process loaded this file); it rejects the case where
     they provably disagree.
     """
-    # -z: NUL-separated output. Whitespace-splitting fragmented a path with a
-    # space into tokens that exist nowhere, so is_file() skipped them and that
-    # build input silently LEFT the guard — a fail-open, not a cosmetic bug.
-    # NUL separation also survives newlines and non-ASCII names, which plain
-    # line splitting only handles modulo git's C-quoting.
+    # -z + BINARY output. Whitespace-splitting fragmented a path with a space
+    # into tokens that exist nowhere, so is_file() skipped them and that build
+    # input silently LEFT the guard. The first fix kept text=True, which implies
+    # universal-newline translation: a '\r' in a filename came back as '\n',
+    # the path no longer existed, and the same fail-open survived one layer
+    # down. Bytes end-to-end — NUL split, os.fsdecode per path (surrogateescape
+    # round-trips arbitrary filename bytes) — leaves no translation step to
+    # lose a file through.
     r = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", *_BUILD_INPUTS],
-                       capture_output=True, text=True)
+                       capture_output=True)
     if r.returncode:
         return                                  # not a checkout we can reason about
     newest, newest_src = 0.0, None
-    for rel in filter(None, r.stdout.split("\0")):
+    for rel in map(os.fsdecode, filter(None, r.stdout.split(b"\0"))):
         f = repo / rel
         if f.is_file() and f.stat().st_mtime > newest:
             newest, newest_src = f.stat().st_mtime, rel

@@ -1397,16 +1397,19 @@ def test_surface_expectation_is_per_species():
     assert "bottom_fall" not in surf   # the aggregate alone cannot attribute
 
 
-def test_stale_guard_sees_a_build_input_with_a_space_in_its_name(tmp_path):
-    # Whitespace-splitting the ls-files output fragmented "a b.cpp" into tokens
-    # that exist nowhere, so is_file() skipped both and the file silently LEFT
-    # the guard — a stale binary passed. NUL-separated listing (-z) closes it.
+@pytest.mark.parametrize("name", ["a b.cpp", "a\rb.cpp"])
+def test_stale_guard_sees_awkwardly_named_build_inputs(tmp_path, name):
+    # Two fail-opens of the same class, found one layer apart. Whitespace-
+    # splitting fragmented "a b.cpp" into tokens that exist nowhere; the fix
+    # kept text=True, whose universal-newline translation turned a '\r' in a
+    # filename into '\n' — either way is_file() failed and the input silently
+    # LEFT the guard. Binary NUL-split listing leaves no translation step.
     import os, subprocess, time, g33_run_env
     repo = tmp_path / "repo"
     (repo / "libtorch/src").mkdir(parents=True)
     (repo / "harness/g33_overlay").mkdir(parents=True)
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
-    spaced = repo / "libtorch/src/a b.cpp"
+    spaced = repo / "libtorch/src" / name
     spaced.write_text("int a;\n")
     (repo / "harness/g33_overlay/sedimentation.cpp.overlay").write_text("x\n")
     (repo / "harness/g33_overlay/g33_op_dump.h").write_text("x\n")
