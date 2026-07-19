@@ -734,7 +734,13 @@ def _emits_per_column(field: str, expr: str) -> bool:
     # fail-open: `in.dend * mystery_tensor` certified as whole-K f32 on the
     # strength of in.dend alone, and `in.dend2` inherited in.dend's certificate
     # by substring. Every token must now be accounted for or the check refuses.
-    residue, roots = _strip_roots(_decomment(expr))
+    # Decomment ONCE, at entry, and use that everywhere below. Routing only the
+    # residue through _decomment left the bracket and call checks reading raw
+    # text, so a comment MENTIONING `.sum(` or `[k]` was parsed as the real
+    # thing and correct code was refused — the same defect as the eighth
+    # finding, surviving in the two checks that were not converted.
+    expr = _decomment(expr)
+    residue, roots = _strip_roots(expr)
     # Strip by ROLE, not by name. Subtracting the allowed NAMES from the token
     # set let an unknown OPERAND that happens to be spelled like one through:
     # `in.dend * abs` and `in.dend * kFloat64` both certified clean, because
@@ -871,6 +877,9 @@ _MUST_NOT_CERTIFY = [
     "(in.dend * mystery_tensor)", "(mystery * in.dend)",
     "(in.dend * abs)", "(in.dend * clone)", "(in.dend + to)",
     "(in.dend * kFloat64)", "(in.dend * torch)", "(in.dend * round)",
+    # comment-hidden slice: the bracket/call checks read RAW text until the
+    # ninth finding, so comments were parsed as syntax in these two as well
+    "in.dend/*x*/[k]", "in.dend/*x*/[0]",
 ]
 
 
