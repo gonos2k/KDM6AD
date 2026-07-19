@@ -14,21 +14,26 @@ Four fail-closed checks, run before any diagnostic build:
      instrumented build runs different physics. `#ifndef KDM6_G33_OP_DUMP` is now
      rejected outright, an `#else` on a G33 frame may contain directives only, and
      check 3 catches any deletion or reordering of a production line;
-  4. no ADDED line ASSIGNS to a production value. Check 3 only proves nothing was
-     DELETED — it is blind to an OVERRIDE, where the canonical line survives (so
-     the subsequence still matches) and an added line reassigns it:
+  4. a TRIPWIRE: no ADDED line may mutate a production value. Check 3 only proves
+     nothing was DELETED — it is blind to an OVERRIDE, where the canonical line
+     survives (so the subsequence still matches) and an added line reassigns it:
          auto falk_qr_top = (…canonical…);      // present -> check 3 passes
          #ifdef KDM6_G33_OP_DUMP
          falk_qr_top = <different arithmetic>;  // added line overrides it
          #endif
-     Every identifier the canonical file assigns to is forbidden as an assignment
-     target on any added line.
+     It flags the mutation forms a text scan can see: plain/compound assignment,
+     an assignment split across lines, `.at(i) = …`, torch IN-PLACE methods
+     (trailing `_`, e.g. copy_/add_/zero_ — these mutate with no `=` at all and
+     are the dominant torch idiom), swap/move onto a production value, and taking
+     a mutable reference or address of one.
 Exit 0 only if all four hold.
 
-SCOPE — these are STATIC checks. They establish no deletion, no substitution and
-no assignment to a production value. They do NOT establish non-invasiveness:
-added code can still perturb state by a route text cannot show (aliasing, a
-mutating method call, tensor layout or dispatch changes). Only the 3-way
+SCOPE — these are STATIC checks. Checks 1-3 are sound: the base is pinned, the
+macro-off text is identical, and nothing is deleted or reordered. Check 4 is a
+TRIPWIRE, not a proof — aliasing defeats any textual rule (a reference obtained
+indirectly, a lambda capture by reference, or a helper that mutates its argument
+is invisible in the text). NONE of this establishes non-invasiveness: added code
+can still perturb state, tensor layout, or dispatch. Only the 3-way
 `A_output == B_output == C_output` run (§10) can establish that. Never cite this
 script as a non-invasiveness certificate.
 """
@@ -123,26 +128,70 @@ def _added_lines(canon_lines: list[str], on_lines: list[str]) -> list[tuple]:
 
 
 def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
-    """Added lines that ASSIGN to a production value — i.e. substitution by OVERRIDE.
+    """TRIPWIRE for added code that mutates a production value.
 
-    The subsequence test only proves nothing was DELETED. It cannot see this:
+    The subsequence test only proves nothing was DELETED. It cannot see an
+    OVERRIDE, where the canonical line survives and an added line reassigns it:
 
         auto falk_qr_top = (…canonical…);   // still present -> subsequence passes
         #ifdef KDM6_G33_OP_DUMP
         falk_qr_top = <different arithmetic>;   // ADDED line silently overrides it
         #endif
 
-    macro-off text is unchanged, nothing is removed, yet the instrumented build
-    computes different physics. So every ADDED line is additionally forbidden from
-    assigning to any identifier the canonical file assigns to.
+    This catches the mutation forms that a text scan CAN see, on every added line:
+      * plain and compound assignment            X = / X[k] += …
+      * an assignment split across lines         X\\n    = …
+      * `.at(i) = …`                             X.at(k) = …
+      * torch IN-PLACE methods (trailing `_`)    X.copy_(…), X[k].add_(…), X.zero_()
+        — these mutate with NO `=` at all and were previously invisible, which
+        matters most here because that is the dominant torch mutation idiom
+      * std::swap / std::move onto a production value
+      * binding a mutable reference or address to a production value
+        (auto& r = X;  auto* p = &X;) — the alias itself is the escape hatch
+
+    LIMIT — this is a tripwire, NOT a proof. Aliasing defeats any textual rule:
+    a reference obtained indirectly, a lambda capture by reference, or a helper
+    that mutates its argument cannot be seen in the text. Only the 3-way
+    A==B==C output equality (§10) can establish that the instrumented build did
+    not perturb the computation.
     """
     targets = _assignment_targets(canon)
+    added = _added_lines(canon.splitlines(), on_lines)
     bad = []
-    for lineno, line in _added_lines(canon.splitlines(), on_lines):
-        for m in _ASSIGN.finditer(line):
+
+    def flag(lineno, name, line, why):
+        bad.append((lineno, f"{name} ({why})", line.strip()))
+
+    # join added lines pairwise so an assignment split across a newline is seen
+    joined = [(ln, txt) for ln, txt in added]
+    for idx, (lineno, line) in enumerate(joined):
+        probe = line
+        if idx + 1 < len(joined) and not line.rstrip().endswith(";"):
+            probe = line.rstrip() + " " + joined[idx + 1][1].strip()
+        for m in _ASSIGN.finditer(probe):
             if m.group(1) in targets:
-                bad.append((lineno, m.group(1), line.strip()))
-    return bad
+                flag(lineno, m.group(1), line, "assignment")
+        for t in targets:
+            tq = re.escape(t)
+            # X.at(i) = …
+            if re.search(rf"\b{tq}\s*\.\s*at\s*\([^)]*\)\s*=(?!=)", probe):
+                flag(lineno, t, line, ".at() assignment")
+            # torch in-place method: trailing underscore, e.g. copy_/add_/zero_
+            if re.search(rf"\b{tq}\s*(?:\[[^\]]*\])?\s*\.\s*[A-Za-z_]\w*_\s*\(", probe):
+                flag(lineno, t, line, "in-place method")
+            # std::swap / std::move onto a production value
+            if re.search(rf"\b(?:swap|move)\s*\([^)]*\b{tq}\b", probe):
+                flag(lineno, t, line, "swap/move")
+            # mutable alias: auto& r = X;   auto* p = &X;
+            if re.search(rf"&\s*[A-Za-z_]\w*\s*=\s*[^;]*\b{tq}\b", probe) or \
+               re.search(rf"=\s*&\s*{tq}\b", probe):
+                flag(lineno, t, line, "mutable alias")
+    # de-duplicate (a line can trip several patterns for the same target)
+    seen, out = set(), []
+    for item in bad:
+        if item[:2] not in seen:
+            seen.add(item[:2]); out.append(item)
+    return out
 
 
 def main() -> int:
@@ -186,22 +235,24 @@ def main() -> int:
         # reassigns it), which is substitution in every sense that matters.
         overrides = overriding_assignments(canon, on_lines)
         if overrides:
-            print(f"FAIL {canon_rel}: {len(overrides)} added line(s) ASSIGN to a "
+            print(f"FAIL {canon_rel}: {len(overrides)} added line(s) MUTATE a "
                   f"production value — that overrides the canonical computation "
                   f"under instrumentation:")
             for ln, name, txt in overrides[:5]:
                 print(f"  macro-ON line {ln}: assigns {name!r} -> {txt[:90]}")
             rc = 1; continue
         print(f"OK {canon_rel}: base SHA pinned; macro-OFF TEXTUALLY IDENTICAL to "
-              f"canonical; macro-ON is a strict in-order SUPERSET; no added line "
-              f"assigns to a production value")
+              f"canonical; macro-ON is a strict in-order SUPERSET; mutation "
+              f"tripwire clean ({len(_assignment_targets(canon))} production "
+              f"targets checked)")
     if rc == 0:
-        print("SCOPE: static checks only. They prove no deletion, no substitution and "
-              "no assignment to a production value — but NOT that the instrumented "
-              "build is non-invasive: added code could still perturb state through a "
-              "path this cannot see (aliasing, a mutating call, dispatch/layout "
-              "changes). Only the 3-way A==B==C output equality (§10) can establish "
-              "that. Never cite this as a non-invasiveness certificate.")
+        print("SCOPE: static only. Checks 1-3 are sound (base pinned, macro-off "
+              "identical, nothing deleted/reordered). Check 4 is a TRIPWIRE, not a "
+              "proof — aliasing defeats any textual rule (an indirectly-obtained "
+              "reference, a by-reference lambda capture, a helper that mutates its "
+              "argument). NONE of this establishes non-invasiveness. Only the 3-way "
+              "A==B==C output equality (§10) can. Never cite this as a "
+              "non-invasiveness certificate.")
     return rc
 
 
