@@ -660,6 +660,30 @@ _WHOLE_K_ROOTS = {"in.state.qr": "f32", "in.state.nr": "f32",
 _PER_COLUMN_ROOTS = {"mstep_col_safe": "f64", "gate_col": "f32"}   # cpp native widths
 _TORCH_DTYPE = {"kFloat": "f32", "kFloat32": "f32", "kFloat64": "f64",
                 "kDouble": "f64", "kInt32": "i32", "kInt": "i32", "kUInt8": "u8"}
+# torch:: tokens that are NOT dtypes. .to() takes device/layout/memory-format
+# arguments too, so these must be recognised as "does not change the dtype"
+# rather than lumped in with the dtype names or treated as unknown.
+_TORCH_NON_DTYPE = {"kCPU", "kCUDA", "kStrided", "kSparse", "kContiguousMemoryFormat"}
+
+
+def _to_call_args(expr: str):
+    """Argument text of each `.to(...)` call, paren-matched.
+
+    A regex for `.to(torch::kX)` silently does not match a MULTI-ARGUMENT call —
+    `.to(torch::kFloat64, torch::kStrided)` — so the cast was invisible and the
+    dtype fell through to the root's: an f64 relabel of an f32 tensor certified
+    as f32, in the gate whose purpose is to catch precision relabels.
+    """
+    args = []
+    for m in re.finditer(r"\.\s*to\s*\(", expr):
+        depth, i = 1, m.end()
+        while i < len(expr) and depth:
+            depth += (expr[i] == "(") - (expr[i] == ")")
+            i += 1
+        if depth:
+            raise AssertionError(f"unbalanced .to( in {expr.strip()!r}")
+        args.append(expr[m.end():i - 1])
+    return args
 # Methods that provably preserve rank. CLOSED WORLD: anything not named here is
 # treated as rank-unknown and refused.
 #
@@ -739,12 +763,19 @@ def _emits_dtype(field: str, expr: str) -> str:
     lie" the overlay's own rec() comment warns about, in the one place the whole
     gate exists to detect.
     """
-    casts = re.findall(r"\.\s*to\s*\(\s*torch::(k\w+)\s*\)", expr)
-    if casts:
-        last = casts[-1]
-        if last not in _TORCH_DTYPE:
-            raise AssertionError(f"{field}: unmapped torch dtype {last}")
-        return _TORCH_DTYPE[last]
+    dtype = None
+    for arg in _to_call_args(expr):
+        toks = re.findall(r"\bk\w+", arg)
+        unknown = [t for t in toks if t not in _TORCH_DTYPE and t not in _TORCH_NON_DTYPE]
+        if unknown:
+            raise AssertionError(f"{field}: unmapped torch token(s) {unknown}")
+        dts = {_TORCH_DTYPE[t] for t in toks if t in _TORCH_DTYPE}
+        if len(dts) > 1:
+            raise AssertionError(f"{field}: ambiguous .to({arg.strip()}) -> {sorted(dts)}")
+        if dts:
+            dtype = dts.pop()          # a device/layout-only .to() leaves it alone
+    if dtype is not None:
+        return dtype
     if re.search(r"==|!=|<=|>=|logical_", expr):
         raise AssertionError(
             f"{field}: comparison/logical result is bool, which is not a manifest "
@@ -807,6 +838,13 @@ _MUST_NOT_CERTIFY = [
     "in.dend.transpose(0, 1)", "in.dend.permute({1,0})",
     "torch::stack({in.dend, in.dend}, 0)",
     "in.dend.to(torch::kFloat64)", "in.dend.to(torch::kUInt8)",
+    # multi-argument .to(): a regex for `.to(torch::kX)` does not match these,
+    # so the cast was invisible and the dtype fell through to the root's f32
+    "in.dend.to(torch::kFloat64, torch::kStrided)",
+    "in.dend.to(torch::kCPU, torch::kFloat64)",
+    "in.dend.to(torch::kFloat64, /*non_blocking=*/false)",
+    "in.dend.to(torch::kFloat64, torch::kUInt8)",
+    "in.dend.to(torch::kBogus)",
     "in.work1_qr",
     "some_unknown_tensor", "in.dend2", "helper(in.dend)",
     "(in.dend * mystery_tensor)", "(mystery * in.dend)",
