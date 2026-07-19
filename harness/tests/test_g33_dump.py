@@ -19,7 +19,10 @@ import g33_expectation as ge
 
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
-         "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"]}
+         "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"],
+         "instrumented_stages": ["substep_pre", "op", "surface", "outer_pre_sed",
+                                 "outer_post_sed", "outer_post_micro",
+                                 "reslope_input", "reslope_output", "substep_post"]}
 
 
 def _header(**over):
@@ -587,3 +590,59 @@ def test_op_seq_map_matches_the_run_index():
     parsed = [t.split(":") for t in ge.op_seq_map(ix).split(",")]
     assert [(c["container_id"], str(c["first_op_seq_id"]), str(c["last_op_seq_id"]))
             for c in ix["containers"]] == [tuple(t) for t in parsed]
+
+
+# ── instrumented scope: the declared window must match the MEASURED counter ────
+def test_overlay_stage_scope_matches_the_source():
+    # CPP_OVERLAY_STAGES is a claim about the overlay. If the overlay starts
+    # emitting a stage the declaration omits (or stops emitting one it names),
+    # every declared op_seq window shifts off the measured counter and the real
+    # overlay silently stops being able to produce a valid container.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', src))
+    assert emitted == set(ge.CPP_OVERLAY_STAGES), (
+        f"overlay emits {sorted(emitted)} but the harness declares "
+        f"{sorted(ge.CPP_OVERLAY_STAGES)}")
+
+
+def test_declared_windows_accept_a_real_overlay_emission_order(tmp_path):
+    # End-to-end shape of an actual run: one container per substep, records
+    # numbered by a single process-global counter that starts at 0 and only
+    # counts INSTRUMENTED records. Before instrumented_stages existed, the index
+    # numbered over uninstrumented outer stages too, so the first real record
+    # measured 0 against a window of [6, N] and every run failed at record one.
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    index = ge.run_index(sched)
+    recs = ge.expected_records(sched)
+    by_container: dict = {}
+    for r in recs:
+        by_container.setdefault(ge.container_id(r), []).append(r)
+
+    op_seq = 0                                    # the overlay's global counter
+    for c in index["containers"]:
+        rs = by_container[c["container_id"]]
+        w = gd.G33Writer(
+            tmp_path / f"{c['container_id']}.g33",
+            _header(container_id=c["container_id"],
+                    global_op_seq_start=c["first_op_seq_id"],
+                    global_op_seq_end=c["last_op_seq_id"],
+                    record_count_expected=len(rs)))
+        for i, r in enumerate(rs):
+            n_elem = 1
+            for d in r["shape"]:
+                n_elem *= d
+            w.record({**r, "seq_no": i, "op_seq_id": op_seq}, r["dtype"], r["shape"],
+                     gd.pack_payload(r["dtype"], [1] * n_elem))
+            op_seq += 1                            # measured, never reset
+        w.finalize()
+        assert op_seq == c["last_op_seq_id"] + 1   # measured meets the declaration
+    assert op_seq == index["total_records"]
+
+
+def test_instrumented_scope_must_be_declared_not_defaulted():
+    with pytest.raises(ValueError, match="instrumented_stages"):
+        ge.expected_records({k: v for k, v in SCHED.items()
+                             if k != "instrumented_stages"})
+    for bad in ([], (), "op", ["outer_pre_sed_typo"]):
+        with pytest.raises(ValueError, match="instrumented_stages"):
+            ge.expected_records({**SCHED, "instrumented_stages": bad})

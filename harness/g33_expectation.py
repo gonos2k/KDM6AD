@@ -333,6 +333,34 @@ def expected_records(schedule: dict) -> list[dict]:
         emit("surface", _stage_fields("surface", backend), outer_loop=loop, shape=[B])
         emit("outer_post_sed", _stage_fields("outer_post_sed", backend), outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
+    # INSTRUMENTED SCOPE. op_seq_id is a MEASURED process-global counter, and it
+    # only counts records the overlay actually emits. Numbering the manifest over
+    # stages that are not instrumented yet therefore offsets every declared window
+    # past the measured values: with substep-only instrumentation the first real
+    # record measures 0 while its container declares [6, N], so the writer rejects
+    # it and the real overlay can never produce a valid container.
+    #
+    # The scope is DECLARED, never defaulted. "all stages" as a silent default is
+    # what produced the offset; "whatever the dump contains" as a silent default
+    # would let the manifest shrink to fit a truncated dump — the failure this
+    # whole manifest exists to prevent. An explicit list makes the evidence say
+    # which stages it is complete WITH RESPECT TO.
+    inst = schedule.get("instrumented_stages")
+    if not isinstance(inst, (list, tuple)) or not inst:
+        raise ValueError(
+            "schedule must declare instrumented_stages (a non-empty list of stage "
+            "names); there is no safe default — see the offset failure above")
+    inst = set(inst)
+    present = {r["stage"] for r in recs}
+    unknown = inst - present
+    if unknown:
+        raise ValueError(f"instrumented_stages names unknown stage(s): {sorted(unknown)} "
+                         f"(known: {sorted(present)})")
+    recs = [r for r in recs if r["stage"] in inst]
+    for i, r in enumerate(recs):
+        r["seq_no"] = i
+        r["op_seq_id"] = i
+
     # Belt-and-suspenders against a vacuous gate: a manifest with no op records
     # would accept any dump that also has none. If we ever get here with zero,
     # the schedule (loops / mstepmax / scope) is degenerate — refuse it.
@@ -352,6 +380,15 @@ def expected_records(schedule: dict) -> list[dict]:
             f"cannot distinguish these records, so completeness checking is unsound. "
             f"example: {next(iter(_dupes))}")
     return recs
+
+
+# The stages the C++ sedimentation overlay emits TODAY. Outer-loop, surface and
+# re-slope stages are protocol steps 4/8 and are not instrumented yet. This is a
+# declaration of current scope, not of the protocol's target scope: a run_index
+# built over stages nothing emits offsets every declared op_seq window past the
+# measured counter, and the real overlay can then never produce a valid
+# container. test_overlay_stage_scope_matches_the_source pins it to the source.
+CPP_OVERLAY_STAGES = ("substep_pre", "op")
 
 
 def container_id(rec: dict) -> str:
