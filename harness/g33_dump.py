@@ -57,11 +57,23 @@ def _read_u32(buf: bytes, off: int) -> tuple[int, int]:
     return struct.unpack_from("<I", buf, off)[0], off + 4
 
 
+def _no_dup_keys(pairs):
+    # json.loads keeps the LAST duplicate key, so a value injected through an
+    # unescaped string ("...","producer_commit":"forged") would silently override
+    # the attested one. Duplicate keys are corruption, not a merge.
+    seen = {}
+    for k, v in pairs:
+        if k in seen:
+            raise G33Corruption(f"duplicate JSON key {k!r} (injection or corruption)")
+        seen[k] = v
+    return seen
+
+
 def _parse_json(raw: bytes, what: str):
     # a fail-closed reader NEVER leaks a raw decode/JSON error — corrupt bytes in
     # any JSON block are a G33Corruption, not an unhandled traceback.
     try:
-        return json.loads(raw.decode("utf-8"))
+        return json.loads(raw.decode("utf-8"), object_pairs_hook=_no_dup_keys)
     except (UnicodeDecodeError, json.JSONDecodeError) as e:
         raise G33Corruption(f"corrupt {what} JSON: {e}") from None
 
@@ -150,7 +162,19 @@ class G33Writer:
         self._f.write(_u32(len(fj)))
         self._f.write(fj)
         self._f.flush()
+        os.fsync(self._f.fileno())
         self._f.close()
+        # §7a: .tmp -> flush/close -> VERIFY -> atomic rename. The verify step was
+        # missing: a short write (disk full — a known hazard on this host) would
+        # otherwise be PUBLISHED to the final path and the .tmp evidence deleted.
+        # Re-parse the closed temp file with the same fail-closed reader used by
+        # consumers; only a container that already reads as valid may be published.
+        try:
+            read_container(self.tmp)
+        except G33Corruption as e:
+            raise G33Corruption(
+                f"post-close verification failed, refusing to publish {self.path} "
+                f"(.tmp kept for inspection): {e}") from None
         # Publish atomically WITHOUT clobbering (matches the C++ writer): os.link
         # fails with FileExistsError if the final path was created concurrently
         # after our constructor's no-overwrite check — never destroy another
@@ -191,6 +215,24 @@ def read_container(path) -> dict:
     if off + hlen > len(buf):
         raise G33Corruption("truncated header")
     header = _parse_json(buf[off:off + hlen], "header"); off += hlen
+    if not isinstance(header, dict):
+        raise G33Corruption("header is not a JSON object")
+    _required = {"producer_commit": str, "binary_sha256": str, "case_id": str,
+                 "pair_id": str, "backend": str, "algorithm": str,
+                 "B": int, "K": int, "column_layout_id": str,
+                 "column_index_map": list, "canonical_k_order": str,
+                 "run_uuid": str, "process_id": str, "owner_thread_id": str}
+    for _k, _t in _required.items():
+        if _k not in header:
+            raise G33Corruption(f"header missing required field {_k!r}")
+        if not isinstance(header[_k], _t) or isinstance(header[_k], bool):
+            raise G33Corruption(
+                f"header field {_k!r} has type {type(header[_k]).__name__}, expected {_t.__name__}")
+    if header["B"] < 1 or header["K"] < 1:
+        raise G33Corruption(f"degenerate header dims B={header['B']} K={header['K']}")
+    if len(header["column_index_map"]) != header["B"]:
+        raise G33Corruption(
+            f"column_index_map has {len(header['column_index_map'])} entries, expected B={header['B']}")
 
     records = []
     payload_hash = hashlib.sha256()
@@ -223,7 +265,9 @@ def read_container(path) -> dict:
             raise G33Corruption("record missing/invalid dtype or shape")
         n_elem = 1
         for s in shape:
-            n_elem *= int(s)
+            if not isinstance(s, int) or isinstance(s, bool) or s < 0:
+                raise G33Corruption(f"record shape element {s!r} is not a non-negative int")
+            n_elem *= s
         if plen != n_elem * _DTYPES[dtype]:
             raise G33Corruption(f"record payload {plen} != {n_elem}*{_DTYPES[dtype]}")
         seq = key.get("seq_no")
@@ -235,7 +279,9 @@ def read_container(path) -> dict:
         payload_hash.update(payload)
         records.append({**key, "payload": payload})
 
-    if not footer or footer.get("complete") is not True:
+    if not isinstance(footer, dict):
+        raise G33Corruption("footer is not a JSON object")
+    if footer.get("complete") is not True:
         raise G33Corruption("missing/incomplete COMPLETE footer")
     if footer.get("record_count_actual") != len(records):
         raise G33Corruption(
@@ -249,7 +295,7 @@ def verify_attestation(header: dict, attestation: dict) -> None:
     """§7d: a container's self-reported provenance is trusted ONLY when it agrees
     with the harness-computed run_attestation. Raises G33Corruption on any drift."""
     for field in ("producer_commit", "binary_sha256", "case_id", "pair_id",
-                  "backend", "algorithm"):
+                  "backend", "algorithm", "run_uuid"):
         want = attestation.get(field)
         got = header.get(field)
         if want is None:

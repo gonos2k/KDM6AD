@@ -16,9 +16,29 @@
 #include "g33_op_dump.h"
 #include <cstdlib>
 #include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
+#include <thread>
+#include <unistd.h>
 
 namespace kdm6 { namespace sed { namespace g33ovl {
+
+// Minimal JSON string escaping. The header/key JSON is built by concatenation,
+// so ANY unescaped value (env-supplied case_id/pair_id, or a field name) could
+// close the string and inject a DUPLICATE key — and json.loads keeps the LAST
+// occurrence, so an injected "producer_commit" would silently override the
+// attested one. Escape everything, and reject control characters outright.
+inline std::string jesc(const std::string& in) {
+    std::string o;
+    for (unsigned char c : in) {
+        if (c == '"' || c == '\\') { o += '\\'; o += char(c); }
+        else if (c < 0x20 || c == 0x7f)
+            throw std::runtime_error("g33: control character in a JSON string value");
+        else o += char(c);
+    }
+    return o;
+}
 
 class Substep {
 public:
@@ -28,35 +48,51 @@ public:
         const char* cas = std::getenv("KDM6_G33_CASE_ID");
         const char* pai = std::getenv("KDM6_G33_PAIR_ID");
         auto* ctx = ::kdm6::g33::g_context;
-        if (!dir || !cas || !pai || !ctx) return;            // inert unless fully configured
+        // Unconfigured => inert (the production path must not require the dump).
+        // But a configured-yet-FAILING writer must NOT be silent: see below.
+        if (!dir || !cas || !pai || !ctx) return;
         B_ = int(probe.size(0)); K_ = int(probe.size(-1));
+        // §7c: the column map is DECLARED by the harness, never fabricated here.
+        // Inventing it (e.g. fortran_j hardcoded to 0) would make the Fortran<->C++
+        // column correspondence an unverified assumption dressed as evidence.
+        const char* colmap = std::getenv("KDM6_G33_COLUMN_MAP");
+        if (!colmap || !*colmap)
+            throw std::runtime_error(
+                "g33: KDM6_G33_COLUMN_MAP is required (declared Fortran(i,j)<->C++ "
+                "flat-B map, protocol 7c) — refusing to fabricate one");
         std::string path = std::string(dir) + "/cpp_" + ctx->algorithm + "_" + cas
                          + "_L" + std::to_string(ctx->outer_loop_1based)
                          + "_" + chain + "_n" + std::to_string(n) + ".g33";
-        std::string cols;
-        for (int b = 0; b < B_; ++b)
-            cols += (b ? "," : "") + std::string("[") + std::to_string(b) + ",0,"
-                  + std::to_string(b) + "," + std::to_string(b) + "]";
-        std::string hdr = std::string("{\"producer_commit\":\"") + g33_env("KDM6_G33_PRODUCER_COMMIT")
-            + "\",\"binary_sha256\":\"" + g33_env("KDM6_G33_BINARY_SHA256")
-            + "\",\"case_id\":\"" + cas + "\",\"pair_id\":\"" + pai
-            + "\",\"backend\":\"cpp\",\"algorithm\":\"" + ctx->algorithm
+        std::ostringstream tid; tid << std::this_thread::get_id();
+        std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
+            + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
+            + "\",\"case_id\":\"" + jesc(cas) + "\",\"pair_id\":\"" + jesc(pai)
+            + "\",\"backend\":\"cpp\",\"algorithm\":\"" + jesc(ctx->algorithm)
             + "\",\"B\":" + std::to_string(B_) + ",\"K\":" + std::to_string(K_)
-            + ",\"column_layout_id\":\"gateb\",\"column_index_map\":[" + cols
-            + "],\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + g33_env("KDM6_G33_RUN_UUID")
-            + "\",\"process_id\":\"0\",\"owner_thread_id\":\"0\",\"record_count_expected\":0}";
-        try { w_.reset(new ::kdm6::g33::Writer(path, hdr)); } catch (...) { w_.reset(); }
+            + ",\"column_layout_id\":\"" + jesc(g33_env("KDM6_G33_COLUMN_LAYOUT_ID"))
+            + "\",\"column_index_map\":" + colmap            // declared, verbatim JSON
+            + ",\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + jesc(g33_env("KDM6_G33_RUN_UUID"))
+            + "\",\"process_id\":\"" + std::to_string(long(::getpid()))
+            + "\",\"owner_thread_id\":\"" + jesc(tid.str())
+            + "\",\"record_count_expected\":0}";
+        // NO catch here. A configured run whose container cannot be opened —
+        // stale .tmp from a killed run, an existing completed container, an
+        // unwritable dir — is an INVALID diagnostic run. Swallowing that turned
+        // the one guard that makes a crashed prior run un-ignorable into a silent
+        // disable: every G33_REC became a no-op, no container was written, and the
+        // run still exited 0 with nothing for the fail-closed reader to reject.
+        w_.reset(new ::kdm6::g33::Writer(path, hdr));
     }
     bool on() const { return w_ != nullptr; }
     // One record at the value's ACTUAL native width and ACTUAL shape.
     //
     // The dtype is DERIVED from t.scalar_type() — never passed in and never
-    // converted (§2). An earlier draft took a dtype string and did .to(kFloat64),
-    // which silently relabelled an f32-native rung as "f64": lossless in value but
-    // a precision-PROVENANCE lie, exactly the false "input bitwise" class the
-    // protocol exists to prevent. Unsupported dtypes are dropped, which the
-    // independent expectation manifest then flags as a missing record.
-    void rec(const char* stage, const char* cell_role, const char* species,
+    // converted: an earlier draft took a dtype string and did .to(kFloat64),
+    // relabelling an f32-native rung as "f64" (a precision-PROVENANCE lie).
+    // `k` is the CANONICAL level index and is part of the record identity;
+    // without it every interior level collides and a dump could emit one cell
+    // twice, skip another, and still look complete.
+    void rec(const char* stage, const char* cell_role, int k, const char* species,
              const char* op_id, const char* field, const torch::Tensor& t) {
         if (!w_) return;
         auto c = t.detach().cpu().contiguous();
@@ -82,10 +118,10 @@ public:
             const uint8_t* p = b.data_ptr<uint8_t>();
             for (int64_t i = 0; i < n; ++i) ::kdm6::g33::be_u8(pay, p[i]);
         } else {
-            return;                             // unsupported -> absent -> flagged
+            throw std::runtime_error(std::string("g33: unsupported dtype for field ") + field);
         }
         // ACTUAL shape, not a flattened numel: the expectation manifest keys on
-        // (B) / (B,K), so a flattened [n] would never match and completeness
+        // (B)/(B,K), so a flattened [n] would never match and completeness
         // checking would be silently vacuous.
         std::string shape = "[";
         for (int64_t i = 0; i < c.dim(); ++i)
@@ -93,25 +129,27 @@ public:
         shape += "]";
         std::string key = std::string("{\"seq_no\":") + std::to_string(seq_)
             + ",\"outer_loop\":" + std::to_string(::kdm6::g33::g_context->outer_loop_1based)
-            + ",\"chain\":\"" + chain_ + "\",\"n\":" + std::to_string(n_)
-            + ",\"cell_role\":\"" + cell_role + "\",\"species\":\"" + species
-            + "\",\"op_id\":\"" + op_id + "\",\"stage\":\"" + stage
-            + "\",\"field\":\"" + field + "\",\"dtype\":\"" + dtype
+            + ",\"chain\":\"" + jesc(chain_) + "\",\"n\":" + std::to_string(n_)
+            + ",\"cell_role\":\"" + jesc(cell_role) + "\",\"k\":" + std::to_string(k)
+            + ",\"species\":\"" + jesc(species) + "\",\"op_id\":\"" + jesc(op_id)
+            + "\",\"stage\":\"" + jesc(stage) + "\",\"field\":\"" + jesc(field)
+            + "\",\"dtype\":\"" + dtype
             + "\",\"shape\":" + shape + ",\"payload_size\":" + std::to_string(pay.size()) + "}";
         w_->record(key, pay);
         ++seq_;
     }
     void finalize() { if (w_) { w_->finalize(); w_.reset(); } }   // explicit only
 private:
-    static const char* g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
+    static std::string g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
     std::unique_ptr<::kdm6::g33::Writer> w_;
-    const char* chain_; int n_; int B_ = 0, K_ = 0, seq_ = 0;
+    std::string chain_;                 // OWNED: a const char* member could dangle
+    int n_; int B_ = 0, K_ = 0, seq_ = 0;
 };
 
 }}}  // namespace kdm6::sed::g33ovl
-#define G33_REC(g, stage, role, sp, op, field, t) do { (g).rec(stage, role, sp, op, field, t); } while (0)
+#define G33_REC(g, stage, role, k, sp, op, field, t) do { (g).rec(stage, role, k, sp, op, field, t); } while (0)
 #else
-#define G33_REC(g, stage, role, sp, op, field, t) do { } while (0)
+#define G33_REC(g, stage, role, k, sp, op, field, t) do { } while (0)
 #endif  // KDM6_G33_OP_DUMP
 namespace kdm6 {
 namespace sed {
@@ -206,26 +244,26 @@ SubstepAdvectionOutputs substep_advection_torch(
         if (g33.on()) {
             g33_q_entry = qr_cols[k].clone();
             g33_n_entry = nr_cols[k].clone();
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "work1_qr", work1_qr_col(k));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "workn_qr", workn_qr_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "work1_qr", work1_qr_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "workn_qr", workn_qr_col(k));
             // P0-4: int32(2) cannot hide 2.0 vs 2.0000002 — record the NATIVE
             // bits, the decoded integer, and whether it is exactly integral.
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "mstep_native", mstep_col_safe);
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "mstep_decoded_i32",
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_native", mstep_col_safe);
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_decoded_i32",
                     mstep_col_safe.to(torch::kInt32));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "mstep_exact_integer",
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_exact_integer",
                     (mstep_col_safe == mstep_col_safe.round()).to(torch::kUInt8));
             // gate at NATIVE width (a non-exact 0/1 would be invisible in u8),
             // plus the exactness flag and the active mask for the NaN policy (P1-11).
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "gate_native", gate_col);
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "gate_exact_01",
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_native", gate_col);
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_exact_01",
                     ((gate_col == 0).logical_or(gate_col == 1)).to(torch::kUInt8));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "active_mask",
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "active_mask",
                     (gate_col != 0).to(torch::kUInt8));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "dend_raw", dend_col(k));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "dend_safe", dend_safe_col(k));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "delz_raw", delz_col(k));
-            G33_REC(g33, "substep_pre", "TOP", "-", "-", "delz_safe", delz_safe_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_raw", dend_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_safe", dend_safe_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_raw", delz_col(k));
+            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_safe", delz_safe_col(k));
         }
 #endif
         // §34: falk REAL(f32) — one f32 rounding of the f64 chain (work1 f64 via vt f64), mirror ice path.
@@ -247,23 +285,23 @@ SubstepAdvectionOutputs substep_advection_torch(
             auto s2 = s1 * work1_qr_col(k);                   // mul_work1
             auto s3 = s2 / mstep_col_safe;                    // div_mstep
             auto s4 = s3 * gate_col;                          // falk_precast (native)
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "mul_dend_q",  s1);
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "mul_work1",   s2);
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "div_mstep",   s3);
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "falk_precast", s4);
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "shadow_falk_f32",
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_dend_q",  s1);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_work1",   s2);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "div_mstep",   s3);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_precast", s4);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "shadow_falk_f32",
                     s4.to(in.state.qr.scalar_type()));
-            G33_REC(g33, "op", "TOP", "qr", "QR_FALK", "falk_f32", falk_qr_top);  // ACTUAL
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_f32", falk_qr_top);  // ACTUAL
             // number family: falk_nr omits dend (distinct expression family, §3)
             auto t1 = g33_n_entry * workn_qr_col(k);
             auto t2 = t1 / mstep_col_safe;
             auto t3 = t2 * gate_col;
-            G33_REC(g33, "op", "TOP", "nr", "NR_FALK", "mul_workn",   t1);
-            G33_REC(g33, "op", "TOP", "nr", "NR_FALK", "div_mstep",   t2);
-            G33_REC(g33, "op", "TOP", "nr", "NR_FALK", "falk_precast", t3);
-            G33_REC(g33, "op", "TOP", "nr", "NR_FALK", "shadow_falk_f32",
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "mul_workn",   t1);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "div_mstep",   t2);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_precast", t3);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "shadow_falk_f32",
                     t3.to(in.state.qr.scalar_type()));
-            G33_REC(g33, "op", "TOP", "nr", "NR_FALK", "falk_f32", falk_nr_top);  // ACTUAL
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_f32", falk_nr_top);  // ACTUAL
         }
 #endif
 
@@ -288,18 +326,18 @@ SubstepAdvectionOutputs substep_advection_torch(
             // clamp IS the update (§3). Shadow pre-clamp exposes the rung where a
             // cross-tree difference would first appear.
             auto pre = g33_q_entry - falk_qr_top * dtcld / dend_safe_col(k);
-            G33_REC(g33, "op", "TOP", "qr", "QR_UPDATE", "q_before", g33_q_entry);
-            G33_REC(g33, "op", "TOP", "qr", "QR_UPDATE", "q_minus_out", pre);
-            G33_REC(g33, "op", "TOP", "qr", "QR_UPDATE", "clamp_active",
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_before", g33_q_entry);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_minus_out", pre);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "clamp_active",
                     (pre < 0.0).to(torch::kUInt8));
-            G33_REC(g33, "op", "TOP", "qr", "QR_UPDATE", "q_post", qr_cols[k]);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_post", qr_cols[k]);
             auto npre = ops::fma_acc(g33_n_entry, falk_nr_top,
                                      torch::full_like(falk_nr_top, dtcld), -1.0);
-            G33_REC(g33, "op", "TOP", "nr", "NR_UPDATE", "n_before", g33_n_entry);
-            G33_REC(g33, "op", "TOP", "nr", "NR_UPDATE", "n_minus_out", npre);
-            G33_REC(g33, "op", "TOP", "nr", "NR_UPDATE", "clamp_active",
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_before", g33_n_entry);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_minus_out", npre);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "clamp_active",
                     (npre < 0.0).to(torch::kUInt8));
-            G33_REC(g33, "op", "TOP", "nr", "NR_UPDATE", "n_post", nr_cols[k]);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
         }
 #endif
 

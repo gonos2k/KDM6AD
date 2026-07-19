@@ -214,11 +214,19 @@ def expected_records(schedule: dict) -> list[dict]:
     recs: list[dict] = []
 
     def emit(stage, fields, *, outer_loop, chain="-", n=0, cell_role="-",
-             species_id="-", op_id="-", shape):
+             species_id="-", op_id="-", k=-1, shape):
+        # `k` is the CANONICAL level index and is part of the record identity.
+        # Without it, cell_role alone (TOP/INTERIOR/BOTTOM) makes every interior
+        # level k=1..K-2 collide: for K>=4 the manifest would expect the same key
+        # more than once, so a dump that emits one interior cell twice and skips
+        # another still matches the multiset — and a comparator pairing C++ vs
+        # Fortran records by key could pair k=1 against k=2. Protocol §8a puts
+        # canonical_k in the total order for exactly this reason.
+        # k = -1 means "not a per-level record" (whole-field or per-column stages).
         for field, dtype in fields:
             recs.append({**base, "seq_no": len(recs), "op_seq_id": len(recs),
                          "outer_loop": outer_loop, "chain": chain, "n": n,
-                         "cell_role": cell_role, "species": species_id,
+                         "cell_role": cell_role, "k": k, "species": species_id,
                          "op_id": op_id, "stage": stage, "field": field,
                          "dtype": dtype, "shape": shape})
 
@@ -236,7 +244,7 @@ def expected_records(schedule: dict) -> list[dict]:
             for n in range(1, mmax + 1):
                 # per-level (B,) slices captured at the top cell (matches the overlay)
                 emit("substep_pre", _STAGE_FIELDS["substep_pre"], outer_loop=loop,
-                     chain=chain, n=n, cell_role="TOP", shape=[B])
+                     chain=chain, n=n, cell_role="TOP", k=0, shape=[B])
                 # only the species this chain actually transports, intersected
                 # with the requested scope (ice carries qi/ni, never qr/nr)
                 chain_species = [s for s in _CHAIN_SPECIES[chain] if s in species]
@@ -246,7 +254,8 @@ def expected_records(schedule: dict) -> list[dict]:
                         ops = _ops_for_species(algo, role, sp)
                         for op_id in ops:
                             emit("op", _op_fields(algo, role, op_id), outer_loop=loop, chain=chain,
-                                 n=n, cell_role=role, species_id=sp, op_id=op_id, shape=[B])
+                                 n=n, cell_role=role, k=k, species_id=sp, op_id=op_id,
+                                 shape=[B])
                 emit("substep_post", _STAGE_FIELDS["substep_post"], outer_loop=loop,
                      chain=chain, n=n, shape=[B, K])
                 # conditional re-slope: main after every substep; ice only n<mstepmax_ice
@@ -265,14 +274,26 @@ def expected_records(schedule: dict) -> list[dict]:
     if not any(r["stage"] == "op" for r in recs):
         raise ValueError("manifest contains no op records — a dump with no ops "
                          "would vacuously 'match'; check loops/mstepmax/species_scope")
+    # EVERY expected key must be unique. If two records share a key the multiset
+    # comparison cannot tell a legitimate second occurrence from a duplicate that
+    # replaced a missing one — e.g. before `k` joined the identity, all interior
+    # levels collided and a dump could emit k=1 twice, never touch k=2, and still
+    # read as complete. Enforce it here so any future identity gap fails loudly.
+    from collections import Counter as _C
+    _dupes = {k: v for k, v in _C(record_key(r) for r in recs).items() if v > 1}
+    if _dupes:
+        raise ValueError(
+            f"{len(_dupes)} expected key(s) are not unique — the record identity "
+            f"cannot distinguish these records, so completeness checking is unsound. "
+            f"example: {next(iter(_dupes))}")
     return recs
 
 
 def record_key(rec: dict) -> tuple:
     """The identity tuple used for observed==expected set comparison (payload-free)."""
     return (rec["outer_loop"], rec["chain"], rec["n"], rec["cell_role"],
-            rec["species"], rec["op_id"], rec["stage"], rec["field"],
-            rec["dtype"], tuple(rec["shape"]))
+            rec.get("k", -1), rec["species"], rec["op_id"], rec["stage"],
+            rec["field"], rec["dtype"], tuple(rec["shape"]))
 
 
 def expected_key_set(schedule: dict) -> set:

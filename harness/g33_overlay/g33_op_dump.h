@@ -149,6 +149,8 @@ public:
         f_.write("KDG33OP\n", 8);
         put_u32(1);                       // format_version
         put_u32(uint32_t(header_json.size())); f_.write(header_json.data(), header_json.size());
+        bytes_ = 8 + 4 + 4 + header_json.size();
+        if (!f_.good()) throw std::runtime_error("g33: write error writing header");
     }
     // key_json must contain seq_no,outer_loop,chain,n,cell_role,species,op_id,
     // stage,field,dtype,shape,payload_size (the overlay builds it; helper below).
@@ -156,6 +158,11 @@ public:
         f_.write("REC1", 4);
         put_u32(uint32_t(key_json.size())); f_.write(key_json.data(), key_json.size());
         put_u32(uint32_t(payload.size()));  f_.write(reinterpret_cast<const char*>(payload.data()), payload.size());
+        bytes_ += 12 + key_json.size() + payload.size();  // REC1 + 2 u32 lengths
+        // A failed stream is SILENT unless checked: without this a disk-full run
+        // kept "succeeding", the footer was appended to a truncated file, and the
+        // short container was published as evidence.
+        if (!f_.good()) throw std::runtime_error("g33: write error while recording (disk full?)");
         sha_.update(payload.data(), payload.size());
         ++n_;
     }
@@ -164,7 +171,22 @@ public:
                            + "\",\"record_count_actual\":" + std::to_string(n_) + "}";
         f_.write("FOOT", 4);
         put_u32(uint32_t(footer.size())); f_.write(footer.data(), footer.size());
+        bytes_ += 8 + footer.size();
+        if (!f_.good()) throw std::runtime_error("g33: write error while finalizing");
         f_.flush(); f_.close();
+        if (f_.fail()) throw std::runtime_error("g33: flush/close failed — not publishing");
+        // POST-CLOSE VERIFY (protocol 7a: .tmp -> flush/close -> verify -> rename).
+        // Compare the on-disk size with the bytes we believe we wrote; a short
+        // write must keep the .tmp and never reach the final path.
+        {
+            std::ifstream chk(tmp_, std::ios::binary | std::ios::ate);
+            if (!chk) throw std::runtime_error("g33: cannot reopen .tmp to verify");
+            const auto on_disk = static_cast<unsigned long long>(chk.tellg());
+            if (on_disk != bytes_)
+                throw std::runtime_error(
+                    "g33: short write (" + std::to_string(on_disk) + " of " +
+                    std::to_string(bytes_) + " bytes) — .tmp kept, not published");
+        }
         // Publish atomically WITHOUT clobbering: link() fails with EEXIST if the
         // final path exists (e.g. a container created concurrently AFTER our
         // constructor's no-overwrite check) — never delete another writer's
@@ -182,7 +204,8 @@ private:
         uint8_t b[4] = {uint8_t(v), uint8_t(v>>8), uint8_t(v>>16), uint8_t(v>>24)};  // LE
         f_.write(reinterpret_cast<const char*>(b), 4);
     }
-    std::string path_, tmp_; std::ofstream f_; Sha256 sha_; uint32_t n_ = 0; bool finalized_ = false;
+    std::string path_, tmp_; std::ofstream f_; Sha256 sha_; uint32_t n_ = 0;
+    unsigned long long bytes_ = 0; bool finalized_ = false;
 };
 
 }}  // namespace kdm6::g33

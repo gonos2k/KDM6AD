@@ -181,7 +181,8 @@ def test_attestation_agrees(tmp_path):
     out = gd.read_container(p)
     att = {"producer_commit": "deadbeef", "binary_sha256": "0" * 64,
            "case_id": SCHED["case_id"], "pair_id": SCHED["pair_id"],
-           "backend": SCHED["backend"], "algorithm": SCHED["algorithm"]}
+           "backend": SCHED["backend"], "algorithm": SCHED["algorithm"],
+           "run_uuid": "uuid-1"}
     gd.verify_attestation(out["header"], att)  # no raise
 
 
@@ -190,7 +191,8 @@ def test_attestation_drift(tmp_path):
     out = gd.read_container(p)
     att = {"producer_commit": "OTHER", "binary_sha256": "0" * 64,
            "case_id": SCHED["case_id"], "pair_id": SCHED["pair_id"],
-           "backend": SCHED["backend"], "algorithm": SCHED["algorithm"]}
+           "backend": SCHED["backend"], "algorithm": SCHED["algorithm"],
+           "run_uuid": "uuid-1"}
     with pytest.raises(gd.G33Corruption, match="provenance drift"):
         gd.verify_attestation(out["header"], att)
 
@@ -218,12 +220,12 @@ def test_extra_record_detected(tmp_path):
 
 def test_conditional_ice_reslope_schedule():
     # ice re-slope emitted only for n < mstepmax_ice; main for every n.
-    keys = ge.expected_key_set(SCHED)                    # tuple idx: 1=chain 2=n 6=stage
+    recs = ge.expected_records(SCHED)                   # use NAMED fields, not tuple positions
     # first scope is qr/nr (main chain only): the ice chain transports qi/ni and
     # so must contribute NO records at all — its substep_pre/reslope fields are
     # chain-specific (work1_qi), and demanding the qr ones would be unsatisfiable.
-    assert {k for k in keys if k[1] == "ice"} == set()
-    main_reslope_n = {k[2] for k in keys if k[1] == "main" and k[6] == "reslope_output"}
+    assert [r for r in recs if r["chain"] == "ice"] == []
+    main_reslope_n = {r["n"] for r in recs if r["chain"] == "main" and r["stage"] == "reslope_output"}
     assert main_reslope_n == {1}                         # mstepmax_main=1 -> n=1 (every main n)
     # the conditional itself (ice re-slope only when n < mstepmax_ice) stays
     # implemented for when ice enters scope — exercised via the emission rule.
@@ -272,10 +274,10 @@ def test_ice_chain_never_demands_qr_nr_ops():
     # ice_substep_advection_* transports ONLY qi/ni. Demanding QR_*/NR_* there
     # would require records the writer can never emit, making the completeness
     # check permanently unsatisfiable (and therefore useless).
-    keys = ge.expected_key_set(SCHED)                    # idx 1=chain 4=species 5=op_id 6=stage
-    ice_ops = {(k[4], k[5]) for k in keys if k[1] == "ice" and k[6] == "op"}
+    recs = ge.expected_records(SCHED)
+    ice_ops = {(r["species"], r["op_id"]) for r in recs if r["chain"] == "ice" and r["stage"] == "op"}
     assert ice_ops == set(), f"ice chain must emit no qr/nr ops, got {ice_ops}"
-    main_ops = {k[4] for k in keys if k[1] == "main" and k[6] == "op"}
+    main_ops = {r["species"] for r in recs if r["chain"] == "main" and r["stage"] == "op"}
     assert main_ops == {"qr", "nr"}
     # widening scope to a species with no op template must fail LOUDLY
     with pytest.raises(NotImplementedError):
@@ -342,12 +344,12 @@ def test_fall_accumulator_and_surface_are_required():
         assert "dq_out" not in leg
         for x in ("fall_before", "fall_increment", "fall_after"):
             assert x in con and x in leg
-    keys = ge.expected_key_set(SCHED)
-    surf = {k[7] for k in keys if k[6] == "surface"}             # idx 6=stage, 7=field
+    recs = ge.expected_records(SCHED)
+    surf = {r["field"] for r in recs if r["stage"] == "surface"}
     assert {"bottom_fall", "delz_bottom", "surface_mul1", "surface_mul_dt",
             "rain_increment"} <= surf
     # exactly once per outer loop
-    assert len({k[0] for k in keys if k[6] == "surface"}) == SCHED["loops"]
+    assert len({r["outer_loop"] for r in recs if r["stage"] == "surface"}) == SCHED["loops"]
 
 
 def test_inflow_ladders_match_the_source_expressions():
@@ -368,6 +370,92 @@ def test_inflow_ladders_match_the_source_expressions():
     # and NR_OUTFLOW has no /dend rung (mass does)
     assert "mul_dt" in [f for f, _ in ge._op_fields("legacy", "INTERIOR", "QR_OUTFLOW")]
     assert "mul_dt" not in [f for f, _ in ge._op_fields("legacy", "INTERIOR", "NR_OUTFLOW")]
+
+
+def test_duplicate_json_key_rejected(tmp_path):
+    # json.loads keeps the LAST duplicate key, so an unescaped value that injects
+    # e.g. "producer_commit" would silently override the ATTESTED one.
+    p = tmp_path / "c.g33"; _write_valid(p)
+    b = p.read_bytes()
+    hlen = struct.unpack_from("<I", b, 12)[0]
+    hdr = b[16:16 + hlen].decode()
+    forged = hdr[:-1] + ',"producer_commit":"FORGED"}'
+    nb = b[:12] + struct.pack("<I", len(forged)) + forged.encode() + b[16 + hlen:]
+    p.write_bytes(nb)
+    with pytest.raises(gd.G33Corruption, match="duplicate JSON key"):
+        gd.read_container(p)
+
+
+def test_header_schema_validated(tmp_path):
+    for bad in ({"B": "3"}, {"column_index_map": [[0, 0, 0, 0]]}, {"run_uuid": 5}):
+        p = tmp_path / f"c{abs(hash(str(bad)))}.g33"
+        _write_valid(p)
+        b = p.read_bytes()
+        hlen = struct.unpack_from("<I", b, 12)[0]
+        hdr = json.loads(b[16:16 + hlen])
+        hdr.update(bad)
+        nh = json.dumps(hdr).encode()
+        p.write_bytes(b[:12] + struct.pack("<I", len(nh)) + nh + b[16 + hlen:])
+        with pytest.raises(gd.G33Corruption):
+            gd.read_container(p)
+    # a header missing a required field entirely
+    p2 = tmp_path / "miss.g33"; _write_valid(p2)
+    b = p2.read_bytes(); hlen = struct.unpack_from("<I", b, 12)[0]
+    hdr = json.loads(b[16:16 + hlen]); hdr.pop("canonical_k_order")
+    nh = json.dumps(hdr).encode()
+    p2.write_bytes(b[:12] + struct.pack("<I", len(nh)) + nh + b[16 + hlen:])
+    with pytest.raises(gd.G33Corruption, match="missing required field"):
+        gd.read_container(p2)
+
+
+def test_post_close_verify_refuses_to_publish_a_corrupt_tmp(tmp_path):
+    # protocol 7a: .tmp -> flush/close -> VERIFY -> rename. A short write (disk
+    # full) must keep the .tmp and never reach the final path.
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header())
+    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+         "k": 0, "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
+    # simulate the tail of the file being lost between close and publish
+    orig_close = w._f.close
+    def truncating_close():
+        orig_close()
+        d = w.tmp.read_bytes(); w.tmp.write_bytes(d[: len(d) // 2])
+    w._f.close = truncating_close
+    with pytest.raises(gd.G33Corruption, match="post-close verification failed"):
+        w.finalize()
+    assert not p.exists()                       # never published
+    assert w.tmp.exists()                       # evidence kept
+
+
+def test_attestation_pins_run_uuid(tmp_path):
+    # without run_uuid a container from a PREVIOUS run (same commit/binary/case)
+    # would pass as this run's evidence.
+    p = tmp_path / "c.g33"; _write_valid(p)
+    out = gd.read_container(p)
+    att = {"producer_commit": "deadbeef", "binary_sha256": "0" * 64,
+           "case_id": SCHED["case_id"], "pair_id": SCHED["pair_id"],
+           "backend": SCHED["backend"], "algorithm": SCHED["algorithm"],
+           "run_uuid": "a-DIFFERENT-run"}
+    with pytest.raises(gd.G33Corruption, match="run_uuid"):
+        gd.verify_attestation(out["header"], att)
+
+
+def test_canonical_k_is_part_of_the_record_identity():
+    # Before `k` joined the identity, cell_role alone (TOP/INTERIOR/BOTTOM) made
+    # every interior level collide: for K>=4 a dump could emit k=1 twice, never
+    # touch k=2, and still read as complete.
+    recs = ge.expected_records(SCHED)
+    interior = [r for r in recs if r["cell_role"] == "INTERIOR" and r["stage"] == "op"]
+    assert len({r["k"] for r in interior}) > 1, "test schedule must have >1 interior level"
+    a = next(r for r in interior if r["k"] == 1)
+    b = next(r for r in interior if r["k"] == 2 and r["field"] == a["field"]
+             and r["op_id"] == a["op_id"] and r["species"] == a["species"])
+    assert ge.record_key(a) != ge.record_key(b), "interior levels must not collide"
+    # and the manifest as a whole must have NO repeated key
+    from collections import Counter
+    dupes = {k: v for k, v in Counter(ge.record_key(r) for r in recs).items() if v > 1}
+    assert dupes == {}, f"non-unique expected keys: {list(dupes)[:2]}"
 
 
 if __name__ == "__main__":
