@@ -1193,3 +1193,43 @@ def test_stale_binary_is_refused(tmp_path):
         g33_run_env._check_binary_not_stale(binary, repo)
     os.utime(binary, None)                        # rebuilt now
     g33_run_env._check_binary_not_stale(binary, repo)
+
+
+def test_stale_guard_covers_the_diagnostic_build_inputs():
+    # The guard watched only the canonical tree, so editing the overlay — the
+    # translation unit the diagnostic dylib is actually compiled from — and not
+    # rebuilding passed silently. That is the most likely staleness here, since
+    # instrumentation work edits exactly those files.
+    import g33_run_env
+    covered = set(g33_run_env._BUILD_INPUTS)
+    assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
+    assert "harness/g33_overlay/g33_op_dump.h" in covered
+    # and it must NOT watch files that cannot reach the artifact: a guard firing
+    # on edits with no effect on the binary gets switched off by whoever hits it
+    for harmless in ("harness/g33_overlay/verify_overlay.py",
+                     "harness/g33_overlay/test_g33_writer.cpp",
+                     "harness/g33_overlay/BASE_SHA256_sedimentation.cpp"):
+        assert harmless not in covered
+
+
+@pytest.mark.parametrize("edited", ["harness/g33_overlay/sedimentation.cpp.overlay",
+                                    "harness/g33_overlay/g33_op_dump.h",
+                                    "libtorch/src/a.cpp"])
+def test_stale_guard_fires_for_each_build_input(edited, tmp_path):
+    import os, subprocess, time, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "harness/g33_overlay").mkdir(parents=True)
+    (repo / "libtorch/src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for rel in ("harness/g33_overlay/sedimentation.cpp.overlay",
+                "harness/g33_overlay/g33_op_dump.h", "libtorch/src/a.cpp"):
+        (repo / rel).write_text("original\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = repo / "lib.dylib"
+    binary.write_bytes(b"built")
+    os.utime(binary, None)
+    g33_run_env._check_binary_not_stale(binary, repo)      # fresh: accepted
+    time.sleep(0.01)
+    (repo / edited).write_text("changed after the build\n")
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)

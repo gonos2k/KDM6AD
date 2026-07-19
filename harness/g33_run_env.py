@@ -63,8 +63,27 @@ def _git_head(repo: Path) -> str:
     return r.stdout.strip()
 
 
+# Everything the DIAGNOSTIC dylib is compiled from. The first two are the whole
+# point: the instrumented translation unit and the container writer are what an
+# instrumentation change actually edits, so a guard that watched only the
+# canonical tree passed the most likely staleness in this workflow — edit the
+# overlay, forget to rebuild, and the evidence carries a commit whose overlay is
+# not the one inside the binary.
+#
+# Deliberately NOT listed: verify_overlay.py, BASE_SHA256_*, test_g33_writer.cpp.
+# None of them is compiled into the dylib, and a guard that fires on edits which
+# cannot affect the artifact gets switched off by whoever hits it.
+_BUILD_INPUTS = (
+    "harness/g33_overlay/sedimentation.cpp.overlay",
+    "harness/g33_overlay/g33_op_dump.h",
+    "libtorch/src",
+    "libtorch/include",
+    "libtorch/CMakeLists.txt",
+)
+
+
 def _check_binary_not_stale(binary: Path, repo: Path) -> None:
-    """Refuse a binary older than the sources HEAD points at.
+    """Refuse a binary older than any input the diagnostic build compiles.
 
     PRODUCER_COMMIT and BINARY_SHA256 are two independent facts; nothing makes
     them describe the same artifact. A dylib built days ago still gets stamped
@@ -73,8 +92,8 @@ def _check_binary_not_stale(binary: Path, repo: Path) -> None:
     establishes that the process loaded this file); it rejects the case where
     they provably disagree.
     """
-    r = subprocess.run(["git", "-C", str(repo), "ls-files", "libtorch/src",
-                        "libtorch/include"], capture_output=True, text=True)
+    r = subprocess.run(["git", "-C", str(repo), "ls-files", *_BUILD_INPUTS],
+                       capture_output=True, text=True)
     if r.returncode:
         return                                  # not a checkout we can reason about
     newest, newest_src = 0.0, None
