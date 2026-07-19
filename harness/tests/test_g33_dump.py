@@ -920,3 +920,58 @@ def test_certifier_accepts_the_real_emissions():
     for (field, expr), r in zip(emitted, expected):
         assert _emits_per_column(field, expr) == (r["shape"] == [SCHED["B"]])
         assert _emits_dtype(field, expr) == r["dtype"]
+
+
+# ── runtime expected-descriptor (owner adjudication: this REPLACES the static
+#    expression certifier as load-bearing evidence; the certifier above is
+#    retained as a tripwire only) ────────────────────────────────────────────
+def test_descriptors_are_sealed_per_container(tmp_path):
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    shas = ge.write_descriptors(sched, tmp_path)
+    index = ge.run_index(sched)
+    assert set(shas) == {c["container_id"] for c in index["containers"]}
+    for c in index["containers"]:
+        lines = (tmp_path / f"{c['container_id']}.desc").read_text().splitlines()
+        assert len(lines) == c["record_count"]
+        first = int(lines[0].split("|")[0])
+        last = int(lines[-1].split("|")[0])
+        assert (first, last) == (c["first_op_seq_id"], c["last_op_seq_id"])
+
+
+def test_descriptor_sha_detects_an_edit(tmp_path):
+    # The overlay and the comparator both read these files. If a descriptor can
+    # be changed between the run and the comparison without detection, the
+    # "sealed before the run" property is decorative.
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    before = ge.write_descriptors(sched, tmp_path)
+    cid = next(iter(before))
+    p = tmp_path / f"{cid}.desc"
+    lines = p.read_text().splitlines()
+    lines[0] = lines[0].replace("|f32|", "|f64|")        # a dtype relabel
+    p.write_bytes(("\n".join(lines) + "\n").encode())
+    import hashlib
+    assert hashlib.sha256(p.read_bytes()).hexdigest() != before[cid]
+
+
+def test_cpp_builds_the_same_descriptor_line():
+    # TRIPWIRE, not proof: the real check is that a run's rec() rejects a
+    # mismatching tensor. This only pins the two field orders against each other
+    # so a reorder on one side is caught before a host campaign, not during one.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    m = re.search(r'std::string got = ([^;]+);', src)
+    assert m, "descriptor line construction not found in the overlay"
+    order = re.findall(r"\b(op_seq_id|stage|cell_role|k|species|op_id|field|dtype)\b",
+                       m.group(1))
+    assert order == ["op_seq_id", "stage", "cell_role", "k", "species", "op_id",
+                     "field", "dtype"]
+
+
+def test_mstepmax_is_derived_from_the_dumped_bits():
+    # Owner adjudication: mstepmax is max_b(mstep_b), so the comparator derives
+    # it rather than the producer dumping it — no production edit, and no
+    # producer attesting to a summary of its own operand.
+    payload = gd.pack_payload("f64", [1.0, 3.0, 2.0])
+    assert gd.derive_mstepmax("f64", payload) == 3
+    nonintegral = gd.pack_payload_bits("f64", [0x4000000000000001])
+    with pytest.raises(gd.G33Corruption, match="non-integral"):
+        gd.derive_mstepmax("f64", nonintegral)

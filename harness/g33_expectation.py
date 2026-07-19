@@ -18,6 +18,8 @@ boundary. Widen only on INCONCLUSIVE.
 """
 from __future__ import annotations
 
+import hashlib
+
 # ── op templates: (algorithm, cell_role, species) -> [op_id, ...] ────────────
 # Mass and number are DISTINCT expression families (§3): falk_nr omits dend,
 # dn_out has no /dend, dn_in is Delta-z only. Legacy TOP directly clamps (no
@@ -139,11 +141,13 @@ _STAGE_FIELDS_BASE = {
                         ("th", "f32", "BK")],
     # substep_pre is WHOLE-K, emitted once per substep (k=-1). Three fields the
     # protocol names are NOT here, each for a stated reason rather than omission:
-    #   mstepmax_i32 (§55) — BLOCKED, needs owner adjudication. The value only
-    #     exists as `int /*mstepmax*/`, an UNNAMED parameter of
-    #     substep_advection_torch. Naming it is a production edit and changes the
-    #     macro-OFF projection, breaking the textual-identity guarantee. It cannot
-    #     be dumped under the current freeze.
+    #   mstepmax_i32 (§55) — DERIVED offline, not dumped. Owner adjudication
+    #     closed the freeze-lift request: mstepmax is max_b(mstep_b), so
+    #     g33_dump.derive_mstepmax() computes it from the mstep_native bits the
+    #     producer already emits. Naming `int /*mstepmax*/` would have been a
+    #     production edit for a value that is not independent of the evidence —
+    #     and a producer that emits both an operand and a summary of that operand
+    #     is attesting to its own arithmetic.
     #   gate_mask, finite_required_mask (§236/§237) — the protocol attaches these
     #     to EACH OP RECORD (the dead-branch/NaN policy is per-operation), not to
     #     the substep entry state. Demanding them here made the manifest
@@ -467,6 +471,49 @@ def run_index(schedule: dict) -> dict:
             "total_records": len(recs),
             "global_op_seq_start": 0, "global_op_seq_end": len(recs) - 1,
             "containers": containers}
+
+
+def descriptor_line(rec: dict) -> str:
+    """The canonical one-line description of a record, as the OVERLAY will build
+    it from the tensor actually in hand.
+
+    Flat and positional on purpose: the overlay must be able to compare it with a
+    single string equality, with no JSON parser inside instrumentation that has to
+    stay trivially reviewable. One comparison covers identity, dtype, rank and
+    shape at once — the properties a static source-text certifier was repeatedly
+    unable to establish.
+    """
+    return "|".join([
+        str(rec["op_seq_id"]), rec["stage"], rec["cell_role"], str(rec["k"]),
+        rec["species"], rec["op_id"], rec["field"], rec["dtype"],
+        ",".join(str(d) for d in rec["shape"]),
+    ])
+
+
+def write_descriptors(schedule: dict, outdir) -> dict:
+    """Seal the expected record stream, per container, BEFORE the run.
+
+    Returns {container_id: sha256}. The overlay reads its own container's file
+    and refuses any record that does not match the next expected line; the
+    comparator re-reads the same files after the run. Both sides must see the
+    same sha, so a descriptor edited between the run and the comparison is
+    detectable rather than authoritative.
+    """
+    from pathlib import Path as _P
+    outdir = _P(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    recs = expected_records(schedule)
+    groups: dict = {}
+    for r in recs:
+        groups.setdefault(container_id(r), []).append(r)
+    shas = {}
+    for cid, rs in sorted(groups.items()):
+        body = "".join(descriptor_line(r) + "\n" for r in rs).encode()
+        (outdir / f"{cid}.desc").write_bytes(body)
+        shas[cid] = hashlib.sha256(body).hexdigest()
+    (outdir / "descriptors.sha256").write_text(
+        "".join(f"{shas[c]}  {c}.desc\n" for c in sorted(shas)))
+    return shas
 
 
 def op_seq_map(index: dict) -> str:

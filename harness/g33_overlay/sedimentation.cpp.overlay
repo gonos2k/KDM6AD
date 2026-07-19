@@ -16,6 +16,7 @@
 #include "g33_op_dump.h"
 #include <cstdlib>
 #include <memory>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -44,13 +45,39 @@ class Substep {
 public:
     Substep(const char* chain, int n, const torch::Tensor& probe)
         : chain_(chain), n_(n) {
+        // ALL-OR-NOTHING configuration. Returning quietly when any single
+        // variable was missing meant a run with DUMP_DIR and CASE_ID set but
+        // PAIR_ID forgotten produced NO evidence and still exited 0 — a typo in
+        // one export was indistinguishable from "diagnostics off". Absent =>
+        // inert (production must not require the dump); partially present =>
+        // the run is misconfigured and says so at the producer.
+        static const char* kRequiredEnv[] = {
+            "KDM6_G33_DUMP_DIR", "KDM6_G33_CASE_ID", "KDM6_G33_PAIR_ID",
+            "KDM6_G33_RUN_UUID", "KDM6_G33_PRODUCER_COMMIT",
+            "KDM6_G33_BINARY_SHA256", "KDM6_G33_COLUMN_LAYOUT_ID",
+            "KDM6_G33_COLUMN_MAP", "KDM6_G33_OP_SEQ_MAP",
+        };
+        std::string missing;
+        int present = 0;
+        for (const char* k : kRequiredEnv) {
+            const char* v = std::getenv(k);
+            if (v && *v) ++present;
+            else missing += std::string(missing.empty() ? "" : ", ") + k;
+        }
+        if (present == 0) return;                       // diagnostics off
+        if (!missing.empty())
+            throw std::runtime_error(
+                "g33: partial configuration — missing " + missing
+                + " (set every G3.3 variable or none; a half-configured run "
+                  "produces no evidence while still exiting 0)");
+        auto* ctx = ::kdm6::g33::g_context;
+        if (!ctx)
+            throw std::runtime_error(
+                "g33: configured but no ScopedDumpContext is active — the "
+                "outer-loop wiring is missing, not the configuration");
         const char* dir = std::getenv("KDM6_G33_DUMP_DIR");
         const char* cas = std::getenv("KDM6_G33_CASE_ID");
         const char* pai = std::getenv("KDM6_G33_PAIR_ID");
-        auto* ctx = ::kdm6::g33::g_context;
-        // Unconfigured => inert (the production path must not require the dump).
-        // But a configured-yet-FAILING writer must NOT be silent: see below.
-        if (!dir || !cas || !pai || !ctx) return;
         B_ = int(probe.size(0)); K_ = int(probe.size(-1));
         // §7c: the column map is DECLARED by the harness, never fabricated here.
         // Inventing it (e.g. fortran_j hardcoded to 0) would make the Fortran<->C++
@@ -94,6 +121,22 @@ public:
         // the one guard that makes a crashed prior run un-ignorable into a silent
         // disable: every G33_REC became a no-op, no container was written, and the
         // run still exited 0 with nothing for the fail-closed reader to reject.
+        // §7 runtime expected-descriptor: the record stream this container may
+        // emit was sealed BEFORE the run. Static analysis of the C++ expression
+        // could not establish a tensor's runtime shape or dtype — nine rounds of
+        // it were bypassed — so the check moved here, where the tensor is in hand.
+        const char* sdir = std::getenv("KDM6_G33_SCHEMA_DIR");
+        if (!sdir || !*sdir)
+            throw std::runtime_error("g33: KDM6_G33_SCHEMA_DIR is required "
+                                     "(sealed expected-record stream, protocol 7)");
+        std::ifstream df(std::string(sdir) + "/" + cid_ + ".desc");
+        if (!df)
+            throw std::runtime_error("g33: no sealed descriptor for container " + cid_);
+        for (std::string line; std::getline(df, line); )
+            if (!line.empty()) want_.push_back(line);
+        if (want_.empty())
+            throw std::runtime_error("g33: empty descriptor for container " + cid_
+                                     + " — an empty expectation accepts an empty dump");
         w_.reset(new ::kdm6::g33::Writer(path, hdr));
     }
     bool on() const { return w_ != nullptr; }
@@ -144,11 +187,11 @@ public:
         // actual tensor is in hand and no parsing is involved.
         if (!((c.dim() == 1 && c.size(0) == B_) ||
               (c.dim() == 2 && c.size(0) == B_ && c.size(1) == K_))) {
-            std::string got = "[";
+            std::string dims = "[";
             for (int64_t i = 0; i < c.dim(); ++i)
-                got += (i ? "," : "") + std::to_string(c.size(i));
+                dims += (i ? "," : "") + std::to_string(c.size(i));
             throw std::runtime_error(
-                std::string("g33: field ") + field + " has shape " + got + "]"
+                std::string("g33: field ") + field + " has shape " + dims + "]"
                 + ", expected [" + std::to_string(B_) + "] or ["
                 + std::to_string(B_) + "," + std::to_string(K_) + "]");
         }
@@ -157,6 +200,20 @@ public:
             shape += (i ? "," : "") + std::to_string(c.size(i));
         shape += "]";
         const uint64_t op_seq_id = ::kdm6::g33::g_op_seq.fetch_add(1);
+        // One string equality covers identity, dtype, rank and shape at once,
+        // all read off the tensor rather than inferred from source text.
+        std::string got = std::to_string(op_seq_id) + "|" + stage + "|" + cell_role
+                        + "|" + std::to_string(k) + "|" + species + "|" + op_id
+                        + "|" + field + "|" + dtype + "|";
+        for (int64_t i = 0; i < c.dim(); ++i)
+            got += (i ? "," : "") + std::to_string(c.size(i));
+        if (seq_ >= int(want_.size()))
+            throw std::runtime_error("g33: record beyond the sealed stream: " + got);
+        if (got != want_[seq_])
+            throw std::runtime_error("g33: record " + std::to_string(seq_)
+                                     + " does not match the sealed descriptor\n"
+                                     + "  expected: " + want_[seq_] + "\n"
+                                     + "  actual:   " + got);
         std::string key = std::string("{\"seq_no\":") + std::to_string(seq_)
             + ",\"op_seq_id\":" + std::to_string(op_seq_id)
             + ",\"outer_loop\":" + std::to_string(::kdm6::g33::g_context->outer_loop_1based)
@@ -169,7 +226,16 @@ public:
         w_->record(key, pay);
         ++seq_;
     }
-    void finalize() { if (w_) { w_->finalize(); w_.reset(); } }   // explicit only
+    void finalize() {
+        if (!w_) return;
+        // A short stream is a MISSING record. Without this, a substep that
+        // returned early would publish a COMPLETE container holding a prefix.
+        if (seq_ != int(want_.size()))
+            throw std::runtime_error(
+                "g33: container " + cid_ + " emitted " + std::to_string(seq_)
+                + " of " + std::to_string(want_.size()) + " sealed records");
+        w_->finalize(); w_.reset();
+    }
 private:
     static std::string g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
     // KDM6_G33_OP_SEQ_MAP := "cid:first:last,cid:first:last,..." emitted from
@@ -195,6 +261,7 @@ private:
     std::unique_ptr<::kdm6::g33::Writer> w_;
     std::string chain_;                 // OWNED: a const char* member could dangle
     std::string cid_;                   // container_id, echoed into the header
+    std::vector<std::string> want_;     // sealed expected stream, consumed in order
     int n_; int B_ = 0, K_ = 0, seq_ = 0;
 };
 

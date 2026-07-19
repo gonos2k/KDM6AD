@@ -27,6 +27,7 @@ overlays emit the identical byte layout (helpers land with steps 6/11).
 from __future__ import annotations
 
 import hashlib
+import math
 import json
 import os
 import re
@@ -137,6 +138,48 @@ def unpack_payload_bits(dtype: str, payload: bytes) -> list:
         raise G33Corruption(f"payload of {len(payload)} bytes is not a multiple of {w}")
     fmt = {4: ">I", 8: ">Q", 1: ">B"}[w]
     return [struct.unpack(fmt, payload[i:i + w])[0] for i in range(0, len(payload), w)]
+
+
+def decode_exact_integers(dtype: str, payload: bytes):
+    """Decode a float payload to integers, reporting which values are EXACT.
+
+    Returns (values, exact_flags). A value is exact when the float is integral
+    to the bit — 2.0000002 decodes to 2 like 2.0 does, and int32(2) cannot tell
+    them apart, which is precisely the confusion this gate exists to detect.
+    """
+    if dtype not in ("f32", "f64"):
+        raise ValueError(f"decode_exact_integers needs a float dtype, got {dtype}")
+    fmt = ">f" if dtype == "f32" else ">d"
+    w = _DTYPES[dtype]
+    if len(payload) % w:
+        raise G33Corruption(f"payload of {len(payload)} bytes is not a multiple of {w}")
+    vals, exact = [], []
+    for i in range(0, len(payload), w):
+        v = struct.unpack(fmt, payload[i:i + w])[0]
+        ok = math.isfinite(v) and float(v).is_integer()
+        vals.append(int(v) if ok else None)
+        exact.append(ok)
+    return vals, exact
+
+
+def derive_mstepmax(dtype: str, mstep_native_payload: bytes) -> int:
+    """mstepmax, DERIVED offline from the raw mstep bits.
+
+    mstepmax is max_b(mstep_b), so the comparator can compute it from evidence
+    the producer already emits. Dumping it from the producer would have required
+    naming `int /*mstepmax*/`, an unnamed production parameter — a production
+    edit for a value that is not independent of what is already recorded. This
+    is also the stronger arrangement: a producer that reports both an operand
+    and a summary OF that operand is attesting to its own arithmetic.
+    """
+    vals, exact = decode_exact_integers(dtype, mstep_native_payload)
+    if not vals:
+        raise G33Corruption("empty mstep_native payload")
+    if not all(exact):
+        raise G33Corruption(
+            "mstep_native contains a non-integral value — mstepmax cannot be "
+            "derived from a substep count that is not exactly an integer")
+    return max(vals)
 
 
 def pack_payload(dtype: str, values) -> bytes:
