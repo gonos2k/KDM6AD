@@ -1063,6 +1063,24 @@ def test_sealed_digest_rejects_an_edited_descriptor(tmp_path):
 
 
 # ── the environment the overlay requires must actually be produced ────────────
+def _clean_repo(tmp_path):
+    """A committed, clean checkout for env-building tests.
+
+    These must not read the real repository: build_env refuses a dirty tree, so
+    using it would make the tests pass or fail based on whether the developer
+    happens to have uncommitted work.
+    """
+    import subprocess
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "base"], check=True)
+    return repo
+
+
 def _overlay_required_env():
     src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
     block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
@@ -1077,12 +1095,13 @@ def test_run_env_supplies_exactly_what_the_overlay_requires(tmp_path):
     # producer against consumer is what keeps that from recurring silently.
     import g33_run_env
     sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    repo = _clean_repo(tmp_path)
     binary = tmp_path / "libfake.dylib"
     binary.write_bytes(b"not a real dylib, but a real file with a real digest")
     env = g33_run_env.build_env(
         sched, tmp_path, binary=binary,
         column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
-        run_uuid="uuid-under-test", column_layout_id="lc05-3col", repo=ROOT.parent)
+        run_uuid="uuid-under-test", column_layout_id="lc05-3col", repo=repo)
     required = _overlay_required_env()
     assert required <= set(env), f"never set: {sorted(required - set(env))}"
     assert set(env) <= required, f"set but unused: {sorted(set(env) - required)}"
@@ -1093,12 +1112,13 @@ def test_run_env_seals_what_it_points_at(tmp_path):
     # op-seq windows the containers actually declare — one schedule, sealed once.
     import g33_run_env, hashlib as _h
     sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    repo = _clean_repo(tmp_path)
     binary = tmp_path / "libfake.dylib"
     binary.write_bytes(b"x" * 64)
     env = g33_run_env.build_env(
         sched, tmp_path, binary=binary,
         column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
-        run_uuid="u", column_layout_id="lc05-3col", repo=ROOT.parent)
+        run_uuid="u", column_layout_id="lc05-3col", repo=repo)
 
     schema_dir = Path(env["KDM6_G33_SCHEMA_DIR"])
     for entry in env["KDM6_G33_SCHEMA_SHA256"].split(","):
@@ -1116,4 +1136,60 @@ def test_run_env_refuses_a_binary_that_does_not_exist(tmp_path):
         g33_run_env.build_env(
             {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}, tmp_path,
             binary=tmp_path / "absent.dylib", column_map=[[0, 0, 0, 0]],
-            run_uuid="u", column_layout_id="l", repo=ROOT.parent)
+            run_uuid="u", column_layout_id="l", repo=_clean_repo(tmp_path))
+
+
+# ── CLI export quoting and producer provenance ───────────────────────────────
+_INJECTIONS = ["$(echo PWNED)", "`echo PWNED`", 'a"; echo PWNED; echo "b',
+               "x\\", "'; echo PWNED; '", "$IFS$(echo PWNED)"]
+
+
+@pytest.mark.parametrize("hostile", _INJECTIONS)
+def test_cli_exports_survive_eval_without_executing(hostile, tmp_path):
+    # json.dumps emits a DOUBLE-quoted string, and inside double quotes a shell
+    # still expands $(...) and backticks. `--run-uuid '$(...)'` executed on eval;
+    # measured before the fix as INJ=PWNED.
+    import shlex, subprocess
+    line = f"export G33_T={shlex.quote(hostile)}"
+    out = subprocess.run(["bash", "-c", f"{line}\nprintf '%s' \"$G33_T\""],
+                         capture_output=True, text=True)
+    assert out.returncode == 0
+    assert out.stdout == hostile, "the value changed — the shell interpreted it"
+    assert "PWNED" not in out.stdout or "PWNED" in hostile
+
+
+def test_producer_commit_refuses_a_dirty_tree(tmp_path):
+    # A dirty tree means HEAD does not describe the compiled source, so stamping
+    # it claims a provenance that does not hold.
+    import subprocess, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "x"], check=True)
+    assert re.fullmatch(r"[0-9a-f]{40}", g33_run_env._git_head(repo))
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a; int b;\n")
+    with pytest.raises(RuntimeError, match="does not describe the tree"):
+        g33_run_env._git_head(repo)
+
+
+def test_stale_binary_is_refused(tmp_path):
+    # PRODUCER_COMMIT and BINARY_SHA256 are independent facts; a dylib built days
+    # ago still gets stamped with today's HEAD, and its digest — a real hash of a
+    # real file — looks like proof.
+    import os, subprocess, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    src = repo / "libtorch" / "src" / "a.cpp"
+    src.write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"built earlier")
+    os.utime(binary, (1, 1))                      # older than the source
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)
+    os.utime(binary, None)                        # rebuilt now
+    g33_run_env._check_binary_not_stale(binary, repo)

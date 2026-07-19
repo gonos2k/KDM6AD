@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -41,11 +42,50 @@ def _sha256_file(path: Path) -> str:
 
 
 def _git_head(repo: Path) -> str:
+    """HEAD, and only if HEAD actually describes the working tree.
+
+    A dirty tree means the recorded commit does not describe the source that was
+    compiled, so stamping it onto the evidence claims a provenance that does not
+    hold. Refuse rather than record a commit the run did not come from.
+    """
     r = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
                        capture_output=True, text=True)
     if r.returncode:
         raise RuntimeError(f"cannot resolve producer commit: {r.stderr.strip()}")
+    d = subprocess.run(["git", "-C", str(repo), "status", "--porcelain",
+                        "--untracked-files=no"], capture_output=True, text=True)
+    if d.returncode:
+        raise RuntimeError(f"cannot determine tree state: {d.stderr.strip()}")
+    if d.stdout.strip():
+        raise RuntimeError(
+            "refusing to stamp evidence with a commit that does not describe the "
+            "tree: " + ", ".join(l[3:] for l in d.stdout.strip().splitlines()[:5]))
     return r.stdout.strip()
+
+
+def _check_binary_not_stale(binary: Path, repo: Path) -> None:
+    """Refuse a binary older than the sources HEAD points at.
+
+    PRODUCER_COMMIT and BINARY_SHA256 are two independent facts; nothing makes
+    them describe the same artifact. A dylib built days ago still gets stamped
+    with today's HEAD, and the digest — being a real hash of a real file — looks
+    like proof. This does not BIND them (only the runtime dladdr check in P0-5
+    establishes that the process loaded this file); it rejects the case where
+    they provably disagree.
+    """
+    r = subprocess.run(["git", "-C", str(repo), "ls-files", "libtorch/src",
+                        "libtorch/include"], capture_output=True, text=True)
+    if r.returncode:
+        return                                  # not a checkout we can reason about
+    newest, newest_src = 0.0, None
+    for rel in r.stdout.split():
+        f = repo / rel
+        if f.is_file() and f.stat().st_mtime > newest:
+            newest, newest_src = f.stat().st_mtime, rel
+    if newest_src and binary.stat().st_mtime < newest:
+        raise RuntimeError(
+            f"binary {binary.name} is older than {newest_src} — it was not built "
+            f"from the tree this run would stamp onto the evidence")
 
 
 def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
@@ -64,6 +104,9 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
     if not run_uuid:
         raise ValueError("run_uuid is required — it ties containers to one run")
 
+    _repo = Path(repo or Path(__file__).parent.parent)
+    _check_binary_not_stale(binary, _repo)
+
     schema_dir = outdir / "schema"
     dump_dir = outdir / "dump"
     dump_dir.mkdir(parents=True, exist_ok=True)
@@ -76,7 +119,7 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
         "KDM6_G33_CASE_ID": schedule["case_id"],
         "KDM6_G33_PAIR_ID": schedule["pair_id"],
         "KDM6_G33_RUN_UUID": run_uuid,
-        "KDM6_G33_PRODUCER_COMMIT": _git_head(Path(repo or Path(__file__).parent.parent)),
+        "KDM6_G33_PRODUCER_COMMIT": _git_head(_repo),
         "KDM6_G33_BINARY_SHA256": _sha256_file(binary),
         "KDM6_G33_COLUMN_LAYOUT_ID": column_layout_id,
         "KDM6_G33_COLUMN_MAP": json.dumps(column_map, separators=(",", ":")),
@@ -105,7 +148,11 @@ def main() -> int:
                     column_map=json.loads(Path(a.column_map).read_text()),
                     run_uuid=a.run_uuid, column_layout_id=a.column_layout_id)
     for k, v in env.items():
-        print(f"export {k}={json.dumps(v)}")
+        # shlex.quote, not json.dumps: a JSON string is DOUBLE quoted, and inside
+        # double quotes a shell still expands $(...), backticks and backslashes.
+        # `--run-uuid '$(...)'` would execute on eval. Single-quoted output does
+        # not expand anything.
+        print(f"export {k}={shlex.quote(v)}")
     return 0
 
 
