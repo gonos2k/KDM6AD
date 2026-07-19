@@ -226,13 +226,22 @@ def test_conditional_ice_reslope_schedule():
 
 
 def test_cell_role_templates():
-    # legacy TOP mass has NO outflow/inflow (direct clamp); conservative TOP has outflow.
-    leg = {"algorithm": "legacy"}
-    assert ge._mass_ops("legacy", "TOP") == ["QR_FALK", "QR_UPDATE"]
-    assert ge._mass_ops("conservative", "TOP") == ["QR_FALK", "QR_OUTFLOW", "QR_UPDATE"]
-    assert "QR_INFLOW" in ge._mass_ops("conservative", "INTERIOR")
-    # number ladder is a distinct family
-    assert ge._number_ops("conservative", "INTERIOR") == ["NR_FALK", "NR_OUTFLOW", "NR_INFLOW", "NR_UPDATE"]
+    # legacy TOP mass has NO outflow and NO inflow (the positivity clamp IS the
+    # update); conservative TOP caps first. Neither TOP has an inflow rung.
+    assert "QR_OUTFLOW" not in ge._mass_ops("legacy", "TOP")
+    assert "QR_OUTFLOW" in ge._mass_ops("conservative", "TOP")
+    for algo in ("legacy", "conservative"):
+        assert "QR_INFLOW" not in ge._mass_ops(algo, "TOP")
+        assert "NR_INFLOW" not in ge._number_ops(algo, "TOP")
+        assert "QR_INFLOW" in ge._mass_ops(algo, "INTERIOR")
+        assert "NR_INFLOW" in ge._number_ops(algo, "INTERIOR")
+    # every op list ends at the update, and FALK is always first (the shared op)
+    for algo in ("legacy", "conservative"):
+        for role in ("TOP", "INTERIOR"):
+            assert ge._mass_ops(algo, role)[0] == "QR_FALK"
+            assert ge._mass_ops(algo, role)[-1] == "QR_UPDATE"
+            assert ge._number_ops(algo, role)[0] == "NR_FALK"
+            assert ge._number_ops(algo, role)[-1] == "NR_UPDATE"
 
 
 def test_capped_ops_expose_pre_cap_rung():
@@ -252,6 +261,40 @@ def test_capped_ops_expose_pre_cap_rung():
         assert "inflow_pre_cap" in leg and "inflow_cap_active" in leg and "source_reservoir" in leg, op
         con = dict(ge._op_fields("conservative", "INTERIOR", op))
         assert "inflow_cap_active" not in con and "inflow_pre_cap" not in con, op
+
+
+def test_number_ops_mirror_the_mass_algorithm_split():
+    # conservative TOP computes dn_out = min(falk_nr*dtcld, nr): omitting NR_OUTFLOW
+    # would let a dump that skips that cap match the manifest.
+    assert "NR_OUTFLOW" in ge._number_ops("conservative", "TOP")
+    assert "NR_OUTFLOW" not in ge._number_ops("legacy", "TOP")   # legacy TOP clamps directly
+    assert "QR_OUTFLOW" in ge._mass_ops("conservative", "TOP")
+    assert "QR_OUTFLOW" not in ge._mass_ops("legacy", "TOP")
+    for algo in ("legacy", "conservative"):                      # interior: both have outflow
+        assert "NR_OUTFLOW" in ge._number_ops(algo, "INTERIOR")
+        assert "QR_OUTFLOW" in ge._mass_ops(algo, "INTERIOR")
+
+
+def test_fall_accumulator_and_surface_are_required():
+    # §4: without these the qr-seed -> rain_increment link is only cell-set
+    # inclusion, and a dump omitting them would pass.
+    for algo in ("legacy", "conservative"):
+        for role in ("TOP", "INTERIOR"):
+            assert "QR_FALLACC" in ge._mass_ops(algo, role), (algo, role)
+            assert "NR_FALLACC" in ge._number_ops(algo, role), (algo, role)
+        # conservative accumulates the ACTUAL capped outflow RATE, legacy the raw falk
+        con = [f for f, _ in ge._op_fields("conservative", "INTERIOR", "QR_FALLACC")]
+        leg = [f for f, _ in ge._op_fields("legacy", "INTERIOR", "QR_FALLACC")]
+        assert "dq_out" in con and "mul_dend_safe" in con
+        assert "dq_out" not in leg
+        for x in ("fall_before", "fall_increment", "fall_after"):
+            assert x in con and x in leg
+    keys = ge.expected_key_set(SCHED)
+    surf = {k[7] for k in keys if k[6] == "surface"}             # idx 6=stage, 7=field
+    assert {"bottom_fall", "delz_bottom", "surface_mul1", "surface_mul_dt",
+            "rain_increment"} <= surf
+    # exactly once per outer loop
+    assert len({k[0] for k in keys if k[6] == "surface"}) == SCHED["loops"]
 
 
 def test_inflow_ladders_match_the_source_expressions():

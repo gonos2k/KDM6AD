@@ -24,16 +24,21 @@ from __future__ import annotations
 # separate outflow/inflow); conservative TOP computes dq_out first (no inflow).
 def _mass_ops(algorithm: str, role: str) -> list[str]:
     if role == "TOP":
-        return ["QR_FALK", "QR_UPDATE"] if algorithm == "legacy" \
-            else ["QR_FALK", "QR_OUTFLOW", "QR_UPDATE"]
+        # legacy TOP clamps directly (no outflow rung); conservative TOP caps first.
+        return ["QR_FALK", "QR_FALLACC", "QR_UPDATE"] if algorithm == "legacy" \
+            else ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_UPDATE"]
     # INTERIOR / BOTTOM
-    return ["QR_FALK", "QR_OUTFLOW", "QR_INFLOW", "QR_UPDATE"]
+    return ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_INFLOW", "QR_UPDATE"]
 
 
 def _number_ops(algorithm: str, role: str) -> list[str]:
+    # MUST mirror _mass_ops' algorithm split: the conservative TOP number path
+    # DOES compute an outflow (dn_out = min(falk_nr*dtcld, nr)), so omitting
+    # NR_OUTFLOW here would let a dump that skips it match the manifest.
     if role == "TOP":
-        return ["NR_FALK", "NR_UPDATE"]
-    return ["NR_FALK", "NR_OUTFLOW", "NR_INFLOW", "NR_UPDATE"]
+        return ["NR_FALK", "NR_FALLACC", "NR_UPDATE"] if algorithm == "legacy" \
+            else ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_UPDATE"]
+    return ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_INFLOW", "NR_UPDATE"]
 
 
 # Fields per op — keyed by (algorithm, cell_role, op_id), because the field SET
@@ -86,6 +91,20 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
                 ("delz_safe_dst", "f32"), ("mul_delz_src", "f32"), ("div_delz_dst", "f32"),
                 ("inflow_pre_cap", "f32"), ("source_reservoir", "f32"),
                 ("inflow_cap_active", "u8"), ("inflow_final", "f32")]
+    # §4 fall accumulator — REQUIRED to trace qr seed -> rain_increment as an op
+    # path. Legacy adds the RAW stored falk; conservative adds the ACTUAL capped
+    # outflow RATE (dq_out*dend_safe/dtcld). Omitting this let a dump that skips
+    # the accumulator match the manifest.
+    if op_id == "QR_FALLACC":
+        if algorithm == "conservative":
+            return [("fall_before", "f32"), ("dq_out", "f32"), ("mul_dend_safe", "f32"),
+                    ("fall_increment", "f32"), ("fall_after", "f32")]
+        return [("fall_before", "f32"), ("fall_increment", "f32"), ("fall_after", "f32")]
+    if op_id == "NR_FALLACC":
+        if algorithm == "conservative":          # fall_nr += dn_out/dtcld
+            return [("fall_before", "f32"), ("dn_out", "f32"),
+                    ("fall_increment", "f32"), ("fall_after", "f32")]
+        return [("fall_before", "f32"), ("fall_increment", "f32"), ("fall_after", "f32")]
     if op_id == "QR_UPDATE":
         f = [("q_before", "f32"), ("q_minus_out", "f32")]
         if role != "TOP":
@@ -125,6 +144,13 @@ _STAGE_FIELDS = {
     "substep_post":    [("qr", "f32"), ("nr", "f32"), ("qs", "f32"), ("qg", "f32"), ("brs", "f32")],
     "reslope_input":   [("qr", "f32"), ("nr", "f32")],
     "reslope_output":  [("work1_qr", "f64"), ("workn_qr", "f64")],
+    # §4 surface diagnostic — emitted once per outer loop after the main+ice
+    # chains (surface_accumulation_torch). Without it the qr-seed -> precip
+    # divergence can only be asserted by cell-set inclusion, not shown as an op path.
+    "surface":         [("bottom_fall", "f32"), ("delz_bottom", "f32"),
+                        ("surface_mul1", "f32"), ("surface_mul_dt", "f32"),
+                        ("rain_increment", "f32"), ("snow_increment", "f32"),
+                        ("graupel_increment", "f32")],
 }
 
 
@@ -186,6 +212,8 @@ def expected_records(schedule: dict) -> list[dict]:
                          chain=chain, n=n, shape=[B, K])
                     emit("reslope_output", _STAGE_FIELDS["reslope_output"], outer_loop=loop,
                          chain=chain, n=n, shape=[B, K])
+        # surface accumulation runs once per outer loop, after main+ice chains
+        emit("surface", _STAGE_FIELDS["surface"], outer_loop=loop, shape=[B])
         emit("outer_post_sed", _STAGE_FIELDS["outer_post_sed"], outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _STAGE_FIELDS["outer_post_micro"], outer_loop=loop, shape=[B, K])
     return recs
