@@ -30,6 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_dump as gd
 import g33_expectation as ge
 
 
@@ -92,12 +93,17 @@ def _check_binary_not_stale(binary: Path, repo: Path) -> None:
     establishes that the process loaded this file); it rejects the case where
     they provably disagree.
     """
-    r = subprocess.run(["git", "-C", str(repo), "ls-files", *_BUILD_INPUTS],
+    # -z: NUL-separated output. Whitespace-splitting fragmented a path with a
+    # space into tokens that exist nowhere, so is_file() skipped them and that
+    # build input silently LEFT the guard — a fail-open, not a cosmetic bug.
+    # NUL separation also survives newlines and non-ASCII names, which plain
+    # line splitting only handles modulo git's C-quoting.
+    r = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", *_BUILD_INPUTS],
                        capture_output=True, text=True)
     if r.returncode:
         return                                  # not a checkout we can reason about
     newest, newest_src = 0.0, None
-    for rel in r.stdout.split():
+    for rel in filter(None, r.stdout.split("\0")):
         f = repo / rel
         if f.is_file() and f.stat().st_mtime > newest:
             newest, newest_src = f.stat().st_mtime, rel
@@ -122,6 +128,10 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
         raise FileNotFoundError(f"binary not found: {binary}")
     if not run_uuid:
         raise ValueError("run_uuid is required — it ties containers to one run")
+    # Same validator the reader/writer share. Without this, a malformed map is
+    # only caught when the overlay opens its first container — deep inside the
+    # physics run, after the whole setup cost has been paid.
+    gd._validate_column_map(column_map, int(schedule["B"]))
 
     _repo = Path(repo or Path(__file__).parent.parent)
     _check_binary_not_stale(binary, _repo)

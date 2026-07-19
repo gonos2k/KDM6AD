@@ -112,7 +112,7 @@ public:
         // (run_index.json, fixed before the run), never inferred here. Same reason
         // as the column map: a range the producer computes for itself cannot
         // falsify the producer. Absent declaration = invalid run, not a default.
-        long first = 0, last = 0;
+        uint64_t first = 0, last = 0;
         if (!lookup_op_seq(cid_, first, last))
             throw std::runtime_error(
                 "g33: KDM6_G33_OP_SEQ_MAP has no entry for container " + cid_
@@ -313,13 +313,25 @@ private:
         }
         return false;
     }
-    static bool lookup_op_seq(const std::string& cid, long& first, long& last) {
+    // uint64_t to match g_op_seq — `long` is 32-bit on LLP64/32-bit targets,
+    // which would truncate a large window silently. And DIGITS ONLY before
+    // conversion: std::stoull accepts "-5" and wraps it to a huge unsigned
+    // value instead of rejecting it, so a corrupted map entry would parse
+    // "successfully" into a nonsense window rather than failing here.
+    static bool all_digits(const std::string& t) {
+        if (t.empty()) return false;
+        for (char c : t) if (c < '0' || c > '9') return false;
+        return true;
+    }
+    static bool lookup_op_seq(const std::string& cid, uint64_t& first, uint64_t& last) {
         std::string v;
         if (!lookup_csv("KDM6_G33_OP_SEQ_MAP", cid, v)) return false;
         auto b = v.find(':');
         if (b == std::string::npos) return false;
-        first = std::stol(v.substr(0, b));
-        last  = std::stol(v.substr(b + 1));
+        const std::string a = v.substr(0, b), z = v.substr(b + 1);
+        if (!all_digits(a) || !all_digits(z)) return false;
+        first = std::stoull(a);
+        last  = std::stoull(z);
         return true;
     }
     std::unique_ptr<::kdm6::g33::Writer> w_;

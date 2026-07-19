@@ -1395,3 +1395,44 @@ def test_surface_expectation_is_per_species():
               "bottom_fall_qi", "bottom_fall_total"):
         assert f in surf
     assert "bottom_fall" not in surf   # the aggregate alone cannot attribute
+
+
+def test_stale_guard_sees_a_build_input_with_a_space_in_its_name(tmp_path):
+    # Whitespace-splitting the ls-files output fragmented "a b.cpp" into tokens
+    # that exist nowhere, so is_file() skipped both and the file silently LEFT
+    # the guard — a stale binary passed. NUL-separated listing (-z) closes it.
+    import os, subprocess, time, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch/src").mkdir(parents=True)
+    (repo / "harness/g33_overlay").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    spaced = repo / "libtorch/src/a b.cpp"
+    spaced.write_text("int a;\n")
+    (repo / "harness/g33_overlay/sedimentation.cpp.overlay").write_text("x\n")
+    (repo / "harness/g33_overlay/g33_op_dump.h").write_text("x\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = repo / "lib.dylib"
+    binary.write_bytes(b"built")
+    os.utime(binary, None)
+    g33_run_env._check_binary_not_stale(binary, repo)     # fresh: accepted
+    time.sleep(0.01)
+    spaced.write_text("edited after the build\n")
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)
+
+
+def test_build_env_refuses_a_malformed_column_map_before_anything_runs(tmp_path):
+    # Without the early check a malformed map is only caught when the overlay
+    # opens its first container — deep inside the physics run.
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    for bad in ([[0, 0, 0, 0]],                                   # short
+                [[0, 0, 0, 0], [0, 0, 1, 1], [2, 0, 2, 2]],       # dup B_index
+                [[0, 0, 0], [1, 0, 1], [2, 0, 2]]):               # wrong arity
+        with pytest.raises(gd.G33Corruption):
+            g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                                  column_map=bad, run_uuid="u",
+                                  column_layout_id="l", repo=repo)
