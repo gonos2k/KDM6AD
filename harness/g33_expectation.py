@@ -196,6 +196,19 @@ def expected_records(schedule: dict) -> list[dict]:
     mm_main = schedule["mstepmax_main"]
     mm_ice = schedule["mstepmax_ice"]
     species = list(schedule.get("species_scope", ["qr", "nr"]))
+    # A malformed scope must FAIL, never silently shrink the manifest: skipping a
+    # chain whose in-scope species list is empty is correct for ice, but if the
+    # scope itself is empty or misspelled the SAME skip drops the main chain too,
+    # leaving a manifest with no op records — under which an empty dump reads as
+    # "complete" and the whole op check is disabled. Fail-open, not fail-closed.
+    known = {s for v in _CHAIN_SPECIES.values() for s in v}
+    if not species:
+        raise ValueError("species_scope is empty — refusing to emit a manifest "
+                         "that would vacuously accept a dump with no op records")
+    unknown = sorted(set(species) - known)
+    if unknown:
+        raise ValueError(f"species_scope contains unknown species {unknown}; "
+                         f"known: {sorted(known)}")
     base = {"case_id": schedule["case_id"], "pair_id": schedule["pair_id"],
             "backend": schedule["backend"]}
     recs: list[dict] = []
@@ -246,6 +259,12 @@ def expected_records(schedule: dict) -> list[dict]:
         emit("surface", _STAGE_FIELDS["surface"], outer_loop=loop, shape=[B])
         emit("outer_post_sed", _STAGE_FIELDS["outer_post_sed"], outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _STAGE_FIELDS["outer_post_micro"], outer_loop=loop, shape=[B, K])
+    # Belt-and-suspenders against a vacuous gate: a manifest with no op records
+    # would accept any dump that also has none. If we ever get here with zero,
+    # the schedule (loops / mstepmax / scope) is degenerate — refuse it.
+    if not any(r["stage"] == "op" for r in recs):
+        raise ValueError("manifest contains no op records — a dump with no ops "
+                         "would vacuously 'match'; check loops/mstepmax/species_scope")
     return recs
 
 

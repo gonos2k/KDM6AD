@@ -282,6 +282,19 @@ def test_ice_chain_never_demands_qr_nr_ops():
         ge._ops_for_species("legacy", "INTERIOR", "qs")
 
 
+def test_bad_species_scope_fails_loudly_instead_of_disabling_the_op_check():
+    # A misspelled or empty scope must NOT silently produce a manifest with no op
+    # records (under which an empty dump would read as "complete").
+    for bad in ([], ["QR"], ["qr ", "nr"], ["rain"]):
+        with pytest.raises(ValueError):
+            ge.expected_records({**SCHED, "species_scope": bad})
+    # a degenerate schedule (no substeps) must also be refused, not accepted
+    with pytest.raises(ValueError, match="no op records"):
+        ge.expected_records({**SCHED, "mstepmax_main": [0], "mstepmax_ice": [0]})
+    # ... while a valid scope still yields a non-vacuous manifest
+    assert any(r["stage"] == "op" for r in ge.expected_records(SCHED))
+
+
 def test_duplicates_are_caught_by_multiset_not_by_set():
     recs = ge.expected_records(SCHED)
     surf = next(r for r in recs if r["stage"] == "surface")
