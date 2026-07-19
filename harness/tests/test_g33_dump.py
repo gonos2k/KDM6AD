@@ -672,8 +672,36 @@ _RANK_PRESERVING = {"to", "round", "abs", "logical_or", "logical_and",
                     "logical_not", "clone", "detach", "contiguous"}
 
 
+def _strip_roots(expr: str):
+    """Remove known tensor roots, returning (residue, roots_found).
+
+    Matching is word-bounded, not substring: `in.dend` must not match `in.dend2`,
+    a DIFFERENT tensor that would otherwise inherit in.dend's certified rank and
+    dtype. Longest-first so `in.work1_qr` is not consumed piecewise.
+    """
+    found = set()
+    for root in sorted(set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS),
+                       key=len, reverse=True):
+        pat = r"(?<![\w.])" + re.escape(root) + r"(?![\w])"
+        if re.search(pat, expr):
+            found.add(root)
+            expr = re.sub(pat, " ", expr)
+    return expr, found
+
+
 def _emits_per_column(field: str, expr: str) -> bool:
-    roots = {r for r in set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS) if r in expr}
+    # CERTIFY THE WHOLE EXPRESSION. Inspecting only the recognised parts is
+    # fail-open: `in.dend * mystery_tensor` certified as whole-K f32 on the
+    # strength of in.dend alone, and `in.dend2` inherited in.dend's certificate
+    # by substring. Every token must now be accounted for or the check refuses.
+    residue, roots = _strip_roots(expr)
+    leftover = set(re.findall(r"[A-Za-z_]\w*", residue)) - _RANK_PRESERVING \
+        - {"torch"} - set(_TORCH_DTYPE)
+    if leftover:
+        raise AssertionError(
+            f"{field}: unaccounted identifier(s) {sorted(leftover)} in "
+            f"{expr.strip()!r} — the shape/dtype certificate would rest on the "
+            f"recognised parts only")
     if not roots:
         raise AssertionError(
             f"{field}: no known tensor root in {expr.strip()!r} — add it to "
@@ -684,7 +712,7 @@ def _emits_per_column(field: str, expr: str) -> bool:
     if re.search(r"\]\s*\[|\w\s*\[", expr):
         return True
     calls = set(re.findall(r"[.:]\s*([A-Za-z_]\w*)\s*\(", expr))
-    unknown = calls - _RANK_PRESERVING
+    unknown = calls - _RANK_PRESERVING - {"torch"} - set(_TORCH_DTYPE)
     if unknown:
         raise AssertionError(
             f"{field}: {sorted(unknown)} is not known to preserve rank, so the "
@@ -715,8 +743,8 @@ def _emits_dtype(field: str, expr: str) -> str:
         raise AssertionError(
             f"{field}: comparison/logical result is bool, which is not a manifest "
             f"dtype — emit an explicit .to(torch::kUInt8)")
-    dts = {(_WHOLE_K_ROOTS | _PER_COLUMN_ROOTS)[r]
-           for r in set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS) if r in expr}
+    _, roots = _strip_roots(expr)
+    dts = {(_WHOLE_K_ROOTS | _PER_COLUMN_ROOTS)[r] for r in roots}
     if len(dts) != 1:
         raise AssertionError(f"{field}: cannot certify dtype from roots {sorted(dts)}")
     return dts.pop()
