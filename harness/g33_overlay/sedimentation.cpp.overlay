@@ -56,6 +56,7 @@ public:
             "KDM6_G33_RUN_UUID", "KDM6_G33_PRODUCER_COMMIT",
             "KDM6_G33_BINARY_SHA256", "KDM6_G33_COLUMN_LAYOUT_ID",
             "KDM6_G33_COLUMN_MAP", "KDM6_G33_OP_SEQ_MAP",
+            "KDM6_G33_SCHEMA_DIR",
         };
         std::string missing;
         int present = 0;
@@ -101,6 +102,36 @@ public:
                 "g33: KDM6_G33_OP_SEQ_MAP has no entry for container " + cid_
                 + " (declared container set and actual execution disagree)");
         std::ostringstream tid; tid << std::this_thread::get_id();
+        // §7 runtime expected-descriptor: the record stream this container may
+        // emit was sealed BEFORE the run. Static analysis of the C++ expression
+        // could not establish a tensor's runtime shape or dtype — nine rounds of
+        // it were bypassed — so the check moved here, where the tensor is in hand.
+        const char* sdir = std::getenv("KDM6_G33_SCHEMA_DIR");
+        if (!sdir || !*sdir)
+            throw std::runtime_error("g33: KDM6_G33_SCHEMA_DIR is required "
+                                     "(sealed expected-record stream, protocol 7)");
+        std::ifstream df(std::string(sdir) + "/" + cid_ + ".desc",
+                         std::ios::binary);
+        if (!df)
+            throw std::runtime_error("g33: no sealed descriptor for container " + cid_);
+        std::string blob((std::istreambuf_iterator<char>(df)),
+                         std::istreambuf_iterator<char>());
+        // Hash the descriptor bytes and record the digest in the header. Reading
+        // a file called "sealed" proves nothing on its own: without the digest,
+        // a descriptor edited between sealing and the run is undetectable, and
+        // the comparator cannot tell WHICH descriptor the producer validated
+        // against. The container now says so itself.
+        ::kdm6::g33::Sha256 dsha;
+        dsha.update(reinterpret_cast<const uint8_t*>(blob.data()), blob.size());
+        desc_sha_ = dsha.hexdigest();
+        for (size_t i = 0, j; i < blob.size(); i = j + 1) {
+            j = blob.find('\n', i);
+            if (j == std::string::npos) j = blob.size();
+            if (j > i) want_.push_back(blob.substr(i, j - i));
+        }
+        if (want_.empty())
+            throw std::runtime_error("g33: empty descriptor for container " + cid_
+                                     + " — an empty expectation accepts an empty dump");
         std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
             + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
             + "\",\"case_id\":\"" + jesc(cas) + "\",\"pair_id\":\"" + jesc(pai)
@@ -111,6 +142,7 @@ public:
             + ",\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + jesc(g33_env("KDM6_G33_RUN_UUID"))
             + "\",\"process_id\":" + std::to_string(long(::getpid()))
             + ",\"owner_thread_id\":\"" + jesc(tid.str())
+            + "\",\"descriptor_sha256\":\"" + desc_sha_
             + "\",\"container_id\":\"" + jesc(cid_)
             + "\",\"global_op_seq_start\":" + std::to_string(first)
             + ",\"global_op_seq_end\":" + std::to_string(last)
@@ -121,22 +153,6 @@ public:
         // the one guard that makes a crashed prior run un-ignorable into a silent
         // disable: every G33_REC became a no-op, no container was written, and the
         // run still exited 0 with nothing for the fail-closed reader to reject.
-        // §7 runtime expected-descriptor: the record stream this container may
-        // emit was sealed BEFORE the run. Static analysis of the C++ expression
-        // could not establish a tensor's runtime shape or dtype — nine rounds of
-        // it were bypassed — so the check moved here, where the tensor is in hand.
-        const char* sdir = std::getenv("KDM6_G33_SCHEMA_DIR");
-        if (!sdir || !*sdir)
-            throw std::runtime_error("g33: KDM6_G33_SCHEMA_DIR is required "
-                                     "(sealed expected-record stream, protocol 7)");
-        std::ifstream df(std::string(sdir) + "/" + cid_ + ".desc");
-        if (!df)
-            throw std::runtime_error("g33: no sealed descriptor for container " + cid_);
-        for (std::string line; std::getline(df, line); )
-            if (!line.empty()) want_.push_back(line);
-        if (want_.empty())
-            throw std::runtime_error("g33: empty descriptor for container " + cid_
-                                     + " — an empty expectation accepts an empty dump");
         w_.reset(new ::kdm6::g33::Writer(path, hdr));
     }
     bool on() const { return w_ != nullptr; }
@@ -262,6 +278,7 @@ private:
     std::string chain_;                 // OWNED: a const char* member could dangle
     std::string cid_;                   // container_id, echoed into the header
     std::vector<std::string> want_;     // sealed expected stream, consumed in order
+    std::string desc_sha_;              // digest of the descriptor actually read
     int n_; int B_ = 0, K_ = 0, seq_ = 0;
 };
 

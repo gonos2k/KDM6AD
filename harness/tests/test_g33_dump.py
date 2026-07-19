@@ -33,7 +33,7 @@ def _header(**over):
          "column_index_map": [[i, 0, i, i] for i in range(SCHED["B"])],
          "canonical_k_order": "top-first",
          "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
-         "container_id": "L1_main_n1",
+         "container_id": "L1_main_n1", "descriptor_sha256": "a" * 64,
          "global_op_seq_start": 0, "global_op_seq_end": 1_000_000,
          "record_count_expected": 0}
     h.update(over)
@@ -975,3 +975,35 @@ def test_mstepmax_is_derived_from_the_dumped_bits():
     nonintegral = gd.pack_payload_bits("f64", [0x4000000000000001])
     with pytest.raises(gd.G33Corruption, match="non-integral"):
         gd.derive_mstepmax("f64", nonintegral)
+
+
+def test_container_records_which_descriptor_it_was_validated_against(tmp_path):
+    # Reading a file called "sealed" proves nothing on its own. Without the
+    # digest in the header, a descriptor edited between sealing and the run is
+    # undetectable and the comparator cannot tell WHICH descriptor the producer
+    # validated against — the "sealed before the run" property is decorative.
+    for bad in ("", "zz" * 32, "a" * 63, "A" * 64, 12345):
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / f"d{abs(hash(str(bad)))}.g33",
+                         _header(descriptor_sha256=bad))
+    gd.G33Writer(tmp_path / "ok.g33", _header(descriptor_sha256="0" * 64))
+
+
+def test_schema_dir_is_part_of_the_all_or_nothing_env_set():
+    # KDM6_G33_SCHEMA_DIR was checked separately from the all-or-nothing block,
+    # so a run configured with ONLY that variable counted as "nothing set" and
+    # went inert instead of reporting a partial configuration.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
+    assert block, "required-env table not found"
+    required = set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
+    # every env the constructor reads must be in the table
+    read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
+    assert read <= required, f"read but not required: {sorted(read - required)}"
+
+
+def test_descriptor_load_precedes_header_construction():
+    # TRIPWIRE: desc_sha_ is embedded in the header string, so computing it after
+    # the header is built silently seals an EMPTY digest.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    assert src.index("desc_sha_ = dsha.hexdigest();") < src.index("std::string hdr =")

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
         "\"algorithm\":\"conservative\",\"B\":3,\"K\":4,\"column_layout_id\":\"lc05-3col\","
         "\"column_index_map\":[[0,0,0,0],[1,0,1,1],[2,0,2,2]],\"canonical_k_order\":\"top-first\","
         "\"run_uuid\":\"uuid-c\",\"process_id\":1,\"owner_thread_id\":\"1\","
-        "\"container_id\":\"L1_main_n1\",\"global_op_seq_start\":0,"
+        "\"descriptor_sha256\":\"" + std::string(64,'a') + "\",\"container_id\":\"L1_main_n1\",\"global_op_seq_start\":0,"
         "\"global_op_seq_end\":99,\"record_count_expected\":3}";
     Writer w(out, header);
 
