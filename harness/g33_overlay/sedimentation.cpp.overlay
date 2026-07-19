@@ -136,6 +136,22 @@ public:
         // ACTUAL shape, not a flattened numel: the expectation manifest keys on
         // (B)/(B,K), so a flattened [n] would never match and completeness
         // checking would be silently vacuous.
+        // RUNTIME shape guard. Every record in this protocol is either a
+        // whole-K field [B,K] or a per-column field [B]; nothing else has a
+        // meaning the manifest can express. A static source check cannot certify
+        // this — two rounds of it passed .select(-1,k), then .sum(-1)/.reshape/
+        // torch::stack — so the producer refuses the shape itself, where the
+        // actual tensor is in hand and no parsing is involved.
+        if (!((c.dim() == 1 && c.size(0) == B_) ||
+              (c.dim() == 2 && c.size(0) == B_ && c.size(1) == K_))) {
+            std::string got = "[";
+            for (int64_t i = 0; i < c.dim(); ++i)
+                got += (i ? "," : "") + std::to_string(c.size(i));
+            throw std::runtime_error(
+                std::string("g33: field ") + field + " has shape " + got + "]"
+                + ", expected [" + std::to_string(B_) + "] or ["
+                + std::to_string(B_) + "," + std::to_string(K_) + "]");
+        }
         std::string shape = "[";
         for (int64_t i = 0; i < c.dim(); ++i)
             shape += (i ? "," : "") + std::to_string(c.size(i));

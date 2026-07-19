@@ -653,28 +653,73 @@ def test_instrumented_scope_must_be_declared_not_defaulted():
 # slices spelled through the *_col lambdas and passed `in.dend.select(-1, k)` —
 # a real [B] slice — as whole-K. An unknown root fails loudly instead of being
 # guessed, so a future field cannot quietly opt out of the shape check.
-_WHOLE_K_ROOTS = {"in.state.qr", "in.state.nr", "in.work1_qr", "in.workn_qr",
-                  "in.dend", "dend_safe", "in.delz", "delz_safe"}
-_PER_COLUMN_ROOTS = {"mstep_col_safe", "gate_col"}
-# any rank-reducing / slicing form, however spelled
-_SLICING = (".select(", ".narrow(", ".squeeze(", ".slice(", ".index_select(",
-            "_col(", "[k]", "[0]")
+_WHOLE_K_ROOTS = {"in.state.qr": "f32", "in.state.nr": "f32",
+                  "in.work1_qr": "f64", "in.workn_qr": "f64",
+                  "in.dend": "f32", "dend_safe": "f32",
+                  "in.delz": "f32", "delz_safe": "f32"}
+_PER_COLUMN_ROOTS = {"mstep_col_safe": "f64", "gate_col": "f32"}   # cpp native widths
+_TORCH_DTYPE = {"kFloat": "f32", "kFloat32": "f32", "kFloat64": "f64",
+                "kDouble": "f64", "kInt32": "i32", "kInt": "i32", "kUInt8": "u8"}
+# Methods that provably preserve rank. CLOSED WORLD: anything not named here is
+# treated as rank-unknown and refused.
+#
+# Two rounds of this check enumerated the rank-CHANGING forms instead —
+# .select/.narrow/.squeeze/_col(/[k] — and each round missed the next spelling:
+# .sum(-1), .reshape, .flatten, .transpose and torch::stack all passed as
+# whole-K. A deny-list of ways to change a tensor's rank cannot be completed;
+# the set of ways to PRESERVE it is small and closable.
+_RANK_PRESERVING = {"to", "round", "abs", "logical_or", "logical_and",
+                    "logical_not", "clone", "detach", "contiguous"}
 
 
 def _emits_per_column(field: str, expr: str) -> bool:
-    roots = {r for r in _WHOLE_K_ROOTS | _PER_COLUMN_ROOTS if r in expr}
+    roots = {r for r in set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS) if r in expr}
     if not roots:
         raise AssertionError(
             f"{field}: no known tensor root in {expr.strip()!r} — add it to "
             f"_WHOLE_K_ROOTS or _PER_COLUMN_ROOTS rather than letting the shape "
             f"check silently pass")
-    if any(tok in expr for tok in _SLICING):
-        return True                      # sliced: no longer whole-K, however spelled
-    if roots <= _PER_COLUMN_ROOTS:
+    # Bracket indexing carries no method call, so a call-based rule alone reads
+    # `in.dend[k]` — a real [B] slice — as whole-K.
+    if re.search(r"\]\s*\[|\w\s*\[", expr):
         return True
-    if roots <= _WHOLE_K_ROOTS:
+    calls = set(re.findall(r"[.:]\s*([A-Za-z_]\w*)\s*\(", expr))
+    unknown = calls - _RANK_PRESERVING
+    if unknown:
+        raise AssertionError(
+            f"{field}: {sorted(unknown)} is not known to preserve rank, so the "
+            f"emitted shape cannot be certified from the source. Add it to "
+            f"_RANK_PRESERVING only if it provably keeps the tensor's rank.")
+    if roots <= set(_PER_COLUMN_ROOTS):
+        return True
+    if roots <= set(_WHOLE_K_ROOTS):
         return False
     raise AssertionError(f"{field}: mixes whole-K and per-column roots: {sorted(roots)}")
+
+
+def _emits_dtype(field: str, expr: str) -> str:
+    """The dtype the overlay actually emits, from the same closed world.
+
+    Nothing checked this. `.to(torch::kFloat64)` on an f32 root kept the shape
+    correct and relabelled the value's precision — the "precision-PROVENANCE
+    lie" the overlay's own rec() comment warns about, in the one place the whole
+    gate exists to detect.
+    """
+    casts = re.findall(r"\.\s*to\s*\(\s*torch::(k\w+)\s*\)", expr)
+    if casts:
+        last = casts[-1]
+        if last not in _TORCH_DTYPE:
+            raise AssertionError(f"{field}: unmapped torch dtype {last}")
+        return _TORCH_DTYPE[last]
+    if re.search(r"==|!=|<=|>=|logical_", expr):
+        raise AssertionError(
+            f"{field}: comparison/logical result is bool, which is not a manifest "
+            f"dtype — emit an explicit .to(torch::kUInt8)")
+    dts = {(_WHOLE_K_ROOTS | _PER_COLUMN_ROOTS)[r]
+           for r in set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS) if r in expr}
+    if len(dts) != 1:
+        raise AssertionError(f"{field}: cannot certify dtype from roots {sorted(dts)}")
+    return dts.pop()
 
 
 def test_overlay_substep_pre_emission_matches_the_manifest():
@@ -708,3 +753,6 @@ def test_overlay_substep_pre_emission_matches_the_manifest():
         assert per_column == (r["shape"] == [SCHED["B"]]), (
             f"{field}: overlay emits {'per-column' if per_column else 'whole-K'} "
             f"but the manifest expects shape {r['shape']}")
+        assert _emits_dtype(field, expr) == r["dtype"], (
+            f"{field}: overlay emits {_emits_dtype(field, expr)} but the manifest "
+            f"declares {r['dtype']} — a dtype relabel is a precision-provenance lie")
