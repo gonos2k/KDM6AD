@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     std::string out = argc > 1 ? argv[1] : "/tmp/cpp_c.g33";
     std::string header =
         "{\"producer_commit\":\"cppcommit\",\"binary_sha256\":\"" + std::string(64,'0') +
+        "\",\"resolved_binary_path\":\"/tmp/g33w\",\"resolved_binary_sha256\":\"" + std::string(64,'0') +
         "\",\"case_id\":\"closure3-C3.3\",\"pair_id\":\"conservative\",\"backend\":\"cpp\","
         "\"algorithm\":\"conservative\",\"B\":3,\"K\":4,\"column_layout_id\":\"lc05-3col\","
         "\"column_index_map\":[[0,0,0,0],[1,0,1,1],[2,0,2,2]],\"canonical_k_order\":\"top-first\","

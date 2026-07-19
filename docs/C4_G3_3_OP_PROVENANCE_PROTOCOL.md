@@ -155,6 +155,17 @@ so `qr seed → rain_increment` is shown as an actual op path, not mere cell-set
   The last pair is why the descriptor check is not a self-attestation: a producer that
   hashes the file it just read and reports the result agrees with itself no matter what
   that file contains.
+
+  The binary digest is bound the same way (P0-5): `dladdr` on a symbol with internal
+  linkage in the instrumented TU asks the dynamic linker which artifact it actually
+  mapped that code from — a measurement, where the sealed digest is a claim about a file
+  on disk. The overlay hashes the resolved artifact, refuses on mismatch, and records
+  `resolved_binary_path`/`resolved_binary_sha256` in every header; the reader
+  independently requires the resolved digest to equal the sealed one, so a writer that
+  never resolved anything cannot fabricate agreement. Scope stated honestly: the file at
+  the resolved path is hashed at first dump use, so a swap after load is outside this
+  check — the A/B/C runs (§10) execute freshly built artifacts where that window is not
+  live.
 - **C++ via overlay too (P0-8)** — instrument `sedimentation*.cpp` on a **temporary diagnostic source
   overlay**, not the canonical tree, so the public production source is byte-unchanged and A vs B/C
   separate cleanly (mirrors the Fortran overlay, §6).

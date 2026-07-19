@@ -349,6 +349,7 @@ def _validate_header(header: dict) -> None:
                  "column_index_map": list, "canonical_k_order": str,
                  "run_uuid": str, "process_id": int, "owner_thread_id": str,
                  "container_id": str, "descriptor_sha256": str,
+                 "resolved_binary_path": str, "resolved_binary_sha256": str,
                  "global_op_seq_start": int, "global_op_seq_end": int}
     for _k, _t in _required.items():
         if _k not in header:
@@ -364,6 +365,17 @@ def _validate_header(header: dict) -> None:
         raise G33Corruption(f"unknown algorithm {header['algorithm']!r}")
     if not re.fullmatch(r"[0-9a-f]{64}", header["descriptor_sha256"]):
         raise G33Corruption("descriptor_sha256 is not a sha256 hex digest")
+    if not re.fullmatch(r"[0-9a-f]{64}", header["resolved_binary_sha256"]):
+        raise G33Corruption("resolved_binary_sha256 is not a sha256 hex digest")
+    # The producer refuses this mismatch at run time; requiring it here as well
+    # closes the other producers — a hand-built container, or a writer that
+    # never resolved anything and echoed the sealed value it was given.
+    if header["resolved_binary_sha256"] != header["binary_sha256"]:
+        raise G33Corruption(
+            "resolved_binary_sha256 does not match the sealed binary_sha256 — "
+            "the container was produced by a binary the evidence does not describe")
+    if not header["resolved_binary_path"]:
+        raise G33Corruption("empty resolved_binary_path")
     if not _SAFE_ID.match(header["container_id"]):
         raise G33Corruption(f"container_id {header['container_id']!r} is not a safe id")
     if not (1 <= header["B"] <= MAX_B) or not (1 <= header["K"] <= MAX_K):

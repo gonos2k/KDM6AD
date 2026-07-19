@@ -27,6 +27,8 @@ SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp"
 
 def _header(**over):
     h = {"producer_commit": "deadbeef", "binary_sha256": "0" * 64,
+         "resolved_binary_path": "/fixtures/libkdm6ad.dylib",
+         "resolved_binary_sha256": "0" * 64,
          "case_id": SCHED["case_id"], "pair_id": SCHED["pair_id"],
          "backend": SCHED["backend"], "algorithm": SCHED["algorithm"],
          "B": SCHED["B"], "K": SCHED["K"], "column_layout_id": "lc05-3col",
@@ -1010,24 +1012,30 @@ def test_descriptor_load_precedes_header_construction():
 
 
 # ── the sealed digest must come from an INDEPENDENT channel ───────────────────
-def _build_seal_probe(tmp_path):
-    """Compile the probe that mirrors the overlay's sealed-digest comparison.
+def _compile_probe(tmp_path, source_name):
+    """Compile a C++ probe against the overlay's writer header.
 
-    The overlay itself needs libtorch, so it cannot be built here; this exercises
-    the same bundled Sha256 and the same lookup against the harness-supplied
-    reference. Skipped when no compiler is available rather than passing.
+    The overlay itself needs libtorch, so it cannot be built here; probes
+    exercise the same bundled code paths (Sha256, dladdr resolution, csv lookup)
+    in a standalone binary. Skipped when no compiler is available rather than
+    passing.
     """
     import shutil, subprocess
     cxx = shutil.which("clang++") or shutil.which("g++")
     if not cxx:
         pytest.skip("no C++ compiler")
-    exe = tmp_path / "sealt"
-    r = subprocess.run([cxx, "-std=c++17", "-DKDM6_G33_OP_DUMP",
-                        f"-I{ROOT / 'g33_overlay'}",
-                        str(ROOT / "tests" / "seal_digest_probe.cpp"), "-o", str(exe)],
-                       capture_output=True, text=True)
+    exe = tmp_path / Path(source_name).stem
+    cmd = [cxx, "-std=c++17", "-DKDM6_G33_OP_DUMP", f"-I{ROOT / 'g33_overlay'}",
+           str(ROOT / "tests" / source_name), "-o", str(exe)]
+    if sys.platform.startswith("linux"):
+        cmd.append("-ldl")
+    r = subprocess.run(cmd, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     return exe
+
+
+def _build_seal_probe(tmp_path):
+    return _compile_probe(tmp_path, "seal_digest_probe.cpp")
 
 
 def test_sealed_digest_rejects_an_edited_descriptor(tmp_path):
@@ -1233,3 +1241,41 @@ def test_stale_guard_fires_for_each_build_input(edited, tmp_path):
     (repo / edited).write_text("changed after the build\n")
     with pytest.raises(RuntimeError, match="older than"):
         g33_run_env._check_binary_not_stale(binary, repo)
+
+
+# ── the evidence must be bound to the binary the process actually loaded ─────
+def test_reader_requires_the_resolved_binary_to_match_the_sealed_one(tmp_path):
+    # binary_sha256 is the digest of the file the harness INTENDED the run to
+    # load; resolved_binary_sha256 is what the producer measured via dladdr. A
+    # container where they differ was produced by a binary the evidence does not
+    # describe — and a writer that never resolved anything cannot fabricate
+    # agreement without echoing the sealed value, which the probe test below
+    # shows the real resolution path does not do.
+    gd.G33Writer(tmp_path / "ok.g33", _header())            # equal: accepted
+    with pytest.raises(gd.G33Corruption, match="does not describe"):
+        gd.G33Writer(tmp_path / "m.g33", _header(resolved_binary_sha256="f" * 64))
+    for bad in ("", "zz" * 32, "A" * 64, 123):
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / f"b{abs(hash(str(bad)))}.g33",
+                         _header(resolved_binary_sha256=bad))
+    with pytest.raises(gd.G33Corruption, match="resolved_binary_path"):
+        gd.G33Writer(tmp_path / "p.g33", _header(resolved_binary_path=""))
+
+
+def test_dladdr_resolves_the_artifact_actually_running(tmp_path):
+    # Measured, not assumed: the probe asks the dynamic linker what binary it is
+    # running from. The resolved path must be the probe executable ITSELF, and
+    # the C++ digest must equal Python's digest of that same file — otherwise
+    # "resolved" would just be another self-reported string.
+    import hashlib, os, subprocess
+    exe = _compile_probe(tmp_path, "binary_binding_probe.cpp")
+    r = subprocess.run([str(exe)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    path, sha = r.stdout.strip().splitlines()
+    assert os.path.realpath(path) == os.path.realpath(str(exe))
+    assert sha == hashlib.sha256(exe.read_bytes()).hexdigest()
+    # the overlay's refusal path, driven for real: sealed == loaded accepts,
+    # sealed != loaded rejects
+    assert subprocess.run([str(exe), sha], capture_output=True).returncode == 0
+    bad = subprocess.run([str(exe), "f" * 64], capture_output=True, text=True)
+    assert bad.returncode == 1 and "REJECTED" in bad.stderr

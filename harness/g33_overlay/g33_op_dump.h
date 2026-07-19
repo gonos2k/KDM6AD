@@ -28,6 +28,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <unistd.h>   // link/unlink — atomic no-clobber publish
+#include <dlfcn.h>    // dladdr — which artifact is this code actually running from
 
 namespace kdm6 { namespace g33 {
 
@@ -135,6 +136,34 @@ private:
     }
     uint32_t h_[8]; uint8_t buf_[64]; size_t buflen_; uint64_t len_;
 };
+
+// ── loaded-binary self-resolution (P0-5) ─────────────────────────────────────
+struct ResolvedBinary { std::string path, sha256; };
+
+// Which artifact did the dynamic linker actually map `sym` from, and what are
+// its bytes on disk? KDM6_G33_BINARY_SHA256 is the digest of the file the
+// harness INTENDS the run to load — a claim. dladdr on a symbol inside this
+// image is a measurement: until the two are compared, a stale dylib on a search
+// path runs with fresh evidence stamped on it and nothing objects. Scope
+// honestly: the file at the resolved path is hashed at call time, so a file
+// swapped after load could still diverge from the mapped image — far narrower
+// than never resolving, and the A/B/C runs (§10) use freshly built artifacts
+// where that window is not live.
+inline ResolvedBinary resolve_containing_binary(const void* sym) {
+    Dl_info info{};
+    if (!dladdr(sym, &info) || !info.dli_fname || !*info.dli_fname)
+        throw std::runtime_error("g33: dladdr cannot resolve the containing binary");
+    std::ifstream f(info.dli_fname, std::ios::binary);
+    if (!f)
+        throw std::runtime_error(std::string("g33: cannot read resolved binary ")
+                                 + info.dli_fname);
+    Sha256 h;
+    std::vector<char> buf(1 << 16);
+    while (f.read(buf.data(), std::streamsize(buf.size())))
+        h.update(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+    h.update(reinterpret_cast<const uint8_t*>(buf.data()), size_t(f.gcount()));
+    return {info.dli_fname, h.hexdigest()};
+}
 
 // ── native-width big-endian payload packing (matches g33_dump.pack_payload) ──
 inline void be_f32(std::vector<uint8_t>& out, float v) {

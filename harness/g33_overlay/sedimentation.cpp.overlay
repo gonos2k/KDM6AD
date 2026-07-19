@@ -41,6 +41,22 @@ inline std::string jesc(const std::string& in) {
     return o;
 }
 
+// Anchor for dladdr with INTERNAL linkage: guaranteed to be compiled into this
+// translation unit, hence into the artifact whose identity the evidence must
+// record. An inline from the shared header could legitimately resolve to some
+// other image's copy of itself.
+static void g33_self_anchor() {}
+
+// Resolved and hashed once, at first dump use — as close to load time as we can
+// get without an initializer. Re-hashing a multi-megabyte dylib in every substep
+// would put the cost where the physics is, for the same answer.
+static const ::kdm6::g33::ResolvedBinary& g33_loaded_binary() {
+    static const ::kdm6::g33::ResolvedBinary rb =
+        ::kdm6::g33::resolve_containing_binary(
+            reinterpret_cast<const void*>(&g33_self_anchor));
+    return rb;
+}
+
 class Substep {
 public:
     Substep(const char* chain, int n, const torch::Tensor& probe)
@@ -101,6 +117,20 @@ public:
             throw std::runtime_error(
                 "g33: KDM6_G33_OP_SEQ_MAP has no entry for container " + cid_
                 + " (declared container set and actual execution disagree)");
+        // §7d/P0-5: bind the evidence to the binary the process ACTUALLY loaded.
+        // BINARY_SHA256 says which file the harness hashed on disk; dladdr says
+        // which artifact the dynamic linker mapped this code from. Refuse when
+        // they differ — the run is executing a binary the evidence does not
+        // describe, and every downstream check would inherit that silently.
+        const auto& g33_self = g33_loaded_binary();
+        {
+            const std::string sealed_bin = g33_env("KDM6_G33_BINARY_SHA256");
+            if (g33_self.sha256 != sealed_bin)
+                throw std::runtime_error(
+                    "g33: the loaded binary is not the sealed one\n  sealed:   "
+                    + sealed_bin + "\n  resolved: " + g33_self.sha256 + " ("
+                    + g33_self.path + ")");
+        }
         std::ostringstream tid; tid << std::this_thread::get_id();
         // §7 runtime expected-descriptor: the record stream this container may
         // emit was sealed BEFORE the run. Static analysis of the C++ expression
@@ -143,6 +173,8 @@ public:
                                      + " — an empty expectation accepts an empty dump");
         std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
             + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
+            + "\",\"resolved_binary_path\":\"" + jesc(g33_self.path)
+            + "\",\"resolved_binary_sha256\":\"" + g33_self.sha256
             + "\",\"case_id\":\"" + jesc(cas) + "\",\"pair_id\":\"" + jesc(pai)
             + "\",\"backend\":\"cpp\",\"algorithm\":\"" + jesc(ctx->algorithm)
             + "\",\"B\":" + std::to_string(B_) + ",\"K\":" + std::to_string(K_)
