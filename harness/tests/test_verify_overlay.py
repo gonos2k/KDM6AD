@@ -159,8 +159,6 @@ def test_raw_string_literals_do_not_hide_mutations(cpp):
     "        /* qr_cols[k] = x */ auto t = 1;",              # block comment
     '        auto s = "qr_cols[k] = bogus";',                # inside a string: not code
     '        auto s = R"(qr_cols[k] = bogus)";',             # inside a raw string
-    '        auto s = R"(abc  qr_cols[k] = bogus;',          # unterminated raw string:
-                                                            # the rest is string content
 ])
 def test_code_that_is_not_executed_is_not_flagged(cpp):
     assert v.overriding_assignments(CANON, BASE + [cpp]) == []
@@ -198,6 +196,15 @@ def test_mutation_inside_a_multiline_literal_or_comment_is_not_flagged(lines):
     # the same state tracking must not flag text that is string content or a
     # comment body — it never executes
     assert v.overriding_assignments(CANON, BASE + lines) == []
+
+
+def test_unterminated_raw_string_at_eof_is_a_hard_error():
+    # previously asserted to be "clean" on the reasoning that the remainder is
+    # string content. With state carried across lines that is no longer decidable
+    # locally: an unterminated raw string at EOF is invalid C++, and treating it
+    # as content would blank everything after it unchecked.
+    with pytest.raises(v.OverlayShape, match="unterminated"):
+        v._clean_lines(['        auto s = R"(abc  qr_cols[k] = bogus;'])
 
 
 def test_unterminated_ordinary_literal_is_a_hard_error():
