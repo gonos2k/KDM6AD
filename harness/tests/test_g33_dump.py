@@ -149,6 +149,21 @@ def test_payload_size_mismatch_writer(tmp_path):
         w.record(r, "f32", [4], gd.pack_payload("f32", [1, 2]))  # shape 4 but 2 elems
 
 
+def test_finalize_no_clobber(tmp_path):
+    # a completed container appearing concurrently (after the constructor's
+    # no-overwrite check) must NOT be destroyed by finalize().
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header())
+    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+         "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
+    p.write_bytes(b"OTHER-COMPLETED-CONTAINER")   # concurrent completed output
+    with pytest.raises(gd.G33Corruption, match="clobber"):
+        w.finalize()
+    assert p.read_bytes() == b"OTHER-COMPLETED-CONTAINER"   # preserved, not deleted
+    assert (tmp_path / "c.g33.tmp").exists()                # our .tmp kept for inspection
+
+
 def test_no_footer_without_finalize(tmp_path):
     p = tmp_path / "c.g33"
     with gd.G33Writer(p, _header()) as w:

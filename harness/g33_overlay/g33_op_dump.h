@@ -26,6 +26,7 @@
 #include <vector>
 #include <fstream>
 #include <stdexcept>
+#include <unistd.h>   // link/unlink — atomic no-clobber publish
 
 namespace kdm6 { namespace g33 {
 
@@ -164,9 +165,15 @@ public:
         f_.write("FOOT", 4);
         put_u32(uint32_t(footer.size())); f_.write(footer.data(), footer.size());
         f_.flush(); f_.close();
-        std::remove(path_.c_str());
-        if (std::rename(tmp_.c_str(), path_.c_str()) != 0)
-            throw std::runtime_error("g33: atomic rename failed for " + path_);
+        // Publish atomically WITHOUT clobbering: link() fails with EEXIST if the
+        // final path exists (e.g. a container created concurrently AFTER our
+        // constructor's no-overwrite check) — never delete another writer's
+        // completed output. std::rename would silently replace it; std::remove
+        // would destroy it outright. On success unlink our .tmp hardlink.
+        if (link(tmp_.c_str(), path_.c_str()) != 0)
+            throw std::runtime_error("g33: refuse to clobber existing " + path_
+                                     + " (or link failed) — .tmp kept for inspection");
+        unlink(tmp_.c_str());
         finalized_ = true;
     }
     ~Writer() { if (!finalized_ && f_.is_open()) f_.close(); }  // no footer on abort

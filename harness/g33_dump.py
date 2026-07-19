@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import struct
 from pathlib import Path
 
@@ -150,7 +151,16 @@ class G33Writer:
         self._f.write(fj)
         self._f.flush()
         self._f.close()
-        self.tmp.replace(self.path)  # atomic
+        # Publish atomically WITHOUT clobbering (matches the C++ writer): os.link
+        # fails with FileExistsError if the final path was created concurrently
+        # after our constructor's no-overwrite check — never destroy another
+        # writer's completed container (Path.replace/os.rename would clobber it).
+        try:
+            os.link(self.tmp, self.path)
+        except FileExistsError:
+            raise G33Corruption(
+                f"refuse to clobber concurrently-created {self.path} (.tmp kept)") from None
+        os.unlink(self.tmp)
         self._finalized = True
 
     def __enter__(self):
