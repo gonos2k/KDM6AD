@@ -70,6 +70,35 @@ def test_code_in_else_of_g33_frame_rejected():
         v.macro_off(src)
 
 
+_SUB = "int y = 999;"
+
+
+@pytest.mark.parametrize("src,why", [
+    (f"#ifndef KDM6_G33_OP_DUMP\nint y=2;\n#else\n{_SUB}\n#endif\n", "plain"),
+    (f"#  ifndef KDM6_G33_OP_DUMP\nint y=2;\n#else\n{_SUB}\n#endif\n", "spaces after #"),
+    (f"#\tifndef KDM6_G33_OP_DUMP\nint y=2;\n#else\n{_SUB}\n#endif\n", "tab after #"),
+    (f"#ifndef  KDM6_G33_OP_DUMP  // note\nint y=2;\n#else\n{_SUB}\n#endif\n", "trailing comment"),
+    (f"#if defined(KDM6_G33_OP_DUMP)\n{_SUB}\n#else\nint y=2;\n#endif\n", "#if defined()"),
+    (f"#if !defined(KDM6_G33_OP_DUMP)\nint y=2;\n#else\n{_SUB}\n#endif\n", "#if !defined()"),
+    (f"#  ifdef KDM6_G33_OP_DUMP\n{_SUB}\n#  else\nint y=2;\n#  endif\n", "spaced ifdef/else code"),
+    (f"#ifdef KDM6_G33_OP_DUMP\n{_SUB}\n#else // macro off\nint y=2;\n#endif\n", "#else + comment"),
+])
+def test_directive_parsing_cannot_be_evaded_by_whitespace_or_comments(src, why):
+    # The C preprocessor allows arbitrary whitespace between `#` and the directive
+    # and a trailing comment. Prefix matching (`startswith("#ifndef …")`,
+    # `s == "#else"`) failed OPEN: `#  ifndef KDM6_G33_OP_DUMP` slipped past the
+    # ban that closes the substitution attack, and `#else // note` was not seen as
+    # an #else at all, corrupting frame tracking.
+    with pytest.raises(v.OverlayShape):
+        v.macro_off(src)
+
+
+def test_spaced_directives_still_work_for_benign_overlays():
+    src = ("#  ifdef KDM6_G33_OP_DUMP\n#  define X real\n#  else\n"
+           "#  define X noop\n#  endif\nint a = 1;\n")
+    assert "int a = 1;" in v.macro_off(src)
+
+
 def test_directive_only_else_is_allowed():
     src = ("#ifdef KDM6_G33_OP_DUMP\n#define X(a) real(a)\n#else\n"
            "#define X(a) do{}while(0)\n#endif\nint a = 1;\n")

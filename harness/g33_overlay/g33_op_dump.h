@@ -34,11 +34,14 @@ namespace kdm6 { namespace g33 {
 // function argument, so no public/internal symbol or function-pointer type
 // changes. Set/cleared by RAII at each outer sub-cycle boundary. ─────────────
 struct DumpContext {
+    // OWNED strings, not const char*: a raw pointer member both crashes on a
+    // nullptr argument (std::string construction from nullptr is UB) and can
+    // DANGLE if a caller passes a temporary's c_str().
     int         outer_loop_1based = 0;
-    const char* case_id   = "";
-    const char* pair_id   = "";
-    const char* algorithm = "";   // "legacy" | "conservative"
-    const char* backend   = "cpp";
+    std::string case_id;
+    std::string pair_id;
+    std::string algorithm;        // "legacy" | "conservative"
+    std::string backend = "cpp";
 };
 inline thread_local DumpContext* g_context = nullptr;
 
@@ -47,8 +50,10 @@ struct ScopedDumpContext {
     DumpContext* prev = nullptr;
     ScopedDumpContext(int loop, const char* case_id, const char* pair_id,
                       const char* algorithm) {
-        ctx.outer_loop_1based = loop; ctx.case_id = case_id;
-        ctx.pair_id = pair_id; ctx.algorithm = algorithm;
+        ctx.outer_loop_1based = loop;
+        ctx.case_id   = case_id   ? case_id   : "";   // nullptr -> empty, never UB
+        ctx.pair_id   = pair_id   ? pair_id   : "";
+        ctx.algorithm = algorithm ? algorithm : "";
         prev = g_context; g_context = &ctx;
     }
     ~ScopedDumpContext() { g_context = prev; }

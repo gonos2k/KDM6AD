@@ -52,6 +52,25 @@ class OverlayShape(Exception):
     """The overlay uses a construct that makes 'pure addition' unprovable."""
 
 
+
+_DIRECTIVE = re.compile(r"^#\s*(\w+)\b(.*)$")
+
+
+def _directive(line: str):
+    """(name, rest) if `line` is a preprocessor directive, else None.
+
+    The C preprocessor allows ARBITRARY whitespace between `#` and the directive
+    name, and a trailing comment. Matching with `startswith("#ifndef …")` and
+    `s == "#else"` therefore fails open: `#  ifndef KDM6_G33_OP_DUMP` slipped past
+    the ban that closes the substitution attack, and `#else // note` was not seen
+    as an #else at all, corrupting frame tracking.
+    """
+    t = re.sub(r"/\*.*?\*/", " ", line)      # same-line block comment
+    t = re.sub(r"//.*$", "", t).strip()
+    m = _DIRECTIVE.match(t)
+    return (m.group(1), m.group(2).strip()) if m else None
+
+
 def _project(text: str, macro_on: bool) -> list[str]:
     """Project the overlay for KDM6_G33_OP_DUMP defined / undefined.
 
@@ -64,23 +83,35 @@ def _project(text: str, macro_on: bool) -> list[str]:
     out, stack = [], []          # stack: (emitting, frame_is_g33, in_else)
     for i, ln in enumerate(text.splitlines(), 1):
         s = ln.strip()
-        if s.startswith("#ifndef KDM6_G33_OP_DUMP"):
-            raise OverlayShape(
-                f"line {i}: '#ifndef KDM6_G33_OP_DUMP' is forbidden — with an "
-                f"#else it substitutes code under the macro while leaving the "
-                f"macro-off text identical, which this check cannot distinguish "
-                f"from a pure addition")
-        if s.startswith("#ifdef KDM6_G33_OP_DUMP"):
-            stack.append([macro_on, True, False]); continue
-        if s.startswith("#if"):                      # unrelated conditional
-            stack.append([True, False, False]); continue
-        if s == "#else" and stack:
-            fr = stack[-1]
-            fr[0] = not fr[0] if fr[1] else fr[0]
-            fr[2] = True
-            continue
-        if s.startswith("#endif") and stack:
-            stack.pop(); continue
+        d = _directive(ln)
+        if d is not None:
+            name, rest = d
+            g33 = re.match(r"^KDM6_G33_OP_DUMP\b", rest) is not None
+            if name == "ifndef" and g33:
+                raise OverlayShape(
+                    f"line {i}: '#ifndef KDM6_G33_OP_DUMP' is forbidden — with an "
+                    f"#else it substitutes code under the macro while leaving the "
+                    f"macro-off text identical, which this check cannot distinguish "
+                    f"from a pure addition")
+            if name == "if" and "KDM6_G33_OP_DUMP" in rest:
+                raise OverlayShape(
+                    f"line {i}: '#if' mentioning KDM6_G33_OP_DUMP is ambiguous "
+                    f"(defined()/!defined() invert the branch); use a plain #ifdef")
+            if name == "ifdef" and g33:
+                stack.append([macro_on, True, False]); continue
+            if name in ("if", "ifdef", "ifndef"):        # unrelated conditional
+                stack.append([True, False, False]); continue
+            if name == "else" and stack:
+                fr = stack[-1]
+                fr[0] = not fr[0] if fr[1] else fr[0]
+                fr[2] = True
+                continue
+            if name == "elif" and stack:
+                stack[-1][2] = True                      # treated like an else arm
+                continue
+            if name == "endif" and stack:
+                stack.pop(); continue
+            # any other directive (#define/#include/#pragma) is an ordinary line
         if stack and stack[-1][1] and stack[-1][2] and not s.startswith("#") and s:
             raise OverlayShape(
                 f"line {i}: non-directive code in the #else of a "

@@ -83,10 +83,13 @@ def pack_payload(dtype: str, values) -> bytes:
     f32/f64 keep their exact bit pattern; i32 two's-complement; u8 a byte."""
     if dtype not in _DTYPES:
         raise ValueError(f"unknown dtype {dtype!r}")
+    # `>f` / `>d` already emit the big-endian IEEE-754 bit pattern, so the old
+    # pack-LE -> unpack-int -> pack-BE roundtrip was redundant. Verified
+    # byte-identical across zero, -0.0, subnormals, min/max normal, inf and nan.
     if dtype == "f32":
-        return b"".join(struct.pack(">I", struct.unpack("<I", struct.pack("<f", float(v)))[0]) for v in values)
+        return b"".join(struct.pack(">f", float(v)) for v in values)
     if dtype == "f64":
-        return b"".join(struct.pack(">Q", struct.unpack("<Q", struct.pack("<d", float(v)))[0]) for v in values)
+        return b"".join(struct.pack(">d", float(v)) for v in values)
     if dtype == "i32":
         return b"".join(struct.pack(">i", int(v)) for v in values)
     return bytes(int(v) & 0xFF for v in values)  # u8

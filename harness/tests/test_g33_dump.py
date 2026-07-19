@@ -460,3 +460,17 @@ def test_canonical_k_is_part_of_the_record_identity():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_pack_payload_is_byte_identical_to_the_bitwise_roundtrip():
+    # `>f`/`>d` replaced a pack-LE -> unpack-int -> pack-BE roundtrip. Both emit
+    # the big-endian IEEE-754 bit pattern; pin that across the awkward values.
+    import math
+    probes = [0.0, -0.0, 1.0, -3.25, 1e-30, 1e30, float("inf"), float("-inf"),
+              float("nan"), 5e-324, 1.5e-45, 3.4028235e38, math.pi,
+              -2.2250738585072014e-308]
+    for v_ in probes:
+        assert gd.pack_payload("f32", [v_]) == struct.pack(
+            ">I", struct.unpack("<I", struct.pack("<f", float(v_)))[0])
+        assert gd.pack_payload("f64", [v_]) == struct.pack(
+            ">Q", struct.unpack("<Q", struct.pack("<d", float(v_)))[0])
