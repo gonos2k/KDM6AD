@@ -103,9 +103,28 @@ def test_mutation_of_production_value_is_flagged(attack):
     assert found, f"tripwire missed: {attack.strip()}"
 
 
-def test_multiline_assignment_is_flagged():
-    assert v.overriding_assignments(CANON, BASE + ["        falk_qr_top",
-                                                   "            = bogus;"])
+@pytest.mark.parametrize("lines", [
+    ["        falk_qr_top", "            = bogus;"],                  # split plain
+    ["        fall_qr_cols[k]", "            += bogus;"],             # split COMPOUND
+    ["        fall_qr_cols[k]", "            -= bogus;"],
+    ["        qr_cols[k]", "            .copy_(bogus);"],             # split IN-PLACE
+    ["        qr_cols", "            .at(k).zero_();"],               # split + chained
+    ["        qr_cols[k]", "            +=", "            bogus;"],   # three-line split
+])
+def test_mutation_split_across_lines_is_flagged(lines):
+    # The receiver sits on one line and the operator on the next, so a per-line
+    # scan sees an empty LHS. An earlier version joined lines only when the
+    # continuation began with `=`, which missed every compound/in-place split.
+    assert v.overriding_assignments(CANON, BASE + lines), f"missed split: {lines}"
+
+
+def test_line_join_does_not_splice_unrelated_regions():
+    # the join must stop at `;` and at a non-adjacent line, or it manufactures
+    # false positives (this shape previously tripped on the parameter name `k`)
+    assert v.overriding_assignments(CANON, BASE + [
+        "    private:",
+        "        static std::string f(const char* k) { const char* v = getenv(k); return v; }",
+    ]) == []
 
 
 def test_targets_are_derived_from_canonical_not_hardcoded():

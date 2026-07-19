@@ -181,14 +181,22 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
 
     joined = list(added)
     for idx, (lineno, line) in enumerate(joined):
+        # Build the probe as a STATEMENT, not a line: keep appending FILE-ADJACENT
+        # added lines until the statement terminates at `;` (capped). A mutation
+        # split across lines otherwise hides — the continuation carries the
+        # operator while the receiver sits on the previous line:
+        #     qr_cols[k]        qr_cols[k]
+        #         += bogus;         .copy_(bogus);
+        # An earlier version joined only when the continuation began with `=`,
+        # which missed exactly these compound/in-place splits. Adjacency + the `;`
+        # stop keep unrelated regions from being spliced together.
         probe = strip_comment(line)
-        # Join the next line ONLY for the narrow multi-line-assignment case (the
-        # continuation starts with `=`). A blanket "doesn't end with ;" join
-        # spliced unrelated lines together and manufactured false positives.
-        if idx + 1 < len(joined):
-            nxt = strip_comment(joined[idx + 1][1]).strip()
-            if nxt.startswith("=") and not nxt.startswith("=="):
-                probe = probe.rstrip() + " " + nxt
+        j, prev_no = idx + 1, lineno
+        while (";" not in probe and j < len(joined) and j - idx <= 3
+               and joined[j][0] == prev_no + 1):
+            probe = probe.rstrip() + " " + strip_comment(joined[j][1]).strip()
+            prev_no = joined[j][0]
+            j += 1
         for chunk in probe.split(";"):
             # assignment (plain or compound): LHS must not name a production value
             for m in re.finditer(r"(?<![=!<>])=(?!=)", chunk):
