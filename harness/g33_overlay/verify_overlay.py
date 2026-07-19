@@ -176,8 +176,30 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
     # X[k].t().add_(…). Scanning what stands to the LEFT of the mutation catches
     # the whole family regardless of chain length.
     def strip_comment(t):
-        i = t.find("//")
-        return t if i < 0 else t[:i]
+        # Must be STRING-LITERAL AWARE. A naive t.find("//") truncates at a `//`
+        # inside a string ("http://x", std::string("//")), discarding everything
+        # after it on the line — including a mutation, which then went unseen.
+        out, i, n, quote = [], 0, len(t), None
+        while i < n:
+            c = t[i]
+            if quote:
+                out.append(c)
+                if c == "\\" and i + 1 < n:
+                    out.append(t[i + 1]); i += 2; continue
+                if c == quote:
+                    quote = None
+                i += 1; continue
+            if c in ('"', "'"):
+                quote = c; out.append(c); i += 1; continue
+            if c == "/" and i + 1 < n and t[i + 1] == "/":
+                break                                   # real line comment
+            if c == "/" and i + 1 < n and t[i + 1] == "*":
+                end = t.find("*/", i + 2)               # same-line block comment
+                if end < 0:
+                    break
+                out.append(" "); i = end + 2; continue
+            out.append(c); i += 1
+        return "".join(out)
 
     joined = list(added)
     for idx, (lineno, line) in enumerate(joined):

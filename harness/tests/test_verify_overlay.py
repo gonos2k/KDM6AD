@@ -127,6 +127,39 @@ def test_line_join_does_not_splice_unrelated_regions():
     ]) == []
 
 
+@pytest.mark.parametrize("cpp", [
+    '        auto s = std::string("//"); qr_cols[k] = bogus;',
+    '        auto u = "http://x"; qr_cols[k].copy_(b);',
+    "        char c = '/'; qr_cols[k] = bogus;",
+    '        auto s = "a\\"//b"; qr_cols[k] = bogus;',      # escaped quote, // INSIDE the string
+])
+def test_comment_stripping_is_string_literal_aware(cpp):
+    # A naive `line.find("//")` truncates at a `//` inside a STRING LITERAL and
+    # discards everything after it — so appending a URL or a "//" literal in front
+    # of a mutation hid the mutation completely.
+    assert v.overriding_assignments(CANON, BASE + [cpp]), f"literal-hidden mutation missed: {cpp}"
+
+
+@pytest.mark.parametrize("cpp", [
+    '        auto s = "a"; // qr_cols[k] = bogus;',          # genuinely commented out
+    "        /* qr_cols[k] = x */ auto t = 1;",              # block comment
+])
+def test_genuinely_commented_code_is_not_flagged(cpp):
+    assert v.overriding_assignments(CANON, BASE + [cpp]) == []
+
+
+@pytest.mark.parametrize("cpp", [
+    "        if (c) { qr_cols[k] = bogus; }",                # inside a braced block
+    "        [&]{ qr_cols[k] = bogus; }();",                 # inside a lambda
+    "        for (qr_cols[k] = bogus;;) break;",             # in a for-init
+    "        (void)0, qr_cols[k] = bogus;",                  # after a comma operator
+    "        qr_cols[idx(k)] = bogus;",                      # call-expression subscript
+    "        qr_cols[k]=bogus;",                             # no spaces
+])
+def test_mutation_in_awkward_syntactic_positions_is_flagged(cpp):
+    assert v.overriding_assignments(CANON, BASE + [cpp]), f"missed: {cpp}"
+
+
 def test_targets_are_derived_from_canonical_not_hardcoded():
     t = v._assignment_targets(CANON)
     assert {"qr_cols", "falk_qr_top", "fall_qr_cols"} <= t
