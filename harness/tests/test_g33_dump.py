@@ -1655,3 +1655,38 @@ def test_context_is_set_by_the_runtime_overlay_around_the_sub_cycle():
     assert src.index("for (int i = 0; i < loops; ++i) {") < ctx
     assert ctx < src.index('Outer g33("outer_pre"')
     assert "PhysicsVariant::ConservativeInterface" in src[ctx:ctx + 400]
+
+
+def test_legacy_op_ladder_order_matches_the_manifest():
+    # The op emission must be SPECIES-MAJOR per cell, in the manifest's exact
+    # per-cell order — the sealed descriptor enforces it record-by-record at
+    # runtime, and this pin catches a reorder before a host campaign. The first
+    # committed emission had qr/nr interleaved by op AND was missing all
+    # interior cells (174 of 193 op records) — found by machine diff, not by
+    # eye, which is why this test generates the expectation instead of listing
+    # it.
+    sched = {**SCHED, "algorithm": "legacy",
+             "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    ops = [(r["cell_role"], r["species"], r["op_id"], r["field"])
+           for r in ge.expected_records(sched) if r["stage"] == "op"]
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+
+    exp_top = [(sp, op, f) for role, sp, op, f in ops if role == "TOP"]
+    em_top = re.findall(
+        r'G33_REC\(g33, "op", "TOP", 0, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em_top == exp_top
+
+    # the interior loop body emits ONE per-k sequence; INTERIOR and BOTTOM use
+    # the same op set, so the manifest's first interior cell is the reference
+    n_int_cells = len({k for r in ge.expected_records(sched)
+                       if r["stage"] == "op" and r["cell_role"] != "TOP"
+                       for k in [r["k"]]})
+    exp_cell = [(sp, op, f) for role, sp, op, f in ops if role != "TOP"]
+    per_k = len(exp_cell) // n_int_cells
+    assert exp_cell[:per_k] * n_int_cells == exp_cell   # every cell identical
+    em_loop = re.findall(
+        r'G33_REC\(g33, "op", g33_role, g33_k, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em_loop == exp_cell[:per_k]
+
+    # BOTTOM must actually be reachable: the role is computed, not hardcoded
+    assert '(k == K - 1) ? "BOTTOM" : "INTERIOR"' in src

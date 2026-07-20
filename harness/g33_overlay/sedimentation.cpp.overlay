@@ -138,6 +138,7 @@ SubstepAdvectionOutputs substep_advection_torch(
 #ifdef KDM6_G33_OP_DUMP
     g33ovl::Substep g33("main", n, in.state.qr);
     torch::Tensor g33_q_entry, g33_n_entry;   // diagnostic-only pre-update capture
+    torch::Tensor g33_fq_entry, g33_fn_entry; // fall accumulators at cell entry
 #endif
     // Top cell
     {
@@ -146,6 +147,8 @@ SubstepAdvectionOutputs substep_advection_torch(
         if (g33.on()) {
             g33_q_entry = qr_cols[k].clone();
             g33_n_entry = nr_cols[k].clone();
+            g33_fq_entry = fall_qr_cols[k].clone();
+            g33_fn_entry = fall_nr_cols[k].clone();
             // WHOLE-K, ONCE per substep, k=-1. These were per-level (B,) slices
             // taken at k=0 inside the top-cell block: the same key was emitted K
             // times with only the k=0 column's data, so K-1 levels of the substep
@@ -196,34 +199,6 @@ SubstepAdvectionOutputs substep_advection_torch(
         auto falk_qs_top = (dend_col(k) * qs_cols[k] * work1_qs_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
         auto falk_qg_top = (dend_col(k) * qg_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
         auto falk_brs_top = (dend_col(k) * brs_cols[k] * work1_qg_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
-#ifdef KDM6_G33_OP_DUMP
-        if (g33.on()) {
-            // SHADOW ladder: the ACTIVE expressions above are untouched; these are
-            // diagnostic-only RECOMPUTES that never feed state (§5b). The final
-            // shadow f32 must equal the actual falk bits (shadow-fidelity, §5a).
-            auto s1 = dend_col(k) * g33_q_entry;              // mul_dend_q
-            auto s2 = s1 * work1_qr_col(k);                   // mul_work1
-            auto s3 = s2 / mstep_col_safe;                    // div_mstep
-            auto s4 = s3 * gate_col;                          // falk_precast (native)
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_dend_q",  s1);
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_work1",   s2);
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "div_mstep",   s3);
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_precast", s4);
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "shadow_falk_f32",
-                    s4.to(in.state.qr.scalar_type()));
-            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_f32", falk_qr_top);  // ACTUAL
-            // number family: falk_nr omits dend (distinct expression family, §3)
-            auto t1 = g33_n_entry * workn_qr_col(k);
-            auto t2 = t1 / mstep_col_safe;
-            auto t3 = t2 * gate_col;
-            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "mul_workn",   t1);
-            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "div_mstep",   t2);
-            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_precast", t3);
-            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "shadow_falk_f32",
-                    t3.to(in.state.qr.scalar_type()));
-            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_f32", falk_nr_top);  // ACTUAL
-        }
-#endif
 
         fall_qr_cols[k] = fall_qr_cols[k] + falk_qr_top;
         fall_nr_cols[k] = fall_nr_cols[k] + falk_nr_top;
@@ -240,17 +215,50 @@ SubstepAdvectionOutputs substep_advection_torch(
         qs_cols[k] = torch::clamp(qs_cols[k] - falk_qs_top * dtcld / dend_safe_col(k), 0.0);
         qg_cols[k] = torch::clamp(qg_cols[k] - falk_qg_top * dtcld / dend_safe_col(k), 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - falk_brs_top * dtcld / dend_safe_col(k), 0.0);
+
 #ifdef KDM6_G33_OP_DUMP
         if (g33.on()) {
+            // SPECIES-MAJOR emission — all qr ops, then all nr ops — matching
+            // the manifest's per-cell order exactly; the sealed descriptor
+            // enforces it record-by-record. Shadow rungs are diagnostic-only
+            // recomputes from ENTRY captures; the actual falk/updated values
+            // are the canonical tensors themselves (§5b).
+            auto s1 = dend_col(k) * g33_q_entry;              // mul_dend_q
+            auto s2 = s1 * work1_qr_col(k);                   // mul_work1
+            auto s3 = s2 / mstep_col_safe;                    // div_mstep
+            auto s4 = s3 * gate_col;                          // falk_precast
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_dend_q",  s1);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "mul_work1",   s2);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "div_mstep",   s3);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_precast", s4);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "shadow_falk_f32",
+                    s4.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALK", "falk_f32", falk_qr_top);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALLACC", "fall_before", g33_fq_entry);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALLACC", "fall_increment", falk_qr_top);
+            G33_REC(g33, "op", "TOP", 0, "qr", "QR_FALLACC", "fall_after", fall_qr_cols[k]);
             // legacy_mass_top: NO separate outflow/inflow rung — the positivity
-            // clamp IS the update (§3). Shadow pre-clamp exposes the rung where a
-            // cross-tree difference would first appear.
+            // clamp IS the update (§3). Shadow pre-clamp exposes the rung where
+            // a cross-tree difference would first appear.
             auto pre = g33_q_entry - falk_qr_top * dtcld / dend_safe_col(k);
             G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_before", g33_q_entry);
             G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_minus_out", pre);
             G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "clamp_active",
                     (pre < 0.0).to(torch::kUInt8));
             G33_REC(g33, "op", "TOP", 0, "qr", "QR_UPDATE", "q_post", qr_cols[k]);
+            // number family: falk_nr omits dend (distinct expression family, §3)
+            auto t1 = g33_n_entry * workn_qr_col(k);
+            auto t2 = t1 / mstep_col_safe;
+            auto t3 = t2 * gate_col;
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "mul_workn",   t1);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "div_mstep",   t2);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_precast", t3);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "shadow_falk_f32",
+                    t3.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALK", "falk_f32", falk_nr_top);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALLACC", "fall_before", g33_fn_entry);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALLACC", "fall_increment", falk_nr_top);
+            G33_REC(g33, "op", "TOP", 0, "nr", "NR_FALLACC", "fall_after", fall_nr_cols[k]);
             auto npre = ops::fma_acc(g33_n_entry, falk_nr_top,
                                      torch::full_like(falk_nr_top, dtcld), -1.0);
             G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_before", g33_n_entry);
@@ -260,13 +268,24 @@ SubstepAdvectionOutputs substep_advection_torch(
             G33_REC(g33, "op", "TOP", 0, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
         }
 #endif
-
         falk_qr_prev = falk_qr_top;  falk_nr_prev = falk_nr_top;
         falk_qs_prev = falk_qs_top;  falk_qg_prev = falk_qg_top;  falk_brs_prev = falk_brs_top;
     }
 
     // Interior cells
     for (int64_t k = 1; k < K; ++k) {
+#ifdef KDM6_G33_OP_DUMP
+        // ENTRY captures for this cell (pre-update); the cell-above operands
+        // (qr_cols[k-1], falk_*_prev) are not modified inside this iteration,
+        // so they are read directly at emission time.
+        torch::Tensor g33_qe, g33_ne, g33_fqb, g33_fnb;
+        if (g33.on()) {
+            g33_qe = qr_cols[k].clone();
+            g33_ne = nr_cols[k].clone();
+            g33_fqb = fall_qr_cols[k].clone();
+            g33_fnb = fall_nr_cols[k].clone();
+        }
+#endif
         auto falk_qr_k = (dend_col(k) * qr_cols[k] * work1_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
         // §34/§52: rain-number fall to f32 (Fortran F:1180 falkn REAL(4)) — see top-cell note.
         auto falk_nr_k = (nr_cols[k] * workn_qr_col(k) / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
@@ -311,6 +330,104 @@ SubstepAdvectionOutputs substep_advection_torch(
         qg_cols[k] = torch::clamp(qg_cols[k] - dqg_k + dqg_above, 0.0);
         brs_cols[k] = torch::clamp(brs_cols[k] - dbrs_k + dbrs_above, 0.0);
 
+#ifdef KDM6_G33_OP_DUMP
+        if (g33.on()) {
+            // SPECIES-MAJOR emission, BEFORE the falk_prev reassignment below —
+            // stored_falk_prev must be the cell-above value these inflow
+            // expressions actually consumed. Role is per-cell: the last level
+            // is the BOTTOM cell whose outflow feeds the surface.
+            const char* g33_role = (k == K - 1) ? "BOTTOM" : "INTERIOR";
+            const int g33_k = int(k);
+            auto s1 = dend_col(k) * g33_qe;                   // mul_dend_q
+            auto s2 = s1 * work1_qr_col(k);                   // mul_work1
+            auto s3 = s2 / mstep_col_safe;                    // div_mstep
+            auto s4 = s3 * gate_col;                          // falk_precast
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "mul_dend_q",  s1);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "mul_work1",   s2);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "div_mstep",   s3);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "falk_precast", s4);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "shadow_falk_f32",
+                    s4.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "falk_f32", falk_qr_k);
+            auto o1 = falk_qr_k * dtcld;                      // mul_dt
+            auto o2 = o1 / dend_safe_col(k);                  // outflow_pre_cap
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "mul_dt", o1);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "outflow_pre_cap", o2);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "source_reservoir", g33_qe);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "cap_active",
+                    (o2 > g33_qe).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "dq_out", dqr_k);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_before", g33_fqb);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_increment", falk_qr_k);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_after", fall_qr_cols[k]);
+            // inflow ladder mirrors the LEFT-TO-RIGHT f32 order of the actual
+            // expression (STEP-88 SEED class: mul by raw delz(k-1) FIRST).
+            auto i1 = falk_qr_prev * delz_col(k - 1);         // mul_delz_src
+            auto i2 = i1 / delz_safe_col(k);                  // div_delz_dst
+            auto i3 = i2 * dtcld;                             // mul_dt
+            auto i4 = i3 / dend_safe_col(k);                  // inflow_pre_cap
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "stored_falk_prev", falk_qr_prev);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "delz_raw_src", delz_col(k - 1));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "delz_safe_dst", delz_safe_col(k));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dend_safe_dst", dend_safe_col(k));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "mul_delz_src", i1);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "div_delz_dst", i2);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "mul_dt", i3);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_pre_cap", i4);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "source_reservoir", qr_cols[k - 1]);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_cap_active",
+                    (i4 > qr_cols[k - 1]).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_final", dqr_above);
+            auto u1 = g33_qe - dqr_k;                         // q_minus_out
+            auto u2 = u1 + dqr_above;                         // q_plus_in_preclamp
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_before", g33_qe);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_minus_out", u1);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_plus_in_preclamp", u2);
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "clamp_active",
+                    (u2 < 0.0).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_post", qr_cols[k]);
+            // ── nr: number family (no dend anywhere) ────────────────────────
+            auto t1 = g33_ne * workn_qr_col(k);
+            auto t2 = t1 / mstep_col_safe;
+            auto t3 = t2 * gate_col;
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "mul_workn",   t1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "div_mstep",   t2);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "falk_precast", t3);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "shadow_falk_f32",
+                    t3.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "falk_f32", falk_nr_k);
+            auto no1 = falk_nr_k * dtcld;                     // outflow_pre_cap (no dend)
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "outflow_pre_cap", no1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "source_reservoir", g33_ne);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "cap_active",
+                    (no1 > g33_ne).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "dn_out", dnr_k);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_before", g33_fnb);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_increment", falk_nr_k);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_after", fall_nr_cols[k]);
+            auto ni1 = falk_nr_prev * delz_col(k - 1);        // mul_delz_src
+            auto ni2 = ni1 / delz_safe_col(k);                // div_delz_dst
+            auto ni3 = ni2 * dtcld;                           // inflow_pre_cap
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "stored_falk_nr_prev", falk_nr_prev);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "delz_raw_src", delz_col(k - 1));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "delz_safe_dst", delz_safe_col(k));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "mul_delz_src", ni1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "div_delz_dst", ni2);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "inflow_pre_cap", ni3);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "source_reservoir", nr_cols[k - 1]);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "inflow_cap_active",
+                    (ni3 > nr_cols[k - 1]).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "inflow_final", dnr_above);
+            auto nu1 = g33_ne - dnr_k;                        // n_minus_out
+            auto nu2 = nu1 + dnr_above;                       // n_plus_in_preclamp
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_before", g33_ne);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_minus_out", nu1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_plus_in_preclamp", nu2);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "clamp_active",
+                    (nu2 < 0.0).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
+        }
+#endif
         // carry this cell's STORED falk (entry q) as the next cell's "above" inflow flux
         falk_qr_prev = falk_qr_k;  falk_nr_prev = falk_nr_k;
         falk_qs_prev = falk_qs_k;  falk_qg_prev = falk_qg_k;  falk_brs_prev = falk_brs_k;
