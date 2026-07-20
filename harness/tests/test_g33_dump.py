@@ -1650,7 +1650,8 @@ def test_qcrmin_preflight_is_finite_and_f32_representable(tmp_path):
     base = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
     for i, bad in enumerate((None, True, 0.0, -1e-9, float("inf"),
                              float("nan"), "1e-9",
-                             1e-60)):    # underflows to f32 +0.0
+                             1e-60,      # underflows to f32 +0.0
+                             1e100, 1e40, 3.5e38)):    # overflow f32 -> +inf
         with pytest.raises(ValueError, match="qcrmin"):
             g33_run_env.build_env({**base, "qcrmin": bad} if bad is not None
                                   else {k: v for k, v in base.items()
