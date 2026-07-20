@@ -13,6 +13,8 @@
 #                    "killed" by rc alone could be a missing file.
 set -u
 cd "$(dirname "$0")/../.."
+# shellcheck disable=SC1091
+source harness/g33_overlay/selfcheck_gate_lib.sh
 OUT=${1:-/tmp/g33_selfcheck_build}
 
 bash harness/g33_overlay/selfcheck_build.sh "$OUT" --with-mutant || exit $?
@@ -46,18 +48,16 @@ if [ "$mut_rc" -eq 0 ]; then
     echo "KILL GATE FAIL: shadow mutant PASSED — the self-check is vacuous"
     exit 1
 fi
-# The EXPECTED kill, not any fidelity failure: the fixture is deterministic, so
-# the first divergent rung is too — the gate that exists to prove first-
-# divergence localization must demand the exact site it predicts.
+# The EXPECTED kill, not any fidelity failure — and only the CONTROLLED one:
+# the fixture is deterministic, so the first divergent rung is too, and the
+# verdict (selfcheck_gate_lib.sh) demands rc==1 exactly, the predicted kill as
+# the TERMINAL line, and no Python traceback. A substring match on any nonzero
+# exit accepted a crash that happened to contain the line.
 EXPECTED_KILL="FAIL offline!=dumped: legacy L1_main_n2 k=0 qr QR_FALK.falk_precast"
-case "$mut_out" in
-    *"$EXPECTED_KILL"*) ;;
-    *)
-        echo "KILL GATE FAIL: mutant did not die at the predicted site (rc=$mut_rc):"
-        echo "  expected: $EXPECTED_KILL"
-        echo "$mut_out" | tail -3
-        exit 1
-        ;;
-esac
+if ! why=$(verdict_mutant "$mut_out" "$mut_rc" "$EXPECTED_KILL"); then
+    echo "KILL GATE FAIL: not the controlled predicted kill: $why"
+    echo "$mut_out" | tail -3
+    exit 1
+fi
 echo "KILL GATE PASS: real=PASS with pinned coverage, mutant killed at the predicted site:"
 echo "$mut_out" | tail -1
