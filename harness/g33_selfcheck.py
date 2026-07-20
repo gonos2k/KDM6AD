@@ -103,6 +103,20 @@ def _post_map(recs, cid):
     return m
 
 
+def _post_snap(post_map, cid):
+    """Decode substep_post qr/nr to [B,K] arrays, SIZE-VALIDATED. A truncated or
+    over-long payload would otherwise raise a raw ValueError at reshape — the
+    harness fail-closes with a clean EXIT_EVIDENCE instead."""
+    out = {}
+    for f in ("qr", "nr"):
+        arr = _np(*post_map[f])
+        if arr.size != B * K:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {cid} substep_post.{f} size {arr.size} != {B * K}")
+        out[f] = arr.reshape(B, K)
+    return out
+
+
 def _bits(a, dt):
     # container payloads are BIG-endian per element; a native tobytes() would
     # compare LE bytes against BE payloads and fail on identical values
@@ -169,6 +183,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
             _die(EXIT_EVIDENCE,
                  f"FAIL: {c['container_id']} sealed a different run_contract_sha256 "
                  f"than the run used")
+
+        # substep_post field map — computed ONCE per container (fail-closed on
+        # missing qr/nr) and reused by both the §2.1 post_snap and the carry.
+        post = _post_map(recs, c["container_id"])
 
         pre = {r["field"]: (r["dtype"], r["payload"])
                for r in recs if r["stage"] == "substep_pre"}
@@ -334,8 +352,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"k={k_} {msg}")
                 stats_links["n"] += 1
 
-            post_rec = _post_map(recs, c["container_id"])
-            post_snap = {f: _np(*post_rec[f]).reshape(B, K) for f in ("qr", "nr")}
+            post_snap = _post_snap(post, c["container_id"])
 
             # 2.2 — TOP cell (k=0): no inflow, so the whole update is a single
             # subtraction. The interior loop starts at k=1 and would leave the
@@ -462,8 +479,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      k, "NR_UPDATE.n_post != substep_post.nr[:, k] (returned state diverged)")
 
         # store this substep's post-state and outgoing accumulator for the next
-        # substep of the SAME chain. _post_map fail-closes on missing qr/nr.
-        post = _post_map(recs, c["container_id"])
+        # substep of the SAME chain (post computed once above, reused here).
         carry[chain_key] = {"n": n_sub, "post": post,
                             "fall_after": _fallacc(recs, "fall_after")}
 
