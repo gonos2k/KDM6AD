@@ -27,6 +27,8 @@ cons_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_cons/selfcheck
 cons_rc=$?
 prevout_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_prevout/selfcheck_driver" 2>&1)
 prevout_rc=$?
+poststate_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_poststate/selfcheck_driver" 2>&1)
+poststate_rc=$?
 
 echo "$real_out" | tail -3
 if [ "$real_rc" -ne 0 ]; then
@@ -95,7 +97,21 @@ if ! why=$(verdict_mutant "$prevout_out" "$prevout_rc" "$PREVOUT_KILL"); then
     echo "$prevout_out" | tail -3
     exit 1
 fi
-echo "KILL GATE PASS: real=PASS with pinned coverage; all three mutants killed at their predicted sites:"
-echo "  shadow:  $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
-echo "  cons:    $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"
-echo "  prevout: $(echo "$prevout_out" | grep -v '^(evidence' | tail -1)"
+# MUTANT 4 — the returned whole-field state link (PR B2.2 §2.1). The diagnostic
+# q_post is correct and continuity is self-consistent, so this can ONLY die at
+# the per-cell-q_post == substep_post link. Predicted site: first perturbed cell.
+POSTSTATE_KILL="FAIL causal-link: conservative L1_main_n1 k=1 QR_UPDATE.q_post != substep_post.qr[:, k] (returned state diverged)"
+if [ "$poststate_rc" -eq 0 ]; then
+    echo "KILL GATE FAIL: poststate mutant PASSED — the returned-state link is vacuous"
+    exit 1
+fi
+if ! why=$(verdict_mutant "$poststate_out" "$poststate_rc" "$POSTSTATE_KILL"); then
+    echo "KILL GATE FAIL: poststate mutant not the controlled predicted kill: $why"
+    echo "$poststate_out" | tail -3
+    exit 1
+fi
+echo "KILL GATE PASS: real=PASS with pinned coverage; all four mutants killed at their predicted sites:"
+echo "  shadow:    $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
+echo "  cons:      $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"
+echo "  prevout:   $(echo "$prevout_out" | grep -v '^(evidence' | tail -1)"
+echo "  poststate: $(echo "$poststate_out" | grep -v '^(evidence' | tail -1)"

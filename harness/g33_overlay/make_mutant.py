@@ -9,6 +9,7 @@ a predicted site; a mutation the gate cannot kill means the check is vacuous.
     make_mutant.py shadow  <in.overlay> <out.overlay>   # legacy FALK gate rung
     make_mutant.py cons_inflow <in.overlay> <out.overlay>  # conservative rho*dz transfer
     make_mutant.py cons_prevout <in.overlay> <out.overlay>  # wrong-neighbour interface link
+    make_mutant.py cons_poststate <in.overlay> <out.overlay>  # returned state != diagnostic q_post
 """
 import sys
 
@@ -44,6 +45,26 @@ elif KIND == "cons_prevout":
     old = "s->prev_out = dq_out;"
     assert s.count(old) == 1, f"cons_prevout anchor count {s.count(old)}"
     s = s.replace(old, "s->prev_out = dq_out * 1.03125f;  // MUTANT: wrong neighbour")
+elif KIND == "cons_poststate":
+    # Perturb the RETURNED qr column AFTER every per-cell op record is written
+    # but BEFORE the substep_post dump and the function return. The diagnostic
+    # QR_UPDATE.q_post records stay correct; the value the function actually
+    # returns (== substep_post, == the next substep's pre) is wrong. Every
+    # within-record equation and cross-substep continuity still pass — only the
+    # per-cell-q_post == substep_post link (PR B2.2 §2.1) can see it. Injected in
+    # the always-compiled path right after the cell loop closes.
+    old = ("        prev_out_nr = dn_out;\n"
+           "    }\n"
+           "\n"
+           "#ifdef KDM6_G33_OP_DUMP")
+    assert s.count(old) == 1, f"cons_poststate anchor count {s.count(old)}"
+    s = s.replace(old,
+                  "        prev_out_nr = dn_out;\n"
+                  "    }\n"
+                  "\n"
+                  "    qr.cols[1] = qr.cols[1] * 1.03125f;  // MUTANT: wrong returned column\n"
+                  "\n"
+                  "#ifdef KDM6_G33_OP_DUMP")
 else:
     sys.exit(f"unknown mutant kind {KIND!r}")
 

@@ -85,4 +85,20 @@ if [ "${2:-}" = "--with-mutant" ]; then
         -Wl,-rpath,"$TORCHLIB" -o "$M3/selfcheck_driver" 2>"$M3/link.err" \
         || { echo "MUTANT3 LINK FAILED"; head -10 "$M3/link.err"; exit 1; }
     echo "built: $M3/selfcheck_driver (conservative prev_out mutant)"
+
+    # MUTANT 4 — conservative returns a WRONG whole-field column (qr.cols[1] *=
+    # 1.03125) after the per-cell op records are written. Diagnostic q_post is
+    # correct; the returned state (== substep_post == next pre) is wrong, so only
+    # the per-cell-q_post == substep_post link (PR B2.2 §2.1) can catch it.
+    M4="$OUT/mutant_poststate"; mkdir -p "$M4"
+    python3 "$MK" cons_poststate \
+        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
+        "$M4/sedimentation_conservative.cpp.overlay"
+    compile "$M4/sedimentation_conservative.cpp.overlay" "$M4/sed_cons.o"
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M4/sed_cons.o" "$AR" \
+        "$TORCHLIB/libtorch.dylib" "$TORCHLIB/libtorch_cpu.dylib" "$TORCHLIB/libc10.dylib" \
+        -Wl,-rpath,"$TORCHLIB" -o "$M4/selfcheck_driver" 2>"$M4/link.err" \
+        || { echo "MUTANT4 LINK FAILED"; head -10 "$M4/link.err"; exit 1; }
+    echo "built: $M4/selfcheck_driver (conservative poststate mutant)"
 fi
