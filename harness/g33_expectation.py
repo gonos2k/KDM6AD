@@ -133,12 +133,15 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
 # work1_qr had already diverged at k=3 — and the gate would misattribute the
 # seed to `falk`.
 _STAGE_FIELDS_BASE = {
+    # `t`, not "th": the evidence names what the code has — CoordinatorState's
+    # member is t, and a field name the state does not carry would make the
+    # comparator's identity claims subtly wrong. `rho` is the forcing `den`.
     "outer_pre_sed":   [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("th", "f32", "BK"), ("rho", "f32", "BK"), ("delz", "f32", "BK")],
+                        ("t", "f32", "BK"), ("rho", "f32", "BK"), ("delz", "f32", "BK")],
     "outer_post_sed":  [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("th", "f32", "BK")],
+                        ("t", "f32", "BK")],
     "outer_post_micro": [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("th", "f32", "BK")],
+                        ("t", "f32", "BK")],
     # substep_pre is WHOLE-K, emitted once per substep (k=-1). Three fields the
     # protocol names are NOT here, each for a stated reason rather than omission:
     #   mstepmax_i32 (§55) — DERIVED offline, not dumped. Owner adjudication
@@ -194,10 +197,15 @@ _STAGE_FIELDS_BASE = {
     # graupel_subset (qg) and checks bottom_fall_total against the per-species
     # sum; the total stays emitted because it is the operand that actually
     # feeds the increments.
+    # surface_mul1/surface_mul_dt are GONE: they never corresponded to a named
+    # code value — the increment is ONE fused left-associated expression
+    # (F:1412, sedimentation.cpp:298), so those fields would have forced the
+    # producer to fabricate rungs. What is recorded is what exists: the actual
+    # per-species bottom operands, a bit-identical recompute of their sum, and
+    # the actual increments. snow/graupel subsets are comparator-derived.
     "surface":         [("bottom_fall_qr", "f32", "B"), ("bottom_fall_qs", "f32", "B"),
                         ("bottom_fall_qg", "f32", "B"), ("bottom_fall_qi", "f32", "B"),
                         ("bottom_fall_total", "f32", "B"), ("delz_bottom", "f32", "B"),
-                        ("surface_mul1", "f32", "B"), ("surface_mul_dt", "f32", "B"),
                         ("rain_increment", "f32", "B"), ("snow_increment", "f32", "B"),
                         ("graupel_increment", "f32", "B")],
 }
@@ -416,7 +424,8 @@ def expected_records(schedule: dict) -> list[dict]:
 # built over stages nothing emits offsets every declared op_seq window past the
 # measured counter, and the real overlay can then never produce a valid
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
-CPP_OVERLAY_STAGES = ("substep_pre", "op")
+CPP_OVERLAY_STAGES = ("outer_pre_sed", "substep_pre", "op", "substep_post",
+                      "surface", "outer_post_sed", "outer_post_micro")
 
 
 def container_id(rec: dict) -> str:
@@ -430,8 +439,16 @@ def container_id(rec: dict) -> str:
     this way every container is contiguous by construction.
     """
     if rec["chain"] == "-":
-        side = "pre" if rec["stage"] == "outer_pre_sed" else "post"
-        return f"L{rec['outer_loop']}_outer_{side}"
+        # One container PER OUTER STAGE. A single post container would have to
+        # stay open across the entire micro step (surface is emitted inside the
+        # sed chain, post_micro after kdm62d_one_step) — a long-lived trace
+        # object spanning two TUs. Per-stage containers open, emit and finalize
+        # in one block; the op_seq tiling stays contiguous because the stages
+        # execute in exactly this order.
+        tail = {"outer_pre_sed": "outer_pre", "surface": "surface",
+                "outer_post_sed": "outer_post_sed"}.get(rec["stage"],
+                                                        "outer_post_micro")
+        return f"L{rec['outer_loop']}_{tail}"
     return f"L{rec['outer_loop']}_{rec['chain']}_n{rec['n']}"
 
 

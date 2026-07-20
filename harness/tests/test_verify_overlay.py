@@ -251,3 +251,45 @@ def test_targets_are_derived_from_canonical_not_hardcoded():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_unrelated_conditionals_are_canonical_text_not_frames_to_consume():
+    # The projection consumed EVERY conditional directive line, including ones
+    # that have nothing to do with KDM6_G33_OP_DUMP — so a canonical file that
+    # itself contains `#ifdef KDM6_SUBSTEP_DUMP` (coordinator.cpp does) could
+    # never pass the macro-off identity check. Unrelated directives are
+    # canonical text: they must survive the projection verbatim, both branches
+    # included, while g33 frames are still consumed.
+    src = ("int a = 1;\n"
+           "#ifdef KDM6_SUBSTEP_DUMP\n"
+           "int dump = 2;\n"
+           "#else\n"
+           "int nodump = 3;\n"
+           "#endif\n"
+           "#ifdef KDM6_G33_OP_DUMP\n"
+           "int g33_only = 4;\n"
+           "#endif\n"
+           "int b = 5;\n")
+    off = v.macro_off(src)
+    assert off == ["int a = 1;", "#ifdef KDM6_SUBSTEP_DUMP", "int dump = 2;",
+                   "#else", "int nodump = 3;", "#endif", "int b = 5;"]
+    on = v._project(src, macro_on=True)
+    assert "int g33_only = 4;" in on and "int nodump = 3;" in on
+
+
+def test_alias_rules_are_operator_aware():
+    # The naive alias regexes read `g33.on() && s == &qr` as `& s = ...`,
+    # flagging a legitimate boolean guard as a mutable alias of whatever
+    # production identifier appeared later in the joined statement — which
+    # blocked the conservative overlay's `if (g33.on() && s == &qr)` capture
+    # guard. `&` must not be half of `&&`, `=` not half of `==`.
+    canon = "auto qr_cols = split(x);\nauto falk = qr_cols[0] * 2;\n"
+
+    def probe(added):
+        return v.overriding_assignments(canon, canon.splitlines() + added)
+
+    assert not probe(
+        ['if (g33.on() && s == &qr_cols) { g33_x = qr_cols[0].clone(); }'])
+    assert not probe(['x = a && b == &qr_cols;'])
+    assert probe(['auto& r = qr_cols[0];'])       # true alias still caught
+    assert probe(['auto* p = &qr_cols;'])         # true address-of still caught

@@ -411,9 +411,11 @@ def test_fall_accumulator_and_surface_are_required():
     recs = ge.expected_records(SCHED)
     surf = {r["field"] for r in recs if r["stage"] == "surface"}
     # per-species since the surface-causal-path review: the aggregate alone
-    # cannot attribute a qr seed (test_surface_expectation_is_per_species)
-    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom", "surface_mul1",
-            "surface_mul_dt", "rain_increment"} <= surf
+    # cannot attribute a qr seed (test_surface_expectation_is_per_species).
+    # surface_mul1/mul_dt are gone — the increment is ONE fused expression
+    # (F:1412) and inventing intermediates would fabricate rungs.
+    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom",
+            "rain_increment"} <= surf
     # exactly once per outer loop
     assert len({r["outer_loop"] for r in recs if r["stage"] == "surface"}) == SCHED["loops"]
 
@@ -625,10 +627,11 @@ def test_overlay_stage_scope_matches_the_source():
     # emitting a stage the declaration omits (or stops emitting one it names),
     # every declared op_seq window shifts off the measured counter and the real
     # overlay silently stops being able to produce a valid container.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
-    emitted = set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', src))
+    emitted = set()
+    for ovl in sorted((ROOT / "g33_overlay").glob("*.overlay")):
+        emitted |= set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', ovl.read_text()))
     assert emitted == set(ge.CPP_OVERLAY_STAGES), (
-        f"overlay emits {sorted(emitted)} but the harness declares "
+        f"overlays emit {sorted(emitted)} but the harness declares "
         f"{sorted(ge.CPP_OVERLAY_STAGES)}")
 
 
@@ -984,7 +987,7 @@ def test_cpp_builds_the_same_descriptor_line():
     # TRIPWIRE, not proof: the real check is that a run's rec() rejects a
     # mismatching tensor. This only pins the two field orders against each other
     # so a reorder on one side is caught before a host campaign, not during one.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     m = re.search(r'std::string got = ([^;]+);', src)
     assert m, "descriptor line construction not found in the overlay"
     order = re.findall(r"\b(op_seq_id|stage|cell_role|k|species|op_id|field|dtype)\b",
@@ -1019,20 +1022,19 @@ def test_container_records_which_descriptor_it_was_validated_against(tmp_path):
 def test_schema_dir_is_part_of_the_all_or_nothing_env_set():
     # KDM6_G33_SCHEMA_DIR was checked separately from the all-or-nothing block,
     # so a run configured with ONLY that variable counted as "nothing set" and
-    # went inert instead of reporting a partial configuration.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
-    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
-    assert block, "required-env table not found"
-    required = set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
-    # every env the constructor reads must be in the table
-    read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
-    assert read <= required, f"read but not required: {sorted(read - required)}"
+    # went inert instead of reporting a partial configuration. Every env ANY
+    # instrumented file reads must be in the shared table.
+    required = _overlay_required_env()
+    for rel in (_TRACE, "g33_overlay/sedimentation.cpp.overlay"):
+        src = (ROOT / rel).read_text()
+        read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
+        assert read <= required, f"{rel} reads unrequired: {sorted(read - required)}"
 
 
 def test_descriptor_load_precedes_header_construction():
     # TRIPWIRE: desc_sha_ is embedded in the header string, so computing it after
     # the header is built silently seals an EMPTY digest.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     assert src.index("desc_sha_ = dsha.hexdigest();") < src.index("std::string hdr =")
 
 
@@ -1114,8 +1116,13 @@ def _clean_repo(tmp_path):
     return repo
 
 
+# The trace machinery moved to the SHARED header (three instrumented TUs, one
+# implementation — private copies drift); source pins follow it there.
+_TRACE = "g33_overlay/g33_op_trace.h"
+
+
 def _overlay_required_env():
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
     assert block, "required-env table not found"
     return set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
@@ -1237,6 +1244,10 @@ def test_stale_guard_covers_the_diagnostic_build_inputs():
     covered = set(g33_run_env._BUILD_INPUTS)
     assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
     assert "harness/g33_overlay/g33_op_dump.h" in covered
+    assert "harness/g33_overlay/g33_op_trace.h" in covered
+    assert "harness/g33_overlay/sedimentation_conservative.cpp.overlay" in covered
+    assert "harness/g33_overlay/runtime.cpp.overlay" in covered
+    assert "harness/g33_overlay/coordinator.cpp.overlay" in covered
     # and it must NOT watch files that cannot reach the artifact: a guard firing
     # on edits with no effect on the binary gets switched off by whoever hits it
     for harmless in ("harness/g33_overlay/verify_overlay.py",
@@ -1489,7 +1500,7 @@ def test_all_identity_fields_are_safe_id_validated(tmp_path):
 def test_cpp_overlay_refuses_unsafe_ids_before_building_the_path():
     # the Python validator sees the header only after the path was opened; the
     # producer must refuse first — pin that the gate sits before path assembly
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     assert "safe_id(v)" in src
     assert src.index("g33: unsafe id") < src.index('std::string path = std::string(dir)')
 
@@ -1604,3 +1615,111 @@ def test_substep_index_rejects_bool_and_nonint():
     for bad in (True, False, 0, -1, 1.5, "2", None):
         with pytest.raises(gd.G33Corruption, match="positive int"):
             gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN)
+
+
+_STAGE_HOME = {                       # which overlay emits which stage
+    "outer_pre_sed": "runtime.cpp.overlay",
+    "outer_post_sed": "runtime.cpp.overlay",
+    "outer_post_micro": "runtime.cpp.overlay",
+    "surface": "coordinator.cpp.overlay",
+    "substep_post": "sedimentation.cpp.overlay",
+}
+
+
+@pytest.mark.parametrize("stage,home", sorted(_STAGE_HOME.items()))
+def test_whole_k_stage_emission_matches_the_manifest(stage, home):
+    # Same non-circular check as the substep_pre pin: the field ORDER the
+    # overlay actually emits for each whole-K stage must equal the manifest's,
+    # read out of the source rather than replayed from the manifest.
+    src = (ROOT / "g33_overlay" / home).read_text()
+    if stage == "substep_post":
+        pat = r'G33_REC\(g33,\s*"substep_post",\s*"-",\s*-1,\s*"-",\s*"-",\s*"([a-z_]+)"'
+    else:
+        pat = r'G33_REC\(g33,\s*"%s",\s*"([a-z_]+)"' % stage
+    emitted = re.findall(pat, src)
+    assert emitted, f"{home} emits no {stage} records"
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r["field"] for r in ge.expected_records(sched)
+                if r["stage"] == stage and r["outer_loop"] == 1
+                and r.get("n", 0) in (0, 1)]
+    assert emitted == expected, (
+        f"{stage}: overlay order {emitted} != manifest order {expected}")
+
+
+def test_context_is_set_by_the_runtime_overlay_around_the_sub_cycle():
+    # The substep traces refuse to run without ScopedDumpContext; the runtime
+    # overlay is its single owner. Pin that it is constructed inside the
+    # sub-cycle loop, before the outer_pre snapshot, with the variant-derived
+    # algorithm — not hardcoded "legacy".
+    src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    ctx = src.index("ScopedDumpContext g33_ctx(")
+    assert src.index("for (int i = 0; i < loops; ++i) {") < ctx
+    assert ctx < src.index('Outer g33("outer_pre"')
+    assert "PhysicsVariant::ConservativeInterface" in src[ctx:ctx + 400]
+
+
+def test_legacy_op_ladder_order_matches_the_manifest():
+    # The op emission must be SPECIES-MAJOR per cell, in the manifest's exact
+    # per-cell order — the sealed descriptor enforces it record-by-record at
+    # runtime, and this pin catches a reorder before a host campaign. The first
+    # committed emission had qr/nr interleaved by op AND was missing all
+    # interior cells (174 of 193 op records) — found by machine diff, not by
+    # eye, which is why this test generates the expectation instead of listing
+    # it.
+    sched = {**SCHED, "algorithm": "legacy",
+             "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    ops = [(r["cell_role"], r["species"], r["op_id"], r["field"])
+           for r in ge.expected_records(sched) if r["stage"] == "op"]
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+
+    exp_top = [(sp, op, f) for role, sp, op, f in ops if role == "TOP"]
+    em_top = re.findall(
+        r'G33_REC\(g33, "op", "TOP", 0, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em_top == exp_top
+
+    # the interior loop body emits ONE per-k sequence; INTERIOR and BOTTOM use
+    # the same op set, so the manifest's first interior cell is the reference
+    n_int_cells = len({k for r in ge.expected_records(sched)
+                       if r["stage"] == "op" and r["cell_role"] != "TOP"
+                       for k in [r["k"]]})
+    exp_cell = [(sp, op, f) for role, sp, op, f in ops if role != "TOP"]
+    per_k = len(exp_cell) // n_int_cells
+    assert exp_cell[:per_k] * n_int_cells == exp_cell   # every cell identical
+    em_loop = re.findall(
+        r'G33_REC\(g33, "op", g33_role, g33_k, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em_loop == exp_cell[:per_k]
+
+    # BOTTOM must actually be reachable: the role is computed, not hardcoded
+    assert '(k == K - 1) ? "BOTTOM" : "INTERIOR"' in src
+
+
+def test_conservative_op_ladder_order_matches_the_manifest():
+    # Same machine-generated pin as the legacy ladder, for the conservative TU.
+    # The source has ONE qr block and ONE nr block, each with a k==0 arm and an
+    # else arm, so the flat source order cannot be compared directly; instead
+    # both per-role manifest sequences must be in-order SUBSEQUENCES of the
+    # source order, and the tuple SETS must match exactly (nothing missing,
+    # nothing invented).
+    sched = {**SCHED, "algorithm": "conservative",
+             "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    recs = [r for r in ge.expected_records(sched) if r["stage"] == "op"]
+    src = (ROOT / "g33_overlay" / "sedimentation_conservative.cpp.overlay").read_text()
+    em = re.findall(
+        r'G33_REC\(g33, "op", g33_role, g33_k, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em, "no op emission in the conservative overlay"
+
+    def role_seq(role):
+        ks = sorted({r["k"] for r in recs if r["cell_role"] == role})
+        return [(r["species"], r["op_id"], r["field"])
+                for r in recs if r["cell_role"] == role and r["k"] == ks[0]]
+
+    def is_subseq(needle, hay):
+        it = iter(hay)
+        return all(x in it for x in needle)
+
+    top, mid = role_seq("TOP"), role_seq("INTERIOR")
+    assert role_seq("BOTTOM") == mid          # same op set per interior cell
+    assert is_subseq(top, em), "TOP sequence not derivable from the source order"
+    assert is_subseq(mid, em), "INTERIOR sequence not derivable from the source order"
+    assert set(em) == set(top) | set(mid)
+    assert '(k == 0) ? "TOP"' in src and '"BOTTOM" : "INTERIOR"' in src

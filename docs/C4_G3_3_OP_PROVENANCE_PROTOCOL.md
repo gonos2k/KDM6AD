@@ -232,6 +232,26 @@ the tensor in hand, the producer-side shape guard, and the comparator recomputat
 every derived flag (`g33_derived.py`). Non-invasiveness is established only by the 3-way
 A/B/C run (§10).
 
+### §5a executed: shadow == actual == offline (self-check)
+
+`selfcheck_build.sh` links the overlay TUs into a standalone driver (their
+objects replace the canonical archive members, so dladdr resolves the artifact
+that actually contains the instrumented code) and `g33_selfcheck.py` runs one
+FRESH PROCESS per algorithm on a deterministic branch-covering fixture
+(mstep {1,2,2} gates a column off at n=2; a 20x work1 column makes the entry
+cap bind; floors inactive per the real-atmosphere policy). Verified from the
+EVIDENCE alone — never the driver's fixture, so a driver bug cannot vacuously
+agree with itself: exact sealed container set; per-record shadow_falk_f32 ==
+falk_f32; a NumPy recomputation from the dumped operands reproducing every
+FALK rung bit-for-bit (72 rungs per algorithm); and the producer cross-checks
+(gate law, mstep range, floor semantics) on real data. The standing mutation kill is ENFORCED by
+`selfcheck_gate.sh` (a committed gate, not a transcript loop): it rebuilds the
+shadow mutant from the committed overlay every run — a fake mutant cannot be
+handed in — and requires real=PASS and mutant=FAIL *for the right reason* (a
+fidelity mismatch, never a SKIP, crash or configuration error). The mutant dies
+exactly at the first rung where the gate matters (n=2, the mstep=1 column,
+falk_precast). Measured green for legacy AND conservative.
+
 ## 6. Canonical Fortran + C++ via temporary build overlay (P0-8, P0-10)
 
 The private Fortran reference permits only its pinned edits; a diagnostic `#ifdef` still changes the
@@ -241,6 +261,19 @@ diagnostic build), never the canonical/public tree. Final checks: canonical Fort
 **before == after**, and `build_c4_evidence.py` Gate A scope **PASS**.
 
 ---
+
+### Build-level gate: compile smoke + macro-off object equivalence
+
+`harness/g33_overlay/compile_smoke.sh` (flags parsed from the real kdm6_c
+flags.make, so it cannot drift from what ships): every overlay TU must compile
+with the macro ON, and with the macro OFF its object must equal the canonical
+object byte-for-byte — directly, or via the line-shift proof (the g33 blocks
+occupy source lines even when compiled out, and TORCH_CHECK materializes
+`__LINE__` as an integer immediate; compiling the canonical text in the
+overlay's blank-line layout isolates that one difference). Measured:
+sedimentation is directly object-identical; runtime and coordinator differ
+ONLY by `__LINE__`. This is a build-level gate — run-level non-invasiveness is
+still §10's A/B/C alone.
 
 ## 7. Dump container + INDEPENDENT expectation + attestation
 

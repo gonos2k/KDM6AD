@@ -45,7 +45,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 PAIRS = [("libtorch/src/sedimentation.cpp", "sedimentation.cpp.overlay",
-          "BASE_SHA256_sedimentation.cpp")]
+          "BASE_SHA256_sedimentation.cpp"),
+         ("libtorch/src/runtime.cpp", "runtime.cpp.overlay",
+          "BASE_SHA256_runtime.cpp"),
+         ("libtorch/src/coordinator.cpp", "coordinator.cpp.overlay",
+          "BASE_SHA256_coordinator.cpp"),
+         ("libtorch/src/sedimentation_conservative.cpp",
+          "sedimentation_conservative.cpp.overlay",
+          "BASE_SHA256_sedimentation_conservative.cpp")]
 
 
 class OverlayShape(Exception):
@@ -99,18 +106,28 @@ def _project(text: str, macro_on: bool) -> list[str]:
                     f"(defined()/!defined() invert the branch); use a plain #ifdef")
             if name == "ifdef" and g33:
                 stack.append([macro_on, True, False]); continue
-            if name in ("if", "ifdef", "ifndef"):        # unrelated conditional
-                stack.append([True, False, False]); continue
-            if name == "else" and stack:
+            if name in ("if", "ifdef", "ifndef"):
+                # UNRELATED conditional: track it for stack bookkeeping but EMIT
+                # the directive line — it is canonical text. Consuming it here
+                # silently deleted every #ifdef KDM6_SUBSTEP_DUMP line from the
+                # projection, which only surfaced when an overlaid file
+                # (coordinator.cpp) actually contained one; sedimentation.cpp
+                # never did, so the hole sat unexercised.
+                stack.append([True, False, False])
+            elif name == "else" and stack and stack[-1][1]:
                 fr = stack[-1]
-                fr[0] = not fr[0] if fr[1] else fr[0]
+                fr[0] = not fr[0]
                 fr[2] = True
                 continue
-            if name == "elif" and stack:
+            elif name == "elif" and stack and stack[-1][1]:
                 stack[-1][2] = True                      # treated like an else arm
                 continue
-            if name == "endif" and stack:
-                stack.pop(); continue
+            elif name == "endif" and stack:
+                was_g33 = stack[-1][1]
+                stack.pop()
+                if was_g33:
+                    continue
+                # unrelated #endif: emit — canonical text
             # any other directive (#define/#include/#pragma) is an ordinary line
         if stack and stack[-1][1] and stack[-1][2] and not s.startswith("#") and s:
             raise OverlayShape(
@@ -323,12 +340,17 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
                 if who:
                     flag(lineno, who, line, "swap/move of production value")
             # mutable alias: auto& r = X;  auto* p = &X;
+            # NOT logical/equality operators: the naive patterns read the
+            # boolean guard `g33.on() && s == &qr` as `& s = ...`, flagging a
+            # legitimate added condition as an alias of whatever production
+            # identifier appeared later in the joined statement. `&` must not
+            # be half of `&&`, and `=` must not be half of `==`/`!=`/`<=`/`>=`.
             if "&" in chunk:
-                for m in re.finditer(r"&\s*[A-Za-z_]\w*\s*=([^;]*)", chunk):
+                for m in re.finditer(r"(?<!&)&(?!&)\s*[A-Za-z_]\w*\s*=(?!=)([^;]*)", chunk):
                     who = hit(m.group(1))
                     if who:
                         flag(lineno, who, line, "mutable reference to production value")
-                for m in re.finditer(r"=\s*&\s*([^;]*)", chunk):
+                for m in re.finditer(r"(?<![=!<>])=(?!=)\s*&(?!&)\s*([^;]*)", chunk):
                     who = hit(m.group(1))
                     if who:
                         flag(lineno, who, line, "address of production value")
