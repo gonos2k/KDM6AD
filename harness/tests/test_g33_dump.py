@@ -411,9 +411,11 @@ def test_fall_accumulator_and_surface_are_required():
     recs = ge.expected_records(SCHED)
     surf = {r["field"] for r in recs if r["stage"] == "surface"}
     # per-species since the surface-causal-path review: the aggregate alone
-    # cannot attribute a qr seed (test_surface_expectation_is_per_species)
-    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom", "surface_mul1",
-            "surface_mul_dt", "rain_increment"} <= surf
+    # cannot attribute a qr seed (test_surface_expectation_is_per_species).
+    # surface_mul1/mul_dt are gone — the increment is ONE fused expression
+    # (F:1412) and inventing intermediates would fabricate rungs.
+    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom",
+            "rain_increment"} <= surf
     # exactly once per outer loop
     assert len({r["outer_loop"] for r in recs if r["stage"] == "surface"}) == SCHED["loops"]
 
@@ -625,10 +627,11 @@ def test_overlay_stage_scope_matches_the_source():
     # emitting a stage the declaration omits (or stops emitting one it names),
     # every declared op_seq window shifts off the measured counter and the real
     # overlay silently stops being able to produce a valid container.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
-    emitted = set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', src))
+    emitted = set()
+    for ovl in sorted((ROOT / "g33_overlay").glob("*.overlay")):
+        emitted |= set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', ovl.read_text()))
     assert emitted == set(ge.CPP_OVERLAY_STAGES), (
-        f"overlay emits {sorted(emitted)} but the harness declares "
+        f"overlays emit {sorted(emitted)} but the harness declares "
         f"{sorted(ge.CPP_OVERLAY_STAGES)}")
 
 
@@ -1242,6 +1245,8 @@ def test_stale_guard_covers_the_diagnostic_build_inputs():
     assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
     assert "harness/g33_overlay/g33_op_dump.h" in covered
     assert "harness/g33_overlay/g33_op_trace.h" in covered
+    assert "harness/g33_overlay/runtime.cpp.overlay" in covered
+    assert "harness/g33_overlay/coordinator.cpp.overlay" in covered
     # and it must NOT watch files that cannot reach the artifact: a guard firing
     # on edits with no effect on the binary gets switched off by whoever hits it
     for harmless in ("harness/g33_overlay/verify_overlay.py",
@@ -1609,3 +1614,44 @@ def test_substep_index_rejects_bool_and_nonint():
     for bad in (True, False, 0, -1, 1.5, "2", None):
         with pytest.raises(gd.G33Corruption, match="positive int"):
             gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN)
+
+
+_STAGE_HOME = {                       # which overlay emits which stage
+    "outer_pre_sed": "runtime.cpp.overlay",
+    "outer_post_sed": "runtime.cpp.overlay",
+    "outer_post_micro": "runtime.cpp.overlay",
+    "surface": "coordinator.cpp.overlay",
+    "substep_post": "sedimentation.cpp.overlay",
+}
+
+
+@pytest.mark.parametrize("stage,home", sorted(_STAGE_HOME.items()))
+def test_whole_k_stage_emission_matches_the_manifest(stage, home):
+    # Same non-circular check as the substep_pre pin: the field ORDER the
+    # overlay actually emits for each whole-K stage must equal the manifest's,
+    # read out of the source rather than replayed from the manifest.
+    src = (ROOT / "g33_overlay" / home).read_text()
+    if stage == "substep_post":
+        pat = r'G33_REC\(g33,\s*"substep_post",\s*"-",\s*-1,\s*"-",\s*"-",\s*"([a-z_]+)"'
+    else:
+        pat = r'G33_REC\(g33,\s*"%s",\s*"([a-z_]+)"' % stage
+    emitted = re.findall(pat, src)
+    assert emitted, f"{home} emits no {stage} records"
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r["field"] for r in ge.expected_records(sched)
+                if r["stage"] == stage and r["outer_loop"] == 1
+                and r.get("n", 0) in (0, 1)]
+    assert emitted == expected, (
+        f"{stage}: overlay order {emitted} != manifest order {expected}")
+
+
+def test_context_is_set_by_the_runtime_overlay_around_the_sub_cycle():
+    # The substep traces refuse to run without ScopedDumpContext; the runtime
+    # overlay is its single owner. Pin that it is constructed inside the
+    # sub-cycle loop, before the outer_pre snapshot, with the variant-derived
+    # algorithm — not hardcoded "legacy".
+    src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    ctx = src.index("ScopedDumpContext g33_ctx(")
+    assert src.index("for (int i = 0; i < loops; ++i) {") < ctx
+    assert ctx < src.index('Outer g33("outer_pre"')
+    assert "PhysicsVariant::ConservativeInterface" in src[ctx:ctx + 400]

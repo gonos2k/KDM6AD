@@ -317,6 +317,16 @@ SubstepAdvectionOutputs substep_advection_torch(
     }
 
 #ifdef KDM6_G33_OP_DUMP
+    if (g33.on()) {
+        // Whole-K state LEAVING the substep. The canonical return builds its
+        // own stacks; these are diagnostic re-stacks of the same columns —
+        // identical values, and the production lines stay untouched (§5).
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qr", torch::stack(qr_cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "nr", torch::stack(nr_cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qs", torch::stack(qs_cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qg", torch::stack(qg_cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "brs", torch::stack(brs_cols, /*dim=*/-1));
+    }
     // EXPLICIT finalize (§7e) — the COMPLETE footer is written here and nowhere
     // else. An exception before this point leaves a footerless .tmp, which the
     // fail-closed reader rejects: an aborted run can never look complete.
