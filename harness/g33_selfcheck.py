@@ -139,10 +139,11 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
            "floor_active": 0}
     stats_links = {"n": 0}
-    # cross-substep carry: substep_post(n) must equal substep_pre(n+1), and the
-    # fall accumulator must be continuous (fall_after(n,k) == fall_before(n+1,k)).
-    # None until the first substep has been seen.
-    carry = None
+    # cross-substep carry, keyed by (outer_loop, chain): substep_post(n) must
+    # equal substep_pre(n+1), and the fall accumulator must be continuous
+    # (fall_after(n,k) == fall_before(n+1,k)), WITHIN a chain. Empty until the
+    # first substep of each chain has been seen.
+    carry = {}
     for c in index["containers"]:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
@@ -173,20 +174,42 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      f"has a non-finite or non-positive entry — ρΔz ill-posed")
 
         # cross-substep continuity (#4): this substep's pre-state and incoming
-        # fall accumulator must equal the previous substep's post-state and
-        # outgoing accumulator, bit-for-bit — the chain that carries mass from
-        # one CFL sub-step to the next.
+        # fall accumulator must equal the PREVIOUS substep OF THE SAME CHAIN's
+        # post-state and outgoing accumulator, bit-for-bit — the chain that
+        # carries mass from one CFL sub-step to the next. carry is keyed by
+        # (outer_loop, chain) so a future ice chain or a second outer loop in
+        # the same run cannot be mis-compared against main-chain state; and the
+        # law is enforced BOTH ways: n==1 must have no prior in its key, n>1
+        # must have exactly the n-1 prior.
+        chain_key = (c["outer_loop"], c["chain"])
+        prior = carry.get(chain_key)
         cur_fall_before = _fallacc(recs, "fall_before")
-        if carry is not None:
+        if n_sub == 1:
+            if prior is not None:
+                _die(EXIT_EVIDENCE,
+                     f"FAIL causal-link: {c['container_id']} is n=1 but chain "
+                     f"{chain_key} already carried state from n={prior['n']} "
+                     f"(substep numbering broken)")
+        else:
+            if prior is None or prior["n"] != n_sub - 1:
+                _die(EXIT_EVIDENCE,
+                     f"FAIL causal-link: {c['container_id']} n={n_sub} has no "
+                     f"immediate predecessor n={n_sub - 1} in chain {chain_key}")
             for sp in ("qr", "nr"):
-                if pre[sp][1] != carry["post"][sp]:
+                if pre[sp][1] != prior["post"][sp]:
                     _die(EXIT_FIDELITY,
                          f"FAIL causal-link: {c['container_id']} substep_pre.{sp} "
                          f"!= prior substep_post.{sp} (state carry broken)")
                 stats_links["n"] += 1
+            # 2.4: the accumulator key SETS must match exactly — an extra key on
+            # either side means a species/cell appeared or vanished across the
+            # boundary, which key-by-key lookup alone would not catch.
+            if set(cur_fall_before) != set(prior["fall_after"]):
+                _die(EXIT_FIDELITY,
+                     f"FAIL causal-link: {c['container_id']} FALLACC key set "
+                     f"{sorted(cur_fall_before)} != prior {sorted(prior['fall_after'])}")
             for key, before in cur_fall_before.items():
-                after = carry["fall_after"].get(key)
-                if after is None or after != before:
+                if prior["fall_after"][key] != before:
                     sp, kk = key
                     _die(EXIT_FIDELITY,
                          f"FAIL causal-link: {c['container_id']} {sp} k={kk} "
@@ -298,6 +321,27 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"k={k_} {msg}")
                 stats_links["n"] += 1
 
+            post_rec = {r["field"]: (r["dtype"], r["payload"])
+                        for r in recs if r["stage"] == "substep_post"}
+            post_snap = {f: _np(*post_rec[f]).reshape(B, K) for f in ("qr", "nr")}
+
+            # 2.2 — TOP cell (k=0): no inflow, so the whole update is a single
+            # subtraction. The interior loop starts at k=1 and would leave the
+            # surface-most, simplest rung unverified precisely because it is
+            # simple. Pin it: before == snapshot, post == before - dq_out.
+            link(op_bits(0, "qr", "QR_UPDATE", "q_before") == _bits(snap["qr"][:, 0], "f32"),
+                 0, "top QR_UPDATE.q_before != substep_pre.qr[:, 0]")
+            q0b = _np("f32", op_bits(0, "qr", "QR_UPDATE", "q_before"))
+            dq0 = _np("f32", op_bits(0, "qr", "QR_OUTFLOW", "dq_out"))
+            link(op_bits(0, "qr", "QR_UPDATE", "q_post") == _bits(q0b - dq0, "f32"),
+                 0, "top QR_UPDATE.q_post != q_before - dq_out (no inflow at top)")
+            link(op_bits(0, "nr", "NR_UPDATE", "n_before") == _bits(snap["nr"][:, 0], "f32"),
+                 0, "top NR_UPDATE.n_before != substep_pre.nr[:, 0]")
+            n0b = _np("f32", op_bits(0, "nr", "NR_UPDATE", "n_before"))
+            dn0 = _np("f32", op_bits(0, "nr", "NR_OUTFLOW", "dn_out"))
+            link(op_bits(0, "nr", "NR_UPDATE", "n_post") == _bits(n0b - dn0, "f32"),
+                 0, "top NR_UPDATE.n_post != n_before - dn_out (no inflow at top)")
+
             for k in range(1, K):
                 prev = _np("f32", ri("prev_out", k))
                 ds_src = _np("f32", ri("dend_safe_src", k))
@@ -392,11 +436,25 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      == op_bits(k, "nr", "NR_UPDATE", "n_plus_in_preclamp"),
                      k, "NR_UPDATE.n_post != n_plus_in_preclamp (a clamp appeared)")
 
+            # 2.1 — close the graph to the RETURNED whole-field state. Every
+            # per-cell op q_post/n_post proven above is a DIAGNOSTIC record; the
+            # value the function actually returns (and dumps as substep_post,
+            # which the next substep's pre is checked against) is a separate
+            # stack. Without this link a producer could emit a correct per-cell
+            # q_post while returning a wrong column, and cross-substep continuity
+            # — comparing the wrong post to the wrong next pre — would still pass.
+            for k in range(K):
+                link(op_bits(k, "qr", "QR_UPDATE", "q_post") == _bits(post_snap["qr"][:, k], "f32"),
+                     k, "QR_UPDATE.q_post != substep_post.qr[:, k] (returned state diverged)")
+                link(op_bits(k, "nr", "NR_UPDATE", "n_post") == _bits(post_snap["nr"][:, k], "f32"),
+                     k, "NR_UPDATE.n_post != substep_post.nr[:, k] (returned state diverged)")
+
         # store this substep's post-state and outgoing accumulator for the next
-        # iteration's continuity check.
+        # substep of the SAME chain.
         post = {r["field"]: r["payload"]
                 for r in recs if r["stage"] == "substep_post"}
-        carry = {"post": post, "fall_after": _fallacc(recs, "fall_after")}
+        carry[chain_key] = {"n": n_sub, "post": post,
+                            "fall_after": _fallacc(recs, "fall_after")}
 
     # branch-coverage verdict — the fixture must actually exercise every branch
     # the ladder claims to test, proven from the evidence, not assumed.
