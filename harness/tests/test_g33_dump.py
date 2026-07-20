@@ -1363,28 +1363,33 @@ def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
         gdv.unordered_failures(br, [1], [1, 1])
 
 
+_QCRMIN = 1e-9
+_N_SUB = 2       # fixture substep index: with mstep [1,2,3], gate(n=2) = [0,1,1]
+
+
 def _substep_pre_fields(**edits):
     f = {
         "mstep_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
         "mstep_decoded_i32": ("i32", gd.pack_payload("i32", [1, 2, 3])),
         "mstep_exact_integer": ("u8", gd.pack_payload("u8", [1, 1, 1])),
-        "gate_native": ("f32", gd.pack_payload("f32", [1.0, 0.0, 1.0])),
-        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "gate_native": ("f32", gd.pack_payload("f32", [0.0, 1.0, 1.0])),
+        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [0, 1, 1])),
         "gate_exact_01": ("u8", gd.pack_payload("u8", [1, 1, 1])),
-        "active_mask": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "active_mask": ("u8", gd.pack_payload("u8", [0, 1, 1])),
         "dend_raw": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
         "dend_safe": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
         "dend_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 0])),
-        "delz_raw": ("f32", gd.pack_payload("f32", [5.0, 5.0, 5.0])),
-        "delz_safe": ("f32", gd.pack_payload("f32", [5.0, 5.0, 9.0])),
-        "delz_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 1])),
+        # delz[0] sits BELOW the floor, so safe[0] must be exactly f32(qcrmin)
+        "delz_raw": ("f32", gd.pack_payload("f32", [5e-10, 5.0, 5.0])),
+        "delz_safe": ("f32", gd.pack_payload("f32", [_QCRMIN, 5.0, 5.0])),
+        "delz_floor_active": ("u8", gd.pack_payload("u8", [1, 0, 0])),
     }
     f.update(edits)
     return f
 
 
 def test_cross_check_accepts_an_honest_producer():
-    gdv.check_producer_flags(_substep_pre_fields())
+    gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN)
 
 
 def test_cross_check_catches_a_lying_producer_flag():
@@ -1393,13 +1398,15 @@ def test_cross_check_catches_a_lying_producer_flag():
         gdv.check_producer_flags(_substep_pre_fields(
             mstep_native=("f64", gd.pack_payload_bits(
                 "f64", [0x3FF0000000000000, 0x4000000000000001,
-                        0x4008000000000000]))))
+                        0x4008000000000000]))), _N_SUB, _QCRMIN)
     with pytest.raises(gd.G33Corruption, match="delz_floor_active"):
         gdv.check_producer_flags(_substep_pre_fields(
-            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))))
+            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))),
+            _N_SUB, _QCRMIN)
     with pytest.raises(gd.G33Corruption, match="active_mask"):
         gdv.check_producer_flags(_substep_pre_fields(
-            active_mask=("u8", gd.pack_payload("u8", [1, 1, 1]))))
+            active_mask=("u8", gd.pack_payload("u8", [0, 1, 0]))),
+            _N_SUB, _QCRMIN)
 
 
 def test_cross_check_refuses_missing_operands():
@@ -1407,7 +1414,7 @@ def test_cross_check_refuses_missing_operands():
     f = _substep_pre_fields()
     del f["gate_native"]
     with pytest.raises(gd.G33Corruption, match="missing operand"):
-        gdv.check_producer_flags(f)
+        gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
 
 
 def test_surface_expectation_is_per_species():
@@ -1484,3 +1491,46 @@ def test_cpp_overlay_refuses_unsafe_ids_before_building_the_path():
     src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
     assert "safe_id(v)" in src
     assert src.index("g33: unsafe id") < src.index('std::string path = std::string(dir)')
+
+
+def test_gate_that_is_exactly_01_but_wrong_is_caught_by_the_mstep_law():
+    # The old check only asked whether the gate was exactly 0/1 — a gate that is
+    # WRONG but exactly 0/1 passed. gate_b(n) = [n <= mstep_b] ties it to the
+    # operand it is derived from: with mstep [1,2,3] and n=2 the gate MUST be
+    # [0,1,1]; an all-ones gate is internally consistent and still illegal.
+    wrong = _substep_pre_fields(
+        gate_native=("f32", gd.pack_payload("f32", [1.0, 1.0, 1.0])),
+        gate_decoded_u8=("u8", gd.pack_payload("u8", [1, 1, 1])),
+        gate_exact_01=("u8", gd.pack_payload("u8", [1, 1, 1])),
+        active_mask=("u8", gd.pack_payload("u8", [1, 1, 1])))
+    with pytest.raises(gd.G33Corruption, match="gate_vs_mstep_law"):
+        gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN)
+
+
+def test_mstep_outside_the_physical_range_is_an_invalid_run():
+    for bad_mstep, bad_decoded in ([0.0, 2.0, 3.0], [0, 2, 3]), ([1.0, 2.0, 101.0], [1, 2, 101]):
+        f = _substep_pre_fields(
+            mstep_native=("f64", gd.pack_payload("f64", bad_mstep)),
+            mstep_decoded_i32=("i32", gd.pack_payload("i32", bad_decoded)))
+        with pytest.raises(gd.G33Corruption, match="physical range"):
+            gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+
+
+def test_floor_authority_is_the_threshold_relation_not_the_output_diff():
+    # relation of raw vs the dtype-faithful threshold; BELOW must produce
+    # exactly the threshold's bits, AT_OR_ABOVE exactly the raw bits
+    raw = gd.pack_payload("f32", [5e-10, _QCRMIN, 5.0])
+    assert gdv.classify_floor("f32", raw, _QCRMIN) == [
+        gdv.FLOOR_BELOW, gdv.FLOOR_AT_OR_ABOVE, gdv.FLOOR_AT_OR_ABOVE]
+    nan = gd.pack_payload_bits("f32", [0x7FC00000])
+    assert gdv.classify_floor("f32", nan, _QCRMIN) == [gdv.FLOOR_UNORDERED]
+    # a clamp that emits anything other than max(raw, qcrmin) is not the
+    # declared semantics — even if `safe != raw` happens to look plausible
+    good_safe = gd.pack_payload("f32", [_QCRMIN, _QCRMIN, 5.0])
+    gdv.check_floor_semantics("f32", raw, good_safe, _QCRMIN)
+    bad_safe = gd.pack_payload("f32", [2e-9, _QCRMIN, 5.0])   # floored to the WRONG value
+    with pytest.raises(gd.G33Corruption, match="not the declared semantics"):
+        gdv.check_floor_semantics("f32", raw, bad_safe, _QCRMIN)
+    # -0.0 raw is BELOW a positive floor and must come back as the threshold
+    neg0 = gd.pack_payload_bits("f32", [0x80000000])
+    gdv.check_floor_semantics("f32", neg0, gd.pack_payload("f32", [_QCRMIN]), _QCRMIN)
