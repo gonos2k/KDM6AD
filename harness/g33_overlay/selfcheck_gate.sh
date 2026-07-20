@@ -100,7 +100,7 @@ fi
 # MUTANT 4 — the returned whole-field state link (PR B2.2 §2.1). The diagnostic
 # q_post is correct and continuity is self-consistent, so this can ONLY die at
 # the per-cell-q_post == substep_post link. Predicted site: first perturbed cell.
-POSTSTATE_KILL="FAIL causal-link: conservative L1_main_n1 k=1 QR_UPDATE.q_post != substep_post.qr"
+POSTSTATE_KILL="FAIL causal-link: conservative L1_main_n1 k=1 QR_UPDATE.q_post != substep_post.qr[:, k] (returned state diverged)"
 if [ "$poststate_rc" -eq 0 ]; then
     echo "KILL GATE FAIL: poststate mutant PASSED — the returned-state link is vacuous"
     exit 1
