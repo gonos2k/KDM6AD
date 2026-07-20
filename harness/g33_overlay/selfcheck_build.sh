@@ -16,6 +16,7 @@ DEFS=$(sed -n 's/^CXX_DEFINES = //p' "$FM")
 INCS=$(sed -n 's/^CXX_INCLUDES = //p' "$FM")
 FLGS=$(sed -n 's/^CXX_FLAGS = //p' "$FM")
 CXX=$(xcrun -f c++ 2>/dev/null || command -v c++)
+if [ -z "$CXX" ]; then echo "no C++ compiler (xcrun/c++ not found)"; exit 2; fi
 TORCHLIB=$(echo "$INCS" | tr ' ' '\n' | sed -n 's|^/|/|p' | grep 'site-packages/torch/include$' | head -1 | sed 's|/include$|/lib|')
 OUT=${1:-/tmp/g33_selfcheck_build}
 mkdir -p "$OUT"
