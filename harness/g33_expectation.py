@@ -168,14 +168,27 @@ _STAGE_FIELDS_BASE = {
                         ("dend_floor_active", "u8", "BK"),
                         ("delz_raw", "f32", "BK"), ("delz_safe", "f32", "BK"),
                         ("delz_floor_active", "u8", "BK"),
-                        # per-column: mstep/gate are level-independent
+                        # per-column: mstep/gate are level-independent.
+                        # mstep_input_native is the RAW mstep_col as the caller
+                        # passed it (before clamp); mstep_native is the EFFECTIVE
+                        # post-clamp value the arithmetic uses. In a valid run
+                        # their bits are equal (P0-3); a break is a caller/runtime
+                        # contract error, not a rounding finding.
+                        ("mstep_input_native", "NATIVE_MSTEP", "B"),
                         ("mstep_native", "NATIVE_MSTEP", "B"),
                         ("mstep_decoded_i32", "i32", "B"),
                         ("mstep_exact_integer", "u8", "B"),
                         ("gate_native", "NATIVE_GATE", "B"),
                         ("gate_decoded_u8", "u8", "B"),
                         ("gate_exact_01", "u8", "B"),
-                        ("active_mask", "u8", "B")],
+                        ("active_mask", "u8", "B"),
+                        # the ACTUAL threshold and timestep the substep computed
+                        # with, broadcast to [B] (P0-5). The comparator checks
+                        # these against the sealed run_contract bits — raw/safe
+                        # results alone cannot catch a wrong sealed qcrmin when
+                        # every rho,dz sits far above it.
+                        ("qcrmin_effective", "f64", "B"),
+                        ("dtcld_effective", "f64", "B")],
     "substep_post":    [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qs", "f32", "BK"),
                         ("qg", "f32", "BK"), ("brs", "f32", "BK")],
     "reslope_input":   [("qr", "f32", "BK"), ("nr", "f32", "BK")],

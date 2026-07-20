@@ -236,13 +236,16 @@ def unordered_failures(branches: list, active_mask: list,
 
 # fields check_producer_flags MUST find; a cross-check that silently skips an
 # absent operand is vacuous, which is the failure mode this whole file replaces
-_REQUIRED = ("mstep_native", "mstep_decoded_i32", "mstep_exact_integer",
+_REQUIRED = ("mstep_input_native", "mstep_native",
+             "mstep_decoded_i32", "mstep_exact_integer",
              "gate_native", "gate_decoded_u8", "gate_exact_01", "active_mask",
              "dend_raw", "dend_safe", "dend_floor_active",
-             "delz_raw", "delz_safe", "delz_floor_active")
+             "delz_raw", "delz_safe", "delz_floor_active",
+             "qcrmin_effective", "dtcld_effective")
 
 
-def check_producer_flags(fields: dict, n: int, qcrmin: float) -> None:
+def check_producer_flags(fields: dict, n: int, qcrmin: float,
+                         dtcld: float = None) -> None:
     """Cross-check every producer-emitted flag against a recomputation from the
     producer's own raw operands.
 
@@ -292,6 +295,40 @@ def check_producer_flags(fields: dict, n: int, qcrmin: float) -> None:
             raise G33Corruption(
                 f"mstep_decoded_i32[{i}] = {mv} outside the algorithmic contract "
                 f"range [{lo}, {hi}] — an invalid run")
+
+    # P0-3: mstep_native is the EFFECTIVE (post-clamp) value; mstep_input_native
+    # is the RAW mstep_col the caller passed. In a valid run the clamp is a
+    # no-op, so their bits must be identical — a break means the caller passed a
+    # mstep below the [1, ...] contract and the clamp masked it, which is a
+    # caller/runtime contract error, not a rounding finding. Bit-exact, per the
+    # native dtype (i32 for Fortran, f64 for C++).
+    idt, iraw = fields["mstep_input_native"]
+    edt, eraw = fields["mstep_native"]
+    if idt != edt:
+        raise G33Corruption(
+            f"mstep_input_native ({idt}) and mstep_native ({edt}) dtypes differ")
+    if _raw_bits(idt, iraw) != _raw_bits(edt, eraw):
+        raise G33Corruption(
+            "mstep_input_native != mstep_native — the clamp changed the caller's "
+            "mstep, so the caller passed a sub-contract value (invalid run, not a "
+            "rounding finding)")
+
+    # P0-5: the threshold/timestep the substep ACTUALLY used, checked against the
+    # sealed contract bits. Raw/safe results alone cannot catch a wrong sealed
+    # qcrmin when every rho,dz sits far above it.
+    q_eff = unpack_values(*fields["qcrmin_effective"])
+    _, qbits = _coerce_threshold("f64", qcrmin)
+    for i, qv in enumerate(_raw_bits("f64", fields["qcrmin_effective"][1])):
+        if qv != qbits:
+            raise G33Corruption(
+                f"qcrmin_effective[{i}] bits 0x{qv:x} != sealed contract qcrmin "
+                f"0x{qbits:x} — the run used a threshold the evidence does not seal")
+    if dtcld is not None:
+        _, dbits = _coerce_threshold("f64", float(dtcld))
+        for i, dv in enumerate(_raw_bits("f64", fields["dtcld_effective"][1])):
+            if dv != dbits:
+                raise G33Corruption(
+                    f"dtcld_effective[{i}] bits 0x{dv:x} != sealed dtcld 0x{dbits:x}")
 
     g = derive_gate(*fields["gate_native"])
     _demand("gate_exact_01", g["exact_01"], _got("gate_exact_01"))

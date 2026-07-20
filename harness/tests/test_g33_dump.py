@@ -687,7 +687,11 @@ _WHOLE_K_ROOTS = {"in.state.qr": "f32", "in.state.nr": "f32",
                   "in.work1_qr": "f64", "in.workn_qr": "f64",
                   "in.dend": "f32", "dend_safe": "f32",
                   "in.delz": "f32", "delz_safe": "f32"}
-_PER_COLUMN_ROOTS = {"mstep_col_safe": "f64", "gate_col": "f32"}   # cpp native widths
+# mstep_col is the RAW per-column divisor (before clamp); mstep_col_safe the
+# clamped one. Word-bounded longest-first matching keeps mstep_col from
+# shadowing mstep_col_safe.
+_PER_COLUMN_ROOTS = {"mstep_col_safe": "f64", "mstep_col": "f64",
+                     "gate_col": "f32"}   # cpp native widths
 _TORCH_DTYPE = {"kFloat": "f32", "kFloat32": "f32", "kFloat64": "f64",
                 "kDouble": "f64", "kInt32": "i32", "kInt": "i32", "kUInt8": "u8"}
 # torch:: tokens that are NOT dtypes. .to() takes device/layout/memory-format
@@ -740,6 +744,13 @@ def _to_call_args(expr: str):
 # the set of ways to PRESERVE it is small and closable.
 _RANK_PRESERVING = {"to", "round", "abs", "logical_or", "logical_and",
                     "logical_not", "clone", "detach", "contiguous"}
+# free FUNCTIONS (torch::fn(...)) that preserve their first arg's rank+dtype —
+# distinct from methods (x.fn()) because they carry a namespace qualifier.
+_RANK_PRESERVING_FNS = {"full_like"}
+# scalar FILL operands of full_like — not tensors, so not roots; the value they
+# broadcast is checked at runtime (qcrmin_effective/dtcld_effective) against the
+# sealed contract, which is where that authority belongs.
+_SCALAR_FILLS = {"p", "qcrmin", "dtcld"}
 
 
 def _strip_roots(expr: str):
@@ -776,9 +787,12 @@ def _emits_per_column(field: str, expr: str) -> bool:
     # `in.dend * abs` and `in.dend * kFloat64` both certified clean, because
     # `abs` and `kFloat64` were on the allowed list no matter where they stood.
     residue = re.sub(r"torch\s*::\s*k\w+", " ", residue)          # dtype token
+    residue = re.sub(r"\b(?:%s)\s*\(" % "|".join(sorted(_RANK_PRESERVING_FNS)),
+                     " ", residue)                                 # free fn call
+    residue = re.sub(r"\btorch\s*::", " ", residue)               # namespace qualifier
     residue = re.sub(r"[.:]+\s*(?:%s)\s*\(" % "|".join(sorted(_RANK_PRESERVING)),
                      " ", residue)                                 # method call
-    leftover = set(re.findall(r"[A-Za-z_]\w*", residue))
+    leftover = set(re.findall(r"[A-Za-z_]\w*", residue)) - _SCALAR_FILLS
     if leftover:
         raise AssertionError(
             f"{field}: unaccounted identifier(s) {sorted(leftover)} in "
@@ -794,7 +808,8 @@ def _emits_per_column(field: str, expr: str) -> bool:
     if re.search(r"\]\s*\[|\w\s*\[", expr):
         return True
     calls = set(re.findall(r"[.:]\s*([A-Za-z_]\w*)\s*\(", expr))
-    unknown = calls - _RANK_PRESERVING - {"torch"} - set(_TORCH_DTYPE)
+    unknown = (calls - _RANK_PRESERVING - _RANK_PRESERVING_FNS - {"torch"}
+               - set(_TORCH_DTYPE))
     if unknown:
         raise AssertionError(
             f"{field}: {sorted(unknown)} is not known to preserve rank, so the "
@@ -1376,11 +1391,13 @@ def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
 
 
 _QCRMIN = 1e-9
+_DTCLD = 20.0
 _N_SUB = 2       # fixture substep index: with mstep [1,2,3], gate(n=2) = [0,1,1]
 
 
 def _substep_pre_fields(**edits):
     f = {
+        "mstep_input_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
         "mstep_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
         "mstep_decoded_i32": ("i32", gd.pack_payload("i32", [1, 2, 3])),
         "mstep_exact_integer": ("u8", gd.pack_payload("u8", [1, 1, 1])),
@@ -1395,13 +1412,15 @@ def _substep_pre_fields(**edits):
         "delz_raw": ("f32", gd.pack_payload("f32", [5e-10, 5.0, 5.0])),
         "delz_safe": ("f32", gd.pack_payload("f32", [_QCRMIN, 5.0, 5.0])),
         "delz_floor_active": ("u8", gd.pack_payload("u8", [1, 0, 0])),
+        "qcrmin_effective": ("f64", gd.pack_payload("f64", [_QCRMIN] * 3)),
+        "dtcld_effective": ("f64", gd.pack_payload("f64", [_DTCLD] * 3)),
     }
     f.update(edits)
     return f
 
 
 def test_cross_check_accepts_an_honest_producer():
-    gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN)
+    gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_cross_check_catches_a_lying_producer_flag():

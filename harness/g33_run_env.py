@@ -155,7 +155,10 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
             "authority compares raw operands against THIS threshold, and a "
             "threshold rediscovered per call site is not a contract")
     qcrmin = float(qcrmin)
-    _q32 = _struct.unpack(">f", _struct.pack(">f", qcrmin))[0]
+    try:
+        _q32 = _struct.unpack(">f", _struct.pack(">f", qcrmin))[0]
+    except OverflowError:
+        _q32 = float("inf")     # a finite double too large for f32 -> +inf there
     if not _math.isfinite(_q32) or not _q32 > 0.0:
         raise ValueError(
             f"qcrmin {qcrmin!r} is not representable as a positive finite f32 — "

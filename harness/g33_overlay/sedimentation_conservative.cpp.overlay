@@ -100,6 +100,7 @@ SubstepAdvectionOutputs substep_advection_conservative(
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_safe", delz_safe);
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_floor_active",
                 (delz_safe != in.delz).to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_input_native", mstep_col);
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_native", mstep_col_safe);
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_decoded_i32",
                 mstep_col_safe.to(torch::kInt32));
@@ -112,6 +113,12 @@ SubstepAdvectionOutputs substep_advection_conservative(
                 ((gate_col == 0).logical_or(gate_col == 1)).to(torch::kUInt8));
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "active_mask",
                 (gate_col != 0).to(torch::kUInt8));
+        // P0-5: the ACTUAL threshold/timestep operands, broadcast to [B].
+                // param p.qcrmin / double dtcld promote to the tensor).
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "qcrmin_effective",
+                torch::full_like(mstep_col_safe, p.qcrmin));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dtcld_effective",
+                torch::full_like(mstep_col_safe, dtcld));
     }
 #endif
 
