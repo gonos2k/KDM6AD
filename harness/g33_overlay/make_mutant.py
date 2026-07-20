@@ -8,6 +8,7 @@ a predicted site; a mutation the gate cannot kill means the check is vacuous.
 
     make_mutant.py shadow  <in.overlay> <out.overlay>   # legacy FALK gate rung
     make_mutant.py cons_inflow <in.overlay> <out.overlay>  # conservative rho*dz transfer
+    make_mutant.py cons_prevout <in.overlay> <out.overlay>  # wrong-neighbour interface link
 """
 import sys
 
@@ -30,6 +31,19 @@ elif KIND == "cons_inflow":
     s = s.replace(old,
                   "auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1));"
                   "  // MUTANT: dropped /dst_metric")
+elif KIND == "cons_prevout":
+    # The outflow that the NEXT cell will pull in as its inflow is carried in
+    # s->prev_out. Perturbing the CARRIED value (not the record, not the metric)
+    # keeps every within-record recompute self-consistent — the offline rho*dz
+    # replay still matches the dumped inflow_final, because both use this same
+    # wrong prev_out. Only the cross-record interface link
+    # (QR_INFLOW.prev_out(k) == QR_OUTFLOW.dq_out(k-1)) can see the mismatch:
+    # the recorded prev_out is now dq_out*1.03125, but dq_out(k-1) is untouched.
+    # This is the defect the causal-link layer exists to catch and the single-
+    # record arithmetic proof cannot.
+    old = "s->prev_out = dq_out;"
+    assert s.count(old) == 1, f"cons_prevout anchor count {s.count(old)}"
+    s = s.replace(old, "s->prev_out = dq_out * 1.03125f;  // MUTANT: wrong neighbour")
 else:
     sys.exit(f"unknown mutant kind {KIND!r}")
 

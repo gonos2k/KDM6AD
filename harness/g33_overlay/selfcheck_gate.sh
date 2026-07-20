@@ -25,6 +25,8 @@ mut_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant/selfcheck_drive
 mut_rc=$?
 cons_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_cons/selfcheck_driver" 2>&1)
 cons_rc=$?
+prevout_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_prevout/selfcheck_driver" 2>&1)
+prevout_rc=$?
 
 echo "$real_out" | tail -3
 if [ "$real_rc" -ne 0 ]; then
@@ -79,6 +81,21 @@ if ! why=$(verdict_mutant "$cons_out" "$cons_rc" "$CONS_KILL"); then
     echo "$cons_out" | tail -3
     exit 1
 fi
-echo "KILL GATE PASS: real=PASS with pinned coverage; both mutants killed at their predicted sites:"
-echo "  shadow: $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
-echo "  cons:   $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"
+# MUTANT 3 — the cross-record interface link (PR B2.1). The carried neighbour
+# outflow is wrong, but every within-record recompute is self-consistent, so
+# this can ONLY die at the causal-link check, not the offline replay. Predicted
+# site is the first interior cell's QR interface link.
+PREVOUT_KILL="FAIL causal-link: conservative L1_main_n1 k=1 prev_out != QR_OUTFLOW.dq_out(k-1)"
+if [ "$prevout_rc" -eq 0 ]; then
+    echo "KILL GATE FAIL: prev_out mutant PASSED — the causal-link layer is vacuous"
+    exit 1
+fi
+if ! why=$(verdict_mutant "$prevout_out" "$prevout_rc" "$PREVOUT_KILL"); then
+    echo "KILL GATE FAIL: prev_out mutant not the controlled predicted kill: $why"
+    echo "$prevout_out" | tail -3
+    exit 1
+fi
+echo "KILL GATE PASS: real=PASS with pinned coverage; all three mutants killed at their predicted sites:"
+echo "  shadow:  $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
+echo "  cons:    $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"
+echo "  prevout: $(echo "$prevout_out" | grep -v '^(evidence' | tail -1)"

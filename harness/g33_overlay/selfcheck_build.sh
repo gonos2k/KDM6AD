@@ -69,4 +69,20 @@ if [ "${2:-}" = "--with-mutant" ]; then
         -Wl,-rpath,"$TORCHLIB" -o "$M2/selfcheck_driver" 2>"$M2/link.err" \
         || { echo "MUTANT2 LINK FAILED"; head -10 "$M2/link.err"; exit 1; }
     echo "built: $M2/selfcheck_driver (conservative inflow mutant)"
+
+    # MUTANT 3 — conservative carries the WRONG neighbour outflow into the next
+    # cell's inflow (s->prev_out *= 1.03125). Every within-record recompute stays
+    # self-consistent; only the cross-record interface link can catch it. Proves
+    # the causal-link layer (PR B2.1) is not vacuous.
+    M3="$OUT/mutant_prevout"; mkdir -p "$M3"
+    python3 "$MK" cons_prevout \
+        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
+        "$M3/sedimentation_conservative.cpp.overlay"
+    compile "$M3/sedimentation_conservative.cpp.overlay" "$M3/sed_cons.o"
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M3/sed_cons.o" "$AR" \
+        "$TORCHLIB/libtorch.dylib" "$TORCHLIB/libtorch_cpu.dylib" "$TORCHLIB/libc10.dylib" \
+        -Wl,-rpath,"$TORCHLIB" -o "$M3/selfcheck_driver" 2>"$M3/link.err" \
+        || { echo "MUTANT3 LINK FAILED"; head -10 "$M3/link.err"; exit 1; }
+    echo "built: $M3/selfcheck_driver (conservative prev_out mutant)"
 fi

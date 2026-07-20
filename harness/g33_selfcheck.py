@@ -78,6 +78,18 @@ def _np(dtype, payload):
          "i32": np.int32, "u8": np.uint8}[dtype])
 
 
+def _fallacc(records, field):
+    """{(species, k): payload} for one FALLACC field across a container — used to
+    check the fall accumulator carries continuously from one substep to the next.
+    Pure in its arguments, so it lives at module scope (not rebuilt per loop)."""
+    out = {}
+    for r in records:
+        if r["stage"] == "op" and r["op_id"].endswith("_FALLACC") \
+                and r["field"] == field:
+            out[(r["species"], r["k"])] = r["payload"]
+    return out
+
+
 def _bits(a, dt):
     # container payloads are BIG-endian per element; a native tobytes() would
     # compare LE bytes against BE payloads and fail on identical values
@@ -126,6 +138,11 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     # ladder that no longer exercises it.
     cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
            "floor_active": 0}
+    stats_links = {"n": 0}
+    # cross-substep carry: substep_post(n) must equal substep_pre(n+1), and the
+    # fall accumulator must be continuous (fall_after(n,k) == fall_before(n+1,k)).
+    # None until the first substep has been seen.
+    carry = None
     for c in index["containers"]:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
@@ -144,6 +161,39 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         gdv.check_producer_flags(pre, n_sub, seal_qcrmin, seal_dtcld)
         stats["flags"] += 1
 
+        # valid-metric gate (#6): the ρΔz metric is only meaningful when every
+        # density and layer thickness is finite and strictly positive. A zero or
+        # negative dend_safe/delz_safe would make the conservative division
+        # ill-posed and silently NaN/Inf the transfer — reject the fixture here.
+        for fld in ("dend_safe", "delz_raw", "delz_safe"):
+            vals = _np(*pre[fld])
+            if not (np.isfinite(vals).all() and (vals > 0.0).all()):
+                _die(EXIT_EVIDENCE,
+                     f"FAIL valid-metric: {c['container_id']} substep_pre.{fld} "
+                     f"has a non-finite or non-positive entry — ρΔz ill-posed")
+
+        # cross-substep continuity (#4): this substep's pre-state and incoming
+        # fall accumulator must equal the previous substep's post-state and
+        # outgoing accumulator, bit-for-bit — the chain that carries mass from
+        # one CFL sub-step to the next.
+        cur_fall_before = _fallacc(recs, "fall_before")
+        if carry is not None:
+            for sp in ("qr", "nr"):
+                if pre[sp][1] != carry["post"][sp]:
+                    _die(EXIT_FIDELITY,
+                         f"FAIL causal-link: {c['container_id']} substep_pre.{sp} "
+                         f"!= prior substep_post.{sp} (state carry broken)")
+                stats_links["n"] += 1
+            for key, before in cur_fall_before.items():
+                after = carry["fall_after"].get(key)
+                if after is None or after != before:
+                    sp, kk = key
+                    _die(EXIT_FIDELITY,
+                         f"FAIL causal-link: {c['container_id']} {sp} k={kk} "
+                         f"FALLACC.fall_before != prior FALLACC.fall_after "
+                         f"(accumulator discontinuous)")
+                stats_links["n"] += 1
+
         # coverage: decoded mstep (constant across containers) + gate for this n
         mdec = gdv.derive_mstep(*pre["mstep_native"])["decoded_i32"]
         if cov["mstep"] is None:
@@ -155,7 +205,14 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # floors must be inactive (real-atmosphere / valid_metric policy)
         for fld in ("dend_floor_active", "delz_floor_active"):
             cov["floor_active"] += int(sum(_np(*pre[fld])))
-        # cap coverage recomputed: outflow_pre_cap > source_reservoir, per species
+        # cap coverage recomputed with the comparator's own 4-state min() enum,
+        # NOT a boolean. dq_out = min(outflow_pre_cap, source_reservoir); the
+        # cap BINDS iff the reservoir is strictly smaller (RIGHT_SELECTED) and
+        # is UNBOUND iff the natural outflow is strictly smaller (LEFT_SELECTED).
+        # `bool(pre_cap > resv)` folded a VALUE_TIE (pre_cap == resv, cap sitting
+        # exactly at the reservoir) into "unbound" and a NaN (UNORDERED) into
+        # "unbound" too — so a fixture that never truly frees the cap could still
+        # read {True, False}. Recording the raw enum keeps ties and NaN distinct.
         for sp, key in (("qr", "qr_cap"), ("nr", "nr_cap")):
             op = f"{sp.upper()}_OUTFLOW"
             for k in range(K):
@@ -163,12 +220,12 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                         and r["species"] == sp and r["op_id"] == op]
                 if not hits:
                     continue
-                pre_cap = _np("f32", _payload(recs, stage="op", k=k, species=sp,
-                                              op_id=op, field="outflow_pre_cap")["payload"])
-                resv = _np("f32", _payload(recs, stage="op", k=k, species=sp,
-                                           op_id=op, field="source_reservoir")["payload"])
-                for b in range(B):
-                    cov[key].add(bool(pre_cap[b] > resv[b]))
+                pre_cap_p = _payload(recs, stage="op", k=k, species=sp,
+                                     op_id=op, field="outflow_pre_cap")["payload"]
+                resv_p = _payload(recs, stage="op", k=k, species=sp,
+                                  op_id=op, field="source_reservoir")["payload"]
+                for br in gdv.classify_min("f32", pre_cap_p, resv_p):
+                    cov[key].add(br)
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)
         w1 = _np(*pre["work1_qr"]).reshape(B, K)
@@ -227,6 +284,20 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
             def ri(f, cell_k):
                 return _payload(recs, stage="op", k=cell_k, species="qr",
                                 op_id="QR_INFLOW", field=f)["payload"]
+            snap = {f: _np(*pre[f]).reshape(B, K)
+                    for f in ("qr", "nr", "dend_safe", "delz_raw", "delz_safe")}
+
+            def op_bits(k_, sp_, opid, field):
+                return _payload(recs, stage="op", k=k_, species=sp_,
+                                op_id=opid, field=field)["payload"]
+
+            def link(cond, k_, msg):
+                if not cond:
+                    _die(EXIT_FIDELITY,
+                         f"FAIL causal-link: {algorithm} {c['container_id']} "
+                         f"k={k_} {msg}")
+                stats_links["n"] += 1
+
             for k in range(1, K):
                 prev = _np("f32", ri("prev_out", k))
                 ds_src = _np("f32", ri("dend_safe_src", k))
@@ -245,6 +316,88 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                              f"k={k} qr QR_INFLOW.{field}")
                     stats["inflow_rungs"] += 1
 
+                # ── CROSS-RECORD CAUSAL LINKS (raw-bit) ──────────────────────
+                # A single record's arithmetic can be internally consistent yet
+                # wire the WRONG neighbour cell or the wrong snapshot column.
+                # These bind the inflow to its actual upstream source and the
+                # substep_pre metric it must have used.
+                # interface link: prev_out(k) is the cell-above's actual dq_out
+                link(ri("prev_out", k) == op_bits(k - 1, "qr", "QR_OUTFLOW", "dq_out"),
+                     k, "prev_out != QR_OUTFLOW.dq_out(k-1)")
+                # metric links: op operands are the whole-K snapshot columns
+                link(ri("dend_safe_src", k) == _bits(snap["dend_safe"][:, k - 1], "f32"),
+                     k, "dend_safe_src != substep_pre.dend_safe[:, k-1]")
+                link(ri("delz_raw_src", k) == _bits(snap["delz_raw"][:, k - 1], "f32"),
+                     k, "delz_raw_src != substep_pre.delz_raw[:, k-1]")
+                link(ri("dend_safe_dst", k) == _bits(snap["dend_safe"][:, k], "f32"),
+                     k, "dend_safe_dst != substep_pre.dend_safe[:, k]")
+                link(ri("delz_safe_dst", k) == _bits(snap["delz_safe"][:, k], "f32"),
+                     k, "delz_safe_dst != substep_pre.delz_safe[:, k]")
+                # state links (QR): the conservative update has NO clamp, so the
+                # chain must close entirely from recorded bits —
+                #   q_before == substep_pre.qr[:, k]
+                #   q_minus_out == q_before - QR_OUTFLOW.dq_out
+                #   q_plus_in_preclamp == q_minus_out + inflow_final
+                #   q_post == q_plus_in_preclamp   (record equality, no clamp)
+                link(op_bits(k, "qr", "QR_UPDATE", "q_before") == _bits(snap["qr"][:, k], "f32"),
+                     k, "QR_UPDATE.q_before != substep_pre.qr[:, k]")
+                q_before = _np("f32", op_bits(k, "qr", "QR_UPDATE", "q_before"))
+                dq_out = _np("f32", op_bits(k, "qr", "QR_OUTFLOW", "dq_out"))
+                q_minus = q_before - dq_out
+                link(op_bits(k, "qr", "QR_UPDATE", "q_minus_out") == _bits(q_minus, "f32"),
+                     k, "QR_UPDATE.q_minus_out != q_before - dq_out")
+                q_minus_q = _np("f32", op_bits(k, "qr", "QR_UPDATE", "q_minus_out"))
+                inflow_q = _np("f32", op_bits(k, "qr", "QR_INFLOW", "inflow_final"))
+                link(op_bits(k, "qr", "QR_UPDATE", "q_plus_in_preclamp")
+                     == _bits(q_minus_q + inflow_q, "f32"),
+                     k, "QR_UPDATE.q_plus_in_preclamp != q_minus_out + inflow_final")
+                link(op_bits(k, "qr", "QR_UPDATE", "q_post")
+                     == op_bits(k, "qr", "QR_UPDATE", "q_plus_in_preclamp"),
+                     k, "QR_UPDATE.q_post != q_plus_in_preclamp (a clamp appeared)")
+
+                # ── NR chain: interface + dz-only metric + state ────────────────
+                # nr transfer is dz-ONLY (the frozen number-moment defect,
+                # [[conservative-nr-number-moment-blocker]]): inflow_final =
+                # (prev_out_nr * delz_raw_src) / delz_safe_dst — NO density ratio.
+                # These links bind that transfer to its upstream cell and columns
+                # without endorsing the physics.
+                def nri(f):
+                    return op_bits(k, "nr", "NR_INFLOW", f)
+                link(nri("prev_out_nr") == op_bits(k - 1, "nr", "NR_OUTFLOW", "dn_out"),
+                     k, "NR_INFLOW.prev_out_nr != NR_OUTFLOW.dn_out(k-1)")
+                link(nri("delz_raw_src") == _bits(snap["delz_raw"][:, k - 1], "f32"),
+                     k, "NR_INFLOW.delz_raw_src != substep_pre.delz_raw[:, k-1]")
+                link(nri("delz_safe_dst") == _bits(snap["delz_safe"][:, k], "f32"),
+                     k, "NR_INFLOW.delz_safe_dst != substep_pre.delz_safe[:, k]")
+                nprev = _np("f32", nri("prev_out_nr"))
+                ndz_src = _np("f32", nri("delz_raw_src"))
+                ndz_dst = _np("f32", nri("delz_safe_dst"))
+                n_mul = nprev * ndz_src               # mul_delz_src (dz-only)
+                n_inflow = n_mul / ndz_dst            # inflow_final
+                link(nri("mul_delz_src") == _bits(n_mul, "f32"),
+                     k, "NR_INFLOW.mul_delz_src != prev_out_nr * delz_raw_src")
+                link(nri("inflow_final") == _bits(n_inflow, "f32"),
+                     k, "NR_INFLOW.inflow_final != mul_delz_src / delz_safe_dst")
+                link(op_bits(k, "nr", "NR_UPDATE", "n_before") == _bits(snap["nr"][:, k], "f32"),
+                     k, "NR_UPDATE.n_before != substep_pre.nr[:, k]")
+                n_before = _np("f32", op_bits(k, "nr", "NR_UPDATE", "n_before"))
+                dn_out = _np("f32", op_bits(k, "nr", "NR_OUTFLOW", "dn_out"))
+                n_minus = n_before - dn_out
+                link(op_bits(k, "nr", "NR_UPDATE", "n_minus_out") == _bits(n_minus, "f32"),
+                     k, "NR_UPDATE.n_minus_out != n_before - dn_out")
+                link(op_bits(k, "nr", "NR_UPDATE", "n_plus_in_preclamp")
+                     == _bits(n_minus + n_inflow, "f32"),
+                     k, "NR_UPDATE.n_plus_in_preclamp != n_minus_out + inflow_final")
+                link(op_bits(k, "nr", "NR_UPDATE", "n_post")
+                     == op_bits(k, "nr", "NR_UPDATE", "n_plus_in_preclamp"),
+                     k, "NR_UPDATE.n_post != n_plus_in_preclamp (a clamp appeared)")
+
+        # store this substep's post-state and outgoing accumulator for the next
+        # iteration's continuity check.
+        post = {r["field"]: r["payload"]
+                for r in recs if r["stage"] == "substep_post"}
+        carry = {"post": post, "fall_after": _fallacc(recs, "fall_after")}
+
     # branch-coverage verdict — the fixture must actually exercise every branch
     # the ladder claims to test, proven from the evidence, not assumed.
     lo, hi = 1, MSTEPMAX
@@ -260,15 +413,27 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE,
              f"FAIL coverage: {cov['floor_active']} density/metric floor "
              f"activations — a valid_metric fixture must have zero")
+    # strict cap coverage: the fixture must produce at least one STRICTLY-bound
+    # (RIGHT_SELECTED: reservoir < pre_cap) AND one STRICTLY-unbound
+    # (LEFT_SELECTED: pre_cap < reservoir) element, per species. A VALUE_TIE
+    # alone proves nothing (both branches agree on the value), and a NaN
+    # (UNORDERED) reaching a cap is a hard FAIL, never coverage.
     for key, label in (("qr_cap", "QR"), ("nr_cap", "NR")):
-        if cov[key] != {True, False}:
+        seen = cov[key]
+        if gdv.BRANCH_UNORDERED in seen:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL coverage: {label} outflow cap saw an UNORDERED (NaN) "
+                 f"operand — a NaN reached min(); the fixture is corrupt")
+        if not (gdv.BRANCH_LEFT_SELECTED in seen and gdv.BRANCH_RIGHT_SELECTED in seen):
             _die(EXIT_EVIDENCE,
                  f"FAIL coverage: {label} outflow cap did not exercise BOTH "
-                 f"bound and unbound (saw {sorted(cov[key])}) — the fixture no "
-                 f"longer tests the cap branch")
+                 f"strictly-bound (RIGHT_SELECTED) and strictly-unbound "
+                 f"(LEFT_SELECTED) (saw {sorted(seen)}) — a VALUE_TIE does not "
+                 f"count; the fixture no longer tests the cap branch")
     stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
                          f"floors {cov['floor_active']}, "
-                         f"QR/NR cap both bound+unbound")
+                         f"QR/NR cap both strictly bound+unbound, "
+                         f"{stats_links['n']} causal links")
     return stats
 
 
