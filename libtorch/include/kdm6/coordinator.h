@@ -41,7 +41,7 @@ struct CoordinatorForcing {
     torch::Tensor p;     // pressure [Pa]
     torch::Tensor den;   // air density
     torch::Tensor delz;  // layer thickness
-    torch::Tensor dend;  // density × delz
+    torch::Tensor dend;  // legacy name; air density rho [kg m^-3], NOT rho*delz (runtime.cpp:66, Fortran F:812 dend=den)
 };
 
 // Subset of PreambleOutputs that state_update actually consumes. Full preamble

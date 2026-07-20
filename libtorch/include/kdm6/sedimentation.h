@@ -44,7 +44,7 @@ struct SubstepAdvectionInputs {
     torch::Tensor fall_qs_in, fall_qg_in, fall_brs_in;
     torch::Tensor work1_qr, workn_qr;
     torch::Tensor work1_qs, work1_qg;
-    torch::Tensor delz, dend;
+    torch::Tensor delz, dend;   // dend: air density rho [kg m^-3], NOT rho*delz
 };
 
 SubstepAdvectionOutputs substep_advection_torch(
