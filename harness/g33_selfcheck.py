@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
 import os
 import subprocess
 import sys
@@ -77,6 +76,18 @@ def _np(dtype, payload):
     return np.frombuffer(payload, dtype=kind).astype(
         {"f32": np.float32, "f64": np.float64,
          "i32": np.int32, "u8": np.uint8}[dtype])
+
+
+def _fallacc(records, field):
+    """{(species, k): payload} for one FALLACC field across a container — used to
+    check the fall accumulator carries continuously from one substep to the next.
+    Pure in its arguments, so it lives at module scope (not rebuilt per loop)."""
+    out = {}
+    for r in records:
+        if r["stage"] == "op" and r["op_id"].endswith("_FALLACC") \
+                and r["field"] == field:
+            out[(r["species"], r["k"])] = r["payload"]
+    return out
 
 
 def _bits(a, dt):
@@ -156,7 +167,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # ill-posed and silently NaN/Inf the transfer — reject the fixture here.
         for fld in ("dend_safe", "delz_raw", "delz_safe"):
             vals = _np(*pre[fld])
-            if not all(math.isfinite(v) and v > 0.0 for v in vals):
+            if not (np.isfinite(vals).all() and (vals > 0.0).all()):
                 _die(EXIT_EVIDENCE,
                      f"FAIL valid-metric: {c['container_id']} substep_pre.{fld} "
                      f"has a non-finite or non-positive entry — ρΔz ill-posed")
@@ -165,14 +176,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # fall accumulator must equal the previous substep's post-state and
         # outgoing accumulator, bit-for-bit — the chain that carries mass from
         # one CFL sub-step to the next.
-        def fallacc(records, field):
-            out = {}
-            for r in records:
-                if r["stage"] == "op" and r["op_id"].endswith("_FALLACC") \
-                        and r["field"] == field:
-                    out[(r["species"], r["k"])] = r["payload"]
-            return out
-        cur_fall_before = fallacc(recs, "fall_before")
+        cur_fall_before = _fallacc(recs, "fall_before")
         if carry is not None:
             for sp in ("qr", "nr"):
                 if pre[sp][1] != carry["post"][sp]:
@@ -342,10 +346,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                 q_minus = q_before - dq_out
                 link(op_bits(k, "qr", "QR_UPDATE", "q_minus_out") == _bits(q_minus, "f32"),
                      k, "QR_UPDATE.q_minus_out != q_before - dq_out")
-                n_minus_q = _np("f32", op_bits(k, "qr", "QR_UPDATE", "q_minus_out"))
+                q_minus_q = _np("f32", op_bits(k, "qr", "QR_UPDATE", "q_minus_out"))
                 inflow_q = _np("f32", op_bits(k, "qr", "QR_INFLOW", "inflow_final"))
                 link(op_bits(k, "qr", "QR_UPDATE", "q_plus_in_preclamp")
-                     == _bits(n_minus_q + inflow_q, "f32"),
+                     == _bits(q_minus_q + inflow_q, "f32"),
                      k, "QR_UPDATE.q_plus_in_preclamp != q_minus_out + inflow_final")
                 link(op_bits(k, "qr", "QR_UPDATE", "q_post")
                      == op_bits(k, "qr", "QR_UPDATE", "q_plus_in_preclamp"),
@@ -392,7 +396,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # iteration's continuity check.
         post = {r["field"]: r["payload"]
                 for r in recs if r["stage"] == "substep_post"}
-        carry = {"post": post, "fall_after": fallacc(recs, "fall_after")}
+        carry = {"post": post, "fall_after": _fallacc(recs, "fall_after")}
 
     # branch-coverage verdict — the fixture must actually exercise every branch
     # the ladder claims to test, proven from the evidence, not assumed.
