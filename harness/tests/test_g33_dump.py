@@ -21,7 +21,7 @@ import g33_expectation as ge
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
          "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"],
-         "qcrmin": 1e-9,
+         "qcrmin": 1e-9, "dtcld": 20.0,
          "instrumented_stages": ["substep_pre", "op", "surface", "outer_pre_sed",
                                  "outer_post_sed", "outer_post_micro",
                                  "reslope_input", "reslope_output", "substep_post"]}
@@ -976,7 +976,7 @@ def test_descriptors_are_sealed_per_container(tmp_path):
     index = ge.run_index(sched)
     assert set(shas) == {c["container_id"] for c in index["containers"]}
     for c in index["containers"]:
-        lines = (tmp_path / f"{c['container_id']}.desc").read_text().splitlines()
+        lines = (tmp_path / f"{c['container_id']}.desc").read_text(encoding="utf-8").splitlines()
         assert len(lines) == c["record_count"]
         first = int(lines[0].split("|")[0])
         last = int(lines[-1].split("|")[0])
@@ -1429,15 +1429,15 @@ def test_cross_check_catches_a_lying_producer_flag():
         gdv.check_producer_flags(_substep_pre_fields(
             mstep_native=("f64", gd.pack_payload_bits(
                 "f64", [0x3FF0000000000000, 0x4000000000000001,
-                        0x4008000000000000]))), _N_SUB, _QCRMIN)
+                        0x4008000000000000]))), _N_SUB, _QCRMIN, _DTCLD)
     with pytest.raises(gd.G33Corruption, match="delz_floor_active"):
         gdv.check_producer_flags(_substep_pre_fields(
             delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))),
-            _N_SUB, _QCRMIN)
+            _N_SUB, _QCRMIN, _DTCLD)
     with pytest.raises(gd.G33Corruption, match="active_mask"):
         gdv.check_producer_flags(_substep_pre_fields(
             active_mask=("u8", gd.pack_payload("u8", [0, 1, 0]))),
-            _N_SUB, _QCRMIN)
+            _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_cross_check_refuses_missing_operands():
@@ -1445,7 +1445,7 @@ def test_cross_check_refuses_missing_operands():
     f = _substep_pre_fields()
     del f["gate_native"]
     with pytest.raises(gd.G33Corruption, match="missing operand"):
-        gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+        gdv.check_producer_flags(f, _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_surface_expectation_is_per_species():
@@ -1535,7 +1535,7 @@ def test_gate_that_is_exactly_01_but_wrong_is_caught_by_the_mstep_law():
         gate_exact_01=("u8", gd.pack_payload("u8", [1, 1, 1])),
         active_mask=("u8", gd.pack_payload("u8", [1, 1, 1])))
     with pytest.raises(gd.G33Corruption, match="gate_vs_mstep_law"):
-        gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN)
+        gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_mstep_input_effective_and_operand_bindings():
@@ -1574,7 +1574,7 @@ def test_honestly_reported_nonintegral_mstep_is_still_invalid():
         gate_decoded_u8=("u8", gd.pack_payload("u8", [0, 1, 1])),
         active_mask=("u8", gd.pack_payload("u8", [0, 1, 1])))
     with pytest.raises(gd.G33Corruption, match="not exactly integral"):
-        gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+        gdv.check_producer_flags(f, _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_mstep_outside_the_contract_range_is_an_invalid_run():
@@ -1583,7 +1583,7 @@ def test_mstep_outside_the_contract_range_is_an_invalid_run():
             mstep_native=("f64", gd.pack_payload("f64", bad_mstep)),
             mstep_decoded_i32=("i32", gd.pack_payload("i32", bad_decoded)))
         with pytest.raises(gd.G33Corruption, match="contract range"):
-            gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+            gdv.check_producer_flags(f, _N_SUB, _QCRMIN, _DTCLD)
 
 
 def test_floor_authority_is_the_threshold_relation_not_the_output_diff():
@@ -1632,7 +1632,7 @@ def test_run_contract_is_sealed_as_a_file(tmp_path):
     sealed = dict(e.split(":") for e in env["KDM6_G33_SCHEMA_SHA256"].split(","))
     assert {x["container_id"]: x["descriptor_sha256"] for x in c["containers"]} == sealed
     # the side-car digest matches the bytes on disk
-    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text().split()[0]
+    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text(encoding="utf-8").split()[0]
     assert sha_line == _h.sha256(body).hexdigest()
 
 
@@ -1701,7 +1701,7 @@ def test_substep_index_rejects_bool_and_nonint():
     # bool is an int subclass; `type(n) is int` excludes it without a special case
     for bad in (True, False, 0, -1, 1.5, "2", None):
         with pytest.raises(gd.G33Corruption, match="positive int"):
-            gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN)
+            gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN, _DTCLD)
 
 
 _STAGE_HOME = {                       # which overlay emits which stage
@@ -1810,3 +1810,34 @@ def test_conservative_op_ladder_order_matches_the_manifest():
     assert is_subseq(mid, em), "INTERIOR sequence not derivable from the source order"
     assert set(em) == set(top) | set(mid)
     assert '(k == 0) ? "TOP"' in src and '"BOTTOM" : "INTERIOR"' in src
+
+
+def test_dtcld_is_a_required_sealed_scalar(tmp_path):
+    # P0-1: dtcld was an optional comparator arg (dtcld=None silently skipped
+    # its bit check) and absent from the run contract. It is now a required
+    # schedule field, sealed like qcrmin, and a mandatory comparator argument.
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    cmap = [[i, 0, i, i] for i in range(SCHED["B"])]
+    base = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    # missing / non-finite / non-f32 dtcld all refused at seal time
+    for i, bad in enumerate((None, float("inf"), float("nan"), 0.0, -1.0,
+                             1e100, "20")):
+        sched = ({k: v for k, v in base.items() if k != "dtcld"} if bad is None
+                 else {**base, "dtcld": bad})
+        with pytest.raises(ValueError, match="dtcld"):
+            g33_run_env.build_env(sched, tmp_path / f"d{i}", binary=binary,
+                                  column_map=cmap, run_uuid="u",
+                                  column_layout_id="l", repo=repo)
+    # sealed into the contract next to qcrmin
+    import json as _j
+    g33_run_env.build_env(base, tmp_path / "ok", binary=binary, column_map=cmap,
+                          run_uuid="u", column_layout_id="l", repo=repo)
+    c = _j.loads((tmp_path / "ok" / "run_contract.json").read_text(encoding="utf-8"))
+    assert c["dtcld"] == SCHED["dtcld"] and c["qcrmin"] == SCHED["qcrmin"]
+    # comparator now REQUIRES dtcld (no default) — a wrong dtcld can no longer
+    # be skipped by omission
+    with pytest.raises(TypeError):
+        gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN)

@@ -244,14 +244,14 @@ _REQUIRED = ("mstep_input_native", "mstep_native",
              "qcrmin_effective", "dtcld_effective")
 
 
-def check_producer_flags(fields: dict, n: int, qcrmin: float,
-                         dtcld: float = None) -> None:
+def check_producer_flags(fields: dict, n: int, qcrmin: float, dtcld: float) -> None:
     """Cross-check every producer-emitted flag against a recomputation from the
     producer's own raw operands.
 
     `fields` maps field name -> (dtype, payload) for ONE substep_pre group;
-    `n` is this substep's 1-based index and `qcrmin` the scheme floor from the
-    run contract. Any disagreement means the producer's arithmetic is not what
+    `n` is this substep's 1-based index; `qcrmin` and `dtcld` are the sealed
+    scalar operands from the run contract (both REQUIRED — an omitted dtcld used
+    to silently skip its bit check). Any disagreement means the producer's arithmetic is not what
     its evidence claims — the run is invalid, so this raises rather than
     reports.
     """
@@ -327,15 +327,14 @@ def check_producer_flags(fields: dict, n: int, qcrmin: float,
             raise G33Corruption(
                 f"qcrmin_effective[{i}] bits 0x{qv:x} != sealed contract qcrmin "
                 f"0x{qbits:x} — the run used a threshold the evidence does not seal")
-    if dtcld is not None:
-        ddt, draw = fields["dtcld_effective"]
-        if ddt != "f64":
-            raise G33Corruption(f"dtcld_effective dtype {ddt!r} is not f64")
-        _, dbits = _coerce_threshold("f64", float(dtcld))
-        for i, dv in enumerate(_raw_bits(ddt, draw)):
-            if dv != dbits:
-                raise G33Corruption(
-                    f"dtcld_effective[{i}] bits 0x{dv:x} != sealed dtcld 0x{dbits:x}")
+    ddt, draw = fields["dtcld_effective"]
+    if ddt != "f64":
+        raise G33Corruption(f"dtcld_effective dtype {ddt!r} is not f64")
+    _, dbits = _coerce_threshold("f64", float(dtcld))
+    for i, dv in enumerate(_raw_bits(ddt, draw)):
+        if dv != dbits:
+            raise G33Corruption(
+                f"dtcld_effective[{i}] bits 0x{dv:x} != sealed dtcld 0x{dbits:x}")
 
     g = derive_gate(*fields["gate_native"])
     _demand("gate_exact_01", g["exact_01"], _got("gate_exact_01"))

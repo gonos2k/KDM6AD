@@ -58,7 +58,7 @@ def _sched(algorithm: str) -> dict:
     return {"case_id": "selfcheck", "pair_id": "selfpair", "backend": "cpp",
             "algorithm": algorithm, "B": B, "K": K, "loops": 1,
             "mstepmax_main": [MSTEPMAX], "mstepmax_ice": [1],
-            "species_scope": ["qr", "nr"], "qcrmin": QCRMIN,
+            "species_scope": ["qr", "nr"], "qcrmin": QCRMIN, "dtcld": DTCLD,
             "instrumented_stages": ["substep_pre", "op", "substep_post"]}
 
 
@@ -93,6 +93,13 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     if r.returncode != 0:
         _die(EXIT_DRIVER, f"FAIL: driver rc={r.returncode}\n{r.stdout}{r.stderr}")
 
+    # bind the comparator to the SEALED contract, not the module constants: a
+    # drifted schedule would then be caught by the qcrmin/dtcld bit checks
+    # rather than silently agreeing with a hardcoded fixture value.
+    contract = json.loads(
+        (workdir / "run_contract.json").read_text(encoding="utf-8"))
+    seal_qcrmin, seal_dtcld = contract["qcrmin"], contract["dtcld"]
+
     # 1. container-set completeness: exactly the sealed set, nothing else
     index = ge.run_index(sched)
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
@@ -111,7 +118,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
         pre = {r["field"]: (r["dtype"], r["payload"])
                for r in recs if r["stage"] == "substep_pre"}
-        gdv.check_producer_flags(pre, n_sub, QCRMIN, DTCLD)
+        gdv.check_producer_flags(pre, n_sub, seal_qcrmin, seal_dtcld)
         stats["flags"] += 1
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)

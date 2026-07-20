@@ -319,9 +319,11 @@ L<loop>_surface          # per-species surface causal path
 L<loop>_outer_post_sed   # post-sed / post-REAL(4) re-clamp state
 L<loop>_outer_post_micro # end-of-sub-cycle state
 ```
-`run_index.json` (harness-sealed BEFORE the run) is the AUTHORITY for this exact
-container set and the contiguous global op_seq tiling — the producer never
-infers it. Each container header carries:
+`run_contract.json`'s `containers` array (harness-sealed BEFORE the run) is the
+PERSISTED AUTHORITY for this exact container set and the contiguous global op_seq
+tiling — the producer never infers it. `run_index()` is the in-memory pre-run
+generator of that table; there is no separate `run_index.json` (a second copy
+would be a drift surface for the same information). Each container header carries:
 ```
 HEADER  magic="KDG33OP" format_version(=2) producer_commit binary_sha256
         resolved_binary_path resolved_binary_sha256      # dladdr-measured (P0-5)
