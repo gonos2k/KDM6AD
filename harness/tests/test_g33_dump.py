@@ -21,6 +21,7 @@ import g33_expectation as ge
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
          "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"],
+         "qcrmin": 1e-9,
          "instrumented_stages": ["substep_pre", "op", "surface", "outer_pre_sed",
                                  "outer_post_sed", "outer_post_micro",
                                  "reslope_input", "reslope_output", "substep_post"]}
@@ -1534,3 +1535,53 @@ def test_floor_authority_is_the_threshold_relation_not_the_output_diff():
     # -0.0 raw is BELOW a positive floor and must come back as the threshold
     neg0 = gd.pack_payload_bits("f32", [0x80000000])
     gdv.check_floor_semantics("f32", neg0, gd.pack_payload("f32", [_QCRMIN]), _QCRMIN)
+
+
+# ── P0-6: the run contract is a persisted artifact ───────────────────────────
+def test_run_contract_is_sealed_as_a_file(tmp_path):
+    import hashlib as _h, json as _j
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    env = g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                                column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+                                run_uuid="u-1", column_layout_id="lc05-3col",
+                                repo=repo)
+    body = (tmp_path / "o" / "run_contract.json").read_bytes()
+    c = _j.loads(body)
+    # the contract and the environment must describe the SAME sealing
+    assert c["binary_sha256"] == env["KDM6_G33_BINARY_SHA256"]
+    assert c["qcrmin"] == SCHED["qcrmin"]
+    index = ge.run_index(sched)
+    assert [x["container_id"] for x in c["containers"]] == \
+           [x["container_id"] for x in index["containers"]]
+    for cc, ic in zip(c["containers"], index["containers"]):
+        assert (cc["first_op_seq_id"], cc["last_op_seq_id"]) == \
+               (ic["first_op_seq_id"], ic["last_op_seq_id"])
+    sealed = dict(e.split(":") for e in env["KDM6_G33_SCHEMA_SHA256"].split(","))
+    assert {x["container_id"]: x["descriptor_sha256"] for x in c["containers"]} == sealed
+    # the side-car digest matches the bytes on disk
+    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text().split()[0]
+    assert sha_line == _h.sha256(body).hexdigest()
+
+
+def test_run_contract_refuses_overwrite_and_missing_qcrmin(tmp_path):
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    cmap = [[i, 0, i, i] for i in range(SCHED["B"])]
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    g33_run_env.build_env(sched, tmp_path / "o", binary=binary, column_map=cmap,
+                          run_uuid="u-1", column_layout_id="l", repo=repo)
+    with pytest.raises(FileExistsError, match="one contract per run"):
+        g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                              column_map=cmap, run_uuid="u-2",
+                              column_layout_id="l", repo=repo)
+    nosched = {k: v for k, v in sched.items() if k != "qcrmin"}
+    with pytest.raises(ValueError, match="qcrmin"):
+        g33_run_env.build_env(nosched, tmp_path / "o2", binary=binary,
+                              column_map=cmap, run_uuid="u-3",
+                              column_layout_id="l", repo=repo)

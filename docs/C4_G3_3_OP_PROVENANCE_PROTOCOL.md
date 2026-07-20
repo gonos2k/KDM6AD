@@ -69,6 +69,33 @@ Acceptance: recomputed `exact_integer==true`, recomputed `decoded_i32` in range,
 
 ---
 
+### Units contract (owner meteorological review §1.1) — pinned from the host source
+
+Raw-bit parity needs no units; any CONSERVATION claim does. These are cited from
+the host source, not asserted from memory:
+
+| variable | meaning | units | column measure |
+|---|---|---|---|
+| `qr` | rain-water mixing ratio | kg kg⁻¹ | ρ Δz qr |
+| `nr` | rain number **MIXING RATIO** — host `Registry.EM_COMMON:122`: `qnr_gc … "rain num concentration" "# kg-1"` | # kg⁻¹ | **ρ Δz nr** |
+| `fallsum` / `bottom_fall_*` | bottom-cell fall-rate density | kg m⁻³ s⁻¹ | — |
+| `surface_mul1` | `fallsum·Δz(kts)/denr` | m s⁻¹ liquid-equivalent | — |
+| `rain_increment` (rainncv) | `fallsum·Δz(kts)/denr·dtcld·1000.` (`module_mp_kdm6_cons.F:1504`) | mm per step | — |
+
+Consequence, stated so it cannot be blurred later: `nr` is a mixing ratio, so
+the physically complete column-number measure is **ρ Δz nr**. The conservative
+number rung transports ΔN with the Δz ratio ONLY — faithful to the corrected
+Fortran reference, which is exactly what G3.3-M compares — and therefore
+"Fortran-faithful" and "physically conserving column number" are DIFFERENT
+claims. G3.3-M makes only the first. Any conservation statement must use the
+ρΔz measure and belongs to the oracle water/number-budget diagnostics, never to
+this gate. The same separation bounds the verdict itself: a G3.3-M PASS
+establishes that the observed Fortran↔C++ difference did not ORIGINATE in
+conservative-only arithmetic but in a mechanism common to both variants — it
+says nothing about which variant is meteorologically more correct; that
+question is answered afterwards with column water, precipitation, hydrometeor
+profiles and BT/obs-cost, not here.
+
 ## 3. Exact per-rung op ladders — pinned to the code (raw/safe, top vs interior, mass vs number)
 
 The "ρΔz conversion" is a concept; the gate records the **operational expression**. Verified against
