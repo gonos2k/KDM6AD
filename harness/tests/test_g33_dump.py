@@ -5,29 +5,39 @@ REJECT corrupt / missing / duplicate / stale / provenance-drift evidence, so a
 buggy or tampered dump can never read as valid.
 """
 import json
+import re
 import struct
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+import g33_derived as gdv
 import g33_dump as gd
 import g33_expectation as ge
 
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
-         "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"]}
+         "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"],
+         "instrumented_stages": ["substep_pre", "op", "surface", "outer_pre_sed",
+                                 "outer_post_sed", "outer_post_micro",
+                                 "reslope_input", "reslope_output", "substep_post"]}
 
 
 def _header(**over):
     h = {"producer_commit": "deadbeef", "binary_sha256": "0" * 64,
+         "resolved_binary_path": "/fixtures/libkdm6ad.dylib",
+         "resolved_binary_sha256": "0" * 64,
          "case_id": SCHED["case_id"], "pair_id": SCHED["pair_id"],
          "backend": SCHED["backend"], "algorithm": SCHED["algorithm"],
          "B": SCHED["B"], "K": SCHED["K"], "column_layout_id": "lc05-3col",
          "column_index_map": [[i, 0, i, i] for i in range(SCHED["B"])],
          "canonical_k_order": "top-first",
-         "run_uuid": "uuid-1", "process_id": "111", "owner_thread_id": "222",
+         "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
+         "container_id": "L1_main_n1", "descriptor_sha256": "a" * 64,
+         "global_op_seq_start": 0, "global_op_seq_end": 1_000_000,
          "record_count_expected": 0}
     h.update(over)
     return h
@@ -121,13 +131,16 @@ def test_stale_tmp(tmp_path):
 
 
 def test_duplicate_seq(tmp_path):
+    # seq_no must be EXACTLY its record index, so a repeat is a gap, not merely a
+    # duplicate: a monotonicity-only rule would accept 0,1,1 losing one record.
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 5, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
-         "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "falk_f32"}
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1,
+         "cell_role": "TOP", "species": "qr", "op_id": "QR_FALK", "stage": "op",
+         "field": "falk_f32"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="duplicate seq_no"):
-        w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="seq_no"):
+        w.record({**r, "op_seq_id": 1}, "f32", [1], gd.pack_payload("f32", [1]))
 
 
 def test_nonmonotone_seq(tmp_path):
@@ -135,15 +148,41 @@ def test_nonmonotone_seq(tmp_path):
     w = gd.G33Writer(p, _header())
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
             "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
-    w.record({**base, "seq_no": 10}, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="non-monotone"):
-        w.record({**base, "seq_no": 4}, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="seq_no"):
+        w.record({**base, "seq_no": 10, "op_seq_id": 10}, "f32", [1],
+                 gd.pack_payload("f32", [1]))
+
+
+def test_op_seq_id_must_advance(tmp_path):
+    # op_seq_id is MEASURED global execution order. A repeat or a step backwards
+    # means two records claim the same instant, which would make an out-of-order
+    # replay indistinguishable from the real order.
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header())
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+            "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
+        w.record({**base, "seq_no": 1, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+
+
+def test_op_seq_id_outside_declared_window(tmp_path):
+    # The header window is DECLARED before the run (run_index.json). A record
+    # landing outside it is the signature of a container that executed out of
+    # the declared order — the reason the window is declared rather than derived.
+    p = tmp_path / "c.g33"
+    w = gd.G33Writer(p, _header(global_op_seq_start=100, global_op_seq_end=200))
+    r = {"seq_no": 0, "op_seq_id": 99, "outer_loop": 1, "chain": "main", "n": 1,
+         "cell_role": "TOP", "species": "qr", "op_id": "QR_FALK", "stage": "op",
+         "field": "f"}
+    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
+        w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
 
 
 def test_payload_size_mismatch_writer(tmp_path):
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     with pytest.raises(gd.G33Corruption, match="payload size"):
         w.record(r, "f32", [4], gd.pack_payload("f32", [1, 2]))  # shape 4 but 2 elems
@@ -154,7 +193,7 @@ def test_finalize_no_clobber(tmp_path):
     # no-overwrite check) must NOT be destroyed by finalize().
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
     p.write_bytes(b"OTHER-COMPLETED-CONTAINER")   # concurrent completed output
@@ -167,7 +206,7 @@ def test_finalize_no_clobber(tmp_path):
 def test_no_footer_without_finalize(tmp_path):
     p = tmp_path / "c.g33"
     with gd.G33Writer(p, _header()) as w:
-        r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+        r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
              "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
         w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
         # leave the context WITHOUT finalize() -> no COMPLETE container appears
@@ -211,7 +250,8 @@ def test_missing_record_detected(tmp_path):
 
 def test_extra_record_detected(tmp_path):
     recs = ge.expected_records(SCHED)
-    extra = dict(recs[0]); extra["field"] = "bogus_extra"; extra["seq_no"] = len(recs)
+    extra = dict(recs[0]); extra["field"] = "bogus_extra"
+    extra["seq_no"] = len(recs); extra["op_seq_id"] = recs[-1]["op_seq_id"] + 1
     recs2 = recs + [extra]
     p = tmp_path / "c.g33"; _write_valid(p, recs2)
     observed = {ge.record_key(r) for r in gd.read_container(p)["records"]}
@@ -290,8 +330,10 @@ def test_bad_species_scope_fails_loudly_instead_of_disabling_the_op_check():
     for bad in ([], ["QR"], ["qr ", "nr"], ["rain"]):
         with pytest.raises(ValueError):
             ge.expected_records({**SCHED, "species_scope": bad})
-    # a degenerate schedule (no substeps) must also be refused, not accepted
-    with pytest.raises(ValueError, match="no op records"):
+    # a degenerate schedule (no substeps) must also be refused, not accepted.
+    # Schedule validation now rejects mstepmax<1 up front, so the vacuous-manifest
+    # guard is never reached from here — assert the refusal, not which layer made it.
+    with pytest.raises(ValueError, match="no op records|< 1"):
         ge.expected_records({**SCHED, "mstepmax_main": [0], "mstepmax_ice": [0]})
     # ... while a valid scope still yields a non-vacuous manifest
     assert any(r["stage"] == "op" for r in ge.expected_records(SCHED))
@@ -346,8 +388,10 @@ def test_fall_accumulator_and_surface_are_required():
             assert x in con and x in leg
     recs = ge.expected_records(SCHED)
     surf = {r["field"] for r in recs if r["stage"] == "surface"}
-    assert {"bottom_fall", "delz_bottom", "surface_mul1", "surface_mul_dt",
-            "rain_increment"} <= surf
+    # per-species since the surface-causal-path review: the aggregate alone
+    # cannot attribute a qr seed (test_surface_expectation_is_per_species)
+    assert {"bottom_fall_qr", "bottom_fall_total", "delz_bottom", "surface_mul1",
+            "surface_mul_dt", "rain_increment"} <= surf
     # exactly once per outer loop
     assert len({r["outer_loop"] for r in recs if r["stage"] == "surface"}) == SCHED["loops"]
 
@@ -413,7 +457,7 @@ def test_post_close_verify_refuses_to_publish_a_corrupt_tmp(tmp_path):
     # full) must keep the .tmp and never reach the final path.
     p = tmp_path / "c.g33"
     w = gd.G33Writer(p, _header())
-    r = {"seq_no": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+    r = {"seq_no": 0, "op_seq_id": 0, "outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
          "k": 0, "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
     w.record(r, "f32", [1], gd.pack_payload("f32", [1]))
     # simulate the tail of the file being lost between close and publish
@@ -474,3 +518,924 @@ def test_pack_payload_is_byte_identical_to_the_bitwise_roundtrip():
             ">I", struct.unpack("<I", struct.pack("<f", float(v_)))[0])
         assert gd.pack_payload("f64", [v_]) == struct.pack(
             ">Q", struct.unpack("<Q", struct.pack("<d", float(v_)))[0])
+
+
+# ── schema v2: owner review #4 P0-1..P0-4 ─────────────────────────────────────
+def test_process_id_must_be_an_integer(tmp_path):
+    # P0-1. The C++ overlay emits process_id as a JSON NUMBER (getpid()). A reader
+    # requiring str made every container from the REAL overlay unreadable, so the
+    # whole pipeline was only ever exercised against Python-written fixtures.
+    gd.G33Writer(tmp_path / "ok.g33", _header(process_id=4242))          # accepted
+    for bad in ("4242", True, -1, 1.5, None):
+        with pytest.raises(gd.G33Corruption, match="process_id"):
+            gd.G33Writer(tmp_path / f"bad{hash(str(bad))}.g33", _header(process_id=bad))
+
+
+def test_cpp_and_python_format_versions_agree():
+    # Two writers in two languages drift silently. Pin the C++ constant from the
+    # test suite so the drift fails here, not in the middle of a host campaign.
+    src = (ROOT / "g33_overlay" / "g33_op_dump.h").read_text()
+    m = re.search(r"put_u32\((\d+)\);\s*//\s*format_version", src)
+    assert m, "format_version emission not found in the C++ writer"
+    assert int(m.group(1)) == gd.FORMAT_VERSION
+
+
+def test_malformed_column_maps_are_refused(tmp_path):
+    B = SCHED["B"]
+    good = [[i, 0, i, i] for i in range(B)]
+    bad_maps = [
+        [[0, 0, 0, 0]],                                  # short: not all B columns
+        good + [[B, 0, B, B]],                           # long: B_index out of range
+        [[0, 0, 0, 0], [0, 0, 1, 1], [2, 0, 2, 2]],      # duplicate B_index
+        [[0, 0, 0, 0], [1, 0, 1, 0], [2, 0, 2, 2]],      # duplicate cpp_flat_index
+        [[0, 0, 0, 0], [1, 0, 0, 1], [2, 0, 2, 2]],      # duplicate Fortran (i,j)
+        [[0, 0, 0], [1, 0, 1], [2, 0, 2]],               # wrong arity
+    ]
+    for cmap in bad_maps:
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / "m.g33", _header(column_index_map=cmap))
+
+
+def test_raw_bit_roundtrip_preserves_nan_payloads(tmp_path):
+    # pack_payload goes through Python floats, which canonicalize NaN payloads —
+    # a signalling NaN or a distinct mantissa would silently become the quiet
+    # default, erasing exactly the bit pattern a divergence hunt is looking for.
+    f32_bits = [0x7F800001, 0xFFC00000, 0x7FC0DEAD, 0x80000000]
+    f64_bits = [0x7FF0000000000001, 0xFFF8000000000000, 0x7FF8DEADBEEFCAFE]
+    p = tmp_path / "nan.g33"
+    w = gd.G33Writer(p, _header(record_count_expected=2))
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP", "k": 0,
+            "species": "qr", "op_id": "QR_FALK", "stage": "op"}
+    w.record({**base, "seq_no": 0, "op_seq_id": 0, "field": "a"},
+             "f32", [len(f32_bits)], gd.pack_payload_bits("f32", f32_bits))
+    w.record({**base, "seq_no": 1, "op_seq_id": 1, "field": "b"},
+             "f64", [len(f64_bits)], gd.pack_payload_bits("f64", f64_bits))
+    w.finalize()
+    recs = gd.read_container(p)["records"]
+    assert gd.unpack_payload_bits("f32", recs[0]["payload"]) == f32_bits
+    assert gd.unpack_payload_bits("f64", recs[1]["payload"]) == f64_bits
+
+
+def test_run_index_tiles_the_op_seq_space_exactly():
+    ix = ge.run_index(SCHED)
+    assert sum(c["record_count"] for c in ix["containers"]) == ix["total_records"]
+    cursor = 0
+    for c in ix["containers"]:
+        assert c["first_op_seq_id"] == cursor            # no gap, no overlap
+        assert c["last_op_seq_id"] - c["first_op_seq_id"] + 1 == c["record_count"]
+        cursor = c["last_op_seq_id"] + 1
+    assert cursor == ix["total_records"]
+    assert len({c["container_id"] for c in ix["containers"]}) == len(ix["containers"])
+
+
+def test_op_seq_map_matches_the_run_index():
+    # The env string the overlay consumes must be the run_index verbatim; if it
+    # can drift, the "declared before the run" property is decorative.
+    ix = ge.run_index(SCHED)
+    parsed = [t.split(":") for t in ge.op_seq_map(ix).split(",")]
+    assert [(c["container_id"], str(c["first_op_seq_id"]), str(c["last_op_seq_id"]))
+            for c in ix["containers"]] == [tuple(t) for t in parsed]
+
+
+# ── instrumented scope: the declared window must match the MEASURED counter ────
+def test_overlay_stage_scope_matches_the_source():
+    # CPP_OVERLAY_STAGES is a claim about the overlay. If the overlay starts
+    # emitting a stage the declaration omits (or stops emitting one it names),
+    # every declared op_seq window shifts off the measured counter and the real
+    # overlay silently stops being able to produce a valid container.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = set(re.findall(r'G33_REC\(g33,\s*"([a-z_]+)"', src))
+    assert emitted == set(ge.CPP_OVERLAY_STAGES), (
+        f"overlay emits {sorted(emitted)} but the harness declares "
+        f"{sorted(ge.CPP_OVERLAY_STAGES)}")
+
+
+def test_declared_windows_accept_a_real_overlay_emission_order(tmp_path):
+    # End-to-end shape of an actual run: one container per substep, records
+    # numbered by a single process-global counter that starts at 0 and only
+    # counts INSTRUMENTED records. Before instrumented_stages existed, the index
+    # numbered over uninstrumented outer stages too, so the first real record
+    # measured 0 against a window of [6, N] and every run failed at record one.
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    index = ge.run_index(sched)
+    recs = ge.expected_records(sched)
+    by_container: dict = {}
+    for r in recs:
+        by_container.setdefault(ge.container_id(r), []).append(r)
+
+    op_seq = 0                                    # the overlay's global counter
+    for c in index["containers"]:
+        rs = by_container[c["container_id"]]
+        w = gd.G33Writer(
+            tmp_path / f"{c['container_id']}.g33",
+            _header(container_id=c["container_id"],
+                    global_op_seq_start=c["first_op_seq_id"],
+                    global_op_seq_end=c["last_op_seq_id"],
+                    record_count_expected=len(rs)))
+        for i, r in enumerate(rs):
+            n_elem = 1
+            for d in r["shape"]:
+                n_elem *= d
+            w.record({**r, "seq_no": i, "op_seq_id": op_seq}, r["dtype"], r["shape"],
+                     gd.pack_payload(r["dtype"], [1] * n_elem))
+            op_seq += 1                            # measured, never reset
+        w.finalize()
+        assert op_seq == c["last_op_seq_id"] + 1   # measured meets the declaration
+    assert op_seq == index["total_records"]
+
+
+def test_instrumented_scope_must_be_declared_not_defaulted():
+    with pytest.raises(ValueError, match="instrumented_stages"):
+        ge.expected_records({k: v for k, v in SCHED.items()
+                             if k != "instrumented_stages"})
+    for bad in ([], (), "op", ["outer_pre_sed_typo"]):
+        with pytest.raises(ValueError, match="instrumented_stages"):
+            ge.expected_records({**SCHED, "instrumented_stages": bad})
+
+
+# Roots the substep_pre block may read, and the rank each carries. Explicit
+# rather than inferred: a substring rule ("expression mentions col") only caught
+# slices spelled through the *_col lambdas and passed `in.dend.select(-1, k)` —
+# a real [B] slice — as whole-K. An unknown root fails loudly instead of being
+# guessed, so a future field cannot quietly opt out of the shape check.
+_WHOLE_K_ROOTS = {"in.state.qr": "f32", "in.state.nr": "f32",
+                  "in.work1_qr": "f64", "in.workn_qr": "f64",
+                  "in.dend": "f32", "dend_safe": "f32",
+                  "in.delz": "f32", "delz_safe": "f32"}
+_PER_COLUMN_ROOTS = {"mstep_col_safe": "f64", "gate_col": "f32"}   # cpp native widths
+_TORCH_DTYPE = {"kFloat": "f32", "kFloat32": "f32", "kFloat64": "f64",
+                "kDouble": "f64", "kInt32": "i32", "kInt": "i32", "kUInt8": "u8"}
+# torch:: tokens that are NOT dtypes. .to() takes device/layout/memory-format
+# arguments too, so these must be recognised as "does not change the dtype"
+# rather than lumped in with the dtype names or treated as unknown.
+_TORCH_NON_DTYPE = {"kCPU", "kCUDA", "kStrided", "kSparse", "kContiguousMemoryFormat"}
+
+
+def _decomment(expr: str) -> str:
+    """Blank C++ comments before any parsing.
+
+    The paren matcher counted comment text as syntax in BOTH directions:
+    `.to(/*)*/ torch::kFloat64)` closed on the ')' inside the comment, hiding the
+    cast so the dtype fell through to the root's f32; and a comment merely
+    MENTIONING `.to(torch::kFloat64)` was parsed as a real cast, failing valid
+    code. Reuses verify_overlay's lexer rather than adding a second comment
+    parser to get wrong independently.
+    """
+    sys.path.insert(0, str(ROOT / "g33_overlay"))
+    from verify_overlay import _clean_lines
+    return "\n".join(_clean_lines(expr.split("\n")))
+
+
+def _to_call_args(expr: str):
+    """Argument text of each `.to(...)` call, paren-matched.
+
+    A regex for `.to(torch::kX)` silently does not match a MULTI-ARGUMENT call —
+    `.to(torch::kFloat64, torch::kStrided)` — so the cast was invisible and the
+    dtype fell through to the root's: an f64 relabel of an f32 tensor certified
+    as f32, in the gate whose purpose is to catch precision relabels.
+    """
+    expr = _decomment(expr)
+    args = []
+    for m in re.finditer(r"\.\s*to\s*\(", expr):
+        depth, i = 1, m.end()
+        while i < len(expr) and depth:
+            depth += (expr[i] == "(") - (expr[i] == ")")
+            i += 1
+        if depth:
+            raise AssertionError(f"unbalanced .to( in {expr.strip()!r}")
+        args.append(expr[m.end():i - 1])
+    return args
+# Methods that provably preserve rank. CLOSED WORLD: anything not named here is
+# treated as rank-unknown and refused.
+#
+# Two rounds of this check enumerated the rank-CHANGING forms instead —
+# .select/.narrow/.squeeze/_col(/[k] — and each round missed the next spelling:
+# .sum(-1), .reshape, .flatten, .transpose and torch::stack all passed as
+# whole-K. A deny-list of ways to change a tensor's rank cannot be completed;
+# the set of ways to PRESERVE it is small and closable.
+_RANK_PRESERVING = {"to", "round", "abs", "logical_or", "logical_and",
+                    "logical_not", "clone", "detach", "contiguous"}
+
+
+def _strip_roots(expr: str):
+    """Remove known tensor roots, returning (residue, roots_found).
+
+    Matching is word-bounded, not substring: `in.dend` must not match `in.dend2`,
+    a DIFFERENT tensor that would otherwise inherit in.dend's certified rank and
+    dtype. Longest-first so `in.work1_qr` is not consumed piecewise.
+    """
+    found = set()
+    for root in sorted(set(_WHOLE_K_ROOTS) | set(_PER_COLUMN_ROOTS),
+                       key=len, reverse=True):
+        pat = r"(?<![\w.])" + re.escape(root) + r"(?![\w])"
+        if re.search(pat, expr):
+            found.add(root)
+            expr = re.sub(pat, " ", expr)
+    return expr, found
+
+
+def _emits_per_column(field: str, expr: str) -> bool:
+    # CERTIFY THE WHOLE EXPRESSION. Inspecting only the recognised parts is
+    # fail-open: `in.dend * mystery_tensor` certified as whole-K f32 on the
+    # strength of in.dend alone, and `in.dend2` inherited in.dend's certificate
+    # by substring. Every token must now be accounted for or the check refuses.
+    # Decomment ONCE, at entry, and use that everywhere below. Routing only the
+    # residue through _decomment left the bracket and call checks reading raw
+    # text, so a comment MENTIONING `.sum(` or `[k]` was parsed as the real
+    # thing and correct code was refused — the same defect as the eighth
+    # finding, surviving in the two checks that were not converted.
+    expr = _decomment(expr)
+    residue, roots = _strip_roots(expr)
+    # Strip by ROLE, not by name. Subtracting the allowed NAMES from the token
+    # set let an unknown OPERAND that happens to be spelled like one through:
+    # `in.dend * abs` and `in.dend * kFloat64` both certified clean, because
+    # `abs` and `kFloat64` were on the allowed list no matter where they stood.
+    residue = re.sub(r"torch\s*::\s*k\w+", " ", residue)          # dtype token
+    residue = re.sub(r"[.:]+\s*(?:%s)\s*\(" % "|".join(sorted(_RANK_PRESERVING)),
+                     " ", residue)                                 # method call
+    leftover = set(re.findall(r"[A-Za-z_]\w*", residue))
+    if leftover:
+        raise AssertionError(
+            f"{field}: unaccounted identifier(s) {sorted(leftover)} in "
+            f"{expr.strip()!r} — the shape/dtype certificate would rest on the "
+            f"recognised parts only")
+    if not roots:
+        raise AssertionError(
+            f"{field}: no known tensor root in {expr.strip()!r} — add it to "
+            f"_WHOLE_K_ROOTS or _PER_COLUMN_ROOTS rather than letting the shape "
+            f"check silently pass")
+    # Bracket indexing carries no method call, so a call-based rule alone reads
+    # `in.dend[k]` — a real [B] slice — as whole-K.
+    if re.search(r"\]\s*\[|\w\s*\[", expr):
+        return True
+    calls = set(re.findall(r"[.:]\s*([A-Za-z_]\w*)\s*\(", expr))
+    unknown = calls - _RANK_PRESERVING - {"torch"} - set(_TORCH_DTYPE)
+    if unknown:
+        raise AssertionError(
+            f"{field}: {sorted(unknown)} is not known to preserve rank, so the "
+            f"emitted shape cannot be certified from the source. Add it to "
+            f"_RANK_PRESERVING only if it provably keeps the tensor's rank.")
+    if roots <= set(_PER_COLUMN_ROOTS):
+        return True
+    if roots <= set(_WHOLE_K_ROOTS):
+        return False
+    raise AssertionError(f"{field}: mixes whole-K and per-column roots: {sorted(roots)}")
+
+
+def _emits_dtype(field: str, expr: str) -> str:
+    """The dtype the overlay actually emits, from the same closed world.
+
+    Nothing checked this. `.to(torch::kFloat64)` on an f32 root kept the shape
+    correct and relabelled the value's precision — the "precision-PROVENANCE
+    lie" the overlay's own rec() comment warns about, in the one place the whole
+    gate exists to detect.
+    """
+    expr = _decomment(expr)
+    dtype = None
+    for arg in _to_call_args(expr):
+        toks = re.findall(r"\bk\w+", arg)
+        unknown = [t for t in toks if t not in _TORCH_DTYPE and t not in _TORCH_NON_DTYPE]
+        if unknown:
+            raise AssertionError(f"{field}: unmapped torch token(s) {unknown}")
+        dts = {_TORCH_DTYPE[t] for t in toks if t in _TORCH_DTYPE}
+        if len(dts) > 1:
+            raise AssertionError(f"{field}: ambiguous .to({arg.strip()}) -> {sorted(dts)}")
+        if dts:
+            dtype = dts.pop()          # a device/layout-only .to() leaves it alone
+    if dtype is not None:
+        return dtype
+    if re.search(r"==|!=|<=|>=|logical_", expr):
+        raise AssertionError(
+            f"{field}: comparison/logical result is bool, which is not a manifest "
+            f"dtype — emit an explicit .to(torch::kUInt8)")
+    _, roots = _strip_roots(expr)
+    dts = {(_WHOLE_K_ROOTS | _PER_COLUMN_ROOTS)[r] for r in roots}
+    if len(dts) != 1:
+        raise AssertionError(f"{field}: cannot certify dtype from roots {sorted(dts)}")
+    return dts.pop()
+
+
+def test_overlay_substep_pre_emission_matches_the_manifest():
+    """The manifest must be satisfiable by what the overlay ACTUALLY emits.
+
+    test_declared_windows_accept_a_real_overlay_emission_order replays the
+    manifest's own records, so it validates the manifest against itself and
+    passes no matter what the overlay does. It did: at that point the overlay
+    emitted substep_pre as 12 per-level (B,) slices hardcoded to k=0 inside the
+    top-cell block, while the manifest expected 20 whole-K fields at k=-1 — a
+    real container could not satisfy it on identity, shape, count, or field set.
+
+    This reads the emission sequence out of the overlay source instead.
+    """
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = re.findall(
+        r'G33_REC\(g33,\s*"substep_pre",\s*"(-|[A-Z]+)",\s*(-?\d+),'
+        r'\s*[^,]+,\s*[^,]+,\s*"([a-z0-9_]+)",\s*([^;]+)\);', src)
+    assert emitted, "no substep_pre emission found in the overlay"
+
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r for r in ge.expected_records(sched) if r["stage"] == "substep_pre"
+                and r["chain"] == "main" and r["n"] == 1 and r["outer_loop"] == 1]
+
+    assert [f for _, _, f, _ in emitted] == [r["field"] for r in expected], (
+        "overlay substep_pre field ORDER/SET differs from the manifest")
+    assert {int(k) for _, k, _, _ in emitted} == {-1}, (
+        "substep_pre is a whole-K record: k must be -1, not a per-level index")
+    for (_, _, field, expr), r in zip(emitted, expected):
+        per_column = _emits_per_column(field, expr)
+        assert per_column == (r["shape"] == [SCHED["B"]]), (
+            f"{field}: overlay emits {'per-column' if per_column else 'whole-K'} "
+            f"but the manifest expects shape {r['shape']}")
+        assert _emits_dtype(field, expr) == r["dtype"], (
+            f"{field}: overlay emits {_emits_dtype(field, expr)} but the manifest "
+            f"declares {r['dtype']} — a dtype relabel is a precision-provenance lie")
+
+
+# Expressions that must NEVER certify as "whole-K f32" — what dend_raw is.
+# Enumerated independently of the certifier's rules, and grown every time the
+# certifier was found fail-open: slicing spellings, rank-changing calls, dtype
+# relabels, unknown operands, and operands SPELLED like allowed tokens. Kept in
+# the repo because five consecutive rounds of ad-hoc falsification each declared
+# the gate sound and each was wrong.
+_MUST_NOT_CERTIFY = [
+    "in.dend.select(-1, k)", "dend_col(k)", "in.dend[k]",
+    "in.dend.narrow(-1,k,1).squeeze(-1)",
+    "in.dend.index({torch::indexing::Slice(), 0})",
+    "in.dend.sum(-1)", "in.dend.mean(-1)", "in.dend.max(-1).values",
+    "in.dend.reshape({-1})", "in.dend.flatten()", "in.dend.unsqueeze(0)",
+    "in.dend.transpose(0, 1)", "in.dend.permute({1,0})",
+    "torch::stack({in.dend, in.dend}, 0)",
+    "in.dend.to(torch::kFloat64)", "in.dend.to(torch::kUInt8)",
+    # multi-argument .to(): a regex for `.to(torch::kX)` does not match these,
+    # so the cast was invisible and the dtype fell through to the root's f32
+    "in.dend.to(torch::kFloat64, torch::kStrided)",
+    "in.dend.to(torch::kCPU, torch::kFloat64)",
+    "in.dend.to(torch::kFloat64, /*non_blocking=*/false)",
+    "in.dend.to(torch::kFloat64, torch::kUInt8)",
+    "in.dend.to(torch::kBogus)",
+    # comments counted as syntax: the ')' inside the comment closed the paren
+    # match early and hid the cast, so the dtype fell through to the root's f32
+    "in.dend.to(/*)*/ torch::kFloat64)",
+    "in.dend.to(torch::kFloat64 /* ) */)",
+    "in.work1_qr",
+    "some_unknown_tensor", "in.dend2", "helper(in.dend)",
+    "(in.dend * mystery_tensor)", "(mystery * in.dend)",
+    "(in.dend * abs)", "(in.dend * clone)", "(in.dend + to)",
+    "(in.dend * kFloat64)", "(in.dend * torch)", "(in.dend * round)",
+    # comment-hidden slice: the bracket/call checks read RAW text until the
+    # ninth finding, so comments were parsed as syntax in these two as well
+    "in.dend/*x*/[k]", "in.dend/*x*/[0]",
+]
+
+
+@pytest.mark.parametrize("expr", _MUST_NOT_CERTIFY)
+def test_certifier_refuses_expressions_that_are_not_whole_k_f32(expr):
+    # dend_raw's contract: whole-K (not per-column) and f32.
+    try:
+        wrong = _emits_per_column("dend_raw", expr) or _emits_dtype("dend_raw", expr) != "f32"
+    except AssertionError:
+        return                     # refused to certify — the correct outcome
+    assert wrong, f"certifier accepted {expr!r} as whole-K f32"
+
+
+@pytest.mark.parametrize("expr", [
+    "in.dend /* .to(torch::kFloat64) */",
+    "in.dend  // .to(torch::kFloat64)",
+    "in.dend /* dend_col(k) */",
+])
+def test_comments_do_not_make_valid_emissions_fail(expr):
+    # The mirror of the corpus: a comment that merely MENTIONS a cast or a slice
+    # was parsed as one, so correct code failed. A gate that fires on comments
+    # gets disabled by whoever hits it, which is how a check stops protecting.
+    assert _emits_per_column("dend_raw", expr) is False
+    assert _emits_dtype("dend_raw", expr) == "f32"
+
+
+def test_certifier_accepts_the_real_emissions():
+    # The corpus above must not be so strict that the actual overlay fails: every
+    # expression the overlay really emits has to certify to its manifest entry.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    emitted = re.findall(
+        r'G33_REC\(g33,\s*"substep_pre",\s*"(?:-|[A-Z]+)",\s*-?\d+,'
+        r'\s*[^,]+,\s*[^,]+,\s*"([a-z0-9_]+)",\s*([^;]+)\);', src)
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    expected = [r for r in ge.expected_records(sched) if r["stage"] == "substep_pre"
+                and r["chain"] == "main" and r["n"] == 1 and r["outer_loop"] == 1]
+    assert len(emitted) == len(expected)
+    for (field, expr), r in zip(emitted, expected):
+        assert _emits_per_column(field, expr) == (r["shape"] == [SCHED["B"]])
+        assert _emits_dtype(field, expr) == r["dtype"]
+
+
+# ── runtime expected-descriptor (owner adjudication: this REPLACES the static
+#    expression certifier as load-bearing evidence; the certifier above is
+#    retained as a tripwire only) ────────────────────────────────────────────
+def test_descriptors_are_sealed_per_container(tmp_path):
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    shas = ge.write_descriptors(sched, tmp_path)
+    index = ge.run_index(sched)
+    assert set(shas) == {c["container_id"] for c in index["containers"]}
+    for c in index["containers"]:
+        lines = (tmp_path / f"{c['container_id']}.desc").read_text().splitlines()
+        assert len(lines) == c["record_count"]
+        first = int(lines[0].split("|")[0])
+        last = int(lines[-1].split("|")[0])
+        assert (first, last) == (c["first_op_seq_id"], c["last_op_seq_id"])
+
+
+def test_descriptor_sha_detects_an_edit(tmp_path):
+    # The overlay and the comparator both read these files. If a descriptor can
+    # be changed between the run and the comparison without detection, the
+    # "sealed before the run" property is decorative.
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    before = ge.write_descriptors(sched, tmp_path)
+    cid = next(iter(before))
+    p = tmp_path / f"{cid}.desc"
+    lines = p.read_text().splitlines()
+    lines[0] = lines[0].replace("|f32|", "|f64|")        # a dtype relabel
+    p.write_bytes(("\n".join(lines) + "\n").encode())
+    import hashlib
+    assert hashlib.sha256(p.read_bytes()).hexdigest() != before[cid]
+
+
+def test_cpp_builds_the_same_descriptor_line():
+    # TRIPWIRE, not proof: the real check is that a run's rec() rejects a
+    # mismatching tensor. This only pins the two field orders against each other
+    # so a reorder on one side is caught before a host campaign, not during one.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    m = re.search(r'std::string got = ([^;]+);', src)
+    assert m, "descriptor line construction not found in the overlay"
+    order = re.findall(r"\b(op_seq_id|stage|cell_role|k|species|op_id|field|dtype)\b",
+                       m.group(1))
+    assert order == ["op_seq_id", "stage", "cell_role", "k", "species", "op_id",
+                     "field", "dtype"]
+
+
+def test_mstepmax_is_derived_from_the_dumped_bits():
+    # Owner adjudication: mstepmax is max_b(mstep_b), so the comparator derives
+    # it rather than the producer dumping it — no production edit, and no
+    # producer attesting to a summary of its own operand.
+    payload = gd.pack_payload("f64", [1.0, 3.0, 2.0])
+    assert gd.derive_mstepmax("f64", payload) == 3
+    nonintegral = gd.pack_payload_bits("f64", [0x4000000000000001])
+    with pytest.raises(gd.G33Corruption, match="non-integral"):
+        gd.derive_mstepmax("f64", nonintegral)
+
+
+def test_container_records_which_descriptor_it_was_validated_against(tmp_path):
+    # Reading a file called "sealed" proves nothing on its own. Without the
+    # digest in the header, a descriptor edited between sealing and the run is
+    # undetectable and the comparator cannot tell WHICH descriptor the producer
+    # validated against — the "sealed before the run" property is decorative.
+    for bad in ("", "zz" * 32, "a" * 63, "A" * 64, 12345):
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / f"d{abs(hash(str(bad)))}.g33",
+                         _header(descriptor_sha256=bad))
+    gd.G33Writer(tmp_path / "ok.g33", _header(descriptor_sha256="0" * 64))
+
+
+def test_schema_dir_is_part_of_the_all_or_nothing_env_set():
+    # KDM6_G33_SCHEMA_DIR was checked separately from the all-or-nothing block,
+    # so a run configured with ONLY that variable counted as "nothing set" and
+    # went inert instead of reporting a partial configuration.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
+    assert block, "required-env table not found"
+    required = set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
+    # every env the constructor reads must be in the table
+    read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
+    assert read <= required, f"read but not required: {sorted(read - required)}"
+
+
+def test_descriptor_load_precedes_header_construction():
+    # TRIPWIRE: desc_sha_ is embedded in the header string, so computing it after
+    # the header is built silently seals an EMPTY digest.
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    assert src.index("desc_sha_ = dsha.hexdigest();") < src.index("std::string hdr =")
+
+
+# ── the sealed digest must come from an INDEPENDENT channel ───────────────────
+def _compile_probe(tmp_path, source_name):
+    """Compile a C++ probe against the overlay's writer header.
+
+    The overlay itself needs libtorch, so it cannot be built here; probes
+    exercise the same bundled code paths (Sha256, dladdr resolution, csv lookup)
+    in a standalone binary. Skipped when no compiler is available rather than
+    passing.
+    """
+    import shutil, subprocess
+    cxx = shutil.which("clang++") or shutil.which("g++")
+    if not cxx:
+        pytest.skip("no C++ compiler")
+    exe = tmp_path / Path(source_name).stem
+    cmd = [cxx, "-std=c++17", "-DKDM6_G33_OP_DUMP", f"-I{ROOT / 'g33_overlay'}",
+           str(ROOT / "tests" / source_name), "-o", str(exe)]
+    if sys.platform.startswith("linux"):
+        cmd.append("-ldl")
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return exe
+
+
+def _build_seal_probe(tmp_path):
+    return _compile_probe(tmp_path, "seal_digest_probe.cpp")
+
+
+def test_sealed_digest_rejects_an_edited_descriptor(tmp_path):
+    # Before this, the producer hashed whatever file it read and reported that
+    # digest — a self-attestation. Editing the descriptor produced a container
+    # that agreed with itself and nothing failed.
+    import os, subprocess
+    exe = _build_seal_probe(tmp_path)
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    shas = ge.write_descriptors(sched, tmp_path)
+    cid = next(iter(shas))
+    desc = tmp_path / f"{cid}.desc"
+    original = desc.read_bytes()
+    env = {**os.environ, "KDM6_G33_SCHEMA_SHA256": ge.schema_sha_map(shas)}
+
+    def rc():
+        return subprocess.run([str(exe), str(desc), cid], env=env,
+                              capture_output=True, text=True).returncode
+
+    assert rc() == 0                                   # unmodified: accepted
+    for edit in (original.replace(b"|f32|", b"|f64|", 1),          # dtype relabel
+                 original[: original.rindex(b"\n", 0, -1) + 1],    # record dropped
+                 original + b"999|op|-|0|qr|X|f|f32|3\n"):         # record added
+        desc.write_bytes(edit)
+        assert rc() == 1, "an edited descriptor was accepted"
+    desc.write_bytes(original)
+    assert rc() == 0
+
+    # and a container with no sealed digest at all must not proceed
+    env.pop("KDM6_G33_SCHEMA_SHA256")
+    assert subprocess.run([str(exe), str(desc), cid], env=env,
+                          capture_output=True, text=True).returncode == 2
+
+
+# ── the environment the overlay requires must actually be produced ────────────
+def _clean_repo(tmp_path):
+    """A committed, clean checkout for env-building tests.
+
+    These must not read the real repository: build_env refuses a dirty tree, so
+    using it would make the tests pass or fail based on whether the developer
+    happens to have uncommitted work.
+    """
+    import subprocess
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "base"], check=True)
+    return repo
+
+
+def _overlay_required_env():
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
+    assert block, "required-env table not found"
+    return set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
+
+
+def test_run_env_supplies_exactly_what_the_overlay_requires(tmp_path):
+    # Each tightening of the producer added another required variable and
+    # nothing produced them: the documented invocation named three while the
+    # overlay required eleven, so a diagnostic run could not start. Pinning
+    # producer against consumer is what keeps that from recurring silently.
+    import g33_run_env
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "libfake.dylib"
+    binary.write_bytes(b"not a real dylib, but a real file with a real digest")
+    env = g33_run_env.build_env(
+        sched, tmp_path, binary=binary,
+        column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+        run_uuid="uuid-under-test", column_layout_id="lc05-3col", repo=repo)
+    required = _overlay_required_env()
+    assert required <= set(env), f"never set: {sorted(required - set(env))}"
+    assert set(env) <= required, f"set but unused: {sorted(set(env) - required)}"
+
+
+def test_run_env_seals_what_it_points_at(tmp_path):
+    # The sealed digests must describe the descriptors actually written, and the
+    # op-seq windows the containers actually declare — one schedule, sealed once.
+    import g33_run_env, hashlib as _h
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "libfake.dylib"
+    binary.write_bytes(b"x" * 64)
+    env = g33_run_env.build_env(
+        sched, tmp_path, binary=binary,
+        column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+        run_uuid="u", column_layout_id="lc05-3col", repo=repo)
+
+    schema_dir = Path(env["KDM6_G33_SCHEMA_DIR"])
+    for entry in env["KDM6_G33_SCHEMA_SHA256"].split(","):
+        cid, sha = entry.split(":")
+        assert _h.sha256((schema_dir / f"{cid}.desc").read_bytes()).hexdigest() == sha
+
+    windows = {e.split(":")[0] for e in env["KDM6_G33_OP_SEQ_MAP"].split(",")}
+    assert windows == {c["container_id"] for c in ge.run_index(sched)["containers"]}
+    assert env["KDM6_G33_BINARY_SHA256"] == _h.sha256(binary.read_bytes()).hexdigest()
+
+
+def test_run_env_refuses_a_binary_that_does_not_exist(tmp_path):
+    import g33_run_env
+    with pytest.raises(FileNotFoundError):
+        g33_run_env.build_env(
+            {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}, tmp_path,
+            binary=tmp_path / "absent.dylib", column_map=[[0, 0, 0, 0]],
+            run_uuid="u", column_layout_id="l", repo=_clean_repo(tmp_path))
+
+
+# ── CLI export quoting and producer provenance ───────────────────────────────
+_INJECTIONS = ["$(echo PWNED)", "`echo PWNED`", 'a"; echo PWNED; echo "b',
+               "x\\", "'; echo PWNED; '", "$IFS$(echo PWNED)"]
+
+
+@pytest.mark.parametrize("hostile", _INJECTIONS)
+def test_cli_exports_survive_eval_without_executing(hostile, tmp_path):
+    # json.dumps emits a DOUBLE-quoted string, and inside double quotes a shell
+    # still expands $(...) and backticks. `--run-uuid '$(...)'` executed on eval;
+    # measured before the fix as INJ=PWNED.
+    import shlex, subprocess
+    line = f"export G33_T={shlex.quote(hostile)}"
+    out = subprocess.run(["bash", "-c", f"{line}\nprintf '%s' \"$G33_T\""],
+                         capture_output=True, text=True)
+    assert out.returncode == 0
+    assert out.stdout == hostile, "the value changed — the shell interpreted it"
+    assert "PWNED" not in out.stdout or "PWNED" in hostile
+
+
+def test_producer_commit_refuses_a_dirty_tree(tmp_path):
+    # A dirty tree means HEAD does not describe the compiled source, so stamping
+    # it claims a provenance that does not hold.
+    import subprocess, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t",
+                    "-c", "user.name=t", "commit", "-qm", "x"], check=True)
+    assert re.fullmatch(r"[0-9a-f]{40}", g33_run_env._git_head(repo))
+    (repo / "libtorch" / "src" / "a.cpp").write_text("int a; int b;\n")
+    with pytest.raises(RuntimeError, match="does not describe the tree"):
+        g33_run_env._git_head(repo)
+
+
+def test_stale_binary_is_refused(tmp_path):
+    # PRODUCER_COMMIT and BINARY_SHA256 are independent facts; a dylib built days
+    # ago still gets stamped with today's HEAD, and its digest — a real hash of a
+    # real file — looks like proof.
+    import os, subprocess, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch" / "src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    src = repo / "libtorch" / "src" / "a.cpp"
+    src.write_text("int a;\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"built earlier")
+    os.utime(binary, (1, 1))                      # older than the source
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)
+    os.utime(binary, None)                        # rebuilt now
+    g33_run_env._check_binary_not_stale(binary, repo)
+
+
+def test_stale_guard_covers_the_diagnostic_build_inputs():
+    # The guard watched only the canonical tree, so editing the overlay — the
+    # translation unit the diagnostic dylib is actually compiled from — and not
+    # rebuilding passed silently. That is the most likely staleness here, since
+    # instrumentation work edits exactly those files.
+    import g33_run_env
+    covered = set(g33_run_env._BUILD_INPUTS)
+    assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
+    assert "harness/g33_overlay/g33_op_dump.h" in covered
+    # and it must NOT watch files that cannot reach the artifact: a guard firing
+    # on edits with no effect on the binary gets switched off by whoever hits it
+    for harmless in ("harness/g33_overlay/verify_overlay.py",
+                     "harness/g33_overlay/test_g33_writer.cpp",
+                     "harness/g33_overlay/BASE_SHA256_sedimentation.cpp"):
+        assert harmless not in covered
+
+
+@pytest.mark.parametrize("edited", ["harness/g33_overlay/sedimentation.cpp.overlay",
+                                    "harness/g33_overlay/g33_op_dump.h",
+                                    "libtorch/src/a.cpp"])
+def test_stale_guard_fires_for_each_build_input(edited, tmp_path):
+    import os, subprocess, time, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "harness/g33_overlay").mkdir(parents=True)
+    (repo / "libtorch/src").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    for rel in ("harness/g33_overlay/sedimentation.cpp.overlay",
+                "harness/g33_overlay/g33_op_dump.h", "libtorch/src/a.cpp"):
+        (repo / rel).write_text("original\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = repo / "lib.dylib"
+    binary.write_bytes(b"built")
+    os.utime(binary, None)
+    g33_run_env._check_binary_not_stale(binary, repo)      # fresh: accepted
+    time.sleep(0.01)
+    (repo / edited).write_text("changed after the build\n")
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)
+
+
+# ── the evidence must be bound to the binary the process actually loaded ─────
+def test_reader_requires_the_resolved_binary_to_match_the_sealed_one(tmp_path):
+    # binary_sha256 is the digest of the file the harness INTENDED the run to
+    # load; resolved_binary_sha256 is what the producer measured via dladdr. A
+    # container where they differ was produced by a binary the evidence does not
+    # describe — and a writer that never resolved anything cannot fabricate
+    # agreement without echoing the sealed value, which the probe test below
+    # shows the real resolution path does not do.
+    gd.G33Writer(tmp_path / "ok.g33", _header())            # equal: accepted
+    with pytest.raises(gd.G33Corruption, match="does not describe"):
+        gd.G33Writer(tmp_path / "m.g33", _header(resolved_binary_sha256="f" * 64))
+    for bad in ("", "zz" * 32, "A" * 64, 123):
+        with pytest.raises(gd.G33Corruption):
+            gd.G33Writer(tmp_path / f"b{abs(hash(str(bad)))}.g33",
+                         _header(resolved_binary_sha256=bad))
+    with pytest.raises(gd.G33Corruption, match="resolved_binary_path"):
+        gd.G33Writer(tmp_path / "p.g33", _header(resolved_binary_path=""))
+
+
+def test_dladdr_resolves_the_artifact_actually_running(tmp_path):
+    # Measured, not assumed: the probe asks the dynamic linker what binary it is
+    # running from. The resolved path must be the probe executable ITSELF, and
+    # the C++ digest must equal Python's digest of that same file — otherwise
+    # "resolved" would just be another self-reported string.
+    import hashlib, os, subprocess
+    exe = _compile_probe(tmp_path, "binary_binding_probe.cpp")
+    r = subprocess.run([str(exe)], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    path, sha = r.stdout.strip().splitlines()
+    assert os.path.realpath(path) == os.path.realpath(str(exe))
+    assert sha == hashlib.sha256(exe.read_bytes()).hexdigest()
+    # the overlay's refusal path, driven for real: sealed == loaded accepts,
+    # sealed != loaded rejects
+    assert subprocess.run([str(exe), sha], capture_output=True).returncode == 0
+    bad = subprocess.run([str(exe), "f" * 64], capture_output=True, text=True)
+    assert bad.returncode == 1 and "REJECTED" in bad.stderr
+
+
+# ── comparator-recomputed flag authority (owner adjudication: producer flags
+#    are debugging aids; acceptance authority is recomputed from raw bits) ────
+def test_mstep_exactness_comes_from_the_bits():
+    # int32(2) cannot hide 2.0 vs 2.0000000000000004 — the piacw-class confusion
+    exact = gd.pack_payload_bits("f64", [0x4000000000000000])   # 2.0
+    off = gd.pack_payload_bits("f64", [0x4000000000000001])     # 2.0 + 1 ulp
+    assert gdv.derive_mstep("f64", exact) == {"decoded_i32": [2], "exact_integer": [1]}
+    assert gdv.derive_mstep("f64", off) == {"decoded_i32": [2], "exact_integer": [0]}
+    with pytest.raises(gd.G33Corruption, match="non-finite"):
+        gdv.derive_mstep("f64", gd.pack_payload_bits("f64", [0x7FF0000000000000]))
+    assert gdv.derive_mstep("i32", gd.pack_payload("i32", [3]))["exact_integer"] == [1]
+
+
+def test_gate_flags_come_from_the_bits():
+    g = gdv.derive_gate("f32", gd.pack_payload("f32", [0.0, 1.0, 0.5]))
+    assert g["exact_01"] == [1, 1, 0]
+    assert g["active_mask"] == [0, 1, 1]
+    assert g["decoded_u8"] == [0, 1, None]     # decoding a non-0/1 gate is meaningless
+    # NaN gate: non-exact, but ACTIVE under the producer's (gate != 0) semantics
+    gn = gdv.derive_gate("f32", gd.pack_payload_bits("f32", [0x7FC00000]))
+    assert gn["exact_01"] == [0] and gn["active_mask"] == [1]
+    # -0.0 is value-exact 0 and inactive, though its BITS differ from +0.0
+    neg0 = gdv.derive_gate("f32", gd.pack_payload_bits("f32", [0x80000000]))
+    assert neg0 == {"exact_01": [1], "active_mask": [0], "decoded_u8": [0]}
+
+
+def test_floor_activity_has_a_value_view_and_a_bits_view():
+    raw = gd.pack_payload_bits("f32", [0x00000000, 0x3F800000])    # +0.0, 1.0
+    safe = gd.pack_payload_bits("f32", [0x80000000, 0x3F800000])   # -0.0, 1.0
+    fl = gdv.derive_floor_active("f32", raw, safe)
+    assert fl["value_changed"] == [0, 0]       # what the producer's != computes
+    assert fl["bits_changed"] == [1, 0]        # what only a raw-bit view can see
+
+
+def test_min_branches_are_four_state_not_boolean():
+    left = gd.pack_payload("f32", [1.0, 2.0, 3.0])
+    right = gd.pack_payload("f32", [2.0, 1.0, 3.0])
+    assert gdv.classify_min("f32", left, right) == [
+        gd.BRANCH_LEFT_SELECTED, gd.BRANCH_RIGHT_SELECTED, gd.BRANCH_TIE]
+
+
+def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
+    # a<b and b<a are BOTH false for NaN, so a 3-state enum misfiles NaN as TIE.
+    # And raising on NaN fails LEGITIMATE dumps: KDM6 evaluates raw divide/sqrt
+    # in DEAD branches and masks afterwards (§236), so NaN operands are expected
+    # there. UNORDERED is recorded always; it is a FAIL only where the physics
+    # actually takes the comparison (active && finite_required).
+    nan_left = gd.pack_payload_bits("f32", [0x7FC00000, 0x3F800000])
+    ones = gd.pack_payload("f32", [1.0, 1.0])
+    br = gdv.classify_min("f32", nan_left, ones)
+    assert br == [gd.BRANCH_UNORDERED, gd.BRANCH_TIE]
+    assert gdv.unordered_failures(br, [1, 1], [1, 1]) == [0]   # live branch: FAIL
+    assert gdv.unordered_failures(br, [0, 1], [1, 1]) == []    # dead branch: recorded only
+    assert gdv.unordered_failures(br, [1, 1], [0, 1]) == []    # not finite-required
+    with pytest.raises(gd.G33Corruption, match="length mismatch"):
+        gdv.unordered_failures(br, [1], [1, 1])
+
+
+def _substep_pre_fields(**edits):
+    f = {
+        "mstep_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
+        "mstep_decoded_i32": ("i32", gd.pack_payload("i32", [1, 2, 3])),
+        "mstep_exact_integer": ("u8", gd.pack_payload("u8", [1, 1, 1])),
+        "gate_native": ("f32", gd.pack_payload("f32", [1.0, 0.0, 1.0])),
+        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "gate_exact_01": ("u8", gd.pack_payload("u8", [1, 1, 1])),
+        "active_mask": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "dend_raw": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
+        "dend_safe": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
+        "dend_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 0])),
+        "delz_raw": ("f32", gd.pack_payload("f32", [5.0, 5.0, 5.0])),
+        "delz_safe": ("f32", gd.pack_payload("f32", [5.0, 5.0, 9.0])),
+        "delz_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 1])),
+    }
+    f.update(edits)
+    return f
+
+
+def test_cross_check_accepts_an_honest_producer():
+    gdv.check_producer_flags(_substep_pre_fields())
+
+
+def test_cross_check_catches_a_lying_producer_flag():
+    # the piacw shape: mstep_native carries 2+1ulp but the producer claims exact
+    with pytest.raises(gd.G33Corruption, match="mstep_exact_integer"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            mstep_native=("f64", gd.pack_payload_bits(
+                "f64", [0x3FF0000000000000, 0x4000000000000001,
+                        0x4008000000000000]))))
+    with pytest.raises(gd.G33Corruption, match="delz_floor_active"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))))
+    with pytest.raises(gd.G33Corruption, match="active_mask"):
+        gdv.check_producer_flags(_substep_pre_fields(
+            active_mask=("u8", gd.pack_payload("u8", [1, 1, 1]))))
+
+
+def test_cross_check_refuses_missing_operands():
+    # a cross-check that silently skips an absent operand is vacuous
+    f = _substep_pre_fields()
+    del f["gate_native"]
+    with pytest.raises(gd.G33Corruption, match="missing operand"):
+        gdv.check_producer_flags(f)
+
+
+def test_surface_expectation_is_per_species():
+    surf = {r["field"] for r in ge.expected_records(SCHED) if r["stage"] == "surface"}
+    for f in ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
+              "bottom_fall_qi", "bottom_fall_total"):
+        assert f in surf
+    assert "bottom_fall" not in surf   # the aggregate alone cannot attribute
+
+
+@pytest.mark.parametrize("name", ["a b.cpp", "a\rb.cpp"])
+def test_stale_guard_sees_awkwardly_named_build_inputs(tmp_path, name):
+    # Two fail-opens of the same class, found one layer apart. Whitespace-
+    # splitting fragmented "a b.cpp" into tokens that exist nowhere; the fix
+    # kept text=True, whose universal-newline translation turned a '\r' in a
+    # filename into '\n' — either way is_file() failed and the input silently
+    # LEFT the guard. Binary NUL-split listing leaves no translation step.
+    import os, subprocess, time, g33_run_env
+    repo = tmp_path / "repo"
+    (repo / "libtorch/src").mkdir(parents=True)
+    (repo / "harness/g33_overlay").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    spaced = repo / "libtorch/src" / name
+    spaced.write_text("int a;\n")
+    (repo / "harness/g33_overlay/sedimentation.cpp.overlay").write_text("x\n")
+    (repo / "harness/g33_overlay/g33_op_dump.h").write_text("x\n")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    binary = repo / "lib.dylib"
+    binary.write_bytes(b"built")
+    os.utime(binary, None)
+    g33_run_env._check_binary_not_stale(binary, repo)     # fresh: accepted
+    time.sleep(0.01)
+    spaced.write_text("edited after the build\n")
+    with pytest.raises(RuntimeError, match="older than"):
+        g33_run_env._check_binary_not_stale(binary, repo)
+
+
+def test_build_env_refuses_a_malformed_column_map_before_anything_runs(tmp_path):
+    # Without the early check a malformed map is only caught when the overlay
+    # opens its first container — deep inside the physics run.
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    for bad in ([[0, 0, 0, 0]],                                   # short
+                [[0, 0, 0, 0], [0, 0, 1, 1], [2, 0, 2, 2]],       # dup B_index
+                [[0, 0, 0], [1, 0, 1], [2, 0, 2]]):               # wrong arity
+        with pytest.raises(gd.G33Corruption):
+            g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                                  column_map=bad, run_uuid="u",
+                                  column_layout_id="l", repo=repo)

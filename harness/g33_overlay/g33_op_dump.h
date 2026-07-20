@@ -19,6 +19,7 @@
 
 #ifdef KDM6_G33_OP_DUMP
 
+#include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
@@ -27,6 +28,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <unistd.h>   // link/unlink — atomic no-clobber publish
+#include <dlfcn.h>    // dladdr — which artifact is this code actually running from
 
 namespace kdm6 { namespace g33 {
 
@@ -44,6 +46,16 @@ struct DumpContext {
     std::string backend = "cpp";
 };
 inline thread_local DumpContext* g_context = nullptr;
+
+// PROCESS-GLOBAL monotonic op sequence. Every record carries the value it read
+// here, so op_seq_id is MEASURED execution order, not derived from the record's
+// position inside its own container. That distinction is the whole point: a
+// per-container counter restarts at 0 in every container, so two substeps that
+// executed in the wrong order would both look correct locally. The header's
+// declared global range (from run_index.json, fixed before the run) is what the
+// measured value is then checked against — out-of-order execution lands outside
+// the declared window and the reader rejects it.
+inline std::atomic<uint64_t> g_op_seq{0};
 
 struct ScopedDumpContext {
     DumpContext ctx;
@@ -125,6 +137,34 @@ private:
     uint32_t h_[8]; uint8_t buf_[64]; size_t buflen_; uint64_t len_;
 };
 
+// ── loaded-binary self-resolution (P0-5) ─────────────────────────────────────
+struct ResolvedBinary { std::string path, sha256; };
+
+// Which artifact did the dynamic linker actually map `sym` from, and what are
+// its bytes on disk? KDM6_G33_BINARY_SHA256 is the digest of the file the
+// harness INTENDS the run to load — a claim. dladdr on a symbol inside this
+// image is a measurement: until the two are compared, a stale dylib on a search
+// path runs with fresh evidence stamped on it and nothing objects. Scope
+// honestly: the file at the resolved path is hashed at call time, so a file
+// swapped after load could still diverge from the mapped image — far narrower
+// than never resolving, and the A/B/C runs (§10) use freshly built artifacts
+// where that window is not live.
+inline ResolvedBinary resolve_containing_binary(const void* sym) {
+    Dl_info info{};
+    if (!dladdr(sym, &info) || !info.dli_fname || !*info.dli_fname)
+        throw std::runtime_error("g33: dladdr cannot resolve the containing binary");
+    std::ifstream f(info.dli_fname, std::ios::binary);
+    if (!f)
+        throw std::runtime_error(std::string("g33: cannot read resolved binary ")
+                                 + info.dli_fname);
+    Sha256 h;
+    std::vector<char> buf(1 << 16);
+    while (f.read(buf.data(), std::streamsize(buf.size())))
+        h.update(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+    h.update(reinterpret_cast<const uint8_t*>(buf.data()), size_t(f.gcount()));
+    return {info.dli_fname, h.hexdigest()};
+}
+
 // ── native-width big-endian payload packing (matches g33_dump.pack_payload) ──
 inline void be_f32(std::vector<uint8_t>& out, float v) {
     uint32_t u; std::memcpy(&u, &v, 4);
@@ -152,7 +192,10 @@ public:
         f_.open(tmp_, std::ios::binary);
         if (!f_) throw std::runtime_error("g33: cannot open " + tmp_);
         f_.write("KDG33OP\n", 8);
-        put_u32(1);                       // format_version
+        // Keep in lockstep with g33_dump.FORMAT_VERSION. The two writers are in
+        // different languages and drift silently; the reader's version check is
+        // what turns that drift into a loud failure rather than a misparse.
+        put_u32(2);                       // format_version
         put_u32(uint32_t(header_json.size())); f_.write(header_json.data(), header_json.size());
         bytes_ = 8 + 4 + 4 + header_json.size();
         if (!f_.good()) throw std::runtime_error("g33: write error writing header");

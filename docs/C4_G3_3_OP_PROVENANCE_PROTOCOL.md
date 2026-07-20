@@ -52,10 +52,20 @@ real32 → uint32   real64 → uint64   int32 → int32   logical → uint8
 **mstep is an integer-VALUED float tensor** (clamped, then used as divisor + gate), NOT an int type.
 Storing only `int32(2)` hides `2.0` vs `2.0000002`. Record:
 ```
-mstep_native_dtype  mstep_native_bits(u32/u64)  mstep_decoded_i32  mstep_exact_integer(u8)  mstepmax_i32  gate(u8)
+mstep_native_dtype  mstep_native_bits(u32/u64)  mstep_decoded_i32  mstep_exact_integer(u8)  gate(u8)
 ```
-Acceptance: `mstep_exact_integer==true`, `mstep_decoded_i32` in range, `mstep_native_bits` equal
-*within* each pair.
+`mstepmax` is NOT dumped (owner adjudication): it is `max_b(mstep_b)`, so the comparator
+derives it offline from the `mstep_native` bits (`g33_dump.derive_mstepmax`). Dumping it
+would have required naming `int /*mstepmax*/`, an unnamed production parameter — a
+production edit for a value that is not independent of evidence already recorded, and a
+producer reporting both an operand and a summary OF that operand attests to its own
+arithmetic. For the same reason, every producer-emitted verdict here (`mstep_decoded_i32`,
+`mstep_exact_integer`, `gate_exact_01`, `active_mask`, `*_floor_active`) is a DEBUGGING
+AID: acceptance authority is `g33_derived.py`, which recomputes each from the raw bits and
+cross-checks the producer's version — a disagreement means the producer's arithmetic is
+not what its evidence claims, and the run is invalid before any cross-tree comparison.
+Acceptance: recomputed `exact_integer==true`, recomputed `decoded_i32` in range,
+`mstep_native_bits` equal *within* each pair.
 
 ---
 
@@ -129,9 +139,43 @@ so `qr seed → rain_increment` is shown as an actual op path, not mere cell-set
 - **Shadow ladder** — the active expression stays verbatim; the ladder is recomputed into
   diagnostic-only variables that never feed state (C++ compiler re-association / Fortran REAL temporary
   rounding would otherwise change the observed target).
-- **Dedicated macro/env** — `KDM6_G33_OP_DUMP` + `KDM6_G33_DUMP_DIR`/`KDM6_G33_CASE_ID`/
-  `KDM6_G33_PAIR_ID`; independent of the shared `KDM6_SUBSTEP_DUMP` (which also drives
-  coordinator/cold/melt-freeze hooks).
+- **Dedicated macro/env** — `KDM6_G33_OP_DUMP` at compile time; independent of the shared
+  `KDM6_SUBSTEP_DUMP` (which also drives coordinator/cold/melt-freeze hooks). The run
+  environment is ALL-OR-NOTHING: none of the variables set means diagnostics are off, any
+  subset means the run is misconfigured and the producer says so. A half-configured run —
+  `DUMP_DIR` and `CASE_ID` exported, `PAIR_ID` forgotten — otherwise produces no evidence
+  and still exits 0, which is indistinguishable from "diagnostics off".
+
+  Do not export these by hand; `harness/g33_run_env.py` derives all of them from one
+  schedule and seals what they point at, so the declaration the producer checks itself
+  against and the expectation the comparator uses afterwards cannot drift apart:
+
+  | variable | meaning |
+  |---|---|
+  | `KDM6_G33_DUMP_DIR` | where containers are written |
+  | `KDM6_G33_CASE_ID`, `KDM6_G33_PAIR_ID` | case/pair identity, echoed into every header |
+  | `KDM6_G33_RUN_UUID` | ties all containers to one run |
+  | `KDM6_G33_PRODUCER_COMMIT` | resolved from git HEAD |
+  | `KDM6_G33_BINARY_SHA256` | digest of the dylib the run loads, hashed from the file |
+  | `KDM6_G33_COLUMN_LAYOUT_ID`, `KDM6_G33_COLUMN_MAP` | declared Fortran(i,j)↔C++ flat-B map (§7c) |
+  | `KDM6_G33_OP_SEQ_MAP` | each container's declared op_seq window (§7, P0-2) |
+  | `KDM6_G33_SCHEMA_DIR` | sealed per-container expected record streams |
+  | `KDM6_G33_SCHEMA_SHA256` | their digests, delivered by a channel an edit of the files does not reach |
+
+  The last pair is why the descriptor check is not a self-attestation: a producer that
+  hashes the file it just read and reports the result agrees with itself no matter what
+  that file contains.
+
+  The binary digest is bound the same way (P0-5): `dladdr` on a symbol with internal
+  linkage in the instrumented TU asks the dynamic linker which artifact it actually
+  mapped that code from — a measurement, where the sealed digest is a claim about a file
+  on disk. The overlay hashes the resolved artifact, refuses on mismatch, and records
+  `resolved_binary_path`/`resolved_binary_sha256` in every header; the reader
+  independently requires the resolved digest to equal the sealed one, so a writer that
+  never resolved anything cannot fabricate agreement. Scope stated honestly: the file at
+  the resolved path is hashed at first dump use, so a swap after load is outside this
+  check — the A/B/C runs (§10) execute freshly built artifacts where that window is not
+  live.
 - **C++ via overlay too (P0-8)** — instrument `sedimentation*.cpp` on a **temporary diagnostic source
   overlay**, not the canonical tree, so the public production source is byte-unchanged and A vs B/C
   separate cleanly (mirrors the Fortran overlay, §6).
@@ -145,6 +189,21 @@ AND an independent Python/scalar evaluator, from the raw recorded inputs, reprod
 exactly: `actual == shadow == offline`. Any mismatch → that rung is unusable → **INCONCLUSIVE**.
 
 ---
+
+### Static verification is a tripwire, not evidence
+
+Nine consecutive review rounds bypassed source-text certification of runtime properties
+(slicing spellings, rank-changing calls, dtype relabels, unknown operands, allowed-name
+collisions, multi-argument `.to()`, comments parsed as syntax — each fix opened the next
+hole one layer down). The static checks' load-bearing role is therefore limited to what
+source text CAN establish: (1) the canonical base SHA pin, (2) macro-OFF textual identity,
+(3) macro-ON in-order superset plus the mutation tripwire. Tensor runtime shape, runtime
+dtype, arithmetic equivalence, and non-mutation through aliases are NOT certifiable from
+source text and must never be cited from it. That authority lives at runtime: the sealed
+per-container expected-descriptor stream (§7) that `rec()` consumes record-by-record with
+the tensor in hand, the producer-side shape guard, and the comparator recomputation of
+every derived flag (`g33_derived.py`). Non-invasiveness is established only by the 3-way
+A/B/C run (§10).
 
 ## 6. Canonical Fortran + C++ via temporary build overlay (P0-8, P0-10)
 

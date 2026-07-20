@@ -16,6 +16,7 @@
 #include "g33_op_dump.h"
 #include <cstdlib>
 #include <memory>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -40,17 +41,60 @@ inline std::string jesc(const std::string& in) {
     return o;
 }
 
+// Anchor for dladdr with INTERNAL linkage: guaranteed to be compiled into this
+// translation unit, hence into the artifact whose identity the evidence must
+// record. An inline from the shared header could legitimately resolve to some
+// other image's copy of itself.
+static void g33_self_anchor() {}
+
+// Resolved and hashed once, at first dump use — as close to load time as we can
+// get without an initializer. Re-hashing a multi-megabyte dylib in every substep
+// would put the cost where the physics is, for the same answer.
+static const ::kdm6::g33::ResolvedBinary& g33_loaded_binary() {
+    static const ::kdm6::g33::ResolvedBinary rb =
+        ::kdm6::g33::resolve_containing_binary(
+            reinterpret_cast<const void*>(&g33_self_anchor));
+    return rb;
+}
+
 class Substep {
 public:
     Substep(const char* chain, int n, const torch::Tensor& probe)
         : chain_(chain), n_(n) {
+        // ALL-OR-NOTHING configuration. Returning quietly when any single
+        // variable was missing meant a run with DUMP_DIR and CASE_ID set but
+        // PAIR_ID forgotten produced NO evidence and still exited 0 — a typo in
+        // one export was indistinguishable from "diagnostics off". Absent =>
+        // inert (production must not require the dump); partially present =>
+        // the run is misconfigured and says so at the producer.
+        static const char* kRequiredEnv[] = {
+            "KDM6_G33_DUMP_DIR", "KDM6_G33_CASE_ID", "KDM6_G33_PAIR_ID",
+            "KDM6_G33_RUN_UUID", "KDM6_G33_PRODUCER_COMMIT",
+            "KDM6_G33_BINARY_SHA256", "KDM6_G33_COLUMN_LAYOUT_ID",
+            "KDM6_G33_COLUMN_MAP", "KDM6_G33_OP_SEQ_MAP",
+            "KDM6_G33_SCHEMA_DIR", "KDM6_G33_SCHEMA_SHA256",
+        };
+        std::string missing;
+        int present = 0;
+        for (const char* k : kRequiredEnv) {
+            const char* v = std::getenv(k);
+            if (v && *v) ++present;
+            else missing += std::string(missing.empty() ? "" : ", ") + k;
+        }
+        if (present == 0) return;                       // diagnostics off
+        if (!missing.empty())
+            throw std::runtime_error(
+                "g33: partial configuration — missing " + missing
+                + " (set every G3.3 variable or none; a half-configured run "
+                  "produces no evidence while still exiting 0)");
+        auto* ctx = ::kdm6::g33::g_context;
+        if (!ctx)
+            throw std::runtime_error(
+                "g33: configured but no ScopedDumpContext is active — the "
+                "outer-loop wiring is missing, not the configuration");
         const char* dir = std::getenv("KDM6_G33_DUMP_DIR");
         const char* cas = std::getenv("KDM6_G33_CASE_ID");
         const char* pai = std::getenv("KDM6_G33_PAIR_ID");
-        auto* ctx = ::kdm6::g33::g_context;
-        // Unconfigured => inert (the production path must not require the dump).
-        // But a configured-yet-FAILING writer must NOT be silent: see below.
-        if (!dir || !cas || !pai || !ctx) return;
         B_ = int(probe.size(0)); K_ = int(probe.size(-1));
         // §7c: the column map is DECLARED by the harness, never fabricated here.
         // Inventing it (e.g. fortran_j hardcoded to 0) would make the Fortran<->C++
@@ -60,21 +104,90 @@ public:
             throw std::runtime_error(
                 "g33: KDM6_G33_COLUMN_MAP is required (declared Fortran(i,j)<->C++ "
                 "flat-B map, protocol 7c) — refusing to fabricate one");
+        cid_ = "L" + std::to_string(ctx->outer_loop_1based) + "_" + chain
+             + "_n" + std::to_string(n);
         std::string path = std::string(dir) + "/cpp_" + ctx->algorithm + "_" + cas
-                         + "_L" + std::to_string(ctx->outer_loop_1based)
-                         + "_" + chain + "_n" + std::to_string(n) + ".g33";
+                         + "_" + cid_ + ".g33";
+        // §7 P0-2: the op_seq window for THIS container is DECLARED by the harness
+        // (run_index.json, fixed before the run), never inferred here. Same reason
+        // as the column map: a range the producer computes for itself cannot
+        // falsify the producer. Absent declaration = invalid run, not a default.
+        uint64_t first = 0, last = 0;
+        if (!lookup_op_seq(cid_, first, last))
+            throw std::runtime_error(
+                "g33: KDM6_G33_OP_SEQ_MAP has no entry for container " + cid_
+                + " (declared container set and actual execution disagree)");
+        // §7d/P0-5: bind the evidence to the binary the process ACTUALLY loaded.
+        // BINARY_SHA256 says which file the harness hashed on disk; dladdr says
+        // which artifact the dynamic linker mapped this code from. Refuse when
+        // they differ — the run is executing a binary the evidence does not
+        // describe, and every downstream check would inherit that silently.
+        const auto& g33_self = g33_loaded_binary();
+        {
+            const std::string sealed_bin = g33_env("KDM6_G33_BINARY_SHA256");
+            if (g33_self.sha256 != sealed_bin)
+                throw std::runtime_error(
+                    "g33: the loaded binary is not the sealed one\n  sealed:   "
+                    + sealed_bin + "\n  resolved: " + g33_self.sha256 + " ("
+                    + g33_self.path + ")");
+        }
         std::ostringstream tid; tid << std::this_thread::get_id();
+        // §7 runtime expected-descriptor: the record stream this container may
+        // emit was sealed BEFORE the run. Static analysis of the C++ expression
+        // could not establish a tensor's runtime shape or dtype — nine rounds of
+        // it were bypassed — so the check moved here, where the tensor is in hand.
+        const char* sdir = std::getenv("KDM6_G33_SCHEMA_DIR");
+        if (!sdir || !*sdir)
+            throw std::runtime_error("g33: KDM6_G33_SCHEMA_DIR is required "
+                                     "(sealed expected-record stream, protocol 7)");
+        std::ifstream df(std::string(sdir) + "/" + cid_ + ".desc",
+                         std::ios::binary);
+        if (!df)
+            throw std::runtime_error("g33: no sealed descriptor for container " + cid_);
+        std::string blob((std::istreambuf_iterator<char>(df)),
+                         std::istreambuf_iterator<char>());
+        // Hash the descriptor bytes and check them against the digest the
+        // HARNESS sealed, passed in by environment. Computing a digest from the
+        // file just read and reporting it proves nothing: edit the descriptor
+        // and the producer hashes the edited bytes and agrees with itself. The
+        // reference has to arrive by a channel the same edit does not reach.
+        ::kdm6::g33::Sha256 dsha;
+        dsha.update(reinterpret_cast<const uint8_t*>(blob.data()), blob.size());
+        desc_sha_ = dsha.hexdigest();
+        std::string want_sha;
+        if (!lookup_csv("KDM6_G33_SCHEMA_SHA256", cid_, want_sha))
+            throw std::runtime_error(
+                "g33: KDM6_G33_SCHEMA_SHA256 has no sealed digest for container "
+                + cid_);
+        if (want_sha != desc_sha_)
+            throw std::runtime_error(
+                "g33: descriptor for " + cid_ + " does not match the sealed digest\n"
+                "  sealed: " + want_sha + "\n  actual: " + desc_sha_);
+        for (size_t i = 0, j; i < blob.size(); i = j + 1) {
+            j = blob.find('\n', i);
+            if (j == std::string::npos) j = blob.size();
+            if (j > i) want_.push_back(blob.substr(i, j - i));
+        }
+        if (want_.empty())
+            throw std::runtime_error("g33: empty descriptor for container " + cid_
+                                     + " — an empty expectation accepts an empty dump");
         std::string hdr = std::string("{\"producer_commit\":\"") + jesc(g33_env("KDM6_G33_PRODUCER_COMMIT"))
             + "\",\"binary_sha256\":\"" + jesc(g33_env("KDM6_G33_BINARY_SHA256"))
+            + "\",\"resolved_binary_path\":\"" + jesc(g33_self.path)
+            + "\",\"resolved_binary_sha256\":\"" + g33_self.sha256
             + "\",\"case_id\":\"" + jesc(cas) + "\",\"pair_id\":\"" + jesc(pai)
             + "\",\"backend\":\"cpp\",\"algorithm\":\"" + jesc(ctx->algorithm)
             + "\",\"B\":" + std::to_string(B_) + ",\"K\":" + std::to_string(K_)
             + ",\"column_layout_id\":\"" + jesc(g33_env("KDM6_G33_COLUMN_LAYOUT_ID"))
             + "\",\"column_index_map\":" + colmap            // declared, verbatim JSON
             + ",\"canonical_k_order\":\"top-first\",\"run_uuid\":\"" + jesc(g33_env("KDM6_G33_RUN_UUID"))
-            + "\",\"process_id\":\"" + std::to_string(long(::getpid()))
-            + "\",\"owner_thread_id\":\"" + jesc(tid.str())
-            + "\",\"record_count_expected\":0}";
+            + "\",\"process_id\":" + std::to_string(long(::getpid()))
+            + ",\"owner_thread_id\":\"" + jesc(tid.str())
+            + "\",\"descriptor_sha256\":\"" + desc_sha_
+            + "\",\"container_id\":\"" + jesc(cid_)
+            + "\",\"global_op_seq_start\":" + std::to_string(first)
+            + ",\"global_op_seq_end\":" + std::to_string(last)
+            + ",\"record_count_expected\":0}";
         // NO catch here. A configured run whose container cannot be opened —
         // stale .tmp from a killed run, an existing completed container, an
         // unwritable dir — is an INVALID diagnostic run. Swallowing that turned
@@ -123,11 +236,43 @@ public:
         // ACTUAL shape, not a flattened numel: the expectation manifest keys on
         // (B)/(B,K), so a flattened [n] would never match and completeness
         // checking would be silently vacuous.
+        // RUNTIME shape guard. Every record in this protocol is either a
+        // whole-K field [B,K] or a per-column field [B]; nothing else has a
+        // meaning the manifest can express. A static source check cannot certify
+        // this — two rounds of it passed .select(-1,k), then .sum(-1)/.reshape/
+        // torch::stack — so the producer refuses the shape itself, where the
+        // actual tensor is in hand and no parsing is involved.
+        if (!((c.dim() == 1 && c.size(0) == B_) ||
+              (c.dim() == 2 && c.size(0) == B_ && c.size(1) == K_))) {
+            std::string dims = "[";
+            for (int64_t i = 0; i < c.dim(); ++i)
+                dims += (i ? "," : "") + std::to_string(c.size(i));
+            throw std::runtime_error(
+                std::string("g33: field ") + field + " has shape " + dims + "]"
+                + ", expected [" + std::to_string(B_) + "] or ["
+                + std::to_string(B_) + "," + std::to_string(K_) + "]");
+        }
         std::string shape = "[";
         for (int64_t i = 0; i < c.dim(); ++i)
             shape += (i ? "," : "") + std::to_string(c.size(i));
         shape += "]";
+        const uint64_t op_seq_id = ::kdm6::g33::g_op_seq.fetch_add(1);
+        // One string equality covers identity, dtype, rank and shape at once,
+        // all read off the tensor rather than inferred from source text.
+        std::string got = std::to_string(op_seq_id) + "|" + stage + "|" + cell_role
+                        + "|" + std::to_string(k) + "|" + species + "|" + op_id
+                        + "|" + field + "|" + dtype + "|";
+        for (int64_t i = 0; i < c.dim(); ++i)
+            got += (i ? "," : "") + std::to_string(c.size(i));
+        if (seq_ >= int(want_.size()))
+            throw std::runtime_error("g33: record beyond the sealed stream: " + got);
+        if (got != want_[seq_])
+            throw std::runtime_error("g33: record " + std::to_string(seq_)
+                                     + " does not match the sealed descriptor\n"
+                                     + "  expected: " + want_[seq_] + "\n"
+                                     + "  actual:   " + got);
         std::string key = std::string("{\"seq_no\":") + std::to_string(seq_)
+            + ",\"op_seq_id\":" + std::to_string(op_seq_id)
             + ",\"outer_loop\":" + std::to_string(::kdm6::g33::g_context->outer_loop_1based)
             + ",\"chain\":\"" + jesc(chain_) + "\",\"n\":" + std::to_string(n_)
             + ",\"cell_role\":\"" + jesc(cell_role) + "\",\"k\":" + std::to_string(k)
@@ -138,11 +283,62 @@ public:
         w_->record(key, pay);
         ++seq_;
     }
-    void finalize() { if (w_) { w_->finalize(); w_.reset(); } }   // explicit only
+    void finalize() {
+        if (!w_) return;
+        // A short stream is a MISSING record. Without this, a substep that
+        // returned early would publish a COMPLETE container holding a prefix.
+        if (seq_ != int(want_.size()))
+            throw std::runtime_error(
+                "g33: container " + cid_ + " emitted " + std::to_string(seq_)
+                + " of " + std::to_string(want_.size()) + " sealed records");
+        w_->finalize(); w_.reset();
+    }
 private:
     static std::string g33_env(const char* k) { const char* v = std::getenv(k); return v ? v : ""; }
+    // KDM6_G33_OP_SEQ_MAP := "cid:first:last,cid:first:last,..." emitted from
+    // run_index(). Flat on purpose — a JSON parser here would be more code to
+    // audit inside instrumentation that must stay trivially reviewable.
+    // "cid:value,cid:value,..." lookup for the harness-declared maps.
+    static bool lookup_csv(const char* env, const std::string& cid, std::string& out) {
+        const char* m = std::getenv(env);
+        if (!m) return false;
+        std::string s(m), tok;
+        std::istringstream in(s);
+        while (std::getline(in, tok, ',')) {
+            auto a = tok.find(':');
+            if (a == std::string::npos) continue;
+            if (tok.substr(0, a) != cid) continue;
+            out = tok.substr(a + 1);
+            return true;
+        }
+        return false;
+    }
+    // uint64_t to match g_op_seq — `long` is 32-bit on LLP64/32-bit targets,
+    // which would truncate a large window silently. And DIGITS ONLY before
+    // conversion: std::stoull accepts "-5" and wraps it to a huge unsigned
+    // value instead of rejecting it, so a corrupted map entry would parse
+    // "successfully" into a nonsense window rather than failing here.
+    static bool all_digits(const std::string& t) {
+        if (t.empty()) return false;
+        for (char c : t) if (c < '0' || c > '9') return false;
+        return true;
+    }
+    static bool lookup_op_seq(const std::string& cid, uint64_t& first, uint64_t& last) {
+        std::string v;
+        if (!lookup_csv("KDM6_G33_OP_SEQ_MAP", cid, v)) return false;
+        auto b = v.find(':');
+        if (b == std::string::npos) return false;
+        const std::string a = v.substr(0, b), z = v.substr(b + 1);
+        if (!all_digits(a) || !all_digits(z)) return false;
+        first = std::stoull(a);
+        last  = std::stoull(z);
+        return true;
+    }
     std::unique_ptr<::kdm6::g33::Writer> w_;
     std::string chain_;                 // OWNED: a const char* member could dangle
+    std::string cid_;                   // container_id, echoed into the header
+    std::vector<std::string> want_;     // sealed expected stream, consumed in order
+    std::string desc_sha_;              // digest of the descriptor actually read
     int n_; int B_ = 0, K_ = 0, seq_ = 0;
 };
 
@@ -244,26 +440,44 @@ SubstepAdvectionOutputs substep_advection_torch(
         if (g33.on()) {
             g33_q_entry = qr_cols[k].clone();
             g33_n_entry = nr_cols[k].clone();
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "work1_qr", work1_qr_col(k));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "workn_qr", workn_qr_col(k));
+            // WHOLE-K, ONCE per substep, k=-1. These were per-level (B,) slices
+            // taken at k=0 inside the top-cell block: the same key was emitted K
+            // times with only the k=0 column's data, so K-1 levels of the substep
+            // entry state were never captured and the manifest could not be
+            // satisfied by any real container. k=-1 marks a record that is not
+            // per-level (the field IS the whole column set).
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "qr", in.state.qr);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "nr", in.state.nr);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "work1_qr", in.work1_qr);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "workn_qr", in.workn_qr);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_raw", in.dend);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_safe", dend_safe);
+            // whether the safe-floor actually changed the value at this cell —
+            // a clamp that fires in one backend and not the other is a
+            // first-divergence mechanism, invisible if only the result is kept.
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_floor_active",
+                    (dend_safe != in.dend).to(torch::kUInt8));
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_raw", in.delz);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_safe", delz_safe);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_floor_active",
+                    (delz_safe != in.delz).to(torch::kUInt8));
             // P0-4: int32(2) cannot hide 2.0 vs 2.0000002 — record the NATIVE
             // bits, the decoded integer, and whether it is exactly integral.
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_native", mstep_col_safe);
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_decoded_i32",
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_native", mstep_col_safe);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_decoded_i32",
                     mstep_col_safe.to(torch::kInt32));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "mstep_exact_integer",
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_exact_integer",
                     (mstep_col_safe == mstep_col_safe.round()).to(torch::kUInt8));
             // gate at NATIVE width (a non-exact 0/1 would be invisible in u8),
-            // plus the exactness flag and the active mask for the NaN policy (P1-11).
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_native", gate_col);
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "gate_exact_01",
+            // plus the u8 decode and the exactness flag that proves the decode
+            // is lossless — same native/decoded/exact triple as mstep.
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_native", gate_col);
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_decoded_u8",
+                    gate_col.to(torch::kUInt8));
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_exact_01",
                     ((gate_col == 0).logical_or(gate_col == 1)).to(torch::kUInt8));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "active_mask",
+            G33_REC(g33, "substep_pre", "-", -1, "-", "-", "active_mask",
                     (gate_col != 0).to(torch::kUInt8));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_raw", dend_col(k));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "dend_safe", dend_safe_col(k));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_raw", delz_col(k));
-            G33_REC(g33, "substep_pre", "TOP", 0, "-", "-", "delz_safe", delz_safe_col(k));
         }
 #endif
         // §34: falk REAL(f32) — one f32 rounding of the f64 chain (work1 f64 via vt f64), mirror ice path.
