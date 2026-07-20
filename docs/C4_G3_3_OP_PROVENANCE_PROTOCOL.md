@@ -242,6 +242,19 @@ diagnostic build), never the canonical/public tree. Final checks: canonical Fort
 
 ---
 
+### Build-level gate: compile smoke + macro-off object equivalence
+
+`harness/g33_overlay/compile_smoke.sh` (flags parsed from the real kdm6_c
+flags.make, so it cannot drift from what ships): every overlay TU must compile
+with the macro ON, and with the macro OFF its object must equal the canonical
+object byte-for-byte — directly, or via the line-shift proof (the g33 blocks
+occupy source lines even when compiled out, and TORCH_CHECK materializes
+`__LINE__` as an integer immediate; compiling the canonical text in the
+overlay's blank-line layout isolates that one difference). Measured:
+sedimentation is directly object-identical; runtime and coordinator differ
+ONLY by `__LINE__`. This is a build-level gate — run-level non-invasiveness is
+still §10's A/B/C alone.
+
 ## 7. Dump container + INDEPENDENT expectation + attestation
 
 ### 7a. Container (versioned, self-verifying) — one per (case, backend)
