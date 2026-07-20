@@ -27,6 +27,7 @@ import json
 import os
 import subprocess
 import sys
+import shutil
 import tempfile
 import uuid
 from pathlib import Path
@@ -170,16 +171,29 @@ def main() -> int:
     if not driver.is_file():
         print(f"SKIP: driver not built ({driver}) — run selfcheck_build.sh first")
         return EXIT_SKIP
+    # Clean up ONLY on success. A failing run leaves its evidence directory in
+    # place for forensics — the same reason build_env keeps a partial run
+    # (auto-cleanup would destroy what a mismatch needs to be diagnosed from).
+    # _die() exits without returning, so a failure never reaches the rmtree.
     root = Path(tempfile.mkdtemp(prefix="g33_selfcheck."))
-    for algorithm in ("legacy", "conservative"):
-        try:
-            stats = check_algorithm(driver, algorithm, root / algorithm)
-        except gd.G33Corruption as e:
-            _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
-        print(f"{algorithm}: PASS — {stats['containers']} containers, "
-              f"{stats['shadow_actual']} shadow==actual, "
-              f"{stats['offline_rungs']} offline rungs bit-exact, "
-              f"{stats['flags']} producer cross-checks")
+    try:
+        for algorithm in ("legacy", "conservative"):
+            try:
+                stats = check_algorithm(driver, algorithm, root / algorithm)
+            except gd.G33Corruption as e:
+                _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
+            print(f"{algorithm}: PASS — {stats['containers']} containers, "
+                  f"{stats['shadow_actual']} shadow==actual, "
+                  f"{stats['offline_rungs']} offline rungs bit-exact, "
+                  f"{stats['flags']} producer cross-checks")
+    except SystemExit as e:
+        # ANY failure keeps the evidence and reports where — the forensic
+        # contract must not depend on which failure class fired (the fidelity
+        # path _die's from inside check_algorithm without root in scope).
+        if e.code:
+            print(f"(evidence preserved at {root})", file=sys.stderr)
+        raise
+    shutil.rmtree(root, ignore_errors=True)     # success only
     print("SELF-CHECK PASS: shadow == actual == offline, both algorithms")
     return 0
 

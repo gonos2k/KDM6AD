@@ -1139,7 +1139,7 @@ def test_run_env_supplies_exactly_what_the_overlay_requires(tmp_path):
     binary = tmp_path / "libfake.dylib"
     binary.write_bytes(b"not a real dylib, but a real file with a real digest")
     env = g33_run_env.build_env(
-        sched, tmp_path, binary=binary,
+        sched, tmp_path / "run", binary=binary,
         column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
         run_uuid="uuid-under-test", column_layout_id="lc05-3col", repo=repo)
     required = _overlay_required_env()
@@ -1156,7 +1156,7 @@ def test_run_env_seals_what_it_points_at(tmp_path):
     binary = tmp_path / "libfake.dylib"
     binary.write_bytes(b"x" * 64)
     env = g33_run_env.build_env(
-        sched, tmp_path, binary=binary,
+        sched, tmp_path / "run", binary=binary,
         column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
         run_uuid="u", column_layout_id="lc05-3col", repo=repo)
 
@@ -1519,12 +1519,27 @@ def test_gate_that_is_exactly_01_but_wrong_is_caught_by_the_mstep_law():
         gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN)
 
 
-def test_mstep_outside_the_physical_range_is_an_invalid_run():
+def test_honestly_reported_nonintegral_mstep_is_still_invalid():
+    # The producer is not lying — mstep_exact_integer=0 matches the 2.5 it dumped
+    # — but the run is still invalid: acceptance is "recomputed exact == true",
+    # not merely "the producer's exact flag agrees". Before P0-2 this PASSED.
+    f = _substep_pre_fields(
+        mstep_native=("f64", gd.pack_payload("f64", [1.0, 2.5, 3.0])),
+        mstep_decoded_i32=("i32", gd.pack_payload("i32", [1, 2, 3])),
+        mstep_exact_integer=("u8", gd.pack_payload("u8", [1, 0, 1])),
+        gate_native=("f32", gd.pack_payload("f32", [0.0, 1.0, 1.0])),
+        gate_decoded_u8=("u8", gd.pack_payload("u8", [0, 1, 1])),
+        active_mask=("u8", gd.pack_payload("u8", [0, 1, 1])))
+    with pytest.raises(gd.G33Corruption, match="not exactly integral"):
+        gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+
+
+def test_mstep_outside_the_contract_range_is_an_invalid_run():
     for bad_mstep, bad_decoded in ([0.0, 2.0, 3.0], [0, 2, 3]), ([1.0, 2.0, 101.0], [1, 2, 101]):
         f = _substep_pre_fields(
             mstep_native=("f64", gd.pack_payload("f64", bad_mstep)),
             mstep_decoded_i32=("i32", gd.pack_payload("i32", bad_decoded)))
-        with pytest.raises(gd.G33Corruption, match="physical range"):
+        with pytest.raises(gd.G33Corruption, match="contract range"):
             gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
 
 
@@ -1578,7 +1593,13 @@ def test_run_contract_is_sealed_as_a_file(tmp_path):
     assert sha_line == _h.sha256(body).hexdigest()
 
 
-def test_run_contract_refuses_overwrite_and_missing_qcrmin(tmp_path):
+def test_second_run_cannot_touch_the_first_runs_evidence(tmp_path):
+    # FAIL BEFORE MUTATION: the old no-clobber lived at the contract file, so a
+    # second invocation rewrote the first run's descriptors BEFORE refusing —
+    # measured: a different schedule left different descriptor bytes behind.
+    # The run directory is exclusive now; the property under test is that the
+    # refusal leaves the first run's sealed bytes untouched.
+    import hashlib as _h
     import g33_run_env
     repo = _clean_repo(tmp_path)
     binary = tmp_path / "lib.dylib"
@@ -1587,15 +1608,37 @@ def test_run_contract_refuses_overwrite_and_missing_qcrmin(tmp_path):
     sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
     g33_run_env.build_env(sched, tmp_path / "o", binary=binary, column_map=cmap,
                           run_uuid="u-1", column_layout_id="l", repo=repo)
-    with pytest.raises(FileExistsError, match="one contract per run"):
-        g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+    schema = tmp_path / "o" / "schema"
+    before = {p.name: _h.sha256(p.read_bytes()).hexdigest()
+              for p in schema.glob("*.desc")}
+    assert before
+    other = {**sched, "mstepmax_main": [2]}       # a DIFFERENT sealed schema
+    with pytest.raises(FileExistsError):
+        g33_run_env.build_env(other, tmp_path / "o", binary=binary,
                               column_map=cmap, run_uuid="u-2",
                               column_layout_id="l", repo=repo)
-    nosched = {k: v for k, v in sched.items() if k != "qcrmin"}
-    with pytest.raises(ValueError, match="qcrmin"):
-        g33_run_env.build_env(nosched, tmp_path / "o2", binary=binary,
-                              column_map=cmap, run_uuid="u-3",
-                              column_layout_id="l", repo=repo)
+    after = {p.name: _h.sha256(p.read_bytes()).hexdigest()
+             for p in schema.glob("*.desc")}
+    assert after == before, "the refused run modified the first run's evidence"
+
+
+def test_qcrmin_preflight_is_finite_and_f32_representable(tmp_path):
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    cmap = [[i, 0, i, i] for i in range(SCHED["B"])]
+    base = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    for i, bad in enumerate((None, True, 0.0, -1e-9, float("inf"),
+                             float("nan"), "1e-9",
+                             1e-60)):    # underflows to f32 +0.0
+        with pytest.raises(ValueError, match="qcrmin"):
+            g33_run_env.build_env({**base, "qcrmin": bad} if bad is not None
+                                  else {k: v for k, v in base.items()
+                                        if k != "qcrmin"},
+                                  tmp_path / f"q{i}", binary=binary,
+                                  column_map=cmap, run_uuid="u",
+                                  column_layout_id="l", repo=repo)
 
 
 def test_floor_dtype_errors_are_g33corruption_not_keyerror():

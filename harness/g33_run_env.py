@@ -140,12 +140,26 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
                     ("pair_id", schedule["pair_id"]),
                     ("column_layout_id", column_layout_id)):
         gd._require_safe_id(_nm, _v)
+    # qcrmin preflight (owner review): a positive FINITE scalar that is still
+    # positive and finite after the f32 rounding the producer actually compares
+    # with. `isinstance(float) and > 0` accepted +inf, and a tiny value that
+    # underflows to f32 zero would make the floor threshold vacuously never
+    # bind while the contract recorded a nonzero number.
+    import math as _math
+    import struct as _struct
     qcrmin = schedule.get("qcrmin")
-    if not isinstance(qcrmin, float) or not qcrmin > 0:
+    if (isinstance(qcrmin, bool) or not isinstance(qcrmin, (int, float))
+            or not _math.isfinite(qcrmin) or not qcrmin > 0):
         raise ValueError(
-            "schedule must declare qcrmin (positive float) — the floor authority "
-            "compares raw operands against THIS threshold (owner review §2.2), "
-            "and a threshold rediscovered per call site is not a contract")
+            "schedule must declare qcrmin (positive finite scalar) — the floor "
+            "authority compares raw operands against THIS threshold, and a "
+            "threshold rediscovered per call site is not a contract")
+    qcrmin = float(qcrmin)
+    _q32 = _struct.unpack(">f", _struct.pack(">f", qcrmin))[0]
+    if not _math.isfinite(_q32) or not _q32 > 0.0:
+        raise ValueError(
+            f"qcrmin {qcrmin!r} is not representable as a positive finite f32 — "
+            f"the f32 producer would compare against {_q32!r}")
     # Same validator the reader/writer share. Without this, a malformed map is
     # only caught when the overlay opens its first container — deep inside the
     # physics run, after the whole setup cost has been paid.
@@ -153,21 +167,32 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
 
     _repo = Path(repo or Path(__file__).parent.parent)
     _check_binary_not_stale(binary, _repo)
+    producer_commit = _git_head(_repo)
+    binary_sha = _sha256_file(binary)
+    index = ge.run_index(schedule)          # validates the schedule, in memory
 
+    # FAIL BEFORE MUTATION (owner review): the old order wrote descriptors into
+    # a shared outdir and only THEN noticed an existing run contract — so a
+    # second invocation could rewrite the first run's sealed schema before
+    # refusing, exactly the evidence-mixing the no-clobber existed to prevent.
+    # The run now owns its directory EXCLUSIVELY: nothing at all is written
+    # until this mkdir succeeds, and it refuses any pre-existing path. A run
+    # that fails midway leaves its partial directory in place for forensics —
+    # auto-cleanup would destroy the evidence of what went wrong.
+    outdir.mkdir(parents=True, exist_ok=False)
     schema_dir = outdir / "schema"
     dump_dir = outdir / "dump"
-    dump_dir.mkdir(parents=True, exist_ok=True)
+    dump_dir.mkdir(parents=True)
 
     shas = ge.write_descriptors(schedule, schema_dir)
-    index = ge.run_index(schedule)
 
     env = {
         "KDM6_G33_DUMP_DIR": str(dump_dir),
         "KDM6_G33_CASE_ID": schedule["case_id"],
         "KDM6_G33_PAIR_ID": schedule["pair_id"],
         "KDM6_G33_RUN_UUID": run_uuid,
-        "KDM6_G33_PRODUCER_COMMIT": _git_head(_repo),
-        "KDM6_G33_BINARY_SHA256": _sha256_file(binary),
+        "KDM6_G33_PRODUCER_COMMIT": producer_commit,
+        "KDM6_G33_BINARY_SHA256": binary_sha,
         "KDM6_G33_COLUMN_LAYOUT_ID": column_layout_id,
         "KDM6_G33_COLUMN_MAP": json.dumps(column_map, separators=(",", ":")),
         "KDM6_G33_OP_SEQ_MAP": ge.op_seq_map(index),
@@ -208,11 +233,10 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
             for c in index["containers"]
         ],
     }
+    # (the exclusive mkdir above makes a pre-existing contract impossible; the
+    # per-file check that used to live here could only fire AFTER descriptors
+    # had already been rewritten, which is why it was the wrong layer)
     contract_path = outdir / "run_contract.json"
-    if contract_path.exists():
-        raise FileExistsError(
-            f"{contract_path} already exists — one contract per run; refusing "
-            f"to overwrite another run's seal")
     body = json.dumps(contract, sort_keys=True, indent=1).encode()
     contract_path.write_bytes(body)
     (outdir / "run_contract.sha256").write_text(
