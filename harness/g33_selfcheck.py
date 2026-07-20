@@ -195,6 +195,8 @@ def main() -> int:
         raise
     shutil.rmtree(root, ignore_errors=True)     # success only
     print("SELF-CHECK PASS: shadow == actual == offline, both algorithms")
+    print("  (fixture: valid_metric + arithmetic_synthetic — branch coverage, "
+          "NOT a meteorological representativeness claim)")
     return 0
 
 
