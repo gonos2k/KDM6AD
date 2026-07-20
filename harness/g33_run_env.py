@@ -121,6 +121,32 @@ def _check_binary_not_stale(binary: Path, repo: Path) -> None:
             f"from the tree this run would stamp onto the evidence")
 
 
+def _require_f32_scalar(schedule: dict, name: str) -> float:
+    """A positive finite scalar that stays positive-finite after f32 rounding.
+
+    `isinstance(float) and > 0` accepted +inf; a value that overflows or
+    underflows to a non-positive f32 would make the operand the f32 producer
+    actually uses differ from the sealed contract — the exact drift the binding
+    exists to catch.
+    """
+    import math as _math
+    import struct as _struct
+    v = schedule.get(name)
+    if (isinstance(v, bool) or not isinstance(v, (int, float))
+            or not _math.isfinite(v) or not v > 0):
+        raise ValueError(f"schedule must declare {name} (positive finite scalar)")
+    v = float(v)
+    try:
+        v32 = _struct.unpack(">f", _struct.pack(">f", v))[0]
+    except OverflowError:
+        v32 = float("inf")
+    if not _math.isfinite(v32) or not v32 > 0.0:
+        raise ValueError(
+            f"{name} {v!r} is not representable as a positive finite f32 — "
+            f"the f32 producer would compare against {v32!r}")
+    return v
+
+
 def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
               column_layout_id, repo=None) -> dict:
     """Seal the descriptors and return the complete overlay environment.
@@ -145,24 +171,13 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
     # with. `isinstance(float) and > 0` accepted +inf, and a tiny value that
     # underflows to f32 zero would make the floor threshold vacuously never
     # bind while the contract recorded a nonzero number.
-    import math as _math
-    import struct as _struct
-    qcrmin = schedule.get("qcrmin")
-    if (isinstance(qcrmin, bool) or not isinstance(qcrmin, (int, float))
-            or not _math.isfinite(qcrmin) or not qcrmin > 0):
-        raise ValueError(
-            "schedule must declare qcrmin (positive finite scalar) — the floor "
-            "authority compares raw operands against THIS threshold, and a "
-            "threshold rediscovered per call site is not a contract")
-    qcrmin = float(qcrmin)
-    try:
-        _q32 = _struct.unpack(">f", _struct.pack(">f", qcrmin))[0]
-    except OverflowError:
-        _q32 = float("inf")     # a finite double too large for f32 -> +inf there
-    if not _math.isfinite(_q32) or not _q32 > 0.0:
-        raise ValueError(
-            f"qcrmin {qcrmin!r} is not representable as a positive finite f32 — "
-            f"the f32 producer would compare against {_q32!r}")
+    # Both scalar operands the comparator binds against the sealed contract —
+    # a threshold rediscovered per call site is not a contract. dtcld joins
+    # qcrmin as a REQUIRED schedule field (P0-1): the comparator's dtcld check
+    # was optional (dtcld=None skipped it), and dtcld was hardcoded in the
+    # self-check; sealing it here makes the binding mandatory end to end.
+    qcrmin = _require_f32_scalar(schedule, "qcrmin")
+    dtcld = _require_f32_scalar(schedule, "dtcld")
     # Same validator the reader/writer share. Without this, a malformed map is
     # only caught when the overlay opens its first container — deep inside the
     # physics run, after the whole setup cost has been paid.
@@ -225,6 +240,7 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
         "column_layout_id": column_layout_id,
         "column_map": column_map,
         "qcrmin": qcrmin,
+        "dtcld": dtcld,
         "schedule": schedule,
         "schedule_sha256": hashlib.sha256(
             json.dumps(schedule, sort_keys=True).encode()).hexdigest(),
