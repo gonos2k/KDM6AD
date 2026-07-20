@@ -383,6 +383,7 @@ def _validate_header(header: dict) -> None:
                  "column_index_map": list, "canonical_k_order": str,
                  "run_uuid": str, "process_id": int, "owner_thread_id": str,
                  "container_id": str, "descriptor_sha256": str,
+                 "run_contract_sha256": str,
                  "resolved_binary_path": str, "resolved_binary_sha256": str,
                  "global_op_seq_start": int, "global_op_seq_end": int}
     for _k, _t in _required.items():
@@ -401,6 +402,8 @@ def _validate_header(header: dict) -> None:
         raise G33Corruption("descriptor_sha256 is not a sha256 hex digest")
     if not re.fullmatch(r"[0-9a-f]{64}", header["resolved_binary_sha256"]):
         raise G33Corruption("resolved_binary_sha256 is not a sha256 hex digest")
+    if not re.fullmatch(r"[0-9a-f]{64}", header["run_contract_sha256"]):
+        raise G33Corruption("run_contract_sha256 is not a sha256 hex digest")
     # The producer refuses this mismatch at run time; requiring it here as well
     # closes the other producers — a hand-built container, or a writer that
     # never resolved anything and echoed the sealed value it was given.
