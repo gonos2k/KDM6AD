@@ -51,7 +51,8 @@ EXIT_SKIP, EXIT_DRIVER, EXIT_EVIDENCE, EXIT_FIDELITY = 2, 3, 4, 5
 
 
 def _die(code: int, msg: str):
-    print(msg, file=sys.stderr)
+    sys.stdout.flush()          # keep merged 2>&1 order deterministic
+    print(msg, file=sys.stderr, flush=True)
     raise SystemExit(code)
 
 
@@ -118,7 +119,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE,
              f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
 
-    stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0, "flags": 0}
+    stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0,
+             "inflow_rungs": 0, "flags": 0}
     for c in index["containers"]:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
@@ -183,6 +185,34 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"FAIL shadow!=actual: {algorithm} {c['container_id']} "
                          f"k={k} {sp}")
                 stats["shadow_actual"] += 1
+
+        # conservative QR_INFLOW — the LOAD-BEARING G3.3-M operation (the
+        # rho*dz metric conversion that is conservative-only). Recompute
+        # src_metric/dst_metric/mul_src/inflow_final from the dumped f32
+        # operands, bit-exact, for every interior/bottom cell. FALK proves the
+        # shared arithmetic; this proves the conserved transfer the whole gate
+        # exists to attribute.
+        if algorithm == "conservative":
+            for k in range(1, K):
+                def ri(f, _k=k):
+                    return _payload(recs, stage="op", k=_k, species="qr",
+                                    op_id="QR_INFLOW", field=f)["payload"]
+                prev = _np("f32", ri("prev_out"))
+                ds_src = _np("f32", ri("dend_safe_src"))
+                dz_src = _np("f32", ri("delz_raw_src"))
+                ds_dst = _np("f32", ri("dend_safe_dst"))
+                dz_dst = _np("f32", ri("delz_safe_dst"))
+                m_src = ds_src * dz_src        # f32*f32 -> f32
+                m_dst = ds_dst * dz_dst
+                mul = prev * m_src
+                inflow = mul / m_dst          # f32/f32 -> f32
+                for field, val in (("src_metric", m_src), ("dst_metric", m_dst),
+                                   ("mul_src", mul), ("inflow_final", inflow)):
+                    if ri(field) != _bits(val, "f32"):
+                        _die(EXIT_FIDELITY,
+                             f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
+                             f"k={k} qr QR_INFLOW.{field}")
+                    stats["inflow_rungs"] += 1
     return stats
 
 
@@ -207,8 +237,9 @@ def main() -> int:
                 _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
             print(f"{algorithm}: PASS — {stats['containers']} containers, "
                   f"{stats['shadow_actual']} shadow==actual, "
-                  f"{stats['offline_rungs']} offline rungs bit-exact, "
-                  f"{stats['flags']} producer cross-checks")
+                  f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW "
+                  f"offline rungs bit-exact, "
+                  f"{stats['flags']} producer cross-checks", flush=True)
     except SystemExit as e:
         # ANY failure keeps the evidence and reports where — the forensic
         # contract must not depend on which failure class fired (the fidelity

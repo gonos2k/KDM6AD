@@ -43,14 +43,11 @@ echo "built: $OUT/selfcheck_driver"
 # kill this mutant is vacuous. The kill lands exactly where the gate first
 # matters (n=2, the mstep=1 column) — the first divergent rung, localized.
 if [ "${2:-}" = "--with-mutant" ]; then
+    MK=harness/g33_overlay/make_mutant.py
+    # MUTANT 1 — legacy SHADOW ladder drops the gate rung (shared FALK proof).
     M="$OUT/mutant"; mkdir -p "$M"
-    python3 - "$M/sedimentation.cpp.overlay" <<'PY'
-import sys
-s = open('harness/g33_overlay/sedimentation.cpp.overlay').read()
-old = 'auto s4 = s3 * gate_col;'
-assert s.count(old) >= 1
-open(sys.argv[1], 'w').write(s.replace(old, 'auto s4 = s3 * 1.0;  // MUTANT'))
-PY
+    python3 "$MK" shadow harness/g33_overlay/sedimentation.cpp.overlay \
+        "$M/sedimentation.cpp.overlay"
     compile "$M/sedimentation.cpp.overlay" "$M/sed.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$M/sed.o" "$OUT/sed_cons.o" "$AR" \
@@ -58,4 +55,18 @@ PY
         -Wl,-rpath,"$TORCHLIB" -o "$M/selfcheck_driver" 2>"$M/link.err" \
         || { echo "MUTANT LINK FAILED"; head -10 "$M/link.err"; exit 1; }
     echo "built: $M/selfcheck_driver (shadow mutant)"
+
+    # MUTANT 2 — conservative INFLOW drops /dst_metric: the rho*dz interface
+    # transfer that is conservative-ONLY, the load-bearing G3.3-M operation.
+    M2="$OUT/mutant_cons"; mkdir -p "$M2"
+    python3 "$MK" cons_inflow \
+        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
+        "$M2/sedimentation_conservative.cpp.overlay"
+    compile "$M2/sedimentation_conservative.cpp.overlay" "$M2/sed_cons.o"
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M2/sed_cons.o" "$AR" \
+        "$TORCHLIB/libtorch.dylib" "$TORCHLIB/libtorch_cpu.dylib" "$TORCHLIB/libc10.dylib" \
+        -Wl,-rpath,"$TORCHLIB" -o "$M2/selfcheck_driver" 2>"$M2/link.err" \
+        || { echo "MUTANT2 LINK FAILED"; head -10 "$M2/link.err"; exit 1; }
+    echo "built: $M2/selfcheck_driver (conservative inflow mutant)"
 fi

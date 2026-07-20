@@ -23,6 +23,8 @@ real_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/selfcheck_driver" 2>&
 real_rc=$?
 mut_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant/selfcheck_driver" 2>&1)
 mut_rc=$?
+cons_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_cons/selfcheck_driver" 2>&1)
+cons_rc=$?
 
 echo "$real_out" | tail -3
 if [ "$real_rc" -ne 0 ]; then
@@ -34,13 +36,17 @@ fi
 # k-loop survives a refactor, so "real PASS + mutant FAIL" alone would stay
 # green while 90% of the rungs silently left the check. The fixture is
 # deterministic (B=3, K=4, mstepmax=2), so the exact counts are part of the
-# contract: 16 shadow==actual (2 species x 4 k x 2 n) and 72 offline rungs
-# ((5+4 FALK rungs) x 4 k x 2 n) per algorithm. Changing the fixture must
-# change this line CONSCIOUSLY.
-for algo in legacy conservative; do
-    if ! echo "$real_out" | grep -q         "^$algo: PASS — 2 containers, 16 shadow==actual, 72 offline rungs bit-exact, 2 producer cross-checks$"; then
-        echo "KILL GATE FAIL: $algo coverage drifted from the pinned counts:"
-        echo "$real_out" | grep "^$algo:" || echo "  (no $algo line at all)"
+# contract, PER ALGORITHM: 16 shadow==actual and 72 FALK rungs both ways;
+# INFLOW is conservative-only — 0 for legacy, 24 (3 interior/bottom cells x 4
+# rho*dz rungs x 2 substeps) for conservative. Changing the fixture must change
+# these lines CONSCIOUSLY.
+LEGACY_LINE="legacy: PASS — 2 containers, 16 shadow==actual, 72 FALK + 0 INFLOW offline rungs bit-exact, 2 producer cross-checks"
+CONS_LINE="conservative: PASS — 2 containers, 16 shadow==actual, 72 FALK + 24 INFLOW offline rungs bit-exact, 2 producer cross-checks"
+for pin in "$LEGACY_LINE" "$CONS_LINE"; do
+    if ! printf '%s\n' "$real_out" | grep -qF "$pin"; then
+        echo "KILL GATE FAIL: coverage drifted from the pinned counts; missing:"
+        echo "  $pin"
+        printf '%s\n' "$real_out" | grep -E '^(legacy|conservative):'
         exit 1
     fi
 done
@@ -59,5 +65,20 @@ if ! why=$(verdict_mutant "$mut_out" "$mut_rc" "$EXPECTED_KILL"); then
     echo "$mut_out" | tail -3
     exit 1
 fi
-echo "KILL GATE PASS: real=PASS with pinned coverage, mutant killed at the predicted site:"
-echo "$mut_out" | tail -1
+# MUTANT 2 — the conservative-ONLY rho*dz inflow. Killing this is what makes
+# "the self-check observes the conservative-only operation" a claim with
+# evidence, not just the shared FALK path (owner review). Predicted site is the
+# first interior cell's inflow_final.
+CONS_KILL="FAIL offline!=dumped: conservative L1_main_n1 k=1 qr QR_INFLOW.inflow_final"
+if [ "$cons_rc" -eq 0 ]; then
+    echo "KILL GATE FAIL: conservative inflow mutant PASSED — the INFLOW replay is vacuous"
+    exit 1
+fi
+if ! why=$(verdict_mutant "$cons_out" "$cons_rc" "$CONS_KILL"); then
+    echo "KILL GATE FAIL: conservative mutant not the controlled predicted kill: $why"
+    echo "$cons_out" | tail -3
+    exit 1
+fi
+echo "KILL GATE PASS: real=PASS with pinned coverage; both mutants killed at their predicted sites:"
+echo "  shadow: $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
+echo "  cons:   $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"

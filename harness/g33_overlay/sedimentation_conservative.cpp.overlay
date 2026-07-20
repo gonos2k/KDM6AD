@@ -151,7 +151,7 @@ SubstepAdvectionOutputs substep_advection_conservative(
             // ENTRY captures for the in-scope species (qr): cols/fall before
             // this cell's update. The other mass species are outside the qr/nr
             // scope and emit nothing.
-            torch::Tensor g33_qe, g33_fb;
+            torch::Tensor g33_qe, g33_fb, g33_dq_in;
             if (g33.on() && s == &qr) {
                 g33_qe = s->cols[k].clone();
                 g33_fb = s->fall[k].clone();
@@ -172,6 +172,9 @@ SubstepAdvectionOutputs substep_advection_conservative(
                 // ρΔz-converted so mass out of k-1 == mass into k exactly.
                 auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1))
                              / (dend_safe_col(k) * delz_safe_col(k));
+#ifdef KDM6_G33_OP_DUMP
+                if (g33.on() && s == &qr) g33_dq_in = dq_in;   // the ACTUAL transfer
+#endif
                 s->cols[k] = s->cols[k] - dq_out + dq_in;
             }
 #ifdef KDM6_G33_OP_DUMP
@@ -221,7 +224,6 @@ SubstepAdvectionOutputs substep_advection_conservative(
                     auto m_src = dend_safe_col(k - 1) * delz_col(k - 1);   // src_metric
                     auto m_dst = dend_safe_col(k) * delz_safe_col(k);      // dst_metric
                     auto i1 = s->prev_out * m_src;                         // mul_src
-                    auto i2 = i1 / m_dst;                                  // inflow_final
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "prev_out", s->prev_out);
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dend_safe_src", dend_safe_col(k - 1));
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "delz_raw_src", delz_col(k - 1));
@@ -230,11 +232,14 @@ SubstepAdvectionOutputs substep_advection_conservative(
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "src_metric", m_src);
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dst_metric", m_dst);
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "mul_src", i1);
-                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_final", i2);
+                    // inflow_final is the ACTUAL dq_in the transfer used, not a
+                    // recompute — so a mutation of the real rho*dz division is
+                    // visible here, not silently masked by a correct recompute.
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_final", g33_dq_in);
                     auto u1 = g33_qe - dq_out;                             // q_minus_out
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_before", g33_qe);
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_minus_out", u1);
-                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_plus_in_preclamp", u1 + i2);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_plus_in_preclamp", u1 + g33_dq_in);
                     G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_post", s->cols[k]);
                 }
             }
