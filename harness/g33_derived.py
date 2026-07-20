@@ -315,17 +315,24 @@ def check_producer_flags(fields: dict, n: int, qcrmin: float,
 
     # P0-5: the threshold/timestep the substep ACTUALLY used, checked against the
     # sealed contract bits. Raw/safe results alone cannot catch a wrong sealed
-    # qcrmin when every rho,dz sits far above it.
-    q_eff = unpack_values(*fields["qcrmin_effective"])
+    # qcrmin when every rho,dz sits far above it. The dtype is VALIDATED, not
+    # assumed: reading a producer's f32 payload as f64 would misalign the bytes
+    # and mask exactly the mismatch this check exists to find.
+    qdt, qraw = fields["qcrmin_effective"]
+    if qdt != "f64":
+        raise G33Corruption(f"qcrmin_effective dtype {qdt!r} is not f64")
     _, qbits = _coerce_threshold("f64", qcrmin)
-    for i, qv in enumerate(_raw_bits("f64", fields["qcrmin_effective"][1])):
+    for i, qv in enumerate(_raw_bits(qdt, qraw)):
         if qv != qbits:
             raise G33Corruption(
                 f"qcrmin_effective[{i}] bits 0x{qv:x} != sealed contract qcrmin "
                 f"0x{qbits:x} — the run used a threshold the evidence does not seal")
     if dtcld is not None:
+        ddt, draw = fields["dtcld_effective"]
+        if ddt != "f64":
+            raise G33Corruption(f"dtcld_effective dtype {ddt!r} is not f64")
         _, dbits = _coerce_threshold("f64", float(dtcld))
-        for i, dv in enumerate(_raw_bits("f64", fields["dtcld_effective"][1])):
+        for i, dv in enumerate(_raw_bits(ddt, draw)):
             if dv != dbits:
                 raise G33Corruption(
                     f"dtcld_effective[{i}] bits 0x{dv:x} != sealed dtcld 0x{dbits:x}")

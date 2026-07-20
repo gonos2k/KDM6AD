@@ -1538,6 +1538,30 @@ def test_gate_that_is_exactly_01_but_wrong_is_caught_by_the_mstep_law():
         gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN)
 
 
+def test_mstep_input_effective_and_operand_bindings():
+    # P0-3: mstep_input_native must bit-match the effective (post-clamp) value —
+    # a caller mstep below the [1,..] contract, masked by the clamp, is invalid.
+    bad = _substep_pre_fields(
+        mstep_input_native=("f64", gd.pack_payload("f64", [0.5, 2.0, 3.0])),
+        mstep_native=("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])))
+    with pytest.raises(gd.G33Corruption, match="clamp changed the caller"):
+        gdv.check_producer_flags(bad, _N_SUB, _QCRMIN, _DTCLD)
+    # P0-5: qcrmin_effective/dtcld_effective bits must match the sealed contract,
+    # and their dtype is validated (an f32 payload read as f64 would misalign).
+    with pytest.raises(gd.G33Corruption, match="does not seal"):
+        gdv.check_producer_flags(
+            _substep_pre_fields(qcrmin_effective=("f64", gd.pack_payload("f64", [2e-9] * 3))),
+            _N_SUB, _QCRMIN, _DTCLD)
+    with pytest.raises(gd.G33Corruption, match="dtype .* is not f64"):
+        gdv.check_producer_flags(
+            _substep_pre_fields(qcrmin_effective=("f32", gd.pack_payload("f32", [_QCRMIN] * 3))),
+            _N_SUB, _QCRMIN, _DTCLD)
+    with pytest.raises(gd.G33Corruption, match="dtcld_effective"):
+        gdv.check_producer_flags(
+            _substep_pre_fields(dtcld_effective=("f64", gd.pack_payload("f64", [99.0] * 3))),
+            _N_SUB, _QCRMIN, _DTCLD)
+
+
 def test_honestly_reported_nonintegral_mstep_is_still_invalid():
     # The producer is not lying — mstep_exact_integer=0 matches the 2.5 it dumped
     # — but the run is still invalid: acceptance is "recomputed exact == true",

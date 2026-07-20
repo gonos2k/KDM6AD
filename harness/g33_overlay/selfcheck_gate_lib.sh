@@ -24,7 +24,7 @@ verdict_mutant() {
     # annotation the self-check prints on every failure (forensic metadata, not
     # a verdict). Take the last line that is not that annotation.
     local last
-    last=$(printf '%s\n' "$out" | grep -v '^(evidence preserved at ' | tail -1)
+    last=$(printf '%s\n' "$out" | grep -v '^[(]evidence preserved at ' | tail -1)
     [ "$last" = "$expected" ] || {
         echo "mutant's terminal line is not the predicted kill:"
         echo "  expected: $expected"
