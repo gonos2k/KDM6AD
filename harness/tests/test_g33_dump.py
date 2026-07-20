@@ -1374,6 +1374,41 @@ def test_min_branches_are_four_state_not_boolean():
         gd.BRANCH_LEFT_SELECTED, gd.BRANCH_RIGHT_SELECTED, gd.BRANCH_TIE]
 
 
+def _cap_coverage_pass(states):
+    """The exact PR B2.1 P0-2 cap-coverage acceptance rule, mirrored from
+    g33_selfcheck: a species passes only with a STRICT unbound AND a STRICT
+    bound; a VALUE_TIE counts for neither and an UNORDERED (NaN) is a hard fail.
+    Pinned here so a regression to the old bool(pre_cap > resv) rule — which
+    folded ties and NaN into 'unbound' — is caught without a driver rebuild."""
+    seen = set(states)
+    if gd.BRANCH_UNORDERED in seen:
+        return False
+    return gd.BRANCH_LEFT_SELECTED in seen and gd.BRANCH_RIGHT_SELECTED in seen
+
+
+def test_cap_coverage_requires_strict_bound_and_unbound_not_ties():
+    # pre_cap vs reservoir, dq_out = min(pre_cap, reservoir):
+    #   pre_cap < resv -> LEFT_SELECTED  (strictly unbound)
+    #   resv < pre_cap -> RIGHT_SELECTED (strictly bound)
+    #   pre_cap == resv -> TIE
+    pre = gd.pack_payload("f32", [1.0, 2.0])   # unbound, bound
+    resv = gd.pack_payload("f32", [2.0, 1.0])
+    assert _cap_coverage_pass(gdv.classify_min("f32", pre, resv)) is True
+
+    # bound + tie only: the OLD bool rule saw {True, False} and PASSED because a
+    # tie read as 'unbound'; the strict rule must REJECT (no strict unbound).
+    pre_t = gd.pack_payload("f32", [2.0, 1.0])   # bound, tie
+    resv_t = gd.pack_payload("f32", [1.0, 1.0])
+    br_t = gdv.classify_min("f32", pre_t, resv_t)
+    assert gd.BRANCH_TIE in br_t and gd.BRANCH_LEFT_SELECTED not in br_t
+    assert _cap_coverage_pass(br_t) is False
+
+    # a NaN reaching the cap is a hard fail, never silent coverage.
+    nan_pre = gd.pack_payload_bits("f32", [0x7FC00000, 0x3F800000])  # NaN, 1.0
+    resv_n = gd.pack_payload("f32", [1.0, 2.0])
+    assert _cap_coverage_pass(gdv.classify_min("f32", nan_pre, resv_n)) is False
+
+
 def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
     # a<b and b<a are BOTH false for NaN, so a 3-state enum misfiles NaN as TIE.
     # And raising on NaN fails LEGITIMATE dumps: KDM6 evaluates raw divide/sqrt
