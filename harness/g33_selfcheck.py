@@ -121,6 +121,11 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
     stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0,
              "inflow_rungs": 0, "flags": 0}
+    # BRANCH COVERAGE, recomputed from dumped operands (never driver constants):
+    # a fixture edited so a branch stops firing must FAIL, not silently pass a
+    # ladder that no longer exercises it.
+    cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
+           "floor_active": 0}
     for c in index["containers"]:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
@@ -138,6 +143,32 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                for r in recs if r["stage"] == "substep_pre"}
         gdv.check_producer_flags(pre, n_sub, seal_qcrmin, seal_dtcld)
         stats["flags"] += 1
+
+        # coverage: decoded mstep (constant across containers) + gate for this n
+        mdec = gdv.derive_mstep(*pre["mstep_native"])["decoded_i32"]
+        if cov["mstep"] is None:
+            cov["mstep"] = mdec
+        elif cov["mstep"] != mdec:
+            _die(EXIT_EVIDENCE, f"FAIL: mstep changed across containers "
+                                f"{cov['mstep']} != {mdec}")
+        cov["gate_by_n"][n_sub] = gdv.derive_gate(*pre["gate_native"])["decoded_u8"]
+        # floors must be inactive (real-atmosphere / valid_metric policy)
+        for fld in ("dend_floor_active", "delz_floor_active"):
+            cov["floor_active"] += int(sum(_np(*pre[fld])))
+        # cap coverage recomputed: outflow_pre_cap > source_reservoir, per species
+        for sp, key in (("qr", "qr_cap"), ("nr", "nr_cap")):
+            op = f"{sp.upper()}_OUTFLOW"
+            for k in range(K):
+                hits = [r for r in recs if r["stage"] == "op" and r["k"] == k
+                        and r["species"] == sp and r["op_id"] == op]
+                if not hits:
+                    continue
+                pre_cap = _np("f32", _payload(recs, stage="op", k=k, species=sp,
+                                              op_id=op, field="outflow_pre_cap")["payload"])
+                resv = _np("f32", _payload(recs, stage="op", k=k, species=sp,
+                                           op_id=op, field="source_reservoir")["payload"])
+                for b in range(B):
+                    cov[key].add(bool(pre_cap[b] > resv[b]))
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)
         w1 = _np(*pre["work1_qr"]).reshape(B, K)
@@ -213,6 +244,31 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                              f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
                              f"k={k} qr QR_INFLOW.{field}")
                     stats["inflow_rungs"] += 1
+
+    # branch-coverage verdict — the fixture must actually exercise every branch
+    # the ladder claims to test, proven from the evidence, not assumed.
+    lo, hi = 1, MSTEPMAX
+    if cov["mstep"] is None or not (min(cov["mstep"]) >= lo and max(cov["mstep"]) <= hi):
+        _die(EXIT_EVIDENCE, f"FAIL coverage: mstep {cov['mstep']} out of [1,{hi}]")
+    # both a gated-off and a gated-on column must appear at the highest n
+    top_gate = cov["gate_by_n"].get(MSTEPMAX)
+    if not top_gate or 0 not in top_gate or 1 not in top_gate:
+        _die(EXIT_EVIDENCE,
+             f"FAIL coverage: n={MSTEPMAX} gate {top_gate} does not exercise "
+             f"both gated-off (0) and gated-on (1)")
+    if cov["floor_active"] != 0:
+        _die(EXIT_EVIDENCE,
+             f"FAIL coverage: {cov['floor_active']} density/metric floor "
+             f"activations — a valid_metric fixture must have zero")
+    for key, label in (("qr_cap", "QR"), ("nr_cap", "NR")):
+        if cov[key] != {True, False}:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL coverage: {label} outflow cap did not exercise BOTH "
+                 f"bound and unbound (saw {sorted(cov[key])}) — the fixture no "
+                 f"longer tests the cap branch")
+    stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
+                         f"floors {cov['floor_active']}, "
+                         f"QR/NR cap both bound+unbound")
     return stats
 
 
@@ -240,6 +296,7 @@ def main() -> int:
                   f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW "
                   f"offline rungs bit-exact, "
                   f"{stats['flags']} producer cross-checks", flush=True)
+            print(f"  coverage: {stats['coverage']}", flush=True)
     except SystemExit as e:
         # ANY failure keeps the evidence and reports where — the forensic
         # contract must not depend on which failure class fired (the fidelity
