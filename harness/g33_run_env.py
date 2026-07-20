@@ -257,10 +257,17 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
     # had already been rewritten, which is why it was the wrong layer)
     contract_path = outdir / "run_contract.json"
     body = json.dumps(contract, sort_keys=True, indent=1).encode()
+    contract_sha = hashlib.sha256(body).hexdigest()
     contract_path.write_bytes(body)
     (outdir / "run_contract.sha256").write_text(
-        hashlib.sha256(body).hexdigest() + "  run_contract.json\n",
-        encoding="utf-8")
+        contract_sha + "  run_contract.json\n", encoding="utf-8")
+    # INDEPENDENT SEAL (owner review): the contract digest travels in the
+    # environment — the in-memory authority build_env hands the caller, not the
+    # adjacent sidecar (re-reading the sidecar would seal the contract against
+    # itself). The producer stamps it into every container header, so a
+    # post-run edit of run_contract.json changes sha256(file) and no longer
+    # matches the digest the run used or the one sealed inside the containers.
+    env["KDM6_G33_RUN_CONTRACT_SHA256"] = contract_sha
     return env
 
 

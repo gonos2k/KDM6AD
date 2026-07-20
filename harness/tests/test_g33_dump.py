@@ -38,6 +38,7 @@ def _header(**over):
          "canonical_k_order": "top-first",
          "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
          "container_id": "L1_main_n1", "descriptor_sha256": "a" * 64,
+         "run_contract_sha256": "b" * 64,
          "global_op_seq_start": 0, "global_op_seq_end": 0,
          "record_count_expected": 0}
     h.update(over)
@@ -1841,3 +1842,22 @@ def test_dtcld_is_a_required_sealed_scalar(tmp_path):
     # be skipped by omission
     with pytest.raises(TypeError):
         gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN)
+
+
+def test_run_contract_is_independently_sealed():
+    # The contract SHA travels in env (the in-memory authority build_env
+    # returns) and is stamped into every container header; the reader requires
+    # the header field. A post-run edit of run_contract.json — even with its
+    # adjacent sidecar updated — changes sha256(file) but not the env seal or
+    # the header seal, so the three no longer agree.
+    import g33_run_env
+    assert "KDM6_G33_RUN_CONTRACT_SHA256" in _overlay_required_env()  # all-or-nothing
+    # the reader rejects a bad/absent header digest
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        for bad in ("", "zz" * 32, "a" * 63):
+            with pytest.raises(gd.G33Corruption, match="run_contract_sha256"):
+                gd.G33Writer(td / f"b{hash(bad)}.g33",
+                             _header(run_contract_sha256=bad))
+        gd.G33Writer(td / "ok.g33", _header(run_contract_sha256="0" * 64))

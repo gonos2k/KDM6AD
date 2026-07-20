@@ -124,6 +124,7 @@ public:
             "KDM6_G33_BINARY_SHA256", "KDM6_G33_COLUMN_LAYOUT_ID",
             "KDM6_G33_COLUMN_MAP", "KDM6_G33_OP_SEQ_MAP",
             "KDM6_G33_SCHEMA_DIR", "KDM6_G33_SCHEMA_SHA256",
+            "KDM6_G33_RUN_CONTRACT_SHA256",
         };
         std::string missing;
         int present = 0;
@@ -249,6 +250,7 @@ public:
             + "\",\"process_id\":" + std::to_string(long(::getpid()))
             + ",\"owner_thread_id\":\"" + jesc(tid.str())
             + "\",\"descriptor_sha256\":\"" + desc_sha_
+            + "\",\"run_contract_sha256\":\"" + jesc(env_or_empty("KDM6_G33_RUN_CONTRACT_SHA256"))
             + "\",\"container_id\":\"" + jesc(cid_)
             + "\",\"global_op_seq_start\":" + std::to_string(first)
             + ",\"global_op_seq_end\":" + std::to_string(last)

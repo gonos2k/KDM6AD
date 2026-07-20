@@ -23,6 +23,7 @@ driver/fixture bug cannot vacuously agree with itself.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -93,11 +94,19 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     if r.returncode != 0:
         _die(EXIT_DRIVER, f"FAIL: driver rc={r.returncode}\n{r.stdout}{r.stderr}")
 
-    # bind the comparator to the SEALED contract, not the module constants: a
-    # drifted schedule would then be caught by the qcrmin/dtcld bit checks
-    # rather than silently agreeing with a hardcoded fixture value.
-    contract = json.loads(
-        (workdir / "run_contract.json").read_text(encoding="utf-8"))
+    # INDEPENDENT SEAL: the contract is authority only if its bytes match the
+    # digest the RUN used (from env, the in-memory authority build_env returned)
+    # AND the digest every container sealed into its header. Reading the file
+    # and trusting it — as before — let a post-run edit of run_contract.json
+    # pass, the self-attestation this whole harness keeps removing.
+    contract_bytes = (workdir / "run_contract.json").read_bytes()
+    file_sha = hashlib.sha256(contract_bytes).hexdigest()
+    env_sha = env["KDM6_G33_RUN_CONTRACT_SHA256"]
+    if file_sha != env_sha:
+        _die(EXIT_EVIDENCE,
+             f"FAIL: run_contract.json edited after the run "
+             f"(file {file_sha[:12]} != sealed {env_sha[:12]})")
+    contract = json.loads(contract_bytes.decode("utf-8"))
     seal_qcrmin, seal_dtcld = contract["qcrmin"], contract["dtcld"]
 
     # 1. container-set completeness: exactly the sealed set, nothing else
@@ -115,6 +124,13 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         recs = cont["records"]
         n_sub = c["n"]
         stats["containers"] += 1
+        # the container sealed the contract digest INSIDE its (sha256'd) payload
+        # frame, so a header edit breaks the footer; requiring header == env_sha
+        # ties the three channels together.
+        if cont["header"]["run_contract_sha256"] != env_sha:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {c['container_id']} sealed a different run_contract_sha256 "
+                 f"than the run used")
 
         pre = {r["field"]: (r["dtype"], r["payload"])
                for r in recs if r["stage"] == "substep_pre"}
