@@ -101,4 +101,19 @@ if [ "${2:-}" = "--with-mutant" ]; then
         -Wl,-rpath,"$TORCHLIB" -o "$M4/selfcheck_driver" 2>"$M4/link.err" \
         || { echo "MUTANT4 LINK FAILED"; head -10 "$M4/link.err"; exit 1; }
     echo "built: $M4/selfcheck_driver (conservative poststate mutant)"
+
+    # MUTANT 5 — conservative fall accumulator perturbed (s->fall *= 1.03125).
+    # Outflow and state are intact, so only the §5 QR_FALLACC.fall_after offline
+    # replay can catch it. Proves the OUTFLOW/FALLACC ladder is not vacuous.
+    M5="$OUT/mutant_fallacc"; mkdir -p "$M5"
+    python3 "$MK" cons_fallacc \
+        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
+        "$M5/sedimentation_conservative.cpp.overlay"
+    compile "$M5/sedimentation_conservative.cpp.overlay" "$M5/sed_cons.o"
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M5/sed_cons.o" "$AR" \
+        "$TORCHLIB/libtorch.dylib" "$TORCHLIB/libtorch_cpu.dylib" "$TORCHLIB/libc10.dylib" \
+        -Wl,-rpath,"$TORCHLIB" -o "$M5/selfcheck_driver" 2>"$M5/link.err" \
+        || { echo "MUTANT5 LINK FAILED"; head -10 "$M5/link.err"; exit 1; }
+    echo "built: $M5/selfcheck_driver (conservative fallacc mutant)"
 fi

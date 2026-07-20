@@ -65,6 +65,18 @@ elif KIND == "cons_poststate":
                   "    qr.cols[1] = qr.cols[1] * 1.03125f;  // MUTANT: wrong returned column\n"
                   "\n"
                   "#ifdef KDM6_G33_OP_DUMP")
+elif KIND == "cons_fallacc":
+    # Perturb the QR fall ACCUMULATOR (the actual capped-outflow rate that feeds
+    # surface precipitation) while leaving the outflow itself and the dump's own
+    # mul_dend_safe/fall_increment recomputes intact. The state update is
+    # untouched, so FALK/INFLOW/state/continuity all still pass; only the §5
+    # QR_FALLACC.fall_after offline replay can catch that s->fall diverged from
+    # fall_before + dq_out*dend_safe/dt.
+    old = "s->fall[k] = s->fall[k] + dq_out * dend_safe_col(k) / dtcld;"
+    assert s.count(old) == 1, f"cons_fallacc anchor count {s.count(old)}"
+    s = s.replace(old,
+                  "s->fall[k] = s->fall[k] + dq_out * dend_safe_col(k) / dtcld "
+                  "* 1.03125f;  // MUTANT: fall accumulator")
 else:
     sys.exit(f"unknown mutant kind {KIND!r}")
 

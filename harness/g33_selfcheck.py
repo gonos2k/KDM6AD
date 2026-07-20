@@ -159,7 +159,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
              f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
 
     stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0,
-             "inflow_rungs": 0, "flags": 0}
+             "inflow_rungs": 0, "ladder_rungs": 0, "flags": 0}
     # BRANCH COVERAGE, recomputed from dumped operands (never driver constants):
     # a fixture edited so a branch stops firing must FAIL, not silently pass a
     # ladder that no longer exercises it.
@@ -371,6 +371,55 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
             link(op_bits(0, "nr", "NR_UPDATE", "n_post") == _bits(n0b - dn0, "f32"),
                  0, "top NR_UPDATE.n_post != n_before - dn_out (no inflow at top)")
 
+            # §5 — full OUTFLOW + FALLACC offline replay (beyond FALK + INFLOW),
+            # every k, from DUMPED operands, bit-exact. This closes the ladder
+            # between falk and the capped outflow / fall accumulator that the
+            # causal links assume but never recomputed:
+            #   qr: pre_cap = falk*dt/dend_safe ; dq_out = min(pre_cap, reservoir)
+            #       fall_after = fall_before + dq_out*dend_safe/dt   (ρΔz-metered)
+            #   nr: pre_cap = falk*dt ; dn_out = min(pre_cap, reservoir)
+            #       fall_after = fall_before + dn_out/dt             (dz-only)
+            # dtcld is a double SCALAR, so it does NOT promote the f32 tensor
+            # (and 20.0 is exact in f32); the offline op is f32 throughout.
+            dt32 = np.float32(seal_dtcld)
+
+            def ladder_eq(sp, op, field, k_, val):
+                if op_bits(k_, sp, op, field) != _bits(val, "f32"):
+                    _die(EXIT_FIDELITY,
+                         f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
+                         f"k={k_} {sp} {op}.{field}")
+                stats["ladder_rungs"] += 1
+
+            for k in range(K):
+                dsafe = snap["dend_safe"][:, k]
+                # QR capped-outflow ladder
+                qfalk = _np("f32", op_bits(k, "qr", "QR_FALK", "falk_f32"))
+                q_mul_dt = qfalk * dt32
+                q_precap = q_mul_dt / dsafe
+                q_res = _np("f32", op_bits(k, "qr", "QR_OUTFLOW", "source_reservoir"))
+                q_dqo = np.minimum(q_precap, q_res)
+                ladder_eq("qr", "QR_OUTFLOW", "mul_dt", k, q_mul_dt)
+                ladder_eq("qr", "QR_OUTFLOW", "outflow_pre_cap", k, q_precap)
+                ladder_eq("qr", "QR_OUTFLOW", "dq_out", k, q_dqo)
+                # QR fall accumulator: actual capped-outflow RATE, ρΔz-metered
+                q_f1 = q_dqo * dsafe
+                q_f2 = q_f1 / dt32
+                q_fb = _np("f32", op_bits(k, "qr", "QR_FALLACC", "fall_before"))
+                ladder_eq("qr", "QR_FALLACC", "mul_dend_safe", k, q_f1)
+                ladder_eq("qr", "QR_FALLACC", "fall_increment", k, q_f2)
+                ladder_eq("qr", "QR_FALLACC", "fall_after", k, q_fb + q_f2)
+                # NR capped-outflow ladder (no dend anywhere — dz-only measure)
+                nfalk = _np("f32", op_bits(k, "nr", "NR_FALK", "falk_f32"))
+                n_precap = nfalk * dt32
+                n_res = _np("f32", op_bits(k, "nr", "NR_OUTFLOW", "source_reservoir"))
+                n_dno = np.minimum(n_precap, n_res)
+                ladder_eq("nr", "NR_OUTFLOW", "outflow_pre_cap", k, n_precap)
+                ladder_eq("nr", "NR_OUTFLOW", "dn_out", k, n_dno)
+                n_f2 = n_dno / dt32
+                n_fb = _np("f32", op_bits(k, "nr", "NR_FALLACC", "fall_before"))
+                ladder_eq("nr", "NR_FALLACC", "fall_increment", k, n_f2)
+                ladder_eq("nr", "NR_FALLACC", "fall_after", k, n_fb + n_f2)
+
             for k in range(1, K):
                 prev = _np("f32", ri("prev_out", k))
                 ds_src = _np("f32", ri("dend_safe_src", k))
@@ -543,8 +592,8 @@ def main() -> int:
                 _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
             print(f"{algorithm}: PASS — {stats['containers']} containers, "
                   f"{stats['shadow_actual']} shadow==actual, "
-                  f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW "
-                  f"offline rungs bit-exact, "
+                  f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW + "
+                  f"{stats['ladder_rungs']} LADDER offline rungs bit-exact, "
                   f"{stats['flags']} producer cross-checks", flush=True)
             print(f"  coverage: {stats['coverage']}", flush=True)
     except SystemExit as e:
