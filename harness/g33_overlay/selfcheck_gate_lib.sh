@@ -20,8 +20,11 @@ verdict_mutant() {
     case "$out" in *"Traceback (most recent call last)"*)
         echo "mutant output contains a Python traceback — a crash, not a kill"; return 1;;
     esac
+    # The kill VERDICT line, ignoring the trailing "(evidence preserved at …)"
+    # annotation the self-check prints on every failure (forensic metadata, not
+    # a verdict). Take the last line that is not that annotation.
     local last
-    last=$(printf '%s\n' "$out" | tail -1)
+    last=$(printf '%s\n' "$out" | grep -v '^(evidence preserved at ' | tail -1)
     [ "$last" = "$expected" ] || {
         echo "mutant's terminal line is not the predicted kill:"
         echo "  expected: $expected"
