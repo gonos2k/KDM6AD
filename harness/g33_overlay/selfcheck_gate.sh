@@ -29,6 +29,8 @@ prevout_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_prevout/sel
 prevout_rc=$?
 poststate_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_poststate/selfcheck_driver" 2>&1)
 poststate_rc=$?
+fallacc_out=$(python3 harness/g33_selfcheck.py --driver "$OUT/mutant_fallacc/selfcheck_driver" 2>&1)
+fallacc_rc=$?
 
 echo "$real_out" | tail -3
 if [ "$real_rc" -ne 0 ]; then
@@ -44,8 +46,12 @@ fi
 # INFLOW is conservative-only — 0 for legacy, 24 (3 interior/bottom cells x 4
 # rho*dz rungs x 2 substeps) for conservative. Changing the fixture must change
 # these lines CONSCIOUSLY.
-LEGACY_LINE="legacy: PASS — 2 containers, 16 shadow==actual, 72 FALK + 0 INFLOW offline rungs bit-exact, 2 producer cross-checks"
-CONS_LINE="conservative: PASS — 2 containers, 16 shadow==actual, 72 FALK + 24 INFLOW offline rungs bit-exact, 2 producer cross-checks"
+# LADDER = OUTFLOW+FALLACC offline replay (PR B2.2 §5), conservative-only: per
+# cell qr(3 outflow+3 fallacc)+nr(2 outflow+2 fallacc)=10, x 4 cells x 2 substeps
+# = 80. Legacy stays 0 (that ladder's arithmetic differs and is not the G3.3-M
+# path). INFLOW is 24; FALK 72 both ways.
+LEGACY_LINE="legacy: PASS — 2 containers, 16 shadow==actual, 72 FALK + 0 INFLOW + 0 LADDER offline rungs bit-exact, 2 producer cross-checks"
+CONS_LINE="conservative: PASS — 2 containers, 16 shadow==actual, 72 FALK + 24 INFLOW + 80 LADDER offline rungs bit-exact, 2 producer cross-checks"
 for pin in "$LEGACY_LINE" "$CONS_LINE"; do
     if ! printf '%s\n' "$real_out" | grep -qF "$pin"; then
         echo "KILL GATE FAIL: coverage drifted from the pinned counts; missing:"
@@ -110,8 +116,22 @@ if ! why=$(verdict_mutant "$poststate_out" "$poststate_rc" "$POSTSTATE_KILL"); t
     echo "$poststate_out" | tail -3
     exit 1
 fi
-echo "KILL GATE PASS: real=PASS with pinned coverage; all four mutants killed at their predicted sites:"
+# MUTANT 5 — the OUTFLOW/FALLACC ladder (PR B2.2 §5). Outflow and state intact,
+# so only the QR_FALLACC.fall_after offline replay can catch the perturbed
+# accumulator. Predicted site: first cell.
+FALLACC_KILL="FAIL offline!=dumped: conservative L1_main_n1 k=0 qr QR_FALLACC.fall_after"
+if [ "$fallacc_rc" -eq 0 ]; then
+    echo "KILL GATE FAIL: fallacc mutant PASSED — the OUTFLOW/FALLACC ladder is vacuous"
+    exit 1
+fi
+if ! why=$(verdict_mutant "$fallacc_out" "$fallacc_rc" "$FALLACC_KILL"); then
+    echo "KILL GATE FAIL: fallacc mutant not the controlled predicted kill: $why"
+    echo "$fallacc_out" | tail -3
+    exit 1
+fi
+echo "KILL GATE PASS: real=PASS with pinned coverage; all five mutants killed at their predicted sites:"
 echo "  shadow:    $(echo "$mut_out" | grep -v '^(evidence' | tail -1)"
 echo "  cons:      $(echo "$cons_out" | grep -v '^(evidence' | tail -1)"
 echo "  prevout:   $(echo "$prevout_out" | grep -v '^(evidence' | tail -1)"
 echo "  poststate: $(echo "$poststate_out" | grep -v '^(evidence' | tail -1)"
+echo "  fallacc:   $(echo "$fallacc_out" | grep -v '^(evidence' | tail -1)"
