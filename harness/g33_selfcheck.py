@@ -176,16 +176,24 @@ def main() -> int:
     # (auto-cleanup would destroy what a mismatch needs to be diagnosed from).
     # _die() exits without returning, so a failure never reaches the rmtree.
     root = Path(tempfile.mkdtemp(prefix="g33_selfcheck."))
-    for algorithm in ("legacy", "conservative"):
-        try:
-            stats = check_algorithm(driver, algorithm, root / algorithm)
-        except gd.G33Corruption as e:
-            _die(EXIT_EVIDENCE, f"FAIL evidence (kept at {root}): {algorithm}: {e}")
-        print(f"{algorithm}: PASS — {stats['containers']} containers, "
-              f"{stats['shadow_actual']} shadow==actual, "
-              f"{stats['offline_rungs']} offline rungs bit-exact, "
-              f"{stats['flags']} producer cross-checks")
-    shutil.rmtree(root, ignore_errors=True)
+    try:
+        for algorithm in ("legacy", "conservative"):
+            try:
+                stats = check_algorithm(driver, algorithm, root / algorithm)
+            except gd.G33Corruption as e:
+                _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
+            print(f"{algorithm}: PASS — {stats['containers']} containers, "
+                  f"{stats['shadow_actual']} shadow==actual, "
+                  f"{stats['offline_rungs']} offline rungs bit-exact, "
+                  f"{stats['flags']} producer cross-checks")
+    except SystemExit as e:
+        # ANY failure keeps the evidence and reports where — the forensic
+        # contract must not depend on which failure class fired (the fidelity
+        # path _die's from inside check_algorithm without root in scope).
+        if e.code:
+            print(f"(evidence preserved at {root})", file=sys.stderr)
+        raise
+    shutil.rmtree(root, ignore_errors=True)     # success only
     print("SELF-CHECK PASS: shadow == actual == offline, both algorithms")
     return 0
 
