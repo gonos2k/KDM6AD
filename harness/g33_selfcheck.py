@@ -224,22 +224,22 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # shared arithmetic; this proves the conserved transfer the whole gate
         # exists to attribute.
         if algorithm == "conservative":
+            def ri(f, cell_k):
+                return _payload(recs, stage="op", k=cell_k, species="qr",
+                                op_id="QR_INFLOW", field=f)["payload"]
             for k in range(1, K):
-                def ri(f, _k=k):
-                    return _payload(recs, stage="op", k=_k, species="qr",
-                                    op_id="QR_INFLOW", field=f)["payload"]
-                prev = _np("f32", ri("prev_out"))
-                ds_src = _np("f32", ri("dend_safe_src"))
-                dz_src = _np("f32", ri("delz_raw_src"))
-                ds_dst = _np("f32", ri("dend_safe_dst"))
-                dz_dst = _np("f32", ri("delz_safe_dst"))
+                prev = _np("f32", ri("prev_out", k))
+                ds_src = _np("f32", ri("dend_safe_src", k))
+                dz_src = _np("f32", ri("delz_raw_src", k))
+                ds_dst = _np("f32", ri("dend_safe_dst", k))
+                dz_dst = _np("f32", ri("delz_safe_dst", k))
                 m_src = ds_src * dz_src        # f32*f32 -> f32
                 m_dst = ds_dst * dz_dst
                 mul = prev * m_src
                 inflow = mul / m_dst          # f32/f32 -> f32
                 for field, val in (("src_metric", m_src), ("dst_metric", m_dst),
                                    ("mul_src", mul), ("inflow_final", inflow)):
-                    if ri(field) != _bits(val, "f32"):
+                    if ri(field, k) != _bits(val, "f32"):
                         _die(EXIT_FIDELITY,
                              f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
                              f"k={k} qr QR_INFLOW.{field}")

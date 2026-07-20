@@ -12,7 +12,7 @@ a predicted site; a mutation the gate cannot kill means the check is vacuous.
 import sys
 
 KIND, SRC, DST = sys.argv[1], sys.argv[2], sys.argv[3]
-s = open(SRC).read()
+s = open(SRC, encoding="utf-8").read()
 
 if KIND == "shadow":
     # legacy SHADOW ladder drops the gate rung — kills the shared FALK proof
@@ -33,4 +33,4 @@ elif KIND == "cons_inflow":
 else:
     sys.exit(f"unknown mutant kind {KIND!r}")
 
-open(DST, "w").write(s)
+open(DST, "w", encoding="utf-8").write(s)
