@@ -17,6 +17,8 @@ sys.path.insert(0, str(ROOT))
 import g33_derived as gdv
 import g33_dump as gd
 import g33_expectation as ge
+import g33_selfcheck as gsc
+import numpy as np
 
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
@@ -1384,6 +1386,27 @@ def _cap_coverage_pass(states):
     if gd.BRANCH_UNORDERED in seen:
         return False
     return gd.BRANCH_LEFT_SELECTED in seen and gd.BRANCH_RIGHT_SELECTED in seen
+
+
+def test_interface_kappa_chi_measures_roundoff_and_metric_ratio():
+    f32 = np.float32
+    # A conserving transfer: inflow = fl32(mul_src / m_dst). κ must be tiny
+    # (sub-ULP, a single divide-then-multiply round-trip), χ the metric ratio.
+    m_src = np.array([300.0, 420.0], dtype=f32)
+    m_dst = np.array([330.0, 400.0], dtype=f32)
+    mul_src = np.array([1.2e-4, 3.4e-4], dtype=f32)         # dq_out*m_src
+    inflow = (mul_src / m_dst).astype(f32)                  # the ρΔz transfer
+    kappa, chi = gsc.interface_kappa_chi(mul_src, inflow, m_src, m_dst)
+    assert (kappa < 1.0).all()                              # roundoff only
+    assert np.allclose(chi, np.maximum(m_src / m_dst, m_dst / m_src).astype(np.float64))
+    assert (chi >= 1.0).all()
+
+    # A NON-conserving transfer (metric dropped: inflow = mul_src, no /m_dst):
+    # mass arriving = mul_src*m_dst >> mass leaving = mul_src, so κ explodes far
+    # past the envelope — the tripwire the gate relies on.
+    bad_inflow = mul_src.copy()                             # forgot /m_dst
+    bad_kappa, _ = gsc.interface_kappa_chi(mul_src, bad_inflow, m_src, m_dst)
+    assert (bad_kappa > gsc.KAPPA_ENVELOPE).all()
 
 
 def test_cap_coverage_requires_strict_bound_and_unbound_not_ties():

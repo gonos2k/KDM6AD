@@ -129,6 +129,24 @@ def _bits(a, dt):
     return a.astype({"f32": ">f4", "f64": ">f8"}[dt]).tobytes()
 
 
+def interface_kappa_chi(mul_src, inflow, m_src, m_dst):
+    """§7 interface residual (κ) and metric condition (χ), per element, f64.
+
+    L = extensive mass LEAVING k-1 (mul_src = dq_out(k-1)*m_src); G = mass
+    ARRIVING at k (inflow*m_dst, the f32 product widened). r = f64(G)-f64(L) is
+    exact (both f32). κ = |r| / (eps32*(|G|+|L|+tiny)) is the residual in ULP
+    units; χ = max(m_src/m_dst, m_dst/m_src) the metric ratio. All inputs are
+    f32 ndarrays. Pure, so the formula is unit-testable away from the driver."""
+    Lf = mul_src.astype(np.float64)
+    Gf = (inflow * m_dst).astype(np.float64)     # f32 op, then widen
+    eps32 = np.float64(np.finfo(np.float32).eps)
+    tiny = np.float64(np.finfo(np.float32).tiny)
+    kappa = np.abs(Gf - Lf) / (eps32 * (np.abs(Gf) + np.abs(Lf) + tiny))
+    ms, md = m_src.astype(np.float64), m_dst.astype(np.float64)
+    chi = np.maximum(ms / md, md / ms)
+    return kappa, chi
+
+
 def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     sched = _sched(algorithm)
     run_uuid = f"selfcheck-{algorithm}-{uuid.uuid4().hex[:12]}"
@@ -452,20 +470,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                              f"k={k} qr QR_INFLOW.{field}")
                     stats["inflow_rungs"] += 1
 
-                # §7 interface roundoff residual (MEASURED, not bit-exact). L is
-                # the extensive mass leaving k-1 (mul_src = dq_out(k-1)*m_src); G
-                # is the mass arriving at k (inflow*m_dst, computed in f32 as the
-                # producer would). r = f64(G) - f64(L) is exact (both are f32).
-                # κ normalizes it by the f32 rounding unit of the magnitudes.
-                Lf = mul.astype(np.float64)
-                Gf = (inflow * m_dst).astype(np.float64)     # f32 op, then widen
-                r = Gf - Lf
-                eps32 = np.float64(np.finfo(np.float32).eps)
-                tiny = np.float64(np.finfo(np.float32).tiny)
-                kappa = np.abs(r) / (eps32 * (np.abs(Gf) + np.abs(Lf) + tiny))
-                m_src64 = m_src.astype(np.float64)
-                m_dst64 = m_dst.astype(np.float64)
-                chi = np.maximum(m_src64 / m_dst64, m_dst64 / m_src64)
+                # §7 interface roundoff residual (MEASURED, not bit-exact): mass
+                # leaving k-1 (mul_src) vs mass arriving at k (inflow*m_dst)
+                # differ by a rounding residual; κ reports it in ULP units.
+                kappa, chi = interface_kappa_chi(mul, inflow, m_src, m_dst)
                 resid["kappa_max"] = max(resid["kappa_max"], float(kappa.max()))
                 resid["chi_max"] = max(resid["chi_max"], float(chi.max()))
                 resid["n"] += int(kappa.size)
