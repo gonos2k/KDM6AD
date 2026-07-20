@@ -80,7 +80,8 @@ SubstepAdvectionOutputs substep_advection_conservative(
                 s->cols[k] = s->cols[k] - dq_out;
             } else {
                 // mass-conserving transfer of the source cell's actual outflow:
-                // ρΔz-converted so mass out of k-1 == mass into k exactly.
+                // ρΔz-converted: algebraically conservative under valid metrics,
+                // closing to within a measured f32 roundoff envelope (NOT bit-exact).
                 auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1))
                              / (dend_safe_col(k) * delz_safe_col(k));
                 s->cols[k] = s->cols[k] - dq_out + dq_in;
