@@ -90,6 +90,19 @@ def _fallacc(records, field):
     return out
 
 
+def _post_map(recs, cid):
+    """{field: (dtype, payload)} for the substep_post stage, fail-closed on the
+    fields the caller relies on. A truncated/malformed container missing qr or
+    nr would otherwise KeyError into a raw traceback; the harness is fail-closed,
+    so a missing field must be a clean EXIT_EVIDENCE, not a crash."""
+    m = {r["field"]: (r["dtype"], r["payload"])
+         for r in recs if r["stage"] == "substep_post"}
+    for f in ("qr", "nr"):
+        if f not in m:
+            _die(EXIT_EVIDENCE, f"FAIL: {cid} substep_post is missing field {f}")
+    return m
+
+
 def _bits(a, dt):
     # container payloads are BIG-endian per element; a native tobytes() would
     # compare LE bytes against BE payloads and fail on identical values
@@ -196,7 +209,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      f"FAIL causal-link: {c['container_id']} n={n_sub} has no "
                      f"immediate predecessor n={n_sub - 1} in chain {chain_key}")
             for sp in ("qr", "nr"):
-                if pre[sp][1] != prior["post"][sp]:
+                if pre[sp][1] != prior["post"][sp][1]:
                     _die(EXIT_FIDELITY,
                          f"FAIL causal-link: {c['container_id']} substep_pre.{sp} "
                          f"!= prior substep_post.{sp} (state carry broken)")
@@ -321,8 +334,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"k={k_} {msg}")
                 stats_links["n"] += 1
 
-            post_rec = {r["field"]: (r["dtype"], r["payload"])
-                        for r in recs if r["stage"] == "substep_post"}
+            post_rec = _post_map(recs, c["container_id"])
             post_snap = {f: _np(*post_rec[f]).reshape(B, K) for f in ("qr", "nr")}
 
             # 2.2 — TOP cell (k=0): no inflow, so the whole update is a single
@@ -450,9 +462,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      k, "NR_UPDATE.n_post != substep_post.nr[:, k] (returned state diverged)")
 
         # store this substep's post-state and outgoing accumulator for the next
-        # substep of the SAME chain.
-        post = {r["field"]: r["payload"]
-                for r in recs if r["stage"] == "substep_post"}
+        # substep of the SAME chain. _post_map fail-closes on missing qr/nr.
+        post = _post_map(recs, c["container_id"])
         carry[chain_key] = {"n": n_sub, "post": post,
                             "fall_after": _fallacc(recs, "fall_after")}
 
