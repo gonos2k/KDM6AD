@@ -51,7 +51,8 @@ EXIT_SKIP, EXIT_DRIVER, EXIT_EVIDENCE, EXIT_FIDELITY = 2, 3, 4, 5
 
 
 def _die(code: int, msg: str):
-    print(msg, file=sys.stderr)
+    sys.stdout.flush()          # keep merged 2>&1 order deterministic
+    print(msg, file=sys.stderr, flush=True)
     raise SystemExit(code)
 
 
@@ -118,7 +119,13 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE,
              f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
 
-    stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0, "flags": 0}
+    stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0,
+             "inflow_rungs": 0, "flags": 0}
+    # BRANCH COVERAGE, recomputed from dumped operands (never driver constants):
+    # a fixture edited so a branch stops firing must FAIL, not silently pass a
+    # ladder that no longer exercises it.
+    cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
+           "floor_active": 0}
     for c in index["containers"]:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
@@ -136,6 +143,32 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                for r in recs if r["stage"] == "substep_pre"}
         gdv.check_producer_flags(pre, n_sub, seal_qcrmin, seal_dtcld)
         stats["flags"] += 1
+
+        # coverage: decoded mstep (constant across containers) + gate for this n
+        mdec = gdv.derive_mstep(*pre["mstep_native"])["decoded_i32"]
+        if cov["mstep"] is None:
+            cov["mstep"] = mdec
+        elif cov["mstep"] != mdec:
+            _die(EXIT_EVIDENCE, f"FAIL: mstep changed across containers "
+                                f"{cov['mstep']} != {mdec}")
+        cov["gate_by_n"][n_sub] = gdv.derive_gate(*pre["gate_native"])["decoded_u8"]
+        # floors must be inactive (real-atmosphere / valid_metric policy)
+        for fld in ("dend_floor_active", "delz_floor_active"):
+            cov["floor_active"] += int(sum(_np(*pre[fld])))
+        # cap coverage recomputed: outflow_pre_cap > source_reservoir, per species
+        for sp, key in (("qr", "qr_cap"), ("nr", "nr_cap")):
+            op = f"{sp.upper()}_OUTFLOW"
+            for k in range(K):
+                hits = [r for r in recs if r["stage"] == "op" and r["k"] == k
+                        and r["species"] == sp and r["op_id"] == op]
+                if not hits:
+                    continue
+                pre_cap = _np("f32", _payload(recs, stage="op", k=k, species=sp,
+                                              op_id=op, field="outflow_pre_cap")["payload"])
+                resv = _np("f32", _payload(recs, stage="op", k=k, species=sp,
+                                           op_id=op, field="source_reservoir")["payload"])
+                for b in range(B):
+                    cov[key].add(bool(pre_cap[b] > resv[b]))
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)
         w1 = _np(*pre["work1_qr"]).reshape(B, K)
@@ -183,6 +216,59 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"FAIL shadow!=actual: {algorithm} {c['container_id']} "
                          f"k={k} {sp}")
                 stats["shadow_actual"] += 1
+
+        # conservative QR_INFLOW — the LOAD-BEARING G3.3-M operation (the
+        # rho*dz metric conversion that is conservative-only). Recompute
+        # src_metric/dst_metric/mul_src/inflow_final from the dumped f32
+        # operands, bit-exact, for every interior/bottom cell. FALK proves the
+        # shared arithmetic; this proves the conserved transfer the whole gate
+        # exists to attribute.
+        if algorithm == "conservative":
+            def ri(f, cell_k):
+                return _payload(recs, stage="op", k=cell_k, species="qr",
+                                op_id="QR_INFLOW", field=f)["payload"]
+            for k in range(1, K):
+                prev = _np("f32", ri("prev_out", k))
+                ds_src = _np("f32", ri("dend_safe_src", k))
+                dz_src = _np("f32", ri("delz_raw_src", k))
+                ds_dst = _np("f32", ri("dend_safe_dst", k))
+                dz_dst = _np("f32", ri("delz_safe_dst", k))
+                m_src = ds_src * dz_src        # f32*f32 -> f32
+                m_dst = ds_dst * dz_dst
+                mul = prev * m_src
+                inflow = mul / m_dst          # f32/f32 -> f32
+                for field, val in (("src_metric", m_src), ("dst_metric", m_dst),
+                                   ("mul_src", mul), ("inflow_final", inflow)):
+                    if ri(field, k) != _bits(val, "f32"):
+                        _die(EXIT_FIDELITY,
+                             f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
+                             f"k={k} qr QR_INFLOW.{field}")
+                    stats["inflow_rungs"] += 1
+
+    # branch-coverage verdict — the fixture must actually exercise every branch
+    # the ladder claims to test, proven from the evidence, not assumed.
+    lo, hi = 1, MSTEPMAX
+    if cov["mstep"] is None or not (min(cov["mstep"]) >= lo and max(cov["mstep"]) <= hi):
+        _die(EXIT_EVIDENCE, f"FAIL coverage: mstep {cov['mstep']} out of [1,{hi}]")
+    # both a gated-off and a gated-on column must appear at the highest n
+    top_gate = cov["gate_by_n"].get(MSTEPMAX)
+    if not top_gate or 0 not in top_gate or 1 not in top_gate:
+        _die(EXIT_EVIDENCE,
+             f"FAIL coverage: n={MSTEPMAX} gate {top_gate} does not exercise "
+             f"both gated-off (0) and gated-on (1)")
+    if cov["floor_active"] != 0:
+        _die(EXIT_EVIDENCE,
+             f"FAIL coverage: {cov['floor_active']} density/metric floor "
+             f"activations — a valid_metric fixture must have zero")
+    for key, label in (("qr_cap", "QR"), ("nr_cap", "NR")):
+        if cov[key] != {True, False}:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL coverage: {label} outflow cap did not exercise BOTH "
+                 f"bound and unbound (saw {sorted(cov[key])}) — the fixture no "
+                 f"longer tests the cap branch")
+    stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
+                         f"floors {cov['floor_active']}, "
+                         f"QR/NR cap both bound+unbound")
     return stats
 
 
@@ -207,8 +293,10 @@ def main() -> int:
                 _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
             print(f"{algorithm}: PASS — {stats['containers']} containers, "
                   f"{stats['shadow_actual']} shadow==actual, "
-                  f"{stats['offline_rungs']} offline rungs bit-exact, "
-                  f"{stats['flags']} producer cross-checks")
+                  f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW "
+                  f"offline rungs bit-exact, "
+                  f"{stats['flags']} producer cross-checks", flush=True)
+            print(f"  coverage: {stats['coverage']}", flush=True)
     except SystemExit as e:
         # ANY failure keeps the evidence and reports where — the forensic
         # contract must not depend on which failure class fired (the fidelity
