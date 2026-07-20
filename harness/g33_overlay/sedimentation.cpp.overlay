@@ -98,9 +98,14 @@ public:
         // case_id/pair_id flow into the container FILE NAME verbatim. The
         // producer must refuse unsafe ids itself — the Python validator only
         // sees the header after the path has already been opened.
+        // The all-or-nothing env check above guarantees cas/pai are non-null
+        // HERE — but concatenating a nullptr is UB, and a guard whose memory
+        // safety depends on 26 lines of distant ordering is one refactor away
+        // from a crash instead of a diagnostic.
         for (const char* v : {cas, pai})
             if (!safe_id(v))
-                throw std::runtime_error(std::string("g33: unsafe id ") + v
+                throw std::runtime_error(std::string("g33: unsafe id ")
+                    + (v ? v : "<null>")
                     + " (allowed: [A-Za-z0-9_.-]+, not dot-only)");
         B_ = int(probe.size(0)); K_ = int(probe.size(-1));
         // §7c: the column map is DECLARED by the harness, never fabricated here.

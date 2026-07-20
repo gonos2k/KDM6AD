@@ -138,6 +138,8 @@ def _coerce_threshold(dtype: str, qcrmin: float) -> tuple:
     Comparing f32 raw values against a full-precision Python float threshold
     would use a boundary NEITHER backend computes with.
     """
+    if dtype not in ("f32", "f64"):
+        raise G33Corruption(f"floor operand cannot be {dtype!r}")
     bits = struct.unpack({"f32": ">I", "f64": ">Q"}[dtype],
                          struct.pack(_FMT[dtype], qcrmin))[0]
     value = struct.unpack(_FMT[dtype], struct.pack(_FMT[dtype], qcrmin))[0]
@@ -146,8 +148,6 @@ def _coerce_threshold(dtype: str, qcrmin: float) -> tuple:
 
 def classify_floor(dtype: str, raw_payload: bytes, qcrmin: float) -> list:
     """Per-element FLOOR relation of raw against the dtype-faithful threshold."""
-    if dtype not in ("f32", "f64"):
-        raise G33Corruption(f"floor operand cannot be {dtype!r}")
     thr, _ = _coerce_threshold(dtype, qcrmin)
     out = []
     for v in unpack_values(dtype, raw_payload):
@@ -251,9 +251,7 @@ def check_producer_flags(fields: dict, n: int, qcrmin: float) -> None:
     its evidence claims — the run is invalid, so this raises rather than
     reports.
     """
-    if not isinstance(n, bool) and isinstance(n, int) and n >= 1:
-        pass
-    else:
+    if not (type(n) is int and n >= 1):    # `type is int` also excludes bool
         raise G33Corruption(f"substep index n must be a positive int, got {n!r}")
     missing = [f for f in _REQUIRED if f not in fields]
     if missing:

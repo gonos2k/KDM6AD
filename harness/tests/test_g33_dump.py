@@ -1585,3 +1585,22 @@ def test_run_contract_refuses_overwrite_and_missing_qcrmin(tmp_path):
         g33_run_env.build_env(nosched, tmp_path / "o2", binary=binary,
                               column_map=cmap, run_uuid="u-3",
                               column_layout_id="l", repo=repo)
+
+
+def test_floor_dtype_errors_are_g33corruption_not_keyerror():
+    # _coerce_threshold's dict lookup leaked a bare KeyError for a non-float
+    # dtype — a fail-closed reader must never surface raw internal errors.
+    # Validated at the single chokepoint so BOTH callers are covered.
+    for fn, args in ((gdv.check_floor_semantics,
+                      ("i32", gd.pack_payload("i32", [1]),
+                       gd.pack_payload("i32", [1]), _QCRMIN)),
+                     (gdv.classify_floor, ("u8", b"\x01", _QCRMIN))):
+        with pytest.raises(gd.G33Corruption, match="floor operand cannot be"):
+            fn(*args)
+
+
+def test_substep_index_rejects_bool_and_nonint():
+    # bool is an int subclass; `type(n) is int` excludes it without a special case
+    for bad in (True, False, 0, -1, 1.5, "2", None):
+        with pytest.raises(gd.G33Corruption, match="positive int"):
+            gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN)
