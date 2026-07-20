@@ -41,6 +41,17 @@ import g33_run_env as gre
 
 B, K, MSTEPMAX, QCRMIN = 3, 4, 2, 1.0e-9
 
+# Failure CLASSES by exit code — the discrimination a wrapped child cannot
+# forge. Driver stdout/stderr is interpolated into failure messages, so child-
+# controlled text can become the terminal line; the parent's exit code cannot.
+# The kill gate accepts ONLY EXIT_FIDELITY.
+EXIT_SKIP, EXIT_DRIVER, EXIT_EVIDENCE, EXIT_FIDELITY = 2, 3, 4, 5
+
+
+def _die(code: int, msg: str):
+    print(msg, file=sys.stderr)
+    raise SystemExit(code)
+
 
 def _sched(algorithm: str) -> dict:
     return {"case_id": "selfcheck", "pair_id": "selfpair", "backend": "cpp",
@@ -53,7 +64,7 @@ def _sched(algorithm: str) -> dict:
 def _payload(recs, **key):
     hits = [r for r in recs if all(r.get(k) == v for k, v in key.items())]
     if len(hits) != 1:
-        raise SystemExit(f"FAIL: {len(hits)} records match {key} (want exactly 1)")
+        _die(EXIT_EVIDENCE, f"FAIL: {len(hits)} records match {key} (want exactly 1)")
     return hits[0]
 
 
@@ -79,7 +90,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     r = subprocess.run([str(driver), algorithm], env={**os.environ, **env},
                        capture_output=True, text=True)
     if r.returncode != 0:
-        raise SystemExit(f"FAIL: driver rc={r.returncode}\n{r.stdout}{r.stderr}")
+        _die(EXIT_DRIVER, f"FAIL: driver rc={r.returncode}\n{r.stdout}{r.stderr}")
 
     # 1. container-set completeness: exactly the sealed set, nothing else
     index = ge.run_index(sched)
@@ -87,7 +98,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     on_disk = sorted(p.name for p in dump_dir.glob("*.g33"))
     expected = sorted(c["path"] for c in index["containers"])
     if on_disk != expected:
-        raise SystemExit(f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
+        _die(EXIT_EVIDENCE,
+             f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
 
     stats = {"containers": 0, "shadow_actual": 0, "offline_rungs": 0, "flags": 0}
     for c in index["containers"]:
@@ -134,18 +146,18 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                 for field, dt, want in off:
                     have = rec(op, field)
                     if have["dtype"] != dt or have["payload"] != want:
-                        raise SystemExit(
-                            f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
-                            f"k={k} {sp} {op}.{field}")
+                        _die(EXIT_FIDELITY,
+                             f"FAIL offline!=dumped: {algorithm} {c['container_id']} "
+                             f"k={k} {sp} {op}.{field}")
                     stats["offline_rungs"] += 1
 
                 # shadow == actual (§5a)
                 sh = rec(op, "shadow_falk_f32")["payload"]
                 ac = rec(op, "falk_f32")["payload"]
                 if sh != ac:
-                    raise SystemExit(
-                        f"FAIL shadow!=actual: {algorithm} {c['container_id']} "
-                        f"k={k} {sp}")
+                    _die(EXIT_FIDELITY,
+                         f"FAIL shadow!=actual: {algorithm} {c['container_id']} "
+                         f"k={k} {sp}")
                 stats["shadow_actual"] += 1
     return stats
 
@@ -157,10 +169,13 @@ def main() -> int:
     driver = Path(a.driver)
     if not driver.is_file():
         print(f"SKIP: driver not built ({driver}) — run selfcheck_build.sh first")
-        return 2
+        return EXIT_SKIP
     root = Path(tempfile.mkdtemp(prefix="g33_selfcheck."))
     for algorithm in ("legacy", "conservative"):
-        stats = check_algorithm(driver, algorithm, root / algorithm)
+        try:
+            stats = check_algorithm(driver, algorithm, root / algorithm)
+        except gd.G33Corruption as e:
+            _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
         print(f"{algorithm}: PASS — {stats['containers']} containers, "
               f"{stats['shadow_actual']} shadow==actual, "
               f"{stats['offline_rungs']} offline rungs bit-exact, "
