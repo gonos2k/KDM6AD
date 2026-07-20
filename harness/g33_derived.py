@@ -41,6 +41,17 @@ from g33_dump import (BRANCH_LEFT_SELECTED, BRANCH_RIGHT_SELECTED, BRANCH_TIE,
 _W = {"f32": 4, "f64": 8, "i32": 4, "u8": 1}
 _FMT = {"f32": ">f", "f64": ">d", "i32": ">i", "u8": ">B"}
 
+# Physically meaningful substep-count range (owner math review §2.1). A decoded
+# mstep outside it is not a rounding finding, it is an invalid run.
+MSTEP_RANGE = (1, 100)
+
+# Floor relation (owner math review §2.2): the branch condition is raw vs the
+# threshold, not "did the output change". `safe != raw` is a RESULT comparison
+# and bit inequality is a REPRESENTATION comparison — neither is the branch.
+FLOOR_BELOW = 0          # raw <  qcrmin  -> clamp fires
+FLOOR_AT_OR_ABOVE = 1    # raw >= qcrmin  -> raw passes through (tie included)
+FLOOR_UNORDERED = 2      # NaN operand    -> verdict deferred to the masks
+
 
 def unpack_values(dtype: str, payload: bytes) -> list:
     if dtype not in _W:
@@ -121,6 +132,63 @@ def derive_floor_active(dtype: str, raw_payload: bytes, safe_payload: bytes) -> 
             "bits_changed": [1 if sb != rb else 0 for rb, sb in zip(raw_b, safe_b)]}
 
 
+def _coerce_threshold(dtype: str, qcrmin: float) -> tuple:
+    """qcrmin as the backend actually sees it: rounded through the dtype.
+
+    Comparing f32 raw values against a full-precision Python float threshold
+    would use a boundary NEITHER backend computes with.
+    """
+    if dtype not in ("f32", "f64"):
+        raise G33Corruption(f"floor operand cannot be {dtype!r}")
+    bits = struct.unpack({"f32": ">I", "f64": ">Q"}[dtype],
+                         struct.pack(_FMT[dtype], qcrmin))[0]
+    value = struct.unpack(_FMT[dtype], struct.pack(_FMT[dtype], qcrmin))[0]
+    return value, bits
+
+
+def classify_floor(dtype: str, raw_payload: bytes, qcrmin: float) -> list:
+    """Per-element FLOOR relation of raw against the dtype-faithful threshold."""
+    thr, _ = _coerce_threshold(dtype, qcrmin)
+    out = []
+    for v in unpack_values(dtype, raw_payload):
+        if math.isnan(v):
+            out.append(FLOOR_UNORDERED)
+        else:
+            out.append(FLOOR_BELOW if v < thr else FLOOR_AT_OR_ABOVE)
+    return out
+
+
+def check_floor_semantics(dtype: str, raw_payload: bytes, safe_payload: bytes,
+                          qcrmin: float) -> dict:
+    """The floor authority: relation to the threshold, plus a BIT-EXACT check
+    that the emitted safe value is max(raw, qcrmin) under that relation.
+
+    BELOW must yield exactly the threshold's bits and AT_OR_ABOVE exactly the
+    raw bits (a tie returns identical bits from either branch, so it needs no
+    fourth state here — the branch enum's TIE ambiguity does not arise for a
+    max against a constant). UNORDERED elements carry no bit expectation; NaN
+    propagation is backend-defined and its verdict belongs to the masks.
+    """
+    if len(raw_payload) != len(safe_payload):
+        raise G33Corruption("floor operands have different payload sizes")
+    thr_v, thr_bits = _coerce_threshold(dtype, qcrmin)
+    rel = classify_floor(dtype, raw_payload, qcrmin)
+    raw_b = _raw_bits(dtype, raw_payload)
+    safe_b = _raw_bits(dtype, safe_payload)
+    for i, (r, rb, sb) in enumerate(zip(rel, raw_b, safe_b)):
+        if r == FLOOR_UNORDERED:
+            continue
+        expected = thr_bits if r == FLOOR_BELOW else rb
+        if sb != expected:
+            raise G33Corruption(
+                f"safe[{i}] bits 0x{sb:x} != max(raw, qcrmin) bits 0x{expected:x} "
+                f"(relation {'BELOW' if r == FLOOR_BELOW else 'AT_OR_ABOVE'}, "
+                f"threshold {thr_v!r}) — the clamp is not the declared semantics")
+    return {"relation": rel,
+            "representation_changed": [1 if a != b else 0
+                                       for a, b in zip(raw_b, safe_b)]}
+
+
 def classify_min(dtype: str, left_payload: bytes, right_payload: bytes) -> list:
     """Per-element BRANCH enum for min(left, right).
 
@@ -173,14 +241,18 @@ _REQUIRED = ("mstep_native", "mstep_decoded_i32", "mstep_exact_integer",
              "delz_raw", "delz_safe", "delz_floor_active")
 
 
-def check_producer_flags(fields: dict) -> None:
+def check_producer_flags(fields: dict, n: int, qcrmin: float) -> None:
     """Cross-check every producer-emitted flag against a recomputation from the
     producer's own raw operands.
 
-    `fields` maps field name -> (dtype, payload) for ONE substep_pre group. Any
-    disagreement means the producer's arithmetic is not what its evidence
-    claims — the run is invalid, so this raises rather than reports.
+    `fields` maps field name -> (dtype, payload) for ONE substep_pre group;
+    `n` is this substep's 1-based index and `qcrmin` the scheme floor from the
+    run contract. Any disagreement means the producer's arithmetic is not what
+    its evidence claims — the run is invalid, so this raises rather than
+    reports.
     """
+    if not (type(n) is int and n >= 1):    # `type is int` also excludes bool
+        raise G33Corruption(f"substep index n must be a positive int, got {n!r}")
     missing = [f for f in _REQUIRED if f not in fields]
     if missing:
         raise G33Corruption(f"cross-check is missing operand(s): {missing}")
@@ -203,15 +275,31 @@ def check_producer_flags(fields: dict) -> None:
     _demand("mstep_decoded_i32", m["decoded_i32"], _got("mstep_decoded_i32"))
     _demand("mstep_exact_integer", m["exact_integer"], _got("mstep_exact_integer"))
 
+    lo, hi = MSTEP_RANGE
+    for i, mv in enumerate(m["decoded_i32"]):
+        if not (lo <= mv <= hi):
+            raise G33Corruption(
+                f"mstep_decoded_i32[{i}] = {mv} outside the physical range "
+                f"[{lo}, {hi}] — not a rounding finding, an invalid run")
+
     g = derive_gate(*fields["gate_native"])
     _demand("gate_exact_01", g["exact_01"], _got("gate_exact_01"))
     _demand("active_mask", g["active_mask"], _got("active_mask"))
     _demand("gate_decoded_u8", g["decoded_u8"], _got("gate_decoded_u8"))
+    # The gate is DERIVED state, not free state: gate_b(n) = [n <= mstep_b]
+    # (owner math review §2.1). Checking only that the gate is exactly 0/1
+    # cannot catch a gate that is WRONG but exactly 0/1 — the law ties it to
+    # the operand it is derived from.
+    _demand("gate_vs_mstep_law", [1 if n <= mv else 0 for mv in m["decoded_i32"]],
+            g["decoded_u8"])
 
     for sp in ("dend", "delz"):
         dt_raw, raw = fields[f"{sp}_raw"]
         dt_safe, safe = fields[f"{sp}_safe"]
         if dt_raw != dt_safe:
             raise G33Corruption(f"{sp}_raw/{sp}_safe dtype mismatch")
+        # authority: relation to the threshold + bit-exact max(raw, qcrmin)
+        check_floor_semantics(dt_raw, raw, safe, qcrmin)
+        # cross-check: the producer's own (safe != raw) flag, value semantics
         fl = derive_floor_active(dt_raw, raw, safe)
         _demand(f"{sp}_floor_active", fl["value_changed"], _got(f"{sp}_floor_active"))

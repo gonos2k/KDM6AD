@@ -21,6 +21,7 @@ import g33_expectation as ge
 SCHED = {"case_id": "closure3-C3.3", "pair_id": "conservative", "backend": "cpp",
          "algorithm": "conservative", "B": 3, "K": 4, "loops": 1,
          "mstepmax_main": [1], "mstepmax_ice": [2], "species_scope": ["qr", "nr"],
+         "qcrmin": 1e-9,
          "instrumented_stages": ["substep_pre", "op", "surface", "outer_pre_sed",
                                  "outer_post_sed", "outer_post_micro",
                                  "reslope_input", "reslope_output", "substep_post"]}
@@ -37,7 +38,7 @@ def _header(**over):
          "canonical_k_order": "top-first",
          "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
          "container_id": "L1_main_n1", "descriptor_sha256": "a" * 64,
-         "global_op_seq_start": 0, "global_op_seq_end": 1_000_000,
+         "global_op_seq_start": 0, "global_op_seq_end": 0,
          "record_count_expected": 0}
     h.update(over)
     return h
@@ -45,7 +46,8 @@ def _header(**over):
 
 def _write_valid(path, records=None):
     recs = records if records is not None else ge.expected_records(SCHED)
-    w = gd.G33Writer(path, _header(record_count_expected=len(recs)))
+    w = gd.G33Writer(path, _header(record_count_expected=len(recs),
+                                   global_op_seq_end=len(recs) - 1))
     for r in recs:
         n_elem = 1
         for s in r["shape"]:
@@ -153,17 +155,37 @@ def test_nonmonotone_seq(tmp_path):
                  gd.pack_payload("f32", [1]))
 
 
-def test_op_seq_id_must_advance(tmp_path):
-    # op_seq_id is MEASURED global execution order. A repeat or a step backwards
-    # means two records claim the same instant, which would make an out-of-order
-    # replay indistinguishable from the real order.
-    p = tmp_path / "c.g33"
-    w = gd.G33Writer(p, _header())
+def test_op_seq_id_obeys_the_exact_window_law(tmp_path):
+    # op_seq_id == global_op_seq_start + seq_no, exactly. "Strictly increasing
+    # and inside the window" let [100,105] hold only 100,102,105 — gaps INSIDE
+    # the window were structurally invisible. Repeats, gaps and offsets are all
+    # the same violation of one equation.
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
             "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
-    w.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
-        w.record({**base, "seq_no": 1, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+    w = gd.G33Writer(tmp_path / "a.g33", _header(global_op_seq_start=100,
+                                                 global_op_seq_end=105))
+    w.record({**base, "seq_no": 0, "op_seq_id": 100}, "f32", [1],
+             gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="exact-window law"):
+        w.record({**base, "seq_no": 1, "op_seq_id": 102}, "f32", [1],
+                 gd.pack_payload("f32", [1]))          # gap INSIDE the window
+    w2 = gd.G33Writer(tmp_path / "b.g33", _header())
+    with pytest.raises(gd.G33Corruption, match="exact-window law"):
+        w2.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1],
+                  gd.pack_payload("f32", [1]))         # offset from the start
+
+
+def test_partial_window_cannot_be_finalized(tmp_path):
+    # a container that covered only part of its declared window must never
+    # receive a COMPLETE footer
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+            "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w = gd.G33Writer(tmp_path / "c.g33", _header(global_op_seq_start=0,
+                                                 global_op_seq_end=2))
+    w.record({**base, "seq_no": 0, "op_seq_id": 0}, "f32", [1],
+             gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="partial window"):
+        w.finalize()
 
 
 def test_op_seq_id_outside_declared_window(tmp_path):
@@ -563,7 +585,7 @@ def test_raw_bit_roundtrip_preserves_nan_payloads(tmp_path):
     f32_bits = [0x7F800001, 0xFFC00000, 0x7FC0DEAD, 0x80000000]
     f64_bits = [0x7FF0000000000001, 0xFFF8000000000000, 0x7FF8DEADBEEFCAFE]
     p = tmp_path / "nan.g33"
-    w = gd.G33Writer(p, _header(record_count_expected=2))
+    w = gd.G33Writer(p, _header(record_count_expected=2, global_op_seq_end=1))
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP", "k": 0,
             "species": "qr", "op_id": "QR_FALK", "stage": "op"}
     w.record({**base, "seq_no": 0, "op_seq_id": 0, "field": "a"},
@@ -1342,28 +1364,33 @@ def test_nan_branch_is_unordered_not_tie_and_the_verdict_is_mask_dependent():
         gdv.unordered_failures(br, [1], [1, 1])
 
 
+_QCRMIN = 1e-9
+_N_SUB = 2       # fixture substep index: with mstep [1,2,3], gate(n=2) = [0,1,1]
+
+
 def _substep_pre_fields(**edits):
     f = {
         "mstep_native": ("f64", gd.pack_payload("f64", [1.0, 2.0, 3.0])),
         "mstep_decoded_i32": ("i32", gd.pack_payload("i32", [1, 2, 3])),
         "mstep_exact_integer": ("u8", gd.pack_payload("u8", [1, 1, 1])),
-        "gate_native": ("f32", gd.pack_payload("f32", [1.0, 0.0, 1.0])),
-        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "gate_native": ("f32", gd.pack_payload("f32", [0.0, 1.0, 1.0])),
+        "gate_decoded_u8": ("u8", gd.pack_payload("u8", [0, 1, 1])),
         "gate_exact_01": ("u8", gd.pack_payload("u8", [1, 1, 1])),
-        "active_mask": ("u8", gd.pack_payload("u8", [1, 0, 1])),
+        "active_mask": ("u8", gd.pack_payload("u8", [0, 1, 1])),
         "dend_raw": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
         "dend_safe": ("f32", gd.pack_payload("f32", [1.0, 2.0, 3.0])),
         "dend_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 0])),
-        "delz_raw": ("f32", gd.pack_payload("f32", [5.0, 5.0, 5.0])),
-        "delz_safe": ("f32", gd.pack_payload("f32", [5.0, 5.0, 9.0])),
-        "delz_floor_active": ("u8", gd.pack_payload("u8", [0, 0, 1])),
+        # delz[0] sits BELOW the floor, so safe[0] must be exactly f32(qcrmin)
+        "delz_raw": ("f32", gd.pack_payload("f32", [5e-10, 5.0, 5.0])),
+        "delz_safe": ("f32", gd.pack_payload("f32", [_QCRMIN, 5.0, 5.0])),
+        "delz_floor_active": ("u8", gd.pack_payload("u8", [1, 0, 0])),
     }
     f.update(edits)
     return f
 
 
 def test_cross_check_accepts_an_honest_producer():
-    gdv.check_producer_flags(_substep_pre_fields())
+    gdv.check_producer_flags(_substep_pre_fields(), _N_SUB, _QCRMIN)
 
 
 def test_cross_check_catches_a_lying_producer_flag():
@@ -1372,13 +1399,15 @@ def test_cross_check_catches_a_lying_producer_flag():
         gdv.check_producer_flags(_substep_pre_fields(
             mstep_native=("f64", gd.pack_payload_bits(
                 "f64", [0x3FF0000000000000, 0x4000000000000001,
-                        0x4008000000000000]))))
+                        0x4008000000000000]))), _N_SUB, _QCRMIN)
     with pytest.raises(gd.G33Corruption, match="delz_floor_active"):
         gdv.check_producer_flags(_substep_pre_fields(
-            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))))
+            delz_floor_active=("u8", gd.pack_payload("u8", [0, 0, 0]))),
+            _N_SUB, _QCRMIN)
     with pytest.raises(gd.G33Corruption, match="active_mask"):
         gdv.check_producer_flags(_substep_pre_fields(
-            active_mask=("u8", gd.pack_payload("u8", [1, 1, 1]))))
+            active_mask=("u8", gd.pack_payload("u8", [0, 1, 0]))),
+            _N_SUB, _QCRMIN)
 
 
 def test_cross_check_refuses_missing_operands():
@@ -1386,7 +1415,7 @@ def test_cross_check_refuses_missing_operands():
     f = _substep_pre_fields()
     del f["gate_native"]
     with pytest.raises(gd.G33Corruption, match="missing operand"):
-        gdv.check_producer_flags(f)
+        gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
 
 
 def test_surface_expectation_is_per_species():
@@ -1439,3 +1468,139 @@ def test_build_env_refuses_a_malformed_column_map_before_anything_runs(tmp_path)
             g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
                                   column_map=bad, run_uuid="u",
                                   column_layout_id="l", repo=repo)
+
+
+# ── P0: identity fields are the path-traversal boundary ──────────────────────
+def test_all_identity_fields_are_safe_id_validated(tmp_path):
+    # case_id flows into the container file name verbatim (overlay side), and
+    # _SAFE_ID's character class alone happily matches "." and ".." — the old
+    # comment claimed otherwise. Every identity field is now checked, with
+    # dot-only segments rejected explicitly.
+    for field in ("case_id", "pair_id", "run_uuid", "column_layout_id",
+                  "container_id"):
+        for bad in ("../evil", "a/b", "a\\b", "..", ".", "...", "", "a b",
+                    "x\x00y", "x\ny"):
+            with pytest.raises(gd.G33Corruption):
+                gd.G33Writer(tmp_path / f"{field}_{abs(hash(bad))}.g33",
+                             _header(**{field: bad}))
+    gd.G33Writer(tmp_path / "ok.g33", _header(case_id="closure3-C3.3"))
+
+
+def test_cpp_overlay_refuses_unsafe_ids_before_building_the_path():
+    # the Python validator sees the header only after the path was opened; the
+    # producer must refuse first — pin that the gate sits before path assembly
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    assert "safe_id(v)" in src
+    assert src.index("g33: unsafe id") < src.index('std::string path = std::string(dir)')
+
+
+def test_gate_that_is_exactly_01_but_wrong_is_caught_by_the_mstep_law():
+    # The old check only asked whether the gate was exactly 0/1 — a gate that is
+    # WRONG but exactly 0/1 passed. gate_b(n) = [n <= mstep_b] ties it to the
+    # operand it is derived from: with mstep [1,2,3] and n=2 the gate MUST be
+    # [0,1,1]; an all-ones gate is internally consistent and still illegal.
+    wrong = _substep_pre_fields(
+        gate_native=("f32", gd.pack_payload("f32", [1.0, 1.0, 1.0])),
+        gate_decoded_u8=("u8", gd.pack_payload("u8", [1, 1, 1])),
+        gate_exact_01=("u8", gd.pack_payload("u8", [1, 1, 1])),
+        active_mask=("u8", gd.pack_payload("u8", [1, 1, 1])))
+    with pytest.raises(gd.G33Corruption, match="gate_vs_mstep_law"):
+        gdv.check_producer_flags(wrong, _N_SUB, _QCRMIN)
+
+
+def test_mstep_outside_the_physical_range_is_an_invalid_run():
+    for bad_mstep, bad_decoded in ([0.0, 2.0, 3.0], [0, 2, 3]), ([1.0, 2.0, 101.0], [1, 2, 101]):
+        f = _substep_pre_fields(
+            mstep_native=("f64", gd.pack_payload("f64", bad_mstep)),
+            mstep_decoded_i32=("i32", gd.pack_payload("i32", bad_decoded)))
+        with pytest.raises(gd.G33Corruption, match="physical range"):
+            gdv.check_producer_flags(f, _N_SUB, _QCRMIN)
+
+
+def test_floor_authority_is_the_threshold_relation_not_the_output_diff():
+    # relation of raw vs the dtype-faithful threshold; BELOW must produce
+    # exactly the threshold's bits, AT_OR_ABOVE exactly the raw bits
+    raw = gd.pack_payload("f32", [5e-10, _QCRMIN, 5.0])
+    assert gdv.classify_floor("f32", raw, _QCRMIN) == [
+        gdv.FLOOR_BELOW, gdv.FLOOR_AT_OR_ABOVE, gdv.FLOOR_AT_OR_ABOVE]
+    nan = gd.pack_payload_bits("f32", [0x7FC00000])
+    assert gdv.classify_floor("f32", nan, _QCRMIN) == [gdv.FLOOR_UNORDERED]
+    # a clamp that emits anything other than max(raw, qcrmin) is not the
+    # declared semantics — even if `safe != raw` happens to look plausible
+    good_safe = gd.pack_payload("f32", [_QCRMIN, _QCRMIN, 5.0])
+    gdv.check_floor_semantics("f32", raw, good_safe, _QCRMIN)
+    bad_safe = gd.pack_payload("f32", [2e-9, _QCRMIN, 5.0])   # floored to the WRONG value
+    with pytest.raises(gd.G33Corruption, match="not the declared semantics"):
+        gdv.check_floor_semantics("f32", raw, bad_safe, _QCRMIN)
+    # -0.0 raw is BELOW a positive floor and must come back as the threshold
+    neg0 = gd.pack_payload_bits("f32", [0x80000000])
+    gdv.check_floor_semantics("f32", neg0, gd.pack_payload("f32", [_QCRMIN]), _QCRMIN)
+
+
+# ── P0-6: the run contract is a persisted artifact ───────────────────────────
+def test_run_contract_is_sealed_as_a_file(tmp_path):
+    import hashlib as _h, json as _j
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    env = g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                                column_map=[[i, 0, i, i] for i in range(SCHED["B"])],
+                                run_uuid="u-1", column_layout_id="lc05-3col",
+                                repo=repo)
+    body = (tmp_path / "o" / "run_contract.json").read_bytes()
+    c = _j.loads(body)
+    # the contract and the environment must describe the SAME sealing
+    assert c["binary_sha256"] == env["KDM6_G33_BINARY_SHA256"]
+    assert c["qcrmin"] == SCHED["qcrmin"]
+    index = ge.run_index(sched)
+    assert [x["container_id"] for x in c["containers"]] == \
+           [x["container_id"] for x in index["containers"]]
+    for cc, ic in zip(c["containers"], index["containers"]):
+        assert (cc["first_op_seq_id"], cc["last_op_seq_id"]) == \
+               (ic["first_op_seq_id"], ic["last_op_seq_id"])
+    sealed = dict(e.split(":") for e in env["KDM6_G33_SCHEMA_SHA256"].split(","))
+    assert {x["container_id"]: x["descriptor_sha256"] for x in c["containers"]} == sealed
+    # the side-car digest matches the bytes on disk
+    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text().split()[0]
+    assert sha_line == _h.sha256(body).hexdigest()
+
+
+def test_run_contract_refuses_overwrite_and_missing_qcrmin(tmp_path):
+    import g33_run_env
+    repo = _clean_repo(tmp_path)
+    binary = tmp_path / "lib.dylib"
+    binary.write_bytes(b"x")
+    cmap = [[i, 0, i, i] for i in range(SCHED["B"])]
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    g33_run_env.build_env(sched, tmp_path / "o", binary=binary, column_map=cmap,
+                          run_uuid="u-1", column_layout_id="l", repo=repo)
+    with pytest.raises(FileExistsError, match="one contract per run"):
+        g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
+                              column_map=cmap, run_uuid="u-2",
+                              column_layout_id="l", repo=repo)
+    nosched = {k: v for k, v in sched.items() if k != "qcrmin"}
+    with pytest.raises(ValueError, match="qcrmin"):
+        g33_run_env.build_env(nosched, tmp_path / "o2", binary=binary,
+                              column_map=cmap, run_uuid="u-3",
+                              column_layout_id="l", repo=repo)
+
+
+def test_floor_dtype_errors_are_g33corruption_not_keyerror():
+    # _coerce_threshold's dict lookup leaked a bare KeyError for a non-float
+    # dtype — a fail-closed reader must never surface raw internal errors.
+    # Validated at the single chokepoint so BOTH callers are covered.
+    for fn, args in ((gdv.check_floor_semantics,
+                      ("i32", gd.pack_payload("i32", [1]),
+                       gd.pack_payload("i32", [1]), _QCRMIN)),
+                     (gdv.classify_floor, ("u8", b"\x01", _QCRMIN))):
+        with pytest.raises(gd.G33Corruption, match="floor operand cannot be"):
+            fn(*args)
+
+
+def test_substep_index_rejects_bool_and_nonint():
+    # bool is an int subclass; `type(n) is int` excludes it without a special case
+    for bad in (True, False, 0, -1, 1.5, "2", None):
+        with pytest.raises(gd.G33Corruption, match="positive int"):
+            gdv.check_producer_flags(_substep_pre_fields(), bad, _QCRMIN)

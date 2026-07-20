@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """G3.3-M op-provenance dump container — Python reference writer/reader.
 
-Format `KDG33OP` v1 (see docs/C4_G3_3_OP_PROVENANCE_PROTOCOL.md §7). A single,
-self-verifying binary container per (case, backend). Layout — all ints little-
+Format `KDG33OP` v2 (see docs/C4_G3_3_OP_PROVENANCE_PROTOCOL.md §7): one
+self-verifying binary container PER SUBSTEP — (case, pair, backend, outer_loop,
+chain, n) — tied together by a harness-sealed run index that fixes the exact
+container set and each container's global op_seq window before the run. The
+header carries container_id, the declared window, the sealed descriptor digest,
+and the dladdr-resolved binary identity. Layout — all ints little-
 endian u32, all JSON utf-8, all PAYLOADS raw NATIVE-width bits (real32→uint32,
 real64→uint64, int32→int32, logical→uint8), each element big-endian, flattened
 row-major in the DECLARED canonical-k order:
@@ -34,7 +38,23 @@ import re
 import struct
 from pathlib import Path
 
-_SAFE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")   # no path separators, no ".."
+_SAFE_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
+def _require_safe_id(name: str, value) -> None:
+    """Reject anything unsafe to embed in a file name.
+
+    The character class alone is NOT enough — it happily matches "." and "..",
+    and the old comment claimed otherwise. These values (case_id, pair_id,
+    run_uuid, column_layout_id, container_id) all flow into container file
+    names; the overlay builds paths from case_id verbatim, so this is the
+    path-traversal boundary, not a style check.
+    """
+    if not isinstance(value, str) or not _SAFE_ID.match(value):
+        raise G33Corruption(f"{name} {value!r} is not a safe id "
+                            f"(allowed: [A-Za-z0-9_.-]+)")
+    if set(value) == {"."}:
+        raise G33Corruption(f"{name} {value!r} is a dot-only path segment")
 
 MAGIC = b"KDG33OP\n"
 FORMAT_VERSION = 2
@@ -238,7 +258,6 @@ class G33Writer:
         self._payload_hash = hashlib.sha256()
         self._n = 0
         self._seen_seq: set[int] = set()
-        self._last_osi = None
         self._finalized = False
 
     def record(self, key: dict, dtype: str, shape, payload: bytes) -> None:
@@ -256,18 +275,20 @@ class G33Writer:
         osi = key.get("op_seq_id")
         if isinstance(osi, bool) or not isinstance(osi, int) or osi < 0:
             raise G33Corruption("record key missing integer op_seq_id (v2 requires it)")
-        if self._last_osi is not None and osi <= self._last_osi:
-            raise G33Corruption(f"op_seq_id {osi} is not strictly increasing")
-        # The declared window is enforced HERE as well as in the reader. Writer-side
-        # is what makes it a fail-fast: a run whose containers execute out of the
-        # declared order stops at the first offending record instead of completing
-        # and leaving the contradiction to be found (or not) at read time.
+        # EXACT window law: op_seq_id == global_op_seq_start + seq_no, enforced
+        # at the producer. "Strictly increasing AND inside the window" let a
+        # container declaring [100,105] record only 100,102,105 and still pass —
+        # gaps INSIDE the window were structurally invisible. One equation
+        # forbids gaps, reordering and drift at once, and gives writer, reader
+        # and sealed descriptor the same law instead of three approximations.
         lo, hi = self.header["global_op_seq_start"], self.header["global_op_seq_end"]
-        if not (lo <= osi <= hi):
+        if osi != lo + seq:
             raise G33Corruption(
-                f"op_seq_id {osi} outside the declared window [{lo}, {hi}] — the "
-                f"container executed outside its run_index-declared position")
-        self._last_osi = osi
+                f"op_seq_id {osi} != global_op_seq_start+seq_no = {lo + seq} "
+                f"(exact-window law, window [{lo}, {hi}])")
+        if osi > hi:
+            raise G33Corruption(
+                f"op_seq_id {osi} beyond the declared window end {hi}")
         n_elem = 1
         for s in shape:
             n_elem *= int(s)
@@ -288,6 +309,13 @@ class G33Writer:
     def finalize(self) -> None:
         if self._finalized:
             raise G33Corruption("double finalize()")
+        expected_n = (self.header["global_op_seq_end"]
+                      - self.header["global_op_seq_start"] + 1)
+        if self._n != expected_n:
+            raise G33Corruption(
+                f"container covers {self._n} of {expected_n} records in its "
+                f"declared window — a partial window must not receive a "
+                f"COMPLETE footer")
         footer = {"record_count_actual": self._n,
                   "payload_sha256": self._payload_hash.hexdigest(),
                   "complete": True}
@@ -382,8 +410,8 @@ def _validate_header(header: dict) -> None:
             "the container was produced by a binary the evidence does not describe")
     if not header["resolved_binary_path"]:
         raise G33Corruption("empty resolved_binary_path")
-    if not _SAFE_ID.match(header["container_id"]):
-        raise G33Corruption(f"container_id {header['container_id']!r} is not a safe id")
+    for _id in ("case_id", "pair_id", "run_uuid", "column_layout_id", "container_id"):
+        _require_safe_id(_id, header[_id])
     if not (1 <= header["B"] <= MAX_B) or not (1 <= header["K"] <= MAX_K):
         raise G33Corruption(f"out-of-range dims B={header['B']} K={header['K']}")
     if header["global_op_seq_start"] < 0 or header["global_op_seq_end"] < header["global_op_seq_start"]:
@@ -473,12 +501,15 @@ def read_container(path) -> dict:
         osi = key.get("op_seq_id")
         if isinstance(osi, bool) or not isinstance(osi, int) or osi < 0:
             raise G33Corruption(f"record {seq} missing integer op_seq_id (v2 requires it)")
-        if not (header["global_op_seq_start"] <= osi <= header["global_op_seq_end"]):
+        # same exact-window law as the writer: gaps inside the window are
+        # otherwise structurally invisible to increasing+range checks
+        if osi != header["global_op_seq_start"] + seq:
             raise G33Corruption(
-                f"record {seq} op_seq_id {osi} outside the header range "
-                f"[{header['global_op_seq_start']}, {header['global_op_seq_end']}]")
-        if records and osi <= records[-1]["op_seq_id"]:
-            raise G33Corruption(f"op_seq_id {osi} is not strictly increasing")
+                f"record {seq} op_seq_id {osi} != global_op_seq_start+seq_no = "
+                f"{header['global_op_seq_start'] + seq} (exact-window law)")
+        if osi > header["global_op_seq_end"]:
+            raise G33Corruption(
+                f"record {seq} op_seq_id {osi} beyond the declared window end")
         payload_hash.update(payload)
         records.append({**key, "payload": payload})
 
@@ -491,6 +522,11 @@ def read_container(path) -> dict:
             f"footer record_count_actual {footer.get('record_count_actual')} != {len(records)} parsed")
     if footer.get("payload_sha256") != payload_hash.hexdigest():
         raise G33Corruption("payload_sha256 mismatch (corrupt/tampered payloads)")
+    expected_n = header["global_op_seq_end"] - header["global_op_seq_start"] + 1
+    if len(records) != expected_n:
+        raise G33Corruption(
+            f"container holds {len(records)} records but declares a window of "
+            f"{expected_n} — the window is not fully covered")
     return {"header": header, "records": records, "footer": footer}
 
 

@@ -132,6 +132,16 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
         raise FileNotFoundError(f"binary not found: {binary}")
     if not run_uuid:
         raise ValueError("run_uuid is required — it ties containers to one run")
+    for _nm, _v in (("run_uuid", run_uuid), ("case_id", schedule["case_id"]),
+                    ("pair_id", schedule["pair_id"]),
+                    ("column_layout_id", column_layout_id)):
+        gd._require_safe_id(_nm, _v)
+    qcrmin = schedule.get("qcrmin")
+    if not isinstance(qcrmin, float) or not qcrmin > 0:
+        raise ValueError(
+            "schedule must declare qcrmin (positive float) — the floor authority "
+            "compares raw operands against THIS threshold (owner review §2.2), "
+            "and a threshold rediscovered per call site is not a contract")
     # Same validator the reader/writer share. Without this, a malformed map is
     # only caught when the overlay opens its first container — deep inside the
     # physics run, after the whole setup cost has been paid.
@@ -163,6 +173,46 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
     missing = [k for k, v in env.items() if not v]
     if missing:
         raise ValueError(f"refusing to emit an environment with empty {missing}")
+
+    # P0-6: the run contract is a PERSISTED artifact, not eleven environment
+    # variables that die with the shell. Without it, reconstructing what a run
+    # was sealed against (container set, windows, descriptor digests, threshold,
+    # binary identity) requires having saved the environment separately — which
+    # nobody does. Written before the env is handed out, no-clobber: one
+    # contract per run, and an outdir reused across runs must fail loudly
+    # rather than silently mixing two runs' evidence.
+    contract = {
+        "format": "KDG33-RUN-CONTRACT",
+        "version": 1,
+        "run_uuid": run_uuid,
+        "case_id": schedule["case_id"],
+        "pair_id": schedule["pair_id"],
+        "producer_commit": env["KDM6_G33_PRODUCER_COMMIT"],
+        "binary_path": str(binary),
+        "binary_sha256": env["KDM6_G33_BINARY_SHA256"],
+        "column_layout_id": column_layout_id,
+        "column_map": column_map,
+        "qcrmin": qcrmin,
+        "schedule": schedule,
+        "schedule_sha256": hashlib.sha256(
+            json.dumps(schedule, sort_keys=True).encode()).hexdigest(),
+        "containers": [
+            {**{k: c[k] for k in ("container_id", "outer_loop", "chain", "n",
+                                  "first_op_seq_id", "last_op_seq_id",
+                                  "record_count", "path")},
+             "descriptor_sha256": shas[c["container_id"]]}
+            for c in index["containers"]
+        ],
+    }
+    contract_path = outdir / "run_contract.json"
+    if contract_path.exists():
+        raise FileExistsError(
+            f"{contract_path} already exists — one contract per run; refusing "
+            f"to overwrite another run's seal")
+    body = json.dumps(contract, sort_keys=True, indent=1).encode()
+    contract_path.write_bytes(body)
+    (outdir / "run_contract.sha256").write_text(
+        hashlib.sha256(body).hexdigest() + "  run_contract.json\n")
     return env
 
 

@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
         "\"column_index_map\":[[0,0,0,0],[1,0,1,1],[2,0,2,2]],\"canonical_k_order\":\"top-first\","
         "\"run_uuid\":\"uuid-c\",\"process_id\":1,\"owner_thread_id\":\"1\","
         "\"descriptor_sha256\":\"" + std::string(64,'a') + "\",\"container_id\":\"L1_main_n1\",\"global_op_seq_start\":0,"
-        "\"global_op_seq_end\":99,\"record_count_expected\":3}";
+        "\"global_op_seq_end\":2,\"record_count_expected\":3}";
     Writer w(out, header);
 
     std::vector<uint8_t> p0; be_f32(p0, 1.0f); be_f32(p0, 2.5f); be_f32(p0, -3.25f);

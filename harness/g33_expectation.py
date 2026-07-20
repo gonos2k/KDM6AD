@@ -180,6 +180,12 @@ _STAGE_FIELDS_BASE = {
     # §4 surface diagnostic — emitted once per outer loop after the main+ice
     # chains (surface_accumulation_torch). Without it the qr-seed -> precip
     # divergence can only be asserted by cell-set inclusion, not shown as an op path.
+    # UNITS (protocol "Units contract"; host-source cited there): bottom_fall_*
+    # are fall-rate densities [kg m-3 s-1]; surface_mul1 is m s-1 liquid-
+    # equivalent; increments are mm per step. nr is a number MIXING ratio
+    # [# kg-1] (Registry.EM_COMMON:122), so the physical column-number measure
+    # is rho*dz*nr — the dz-only number rung is Fortran-faithful, which is a
+    # different claim from column-number conservation.
     # Surface contributions are PER SPECIES (owner review, surface causal path):
     # rain_increment is the TOTAL fallout of qr+qs+qg+qi, so an aggregate
     # bottom_fall cannot show that a qr seed produced the final precipitation
