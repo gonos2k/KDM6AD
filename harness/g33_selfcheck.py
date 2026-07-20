@@ -43,6 +43,12 @@ import g33_run_env as gre
 
 B, K, MSTEPMAX, QCRMIN, DTCLD = 3, 4, 2, 1.0e-9, 20.0   # DTCLD matches selfcheck_driver.cpp
 
+# §7 interface roundoff-residual ceiling in ULP units (see resid/κ below). A
+# gross-error tripwire, calibrated above the observed maximum with margin — NOT
+# a bit-exact claim. The ρΔz transfer is algebraically conservative but closes
+# only to within this measured float32 envelope.
+KAPPA_ENVELOPE = 4.0
+
 # Failure CLASSES by exit code — the discrimination a wrapped child cannot
 # forge. Driver stdout/stderr is interpolated into failure messages, so child-
 # controlled text can become the terminal line; the parent's exit code cannot.
@@ -166,6 +172,14 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
            "floor_active": 0}
     stats_links = {"n": 0}
+    # §7 interface roundoff residual: the ρΔz transfer is algebraically
+    # conservative but NOT bit-exact in f32 (dq_in = fl32(dq_out*m_src/m_dst)),
+    # so mass LEAVING k-1 (= mul_src) and mass ARRIVING at k (= inflow*m_dst)
+    # differ by a rounding residual r. κ = |r| / (eps32*(|G|+|L|+tiny)) reports
+    # it in ULP units; χ = max(m_src/m_dst, m_dst/m_src) flags where the metric
+    # ratio (and thus roundoff amplification) is large. Measured, not asserted
+    # bit-exact — the honest closure claim.
+    resid = {"kappa_max": 0.0, "chi_max": 0.0, "n": 0}
     # cross-substep carry, keyed by (outer_loop, chain): substep_post(n) must
     # equal substep_pre(n+1), and the fall accumulator must be continuous
     # (fall_after(n,k) == fall_before(n+1,k)), WITHIN a chain. Empty until the
@@ -438,6 +452,24 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                              f"k={k} qr QR_INFLOW.{field}")
                     stats["inflow_rungs"] += 1
 
+                # §7 interface roundoff residual (MEASURED, not bit-exact). L is
+                # the extensive mass leaving k-1 (mul_src = dq_out(k-1)*m_src); G
+                # is the mass arriving at k (inflow*m_dst, computed in f32 as the
+                # producer would). r = f64(G) - f64(L) is exact (both are f32).
+                # κ normalizes it by the f32 rounding unit of the magnitudes.
+                Lf = mul.astype(np.float64)
+                Gf = (inflow * m_dst).astype(np.float64)     # f32 op, then widen
+                r = Gf - Lf
+                eps32 = np.float64(np.finfo(np.float32).eps)
+                tiny = np.float64(np.finfo(np.float32).tiny)
+                kappa = np.abs(r) / (eps32 * (np.abs(Gf) + np.abs(Lf) + tiny))
+                m_src64 = m_src.astype(np.float64)
+                m_dst64 = m_dst.astype(np.float64)
+                chi = np.maximum(m_src64 / m_dst64, m_dst64 / m_src64)
+                resid["kappa_max"] = max(resid["kappa_max"], float(kappa.max()))
+                resid["chi_max"] = max(resid["chi_max"], float(chi.max()))
+                resid["n"] += int(kappa.size)
+
                 # ── CROSS-RECORD CAUSAL LINKS (raw-bit) ──────────────────────
                 # A single record's arithmetic can be internally consistent yet
                 # wire the WRONG neighbour cell or the wrong snapshot column.
@@ -564,10 +596,26 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                  f"strictly-bound (RIGHT_SELECTED) and strictly-unbound "
                  f"(LEFT_SELECTED) (saw {sorted(seen)}) — a VALUE_TIE does not "
                  f"count; the fixture no longer tests the cap branch")
+    # §7 interface residual envelope: the ρΔz transfer closes to within a few
+    # ULP of the metric-weighted magnitude. A single fl32(divide)·multiply
+    # round-trip gives κ≈0.5; metric amplification (χ) lifts it modestly. The
+    # bound is a GROSS-ERROR tripwire (a dropped/wrong metric blows past it),
+    # NOT a bit-exact claim — measured max is reported so drift is visible.
+    if algorithm == "conservative":
+        if resid["n"] == 0:
+            _die(EXIT_EVIDENCE, "FAIL: no interface residual sampled — the "
+                                "conservative transfer produced no interfaces")
+        if resid["kappa_max"] > KAPPA_ENVELOPE:
+            _die(EXIT_FIDELITY,
+                 f"FAIL interface residual: κ_max {resid['kappa_max']:.3g} > "
+                 f"{KAPPA_ENVELOPE} ULP — the ρΔz closure exceeds the roundoff "
+                 f"envelope (a dropped/wrong metric, not rounding)")
     stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
                          f"floors {cov['floor_active']}, "
                          f"QR/NR cap both strictly bound+unbound, "
-                         f"{stats_links['n']} causal links")
+                         f"{stats_links['n']} causal links, "
+                         f"interface κ_max {resid['kappa_max']:.3g} ULP "
+                         f"(≤{KAPPA_ENVELOPE}), χ_max {resid['chi_max']:.3g}")
     return stats
 
 
