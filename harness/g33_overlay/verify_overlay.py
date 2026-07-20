@@ -49,7 +49,10 @@ PAIRS = [("libtorch/src/sedimentation.cpp", "sedimentation.cpp.overlay",
          ("libtorch/src/runtime.cpp", "runtime.cpp.overlay",
           "BASE_SHA256_runtime.cpp"),
          ("libtorch/src/coordinator.cpp", "coordinator.cpp.overlay",
-          "BASE_SHA256_coordinator.cpp")]
+          "BASE_SHA256_coordinator.cpp"),
+         ("libtorch/src/sedimentation_conservative.cpp",
+          "sedimentation_conservative.cpp.overlay",
+          "BASE_SHA256_sedimentation_conservative.cpp")]
 
 
 class OverlayShape(Exception):
@@ -337,12 +340,17 @@ def overriding_assignments(canon: str, on_lines: list[str]) -> list[tuple]:
                 if who:
                     flag(lineno, who, line, "swap/move of production value")
             # mutable alias: auto& r = X;  auto* p = &X;
+            # NOT logical/equality operators: the naive patterns read the
+            # boolean guard `g33.on() && s == &qr` as `& s = ...`, flagging a
+            # legitimate added condition as an alias of whatever production
+            # identifier appeared later in the joined statement. `&` must not
+            # be half of `&&`, and `=` must not be half of `==`/`!=`/`<=`/`>=`.
             if "&" in chunk:
-                for m in re.finditer(r"&\s*[A-Za-z_]\w*\s*=([^;]*)", chunk):
+                for m in re.finditer(r"(?<!&)&(?!&)\s*[A-Za-z_]\w*\s*=(?!=)([^;]*)", chunk):
                     who = hit(m.group(1))
                     if who:
                         flag(lineno, who, line, "mutable reference to production value")
-                for m in re.finditer(r"=\s*&\s*([^;]*)", chunk):
+                for m in re.finditer(r"(?<![=!<>])=(?!=)\s*&(?!&)\s*([^;]*)", chunk):
                     who = hit(m.group(1))
                     if who:
                         flag(lineno, who, line, "address of production value")

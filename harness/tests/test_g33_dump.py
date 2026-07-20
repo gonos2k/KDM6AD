@@ -1245,6 +1245,7 @@ def test_stale_guard_covers_the_diagnostic_build_inputs():
     assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
     assert "harness/g33_overlay/g33_op_dump.h" in covered
     assert "harness/g33_overlay/g33_op_trace.h" in covered
+    assert "harness/g33_overlay/sedimentation_conservative.cpp.overlay" in covered
     assert "harness/g33_overlay/runtime.cpp.overlay" in covered
     assert "harness/g33_overlay/coordinator.cpp.overlay" in covered
     # and it must NOT watch files that cannot reach the artifact: a guard firing
@@ -1690,3 +1691,35 @@ def test_legacy_op_ladder_order_matches_the_manifest():
 
     # BOTTOM must actually be reachable: the role is computed, not hardcoded
     assert '(k == K - 1) ? "BOTTOM" : "INTERIOR"' in src
+
+
+def test_conservative_op_ladder_order_matches_the_manifest():
+    # Same machine-generated pin as the legacy ladder, for the conservative TU.
+    # The source has ONE qr block and ONE nr block, each with a k==0 arm and an
+    # else arm, so the flat source order cannot be compared directly; instead
+    # both per-role manifest sequences must be in-order SUBSEQUENCES of the
+    # source order, and the tuple SETS must match exactly (nothing missing,
+    # nothing invented).
+    sched = {**SCHED, "algorithm": "conservative",
+             "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    recs = [r for r in ge.expected_records(sched) if r["stage"] == "op"]
+    src = (ROOT / "g33_overlay" / "sedimentation_conservative.cpp.overlay").read_text()
+    em = re.findall(
+        r'G33_REC\(g33, "op", g33_role, g33_k, "(\w+)", "(\w+)", "(\w+)"', src)
+    assert em, "no op emission in the conservative overlay"
+
+    def role_seq(role):
+        ks = sorted({r["k"] for r in recs if r["cell_role"] == role})
+        return [(r["species"], r["op_id"], r["field"])
+                for r in recs if r["cell_role"] == role and r["k"] == ks[0]]
+
+    def is_subseq(needle, hay):
+        it = iter(hay)
+        return all(x in it for x in needle)
+
+    top, mid = role_seq("TOP"), role_seq("INTERIOR")
+    assert role_seq("BOTTOM") == mid          # same op set per interior cell
+    assert is_subseq(top, em), "TOP sequence not derivable from the source order"
+    assert is_subseq(mid, em), "INTERIOR sequence not derivable from the source order"
+    assert set(em) == set(top) | set(mid)
+    assert '(k == 0) ? "TOP"' in src and '"BOTTOM" : "INTERIOR"' in src

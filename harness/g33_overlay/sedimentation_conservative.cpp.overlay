@@ -1,0 +1,402 @@
+#include "kdm6/sedimentation_conservative.h"
+#ifdef KDM6_G33_OP_DUMP
+// ── G3.3-M op-provenance instrumentation (OVERLAY ONLY, diagnostic) ─────────
+// Compiled out entirely when KDM6_G33_OP_DUMP is undefined (protocol §5, §10).
+// Machinery is shared (g33_op_trace.h); the Substep wrapper below is
+// TOKEN-IDENTICAL to the legacy TU's — the same class in the same namespace in
+// two TUs must have one definition (ODR) — and the dladdr anchor is per-TU on
+// purpose (P0-5).
+#include "g33_op_trace.h"
+
+namespace kdm6 { namespace sed { namespace g33ovl {
+
+static void g33_self_anchor() {}
+
+// Resolved and hashed once, at first dump use — as close to load time as we can
+// get without an initializer. Re-hashing a multi-megabyte dylib in every substep
+// would put the cost where the physics is, for the same answer.
+static const ::kdm6::g33::ResolvedBinary& g33_loaded_binary() {
+    static const ::kdm6::g33::ResolvedBinary rb =
+        ::kdm6::g33::resolve_containing_binary(
+            reinterpret_cast<const void*>(&g33_self_anchor));
+    return rb;
+}
+
+// Thin per-TU wrapper: names this TU's containers (substep granularity) and
+// binds them to this TU's resolved binary. All checking lives in ContainerTrace.
+class Substep {
+public:
+    Substep(const char* chain, int n, const torch::Tensor& probe)
+        : t_(chain, n, /*outer_tail=*/nullptr,
+             int(probe.size(0)), int(probe.size(-1)), g33_loaded_binary()) {}
+    bool on() const { return t_.on(); }
+    void rec(const char* stage, const char* cell_role, int k, const char* species,
+             const char* op_id, const char* field, const torch::Tensor& t) {
+        t_.rec(stage, cell_role, k, species, op_id, field, t);
+    }
+    void finalize() { t_.finalize(); }
+private:
+    ::kdm6::g33::trace::ContainerTrace t_;
+};
+
+}}}  // namespace kdm6::sed::g33ovl
+#define G33_REC(g, stage, role, k, sp, op, field, t) do { (g).rec(stage, role, k, sp, op, field, t); } while (0)
+#endif  // KDM6_G33_OP_DUMP
+
+//
+// Conservative-interface sedimentation substeps — 1:1 port of
+// oracle/kdm6/sed_conservative.py (the AUTHORITATIVE numerical semantics).
+// Dtype discipline follows the LEGACY C++ substep (sedimentation.cpp): falk is
+// stored through ONE f32 rounding of the (possibly f64-vt) chain via
+// .to(state dtype); everything downstream stays in the state dtype, exactly as
+// the legacy file's corresponding operations. The ledger/_SubstepCapture hooks
+// of the oracle are analysis-only instrumentation and are not ported.
+//
+
+namespace kdm6 {
+namespace sed {
+
+namespace {
+
+std::vector<torch::Tensor> split_columns(const torch::Tensor& x, int64_t K) {
+    std::vector<torch::Tensor> cols;
+    cols.reserve(K);
+    for (int64_t k = 0; k < K; ++k) {
+        cols.push_back(x.select(/*dim=*/-1, k));
+    }
+    return cols;
+}
+
+}  // namespace
+
+SubstepAdvectionOutputs substep_advection_conservative(
+    const SubstepAdvectionInputs& in,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
+    const SubstepAdvectionParams& p
+) {
+    const int64_t K = in.state.qr.size(-1);
+    auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
+    auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
+    // Per-column divisor + gate — identical to the legacy substep (Fortran
+    // .../mstep(i) and if(n.le.mstep(i))): divide the numerator by
+    // mstep_col_safe (single rounding), gate is exact 0/1.
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qr.dtype()); // (B,)
+#ifdef KDM6_G33_OP_DUMP
+    g33ovl::Substep g33("main", n, in.state.qr);
+    if (g33.on()) {
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "qr", in.state.qr);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "nr", in.state.nr);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "work1_qr", in.work1_qr);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "workn_qr", in.workn_qr);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_raw", in.dend);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_safe", dend_safe);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "dend_floor_active",
+                (dend_safe != in.dend).to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_raw", in.delz);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_safe", delz_safe);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "delz_floor_active",
+                (delz_safe != in.delz).to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_native", mstep_col_safe);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_decoded_i32",
+                mstep_col_safe.to(torch::kInt32));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "mstep_exact_integer",
+                (mstep_col_safe == mstep_col_safe.round()).to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_native", gate_col);
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_decoded_u8",
+                gate_col.to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "gate_exact_01",
+                ((gate_col == 0).logical_or(gate_col == 1)).to(torch::kUInt8));
+        G33_REC(g33, "substep_pre", "-", -1, "-", "-", "active_mask",
+                (gate_col != 0).to(torch::kUInt8));
+    }
+#endif
+
+    auto dend_col      = [&](int64_t k) { return in.dend.select(-1, k); };
+    auto dend_safe_col = [&](int64_t k) { return dend_safe.select(-1, k); };
+    auto delz_col      = [&](int64_t k) { return in.delz.select(-1, k); };
+    auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
+
+    // Per-species chain state: q columns, fall columns, and the cell-above's
+    // ACTUAL capped outflow (mixing ratio) — the conserved transfer.
+    struct SpeciesChain {
+        std::vector<torch::Tensor> cols;
+        std::vector<torch::Tensor> fall;
+        const torch::Tensor* work1;   // E1-normalized fall speed (vt/delz)
+        torch::Tensor prev_out;       // dq_out of cell k-1
+    };
+    SpeciesChain qr{split_columns(in.state.qr, K),  split_columns(in.fall_qr_in, K),  &in.work1_qr, {}};
+    SpeciesChain qs{split_columns(in.state.qs, K),  split_columns(in.fall_qs_in, K),  &in.work1_qs, {}};
+    SpeciesChain qg{split_columns(in.state.qg, K),  split_columns(in.fall_qg_in, K),  &in.work1_qg, {}};
+    SpeciesChain brs{split_columns(in.state.brs, K), split_columns(in.fall_brs_in, K), &in.work1_qg, {}};  // brs rides the graupel fall speed (as legacy)
+
+    auto nr_cols = split_columns(in.state.nr, K);
+    auto fall_nr_cols = split_columns(in.fall_nr_in, K);
+    torch::Tensor prev_out_nr;
+
+    for (int64_t k = 0; k < K; ++k) {
+        // ── mass species (qr/qs/qg/brs): ρΔz-conserving interface transfer ──
+        for (SpeciesChain* s : {&qr, &qs, &qg, &brs}) {
+#ifdef KDM6_G33_OP_DUMP
+            // ENTRY captures for the in-scope species (qr): cols/fall before
+            // this cell's update. The other mass species are outside the qr/nr
+            // scope and emit nothing.
+            torch::Tensor g33_qe, g33_fb;
+            if (g33.on() && s == &qr) {
+                g33_qe = s->cols[k].clone();
+                g33_fb = s->fall[k].clone();
+            }
+#endif
+            // falk as in legacy: ONE f32 rounding of the (f64-vt) chain (§34).
+            auto falk = (dend_col(k) * s->cols[k] * s->work1->select(-1, k)
+                         / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+            // ACTUAL outflow: raw flux entry-capped by this cell's reservoir.
+            auto dq_out = torch::minimum(falk * dtcld / dend_safe_col(k), s->cols[k]);
+            // actual-outflow RATE into the fall accumulator, so the chain-end
+            // surface accumulation reports the actual bottom outflow.
+            s->fall[k] = s->fall[k] + dq_out * dend_safe_col(k) / dtcld;
+            if (k == 0) {
+                s->cols[k] = s->cols[k] - dq_out;
+            } else {
+                // mass-conserving transfer of the source cell's actual outflow:
+                // ρΔz-converted so mass out of k-1 == mass into k exactly.
+                auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1))
+                             / (dend_safe_col(k) * delz_safe_col(k));
+                s->cols[k] = s->cols[k] - dq_out + dq_in;
+            }
+#ifdef KDM6_G33_OP_DUMP
+            if (g33.on() && s == &qr) {
+                // SPECIES-MAJOR per cell, manifest order. Emitted BEFORE the
+                // prev_out reassignment below: the INFLOW rungs must record the
+                // cell-above outflow this cell actually consumed. Shadow rungs
+                // reuse the exact grouping of the actual expressions
+                // (prev_out * (rho_src*dz_src) / (rho_dst*dz_dst)).
+                const char* g33_role = (k == 0) ? "TOP"
+                                      : ((k == K - 1) ? "BOTTOM" : "INTERIOR");
+                const int g33_k = int(k);
+                auto s1 = dend_col(k) * g33_qe;               // mul_dend_q
+                auto s2 = s1 * s->work1->select(-1, k);       // mul_work1
+                auto s3 = s2 / mstep_col_safe;                // div_mstep
+                auto s4 = s3 * gate_col;                      // falk_precast
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "mul_dend_q",  s1);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "mul_work1",   s2);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "div_mstep",   s3);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "falk_precast", s4);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "shadow_falk_f32",
+                        s4.to(in.state.qr.scalar_type()));
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALK", "falk_f32", falk);
+                auto o1 = falk * dtcld;                       // mul_dt
+                auto o2 = o1 / dend_safe_col(k);              // outflow_pre_cap
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "mul_dt", o1);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "outflow_pre_cap", o2);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "source_reservoir", g33_qe);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "cap_active",
+                        (o2 > g33_qe).to(torch::kUInt8));
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_OUTFLOW", "dq_out", dq_out);
+                // conservative FALLACC accumulates the ACTUAL capped outflow
+                // RATE (dq_out*rho_safe/dt), not the raw falk — the defining
+                // difference from the legacy accumulator.
+                auto f1 = dq_out * dend_safe_col(k);          // mul_dend_safe
+                auto f2 = f1 / dtcld;                         // fall_increment
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_before", g33_fb);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "dq_out", dq_out);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "mul_dend_safe", f1);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_increment", f2);
+                G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_FALLACC", "fall_after", s->fall[k]);
+                if (k == 0) {
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_before", g33_qe);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_minus_out", g33_qe - dq_out);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_post", s->cols[k]);
+                } else {
+                    auto m_src = dend_safe_col(k - 1) * delz_col(k - 1);   // src_metric
+                    auto m_dst = dend_safe_col(k) * delz_safe_col(k);      // dst_metric
+                    auto i1 = s->prev_out * m_src;                         // mul_src
+                    auto i2 = i1 / m_dst;                                  // inflow_final
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "prev_out", s->prev_out);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dend_safe_src", dend_safe_col(k - 1));
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "delz_raw_src", delz_col(k - 1));
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dend_safe_dst", dend_safe_col(k));
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "delz_safe_dst", delz_safe_col(k));
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "src_metric", m_src);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "dst_metric", m_dst);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "mul_src", i1);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_INFLOW", "inflow_final", i2);
+                    auto u1 = g33_qe - dq_out;                             // q_minus_out
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_before", g33_qe);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_minus_out", u1);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_plus_in_preclamp", u1 + i2);
+                    G33_REC(g33, "op", g33_role, g33_k, "qr", "QR_UPDATE", "q_post", s->cols[k]);
+                }
+            }
+#endif
+            s->prev_out = dq_out;
+        }
+
+        // ── numbers (nr): legacy's implied Δz-only measure, actual transfer ──
+        // (no ρΔz mass conversion on numbers — oracle keeps the legacy form)
+#ifdef KDM6_G33_OP_DUMP
+        torch::Tensor g33_ne, g33_fnb;
+        if (g33.on()) {
+            g33_ne = nr_cols[k].clone();
+            g33_fnb = fall_nr_cols[k].clone();
+        }
+#endif
+        auto falk_nr = (nr_cols[k] * in.workn_qr.select(-1, k)
+                        / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
+        auto dn_out = torch::minimum(falk_nr * dtcld, nr_cols[k]);
+        fall_nr_cols[k] = fall_nr_cols[k] + dn_out / dtcld;
+        if (k == 0) {
+            nr_cols[k] = nr_cols[k] - dn_out;
+        } else {
+            auto dn_in = prev_out_nr * delz_col(k - 1) / delz_safe_col(k);
+            nr_cols[k] = nr_cols[k] - dn_out + dn_in;
+        }
+#ifdef KDM6_G33_OP_DUMP
+        if (g33.on()) {
+            const char* g33_role = (k == 0) ? "TOP"
+                                  : ((k == K - 1) ? "BOTTOM" : "INTERIOR");
+            const int g33_k = int(k);
+            // number family: no dend anywhere — the dz-only measure the oracle
+            // keeps (see the units contract: this is Fortran-faithful, which is
+            // a DIFFERENT claim from column-number conservation).
+            auto t1 = g33_ne * in.workn_qr.select(-1, k);     // mul_workn
+            auto t2 = t1 / mstep_col_safe;                    // div_mstep
+            auto t3 = t2 * gate_col;                          // falk_precast
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "mul_workn",   t1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "div_mstep",   t2);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "falk_precast", t3);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "shadow_falk_f32",
+                    t3.to(in.state.qr.scalar_type()));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALK", "falk_f32", falk_nr);
+            auto no1 = falk_nr * dtcld;                       // outflow_pre_cap
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "outflow_pre_cap", no1);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "source_reservoir", g33_ne);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "cap_active",
+                    (no1 > g33_ne).to(torch::kUInt8));
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_OUTFLOW", "dn_out", dn_out);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_before", g33_fnb);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "dn_out", dn_out);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_increment", dn_out / dtcld);
+            G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_FALLACC", "fall_after", fall_nr_cols[k]);
+            if (k == 0) {
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_before", g33_ne);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_minus_out", g33_ne - dn_out);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
+            } else {
+                auto ni1 = prev_out_nr * delz_col(k - 1);     // mul_delz_src
+                auto ni2 = ni1 / delz_safe_col(k);            // inflow_final
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "prev_out_nr", prev_out_nr);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "delz_raw_src", delz_col(k - 1));
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "delz_safe_dst", delz_safe_col(k));
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "mul_delz_src", ni1);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_INFLOW", "inflow_final", ni2);
+                auto nu1 = g33_ne - dn_out;                   // n_minus_out
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_before", g33_ne);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_minus_out", nu1);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_plus_in_preclamp", nu1 + ni2);
+                G33_REC(g33, "op", g33_role, g33_k, "nr", "NR_UPDATE", "n_post", nr_cols[k]);
+            }
+        }
+#endif
+        prev_out_nr = dn_out;
+    }
+
+#ifdef KDM6_G33_OP_DUMP
+    if (g33.on()) {
+        // Whole-K state LEAVING the substep. The canonical return builds its
+        // own stacks; these are diagnostic re-stacks of the same columns —
+        // identical values, and the production lines stay untouched (§5).
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qr", torch::stack(qr.cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "nr", torch::stack(nr_cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qs", torch::stack(qs.cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "qg", torch::stack(qg.cols, /*dim=*/-1));
+        G33_REC(g33, "substep_post", "-", -1, "-", "-", "brs", torch::stack(brs.cols, /*dim=*/-1));
+    }
+    // EXPLICIT finalize (§7e) — the COMPLETE footer is written here and nowhere
+    // else. An exception before this point leaves a footerless .tmp, which the
+    // fail-closed reader rejects: an aborted run can never look complete.
+    g33.finalize();
+#endif
+    return SubstepAdvectionOutputs{
+        SubstepAdvectionState{
+            torch::stack(qr.cols, /*dim=*/-1),
+            torch::stack(nr_cols, /*dim=*/-1),
+            torch::stack(qs.cols, /*dim=*/-1),
+            torch::stack(qg.cols, /*dim=*/-1),
+            torch::stack(brs.cols, /*dim=*/-1),
+        },
+        torch::stack(qr.fall, /*dim=*/-1),
+        torch::stack(fall_nr_cols, /*dim=*/-1),
+        torch::stack(qs.fall, /*dim=*/-1),
+        torch::stack(qg.fall, /*dim=*/-1),
+        torch::stack(brs.fall, /*dim=*/-1),
+    };
+}
+
+IceSubstepOutputs ice_substep_advection_conservative(
+    const IceSubstepInputs& in,
+    const torch::Tensor& mstep_col,
+    int /*mstepmax*/,
+    int n,
+    double dtcld,
+    const SubstepAdvectionParams& p
+) {
+    const int64_t K = in.state.qi.size(-1);
+    auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
+    auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
+    auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
+    auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qi.dtype()); // (B,)
+
+    auto dend_col      = [&](int64_t k) { return in.dend.select(-1, k); };
+    auto dend_safe_col = [&](int64_t k) { return dend_safe.select(-1, k); };
+    auto delz_col      = [&](int64_t k) { return in.delz.select(-1, k); };
+    auto delz_safe_col = [&](int64_t k) { return delz_safe.select(-1, k); };
+
+    auto qi_cols = split_columns(in.state.qi, K);
+    auto ni_cols = split_columns(in.state.ni, K);
+    auto fall_qi_cols = split_columns(in.fall_qi_in, K);
+    auto fall_ni_cols = split_columns(in.fall_ni_in, K);
+    torch::Tensor prev_out_qi, prev_out_ni;
+
+    for (int64_t k = 0; k < K; ++k) {
+        // falk/falkn: ONE f32 rounding of the f64-vt chain — as legacy ice.
+        auto falk_qi = (dend_col(k) * qi_cols[k] * in.work1_qi.select(-1, k)
+                        / mstep_col_safe * gate_col).to(in.state.qi.scalar_type());
+        auto falk_ni = (ni_cols[k] * in.workn_qi.select(-1, k)
+                        / mstep_col_safe * gate_col).to(in.state.qi.scalar_type());
+        // ACTUAL entry-capped outflows.
+        auto dqi_out = torch::minimum(falk_qi * dtcld / dend_safe_col(k), qi_cols[k]);
+        auto dni_out = torch::minimum(falk_ni * dtcld, ni_cols[k]);
+        // actual-outflow rates into the accumulators.
+        fall_qi_cols[k] = fall_qi_cols[k] + dqi_out * dend_safe_col(k) / dtcld;
+        fall_ni_cols[k] = fall_ni_cols[k] + dni_out / dtcld;
+        if (k == 0) {
+            qi_cols[k] = qi_cols[k] - dqi_out;
+            ni_cols[k] = ni_cols[k] - dni_out;
+        } else {
+            // mass: ρΔz-conserving transfer; number: legacy Δz-only measure.
+            auto dqi_in = prev_out_qi * (dend_safe_col(k - 1) * delz_col(k - 1))
+                          / (dend_safe_col(k) * delz_safe_col(k));
+            auto dni_in = prev_out_ni * delz_col(k - 1) / delz_safe_col(k);
+            qi_cols[k] = qi_cols[k] - dqi_out + dqi_in;
+            ni_cols[k] = ni_cols[k] - dni_out + dni_in;
+        }
+        prev_out_qi = dqi_out;
+        prev_out_ni = dni_out;
+    }
+
+    return IceSubstepOutputs{
+        IceSubstepState{
+            torch::stack(qi_cols, /*dim=*/-1),
+            torch::stack(ni_cols, /*dim=*/-1),
+        },
+        torch::stack(fall_qi_cols, /*dim=*/-1),
+        torch::stack(fall_ni_cols, /*dim=*/-1),
+    };
+}
+
+}  // namespace sed
+}  // namespace kdm6

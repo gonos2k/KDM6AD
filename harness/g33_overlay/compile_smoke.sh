@@ -42,7 +42,7 @@ compile() {   # $1 src  $2 out.o  $3 extra defines
 }
 
 rc=0
-for tu in sedimentation runtime coordinator; do
+for tu in sedimentation sedimentation_conservative runtime coordinator; do
     ovl="harness/g33_overlay/$tu.cpp.overlay"
     canon="libtorch/src/$tu.cpp"
 

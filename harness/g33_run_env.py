@@ -77,6 +77,7 @@ def _git_head(repo: Path) -> str:
 # cannot affect the artifact gets switched off by whoever hits it.
 _BUILD_INPUTS = (
     "harness/g33_overlay/sedimentation.cpp.overlay",
+    "harness/g33_overlay/sedimentation_conservative.cpp.overlay",
     "harness/g33_overlay/runtime.cpp.overlay",
     "harness/g33_overlay/coordinator.cpp.overlay",
     "harness/g33_overlay/g33_op_dump.h",

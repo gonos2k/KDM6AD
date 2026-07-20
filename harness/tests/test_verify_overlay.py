@@ -275,3 +275,21 @@ def test_unrelated_conditionals_are_canonical_text_not_frames_to_consume():
                    "#else", "int nodump = 3;", "#endif", "int b = 5;"]
     on = v._project(src, macro_on=True)
     assert "int g33_only = 4;" in on and "int nodump = 3;" in on
+
+
+def test_alias_rules_are_operator_aware():
+    # The naive alias regexes read `g33.on() && s == &qr` as `& s = ...`,
+    # flagging a legitimate boolean guard as a mutable alias of whatever
+    # production identifier appeared later in the joined statement — which
+    # blocked the conservative overlay's `if (g33.on() && s == &qr)` capture
+    # guard. `&` must not be half of `&&`, `=` not half of `==`.
+    canon = "auto qr_cols = split(x);\nauto falk = qr_cols[0] * 2;\n"
+
+    def probe(added):
+        return v.overriding_assignments(canon, canon.splitlines() + added)
+
+    assert not probe(
+        ['if (g33.on() && s == &qr_cols) { g33_x = qr_cols[0].clone(); }'])
+    assert not probe(['x = a && b == &qr_cols;'])
+    assert probe(['auto& r = qr_cols[0];'])       # true alias still caught
+    assert probe(['auto* p = &qr_cols;'])         # true address-of still caught
