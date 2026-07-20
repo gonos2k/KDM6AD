@@ -37,7 +37,7 @@ def _header(**over):
          "canonical_k_order": "top-first",
          "run_uuid": "uuid-1", "process_id": 111, "owner_thread_id": "222",
          "container_id": "L1_main_n1", "descriptor_sha256": "a" * 64,
-         "global_op_seq_start": 0, "global_op_seq_end": 1_000_000,
+         "global_op_seq_start": 0, "global_op_seq_end": 0,
          "record_count_expected": 0}
     h.update(over)
     return h
@@ -45,7 +45,8 @@ def _header(**over):
 
 def _write_valid(path, records=None):
     recs = records if records is not None else ge.expected_records(SCHED)
-    w = gd.G33Writer(path, _header(record_count_expected=len(recs)))
+    w = gd.G33Writer(path, _header(record_count_expected=len(recs),
+                                   global_op_seq_end=len(recs) - 1))
     for r in recs:
         n_elem = 1
         for s in r["shape"]:
@@ -153,17 +154,37 @@ def test_nonmonotone_seq(tmp_path):
                  gd.pack_payload("f32", [1]))
 
 
-def test_op_seq_id_must_advance(tmp_path):
-    # op_seq_id is MEASURED global execution order. A repeat or a step backwards
-    # means two records claim the same instant, which would make an out-of-order
-    # replay indistinguishable from the real order.
-    p = tmp_path / "c.g33"
-    w = gd.G33Writer(p, _header())
+def test_op_seq_id_obeys_the_exact_window_law(tmp_path):
+    # op_seq_id == global_op_seq_start + seq_no, exactly. "Strictly increasing
+    # and inside the window" let [100,105] hold only 100,102,105 — gaps INSIDE
+    # the window were structurally invisible. Repeats, gaps and offsets are all
+    # the same violation of one equation.
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
             "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
-    w.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
-    with pytest.raises(gd.G33Corruption, match="op_seq_id"):
-        w.record({**base, "seq_no": 1, "op_seq_id": 7}, "f32", [1], gd.pack_payload("f32", [1]))
+    w = gd.G33Writer(tmp_path / "a.g33", _header(global_op_seq_start=100,
+                                                 global_op_seq_end=105))
+    w.record({**base, "seq_no": 0, "op_seq_id": 100}, "f32", [1],
+             gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="exact-window law"):
+        w.record({**base, "seq_no": 1, "op_seq_id": 102}, "f32", [1],
+                 gd.pack_payload("f32", [1]))          # gap INSIDE the window
+    w2 = gd.G33Writer(tmp_path / "b.g33", _header())
+    with pytest.raises(gd.G33Corruption, match="exact-window law"):
+        w2.record({**base, "seq_no": 0, "op_seq_id": 7}, "f32", [1],
+                  gd.pack_payload("f32", [1]))         # offset from the start
+
+
+def test_partial_window_cannot_be_finalized(tmp_path):
+    # a container that covered only part of its declared window must never
+    # receive a COMPLETE footer
+    base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP",
+            "species": "qr", "op_id": "QR_FALK", "stage": "op", "field": "f"}
+    w = gd.G33Writer(tmp_path / "c.g33", _header(global_op_seq_start=0,
+                                                 global_op_seq_end=2))
+    w.record({**base, "seq_no": 0, "op_seq_id": 0}, "f32", [1],
+             gd.pack_payload("f32", [1]))
+    with pytest.raises(gd.G33Corruption, match="partial window"):
+        w.finalize()
 
 
 def test_op_seq_id_outside_declared_window(tmp_path):
@@ -563,7 +584,7 @@ def test_raw_bit_roundtrip_preserves_nan_payloads(tmp_path):
     f32_bits = [0x7F800001, 0xFFC00000, 0x7FC0DEAD, 0x80000000]
     f64_bits = [0x7FF0000000000001, 0xFFF8000000000000, 0x7FF8DEADBEEFCAFE]
     p = tmp_path / "nan.g33"
-    w = gd.G33Writer(p, _header(record_count_expected=2))
+    w = gd.G33Writer(p, _header(record_count_expected=2, global_op_seq_end=1))
     base = {"outer_loop": 1, "chain": "main", "n": 1, "cell_role": "TOP", "k": 0,
             "species": "qr", "op_id": "QR_FALK", "stage": "op"}
     w.record({**base, "seq_no": 0, "op_seq_id": 0, "field": "a"},
@@ -1439,3 +1460,27 @@ def test_build_env_refuses_a_malformed_column_map_before_anything_runs(tmp_path)
             g33_run_env.build_env(sched, tmp_path / "o", binary=binary,
                                   column_map=bad, run_uuid="u",
                                   column_layout_id="l", repo=repo)
+
+
+# ── P0: identity fields are the path-traversal boundary ──────────────────────
+def test_all_identity_fields_are_safe_id_validated(tmp_path):
+    # case_id flows into the container file name verbatim (overlay side), and
+    # _SAFE_ID's character class alone happily matches "." and ".." — the old
+    # comment claimed otherwise. Every identity field is now checked, with
+    # dot-only segments rejected explicitly.
+    for field in ("case_id", "pair_id", "run_uuid", "column_layout_id",
+                  "container_id"):
+        for bad in ("../evil", "a/b", "a\\b", "..", ".", "...", "", "a b",
+                    "x\x00y", "x\ny"):
+            with pytest.raises(gd.G33Corruption):
+                gd.G33Writer(tmp_path / f"{field}_{abs(hash(bad))}.g33",
+                             _header(**{field: bad}))
+    gd.G33Writer(tmp_path / "ok.g33", _header(case_id="closure3-C3.3"))
+
+
+def test_cpp_overlay_refuses_unsafe_ids_before_building_the_path():
+    # the Python validator sees the header only after the path was opened; the
+    # producer must refuse first — pin that the gate sits before path assembly
+    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    assert "safe_id(v)" in src
+    assert src.index("g33: unsafe id") < src.index('std::string path = std::string(dir)')

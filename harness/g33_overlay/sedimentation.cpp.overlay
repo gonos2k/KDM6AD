@@ -95,6 +95,13 @@ public:
         const char* dir = std::getenv("KDM6_G33_DUMP_DIR");
         const char* cas = std::getenv("KDM6_G33_CASE_ID");
         const char* pai = std::getenv("KDM6_G33_PAIR_ID");
+        // case_id/pair_id flow into the container FILE NAME verbatim. The
+        // producer must refuse unsafe ids itself — the Python validator only
+        // sees the header after the path has already been opened.
+        for (const char* v : {cas, pai})
+            if (!safe_id(v))
+                throw std::runtime_error(std::string("g33: unsafe id ") + v
+                    + " (allowed: [A-Za-z0-9_.-]+, not dot-only)");
         B_ = int(probe.size(0)); K_ = int(probe.size(-1));
         // §7c: the column map is DECLARED by the harness, never fabricated here.
         // Inventing it (e.g. fortran_j hardcoded to 0) would make the Fortran<->C++
@@ -318,6 +325,18 @@ private:
     // conversion: std::stoull accepts "-5" and wraps it to a huge unsigned
     // value instead of rejecting it, so a corrupted map entry would parse
     // "successfully" into a nonsense window rather than failing here.
+    static bool safe_id(const char* v) {
+        if (!v || !*v) return false;
+        bool nondot = false;
+        for (const char* p = v; *p; ++p) {
+            const char c = *p;
+            if (!(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') ||
+                  ('0' <= c && c <= '9') || c == '_' || c == '.' || c == '-'))
+                return false;
+            if (c != '.') nondot = true;
+        }
+        return nondot;                       // "." / ".." are path segments
+    }
     static bool all_digits(const std::string& t) {
         if (t.empty()) return false;
         for (char c : t) if (c < '0' || c > '9') return false;
