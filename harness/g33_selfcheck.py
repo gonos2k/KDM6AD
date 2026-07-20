@@ -96,7 +96,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     # bind the comparator to the SEALED contract, not the module constants: a
     # drifted schedule would then be caught by the qcrmin/dtcld bit checks
     # rather than silently agreeing with a hardcoded fixture value.
-    contract = json.loads((workdir / "run_contract.json").read_text())
+    contract = json.loads(
+        (workdir / "run_contract.json").read_text(encoding="utf-8"))
     seal_qcrmin, seal_dtcld = contract["qcrmin"], contract["dtcld"]
 
     # 1. container-set completeness: exactly the sealed set, nothing else

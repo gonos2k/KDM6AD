@@ -259,7 +259,8 @@ def build_env(schedule: dict, outdir, *, binary, column_map, run_uuid,
     body = json.dumps(contract, sort_keys=True, indent=1).encode()
     contract_path.write_bytes(body)
     (outdir / "run_contract.sha256").write_text(
-        hashlib.sha256(body).hexdigest() + "  run_contract.json\n")
+        hashlib.sha256(body).hexdigest() + "  run_contract.json\n",
+        encoding="utf-8")
     return env
 
 

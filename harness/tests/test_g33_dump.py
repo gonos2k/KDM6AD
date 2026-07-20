@@ -976,7 +976,7 @@ def test_descriptors_are_sealed_per_container(tmp_path):
     index = ge.run_index(sched)
     assert set(shas) == {c["container_id"] for c in index["containers"]}
     for c in index["containers"]:
-        lines = (tmp_path / f"{c['container_id']}.desc").read_text().splitlines()
+        lines = (tmp_path / f"{c['container_id']}.desc").read_text(encoding="utf-8").splitlines()
         assert len(lines) == c["record_count"]
         first = int(lines[0].split("|")[0])
         last = int(lines[-1].split("|")[0])
@@ -1632,7 +1632,7 @@ def test_run_contract_is_sealed_as_a_file(tmp_path):
     sealed = dict(e.split(":") for e in env["KDM6_G33_SCHEMA_SHA256"].split(","))
     assert {x["container_id"]: x["descriptor_sha256"] for x in c["containers"]} == sealed
     # the side-car digest matches the bytes on disk
-    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text().split()[0]
+    sha_line = (tmp_path / "o" / "run_contract.sha256").read_text(encoding="utf-8").split()[0]
     assert sha_line == _h.sha256(body).hexdigest()
 
 
@@ -1835,7 +1835,7 @@ def test_dtcld_is_a_required_sealed_scalar(tmp_path):
     import json as _j
     g33_run_env.build_env(base, tmp_path / "ok", binary=binary, column_map=cmap,
                           run_uuid="u", column_layout_id="l", repo=repo)
-    c = _j.loads((tmp_path / "ok" / "run_contract.json").read_text())
+    c = _j.loads((tmp_path / "ok" / "run_contract.json").read_text(encoding="utf-8"))
     assert c["dtcld"] == SCHED["dtcld"] and c["qcrmin"] == SCHED["qcrmin"]
     # comparator now REQUIRES dtcld (no default) — a wrong dtcld can no longer
     # be skipped by omission
