@@ -984,7 +984,7 @@ def test_cpp_builds_the_same_descriptor_line():
     # TRIPWIRE, not proof: the real check is that a run's rec() rejects a
     # mismatching tensor. This only pins the two field orders against each other
     # so a reorder on one side is caught before a host campaign, not during one.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     m = re.search(r'std::string got = ([^;]+);', src)
     assert m, "descriptor line construction not found in the overlay"
     order = re.findall(r"\b(op_seq_id|stage|cell_role|k|species|op_id|field|dtype)\b",
@@ -1019,20 +1019,19 @@ def test_container_records_which_descriptor_it_was_validated_against(tmp_path):
 def test_schema_dir_is_part_of_the_all_or_nothing_env_set():
     # KDM6_G33_SCHEMA_DIR was checked separately from the all-or-nothing block,
     # so a run configured with ONLY that variable counted as "nothing set" and
-    # went inert instead of reporting a partial configuration.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
-    block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
-    assert block, "required-env table not found"
-    required = set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
-    # every env the constructor reads must be in the table
-    read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
-    assert read <= required, f"read but not required: {sorted(read - required)}"
+    # went inert instead of reporting a partial configuration. Every env ANY
+    # instrumented file reads must be in the shared table.
+    required = _overlay_required_env()
+    for rel in (_TRACE, "g33_overlay/sedimentation.cpp.overlay"):
+        src = (ROOT / rel).read_text()
+        read = set(re.findall(r'std::getenv\("(KDM6_G33_\w+)"\)', src))
+        assert read <= required, f"{rel} reads unrequired: {sorted(read - required)}"
 
 
 def test_descriptor_load_precedes_header_construction():
     # TRIPWIRE: desc_sha_ is embedded in the header string, so computing it after
     # the header is built silently seals an EMPTY digest.
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     assert src.index("desc_sha_ = dsha.hexdigest();") < src.index("std::string hdr =")
 
 
@@ -1114,8 +1113,13 @@ def _clean_repo(tmp_path):
     return repo
 
 
+# The trace machinery moved to the SHARED header (three instrumented TUs, one
+# implementation — private copies drift); source pins follow it there.
+_TRACE = "g33_overlay/g33_op_trace.h"
+
+
 def _overlay_required_env():
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     block = re.search(r"kRequiredEnv\[\]\s*=\s*\{(.*?)\}", src, re.S)
     assert block, "required-env table not found"
     return set(re.findall(r'"(KDM6_G33_\w+)"', block.group(1)))
@@ -1237,6 +1241,7 @@ def test_stale_guard_covers_the_diagnostic_build_inputs():
     covered = set(g33_run_env._BUILD_INPUTS)
     assert "harness/g33_overlay/sedimentation.cpp.overlay" in covered
     assert "harness/g33_overlay/g33_op_dump.h" in covered
+    assert "harness/g33_overlay/g33_op_trace.h" in covered
     # and it must NOT watch files that cannot reach the artifact: a guard firing
     # on edits with no effect on the binary gets switched off by whoever hits it
     for harmless in ("harness/g33_overlay/verify_overlay.py",
@@ -1489,7 +1494,7 @@ def test_all_identity_fields_are_safe_id_validated(tmp_path):
 def test_cpp_overlay_refuses_unsafe_ids_before_building_the_path():
     # the Python validator sees the header only after the path was opened; the
     # producer must refuse first — pin that the gate sits before path assembly
-    src = (ROOT / "g33_overlay" / "sedimentation.cpp.overlay").read_text()
+    src = (ROOT / _TRACE).read_text()
     assert "safe_id(v)" in src
     assert src.index("g33: unsafe id") < src.index('std::string path = std::string(dir)')
 

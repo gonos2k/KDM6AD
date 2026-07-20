@@ -78,6 +78,7 @@ def _git_head(repo: Path) -> str:
 _BUILD_INPUTS = (
     "harness/g33_overlay/sedimentation.cpp.overlay",
     "harness/g33_overlay/g33_op_dump.h",
+    "harness/g33_overlay/g33_op_trace.h",
     "libtorch/src",
     "libtorch/include",
     "libtorch/CMakeLists.txt",
