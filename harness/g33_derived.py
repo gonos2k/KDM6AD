@@ -41,9 +41,10 @@ from g33_dump import (BRANCH_LEFT_SELECTED, BRANCH_RIGHT_SELECTED, BRANCH_TIE,
 _W = {"f32": 4, "f64": 8, "i32": 4, "u8": 1}
 _FMT = {"f32": ">f", "f64": ">d", "i32": ">i", "u8": ">B"}
 
-# Physically meaningful substep-count range (owner math review §2.1). A decoded
-# mstep outside it is not a rounding finding, it is an invalid run.
-MSTEP_RANGE = (1, 100)
+# mstep is a NUMERICAL algorithm variable (CFL sub-cycling count), not a physical
+# quantity — its bound is an ALGORITHMIC contract, not a physical range. A decoded
+# value outside it is an invalid run, not a rounding finding.
+MSTEP_RANGE = (1, 100)   # algorithmic contract range
 
 # Floor relation (owner math review §2.2): the branch condition is raw vs the
 # threshold, not "did the output change". `safe != raw` is a RESULT comparison
@@ -275,12 +276,22 @@ def check_producer_flags(fields: dict, n: int, qcrmin: float) -> None:
     _demand("mstep_decoded_i32", m["decoded_i32"], _got("mstep_decoded_i32"))
     _demand("mstep_exact_integer", m["exact_integer"], _got("mstep_exact_integer"))
 
+    # RECOMPUTED exactness must hold — the protocol's acceptance is
+    # "exact_integer == true", not merely "the producer's exact flag agrees
+    # with the recomputation". A run that HONESTLY reports mstep_native=2.5 with
+    # exact=0 was passing: the producer was not caught lying, but the run is
+    # still invalid (a non-integral substep count is a broken caller contract).
+    bad_exact = [i for i, ok in enumerate(m["exact_integer"]) if not ok]
+    if bad_exact:
+        raise G33Corruption(
+            f"mstep_native is not exactly integral at columns {bad_exact[:16]} "
+            f"— a non-integral substep count is an invalid run, not a finding")
     lo, hi = MSTEP_RANGE
     for i, mv in enumerate(m["decoded_i32"]):
         if not (lo <= mv <= hi):
             raise G33Corruption(
-                f"mstep_decoded_i32[{i}] = {mv} outside the physical range "
-                f"[{lo}, {hi}] — not a rounding finding, an invalid run")
+                f"mstep_decoded_i32[{i}] = {mv} outside the algorithmic contract "
+                f"range [{lo}, {hi}] — an invalid run")
 
     g = derive_gate(*fields["gate_native"])
     _demand("gate_exact_01", g["exact_01"], _got("gate_exact_01"))

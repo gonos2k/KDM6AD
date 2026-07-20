@@ -1,0 +1,59 @@
+name: g33-harness-ci
+
+# Least-privilege: read-only; runs the G3.3-M evidence-system regression suite.
+permissions:
+  contents: read
+
+# The G3.3-M evidence system lives almost entirely in harness/, but no required
+# check ran it — oracle-ci only runs `cd oracle && pytest`, and port-ci's path
+# filter has no harness/**. So "216 pass" was LOCAL evidence, never GitHub CI
+# evidence: the very system that certifies op-provenance had no continuous
+# regression gate. This job closes that. It compiles the C++ probes (via the
+# pytest suite) and runs the overlay 4-check, so a drift in the container
+# format, the derived-flag authority, or the overlay projection fails on the PR.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'harness/**'
+      - 'docs/C4_G3_3_OP_PROVENANCE_PROTOCOL.md'
+      - '.github/workflows/g33-harness-ci.yml'
+  # No paths filter on pull_request: to be a REQUIRED status check it must
+  # REPORT on every PR to main (a path-filtered required context leaves
+  # non-harness PRs blocked forever, waiting on a job that never runs). The
+  # suite is a ~1-2 min pure-Python pytest plus clang probe builds; running it
+  # on all PRs is cheap and keeps the gate always satisfiable. (push stays
+  # harness-scoped — post-merge only.)
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  g33-harness:
+    name: g33 harness (op-provenance regression)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install numpy + pytest (pinned)
+        run: |
+          python -m pip install --upgrade pip
+          # numpy is used by the derived-flag comparator and the self-check;
+          # pinned to the same combo as oracle-ci for reproducible float behavior.
+          pip install "numpy==2.4.6" "pytest==9.1.1"
+
+      - name: Record versions
+        run: |
+          python -c 'import sys, numpy, pytest; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__)'
+          c++ --version | head -1   # the C++ probes are compiled by the suite
+
+      - name: pytest (harness/tests — container, comparator, overlay, probes)
+        run: python -m pytest -rs -q harness/tests
+
+      - name: overlay 4-check (all instrumented TUs)
+        run: python harness/g33_overlay/verify_overlay.py

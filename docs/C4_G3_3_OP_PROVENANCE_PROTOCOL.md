@@ -65,7 +65,12 @@ AID: acceptance authority is `g33_derived.py`, which recomputes each from the ra
 cross-checks the producer's version — a disagreement means the producer's arithmetic is
 not what its evidence claims, and the run is invalid before any cross-tree comparison.
 Acceptance: recomputed `exact_integer==true`, recomputed `decoded_i32` in range,
-`mstep_native_bits` equal *within* each pair.
+`mstep_native_bits` equal *within each backend* (a repeated-read self-consistency
+check), NOT across trees. C++ mstep_native is f64 and Fortran mstep_native is i32
+(different dtypes, different bit widths): the CROSS-tree comparison is on the
+DECODED semantic fields (`mstep_decoded_i32` and the gate law `n <= mstep`), never
+on the raw native bits. Comparing f64 bits against i32 bits would be a category
+error dressed as strict-bitwise.
 
 ---
 
@@ -231,6 +236,23 @@ per-container expected-descriptor stream (§7) that `rec()` consumes record-by-r
 the tensor in hand, the producer-side shape guard, and the comparator recomputation of
 every derived flag (`g33_derived.py`). Non-invasiveness is established only by the 3-way
 A/B/C run (§10).
+
+### Fixture policy: density/metric floors are not a normal branch (owner review §6)
+
+The general NaN/UNORDERED policy is right for dead-branch microphysics
+intermediates, but rho and delz are not intermediates: in a real column both are
+finite and strictly positive, so `dend_floor_active`/`delz_floor_active` MUST be
+zero. A fixture is therefore one of two kinds, declared, not inferred:
+
+    real_atmosphere:        all rho,delz finite and > 0; floor counts == 0;
+                            NaN/Inf in rho/delz => INVALID RUN (not INCONCLUSIVE);
+                            a density/metric floor as the first divergence is an
+                            invalid input/mapping, not a rounding finding.
+    synthetic_floor_stress: floor activation allowed; results are a branch-
+                            coverage stress test and are NOT used for the
+                            representative G3.3-M science verdict.
+
+The self-check fixture below is real_atmosphere (floors inactive by construction).
 
 ### §5a executed: shadow == actual == offline (self-check)
 
