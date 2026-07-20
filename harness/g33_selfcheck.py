@@ -40,7 +40,7 @@ import g33_dump as gd
 import g33_expectation as ge
 import g33_run_env as gre
 
-B, K, MSTEPMAX, QCRMIN = 3, 4, 2, 1.0e-9
+B, K, MSTEPMAX, QCRMIN, DTCLD = 3, 4, 2, 1.0e-9, 20.0   # DTCLD matches selfcheck_driver.cpp
 
 # Failure CLASSES by exit code — the discrimination a wrapped child cannot
 # forge. Driver stdout/stderr is interpolated into failure messages, so child-
@@ -111,7 +111,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
         pre = {r["field"]: (r["dtype"], r["payload"])
                for r in recs if r["stage"] == "substep_pre"}
-        gdv.check_producer_flags(pre, n_sub, QCRMIN)
+        gdv.check_producer_flags(pre, n_sub, QCRMIN, DTCLD)
         stats["flags"] += 1
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)
@@ -195,6 +195,8 @@ def main() -> int:
         raise
     shutil.rmtree(root, ignore_errors=True)     # success only
     print("SELF-CHECK PASS: shadow == actual == offline, both algorithms")
+    print("  (fixture: valid_metric + arithmetic_synthetic — branch coverage, "
+          "NOT a meteorological representativeness claim)")
     return 0
 
 

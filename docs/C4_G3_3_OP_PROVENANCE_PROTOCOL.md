@@ -252,7 +252,14 @@ zero. A fixture is therefore one of two kinds, declared, not inferred:
                             coverage stress test and are NOT used for the
                             representative G3.3-M science verdict.
 
-The self-check fixture below is real_atmosphere (floors inactive by construction).
+Two axes, not one: metric_policy (valid_metric | floor_stress) and science_role
+(arithmetic_synthetic | meteorological_replay). The self-check fixture is
+`valid_metric + arithmetic_synthetic`: its floors are inactive (valid_metric),
+but its large fall-speed column drives an implied vt of ~110-150 m/s to force
+the cap open — a branch-coverage ARITHMETIC fixture, NOT a representative rain
+column. It certifies the arithmetic pipeline; it makes no meteorological
+representativeness claim. A meteorological_replay fixture is a separate,
+later gate.
 
 ### §5a executed: shadow == actual == offline (self-check)
 
@@ -299,17 +306,38 @@ still §10's A/B/C alone.
 
 ## 7. Dump container + INDEPENDENT expectation + attestation
 
-### 7a. Container (versioned, self-verifying) — one per (case, backend)
+### 7a. Container (v2, self-verifying) — ONE PER SUBSTEP AND OUTER STAGE
+KDG33OP v2 writes one container per (case, pair, backend, outer_loop, chain, n),
+NOT one per (case, backend) — the v1 line was stale and a Fortran implementer
+following it would build a different topology. The exact container set for one
+run, per outer loop, is:
 ```
-HEADER  magic="KDG33OP" format_version producer_commit binary_sha256 case_id pair_id
-        backend algorithm B K column_layout_id record_count_expected(informational)
+L<loop>_outer_pre        # whole-K state entering sedimentation
+L<loop>_main_n<n>        # each main substep, n = 1..mstepmax_main
+L<loop>_ice_n<n>         # each ice substep, when the ice chain is in scope
+L<loop>_surface          # per-species surface causal path
+L<loop>_outer_post_sed   # post-sed / post-REAL(4) re-clamp state
+L<loop>_outer_post_micro # end-of-sub-cycle state
+```
+`run_index.json` (harness-sealed BEFORE the run) is the AUTHORITY for this exact
+container set and the contiguous global op_seq tiling — the producer never
+infers it. Each container header carries:
+```
+HEADER  magic="KDG33OP" format_version(=2) producer_commit binary_sha256
+        resolved_binary_path resolved_binary_sha256      # dladdr-measured (P0-5)
+        case_id pair_id backend algorithm B K column_layout_id
         column_index_map[B]{B_index, fortran_i, fortran_j, cpp_flat_index}
-        fortran_k_index cpp_k_index canonical_k_index
-        run_uuid process_id owner_thread_id
-RECORD* seq_no outer_loop chain n cell_role species op_id stage field dtype shape payload_size payload
+        canonical_k_order run_uuid process_id owner_thread_id
+        container_id descriptor_sha256                    # sealed-descriptor digest
+        global_op_seq_start global_op_seq_end             # this container's declared window
+        record_count_expected(informational)
+RECORD* seq_no op_seq_id outer_loop chain n cell_role species op_id stage field
+        dtype shape payload_size payload
 FOOTER  record_count_actual payload_sha256 COMPLETE
 ```
-Write `.tmp → flush/close → verify → atomic rename`.
+op_seq_id == global_op_seq_start + seq_no exactly; the window must be fully
+covered or the container is neither finalized nor read (a partial window gets no
+COMPLETE footer). Write `.tmp → flush/close → verify → atomic rename`.
 
 ### 7b. Independent expectation manifest (P0-5) — completeness is NOT writer self-reported
 A **separate** generator derives, from the fixture + the known substep/re-slope schedule, the exact
