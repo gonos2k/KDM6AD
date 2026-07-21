@@ -4,7 +4,11 @@
 # pulled for an undefined symbol; the overlay objects define those symbols
 # first). The result is one executable that CONTAINS the instrumented code, so
 # the dladdr binding resolves the artifact the evidence must describe.
-set -u
+#
+# HERMETIC: `set -euo pipefail` + a FRESH output directory + fail-loud missing
+# tools, so a stale mutant source/binary from a previous run can never be
+# recompiled and mistaken for this run's evidence (a false-green path).
+set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 FM=libtorch/build/CMakeFiles/kdm6_c.dir/flags.make
@@ -15,14 +19,23 @@ fi
 DEFS=$(sed -n 's/^CXX_DEFINES = //p' "$FM")
 INCS=$(sed -n 's/^CXX_INCLUDES = //p' "$FM")
 FLGS=$(sed -n 's/^CXX_FLAGS = //p' "$FM")
-CXX=$(xcrun -f c++ 2>/dev/null || command -v c++)
-if [ -z "$CXX" ]; then echo "no C++ compiler (xcrun/c++ not found)"; exit 2; fi
-TORCHLIB=$(echo "$INCS" | tr ' ' '\n' | sed -n 's|^/|/|p' | grep 'site-packages/torch/include$' | head -1 | sed 's|/include$|/lib|')
-# Platform shared-library extension: macOS ships .dylib, Linux .so. This is what
-# lets the gate run in the Linux port-ci job, not only on a local macOS host.
+CXX=$(xcrun -f c++ 2>/dev/null || command -v c++ || true)
+[ -n "$CXX" ] || { echo "no C++ compiler (xcrun/c++ not found)" >&2; exit 2; }
+
+# Torch lib dir straight from the interpreter (works for site-/dist-packages and
+# other layouts), not by parsing CMake include flags. It is the same torch the
+# CMake configure used (-DCMAKE_PREFIX_PATH came from this interpreter).
+# `|| true` so a missing python3/torch does not trip `set -e` before the check
+# below — otherwise the helpful message is dead code.
+TORCHLIB=$(python3 -c 'import pathlib, torch; print(pathlib.Path(torch.__file__).resolve().parent / "lib")' 2>/dev/null || true)
+[ -n "$TORCHLIB" ] && [ -d "$TORCHLIB" ] || { echo "torch lib dir not found (is python3/torch installed?): '$TORCHLIB'" >&2; exit 2; }
+
+# Supported OSes are ENUMERATED fail-loud, not "everything that is not macOS is
+# .so" — an unexpected platform is an explicit error, not a wrong default.
 case "$(uname -s)" in
     Darwin) LIB_EXT=dylib ;;
-    *)      LIB_EXT=so ;;
+    Linux)  LIB_EXT=so ;;
+    *) echo "unsupported OS: $(uname -s)" >&2; exit 2 ;;
 esac
 # Bash array (not a space-joined string) so a TORCHLIB path with spaces stays one
 # argument per lib under "${TORCHLIBS[@]}".
@@ -31,7 +44,20 @@ TORCHLIBS=(
     "$TORCHLIB/libtorch_cpu.$LIB_EXT"
     "$TORCHLIB/libc10.$LIB_EXT"
 )
+for lib in "${TORCHLIBS[@]}"; do
+    [ -f "$lib" ] || { echo "missing Torch library: $lib" >&2; exit 2; }
+done
+
+# FRESH, owned output directory: wipe any prior contents so no stale artifact
+# survives into this run. ${OUT:?} refuses an empty path, and the guard below
+# refuses a critical directory — `rm -rf` on a caller-supplied path must never
+# be able to destroy /, the repo root, or $HOME.
 OUT=${1:-/tmp/g33_selfcheck_build}
+case "$OUT" in
+    / | . | .. | "$PWD" | "$HOME")
+        echo "refusing to rm -rf a critical directory: $OUT" >&2; exit 2 ;;
+esac
+rm -rf "${OUT:?}"
 mkdir -p "$OUT"
 
 compile() {  # $1 src  $2 out.o
@@ -39,94 +65,65 @@ compile() {  # $1 src  $2 out.o
     "$CXX" $DEFS -DKDM6_G33_OP_DUMP $FLGS $INCS -I harness/g33_overlay \
         -x c++ -c "$1" -o "$2" 2>"$2.err" || { echo "COMPILE FAILED: $1"; head -15 "$2.err"; exit 1; }
 }
+
+link_driver() {  # $1 sed.o  $2 sed_cons.o  $3 outdir  $4 label
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "$OUT/driver.o" "$1" "$2" "$AR" \
+        "${TORCHLIBS[@]}" \
+        -Wl,-rpath,"$TORCHLIB" -o "$3/selfcheck_driver" 2>"$3/link.err" \
+        || { echo "LINK FAILED ($4)"; head -20 "$3/link.err"; exit 1; }
+    echo "built: $3/selfcheck_driver ($4)"
+}
+
 compile harness/g33_overlay/sedimentation.cpp.overlay              "$OUT/sed.o"
 compile harness/g33_overlay/sedimentation_conservative.cpp.overlay "$OUT/sed_cons.o"
 compile harness/g33_overlay/selfcheck_driver.cpp                   "$OUT/driver.o"
 
-# shellcheck disable=SC2086
-"$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$OUT/sed_cons.o" "$AR" \
-    "${TORCHLIBS[@]}" \
-    -Wl,-rpath,"$TORCHLIB" -o "$OUT/selfcheck_driver" 2>"$OUT/link.err" \
-    || { echo "LINK FAILED"; head -20 "$OUT/link.err"; exit 1; }
-echo "built: $OUT/selfcheck_driver"
+link_driver "$OUT/sed.o" "$OUT/sed_cons.o" "$OUT" "real"
 
 # ── standing mutation kill (owner kill-table: "shadow expression 변경") ───────
-# With --with-mutant, additionally build a driver whose SHADOW ladder drops the
-# gate rung, and require the self-check to FAIL on it. A self-check that cannot
-# kill this mutant is vacuous. The kill lands exactly where the gate first
-# matters (n=2, the mstep=1 column) — the first divergent rung, localized.
+# With --with-mutant, additionally build one driver per mutant and require the
+# self-check to FAIL on each at its predicted site. A self-check that cannot kill
+# a mutant is vacuous. make_mutant.py exits non-zero (→ set -e aborts here) if an
+# anchor count drifts, so a silently-vacuous mutant cannot slip through.
 if [ "${2:-}" = "--with-mutant" ]; then
     MK=harness/g33_overlay/make_mutant.py
+    SED=harness/g33_overlay/sedimentation.cpp.overlay
+    SED_CONS=harness/g33_overlay/sedimentation_conservative.cpp.overlay
+
     # MUTANT 1 — legacy SHADOW ladder drops the gate rung (shared FALK proof).
-    M="$OUT/mutant"; mkdir -p "$M"
-    python3 "$MK" shadow harness/g33_overlay/sedimentation.cpp.overlay \
-        "$M/sedimentation.cpp.overlay"
+    M="$OUT/mutant"; mkdir "$M"
+    python3 "$MK" shadow "$SED" "$M/sedimentation.cpp.overlay"
     compile "$M/sedimentation.cpp.overlay" "$M/sed.o"
-    # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$M/sed.o" "$OUT/sed_cons.o" "$AR" \
-        "${TORCHLIBS[@]}" \
-        -Wl,-rpath,"$TORCHLIB" -o "$M/selfcheck_driver" 2>"$M/link.err" \
-        || { echo "MUTANT LINK FAILED"; head -10 "$M/link.err"; exit 1; }
-    echo "built: $M/selfcheck_driver (shadow mutant)"
+    link_driver "$M/sed.o" "$OUT/sed_cons.o" "$M" "shadow mutant"
 
     # MUTANT 2 — conservative INFLOW drops /dst_metric: the rho*dz interface
     # transfer that is conservative-ONLY, the load-bearing G3.3-M operation.
-    M2="$OUT/mutant_cons"; mkdir -p "$M2"
-    python3 "$MK" cons_inflow \
-        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
-        "$M2/sedimentation_conservative.cpp.overlay"
+    M2="$OUT/mutant_cons"; mkdir "$M2"
+    python3 "$MK" cons_inflow "$SED_CONS" "$M2/sedimentation_conservative.cpp.overlay"
     compile "$M2/sedimentation_conservative.cpp.overlay" "$M2/sed_cons.o"
-    # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M2/sed_cons.o" "$AR" \
-        "${TORCHLIBS[@]}" \
-        -Wl,-rpath,"$TORCHLIB" -o "$M2/selfcheck_driver" 2>"$M2/link.err" \
-        || { echo "MUTANT2 LINK FAILED"; head -10 "$M2/link.err"; exit 1; }
-    echo "built: $M2/selfcheck_driver (conservative inflow mutant)"
+    link_driver "$OUT/sed.o" "$M2/sed_cons.o" "$M2" "conservative inflow mutant"
 
     # MUTANT 3 — conservative carries the WRONG neighbour outflow into the next
     # cell's inflow (s->prev_out *= 1.03125). Every within-record recompute stays
-    # self-consistent; only the cross-record interface link can catch it. Proves
-    # the causal-link layer (PR B2.1) is not vacuous.
-    M3="$OUT/mutant_prevout"; mkdir -p "$M3"
-    python3 "$MK" cons_prevout \
-        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
-        "$M3/sedimentation_conservative.cpp.overlay"
+    # self-consistent; only the cross-record interface link can catch it.
+    M3="$OUT/mutant_prevout"; mkdir "$M3"
+    python3 "$MK" cons_prevout "$SED_CONS" "$M3/sedimentation_conservative.cpp.overlay"
     compile "$M3/sedimentation_conservative.cpp.overlay" "$M3/sed_cons.o"
-    # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M3/sed_cons.o" "$AR" \
-        "${TORCHLIBS[@]}" \
-        -Wl,-rpath,"$TORCHLIB" -o "$M3/selfcheck_driver" 2>"$M3/link.err" \
-        || { echo "MUTANT3 LINK FAILED"; head -10 "$M3/link.err"; exit 1; }
-    echo "built: $M3/selfcheck_driver (conservative prev_out mutant)"
+    link_driver "$OUT/sed.o" "$M3/sed_cons.o" "$M3" "conservative prev_out mutant"
 
     # MUTANT 4 — conservative returns a WRONG whole-field column (qr.cols[1] *=
-    # 1.03125) after the per-cell op records are written. Diagnostic q_post is
-    # correct; the returned state (== substep_post == next pre) is wrong, so only
-    # the per-cell-q_post == substep_post link (PR B2.2 §2.1) can catch it.
-    M4="$OUT/mutant_poststate"; mkdir -p "$M4"
-    python3 "$MK" cons_poststate \
-        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
-        "$M4/sedimentation_conservative.cpp.overlay"
+    # 1.03125) after the per-cell op records are written. Only the per-cell-q_post
+    # == substep_post link (PR B2.2 §2.1) can catch it.
+    M4="$OUT/mutant_poststate"; mkdir "$M4"
+    python3 "$MK" cons_poststate "$SED_CONS" "$M4/sedimentation_conservative.cpp.overlay"
     compile "$M4/sedimentation_conservative.cpp.overlay" "$M4/sed_cons.o"
-    # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M4/sed_cons.o" "$AR" \
-        "${TORCHLIBS[@]}" \
-        -Wl,-rpath,"$TORCHLIB" -o "$M4/selfcheck_driver" 2>"$M4/link.err" \
-        || { echo "MUTANT4 LINK FAILED"; head -10 "$M4/link.err"; exit 1; }
-    echo "built: $M4/selfcheck_driver (conservative poststate mutant)"
+    link_driver "$OUT/sed.o" "$M4/sed_cons.o" "$M4" "conservative poststate mutant"
 
     # MUTANT 5 — conservative fall accumulator perturbed (s->fall *= 1.03125).
-    # Outflow and state are intact, so only the §5 QR_FALLACC.fall_after offline
-    # replay can catch it. Proves the OUTFLOW/FALLACC ladder is not vacuous.
-    M5="$OUT/mutant_fallacc"; mkdir -p "$M5"
-    python3 "$MK" cons_fallacc \
-        harness/g33_overlay/sedimentation_conservative.cpp.overlay \
-        "$M5/sedimentation_conservative.cpp.overlay"
+    # Outflow and state intact, so only the §5 QR_FALLACC.fall_after replay catches it.
+    M5="$OUT/mutant_fallacc"; mkdir "$M5"
+    python3 "$MK" cons_fallacc "$SED_CONS" "$M5/sedimentation_conservative.cpp.overlay"
     compile "$M5/sedimentation_conservative.cpp.overlay" "$M5/sed_cons.o"
-    # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M5/sed_cons.o" "$AR" \
-        "${TORCHLIBS[@]}" \
-        -Wl,-rpath,"$TORCHLIB" -o "$M5/selfcheck_driver" 2>"$M5/link.err" \
-        || { echo "MUTANT5 LINK FAILED"; head -10 "$M5/link.err"; exit 1; }
-    echo "built: $M5/selfcheck_driver (conservative fallacc mutant)"
+    link_driver "$OUT/sed.o" "$M5/sed_cons.o" "$M5" "conservative fallacc mutant"
 fi

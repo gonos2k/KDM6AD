@@ -10,17 +10,33 @@ a predicted site; a mutation the gate cannot kill means the check is vacuous.
     make_mutant.py cons_inflow <in.overlay> <out.overlay>  # conservative rho*dz transfer
     make_mutant.py cons_prevout <in.overlay> <out.overlay>  # wrong-neighbour interface link
     make_mutant.py cons_poststate <in.overlay> <out.overlay>  # returned state != diagnostic q_post
+    make_mutant.py cons_fallacc <in.overlay> <out.overlay>  # fall accumulator != OUTFLOW/FALLACC replay
 """
 import sys
 
 KIND, SRC, DST = sys.argv[1], sys.argv[2], sys.argv[3]
 s = open(SRC, encoding="utf-8").read()
 
+
+def require(old, n):
+    """Fail LOUD (not assert — assert vanishes under python -O) if the anchor
+    count is not exactly n. A drifted count means the overlay changed and the
+    mutant must be re-derived, never silently applied to the wrong site(s)."""
+    got = s.count(old)
+    if got != n:
+        raise SystemExit(
+            f"{KIND}: anchor count {got}, expected {n} — overlay changed, "
+            f"re-derive the mutant")
+
+
 if KIND == "shadow":
-    # legacy SHADOW ladder drops the gate rung — kills the shared FALK proof
+    # legacy SHADOW ladder drops the gate rung — kills the shared FALK proof.
+    # The rung appears at BOTH the top and interior cells (count 2); breaking
+    # both is the intended "shadow gate" defect and the first divergence is
+    # deterministic at k=0. An exact count of 2 pins that expectation.
     old = "auto s4 = s3 * gate_col;"
-    assert s.count(old) >= 1, f"shadow anchor count {s.count(old)}"
-    s = s.replace(old, "auto s4 = s3 * 1.0;  // MUTANT")
+    require(old, 2)
+    s = s.replace(old, "auto s4 = s3 * 1.0;  // MUTANT", 2)
 elif KIND == "cons_inflow":
     # conservative ACTUAL transfer drops the /dst_metric division — the rho*dz
     # interface transfer that is conservative-ONLY. Mutating the STATE-carrying
@@ -28,10 +44,10 @@ elif KIND == "cons_inflow":
     # from the offline rho*dz replay.
     old = ("auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1))\n"
            "                             / (dend_safe_col(k) * delz_safe_col(k));")
-    assert s.count(old) == 1, f"cons_inflow anchor count {s.count(old)}"
+    require(old, 1)
     s = s.replace(old,
                   "auto dq_in = s->prev_out * (dend_safe_col(k - 1) * delz_col(k - 1));"
-                  "  // MUTANT: dropped /dst_metric")
+                  "  // MUTANT: dropped /dst_metric", 1)
 elif KIND == "cons_prevout":
     # The outflow that the NEXT cell will pull in as its inflow is carried in
     # s->prev_out. Perturbing the CARRIED value (not the record, not the metric)
@@ -43,8 +59,8 @@ elif KIND == "cons_prevout":
     # This is the defect the causal-link layer exists to catch and the single-
     # record arithmetic proof cannot.
     old = "s->prev_out = dq_out;"
-    assert s.count(old) == 1, f"cons_prevout anchor count {s.count(old)}"
-    s = s.replace(old, "s->prev_out = dq_out * 1.03125f;  // MUTANT: wrong neighbour")
+    require(old, 1)
+    s = s.replace(old, "s->prev_out = dq_out * 1.03125f;  // MUTANT: wrong neighbour", 1)
 elif KIND == "cons_poststate":
     # Perturb the RETURNED qr column AFTER every per-cell op record is written
     # but BEFORE the substep_post dump and the function return. The diagnostic
@@ -57,14 +73,14 @@ elif KIND == "cons_poststate":
            "    }\n"
            "\n"
            "#ifdef KDM6_G33_OP_DUMP")
-    assert s.count(old) == 1, f"cons_poststate anchor count {s.count(old)}"
+    require(old, 1)
     s = s.replace(old,
                   "        prev_out_nr = dn_out;\n"
                   "    }\n"
                   "\n"
                   "    qr.cols[1] = qr.cols[1] * 1.03125f;  // MUTANT: wrong returned column\n"
                   "\n"
-                  "#ifdef KDM6_G33_OP_DUMP")
+                  "#ifdef KDM6_G33_OP_DUMP", 1)
 elif KIND == "cons_fallacc":
     # Perturb the QR fall ACCUMULATOR (the actual capped-outflow rate that feeds
     # surface precipitation) while leaving the outflow itself and the dump's own
@@ -73,10 +89,10 @@ elif KIND == "cons_fallacc":
     # QR_FALLACC.fall_after offline replay can catch that s->fall diverged from
     # fall_before + dq_out*dend_safe/dt.
     old = "s->fall[k] = s->fall[k] + dq_out * dend_safe_col(k) / dtcld;"
-    assert s.count(old) == 1, f"cons_fallacc anchor count {s.count(old)}"
+    require(old, 1)
     s = s.replace(old,
                   "s->fall[k] = s->fall[k] + dq_out * dend_safe_col(k) / dtcld "
-                  "* 1.03125f;  // MUTANT: fall accumulator")
+                  "* 1.03125f;  // MUTANT: fall accumulator", 1)
 else:
     sys.exit(f"unknown mutant kind {KIND!r}")
 

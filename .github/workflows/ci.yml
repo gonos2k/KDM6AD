@@ -37,13 +37,11 @@ on:
       - 'oracle/conftest.py'
       # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
       # TUs / build script / gate / mutant generator + the self-check reader and
-      # its harness deps) so a change to them re-runs the continuous gate.
+      # its harness deps) so a change to them re-runs the continuous gate. Globs,
+      # not an enumerated list, so a new g33_*.py module cannot silently escape
+      # the trigger.
       - 'harness/g33_overlay/**'
-      - 'harness/g33_selfcheck.py'
-      - 'harness/g33_run_env.py'
-      - 'harness/g33_dump.py'
-      - 'harness/g33_derived.py'
-      - 'harness/g33_expectation.py'
+      - 'harness/g33_*.py'
   pull_request:
     branches: [main]
     paths:
@@ -64,13 +62,11 @@ on:
       - 'oracle/conftest.py'
       # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
       # TUs / build script / gate / mutant generator + the self-check reader and
-      # its harness deps) so a change to them re-runs the continuous gate.
+      # its harness deps) so a change to them re-runs the continuous gate. Globs,
+      # not an enumerated list, so a new g33_*.py module cannot silently escape
+      # the trigger.
       - 'harness/g33_overlay/**'
-      - 'harness/g33_selfcheck.py'
-      - 'harness/g33_run_env.py'
-      - 'harness/g33_dump.py'
-      - 'harness/g33_derived.py'
-      - 'harness/g33_expectation.py'
+      - 'harness/g33_*.py'
   workflow_dispatch:
 
 jobs:
@@ -102,15 +98,17 @@ jobs:
           # not whatever the latest wheel happens to be.
           pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
           # numpy is NOT a hard torch>=2.8 dependency, but the G3.3-M self-check
-          # reader needs it for the raw-bit replay — install it explicitly.
-          pip install numpy
+          # reader needs it for the raw-bit replay — install it explicitly, PINNED
+          # to the same version as g33-harness-ci so the dtype-promotion / float
+          # ops the replay depends on are reproducible.
+          pip install "numpy==2.4.6"
 
       - name: Record toolchain versions
         run: |
           cmake --version | head -1
           g++ --version | head -1
           gfortran --version | head -1
-          python -c 'import torch; print("torch", torch.__version__)'
+          python -c 'import torch, numpy; print("torch", torch.__version__, "| numpy", numpy.__version__)'
           pip --version   # installer version (deps are pinned; pip itself is not)
 
       # PR1-A dual-gate: the representative CI build is the SHIPPED config
@@ -143,8 +141,8 @@ jobs:
       # real=PASS with every mutant killed at its predicted site. This makes the
       # op-provenance evidence a CONTINUOUS CI gate, not a local transcript. Runs
       # on the SHIPPED (test-hooks OFF) config, BEFORE the reconfigure-ON below
-      # that rewrites flags.make. numpy (the fail-closed reader's only dep beyond
-      # the stdlib) comes in with torch, installed above.
+      # that rewrites flags.make. The reader's numpy (pinned, installed above —
+      # torch>=2.8 does NOT pull it in) is its only dep beyond the stdlib.
       - name: G3.3-M self-check + 5-mutant kill gate
         run: bash harness/g33_overlay/selfcheck_gate.sh
 
@@ -237,13 +235,16 @@ jobs:
           python -m pip install --upgrade pip
           # macOS arm64 default wheel is CPU-only; pin to the ENVIRONMENT.md reference.
           pip install "torch==2.8.0"
+          # numpy for the G3.3-M self-check reader (torch>=2.8 does not pull it in),
+          # pinned to the same version as the other jobs for a reproducible replay.
+          pip install "numpy==2.4.6"
 
       - name: Record toolchain versions
         run: |
           cmake --version | head -1
           clang --version | head -1
           gfortran --version | head -1
-          python -c 'import torch; print("torch", torch.__version__)'
+          python -c 'import torch, numpy; print("torch", torch.__version__, "| numpy", numpy.__version__)'
 
       - name: Configure (CMake, SHIPPED config — test hooks OFF, Release)
         run: |
@@ -263,6 +264,14 @@ jobs:
 
       - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
+
+      # Same G3.3-M gate as the ubuntu job, run here too so the cross-platform
+      # build script (dylib link path) and the actual instrumented driver are
+      # CONTINUOUSLY exercised on the macOS/arm64 reference toolchain — not only
+      # on Linux. This is where "the self-check runs on macOS" stops being a
+      # local claim.
+      - name: G3.3-M self-check + 5-mutant kill gate
+        run: bash harness/g33_overlay/selfcheck_gate.sh
 
       - name: Assert arch (arm64) + fault seam ABSENT + install-name
         run: |
