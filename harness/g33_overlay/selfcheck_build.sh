@@ -1,8 +1,9 @@
 #!/bin/bash
-# Build the G3.3 self-check drivers: the qr/nr substep proof and the focused
-# bottom-fall -> surface-precipitation proof. Overlay objects replace the matching
-# canonical archive members, so dladdr resolves the executable that actually
-# contains the instrumented code.
+# Build the G3.3 self-check drivers: the qr/nr substep proof, the focused
+# bottom-fall -> surface-precipitation proof, and the full-step C++ A/B/C
+# non-invasiveness pair. Overlay objects replace the matching canonical archive
+# members, so dladdr resolves the executable that actually contains the
+# instrumented code.
 #
 # HERMETIC: `set -euo pipefail` + a FRESH output directory + fail-loud missing
 # tools, so a stale mutant source/binary from a previous run can never be
@@ -82,19 +83,47 @@ link_surface_driver() {  # $1 sed.o  $2 sed_cons.o  $3 coord.o  $4 outdir  $5 la
     echo "built: $4/surface_selfcheck_driver ($5)"
 }
 
+link_abc_canonical() {
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/abc_driver.o" "$AR" \
+        "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
+        -o "$OUT/abc_canonical_driver" 2>"$OUT/abc_canonical_link.err" \
+        || { echo "ABC CANONICAL LINK FAILED"; head -40 "$OUT/abc_canonical_link.err"; exit 1; }
+    echo "built: $OUT/abc_canonical_driver (A canonical)"
+}
+
+link_abc_diagnostic() {
+    # The four overlay TUs define the production symbols before libkdm6.a is
+    # searched, so the archive contributes their dependencies but not duplicate
+    # canonical members. B and C are the SAME executable; only the environment
+    # differs.
+    # shellcheck disable=SC2086
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/abc_driver.o" \
+        "$OUT/runtime.o" "$OUT/coord.o" "$OUT/sed.o" "$OUT/sed_cons.o" "$AR" \
+        "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
+        -o "$OUT/abc_diagnostic_driver" 2>"$OUT/abc_diagnostic_link.err" \
+        || { echo "ABC DIAGNOSTIC LINK FAILED"; head -40 "$OUT/abc_diagnostic_link.err"; exit 1; }
+    echo "built: $OUT/abc_diagnostic_driver (B/C diagnostic)"
+}
+
 SED=harness/g33_overlay/sedimentation.cpp.overlay
 SED_CONS=harness/g33_overlay/sedimentation_conservative.cpp.overlay
 COORD=harness/g33_overlay/coordinator.cpp.overlay
+RUNTIME=harness/g33_overlay/runtime.cpp.overlay
 MK=harness/g33_overlay/make_mutant.py
 
-compile "$SED"                                      "$OUT/sed.o"
-compile "$SED_CONS"                                 "$OUT/sed_cons.o"
-compile harness/g33_overlay/selfcheck_driver.cpp     "$OUT/driver.o"
-compile "$COORD"                                    "$OUT/coord.o"
+compile "$SED"                                          "$OUT/sed.o"
+compile "$SED_CONS"                                     "$OUT/sed_cons.o"
+compile harness/g33_overlay/selfcheck_driver.cpp         "$OUT/driver.o"
+compile "$COORD"                                        "$OUT/coord.o"
 compile harness/g33_overlay/surface_selfcheck_driver.cpp "$OUT/surface_driver.o"
+compile "$RUNTIME"                                      "$OUT/runtime.o"
+compile harness/g33_overlay/abc_driver.cpp               "$OUT/abc_driver.o"
 
 link_substep_driver "$OUT/sed.o" "$OUT/sed_cons.o" "$OUT" "real"
 link_surface_driver "$OUT/sed.o" "$OUT/sed_cons.o" "$OUT/coord.o" "$OUT" "surface real"
+link_abc_canonical
+link_abc_diagnostic
 
 if [ "${2:-}" = "--with-mutant" ]; then
     M="$OUT/mutant"; mkdir "$M"
