@@ -65,10 +65,11 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
     # enters the min() (…_pre_cap). Collapsing them to just the final result would
     # let an incomplete dump match the manifest and would make it impossible to say
     # WHICH rung first diverged — the exact failure P1-9 forbids.
-    # cap_active / clamp_active are a 3-valued BRANCH enum, not a boolean:
-    #   0 = LEFT_SELECTED, 1 = RIGHT_SELECTED, 2 = TIE.
+    # cap_active / clamp_active are a 4-state BRANCH enum, not a boolean:
+    #   0 = LEFT_SELECTED, 1 = RIGHT_SELECTED, 2 = TIE, 3 = UNORDERED (NaN).
     # A boolean hides the TIE case, where both backends yield the SAME value from
-    # DIFFERENT branch semantics — precisely what a first-divergence gate must see.
+    # DIFFERENT branch semantics, and misfiles a NaN operand (UNORDERED) as TIE —
+    # precisely what a first-divergence gate must see.
     if op_id == "QR_OUTFLOW":         # min(falk*dtcld/dend_safe, q)   [both algorithms]
         return [("mul_dt", "f32"), ("outflow_pre_cap", "f32"),
                 ("source_reservoir", "f32"), ("cap_active", "u8"), ("dq_out", "f32")]

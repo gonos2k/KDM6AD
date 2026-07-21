@@ -254,7 +254,7 @@ public:
             + "\",\"container_id\":\"" + jesc(cid_)
             + "\",\"global_op_seq_start\":" + std::to_string(first)
             + ",\"global_op_seq_end\":" + std::to_string(last)
-            + ",\"record_count_expected\":0}";
+            + ",\"record_count_expected\":" + std::to_string(want_.size()) + "}";
         // NO catch here. A configured run whose container cannot be opened —
         // stale .tmp from a killed run, an existing completed container, an
         // unwritable dir — is an INVALID diagnostic run. Swallowing that turned

@@ -1388,6 +1388,26 @@ def _cap_coverage_pass(states):
     return gd.BRANCH_LEFT_SELECTED in seen and gd.BRANCH_RIGHT_SELECTED in seen
 
 
+def test_positive_f32_ulp_distance_validates_its_domain():
+    f32 = np.float32
+    def p(*xs):
+        return np.array(xs, dtype=">f4").tobytes()
+    # valid positive operands -> exact ULP distance
+    assert gsc.positive_f32_ulp_distance(p(1.0), p(1.0))[0] == 0
+    one = f32(1.0)
+    assert gsc.positive_f32_ulp_distance(
+        p(1.0), np.array([np.nextafter(one, f32(2))], dtype=">f4").tobytes())[0] == 1
+    # signed zero: -0.0 must read as +0.0, NOT a spurious 2^31-ULP gap
+    assert gsc.positive_f32_ulp_distance(p(0.0), p(-0.0))[0] == 0
+    # a broken nonnegativity / finiteness contract fails CLOSED, not silently
+    with pytest.raises(gd.G33Corruption, match="nonnegative"):
+        gsc.positive_f32_ulp_distance(p(-1.0), p(1.0))
+    with pytest.raises(gd.G33Corruption, match="non-finite"):
+        gsc.positive_f32_ulp_distance(p(float("inf")), p(1.0))
+    with pytest.raises(gd.G33Corruption, match="non-finite"):
+        gsc.positive_f32_ulp_distance(p(float("nan")), p(1.0))
+
+
 def test_cap_ulp_margin_distance_is_exact_for_positive_f32():
     # ULP distance = |bit_int(a) - bit_int(b)| is exact for same-sign positive
     # f32 (monotone bit ordering). The self-check uses it to require strict cap
