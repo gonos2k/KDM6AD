@@ -36,6 +36,10 @@ import g33_run_env as gre
 B, K = 3, 4
 QCRMIN, DTCLD, DENR = 1.0e-9, 20.0, 1000.0
 EXIT_SKIP, EXIT_DRIVER, EXIT_EVIDENCE, EXIT_FIDELITY = 2, 3, 4, 5
+_DECLARED_CONTAINER_FIELDS = (
+    "container_id", "outer_loop", "chain", "n", "first_op_seq_id",
+    "last_op_seq_id", "record_count", "path",
+)
 
 
 def _die(code: int, message: str) -> None:
@@ -143,11 +147,21 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     try:
         contract = json.loads(contract_bytes.decode("utf-8"))
         containers = contract["containers"]
+        if not isinstance(containers, list) or not all(isinstance(c, dict) for c in containers):
+            raise TypeError("containers is not a list of objects")
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
         _die(EXIT_EVIDENCE, f"FAIL: malformed surface run contract: {exc}")
 
     generated = ge.run_index(schedule)["containers"]
-    if containers != generated:
+    generated_declared = [
+        {key: container[key] for key in _DECLARED_CONTAINER_FIELDS}
+        for container in generated
+    ]
+    sealed_declared = [
+        {key: container.get(key) for key in _DECLARED_CONTAINER_FIELDS}
+        for container in containers
+    ]
+    if generated_declared != sealed_declared:
         _die(EXIT_EVIDENCE,
              "FAIL: generated surface container index differs from the sealed contract")
 
@@ -158,8 +172,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE,
              f"FAIL surface container set:\n  disk    {on_disk}\n  sealed  {expected}")
 
-    main_specs = [c for c in containers if c["chain"] == "main"]
-    surface_specs = [c for c in containers if c["container_id"] == "L1_surface"]
+    main_specs = [c for c in containers if c.get("chain") == "main"]
+    surface_specs = [c for c in containers if c.get("container_id") == "L1_surface"]
     if not main_specs or len(surface_specs) != 1:
         _die(EXIT_EVIDENCE, "FAIL: surface contract lacks main or unique surface container")
     last_main_spec = max(main_specs, key=lambda c: int(c["n"]))
@@ -171,6 +185,9 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         if container["header"].get("run_contract_sha256") != sealed_sha:
             _die(EXIT_EVIDENCE,
                  f"FAIL: {spec['container_id']} sealed the wrong run contract")
+        if container["header"].get("descriptor_sha256") != spec.get("descriptor_sha256"):
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {spec['container_id']} sealed the wrong descriptor")
 
     main_records = last_main["records"]
     surface_records = surface["records"]
