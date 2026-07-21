@@ -144,7 +144,21 @@ jobs:
       # that rewrites flags.make. The reader's numpy (pinned, installed above —
       # torch>=2.8 does NOT pull it in) is its only dep beyond the stdlib.
       - name: G3.3-M self-check + 5-mutant kill gate
-        run: bash harness/g33_overlay/selfcheck_gate.sh
+        run: |
+          # runner-owned, per-run path so the diagnostics below can find it.
+          bash harness/g33_overlay/selfcheck_gate.sh \
+            "$RUNNER_TEMP/g33-gate-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: Upload G3.3-M gate diagnostics (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g33-gate-diag-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/g33-gate-${{ github.run_id }}-${{ github.run_attempt }}/
+            libtorch/build/CMakeFiles/kdm6_c.dir/flags.make
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Assert the test fault seam is ABSENT from the shipped library
         run: |
@@ -220,8 +234,11 @@ jobs:
     name: build + symbol surface + smoke (macOS arm64, libtorch CPU)
     runs-on: macos-14
     # The full libtorch C++ build runs ~43-45 min on macos-14 hosted runners
-    # (last green was 42.5 min); a 45-min cap flakes as timeout-cancelled. 60 gives margin.
-    timeout-minutes: 60
+    # (last green was 42.5 min), but the arm64 runner intermittently stalls
+    # mid-build under load and blew past 60 (cancelled at 27% link). 90 gives the
+    # slow-but-progressing case room to finish; a genuine hang is a runner issue
+    # (owner: consider ccache / a self-hosted runner), not tunable here.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -271,7 +288,21 @@ jobs:
       # on Linux. This is where "the self-check runs on macOS" stops being a
       # local claim.
       - name: G3.3-M self-check + 5-mutant kill gate
-        run: bash harness/g33_overlay/selfcheck_gate.sh
+        run: |
+          # runner-owned, per-run path so the diagnostics below can find it.
+          bash harness/g33_overlay/selfcheck_gate.sh \
+            "$RUNNER_TEMP/g33-gate-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: Upload G3.3-M gate diagnostics (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g33-gate-diag-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/g33-gate-${{ github.run_id }}-${{ github.run_attempt }}/
+            libtorch/build/CMakeFiles/kdm6_c.dir/flags.make
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Assert arch (arm64) + fault seam ABSENT + install-name
         run: |
