@@ -29,6 +29,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_derived as gdv
 import g33_dump as gd
 import g33_expectation as ge
 import g33_run_env as gre
@@ -66,7 +67,8 @@ def _schedule(algorithm: str) -> dict:
 
 
 def _record(records: list[dict], **key) -> dict:
-    hits = [r for r in records if all(r.get(k) == v for k, v in key.items())]
+    hits = [record for record in records
+            if all(record.get(name) == value for name, value in key.items())]
     if len(hits) != 1:
         _die(EXIT_EVIDENCE, f"FAIL: {len(hits)} records match {key} (want exactly 1)")
     return hits[0]
@@ -83,7 +85,7 @@ def _bits(values: np.ndarray) -> bytes:
 
 
 def _same_shape(*arrays: np.ndarray) -> None:
-    shapes = {a.shape for a in arrays}
+    shapes = {array.shape for array in arrays}
     if len(shapes) != 1:
         raise gd.G33Corruption(f"surface operands have different shapes: {sorted(shapes)}")
 
@@ -96,7 +98,7 @@ def recompute_surface(qr: np.ndarray, qs: np.ndarray, qg: np.ndarray,
                         ("qi", qi), ("delz", delz)):
         if not np.isfinite(array).all():
             raise gd.G33Corruption(f"surface operand {name} is non-finite")
-    if any((a < 0).any() for a in (qr, qs, qg, qi)):
+    if any((array < 0).any() for array in (qr, qs, qg, qi)):
         raise gd.G33Corruption("surface bottom-fall operand is negative")
     if (delz <= 0).any():
         raise gd.G33Corruption("surface delz_bottom is non-positive")
@@ -121,13 +123,47 @@ def recompute_surface(qr: np.ndarray, qs: np.ndarray, qg: np.ndarray,
     }
 
 
+def _load_bound_containers(containers: list[dict], dump_dir: Path,
+                           contract: dict, sealed_sha: str) -> dict[str, dict]:
+    """Read every sealed container and bind its header to the run contract."""
+    loaded: dict[str, dict] = {}
+    for spec in containers:
+        container = gd.read_container(dump_dir / spec["path"])
+        header = container["header"]
+        expected = {
+            "case_id": contract["case_id"],
+            "pair_id": contract["pair_id"],
+            "backend": "cpp",
+            "algorithm": contract["schedule"]["algorithm"],
+            "B": B,
+            "K": K,
+            "run_uuid": contract["run_uuid"],
+            "column_layout_id": contract["column_layout_id"],
+            "container_id": spec["container_id"],
+            "descriptor_sha256": spec["descriptor_sha256"],
+            "run_contract_sha256": sealed_sha,
+            "global_op_seq_start": spec["first_op_seq_id"],
+            "global_op_seq_end": spec["last_op_seq_id"],
+        }
+        for field, value in expected.items():
+            if header.get(field) != value:
+                _die(EXIT_EVIDENCE,
+                     f"FAIL: {spec['container_id']} header {field}={header.get(field)!r} "
+                     f"!= sealed {value!r}")
+        if spec["container_id"] in loaded:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: duplicate sealed container id {spec['container_id']}")
+        loaded[spec["container_id"]] = container
+    return loaded
+
+
 def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     schedule = _schedule(algorithm)
     env = gre.build_env(
         schedule,
         workdir,
         binary=driver,
-        column_map=[[i, 0, i, i] for i in range(B)],
+        column_map=[[index, 0, index, index] for index in range(B)],
         run_uuid=f"surface-{algorithm}-{uuid.uuid4().hex[:12]}",
         column_layout_id="surface-selfcheck-3col",
     )
@@ -147,18 +183,20 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     try:
         contract = json.loads(contract_bytes.decode("utf-8"))
         containers = contract["containers"]
-        if not isinstance(containers, list) or not all(isinstance(c, dict) for c in containers):
+        if not isinstance(containers, list) or not all(isinstance(item, dict) for item in containers):
             raise TypeError("containers is not a list of objects")
-    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        seal_qcrmin = float(contract["qcrmin"])
+        seal_dtcld = float(contract["dtcld"])
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         _die(EXIT_EVIDENCE, f"FAIL: malformed surface run contract: {exc}")
 
     generated = ge.run_index(schedule)["containers"]
     generated_declared = [
-        {key: container[key] for key in _DECLARED_CONTAINER_FIELDS}
+        {field: container[field] for field in _DECLARED_CONTAINER_FIELDS}
         for container in generated
     ]
     sealed_declared = [
-        {key: container.get(key) for key in _DECLARED_CONTAINER_FIELDS}
+        {field: container.get(field) for field in _DECLARED_CONTAINER_FIELDS}
         for container in containers
     ]
     if generated_declared != sealed_declared:
@@ -166,31 +204,28 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
              "FAIL: generated surface container index differs from the sealed contract")
 
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
-    on_disk = sorted(p.name for p in dump_dir.glob("*.g33"))
-    expected = sorted(c["path"] for c in containers)
-    if on_disk != expected:
+    on_disk = sorted(path.name for path in dump_dir.glob("*.g33"))
+    expected_paths = sorted(container["path"] for container in containers)
+    if on_disk != expected_paths:
         _die(EXIT_EVIDENCE,
-             f"FAIL surface container set:\n  disk    {on_disk}\n  sealed  {expected}")
+             f"FAIL surface container set:\n  disk    {on_disk}\n  sealed  {expected_paths}")
+    loaded = _load_bound_containers(containers, dump_dir, contract, sealed_sha)
 
-    main_specs = [c for c in containers if c.get("chain") == "main"]
-    surface_specs = [c for c in containers if c.get("container_id") == "L1_surface"]
+    main_specs = [container for container in containers if container.get("chain") == "main"]
+    surface_specs = [container for container in containers
+                     if container.get("container_id") == "L1_surface"]
     if not main_specs or len(surface_specs) != 1:
         _die(EXIT_EVIDENCE, "FAIL: surface contract lacks main or unique surface container")
-    last_main_spec = max(main_specs, key=lambda c: int(c["n"]))
+    last_main_spec = max(main_specs, key=lambda container: int(container["n"]))
     surface_spec = surface_specs[0]
-
-    last_main = gd.read_container(dump_dir / last_main_spec["path"])
-    surface = gd.read_container(dump_dir / surface_spec["path"])
-    for container, spec in ((last_main, last_main_spec), (surface, surface_spec)):
-        if container["header"].get("run_contract_sha256") != sealed_sha:
-            _die(EXIT_EVIDENCE,
-                 f"FAIL: {spec['container_id']} sealed the wrong run contract")
-        if container["header"].get("descriptor_sha256") != spec.get("descriptor_sha256"):
-            _die(EXIT_EVIDENCE,
-                 f"FAIL: {spec['container_id']} sealed the wrong descriptor")
+    last_main = loaded[last_main_spec["container_id"]]
+    surface = loaded[surface_spec["container_id"]]
 
     main_records = last_main["records"]
     surface_records = surface["records"]
+    pre = {record["field"]: (record["dtype"], record["payload"])
+           for record in main_records if record["stage"] == "substep_pre"}
+    gdv.check_producer_flags(pre, int(last_main_spec["n"]), seal_qcrmin, seal_dtcld)
     k_bottom = K - 1
 
     qr_fall = _record(
@@ -213,14 +248,18 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
              f"FAIL surface-link: {algorithm} L1_surface delz_bottom != "
              f"{last_main_spec['container_id']} substep_pre.delz_raw[:, {k_bottom}]")
 
-    fields = {name: _f32(_record(surface_records, stage="surface", field=name))
-              for name in ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
-                           "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
-                           "rain_increment", "snow_increment", "graupel_increment")}
+    fields = {
+        name: _f32(_record(surface_records, stage="surface", field=name))
+        for name in (
+            "bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi",
+            "bottom_fall_total", "delz_bottom", "rain_increment", "snow_increment",
+            "graupel_increment",
+        )
+    }
     offline = recompute_surface(
         fields["bottom_fall_qr"], fields["bottom_fall_qs"],
         fields["bottom_fall_qg"], fields["bottom_fall_qi"],
-        fields["delz_bottom"], DTCLD)
+        fields["delz_bottom"], seal_dtcld)
     for name, expected_values in offline.items():
         record = _record(surface_records, stage="surface", field=name)
         if record["payload"] != _bits(expected_values):
@@ -251,8 +290,6 @@ def main() -> None:
         print(f"(evidence preserved at {root})", file=sys.stderr)
         _die(EXIT_EVIDENCE, f"FAIL surface evidence: {exc}")
     except BaseException:
-        # Includes SystemExit plus unexpected IO/parser errors: never lose the
-        # forensic path merely because the failure was outside a predicted gate.
         print(f"(evidence preserved at {root})", file=sys.stderr)
         raise
     else:
