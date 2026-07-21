@@ -76,6 +76,21 @@ def test_contract_loader_rejects_malformed_container_specs(tmp_path, contract, m
         abc._load_contract_specs(outdir, env)
 
 
+def test_cpp_records_inherit_header_identity_before_multiset_comparison():
+    schedule = abc._schedule("legacy", "closure3")
+    expected = ge.expected_records(schedule)[0]
+    # C++ stores case/pair/backend once in the container header, not redundantly
+    # in every record key. The checker must normalize them before record_key().
+    record = {k: v for k, v in expected.items()
+              if k not in ("case_id", "pair_id", "backend")}
+    header = {"case_id": schedule["case_id"],
+              "pair_id": schedule["pair_id"], "backend": "cpp"}
+    logical = abc._record_with_header_identity(record, header)
+    assert ge.record_key(logical) == ge.record_key(expected)
+    with pytest.raises(gd.G33Corruption, match="conflicts with header"):
+        abc._record_with_header_identity({**record, "backend": "fortran"}, header)
+
+
 def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
     for algorithm in abc.ALGORITHMS:
         for case_name, (B, K) in abc.CASES.items():
