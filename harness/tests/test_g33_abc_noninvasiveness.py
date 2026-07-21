@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Pure fail-closed tests for the C++ A/B/C non-invasiveness harness."""
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -30,6 +32,13 @@ def _valid_output(algorithm="legacy", case_name="closure3"):
     return ("\n".join(lines) + "\n").encode()
 
 
+def _contract_env(path: Path, contract) -> dict:
+    body = json.dumps(contract, sort_keys=True).encode()
+    path.mkdir()
+    (path / "run_contract.json").write_bytes(body)
+    return {"KDM6_G33_RUN_CONTRACT_SHA256": hashlib.sha256(body).hexdigest()}
+
+
 def test_parse_output_accepts_the_exact_complete_protocol():
     parsed = abc.parse_output(_valid_output(), "legacy", "closure3")
     assert tuple(parsed) == abc.EXPECTED_FIELDS
@@ -47,6 +56,24 @@ def test_parse_output_accepts_the_exact_complete_protocol():
 def test_parse_output_rejects_truncated_or_relabelled_results(edit, match):
     with pytest.raises(gd.G33Corruption, match=match):
         abc.parse_output(edit(_valid_output()), "legacy", "closure3")
+
+
+def test_contract_loader_rejects_a_missing_contract(tmp_path):
+    with pytest.raises(gd.G33Corruption, match="contract missing"):
+        abc._load_contract_specs(
+            tmp_path / "missing", {"KDM6_G33_RUN_CONTRACT_SHA256": "0" * 64})
+
+
+@pytest.mark.parametrize("contract,match", [
+    ({"containers": "not-a-list"}, "containers must be a list"),
+    ({"containers": ["not-an-object"]}, r"containers\[0\] must be an object"),
+    ({"containers": [{}]}, "container_id"),
+])
+def test_contract_loader_rejects_malformed_container_specs(tmp_path, contract, match):
+    outdir = tmp_path / "case"
+    env = _contract_env(outdir, contract)
+    with pytest.raises(gd.G33Corruption, match=match):
+        abc._load_contract_specs(outdir, env)
 
 
 def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
@@ -68,4 +95,4 @@ def test_first_diff_identifies_the_first_changed_output_line():
     a = _valid_output()
     b = a.replace(b"FIELD qr", b"FIELD qx", 1)
     msg = abc._first_diff(a, b)
-    assert "line" in msg and b"FIELD qr".decode() in msg and b"FIELD qx".decode() in msg
+    assert "line" in msg and "FIELD qr" in msg and "FIELD qx" in msg
