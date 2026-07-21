@@ -35,6 +35,15 @@ on:
       - 'oracle/tests/test_cpp_parity.py'
       - 'oracle/tests/test_cpp_conservative_interface_parity.py'
       - 'oracle/conftest.py'
+      # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
+      # TUs / build script / gate / mutant generator + the self-check reader and
+      # its harness deps) so a change to them re-runs the continuous gate.
+      - 'harness/g33_overlay/**'
+      - 'harness/g33_selfcheck.py'
+      - 'harness/g33_run_env.py'
+      - 'harness/g33_dump.py'
+      - 'harness/g33_derived.py'
+      - 'harness/g33_expectation.py'
   pull_request:
     branches: [main]
     paths:
@@ -53,6 +62,15 @@ on:
       - 'oracle/tests/test_cpp_parity.py'
       - 'oracle/tests/test_cpp_conservative_interface_parity.py'
       - 'oracle/conftest.py'
+      # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
+      # TUs / build script / gate / mutant generator + the self-check reader and
+      # its harness deps) so a change to them re-runs the continuous gate.
+      - 'harness/g33_overlay/**'
+      - 'harness/g33_selfcheck.py'
+      - 'harness/g33_run_env.py'
+      - 'harness/g33_dump.py'
+      - 'harness/g33_derived.py'
+      - 'harness/g33_expectation.py'
   workflow_dispatch:
 
 jobs:
@@ -116,6 +134,16 @@ jobs:
 
       - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
+
+      # G3.3-M op-provenance kill gate: build the instrumented self-check driver
+      # + 5 mutants against the libkdm6.a this job just built, and require
+      # real=PASS with every mutant killed at its predicted site. This makes the
+      # op-provenance evidence a CONTINUOUS CI gate, not a local transcript. Runs
+      # on the SHIPPED (test-hooks OFF) config, BEFORE the reconfigure-ON below
+      # that rewrites flags.make. numpy (the fail-closed reader's only dep beyond
+      # the stdlib) comes in with torch, installed above.
+      - name: G3.3-M self-check + 5-mutant kill gate
+        run: bash harness/g33_overlay/selfcheck_gate.sh
 
       - name: Assert the test fault seam is ABSENT from the shipped library
         run: |
