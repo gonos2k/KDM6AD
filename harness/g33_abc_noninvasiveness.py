@@ -62,9 +62,8 @@ def _schedule(algorithm: str, case_name: str) -> dict:
         "B": B,
         "K": K,
         "loops": 1,
-        # The fixture uses dt=20 s and ~8 km layers. This is a declared
-        # one-substep schedule, not a producer-reported count: if execution ever
-        # needs n=2, the sealed container set makes C fail immediately.
+        # dt=20 s and ~8 km layers deliberately keep this a one-substep fixture.
+        # If execution ever needs n=2, the sealed container set fails immediately.
         "mstepmax_main": [1],
         "mstepmax_ice": [1],
         "species_scope": ["qr", "nr"],
@@ -127,13 +126,10 @@ def parse_output(raw: bytes, algorithm: str, case_name: str) -> dict:
             raise gd.G33Corruption(
                 f"ABC field {expected_name} has malformed raw-bit words")
         bits = [int(w, 16) for w in words]
-        if dtype == "f32":
-            nonfinite = [i for i, u in enumerate(bits) if ((u >> 23) & 0xff) == 0xff]
-        else:
-            nonfinite = [i for i, u in enumerate(bits) if ((u >> 52) & 0x7ff) == 0x7ff]
-        if nonfinite:
-            raise gd.G33Corruption(
-                f"ABC field {expected_name} contains non-finite values at {nonfinite[:8]}")
+        exponent = 23 if dtype == "f32" else 52
+        mask = 0xff if dtype == "f32" else 0x7ff
+        if any(((word >> exponent) & mask) == mask for word in bits):
+            raise gd.G33Corruption(f"ABC field {expected_name} contains non-finite values")
         if expected_name in parsed:
             raise gd.G33Corruption(f"duplicate ABC field {expected_name}")
         parsed[expected_name] = {"dtype": dtype, "shape": shape, "bits": bits}
@@ -159,15 +155,10 @@ def _run(driver: Path, algorithm: str, case_name: str, *,
 
 def _record(records: list[dict], *, stage: str, field: str,
             op_id: str | None = None, species: str | None = None) -> dict:
-    hits = []
-    for record in records:
-        if record.get("stage") != stage or record.get("field") != field:
-            continue
-        if op_id is not None and record.get("op_id") != op_id:
-            continue
-        if species is not None and record.get("species") != species:
-            continue
-        hits.append(record)
+    hits = [r for r in records
+            if r.get("stage") == stage and r.get("field") == field
+            and (op_id is None or r.get("op_id") == op_id)
+            and (species is None or r.get("species") == species)]
     if len(hits) != 1:
         raise gd.G33Corruption(
             f"{len(hits)} records match stage={stage} field={field} "
@@ -176,11 +167,10 @@ def _record(records: list[dict], *, stage: str, field: str,
 
 
 def _values(record: dict) -> np.ndarray:
-    vals = gdv.unpack_values(record["dtype"], record["payload"])
-    return np.asarray(vals)
+    return np.asarray(gdv.unpack_values(record["dtype"], record["payload"]))
 
 
-def _load_contract_specs(outdir: Path, env: dict[str, str]) -> tuple[bytes, str, list[dict], list[dict]]:
+def _load_contract_specs(outdir: Path, env: dict[str, str]) -> tuple[str, list[dict], list[dict]]:
     """Read and structurally validate the sealed C run contract, fail-closed."""
     contract_path = outdir / "run_contract.json"
     if not contract_path.is_file():
@@ -210,11 +200,21 @@ def _load_contract_specs(outdir: Path, env: dict[str, str]) -> tuple[bytes, str,
             actual_specs.append({key: spec[key] for key in keys})
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise gd.G33Corruption(f"malformed C run contract: {exc}") from None
-    return body, sealed_sha, specs, actual_specs
+    return sealed_sha, specs, actual_specs
+
+
+def _record_with_header_identity(record: dict, header: dict) -> dict:
+    """Normalize header-scoped identity into a logical record for completeness."""
+    identity = {name: header[name] for name in ("case_id", "pair_id", "backend")}
+    for name, value in identity.items():
+        if name in record and record[name] != value:
+            raise gd.G33Corruption(
+                f"record {name}={record[name]!r} conflicts with header {value!r}")
+    return {**identity, **record}
 
 
 def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> dict:
-    _, sealed_sha, specs, actual_specs = _load_contract_specs(outdir, env)
+    sealed_sha, specs, actual_specs = _load_contract_specs(outdir, env)
     generated = ge.run_index(schedule)["containers"]
     if actual_specs != generated:
         raise gd.G33Corruption(
@@ -228,13 +228,13 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
             f"C container set differs\n  actual: {actual_paths}\n  sealed: {expected_paths}")
 
     containers = {}
-    all_records = []
+    logical_records = []
     for spec in specs:
         path = dump_dir / spec["path"]
         if not path.is_file():
             raise gd.G33Corruption(f"C container missing: {path}")
         container = gd.read_container(path)
-        h = container["header"]
+        header = container["header"]
         expected_header = {
             "case_id": schedule["case_id"], "pair_id": schedule["pair_id"],
             "backend": "cpp", "algorithm": schedule["algorithm"],
@@ -245,26 +245,32 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
             "binary_sha256": env["KDM6_G33_BINARY_SHA256"],
         }
         for key, want in expected_header.items():
-            if h.get(key) != want:
+            if header.get(key) != want:
                 raise gd.G33Corruption(
-                    f"C {spec['container_id']} header {key}={h.get(key)!r}, "
+                    f"C {spec['container_id']} header {key}={header.get(key)!r}, "
                     f"expected {want!r}")
         containers[spec["container_id"]] = container
-        all_records.extend(container["records"])
+        logical_records.extend(
+            _record_with_header_identity(record, header)
+            for record in container["records"])
 
-    observed = {ge.record_key(r) for r in all_records}
-    expected = ge.expected_key_set(schedule)
-    if observed != expected:
+    # C++ keeps run identity in the container header rather than repeating it in
+    # every record. Normalize that identity, then compare MULTIPLICITY—not a set,
+    # which would be blind to one expected record being duplicated in place of
+    # another.
+    diff = ge.completeness_diff(logical_records, schedule)
+    if any(diff.values()):
         raise gd.G33Corruption(
-            f"C logical record set differs: missing={len(expected-observed)} "
-            f"extra={len(observed-expected)}")
-    op_seq = sorted(int(r["op_seq_id"]) for r in all_records)
-    if op_seq != list(range(len(all_records))):
+            "C logical record multiset differs: "
+            f"missing={sum(diff['missing'].values())} "
+            f"extra={sum(diff['extra'].values())} "
+            f"duplicated={sum(diff['duplicated'].values())}")
+    op_seq = sorted(int(record["op_seq_id"]) for record in logical_records)
+    if op_seq != list(range(len(logical_records))):
         raise gd.G33Corruption("C global op_seq does not tile 0..N-1 exactly")
 
-    # Numerical diagnostics from actual substep evidence. The current first scope
-    # records rain mass/number fall rates, so this is a rain-family CFL, not the
-    # total maximum that also includes snow/graupel.
+    # Numerical diagnostics from actual substep evidence. The first scope records
+    # rain mass/number rates; this is not the total qs/qg main-chain maximum.
     rain_cfl_max = 0.0
     rain_substep_cfl_max = 0.0
     boundary_proxy_min = math.inf
@@ -305,7 +311,7 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
             boundary_proxy_min,
             float(np.abs((cfl + 1.0) - np.rint(cfl + 1.0))
                   .min(initial=math.inf)))
-        msteps.extend(int(v) for v in mstep)
+        msteps.extend(int(value) for value in mstep)
         floor_count += int(_values(pre["dend_floor_active"]).sum())
         floor_count += int(_values(pre["delz_floor_active"]).sum())
 
@@ -330,24 +336,25 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
 
     if not msteps or min(msteps) < 1 or max(msteps) > 100:
         raise gd.G33Corruption(f"invalid or missing mstep diagnostics: {msteps}")
-    if any(v == 100 for v in msteps):
+    if any(value == 100 for value in msteps):
         raise gd.G33Corruption(
             "A/B/C synthetic fixture reached the mstep=100 saturation cap")
     if floor_count:
         raise gd.G33Corruption(
             f"A/B/C valid-metric fixture activated {floor_count} metric floors")
 
-    surface_specs = [s for s in specs if s["container_id"].endswith("_surface")]
+    surface_specs = [spec for spec in specs
+                     if spec["container_id"].endswith("_surface")]
     if len(surface_specs) != 1:
         raise gd.G33Corruption("C run has no unique surface container")
     surface_records = containers[surface_specs[0]["container_id"]]["records"]
     surface_negative = 0
     for name in ("bottom_fall_qr", "bottom_fall_qs",
                  "bottom_fall_qg", "bottom_fall_qi"):
-        vals = _values(_record(surface_records, stage="surface", field=name))
-        if not np.isfinite(vals).all():
+        values = _values(_record(surface_records, stage="surface", field=name))
+        if not np.isfinite(values).all():
             raise gd.G33Corruption(f"surface {name} is non-finite")
-        surface_negative += int(np.count_nonzero(vals < 0))
+        surface_negative += int(np.count_nonzero(values < 0))
     if surface_negative:
         raise gd.G33Corruption(
             f"surface clamp would hide {surface_negative} negative bottom-fall values")
@@ -364,9 +371,9 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
 
 def _first_diff(a: bytes, b: bytes) -> str:
     aa, bb = a.splitlines(), b.splitlines()
-    for i, (x, y) in enumerate(zip(aa, bb), 1):
-        if x != y:
-            return f"line {i}\n  A: {x[:160]!r}\n  B: {y[:160]!r}"
+    for i, (left, right) in enumerate(zip(aa, bb), 1):
+        if left != right:
+            return f"line {i}\n  A: {left[:160]!r}\n  B: {right[:160]!r}"
     return f"different line counts {len(aa)} vs {len(bb)}"
 
 
