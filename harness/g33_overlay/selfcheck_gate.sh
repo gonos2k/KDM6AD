@@ -1,10 +1,11 @@
 #!/bin/bash
-# Enforced G3.3-M kill gate.
+# Enforced G3.3-M gate.
 #
 # The main driver proves the qr/nr substep operator. The focused surface driver
-# proves the final bottom-fall -> precipitation path. A real driver must pass;
-# each mutant must fail with EXIT_FIDELITY at its single predicted site — never
-# because of a build error, SKIP, crash, or malformed evidence.
+# proves the final bottom-fall -> precipitation path. The full-step A/B/C pair
+# then proves that the diagnostic overlay is non-invasive with env absent and
+# active. Real drivers must pass; each mutant must fail at its predicted site —
+# never because of a build error, SKIP, crash, or malformed evidence.
 set -u
 cd "$(dirname "$0")/../.."
 # shellcheck disable=SC1091
@@ -128,7 +129,27 @@ if ! why=$(verdict_mutant "$surface_bottom_out" "$surface_bottom_rc" "$SURFACE_B
     exit 1
 fi
 
-echo "KILL GATE PASS: real substep+surface checks PASS; all seven mutants killed at predicted sites:"
+# ── Full-step C++ A/B/C non-invasiveness ─────────────────────────────────────
+abc_out=$(python3 harness/g33_abc_noninvasiveness.py \
+    --canonical-driver "$OUT/abc_canonical_driver" \
+    --diagnostic-driver "$OUT/abc_diagnostic_driver" 2>&1)
+abc_rc=$?
+echo "$abc_out" | tail -5
+if [ "$abc_rc" -ne 0 ]; then
+    echo "ABC GATE FAIL: canonical/env-off/env-on outputs or C evidence failed (rc=$abc_rc)"
+    echo "$abc_out" | tail -12
+    exit 1
+fi
+abc_count=$(printf '%s\n' "$abc_out" | grep -c '^ABC PASS ' || true)
+if [ "$abc_count" -ne 4 ] || \
+   ! printf '%s\n' "$abc_out" | grep -qF \
+       "C++ A/B/C NON-INVASIVENESS PASS — 4 algorithm/case pairs, strict raw-bit"; then
+    echo "ABC GATE FAIL: coverage drifted (ABC PASS lines=$abc_count, expected 4)"
+    echo "$abc_out" | tail -12
+    exit 1
+fi
+
+echo "G3.3 CONTINUOUS GATE PASS: substep+surface real checks, seven predicted-site mutant kills, and C++ A/B/C strict-bitwise"
 echo "  shadow:        $(printf '%s\n' "$mut_out" | grep -v '^[(]evidence' | tail -1)"
 echo "  cons:          $(printf '%s\n' "$cons_out" | grep -v '^[(]evidence' | tail -1)"
 echo "  prevout:       $(printf '%s\n' "$prevout_out" | grep -v '^[(]evidence' | tail -1)"
