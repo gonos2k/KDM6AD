@@ -215,8 +215,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     _decl = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
              "last_op_seq_id", "record_count", "path")
     gen = [{k: c[k] for k in _decl} for c in ge.run_index(sched)["containers"]]
-    containers = contract["containers"]
-    if gen != [{k: c[k] for k in _decl} for c in containers]:
+    containers = contract.get("containers", [])
+    if gen != [{k: c.get(k) for k in _decl} for c in containers]:
         _die(EXIT_EVIDENCE,
              "FAIL: run_index() disagrees with the sealed run_contract.containers "
              "— schedule/generator drift")
