@@ -35,6 +35,10 @@ SubstepAdvectionOutputs substep_advection_conservative(
     const SubstepAdvectionParams& p
 ) {
     const int64_t K = in.state.qr.size(-1);
+    // dend_safe/delz_safe are NUMERICAL denominator guards only (ρ and Δz appear
+    // in divisors below), NOT a physical threshold — and the three quantities
+    // carry different units. Valid meteorological inputs must not activate either
+    // floor; the host/replay gates require zero activations.
     auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
     auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);
     // Per-column divisor + gate — identical to the legacy substep (Fortran
@@ -92,7 +96,9 @@ SubstepAdvectionOutputs substep_advection_conservative(
         }
 
         // ── numbers (nr): legacy's implied Δz-only measure, actual transfer ──
-        // (no ρΔz mass conversion on numbers — oracle keeps the legacy form)
+        // (no ρΔz mass conversion on numbers — oracle keeps the legacy form).
+        // Reference-faithful ONLY: for a number mixing ratio [#/kg] this does NOT
+        // conserve the physical ρΔz·n column-number moment (release science gate).
         auto falk_nr = (nr_cols[k] * in.workn_qr.select(-1, k)
                         / mstep_col_safe * gate_col).to(in.state.qr.scalar_type());
         auto dn_out = torch::minimum(falk_nr * dtcld, nr_cols[k]);
