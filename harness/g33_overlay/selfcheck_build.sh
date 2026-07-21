@@ -25,8 +25,10 @@ CXX=$(xcrun -f c++ 2>/dev/null || command -v c++ || true)
 # Torch lib dir straight from the interpreter (works for site-/dist-packages and
 # other layouts), not by parsing CMake include flags. It is the same torch the
 # CMake configure used (-DCMAKE_PREFIX_PATH came from this interpreter).
-TORCHLIB=$(python3 -c 'import pathlib, torch; print(pathlib.Path(torch.__file__).resolve().parent / "lib")')
-[ -d "$TORCHLIB" ] || { echo "torch lib dir not found: $TORCHLIB" >&2; exit 2; }
+# `|| true` so a missing python3/torch does not trip `set -e` before the check
+# below — otherwise the helpful message is dead code.
+TORCHLIB=$(python3 -c 'import pathlib, torch; print(pathlib.Path(torch.__file__).resolve().parent / "lib")' 2>/dev/null || true)
+[ -n "$TORCHLIB" ] && [ -d "$TORCHLIB" ] || { echo "torch lib dir not found (is python3/torch installed?): '$TORCHLIB'" >&2; exit 2; }
 
 # Supported OSes are ENUMERATED fail-loud, not "everything that is not macOS is
 # .so" — an unexpected platform is an explicit error, not a wrong default.
@@ -47,8 +49,14 @@ for lib in "${TORCHLIBS[@]}"; do
 done
 
 # FRESH, owned output directory: wipe any prior contents so no stale artifact
-# survives into this run. ${OUT:?} refuses an empty path (never `rm -rf ""`).
+# survives into this run. ${OUT:?} refuses an empty path, and the guard below
+# refuses a critical directory — `rm -rf` on a caller-supplied path must never
+# be able to destroy /, the repo root, or $HOME.
 OUT=${1:-/tmp/g33_selfcheck_build}
+case "$OUT" in
+    / | . | .. | "$PWD" | "$HOME")
+        echo "refusing to rm -rf a critical directory: $OUT" >&2; exit 2 ;;
+esac
 rm -rf "${OUT:?}"
 mkdir -p "$OUT"
 
