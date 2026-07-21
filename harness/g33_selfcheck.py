@@ -49,6 +49,12 @@ B, K, MSTEPMAX, QCRMIN, DTCLD = 3, 4, 2, 1.0e-9, 20.0   # DTCLD matches selfchec
 # only to within this measured float32 envelope.
 KAPPA_ENVELOPE = 4.0
 
+# §3/§5 minimum ULP margin a strict cap-branch witness must clear the reservoir
+# by, so the branch stays strict under compiler/backend rounding (owner: a 1-ULP
+# witness is fragile). The fixture drives the binding cell 20x, so real margins
+# are far above this floor.
+CAP_MARGIN_ULP = 8
+
 # Failure CLASSES by exit code — the discrimination a wrapped child cannot
 # forge. Driver stdout/stderr is interpolated into failure messages, so child-
 # controlled text can become the terminal line; the parent's exit code cannot.
@@ -107,6 +113,20 @@ def _post_map(recs, cid):
         if f not in m:
             _die(EXIT_EVIDENCE, f"FAIL: {cid} substep_post is missing field {f}")
     return m
+
+
+def _post_snap(post_map, cid):
+    """Decode substep_post qr/nr to [B,K] arrays, SIZE-VALIDATED. A truncated or
+    over-long payload would otherwise raise a raw ValueError at reshape — the
+    harness fail-closes with a clean EXIT_EVIDENCE instead."""
+    out = {}
+    for f in ("qr", "nr"):
+        arr = _np(*post_map[f])
+        if arr.size != B * K:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {cid} substep_post.{f} size {arr.size} != {B * K}")
+        out[f] = arr.reshape(B, K)
+    return out
 
 
 def _bits(a, dt):
@@ -175,6 +195,13 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     # ladder that no longer exercises it.
     cov = {"mstep": None, "gate_by_n": {}, "qr_cap": set(), "nr_cap": set(),
            "floor_active": 0}
+    # §3/§5 cap ULP-margin: a strict branch witness that clears the reservoir by
+    # a single ULP is compiler/backend/rounding-fragile — it may not stay strict
+    # elsewhere. Track the SMALLEST margin among strict-bound (RIGHT_SELECTED)
+    # and strict-unbound (LEFT_SELECTED) witnesses, per species, and require it
+    # to exceed a floor so the fixture opens each branch ROBUSTLY, not barely.
+    cap_margin = {"qr": {"bound": [], "unbound": []},
+                  "nr": {"bound": [], "unbound": []}}
     stats_links = {"n": 0}
     # §7 interface roundoff residual: the ρΔz transfer is algebraically
     # conservative but NOT bit-exact in f32 (dq_in = fl32(dq_out*m_src/m_dst)),
@@ -201,6 +228,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
             _die(EXIT_EVIDENCE,
                  f"FAIL: {c['container_id']} sealed a different run_contract_sha256 "
                  f"than the run used")
+
+        # substep_post field map — computed ONCE per container (fail-closed on
+        # missing qr/nr) and reused by both the §2.1 post_snap and the carry.
+        post = _post_map(recs, c["container_id"])
 
         pre = {r["field"]: (r["dtype"], r["payload"])
                for r in recs if r["stage"] == "substep_pre"}
@@ -292,8 +323,18 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                                      op_id=op, field="outflow_pre_cap")["payload"]
                 resv_p = _payload(recs, stage="op", k=k, species=sp,
                                   op_id=op, field="source_reservoir")["payload"]
-                for br in gdv.classify_min("f32", pre_cap_p, resv_p):
+                # ULP distance = |bit_int(pre_cap) - bit_int(reservoir)|, exact
+                # for same-sign positive f32 (monotone bit ordering). pre_cap and
+                # reservoir are mass/number quantities, always ≥ 0.
+                pre_u = np.frombuffer(pre_cap_p, dtype=">u4").astype(np.int64)
+                resv_u = np.frombuffer(resv_p, dtype=">u4").astype(np.int64)
+                ulp = np.abs(pre_u - resv_u)
+                for br, du in zip(gdv.classify_min("f32", pre_cap_p, resv_p), ulp):
                     cov[key].add(br)
+                    if br == gdv.BRANCH_RIGHT_SELECTED:
+                        cap_margin[sp]["bound"].append(int(du))
+                    elif br == gdv.BRANCH_LEFT_SELECTED:
+                        cap_margin[sp]["unbound"].append(int(du))
 
         dend = _np(*pre["dend_raw"]).reshape(B, K)
         w1 = _np(*pre["work1_qr"]).reshape(B, K)
@@ -366,8 +407,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"k={k_} {msg}")
                 stats_links["n"] += 1
 
-            post_rec = _post_map(recs, c["container_id"])
-            post_snap = {f: _np(*post_rec[f]).reshape(B, K) for f in ("qr", "nr")}
+            post_snap = _post_snap(post, c["container_id"])
 
             # 2.2 — TOP cell (k=0): no inflow, so the whole update is a single
             # subtraction. The interior loop starts at k=1 and would leave the
@@ -551,8 +591,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                      k, "NR_UPDATE.n_post != substep_post.nr[:, k] (returned state diverged)")
 
         # store this substep's post-state and outgoing accumulator for the next
-        # substep of the SAME chain. _post_map fail-closes on missing qr/nr.
-        post = _post_map(recs, c["container_id"])
+        # substep of the SAME chain (post computed once above, reused here).
         carry[chain_key] = {"n": n_sub, "post": post,
                             "fall_after": _fallacc(recs, "fall_after")}
 
@@ -588,6 +627,17 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                  f"strictly-bound (RIGHT_SELECTED) and strictly-unbound "
                  f"(LEFT_SELECTED) (saw {sorted(seen)}) — a VALUE_TIE does not "
                  f"count; the fixture no longer tests the cap branch")
+        # §3/§5 ULP-margin: each strict witness must clear the reservoir by more
+        # than a knife-edge, so the branch stays strict under compiler/backend
+        # rounding differences.
+        sp = "qr" if key == "qr_cap" else "nr"
+        for side in ("bound", "unbound"):
+            margins = cap_margin[sp][side]
+            if min(margins) < CAP_MARGIN_ULP:
+                _die(EXIT_EVIDENCE,
+                     f"FAIL coverage: {label} strict-{side} cap witness margin "
+                     f"{min(margins)} ULP < {CAP_MARGIN_ULP} — the branch opens "
+                     f"by a knife-edge, fragile to rounding")
     # §7 interface residual envelope: the ρΔz transfer closes to within a few
     # ULP of the metric-weighted magnitude. A single fl32(divide)·multiply
     # round-trip gives κ≈0.5; metric amplification (χ) lifts it modestly. The
@@ -602,9 +652,12 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                  f"FAIL interface residual: κ_max {resid['kappa_max']:.3g} > "
                  f"{KAPPA_ENVELOPE} ULP — the ρΔz closure exceeds the roundoff "
                  f"envelope (a dropped/wrong metric, not rounding)")
+    qr_bm = min(cap_margin["qr"]["bound"] + cap_margin["qr"]["unbound"])
+    nr_bm = min(cap_margin["nr"]["bound"] + cap_margin["nr"]["unbound"])
     stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
                          f"floors {cov['floor_active']}, "
-                         f"QR/NR cap both strictly bound+unbound, "
+                         f"QR/NR cap both strictly bound+unbound "
+                         f"(min margin QR {qr_bm}, NR {nr_bm} ULP ≥{CAP_MARGIN_ULP}), "
                          f"{stats_links['n']} causal links, "
                          f"interface κ_max {resid['kappa_max']:.3g} ULP "
                          f"(≤{KAPPA_ENVELOPE}), χ_max {resid['chi_max']:.3g}")

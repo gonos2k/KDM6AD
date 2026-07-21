@@ -1388,6 +1388,28 @@ def _cap_coverage_pass(states):
     return gd.BRANCH_LEFT_SELECTED in seen and gd.BRANCH_RIGHT_SELECTED in seen
 
 
+def test_cap_ulp_margin_distance_is_exact_for_positive_f32():
+    # ULP distance = |bit_int(a) - bit_int(b)| is exact for same-sign positive
+    # f32 (monotone bit ordering). The self-check uses it to require strict cap
+    # witnesses to clear the reservoir by ≥ CAP_MARGIN_ULP, not a knife-edge.
+    def ulp(a, b):
+        pa = np.array([a], dtype=">f4").tobytes()
+        pb = np.array([b], dtype=">f4").tobytes()
+        ua = np.frombuffer(pa, dtype=">u4").astype(np.int64)
+        ub = np.frombuffer(pb, dtype=">u4").astype(np.int64)
+        return int(np.abs(ua - ub)[0])
+
+    x = np.float32(1.0)
+    assert ulp(x, x) == 0                                   # identical -> 0 ULP
+    assert ulp(x, np.nextafter(x, np.float32(2), dtype=np.float32)) == 1
+    three_up = x
+    for _ in range(3):
+        three_up = np.nextafter(three_up, np.float32(2), dtype=np.float32)
+    assert ulp(x, three_up) == 3                            # a knife-edge (<8)
+    # a 20x-apart pair (the fixture's binding cell) is millions of ULP -> robust
+    assert ulp(np.float32(1.0e-6), np.float32(2.0e-5)) > gsc.CAP_MARGIN_ULP * 1000
+
+
 def test_interface_kappa_chi_measures_roundoff_and_metric_ratio():
     f32 = np.float32
     # A conserving transfer: inflow = fl32(mul_src / m_dst). κ must be tiny
