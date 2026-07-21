@@ -58,15 +58,8 @@ jobs:
       - name: overlay 4-check (all instrumented TUs)
         run: python harness/g33_overlay/verify_overlay.py
 
-      # G3.3-M standalone Fortran build (P1): compile the CANONICAL reference
-      # Fortran (host/KIM-meso) + the harness fixture driver with gfortran and
-      # run it — proving the reference legacy sedimentation runs standalone (no
-      # WRF, no libtorch), the foundation for the four-case cross-tree gate.
-      - name: Install gfortran
-        run: sudo apt-get update && sudo apt-get install -y gfortran
-      - name: G3.3-M standalone Fortran build + run
-        run: |
-          out=$(bash harness/g33_fortran/fortran_build.sh "$RUNNER_TEMP/g33-fortran-${GITHUB_RUN_ID}" | tail -1)
-          "$out/g33_fortran_driver" | tee "$RUNNER_TEMP/g33_fortran_out.txt"
-          grep -q '^FORTRAN DRIVER OK' "$RUNNER_TEMP/g33_fortran_out.txt" \
-            || { echo "FAIL: Fortran driver did not report OK"; exit 1; }
+      # NOTE: the G3.3-M Fortran leg (harness/g33_fortran/) is LOCAL-ONLY — the
+      # reference host WRF/KIM-meso Fortran tree is gitignored (not distributed),
+      # so it cannot run in CI. It is exercised by test_g33_fortran_build.py,
+      # which SKIPS when gfortran or the reference source is absent (i.e. always
+      # in CI) and builds+runs where the source is present (the owner's host).
