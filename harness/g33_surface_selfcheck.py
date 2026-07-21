@@ -247,7 +247,12 @@ def main() -> None:
             print(f"{algorithm}: SURFACE PASS — {stats['containers']} containers, "
                   f"qr bottom link + {stats['surface_fields']} fields bit-exact")
         print("SURFACE SELF-CHECK PASS")
-    except SystemExit:
+    except gd.G33Corruption as exc:
+        print(f"(evidence preserved at {root})", file=sys.stderr)
+        _die(EXIT_EVIDENCE, f"FAIL surface evidence: {exc}")
+    except BaseException:
+        # Includes SystemExit plus unexpected IO/parser errors: never lose the
+        # forensic path merely because the failure was outside a predicted gate.
         print(f"(evidence preserved at {root})", file=sys.stderr)
         raise
     else:
