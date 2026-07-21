@@ -130,10 +130,14 @@ if ! why=$(verdict_mutant "$surface_bottom_out" "$surface_bottom_rc" "$SURFACE_B
 fi
 
 # ── Full-step C++ A/B/C non-invasiveness ─────────────────────────────────────
-abc_out=$(python3 harness/g33_abc_noninvasiveness.py \
+# Put tempfile evidence under OUT, not the system /tmp: the workflow uploads OUT
+# on failure.  Save the complete checker output too, so a future failure is
+# diagnosable from artifacts even when the Actions log is truncated.
+abc_out=$(TMPDIR="$OUT" python3 harness/g33_abc_noninvasiveness.py \
     --canonical-driver "$OUT/abc_canonical_driver" \
     --diagnostic-driver "$OUT/abc_diagnostic_driver" 2>&1)
 abc_rc=$?
+printf '%s\n' "$abc_out" > "$OUT/abc_gate.log"
 echo "$abc_out" | tail -5
 if [ "$abc_rc" -ne 0 ]; then
     echo "ABC GATE FAIL: canonical/env-off/env-on outputs or C evidence failed (rc=$abc_rc)"
