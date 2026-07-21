@@ -234,8 +234,11 @@ jobs:
     name: build + symbol surface + smoke (macOS arm64, libtorch CPU)
     runs-on: macos-14
     # The full libtorch C++ build runs ~43-45 min on macos-14 hosted runners
-    # (last green was 42.5 min); a 45-min cap flakes as timeout-cancelled. 60 gives margin.
-    timeout-minutes: 60
+    # (last green was 42.5 min), but the arm64 runner intermittently stalls
+    # mid-build under load and blew past 60 (cancelled at 27% link). 90 gives the
+    # slow-but-progressing case room to finish; a genuine hang is a runner issue
+    # (owner: consider ccache / a self-hosted runner), not tunable here.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
