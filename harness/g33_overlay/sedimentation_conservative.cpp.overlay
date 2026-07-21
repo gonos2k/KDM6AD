@@ -145,7 +145,9 @@ SubstepAdvectionOutputs substep_advection_conservative(
     torch::Tensor prev_out_nr;
 
     for (int64_t k = 0; k < K; ++k) {
-        // ── mass species (qr/qs/qg/brs): ρΔz-conserving interface transfer ──
+        // ── extensive mass/volume moments (qr/qs/qg/brs) sharing the ρΔz layer
+        // metric: ρΔz-conserving interface transfer. brs is a graupel VOLUME
+        // moment, not water mass; it rides the same metric, not the same units. ─
         for (SpeciesChain* s : {&qr, &qs, &qg, &brs}) {
 #ifdef KDM6_G33_OP_DUMP
             // ENTRY captures for the in-scope species (qr): cols/fall before
