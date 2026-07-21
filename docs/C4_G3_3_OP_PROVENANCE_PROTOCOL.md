@@ -27,16 +27,18 @@ FAIL; widen upstream.
 ## 1. Snapshots (whole B×K, every value)
 
 ```
-outer_pre_sed        qr nr qv th   rho delz
+outer_pre_sed        qr nr qv t    rho delz
   substep_pre_n      qr nr  work1_qr workn_qr  mstep(native) mstepmax gate  rho delz
     <per-k op ladders — §3>
   substep_post_n     qr nr qs qg brs
   reslope_input_n / reslope_output_n     work1_qr workn_qr + regenerated fall-speed inputs
-outer_post_sed       qr nr qv th
-outer_post_micro     qr nr qv th
+outer_post_sed       qr nr qv t
+outer_post_micro     qr nr qv t
 ```
-`qv`/`th` are absent from `SubstepAdvectionState`, so they are captured only at the outer boundary;
-`outer_pre_sed.{qv,th} == outer_post_sed.{qv,th}` is a checked sed-invariant (violation = instrumentation bug).
+`qv`/`t` are absent from `SubstepAdvectionState`, so they are captured only at the outer boundary;
+`outer_pre_sed.{qv,t} == outer_post_sed.{qv,t}` is a checked sed-invariant (violation = instrumentation bug).
+The evidence names the actual `CoordinatorState` field — `t`, NOT `th`; there is no separate
+potential-temperature conversion, so calling it `th` would misdescribe the recorded value.
 
 ---
 
@@ -83,9 +85,13 @@ the host source, not asserted from memory:
 |---|---|---|---|
 | `qr` | rain-water mixing ratio | kg kg⁻¹ | ρ Δz qr |
 | `nr` | rain number **MIXING RATIO** — host `Registry.EM_COMMON:122`: `qnr_gc … "rain num concentration" "# kg-1"` | # kg⁻¹ | **ρ Δz nr** |
-| `fallsum` / `bottom_fall_*` | bottom-cell fall-rate density | kg m⁻³ s⁻¹ | — |
-| `surface_mul1` | `fallsum·Δz(kts)/denr` | m s⁻¹ liquid-equivalent | — |
-| `rain_increment` (rainncv) | `fallsum·Δz(kts)/denr·dtcld·1000.` (`module_mp_kdm6_cons.F:1504`) | mm per step | — |
+| `bottom_fall_{qr,qs,qg,qi}` / `bottom_fall_total` | bottom-cell fall-rate density (per species + their sum) | kg m⁻³ s⁻¹ | — |
+| `rain_increment` (rainncv) | `clamp(bottom_fall_total,0)·Δz_b/denr·dtcld·1000.` (`sedimentation.cpp:298`) | mm per step | — |
+
+(There is NO `surface_mul1`/`surface_mul_dt` record: they are not named intermediates in the code — the
+increment is ONE fused left-associated expression — so emitting them would fabricate rungs. What is
+recorded is the actual per-species bottom fall, a bit-identical recompute of their sum, and the actual
+increments; `snow_increment`/`graupel_increment` subsets are comparator-derived.)
 
 Consequence, stated so it cannot be blurred later: `nr` is a mixing ratio, so
 the physically complete column-number measure is **ρ Δz nr**. The conservative
@@ -157,9 +163,13 @@ The final G3.3 diff includes `rain_increment`; the state-update ladder alone can
 adds the raw stored `falk` to the accumulator; conservative adds the actual capped-outflow rate. Record:
 ```
 fall_before  fall_increment  fall_after
-bottom_fall  delz_bottom  surface_mul1  surface_mul_dt  rain_increment  snow_increment  graupel_increment
+bottom_fall_qr  bottom_fall_qs  bottom_fall_qg  bottom_fall_qi  bottom_fall_total  delz_bottom
+rain_increment  snow_increment  graupel_increment
 ```
-so `qr seed → rain_increment` is shown as an actual op path, not mere cell-set inclusion.
+Per-species bottom fall (not an aggregate `bottom_fall`) so a `qr` seed's contribution to the total is
+visible; `bottom_fall_total` is the actual left-associated `((qr+qs)+qg)+qi` operand that feeds the
+increments; `snow`/`graupel` subsets are comparator-derived. So `qr seed → rain_increment` is shown as
+an actual op path, not mere cell-set inclusion.
 
 ---
 
@@ -404,10 +414,14 @@ difference at an undumped stage · missing/duplicate records or unverifiable ori
 fails.
 
 ### 8c. Active-mask-aware NaN/degeneracy (P1-11)
-KDM6 evaluates raw divide/sqrt in dead branches then masks. Each record carries `active_mask, gate_mask,
-cap_active, finite_required_mask`. NaN/Inf in an active + finite-required cell → FAIL; in an
-inactive/dead branch → recorded but excluded from the verdict. Degeneracy is judged container-wide
-(§7f), not per-record (a gate-all-1, cap-all-0, or inactive-species-all-0 record is legitimate).
+KDM6 evaluates raw divide/sqrt in dead branches then masks. The producer records `active_mask` and (as a
+debugging aid) `cap_active`; the verdict-bearing `gate_mask` and `finite_required_mask` are NOT producer
+records — the comparator DERIVES them, consistent with the project-wide rule that a producer must not
+attest to its own verdict (§2): `gate_mask` from `mstep_native`+`n` (the gate law `n ≤ mstep`),
+`active_mask` from gate+op template, `finite_required_mask` from the op template's mathematical
+definition. NaN/Inf in an active + finite-required cell → FAIL; in an inactive/dead branch → recorded but
+excluded from the verdict. Degeneracy is judged container-wide (§7f), not per-record (a gate-all-1,
+cap-all-0, or inactive-species-all-0 record is legitimate).
 
 ---
 
@@ -420,10 +434,10 @@ New `harness/gateb_g33m_check.py` (the existing ULP gate is UNTOUCHED until a PA
   "first_divergence":{"outer_loop":0,"chain":"main","n":0,"op_id":"","species":"","column":0,"k":0},
   "shadow_fidelity":true, "preop_inputs_bitwise":true,
   "branch_signature_equal_within_pair":true, "conservative_only_op_precedes_seed":false,
-  "causal_propagation":{"qr":true,"nr":true,"qv":"not-yet-traced","th":"not-yet-traced","rain_increment":true},
+  "causal_propagation":{"qr":true,"nr":true,"qv":"not-yet-traced","t":"not-yet-traced","rain_increment":true},
   "noninvasiveness":{}, "completeness":{} }
 ```
-If `qv`/`th` are confirmed only by the coarse outer snapshot, mark `evidence_strength: PARTIAL` and the
+If `qv`/`t` are confirmed only by the coarse outer snapshot, mark `evidence_strength: PARTIAL` and the
 respective `causal_propagation` entries `not-yet-traced`; the first-divergence gate may PASS while
 propagation coverage remains separate.
 
@@ -460,7 +474,7 @@ hash, Torch build hash, deployment target, timestamp policy) is pinned in the at
 12 Fortran temporary-overlay conservative
 13 four fresh-process cases
 14 G3.3-M comparison
-15 conditional expansion to qv/th/surface path
+15 conditional expansion to qv/t/surface path
 16 diagnostic code removal from production branch
 17 preserve immutable diagnostic commit/patch hashes
 18 production SHA · symbols · Gate A · full C3 re-verify
