@@ -15,7 +15,11 @@ set -u
 cd "$(dirname "$0")/../.."
 # shellcheck disable=SC1091
 source harness/g33_overlay/selfcheck_gate_lib.sh
-OUT=${1:-/tmp/g33_selfcheck_build}
+# A FRESH, non-existent output path each run: the build script refuses an
+# existing path (it owns what it creates), so a fixed reused path would fail the
+# second run. Callers (CI) may pass a known runner-owned path for artifact
+# collection; the default is a private per-run temp dir.
+OUT=${1:-"$(mktemp -d "${TMPDIR:-/tmp}/g33-gate.XXXXXX")/out"}
 
 bash harness/g33_overlay/selfcheck_build.sh "$OUT" --with-mutant || exit $?
 

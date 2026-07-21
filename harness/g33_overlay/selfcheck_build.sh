@@ -32,8 +32,16 @@ TORCHLIB=$(python3 -c 'import pathlib, torch; print(pathlib.Path(torch.__file__)
 
 # Supported OSes are ENUMERATED fail-loud, not "everything that is not macOS is
 # .so" — an unexpected platform is an explicit error, not a wrong default.
+# MACFLAGS: on macOS pass the CURRENT SDK sysroot explicitly. flags.make's
+# CXX_FLAGS carry an -isysroot, but on a CI runner it can point at a different /
+# stale SDK than `xcrun -f c++` resolves — the observed failure was libc++'s
+# <cstddef> not found. Appending our -isysroot AFTER $FLGS makes clang use the
+# live SDK (last -isysroot wins). Empty on Linux.
+MACFLAGS=()
 case "$(uname -s)" in
-    Darwin) LIB_EXT=dylib ;;
+    Darwin) LIB_EXT=dylib
+            SDK=$(xcrun --show-sdk-path 2>/dev/null || true)
+            [ -n "$SDK" ] && MACFLAGS=(-isysroot "$SDK") ;;
     Linux)  LIB_EXT=so ;;
     *) echo "unsupported OS: $(uname -s)" >&2; exit 2 ;;
 esac
@@ -48,22 +56,24 @@ for lib in "${TORCHLIBS[@]}"; do
     [ -f "$lib" ] || { echo "missing Torch library: $lib" >&2; exit 2; }
 done
 
-# FRESH, owned output directory: wipe any prior contents so no stale artifact
-# survives into this run. ${OUT:?} refuses an empty path, and the guard below
-# refuses a critical directory — `rm -rf` on a caller-supplied path must never
-# be able to destroy /, the repo root, or $HOME.
-OUT=${1:-/tmp/g33_selfcheck_build}
-case "$OUT" in
-    / | . | .. | "$PWD" | "$HOME")
-        echo "refusing to rm -rf a critical directory: $OUT" >&2; exit 2 ;;
-esac
-rm -rf "${OUT:?}"
-mkdir -p "$OUT"
+# FRESH, owned output directory — NEVER destructive. An explicit path must not
+# already exist (we create and own it, so no stale artifact can survive into
+# this run); with no argument we make a private mktemp dir. This removes the
+# `rm -rf` entirely (and with it every path-normalization / symlink-bypass
+# concern) while still guaranteeing a clean build tree.
+if [ -n "${1:-}" ]; then
+    OUT=$1
+    [ -e "$OUT" ] && { echo "output path already exists (refusing): $OUT" >&2; exit 2; }
+    mkdir -p "$OUT"
+else
+    OUT=$(mktemp -d "${TMPDIR:-/tmp}/g33-selfcheck.XXXXXX")
+fi
 
 compile() {  # $1 src  $2 out.o
     # shellcheck disable=SC2086
     "$CXX" $DEFS -DKDM6_G33_OP_DUMP $FLGS $INCS -I harness/g33_overlay \
-        -x c++ -c "$1" -o "$2" 2>"$2.err" || { echo "COMPILE FAILED: $1"; head -15 "$2.err"; exit 1; }
+        "${MACFLAGS[@]}" -x c++ -c "$1" -o "$2" 2>"$2.err" \
+        || { echo "COMPILE FAILED: $1"; head -15 "$2.err"; exit 1; }
 }
 
 link_driver() {  # $1 sed.o  $2 sed_cons.o  $3 outdir  $4 label
