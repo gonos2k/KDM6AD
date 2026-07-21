@@ -21,10 +21,16 @@ TORCHLIB=$(echo "$INCS" | tr ' ' '\n' | sed -n 's|^/|/|p' | grep 'site-packages/
 # Platform shared-library extension: macOS ships .dylib, Linux .so. This is what
 # lets the gate run in the Linux port-ci job, not only on a local macOS host.
 case "$(uname -s)" in
-    Darwin) TEXT=dylib ;;
-    *)      TEXT=so ;;
+    Darwin) LIB_EXT=dylib ;;
+    *)      LIB_EXT=so ;;
 esac
-TORCHLIBS="$TORCHLIB/libtorch.$TEXT $TORCHLIB/libtorch_cpu.$TEXT $TORCHLIB/libc10.$TEXT"
+# Bash array (not a space-joined string) so a TORCHLIB path with spaces stays one
+# argument per lib under "${TORCHLIBS[@]}".
+TORCHLIBS=(
+    "$TORCHLIB/libtorch.$LIB_EXT"
+    "$TORCHLIB/libtorch_cpu.$LIB_EXT"
+    "$TORCHLIB/libc10.$LIB_EXT"
+)
 OUT=${1:-/tmp/g33_selfcheck_build}
 mkdir -p "$OUT"
 
@@ -39,7 +45,7 @@ compile harness/g33_overlay/selfcheck_driver.cpp                   "$OUT/driver.
 
 # shellcheck disable=SC2086
 "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$OUT/sed_cons.o" "$AR" \
-    $TORCHLIBS \
+    "${TORCHLIBS[@]}" \
     -Wl,-rpath,"$TORCHLIB" -o "$OUT/selfcheck_driver" 2>"$OUT/link.err" \
     || { echo "LINK FAILED"; head -20 "$OUT/link.err"; exit 1; }
 echo "built: $OUT/selfcheck_driver"
@@ -58,7 +64,7 @@ if [ "${2:-}" = "--with-mutant" ]; then
     compile "$M/sedimentation.cpp.overlay" "$M/sed.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$M/sed.o" "$OUT/sed_cons.o" "$AR" \
-        $TORCHLIBS \
+        "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$M/selfcheck_driver" 2>"$M/link.err" \
         || { echo "MUTANT LINK FAILED"; head -10 "$M/link.err"; exit 1; }
     echo "built: $M/selfcheck_driver (shadow mutant)"
@@ -72,7 +78,7 @@ if [ "${2:-}" = "--with-mutant" ]; then
     compile "$M2/sedimentation_conservative.cpp.overlay" "$M2/sed_cons.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M2/sed_cons.o" "$AR" \
-        $TORCHLIBS \
+        "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$M2/selfcheck_driver" 2>"$M2/link.err" \
         || { echo "MUTANT2 LINK FAILED"; head -10 "$M2/link.err"; exit 1; }
     echo "built: $M2/selfcheck_driver (conservative inflow mutant)"
@@ -88,7 +94,7 @@ if [ "${2:-}" = "--with-mutant" ]; then
     compile "$M3/sedimentation_conservative.cpp.overlay" "$M3/sed_cons.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M3/sed_cons.o" "$AR" \
-        $TORCHLIBS \
+        "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$M3/selfcheck_driver" 2>"$M3/link.err" \
         || { echo "MUTANT3 LINK FAILED"; head -10 "$M3/link.err"; exit 1; }
     echo "built: $M3/selfcheck_driver (conservative prev_out mutant)"
@@ -104,7 +110,7 @@ if [ "${2:-}" = "--with-mutant" ]; then
     compile "$M4/sedimentation_conservative.cpp.overlay" "$M4/sed_cons.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M4/sed_cons.o" "$AR" \
-        $TORCHLIBS \
+        "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$M4/selfcheck_driver" 2>"$M4/link.err" \
         || { echo "MUTANT4 LINK FAILED"; head -10 "$M4/link.err"; exit 1; }
     echo "built: $M4/selfcheck_driver (conservative poststate mutant)"
@@ -119,7 +125,7 @@ if [ "${2:-}" = "--with-mutant" ]; then
     compile "$M5/sedimentation_conservative.cpp.overlay" "$M5/sed_cons.o"
     # shellcheck disable=SC2086
     "$CXX" $FLGS "$OUT/driver.o" "$OUT/sed.o" "$M5/sed_cons.o" "$AR" \
-        $TORCHLIBS \
+        "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$M5/selfcheck_driver" 2>"$M5/link.err" \
         || { echo "MUTANT5 LINK FAILED"; head -10 "$M5/link.err"; exit 1; }
     echo "built: $M5/selfcheck_driver (conservative fallacc mutant)"
