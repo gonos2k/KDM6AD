@@ -1430,7 +1430,7 @@ def test_cap_ulp_margin_distance_is_exact_for_positive_f32():
     assert ulp(np.float32(1.0e-6), np.float32(2.0e-5)) > gsc.CAP_MARGIN_ULP * 1000
 
 
-def test_interface_kappa_chi_measures_roundoff_and_metric_ratio():
+def test_interface_residual_and_metric_ratio_measures_roundoff_and_metric_ratio():
     f32 = np.float32
     # A conserving transfer: inflow = fl32(mul_src / m_dst). κ must be tiny
     # (sub-ULP, a single divide-then-multiply round-trip), χ the metric ratio.
@@ -1438,17 +1438,17 @@ def test_interface_kappa_chi_measures_roundoff_and_metric_ratio():
     m_dst = np.array([330.0, 400.0], dtype=f32)
     mul_src = np.array([1.2e-4, 3.4e-4], dtype=f32)         # dq_out*m_src
     inflow = (mul_src / m_dst).astype(f32)                  # the ρΔz transfer
-    kappa, chi = gsc.interface_kappa_chi(mul_src, inflow, m_src, m_dst)
-    assert (kappa < 1.0).all()                              # roundoff only
-    assert np.allclose(chi, np.maximum(m_src / m_dst, m_dst / m_src).astype(np.float64))
-    assert (chi >= 1.0).all()
+    eps_res, metric_ratio = gsc.interface_residual_and_metric_ratio(mul_src, inflow, m_src, m_dst)
+    assert (eps_res < 1.0).all()                              # roundoff only
+    assert np.allclose(metric_ratio, np.maximum(m_src / m_dst, m_dst / m_src).astype(np.float64))
+    assert (metric_ratio >= 1.0).all()
 
     # A NON-conserving transfer (metric dropped: inflow = mul_src, no /m_dst):
     # mass arriving = mul_src*m_dst >> mass leaving = mul_src, so κ explodes far
     # past the envelope — the tripwire the gate relies on.
     bad_inflow = mul_src.copy()                             # forgot /m_dst
-    bad_kappa, _ = gsc.interface_kappa_chi(mul_src, bad_inflow, m_src, m_dst)
-    assert (bad_kappa > gsc.KAPPA_ENVELOPE).all()
+    bad_eps, _ = gsc.interface_residual_and_metric_ratio(mul_src, bad_inflow, m_src, m_dst)
+    assert (bad_eps > gsc.EPS_RESIDUAL_LIMIT).all()
 
 
 def test_cap_coverage_requires_strict_bound_and_unbound_not_ties():

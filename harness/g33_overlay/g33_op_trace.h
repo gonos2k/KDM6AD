@@ -174,7 +174,9 @@ public:
         std::string path = std::string(dir) + "/cpp_" + ctx->algorithm + "_" + cas
                          + "_" + cid_ + ".g33";
         // §7 P0-2: the op_seq window for THIS container is DECLARED by the harness
-        // (run_index.json, fixed before the run), never inferred here. Same reason
+        // (the op-seq window derived from the sealed run contract, fixed before
+        // the run — the persisted authority is run_contract.json.containers, not a
+        // separate run_index.json), never inferred here. Same reason
         // as the column map: a range the producer computes for itself cannot
         // falsify the producer. Absent declaration = invalid run, not a default.
         uint64_t first = 0, last = 0;

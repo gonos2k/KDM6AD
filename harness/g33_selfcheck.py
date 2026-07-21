@@ -5,17 +5,23 @@ Runs the instrumented substep chain (one FRESH PROCESS per algorithm) under a
 sealed environment, then verifies from the EVIDENCE alone:
 
   1. container-set completeness — the files on disk are exactly the sealed
-     run-index set, and every container reads fail-closed;
+     run-contract container set, and every container reads fail-closed;
   2. shadow == actual — the diagnostic shadow ladder's final f32 equals the
      ACTUAL falk bits, per record (§5a shadow-fidelity);
   3. offline == shadow — an independent NumPy recomputation FROM THE DUMPED
-     OPERANDS reproduces every FALK rung bit-for-bit (same IEEE ops, same
-     promotion: f32*f32→f32, f32*f64→f64, one final f32 rounding);
+     OPERANDS reproduces every FALK rung, plus the OUTFLOW/FALLACC and the
+     conservative INFLOW ladders, bit-for-bit (same IEEE ops, same promotion:
+     f32*f32→f32, f32*f64→f64, one final f32 rounding);
   4. producer cross-checks — check_producer_flags per substep (gate law
-     n<=mstep, mstep range, floor semantics against qcrmin).
+     n<=mstep, mstep range, floor semantics against qcrmin);
+  5. cross-record causal graph — prev_out↔dq_out, op operands↔substep_pre
+     snapshot columns, the (no-clamp) state equations, per-cell q_post/n_post↔
+     the returned whole-field substep_post, and cross-substep continuity;
+  6. coverage & residual — branch/gate/floor coverage, strict tie-aware cap
+     branches with a ULP margin, and the measured f32 interface residual (κ).
 
 The offline recomputation uses ONLY dumped payloads (q_before, dend_raw,
-work1/workn, mstep_native, gate_native) — never the driver's fixture — so a
+work1/workn, mstep_native, gate_native, …) — never the driver's fixture — so a
 driver/fixture bug cannot vacuously agree with itself.
 
     python3 harness/g33_selfcheck.py [--driver /path/to/selfcheck_driver]
@@ -51,7 +57,7 @@ B, K, MSTEPMAX, QCRMIN, DTCLD = 3, 4, 2, 1.0e-9, 20.0   # DTCLD matches selfchec
 # metric fails, loose enough to admit ordinary two-rounding closure. (Subnormal/
 # overflow operands would need a separate classification; the arithmetic fixture
 # stays in the normal range.)
-KAPPA_ENVELOPE = 1.0
+EPS_RESIDUAL_LIMIT = 1.0
 
 # §3/§5 minimum ULP margin a strict cap-branch witness must clear the reservoir
 # by, so the branch stays strict under compiler/backend rounding (owner: a 1-ULP
@@ -156,8 +162,8 @@ def positive_f32_ulp_distance(pa, pb):
     return np.abs(au - bu)
 
 
-def interface_kappa_chi(mul_src, inflow, m_src, m_dst):
-    """§7 interface residual (κ) and metric condition (χ), per element, f64.
+def interface_residual_and_metric_ratio(mul_src, inflow, m_src, m_dst):
+    """§7 interface residual (κ) and metric ratio (χ), per element, f64.
 
     L = extensive mass LEAVING k-1 (mul_src = dq_out(k-1)*m_src); G = mass
     ARRIVING at k (inflow*m_dst, the f32 product widened). r = f64(G)-f64(L) is
@@ -169,10 +175,10 @@ def interface_kappa_chi(mul_src, inflow, m_src, m_dst):
     Gf = (inflow * m_dst).astype(np.float64)     # f32 op, then widen
     eps32 = np.float64(np.finfo(np.float32).eps)
     tiny = np.float64(np.finfo(np.float32).tiny)
-    kappa = np.abs(Gf - Lf) / (eps32 * (np.abs(Gf) + np.abs(Lf) + tiny))
+    eps_residual = np.abs(Gf - Lf) / (eps32 * (np.abs(Gf) + np.abs(Lf) + tiny))
     ms, md = m_src.astype(np.float64), m_dst.astype(np.float64)
-    chi = np.maximum(ms / md, md / ms)
-    return kappa, chi
+    metric_ratio = np.maximum(ms / md, md / ms)
+    return eps_residual, metric_ratio
 
 
 def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
@@ -201,11 +207,22 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     contract = json.loads(contract_bytes.decode("utf-8"))
     seal_qcrmin, seal_dtcld = contract["qcrmin"], contract["dtcld"]
 
-    # 1. container-set completeness: exactly the sealed set, nothing else
-    index = ge.run_index(sched)
+    # 1. container-set completeness: exactly the sealed set, nothing else.
+    # The SEALED run contract is the single authority; run_index() is only its
+    # pre-run GENERATOR. Assert the generator (re-run here) reproduces the sealed
+    # set on the fields it declares, then use the SEALED containers downstream —
+    # a drifted schedule cannot silently regenerate a different expectation.
+    _decl = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
+             "last_op_seq_id", "record_count", "path")
+    gen = [{k: c[k] for k in _decl} for c in ge.run_index(sched)["containers"]]
+    containers = contract.get("containers", [])
+    if gen != [{k: c.get(k) for k in _decl} for c in containers]:
+        _die(EXIT_EVIDENCE,
+             "FAIL: run_index() disagrees with the sealed run_contract.containers "
+             "— schedule/generator drift")
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
     on_disk = sorted(p.name for p in dump_dir.glob("*.g33"))
-    expected = sorted(c["path"] for c in index["containers"])
+    expected = sorted(c["path"] for c in containers)
     if on_disk != expected:
         _die(EXIT_EVIDENCE,
              f"FAIL container set:\n  disk    {on_disk}\n  sealed  {expected}")
@@ -233,13 +250,13 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     # χ = max(m_src/m_dst, m_dst/m_src) is the METRIC RATIO (dynamic-range
     # contrast, not a roundoff condition number). Measured, not asserted
     # bit-exact — the honest closure claim.
-    resid = {"kappa_max": 0.0, "chi_max": 0.0, "n": 0}
+    resid = {"eps_residual_max": 0.0, "metric_ratio_max": 0.0, "n": 0}
     # cross-substep carry, keyed by (outer_loop, chain): substep_post(n) must
     # equal substep_pre(n+1), and the fall accumulator must be continuous
     # (fall_after(n,k) == fall_before(n+1,k)), WITHIN a chain. Empty until the
     # first substep of each chain has been seen.
     carry = {}
-    for c in index["containers"]:
+    for c in containers:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
         recs = cont["records"]
         n_sub = c["n"]
@@ -518,10 +535,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                 # §7 interface roundoff residual (MEASURED, not bit-exact): mass
                 # leaving k-1 (mul_src) vs mass arriving at k (inflow*m_dst)
                 # differ by a rounding residual; κ is the eps-scaled residual.
-                kappa, chi = interface_kappa_chi(mul, inflow, m_src, m_dst)
-                resid["kappa_max"] = max(resid["kappa_max"], float(kappa.max()))
-                resid["chi_max"] = max(resid["chi_max"], float(chi.max()))
-                resid["n"] += int(kappa.size)
+                eps_res, metric_ratio = interface_residual_and_metric_ratio(mul, inflow, m_src, m_dst)
+                resid["eps_residual_max"] = max(resid["eps_residual_max"], float(eps_res.max()))
+                resid["metric_ratio_max"] = max(resid["metric_ratio_max"], float(metric_ratio.max()))
+                resid["n"] += int(eps_res.size)
 
                 # ── CROSS-RECORD CAUSAL LINKS (raw-bit) ──────────────────────
                 # A single record's arithmetic can be internally consistent yet
@@ -669,10 +686,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         if resid["n"] == 0:
             _die(EXIT_EVIDENCE, "FAIL: no interface residual sampled — the "
                                 "conservative transfer produced no interfaces")
-        if resid["kappa_max"] > KAPPA_ENVELOPE:
+        if resid["eps_residual_max"] > EPS_RESIDUAL_LIMIT:
             _die(EXIT_FIDELITY,
-                 f"FAIL interface residual: κ_max {resid['kappa_max']:.3g} > "
-                 f"{KAPPA_ENVELOPE} (eps-scaled) — the ρΔz closure exceeds the "
+                 f"FAIL interface residual: κ_max {resid['eps_residual_max']:.3g} > "
+                 f"{EPS_RESIDUAL_LIMIT} (eps-scaled) — the ρΔz closure exceeds the "
                  f"roundoff envelope (a dropped/wrong metric, not rounding)")
     qr_bm = min(cap_margin["qr"]["bound"] + cap_margin["qr"]["unbound"])
     nr_bm = min(cap_margin["nr"]["bound"] + cap_margin["nr"]["unbound"])
@@ -681,8 +698,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"QR/NR cap both strictly bound+unbound "
                          f"(min margin QR {qr_bm}, NR {nr_bm} ULP ≥{CAP_MARGIN_ULP}), "
                          f"{stats_links['n']} causal links, "
-                         f"interface κ_max {resid['kappa_max']:.3g} eps-scaled "
-                         f"(≤{KAPPA_ENVELOPE}), χ_max {resid['chi_max']:.3g} (metric ratio)")
+                         f"interface κ_max {resid['eps_residual_max']:.3g} eps-scaled "
+                         f"(≤{EPS_RESIDUAL_LIMIT}), χ_max {resid['metric_ratio_max']:.3g} (metric ratio)")
     return stats
 
 
