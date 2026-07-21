@@ -77,8 +77,11 @@ compile() {  # $1 src  $2 out.o
 }
 
 link_driver() {  # $1 sed.o  $2 sed_cons.o  $3 outdir  $4 label
+    # MACFLAGS here too: the LINK needs the live SDK sysroot to find libc++ on
+    # macOS (observed: `ld: library 'c++' not found` when flags.make's -isysroot
+    # is stale). Same fix as the compile, applied to the link.
     # shellcheck disable=SC2086
-    "$CXX" $FLGS "$OUT/driver.o" "$1" "$2" "$AR" \
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/driver.o" "$1" "$2" "$AR" \
         "${TORCHLIBS[@]}" \
         -Wl,-rpath,"$TORCHLIB" -o "$3/selfcheck_driver" 2>"$3/link.err" \
         || { echo "LINK FAILED ($4)"; head -20 "$3/link.err"; exit 1; }
