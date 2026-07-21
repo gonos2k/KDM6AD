@@ -101,6 +101,9 @@ jobs:
           # Pinned to the ENVIRONMENT.md reference version so CI validates that toolchain,
           # not whatever the latest wheel happens to be.
           pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+          # numpy is NOT a hard torch>=2.8 dependency, but the G3.3-M self-check
+          # reader needs it for the raw-bit replay — install it explicitly.
+          pip install numpy
 
       - name: Record toolchain versions
         run: |
