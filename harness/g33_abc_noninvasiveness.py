@@ -7,10 +7,10 @@ C = the SAME diagnostic executable as B, with a harness-sealed dump environment.
 
 For each algorithm (legacy/conservative) and fixture (closure3/species_iso), the
 15 returned fields are validated and their complete raw-bit output streams must
-be byte-identical A == B == C.  C must additionally produce exactly the sealed
-container set.  Numerical diagnostics are derived from evidence rather than
+be byte-identical A == B == C. C must additionally produce exactly the sealed
+container set. Numerical diagnostics are derived from evidence rather than
 producer verdicts; the current schema supports the rain-family effective CFL
-(qr/nr), mstep, metric-floor and surface-sign checks.  It does not claim that
+(qr/nr), mstep, metric-floor and surface-sign checks. It does not claim that
 this rain-family CFL is the total main-chain maximum over snow/graupel.
 """
 from __future__ import annotations
@@ -62,7 +62,7 @@ def _schedule(algorithm: str, case_name: str) -> dict:
         "B": B,
         "K": K,
         "loops": 1,
-        # The fixture uses dt=20 s and ~8 km layers.  This is a declared
+        # The fixture uses dt=20 s and ~8 km layers. This is a declared
         # one-substep schedule, not a producer-reported count: if execution ever
         # needs n=2, the sealed container set makes C fail immediately.
         "mstepmax_main": [1],
@@ -114,15 +114,18 @@ def parse_output(raw: bytes, algorithm: str, case_name: str) -> dict:
             shape = tuple(int(v) for v in tok[shape_start:shape_end])
             numel = int(tok[shape_end])
         except ValueError:
-            raise gd.G33Corruption(f"ABC field {expected_name} has non-integer shape/count") from None
+            raise gd.G33Corruption(
+                f"ABC field {expected_name} has non-integer shape/count") from None
         want_shape = (B, K) if expected_name in STATE_FIELDS else (B,)
         if shape != want_shape or numel != math.prod(shape):
             raise gd.G33Corruption(
                 f"ABC field {expected_name} shape/count {(shape, numel)} != {want_shape}")
         words = tok[shape_end + 1:]
         width = 8 if dtype == "f32" else 16
-        if len(words) != numel or any(len(w) != width or not _HEX.fullmatch(w) for w in words):
-            raise gd.G33Corruption(f"ABC field {expected_name} has malformed raw-bit words")
+        if len(words) != numel or any(
+                len(w) != width or not _HEX.fullmatch(w) for w in words):
+            raise gd.G33Corruption(
+                f"ABC field {expected_name} has malformed raw-bit words")
         bits = [int(w, 16) for w in words]
         if dtype == "f32":
             nonfinite = [i for i, u in enumerate(bits) if ((u >> 23) & 0xff) == 0xff]
@@ -137,7 +140,8 @@ def parse_output(raw: bytes, algorithm: str, case_name: str) -> dict:
     return parsed
 
 
-def _run(driver: Path, algorithm: str, case_name: str, *, env: dict[str, str], cwd: Path) -> bytes:
+def _run(driver: Path, algorithm: str, case_name: str, *,
+         env: dict[str, str], cwd: Path) -> bytes:
     cwd.mkdir(parents=True, exist_ok=False)
     result = subprocess.run(
         [str(driver), algorithm, case_name], cwd=cwd, env=env,
@@ -145,7 +149,8 @@ def _run(driver: Path, algorithm: str, case_name: str, *, env: dict[str, str], c
     )
     if result.returncode != 0:
         _die(EXIT_DRIVER,
-             f"FAIL ABC driver {driver.name} {algorithm}/{case_name} rc={result.returncode}\n"
+             f"FAIL ABC driver {driver.name} {algorithm}/{case_name} "
+             f"rc={result.returncode}\n"
              f"stdout:\n{result.stdout.decode(errors='replace')}\n"
              f"stderr:\n{result.stderr.decode(errors='replace')}")
     parse_output(result.stdout, algorithm, case_name)
@@ -165,7 +170,8 @@ def _record(records: list[dict], *, stage: str, field: str,
         hits.append(record)
     if len(hits) != 1:
         raise gd.G33Corruption(
-            f"{len(hits)} records match stage={stage} field={field} op={op_id} species={species}")
+            f"{len(hits)} records match stage={stage} field={field} "
+            f"op={op_id} species={species}")
     return hits[0]
 
 
@@ -174,23 +180,45 @@ def _values(record: dict) -> np.ndarray:
     return np.asarray(vals)
 
 
-def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> dict:
+def _load_contract_specs(outdir: Path, env: dict[str, str]) -> tuple[bytes, str, list[dict], list[dict]]:
+    """Read and structurally validate the sealed C run contract, fail-closed."""
     contract_path = outdir / "run_contract.json"
-    body = contract_path.read_bytes()
-    sealed_sha = env["KDM6_G33_RUN_CONTRACT_SHA256"]
+    if not contract_path.is_file():
+        raise gd.G33Corruption(f"C run contract missing: {contract_path}")
+    try:
+        body = contract_path.read_bytes()
+    except OSError as exc:
+        raise gd.G33Corruption(f"cannot read C run contract {contract_path}: {exc}") from None
+    try:
+        sealed_sha = env["KDM6_G33_RUN_CONTRACT_SHA256"]
+    except KeyError:
+        raise gd.G33Corruption("C environment lacks KDM6_G33_RUN_CONTRACT_SHA256") from None
     if hashlib.sha256(body).hexdigest() != sealed_sha:
         raise gd.G33Corruption("C run_contract.json does not match its independent seal")
+
+    keys = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
+            "last_op_seq_id", "record_count", "path")
     try:
         contract = json.loads(body.decode("utf-8"))
         specs = contract["containers"]
+        if not isinstance(specs, list):
+            raise TypeError("containers must be a list")
+        actual_specs = []
+        for i, spec in enumerate(specs):
+            if not isinstance(spec, dict):
+                raise TypeError(f"containers[{i}] must be an object")
+            actual_specs.append({key: spec[key] for key in keys})
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
         raise gd.G33Corruption(f"malformed C run contract: {exc}") from None
+    return body, sealed_sha, specs, actual_specs
 
+
+def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> dict:
+    _, sealed_sha, specs, actual_specs = _load_contract_specs(outdir, env)
     generated = ge.run_index(schedule)["containers"]
-    keys = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
-            "last_op_seq_id", "record_count", "path")
-    if [{k: c[k] for k in keys} for c in specs] != generated:
-        raise gd.G33Corruption("C sealed container table differs from independent run_index()")
+    if actual_specs != generated:
+        raise gd.G33Corruption(
+            "C sealed container table differs from independent run_index()")
 
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
     expected_paths = sorted(c["path"] for c in specs)
@@ -202,7 +230,10 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
     containers = {}
     all_records = []
     for spec in specs:
-        container = gd.read_container(dump_dir / spec["path"])
+        path = dump_dir / spec["path"]
+        if not path.is_file():
+            raise gd.G33Corruption(f"C container missing: {path}")
+        container = gd.read_container(path)
         h = container["header"]
         expected_header = {
             "case_id": schedule["case_id"], "pair_id": schedule["pair_id"],
@@ -216,7 +247,8 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
         for key, want in expected_header.items():
             if h.get(key) != want:
                 raise gd.G33Corruption(
-                    f"C {spec['container_id']} header {key}={h.get(key)!r}, expected {want!r}")
+                    f"C {spec['container_id']} header {key}={h.get(key)!r}, "
+                    f"expected {want!r}")
         containers[spec["container_id"]] = container
         all_records.extend(container["records"])
 
@@ -224,14 +256,15 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
     expected = ge.expected_key_set(schedule)
     if observed != expected:
         raise gd.G33Corruption(
-            f"C logical record set differs: missing={len(expected-observed)} extra={len(observed-expected)}")
+            f"C logical record set differs: missing={len(expected-observed)} "
+            f"extra={len(observed-expected)}")
     op_seq = sorted(int(r["op_seq_id"]) for r in all_records)
     if op_seq != list(range(len(all_records))):
         raise gd.G33Corruption("C global op_seq does not tile 0..N-1 exactly")
 
-    # Numerical diagnostics from actual substep evidence.  The current first
-    # scope records rain mass/number fall rates, so this is explicitly a
-    # rain-family CFL, not the total max that also includes snow/graupel.
+    # Numerical diagnostics from actual substep evidence. The current first scope
+    # records rain mass/number fall rates, so this is a rain-family CFL, not the
+    # total maximum that also includes snow/graupel.
     rain_cfl_max = 0.0
     rain_substep_cfl_max = 0.0
     boundary_proxy_min = math.inf
@@ -250,7 +283,8 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
                             "dend_floor_active", "delz_raw", "delz_safe",
                             "delz_floor_active", "qcrmin_effective", "dtcld_effective")}
         gdv.check_producer_flags(
-            {k: (r["dtype"], r["payload"]) for k, r in pre.items()},
+            {key: (record["dtype"], record["payload"])
+             for key, record in pre.items()},
             int(spec["n"]), QCRMIN, DTCLD)
         B, K = schedule["B"], schedule["K"]
         w1 = _values(pre["work1_qr"]).astype(np.float64).reshape(B, K)
@@ -259,46 +293,57 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
         dt = _values(pre["dtcld_effective"]).astype(np.float64)
         cfl = np.maximum(w1, wn).max(axis=1) * dt
         sub_cfl = cfl / mstep
-        if (sub_cfl < 0).any() or not np.isfinite(sub_cfl).all() or (sub_cfl > 1.0 + 1e-12).any():
+        if ((sub_cfl < 0).any() or not np.isfinite(sub_cfl).all()
+                or (sub_cfl > 1.0 + 1e-12).any()):
             raise gd.G33Corruption(
-                f"rain-family effective CFL invalid in {spec['container_id']}: {sub_cfl.tolist()}")
+                f"rain-family effective CFL invalid in {spec['container_id']}: "
+                f"{sub_cfl.tolist()}")
         rain_cfl_max = max(rain_cfl_max, float(cfl.max(initial=0.0)))
-        rain_substep_cfl_max = max(rain_substep_cfl_max, float(sub_cfl.max(initial=0.0)))
+        rain_substep_cfl_max = max(
+            rain_substep_cfl_max, float(sub_cfl.max(initial=0.0)))
         boundary_proxy_min = min(
             boundary_proxy_min,
-            float(np.abs((cfl + 1.0) - np.rint(cfl + 1.0)).min(initial=math.inf)))
+            float(np.abs((cfl + 1.0) - np.rint(cfl + 1.0))
+                  .min(initial=math.inf)))
         msteps.extend(int(v) for v in mstep)
         floor_count += int(_values(pre["dend_floor_active"]).sum())
         floor_count += int(_values(pre["delz_floor_active"]).sum())
 
         for species, op_id in (("qr", "QR_OUTFLOW"), ("nr", "NR_OUTFLOW")):
             pre_cap = [r for r in records if r.get("stage") == "op"
-                       and r.get("species") == species and r.get("op_id") == op_id
+                       and r.get("species") == species
+                       and r.get("op_id") == op_id
                        and r.get("field") == "outflow_pre_cap"]
             reservoir = [r for r in records if r.get("stage") == "op"
-                         and r.get("species") == species and r.get("op_id") == op_id
+                         and r.get("species") == species
+                         and r.get("op_id") == op_id
                          and r.get("field") == "source_reservoir"]
             if len(pre_cap) != len(reservoir):
-                raise gd.G33Corruption(f"{op_id} cap operands have different record counts")
+                raise gd.G33Corruption(
+                    f"{op_id} cap operands have different record counts")
             for left, right in zip(pre_cap, reservoir):
                 a, b = _values(left), _values(right)
                 if a.shape != b.shape:
-                    raise gd.G33Corruption(f"{op_id} cap operands have different shapes")
+                    raise gd.G33Corruption(
+                        f"{op_id} cap operands have different shapes")
                 cap_bound_count += int(np.count_nonzero(a > b))
 
     if not msteps or min(msteps) < 1 or max(msteps) > 100:
         raise gd.G33Corruption(f"invalid or missing mstep diagnostics: {msteps}")
     if any(v == 100 for v in msteps):
-        raise gd.G33Corruption("A/B/C synthetic fixture reached the mstep=100 saturation cap")
+        raise gd.G33Corruption(
+            "A/B/C synthetic fixture reached the mstep=100 saturation cap")
     if floor_count:
-        raise gd.G33Corruption(f"A/B/C valid-metric fixture activated {floor_count} metric floors")
+        raise gd.G33Corruption(
+            f"A/B/C valid-metric fixture activated {floor_count} metric floors")
 
     surface_specs = [s for s in specs if s["container_id"].endswith("_surface")]
     if len(surface_specs) != 1:
         raise gd.G33Corruption("C run has no unique surface container")
     surface_records = containers[surface_specs[0]["container_id"]]["records"]
     surface_negative = 0
-    for name in ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi"):
+    for name in ("bottom_fall_qr", "bottom_fall_qs",
+                 "bottom_fall_qg", "bottom_fall_qi"):
         vals = _values(_record(surface_records, stage="surface", field=name))
         if not np.isfinite(vals).all():
             raise gd.G33Corruption(f"surface {name} is non-finite")
@@ -333,48 +378,61 @@ def main() -> None:
     for path in (args.canonical_driver, args.diagnostic_driver):
         if not path.is_file():
             _die(EXIT_SKIP, f"SKIP: ABC driver not found: {path}")
-        path.resolve()
 
     root = Path(tempfile.mkdtemp(prefix="g33-abc-"))
     try:
         clean = _clean_env()
+        canonical = args.canonical_driver.resolve()
+        diagnostic = args.diagnostic_driver.resolve()
         for algorithm in ALGORITHMS:
             for case_name in CASES:
                 label = f"{algorithm}-{case_name}"
-                out_a = _run(args.canonical_driver.resolve(), algorithm, case_name,
-                             env=clean, cwd=root / f"{label}-A")
-                out_b = _run(args.diagnostic_driver.resolve(), algorithm, case_name,
-                             env=clean, cwd=root / f"{label}-B")
+                out_a = _run(
+                    canonical, algorithm, case_name,
+                    env=clean, cwd=root / f"{label}-A")
+                out_b = _run(
+                    diagnostic, algorithm, case_name,
+                    env=clean, cwd=root / f"{label}-B")
                 leaked = list((root / f"{label}-B").rglob("*.g33"))
                 leaked += list((root / f"{label}-B").rglob("*.tmp"))
                 if leaked:
-                    _die(EXIT_EVIDENCE, f"B env-off run emitted evidence: {leaked}")
+                    _die(EXIT_EVIDENCE,
+                         f"B env-off run emitted evidence: {leaked}")
 
                 schedule = _schedule(algorithm, case_name)
                 evidence = root / f"{label}-C-evidence"
                 env_c = gre.build_env(
-                    schedule, evidence, binary=args.diagnostic_driver.resolve(),
+                    schedule, evidence, binary=diagnostic,
                     column_map=[[i, 0, i, i] for i in range(schedule["B"])],
-                    run_uuid=f"abc-{algorithm}-{case_name}-{uuid.uuid4().hex[:10]}",
+                    run_uuid=(f"abc-{algorithm}-{case_name}-"
+                              f"{uuid.uuid4().hex[:10]}"),
                     column_layout_id=f"abc-{case_name}-{schedule['B']}col")
-                out_c = _run(args.diagnostic_driver.resolve(), algorithm, case_name,
-                             env={**clean, **env_c}, cwd=root / f"{label}-C")
+                out_c = _run(
+                    diagnostic, algorithm, case_name,
+                    env={**clean, **env_c}, cwd=root / f"{label}-C")
 
                 if out_a != out_b:
-                    _die(EXIT_FIDELITY, f"FAIL A!=B {label}: {_first_diff(out_a, out_b)}")
+                    _die(EXIT_FIDELITY,
+                         f"FAIL A!=B {label}: {_first_diff(out_a, out_b)}")
                 if out_a != out_c:
-                    _die(EXIT_FIDELITY, f"FAIL A!=C {label}: {_first_diff(out_a, out_c)}")
+                    _die(EXIT_FIDELITY,
+                         f"FAIL A!=C {label}: {_first_diff(out_a, out_c)}")
                 diag = _validate_c_evidence(evidence, env_c, schedule)
                 digest = hashlib.sha256(out_a).hexdigest()[:16]
                 print(
                     f"ABC PASS {algorithm}/{case_name} sha={digest} "
-                    f"containers={diag['containers']} mstep={diag['mstep_min']}..{diag['mstep_max']} "
+                    f"containers={diag['containers']} "
+                    f"mstep={diag['mstep_min']}..{diag['mstep_max']} "
                     f"rain_Cmax={diag['rain_cfl_max']:.6g} "
                     f"rain_Csub={diag['rain_substep_cfl_max']:.6g} "
                     f"rain_boundary_proxy={diag['boundary_proxy_min']:.6g} "
-                    f"floors={diag['floor_count']} cap_bound={diag['cap_bound_count']}")
-        print("C++ A/B/C NON-INVASIVENESS PASS — 4 algorithm/case pairs, strict raw-bit")
+                    f"floors={diag['floor_count']} "
+                    f"cap_bound={diag['cap_bound_count']}")
+        print(
+            "C++ A/B/C NON-INVASIVENESS PASS — "
+            "4 algorithm/case pairs, strict raw-bit")
     except gd.G33Corruption as exc:
+        print(f"(ABC evidence preserved at {root})", file=sys.stderr)
         _die(EXIT_EVIDENCE, f"FAIL ABC evidence: {exc}")
     except BaseException:
         print(f"(ABC evidence preserved at {root})", file=sys.stderr)
