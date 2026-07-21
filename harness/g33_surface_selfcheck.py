@@ -2,7 +2,7 @@
 """Focused G3.3-M check for the final sedimentation-to-surface causal path.
 
 This deliberately stays separate from g33_selfcheck.check_algorithm(): the main
-checker already proves the qr/nr substep ladder.  This check proves only the
+checker already proves the qr/nr substep ladder. This check proves only the
 remaining load-bearing edge:
 
     final main-substep QR_FALLACC(k=K-1)
@@ -11,7 +11,7 @@ remaining load-bearing edge:
         -> actual rain/snow/graupel increments.
 
 The surface arithmetic is independently replayed from dumped operands at f32
-operation boundaries.  No driver fixture value is used as an expected result.
+operation boundaries. No driver fixture value is used as an expected result.
 """
 from __future__ import annotations
 
@@ -216,19 +216,22 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--driver", type=Path, required=True)
+    parser.add_argument("--algorithm", choices=("legacy", "conservative", "both"),
+                        default="both")
     args = parser.parse_args()
     if not args.driver.is_file():
         _die(EXIT_SKIP, f"SKIP: surface driver not found: {args.driver}")
 
+    algorithms = ("legacy", "conservative") if args.algorithm == "both" else (args.algorithm,)
     root = Path(tempfile.mkdtemp(prefix="g33-surface-selfcheck-"))
     try:
-        for algorithm in ("legacy", "conservative"):
+        for algorithm in algorithms:
             stats = check_algorithm(args.driver, algorithm, root / algorithm)
             print(f"{algorithm}: SURFACE PASS — {stats['containers']} containers, "
                   f"qr bottom link + {stats['surface_fields']} fields bit-exact")
         print("SURFACE SELF-CHECK PASS")
     except SystemExit:
-        print(f"(surface evidence preserved at {root})", file=sys.stderr)
+        print(f"(evidence preserved at {root})", file=sys.stderr)
         raise
     else:
         shutil.rmtree(root)
