@@ -46,7 +46,16 @@ fc "$CPPDEF" "$HOST/frame/libmassv.F"                 "$OUT/libmassv.o"
 fc ""        "$HERE/stub_wrf_error.f90"               "$OUT/stub_wrf_error.o"
 fc "$CPPDEF" "$HOST/share/module_model_constants.F"   "$OUT/module_model_constants.o"
 fc "$CPPDEF" "$HOST/phys/module_mp_radar.F"           "$OUT/module_mp_radar.o"
-fc "$KDM6 $CPPDEF" "$HOST/phys/module_mp_kdm6.F"      "$OUT/module_mp_kdm6.o"
+# --dump: compile a TEMPORARY instrumentation overlay (SHA-pinned patched copy)
+# with -DKDM6_G33_FORTRAN_DUMP so the sed ladder is emitted as G33OP lines.
+# Without --dump: the canonical reference, byte-identical behaviour.
+if [ "${2:-}" = "--dump" ]; then
+    python3 "$HERE/make_fortran_overlay.py" \
+        "$HOST/phys/module_mp_kdm6.F" "$OUT/module_mp_kdm6_ovl.F" >/dev/null
+    fc "$KDM6 $CPPDEF -DKDM6_G33_FORTRAN_DUMP" "$OUT/module_mp_kdm6_ovl.F" "$OUT/module_mp_kdm6.o"
+else
+    fc "$KDM6 $CPPDEF" "$HOST/phys/module_mp_kdm6.F"  "$OUT/module_mp_kdm6.o"
+fi
 fc "$KDM6"   "$HERE/g33_fortran_driver.f90"           "$OUT/g33_fortran_driver.o"
 
 # shellcheck disable=SC2086
