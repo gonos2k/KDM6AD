@@ -43,11 +43,15 @@ import g33_run_env as gre
 
 B, K, MSTEPMAX, QCRMIN, DTCLD = 3, 4, 2, 1.0e-9, 20.0   # DTCLD matches selfcheck_driver.cpp
 
-# §7 interface roundoff-residual ceiling in ULP units (see resid/κ below). A
-# gross-error tripwire, calibrated above the observed maximum with margin — NOT
-# a bit-exact claim. The ρΔz transfer is algebraically conservative but closes
-# only to within this measured float32 envelope.
-KAPPA_ENVELOPE = 4.0
+# §7 interface residual ceiling, in EPSILON-SCALED residual units (κ = |G-L| /
+# (eps32·(|G|+|L|+tiny)) — an eps-scaled RELATIVE residual, NOT a representable-
+# number ULP count). Standard f32 model: a divide-then-multiply round-trip gives
+# |G-L| ≲ γ₂|L| (γ₂=2u/(1-2u)), so κ ≲ 0.5 in the normal finite range; the
+# fixture measures 0.299. The ceiling is 1.0 — tight enough that a dropped/wrong
+# metric fails, loose enough to admit ordinary two-rounding closure. (Subnormal/
+# overflow operands would need a separate classification; the arithmetic fixture
+# stays in the normal range.)
+KAPPA_ENVELOPE = 1.0
 
 # §3/§5 minimum ULP margin a strict cap-branch witness must clear the reservoir
 # by, so the branch stays strict under compiler/backend rounding (owner: a 1-ULP
@@ -135,14 +139,32 @@ def _bits(a, dt):
     return a.astype({"f32": ">f4", "f64": ">f8"}[dt]).tobytes()
 
 
+def positive_f32_ulp_distance(pa, pb):
+    """|bit_int(a) - bit_int(b)| for a, b from BE-f32 payloads — the ULP distance,
+    VALID only for finite nonnegative operands (bit order is monotone only there).
+    Hydrometeor pre_cap/reservoir are physically ≥ 0 and finite; if that domain
+    contract is broken the raw bit difference is NOT a ULP distance, so fail
+    closed rather than report a meaningless margin. Signed zero maps to +0.0 so a
+    -0.0 is not a spurious 2^31-ULP gap."""
+    a, b = _np("f32", pa), _np("f32", pb)
+    if not (np.isfinite(a).all() and np.isfinite(b).all()):
+        raise gd.G33Corruption("cap ULP-margin operand is non-finite")
+    if (a < 0).any() or (b < 0).any():
+        raise gd.G33Corruption("cap ULP-margin requires nonnegative hydrometeor operands")
+    au = np.where(a == 0, 0, np.frombuffer(pa, dtype=">u4").astype(np.int64))
+    bu = np.where(b == 0, 0, np.frombuffer(pb, dtype=">u4").astype(np.int64))
+    return np.abs(au - bu)
+
+
 def interface_kappa_chi(mul_src, inflow, m_src, m_dst):
     """§7 interface residual (κ) and metric condition (χ), per element, f64.
 
     L = extensive mass LEAVING k-1 (mul_src = dq_out(k-1)*m_src); G = mass
     ARRIVING at k (inflow*m_dst, the f32 product widened). r = f64(G)-f64(L) is
-    exact (both f32). κ = |r| / (eps32*(|G|+|L|+tiny)) is the residual in ULP
-    units; χ = max(m_src/m_dst, m_dst/m_src) the metric ratio. All inputs are
-    f32 ndarrays. Pure, so the formula is unit-testable away from the driver."""
+    exact (both f32). κ = |r| / (eps32*(|G|+|L|+tiny)) is an EPS-SCALED RELATIVE
+    residual (not a representable-number ULP count); χ = max(m_src/m_dst,
+    m_dst/m_src) is the METRIC RATIO. All inputs are f32 ndarrays. Pure, so the
+    formula is unit-testable away from the driver."""
     Lf = mul_src.astype(np.float64)
     Gf = (inflow * m_dst).astype(np.float64)     # f32 op, then widen
     eps32 = np.float64(np.finfo(np.float32).eps)
@@ -206,9 +228,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     # §7 interface roundoff residual: the ρΔz transfer is algebraically
     # conservative but NOT bit-exact in f32 (dq_in = fl32(dq_out*m_src/m_dst)),
     # so mass LEAVING k-1 (= mul_src) and mass ARRIVING at k (= inflow*m_dst)
-    # differ by a rounding residual r. κ = |r| / (eps32*(|G|+|L|+tiny)) reports
-    # it in ULP units; χ = max(m_src/m_dst, m_dst/m_src) flags where the metric
-    # ratio (and thus roundoff amplification) is large. Measured, not asserted
+    # differ by a rounding residual r. κ = |r| / (eps32*(|G|+|L|+tiny)) is an
+    # EPSILON-SCALED RELATIVE residual (not a representable-number ULP count);
+    # χ = max(m_src/m_dst, m_dst/m_src) is the METRIC RATIO (dynamic-range
+    # contrast, not a roundoff condition number). Measured, not asserted
     # bit-exact — the honest closure claim.
     resid = {"kappa_max": 0.0, "chi_max": 0.0, "n": 0}
     # cross-substep carry, keyed by (outer_loop, chain): substep_post(n) must
@@ -323,12 +346,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                                      op_id=op, field="outflow_pre_cap")["payload"]
                 resv_p = _payload(recs, stage="op", k=k, species=sp,
                                   op_id=op, field="source_reservoir")["payload"]
-                # ULP distance = |bit_int(pre_cap) - bit_int(reservoir)|, exact
-                # for same-sign positive f32 (monotone bit ordering). pre_cap and
-                # reservoir are mass/number quantities, always ≥ 0.
-                pre_u = np.frombuffer(pre_cap_p, dtype=">u4").astype(np.int64)
-                resv_u = np.frombuffer(resv_p, dtype=">u4").astype(np.int64)
-                ulp = np.abs(pre_u - resv_u)
+                # ULP distance, domain-validated (finite, nonnegative, signed-zero
+                # normalized) — a broken nonnegativity contract fails closed, not
+                # silently reports a meaningless bit gap.
+                ulp = positive_f32_ulp_distance(pre_cap_p, resv_p)
                 for br, du in zip(gdv.classify_min("f32", pre_cap_p, resv_p), ulp):
                     cov[key].add(br)
                     if br == gdv.BRANCH_RIGHT_SELECTED:
@@ -409,10 +430,11 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
             post_snap = _post_snap(post, c["container_id"])
 
-            # 2.2 — TOP cell (k=0): no inflow, so the whole update is a single
-            # subtraction. The interior loop starts at k=1 and would leave the
-            # surface-most, simplest rung unverified precisely because it is
-            # simple. Pin it: before == snapshot, post == before - dq_out.
+            # 2.2 — TOP cell (k=0, the uppermost layer in the top-first [B,K]
+            # layout): no inflow from above, so the whole update is a single
+            # subtraction. The interior loop starts at k=1 and would leave this
+            # uppermost, simplest rung unverified precisely because it is simple.
+            # Pin it: before == snapshot, post == before - dq_out.
             link(op_bits(0, "qr", "QR_UPDATE", "q_before") == _bits(snap["qr"][:, 0], "f32"),
                  0, "top QR_UPDATE.q_before != substep_pre.qr[:, 0]")
             q0b = _np("f32", op_bits(0, "qr", "QR_UPDATE", "q_before"))
@@ -495,7 +517,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
                 # §7 interface roundoff residual (MEASURED, not bit-exact): mass
                 # leaving k-1 (mul_src) vs mass arriving at k (inflow*m_dst)
-                # differ by a rounding residual; κ reports it in ULP units.
+                # differ by a rounding residual; κ is the eps-scaled residual.
                 kappa, chi = interface_kappa_chi(mul, inflow, m_src, m_dst)
                 resid["kappa_max"] = max(resid["kappa_max"], float(kappa.max()))
                 resid["chi_max"] = max(resid["chi_max"], float(chi.max()))
@@ -650,8 +672,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         if resid["kappa_max"] > KAPPA_ENVELOPE:
             _die(EXIT_FIDELITY,
                  f"FAIL interface residual: κ_max {resid['kappa_max']:.3g} > "
-                 f"{KAPPA_ENVELOPE} ULP — the ρΔz closure exceeds the roundoff "
-                 f"envelope (a dropped/wrong metric, not rounding)")
+                 f"{KAPPA_ENVELOPE} (eps-scaled) — the ρΔz closure exceeds the "
+                 f"roundoff envelope (a dropped/wrong metric, not rounding)")
     qr_bm = min(cap_margin["qr"]["bound"] + cap_margin["qr"]["unbound"])
     nr_bm = min(cap_margin["nr"]["bound"] + cap_margin["nr"]["unbound"])
     stats["coverage"] = (f"mstep {cov['mstep']}, n{MSTEPMAX} gate {top_gate}, "
@@ -659,8 +681,8 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"QR/NR cap both strictly bound+unbound "
                          f"(min margin QR {qr_bm}, NR {nr_bm} ULP ≥{CAP_MARGIN_ULP}), "
                          f"{stats_links['n']} causal links, "
-                         f"interface κ_max {resid['kappa_max']:.3g} ULP "
-                         f"(≤{KAPPA_ENVELOPE}), χ_max {resid['chi_max']:.3g}")
+                         f"interface κ_max {resid['kappa_max']:.3g} eps-scaled "
+                         f"(≤{KAPPA_ENVELOPE}), χ_max {resid['chi_max']:.3g} (metric ratio)")
     return stats
 
 

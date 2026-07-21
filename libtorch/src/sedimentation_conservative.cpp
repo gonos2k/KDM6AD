@@ -66,7 +66,9 @@ SubstepAdvectionOutputs substep_advection_conservative(
     torch::Tensor prev_out_nr;
 
     for (int64_t k = 0; k < K; ++k) {
-        // ── mass species (qr/qs/qg/brs): ρΔz-conserving interface transfer ──
+        // ── extensive mass/volume moments (qr/qs/qg/brs) sharing the ρΔz layer
+        // metric: ρΔz-conserving interface transfer. brs is a graupel VOLUME
+        // moment, not water mass; it rides the same metric, not the same units. ─
         for (SpeciesChain* s : {&qr, &qs, &qg, &brs}) {
             // falk as in legacy: ONE f32 rounding of the (f64-vt) chain (§34).
             auto falk = (dend_col(k) * s->cols[k] * s->work1->select(-1, k)
