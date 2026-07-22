@@ -160,10 +160,12 @@ class FortranRun:
     K: int
     B: int
     mstep: dict            # col -> substep count
-    fixture_sha256: str
+    fixture_sha256: str    # over the FIXIN inputs only
+    parameter_sha256: str  # over the PARAM scalars only
     ops: tuple             # OpRecord, in canonical op_seq order
     state: dict            # (field, col, k) -> bits
     precip: dict           # (family, col) -> bits
+    fixin: dict            # (field, col, k) -> bits
     params: dict           # name -> bits
 
 
@@ -250,12 +252,13 @@ def parse_fortran_run(text, algo, K, B):
     _require_unique(fixin, _FIXIN, text, "FIXIN")
 
     fx = "".join(f"{f}:{c}:{k}:{b:08x}" for (f, c, k), b in sorted(fixin.items()))
-    fx += "".join(f"{n}:{b:08x}" for n, b in sorted(params.items()))
+    pr = "".join(f"{n}:{b:08x}" for n, b in sorted(params.items()))
     fixture_sha256 = _hashlib.sha256(fx.encode()).hexdigest()
+    parameter_sha256 = _hashlib.sha256(pr.encode()).hexdigest()
 
     return FortranRun(algorithm=algo, K=K, B=B, mstep=mstep,
-                      fixture_sha256=fixture_sha256, ops=ops, state=state,
-                      precip=precip, params=params)
+                      fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
+                      ops=ops, state=state, precip=precip, fixin=fixin, params=params)
 
 
 def _require_unique(parsed, pattern, text, label):

@@ -186,3 +186,25 @@ def test_strict_parser_accepts_good_and_rejects_mutants(algo):
     for name, fn in mutants.items():
         with pytest.raises(fd.FortranRunError):
             fd.parse_fortran_run(_mut(fn), algo, K=4, B=3)
+
+
+def test_run_wrapper_writes_complete_manifest():
+    # end-to-end: build + run + strict-parse + decision-grade run_manifest.json.
+    WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_case.py"
+    with tempfile.TemporaryDirectory(prefix="g33-run.") as td:
+        out = Path(td) / "run"
+        r = subprocess.run(["python3", str(WRAP), "--algo", "legacy", "--out", str(out)],
+                           capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"wrapper failed:\n{r.stdout}\n{r.stderr}"
+        import json
+        man = json.loads((out / "run_manifest.json").read_text())
+        required = ["repo_commit", "repo_dirty", "algorithm", "fixture_sha256",
+                    "parameter_sha256", "stdout_sha256", "stderr_sha256",
+                    "executable_sha256", "compiler_binary_sha256", "os",
+                    "architecture", "python_version", "mstep_per_column",
+                    "op_record_count", "host_source_sha256", "harness_source_sha256"]
+        assert all(k in man for k in required), \
+            f"missing manifest keys: {[k for k in required if k not in man]}"
+        assert man["algorithm"] == "legacy" and man["op_record_count"] > 0
+        assert all(len(man[k]) == 64 for k in ("fixture_sha256", "stdout_sha256",
+                                               "compiler_binary_sha256"))
