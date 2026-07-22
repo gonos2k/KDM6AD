@@ -137,3 +137,52 @@ def test_fortran_overlay_full_abc_and_emits_full_schema(algo):
         saw_top |= (k == 0)
         saw_int |= (k >= 1)
     assert saw_top and saw_int, "fixture must exercise both TOP (k=0) and interior (k>=1)"
+
+
+def _set_tok(line, idx, val):
+    t = line.split()
+    t[idx] = val
+    return " ".join(t)
+
+
+@pytest.mark.parametrize("algo", ALGOS)
+def test_strict_parser_accepts_good_and_rejects_mutants(algo):
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+
+    good = _build_and_run(algo, overlay=True, dump=True)
+    run = fd.parse_fortran_run(good, algo, K=4, B=3)   # must accept a clean run
+    assert run.algorithm == algo and run.ops and run.fixture_sha256
+    # ops are canonically ordered per column (op_seq_id monotonic within a lane).
+    for c in range(1, 4):
+        seqs = [r.op_seq_id for r in run.ops if r.col == c]
+        assert seqs == sorted(seqs) and len(seqs) == len(set(seqs))
+
+    lines = good.splitlines()
+    op_i = next(i for i, l in enumerate(lines) if l.startswith("G33FOP"))
+    st_i = next(i for i, l in enumerate(lines) if l.startswith("G33F STATE"))
+    beg_i = next(i for i, l in enumerate(lines) if l.startswith("G33F BEGIN"))
+    # G33FOP loop chain n col k op field dtype hex  -> col=idx4, k=idx5, n=idx3
+    one_col = [i for i, l in enumerate(lines)
+               if l.startswith("G33FOP") and l.split()[4] == "2"]
+
+    def _mut(fn):
+        m = list(lines)
+        fn(m)
+        return "\n".join(m)
+
+    mutants = {
+        "drop one op": lambda m: m.pop(op_i),
+        "duplicate op": lambda m: m.insert(op_i, m[op_i]),
+        "whole column dropped": lambda m: [m.pop(i) for i in reversed(one_col)],
+        "op k out of range": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 5, "9")),
+        "op n out of gate": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 3, "7")),
+        "malformed op (bad dtype)": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 8, "BAD")),
+        "duplicate state key": lambda m: m.insert(st_i, m[st_i]),
+        "BEGIN removed": lambda m: m.pop(beg_i),
+    }
+    for name, fn in mutants.items():
+        with pytest.raises(fd.FortranRunError):
+            fd.parse_fortran_run(_mut(fn), algo, K=4, B=3)
