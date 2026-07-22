@@ -19,6 +19,7 @@ order, for every (role, species, op) in scope — a drift fails here, loudly.
 Each emitted line: G33OP <i> <k_topfirst> <n> <op_id>.<field> <dtype> <hex>
 (Z8.8 / Z16.16 / Z2.2). Fortran k is bottom-up (kts..kte); we emit k = kte-k.
 """
+import argparse
 import hashlib
 import os
 import sys
@@ -120,25 +121,22 @@ def build_overlay(algo, text):
 
 
 def main():
-    argv = [a for a in sys.argv[1:] if not a.startswith("--")]
-    algo = "legacy"
-    for a in sys.argv[1:]:
-        if a.startswith("--algo"):
-            algo = a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1]
-    if algo not in fb.VARIANTS:
-        raise SystemExit(f"--algo must be one of {sorted(fb.VARIANTS)}, got {algo!r}")
-    src_path, dst_path = argv[0], argv[1]
+    ap = argparse.ArgumentParser(description="G3.3-M temporary Fortran overlay generator")
+    ap.add_argument("src", help="canonical reference module (.F)")
+    ap.add_argument("dst", help="output overlay path (.F)")
+    ap.add_argument("--algo", default="legacy", choices=sorted(fb.VARIANTS))
+    args = ap.parse_args()
 
-    _validate_against_schema(algo)
-    raw = open(src_path, "rb").read()
+    _validate_against_schema(args.algo)
+    raw = open(args.src, "rb").read()
     got = hashlib.sha256(raw).hexdigest()
-    if got != fb.VARIANTS[algo]["sha"]:
+    if got != fb.VARIANTS[args.algo]["sha"]:
         raise SystemExit(
-            f"canonical {algo} SHA {got} != pinned {fb.VARIANTS[algo]['sha']} — the "
-            f"reference changed; re-verify anchors and re-pin")
+            f"canonical {args.algo} SHA {got} != pinned {fb.VARIANTS[args.algo]['sha']} "
+            f"— the reference changed; re-verify anchors and re-pin")
 
-    open(dst_path, "w", encoding="utf-8").write(build_overlay(algo, raw.decode("utf-8")))
-    print(f"wrote {algo} overlay: {dst_path}")
+    open(args.dst, "w", encoding="utf-8").write(build_overlay(args.algo, raw.decode("utf-8")))
+    print(f"wrote {args.algo} overlay: {args.dst}")
 
 
 if __name__ == "__main__":
