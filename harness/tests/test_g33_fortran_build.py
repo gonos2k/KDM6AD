@@ -55,34 +55,58 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits():
     assert all(280.0 < v < 300.0 for v in vals), f"th out of range: {vals}"
 
 
-def test_fortran_overlay_emits_qr_ladder_and_is_non_invasive():
+def _schema_fields(algo, role):
+    """The authoritative (op_id, field, dtype) set the overlay must emit for a
+    cell role, taken from the single schema the C++ container + P4 comparator use."""
+    import g33_expectation as ge
+    out = set()
+    for sp in ("qr", "nr"):
+        for op_id in ge._ops_for_species(algo, role, sp):
+            for f, dt in ge._op_fields(algo, role, op_id):
+                out.add((op_id, f, dt))
+    return out
+
+
+def test_fortran_overlay_emits_full_schema_and_is_non_invasive():
     import sys
     sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
     import g33_fortran_dump as fd
 
     canon = _build_and_run(dump=False)
     dump = _build_and_run(dump=True)
 
-    # NON-INVASIVE: the instrumentation only adds WRITEs — the final prognostic
-    # state and precip must be BYTE-IDENTICAL between the canonical and the
-    # dump (overlay) builds. This is the Fortran analogue of C++ A/B/C.
+    # NON-INVASIVE: the instrumentation only adds WRITEs (and reads into two
+    # scratch temps) — the final prognostic state and precip must be
+    # BYTE-IDENTICAL between the canonical and the dump build. Fortran A/B/C.
     assert fd.parse_state(canon) == fd.parse_state(dump), \
         "overlay perturbed the final state — instrumentation is NOT non-invasive"
     assert fd.parse_prec(canon) == fd.parse_prec(dump), \
         "overlay perturbed precip — instrumentation is NOT non-invasive"
+    assert not fd.parse_ops(canon), "canonical build must not emit op records"
 
-    # The dump carries the interior QR op ladder (top-first k >= 1; the top cell
-    # k=0 is a separate branch not yet instrumented), 5 fields per (col, k, n).
     ops = fd.parse_ops(dump)
     assert ops, "no G33OP records emitted"
-    fields = {(o["op"], o["field"]) for o in ops}
-    assert fields == {
-        ("QR_FALK", "falk_f32"), ("QR_OUTFLOW", "dq_out"),
-        ("QR_INFLOW", "dq_in"), ("QR_FALLACC", "fall_after"),
-        ("QR_UPDATE", "q_post"),
-        ("NR_FALK", "falk_f32"), ("NR_OUTFLOW", "dn_out"),
-        ("NR_INFLOW", "dn_in"), ("NR_FALLACC", "fall_after"),
-        ("NR_UPDATE", "n_post")}, f"unexpected op/field set: {fields}"
-    assert all(o["k"] >= 1 for o in ops), "interior ladder must be top-first k>=1"
-    # canonical build emits NO G33OP (macro off).
-    assert not fd.parse_ops(canon), "canonical build must not emit op records"
+
+    # Every emitted record must carry the schema dtype for its (role, op, field).
+    top_fields = _schema_fields("legacy", "TOP")
+    int_fields = _schema_fields("legacy", "INTERIOR")   # == BOTTOM op set
+    for o in ops:
+        want = top_fields if o["k"] == 0 else int_fields
+        assert (o["op"], o["field"], o["dtype"]) in want, \
+            f"emitted {(o['op'], o['field'], o['dtype'])} not in schema for k={o['k']}"
+
+    # COMPLETENESS: for every active (col, k, n) cell the emitted (op,field,dtype)
+    # set must equal the schema's EXACTLY — no rung dropped, none invented. This
+    # is what makes the Fortran dump comparable to the C++ container in P4.
+    groups = {}
+    for o in ops:
+        groups.setdefault((o["col"], o["k"], o["n"]), set()).add(
+            (o["op"], o["field"], o["dtype"]))
+    saw_top = saw_int = False
+    for (col, k, n), got in groups.items():
+        want = top_fields if k == 0 else int_fields
+        assert got == want, f"cell col={col} k={k} n={n}: {got ^ want} differs from schema"
+        saw_top |= (k == 0)
+        saw_int |= (k >= 1)
+    assert saw_top and saw_int, "fixture must exercise both TOP (k=0) and interior (k>=1)"
