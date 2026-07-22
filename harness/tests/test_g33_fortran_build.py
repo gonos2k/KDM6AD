@@ -25,10 +25,14 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _build_and_run(dump=False):
+ALGOS = ["legacy", "conservative"]
+
+
+def _build_and_run(algo="legacy", dump=False):
     with tempfile.TemporaryDirectory(prefix="g33-fortran-test.") as td:
         out = Path(td) / "build"
-        cmd = ["bash", str(BUILD), str(out)] + (["--dump"] if dump else [])
+        cmd = ["bash", str(BUILD), str(out), f"--algo={algo}"] + (
+            ["--dump"] if dump else [])
         r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
         assert r.returncode == 0, f"build failed:\n{r.stdout}\n{r.stderr}"
         driver = out / "g33_fortran_driver"
@@ -38,10 +42,11 @@ def _build_and_run(dump=False):
         return run.stdout
 
 
-def test_fortran_driver_builds_runs_and_emits_raw_bits():
-    out = _build_and_run()
-    assert "FORTRAN DRIVER OK" in out
-    assert "G33-FORTRAN-BEGIN legacy" in out and "G33-FORTRAN-END legacy" in out
+@pytest.mark.parametrize("algo", ALGOS)
+def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
+    out = _build_and_run(algo)
+    assert f"FORTRAN DRIVER OK ({algo}" in out
+    assert f"G33-FORTRAN-BEGIN {algo}" in out and f"G33-FORTRAN-END {algo}" in out
     # Every FLD line is: FLD <name> <i> <k> <8-hex>. 12 fields x 3 cols x 4 lvls.
     fld = re.findall(r"^FLD\s+(\S.*?)\s+(\d+)\s+(\d+)\s+([0-9A-F]{8})$", out, re.M)
     assert len(fld) == 12 * 3 * 4, f"expected 144 FLD records, got {len(fld)}"
@@ -67,14 +72,15 @@ def _schema_fields(algo, role):
     return out
 
 
-def test_fortran_overlay_emits_full_schema_and_is_non_invasive():
+@pytest.mark.parametrize("algo", ALGOS)
+def test_fortran_overlay_emits_full_schema_and_is_non_invasive(algo):
     import sys
     sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
     sys.path.insert(0, str(ROOT / "harness"))
     import g33_fortran_dump as fd
 
-    canon = _build_and_run(dump=False)
-    dump = _build_and_run(dump=True)
+    canon = _build_and_run(algo, dump=False)
+    dump = _build_and_run(algo, dump=True)
 
     # NON-INVASIVE: the instrumentation only adds WRITEs (and reads into two
     # scratch temps) — the final prognostic state and precip must be
@@ -89,8 +95,8 @@ def test_fortran_overlay_emits_full_schema_and_is_non_invasive():
     assert ops, "no G33OP records emitted"
 
     # Every emitted record must carry the schema dtype for its (role, op, field).
-    top_fields = _schema_fields("legacy", "TOP")
-    int_fields = _schema_fields("legacy", "INTERIOR")   # == BOTTOM op set
+    top_fields = _schema_fields(algo, "TOP")
+    int_fields = _schema_fields(algo, "INTERIOR")   # == BOTTOM op set
     for o in ops:
         want = top_fields if o["k"] == 0 else int_fields
         assert (o["op"], o["field"], o["dtype"]) in want, \

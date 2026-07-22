@@ -1,18 +1,31 @@
-! G3.3-M standalone Fortran driver (P1): run the reference legacy sedimentation
-! path (module_mp_kdm6::kdm6) on a deterministic B=3, K=4 fixture and print the
-! resulting prognostic state + surface precip as raw uint32 hex — the format the
-! four-case G3.3-M comparator will read. Fortran-only: no C++/libtorch linkage.
+! G3.3-M standalone Fortran driver: run a reference sedimentation path on a
+! deterministic B=3, K=4 fixture and print the resulting prognostic state +
+! surface precip as raw uint32 hex — the format the four-case G3.3-M comparator
+! reads. Fortran-only: no C++/libtorch linkage.
 !
-! This is the build/run feasibility foundation (protocol §5, P1). Instrumenting
-! the per-op sedimentation ladder is P2 (a temporary patched overlay).
+! ONE driver, both variants (compiled with -cpp): the DEFAULT is legacy
+! (module_mp_kdm6::kdm6); -DKDM6_CONS selects the conservative-interface variant
+! (module_mp_kdm6_cons::kdm6_cons), renamed to `kdm6` so the fixture body and
+! call site are byte-identical across variants — the P3 fixture-equivalence the
+! four-case comparison needs. The per-op sed ladder is emitted by the temporary
+! overlay of the module itself (make_fortran_overlay.py), not here.
 module g33_fixture
   use, intrinsic :: iso_fortran_env, only: int32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
                                     xls, xlv, xlf, rhoair0, rhowater,        &
                                     rhosnow, cliq, cice, psat,               &
                                     wrf_eps => epsilon
+#ifdef KDM6_CONS
+  use module_mp_kdm6_cons, only: kdm6 => kdm6_cons
+#else
   use module_mp_kdm6, only: kdm6
+#endif
   implicit none
+#ifdef KDM6_CONS
+  character(len=*), parameter :: ALGOTAG = 'conservative'
+#else
+  character(len=*), parameter :: ALGOTAG = 'legacy'
+#endif
   integer, parameter :: NFLD_ST = 12
   character(len=4), dimension(NFLD_ST), parameter :: FLDNAME = &
        [character(len=4) :: 'th  ','qv  ','qc  ','qr  ','qi  ','qs  ', &
@@ -21,7 +34,7 @@ module g33_fixture
   real, parameter :: NCMIN_LAND_NL = 10.0, NCMIN_SEA_NL = 10.0
 contains
 
-  subroutine run_legacy(im, km, delt, outF, precF)
+  subroutine run_case(im, km, delt, outF, precF)
     integer, intent(in)  :: im, km
     real,    intent(in)  :: delt
     real,    intent(out) :: outF(im, km, NFLD_ST), precF(3, im)
@@ -94,13 +107,17 @@ contains
     precF(1,:) = rainncv(:,1)
     precF(2,:) = snowncv(:,1)
     precF(3,:) = graupelncv(:,1)
-  end subroutine run_legacy
+  end subroutine run_case
 end module g33_fixture
 
 program g33_fortran_driver
   use, intrinsic :: iso_fortran_env, only: int32
   use module_model_constants, only: cliq, cpv, rhoair0, rhowater, rhosnow
+#ifdef KDM6_CONS
+  use module_mp_kdm6_cons, only: kdm6init => kdm6init_cons
+#else
   use module_mp_kdm6, only: kdm6init
+#endif
   use g33_fixture
   implicit none
   integer, parameter :: IM = 3, KM = 4
@@ -109,10 +126,10 @@ program g33_fortran_driver
   integer(int32) :: bits
 
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, CCN0_NL, 0, .true.)
-  call run_legacy(IM, KM, 20.0, outF, precF)
+  call run_case(IM, KM, 20.0, outF, precF)
 
   ! Raw-bit stream (uint32 hex) — the operand-domain values the comparator reads.
-  write(*,'(A)') 'G33-FORTRAN-BEGIN legacy'
+  write(*,'(A)') 'G33-FORTRAN-BEGIN '//ALGOTAG
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM
@@ -127,6 +144,6 @@ program g33_fortran_driver
       write(*,'(A,1X,I0,1X,I0,1X,Z8.8)') 'PREC', f, i, bits
     end do
   end do
-  write(*,'(A)') 'G33-FORTRAN-END legacy'
-  write(*,'(A)') 'FORTRAN DRIVER OK (legacy, B=3 K=4)'
+  write(*,'(A)') 'G33-FORTRAN-END '//ALGOTAG
+  write(*,'(A)') 'FORTRAN DRIVER OK ('//ALGOTAG//', B=3 K=4)'
 end program g33_fortran_driver
