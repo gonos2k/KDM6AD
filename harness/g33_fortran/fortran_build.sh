@@ -10,8 +10,15 @@
 #
 # --algo legacy (default) builds module_mp_kdm6; conservative builds
 # module_mp_kdm6_cons (mp237, ρΔz interface). --dump compiles a TEMPORARY
-# SHA-pinned instrumentation overlay (-DKDM6_G33_FORTRAN_DUMP) that emits the
-# per-op sed ladder; without it, the canonical reference (byte-identical).
+# SHA-pinned instrumentation overlay (-DKDM6_G33_FORTRAN_DUMP); without it, the
+# canonical reference (byte-identical).
+#
+# On success writes OUT/provenance.json — a DECISION-GRADE record of every input
+# (host source SHAs, overlay generator + generated overlay + driver SHAs, the
+# executable SHA, compiler path/version, exact flags + compile/link commands).
+# The Fortran leg is local-only (gitignored reference tree), so this manifest is
+# what makes a local result reproducible/auditable. The driver run adds the
+# fixture + stdout SHAs.
 #
 # HERMETIC: set -euo pipefail + a fresh, owned output dir (no rm -rf; explicit
 # path must not pre-exist, default is a private mktemp dir).
@@ -33,55 +40,76 @@ for a in "$@"; do
     esac
 done
 case "$ALGO" in
-    legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF="" ;;
-    conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF="-DKDM6_CONS" ;;
+    legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
+    conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
     *) echo "--algo must be legacy or conservative, got $ALGO" >&2; exit 2 ;;
 esac
 
-# Reference sources must be present (frozen host tree).
-for f in "$HOST/frame/libmassv.F" "$HOST/share/module_model_constants.F" \
-         "$HOST/phys/module_mp_radar.F" "$MODULE"; do
+# Reference sources (frozen host tree) — all four must be present.
+LIBMASSV="$HOST/frame/libmassv.F"
+CONSTS="$HOST/share/module_model_constants.F"
+RADAR="$HOST/phys/module_mp_radar.F"
+for f in "$LIBMASSV" "$CONSTS" "$RADAR" "$MODULE"; do
     [ -f "$f" ] || { echo "missing reference source: $f" >&2; exit 2; }
 done
 
 if [ -n "$OUT" ]; then
     [ -e "$OUT" ] && { echo "output path already exists (refusing): $OUT" >&2; exit 2; }
-    mkdir -p "$OUT"
+    mkdir "$OUT"                       # parent exists; non-existence checked above
 else
     OUT=$(mktemp -d "${TMPDIR:-/tmp}/g33-fortran.XXXXXX")
 fi
 
-GEN="-O2 -ftree-vectorize -funroll-loops -w -ffree-form -ffree-line-length-none \
-     -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz"
-KDM6="$GEN -ffp-contract=off"          # ffp-contract=off is required for f32 parity
-CPPDEF="-cpp -DRWORDSIZE=4 -DEM_CORE=1"
+# ── flag arrays (path-safe, no word-split surprises) ──────────────────────────
+COMMON_FLAGS=(-O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none
+              -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch
+              -fallow-invalid-boz)
+# canonical reference is compiled AS-IS; -w silences ITS warnings (not ours),
+# -ffp-contract=off is required for f32 bit-parity with the C++ side.
+REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
+KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
+CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)
+# our harness driver is held to a higher bar: warnings ON.
+DRIVER_FLAGS=("${COMMON_FLAGS[@]}" -ffp-contract=off -Wall)
 
-fc() {  # $1 flags-extra  $2 src  $3 out.o
+CMDLOG="$OUT/commands.txt"
+: >"$CMDLOG"
+fc() {  # $1 out.o ; rest: flags + src
+    local out="$1"; shift
+    printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$out" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
     # shellcheck disable=SC2086
-    "$FC" -c $GEN $1 -J"$OUT" -I"$OUT" "$2" -o "$3" 2>"$3.err" \
-        || { echo "FORTRAN COMPILE FAILED: $2"; head -20 "$3.err"; exit 1; }
+    "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$out" 2>"$out.err" \
+        || { echo "FORTRAN COMPILE FAILED: $*"; head -20 "$out.err"; exit 1; }
 }
 
 # dependency order: constants + massv + wrf stub, then radar, then the mp module,
 # then the driver (driver is -cpp so -DKDM6_CONS can rename the module entry).
-fc "$CPPDEF" "$HOST/frame/libmassv.F"                 "$OUT/libmassv.o"
-fc ""        "$HERE/stub_wrf_error.f90"               "$OUT/stub_wrf_error.o"
-fc "$CPPDEF" "$HOST/share/module_model_constants.F"   "$OUT/module_model_constants.o"
-fc "$CPPDEF" "$HOST/phys/module_mp_radar.F"           "$OUT/module_mp_radar.o"
+fc "$OUT/libmassv.o"              "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$LIBMASSV"
+fc "$OUT/stub_wrf_error.o"        "${REF_FLAGS[@]}" "$HERE/stub_wrf_error.f90"
+fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$CONSTS"
+fc "$OUT/module_mp_radar.o"       "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$RADAR"
 if [ "$DUMP" = 1 ]; then
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
-        --algo="$ALGO" >/dev/null
-    fc "$KDM6 $CPPDEF -DKDM6_G33_FORTRAN_DUMP" "$OUT/module_mp_ovl.F" "$OUT/module_mp.o"
+    OVERLAY="$OUT/module_mp_ovl.F"
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY" --algo="$ALGO" >/dev/null
+    MODULE_SRC="$OVERLAY"
+    fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" -DKDM6_G33_FORTRAN_DUMP "$OVERLAY"
 else
-    fc "$KDM6 $CPPDEF" "$MODULE"                       "$OUT/module_mp.o"
+    MODULE_SRC="$MODULE"
+    fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "$MODULE"
 fi
-fc "$KDM6 $CPPDEF $DRVDEF" "$HERE/g33_fortran_driver.f90" "$OUT/g33_fortran_driver.o"
+fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" \
+    "$HERE/g33_fortran_driver.f90"
 
+printf '%q ' "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" >>"$CMDLOG"
+printf '...objs\n' >>"$CMDLOG"
 # shellcheck disable=SC2086
-"$FC" $GEN -o "$OUT/g33_fortran_driver" \
+"$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" \
     "$OUT/g33_fortran_driver.o" "$OUT/module_mp.o" "$OUT/module_mp_radar.o" \
     "$OUT/module_model_constants.o" "$OUT/stub_wrf_error.o" "$OUT/libmassv.o" \
     2>"$OUT/link.err" || { echo "FORTRAN LINK FAILED"; head -20 "$OUT/link.err"; exit 1; }
+
+# ── decision-grade provenance manifest (a plain script, not a heredoc) ────────
+python3 "$HERE/g33_provenance.py" "$OUT" "$ALGO" "$DUMP" "$FC" "$MODULE_SRC" "$MODULE"
 
 echo "built ($ALGO): $OUT/g33_fortran_driver"
 echo "$OUT"
