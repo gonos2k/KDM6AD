@@ -54,3 +54,32 @@ def parse_prec(text):
         if m:
             pr[(int(m.group(1)), int(m.group(2)))] = int(m.group(3), 16)
     return pr
+
+
+# ── canonicalization for the four-case comparator (P4) ────────────────────────
+# The Fortran dump is per-(column i, top-first k, substep n, op, field). The C++
+# KDG33OP record identity carries cell_role + species (not the raw index); derive
+# them here so both trees present the SAME logical key. Must mirror
+# g33_expectation._cell_role (canonical top-first) and the QR_/NR_ family split.
+def cell_role(k, K):
+    if k == 0:
+        return "TOP"
+    if k == K - 1:
+        return "BOTTOM"
+    return "INTERIOR"
+
+
+def species_of(op_id):
+    fam = op_id.split("_", 1)[0]
+    try:
+        return {"QR": "qr", "NR": "nr"}[fam]
+    except KeyError:
+        raise ValueError(f"unknown op family in {op_id!r}") from None
+
+
+def to_records(text, K):
+    """Parsed ops enriched with cell_role + species — the logical fields the
+    comparator keys on. `col` (Fortran i, 1-based) maps to the C++ per-record
+    [B] payload lane (col-1); the comparator compares lane-by-lane."""
+    return [{**o, "cell_role": cell_role(o["k"], K), "species": species_of(o["op"])}
+            for o in parse_ops(text)]

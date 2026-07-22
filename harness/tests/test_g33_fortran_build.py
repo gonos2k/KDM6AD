@@ -116,3 +116,10 @@ def test_fortran_overlay_emits_full_schema_and_is_non_invasive(algo):
         saw_top |= (k == 0)
         saw_int |= (k >= 1)
     assert saw_top and saw_int, "fixture must exercise both TOP (k=0) and interior (k>=1)"
+
+    # canonicalization (P4 input): role from k (top-first), species from op family.
+    K = 4  # driver fixture
+    for r in fd.to_records(dump, K):
+        assert r["species"] == ("qr" if r["op"].startswith("QR_") else "nr")
+        assert r["cell_role"] == ("TOP" if r["k"] == 0 else
+                                  "BOTTOM" if r["k"] == K - 1 else "INTERIOR")
