@@ -57,3 +57,9 @@ jobs:
 
       - name: overlay 4-check (all instrumented TUs)
         run: python harness/g33_overlay/verify_overlay.py
+
+      # NOTE: the G3.3-M Fortran leg (harness/g33_fortran/) is LOCAL-ONLY — the
+      # reference host WRF/KIM-meso Fortran tree is gitignored (not distributed),
+      # so it cannot run in CI. It is exercised by test_g33_fortran_build.py,
+      # which SKIPS when gfortran or the reference source is absent (i.e. always
+      # in CI) and builds+runs where the source is present (the owner's host).
