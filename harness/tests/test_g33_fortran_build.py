@@ -63,11 +63,13 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 def _schema_fields(algo, role):
     """The authoritative (op_id, field, dtype) set the overlay must emit for a
     cell role, taken from the single schema the C++ container + P4 comparator use."""
-    import g33_expectation as ge
+    import sys
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_schema as schema
     out = set()
     for sp in ("qr", "nr"):
-        for op_id in ge._ops_for_species(algo, role, sp):
-            for f, dt in ge._op_fields(algo, role, op_id):
+        for op_id in schema.ops_for_species(algo, role, sp):
+            for f, dt in schema.op_fields(algo, role, op_id):
                 out.add((op_id, f, dt))
     return out
 
