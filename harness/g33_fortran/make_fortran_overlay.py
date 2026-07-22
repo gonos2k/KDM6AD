@@ -46,6 +46,20 @@ QR_INTERIOR_BLOCK = "\n".join([
     "#endif",
 ])
 
+# The interior NUMBER (NR) update — the dz-ONLY number transport (dnr(i,k+1) uses
+# delz(k+1)/delz(k), no density), the op the release number-budget blocker lives
+# in. Unique line, same 13-space indent.
+NR_INTERIOR_ANCHOR = "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)"
+NR_INTERIOR_BLOCK = "\n".join([
+    "#ifdef KDM6_G33_FORTRAN_DUMP",
+    _emit("NR_FALK.falk_f32",      "falkn(i,k,1)"),
+    _emit("NR_OUTFLOW.dn_out",     "dnr(i,k)"),
+    _emit("NR_INFLOW.dn_in",       "dnr(i,k+1)"),
+    _emit("NR_FALLACC.fall_after", "falln(i,k,1)"),
+    _emit("NR_UPDATE.n_post",      "nrs(i,k,1)"),
+    "#endif",
+])
+
 
 def main():
     src_path, dst_path = sys.argv[1], sys.argv[2]
@@ -57,12 +71,14 @@ def main():
             f"reference changed; re-verify anchors and re-pin")
     text = raw.decode("utf-8")
 
-    if text.count(QR_INTERIOR_ANCHOR) != 1:
-        raise SystemExit(
-            f"QR interior anchor count {text.count(QR_INTERIOR_ANCHOR)}, "
-            f"expected 1 — the sub-cycle changed")
-    text = text.replace(QR_INTERIOR_ANCHOR,
-                        QR_INTERIOR_ANCHOR + "\n" + QR_INTERIOR_BLOCK, 1)
+    for name, anchor, block in (
+            ("QR interior", QR_INTERIOR_ANCHOR, QR_INTERIOR_BLOCK),
+            ("NR interior", NR_INTERIOR_ANCHOR, NR_INTERIOR_BLOCK)):
+        if text.count(anchor) != 1:
+            raise SystemExit(
+                f"{name} anchor count {text.count(anchor)}, expected 1 — "
+                f"the sub-cycle changed")
+        text = text.replace(anchor, anchor + "\n" + block, 1)
 
     open(dst_path, "w", encoding="utf-8").write(text)
     print(f"wrote overlay: {dst_path}")

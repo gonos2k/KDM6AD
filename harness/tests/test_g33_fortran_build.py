@@ -79,7 +79,10 @@ def test_fortran_overlay_emits_qr_ladder_and_is_non_invasive():
     assert fields == {
         ("QR_FALK", "falk_f32"), ("QR_OUTFLOW", "dq_out"),
         ("QR_INFLOW", "dq_in"), ("QR_FALLACC", "fall_after"),
-        ("QR_UPDATE", "q_post")}, f"unexpected op/field set: {fields}"
+        ("QR_UPDATE", "q_post"),
+        ("NR_FALK", "falk_f32"), ("NR_OUTFLOW", "dn_out"),
+        ("NR_INFLOW", "dn_in"), ("NR_FALLACC", "fall_after"),
+        ("NR_UPDATE", "n_post")}, f"unexpected op/field set: {fields}"
     assert all(o["k"] >= 1 for o in ops), "interior ladder must be top-first k>=1"
     # canonical build emits NO G33OP (macro off).
     assert not fd.parse_ops(canon), "canonical build must not emit op records"
