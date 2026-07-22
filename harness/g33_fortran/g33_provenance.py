@@ -23,10 +23,10 @@ HERE = "harness/g33_fortran"
 
 
 def _sha(path):
-    try:
-        return hashlib.sha256(open(path, "rb").read()).hexdigest()
-    except OSError:
-        return None
+    # decision-grade: a missing/unreadable input is a HARD failure, never a
+    # silent None hole in the manifest.
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 
 def main():
@@ -37,10 +37,16 @@ def main():
         "module_mp_radar.F": f"{HOST}/phys/module_mp_radar.F",
         "module_mp_kdm6[_cons].F": module_canon,
     }
+    # every file that shapes the produced bits: the driver + overlay generator +
+    # bindings + stub, the build script itself, this provenance writer, and the
+    # schema modules the generator validates against.
     harness_sources = {
-        n: f"{HERE}/{n}" for n in (
+        **{n: f"{HERE}/{n}" for n in (
             "make_fortran_overlay.py", "g33_fortran_bindings.py",
-            "g33_fortran_driver.f90", "stub_wrf_error.f90")
+            "g33_fortran_driver.f90", "stub_wrf_error.f90",
+            "fortran_build.sh", "g33_provenance.py", "g33_fortran_dump.py")},
+        "g33_schema.py": "harness/g33_schema.py",
+        "g33_expectation.py": "harness/g33_expectation.py",
     }
     ver = subprocess.run([fc, "--version"], capture_output=True, text=True).stdout
     cmds_path = os.path.join(out_dir, "commands.txt")
@@ -54,12 +60,21 @@ def main():
         "executable_sha256": _sha(os.path.join(out_dir, "g33_fortran_driver")),
         "compiler_path": fc,
         "compiler_version": ver.splitlines()[0] if ver else None,
-        "commands": (open(cmds_path).read().splitlines()
-                     if os.path.exists(cmds_path) else []),
-        "note": "fixture_sha256 + stdout_sha256 are added by the driver run (runtime)",
+        "commands": _sha_open(cmds_path),
+        "note": "fixture_sha256 + stdout_sha256 are added by the run wrapper (runtime)",
     }
-    json.dump(manifest, open(os.path.join(out_dir, "provenance.json"), "w"),
-              indent=2, sort_keys=True)
+    # atomic publish: write .tmp then rename, so a partial write never masquerades
+    # as a complete manifest.
+    dst = os.path.join(out_dir, "provenance.json")
+    tmp = dst + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(manifest, f, indent=2, sort_keys=True)
+    os.replace(tmp, dst)
+
+
+def _sha_open(cmds_path):
+    with open(cmds_path) as f:
+        return f.read().splitlines()
 
 
 if __name__ == "__main__":

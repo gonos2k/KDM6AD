@@ -19,6 +19,7 @@ order, for every (role, species, op) in scope — a drift fails here, loudly.
 Each emitted line: G33OP <i> <k_topfirst> <n> <op_id>.<field> <dtype> <hex>
 (Z8.8 / Z16.16 / Z2.2). Fortran k is bottom-up (kts..kte); we emit k = kte-k.
 """
+import argparse
 import hashlib
 import os
 import sys
@@ -56,16 +57,36 @@ def _validate_against_schema(algo):
                             f"!= schema {sd[f]}")
 
 
-def _emit_lines(algo, role, species):
-    """The op-emission lines for one (role, species) — top-first k = kte-k."""
-    lines = ["#ifdef KDM6_G33_FORTRAN_DUMP"]
+def _emit_lines(algo, role, species, phase):
+    """The op-emission lines for one (role, species) — top-first k = kte-k. Each
+    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>.
+    phase 'pre' emits every field EXCEPT the actual post-update q_post/n_post;
+    phase 'post' emits ONLY those (the stored value, read after the update)."""
+    body = []
     for op_id in schema.ops_for_species(algo, role, species):
         for field, dtype, expr in fb.FIELD_EXPR[algo][role][op_id]:
+            is_post = field in fb.POST_FIELDS
+            if (phase == "pre") == is_post:
+                continue
             val, zf = _EMIT[dtype]
-            lines.append(
-                f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,{zf})') "
-                f"'G33OP', i, kte-k, n, '{op_id}.{field}', '{dtype}', "
+            body.append(
+                f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
+                f"'G33FOP 1 main', n, i, kte-k, '{op_id}', '{field}', '{dtype}', "
                 f"{val.format(e=expr)}")
+    return ["#ifdef KDM6_G33_FORTRAN_DUMP", *body, "#endif"] if body else []
+
+
+def _cap_lines(top):
+    """Cell-entry capture of fall/falln into scratch temps. The TOP capture also
+    emits each column's mstep ONCE (guarded n==1; every column is active at n=1)
+    so the parser can derive the active (col,n) universe independently."""
+    lines = ["#ifdef KDM6_G33_FORTRAN_DUMP",
+             f"{fb.IND}g33_fqb = fall(i,k,1)",
+             f"{fb.IND}g33_fnb = falln(i,k,1)"]
+    if top:
+        lines.append(
+            f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,A,1X,Z8.8)') "
+            f"'G33F MSTEP', i, 'i32', mstep(i)")
     lines.append("#endif")
     return lines
 
@@ -77,11 +98,15 @@ def build_overlay(algo, text):
     lines = text.split("\n")
 
     edits = [(fb.DECL_ANCHOR, "after", fb.DECL_BLOCK),
-             (cfg["cap_top"], "after", fb.CAP_BLOCK),
-             (cfg["cap_int"], "after", fb.CAP_BLOCK)]
+             (cfg["cap_top"], "after", _cap_lines(top=True)),
+             (cfg["cap_int"], "after", _cap_lines(top=False))]
     for (role, species), anchor in cfg["emit"].items():
-        edits.append((anchor, "before", _emit_lines(algo, role, species)))
+        edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
+    for (role, species), anchor in cfg["post"].items():
+        edits.append((anchor, "after", _emit_lines(algo, role, species, "post")))
 
+    # a line may take BOTH a before-block and an after-block (legacy: the update
+    # line gets the pre-ladder before + the actual q_post after).
     plan = {}
     for anchor, place, block in edits:
         idx = [i for i, ln in enumerate(lines) if ln == anchor]
@@ -89,39 +114,36 @@ def build_overlay(algo, text):
             raise SystemExit(
                 f"anchor matched {len(idx)} whole lines, expected 1 — the source "
                 f"changed:\n  {anchor}")
-        plan[idx[0]] = (place, block)
+        plan.setdefault(idx[0], {"before": [], "after": []})[place] += block
 
     out = []
     for i, ln in enumerate(lines):
         pl = plan.get(i)
-        if pl and pl[0] == "before":
-            out.extend(pl[1])
+        if pl:
+            out.extend(pl["before"])
         out.append(ln)
-        if pl and pl[0] == "after":
-            out.extend(pl[1])
+        if pl:
+            out.extend(pl["after"])
     return "\n".join(out)
 
 
 def main():
-    argv = [a for a in sys.argv[1:] if not a.startswith("--")]
-    algo = "legacy"
-    for a in sys.argv[1:]:
-        if a.startswith("--algo"):
-            algo = a.split("=", 1)[1] if "=" in a else sys.argv[sys.argv.index(a) + 1]
-    if algo not in fb.VARIANTS:
-        raise SystemExit(f"--algo must be one of {sorted(fb.VARIANTS)}, got {algo!r}")
-    src_path, dst_path = argv[0], argv[1]
+    ap = argparse.ArgumentParser(description="G3.3-M temporary Fortran overlay generator")
+    ap.add_argument("src", help="canonical reference module (.F)")
+    ap.add_argument("dst", help="output overlay path (.F)")
+    ap.add_argument("--algo", default="legacy", choices=sorted(fb.VARIANTS))
+    args = ap.parse_args()
 
-    _validate_against_schema(algo)
-    raw = open(src_path, "rb").read()
+    _validate_against_schema(args.algo)
+    raw = open(args.src, "rb").read()
     got = hashlib.sha256(raw).hexdigest()
-    if got != fb.VARIANTS[algo]["sha"]:
+    if got != fb.VARIANTS[args.algo]["sha"]:
         raise SystemExit(
-            f"canonical {algo} SHA {got} != pinned {fb.VARIANTS[algo]['sha']} — the "
-            f"reference changed; re-verify anchors and re-pin")
+            f"canonical {args.algo} SHA {got} != pinned {fb.VARIANTS[args.algo]['sha']} "
+            f"— the reference changed; re-verify anchors and re-pin")
 
-    open(dst_path, "w", encoding="utf-8").write(build_overlay(algo, raw.decode("utf-8")))
-    print(f"wrote {algo} overlay: {dst_path}")
+    open(args.dst, "w", encoding="utf-8").write(build_overlay(args.algo, raw.decode("utf-8")))
+    print(f"wrote {args.algo} overlay: {args.dst}")
 
 
 if __name__ == "__main__":

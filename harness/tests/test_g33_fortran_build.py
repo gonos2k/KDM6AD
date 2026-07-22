@@ -28,12 +28,16 @@ pytestmark = pytest.mark.skipif(
 ALGOS = ["legacy", "conservative"]
 
 
-def _build_and_run(algo="legacy", dump=False):
+def _build_and_run(algo="legacy", *, overlay=False, dump=False):
     with tempfile.TemporaryDirectory(prefix="g33-fortran-test.") as td:
         out = Path(td) / "build"
-        cmd = ["bash", str(BUILD), str(out), f"--algo={algo}"] + (
-            ["--dump"] if dump else [])
-        r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
+        flags = [f"--algo={algo}"]
+        if dump:
+            flags.append("--dump")        # implies --overlay
+        elif overlay:
+            flags.append("--overlay")
+        r = subprocess.run(["bash", str(BUILD), str(out), *flags],
+                           capture_output=True, text=True, cwd=ROOT)
         assert r.returncode == 0, f"build failed:\n{r.stdout}\n{r.stderr}"
         driver = out / "g33_fortran_driver"
         assert driver.is_file(), "driver not built"
@@ -44,18 +48,23 @@ def _build_and_run(algo="legacy", dump=False):
 
 @pytest.mark.parametrize("algo", ALGOS)
 def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    import g33_fortran_dump as fd
+
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33-FORTRAN-BEGIN {algo}" in out and f"G33-FORTRAN-END {algo}" in out
-    # Every FLD line is: FLD <name> <i> <k> <8-hex>. 12 fields x 3 cols x 4 lvls.
-    fld = re.findall(r"^FLD\s+(\S.*?)\s+(\d+)\s+(\d+)\s+([0-9A-F]{8})$", out, re.M)
-    assert len(fld) == 12 * 3 * 4, f"expected 144 FLD records, got {len(fld)}"
-    # 3 precip families x 3 columns.
-    prec = re.findall(r"^PREC\s+(\d+)\s+(\d+)\s+([0-9A-F]{8})$", out, re.M)
-    assert len(prec) == 3 * 3, f"expected 9 PREC records, got {len(prec)}"
-    # the 'th' (temperature) column-1 top value must be a plausible ~285-293 K.
-    th = [int(h, 16) for (n, i, k, h) in fld if n.strip() == "th" and i == "1"]
+    assert f"G33F BEGIN v1 {algo}" in out and f"G33F END v1 {algo}" in out
+    # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
+    state = fd.parse_state(out)
+    assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
+    assert {k for (_, _, k) in state} == {0, 1, 2, 3}, "STATE k must be top-first 0..3"
+    # 3 precip families x 3 columns; fixture identity present.
+    assert len(fd.parse_prec(out)) == 3 * 3, "expected 9 PREC records"
+    assert fd.parse_fixin(out), "no FIXIN fixture-identity records"
+    # the 'th' column-1 values must be plausible ~285-293 K.
     import struct
+    th = [v for (n, i, k), v in state.items() if n == "th" and i == 1]
     vals = [struct.unpack(">f", v.to_bytes(4, "big"))[0] for v in th]
     assert all(280.0 < v < 300.0 for v in vals), f"th out of range: {vals}"
 
@@ -75,26 +84,36 @@ def _schema_fields(algo, role):
 
 
 @pytest.mark.parametrize("algo", ALGOS)
-def test_fortran_overlay_emits_full_schema_and_is_non_invasive(algo):
+def test_fortran_overlay_full_abc_and_emits_full_schema(algo):
     import sys
     sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
     sys.path.insert(0, str(ROOT / "harness"))
     import g33_fortran_dump as fd
 
-    canon = _build_and_run(algo, dump=False)
-    dump = _build_and_run(algo, dump=True)
+    # FULL Fortran A/B/C (owner P0-7):
+    #   A = canonical module
+    #   B = generated overlay, dump macro OFF
+    #   C = same generated overlay, dump macro ON
+    a = _build_and_run(algo)                          # A
+    b = _build_and_run(algo, overlay=True)            # B
+    c = _build_and_run(algo, overlay=True, dump=True)  # C
 
-    # NON-INVASIVE: the instrumentation only adds WRITEs (and reads into two
-    # scratch temps) — the final prognostic state and precip must be
-    # BYTE-IDENTICAL between the canonical and the dump build. Fortran A/B/C.
-    assert fd.parse_state(canon) == fd.parse_state(dump), \
-        "overlay perturbed the final state — instrumentation is NOT non-invasive"
-    assert fd.parse_prec(canon) == fd.parse_prec(dump), \
-        "overlay perturbed precip — instrumentation is NOT non-invasive"
-    assert not fd.parse_ops(canon), "canonical build must not emit op records"
+    # A==B==C raw-bit in final state + precip: the overlay only ADDS guarded
+    # WRITEs, so with the macro off it is byte-identical to canonical, and with
+    # it on the extra WRITEs must not perturb any prognostic value.
+    sa, sb, sc = fd.parse_state(a), fd.parse_state(b), fd.parse_state(c)
+    pa, pb, pc = fd.parse_prec(a), fd.parse_prec(b), fd.parse_prec(c)
+    assert sa == sb, "generated overlay (macro OFF) changed final state vs canonical"
+    assert sa == sc, "dump build changed final state — instrumentation NOT non-invasive"
+    assert pa == pb == pc, "precip differs across A/B/C — NOT non-invasive"
 
+    # Only C emits op records; A (canonical) and B (macro off) emit none.
+    assert not fd.parse_ops(a), "canonical build A must not emit op records"
+    assert not fd.parse_ops(b), "overlay build B (macro OFF) must not emit op records"
+
+    dump = c
     ops = fd.parse_ops(dump)
-    assert ops, "no G33OP records emitted"
+    assert ops, "no G33OP records emitted by C"
 
     # Every emitted record must carry the schema dtype for its (role, op, field).
     top_fields = _schema_fields(algo, "TOP")
@@ -118,3 +137,119 @@ def test_fortran_overlay_emits_full_schema_and_is_non_invasive(algo):
         saw_top |= (k == 0)
         saw_int |= (k >= 1)
     assert saw_top and saw_int, "fixture must exercise both TOP (k=0) and interior (k>=1)"
+
+
+def _set_tok(line, idx, val):
+    t = line.split()
+    t[idx] = val
+    return " ".join(t)
+
+
+@pytest.mark.parametrize("algo", ALGOS)
+def test_strict_parser_accepts_good_and_rejects_mutants(algo):
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+
+    good = _build_and_run(algo, overlay=True, dump=True)
+    run = fd.parse_fortran_run(good, algo, K=4, B=3)   # must accept a clean run
+    assert run.algorithm == algo and run.ops and run.fixture_sha256
+    # ops are canonically ordered per column (op_seq_id monotonic within a lane).
+    for c in range(1, 4):
+        seqs = [r.op_seq_id for r in run.ops if r.col == c]
+        assert seqs == sorted(seqs) and len(seqs) == len(set(seqs))
+
+    lines = good.splitlines()
+    op_i = next(i for i, l in enumerate(lines) if l.startswith("G33FOP"))
+    st_i = next(i for i, l in enumerate(lines) if l.startswith("G33F STATE"))
+    beg_i = next(i for i, l in enumerate(lines) if l.startswith("G33F BEGIN"))
+    # G33FOP loop chain n col k op field dtype hex  -> col=idx4, k=idx5, n=idx3
+    one_col = [i for i, l in enumerate(lines)
+               if l.startswith("G33FOP") and l.split()[4] == "2"]
+
+    def _mut(fn):
+        m = list(lines)
+        fn(m)
+        return "\n".join(m)
+
+    mutants = {
+        "drop one op": lambda m: m.pop(op_i),
+        "duplicate op": lambda m: m.insert(op_i, m[op_i]),
+        "whole column dropped": lambda m: [m.pop(i) for i in reversed(one_col)],
+        "op k out of range": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 5, "9")),
+        "op n out of gate": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 3, "7")),
+        "malformed op (bad dtype)": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 8, "BAD")),
+        "duplicate state key": lambda m: m.insert(st_i, m[st_i]),
+        "BEGIN removed": lambda m: m.pop(beg_i),
+    }
+    for name, fn in mutants.items():
+        with pytest.raises(fd.FortranRunError):
+            fd.parse_fortran_run(_mut(fn), algo, K=4, B=3)
+
+
+@pytest.mark.parametrize("algo", ALGOS)
+def test_actual_vs_shadow_offline_replay(algo):
+    # the ACTUAL stored q_post/n_post match an offline replay from the dumped
+    # operands — proves the dump observes the real update, not just shadows.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+    run = fd.parse_fortran_run(_build_and_run(algo, overlay=True, dump=True),
+                               algo, K=4, B=3)
+    assert fd.verify_offline_replay(run) > 0
+
+
+def test_offline_replay_catches_mutated_actual_update():
+    # NON-VACUOUSNESS: a REAL source mutant that drops the inflow term from the
+    # conservative interior qr UPDATE (operands + shadows unchanged) makes the
+    # STORED q_post diverge from the replay — the verifier must catch it.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import make_fortran_overlay as mk
+    import g33_fortran_dump as fd
+
+    src = (ROOT / "host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F").read_text()
+    overlay = mk.build_overlay("conservative", src)
+    anchor = "                          +dqr(i,k+1)*src_metric/dst_metric"
+    assert overlay.count(anchor) == 1, "actual inflow line not unique"
+    mutant = overlay.replace(anchor, "                          +0.0")
+
+    with tempfile.TemporaryDirectory(prefix="g33-mutant.") as td:
+        mpath = Path(td) / "mutant.F"
+        mpath.write_text(mutant)
+        out = Path(td) / "build"
+        r = subprocess.run(
+            ["bash", str(BUILD), str(out), "--algo=conservative",
+             f"--overlay-file={mpath}"], capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"mutant build failed:\n{r.stdout}\n{r.stderr}"
+        run_out = subprocess.run([str(out / "g33_fortran_driver")],
+                                 capture_output=True, text=True).stdout
+
+    run = fd.parse_fortran_run(run_out, "conservative", K=4, B=3)  # structurally complete
+    with pytest.raises(fd.FortranRunError):
+        fd.verify_offline_replay(run)
+
+
+def test_run_wrapper_writes_complete_manifest():
+    # end-to-end: build + run + strict-parse + decision-grade run_manifest.json.
+    WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_case.py"
+    with tempfile.TemporaryDirectory(prefix="g33-run.") as td:
+        out = Path(td) / "run"
+        r = subprocess.run(["python3", str(WRAP), "--algo", "legacy", "--out", str(out)],
+                           capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"wrapper failed:\n{r.stdout}\n{r.stderr}"
+        import json
+        man = json.loads((out / "run_manifest.json").read_text())
+        required = ["repo_commit", "repo_dirty", "algorithm", "fixture_sha256",
+                    "parameter_sha256", "stdout_sha256", "stderr_sha256",
+                    "executable_sha256", "compiler_binary_sha256", "os",
+                    "architecture", "python_version", "mstep_per_column",
+                    "op_record_count", "host_source_sha256", "harness_source_sha256"]
+        assert all(k in man for k in required), \
+            f"missing manifest keys: {[k for k in required if k not in man]}"
+        assert man["algorithm"] == "legacy" and man["op_record_count"] > 0
+        assert all(len(man[k]) == 64 for k in ("fixture_sha256", "stdout_sha256",
+                                               "compiler_binary_sha256"))

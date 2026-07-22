@@ -75,7 +75,7 @@ _LEG_INT = {
         ("q_minus_out", "f32", "qrs(i,k,1)-dqr(i,k)"),
         ("q_plus_in_preclamp", "f32", "qrs(i,k,1)-dqr(i,k)+dqr(i,k+1)"),
         ("clamp_active", "u8", "(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1)) < 0."),
-        ("q_post", "f32", "max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)"),
+        ("q_post", "f32", "qrs(i,k,1)"),
     ],
     "NR_FALK": NR_FALK, "NR_OUTFLOW": NR_OUTFLOW,
     "NR_FALLACC": [
@@ -100,7 +100,7 @@ _LEG_INT = {
         ("n_minus_out", "f32", "nrs(i,k,1)-dnr(i,k)"),
         ("n_plus_in_preclamp", "f32", "nrs(i,k,1)-dnr(i,k)+dnr(i,k+1)"),
         ("clamp_active", "u8", "(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1)) < 0."),
-        ("n_post", "f32", "max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)"),
+        ("n_post", "f32", "nrs(i,k,1)"),
     ],
 }
 _LEG_TOP = {   # legacy TOP clamps directly: no OUTFLOW/INFLOW rung
@@ -110,7 +110,7 @@ _LEG_TOP = {   # legacy TOP clamps directly: no OUTFLOW/INFLOW rung
         ("q_before", "f32", "qrs(i,k,1)"),
         ("q_minus_out", "f32", "qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k)"),
         ("clamp_active", "u8", "(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k)) < 0."),
-        ("q_post", "f32", "max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)"),
+        ("q_post", "f32", "qrs(i,k,1)"),
     ],
     "NR_FALK": NR_FALK,
     "NR_FALLACC": _LEG_INT["NR_FALLACC"],
@@ -118,7 +118,7 @@ _LEG_TOP = {   # legacy TOP clamps directly: no OUTFLOW/INFLOW rung
         ("n_before", "f32", "nrs(i,k,1)"),
         ("n_minus_out", "f32", "nrs(i,k,1)-falkn(i,k,1)*dtcld"),
         ("clamp_active", "u8", "(nrs(i,k,1)-falkn(i,k,1)*dtcld) < 0."),
-        ("n_post", "f32", "max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)"),
+        ("n_post", "f32", "nrs(i,k,1)"),
     ],
 }
 
@@ -148,7 +148,7 @@ _CON_INT = {
         ("q_before", "f32", "qrs(i,k,1)"),
         ("q_minus_out", "f32", "qrs(i,k,1)-dqr(i,k)"),
         ("q_plus_in_preclamp", "f32", "qrs(i,k,1)-dqr(i,k)+dqr(i,k+1)*src_metric/dst_metric"),
-        ("q_post", "f32", "qrs(i,k,1)-dqr(i,k)+dqr(i,k+1)*src_metric/dst_metric"),
+        ("q_post", "f32", "qrs(i,k,1)"),
     ],
     "NR_FALK": NR_FALK, "NR_OUTFLOW": NR_OUTFLOW,
     "NR_FALLACC": [
@@ -168,7 +168,7 @@ _CON_INT = {
         ("n_before", "f32", "nrs(i,k,1)"),
         ("n_minus_out", "f32", "nrs(i,k,1)-dnr(i,k)"),
         ("n_plus_in_preclamp", "f32", "nrs(i,k,1)-dnr(i,k)+dnr(i,k+1)*delz(i,k+1)/delz(i,k)"),
-        ("n_post", "f32", "nrs(i,k,1)-dnr(i,k)+dnr(i,k+1)*delz(i,k+1)/delz(i,k)"),
+        ("n_post", "f32", "nrs(i,k,1)"),
     ],
 }
 _CON_TOP = {   # conservative TOP DOES compute an outflow; no inflow, no clamp
@@ -177,14 +177,14 @@ _CON_TOP = {   # conservative TOP DOES compute an outflow; no inflow, no clamp
     "QR_UPDATE": [
         ("q_before", "f32", "qrs(i,k,1)"),
         ("q_minus_out", "f32", "qrs(i,k,1)-dqr(i,k)"),
-        ("q_post", "f32", "qrs(i,k,1)-dqr(i,k)"),
+        ("q_post", "f32", "qrs(i,k,1)"),
     ],
     "NR_FALK": NR_FALK, "NR_OUTFLOW": NR_OUTFLOW,
     "NR_FALLACC": _CON_INT["NR_FALLACC"],
     "NR_UPDATE": [
         ("n_before", "f32", "nrs(i,k,1)"),
         ("n_minus_out", "f32", "nrs(i,k,1)-dnr(i,k)"),
-        ("n_post", "f32", "nrs(i,k,1)-dnr(i,k)"),
+        ("n_post", "f32", "nrs(i,k,1)"),
     ],
 }
 
@@ -192,6 +192,13 @@ FIELD_EXPR = {
     "legacy": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "conservative": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
 }
+
+# q_post/n_post are the ACTUAL stored qrs/nrs — emitted by the generator's POST
+# phase AFTER the update statement completes (all other fields are pre-update).
+# This makes the offline replay a real check: recomputing q_post from the dumped
+# operands and matching the STORED value proves the actual update used them; a
+# recompute would match its own operands vacuously.
+POST_FIELDS = ("q_post", "n_post")
 
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
@@ -224,6 +231,14 @@ VARIANTS = {
             ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
             ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
         },
+        # q_post/n_post emitted AFTER the update line (legacy updates are single
+        # lines, so the post anchor is the update line itself).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
     },
     "conservative": {
         "sha": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
@@ -236,6 +251,16 @@ VARIANTS = {
                 "             qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)                                  &",
             ("INTERIOR", "nr"):
                 "             nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)                                  &",
+        },
+        # conservative TOP updates are single lines (post anchor = update line);
+        # INTERIOR updates are two-line continued statements, so q_post/n_post go
+        # AFTER the continuation line (inserting between the two would be a syntax
+        # error — the statement is not yet complete).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"): "                          +dqr(i,k+1)*src_metric/dst_metric",
+            ("INTERIOR", "nr"): "                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
         },
     },
 }
