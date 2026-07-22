@@ -57,15 +57,32 @@ def _validate_against_schema(algo):
 
 
 def _emit_lines(algo, role, species):
-    """The op-emission lines for one (role, species) — top-first k = kte-k."""
+    """The op-emission lines for one (role, species) — top-first k = kte-k. Each
+    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>
+    (loop/chain are the constant 1/main for the standalone main sed sub-cycle)."""
     lines = ["#ifdef KDM6_G33_FORTRAN_DUMP"]
     for op_id in schema.ops_for_species(algo, role, species):
         for field, dtype, expr in fb.FIELD_EXPR[algo][role][op_id]:
             val, zf = _EMIT[dtype]
             lines.append(
-                f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,{zf})') "
-                f"'G33OP', i, kte-k, n, '{op_id}.{field}', '{dtype}', "
+                f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
+                f"'G33FOP 1 main', n, i, kte-k, '{op_id}', '{field}', '{dtype}', "
                 f"{val.format(e=expr)}")
+    lines.append("#endif")
+    return lines
+
+
+def _cap_lines(top):
+    """Cell-entry capture of fall/falln into scratch temps. The TOP capture also
+    emits each column's mstep ONCE (guarded n==1; every column is active at n=1)
+    so the parser can derive the active (col,n) universe independently."""
+    lines = ["#ifdef KDM6_G33_FORTRAN_DUMP",
+             f"{fb.IND}g33_fqb = fall(i,k,1)",
+             f"{fb.IND}g33_fnb = falln(i,k,1)"]
+    if top:
+        lines.append(
+            f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,A,1X,Z8.8)') "
+            f"'G33F MSTEP', i, 'i32', mstep(i)")
     lines.append("#endif")
     return lines
 
@@ -77,8 +94,8 @@ def build_overlay(algo, text):
     lines = text.split("\n")
 
     edits = [(fb.DECL_ANCHOR, "after", fb.DECL_BLOCK),
-             (cfg["cap_top"], "after", fb.CAP_BLOCK),
-             (cfg["cap_int"], "after", fb.CAP_BLOCK)]
+             (cfg["cap_top"], "after", _cap_lines(top=True)),
+             (cfg["cap_int"], "after", _cap_lines(top=False))]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species)))
 

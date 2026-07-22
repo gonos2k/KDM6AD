@@ -44,7 +44,8 @@ contains
     real, dimension(1:im,1:km,1:1) :: refl, re_c, re_i, re_s
     real, dimension(1:im,1:1)      :: xland, rainF, rainncv, snowF, snowncv
     real, dimension(1:im,1:1)      :: srF, graupelF, graupelncv
-    integer :: i, k
+    real, dimension(1:im,1:km,NFLD_ST) :: inF
+    integer :: i, k, f
 
     ! deterministic fixture: three columns with rain + a little ice/snow so the
     ! rain/number sedimentation path is exercised. Top-first is handled inside.
@@ -75,6 +76,40 @@ contains
       srF(i,1)   = 0.0;  graupelF(i,1) = 0.0;  graupelncv(i,1) = 0.0
       re_c(i,:,1) = 0.0; re_i(i,:,1) = 0.0; re_s(i,:,1) = 0.0
     end do
+
+    ! ── G3.3-M evidence (protocol G33F): versioned header + fixture identity,
+    ! emitted BEFORE the call so the op stream that follows is bracketed by the
+    ! exact inputs it was produced from. Top-first k = km-k (matches the op stream);
+    ! per-column scalars carry k=-1.
+    inF(:,:,1)=th(:,:,1);  inF(:,:,2)=q(:,:,1);   inF(:,:,3)=qc(:,:,1)
+    inF(:,:,4)=qr(:,:,1);  inF(:,:,5)=qi(:,:,1);  inF(:,:,6)=qs(:,:,1)
+    inF(:,:,7)=qg(:,:,1);  inF(:,:,8)=nn(:,:,1);  inF(:,:,9)=nc(:,:,1)
+    inF(:,:,10)=ni(:,:,1); inF(:,:,11)=nr(:,:,1); inF(:,:,12)=bg(:,:,1)
+    write(*,'(A)') 'G33F BEGIN v1 '//ALGOTAG
+    do f = 1, NFLD_ST
+      do k = 1, km
+        do i = 1, im
+          call emit_fld('G33F FIXIN', FLDNAME(f), i, km-k, inF(i,k,f))
+        end do
+      end do
+    end do
+    do k = 1, km
+      do i = 1, im
+        call emit_fld('G33F FIXIN', 'den', i, km-k, den(i,k,1))
+        call emit_fld('G33F FIXIN', 'pii', i, km-k, pii(i,k,1))
+        call emit_fld('G33F FIXIN', 'p', i, km-k, p(i,k,1))
+        call emit_fld('G33F FIXIN', 'delz', i, km-k, delz(i,k,1))
+      end do
+    end do
+    do i = 1, im
+      call emit_fld('G33F FIXIN', 'xland', i, -1, xland(i,1))
+    end do
+    call emit_param('dt', delt)
+    call emit_param('ccn0', CCN0_NL)
+    call emit_param('scale_h', SCALEH_NL)
+    call emit_param('ncmin_land', NCMIN_LAND_NL)
+    call emit_param('ncmin_sea', NCMIN_SEA_NL)
+    call emit_param('qmin', wrf_eps)
 
     call kdm6(th=th, q=q, qc=qc, qr=qr, qi=qi, qs=qs, qg=qg,                &
               nn=nn, nc=nc, ni=ni, nr=nr, bg=bg, diag_rhog=diag_rhog,       &
@@ -108,6 +143,29 @@ contains
     precF(2,:) = snowncv(:,1)
     precF(3,:) = graupelncv(:,1)
   end subroutine run_case
+
+  ! raw-bit emit helpers (one WRITE site each — keep the byte format in one place)
+  subroutine emit_fld(tag, name, i, k_top, val)   ! FIXIN / STATE: <tag> name i k f32 hex
+    character(len=*), intent(in) :: tag, name
+    integer, intent(in) :: i, k_top
+    real, intent(in) :: val
+    write(*,'(A,1X,A,2(1X,I0),1X,A,1X,Z8.8)') tag, trim(name), i, k_top, 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_fld
+
+  subroutine emit_param(name, val)                ! G33F PARAM name f32 hex
+    character(len=*), intent(in) :: name
+    real, intent(in) :: val
+    write(*,'(A,1X,A,1X,A,1X,Z8.8)') 'G33F PARAM', trim(name), 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_param
+
+  subroutine emit_prec(fam, i, val)               ! G33F PREC fam i f32 hex
+    integer, intent(in) :: fam, i
+    real, intent(in) :: val
+    write(*,'(A,2(1X,I0),1X,A,1X,Z8.8)') 'G33F PREC', fam, i, 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_prec
 end module g33_fixture
 
 program g33_fortran_driver
@@ -123,27 +181,25 @@ program g33_fortran_driver
   integer, parameter :: IM = 3, KM = 4
   real :: outF(IM, KM, NFLD_ST), precF(3, IM)
   integer :: i, k, f
-  integer(int32) :: bits
 
+  ! BEGIN + fixture identity + op stream are emitted inside run_case (op records
+  ! come from the module overlay during the call). Here we close with the final
+  ! state (top-first k = KM-k, matching the op stream) + precip + versioned END.
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, CCN0_NL, 0, .true.)
   call run_case(IM, KM, 20.0, outF, precF)
 
-  ! Raw-bit stream (uint32 hex) — the operand-domain values the comparator reads.
-  write(*,'(A)') 'G33-FORTRAN-BEGIN '//ALGOTAG
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM
-        bits = transfer(outF(i,k,f), 0_int32)
-        write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'FLD', FLDNAME(f), i, k, bits
+        call emit_fld('G33F STATE', FLDNAME(f), i, KM-k, outF(i,k,f))
       end do
     end do
   end do
   do f = 1, 3
     do i = 1, IM
-      bits = transfer(precF(f,i), 0_int32)
-      write(*,'(A,1X,I0,1X,I0,1X,Z8.8)') 'PREC', f, i, bits
+      call emit_prec(f, i, precF(f,i))
     end do
   end do
-  write(*,'(A)') 'G33-FORTRAN-END '//ALGOTAG
+  write(*,'(A)') 'G33F END v1 '//ALGOTAG
   write(*,'(A)') 'FORTRAN DRIVER OK ('//ALGOTAG//', B=3 K=4)'
 end program g33_fortran_driver

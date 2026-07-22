@@ -48,18 +48,23 @@ def _build_and_run(algo="legacy", *, overlay=False, dump=False):
 
 @pytest.mark.parametrize("algo", ALGOS)
 def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    import g33_fortran_dump as fd
+
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33-FORTRAN-BEGIN {algo}" in out and f"G33-FORTRAN-END {algo}" in out
-    # Every FLD line is: FLD <name> <i> <k> <8-hex>. 12 fields x 3 cols x 4 lvls.
-    fld = re.findall(r"^FLD\s+(\S.*?)\s+(\d+)\s+(\d+)\s+([0-9A-F]{8})$", out, re.M)
-    assert len(fld) == 12 * 3 * 4, f"expected 144 FLD records, got {len(fld)}"
-    # 3 precip families x 3 columns.
-    prec = re.findall(r"^PREC\s+(\d+)\s+(\d+)\s+([0-9A-F]{8})$", out, re.M)
-    assert len(prec) == 3 * 3, f"expected 9 PREC records, got {len(prec)}"
-    # the 'th' (temperature) column-1 top value must be a plausible ~285-293 K.
-    th = [int(h, 16) for (n, i, k, h) in fld if n.strip() == "th" and i == "1"]
+    assert f"G33F BEGIN v1 {algo}" in out and f"G33F END v1 {algo}" in out
+    # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
+    state = fd.parse_state(out)
+    assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
+    assert {k for (_, _, k) in state} == {0, 1, 2, 3}, "STATE k must be top-first 0..3"
+    # 3 precip families x 3 columns; fixture identity present.
+    assert len(fd.parse_prec(out)) == 3 * 3, "expected 9 PREC records"
+    assert fd.parse_fixin(out), "no FIXIN fixture-identity records"
+    # the 'th' column-1 values must be plausible ~285-293 K.
     import struct
+    th = [v for (n, i, k), v in state.items() if n == "th" and i == 1]
     vals = [struct.unpack(">f", v.to_bytes(4, "big"))[0] for v in th]
     assert all(280.0 < v < 300.0 for v in vals), f"th out of range: {vals}"
 
