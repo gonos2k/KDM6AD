@@ -267,3 +267,45 @@ def _require_unique(parsed, pattern, text, label):
     n_raw = sum(1 for line in text.splitlines() if pattern.match(line))
     if n_raw != len(parsed):
         raise FortranRunError(f"{label}: {n_raw - len(parsed)} duplicate key(s)")
+
+
+def verify_offline_replay(run):
+    """Prove the ACTUAL stored update (q_post/n_post) equals an offline replay
+    from the dumped operands — the actual↔shadow causal link (owner P0-6).
+
+    q_post is the STORED qrs after the update; the pre-clamp value
+    (q_plus_in_preclamp interior / q_minus_out top) is an independent shadow
+    recompute from the operands. Bit-exact: conservative has no clamp so
+    q_post == preclamp; legacy clamps to zero so q_post == preclamp if >0 else 0.
+    A mutated ACTUAL update (shadows unchanged) breaks this and RAISES.
+    """
+    import struct
+
+    def f32(b):
+        return struct.unpack(">f", b.to_bytes(4, "big"))[0]
+
+    by = {}
+    for r in run.ops:
+        by.setdefault((r.col, r.k, r.n), {})[(r.op_id, r.field)] = r.bits
+    checked = 0
+    for (col, k, n), d in by.items():
+        for upd, pre_in, pre_out, post in (
+                ("QR_UPDATE", "q_plus_in_preclamp", "q_minus_out", "q_post"),
+                ("NR_UPDATE", "n_plus_in_preclamp", "n_minus_out", "n_post")):
+            if (upd, post) not in d:
+                continue
+            preclamp = d.get((upd, pre_in), d.get((upd, pre_out)))
+            if preclamp is None:
+                raise FortranRunError(f"{upd} col={col} k={k} n={n}: no pre-clamp operand")
+            actual = d[(upd, post)]
+            expect = preclamp if (run.algorithm != "legacy" or f32(preclamp) > 0.0) \
+                else 0x00000000
+            if actual != expect:
+                raise FortranRunError(
+                    f"offline-replay mismatch {upd} col={col} k={k} n={n}: stored "
+                    f"q_post {actual:08x} != replay {expect:08x} (actual update "
+                    f"diverges from its dumped operands)")
+            checked += 1
+    if checked == 0:
+        raise FortranRunError("offline replay checked 0 updates — no q_post/n_post")
+    return checked

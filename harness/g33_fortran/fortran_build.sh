@@ -36,11 +36,14 @@ FC=$(command -v gfortran || true)
 #   C = --overlay --dump       generated overlay, macro ON     -> emits the op stream
 # A==B==C must be raw-bit identical in final state + precip (the overlay only adds
 # guarded WRITEs). --dump implies --overlay.
-OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy
+OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy; OVERLAY_FILE_ARG=""
 for a in "$@"; do
     case "$a" in
         --dump) DUMP=1; OVERLAY=1 ;;
         --overlay) OVERLAY=1 ;;
+        # use a PRE-GENERATED overlay (e.g. a mutant) instead of generating one;
+        # implies overlay + dump. For the actual-vs-shadow mutation corpus.
+        --overlay-file=*) OVERLAY_FILE_ARG="${a#--overlay-file=}"; OVERLAY=1; DUMP=1 ;;
         --algo=*) ALGO="${a#--algo=}" ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
@@ -97,7 +100,9 @@ fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$CONSTS"
 fc "$OUT/module_mp_radar.o"       "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$RADAR"
 DUMP_DEF=()
 [ "$DUMP" = 1 ] && DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
-if [ "$OVERLAY" = 1 ]; then
+if [ -n "$OVERLAY_FILE_ARG" ]; then
+    MODULE_SRC="$OVERLAY_FILE_ARG"          # caller-supplied (possibly mutated) overlay
+elif [ "$OVERLAY" = 1 ]; then
     OVERLAY_FILE="$OUT/module_mp_ovl.F"
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY_FILE" --algo="$ALGO" >/dev/null
     MODULE_SRC="$OVERLAY_FILE"

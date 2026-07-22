@@ -188,6 +188,51 @@ def test_strict_parser_accepts_good_and_rejects_mutants(algo):
             fd.parse_fortran_run(_mut(fn), algo, K=4, B=3)
 
 
+@pytest.mark.parametrize("algo", ALGOS)
+def test_actual_vs_shadow_offline_replay(algo):
+    # the ACTUAL stored q_post/n_post match an offline replay from the dumped
+    # operands — proves the dump observes the real update, not just shadows.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+    run = fd.parse_fortran_run(_build_and_run(algo, overlay=True, dump=True),
+                               algo, K=4, B=3)
+    assert fd.verify_offline_replay(run) > 0
+
+
+def test_offline_replay_catches_mutated_actual_update():
+    # NON-VACUOUSNESS: a REAL source mutant that drops the inflow term from the
+    # conservative interior qr UPDATE (operands + shadows unchanged) makes the
+    # STORED q_post diverge from the replay — the verifier must catch it.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import make_fortran_overlay as mk
+    import g33_fortran_dump as fd
+
+    src = (ROOT / "host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F").read_text()
+    overlay = mk.build_overlay("conservative", src)
+    anchor = "                          +dqr(i,k+1)*src_metric/dst_metric"
+    assert overlay.count(anchor) == 1, "actual inflow line not unique"
+    mutant = overlay.replace(anchor, "                          +0.0")
+
+    with tempfile.TemporaryDirectory(prefix="g33-mutant.") as td:
+        mpath = Path(td) / "mutant.F"
+        mpath.write_text(mutant)
+        out = Path(td) / "build"
+        r = subprocess.run(
+            ["bash", str(BUILD), str(out), "--algo=conservative",
+             f"--overlay-file={mpath}"], capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"mutant build failed:\n{r.stdout}\n{r.stderr}"
+        run_out = subprocess.run([str(out / "g33_fortran_driver")],
+                                 capture_output=True, text=True).stdout
+
+    run = fd.parse_fortran_run(run_out, "conservative", K=4, B=3)  # structurally complete
+    with pytest.raises(fd.FortranRunError):
+        fd.verify_offline_replay(run)
+
+
 def test_run_wrapper_writes_complete_manifest():
     # end-to-end: build + run + strict-parse + decision-grade run_manifest.json.
     WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_case.py"

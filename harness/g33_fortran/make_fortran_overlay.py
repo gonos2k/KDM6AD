@@ -57,20 +57,23 @@ def _validate_against_schema(algo):
                             f"!= schema {sd[f]}")
 
 
-def _emit_lines(algo, role, species):
+def _emit_lines(algo, role, species, phase):
     """The op-emission lines for one (role, species) — top-first k = kte-k. Each
-    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>
-    (loop/chain are the constant 1/main for the standalone main sed sub-cycle)."""
-    lines = ["#ifdef KDM6_G33_FORTRAN_DUMP"]
+    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>.
+    phase 'pre' emits every field EXCEPT the actual post-update q_post/n_post;
+    phase 'post' emits ONLY those (the stored value, read after the update)."""
+    body = []
     for op_id in schema.ops_for_species(algo, role, species):
         for field, dtype, expr in fb.FIELD_EXPR[algo][role][op_id]:
+            is_post = field in fb.POST_FIELDS
+            if (phase == "pre") == is_post:
+                continue
             val, zf = _EMIT[dtype]
-            lines.append(
+            body.append(
                 f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
                 f"'G33FOP 1 main', n, i, kte-k, '{op_id}', '{field}', '{dtype}', "
                 f"{val.format(e=expr)}")
-    lines.append("#endif")
-    return lines
+    return ["#ifdef KDM6_G33_FORTRAN_DUMP", *body, "#endif"] if body else []
 
 
 def _cap_lines(top):
@@ -98,8 +101,12 @@ def build_overlay(algo, text):
              (cfg["cap_top"], "after", _cap_lines(top=True)),
              (cfg["cap_int"], "after", _cap_lines(top=False))]
     for (role, species), anchor in cfg["emit"].items():
-        edits.append((anchor, "before", _emit_lines(algo, role, species)))
+        edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
+    for (role, species), anchor in cfg["post"].items():
+        edits.append((anchor, "after", _emit_lines(algo, role, species, "post")))
 
+    # a line may take BOTH a before-block and an after-block (legacy: the update
+    # line gets the pre-ladder before + the actual q_post after).
     plan = {}
     for anchor, place, block in edits:
         idx = [i for i, ln in enumerate(lines) if ln == anchor]
@@ -107,16 +114,16 @@ def build_overlay(algo, text):
             raise SystemExit(
                 f"anchor matched {len(idx)} whole lines, expected 1 — the source "
                 f"changed:\n  {anchor}")
-        plan[idx[0]] = (place, block)
+        plan.setdefault(idx[0], {"before": [], "after": []})[place] += block
 
     out = []
     for i, ln in enumerate(lines):
         pl = plan.get(i)
-        if pl and pl[0] == "before":
-            out.extend(pl[1])
+        if pl:
+            out.extend(pl["before"])
         out.append(ln)
-        if pl and pl[0] == "after":
-            out.extend(pl[1])
+        if pl:
+            out.extend(pl["after"])
     return "\n".join(out)
 
 
