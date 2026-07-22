@@ -28,12 +28,16 @@ pytestmark = pytest.mark.skipif(
 ALGOS = ["legacy", "conservative"]
 
 
-def _build_and_run(algo="legacy", dump=False):
+def _build_and_run(algo="legacy", *, overlay=False, dump=False):
     with tempfile.TemporaryDirectory(prefix="g33-fortran-test.") as td:
         out = Path(td) / "build"
-        cmd = ["bash", str(BUILD), str(out), f"--algo={algo}"] + (
-            ["--dump"] if dump else [])
-        r = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
+        flags = [f"--algo={algo}"]
+        if dump:
+            flags.append("--dump")        # implies --overlay
+        elif overlay:
+            flags.append("--overlay")
+        r = subprocess.run(["bash", str(BUILD), str(out), *flags],
+                           capture_output=True, text=True, cwd=ROOT)
         assert r.returncode == 0, f"build failed:\n{r.stdout}\n{r.stderr}"
         driver = out / "g33_fortran_driver"
         assert driver.is_file(), "driver not built"
@@ -75,26 +79,36 @@ def _schema_fields(algo, role):
 
 
 @pytest.mark.parametrize("algo", ALGOS)
-def test_fortran_overlay_emits_full_schema_and_is_non_invasive(algo):
+def test_fortran_overlay_full_abc_and_emits_full_schema(algo):
     import sys
     sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
     sys.path.insert(0, str(ROOT / "harness"))
     import g33_fortran_dump as fd
 
-    canon = _build_and_run(algo, dump=False)
-    dump = _build_and_run(algo, dump=True)
+    # FULL Fortran A/B/C (owner P0-7):
+    #   A = canonical module
+    #   B = generated overlay, dump macro OFF
+    #   C = same generated overlay, dump macro ON
+    a = _build_and_run(algo)                          # A
+    b = _build_and_run(algo, overlay=True)            # B
+    c = _build_and_run(algo, overlay=True, dump=True)  # C
 
-    # NON-INVASIVE: the instrumentation only adds WRITEs (and reads into two
-    # scratch temps) — the final prognostic state and precip must be
-    # BYTE-IDENTICAL between the canonical and the dump build. Fortran A/B/C.
-    assert fd.parse_state(canon) == fd.parse_state(dump), \
-        "overlay perturbed the final state — instrumentation is NOT non-invasive"
-    assert fd.parse_prec(canon) == fd.parse_prec(dump), \
-        "overlay perturbed precip — instrumentation is NOT non-invasive"
-    assert not fd.parse_ops(canon), "canonical build must not emit op records"
+    # A==B==C raw-bit in final state + precip: the overlay only ADDS guarded
+    # WRITEs, so with the macro off it is byte-identical to canonical, and with
+    # it on the extra WRITEs must not perturb any prognostic value.
+    sa, sb, sc = fd.parse_state(a), fd.parse_state(b), fd.parse_state(c)
+    pa, pb, pc = fd.parse_prec(a), fd.parse_prec(b), fd.parse_prec(c)
+    assert sa == sb, "generated overlay (macro OFF) changed final state vs canonical"
+    assert sa == sc, "dump build changed final state — instrumentation NOT non-invasive"
+    assert pa == pb == pc, "precip differs across A/B/C — NOT non-invasive"
 
+    # Only C emits op records; A (canonical) and B (macro off) emit none.
+    assert not fd.parse_ops(a), "canonical build A must not emit op records"
+    assert not fd.parse_ops(b), "overlay build B (macro OFF) must not emit op records"
+
+    dump = c
     ops = fd.parse_ops(dump)
-    assert ops, "no G33OP records emitted"
+    assert ops, "no G33OP records emitted by C"
 
     # Every emitted record must carry the schema dtype for its (role, op, field).
     top_fields = _schema_fields(algo, "TOP")

@@ -30,10 +30,17 @@ HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
-OUT=""; DUMP=0; ALGO=legacy
+# Three build configs for the Fortran A/B/C non-invasiveness gate:
+#   A = (neither flag)         canonical module               -> emits 0 op records
+#   B = --overlay              generated overlay, macro OFF    -> emits 0 op records
+#   C = --overlay --dump       generated overlay, macro ON     -> emits the op stream
+# A==B==C must be raw-bit identical in final state + precip (the overlay only adds
+# guarded WRITEs). --dump implies --overlay.
+OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy
 for a in "$@"; do
     case "$a" in
-        --dump) DUMP=1 ;;
+        --dump) DUMP=1; OVERLAY=1 ;;
+        --overlay) OVERLAY=1 ;;
         --algo=*) ALGO="${a#--algo=}" ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
@@ -88,20 +95,23 @@ fc "$OUT/libmassv.o"              "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$LIBMASSV
 fc "$OUT/stub_wrf_error.o"        "${REF_FLAGS[@]}" "$HERE/stub_wrf_error.f90"
 fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$CONSTS"
 fc "$OUT/module_mp_radar.o"       "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$RADAR"
-if [ "$DUMP" = 1 ]; then
-    OVERLAY="$OUT/module_mp_ovl.F"
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY" --algo="$ALGO" >/dev/null
-    MODULE_SRC="$OVERLAY"
-    fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" -DKDM6_G33_FORTRAN_DUMP "$OVERLAY"
+DUMP_DEF=()
+[ "$DUMP" = 1 ] && DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
+if [ "$OVERLAY" = 1 ]; then
+    OVERLAY_FILE="$OUT/module_mp_ovl.F"
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY_FILE" --algo="$ALGO" >/dev/null
+    MODULE_SRC="$OVERLAY_FILE"
 else
     MODULE_SRC="$MODULE"
-    fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "$MODULE"
 fi
+fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DUMP_DEF[@]}" "$MODULE_SRC"
 fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" \
     "$HERE/g33_fortran_driver.f90"
 
-printf '%q ' "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" >>"$CMDLOG"
-printf '...objs\n' >>"$CMDLOG"
+LINK_OBJS=("$OUT/g33_fortran_driver.o" "$OUT/module_mp.o" "$OUT/module_mp_radar.o"
+           "$OUT/module_model_constants.o" "$OUT/stub_wrf_error.o" "$OUT/libmassv.o")
+printf '%q ' "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" "${LINK_OBJS[@]}" >>"$CMDLOG"
+printf '\n' >>"$CMDLOG"
 # shellcheck disable=SC2086
 "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" \
     "$OUT/g33_fortran_driver.o" "$OUT/module_mp.o" "$OUT/module_mp_radar.o" \
