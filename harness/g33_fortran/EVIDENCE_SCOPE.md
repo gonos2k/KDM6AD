@@ -24,23 +24,38 @@ accuracy. Two coverage limits are explicit, not accidental:
 ## ccn0 / scale_h equivalence (P0-9)
 
 The C++ path has no explicit `ccn0`/`scale_h` runtime arguments (they are baked),
-while the Fortran passes them as call parameters. The Fortran now records their
+while the Fortran passes them as call parameters. The Fortran records their
 **actual runtime bits** as `G33F LOCALPARAM` records (not a re-hash of the
 authority JSON), cross-checked against the fixture authority.
 
-Cross-tree equivalence of these two is **gated by `outer_pre_sed` equality**, not
-asserted separately: `ccn0`/`scale_h` influence droplet activation, which runs in
-the microphysics *before* sedimentation. If the C++ baked values differed from the
-Fortran authority values, the pre-sedimentation state (`outer_pre_sed`: qr, nr,
-qv, t, rho, delz) would differ. The comparator checks `outer_pre_sed` for raw-bit
-equality first; a mismatch there — from any upstream cause, `ccn0`/`scale_h`
-included — yields **INCONCLUSIVE**, never a PASS or FAIL. This is the
-conservative (option-3) closure: a parameter divergence cannot masquerade as a
-sedimentation-mechanism verdict.
+**Execution order (corrected).** Within one micro subcycle the reference order is
+`sedimentation → re-slope/aux → microphysics → state update`: sedimentation runs
+*before* the microphysics. In `module_mp_kdm6.F` the sed sub-cycle is at the
+`do n = 1, mstepmax` loop; accretion and nucleation — the paths that consume the
+CCN/activation constants — are downstream of it (accretion ~line 1885+,
+nucleation ~line 2487). The shared fixture's `dt` is `0x41A00000` (20 s) < the
+120 s cloud-subcycle threshold, so there is exactly **one** outer loop: the
+recorded sed ladder is not preceded by an activation step in this fixture.
 
-A stronger closure (a C++ diagnostic probe emitting the baked `ccn0`/`scale_h`
-bits for direct raw-bit comparison) is optional and belongs to the comparator PR;
-the `outer_pre_sed` gate already prevents a wrong verdict without it.
+**What this does and does not close.** For the G3.3 first scope — the recorded
+sedimentation ladder and its surface operands — `ccn0`/`scale_h` are consumed only
+downstream (nucleation/activation) and in `kdm6init` constant setup; they do not
+enter the fall-speed (`work1`/`workn`) or transport arithmetic. So the recorded
+sed evidence is independent of them, and the earlier claim that "`outer_pre_sed`
+equality proves `ccn0`/`scale_h` equality" was WRONG (that order was backwards)
+and is retracted.
+
+For any comparison that reaches the **full-step final `STATE`/`PREC`** (which do
+run through the downstream microphysics), `ccn0`/`scale_h` equivalence is NOT
+established by the current evidence. Closing it is **required, not optional**, and
+needs one of:
+  1. a **dependency proof** — pin, from the source + execution order, that
+     `ccn0`/`scale_h` are not consumed before the recorded sed ladder, OR
+  2. a **direct C++ diagnostic probe** emitting the baked `ccn0`/`scale_h` bits for
+     raw-bit comparison against the Fortran `LOCALPARAM`.
+Until one holds, a full-step `STATE`/`PREC` divergence that could trace to
+`ccn0`/`scale_h` must be reported **INCONCLUSIVE**, and the admissible G3.3 verdict
+rests on the sed-ladder + `outer_pre_sed`/`substep_pre` scope only.
 
 ## Verdict bounds
 

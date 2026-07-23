@@ -232,6 +232,12 @@ def _validate_stages(stages, n_raw, mstep, K, B):
             raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
         if dt == "f64" and not _math.isfinite(_f64(b)):
             raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+        if stage == "surface":                             # bottom fall / thickness
+            v = _f32(b)
+            if f == "delz_bottom" and v <= 0.0:
+                raise FortranRunError(f"surface delz_bottom col={c} must be > 0")
+            if f != "delz_bottom" and v < 0.0:
+                raise FortranRunError(f"surface {f} col={c} must be >= 0")
 
 
 def _validate_domain(fixin, params, localparams, state, precip, B, K):
@@ -260,6 +266,9 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K):
             raise FortranRunError(f"FIXIN p col={c} not strictly increasing downward: {ps}")
         if _f32(fixin[("xland", c, -1)]) not in (1.0, 2.0):
             raise FortranRunError(f"FIXIN xland col={c} must be 1 or 2")
+    for (fam, c), b in precip.items():                     # accumulated precip >= 0
+        if _f32(b) < 0.0:
+            raise FortranRunError(f"PREC family={fam} col={c} must be >= 0")
 
 
 @dataclass(frozen=True)
