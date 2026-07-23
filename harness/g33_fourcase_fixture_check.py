@@ -10,7 +10,10 @@ checker. No detached anchor can self-attest: p and qv are actual FIXIN fields.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -48,10 +51,23 @@ def _run(driver: Path, argv: list[str], cwd: Path, env: dict[str, str]) -> bytes
     return proc.stdout
 
 
+def _sha(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
+
+def _sha_path(p: Path) -> str:
+    return _sha(p.read_bytes())
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--canonical-driver", type=Path, required=True)
     ap.add_argument("--diagnostic-driver", type=Path, required=True)
+    # --out persists a decision-grade C++ A/B/C bundle (analogous to
+    # run_fortran_abc) instead of a temp root that is deleted on success — so the
+    # four-case comparator has a durable C++ artifact (owner P0-6/item 10).
+    ap.add_argument("--out", type=Path, default=None,
+                    help="fresh dir; persist the bundle + manifest here")
     args = ap.parse_args()
     for path in (args.canonical_driver, args.diagnostic_driver):
         if not path.is_file():
@@ -63,7 +79,13 @@ def main() -> None:
     canonical = args.canonical_driver.resolve()
     diagnostic = args.diagnostic_driver.resolve()
     clean = _clean_env()
-    root = Path(tempfile.mkdtemp(prefix="g33-fourcase-fixture-"))
+    persist = args.out is not None
+    if persist:
+        args.out.mkdir(parents=True, exist_ok=False)
+        root = args.out
+    else:
+        root = Path(tempfile.mkdtemp(prefix="g33-fourcase-fixture-"))
+    bundle: dict = {"algorithms": {}}
     try:
         for algo in abc.ALGORITHMS:
             raw_a = _run(canonical, [algo, CASE, "--fixture-only"],
@@ -98,6 +120,17 @@ def main() -> None:
             print(f"FOURCASE PASS {algo} fixture={got_a[0][:16]} "
                   f"params={got_a[1][:16]} containers={diag['containers']} "
                   f"mstep={diag['mstep_min']}..{diag['mstep_max']}")
+            if persist:
+                for name, raw in (("A", out_a), ("B", out_b), ("C", out_c)):
+                    (root / f"{algo}-{name}" / "stdout.abc").write_bytes(raw)
+                bundle["algorithms"][algo] = {
+                    "fixture_sha256": got_a[0], "parameter_sha256": got_a[1],
+                    "abc_equal": True,
+                    "stdout_sha256": {"A": _sha(out_a), "B": _sha(out_b), "C": _sha(out_c)},
+                    "containers": diag["containers"],
+                    "mstep_min": diag["mstep_min"], "mstep_max": diag["mstep_max"],
+                    "evidence_dir": f"{algo}-C-evidence",
+                }
         print("FOURCASE FIXTURE PASS — actual C++ A/B/C tensors and common "
               "parameters match the shared raw-bit authority")
     except (ValueError, gd.G33Corruption) as exc:
@@ -107,7 +140,23 @@ def main() -> None:
         print(f"(fourcase evidence preserved at {root})", file=sys.stderr)
         raise
     else:
-        shutil.rmtree(root)
+        if persist:
+            manifest = {
+                "schema_version": 1,
+                "fixture_id": authority["fixture_id"],
+                "fixture_manifest_sha256": fixture.manifest_sha256(authority),
+                "canonical_driver_sha256": _sha_path(canonical),
+                "diagnostic_driver_sha256": _sha_path(diagnostic),
+                "os": platform.platform(), "architecture": platform.machine(),
+                "python_version": platform.python_version(),
+                "algorithms": bundle["algorithms"],
+            }
+            tmp = root / "cpp_abc_manifest.json.tmp"
+            tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+            tmp.replace(root / "cpp_abc_manifest.json")
+            print(f"C++ A/B/C bundle persisted -> {root}/cpp_abc_manifest.json")
+        else:
+            shutil.rmtree(root)
 
 
 if __name__ == "__main__":
