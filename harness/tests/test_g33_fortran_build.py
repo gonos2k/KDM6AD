@@ -300,7 +300,9 @@ def test_presed_stage_records():
     # outer_pre_sed = 6 fields x 3 x 4; both stages present.
     assert sum(1 for k in run.stages if k[0] == "outer_pre_sed") == 6 * 3 * 4
     assert any(k[0] == "substep_pre" for k in run.stages)
+    assert sum(1 for k in run.stages if k[0] == "surface") == 6 * 3   # P0-8
     assert ("outer_pre_sed", 0, "qr", 1, 0) in run.stages
+    assert ("surface", 0, "bottom_fall_qr", 1, -1) in run.stages
 
     cl = C.splitlines()
     sg = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE outer_pre_sed"))

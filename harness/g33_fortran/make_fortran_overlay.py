@@ -126,7 +126,14 @@ def build_overlay(algo, text):
              (fb.STAGE_ANCHOR, "before",
               _stage_block("outer_pre_sed", "0", [], fb.OUTER_PRE_SED)),
              (fb.STAGE_ANCHOR, "after",
-              _stage_block("substep_pre", "n", fb.SUBSTEP_PRE_COL, fb.SUBSTEP_PRE_K))]
+              _stage_block("substep_pre", "n", fb.SUBSTEP_PRE_COL, fb.SUBSTEP_PRE_K)),
+             # surface bottom-fall operands, per column, at the accumulation (k=-1;
+             # already inside `do i` so no injected loop).
+             (fb.SURFACE_ANCHOR, "after",
+              ["#ifdef KDM6_G33_FORTRAN_DUMP",
+               *[_stage_write("surface", "0", f, "-1", dt, e)
+                 for f, dt, e in fb.SURFACE_FIELDS],
+               "#endif"])]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
     for (role, species), anchor in cfg["post"].items():

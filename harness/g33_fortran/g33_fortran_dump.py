@@ -218,6 +218,8 @@ def _validate_stages(stages, n_raw, mstep, K, B):
             exp |= {("substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
             exp |= {("substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
                     for k in range(K)}
+    exp |= {("surface", 0, f, c, -1) for f in _SURFACE_FIELDS
+            for c in range(1, B + 1)}
     if set(stages) != exp:
         missing, extra = exp - set(stages), set(stages) - exp
         raise FortranRunError(
@@ -285,10 +287,13 @@ _KNOWN = (_OP, _MSTEP, _STAGE, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC,
 _OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
 _SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
 _SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
+_SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
+                   "bottom_fall_qi", "bottom_fall_total", "delz_bottom")
 _STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
                 "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
                 "dend_safe": "f32", "delz_safe": "f32",
-                "mstep": "i32", "gate": "u8", "dtcld": "f32"}
+                "mstep": "i32", "gate": "u8", "dtcld": "f32",
+                **{f: "f32" for f in _SURFACE_FIELDS}}
 
 
 def _expected_op_universe(algo, K, B, mstep):

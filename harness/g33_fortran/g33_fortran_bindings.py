@@ -222,6 +222,19 @@ SUBSTEP_PRE_COL = [  # per-column scalar (k=-1), per substep n
     ("dtcld", "f32", "dtcld"),
 ]
 
+# ── surface causal operands (owner P0-8): the per-species bottom fall that feeds
+# rain/snow/graupel increments, so the qr-seed -> precip path is an operand set,
+# not just the final PREC. Emitted per column at the surface accumulation (k=-1).
+SURFACE_ANCHOR = "        fallsum = fall(i,kts,1)+fall(i,kts,2)+fall(i,kts,3)+fall(i,kts,4)"
+SURFACE_FIELDS = [
+    ("bottom_fall_qr", "f32", "fall(i,kts,1)"),
+    ("bottom_fall_qs", "f32", "fall(i,kts,2)"),
+    ("bottom_fall_qg", "f32", "fall(i,kts,3)"),
+    ("bottom_fall_qi", "f32", "fall(i,kts,4)"),
+    ("bottom_fall_total", "f32", "fallsum"),
+    ("delz_bottom", "f32", "delz(i,kts)"),
+]
+
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [
