@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_abc_noninvasiveness as abc
 import g33_dump as gd
+import g33_evidence_validate as gev
 import g33_expectation as ge
 
 
@@ -85,10 +86,10 @@ def test_cpp_records_inherit_header_identity_before_multiset_comparison():
               if k not in ("case_id", "pair_id", "backend")}
     header = {"case_id": schedule["case_id"],
               "pair_id": schedule["pair_id"], "backend": "cpp"}
-    logical = abc._record_with_header_identity(record, header)
+    logical = gev.record_with_header_identity(record, header)
     assert ge.record_key(logical) == ge.record_key(expected)
     with pytest.raises(gd.G33Corruption, match="conflicts with header"):
-        abc._record_with_header_identity({**record, "backend": "fortran"}, header)
+        gev.record_with_header_identity({**record, "backend": "fortran"}, header)
 
 
 def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():

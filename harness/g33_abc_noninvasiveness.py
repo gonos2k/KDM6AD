@@ -33,6 +33,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_derived as gdv
 import g33_dump as gd
+import g33_evidence_validate as gev
 import g33_expectation as ge
 import g33_run_env as gre
 
@@ -203,22 +204,9 @@ def _load_contract_specs(outdir: Path, env: dict[str, str]) -> tuple[str, list[d
     return sealed_sha, specs, actual_specs
 
 
-def _record_with_header_identity(record: dict, header: dict) -> dict:
-    """Normalize header-scoped identity into a logical record for completeness."""
-    identity = {name: header[name] for name in ("case_id", "pair_id", "backend")}
-    for name, value in identity.items():
-        if name in record and record[name] != value:
-            raise gd.G33Corruption(
-                f"record {name}={record[name]!r} conflicts with header {value!r}")
-    return {**identity, **record}
-
-
 def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> dict:
     sealed_sha, specs, actual_specs = _load_contract_specs(outdir, env)
-    generated = ge.run_index(schedule)["containers"]
-    if actual_specs != generated:
-        raise gd.G33Corruption(
-            "C sealed container table differs from independent run_index()")
+    gev.validate_container_index(schedule, actual_specs)   # shared with the offline reader
 
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
     expected_paths = sorted(c["path"] for c in specs)
@@ -228,7 +216,6 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
             f"C container set differs\n  actual: {actual_paths}\n  sealed: {expected_paths}")
 
     containers = {}
-    logical_records = []
     for spec in specs:
         path = dump_dir / spec["path"]
         if not path.is_file():
@@ -250,24 +237,10 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
                     f"C {spec['container_id']} header {key}={header.get(key)!r}, "
                     f"expected {want!r}")
         containers[spec["container_id"]] = container
-        logical_records.extend(
-            _record_with_header_identity(record, header)
-            for record in container["records"])
 
-    # C++ keeps run identity in the container header rather than repeating it in
-    # every record. Normalize that identity, then compare MULTIPLICITY—not a set,
-    # which would be blind to one expected record being duplicated in place of
-    # another.
-    diff = ge.completeness_diff(logical_records, schedule)
-    if any(diff.values()):
-        raise gd.G33Corruption(
-            "C logical record multiset differs: "
-            f"missing={sum(diff['missing'].values())} "
-            f"extra={sum(diff['extra'].values())} "
-            f"duplicated={sum(diff['duplicated'].values())}")
-    op_seq = sorted(int(record["op_seq_id"]) for record in logical_records)
-    if op_seq != list(range(len(logical_records))):
-        raise gd.G33Corruption("C global op_seq does not tile 0..N-1 exactly")
+    # Independent record-multiset + op_seq tiling — the SAME gate the offline bundle
+    # reader runs (g33_evidence_validate), so the two cannot drift.
+    gev.validate_logical_completeness(schedule, list(containers.values()))
 
     # Numerical diagnostics from actual substep evidence. The first scope records
     # rain mass/number rates; this is not the total qs/qg main-chain maximum.
