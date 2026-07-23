@@ -32,6 +32,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "harness"))
 import g33_fortran_dump as fd          # noqa: E402
+import g33_fortran_semantics as sem    # noqa: E402
 import g33_fixture_v1 as fixture       # noqa: E402
 
 
@@ -103,12 +104,19 @@ def main():
 
     parsed = runs["C"]
     fd.verify_offline_replay(parsed)
-    if parsed.fixture_sha256 != fixture.fixture_sha256(authority):
-        raise SystemExit("C FIXIN differs from the shared authority")
-    if parsed.parameter_sha256 != fixture.parameter_sha256(authority):
-        raise SystemExit("C common PARAM differs from the shared authority")
-    if parsed.local_parameter_sha256 != fixture.fortran_parameter_sha256(authority):
-        raise SystemExit("C ccn0/scale_h differ from the authority")
+    sem.verify_semantics(parsed)
+    # EVERY run (not just C) must consume the shared fixture/params — else an A/B
+    # with different inputs whose final state happens to match C would pass
+    # abc_equal on a false premise (owner P0-5).
+    fx, pr, lp = (fixture.fixture_sha256(authority), fixture.parameter_sha256(authority),
+                  fixture.fortran_parameter_sha256(authority))
+    for n, r in runs.items():
+        if r.fixture_sha256 != fx:
+            raise SystemExit(f"{n} FIXIN differs from the shared authority")
+        if r.parameter_sha256 != pr:
+            raise SystemExit(f"{n} common PARAM differs from the shared authority")
+        if r.local_parameter_sha256 != lp:
+            raise SystemExit(f"{n} ccn0/scale_h differ from the authority")
 
     # Bind A/B/C BUILD provenance into the root, and enforce the cross-build
     # invariants that make A/B/C the same numerical problem (owner P0-4):
@@ -144,6 +152,11 @@ def main():
         "fixture_sha256": parsed.fixture_sha256,
         "parameter_sha256": parsed.parameter_sha256,
         "fortran_parameter_sha256": parsed.local_parameter_sha256,
+        # per-run input identity (all three verified == authority above).
+        "run_input_sha256": {n: {"fixture": runs[n].fixture_sha256,
+                                 "parameter": runs[n].parameter_sha256,
+                                 "fortran_parameter": runs[n].local_parameter_sha256}
+                             for n in cases},
         "abc_equal": abc_equal,
         "mstep_per_column": parsed.mstep,
         "op_record_count": len(parsed.ops),

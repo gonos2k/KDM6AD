@@ -232,6 +232,12 @@ def _validate_stages(stages, n_raw, mstep, K, B):
             raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
         if dt == "f64" and not _math.isfinite(_f64(b)):
             raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+        if stage == "surface":                             # bottom fall / metrics
+            v = _f32(b)
+            if f in ("delz_bottom", "surface_denr") and v <= 0.0:
+                raise FortranRunError(f"surface {f} col={c} must be > 0")
+            if f not in ("delz_bottom", "surface_denr") and v < 0.0:
+                raise FortranRunError(f"surface {f} col={c} must be >= 0")
 
 
 def _validate_domain(fixin, params, localparams, state, precip, B, K):
@@ -260,6 +266,9 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K):
             raise FortranRunError(f"FIXIN p col={c} not strictly increasing downward: {ps}")
         if _f32(fixin[("xland", c, -1)]) not in (1.0, 2.0):
             raise FortranRunError(f"FIXIN xland col={c} must be 1 or 2")
+    for (fam, c), b in precip.items():                     # accumulated precip >= 0
+        if _f32(b) < 0.0:
+            raise FortranRunError(f"PREC family={fam} col={c} must be >= 0")
 
 
 @dataclass(frozen=True)
@@ -288,7 +297,8 @@ _OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
 _SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
 _SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
 _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
-                   "bottom_fall_qi", "bottom_fall_total", "delz_bottom")
+                   "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
+                   "surface_denr")
 _STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
                 "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
                 "dend_safe": "f32", "delz_safe": "f32",
