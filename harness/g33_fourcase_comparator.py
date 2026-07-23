@@ -201,7 +201,12 @@ def classify(legacy: Divergence, conservative: Divergence):
         if d.kind == mech.OUT_OF_SCOPE:
             return "INCONCLUSIVE", (f"{name} first-diverges at out-of-scope {d.tag} "
                                     f"{d.identity} — no instrumented provenance")
-    if conservative.kind == mech.CONSERVATIVE:    # 6. conservative-only arithmetic
+    # 6. FAIL DEFINITION (owner-pinned, 2026-07): G3.3-M FAILs iff the conservative
+    #    pair's first cross-tree divergence lands in conservative-only arithmetic —
+    #    ANY such mismatch fails, even when the legacy pair also diverges at its
+    #    corresponding variant-specific rung in parallel. FAIL is decided by the
+    #    conservative pair alone; the legacy pair is not a mitigating control.
+    if conservative.kind == mech.CONSERVATIVE:
         return "FAIL", (f"conservative pair first-diverges at {conservative.tag} "
                         f"{conservative.identity} — arithmetic absent from the legacy ladder")
     if legacy.phase is None and conservative.phase is None:   # 7. no divergence
