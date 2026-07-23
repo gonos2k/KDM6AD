@@ -24,6 +24,7 @@ _OP = re.compile(
 _MSTEP = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
+_LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _BEGIN = re.compile(r"^G33F BEGIN v1 (\S+)$")
@@ -83,6 +84,15 @@ def parse_param(text):
         if m:
             pm[m.group(1)] = int(m.group(2), 16)
     return pm
+
+
+def parse_localparam(text):
+    lp = {}
+    for line in text.splitlines():
+        m = _LOCALPARAM.match(line)
+        if m:
+            lp[m.group(1)] = int(m.group(2), 16)
+    return lp
 
 
 def parse_mstep(text):
@@ -161,6 +171,7 @@ _STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                  "nccn", "nc", "ni", "nr", "bg")
 _FIXIN_FIELDS = _STATE_FIELDS + ("rho", "pii", "p", "delz")
 _COMMON_PARAMS = ("dt", "ncmin_land", "ncmin_sea", "qmin")
+_LOCAL_PARAMS = ("ccn0", "scale_h")   # Fortran-only (no C++ runtime counterpart)
 
 
 def _signed_i32(u):
@@ -173,16 +184,18 @@ class FortranRun:
     K: int
     B: int
     mstep: dict            # col -> substep count
-    fixture_sha256: str    # over the FIXIN inputs only
-    parameter_sha256: str  # over the PARAM scalars only
+    fixture_sha256: str          # over the FIXIN inputs only
+    parameter_sha256: str        # over the common PARAM scalars only
+    local_parameter_sha256: str  # over the ACTUAL-runtime LOCALPARAM (ccn0/scale_h)
     ops: tuple             # OpRecord, in canonical op_seq order
     state: dict            # (field, col, k) -> bits
     precip: dict           # (family, col) -> bits
     fixin: dict            # (field, col, k) -> bits
     params: dict           # name -> bits
+    localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP, _FIXIN, _PARAM, _STATE, _PREC, _BEGIN, _END)
+_KNOWN = (_OP, _MSTEP, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
 
 
 def _expected_op_universe(algo, K, B, mstep):
@@ -228,7 +241,7 @@ def parse_fortran_run(text, algo, K, B):
     def _phase(line):
         if _BEGIN.match(line):
             return 0
-        if _FIXIN.match(line) or _PARAM.match(line):
+        if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
         if _MSTEP.match(line) or _OP.match(line):
             return 2
@@ -310,20 +323,32 @@ def parse_fortran_run(text, algo, K, B):
     exp_fixin |= {("xland", c, -1) for c in range(1, B + 1)}
     _require_exact(fixin, exp_fixin, _FIXIN, text, "FIXIN")
     params = parse_param(text)
-    n_param_raw = sum(1 for line in lines if _PARAM.match(line))
-    if n_param_raw != len(params):
-        raise FortranRunError(f"PARAM: {n_param_raw - len(params)} duplicate key(s)")
-    if set(params) != set(_COMMON_PARAMS):
-        raise FortranRunError(f"PARAM names {sorted(params)} != {sorted(_COMMON_PARAMS)}")
+    _require_names(params, _COMMON_PARAMS, _PARAM, lines, "PARAM")
+    localparams = parse_localparam(text)
+    _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
 
-    fx = "".join(f"{f}:{c}:{k}:{b:08x}" for (f, c, k), b in sorted(fixin.items()))
-    pr = "".join(f"{n}:{b:08x}" for n, b in sorted(params.items()))
-    fixture_sha256 = _hashlib.sha256(fx.encode()).hexdigest()
-    parameter_sha256 = _hashlib.sha256(pr.encode()).hexdigest()
+    def _sha(s):
+        return _hashlib.sha256(s.encode()).hexdigest()
+
+    fixture_sha256 = _sha("".join(
+        f"{f}:{c}:{k}:{b:08x}" for (f, c, k), b in sorted(fixin.items())))
+    parameter_sha256 = _sha("".join(f"{n}:{b:08x}" for n, b in sorted(params.items())))
+    local_parameter_sha256 = _sha(
+        "".join(f"{n}:{b:08x}" for n, b in sorted(localparams.items())))
 
     return FortranRun(algorithm=algo, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
-                      ops=ops, state=state, precip=precip, fixin=fixin, params=params)
+                      local_parameter_sha256=local_parameter_sha256,
+                      ops=ops, state=state, precip=precip, fixin=fixin,
+                      params=params, localparams=localparams)
+
+
+def _require_names(parsed, expected, pattern, lines, label):
+    n_raw = sum(1 for line in lines if pattern.match(line))
+    if n_raw != len(parsed):
+        raise FortranRunError(f"{label}: {n_raw - len(parsed)} duplicate key(s)")
+    if set(parsed) != set(expected):
+        raise FortranRunError(f"{label} names {sorted(parsed)} != {sorted(expected)}")
 
 
 def _require_exact(parsed, expected, pattern, text, label):
