@@ -233,6 +233,9 @@ SURFACE_FIELDS = [
     ("bottom_fall_qi", "f32", "fall(i,kts,4)"),
     ("bottom_fall_total", "f32", "fallsum"),
     ("delz_bottom", "f32", "delz(i,kts)"),
+    # the water density the rain-increment arithmetic divides by — the last
+    # surface operand that was source-knowledge-only, now bound (owner P0-8).
+    ("surface_denr", "f32", "denr"),
 ]
 
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.

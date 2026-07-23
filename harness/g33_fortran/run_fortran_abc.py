@@ -32,6 +32,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "harness"))
 import g33_fortran_dump as fd          # noqa: E402
+import g33_fortran_semantics as sem    # noqa: E402
 import g33_fixture_v1 as fixture       # noqa: E402
 
 
@@ -103,6 +104,7 @@ def main():
 
     parsed = runs["C"]
     fd.verify_offline_replay(parsed)
+    sem.verify_semantics(parsed)
     # EVERY run (not just C) must consume the shared fixture/params — else an A/B
     # with different inputs whose final state happens to match C would pass
     # abc_equal on a false premise (owner P0-5).

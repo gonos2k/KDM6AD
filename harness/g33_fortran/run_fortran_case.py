@@ -15,6 +15,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "harness"))
 import g33_fortran_dump as fd  # noqa: E402
+import g33_fortran_semantics as sem  # noqa: E402
 import g33_fixture_v1 as fixture  # noqa: E402
 
 
@@ -60,6 +61,7 @@ def main() -> None:
     if parsed.local_parameter_sha256 != fixture.fortran_parameter_sha256(authority):
         raise SystemExit("Fortran-only params (ccn0/scale_h) differ from the authority")
     fd.verify_offline_replay(parsed)
+    sem.verify_semantics(parsed)
 
     with open(os.path.join(args.out, "provenance.json"), encoding="utf-8") as f:
         build = json.load(f)

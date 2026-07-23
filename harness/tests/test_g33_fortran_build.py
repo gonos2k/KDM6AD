@@ -300,7 +300,7 @@ def test_presed_stage_records():
     # outer_pre_sed = 6 fields x 3 x 4; both stages present.
     assert sum(1 for k in run.stages if k[0] == "outer_pre_sed") == 6 * 3 * 4
     assert any(k[0] == "substep_pre" for k in run.stages)
-    assert sum(1 for k in run.stages if k[0] == "surface") == 6 * 3   # P0-8
+    assert sum(1 for k in run.stages if k[0] == "surface") == 7 * 3   # P0-8 (+denr)
     assert ("outer_pre_sed", 0, "qr", 1, 0) in run.stages
     assert ("surface", 0, "bottom_fall_qr", 1, -1) in run.stages
 
@@ -320,6 +320,38 @@ def test_presed_stage_records():
     with pytest.raises(fd.FortranRunError):        # STAGE leaking into A (noninstrumented)
         m = list(A); m.insert(st_a, cl[sg])
         fd.parse_fortran_run("\n".join(m), "legacy", 4, 3, evidence_mode="noninstrumented")
+
+
+def test_evidence_semantics_and_mutants():
+    # PR#63A: the stage/surface snapshots are causally consistent with the op
+    # ladder + mstep — not just structurally complete.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+    import g33_fortran_semantics as sem
+
+    C = _build_and_run("legacy", overlay=True, dump=True)
+    sem.verify_semantics(fd.parse_fortran_run(C, "legacy", 4, 3))   # clean
+
+    def mutate(fn):
+        r = fd.parse_fortran_run(C, "legacy", 4, 3)
+        fn(r.stages, r.precip)
+        return r
+
+    other = 0x40000000        # 2.0f — a value not equal to the real one
+    mutants = [
+        lambda S, P: S.__setitem__(("substep_pre", 1, "mstep", 1, -1), ("i32", 2)),
+        lambda S, P: S.__setitem__(("substep_pre", 1, "gate", 1, -1), ("u8", 0)),
+        lambda S, P: S.__setitem__(("substep_pre", 1, "gate", 1, -1), ("u8", 2)),
+        lambda S, P: S.__setitem__(("substep_pre", 1, "qr", 1, 0), ("f32", other)),
+        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_qr", 1, -1), ("f32", other)),
+        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_total", 1, -1), ("f32", other)),
+        lambda S, P: P.__setitem__((1, 1), other),      # wrong rain PREC vs replay
+    ]
+    for fn in mutants:
+        with pytest.raises(sem.SemanticError):
+            sem.verify_semantics(mutate(fn))
 
 
 @pytest.mark.parametrize("algo", ALGOS)
