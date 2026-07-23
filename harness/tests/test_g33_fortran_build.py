@@ -288,6 +288,38 @@ def test_strict_parser_closeout2_mutants():
             fd.parse_fortran_run(amut(fn), "legacy", 4, 3, evidence_mode="noninstrumented")
 
 
+def test_presed_stage_records():
+    # PR#62A P0-7: outer_pre_sed + substep_pre whole-K snapshots, exact + finite.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+
+    C = _build_and_run("legacy", overlay=True, dump=True)
+    run = fd.parse_fortran_run(C, "legacy", 4, 3)
+    # outer_pre_sed = 6 fields x 3 x 4; both stages present.
+    assert sum(1 for k in run.stages if k[0] == "outer_pre_sed") == 6 * 3 * 4
+    assert any(k[0] == "substep_pre" for k in run.stages)
+    assert ("outer_pre_sed", 0, "qr", 1, 0) in run.stages
+
+    cl = C.splitlines()
+    sg = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE outer_pre_sed"))
+    # tokens: G33F STAGE <stage> <n> <field> <col> <k> <dtype> <hex>
+    w1 = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE substep_pre")
+              and l.split()[4] == "work1_qr")
+    A = _build_and_run("legacy").splitlines()
+    st_a = next(i for i, l in enumerate(A) if l.startswith("G33F STATE"))
+
+    with pytest.raises(fd.FortranRunError):        # a dropped stage record
+        fd.parse_fortran_run("\n".join(cl[:sg] + cl[sg + 1:]), "legacy", 4, 3)
+    with pytest.raises(fd.FortranRunError):        # NaN in a work1 (f64) snapshot
+        m = list(cl); m[w1] = _set_tok(m[w1], 8, "7FF8000000000000")
+        fd.parse_fortran_run("\n".join(m), "legacy", 4, 3)
+    with pytest.raises(fd.FortranRunError):        # STAGE leaking into A (noninstrumented)
+        m = list(A); m.insert(st_a, cl[sg])
+        fd.parse_fortran_run("\n".join(m), "legacy", 4, 3, evidence_mode="noninstrumented")
+
+
 @pytest.mark.parametrize("algo", ALGOS)
 def test_actual_vs_shadow_offline_replay(algo):
     # the ACTUAL stored q_post/n_post match an offline replay from the dumped

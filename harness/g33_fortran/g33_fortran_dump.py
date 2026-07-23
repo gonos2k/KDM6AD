@@ -22,6 +22,9 @@ _OP = re.compile(
     r"^G33FOP\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s+(\S+)\s+(\S+)\s+"
     r"(f32|f64|u8)\s+([0-9A-Fa-f]+)$")
 _MSTEP = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
+_STAGE = re.compile(
+    r"^G33F STAGE\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+"
+    r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -30,7 +33,7 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _BEGIN = re.compile(r"^G33F BEGIN v1 (\S+)$")
 _END = re.compile(r"^G33F END v1 (\S+)$")
 
-_HEXWIDTH = {"f32": 8, "f64": 16, "u8": 2}
+_HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
 
 def parse_ops(text):
@@ -102,6 +105,20 @@ def parse_mstep(text):
         if m:
             ms[int(m.group(1))] = int(m.group(2), 16)
     return ms
+
+
+def parse_stage(text):
+    """(stage, n, field, col, k_top) -> (dtype, bits) for the pre-sed snapshots."""
+    st = {}
+    for line in text.splitlines():
+        m = _STAGE.match(line)
+        if m:
+            dtype, hexbits = m.group(6), m.group(7)
+            if len(hexbits) != _HEXWIDTH[dtype]:
+                raise ValueError(f"{dtype} stage payload width: {line!r}")
+            st[(m.group(1), int(m.group(2)), m.group(3), int(m.group(4)),
+                int(m.group(5)))] = (dtype, int(hexbits, 16))
+    return st
 
 
 # ── canonicalization for the four-case comparator ─────────────────────────────
@@ -185,6 +202,36 @@ def _f32(bits):
     return _struct.unpack(">f", bits.to_bytes(4, "big"))[0]
 
 
+def _f64(bits):
+    return _struct.unpack(">d", bits.to_bytes(8, "big"))[0]
+
+
+def _validate_stages(stages, n_raw, mstep, K, B):
+    """Exact pre-sed STAGE universe from mstep + the schema (owner P0-7): once
+    outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
+    if n_raw != len(stages):
+        raise FortranRunError(f"STAGE: {n_raw - len(stages)} duplicate key(s)")
+    exp = {("outer_pre_sed", 0, f, c, k) for f in _OUTER_PRE_SED_FIELDS
+           for c in range(1, B + 1) for k in range(K)}
+    for n in range(1, max(mstep.values()) + 1):
+        for c in range(1, B + 1):
+            exp |= {("substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
+            exp |= {("substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
+                    for k in range(K)}
+    if set(stages) != exp:
+        missing, extra = exp - set(stages), set(stages) - exp
+        raise FortranRunError(
+            f"STAGE universe: {len(missing)} missing (e.g. {next(iter(missing), None)}), "
+            f"{len(extra)} extra (e.g. {next(iter(extra), None)})")
+    for (stage, n, f, c, k), (dt, b) in stages.items():
+        if dt != _STAGE_DTYPE[f]:
+            raise FortranRunError(f"STAGE {stage}.{f} dtype {dt} != {_STAGE_DTYPE[f]}")
+        if dt == "f32" and not _math.isfinite(_f32(b)):
+            raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+        if dt == "f64" and not _math.isfinite(_f64(b)):
+            raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+
+
 def _validate_domain(fixin, params, localparams, state, precip, B, K):
     """Every f32 must be finite, and the arithmetic-synthetic input metrics must
     be physically well-formed. A one-line authority edit that produced a NaN or a
@@ -223,6 +270,7 @@ class FortranRun:
     parameter_sha256: str        # over the common PARAM scalars only
     local_parameter_sha256: str  # over the ACTUAL-runtime LOCALPARAM (ccn0/scale_h)
     ops: tuple             # OpRecord, in canonical op_seq order
+    stages: dict           # (stage, n, field, col, k) -> (dtype, bits)
     state: dict            # (field, col, k) -> bits
     precip: dict           # (family, col) -> bits
     fixin: dict            # (field, col, k) -> bits
@@ -230,7 +278,17 @@ class FortranRun:
     localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
+_KNOWN = (_OP, _MSTEP, _STAGE, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC,
+          _BEGIN, _END)
+
+# pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
+_OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
+_SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
+_SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
+_STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
+                "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
+                "dend_safe": "f32", "delz_safe": "f32",
+                "mstep": "i32", "gate": "u8", "dtcld": "f32"}
 
 
 def _expected_op_universe(algo, K, B, mstep):
@@ -285,7 +343,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
             return 0
         if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
-        if _MSTEP.match(line) or _OP.match(line):
+        if _MSTEP.match(line) or _OP.match(line) or _STAGE.match(line):
             return 2
         if _STATE.match(line) or _PREC.match(line):
             return 3
@@ -365,6 +423,14 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
              for o in raw_ops),
             key=lambda r: r.scalar_seq_id))
 
+    stages = parse_stage(text)
+    n_stage_raw = sum(1 for line in lines if _STAGE.match(line))
+    if evidence_mode == "noninstrumented":
+        if n_stage_raw:
+            raise FortranRunError(f"noninstrumented run emitted {n_stage_raw} STAGE records")
+    else:
+        _validate_stages(stages, n_stage_raw, mstep, K, B)
+
     state = parse_state(text)
     exp_state = {(f, c, k) for f in _STATE_FIELDS
                  for c in range(1, B + 1) for k in range(K)}
@@ -395,7 +461,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     return FortranRun(algorithm=algo, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
-                      ops=ops, state=state, precip=precip, fixin=fixin,
+                      ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,
                       params=params, localparams=localparams)
 
 
