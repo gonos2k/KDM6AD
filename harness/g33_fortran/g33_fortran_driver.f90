@@ -107,6 +107,11 @@ contains
     call emit_param('ncmin_land', ncmin_land)
     call emit_param('ncmin_sea', ncmin_sea)
     call emit_param('qmin', qmin)
+    ! ccn0/scale_h have no C++ runtime counterpart, so they are NOT cross-tree
+    ! PARAMs; but their ACTUAL runtime bits (not a re-hash of the authority JSON)
+    ! must be recorded so the run manifest's Fortran-only hash is a measurement.
+    call emit_localparam('ccn0', ccn0)
+    call emit_localparam('scale_h', scale_h)
 
     call kdm6(th=th, q=q, qc=qc, qr=qr, qi=qi, qs=qs, qg=qg,                &
               nn=nn, nc=nc, ni=ni, nr=nr, bg=bg, diag_rhog=diag_rhog,       &
@@ -146,6 +151,13 @@ contains
     write(*,'(A,1X,A,1X,A,1X,Z8.8)') 'G33F PARAM', trim(name), 'f32', &
          transfer(val, 0_int32)
   end subroutine emit_param
+
+  subroutine emit_localparam(name, val)   ! Fortran-only param (no C++ counterpart)
+    character(len=*), intent(in) :: name
+    real, intent(in) :: val
+    write(*,'(A,1X,A,1X,A,1X,Z8.8)') 'G33F LOCALPARAM', trim(name), 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_localparam
 
   subroutine emit_prec(fam, i, val)
     integer, intent(in) :: fam, i

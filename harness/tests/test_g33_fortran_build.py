@@ -188,6 +188,49 @@ def test_strict_parser_accepts_good_and_rejects_mutants(algo):
             fd.parse_fortran_run(_mut(fn), algo, K=4, B=3)
 
 
+def test_strict_parser_closeout_mutants():
+    # PR#61 hardening: loop/chain identity, signed mstep range, exact
+    # STATE/PREC/FIXIN/PARAM universe, phase bracketing.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+
+    good = _build_and_run("legacy", overlay=True, dump=True)
+    fd.parse_fortran_run(good, "legacy", K=4, B=3)   # accepts clean
+    lines = good.splitlines()
+
+    def idx(pred):
+        return next(i for i, l in enumerate(lines) if pred(l))
+
+    op_i = idx(lambda l: l.startswith("G33FOP"))
+    ms_i = idx(lambda l: l.startswith("G33F MSTEP"))
+    st_i = idx(lambda l: l.startswith("G33F STATE"))
+    pr_i = idx(lambda l: l.startswith("G33F PREC"))
+    fx_i = idx(lambda l: l.startswith("G33F FIXIN"))
+    pm_i = idx(lambda l: l.startswith("G33F PARAM"))
+
+    def mut(fn):
+        m = list(lines)
+        fn(m)
+        return "\n".join(m)
+
+    cases = {
+        "loop != 1": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 1, "9")),
+        "chain != main": lambda m: m.__setitem__(op_i, _set_tok(m[op_i], 2, "ice")),
+        "mstep negative (signed FFFFFFFF)": lambda m: m.__setitem__(ms_i, _set_tok(m[ms_i], 4, "FFFFFFFF")),
+        "mstep > 100 (0x65)": lambda m: m.__setitem__(ms_i, _set_tok(m[ms_i], 4, "00000065")),
+        "STATE record missing": lambda m: m.pop(st_i),
+        "PREC record missing": lambda m: m.pop(pr_i),
+        "FIXIN record missing": lambda m: m.pop(fx_i),
+        "PARAM name wrong": lambda m: m.__setitem__(pm_i, _set_tok(m[pm_i], 2, "bogus")),
+        "op after STATE (phase order)": lambda m: m.insert(st_i + 1, m[op_i]),
+    }
+    for name, fn in cases.items():
+        with pytest.raises(fd.FortranRunError):
+            fd.parse_fortran_run(mut(fn), "legacy", K=4, B=3)
+
+
 @pytest.mark.parametrize("algo", ALGOS)
 def test_actual_vs_shadow_offline_replay(algo):
     # the ACTUAL stored q_post/n_post match an offline replay from the dumped
@@ -231,6 +274,25 @@ def test_offline_replay_catches_mutated_actual_update():
     run = fd.parse_fortran_run(run_out, "conservative", K=4, B=3)  # structurally complete
     with pytest.raises(fd.FortranRunError):
         fd.verify_offline_replay(run)
+
+
+def test_abc_bundle_is_persistent_and_recheckable():
+    import hashlib
+    import json
+    WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_abc.py"
+    with tempfile.TemporaryDirectory(prefix="g33-abc.") as td:
+        out = Path(td) / "abc"
+        r = subprocess.run(["python3", str(WRAP), "--algo", "legacy", "--out", str(out)],
+                           capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"abc wrapper failed:\n{r.stdout}\n{r.stderr}"
+        man = json.loads((out / "abc_manifest.json").read_text())
+        assert man["abc_equal"] is True and man["op_record_count"] > 0
+        # raw streams persisted and re-checkable against the manifest.
+        for c in ("A", "B", "C"):
+            raw = (out / c / "stdout.g33f").read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == man["stdout_sha256"][c]
+        assert (out / "C" / "normalized_ops.json").is_file()
+        assert man["executable_sha256"]["A"] != man["executable_sha256"]["C"]
 
 
 def test_run_wrapper_writes_complete_manifest():

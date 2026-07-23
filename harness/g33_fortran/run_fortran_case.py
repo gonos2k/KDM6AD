@@ -55,6 +55,10 @@ def main() -> None:
         raise SystemExit("Fortran FIXIN differs from the shared raw-bit authority")
     if parsed.parameter_sha256 != fixture.parameter_sha256(authority):
         raise SystemExit("Fortran common PARAM values differ from the shared authority")
+    # ccn0/scale_h: the ACTUAL runtime LOCALPARAM bits (not a re-hash of the JSON)
+    # must equal the authority's Fortran-only parameters.
+    if parsed.local_parameter_sha256 != fixture.fortran_parameter_sha256(authority):
+        raise SystemExit("Fortran-only params (ccn0/scale_h) differ from the authority")
     fd.verify_offline_replay(parsed)
 
     with open(os.path.join(args.out, "provenance.json"), encoding="utf-8") as f:
@@ -69,7 +73,7 @@ def main() -> None:
         "fixture_manifest_sha256": fixture.manifest_sha256(authority),
         "fixture_sha256": parsed.fixture_sha256,
         "parameter_sha256": parsed.parameter_sha256,
-        "fortran_parameter_sha256": fixture.fortran_parameter_sha256(authority),
+        "fortran_parameter_sha256": parsed.local_parameter_sha256,  # actual runtime bits
         "K": K, "B": B, "mstep_per_column": parsed.mstep,
         "stdout_sha256": _sha_bytes(run.stdout),
         "stderr_sha256": _sha_bytes(run.stderr),
