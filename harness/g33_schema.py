@@ -84,8 +84,26 @@ _SEMANTIC_STAGE_FIELDS = {
 }
 
 
+# Canonical dtype of every common semantic stage field (both backends must agree).
+_SEMANTIC_STAGE_DTYPE = {
+    ("outer_pre_sed", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["outer_pre_sed"]}
+_SEMANTIC_STAGE_DTYPE.update({
+    ("substep_pre", "qr"): "f32", ("substep_pre", "nr"): "f32",
+    ("substep_pre", "work1_qr"): "f64", ("substep_pre", "workn_qr"): "f64",
+    ("substep_pre", "delz_safe"): "f32", ("substep_pre", "dend_safe"): "f32",
+    ("substep_pre", "gate"): "u8", ("substep_pre", "mstep"): "i32"})
+_SEMANTIC_STAGE_DTYPE.update({
+    ("surface", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["surface"]})
+
+
 def species_rank(species: str) -> int:
     return _SPECIES_ORDER.index(species)
+
+
+def semantic_stage_field_dtype(stage: str, field: str) -> str:
+    """Canonical dtype of a semantic stage field; KeyError if the field is not in
+    the common schema (an unknown stage field must be rejected, not defaulted)."""
+    return _SEMANTIC_STAGE_DTYPE[(stage, field)]
 
 
 def semantic_stage_fields(stage: str) -> list[str]:

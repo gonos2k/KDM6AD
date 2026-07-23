@@ -75,7 +75,9 @@ def from_fortran_run(run) -> dict:
             raise NormalizeError(f"fortran run has unknown PREC family {family!r}")
         stages.append({"stage": "surface", "n": 0, "col": col, "k": -1,
                        "field": field, "dtype": "f32", "bits": bits})
-    return {"algorithm": run.algorithm, "ops": ops, "stages": stages}
+    B = max((o["col"] for o in ops), default=0)
+    K = max((o["k"] for o in ops), default=-1) + 1
+    return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops, "stages": stages}
 
 
 def _lane_to_col(column_index_map):
@@ -122,12 +124,14 @@ def from_cpp_evidence(evidence) -> dict:
     contract = evidence["contract"]
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
+    bk = set()
     for cid, c in evidence["containers"].items():
         h = c["header"]
         if h.get("canonical_k_order") != "top-first":
             raise NormalizeError(f"container {cid} k-order {h.get('canonical_k_order')!r} "
                                  f"is not top-first — orientation unproven")
         B, K = h["B"], h["K"]
+        bk.add((B, K))
         lane_to_col = _lane_to_col(h["column_index_map"])
         for r in c["records"]:
             stage = r["stage"]
@@ -151,4 +155,7 @@ def from_cpp_evidence(evidence) -> dict:
                                    "col": col, "k": k, "field": field,
                                    "dtype": dtype, "bits": bits})
             # op-less non-comparator stages (outer_post_*) are simply not emitted
-    return {"algorithm": algo, "ops": ops, "stages": stages}
+    if len(bk) != 1:
+        raise NormalizeError(f"containers disagree on (B,K): {sorted(bk)}")
+    B, K = bk.pop()
+    return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages}
