@@ -9,31 +9,31 @@ separately (g33_bundle_io/g33_normalize).
 
 Normalized run (one per backend/variant):
   {"algorithm": "legacy"|"conservative",
-   "ops":    [ {n,col,k,role,species,op_id,field,dtype,bits,op_seq_id}, ... ],
+   "ops":    [ {n,col,k,role,species,op_id,field,dtype,bits}, ... ],
    "stages": [ {stage,n,col,k,field,dtype,bits}, ... ]}   # stage incl. surface
-  op_seq_id is the UNIQUE per-record total-order index (Fortran scalar_seq_id =
-  schema op_seq_id · B + column); it is cross-checked for monotonicity in the
-  schema-canonical order, never used to define that order.
 
 Design contract (owner P0 closeout):
-  * Canonical execution order is re-derived from the SCHEMA ordinals, never
-    trusted from the producer's op_seq_id (that field is only cross-checked for
-    consistency, then discarded). Order = outer_pre_sed, then per substep n
-    [substep_pre(n) BEFORE ops(n)], then surface — so a divergence born in an n=1
-    op is not misattributed to the substep_pre(n=2) it later perturbs.
-  * Comparison is IDENTITY-FIRST: a differing / DUPLICATED record identity is
-    INVALID_EVIDENCE, not a numerical divergence.
-  * Attribution uses the role/species/expression-aware MechanismSpec.kind
-    (g33_mechanism), not a field-set difference:
-      - input carry differs first          -> INVALID_EVIDENCE (inconsistent)
-      - pre-sed / out-of-scope species      -> INCONCLUSIVE
-      - conservative-only arithmetic        -> FAIL
-      - same SHARED rung in BOTH pairs      -> PASS  (aligned on the
-        variant-independent mechanism tag AND dtype/rounding domain)
+  * Canonical execution order comes ENTIRELY from the schema single-authority
+    (g33_schema.species_rank / op_ordinal / field_ordinal / stage_field_ordinal):
+    outer_pre_sed, then per substep n [substep_pre(n) BEFORE ops(n)], then surface;
+    within a substep (k, species, op, field) with the column lane innermost. The
+    producer's own sequence numbers are NOT consumed — the comparator regenerates
+    the order, so a producer that renumbers records cannot bias it.
+  * Comparison is IDENTITY-FIRST: a differing / duplicated identity, an unknown
+    stage/species/field, a dtype that disagrees with the schema, or any malformed
+    record is INVALID_EVIDENCE — never a numerical divergence or a crash.
+  * Attribution uses the closed-world MechanismSpec.kind (g33_mechanism):
+      causal_carry differs first  -> INVALID_EVIDENCE (internally inconsistent)
+      external_input differs first -> INCONCLUSIVE (unsealed precondition)
+      pre-sed / out_of_scope       -> INCONCLUSIVE
+      conservative-only arithmetic -> FAIL
+      same SHARED rung both pairs   -> PASS  (tag + dtype + cell), with the raw-bit
+                                       signature (ULP delta + direction) recorded.
 """
 from __future__ import annotations
 
 import os
+import struct
 import sys
 from dataclasses import dataclass
 
@@ -45,17 +45,8 @@ VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
 _PRESED = ("outer_pre_sed", "substep_pre")
-# Species rank in the authoritative schedule (g33_expectation _CHAIN_SPECIES:
-# main [qr,nr,qs,qg,brs] then ice [qi,ni]) — the total op order within a substep
-# is (k, species, op_ordinal, field_ordinal) with the column lane innermost.
-_SPECIES_RANK = {s: i for i, s in enumerate(
-    ["qr", "nr", "qs", "qg", "brs", "qi", "ni"])}
-# Explicit surface field order (P0-9): per-species operands, then the shared
-# species sum, then the shared metric inputs — NOT alphabetic.
-_SURFACE_ORDER = ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
-                  "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
-                  "surface_denr"]
 _SURFACE_N = 10 ** 9          # order surface after every substep
+_WIDTH = {"f32": 32, "f64": 64}
 
 
 class StructuralError(Exception):
@@ -70,69 +61,90 @@ class Event:
     shared_key: tuple | None   # VARIANT-INDEPENDENT identity for cross-pair PASS
     kind: str | None    # MechanismSpec.kind (None for pre-sed stages)
     tag: str | None
+    dtype: str
     bits: int
-    seq: int | None     # producer op_seq_id — cross-checked, not authoritative
 
 
 def _events(run) -> list[Event]:
-    algo = run.get("algorithm")
-    if algo not in _ALGOS:
-        raise StructuralError(f"unknown algorithm {algo!r}")
-    out: list[Event] = []
-    for o in run["ops"]:
-        role, sp, op_id, fld = o["role"], o["species"], o["op_id"], o["field"]
-        try:
-            oo = schema.op_ordinal(algo, role, sp, op_id)
-            fo = schema.field_ordinal(algo, role, op_id, fld)
-            want_dt = schema.field_dtype(algo, role, op_id, fld)
-        except (KeyError, ValueError) as e:
-            raise StructuralError(f"op not in schema: {op_id}.{fld} [{role}/{sp}]") from e
-        if o["dtype"] != want_dt:
-            raise StructuralError(
-                f"dtype mismatch {op_id}.{fld}: got {o['dtype']} want {want_dt}")
-        if sp not in _SPECIES_RANK:
-            raise StructuralError(f"unknown species {sp!r}")
-        spec = mech.mechanism(algo, role, sp, op_id, fld)
-        # schema-canonical total order: (n, k, species, op, field, col) — col inner.
-        out.append(Event(
-            order=(o["n"], 1, o["k"], _SPECIES_RANK[sp], oo, fo, o["col"]),
-            phase="op",
-            identity=("op", o["n"], o["col"], o["k"], role, sp, op_id, fld, o["dtype"]),
-            shared_key=("op", o["n"], o["col"], o["k"], role, sp, spec.tag, o["dtype"]),
-            kind=spec.kind, tag=spec.tag, bits=o["bits"], seq=o["op_seq_id"]))
-    for s in run["stages"]:
-        stage, fld = s["stage"], s["field"]
-        if stage not in _STAGES:
-            raise StructuralError(f"unknown stage {stage!r}")
-        if stage == "surface":
-            fo = _SURFACE_ORDER.index(fld) if fld in _SURFACE_ORDER else len(_SURFACE_ORDER)
-            spec = mech.surface_mechanism(fld)
+    try:
+        algo = run["algorithm"]
+        if algo not in _ALGOS:
+            raise StructuralError(f"unknown algorithm {algo!r}")
+        out: list[Event] = []
+        for o in run["ops"]:
+            role, sp, op_id, fld, dt = (o["role"], o["species"], o["op_id"],
+                                        o["field"], o["dtype"])
+            try:
+                sr = schema.species_rank(sp)
+                oo = schema.op_ordinal(algo, role, sp, op_id)
+                fo = schema.field_ordinal(algo, role, op_id, fld)
+                want_dt = schema.field_dtype(algo, role, op_id, fld)
+            except (KeyError, ValueError) as e:
+                raise StructuralError(f"op not in schema: {op_id}.{fld} [{role}/{sp}]") from e
+            if dt != want_dt:
+                raise StructuralError(f"dtype {op_id}.{fld}: got {dt} want {want_dt}")
+            spec = mech.mechanism(algo, role, sp, op_id, fld)
             out.append(Event(
-                order=(_SURFACE_N, 0, 0, 0, 0, fo, s["col"]),   # after every substep
-                phase="surface",
-                identity=("surface", s["n"], s["col"], s["k"], fld, s["dtype"]),
-                shared_key=("surface", s["col"], spec.tag, s["dtype"]),
-                kind=spec.kind, tag=spec.tag, bits=s["bits"], seq=None))
-        else:                                     # outer_pre_sed | substep_pre(n)
-            n = 0 if stage == "outer_pre_sed" else s["n"]   # outer_pre_sed precedes n=1
-            out.append(Event(
-                order=(n, 0, s["k"], 0, 0, 0, s["col"]),     # phase 0 < ops (phase 1)
-                phase=stage,
-                identity=(stage, s["n"], s["col"], s["k"], fld, s["dtype"]),
-                shared_key=None, kind=None, tag=None, bits=s["bits"], seq=None))
+                order=(o["n"], 1, o["k"], sr, oo, fo, o["col"]),
+                phase="op",
+                identity=("op", o["n"], o["col"], o["k"], role, sp, op_id, fld, dt),
+                shared_key=("op", o["n"], o["col"], o["k"], role, sp, spec.tag, dt),
+                kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(o["bits"], dt)))
+        for s in run["stages"]:
+            stage, fld, dt = s["stage"], s["field"], s["dtype"]
+            if stage not in _STAGES:
+                raise StructuralError(f"unknown stage {stage!r}")
+            if stage == "surface":
+                fo = schema.stage_field_ordinal("surface", fld)
+                spec = mech.surface_mechanism(fld)
+                out.append(Event(
+                    order=(_SURFACE_N, 0, 0, 0, 0, fo, s["col"]),
+                    phase="surface",
+                    identity=("surface", s["n"], s["col"], s["k"], fld, dt),
+                    shared_key=("surface", s["col"], spec.tag, dt),
+                    kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(s["bits"], dt)))
+            else:                                 # outer_pre_sed | substep_pre(n)
+                n = 0 if stage == "outer_pre_sed" else s["n"]
+                fo = schema.stage_field_ordinal(stage, fld)
+                out.append(Event(
+                    order=(n, 0, s["k"], 0, 0, fo, s["col"]),
+                    phase=stage,
+                    identity=(stage, s["n"], s["col"], s["k"], fld, dt),
+                    shared_key=None, kind=None, tag=None, dtype=dt,
+                    bits=_bits(s["bits"], dt)))
+    except (KeyError, TypeError, ValueError, IndexError) as e:
+        # P0-6: any malformed normalized record is INVALID_EVIDENCE, not a crash.
+        raise StructuralError(f"malformed normalized run: {e!r}") from e
     out.sort(key=lambda e: e.order)
-    # P0-4 duplicate identity — the dict-of-identity build below would silently
-    # coalesce them, hiding a missing/extra record.
     ids = [e.identity for e in out]
     if len(ids) != len(set(ids)):
         raise StructuralError("duplicate record identity")
-    # P0-5 the unique per-record op_seq_id must be strictly increasing in the
-    # schema-canonical order derived above; a producer that renumbers records
-    # inconsistently is rejected, not trusted to define the order.
-    seqs = [e.seq for e in out if e.phase == "op"]
-    if any(a >= b for a, b in zip(seqs, seqs[1:])):
-        raise StructuralError("op_seq_id inconsistent with schema-canonical order")
     return out
+
+
+def _bits(v, dt):
+    b = int(v)
+    if b < 0 or b >= (1 << _WIDTH.get(dt, 8)):
+        raise StructuralError(f"bits {v!r} out of range for dtype {dt}")
+    return b
+
+
+def _mono(bits, w):
+    """IEEE bit pattern -> order-preserving unsigned int (Dawson transform)."""
+    msb = 1 << (w - 1)
+    return (~bits & ((1 << w) - 1)) if (bits & msb) else (bits | msb)
+
+
+def _signature(dt, f_bits, c_bits):
+    """Raw-bit divergence signature for the result — direction + ULP distance."""
+    sig = {"dtype": dt, "f_bits": f"{f_bits:#x}", "c_bits": f"{c_bits:#x}",
+           "xor": f"{f_bits ^ c_bits:#x}"}
+    w = _WIDTH.get(dt)
+    if w:
+        ulp = _mono(c_bits, w) - _mono(f_bits, w)
+        sig["ulp_delta"] = ulp
+        sig["direction"] = "C>F" if ulp > 0 else ("C<F" if ulp < 0 else "equal")
+    return sig
 
 
 @dataclass(frozen=True)
@@ -143,6 +155,7 @@ class Divergence:
     shared_key: tuple | None = None
     kind: str | None = None
     tag: str | None = None
+    signature: dict | None = None
 
 
 def compare_pair(f_run, c_run) -> Divergence:
@@ -158,50 +171,48 @@ def compare_pair(f_run, c_run) -> Divergence:
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
     for e in fe:                                  # canonical order
-        if e.bits != cmap[e.identity].bits:
+        ce_e = cmap[e.identity]
+        if e.bits != ce_e.bits:
             return Divergence(phase=e.phase, identity=e.identity,
-                              shared_key=e.shared_key, kind=e.kind, tag=e.tag)
+                              shared_key=e.shared_key, kind=e.kind, tag=e.tag,
+                              signature=_signature(e.dtype, e.bits, ce_e.bits))
     return Divergence()                           # bit-identical
 
 
 def classify(legacy: Divergence, conservative: Divergence):
     """(verdict, reason). Evidence-integrity outranks any numerical verdict."""
     pairs = (("legacy", legacy), ("conservative", conservative))
-    # 1. structural evidence failure in EITHER pair.
-    for name, d in pairs:
+    for name, d in pairs:                         # 1. structural failure
         if d.invalid:
             return "INVALID_EVIDENCE", f"{name} pair: {d.invalid}"
-    # 2. an input/carry differing FIRST means upstream matched but a carry did
-    #    not — the evidence is internally inconsistent, not a mechanism verdict.
-    for name, d in pairs:
-        if d.kind == mech.INPUT:
-            return "INVALID_EVIDENCE", (f"{name} pair: carry/input {d.tag} "
+    for name, d in pairs:                         # 2. carry inconsistency
+        if d.kind == mech.CAUSAL_CARRY:
+            return "INVALID_EVIDENCE", (f"{name} pair: causal carry {d.tag} "
                                         f"{d.identity} differs while its source matched")
-    # 3. a pre-sed divergence cannot be attributed to sedimentation arithmetic.
-    for name, d in pairs:
+    for name, d in pairs:                         # 3. upstream (pre-sed)
         if d.phase in _PRESED:
             return "INCONCLUSIVE", f"{name} divergence upstream at {d.phase} {d.identity}"
-    # 4. an out-of-scope species (snow/ice/graupel) has no qr/nr provenance here.
-    for name, d in pairs:
+    for name, d in pairs:                         # 4. unsealed external precondition
+        if d.kind == mech.EXTERNAL_INPUT:
+            return "INCONCLUSIVE", (f"{name} first-diverges at external input {d.tag} "
+                                    f"{d.identity} — a fixture/parameter precondition, "
+                                    f"not sealed by bundle preflight")
+    for name, d in pairs:                         # 5. out-of-scope species/output
         if d.kind == mech.OUT_OF_SCOPE:
             return "INCONCLUSIVE", (f"{name} first-diverges at out-of-scope {d.tag} "
-                                    f"{d.identity} — upstream provenance not instrumented")
-    # 5. conservative pair first-diverges in genuinely conservative-only arithmetic.
-    if conservative.kind == mech.CONSERVATIVE:
+                                    f"{d.identity} — no instrumented provenance")
+    if conservative.kind == mech.CONSERVATIVE:    # 6. conservative-only arithmetic
         return "FAIL", (f"conservative pair first-diverges at {conservative.tag} "
                         f"{conservative.identity} — arithmetic absent from the legacy ladder")
-    # 6. neither pair diverged.
-    if legacy.phase is None and conservative.phase is None:
+    if legacy.phase is None and conservative.phase is None:   # 7. no divergence
         return "INCONCLUSIVE", "no cross-tree divergence in either pair at this fixture"
-    # 7. both pairs first-diverge at the SAME shared rung (tag + dtype + cell).
-    if (legacy.kind == mech.SHARED and conservative.kind == mech.SHARED
+    if (legacy.kind == mech.SHARED and conservative.kind == mech.SHARED  # 8. shared
             and legacy.shared_key is not None
             and legacy.shared_key == conservative.shared_key):
         return "PASS", (f"both pairs first-diverge at the shared mechanism {legacy.tag} "
                         f"{legacy.shared_key} — common to both variants")
     return "INCONCLUSIVE", (f"pairs diverge differently: legacy {legacy.phase}/"
-                            f"{legacy.tag}/{legacy.shared_key}, conservative "
-                            f"{conservative.phase}/{conservative.tag}/{conservative.shared_key}")
+                            f"{legacy.tag}, conservative {conservative.phase}/{conservative.tag}")
 
 
 def _require_algorithm(run, want, label):
@@ -210,7 +221,7 @@ def _require_algorithm(run, want, label):
 
 
 def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
-    try:                                          # P0-6 algorithm preflight
+    try:                                          # algorithm preflight
         _require_algorithm(legacy_f, "legacy", "legacy_f")
         _require_algorithm(legacy_c, "legacy", "legacy_c")
         _require_algorithm(conservative_f, "conservative", "conservative_f")
@@ -224,7 +235,7 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
 
     def _d(x):
         return {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
-                "kind": x.kind, "tag": x.tag}
+                "kind": x.kind, "tag": x.tag, "signature": x.signature}
     return {"verdict": verdict, "reason": reason,
             "legacy_first_divergence": _d(leg),
             "conservative_first_divergence": _d(con)}
