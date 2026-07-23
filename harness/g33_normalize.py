@@ -92,9 +92,9 @@ def _lane_to_col(column_index_map):
 def _expand(record, B, K, lane_to_col):
     """Yield (col, k, dtype, bits) per element of a whole-tensor record. shape [B]
     is per-column (k=-1); shape [B,K] is per (column, level), B outer / K inner.
-    The C++ [B,K] tensors are stored BOTTOM-first (native model k = kts..kte), so
-    the storage index is flipped to the comparator's TOP-first canonical k
-    (k=0 top) — matching the Fortran per-level records and the op cell_role."""
+    The container declares canonical top-first k (k=0 top) — with the driver's
+    fixture now loaded in host order (abc_driver to_host_order), the emitted
+    tensors are already top-first, so the storage index IS the canonical k."""
     dtype, shape = record["dtype"], record["shape"]
     bits = dv._raw_bits(dtype, record["payload"])
     if shape == [B]:
@@ -103,7 +103,7 @@ def _expand(record, B, K, lane_to_col):
     elif shape == [B, K]:
         for b in range(B):
             for k in range(K):
-                yield lane_to_col[b], K - 1 - k, dtype, bits[b * K + k]
+                yield lane_to_col[b], k, dtype, bits[b * K + k]
     else:
         raise NormalizeError(f"unexpected record shape {shape} for B={B} K={K}")
 
@@ -122,6 +122,9 @@ def from_cpp_evidence(evidence) -> dict:
     ops, stages = [], []
     for cid, c in evidence["containers"].items():
         h = c["header"]
+        if h.get("canonical_k_order") != "top-first":
+            raise NormalizeError(f"container {cid} k-order {h.get('canonical_k_order')!r} "
+                                 f"is not top-first — orientation unproven")
         B, K = h["B"], h["K"]
         lane_to_col = _lane_to_col(h["column_index_map"])
         for r in c["records"]:
