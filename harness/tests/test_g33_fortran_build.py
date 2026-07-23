@@ -276,6 +276,25 @@ def test_offline_replay_catches_mutated_actual_update():
         fd.verify_offline_replay(run)
 
 
+def test_abc_bundle_is_persistent_and_recheckable():
+    import hashlib
+    import json
+    WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_abc.py"
+    with tempfile.TemporaryDirectory(prefix="g33-abc.") as td:
+        out = Path(td) / "abc"
+        r = subprocess.run(["python3", str(WRAP), "--algo", "legacy", "--out", str(out)],
+                           capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, f"abc wrapper failed:\n{r.stdout}\n{r.stderr}"
+        man = json.loads((out / "abc_manifest.json").read_text())
+        assert man["abc_equal"] is True and man["op_record_count"] > 0
+        # raw streams persisted and re-checkable against the manifest.
+        for c in ("A", "B", "C"):
+            raw = (out / c / "stdout.g33f").read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == man["stdout_sha256"][c]
+        assert (out / "C" / "normalized_ops.json").is_file()
+        assert man["executable_sha256"]["A"] != man["executable_sha256"]["C"]
+
+
 def test_run_wrapper_writes_complete_manifest():
     # end-to-end: build + run + strict-parse + decision-grade run_manifest.json.
     WRAP = ROOT / "harness" / "g33_fortran" / "run_fortran_case.py"
