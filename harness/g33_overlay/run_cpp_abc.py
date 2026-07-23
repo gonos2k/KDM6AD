@@ -29,7 +29,9 @@ def main() -> None:
     build = args.out.with_name(args.out.name + "-build")
     if build.exists():
         raise SystemExit(f"build path already exists (refusing): {build}")
-    build.mkdir(parents=True)
+    # selfcheck_build.sh creates the dir itself and REFUSES a pre-existing one, so
+    # the parent must exist but the build dir must not — do not mkdir it here.
+    build.parent.mkdir(parents=True, exist_ok=True)
     r = subprocess.run(["bash", str(HERE / "selfcheck_build.sh"), str(build)], cwd=ROOT)
     if r.returncode != 0:
         raise SystemExit("C++ ABC build failed")
