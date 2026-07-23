@@ -85,11 +85,18 @@ from those fields without mutating them. This is not assumed silently:
   first diverge at the **same shared** expression family, with `outer_pre_sed` and
   `substep_pre` (work1/workn/mstep/gate) equal.
 - **FAIL** — the conservative pair's first divergence is at a **conservative-only**
-  ρΔz operation (`dq_in`, no-clamp update) absent from the legacy pair.
+  arithmetic rung (ρΔz mass inflow, Δz number inflow, rate accumulation, capped
+  TOP depletion, no-clamp update). **One-sentence definition (owner-pinned):**
+  G3.3-M FAILs iff the conservative pair's first cross-tree divergence lands in
+  conservative-only arithmetic — *any* such mismatch fails, even when the legacy
+  pair also diverges at its corresponding variant-specific rung in parallel; the
+  legacy pair is a label, not a mitigating control.
 - **INCONCLUSIVE** — `outer_pre_sed` or `substep_pre` already differ (upstream /
   fall-speed / gating divergence, incl. any `ccn0`/`scale_h` mismatch); the first
-  divergence is in a non-instrumented species/stage; or the surface causal set
-  cannot be closed.
+  divergence is a **causal carry** or **external input** (grid metric / baked
+  constant such as `delz_bottom`/`surface_denr`, not yet sealed by preflight); it
+  is in a non-instrumented / out-of-scope species or output (`bottom_fall_qs/qg/qi`,
+  snow/graupel increment); or the surface causal set cannot be closed.
 
 A G3.3-M PASS certifies only that the observed Fortran↔C++ difference did **not
 originate in conservative-only arithmetic**. It never licenses "conservative-

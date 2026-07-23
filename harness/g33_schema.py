@@ -57,3 +57,47 @@ def field_dtype(algorithm: str, role: str, op_id: str, field: str) -> str:
         if f == field:
             return dt
     raise KeyError(f"{op_id}.{field} not in schema for {algorithm}/{role}")
+
+
+# ── SINGLE ORDERING AUTHORITY ────────────────────────────────────────────────
+# The comparator, the Fortran parser and the C++ normalizer must all take the
+# canonical total order from HERE — duplicating it (as an ad-hoc _SPECIES_RANK or
+# _SURFACE_ORDER in the comparator) is exactly how the surface-output field set
+# drifted. Species order is g33_expectation's chain schedule (main then ice); the
+# stage/surface orders are the COMMON semantic projection target both backends map
+# onto (Fortran canonical names / C++ native fields projected to these).
+_SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[chain]]
+
+# The COMMON, cross-backend BIT-COMPARABLE fields only. Two exclusions are
+# deliberate: `dtcld` is f32 in Fortran but f64 in C++ (dtcld_effective) — a raw
+# bit-compare across widths is meaningless, and any dtcld effect on the ladder is
+# caught by the ops themselves; `surface_denr` is a Fortran-only external constant
+# with no C++ counterpart. Both backends' normalizers project onto exactly this
+# set, so the F↔C++ identity universes match.
+_SEMANTIC_STAGE_FIELDS = {
+    "outer_pre_sed": ["qr", "nr", "qv", "t", "rho", "delz"],
+    "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
+                    "gate", "mstep"],
+    "surface": ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
+                "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
+                "rain_increment", "snow_increment", "graupel_increment"],
+}
+
+
+def species_rank(species: str) -> int:
+    return _SPECIES_ORDER.index(species)
+
+
+def semantic_stage_fields(stage: str) -> list[str]:
+    return list(_SEMANTIC_STAGE_FIELDS[stage])
+
+
+def stage_field_ordinal(stage: str, field: str) -> int:
+    """Canonical index of a field within a stage; unknown fields sort last (stably
+    by name) so a malformed record never silently steals the 'first divergence'."""
+    fields = _SEMANTIC_STAGE_FIELDS[stage]
+    return fields.index(field) if field in fields else len(fields)
+
+
+def semantic_surface_fields() -> list[str]:
+    return list(_SEMANTIC_STAGE_FIELDS["surface"])

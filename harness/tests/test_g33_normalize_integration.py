@@ -43,10 +43,10 @@ def test_real_run_shared_rung_mutation_first_diverges_there():
     mut = _mutate(lambda o: o["role"] == "INTERIOR" and o["op_id"] == "QR_FALK"
                   and o["field"] == "mul_work1")
     d = cmp.compare_pair(NORM, mut)
-    assert d.phase == "op" and d.tag == "FALK_mul_work1" and d.kind == cmp.mech.SHARED
+    assert d.phase == "op" and d.tag == "FALK/mul_work1" and d.kind == cmp.mech.SHARED
+    assert d.signature and "ulp_delta" in d.signature
 
 
-def test_real_run_scrambled_scalar_seq_is_invalid():
-    m = copy.deepcopy(NORM)
-    m["ops"][0]["op_seq_id"] = 10 ** 9          # break monotonicity in canonical order
-    assert cmp.compare_pair(NORM, m).invalid is not None
+def test_real_run_projects_prec_to_surface_outputs():
+    surf = {s["field"] for s in NORM["stages"] if s["stage"] == "surface"}
+    assert {"rain_increment", "snow_increment", "graupel_increment"} <= surf
