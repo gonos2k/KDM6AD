@@ -143,6 +143,8 @@ class FortranRunError(ValueError):
 @dataclass(frozen=True)
 class OpRecord:
     op_seq_id: int
+    loop: int
+    chain: str
     n: int
     col: int
     k: int
@@ -152,6 +154,17 @@ class OpRecord:
     field: str
     dtype: str
     bits: int
+
+
+# The exact field universes the driver emits (fail-closed against these).
+_STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
+                 "nccn", "nc", "ni", "nr", "bg")
+_FIXIN_FIELDS = _STATE_FIELDS + ("rho", "pii", "p", "delz")
+_COMMON_PARAMS = ("dt", "ncmin_land", "ncmin_sea", "qmin")
+
+
+def _signed_i32(u):
+    return u - 0x100000000 if u >= 0x80000000 else u
 
 
 @dataclass(frozen=True)
@@ -197,59 +210,111 @@ def _expected_op_universe(algo, K, B, mstep):
 
 def parse_fortran_run(text, algo, K, B):
     from collections import Counter
-    begins = [m.group(1) for line in text.splitlines() if (m := _BEGIN.match(line))]
-    ends = [m.group(1) for line in text.splitlines() if (m := _END.match(line))]
+    lines = text.splitlines()
+    begins = [m.group(1) for line in lines if (m := _BEGIN.match(line))]
+    ends = [m.group(1) for line in lines if (m := _END.match(line))]
     if begins != [algo]:
         raise FortranRunError(f"expected exactly one 'G33F BEGIN v1 {algo}', got {begins}")
     if ends != [algo]:
         raise FortranRunError(f"expected exactly one 'G33F END v1 {algo}', got {ends}")
 
     # every G33F-prefixed line MUST match a known record — never silently skipped.
-    for line in text.splitlines():
+    for line in lines:
         if line.startswith("G33F") and not any(p.match(line) for p in _KNOWN):
             raise FortranRunError(f"malformed/unknown G33F line: {line!r}")
 
-    mstep = parse_mstep(text)
-    if set(mstep) != set(range(1, B + 1)):
-        raise FortranRunError(f"MSTEP must cover columns 1..{B}, got {sorted(mstep)}")
-    if any(v < 1 for v in mstep.values()):
-        raise FortranRunError(f"mstep < 1: {mstep}")
+    # BRACKETING: the whole stream must be BEGIN, then FIXIN/PARAM, then
+    # MSTEP/OP, then STATE/PREC, then END — no stale append or spliced run.
+    def _phase(line):
+        if _BEGIN.match(line):
+            return 0
+        if _FIXIN.match(line) or _PARAM.match(line):
+            return 1
+        if _MSTEP.match(line) or _OP.match(line):
+            return 2
+        if _STATE.match(line) or _PREC.match(line):
+            return 3
+        return 4                                      # _END
+    phases = [_phase(line) for line in lines if line.startswith("G33F")]
+    if phases != sorted(phases):
+        raise FortranRunError("G33F records out of phase order "
+                              "(BEGIN < FIXIN/PARAM < MSTEP/OP < STATE/PREC < END)")
+
+    # MSTEP: a SIGNED int32 in [1, 100] (the Fortran mstep cap), one per column.
+    mstep_raw = parse_mstep(text)
+    if set(mstep_raw) != set(range(1, B + 1)):
+        raise FortranRunError(f"MSTEP must cover columns 1..{B}, got {sorted(mstep_raw)}")
+    mstep = {c: _signed_i32(w) for c, w in mstep_raw.items()}
+    for c, v in mstep.items():
+        if not (1 <= v <= 100):
+            raise FortranRunError(f"mstep[{c}]={v} out of [1,100]")
 
     raw_ops = parse_ops(text)
+    _, seq = _expected_op_universe(algo, K, B, mstep)
     obs = Counter()
     for o in raw_ops:
+        if o["loop"] != 1 or o["chain"] != "main":
+            raise FortranRunError(f"op loop/chain must be 1/main: {o}")
         if not (1 <= o["col"] <= B):
             raise FortranRunError(f"op col out of range 1..{B}: {o}")
         if not (0 <= o["k"] <= K - 1):
             raise FortranRunError(f"op k out of range 0..{K-1}: {o}")
         if not (1 <= o["n"] <= mstep[o["col"]]):
-            raise FortranRunError(f"op n out of gate 1..mstep[{o['col']}]={mstep[o['col']]}: {o}")
+            raise FortranRunError(f"op n out of gate 1..mstep[{o['col']}]: {o}")
         obs[(o["n"], o["col"], o["k"], o["op"], o["field"], o["dtype"])] += 1
 
-    want, seq = _expected_op_universe(algo, K, B, mstep)
+    want, _ = _expected_op_universe(algo, K, B, mstep)
     if obs != want:
-        missing = want - obs
-        extra = obs - want
+        missing, extra = want - obs, obs - want
         raise FortranRunError(
             f"op multiset != expected universe: {sum(missing.values())} missing "
             f"(e.g. {next(iter(missing), None)}), {sum(extra.values())} extra "
             f"(e.g. {next(iter(extra), None)})")
 
+    # RAW ORDER: each (col, n, k) cell's op records must be a CONTIGUOUS block in
+    # the stream — a producer may not scatter a cell's rungs across the run. (The
+    # physical emission order is deterministic but not the canonical op_seq order:
+    # legacy emits the nr update before the qr update, and the top cell before the
+    # interior loop; within one cell the field order is irrelevant because the
+    # comparator keys every rung by its canonical op_seq. So contiguity — not
+    # global monotonicity — is the integrity invariant, and it catches any record
+    # moved out of its cell, a spliced run, or an interleaved second stream.)
+    seen_cells = set()
+    prev_cell = None
+    for o in raw_ops:
+        cell = (o["col"], o["n"], o["k"])
+        if cell != prev_cell:
+            if cell in seen_cells:
+                raise FortranRunError(f"op records for cell {cell} are not contiguous")
+            seen_cells.add(cell)
+            prev_cell = cell
+
     ops = tuple(sorted(
         (OpRecord(op_seq_id=seq[(o["n"], o["k"], o["op"], o["field"], o["dtype"])],
-                  n=o["n"], col=o["col"], k=o["k"], cell_role=cell_role(o["k"], K),
-                  species=species_of(o["op"]), op_id=o["op"], field=o["field"],
-                  dtype=o["dtype"], bits=o["bits"])
+                  loop=o["loop"], chain=o["chain"], n=o["n"], col=o["col"], k=o["k"],
+                  cell_role=cell_role(o["k"], K), species=species_of(o["op"]),
+                  op_id=o["op"], field=o["field"], dtype=o["dtype"], bits=o["bits"])
          for o in raw_ops),
         key=lambda r: (r.col, r.op_seq_id)))
 
     state = parse_state(text)
-    _require_unique(state, _STATE, text, "STATE")
+    exp_state = {(f, c, k) for f in _STATE_FIELDS
+                 for c in range(1, B + 1) for k in range(K)}
+    _require_exact(state, exp_state, _STATE, text, "STATE")
     precip = parse_prec(text)
-    _require_unique(precip, _PREC, text, "PREC")
-    params = parse_param(text)
+    exp_prec = {(fam, c) for fam in (1, 2, 3) for c in range(1, B + 1)}
+    _require_exact(precip, exp_prec, _PREC, text, "PREC")
     fixin = parse_fixin(text)
-    _require_unique(fixin, _FIXIN, text, "FIXIN")
+    exp_fixin = {(f, c, k) for f in _FIXIN_FIELDS
+                 for c in range(1, B + 1) for k in range(K)}
+    exp_fixin |= {("xland", c, -1) for c in range(1, B + 1)}
+    _require_exact(fixin, exp_fixin, _FIXIN, text, "FIXIN")
+    params = parse_param(text)
+    n_param_raw = sum(1 for line in lines if _PARAM.match(line))
+    if n_param_raw != len(params):
+        raise FortranRunError(f"PARAM: {n_param_raw - len(params)} duplicate key(s)")
+    if set(params) != set(_COMMON_PARAMS):
+        raise FortranRunError(f"PARAM names {sorted(params)} != {sorted(_COMMON_PARAMS)}")
 
     fx = "".join(f"{f}:{c}:{k}:{b:08x}" for (f, c, k), b in sorted(fixin.items()))
     pr = "".join(f"{n}:{b:08x}" for n, b in sorted(params.items()))
@@ -261,12 +326,17 @@ def parse_fortran_run(text, algo, K, B):
                       ops=ops, state=state, precip=precip, fixin=fixin, params=params)
 
 
-def _require_unique(parsed, pattern, text, label):
-    """A dict parser silently overwrites duplicate keys — count raw matches and
-    fail if any key appeared more than once."""
+def _require_exact(parsed, expected, pattern, text, label):
+    """No duplicate keys (dicts silently overwrite) AND the key set is EXACTLY
+    the expected universe — missing / extra / wrong-index all fail."""
     n_raw = sum(1 for line in text.splitlines() if pattern.match(line))
     if n_raw != len(parsed):
         raise FortranRunError(f"{label}: {n_raw - len(parsed)} duplicate key(s)")
+    if set(parsed) != expected:
+        missing, extra = expected - set(parsed), set(parsed) - expected
+        raise FortranRunError(
+            f"{label}: {len(missing)} missing (e.g. {next(iter(missing), None)}), "
+            f"{len(extra)} extra (e.g. {next(iter(extra), None)})")
 
 
 def verify_offline_replay(run):
