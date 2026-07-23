@@ -88,16 +88,20 @@ def main():
         _write(os.path.join(sub, "stderr.txt"), se)
         out[name] = {"exe": exe, "stdout": so, "stderr": se}
 
-    state = {n: fd.parse_state(out[n]["stdout"].decode()) for n in cases}
-    precip = {n: fd.parse_prec(out[n]["stdout"].decode()) for n in cases}
-    abc_equal = (state["A"] == state["B"] == state["C"]
-                 and precip["A"] == precip["B"] == precip["C"])
+    # A/B/C all go through the SAME strict parser (A/B in noninstrumented mode:
+    # zero MSTEP/OP but the same bracketed, exact-universe, finite, domain-valid
+    # inputs/state) — a malformed A/B stream can no longer masquerade as a clean
+    # non-invasiveness result.
+    runs = {n: fd.parse_fortran_run(
+        out[n]["stdout"].decode(), args.algo, K=K, B=B,
+        evidence_mode="instrumented" if n == "C" else "noninstrumented")
+        for n in cases}
+    abc_equal = (runs["A"].state == runs["B"].state == runs["C"].state
+                 and runs["A"].precip == runs["B"].precip == runs["C"].precip)
     if not abc_equal:
         raise SystemExit("A/B/C final state or precip differ — NOT non-invasive")
-    if fd.parse_ops(out["A"]["stdout"].decode()) or fd.parse_ops(out["B"]["stdout"].decode()):
-        raise SystemExit("A or B emitted op records (must be zero)")
 
-    parsed = fd.parse_fortran_run(out["C"]["stdout"].decode(), args.algo, K=K, B=B)
+    parsed = runs["C"]
     fd.verify_offline_replay(parsed)
     if parsed.fixture_sha256 != fixture.fixture_sha256(authority):
         raise SystemExit("C FIXIN differs from the shared authority")
@@ -106,11 +110,32 @@ def main():
     if parsed.local_parameter_sha256 != fixture.fortran_parameter_sha256(authority):
         raise SystemExit("C ccn0/scale_h differ from the authority")
 
-    _write(os.path.join(args.out, "C", "normalized_ops.json"),
-           json.dumps([dataclasses.asdict(o) for o in parsed.ops], indent=1))
-    build = json.load(open(os.path.join(args.out, "C", "provenance.json")))
+    # Bind A/B/C BUILD provenance into the root, and enforce the cross-build
+    # invariants that make A/B/C the same numerical problem (owner P0-4):
+    prov = {n: json.load(open(os.path.join(args.out, n, "provenance.json")))
+            for n in cases}
+    _hw = {"f32": 8, "f64": 16, "u8": 2}
+    if prov["A"]["module_compiled_sha256"] != prov["A"]["module_canonical_sha256"]:
+        raise SystemExit("A did not compile the canonical module")
+    if prov["B"]["module_compiled_sha256"] != prov["C"]["module_compiled_sha256"]:
+        raise SystemExit("B and C did not compile the same generated overlay")
+    for field in ("module_canonical_sha256", "compiler_binary_sha256",
+                  "host_source_sha256", "harness_source_sha256"):
+        if not (prov["A"][field] == prov["B"][field] == prov["C"][field]):
+            raise SystemExit(f"A/B/C differ in {field}")
+
+    # normalized_ops is a DEBUG cache, not the authority (the comparator re-reads
+    # C/stdout.g33f); bits are dtype-width hex (JSON decimals lose f64 precision).
+    def _op_json(o):
+        d = dataclasses.asdict(o)
+        d["bits"] = f"{o.bits:0{_hw[o.dtype]}x}"
+        return d
+    norm = json.dumps([_op_json(o) for o in parsed.ops], indent=1).encode()
+    _write(os.path.join(args.out, "C", "normalized_ops.json"), norm)
+
+    build = prov["C"]
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "algorithm": args.algo,
         "repo_commit": _git("rev-parse", "HEAD"),
         "repo_dirty": bool(_git("status", "--porcelain")),
@@ -125,6 +150,13 @@ def main():
         "executable_sha256": {n: _sha_path(out[n]["exe"]) for n in cases},
         "stdout_sha256": {n: _sha(out[n]["stdout"]) for n in cases},
         "stderr_sha256": {n: _sha(out[n]["stderr"]) for n in cases},
+        "build_provenance_sha256": {n: _sha_path(
+            os.path.join(args.out, n, "provenance.json")) for n in cases},
+        "normalized_ops_sha256": _sha(norm),
+        "normalized_ops_source_stdout_sha256": _sha(out["C"]["stdout"]),
+        "module_canonical_sha256": build["module_canonical_sha256"],
+        "module_compiled_sha256": {"A": prov["A"]["module_compiled_sha256"],
+                                   "BC": prov["C"]["module_compiled_sha256"]},
         "compiler_path": build["compiler_path"],
         "compiler_binary_sha256": build["compiler_binary_sha256"],
         "compiler_version": build["compiler_version"],

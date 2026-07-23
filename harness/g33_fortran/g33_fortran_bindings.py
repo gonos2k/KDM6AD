@@ -200,6 +200,41 @@ FIELD_EXPR = {
 # recompute would match its own operands vacuously.
 POST_FIELDS = ("q_post", "n_post")
 
+# ── pre-sed STAGE snapshots (owner P0-7): so the comparator can tell a divergence
+# BORN in sedimentation from one already present at sed entry / in the fall-speed
+# + gating chain. Emitted as injected whole-K loops (variant-independent — the
+# sed-entry variables are the same in both). Fortran has NO density/thickness
+# floor, so dend_raw==dend_safe and delz_raw==delz_safe; qcrmin has no Fortran
+# counterpart in kdm62D and is intentionally omitted.
+STAGE_ANCHOR = "      do n = 1, mstepmax"
+OUTER_PRE_SED = [   # whole-K, once, before the sub-cycle (n=0)
+    ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
+    ("qv", "f32", "q(i,k)"), ("t", "f32", "t(i,k)"),
+    ("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)"),
+]
+SUBSTEP_PRE_K = [   # whole-K, per substep n
+    ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
+    ("work1_qr", "f64", "work1(i,k,1)"), ("workn_qr", "f64", "workn(i,k,1)"),
+    ("dend_safe", "f32", "dend(i,k)"), ("delz_safe", "f32", "delz(i,k)"),
+]
+SUBSTEP_PRE_COL = [  # per-column scalar (k=-1), per substep n
+    ("mstep", "i32", "mstep(i)"), ("gate", "u8", "n.le.mstep(i)"),
+    ("dtcld", "f32", "dtcld"),
+]
+
+# ── surface causal operands (owner P0-8): the per-species bottom fall that feeds
+# rain/snow/graupel increments, so the qr-seed -> precip path is an operand set,
+# not just the final PREC. Emitted per column at the surface accumulation (k=-1).
+SURFACE_ANCHOR = "        fallsum = fall(i,kts,1)+fall(i,kts,2)+fall(i,kts,3)+fall(i,kts,4)"
+SURFACE_FIELDS = [
+    ("bottom_fall_qr", "f32", "fall(i,kts,1)"),
+    ("bottom_fall_qs", "f32", "fall(i,kts,2)"),
+    ("bottom_fall_qg", "f32", "fall(i,kts,3)"),
+    ("bottom_fall_qi", "f32", "fall(i,kts,4)"),
+    ("bottom_fall_total", "f32", "fallsum"),
+    ("delz_bottom", "f32", "delz(i,kts)"),
+]
+
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [

@@ -22,6 +22,9 @@ _OP = re.compile(
     r"^G33FOP\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s+(\S+)\s+(\S+)\s+"
     r"(f32|f64|u8)\s+([0-9A-Fa-f]+)$")
 _MSTEP = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
+_STAGE = re.compile(
+    r"^G33F STAGE\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+"
+    r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -30,7 +33,7 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _BEGIN = re.compile(r"^G33F BEGIN v1 (\S+)$")
 _END = re.compile(r"^G33F END v1 (\S+)$")
 
-_HEXWIDTH = {"f32": 8, "f64": 16, "u8": 2}
+_HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
 
 def parse_ops(text):
@@ -104,6 +107,20 @@ def parse_mstep(text):
     return ms
 
 
+def parse_stage(text):
+    """(stage, n, field, col, k_top) -> (dtype, bits) for the pre-sed snapshots."""
+    st = {}
+    for line in text.splitlines():
+        m = _STAGE.match(line)
+        if m:
+            dtype, hexbits = m.group(6), m.group(7)
+            if len(hexbits) != _HEXWIDTH[dtype]:
+                raise ValueError(f"{dtype} stage payload width: {line!r}")
+            st[(m.group(1), int(m.group(2)), m.group(3), int(m.group(4)),
+                int(m.group(5)))] = (dtype, int(hexbits, 16))
+    return st
+
+
 # ── canonicalization for the four-case comparator ─────────────────────────────
 # Mirror g33_expectation._cell_role (canonical top-first) + the QR_/NR_ split.
 def cell_role(k, K):
@@ -138,7 +155,9 @@ def to_records(text, K):
 # in-range indices, exactly one BEGIN/END. A missing record, a duplicate, a
 # whole cell/column/substep dropped, a reordered or malformed line all raise.
 import hashlib as _hashlib          # noqa: E402
+import math as _math                # noqa: E402
 import os as _os                    # noqa: E402
+import struct as _struct            # noqa: E402
 import sys as _sys                  # noqa: E402
 from dataclasses import dataclass    # noqa: E402
 
@@ -153,6 +172,7 @@ class FortranRunError(ValueError):
 @dataclass(frozen=True)
 class OpRecord:
     op_seq_id: int
+    scalar_seq_id: int   # op_seq_id*B + (col-1): the SINGLE cross-tree total order
     loop: int
     chain: str
     n: int
@@ -178,6 +198,70 @@ def _signed_i32(u):
     return u - 0x100000000 if u >= 0x80000000 else u
 
 
+def _f32(bits):
+    return _struct.unpack(">f", bits.to_bytes(4, "big"))[0]
+
+
+def _f64(bits):
+    return _struct.unpack(">d", bits.to_bytes(8, "big"))[0]
+
+
+def _validate_stages(stages, n_raw, mstep, K, B):
+    """Exact pre-sed STAGE universe from mstep + the schema (owner P0-7): once
+    outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
+    if n_raw != len(stages):
+        raise FortranRunError(f"STAGE: {n_raw - len(stages)} duplicate key(s)")
+    exp = {("outer_pre_sed", 0, f, c, k) for f in _OUTER_PRE_SED_FIELDS
+           for c in range(1, B + 1) for k in range(K)}
+    for n in range(1, max(mstep.values()) + 1):
+        for c in range(1, B + 1):
+            exp |= {("substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
+            exp |= {("substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
+                    for k in range(K)}
+    exp |= {("surface", 0, f, c, -1) for f in _SURFACE_FIELDS
+            for c in range(1, B + 1)}
+    if set(stages) != exp:
+        missing, extra = exp - set(stages), set(stages) - exp
+        raise FortranRunError(
+            f"STAGE universe: {len(missing)} missing (e.g. {next(iter(missing), None)}), "
+            f"{len(extra)} extra (e.g. {next(iter(extra), None)})")
+    for (stage, n, f, c, k), (dt, b) in stages.items():
+        if dt != _STAGE_DTYPE[f]:
+            raise FortranRunError(f"STAGE {stage}.{f} dtype {dt} != {_STAGE_DTYPE[f]}")
+        if dt == "f32" and not _math.isfinite(_f32(b)):
+            raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+        if dt == "f64" and not _math.isfinite(_f64(b)):
+            raise FortranRunError(f"STAGE {stage}.{f} col={c} k={k} not finite")
+
+
+def _validate_domain(fixin, params, localparams, state, precip, B, K):
+    """Every f32 must be finite, and the arithmetic-synthetic input metrics must
+    be physically well-formed. A one-line authority edit that produced a NaN or a
+    non-positive metric must NOT be certified as a valid run (owner P0-3)."""
+    for label, d in (("FIXIN", fixin), ("STATE", state), ("PREC", precip),
+                     ("PARAM", params), ("LOCALPARAM", localparams)):
+        for key, b in d.items():
+            if not _math.isfinite(_f32(b)):
+                raise FortranRunError(f"{label} {key} is not finite")
+    for name in ("dt", "qmin", "ncmin_land", "ncmin_sea"):
+        if _f32(params[name]) <= 0.0:
+            raise FortranRunError(f"PARAM {name} must be > 0")
+    nonneg = ("qv", "qc", "qr", "qi", "qs", "qg", "bg", "nccn", "nc", "ni", "nr")
+    for c in range(1, B + 1):
+        for k in range(K):
+            for pos in ("rho", "pii", "p", "delz"):
+                if _f32(fixin[(pos, c, k)]) <= 0.0:
+                    raise FortranRunError(f"FIXIN {pos} col={c} k={k} must be > 0")
+            for nn in nonneg:
+                if _f32(fixin[(nn, c, k)]) < 0.0:
+                    raise FortranRunError(f"FIXIN {nn} col={c} k={k} must be >= 0")
+        ps = [_f32(fixin[("p", c, k)]) for k in range(K)]  # top-first: k=0 top
+        if any(ps[k] >= ps[k + 1] for k in range(K - 1)):
+            raise FortranRunError(f"FIXIN p col={c} not strictly increasing downward: {ps}")
+        if _f32(fixin[("xland", c, -1)]) not in (1.0, 2.0):
+            raise FortranRunError(f"FIXIN xland col={c} must be 1 or 2")
+
+
 @dataclass(frozen=True)
 class FortranRun:
     algorithm: str
@@ -188,6 +272,7 @@ class FortranRun:
     parameter_sha256: str        # over the common PARAM scalars only
     local_parameter_sha256: str  # over the ACTUAL-runtime LOCALPARAM (ccn0/scale_h)
     ops: tuple             # OpRecord, in canonical op_seq order
+    stages: dict           # (stage, n, field, col, k) -> (dtype, bits)
     state: dict            # (field, col, k) -> bits
     precip: dict           # (family, col) -> bits
     fixin: dict            # (field, col, k) -> bits
@@ -195,7 +280,20 @@ class FortranRun:
     localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
+_KNOWN = (_OP, _MSTEP, _STAGE, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC,
+          _BEGIN, _END)
+
+# pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
+_OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
+_SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
+_SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
+_SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
+                   "bottom_fall_qi", "bottom_fall_total", "delz_bottom")
+_STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
+                "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
+                "dend_safe": "f32", "delz_safe": "f32",
+                "mstep": "i32", "gate": "u8", "dtcld": "f32",
+                **{f: "f32" for f in _SURFACE_FIELDS}}
 
 
 def _expected_op_universe(algo, K, B, mstep):
@@ -221,8 +319,15 @@ def _expected_op_universe(algo, K, B, mstep):
     return want, seq
 
 
-def parse_fortran_run(text, algo, K, B):
+def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
+    """Strict fail-closed parse. evidence_mode 'instrumented' (the dump build C)
+    requires the MSTEP + op ladder; 'noninstrumented' (A canonical / B macro-off)
+    requires ZERO mstep + ZERO ops. Both require the same bracketed, exact-universe,
+    finite, domain-valid FIXIN/PARAM/LOCALPARAM/STATE/PREC — so A/B are held to the
+    SAME parser surface as C (owner P0-2), never a loose collector."""
     from collections import Counter
+    if evidence_mode not in ("instrumented", "noninstrumented"):
+        raise ValueError(f"bad evidence_mode {evidence_mode!r}")
     lines = text.splitlines()
     begins = [m.group(1) for line in lines if (m := _BEGIN.match(line))]
     ends = [m.group(1) for line in lines if (m := _END.match(line))]
@@ -243,7 +348,7 @@ def parse_fortran_run(text, algo, K, B):
             return 0
         if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
-        if _MSTEP.match(line) or _OP.match(line):
+        if _MSTEP.match(line) or _OP.match(line) or _STAGE.match(line):
             return 2
         if _STATE.match(line) or _PREC.match(line):
             return 3
@@ -253,62 +358,83 @@ def parse_fortran_run(text, algo, K, B):
         raise FortranRunError("G33F records out of phase order "
                               "(BEGIN < FIXIN/PARAM < MSTEP/OP < STATE/PREC < END)")
 
-    # MSTEP: a SIGNED int32 in [1, 100] (the Fortran mstep cap), one per column.
-    mstep_raw = parse_mstep(text)
-    if set(mstep_raw) != set(range(1, B + 1)):
-        raise FortranRunError(f"MSTEP must cover columns 1..{B}, got {sorted(mstep_raw)}")
-    mstep = {c: _signed_i32(w) for c, w in mstep_raw.items()}
-    for c, v in mstep.items():
-        if not (1 <= v <= 100):
-            raise FortranRunError(f"mstep[{c}]={v} out of [1,100]")
-
+    n_mstep_raw = sum(1 for line in lines if _MSTEP.match(line))
     raw_ops = parse_ops(text)
-    _, seq = _expected_op_universe(algo, K, B, mstep)
-    obs = Counter()
-    for o in raw_ops:
-        if o["loop"] != 1 or o["chain"] != "main":
-            raise FortranRunError(f"op loop/chain must be 1/main: {o}")
-        if not (1 <= o["col"] <= B):
-            raise FortranRunError(f"op col out of range 1..{B}: {o}")
-        if not (0 <= o["k"] <= K - 1):
-            raise FortranRunError(f"op k out of range 0..{K-1}: {o}")
-        if not (1 <= o["n"] <= mstep[o["col"]]):
-            raise FortranRunError(f"op n out of gate 1..mstep[{o['col']}]: {o}")
-        obs[(o["n"], o["col"], o["k"], o["op"], o["field"], o["dtype"])] += 1
 
-    want, _ = _expected_op_universe(algo, K, B, mstep)
-    if obs != want:
-        missing, extra = want - obs, obs - want
-        raise FortranRunError(
-            f"op multiset != expected universe: {sum(missing.values())} missing "
-            f"(e.g. {next(iter(missing), None)}), {sum(extra.values())} extra "
-            f"(e.g. {next(iter(extra), None)})")
+    if evidence_mode == "noninstrumented":
+        if n_mstep_raw or raw_ops:
+            raise FortranRunError(
+                f"noninstrumented run must emit no MSTEP/OP, got "
+                f"{n_mstep_raw} MSTEP + {len(raw_ops)} op records")
+        mstep, ops = {}, ()
+    else:
+        # MSTEP: exactly B records (no duplicate/stale), each a SIGNED int32 in
+        # [1,100] (the Fortran cap), covering columns 1..B.
+        mstep_raw = parse_mstep(text)
+        if n_mstep_raw != B:
+            raise FortranRunError(f"MSTEP has {n_mstep_raw} records, expected exactly {B}")
+        if set(mstep_raw) != set(range(1, B + 1)):
+            raise FortranRunError(f"MSTEP must cover columns 1..{B}, got {sorted(mstep_raw)}")
+        mstep = {c: _signed_i32(w) for c, w in mstep_raw.items()}
+        for c, v in mstep.items():
+            if not (1 <= v <= 100):
+                raise FortranRunError(f"mstep[{c}]={v} out of [1,100]")
 
-    # RAW ORDER: each (col, n, k) cell's op records must be a CONTIGUOUS block in
-    # the stream — a producer may not scatter a cell's rungs across the run. (The
-    # physical emission order is deterministic but not the canonical op_seq order:
-    # legacy emits the nr update before the qr update, and the top cell before the
-    # interior loop; within one cell the field order is irrelevant because the
-    # comparator keys every rung by its canonical op_seq. So contiguity — not
-    # global monotonicity — is the integrity invariant, and it catches any record
-    # moved out of its cell, a spliced run, or an interleaved second stream.)
-    seen_cells = set()
-    prev_cell = None
-    for o in raw_ops:
-        cell = (o["col"], o["n"], o["k"])
-        if cell != prev_cell:
-            if cell in seen_cells:
-                raise FortranRunError(f"op records for cell {cell} are not contiguous")
-            seen_cells.add(cell)
-            prev_cell = cell
+        _, seq = _expected_op_universe(algo, K, B, mstep)
+        obs = Counter()
+        for o in raw_ops:
+            if o["loop"] != 1 or o["chain"] != "main":
+                raise FortranRunError(f"op loop/chain must be 1/main: {o}")
+            if not (1 <= o["col"] <= B):
+                raise FortranRunError(f"op col out of range 1..{B}: {o}")
+            if not (0 <= o["k"] <= K - 1):
+                raise FortranRunError(f"op k out of range 0..{K-1}: {o}")
+            if not (1 <= o["n"] <= mstep[o["col"]]):
+                raise FortranRunError(f"op n out of gate 1..mstep[{o['col']}]: {o}")
+            obs[(o["n"], o["col"], o["k"], o["op"], o["field"], o["dtype"])] += 1
+        want, _ = _expected_op_universe(algo, K, B, mstep)
+        if obs != want:
+            missing, extra = want - obs, obs - want
+            raise FortranRunError(
+                f"op multiset != expected universe: {sum(missing.values())} missing "
+                f"(e.g. {next(iter(missing), None)}), {sum(extra.values())} extra "
+                f"(e.g. {next(iter(extra), None)})")
 
-    ops = tuple(sorted(
-        (OpRecord(op_seq_id=seq[(o["n"], o["k"], o["op"], o["field"], o["dtype"])],
-                  loop=o["loop"], chain=o["chain"], n=o["n"], col=o["col"], k=o["k"],
-                  cell_role=cell_role(o["k"], K), species=species_of(o["op"]),
-                  op_id=o["op"], field=o["field"], dtype=o["dtype"], bits=o["bits"])
-         for o in raw_ops),
-        key=lambda r: (r.col, r.op_seq_id)))
+        # RAW ORDER: each (col,n,k) cell's op rungs must be a CONTIGUOUS block. The
+        # physical emission is deterministic but NOT canonical op_seq order (legacy
+        # emits the nr update before qr, top before interior); within a cell the
+        # field order is not verdict authority — the comparator re-keys every rung
+        # by its canonical op_seq. Contiguity is the integrity invariant and it
+        # rejects a rung moved out of its cell, a spliced run, or an interleaved
+        # second stream. Phase-order + this catch the meaningful reorderings.
+        seen_cells, prev_cell = set(), None
+        for o in raw_ops:
+            cell = (o["col"], o["n"], o["k"])
+            if cell != prev_cell:
+                if cell in seen_cells:
+                    raise FortranRunError(f"op records for cell {cell} are not contiguous")
+                seen_cells.add(cell)
+                prev_cell = cell
+
+        # SCALAR canonical order: op_seq_id OUTER, column lane INNER — the single
+        # total order both trees scalarize to (C++ carries a [B] payload per
+        # logical record; a column-first order would pick a different first diff).
+        ops = tuple(sorted(
+            (OpRecord(op_seq_id=(sid := seq[(o["n"], o["k"], o["op"], o["field"], o["dtype"])]),
+                      scalar_seq_id=sid * B + (o["col"] - 1),
+                      loop=o["loop"], chain=o["chain"], n=o["n"], col=o["col"], k=o["k"],
+                      cell_role=cell_role(o["k"], K), species=species_of(o["op"]),
+                      op_id=o["op"], field=o["field"], dtype=o["dtype"], bits=o["bits"])
+             for o in raw_ops),
+            key=lambda r: r.scalar_seq_id))
+
+    stages = parse_stage(text)
+    n_stage_raw = sum(1 for line in lines if _STAGE.match(line))
+    if evidence_mode == "noninstrumented":
+        if n_stage_raw:
+            raise FortranRunError(f"noninstrumented run emitted {n_stage_raw} STAGE records")
+    else:
+        _validate_stages(stages, n_stage_raw, mstep, K, B)
 
     state = parse_state(text)
     exp_state = {(f, c, k) for f in _STATE_FIELDS
@@ -326,6 +452,7 @@ def parse_fortran_run(text, algo, K, B):
     _require_names(params, _COMMON_PARAMS, _PARAM, lines, "PARAM")
     localparams = parse_localparam(text)
     _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
+    _validate_domain(fixin, params, localparams, state, precip, B, K)
 
     def _sha(s):
         return _hashlib.sha256(s.encode()).hexdigest()
@@ -339,7 +466,7 @@ def parse_fortran_run(text, algo, K, B):
     return FortranRun(algorithm=algo, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
-                      ops=ops, state=state, precip=precip, fixin=fixin,
+                      ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,
                       params=params, localparams=localparams)
 
 

@@ -32,8 +32,29 @@ import g33_fortran_bindings as fb  # noqa: E402
 _EMIT = {  # dtype -> (value expr wrapping the operand, Z format width)
     "f32": ("transfer({e}, 0)",   "Z8.8"),
     "f64": ("transfer({e}, 0_8)", "Z16.16"),
+    "i32": ("transfer({e}, 0)",   "Z8.8"),
     "u8":  ("merge(1, 0, {e})",   "Z2.2"),
 }
+
+
+def _stage_write(stage, n_expr, field, k_expr, dtype, expr):
+    val, zf = _EMIT[dtype]
+    return (f"{fb.IND}write(*,'(A,1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
+            f"'G33F STAGE {stage}', {n_expr}, '{field}', i, {k_expr}, "
+            f"'{dtype}', {val.format(e=expr)}")
+
+
+def _stage_block(stage, n_expr, col_fields, whole_k_fields):
+    """An injected whole-K emission loop for a pre-sed stage snapshot. Per-column
+    scalars (mstep/gate/dtcld) carry k=-1; whole-K fields carry top-first kte-k."""
+    lines = ["#ifdef KDM6_G33_FORTRAN_DUMP", f"{fb.IND}do i = its, ite"]
+    for field, dtype, expr in col_fields:
+        lines.append(_stage_write(stage, n_expr, field, "-1", dtype, expr))
+    lines.append(f"{fb.IND}  do k = kts, kte")
+    for field, dtype, expr in whole_k_fields:
+        lines.append(_stage_write(stage, n_expr, field, "kte-k", dtype, expr))
+    lines += [f"{fb.IND}  end do", f"{fb.IND}end do", "#endif"]
+    return lines
 
 
 def _validate_against_schema(algo):
@@ -99,7 +120,20 @@ def build_overlay(algo, text):
 
     edits = [(fb.DECL_ANCHOR, "after", fb.DECL_BLOCK),
              (cfg["cap_top"], "after", _cap_lines(top=True)),
-             (cfg["cap_int"], "after", _cap_lines(top=False))]
+             (cfg["cap_int"], "after", _cap_lines(top=False)),
+             # pre-sed snapshots at the sub-cycle boundary: outer_pre_sed once
+             # BEFORE `do n=1,mstepmax`, substep_pre per-n right AFTER it.
+             (fb.STAGE_ANCHOR, "before",
+              _stage_block("outer_pre_sed", "0", [], fb.OUTER_PRE_SED)),
+             (fb.STAGE_ANCHOR, "after",
+              _stage_block("substep_pre", "n", fb.SUBSTEP_PRE_COL, fb.SUBSTEP_PRE_K)),
+             # surface bottom-fall operands, per column, at the accumulation (k=-1;
+             # already inside `do i` so no injected loop).
+             (fb.SURFACE_ANCHOR, "after",
+              ["#ifdef KDM6_G33_FORTRAN_DUMP",
+               *[_stage_write("surface", "0", f, "-1", dt, e)
+                 for f, dt, e in fb.SURFACE_FIELDS],
+               "#endif"])]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
     for (role, species), anchor in cfg["post"].items():
