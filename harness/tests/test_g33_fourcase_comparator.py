@@ -135,8 +135,8 @@ def test_surface_out_of_scope_species_both_pairs_is_inconclusive():
 
 
 # ── P0-5: external input is not evidence corruption ───────────────────────────
-def test_surface_denr_external_input_is_inconclusive_not_invalid():
-    d = {"surface_denr": 0x1111}
+def test_delz_bottom_external_input_is_inconclusive_not_invalid():
+    d = {"delz_bottom": 0x1111}          # grid metric — a precondition, not a result
     r = cmp.adjudicate(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
                        _run("conservative", stages=_surface()),
                        _run("conservative", stages=_surface(d)))
