@@ -88,16 +88,20 @@ def main():
         _write(os.path.join(sub, "stderr.txt"), se)
         out[name] = {"exe": exe, "stdout": so, "stderr": se}
 
-    state = {n: fd.parse_state(out[n]["stdout"].decode()) for n in cases}
-    precip = {n: fd.parse_prec(out[n]["stdout"].decode()) for n in cases}
-    abc_equal = (state["A"] == state["B"] == state["C"]
-                 and precip["A"] == precip["B"] == precip["C"])
+    # A/B/C all go through the SAME strict parser (A/B in noninstrumented mode:
+    # zero MSTEP/OP but the same bracketed, exact-universe, finite, domain-valid
+    # inputs/state) — a malformed A/B stream can no longer masquerade as a clean
+    # non-invasiveness result.
+    runs = {n: fd.parse_fortran_run(
+        out[n]["stdout"].decode(), args.algo, K=K, B=B,
+        evidence_mode="instrumented" if n == "C" else "noninstrumented")
+        for n in cases}
+    abc_equal = (runs["A"].state == runs["B"].state == runs["C"].state
+                 and runs["A"].precip == runs["B"].precip == runs["C"].precip)
     if not abc_equal:
         raise SystemExit("A/B/C final state or precip differ — NOT non-invasive")
-    if fd.parse_ops(out["A"]["stdout"].decode()) or fd.parse_ops(out["B"]["stdout"].decode()):
-        raise SystemExit("A or B emitted op records (must be zero)")
 
-    parsed = fd.parse_fortran_run(out["C"]["stdout"].decode(), args.algo, K=K, B=B)
+    parsed = runs["C"]
     fd.verify_offline_replay(parsed)
     if parsed.fixture_sha256 != fixture.fixture_sha256(authority):
         raise SystemExit("C FIXIN differs from the shared authority")

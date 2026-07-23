@@ -231,6 +231,63 @@ def test_strict_parser_closeout_mutants():
             fd.parse_fortran_run(mut(fn), "legacy", K=4, B=3)
 
 
+def test_strict_parser_closeout2_mutants():
+    # PR#62A: duplicate MSTEP, A/B held to the strict parser (noninstrumented),
+    # finiteness/domain, and a PROPER cross-cell reorder.
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+
+    C = _build_and_run("legacy", overlay=True, dump=True)   # instrumented
+    A = _build_and_run("legacy")                            # canonical -> noninstrumented
+    fd.parse_fortran_run(C, "legacy", 4, 3)                                    # accepts
+    fd.parse_fortran_run(A, "legacy", 4, 3, evidence_mode="noninstrumented")   # accepts
+
+    cl = C.splitlines()
+    ms = next(i for i, l in enumerate(cl) if l.startswith("G33F MSTEP"))
+    fx = next(i for i, l in enumerate(cl) if l.startswith("G33F FIXIN qr"))
+    op0 = cl[next(i for i, l in enumerate(cl) if l.startswith("G33FOP"))]
+
+    def cmut(fn):
+        m = list(cl)
+        fn(m)
+        return "\n".join(m)
+
+    def move_op_to_end(m):                       # proper reorder: pop + reinsert late
+        i = next(j for j, l in enumerate(m) if l.startswith("G33FOP"))
+        line = m.pop(i)
+        j = next(k for k, l in enumerate(m) if l.startswith("G33F STATE"))
+        m.insert(j, line)
+
+    c_cases = {
+        "duplicate MSTEP": lambda m: m.insert(ms, m[ms]),
+        "conflicting MSTEP": lambda m: m.insert(ms, _set_tok(m[ms], 4, "00000002")),
+        "NaN FIXIN": lambda m: m.__setitem__(fx, _set_tok(m[fx], 6, "7FC00000")),
+        "cross-cell op reorder": move_op_to_end,
+    }
+    for name, fn in c_cases.items():
+        with pytest.raises(fd.FortranRunError):
+            fd.parse_fortran_run(cmut(fn), "legacy", 4, 3)
+
+    al = A.splitlines()
+    st = next(i for i, l in enumerate(al) if l.startswith("G33F STATE"))
+
+    def amut(fn):
+        m = list(al)
+        fn(m)
+        return "\n".join(m)
+
+    a_cases = {   # A is noninstrumented — the strict parser must still reject these
+        "op record in A": lambda m: m.insert(st, op0),
+        "malformed G33F in A": lambda m: m.insert(st, "G33F BOGUS 1 2 3"),
+        "duplicate STATE in A": lambda m: m.insert(st, m[st]),
+    }
+    for name, fn in a_cases.items():
+        with pytest.raises(fd.FortranRunError):
+            fd.parse_fortran_run(amut(fn), "legacy", 4, 3, evidence_mode="noninstrumented")
+
+
 @pytest.mark.parametrize("algo", ALGOS)
 def test_actual_vs_shadow_offline_replay(algo):
     # the ACTUAL stored q_post/n_post match an offline replay from the dumped
