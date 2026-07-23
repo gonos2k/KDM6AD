@@ -11,6 +11,9 @@ Normalized run (one per backend/variant):
   {"algorithm": "legacy"|"conservative",
    "ops":    [ {n,col,k,role,species,op_id,field,dtype,bits,op_seq_id}, ... ],
    "stages": [ {stage,n,col,k,field,dtype,bits}, ... ]}   # stage incl. surface
+  op_seq_id is the UNIQUE per-record total-order index (Fortran scalar_seq_id =
+  schema op_seq_id · B + column); it is cross-checked for monotonicity in the
+  schema-canonical order, never used to define that order.
 
 Design contract (owner P0 closeout):
   * Canonical execution order is re-derived from the SCHEMA ordinals, never
@@ -42,6 +45,11 @@ VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
 _PRESED = ("outer_pre_sed", "substep_pre")
+# Species rank in the authoritative schedule (g33_expectation _CHAIN_SPECIES:
+# main [qr,nr,qs,qg,brs] then ice [qi,ni]) — the total op order within a substep
+# is (k, species, op_ordinal, field_ordinal) with the column lane innermost.
+_SPECIES_RANK = {s: i for i, s in enumerate(
+    ["qr", "nr", "qs", "qg", "brs", "qi", "ni"])}
 # Explicit surface field order (P0-9): per-species operands, then the shared
 # species sum, then the shared metric inputs — NOT alphabetic.
 _SURFACE_ORDER = ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
@@ -82,9 +90,12 @@ def _events(run) -> list[Event]:
         if o["dtype"] != want_dt:
             raise StructuralError(
                 f"dtype mismatch {op_id}.{fld}: got {o['dtype']} want {want_dt}")
+        if sp not in _SPECIES_RANK:
+            raise StructuralError(f"unknown species {sp!r}")
         spec = mech.mechanism(algo, role, sp, op_id, fld)
+        # schema-canonical total order: (n, k, species, op, field, col) — col inner.
         out.append(Event(
-            order=(o["n"], 1, o["col"], o["k"], oo, fo),
+            order=(o["n"], 1, o["k"], _SPECIES_RANK[sp], oo, fo, o["col"]),
             phase="op",
             identity=("op", o["n"], o["col"], o["k"], role, sp, op_id, fld, o["dtype"]),
             shared_key=("op", o["n"], o["col"], o["k"], role, sp, spec.tag, o["dtype"]),
@@ -97,15 +108,15 @@ def _events(run) -> list[Event]:
             fo = _SURFACE_ORDER.index(fld) if fld in _SURFACE_ORDER else len(_SURFACE_ORDER)
             spec = mech.surface_mechanism(fld)
             out.append(Event(
-                order=(_SURFACE_N, 0, s["col"], 0, fo, 0),
+                order=(_SURFACE_N, 0, 0, 0, 0, fo, s["col"]),   # after every substep
                 phase="surface",
                 identity=("surface", s["n"], s["col"], s["k"], fld, s["dtype"]),
                 shared_key=("surface", s["col"], spec.tag, s["dtype"]),
                 kind=spec.kind, tag=spec.tag, bits=s["bits"], seq=None))
         else:                                     # outer_pre_sed | substep_pre(n)
-            n = 0 if stage == "outer_pre_sed" else s["n"]
+            n = 0 if stage == "outer_pre_sed" else s["n"]   # outer_pre_sed precedes n=1
             out.append(Event(
-                order=(n, 0, s["col"], s["k"], 0, fld),
+                order=(n, 0, s["k"], 0, 0, 0, s["col"]),     # phase 0 < ops (phase 1)
                 phase=stage,
                 identity=(stage, s["n"], s["col"], s["k"], fld, s["dtype"]),
                 shared_key=None, kind=None, tag=None, bits=s["bits"], seq=None))
@@ -115,8 +126,9 @@ def _events(run) -> list[Event]:
     ids = [e.identity for e in out]
     if len(ids) != len(set(ids)):
         raise StructuralError("duplicate record identity")
-    # P0-5 producer op_seq_id must be strictly increasing in schema-canonical
-    # order; a producer that renumbers ops inconsistently is rejected, not trusted.
+    # P0-5 the unique per-record op_seq_id must be strictly increasing in the
+    # schema-canonical order derived above; a producer that renumbers records
+    # inconsistently is rejected, not trusted to define the order.
     seqs = [e.seq for e in out if e.phase == "op"]
     if any(a >= b for a, b in zip(seqs, seqs[1:])):
         raise StructuralError("op_seq_id inconsistent with schema-canonical order")
