@@ -57,6 +57,28 @@ Until one holds, a full-step `STATE`/`PREC` divergence that could trace to
 `ccn0`/`scale_h` must be reported **INCONCLUSIVE**, and the admissible G3.3 verdict
 rests on the sed-ladder + `outer_pre_sed`/`substep_pre` scope only.
 
+## `outer_pre_sed` capture position (P0-3)
+
+The two backends capture `outer_pre_sed` at **different program points**:
+
+- **C++** emits it before `preamble()` (before the fall-speed / `mstep`
+  generation).
+- **Fortran** emits it at the sed sub-cycle entry (`do n = 1, mstepmax`), i.e.
+  *after* the preamble has computed `work1`/`workn`/`mstep` from the state.
+
+They coincide only if the preamble is state-preserving for the compared fields
+(`qr, nr, qv, t, rho, delz`) — which it is: the preamble derives the fall speeds
+from those fields without mutating them. This is not assumed silently:
+
+- `verify_semantics` check (4) proves the Fortran `outer_pre_sed` **is** the
+  first substep's entry state (`substep_pre(n=1) == outer_pre_sed`), so the
+  Fortran snapshot is a genuine sed-entry observation, not a stale copy.
+- The comparator then requires `outer_pre_sed` raw-bit equality **across trees**.
+  If the preamble had perturbed any compared field on one side, that equality
+  would fail and the verdict is **INCONCLUSIVE** — never a false sedimentation
+  verdict. So the differing capture point cannot silently corrupt the comparison;
+  at worst it is surfaced as an upstream divergence.
+
 ## Verdict bounds
 
 - **PASS** — both pairs (legacy-F↔legacy-C++, conservative-F↔conservative-C++)
