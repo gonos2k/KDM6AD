@@ -1,89 +1,88 @@
 """Verdict-matrix unit tests for the four-case comparator core (public CI — no
 build). Synthetic normalized runs exercise PASS / FAIL / INCONCLUSIVE /
-INVALID_EVIDENCE; the real bundle readers are integration-tested separately."""
+INVALID_EVIDENCE and the canonical-order + mechanism-taxonomy fixes."""
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "harness"))
 import g33_fourcase_comparator as cmp  # noqa: E402
-
-# op ladders (scalar_seq -> record). seq 0 is a SHARED rung; seq 2 differs by
-# variant: legacy carries a legacy-only field, conservative a conservative-only one.
-SHARED0 = ("QR_FALK", "mul_dend_q", "TOP", 0, "qr", "f32")
-SHARED1 = ("QR_FALK", "mul_work1", "TOP", 0, "qr", "f64")
-LEG_ONLY = ("QR_INFLOW", "stored_falk_prev", "INTERIOR", 1, "qr", "f32")
-CON_ONLY = ("QR_INFLOW", "src_metric", "INTERIOR", 1, "qr", "f32")
-STAGE = ("outer_pre_sed", 0, "qr", 0, 1)
+import g33_mechanism as mech           # noqa: E402
 
 
-def _run(seq2, bits):
-    """A run: 3 op rungs + one stage; `bits` overrides {scalar_seq: value} and
-    {stage_key: value}."""
-    ops = {0: (*SHARED0, bits.get(0, 100)),
-           1: (*SHARED1, bits.get(1, 200)),
-           2: (*seq2, bits.get(2, 300))}
-    stages = {STAGE: bits.get(STAGE, 500)}
-    return {"ops": ops, "stages": stages}
+def _op(n, col, k, role, sp, opid, fld, dt, bits, seq):
+    return {"n": n, "col": col, "k": k, "role": role, "species": sp,
+            "op_id": opid, "field": fld, "dtype": dt, "bits": bits, "op_seq_id": seq}
 
 
-def _leg(bits=None):
-    return _run(LEG_ONLY, bits or {})
+def _st(stage, n, col, k, fld, dt, bits):
+    return {"stage": stage, "n": n, "col": col, "k": k, "field": fld,
+            "dtype": dt, "bits": bits}
 
 
-def _con(bits=None):
-    return _run(CON_ONLY, bits or {})
+def _run(algo, falk=100, inflow=200, outer=300, sub1=400, n2=False, sub2=None):
+    ops = [_op(1, 1, 0, "TOP", "qr", "QR_FALK", "mul_work1", "f64", falk, 0),
+           _op(1, 1, 1, "INTERIOR", "qr", "QR_INFLOW", "inflow_final", "f32", inflow, 5)]
+    stages = [_st("outer_pre_sed", 0, 1, 0, "qr", "f32", outer),
+              _st("substep_pre", 1, 1, 0, "work1_qr", "f64", sub1),
+              _st("surface", 0, 1, -1, "bottom_fall_qr", "f32", 500)]
+    if n2:
+        ops.append(_op(2, 1, 0, "TOP", "qr", "QR_FALK", "mul_work1", "f64", falk, 10))
+        stages.append(_st("substep_pre", 2, 1, 0, "work1_qr", "f64",
+                          sub2 if sub2 is not None else sub1))
+    return {"algorithm": algo, "ops": ops, "stages": stages}
+
+
+def _verdict(lf, lc, cf, cc):
+    return cmp.classify(cmp.compare_pair(lf, lc), cmp.compare_pair(cf, cc))[0]
 
 
 def test_no_divergence_is_inconclusive():
-    v, _ = cmp.classify(cmp.compare_pair(_leg(), _leg()),
-                        cmp.compare_pair(_con(), _con()))
-    assert v == "INCONCLUSIVE"
+    assert _verdict(_run("legacy"), _run("legacy"),
+                    _run("conservative"), _run("conservative")) == "INCONCLUSIVE"
 
 
-def test_shared_first_divergence_is_pass():
-    # both pairs first differ at the SHARED rung seq 0.
-    leg = cmp.compare_pair(_leg(), _leg({0: 999}))
-    con = cmp.compare_pair(_con(), _con({0: 999}))
-    v, reason = cmp.classify(leg, con)
-    assert v == "PASS", reason
+def test_shared_falk_divergence_is_pass():
+    assert _verdict(_run("legacy"), _run("legacy", falk=999),
+                    _run("conservative"), _run("conservative", falk=999)) == "PASS"
 
 
-def test_conservative_only_divergence_is_fail():
-    # legacy pair identical; conservative pair first differs at the ρΔz rung seq 2.
-    leg = cmp.compare_pair(_leg(), _leg())
-    con = cmp.compare_pair(_con(), _con({2: 999}))
-    v, reason = cmp.classify(leg, con)
-    assert v == "FAIL" and "src_metric" in reason
+def test_conservative_inflow_divergence_is_fail():
+    # legacy pair identical; conservative pair first-diverges at the ρΔz inflow.
+    v, reason = cmp.classify(
+        cmp.compare_pair(_run("legacy"), _run("legacy")),
+        cmp.compare_pair(_run("conservative"), _run("conservative", inflow=999)))
+    assert v == "FAIL" and "CONSERVATIVE_RHODZ_INFLOW" in reason
 
 
-def test_presed_divergence_is_inconclusive():
-    # an outer_pre_sed mismatch — the sed-entry state already differs.
-    leg = cmp.compare_pair(_leg(), _leg({STAGE: 777}))
-    con = cmp.compare_pair(_con(), _con({0: 999}))
-    v, reason = cmp.classify(leg, con)
-    assert v == "INCONCLUSIVE" and "pre-sed" in reason
+def test_outer_pre_sed_divergence_is_inconclusive():
+    v, reason = cmp.classify(
+        cmp.compare_pair(_run("legacy"), _run("legacy", outer=777)),
+        cmp.compare_pair(_run("conservative"), _run("conservative", falk=999)))
+    assert v == "INCONCLUSIVE" and "upstream" in reason
 
 
-def test_universe_mismatch_is_invalid_evidence():
-    a = _con()
-    b = _con()
-    del b["ops"][2]                       # C++ dropped a record
-    v, _ = cmp.classify(cmp.compare_pair(_leg(), _leg()), cmp.compare_pair(a, b))
-    assert v == "INVALID_EVIDENCE"
+def test_identity_universe_mismatch_is_invalid_evidence():
+    a = _run("conservative")
+    b = _run("conservative")
+    b["ops"] = b["ops"][:-1]                    # C++ dropped an op identity
+    assert _verdict(_run("legacy"), _run("legacy"), a, b) == "INVALID_EVIDENCE"
 
 
-def test_different_ops_is_inconclusive():
-    # legacy first-diverges at seq 0, conservative at the shared seq 1 — not the
-    # same op, and seq 1 is not conservative-only, so it cannot be adjudicated.
-    leg = cmp.compare_pair(_leg(), _leg({0: 999}))
-    con = cmp.compare_pair(_con(), _con({1: 999}))
-    v, _ = cmp.classify(leg, con)
-    assert v == "INCONCLUSIVE"
+def test_n1_op_divergence_not_misattributed_to_n2_stage():
+    # P0-3: n=1 QR_FALK differs AND substep_pre(n=2) differs — the n=1 op wins
+    # (execution order), NOT the later stage that the op perturbs.
+    d = cmp.compare_pair(_run("legacy", n2=True),
+                         _run("legacy", falk=999, n2=True, sub2=888))
+    assert d.phase == "op" and d.identity[6] == "QR_FALK"
 
 
-def test_conservative_only_set_is_schema_derived():
-    co = cmp.conservative_only_ops()
-    assert ("QR_INFLOW", "src_metric") in co and ("QR_INFLOW", "dst_metric") in co
-    assert ("QR_FALK", "mul_dend_q") not in co        # shared rung, not conservative-only
-    assert ("QR_INFLOW", "stored_falk_prev") not in co  # legacy-only, not conservative-only
+def test_mechanism_taxonomy_is_role_and_expression_aware():
+    # P0-5: same op_id.field, DIFFERENT mechanism per variant; falk is shared.
+    assert mech.mechanism("conservative", "QR_INFLOW", "inflow_final") == \
+        mech.CONSERVATIVE_RHODZ_INFLOW
+    assert mech.mechanism("legacy", "QR_INFLOW", "inflow_final") == \
+        mech.LEGACY_DZ_CAPPED_INFLOW
+    assert mech.mechanism("legacy", "QR_FALK", "mul_work1") == mech.SHARED_FALK
+    assert mech.is_conservative_only(mech.CONSERVATIVE_RHODZ_INFLOW)
+    assert not mech.is_conservative_only(mech.SHARED_FALK)
