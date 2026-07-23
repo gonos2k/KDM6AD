@@ -1,80 +1,119 @@
 #!/usr/bin/env python3
-"""Explicit mechanism taxonomy for the G3.3-M op ladder (owner P0-5).
+"""Role/species/expression-aware mechanism taxonomy for the G3.3-M op ladder.
 
-`fields(conservative) - fields(legacy)` on (op_id, field) is WRONG: it drops
-role/species, treats a conservative-TOP `QR_OUTFLOW` (min-cap, a SHARED operation
-legacy simply does not run at TOP) as conservative-only, and can never flag the
-no-clamp `q_post` because legacy has that field name too — with a DIFFERENT
-expression. So classification is by the ACTUAL operation, tagged explicitly.
+At a FIRST cross-tree divergence the inputs are identical (upstream matched), so
+the divergence is in that rung's own step — and its MechanismSpec.kind decides
+attribution. The earlier taxonomy was too coarse and could flip PASS/FAIL:
 
-At a FIRST cross-tree divergence the inputs are identical (upstream matched by
-definition), so the divergence is in that rung's own arithmetic — and the rung's
-mechanism tag decides attribution:
+  input           — a state/carry value (reservoir, above-cell flux, pre-update
+                    state, the qr seed reaching the surface). It cannot be the
+                    genuine first mechanism divergence: if it differs while its
+                    source matched, the evidence is INCONSISTENT -> INVALID_EVIDENCE.
+  shared          — an operation identical in both variants (falk chain, min-cap
+                    outflow, the INTERIOR capped depletion, the surface species
+                    sum). Both pairs diverging at the SAME shared rung -> PASS.
+  legacy /        — variant-specific arithmetic. A conservative-pair first
+  conservative      divergence in `conservative` arithmetic (ρΔz inflow, rate
+                    accumulator, no-clamp update, the capped-vs-raw TOP depletion)
+                    -> FAIL.
+  out_of_scope    — a species outside the qr/nr first scope (snow/ice/graupel
+                    surface fall) whose upstream provenance is not instrumented
+                    -> INCONCLUSIVE.
 
-  SHARED_*        — same operation in both variants (falk chain, min-cap outflow,
-                    the pre-clamp subtract, the surface species sum). A divergence
-                    here is a mechanism common to both variants → PASS candidate.
-  CONSERVATIVE_*  — the conservative-only arithmetic (ρΔz inflow, actual-rate fall
-                    accumulator, no-clamp update). A first divergence here in the
-                    conservative pair → FAIL.
-  LEGACY_*        — legacy-only arithmetic (Δz-capped inflow, positivity clamp).
-
-FAIL requires a CONSERVATIVE_* tag — NOT merely "present only in conservative":
-a shared operation that legacy happens not to perform at some role is neither a
-shared-rung PASS (legacy has no counterpart) nor conservative-only arithmetic, so
-it is INCONCLUSIVE, decided by the comparator, not here.
+Role matters: TOP `q_minus_out` is legacy RAW depletion (q - falk·dt/ρ, clamped
+after) vs conservative CAPPED depletion (q - min(...)); INTERIOR/BOTTOM subtract
+the SAME capped outflow in both, so only there is it shared.
 """
+from __future__ import annotations
 
-SHARED_FALK = "SHARED_FALK"
-SHARED_OUTFLOW_CAP = "SHARED_OUTFLOW_CAP"
-SHARED_UPDATE_SUBTRACT = "SHARED_UPDATE_SUBTRACT"
-SHARED_SURFACE_SUM = "SHARED_SURFACE_SUM"
-LEGACY_RAW_FALLACC = "LEGACY_RAW_FALLACC"
-LEGACY_DZ_CAPPED_INFLOW = "LEGACY_DZ_CAPPED_INFLOW"
-LEGACY_CLAMPED_UPDATE = "LEGACY_CLAMPED_UPDATE"
-LEGACY_POSITIVITY_CLAMP = "LEGACY_POSITIVITY_CLAMP"
-CONSERVATIVE_RATE_FALLACC = "CONSERVATIVE_RATE_FALLACC"
-CONSERVATIVE_RHODZ_INFLOW = "CONSERVATIVE_RHODZ_INFLOW"
-CONSERVATIVE_NO_CLAMP_UPDATE = "CONSERVATIVE_NO_CLAMP_UPDATE"
+import os
+import sys
+from dataclasses import dataclass
 
-# op fields that are the shared pre-clamp subtraction (q_before - dq_out); the
-# rest of UPDATE (q_plus_in_preclamp / q_post) carries the variant's inflow + clamp.
-_SHARED_UPDATE_FIELDS = {"q_before", "n_before", "q_minus_out", "n_minus_out"}
-_CLAMP_FIELDS = {"clamp_active"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_schema as schema  # noqa: E402
+
+INPUT, SHARED, LEGACY, CONSERVATIVE, OUT_OF_SCOPE = (
+    "input", "shared", "legacy", "conservative", "out_of_scope")
 
 
-def mechanism(algorithm, op_id, field):
-    """The mechanism tag of one rung. `algorithm` in {legacy, conservative}."""
+@dataclass(frozen=True)
+class MechanismSpec:
+    kind: str        # one of the five above
+    tag: str         # variant-INDEPENDENT for shared rungs (drives PASS alignment)
+
+
+def _variant(algo, tag_base):
+    return MechanismSpec(CONSERVATIVE if algo == "conservative" else LEGACY,
+                         f"{'CONS' if algo == 'conservative' else 'LEG'}_{tag_base}")
+
+
+_INFLOW_CARRIES = {"stored_falk_prev", "stored_falk_nr_prev", "prev_out",
+                   "prev_out_nr", "delz_raw_src", "delz_safe_dst", "dend_safe_dst",
+                   "dend_safe_src", "source_reservoir"}
+
+
+def mechanism(algorithm, role, species, op_id, field) -> MechanismSpec:
     cons = algorithm == "conservative"
-    family = op_id.split("_", 1)[1]        # FALK | OUTFLOW | FALLACC | INFLOW | UPDATE
+    family = op_id.split("_", 1)[1]        # FALK|OUTFLOW|FALLACC|INFLOW|UPDATE
     if family == "FALK":
-        return SHARED_FALK
+        return MechanismSpec(SHARED, f"FALK_{field}")
     if family == "OUTFLOW":
-        return SHARED_OUTFLOW_CAP
+        if field == "source_reservoir":
+            return MechanismSpec(INPUT, "OUTFLOW_reservoir")
+        return MechanismSpec(SHARED, f"OUTFLOW_{field}")
     if family == "FALLACC":
-        return CONSERVATIVE_RATE_FALLACC if cons else LEGACY_RAW_FALLACC
+        if field == "fall_before":
+            return MechanismSpec(INPUT, "FALLACC_carry_before")
+        if field in ("dq_out", "dn_out"):
+            return MechanismSpec(INPUT, "FALLACC_carry_outflow")
+        if field in ("mul_dend_safe", "fall_increment"):
+            # legacy fall_increment is the shared falk carry; conservative is rate.
+            return (MechanismSpec(CONSERVATIVE, f"CONS_FALLACC_{field}") if cons
+                    else MechanismSpec(INPUT, "FALLACC_carry_falk"))
+        # fall_after — the variant-specific accumulator result.
+        return _variant(algorithm, "FALLACC_result")
     if family == "INFLOW":
-        return CONSERVATIVE_RHODZ_INFLOW if cons else LEGACY_DZ_CAPPED_INFLOW
+        if field in _INFLOW_CARRIES:
+            return MechanismSpec(INPUT, "INFLOW_carry")
+        return _variant(algorithm, "INFLOW_rhodz" if cons else "INFLOW_dzcap")
     if family == "UPDATE":
-        if field in _CLAMP_FIELDS:
-            return LEGACY_POSITIVITY_CLAMP
-        if field in _SHARED_UPDATE_FIELDS:
-            return SHARED_UPDATE_SUBTRACT
-        return CONSERVATIVE_NO_CLAMP_UPDATE if cons else LEGACY_CLAMPED_UPDATE
-    raise KeyError(f"no mechanism for op family {family!r} ({op_id}.{field})")
+        if field in ("q_before", "n_before"):
+            return MechanismSpec(INPUT, "UPDATE_state_before")
+        if field in ("q_minus_out", "n_minus_out"):
+            if role == "TOP":                # legacy RAW vs conservative CAPPED
+                return _variant(algorithm, "UPDATE_depletion")
+            return MechanismSpec(SHARED, "UPDATE_minus_capped_outflow")
+        if field in ("q_plus_in_preclamp", "n_plus_in_preclamp"):
+            return _variant(algorithm, "UPDATE_plus_inflow")
+        if field == "clamp_active":
+            return MechanismSpec(LEGACY, "LEG_UPDATE_positivity_clamp")
+        # q_post / n_post — legacy clamped vs conservative no-clamp.
+        return _variant(algorithm, "UPDATE_result")
+    raise KeyError(f"no mechanism for {op_id}.{field}")
 
 
-def surface_mechanism(field):
-    return SHARED_SURFACE_SUM
+_OUT_OF_SCOPE_SURFACE = {"bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi"}
 
 
-def is_shared(tag):
-    return tag.startswith("SHARED_")
+def surface_mechanism(field) -> MechanismSpec:
+    if field == "bottom_fall_qr":
+        return MechanismSpec(INPUT, "SURFACE_carry_qr")
+    if field in _OUT_OF_SCOPE_SURFACE:
+        return MechanismSpec(OUT_OF_SCOPE, f"SURFACE_{field}")
+    if field in ("delz_bottom", "surface_denr"):
+        return MechanismSpec(INPUT, "SURFACE_input")
+    if field == "bottom_fall_total":
+        return MechanismSpec(SHARED, "SURFACE_species_sum")
+    raise KeyError(f"no surface mechanism for {field}")
 
 
-def is_conservative_only(tag):
-    return tag.startswith("CONSERVATIVE_")
-
-
-def is_legacy_only(tag):
-    return tag.startswith("LEGACY_")
+def check_universe():
+    """Every schema op field (both variants, all roles) must map to a spec —
+    a missing or crashing mapping is a taxonomy hole. Called by a test."""
+    for algo in ("legacy", "conservative"):
+        for role in ("TOP", "INTERIOR", "BOTTOM"):
+            for sp in ("qr", "nr"):
+                for op_id in schema.ops_for_species(algo, role, sp):
+                    for f, _ in schema.op_fields(algo, role, op_id):
+                        mechanism(algo, role, sp, op_id, f)   # raises on a hole
