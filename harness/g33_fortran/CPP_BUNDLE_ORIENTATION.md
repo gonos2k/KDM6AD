@@ -1,6 +1,21 @@
 # C++ four-case bundle — vertical (k) orientation finding
 
-Status: **OPEN — blocks a trustworthy four-case op comparison (PR#66B/#67).**
+Status: **RESOLVED (PR#67A, commit on harness/g33-cpp-orientation).** Root cause was
+the C++ shared-fixture LOAD, exactly as hypothesised below (candidate b). Fixed at
+source in `abc_driver.cpp`: `to_host_order()` loads the top-first authority fixture
+into the surface-first wrapper State/Forcing (so `runtime.cpp` flip_k yields correct
+top-first sedimentation), and `emit_fixture_field` flips back for `--fixture-only`
+(the emitted fixture stays byte-identical to the authority; SHA `18ea733b` and F↔C++
+parity preserved). The normalizer's compensating `[B,K]` flip is removed and it now
+enforces `canonical_k_order == "top-first"`.
+
+**Validation:** on a regenerated bundle, legacy Fortran ↔ legacy C++ (via
+`from_fortran_run` / `from_cpp_evidence` + `compare_pair`) is now **bit-identical**
+across all 579 ops + stages — no divergence, no flip. The op-set/value inconsistency
+below is gone.
+
+--- Original finding (for the record) ---
+
 Found while wiring the real C++ bundle reader (`g33_bundle_io` + `g33_normalize`)
 against a real bundle (fixture `18ea733b`, params `4b1c84ef`, identical to the
 committed Fortran legacy sample).

@@ -113,10 +113,12 @@ def from_cpp_evidence(evidence) -> dict:
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
 
-    NOT VERDICT-READY: columns and the stage [B,K] k-orientation are validated
-    (entry state is bit-identical to Fortran), but the op-record k-orientation is an
-    OPEN discrepancy — see g33_fortran/CPP_BUNDLE_ORIENTATION.md. Do not feed the op
-    stream to adjudicate() for a real C4 verdict until that is resolved at source."""
+    Orientation is RESOLVED (PR#67A): with the driver loading the fixture in host
+    order, the C++ tensors are genuinely top-first and legacy F↔C++ is bit-identical
+    (see g33_fortran/CPP_BUNDLE_ORIENTATION.md). Columns, stage [B,K] and op streams
+    all validate. Full verdict-readiness still awaits the offline evidence validator
+    (independent record-completeness + root attestation, PR#67B) before adjudicate()
+    is run on real bundles for a C4 verdict."""
     contract = evidence["contract"]
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
