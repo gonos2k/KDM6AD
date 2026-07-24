@@ -120,16 +120,20 @@ def from_cpp_evidence(evidence) -> dict:
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
 
-    Requires a bundle already through g33_bundle_io.verify_cpp_evidence (root
-    attestation + independent completeness + producer-flag recomputation). Columns,
-    the top-first [B,K] stage orientation, and the op stream are all validated; the
+    Accepts ONLY a root-attested VerifiedCppLeg (g33_bundle_io.verify_cpp_bundle) —
+    a leg from verify_cpp_evidence alone (root_attested=False) is refused, so the
+    normalizer cannot be fed evidence that skipped the root attestation. Columns, the
+    top-first [B,K] stage orientation, and the op stream are all validated; the
     remaining C4-verdict gate is a real multi-subcycle fixture (this fixture is
     mstep=1, so bit-identical F↔C++ is the correct INCONCLUSIVE)."""
-    contract = evidence["contract"]
+    if not (getattr(evidence, "root_attested", False)):
+        raise NormalizeError("from_cpp_evidence requires a root-attested VerifiedCppLeg "
+                             "(run g33_bundle_io.verify_cpp_bundle)")
+    contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
     bk = set()
-    for cid, c in evidence["containers"].items():
+    for cid, c in evidence.containers.items():
         h = c["header"]
         if h.get("canonical_k_order") != "top-first":
             raise NormalizeError(f"container {cid} k-order {h.get('canonical_k_order')!r} "

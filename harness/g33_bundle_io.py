@@ -19,6 +19,7 @@ import hashlib
 import json
 import os
 import sys
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -46,6 +47,19 @@ _ALGOS = ("legacy", "conservative")
 
 class BundleError(Exception):
     """The bundle is malformed, incomplete, or fails re-verification."""
+
+
+@dataclass(frozen=True)
+class VerifiedCppLeg:
+    """One C++ leg that has passed re-verification. `root_attested` is False from
+    verify_cpp_evidence alone (structure + completeness + producer semantics +
+    orientation) and only True after verify_cpp_bundle adds the root attestation
+    (same-problem, A/B/C, diagnostic-binary). from_cpp_evidence requires it True, so
+    the normalizer cannot be fed a leg that skipped the root gate."""
+    contract: dict
+    containers: dict
+    mstep_range: tuple | None
+    root_attested: bool = False
 
 
 def _no_dup_keys(pairs):
@@ -102,20 +116,27 @@ def _parse_sha_file(path: Path) -> dict:
     return out
 
 
+def _no_symlink(p: Path):
+    if p.is_symlink():
+        raise BundleError(f"symlink not allowed in evidence tree: {p}")
+    return p
+
+
 def _verify_sha_manifest(scan: Path, sha_file: Path) -> dict:
-    """Every listed file must exist and match; no unlisted non-.sha256 file may sit
-    alongside (an extra file is unverified evidence)."""
+    """Every listed file must exist, be a regular non-symlink file, and match; no
+    unlisted file (incl. a stray .sha256 or stale .tmp) may sit alongside."""
     listed = _parse_sha_file(sha_file)
     for name, want in listed.items():
-        f = scan / name
+        f = _no_symlink(scan / name)
         if not f.is_file():
             raise BundleError(f"{sha_file.name} lists missing file {name}")
         if _sha256_file(f) != want:
             raise BundleError(f"{name} sha256 mismatch")
-    present = {p.name for p in scan.iterdir() if p.is_file() and p.suffix != ".sha256"}
-    extra = present - set(listed)
-    if extra:
-        raise BundleError(f"unlisted file(s) in {scan.name}: {sorted(extra)}")
+    allowed = set(listed) | {sha_file.name}       # the manifest itself is the only ok .sha256
+    for p in scan.iterdir():
+        _no_symlink(p)
+        if p.name not in allowed:
+            raise BundleError(f"unlisted file in {scan.name}: {p.name}")
     return listed
 
 
@@ -149,8 +170,14 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
     desc_shas = _verify_sha_manifest(evidence_dir / "schema",
                                      evidence_dir / "schema" / "descriptors.sha256")
 
+    _no_symlink(contract_path)
+    _no_symlink(evidence_dir / "run_contract.sha256")
     dump = evidence_dir / "dump"
     parsed: dict[str, dict] = {}
+    for p in dump.iterdir():                       # only .g33 regular files, no .tmp
+        _no_symlink(p)
+        if p.suffix != ".g33":
+            raise BundleError(f"unexpected file in dump: {p.name}")
     g33_files = sorted(dump.glob("*.g33"))
     if not g33_files:
         raise BundleError(f"no containers under {dump}")
@@ -218,7 +245,8 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
             if r["field"] == "mstep_decoded_i32":
                 mstep_vals.extend(int(v) for v in gdv.unpack_values(r["dtype"], r["payload"]))
     mstep_range = (min(mstep_vals), max(mstep_vals)) if mstep_vals else None
-    return {"contract": contract, "containers": parsed, "mstep_range": mstep_range}
+    return VerifiedCppLeg(contract=contract, containers=parsed,
+                          mstep_range=mstep_range, root_attested=False)
 
 
 def verify_cpp_bundle(bundle_dir) -> dict:
@@ -262,11 +290,11 @@ def verify_cpp_bundle(bundle_dir) -> dict:
         leg = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha)
         # the manifest's declared mstep summary must equal what the raw evidence shows
         # (P0-4) — no [1,1] hard-pin, so a real multi-subcycle bundle is admissible.
-        obs = leg["mstep_range"]
+        obs = leg.mstep_range
         if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
-        out[algo] = leg
+        out[algo] = replace(leg, root_attested=True)
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")

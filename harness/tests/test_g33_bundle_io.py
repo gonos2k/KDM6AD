@@ -132,7 +132,8 @@ def _bundle(root: Path):
 def test_complete_evidence_verifies(tmp_path):
     ev = _full_evidence(tmp_path, "legacy")
     out = bio.verify_cpp_evidence(ev, "legacy")
-    assert set(out["containers"]) >= set(bio.COMPARATOR_CONTAINERS)
+    assert set(out.containers) >= set(bio.COMPARATOR_CONTAINERS)
+    assert out.root_attested is False          # not root-attested from evidence alone
 
 
 def test_incomplete_evidence_rejected(tmp_path):
@@ -153,6 +154,13 @@ def test_tampered_contract_rejected(tmp_path):
 def test_unlisted_extra_file_rejected(tmp_path):
     ev = _full_evidence(tmp_path, "legacy")
     (ev / "schema" / "sneak.desc").write_text("x\n")
+    with pytest.raises(bio.BundleError):
+        bio.verify_cpp_evidence(ev, "legacy")
+
+
+def test_stray_file_in_dump_rejected(tmp_path):
+    ev = _full_evidence(tmp_path, "legacy")
+    (ev / "dump" / "leftover.g33.tmp").write_text("x\n")   # stale/partial write
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_evidence(ev, "legacy")
 
@@ -197,12 +205,18 @@ def test_manifest_duplicate_json_key_rejected(tmp_path):
 
 # ── P1-2 C++ normalize on synthetic evidence ──────────────────────────────────
 def test_cpp_evidence_normalizes_and_events_build(tmp_path):
-    ev = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy"), "legacy")
-    run = nz.from_cpp_evidence(ev)
+    res = bio.verify_cpp_bundle(_bundle(tmp_path))     # root-attested leg
+    run = nz.from_cpp_evidence(res["algorithms"]["legacy"])
     assert run["algorithm"] == "legacy" and run["B"] == B and run["K"] == K
     import g33_fourcase_comparator as cmp
     events = cmp._events(run)          # schema order + range + dtype + identity
     assert events and run["ops"]
+
+
+def test_unattested_leg_refused_by_normalizer(tmp_path):
+    leg = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy"), "legacy")
+    with pytest.raises(nz.NormalizeError):          # root_attested is False
+        nz.from_cpp_evidence(leg)
 
 
 def test_falsely_exact_mstep_flag_rejected(tmp_path):
