@@ -162,7 +162,8 @@ def _under(root: Path, child: Path) -> Path:
     return c
 
 
-def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) -> dict:
+def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
+                        expected_repo_commit=None) -> dict:
     """Re-verify one {algo}-C-evidence tree and return {contract, containers}."""
     evidence_dir = Path(evidence_dir)
     if not evidence_dir.is_dir():
@@ -229,9 +230,16 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
     except gd.G33Corruption as e:
         raise BundleError(f"evidence completeness: {e}") from None
 
-    # SAME-RUN invariants: every container shares one run identity (P0-5).
+    # SAME-RUN invariants: every container shares one run identity (P0-5), and the
+    # producing revision is a real commit (optionally pinned to a reviewed one).
     anchor = None
     for cid, c in parsed.items():
+        commit = c["header"].get("producer_commit")
+        if not (isinstance(commit, str) and len(commit) == 40
+                and all(ch in _HEX64 for ch in commit)):
+            raise BundleError(f"{cid} producer_commit is not a 40-hex commit")
+        if expected_repo_commit is not None and commit != expected_repo_commit:
+            raise BundleError(f"{cid} producer_commit != expected {expected_repo_commit}")
         sig = tuple(json.dumps(c["header"].get(k), sort_keys=True) for k in _SAME_RUN)
         if c["header"].get("canonical_k_order") != "top-first":
             raise BundleError(f"{cid} canonical_k_order != top-first")
@@ -276,11 +284,26 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
                           mstep_range=mstep_range, root_attested=False)
 
 
-def verify_cpp_bundle(bundle_dir) -> dict:
-    """Re-verify the whole C++ ABC bundle root incl. attestation (P0-3). Returns
-    {manifest, algorithms:{algo:{contract, containers}}}."""
+def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
+                      expected_repo_commit=None) -> dict:
+    """Re-verify the whole C++ ABC bundle root incl. attestation. Returns
+    {manifest, algorithms:{algo: VerifiedCppLeg}}.
+
+    EXTERNAL ANCHORS (optional, but required for a decision-grade run): a bundle
+    that rewrites its own manifest AND its sidecar hashes is still self-consistent,
+    so tamper-evidence ultimately needs a value recorded OUTSIDE the bundle.
+    `expected_manifest_sha256` pins the root manifest to a hash held elsewhere (a
+    committed C4 evidence manifest / the owner's adjudication record), and
+    `expected_repo_commit` pins every container's producer_commit to the reviewed
+    source revision."""
     bundle_dir = Path(bundle_dir).resolve()
-    manifest = _load_json(bundle_dir / "cpp_abc_manifest.json", "manifest")
+    manifest_path = bundle_dir / "cpp_abc_manifest.json"
+    if expected_manifest_sha256 is not None:
+        got = _sha256_file(manifest_path)
+        if got != expected_manifest_sha256:
+            raise BundleError(f"root manifest sha256 {got} != external anchor "
+                              f"{expected_manifest_sha256}")
+    manifest = _load_json(manifest_path, "manifest")
     if manifest.get("schema_version") != 1:
         raise BundleError(f"unexpected manifest schema_version {manifest.get('schema_version')!r}")
     algos = manifest.get("algorithms")
@@ -319,7 +342,8 @@ def verify_cpp_bundle(bundle_dir) -> dict:
         fixtures.add(meta.get("fixture_sha256"))
         params.add(meta.get("parameter_sha256"))
         ev = _under(bundle_dir, bundle_dir / meta["evidence_dir"])
-        leg = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha)
+        leg = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha,
+                                  expected_repo_commit=expected_repo_commit)
         # P0-6: fully re-parse each lane against the ABC protocol (a prefix check
         # accepts a truncated lane whose hash merely matches its siblings), then
         # require the three PARSED structures to be identical. The case/B/K come

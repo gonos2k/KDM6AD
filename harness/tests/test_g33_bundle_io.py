@@ -21,6 +21,7 @@ import g33_normalize as nz         # noqa: E402
 
 B, K = 3, 4
 DIAG = "d" * 64
+COMMIT = "a1" * 20          # a well-formed 40-hex producer commit
 CMAP = [[i, 0, i, i] for i in range(B)]
 
 
@@ -94,7 +95,7 @@ def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False,
         desc_lines.append(f"{dsha}  {cid}.desc")
         crecs = sorted(by_cid.get(cid, []), key=lambda r: r["op_seq_id"])
         first = spec["first_op_seq_id"]
-        header = {"producer_commit": "c", "binary_sha256": DIAG,
+        header = {"producer_commit": COMMIT, "binary_sha256": DIAG,
                   "resolved_binary_path": "/x", "resolved_binary_sha256": DIAG,
                   "case_id": sched["case_id"], "pair_id": sched["pair_id"],
                   "backend": "cpp", "algorithm": algo, "B": B, "K": K,
@@ -305,3 +306,25 @@ def test_falsely_exact_mstep_flag_rejected(tmp_path):
     tree = _full_evidence(tmp_path, "legacy", lie_mstep=True)
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_evidence(tree, "legacy")
+
+
+# ── external anchors (the bundle cannot self-attest) ─────────────────────────
+def test_external_manifest_anchor_enforced(tmp_path):
+    root = _bundle(tmp_path)
+    good = _sha(root / "cpp_abc_manifest.json")
+    bio.verify_cpp_bundle(root, expected_manifest_sha256=good)      # matching anchor
+    with pytest.raises(bio.BundleError, match="external anchor"):
+        bio.verify_cpp_bundle(root, expected_manifest_sha256="f" * 64)
+
+
+def test_external_repo_commit_anchor_enforced(tmp_path):
+    root = _bundle(tmp_path)
+    bio.verify_cpp_bundle(root, expected_repo_commit=COMMIT)
+    with pytest.raises(bio.BundleError, match="producer_commit"):
+        bio.verify_cpp_bundle(root, expected_repo_commit="b2" * 20)
+
+
+def test_non_commit_producer_rejected(tmp_path):
+    ev = _full_evidence(tmp_path, "legacy")
+    with pytest.raises(bio.BundleError):
+        bio.verify_cpp_evidence(ev, "legacy", expected_repo_commit="b2" * 20)
