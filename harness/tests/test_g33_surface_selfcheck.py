@@ -86,5 +86,7 @@ def test_surface_schedule_has_two_main_substeps_and_one_surface_container():
         "L1_surface",
     ]
     surface = index["containers"][-1]
-    assert surface["record_count"] == 9
-    assert surface["last_op_seq_id"] - surface["first_op_seq_id"] + 1 == 9
+    # 10 surface fields: bottom_fall_{qr,qs,qg,qi}, bottom_fall_total, delz_bottom,
+    # surface_denr (P0-5), rain/snow/graupel_increment.
+    assert surface["record_count"] == 10
+    assert surface["last_op_seq_id"] - surface["first_op_seq_id"] + 1 == 10
