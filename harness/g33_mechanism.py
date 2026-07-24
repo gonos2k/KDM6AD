@@ -51,10 +51,24 @@ import g33_schema as schema  # noqa: E402
     "causal_carry", "external_input", "shared", "legacy", "conservative", "out_of_scope")
 
 
+# How a rung behaves in a GATE-INACTIVE column (gate==0, i.e. n > this column's
+# mstep). The per-column gate is a terminal MULTIPLY at the end of the falk chain
+# (s4 = s3 * gate_col), so only the rungs BEFORE that multiply are computed-then-
+# discarded; everything from falk_precast on carries the gate and is an actual
+# effect. Ignoring a whole dead lane would discard the only evidence that the lane
+# really stayed dead (owner P0-1).
+IGNORE_PRE_GATE, MUST_MATCH = "ignore_pre_gate", "must_match"
+
+
 @dataclass(frozen=True)
 class MechanismSpec:
-    kind: str        # one of the six above
-    tag: str         # variant-INDEPENDENT for shared rungs (drives PASS alignment)
+    kind: str                          # one of the six above
+    tag: str                           # variant-INDEPENDENT (drives PASS alignment)
+    inactive_policy: str = MUST_MATCH  # IGNORE_PRE_GATE only for pre-gate diagnostics
+    # An ACTUAL transported quantity: in an ACTIVE lane it must be finite, and in an
+    # inactive lane it must be the no-op value (0 / unchanged). Pre-gate diagnostics
+    # carry no such obligation.
+    actual_transport: bool = False
 
 
 class TaxonomyHole(KeyError):
@@ -71,14 +85,19 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
     mn = _mass_or_number(species)
 
     if fam == "FALK":
-        if field in ("mul_dend_q", "mul_workn", "mul_work1", "div_mstep",
-                     "falk_precast", "shadow_falk_f32", "falk_f32"):
-            return MechanismSpec(SHARED, f"FALK/{field}")
+        if field in ("mul_dend_q", "mul_work1", "mul_workn", "div_mstep"):
+            # computed BEFORE the terminal `* gate_col`, so a dead lane discards it
+            return MechanismSpec(SHARED, f"FALK/{field}", IGNORE_PRE_GATE)
+        if field in ("falk_precast", "shadow_falk_f32", "falk_f32"):
+            # gate already applied -> an ACTUAL fall rate (0 in a dead lane)
+            return MechanismSpec(SHARED, f"FALK/{field}", actual_transport=True)
 
     elif fam == "OUTFLOW":
         if field == "source_reservoir":
             return MechanismSpec(CAUSAL_CARRY, "CARRY/outflow_reservoir")
-        if field in ("mul_dt", "outflow_pre_cap", "cap_active", "dq_out", "dn_out"):
+        if field in ("dq_out", "dn_out"):          # the transported amount itself
+            return MechanismSpec(SHARED, f"OUTFLOW/{field}", actual_transport=True)
+        if field in ("mul_dt", "outflow_pre_cap", "cap_active"):
             return MechanismSpec(SHARED, f"OUTFLOW/{field}")
 
     elif fam == "FALLACC":
@@ -95,7 +114,7 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
         if field == "fall_after":
             # P0-1: given matched fall_before + fall_increment, this is fl32(a+b) —
             # the SAME accumulator add in both variants, not a variant result.
-            return MechanismSpec(SHARED, "FALLACC/accumulator_add")
+            return MechanismSpec(SHARED, "FALLACC/accumulator_add", actual_transport=True)
 
     elif fam == "INFLOW":
         if field in ("stored_falk_prev", "stored_falk_nr_prev", "prev_out",
@@ -124,9 +143,10 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
                     else MechanismSpec(LEGACY, "LEG_DZ_PLUS_INFLOW"))
         if field == "clamp_active":
             return MechanismSpec(LEGACY, "LEG_POSITIVITY_CLAMP")
-        if field in ("q_post", "n_post"):
-            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_NOCLAMP_UPDATE") if cons
-                    else MechanismSpec(LEGACY, "LEG_CLAMPED_UPDATE"))
+        if field in ("q_post", "n_post"):           # the updated state itself
+            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_NOCLAMP_UPDATE",
+                                  actual_transport=True) if cons
+                    else MechanismSpec(LEGACY, "LEG_CLAMPED_UPDATE", actual_transport=True))
 
     raise TaxonomyHole(f"no mechanism entry for {algo}/{role}/{species} {op_id}.{field}")
 

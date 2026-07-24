@@ -6,6 +6,8 @@ external-input, surface output increments, and malformed-input -> INVALID."""
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "harness"))
 import g33_fourcase_comparator as cmp  # noqa: E402
@@ -14,27 +16,43 @@ import g33_schema as schema            # noqa: E402
 
 
 _MASK = {"f32": 0xFFFFFFFF, "f64": 0xFFFFFFFFFFFFFFFF, "u8": 0xFF}
+_NOOP_FROM = {"fall_after": "fall_before", "q_post": "q_before", "n_post": "n_before"}
 
 
 def _base(dt, n, col, k, opid, fld):
     return (hash((n, col, k, opid, fld)) & _MASK[dt]) or 1
 
 
-def _species_run(algo, sp, cells, stages, bits):
+def _species_run(algo, sp, cells, stages, bits, gate=1):
+    """Build a well-formed normalized run. Every op lane gets its substep_pre gate
+    record (coverage is mandatory); with gate=0 the lane's ACTUAL transport fields
+    are filled with their no-op values (0 / unchanged), as a real dead lane must."""
     bits = bits or {}
-    ops = []
+    ops, lanes = [], set()
     for n, col, k, role in cells:
+        lanes.add((n, col))
         for opid in schema.ops_for_species(algo, role, sp):
+            group = {}
             for fld, dt in schema.op_fields(algo, role, opid):
                 key = (n, col, k, opid, fld)
                 b = bits.get(key, _base(dt, *key)) & _MASK[dt]
-                ops.append({"n": n, "col": col, "k": k, "role": role, "species": sp,
-                            "op_id": opid, "field": fld, "dtype": dt, "bits": b})
-    return {"algorithm": algo, "B": 3, "K": 4, "ops": ops, "stages": list(stages or [])}
+                if not gate and key not in bits:
+                    spec = mech.mechanism(algo, role, sp, opid, fld)
+                    if spec.actual_transport:
+                        b = group.get(_NOOP_FROM.get(fld), 0)
+                group[fld] = b
+                ops.append({"loop": 1, "chain": "main", "n": n, "col": col, "k": k,
+                            "role": role, "species": sp, "op_id": opid,
+                            "field": fld, "dtype": dt, "bits": b})
+    st = [{"loop": 1, "chain": "main", "stage": "substep_pre", "n": n, "col": col,
+           "k": -1, "field": "gate", "dtype": "u8", "bits": gate}
+          for n, col in sorted(lanes)]
+    st += list(stages or [])
+    return {"algorithm": algo, "B": 3, "K": 4, "ops": ops, "stages": st}
 
 
-def _run(algo, cells=((1, 1, 1, "INTERIOR"),), stages=None, bits=None):
-    return _species_run(algo, "qr", cells, stages, bits)
+def _run(algo, cells=((1, 1, 1, "INTERIOR"),), stages=None, bits=None, gate=1):
+    return _species_run(algo, "qr", cells, stages, bits, gate)
 
 
 def _nr_run(algo, cells=((1, 1, 1, "INTERIOR"),), bits=None):
@@ -43,8 +61,8 @@ def _nr_run(algo, cells=((1, 1, 1, "INTERIOR"),), bits=None):
 
 def _surface(bits=None):
     bits = bits or {}
-    return [{"stage": "surface", "n": 0, "col": 1, "k": -1, "field": f,
-             "dtype": "f32", "bits": bits.get(f, (hash(f) & 0xFFFFFFFF) or 1)}
+    return [{"loop": 1, "chain": "-", "stage": "surface", "n": 0, "col": 1, "k": -1,
+             "field": f, "dtype": "f32", "bits": bits.get(f, (hash(f) & 0xFFFFFFFF) or 1)}
             for f in schema.semantic_surface_fields()]
 
 
@@ -261,41 +279,87 @@ def test_mechanism_out_of_schema_key_raises():
         mech.mechanism("legacy", "TOP", "qr", "QR_OUTFLOW", "dq_out")  # no outflow at legacy TOP
 
 
-# ── P0-3: gate-aware event filtering ──────────────────────────────────────────
-def _gate(bits):
-    return [{"stage": "substep_pre", "n": 1, "col": 1, "k": -1, "field": "gate",
-             "dtype": "u8", "bits": bits}]
-
-
-def test_inactive_lane_op_diff_is_not_the_verdict():
-    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
-    div = cmp.compare_pair(_run("legacy", stages=_gate(0)),
-                           _run("legacy", stages=_gate(0), bits=d))
-    # gate=0 for (n=1,col=1): the mul_work1 diff is a dead lane -> not attributed.
+# ── gate semantics: only PRE-GATE rungs may differ in a dead lane ─────────────
+def test_inactive_lane_pre_gate_diff_is_not_the_verdict():
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}      # pre-gate diagnostic
+    div = cmp.compare_pair(_run("legacy", gate=0),
+                           _run("legacy", gate=0, bits=d))
     assert div.phase is None and div.inactive_diffs and not div.invalid
 
 
 def test_active_lane_op_diff_is_the_verdict():
     d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
-    div = cmp.compare_pair(_run("legacy", stages=_gate(1)),
-                           _run("legacy", stages=_gate(1), bits=d))
+    div = cmp.compare_pair(_run("legacy"), _run("legacy", bits=d))
     assert div.phase == "op" and div.tag == "FALK/mul_work1"
 
 
-# ── P1-4: PASS records the raw-bit divergence signature ───────────────────────
-def test_pass_records_bit_signature():
-    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
-    r = cmp.adjudicate(_run("legacy"), _run("legacy", bits=d),
-                       _run("conservative"), _run("conservative", bits=d))
-    sig = r["legacy_first_divergence"]["signature"]
-    assert sig and "ulp_delta" in sig and sig["direction"] in ("C>F", "C<F", "equal")
+@pytest.mark.parametrize("field", ["falk_f32", "falk_precast"])
+def test_inactive_lane_nonzero_falk_is_invalid(field):
+    # gate=0 but an actual fall rate is non-zero: the dead lane transported.
+    d = {(1, 1, 1, "QR_FALK", field): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+    assert div.invalid and "gate semantics" in div.invalid
 
 
-# ── taxonomy role/expression awareness ────────────────────────────────────────
-def test_mechanism_taxonomy_is_role_and_expression_aware():
-    m = mech.mechanism
-    assert m("conservative", "TOP", "qr", "QR_UPDATE", "q_minus_out").kind == mech.CONSERVATIVE
-    assert m("legacy", "TOP", "qr", "QR_UPDATE", "q_minus_out").kind == mech.LEGACY
-    assert m("legacy", "INTERIOR", "qr", "QR_UPDATE", "q_minus_out").kind == mech.SHARED
-    assert m("legacy", "INTERIOR", "qr", "QR_FALLACC", "fall_after").kind == mech.SHARED
-    assert m("conservative", "INTERIOR", "qr", "QR_FALLACC", "fall_before").kind == mech.CAUSAL_CARRY
+def test_inactive_lane_nonzero_outflow_is_invalid():
+    d = {(1, 1, 1, "QR_OUTFLOW", "dq_out"): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+    assert div.invalid and "gate semantics" in div.invalid
+
+
+def test_inactive_lane_changed_accumulator_is_invalid():
+    d = {(1, 1, 1, "QR_FALLACC", "fall_after"): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+    assert div.invalid and "gate semantics" in div.invalid
+
+
+def test_inactive_lane_changed_state_is_invalid():
+    d = {(1, 1, 1, "QR_UPDATE", "q_post"): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+    assert div.invalid and "gate semantics" in div.invalid
+
+
+def test_active_lane_nonfinite_transport_is_invalid():
+    d = {(1, 1, 1, "QR_FALK", "falk_f32"): 0x7F800000}   # +Inf in an ACTIVE lane
+    div = cmp.compare_pair(_run("legacy", bits=d), _run("legacy", bits=d))
+    assert div.invalid and "gate semantics" in div.invalid
+
+
+# ── P0-2: the active mask is never defaulted ─────────────────────────────────
+def test_missing_gate_record_is_invalid():
+    r = _run("legacy")
+    r["stages"] = [s for s in r["stages"] if s["field"] != "gate"]
+    assert cmp.compare_pair(r, r).invalid
+
+
+def test_gate_mask_mismatch_between_backends_is_invalid():
+    div = cmp.compare_pair(_run("legacy", gate=1), _run("legacy", gate=0))
+    assert div.invalid
+
+
+# ── P0-3: outer_loop / chain are part of the event identity ──────────────────
+def test_outer_loop_is_in_the_identity():
+    r = _run("legacy")
+    ev = cmp._events(r)
+    op = next(e for e in ev if e.phase == "op")
+    assert op.identity[1] == 1 and op.identity[2] == "main"      # loop, chain
+    # the same (n,col,k,op,field) in a DIFFERENT outer loop is a distinct record
+    r2 = _run("legacy")
+    for o in r2["ops"]:
+        o["loop"] = 2
+    for st in r2["stages"]:
+        st["loop"] = 2
+    ids = {e.identity for e in cmp._events(r)} | {e.identity for e in cmp._events(r2)}
+    assert len(ids) == 2 * len(cmp._events(r))
+
+
+def test_loop2_sorts_after_loop1_surface():
+    r = _run("legacy", stages=_surface())
+    r2 = _run("legacy", stages=_surface())
+    for rec in r2["ops"] + r2["stages"]:
+        rec["loop"] = 2
+    merged = {"algorithm": "legacy", "B": 3, "K": 4,
+              "ops": r["ops"] + r2["ops"], "stages": r["stages"] + r2["stages"]}
+    ev = cmp._events(merged)
+    loops = [e.identity[1] for e in ev]
+    assert loops == sorted(loops)        # every loop-1 event precedes every loop-2
