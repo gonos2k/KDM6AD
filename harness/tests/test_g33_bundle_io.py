@@ -35,7 +35,27 @@ def _sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def _full_evidence(root: Path, algo: str, omit_container=None, exact_ok=True):
+# Valid raw operands for a substep_pre group, so the independent producer-flag
+# recomputation (g33_derived.check_producer_flags) passes: mstep=1 exact, gate=1
+# exact/active, unfloored positive metrics, sealed qcrmin/dtcld.
+_SUBPRE_VAL = {
+    "mstep_input_native": 1.0, "mstep_native": 1.0, "mstep_decoded_i32": 1,
+    "mstep_exact_integer": 1, "gate_native": 1.0, "gate_decoded_u8": 1,
+    "gate_exact_01": 1, "active_mask": 1, "dend_raw": 1.0, "dend_safe": 1.0,
+    "dend_floor_active": 0, "delz_raw": 1.0, "delz_safe": 1.0,
+    "delz_floor_active": 0, "qcrmin_effective": 1e-9, "dtcld_effective": 20.0,
+    "qr": 0.5, "nr": 100.0, "work1_qr": 0.1, "workn_qr": 0.1,
+}
+
+
+def _payload(field, dtype, n_elem, lie_mstep):
+    v = _SUBPRE_VAL.get(field, 0)
+    if lie_mstep and field == "mstep_native":
+        v = 1.5                       # non-integer, but the flag still claims exact
+    return gd.pack_payload(dtype, [v] * n_elem)
+
+
+def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False):
     """Write a complete {algo}-C-evidence tree; omit_container drops one container
     (file + descriptor) so it writes cleanly but the record multiset is short,
     exercising the independent completeness gate."""
@@ -81,10 +101,7 @@ def _full_evidence(root: Path, algo: str, omit_container=None, exact_ok=True):
             for s in r["shape"]:
                 n_elem *= s
             key = {**r, "seq_no": r["op_seq_id"] - first}
-            # exactness flags must read 1 in a valid run (P0-4)
-            fill = (1 if exact_ok else 0) if r["field"] in (
-                "mstep_exact_integer", "gate_exact_01") else 0
-            w.record(key, r["dtype"], r["shape"], gd.pack_payload(r["dtype"], [fill] * n_elem))
+            w.record(key, r["dtype"], r["shape"], _payload(r["field"], r["dtype"], n_elem, lie_mstep))
         w.finalize()
     (ev / "schema" / "descriptors.sha256").write_text("\n".join(desc_lines) + "\n")
     return ev
@@ -97,14 +114,14 @@ def _bundle(root: Path):
         for lane in ("A", "B", "C"):
             d = root / f"{algo}-{lane}"
             d.mkdir()
-            (d / "stdout.abc").write_text(f"stdout for {algo}\n")
+            (d / "stdout.abc").write_text(f"KDM6ABC 1 {algo} fourcase_v1 {B} {K}\nEND\n")
     manifest = {"schema_version": 1, "diagnostic_driver_sha256": DIAG,
                 "canonical_driver_sha256": "c" * 64, "fixture_id": "f", "algorithms": {}}
     for algo in ("legacy", "conservative"):
         sha = _sha(root / f"{algo}-A" / "stdout.abc")
         manifest["algorithms"][algo] = {
             "abc_equal": True, "containers": 5, "evidence_dir": f"{algo}-C-evidence",
-            "fixture_sha256": "fx" + "0" * 62, "parameter_sha256": "pa" + "0" * 62,
+            "fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64,
             "mstep_min": 1, "mstep_max": 1,
             "stdout_sha256": {"A": sha, "B": sha, "C": sha}}
     (root / "cpp_abc_manifest.json").write_text(json.dumps(manifest))
@@ -158,7 +175,7 @@ def test_missing_algorithm_leg_rejected(tmp_path):
 def test_mismatched_fixture_across_legs_rejected(tmp_path):
     root = _bundle(tmp_path)
     m = json.loads((root / "cpp_abc_manifest.json").read_text())
-    m["algorithms"]["conservative"]["fixture_sha256"] = "zz" + "0" * 62
+    m["algorithms"]["conservative"]["fixture_sha256"] = "c" * 64  # valid hex, differs
     (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_bundle(root)
@@ -188,8 +205,9 @@ def test_cpp_evidence_normalizes_and_events_build(tmp_path):
     assert events and run["ops"]
 
 
-def test_inexact_mstep_flag_rejected(tmp_path):
-    # P0-4: a non-exact mstep_exact_integer means the decoded projection is untrusted.
-    ev = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy", exact_ok=False), "legacy")
-    with pytest.raises(nz.NormalizeError):
-        nz.from_cpp_evidence(ev)
+def test_falsely_exact_mstep_flag_rejected(tmp_path):
+    # P0-1: producer reports mstep_exact_integer=1 but mstep_native=1.5 — the
+    # INDEPENDENT recomputation from the raw operand rejects the lie at verify time.
+    tree = _full_evidence(tmp_path, "legacy", lie_mstep=True)
+    with pytest.raises(bio.BundleError):
+        bio.verify_cpp_evidence(tree, "legacy")

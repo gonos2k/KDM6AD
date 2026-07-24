@@ -22,8 +22,21 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_derived as gdv            # noqa: E402
 import g33_dump as gd                # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
+
+_HEX64 = tuple("0123456789abcdef")
+# Header fields that must be IDENTICAL across every container of one run — a bundle
+# must not splice containers from separate executions that happen to share a
+# schedule (owner P0-5).
+_SAME_RUN = ("run_uuid", "process_id", "owner_thread_id", "producer_commit",
+             "binary_sha256", "resolved_binary_sha256", "column_layout_id",
+             "canonical_k_order", "column_index_map")
+
+
+def _is_hex64(s) -> bool:
+    return isinstance(s, str) and len(s) == 64 and all(c in _HEX64 for c in s)
 
 COMPARATOR_CONTAINERS = ("L1_outer_pre", "L1_main_n1", "L1_surface")
 _MAX_JSON_BYTES = 4 * 1024 * 1024
@@ -173,6 +186,31 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
         gev.validate_evidence(schedule, contract.get("containers", []), list(parsed.values()))
     except gd.G33Corruption as e:
         raise BundleError(f"evidence completeness: {e}") from None
+
+    # SAME-RUN invariants: every container shares one run identity (P0-5).
+    anchor = None
+    for cid, c in parsed.items():
+        sig = tuple(json.dumps(c["header"].get(k), sort_keys=True) for k in _SAME_RUN)
+        if c["header"].get("canonical_k_order") != "top-first":
+            raise BundleError(f"{cid} canonical_k_order != top-first")
+        if anchor is None:
+            anchor = sig
+        elif sig != anchor:
+            raise BundleError(f"{cid} run identity differs from other containers (spliced?)")
+
+    # INDEPENDENT producer-flag recomputation: recompute mstep/gate/floor exactness
+    # and the dtcld bit-binding from the raw native operands, so a producer that
+    # FALSELY reports exact=1 (or a wrong dtcld) is rejected — never trusted (P0-1/P0-6).
+    qcrmin, dtcld = schedule.get("qcrmin"), schedule.get("dtcld")
+    for cid, c in parsed.items():
+        subpre = [r for r in c["records"] if r.get("stage") == "substep_pre"]
+        if not subpre:
+            continue
+        pre = {r["field"]: (r["dtype"], r["payload"]) for r in subpre}
+        try:
+            gdv.check_producer_flags(pre, subpre[0]["n"], qcrmin, dtcld)
+        except gd.G33Corruption as e:
+            raise BundleError(f"{cid} producer flags: {e}") from None
     return {"contract": contract, "containers": parsed}
 
 
@@ -187,6 +225,8 @@ def verify_cpp_bundle(bundle_dir) -> dict:
     if not isinstance(algos, dict) or set(algos) != set(_ALGOS):
         raise BundleError(f"manifest algorithms must be exactly {set(_ALGOS)}")
     diag_sha = manifest.get("diagnostic_driver_sha256")
+    if not _is_hex64(diag_sha):                # P0-2: mandatory, well-formed
+        raise BundleError("manifest diagnostic_driver_sha256 missing or not 64-hex")
 
     fixtures, params, out = set(), set(), {}
     for algo in _ALGOS:
@@ -205,6 +245,12 @@ def verify_cpp_bundle(bundle_dir) -> dict:
             seen.add(got)
         if len(seen) != 1:
             raise BundleError(f"{algo}: A/B/C stdout not byte-identical")
+        # each stdout must be a real ABC frame, not an arbitrary blob (P0-2).
+        head = _under(bundle_dir, bundle_dir / f"{algo}-A" / "stdout.abc").read_bytes()[:64]
+        if not head.startswith(b"KDM6ABC "):
+            raise BundleError(f"{algo}: stdout.abc is not an ABC frame")
+        if not (_is_hex64(meta.get("fixture_sha256")) and _is_hex64(meta.get("parameter_sha256"))):
+            raise BundleError(f"{algo}: fixture/parameter sha256 not 64-hex")
         fixtures.add(meta.get("fixture_sha256"))
         params.add(meta.get("parameter_sha256"))
         ev = _under(bundle_dir, bundle_dir / meta["evidence_dir"])
