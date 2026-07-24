@@ -60,6 +60,22 @@ torch::Tensor tensor2(int64_t B, int64_t K, const std::vector<float>& values) {
         .reshape({B, K});
 }
 
+// The shared fixture authority is CANONICAL TOP-FIRST (k=0 = top), matching the op
+// trace and the Fortran reference. The kdm6 wrapper State/Forcing are SURFACE-FIRST
+// (k=0 = surface): runtime.cpp flip_k's them into top-first `cur_pyc` before
+// sedimentation. Loading top-first authority data straight into the wrapper made
+// sedimentation (and the whole trace) see bottom-first values under top-first
+// labels — the observed C++ k-orientation discrepancy. So the fixture is flipped to
+// host/surface-first here and flipped back to canonical top-first for --fixture-only
+// (keeping the emitted fixture, and its SHA, byte-identical to the authority).
+torch::Tensor to_host_order(const torch::Tensor& canonical_top_first) {
+    return torch::flip(canonical_top_first, {1}).contiguous();
+}
+
+torch::Tensor host2(int64_t B, int64_t K, const std::vector<float>& values) {
+    return to_host_order(tensor2(B, K, values));
+}
+
 torch::Tensor tensor1(const std::vector<float>& values) {
     return torch::tensor(values, torch::TensorOptions().dtype(torch::kFloat32));
 }
@@ -75,24 +91,24 @@ std::vector<float> decode(const std::array<std::uint32_t, N>& words) {
 Fixture make_shared_fixture() {
     namespace fx = g33_fixture_v1;
     State s;
-    s.th = tensor2(fx::B, fx::K, decode(fx::th_bits));
-    s.qv = tensor2(fx::B, fx::K, decode(fx::qv_bits));
-    s.qc = tensor2(fx::B, fx::K, decode(fx::qc_bits));
-    s.qr = tensor2(fx::B, fx::K, decode(fx::qr_bits));
-    s.qi = tensor2(fx::B, fx::K, decode(fx::qi_bits));
-    s.qs = tensor2(fx::B, fx::K, decode(fx::qs_bits));
-    s.qg = tensor2(fx::B, fx::K, decode(fx::qg_bits));
-    s.nccn = tensor2(fx::B, fx::K, decode(fx::nccn_bits));
-    s.nc = tensor2(fx::B, fx::K, decode(fx::nc_bits));
-    s.ni = tensor2(fx::B, fx::K, decode(fx::ni_bits));
-    s.nr = tensor2(fx::B, fx::K, decode(fx::nr_bits));
-    s.bg = tensor2(fx::B, fx::K, decode(fx::bg_bits));
+    s.th = host2(fx::B, fx::K, decode(fx::th_bits));
+    s.qv = host2(fx::B, fx::K, decode(fx::qv_bits));
+    s.qc = host2(fx::B, fx::K, decode(fx::qc_bits));
+    s.qr = host2(fx::B, fx::K, decode(fx::qr_bits));
+    s.qi = host2(fx::B, fx::K, decode(fx::qi_bits));
+    s.qs = host2(fx::B, fx::K, decode(fx::qs_bits));
+    s.qg = host2(fx::B, fx::K, decode(fx::qg_bits));
+    s.nccn = host2(fx::B, fx::K, decode(fx::nccn_bits));
+    s.nc = host2(fx::B, fx::K, decode(fx::nc_bits));
+    s.ni = host2(fx::B, fx::K, decode(fx::ni_bits));
+    s.nr = host2(fx::B, fx::K, decode(fx::nr_bits));
+    s.bg = host2(fx::B, fx::K, decode(fx::bg_bits));
 
     Forcing f;
-    f.rho = tensor2(fx::B, fx::K, decode(fx::rho_bits));
-    f.p = tensor2(fx::B, fx::K, decode(fx::p_bits));
-    f.pii = tensor2(fx::B, fx::K, decode(fx::pii_bits));
-    f.delz = tensor2(fx::B, fx::K, decode(fx::delz_bits));
+    f.rho = host2(fx::B, fx::K, decode(fx::rho_bits));
+    f.p = host2(fx::B, fx::K, decode(fx::p_bits));
+    f.pii = host2(fx::B, fx::K, decode(fx::pii_bits));
+    f.delz = host2(fx::B, fx::K, decode(fx::delz_bits));
 
     const float qmin = static_cast<float>(kdm6::constants::EPS);
     if (bits_from_f32(qmin) != fx::qmin_bits)
@@ -177,7 +193,10 @@ std::string hex32(float value) {
 }
 
 void emit_fixture_field(const char* name, const torch::Tensor& value, int64_t B, int64_t K) {
-    auto t = value.detach().contiguous().cpu();
+    // The Fixture holds host/surface-first tensors (see to_host_order); emit the
+    // fixture in CANONICAL TOP-FIRST order so it stays byte-identical to the
+    // authority and the Fortran-side fixture SHA.
+    auto t = torch::flip(value, {1}).detach().contiguous().cpu();
     if (t.scalar_type() != torch::kFloat32 || t.dim() != 2 ||
         t.size(0) != B || t.size(1) != K)
         throw std::runtime_error(std::string("fixture field shape/dtype mismatch: ") + name);

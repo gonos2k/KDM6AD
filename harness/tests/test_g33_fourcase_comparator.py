@@ -30,7 +30,7 @@ def _species_run(algo, sp, cells, stages, bits):
                 b = bits.get(key, _base(dt, *key)) & _MASK[dt]
                 ops.append({"n": n, "col": col, "k": k, "role": role, "species": sp,
                             "op_id": opid, "field": fld, "dtype": dt, "bits": b})
-    return {"algorithm": algo, "ops": ops, "stages": list(stages or [])}
+    return {"algorithm": algo, "B": 3, "K": 4, "ops": ops, "stages": list(stages or [])}
 
 
 def _run(algo, cells=((1, 1, 1, "INTERIOR"),), stages=None, bits=None):
@@ -208,6 +208,57 @@ def test_unknown_stage_is_invalid():
                                       "k": 1, "field": "qr", "dtype": "f32", "bits": 1}])
     assert _verdict(_run("legacy"), _run("legacy"), _run("conservative", stages=[]),
                     b) == "INVALID_EVIDENCE"
+
+
+# ── P0-6: fail-closed gaps (all must be INVALID, never a crash) ────────────────
+def test_out_of_scope_species_op_is_invalid_not_crash():
+    b = _run("conservative")
+    b["ops"][0]["species"] = "qs"          # schema raises NotImplementedError
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative"), b) == "INVALID_EVIDENCE"
+
+
+def test_unknown_substep_field_is_invalid():
+    b = _run("conservative", stages=[{"stage": "substep_pre", "n": 1, "col": 1,
+                                      "k": -1, "field": "invented", "dtype": "f32", "bits": 1}])
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative", stages=[]),
+                    b) == "INVALID_EVIDENCE"
+
+
+def test_wrong_stage_dtype_is_invalid():
+    d = [{"stage": "surface", "n": 0, "col": 1, "k": -1, "field": "rain_increment",
+          "dtype": "u8", "bits": 1}]              # schema says rain_increment is f32
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative", stages=[]),
+                    _run("conservative", stages=d)) == "INVALID_EVIDENCE"
+
+
+def test_role_k_mismatch_is_invalid():
+    b = _run("conservative")
+    b["ops"][0]["role"] = "BOTTOM"          # k=1 in K=4 is INTERIOR, not BOTTOM
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative"), b) == "INVALID_EVIDENCE"
+
+
+def test_col_out_of_range_is_invalid():
+    b = _run("conservative")
+    b["ops"][0]["col"] = 0                   # col must be 1..B
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative"), b) == "INVALID_EVIDENCE"
+
+
+def test_float_bits_is_invalid():
+    b = _run("conservative")
+    b["ops"][0]["bits"] = 1.9                # must be a genuine int, not coerced
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative"), b) == "INVALID_EVIDENCE"
+
+
+def test_missing_BK_is_invalid():
+    b = _run("conservative")
+    del b["B"]
+    assert _verdict(_run("legacy"), _run("legacy"), _run("conservative"), b) == "INVALID_EVIDENCE"
+
+
+def test_mechanism_out_of_schema_key_raises():
+    import pytest
+    with pytest.raises(mech.TaxonomyHole):
+        mech.mechanism("legacy", "TOP", "qr", "QR_OUTFLOW", "dq_out")  # no outflow at legacy TOP
 
 
 # ── P1-4: PASS records the raw-bit divergence signature ───────────────────────

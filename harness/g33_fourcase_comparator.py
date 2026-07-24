@@ -46,7 +46,7 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
 _PRESED = ("outer_pre_sed", "substep_pre")
 _SURFACE_N = 10 ** 9          # order surface after every substep
-_WIDTH = {"f32": 32, "f64": 64}
+_WIDTH = {"f32": 32, "f64": 64, "i32": 32, "u8": 8}
 
 
 class StructuralError(Exception):
@@ -65,54 +65,99 @@ class Event:
     bits: int
 
 
+def _int(v, what):
+    """Accept a genuine int only — reject bool and any float (int(1.9)->1, int(True)
+    ->1 would silently coerce structurally-wrong evidence)."""
+    if isinstance(v, bool) or not isinstance(v, int):
+        raise StructuralError(f"{what} must be an int, got {v!r}")
+    return v
+
+
+def _bits(v, dt):
+    b = _int(v, "bits")
+    if dt not in _WIDTH:
+        raise StructuralError(f"unknown dtype {dt!r}")
+    if b < 0 or b >= (1 << _WIDTH[dt]):
+        raise StructuralError(f"bits {v!r} out of range for dtype {dt}")
+    return b
+
+
 def _events(run) -> list[Event]:
     try:
         algo = run["algorithm"]
         if algo not in _ALGOS:
             raise StructuralError(f"unknown algorithm {algo!r}")
+        B, K = _int(run["B"], "B"), _int(run["K"], "K")
+        if B < 1 or K < 2:
+            raise StructuralError(f"degenerate B={B} K={K}")
         out: list[Event] = []
         for o in run["ops"]:
             role, sp, op_id, fld, dt = (o["role"], o["species"], o["op_id"],
                                         o["field"], o["dtype"])
+            col, k, n = _int(o["col"], "col"), _int(o["k"], "k"), _int(o["n"], "n")
+            if not (1 <= col <= B):
+                raise StructuralError(f"op col {col} out of 1..{B}")
+            if not (0 <= k < K):
+                raise StructuralError(f"op k {k} out of 0..{K - 1}")
+            if n < 1:
+                raise StructuralError(f"op n {n} < 1")
+            if role != schema.cell_role(k, K):
+                raise StructuralError(f"op role {role} != cell_role({k},{K})")
             try:
                 sr = schema.species_rank(sp)
                 oo = schema.op_ordinal(algo, role, sp, op_id)
                 fo = schema.field_ordinal(algo, role, op_id, fld)
                 want_dt = schema.field_dtype(algo, role, op_id, fld)
-            except (KeyError, ValueError) as e:
+            except (KeyError, ValueError, NotImplementedError) as e:
                 raise StructuralError(f"op not in schema: {op_id}.{fld} [{role}/{sp}]") from e
             if dt != want_dt:
                 raise StructuralError(f"dtype {op_id}.{fld}: got {dt} want {want_dt}")
             spec = mech.mechanism(algo, role, sp, op_id, fld)
             out.append(Event(
-                order=(o["n"], 1, o["k"], sr, oo, fo, o["col"]),
+                order=(n, 1, k, sr, oo, fo, col),
                 phase="op",
-                identity=("op", o["n"], o["col"], o["k"], role, sp, op_id, fld, dt),
-                shared_key=("op", o["n"], o["col"], o["k"], role, sp, spec.tag, dt),
+                identity=("op", n, col, k, role, sp, op_id, fld, dt),
+                shared_key=("op", n, col, k, role, sp, spec.tag, dt),
                 kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(o["bits"], dt)))
         for s in run["stages"]:
             stage, fld, dt = s["stage"], s["field"], s["dtype"]
             if stage not in _STAGES:
                 raise StructuralError(f"unknown stage {stage!r}")
+            col, k, n = _int(s["col"], "col"), _int(s["k"], "k"), _int(s["n"], "n")
+            if not (1 <= col <= B):
+                raise StructuralError(f"stage col {col} out of 1..{B}")
+            try:                                  # rejects unknown field AND dtype
+                want_dt = schema.semantic_stage_field_dtype(stage, fld)
+            except KeyError as e:
+                raise StructuralError(f"unknown {stage} field {fld!r}") from e
+            if dt != want_dt:
+                raise StructuralError(f"stage dtype {stage}.{fld}: got {dt} want {want_dt}")
+            fo = schema.stage_field_ordinal(stage, fld)
             if stage == "surface":
-                fo = schema.stage_field_ordinal("surface", fld)
+                if n != 0 or k != -1:
+                    raise StructuralError(f"surface must have n=0 k=-1, got n={n} k={k}")
                 spec = mech.surface_mechanism(fld)
                 out.append(Event(
-                    order=(_SURFACE_N, 0, 0, 0, 0, fo, s["col"]),
+                    order=(_SURFACE_N, 0, 0, 0, 0, fo, col),
                     phase="surface",
-                    identity=("surface", s["n"], s["col"], s["k"], fld, dt),
-                    shared_key=("surface", s["col"], spec.tag, dt),
+                    identity=("surface", n, col, k, fld, dt),
+                    shared_key=("surface", col, spec.tag, dt),
                     kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(s["bits"], dt)))
             else:                                 # outer_pre_sed | substep_pre(n)
-                n = 0 if stage == "outer_pre_sed" else s["n"]
-                fo = schema.stage_field_ordinal(stage, fld)
+                if not (k == -1 or 0 <= k < K):
+                    raise StructuralError(f"{stage} k {k} out of -1..{K - 1}")
+                if stage == "outer_pre_sed" and n != 0:
+                    raise StructuralError(f"outer_pre_sed must have n=0, got {n}")
+                if stage == "substep_pre" and n < 1:
+                    raise StructuralError(f"substep_pre must have n>=1, got {n}")
+                order_n = 0 if stage == "outer_pre_sed" else n
                 out.append(Event(
-                    order=(n, 0, s["k"], 0, 0, fo, s["col"]),
+                    order=(order_n, 0, k, 0, 0, fo, col),
                     phase=stage,
-                    identity=(stage, s["n"], s["col"], s["k"], fld, dt),
+                    identity=(stage, n, col, k, fld, dt),
                     shared_key=None, kind=None, tag=None, dtype=dt,
                     bits=_bits(s["bits"], dt)))
-    except (KeyError, TypeError, ValueError, IndexError) as e:
+    except (KeyError, TypeError, ValueError, IndexError, NotImplementedError) as e:
         # P0-6: any malformed normalized record is INVALID_EVIDENCE, not a crash.
         raise StructuralError(f"malformed normalized run: {e!r}") from e
     out.sort(key=lambda e: e.order)
@@ -120,13 +165,6 @@ def _events(run) -> list[Event]:
     if len(ids) != len(set(ids)):
         raise StructuralError("duplicate record identity")
     return out
-
-
-def _bits(v, dt):
-    b = int(v)
-    if b < 0 or b >= (1 << _WIDTH.get(dt, 8)):
-        raise StructuralError(f"bits {v!r} out of range for dtype {dt}")
-    return b
 
 
 def _mono(bits, w):
@@ -139,7 +177,7 @@ def _signature(dt, f_bits, c_bits):
     """Raw-bit divergence signature for the result — direction + ULP distance."""
     sig = {"dtype": dt, "f_bits": f"{f_bits:#x}", "c_bits": f"{c_bits:#x}",
            "xor": f"{f_bits ^ c_bits:#x}"}
-    w = _WIDTH.get(dt)
+    w = {"f32": 32, "f64": 64}.get(dt)        # ULP ordering is float-only
     if w:
         ulp = _mono(c_bits, w) - _mono(f_bits, w)
         sig["ulp_delta"] = ulp

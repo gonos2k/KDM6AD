@@ -220,6 +220,12 @@ _STAGE_FIELDS_BASE = {
     "surface":         [("bottom_fall_qr", "f32", "B"), ("bottom_fall_qs", "f32", "B"),
                         ("bottom_fall_qg", "f32", "B"), ("bottom_fall_qi", "f32", "B"),
                         ("bottom_fall_total", "f32", "B"), ("delz_bottom", "f32", "B"),
+                        # surface_denr: the water-density constant the rain conversion
+                        # divides by. An UNSEALED external constant (not in the PARAM
+                        # set), so it is emitted and compared cross-tree — otherwise a
+                        # C++ DENR ≠ Fortran denr would surface only as a false
+                        # rain_increment "shared" PASS (owner P0-5).
+                        ("surface_denr", "f32", "B"),
                         ("rain_increment", "f32", "B"), ("snow_increment", "f32", "B"),
                         ("graupel_increment", "f32", "B")],
 }

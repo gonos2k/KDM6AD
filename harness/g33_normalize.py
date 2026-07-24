@@ -45,6 +45,12 @@ _CPP_SUBPRE = {
     "delz_safe": "delz_safe", "dend_safe": "dend_safe",
     "mstep_decoded_i32": "mstep", "gate_decoded_u8": "gate",
 }
+# Projecting the DECODED mstep/gate silently discards whether the native value was
+# actually an exact integer / exact 0|1. A native mstep of 2.0000002 decodes to 2
+# with mstep_exact_integer=0; the comparison would then look clean on a value the
+# producer itself flagged inexact. These flags MUST all be 1 before we trust the
+# decoded projection (owner P0-4).
+_EXACT_FLAGS = ("mstep_exact_integer", "gate_exact_01")
 
 
 class NormalizeError(ValueError):
@@ -75,7 +81,9 @@ def from_fortran_run(run) -> dict:
             raise NormalizeError(f"fortran run has unknown PREC family {family!r}")
         stages.append({"stage": "surface", "n": 0, "col": col, "k": -1,
                        "field": field, "dtype": "f32", "bits": bits})
-    return {"algorithm": run.algorithm, "ops": ops, "stages": stages}
+    B = max((o["col"] for o in ops), default=0)
+    K = max((o["k"] for o in ops), default=-1) + 1
+    return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops, "stages": stages}
 
 
 def _lane_to_col(column_index_map):
@@ -92,9 +100,9 @@ def _lane_to_col(column_index_map):
 def _expand(record, B, K, lane_to_col):
     """Yield (col, k, dtype, bits) per element of a whole-tensor record. shape [B]
     is per-column (k=-1); shape [B,K] is per (column, level), B outer / K inner.
-    The C++ [B,K] tensors are stored BOTTOM-first (native model k = kts..kte), so
-    the storage index is flipped to the comparator's TOP-first canonical k
-    (k=0 top) — matching the Fortran per-level records and the op cell_role."""
+    The container declares canonical top-first k (k=0 top) — with the driver's
+    fixture now loaded in host order (abc_driver to_host_order), the emitted
+    tensors are already top-first, so the storage index IS the canonical k."""
     dtype, shape = record["dtype"], record["shape"]
     bits = dv._raw_bits(dtype, record["payload"])
     if shape == [B]:
@@ -103,7 +111,7 @@ def _expand(record, B, K, lane_to_col):
     elif shape == [B, K]:
         for b in range(B):
             for k in range(K):
-                yield lane_to_col[b], K - 1 - k, dtype, bits[b * K + k]
+                yield lane_to_col[b], k, dtype, bits[b * K + k]
     else:
         raise NormalizeError(f"unexpected record shape {shape} for B={B} K={K}")
 
@@ -113,16 +121,23 @@ def from_cpp_evidence(evidence) -> dict:
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
 
-    NOT VERDICT-READY: columns and the stage [B,K] k-orientation are validated
-    (entry state is bit-identical to Fortran), but the op-record k-orientation is an
-    OPEN discrepancy — see g33_fortran/CPP_BUNDLE_ORIENTATION.md. Do not feed the op
-    stream to adjudicate() for a real C4 verdict until that is resolved at source."""
+    Orientation is RESOLVED (PR#67A): with the driver loading the fixture in host
+    order, the C++ tensors are genuinely top-first and legacy F↔C++ is bit-identical
+    (see g33_fortran/CPP_BUNDLE_ORIENTATION.md). Columns, stage [B,K] and op streams
+    all validate. Full verdict-readiness still awaits the offline evidence validator
+    (independent record-completeness + root attestation, PR#67B) before adjudicate()
+    is run on real bundles for a C4 verdict."""
     contract = evidence["contract"]
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
+    bk = set()
     for cid, c in evidence["containers"].items():
         h = c["header"]
+        if h.get("canonical_k_order") != "top-first":
+            raise NormalizeError(f"container {cid} k-order {h.get('canonical_k_order')!r} "
+                                 f"is not top-first — orientation unproven")
         B, K = h["B"], h["K"]
+        bk.add((B, K))
         lane_to_col = _lane_to_col(h["column_index_map"])
         for r in c["records"]:
             stage = r["stage"]
@@ -136,6 +151,11 @@ def from_cpp_evidence(evidence) -> dict:
             elif stage in _COMPARATOR_STAGES:
                 field = r["field"]
                 if stage == "substep_pre":
+                    if r["field"] in _EXACT_FLAGS:      # P0-4: decoded value is only
+                        vals = dv.unpack_values(r["dtype"], r["payload"])  # trustworthy
+                        if any(int(v) != 1 for v in vals):                 # if exact
+                            raise NormalizeError(
+                                f"{r['field']} not all-exact in {cid}: {vals}")
                     field = _CPP_SUBPRE.get(field)
                     if field is None:            # C++-only diagnostic — dropped
                         continue
@@ -146,4 +166,7 @@ def from_cpp_evidence(evidence) -> dict:
                                    "col": col, "k": k, "field": field,
                                    "dtype": dtype, "bits": bits})
             # op-less non-comparator stages (outer_post_*) are simply not emitted
-    return {"algorithm": algo, "ops": ops, "stages": stages}
+    if len(bk) != 1:
+        raise NormalizeError(f"containers disagree on (B,K): {sorted(bk)}")
+    B, K = bk.pop()
+    return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages}

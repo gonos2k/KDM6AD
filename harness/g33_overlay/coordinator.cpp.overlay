@@ -2800,6 +2800,11 @@ SedimentationOutputs sedimentation_chain(
             G33_REC(g33, "surface", "bottom_fall_total",
                     fall_qr_b + fall_qs_b + fall_qg_b + fall_qi_b);
             G33_REC(g33, "surface", "delz_bottom", delz_b);
+            // The water-density constant the rain conversion divides by — an
+            // UNSEALED external constant, emitted so a C++ DENR != Fortran denr is
+            // caught cross-tree rather than hiding as a false rain PASS (owner P0-5).
+            G33_REC(g33, "surface", "surface_denr",
+                    torch::full_like(delz_b, constants::DENR));
             G33_REC(g33, "surface", "rain_increment", surface.rain_increment);
             G33_REC(g33, "surface", "snow_increment", surface.snow_increment);
             G33_REC(g33, "surface", "graupel_increment", surface.graupel_increment);

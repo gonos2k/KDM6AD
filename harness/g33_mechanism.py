@@ -169,12 +169,14 @@ MECHANISMS = {key: _classify(*key) for key in _schema_universe()}
 
 
 def mechanism(algorithm, role, species, op_id, field) -> MechanismSpec:
+    # Closed world: only in-schema (algorithm, role, species, op_id, field) tuples
+    # have a mechanism. An out-of-schema combination (e.g. QR_OUTFLOW at a legacy
+    # TOP cell that has no outflow) is a taxonomy hole, not a live-classified guess.
     try:
         return MECHANISMS[(algorithm, role, species, op_id, field)]
     except KeyError:
-        # Not in the pre-built table -> an out-of-schema field. Classify live so the
-        # hole raises TaxonomyHole rather than a bare KeyError the caller misreads.
-        return _classify(algorithm, role, species, op_id, field)
+        raise TaxonomyHole(
+            f"out-of-schema mechanism key: {(algorithm, role, species, op_id, field)}") from None
 
 
 def check_universe():
