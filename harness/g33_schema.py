@@ -68,18 +68,18 @@ def field_dtype(algorithm: str, role: str, op_id: str, field: str) -> str:
 # onto (Fortran canonical names / C++ native fields projected to these).
 _SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[chain]]
 
-# The COMMON, cross-backend BIT-COMPARABLE fields only. Two exclusions are
-# deliberate: `dtcld` is f32 in Fortran but f64 in C++ (dtcld_effective) — a raw
-# bit-compare across widths is meaningless, and any dtcld effect on the ladder is
-# caught by the ops themselves; `surface_denr` is a Fortran-only external constant
-# with no C++ counterpart. Both backends' normalizers project onto exactly this
-# set, so the F↔C++ identity universes match.
+# The COMMON, cross-backend BIT-COMPARABLE fields only. `dtcld` is excluded: it is
+# f32 in Fortran but f64 in C++ (dtcld_effective) — a raw bit-compare across widths
+# is meaningless, and any dtcld effect on the ladder is caught by the ops. Both
+# backends now emit `surface_denr` (the unsealed rain-conversion constant), so it IS
+# compared. Both normalizers project onto exactly this set, so the F↔C++ identity
+# universes match.
 _SEMANTIC_STAGE_FIELDS = {
     "outer_pre_sed": ["qr", "nr", "qv", "t", "rho", "delz"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
                     "gate", "mstep"],
     "surface": ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
-                "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
+                "bottom_fall_qi", "bottom_fall_total", "delz_bottom", "surface_denr",
                 "rain_increment", "snow_increment", "graupel_increment"],
 }
 
