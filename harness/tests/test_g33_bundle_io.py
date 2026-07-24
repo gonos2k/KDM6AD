@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 import g33_bundle_io as bio        # noqa: E402
 import g33_dump as gd              # noqa: E402
 import g33_expectation as ge       # noqa: E402
+import g33_fixture_v1 as gfx        # noqa: E402
 import g33_normalize as nz         # noqa: E402
 
 B, K = 3, 4
@@ -23,10 +24,10 @@ DIAG = "d" * 64
 CMAP = [[i, 0, i, i] for i in range(B)]
 
 
-def _sched(algo):
+def _sched(algo, substeps=1):
     return {"case_id": "abc-fourcase_v1", "pair_id": f"abc-{algo}", "backend": "cpp",
-            "algorithm": algo, "B": B, "K": K, "loops": 1, "mstepmax_main": [1],
-            "mstepmax_ice": [1], "species_scope": ["qr", "nr"], "qcrmin": 1e-9,
+            "algorithm": algo, "B": B, "K": K, "loops": 1, "mstepmax_main": [substeps],
+            "mstepmax_ice": [substeps], "species_scope": ["qr", "nr"], "qcrmin": 1e-9,
             "dtcld": 20.0, "instrumented_stages": ["outer_pre_sed", "substep_pre",
             "op", "surface", "outer_post_sed", "outer_post_micro"]}
 
@@ -48,18 +49,26 @@ _SUBPRE_VAL = {
 }
 
 
-def _payload(field, dtype, n_elem, lie_mstep):
-    v = _SUBPRE_VAL.get(field, 0)
-    if lie_mstep and field == "mstep_native":
-        v = 1.5                       # non-integer, but the flag still claims exact
+def _payload(field, dtype, n_elem, lie_mstep, n=1, mstep=1):
+    """Emit operands consistent with the producer contract: the mstep vector and the
+    gate law gate == (n <= mstep) must recompute correctly from the raw values."""
+    if field in ("mstep_input_native", "mstep_native"):
+        v = float(mstep) + (0.5 if lie_mstep and field == "mstep_native" else 0.0)
+    elif field == "mstep_decoded_i32":
+        v = mstep
+    elif field in ("gate_native", "gate_decoded_u8", "active_mask"):
+        v = 1 if n <= mstep else 0
+    else:
+        v = _SUBPRE_VAL.get(field, 0)
     return gd.pack_payload(dtype, [v] * n_elem)
 
 
-def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False):
+def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False,
+                   substeps=1, mstep=1, mstep_by_n=None):
     """Write a complete {algo}-C-evidence tree; omit_container drops one container
     (file + descriptor) so it writes cleanly but the record multiset is short,
     exercising the independent completeness gate."""
-    sched = _sched(algo)
+    sched = _sched(algo, substeps)
     recs = list(ge.expected_records(sched))
     index = ge.run_index(sched)["containers"]
     by_cid: dict[str, list] = {}
@@ -101,28 +110,53 @@ def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False):
             for s in r["shape"]:
                 n_elem *= s
             key = {**r, "seq_no": r["op_seq_id"] - first}
-            w.record(key, r["dtype"], r["shape"], _payload(r["field"], r["dtype"], n_elem, lie_mstep))
+            n = r["n"] or 1
+            m = (mstep_by_n or {}).get(n, mstep)
+            w.record(key, r["dtype"], r["shape"],
+                     _payload(r["field"], r["dtype"], n_elem, lie_mstep, n, m))
         w.finalize()
     (ev / "schema" / "descriptors.sha256").write_text("\n".join(desc_lines) + "\n")
     return ev
 
 
-def _bundle(root: Path):
-    """A full two-leg bundle with manifest + A/B/C stdout for root attestation."""
+def _abc_stdout(algo: str, truncate=False) -> str:
+    """A complete ABC frame: 12 state fields [B,K] + 3 increments [B], all f32."""
+    lines = [f"KDM6ABC 1 {algo} fourcase_v1 {B} {K}"]
+    for name in gfx.STATE_FIELDS:
+        lines.append(f"FIELD {name} f32 2 {B} {K} {B * K} " + " ".join(["3f800000"] * (B * K)))
+    for name in ("rain_increment", "snow_increment", "graupel_increment"):
+        lines.append(f"FIELD {name} f32 1 {B} {B} " + " ".join(["00000000"] * B))
+    if truncate:
+        lines = lines[:6]
+    lines.append("END")
+    return "\n".join(lines) + "\n"
+
+
+def _bundle(root: Path, truncate_abc=False, **ev):
+    """A full two-leg bundle with manifest + A/B/C stdout for root attestation.
+    Fixture/parameter SHAs come from the CHECKED-IN authority, so the bundle is
+    bound to the real problem rather than to its own self-consistent manifest."""
+    authority = gfx.load_manifest()
     for algo in ("legacy", "conservative"):
-        _full_evidence(root, algo)
+        _full_evidence(root, algo, **ev)
         for lane in ("A", "B", "C"):
             d = root / f"{algo}-{lane}"
             d.mkdir()
-            (d / "stdout.abc").write_text(f"KDM6ABC 1 {algo} fourcase_v1 {B} {K}\nEND\n")
+            (d / "stdout.abc").write_text(_abc_stdout(algo, truncate_abc))
     manifest = {"schema_version": 1, "diagnostic_driver_sha256": DIAG,
-                "canonical_driver_sha256": "c" * 64, "fixture_id": "f", "algorithms": {}}
+                "canonical_driver_sha256": "c" * 64, "fixture_id": "f",
+                "fixture_manifest_sha256": gfx.manifest_sha256(authority),
+                "algorithms": {}}
+    substeps = ev.get("substeps", 1)
+    msteps = list((ev.get("mstep_by_n") or {}).values()) or [ev.get("mstep", 1)]
     for algo in ("legacy", "conservative"):
         sha = _sha(root / f"{algo}-A" / "stdout.abc")
         manifest["algorithms"][algo] = {
-            "abc_equal": True, "containers": 5, "evidence_dir": f"{algo}-C-evidence",
-            "fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64,
-            "mstep_min": 1, "mstep_max": 1,
+            "abc_equal": True, "containers": 4 + substeps,
+            "evidence_dir": f"{algo}-C-evidence",
+            "fixture_sha256": gfx.fixture_sha256(authority),
+            "parameter_sha256": gfx.parameter_sha256(authority),
+            "mstep_min": min(msteps), "mstep_max": max(msteps),
             "stdout_sha256": {"A": sha, "B": sha, "C": sha}}
     (root / "cpp_abc_manifest.json").write_text(json.dumps(manifest))
     return root
@@ -187,6 +221,52 @@ def test_mismatched_fixture_across_legs_rejected(tmp_path):
     (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_bundle(root)
+
+
+def test_both_legs_sharing_a_WRONG_fixture_rejected(tmp_path):
+    # P0-5: leg-vs-leg equality alone would accept this — the wrong-problem bundle.
+    root = _bundle(tmp_path)
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    for algo in ("legacy", "conservative"):
+        m["algorithms"][algo]["fixture_sha256"] = "d" * 64
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(bio.BundleError, match="authority"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_wrong_fixture_manifest_sha_rejected(tmp_path):
+    root = _bundle(tmp_path)
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    m["fixture_manifest_sha256"] = "e" * 64
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(bio.BundleError, match="authority"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_truncated_abc_stdout_rejected(tmp_path):
+    # P0-6: all three lanes truncated identically — hashes still agree, so only a
+    # full protocol re-parse catches it.
+    with pytest.raises(bio.BundleError, match="stdout"):
+        bio.verify_cpp_bundle(_bundle(tmp_path, truncate_abc=True))
+
+
+def test_two_substep_bundle_verifies(tmp_path):
+    out = bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep=3))
+    assert out["algorithms"]["legacy"].mstep_range == (3, 3)
+
+
+def test_mstep_vector_drift_between_substeps_rejected(tmp_path):
+    # P0-4: each substep is internally consistent (gate law holds for both), so only
+    # the cross-substep continuity check sees that the vector changed.
+    with pytest.raises(bio.BundleError, match="mstep"):
+        bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep_by_n={1: 3, 2: 2}))
+
+
+def test_verified_leg_is_deep_frozen(tmp_path):
+    leg = bio.verify_cpp_bundle(_bundle(tmp_path))["algorithms"]["legacy"]
+    cid = next(iter(leg.containers))
+    with pytest.raises(TypeError):        # forging after verification must not work
+        leg.containers[cid]["records"][0]["payload"] = b"forged"
 
 
 def test_tampered_stdout_rejected(tmp_path):

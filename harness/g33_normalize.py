@@ -121,12 +121,13 @@ def _expand(record, B, K, lane_to_col):
     The container declares canonical top-first k (k=0 top) — with the driver's
     fixture now loaded in host order (abc_driver to_host_order), the emitted
     tensors are already top-first, so the storage index IS the canonical k."""
-    dtype, shape = record["dtype"], record["shape"]
+    # a verified leg is deep-frozen, so `shape` arrives as a tuple, not a list
+    dtype, shape = record["dtype"], tuple(record["shape"])
     bits = dv._raw_bits(dtype, record["payload"])
-    if shape == [B]:
+    if shape == (B,):
         for b in range(B):
             yield lane_to_col[b], -1, dtype, bits[b]
-    elif shape == [B, K]:
+    elif shape == (B, K):
         for b in range(B):
             for k in range(K):
                 yield lane_to_col[b], k, dtype, bits[b * K + k]

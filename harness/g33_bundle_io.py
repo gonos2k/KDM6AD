@@ -21,11 +21,14 @@ import os
 import sys
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_abc_protocol as abcp      # noqa: E402
 import g33_derived as gdv            # noqa: E402
 import g33_dump as gd                # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
+import g33_fixture_v1 as gfx         # noqa: E402
 
 _HEX64 = tuple("0123456789abcdef")
 # Header fields that must be IDENTICAL across every container of one run — a bundle
@@ -47,6 +50,18 @@ _ALGOS = ("legacy", "conservative")
 
 class BundleError(Exception):
     """The bundle is malformed, incomplete, or fails re-verification."""
+
+
+def _freeze(obj):
+    """Recursively make a parsed bundle read-only. `frozen=True` on the dataclass
+    only protects the ATTRIBUTES — without this, a caller could still forge
+    `leg.containers[cid]["records"][0]["payload"]` after verification while
+    root_attested stayed True."""
+    if isinstance(obj, dict):
+        return MappingProxyType({k: _freeze(v) for k, v in obj.items()})
+    if isinstance(obj, list):
+        return tuple(_freeze(v) for v in obj)
+    return obj
 
 
 @dataclass(frozen=True)
@@ -229,7 +244,7 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
     # and the dtcld bit-binding from the raw native operands, so a producer that
     # FALSELY reports exact=1 (or a wrong dtcld) is rejected — never trusted (P0-1/P0-6).
     qcrmin, dtcld = schedule.get("qcrmin"), schedule.get("dtcld")
-    mstep_vals = []
+    mstep_vals, mstep_anchor = [], {}
     for cid, c in parsed.items():
         subpre = [r for r in c["records"] if r.get("stage") == "substep_pre"]
         if not subpre:
@@ -242,10 +257,22 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
         # Derive the mstep range INDEPENDENTLY from the decoded evidence (P0-4), so
         # the manifest's mstep summary is attested, not trusted or hard-pinned to 1.
         for r in subpre:
+            if r["field"] in ("mstep_decoded_i32", "mstep_native"):
+                # The runtime computes the per-column mstep ONCE before the substep
+                # loop and reuses it, so within one (outer_loop, chain) every substep
+                # must carry the bit-identical vector. Per-container checks alone
+                # would admit an mstep that drifts between n.
+                anchor_key = (r["outer_loop"], r["chain"], r["field"])
+                prev = mstep_anchor.setdefault(anchor_key, r["payload"])
+                if prev != r["payload"]:
+                    raise BundleError(
+                        f"{cid}: {r['field']} differs from an earlier substep of "
+                        f"{anchor_key[:2]} — the per-column mstep vector is not "
+                        f"constant across the substep loop")
             if r["field"] == "mstep_decoded_i32":
                 mstep_vals.extend(int(v) for v in gdv.unpack_values(r["dtype"], r["payload"]))
     mstep_range = (min(mstep_vals), max(mstep_vals)) if mstep_vals else None
-    return VerifiedCppLeg(contract=contract, containers=parsed,
+    return VerifiedCppLeg(contract=_freeze(contract), containers=_freeze(parsed),
                           mstep_range=mstep_range, root_attested=False)
 
 
@@ -263,6 +290,11 @@ def verify_cpp_bundle(bundle_dir) -> dict:
     if not _is_hex64(diag_sha):                # P0-2: mandatory, well-formed
         raise BundleError("manifest diagnostic_driver_sha256 missing or not 64-hex")
 
+    authority = gfx.load_manifest()
+    want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
+    if manifest.get("fixture_manifest_sha256") != gfx.manifest_sha256(authority):
+        raise BundleError("manifest fixture_manifest_sha256 != checked-in authority")
+
     fixtures, params, out = set(), set(), {}
     for algo in _ALGOS:
         meta = algos[algo]
@@ -278,16 +310,32 @@ def verify_cpp_bundle(bundle_dir) -> dict:
             seen.add(got)
         if len(seen) != 1:
             raise BundleError(f"{algo}: A/B/C stdout not byte-identical")
-        # each stdout must be a real ABC frame, not an arbitrary blob (P0-2).
-        head = _under(bundle_dir, bundle_dir / f"{algo}-A" / "stdout.abc").read_bytes()[:64]
-        if not head.startswith(b"KDM6ABC "):
-            raise BundleError(f"{algo}: stdout.abc is not an ABC frame")
-        if not (_is_hex64(meta.get("fixture_sha256")) and _is_hex64(meta.get("parameter_sha256"))):
-            raise BundleError(f"{algo}: fixture/parameter sha256 not 64-hex")
+        # P0-5: bind to the CHECKED-IN fixture authority, not just leg-vs-leg equality
+        # — otherwise both legs sharing one WRONG fixture passes.
+        if meta.get("fixture_sha256") != want_fixture:
+            raise BundleError(f"{algo}: fixture_sha256 != checked-in authority")
+        if meta.get("parameter_sha256") != want_param:
+            raise BundleError(f"{algo}: parameter_sha256 != checked-in authority")
         fixtures.add(meta.get("fixture_sha256"))
         params.add(meta.get("parameter_sha256"))
         ev = _under(bundle_dir, bundle_dir / meta["evidence_dir"])
         leg = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha)
+        # P0-6: fully re-parse each lane against the ABC protocol (a prefix check
+        # accepts a truncated lane whose hash merely matches its siblings), then
+        # require the three PARSED structures to be identical. The case/B/K come
+        # from the leg's own verified schedule.
+        sched = leg.contract["schedule"]
+        case_name = str(sched.get("case_id", "")).split("-", 1)[-1]
+        parsed_lanes = []
+        for lane in ("A", "B", "C"):
+            raw = _under(bundle_dir, bundle_dir / f"{algo}-{lane}" / "stdout.abc").read_bytes()
+            try:
+                parsed_lanes.append(abcp.parse_abc_output(
+                    raw, algo, case_name, sched["B"], sched["K"]))
+            except gd.G33Corruption as e:
+                raise BundleError(f"{algo}-{lane} stdout.abc: {e}") from None
+        if parsed_lanes[0] != parsed_lanes[1] or parsed_lanes[0] != parsed_lanes[2]:
+            raise BundleError(f"{algo}: parsed A/B/C outputs differ")
         # the manifest's declared mstep summary must equal what the raw evidence shows
         # (P0-4) — no [1,1] hard-pin, so a real multi-subcycle bundle is admissible.
         obs = leg.mstep_range
