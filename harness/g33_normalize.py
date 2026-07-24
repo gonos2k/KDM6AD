@@ -14,8 +14,9 @@ that form, projecting BOTH backends onto the common semantic schema
 
   * Fortran — a `FortranRun` (g33_fortran_dump.parse_fortran_run). Ops map directly;
     the whitelisted outer_pre_sed / substep_pre / surface stages are FILTERED to the
-    semantic set (dropping the Fortran-only `dtcld`/`surface_denr`); the PREC family
-    (1=rain, 2=snow, 3=graupel) projects onto the surface OUTPUT fields.
+    common semantic set (dropping the Fortran-only `dtcld`; `surface_denr` IS kept —
+    both backends emit it now); the PREC family (1=rain, 2=snow, 3=graupel) projects
+    onto the surface OUTPUT fields.
   * C++ — a verified bundle (g33_bundle_io.verify_cpp_evidence). Whole-tensor
     records are expanded to per-(col,k) scalars via the container column map; the
     C++-native substep_pre diagnostics are projected to the canonical set (the
@@ -45,12 +46,10 @@ _CPP_SUBPRE = {
     "delz_safe": "delz_safe", "dend_safe": "dend_safe",
     "mstep_decoded_i32": "mstep", "gate_decoded_u8": "gate",
 }
-# Projecting the DECODED mstep/gate silently discards whether the native value was
-# actually an exact integer / exact 0|1. A native mstep of 2.0000002 decodes to 2
-# with mstep_exact_integer=0; the comparison would then look clean on a value the
-# producer itself flagged inexact. These flags MUST all be 1 before we trust the
-# decoded projection (owner P0-4).
-_EXACT_FLAGS = ("mstep_exact_integer", "gate_exact_01")
+# The decoded mstep/gate are trustworthy only because g33_bundle_io.verify_cpp_evidence
+# has already RECOMPUTED their exactness (+ floor/dtcld) from the raw native operands
+# via g33_derived.check_producer_flags — this module only projects, it does not
+# re-validate (owner architecture note).
 
 
 class NormalizeError(ValueError):
@@ -121,17 +120,20 @@ def from_cpp_evidence(evidence) -> dict:
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
 
-    Orientation is RESOLVED (PR#67A): with the driver loading the fixture in host
-    order, the C++ tensors are genuinely top-first and legacy F↔C++ is bit-identical
-    (see g33_fortran/CPP_BUNDLE_ORIENTATION.md). Columns, stage [B,K] and op streams
-    all validate. Full verdict-readiness still awaits the offline evidence validator
-    (independent record-completeness + root attestation, PR#67B) before adjudicate()
-    is run on real bundles for a C4 verdict."""
-    contract = evidence["contract"]
+    Accepts ONLY a root-attested VerifiedCppLeg (g33_bundle_io.verify_cpp_bundle) —
+    a leg from verify_cpp_evidence alone (root_attested=False) is refused, so the
+    normalizer cannot be fed evidence that skipped the root attestation. Columns, the
+    top-first [B,K] stage orientation, and the op stream are all validated; the
+    remaining C4-verdict gate is a real multi-subcycle fixture (this fixture is
+    mstep=1, so bit-identical F↔C++ is the correct INCONCLUSIVE)."""
+    if not (getattr(evidence, "root_attested", False)):
+        raise NormalizeError("from_cpp_evidence requires a root-attested VerifiedCppLeg "
+                             "(run g33_bundle_io.verify_cpp_bundle)")
+    contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
     bk = set()
-    for cid, c in evidence["containers"].items():
+    for cid, c in evidence.containers.items():
         h = c["header"]
         if h.get("canonical_k_order") != "top-first":
             raise NormalizeError(f"container {cid} k-order {h.get('canonical_k_order')!r} "
@@ -151,11 +153,6 @@ def from_cpp_evidence(evidence) -> dict:
             elif stage in _COMPARATOR_STAGES:
                 field = r["field"]
                 if stage == "substep_pre":
-                    if r["field"] in _EXACT_FLAGS:      # P0-4: decoded value is only
-                        vals = dv.unpack_values(r["dtype"], r["payload"])  # trustworthy
-                        if any(int(v) != 1 for v in vals):                 # if exact
-                            raise NormalizeError(
-                                f"{r['field']} not all-exact in {cid}: {vals}")
                     field = _CPP_SUBPRE.get(field)
                     if field is None:            # C++-only diagnostic — dropped
                         continue

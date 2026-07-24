@@ -261,6 +261,27 @@ def test_mechanism_out_of_schema_key_raises():
         mech.mechanism("legacy", "TOP", "qr", "QR_OUTFLOW", "dq_out")  # no outflow at legacy TOP
 
 
+# ── P0-3: gate-aware event filtering ──────────────────────────────────────────
+def _gate(bits):
+    return [{"stage": "substep_pre", "n": 1, "col": 1, "k": -1, "field": "gate",
+             "dtype": "u8", "bits": bits}]
+
+
+def test_inactive_lane_op_diff_is_not_the_verdict():
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
+    div = cmp.compare_pair(_run("legacy", stages=_gate(0)),
+                           _run("legacy", stages=_gate(0), bits=d))
+    # gate=0 for (n=1,col=1): the mul_work1 diff is a dead lane -> not attributed.
+    assert div.phase is None and div.inactive_diffs and not div.invalid
+
+
+def test_active_lane_op_diff_is_the_verdict():
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
+    div = cmp.compare_pair(_run("legacy", stages=_gate(1)),
+                           _run("legacy", stages=_gate(1), bits=d))
+    assert div.phase == "op" and div.tag == "FALK/mul_work1"
+
+
 # ── P1-4: PASS records the raw-bit divergence signature ───────────────────────
 def test_pass_records_bit_signature():
     d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
