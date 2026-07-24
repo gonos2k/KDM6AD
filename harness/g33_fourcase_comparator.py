@@ -194,6 +194,18 @@ class Divergence:
     kind: str | None = None
     tag: str | None = None
     signature: dict | None = None
+    inactive_diffs: tuple = ()   # op diffs in gate-inactive lanes (diagnostics only)
+
+
+def _active_mask(run) -> dict:
+    """(n, col) -> is the column's gate active this substep. A column whose gate is
+    0 at substep n does no transport there, so an intermediate-rung difference in it
+    changes no state and must not be a first-divergence candidate (P0-3)."""
+    m = {}
+    for s in run["stages"]:
+        if s["stage"] == "substep_pre" and s["field"] == "gate":
+            m[(s["n"], s["col"])] = int(s["bits"]) == 1
+    return m
 
 
 def compare_pair(f_run, c_run) -> Divergence:
@@ -208,13 +220,20 @@ def compare_pair(f_run, c_run) -> Divergence:
         fo, co = len(set(fmap) - set(cmap)), len(set(cmap) - set(fmap))
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
+    active = _active_mask(f_run)   # gate matched F↔C++ here (else caught in substep_pre)
+    inactive = []
     for e in fe:                                  # canonical order
         ce_e = cmap[e.identity]
-        if e.bits != ce_e.bits:
-            return Divergence(phase=e.phase, identity=e.identity,
-                              shared_key=e.shared_key, kind=e.kind, tag=e.tag,
-                              signature=_signature(e.dtype, e.bits, ce_e.bits))
-    return Divergence()                           # bit-identical
+        if e.bits == ce_e.bits:
+            continue
+        if e.phase == "op" and not active.get((e.identity[1], e.identity[2]), True):
+            inactive.append(e.identity)           # dead lane — record, don't attribute
+            continue
+        return Divergence(phase=e.phase, identity=e.identity,
+                          shared_key=e.shared_key, kind=e.kind, tag=e.tag,
+                          signature=_signature(e.dtype, e.bits, ce_e.bits),
+                          inactive_diffs=tuple(inactive))
+    return Divergence(inactive_diffs=tuple(inactive))   # no active divergence
 
 
 def classify(legacy: Divergence, conservative: Divergence):
@@ -278,7 +297,8 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
 
     def _d(x):
         return {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
-                "kind": x.kind, "tag": x.tag, "signature": x.signature}
+                "kind": x.kind, "tag": x.tag, "signature": x.signature,
+                "inactive_lane_diffs": len(x.inactive_diffs)}
     return {"verdict": verdict, "reason": reason,
             "legacy_first_divergence": _d(leg),
             "conservative_first_divergence": _d(con)}

@@ -202,6 +202,7 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
     # and the dtcld bit-binding from the raw native operands, so a producer that
     # FALSELY reports exact=1 (or a wrong dtcld) is rejected — never trusted (P0-1/P0-6).
     qcrmin, dtcld = schedule.get("qcrmin"), schedule.get("dtcld")
+    mstep_vals = []
     for cid, c in parsed.items():
         subpre = [r for r in c["records"] if r.get("stage") == "substep_pre"]
         if not subpre:
@@ -211,7 +212,13 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None) 
             gdv.check_producer_flags(pre, subpre[0]["n"], qcrmin, dtcld)
         except gd.G33Corruption as e:
             raise BundleError(f"{cid} producer flags: {e}") from None
-    return {"contract": contract, "containers": parsed}
+        # Derive the mstep range INDEPENDENTLY from the decoded evidence (P0-4), so
+        # the manifest's mstep summary is attested, not trusted or hard-pinned to 1.
+        for r in subpre:
+            if r["field"] == "mstep_decoded_i32":
+                mstep_vals.extend(int(v) for v in gdv.unpack_values(r["dtype"], r["payload"]))
+    mstep_range = (min(mstep_vals), max(mstep_vals)) if mstep_vals else None
+    return {"contract": contract, "containers": parsed, "mstep_range": mstep_range}
 
 
 def verify_cpp_bundle(bundle_dir) -> dict:
@@ -233,8 +240,6 @@ def verify_cpp_bundle(bundle_dir) -> dict:
         meta = algos[algo]
         if meta.get("abc_equal") is not True:
             raise BundleError(f"{algo}: abc_equal is not True")
-        if not (meta.get("mstep_min") == meta.get("mstep_max") == 1):
-            raise BundleError(f"{algo}: mstep range is not [1,1]")
         # A/B/C stdout must rehash to the sealed value AND be byte-equal to each other.
         seen = set()
         for lane in ("A", "B", "C"):
@@ -254,7 +259,14 @@ def verify_cpp_bundle(bundle_dir) -> dict:
         fixtures.add(meta.get("fixture_sha256"))
         params.add(meta.get("parameter_sha256"))
         ev = _under(bundle_dir, bundle_dir / meta["evidence_dir"])
-        out[algo] = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha)
+        leg = verify_cpp_evidence(ev, algo, expected_binary_sha=diag_sha)
+        # the manifest's declared mstep summary must equal what the raw evidence shows
+        # (P0-4) — no [1,1] hard-pin, so a real multi-subcycle bundle is admissible.
+        obs = leg["mstep_range"]
+        if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
+            raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
+                              f"{meta.get('mstep_max')}] != evidence {obs}")
+        out[algo] = leg
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")
