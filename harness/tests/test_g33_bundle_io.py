@@ -35,7 +35,7 @@ def _sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def _full_evidence(root: Path, algo: str, omit_container=None):
+def _full_evidence(root: Path, algo: str, omit_container=None, exact_ok=True):
     """Write a complete {algo}-C-evidence tree; omit_container drops one container
     (file + descriptor) so it writes cleanly but the record multiset is short,
     exercising the independent completeness gate."""
@@ -81,7 +81,10 @@ def _full_evidence(root: Path, algo: str, omit_container=None):
             for s in r["shape"]:
                 n_elem *= s
             key = {**r, "seq_no": r["op_seq_id"] - first}
-            w.record(key, r["dtype"], r["shape"], gd.pack_payload(r["dtype"], [0] * n_elem))
+            # exactness flags must read 1 in a valid run (P0-4)
+            fill = (1 if exact_ok else 0) if r["field"] in (
+                "mstep_exact_integer", "gate_exact_01") else 0
+            w.record(key, r["dtype"], r["shape"], gd.pack_payload(r["dtype"], [fill] * n_elem))
         w.finalize()
     (ev / "schema" / "descriptors.sha256").write_text("\n".join(desc_lines) + "\n")
     return ev
@@ -183,3 +186,10 @@ def test_cpp_evidence_normalizes_and_events_build(tmp_path):
     import g33_fourcase_comparator as cmp
     events = cmp._events(run)          # schema order + range + dtype + identity
     assert events and run["ops"]
+
+
+def test_inexact_mstep_flag_rejected(tmp_path):
+    # P0-4: a non-exact mstep_exact_integer means the decoded projection is untrusted.
+    ev = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy", exact_ok=False), "legacy")
+    with pytest.raises(nz.NormalizeError):
+        nz.from_cpp_evidence(ev)

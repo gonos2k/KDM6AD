@@ -45,6 +45,12 @@ _CPP_SUBPRE = {
     "delz_safe": "delz_safe", "dend_safe": "dend_safe",
     "mstep_decoded_i32": "mstep", "gate_decoded_u8": "gate",
 }
+# Projecting the DECODED mstep/gate silently discards whether the native value was
+# actually an exact integer / exact 0|1. A native mstep of 2.0000002 decodes to 2
+# with mstep_exact_integer=0; the comparison would then look clean on a value the
+# producer itself flagged inexact. These flags MUST all be 1 before we trust the
+# decoded projection (owner P0-4).
+_EXACT_FLAGS = ("mstep_exact_integer", "gate_exact_01")
 
 
 class NormalizeError(ValueError):
@@ -145,6 +151,11 @@ def from_cpp_evidence(evidence) -> dict:
             elif stage in _COMPARATOR_STAGES:
                 field = r["field"]
                 if stage == "substep_pre":
+                    if r["field"] in _EXACT_FLAGS:      # P0-4: decoded value is only
+                        vals = dv.unpack_values(r["dtype"], r["payload"])  # trustworthy
+                        if any(int(v) != 1 for v in vals):                 # if exact
+                            raise NormalizeError(
+                                f"{r['field']} not all-exact in {cid}: {vals}")
                     field = _CPP_SUBPRE.get(field)
                     if field is None:            # C++-only diagnostic — dropped
                         continue
