@@ -51,24 +51,31 @@ import g33_schema as schema  # noqa: E402
     "causal_carry", "external_input", "shared", "legacy", "conservative", "out_of_scope")
 
 
-# How a rung behaves in a GATE-INACTIVE column (gate==0, i.e. n > this column's
-# mstep). The per-column gate is a terminal MULTIPLY at the end of the falk chain
-# (s4 = s3 * gate_col), so only the rungs BEFORE that multiply are computed-then-
-# discarded; everything from falk_precast on carries the gate and is an actual
-# effect. Ignoring a whole dead lane would discard the only evidence that the lane
-# really stayed dead (owner P0-1).
-IGNORE_PRE_GATE, MUST_MATCH = "ignore_pre_gate", "must_match"
+# What a rung must satisfy in a GATE-INACTIVE column (gate==0, i.e. n > that
+# column's mstep). The per-column gate is a terminal MULTIPLY at the end of the falk
+# chain (s4 = s3 * gate_col), so only the rungs BEFORE that multiply are
+# computed-then-discarded; every operand downstream is derived from falk (or from
+# dq_out) and therefore has an exact no-op value the arithmetic guarantees:
+#
+#   IGNORE    pre-gate diagnostic — may differ across backends, excluded from the
+#             verdict (the ONLY rungs that may be skipped in a dead lane)
+#   ZERO      derived from falk / dq_out, so identically +-0
+#   EQUAL_TO  a state rung that must still equal its own input (no transport)
+#   FALSE     a branch flag that cannot fire without transport
+#   CARRY     a state or metric input (q, delz, dend, src_metric...) — neither
+#             skippable nor pinned; the DEFAULT, so a new field is never fail-open
+IGNORE, ZERO, EQUAL_TO, FALSE, CARRY = "ignore", "zero", "equal_to", "false", "carry"
 
 
 @dataclass(frozen=True)
 class MechanismSpec:
-    kind: str                          # one of the six above
-    tag: str                           # variant-INDEPENDENT (drives PASS alignment)
-    inactive_policy: str = MUST_MATCH  # IGNORE_PRE_GATE only for pre-gate diagnostics
-    # An ACTUAL transported quantity: in an ACTIVE lane it must be finite, and in an
-    # inactive lane it must be the no-op value (0 / unchanged). Pre-gate diagnostics
-    # carry no such obligation.
-    actual_transport: bool = False
+    kind: str                        # one of the six above
+    tag: str                         # variant-INDEPENDENT (drives PASS alignment)
+    inactive: str = CARRY            # relation that must hold in a dead lane
+    inactive_ref: str | None = None  # the field EQUAL_TO refers to
+    # An ACTUAL transported quantity: in an ACTIVE lane sedimentation's valid domain
+    # requires it to be finite AND non-negative.
+    active_nonneg: bool = False
 
 
 class TaxonomyHole(KeyError):
@@ -83,70 +90,78 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
     cons = algo == "conservative"
     fam = op_id.split("_", 1)[1]        # FALK|OUTFLOW|FALLACC|INFLOW|UPDATE
     mn = _mass_or_number(species)
+    q_before = "n_before" if species == "nr" else "q_before"
+    q_minus = "n_minus_out" if species == "nr" else "q_minus_out"
 
     if fam == "FALK":
         if field in ("mul_dend_q", "mul_work1", "mul_workn", "div_mstep"):
             # computed BEFORE the terminal `* gate_col`, so a dead lane discards it
-            return MechanismSpec(SHARED, f"FALK/{field}", IGNORE_PRE_GATE)
+            return MechanismSpec(SHARED, f"FALK/{field}", IGNORE)
         if field in ("falk_precast", "shadow_falk_f32", "falk_f32"):
             # gate already applied -> an ACTUAL fall rate (0 in a dead lane)
-            return MechanismSpec(SHARED, f"FALK/{field}", actual_transport=True)
+            return MechanismSpec(SHARED, f"FALK/{field}", ZERO, active_nonneg=True)
 
     elif fam == "OUTFLOW":
-        if field == "source_reservoir":
-            return MechanismSpec(CAUSAL_CARRY, "CARRY/outflow_reservoir")
-        if field in ("dq_out", "dn_out"):          # the transported amount itself
-            return MechanismSpec(SHARED, f"OUTFLOW/{field}", actual_transport=True)
-        if field in ("mul_dt", "outflow_pre_cap", "cap_active"):
-            return MechanismSpec(SHARED, f"OUTFLOW/{field}")
+        if field == "source_reservoir":                     # the state q itself
+            return MechanismSpec(CAUSAL_CARRY, "CARRY/outflow_reservoir", CARRY)
+        if field in ("dq_out", "dn_out"):                   # the transported amount
+            return MechanismSpec(SHARED, f"OUTFLOW/{field}", ZERO, active_nonneg=True)
+        if field in ("mul_dt", "outflow_pre_cap"):          # falk*dt, /dend -> 0
+            return MechanismSpec(SHARED, f"OUTFLOW/{field}", ZERO)
+        if field == "cap_active":
+            return MechanismSpec(SHARED, "OUTFLOW/cap_active", CARRY)
 
     elif fam == "FALLACC":
         if field == "fall_before":
-            return MechanismSpec(CAUSAL_CARRY, "CARRY/fall_before")
-        if field in ("dq_out", "dn_out"):
-            return MechanismSpec(CAUSAL_CARRY, "CARRY/fall_outflow")
-        if field == "mul_dend_safe":          # conservative qr only
-            return MechanismSpec(CONSERVATIVE, "CONS_MASS_RATE_ACCUMULATION")
-        if field == "fall_increment":
-            # legacy increment is the shared falk carry; conservative is the rate.
-            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_RATE_ACCUMULATION") if cons
-                    else MechanismSpec(CAUSAL_CARRY, "CARRY/fall_increment_falk"))
+            return MechanismSpec(CAUSAL_CARRY, "CARRY/fall_before", CARRY)
+        if field in ("dq_out", "dn_out"):                   # carried outflow -> 0
+            return MechanismSpec(CAUSAL_CARRY, "CARRY/fall_outflow", ZERO)
+        if field == "mul_dend_safe":          # conservative qr: dq_out*dend -> 0
+            return MechanismSpec(CONSERVATIVE, "CONS_MASS_RATE_ACCUMULATION", ZERO)
+        if field == "fall_increment":         # legacy falk / conservative rate -> 0
+            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_RATE_ACCUMULATION", ZERO) if cons
+                    else MechanismSpec(CAUSAL_CARRY, "CARRY/fall_increment_falk", ZERO))
         if field == "fall_after":
-            # P0-1: given matched fall_before + fall_increment, this is fl32(a+b) —
-            # the SAME accumulator add in both variants, not a variant result.
-            return MechanismSpec(SHARED, "FALLACC/accumulator_add", actual_transport=True)
+            # given matched fall_before + fall_increment this is fl32(a+b) — the SAME
+            # accumulator add in both variants; unchanged when nothing fell.
+            return MechanismSpec(SHARED, "FALLACC/accumulator_add", EQUAL_TO,
+                                 "fall_before", active_nonneg=True)
 
     elif fam == "INFLOW":
         if field in ("stored_falk_prev", "stored_falk_nr_prev", "prev_out",
                      "prev_out_nr", "delz_raw_src", "delz_safe_dst", "dend_safe_dst",
-                     "dend_safe_src", "source_reservoir"):
-            return MechanismSpec(CAUSAL_CARRY, "CARRY/inflow_input")
+                     "dend_safe_src", "source_reservoir", "src_metric", "dst_metric"):
+            # states and grid metrics — a metric is NOT zero in a dead lane
+            return MechanismSpec(CAUSAL_CARRY, "CARRY/inflow_input", CARRY)
         if not cons and field in ("mul_delz_src", "div_delz_dst", "mul_dt",
-                                  "inflow_pre_cap", "inflow_cap_active", "inflow_final"):
-            return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW")
-        if cons and field in ("src_metric", "dst_metric", "mul_src",
-                              "mul_delz_src", "inflow_final"):
-            # qr: ρΔz mass transport; nr: Δz-only number transport (P0-2).
+                                  "inflow_pre_cap", "inflow_final"):
+            return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW", ZERO)
+        if not cons and field == "inflow_cap_active":
+            return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW", CARRY)
+        if cons and field in ("mul_src", "mul_delz_src", "inflow_final"):
+            # qr: rho*dz mass transport; nr: dz-only number transport.
             tag = "CONS_MASS_RHODZ_INFLOW" if species == "qr" else "CONS_NUMBER_DZ_INFLOW"
-            return MechanismSpec(CONSERVATIVE, tag)
+            return MechanismSpec(CONSERVATIVE, tag, ZERO)
 
     elif fam == "UPDATE":
         if field in ("q_before", "n_before"):
-            return MechanismSpec(CAUSAL_CARRY, "CARRY/update_state_before")
+            return MechanismSpec(CAUSAL_CARRY, "CARRY/update_state_before", CARRY)
         if field in ("q_minus_out", "n_minus_out"):
-            if role == "TOP":                # legacy RAW vs conservative CAPPED
-                return (MechanismSpec(CONSERVATIVE, "CONS_CAPPED_DEPLETION") if cons
-                        else MechanismSpec(LEGACY, "LEG_RAW_DEPLETION"))
-            return MechanismSpec(SHARED, "UPDATE/minus_capped_outflow")
+            spec = ((CONSERVATIVE, "CONS_CAPPED_DEPLETION") if cons
+                    else (LEGACY, "LEG_RAW_DEPLETION")) if role == "TOP" else \
+                   (SHARED, "UPDATE/minus_capped_outflow")
+            return MechanismSpec(spec[0], spec[1], EQUAL_TO, q_before)
         if field in ("q_plus_in_preclamp", "n_plus_in_preclamp"):
-            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_PLUS_INFLOW") if cons
-                    else MechanismSpec(LEGACY, "LEG_DZ_PLUS_INFLOW"))
+            kind, tag = ((CONSERVATIVE, f"CONS_{mn}_PLUS_INFLOW") if cons
+                         else (LEGACY, "LEG_DZ_PLUS_INFLOW"))
+            return MechanismSpec(kind, tag, EQUAL_TO, q_minus)
         if field == "clamp_active":
-            return MechanismSpec(LEGACY, "LEG_POSITIVITY_CLAMP")
+            # positivity clamp cannot fire when the state did not move
+            return MechanismSpec(LEGACY, "LEG_POSITIVITY_CLAMP", FALSE)
         if field in ("q_post", "n_post"):           # the updated state itself
-            return (MechanismSpec(CONSERVATIVE, f"CONS_{mn}_NOCLAMP_UPDATE",
-                                  actual_transport=True) if cons
-                    else MechanismSpec(LEGACY, "LEG_CLAMPED_UPDATE", actual_transport=True))
+            kind, tag = ((CONSERVATIVE, f"CONS_{mn}_NOCLAMP_UPDATE") if cons
+                         else (LEGACY, "LEG_CLAMPED_UPDATE"))
+            return MechanismSpec(kind, tag, EQUAL_TO, q_before, active_nonneg=True)
 
     raise TaxonomyHole(f"no mechanism entry for {algo}/{role}/{species} {op_id}.{field}")
 

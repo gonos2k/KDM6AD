@@ -2,14 +2,22 @@
 brackets the run with a versioned header + the fixture identity, then the module
 overlay emits the sed op ladder, then the driver emits the final state + precip:
 
-  G33F BEGIN v1 <algo>
+  G33F BEGIN v2 <algo>
   G33F FIXIN <field> <col> <k_top> f32 <hex>      # fixture inputs (k=-1 = column scalar)
   G33F PARAM <name> f32 <hex>                      # scalar parameters
   G33F MSTEP <col> i32 <hex>                       # per-column substep count (overlay)
   G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>   # overlay
+  G33F STAGE <loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>   # overlay
   G33F STATE <field> <col> <k_top> f32 <hex>       # final prognostic state (top-first)
   G33F PREC <family> <col> f32 <hex>
-  G33F END v1 <algo>
+  G33F END v2 <algo>
+
+PROTOCOL VERSIONS. The banner selects the record grammar and the two are never
+mixed. v1 STAGE records carry no <loop>/<chain>, so the reader derives them under
+the single-main-chain-outer-loop scope the v1 overlay emitted; v2 carries the
+RUNTIME cloud-subcycle index, which is what makes multi-outer-loop (dt=300)
+evidence expressible at all. Both produce the same key shape
+(loop, chain, stage, n, field, col, k), so downstream code is version-agnostic.
 
 `bits` is the raw integer of the operand's native bit pattern — f32 (8 hex),
 f64 (16 hex) or u8 (2 hex). Top-first k matches the C++ evidence (k=0 TOP). This
@@ -22,16 +30,24 @@ _OP = re.compile(
     r"^G33FOP\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s+(\S+)\s+(\S+)\s+"
     r"(f32|f64|u8)\s+([0-9A-Fa-f]+)$")
 _MSTEP = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
-_STAGE = re.compile(
+# v1: G33F STAGE <stage> <n> <field> <col> <k> <dtype> <hex>
+# v2: G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
+_STAGE_V1 = re.compile(
     r"^G33F STAGE\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+"
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
+_STAGE_V2 = re.compile(
+    r"^G33F STAGE\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+"
+    r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
+# A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
+# that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
+_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_BEGIN = re.compile(r"^G33F BEGIN v1 (\S+)$")
-_END = re.compile(r"^G33F END v1 (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([12]) (\S+)$")
+_END = re.compile(r"^G33F END v([12]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -107,17 +123,32 @@ def parse_mstep(text):
     return ms
 
 
-def parse_stage(text):
-    """(stage, n, field, col, k_top) -> (dtype, bits) for the pre-sed snapshots."""
+def parse_stage(text, version=1):
+    """(loop, chain, stage, n, field, col, k_top) -> (dtype, bits).
+
+    The key always carries the outer loop and chain so records from different cloud
+    subcycles can never collide; a v1 stream, which does not transmit them, has them
+    derived from the stage under the single-main-loop scope the v1 overlay emits."""
     st = {}
     for line in text.splitlines():
-        m = _STAGE.match(line)
-        if m:
+        if version == 2:
+            m = _STAGE_V2.match(line)
+            if not m:
+                continue
+            loop, chain, stage = int(m.group(1)), m.group(2), m.group(3)
+            n, field, col, k = int(m.group(4)), m.group(5), int(m.group(6)), int(m.group(7))
+            dtype, hexbits = m.group(8), m.group(9)
+        else:
+            m = _STAGE_V1.match(line)
+            if not m:
+                continue
+            stage, n, field = m.group(1), int(m.group(2)), m.group(3)
+            col, k = int(m.group(4)), int(m.group(5))
             dtype, hexbits = m.group(6), m.group(7)
-            if len(hexbits) != _HEXWIDTH[dtype]:
-                raise ValueError(f"{dtype} stage payload width: {line!r}")
-            st[(m.group(1), int(m.group(2)), m.group(3), int(m.group(4)),
-                int(m.group(5)))] = (dtype, int(hexbits, 16))
+            loop, chain = 1, _STAGE_CHAIN.get(stage, "-")
+        if len(hexbits) != _HEXWIDTH[dtype]:
+            raise ValueError(f"{dtype} stage payload width: {line!r}")
+        st[(loop, chain, stage, n, field, col, k)] = (dtype, int(hexbits, 16))
     return st
 
 
@@ -211,21 +242,22 @@ def _validate_stages(stages, n_raw, mstep, K, B):
     outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
     if n_raw != len(stages):
         raise FortranRunError(f"STAGE: {n_raw - len(stages)} duplicate key(s)")
-    exp = {("outer_pre_sed", 0, f, c, k) for f in _OUTER_PRE_SED_FIELDS
+    L, MAIN = 1, "main"          # the emitted scope: one outer loop, main chain
+    exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for f in _OUTER_PRE_SED_FIELDS
            for c in range(1, B + 1) for k in range(K)}
     for n in range(1, max(mstep.values()) + 1):
         for c in range(1, B + 1):
-            exp |= {("substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
-            exp |= {("substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
+            exp |= {(L, MAIN, "substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
+            exp |= {(L, MAIN, "substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
                     for k in range(K)}
-    exp |= {("surface", 0, f, c, -1) for f in _SURFACE_FIELDS
+    exp |= {(L, "-", "surface", 0, f, c, -1) for f in _SURFACE_FIELDS
             for c in range(1, B + 1)}
     if set(stages) != exp:
         missing, extra = exp - set(stages), set(stages) - exp
         raise FortranRunError(
             f"STAGE universe: {len(missing)} missing (e.g. {next(iter(missing), None)}), "
             f"{len(extra)} extra (e.g. {next(iter(extra), None)})")
-    for (stage, n, f, c, k), (dt, b) in stages.items():
+    for (_loop, _chain, stage, n, f, c, k), (dt, b) in stages.items():
         if dt != _STAGE_DTYPE[f]:
             raise FortranRunError(f"STAGE {stage}.{f} dtype {dt} != {_STAGE_DTYPE[f]}")
         if dt == "f32" and not _math.isfinite(_f32(b)):
@@ -289,8 +321,8 @@ class FortranRun:
     localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP, _STAGE, _FIXIN, _PARAM, _LOCALPARAM, _STATE, _PREC,
-          _BEGIN, _END)
+_KNOWN = (_OP, _MSTEP, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM, _LOCALPARAM,
+          _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
 _OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
@@ -339,12 +371,20 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     if evidence_mode not in ("instrumented", "noninstrumented"):
         raise ValueError(f"bad evidence_mode {evidence_mode!r}")
     lines = text.splitlines()
-    begins = [m.group(1) for line in lines if (m := _BEGIN.match(line))]
-    ends = [m.group(1) for line in lines if (m := _END.match(line))]
+    begin_ms = [m for line in lines if (m := _BEGIN.match(line))]
+    versions = {int(m.group(1)) for m in begin_ms}
+    begins = [m.group(2) for m in begin_ms]
+    end_ms = [m for line in lines if (m := _END.match(line))]
+    ends = [m.group(2) for m in end_ms]
     if begins != [algo]:
-        raise FortranRunError(f"expected exactly one 'G33F BEGIN v1 {algo}', got {begins}")
+        raise FortranRunError(f"expected exactly one 'G33F BEGIN v* {algo}', got {begins}")
     if ends != [algo]:
-        raise FortranRunError(f"expected exactly one 'G33F END v1 {algo}', got {ends}")
+        raise FortranRunError(f"expected exactly one 'G33F END v* {algo}', got {ends}")
+    # the banner selects the record grammar; a mixed or disagreeing pair is refused
+    # so a v1 stream can never be read with the v2 field positions or vice versa.
+    if versions != {int(m.group(1)) for m in end_ms} or len(versions) != 1:
+        raise FortranRunError(f"BEGIN/END protocol versions disagree: {versions}")
+    version = versions.pop()
 
     # every G33F-prefixed line MUST match a known record — never silently skipped.
     for line in lines:
@@ -358,7 +398,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
             return 0
         if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
-        if _MSTEP.match(line) or _OP.match(line) or _STAGE.match(line):
+        if (_MSTEP.match(line) or _OP.match(line)
+                or _STAGE_V1.match(line) or _STAGE_V2.match(line)):
             return 2
         if _STATE.match(line) or _PREC.match(line):
             return 3
@@ -438,8 +479,9 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
              for o in raw_ops),
             key=lambda r: r.scalar_seq_id))
 
-    stages = parse_stage(text)
-    n_stage_raw = sum(1 for line in lines if _STAGE.match(line))
+    stages = parse_stage(text, version)
+    _stage_re = _STAGE_V2 if version == 2 else _STAGE_V1
+    n_stage_raw = sum(1 for line in lines if _stage_re.match(line))
     if evidence_mode == "noninstrumented":
         if n_stage_raw:
             raise FortranRunError(f"noninstrumented run emitted {n_stage_raw} STAGE records")

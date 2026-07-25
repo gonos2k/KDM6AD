@@ -54,7 +54,7 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33F BEGIN v1 {algo}" in out and f"G33F END v1 {algo}" in out
+    assert f"G33F BEGIN v2 {algo}" in out and f"G33F END v2 {algo}" in out
     # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
     state = fd.parse_state(out)
     assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
@@ -298,24 +298,24 @@ def test_presed_stage_records():
     C = _build_and_run("legacy", overlay=True, dump=True)
     run = fd.parse_fortran_run(C, "legacy", 4, 3)
     # outer_pre_sed = 6 fields x 3 x 4; both stages present.
-    assert sum(1 for k in run.stages if k[0] == "outer_pre_sed") == 6 * 3 * 4
-    assert any(k[0] == "substep_pre" for k in run.stages)
-    assert sum(1 for k in run.stages if k[0] == "surface") == 7 * 3   # P0-8 (+denr)
-    assert ("outer_pre_sed", 0, "qr", 1, 0) in run.stages
-    assert ("surface", 0, "bottom_fall_qr", 1, -1) in run.stages
+    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 6 * 3 * 4
+    assert any(k[2] == "substep_pre" for k in run.stages)
+    assert sum(1 for k in run.stages if k[2] == "surface") == 7 * 3   # P0-8 (+denr)
+    assert (1, "-", "outer_pre_sed", 0, "qr", 1, 0) in run.stages
+    assert (1, "-", "surface", 0, "bottom_fall_qr", 1, -1) in run.stages
 
     cl = C.splitlines()
-    sg = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE outer_pre_sed"))
-    # tokens: G33F STAGE <stage> <n> <field> <col> <k> <dtype> <hex>
-    w1 = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE substep_pre")
-              and l.split()[4] == "work1_qr")
+    sg = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE 1 - outer_pre_sed"))
+    # tokens: G33F STAGE <loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
+    w1 = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE 1 main substep_pre")
+              and l.split()[6] == "work1_qr")
     A = _build_and_run("legacy").splitlines()
     st_a = next(i for i, l in enumerate(A) if l.startswith("G33F STATE"))
 
     with pytest.raises(fd.FortranRunError):        # a dropped stage record
         fd.parse_fortran_run("\n".join(cl[:sg] + cl[sg + 1:]), "legacy", 4, 3)
     with pytest.raises(fd.FortranRunError):        # NaN in a work1 (f64) snapshot
-        m = list(cl); m[w1] = _set_tok(m[w1], 8, "7FF8000000000000")
+        m = list(cl); m[w1] = _set_tok(m[w1], 10, "7FF8000000000000")
         fd.parse_fortran_run("\n".join(m), "legacy", 4, 3)
     with pytest.raises(fd.FortranRunError):        # STAGE leaking into A (noninstrumented)
         m = list(A); m.insert(st_a, cl[sg])
@@ -341,12 +341,12 @@ def test_evidence_semantics_and_mutants():
 
     other = 0x40000000        # 2.0f — a value not equal to the real one
     mutants = [
-        lambda S, P: S.__setitem__(("substep_pre", 1, "mstep", 1, -1), ("i32", 2)),
-        lambda S, P: S.__setitem__(("substep_pre", 1, "gate", 1, -1), ("u8", 0)),
-        lambda S, P: S.__setitem__(("substep_pre", 1, "gate", 1, -1), ("u8", 2)),
-        lambda S, P: S.__setitem__(("substep_pre", 1, "qr", 1, 0), ("f32", other)),
-        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_qr", 1, -1), ("f32", other)),
-        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_total", 1, -1), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "mstep", 1, -1), ("i32", 2)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "gate", 1, -1), ("u8", 0)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "gate", 1, -1), ("u8", 2)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "qr", 1, 0), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "-", "surface", 0, "bottom_fall_qr", 1, -1), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "-", "surface", 0, "bottom_fall_total", 1, -1), ("f32", other)),
         lambda S, P: P.__setitem__((1, 1), other),      # wrong rain PREC vs replay
     ]
     for fn in mutants:

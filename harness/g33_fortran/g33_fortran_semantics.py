@@ -37,6 +37,16 @@ def _signed_i32(u):
     return u - 0x100000000 if u >= 0x80000000 else u
 
 
+_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
+
+
+def _sv(stages, stage, n, field, col, k, loop=1):
+    """Stage lookup. The stage key carries (outer_loop, chain) so multi-loop records
+    cannot collide; these causal checks are scoped to the single main-chain outer
+    loop the overlay emits, so the loop defaults to 1."""
+    return stages[(loop, _CHAIN[stage], stage, n, field, col, k)]
+
+
 def verify_semantics(run):
     B, K, S = run.B, run.K, run.stages
     mm = max(run.mstep.values())
@@ -45,19 +55,19 @@ def verify_semantics(run):
     dt = run.params["dt"]                                  # f32 bits
     for c in range(1, B + 1):
         for n in range(1, mm + 1):
-            if _signed_i32(S[("substep_pre", n, "mstep", c, -1)][1]) != run.mstep[c]:
+            if _signed_i32(_sv(S, "substep_pre", n, "mstep", c, -1)[1]) != run.mstep[c]:
                 raise SemanticError(f"substep_pre.mstep(c={c},n={n}) != MSTEP record")
-            g = S[("substep_pre", n, "gate", c, -1)][1]
+            g = _sv(S, "substep_pre", n, "gate", c, -1)[1]
             if g not in (0, 1) or g != (1 if n <= run.mstep[c] else 0):
                 raise SemanticError(f"substep_pre.gate(c={c},n={n})={g} != [n<=mstep]")
-            if S[("substep_pre", n, "dtcld", c, -1)][1] != dt:
+            if _sv(S, "substep_pre", n, "dtcld", c, -1)[1] != dt:
                 raise SemanticError(f"substep_pre.dtcld(c={c},n={n}) != PARAM dt")
 
     # (4) the first substep's entry state IS the pre-sed snapshot.
     for c in range(1, B + 1):
         for k in range(K):
             for sp in ("qr", "nr"):
-                if S[("substep_pre", 1, sp, c, k)][1] != S[("outer_pre_sed", 0, sp, c, k)][1]:
+                if _sv(S, "substep_pre", 1, sp, c, k)[1] != _sv(S, "outer_pre_sed", 0, sp, c, k)[1]:
                     raise SemanticError(
                         f"substep_pre(n=1).{sp} != outer_pre_sed.{sp} c={c} k={k}")
 
@@ -69,28 +79,28 @@ def verify_semantics(run):
     for c in range(1, B + 1):
         for n in range(1, run.mstep[c]):                   # n and n+1 both active
             for k in range(K):
-                if S[("substep_pre", n + 1, "qr", c, k)][1] != qpost[(c, k, n)]:
+                if _sv(S, "substep_pre", n + 1, "qr", c, k)[1] != qpost[(c, k, n)]:
                     raise SemanticError(f"qr continuity broken c={c} k={k} n={n}->{n+1}")
-                if S[("substep_pre", n + 1, "nr", c, k)][1] != npost[(c, k, n)]:
+                if _sv(S, "substep_pre", n + 1, "nr", c, k)[1] != npost[(c, k, n)]:
                     raise SemanticError(f"nr continuity broken c={c} k={k} n={n}->{n+1}")
 
     # (6) the seed reaches the surface: bottom-cell accumulator == surface fall.
     fall_after = {(o.col, o.k, o.n): o.bits for o in run.ops
                   if o.op_id == "QR_FALLACC" and o.field == "fall_after"}
     for c in range(1, B + 1):
-        if fall_after[(c, K - 1, run.mstep[c])] != S[("surface", 0, "bottom_fall_qr", c, -1)][1]:
+        if fall_after[(c, K - 1, run.mstep[c])] != _sv(S, "surface", 0, "bottom_fall_qr", c, -1)[1]:
             raise SemanticError(f"bottom qr fall_after != surface.bottom_fall_qr c={c}")
 
     # (7) surface species sum + rain increment, replayed bit-exact.
     for c in range(1, B + 1):
-        qr, qs, qg, qi = (_f32(S[("surface", 0, f, c, -1)][1]) for f in
+        qr, qs, qg, qi = (_f32(_sv(S, "surface", 0, f, c, -1)[1]) for f in
                           ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi"))
         total = np.float32(np.float32(np.float32(qr + qs) + qg) + qi)
-        if _f32_bits(total) != S[("surface", 0, "bottom_fall_total", c, -1)][1]:
+        if _f32_bits(total) != _sv(S, "surface", 0, "bottom_fall_total", c, -1)[1]:
             raise SemanticError(f"bottom_fall_total != (((qr+qs)+qg)+qi) c={c}")
-        tot = _f32(S[("surface", 0, "bottom_fall_total", c, -1)][1])
-        delz_b = _f32(S[("surface", 0, "delz_bottom", c, -1)][1])
-        denr = _f32(S[("surface", 0, "surface_denr", c, -1)][1])
+        tot = _f32(_sv(S, "surface", 0, "bottom_fall_total", c, -1)[1])
+        delz_b = _f32(_sv(S, "surface", 0, "delz_bottom", c, -1)[1])
+        denr = _f32(_sv(S, "surface", 0, "surface_denr", c, -1)[1])
         dtcld = _f32(dt)
         # rainncv(i) = fallsum*delz(i,kts)/denr*dtcld*1000. + rainncv(i), rainncv0=0,
         # guarded by fallsum>0. Left-associated f32.
