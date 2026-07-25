@@ -173,7 +173,7 @@ def _under(root: Path, child: Path) -> Path:
 
 
 def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
-                        expected_repo_commit=None) -> dict:
+                        expected_repo_commit=None, allow_metric_floor=False) -> dict:
     """Re-verify one {algo}-C-evidence tree and return {contract, containers}."""
     evidence_dir = Path(evidence_dir)
     if not evidence_dir.is_dir():
@@ -273,6 +273,22 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
             gdv.check_producer_flags(pre, subpre[0]["n"], qcrmin, dtcld)
         except gd.G33Corruption as e:
             raise BundleError(f"{cid} producer flags: {e}") from None
+        # The shared fixture carries physically well-formed positive rho / dz, so no
+        # metric floor may fire. check_producer_flags only verifies that a floor, IF
+        # it fired, followed max(raw, qcrmin) — it does not object to it firing. A
+        # floored metric silently changes the divisor the conservative transfer uses,
+        # so on this fixture it is rejected outright; a deliberate numerical-edge
+        # fixture must opt in with allow_metric_floor=True. (Fortran has no floor at
+        # all, so a fired C++ floor is also a cross-tree asymmetry.)
+        if not allow_metric_floor:
+            for flag in ("dend_floor_active", "delz_floor_active"):
+                if flag not in pre:
+                    continue
+                fired = sum(int(v) != 0 for v in gdv.unpack_values(*pre[flag]))
+                if fired:
+                    raise BundleError(
+                        f"{cid}: {flag} fired in {fired} cell(s) — the metric floor "
+                        f"must not engage on a well-formed fixture")
         # Derive the mstep range INDEPENDENTLY from the decoded evidence (P0-4), so
         # the manifest's mstep summary is attested, not trusted or hard-pinned to 1.
         for r in subpre:

@@ -68,16 +68,17 @@ def field_dtype(algorithm: str, role: str, op_id: str, field: str) -> str:
 # onto (Fortran canonical names / C++ native fields projected to these).
 _SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[chain]]
 
-# The COMMON, cross-backend BIT-COMPARABLE fields only. `dtcld` is excluded: it is
-# f32 in Fortran but f64 in C++ (dtcld_effective) — a raw bit-compare across widths
-# is meaningless, and any dtcld effect on the ladder is caught by the ops. Both
-# backends now emit `surface_denr` (the unsealed rain-conversion constant), so it IS
-# compared. Both normalizers project onto exactly this set, so the F↔C++ identity
-# universes match.
+# The COMMON, cross-backend BIT-COMPARABLE fields. Two carry a projection rather
+# than a raw width match: `dtcld` is f32 in Fortran but f64 in C++
+# (dtcld_effective), so the normalizer proves the C++ double is an EXACT f32
+# round-trip and compares the f32 semantic bits — it multiplies the surface
+# precipitation directly, so leaving it out left a conversion input unchecked.
+# `surface_denr` (the unsealed rain-conversion constant) is emitted by both. Both
+# normalizers project onto exactly this set, so the F↔C++ identity universes match.
 _SEMANTIC_STAGE_FIELDS = {
     "outer_pre_sed": ["qr", "nr", "qv", "t", "rho", "delz"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
-                    "gate", "mstep"],
+                    "dtcld", "gate", "mstep"],
     "surface": ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
                 "bottom_fall_qi", "bottom_fall_total", "delz_bottom", "surface_denr",
                 "rain_increment", "snow_increment", "graupel_increment"],
@@ -91,6 +92,7 @@ _SEMANTIC_STAGE_DTYPE.update({
     ("substep_pre", "qr"): "f32", ("substep_pre", "nr"): "f32",
     ("substep_pre", "work1_qr"): "f64", ("substep_pre", "workn_qr"): "f64",
     ("substep_pre", "delz_safe"): "f32", ("substep_pre", "dend_safe"): "f32",
+    ("substep_pre", "dtcld"): "f32",
     ("substep_pre", "gate"): "u8", ("substep_pre", "mstep"): "i32"})
 _SEMANTIC_STAGE_DTYPE.update({
     ("surface", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["surface"]})
