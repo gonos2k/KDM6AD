@@ -37,22 +37,27 @@ _EMIT = {  # dtype -> (value expr wrapping the operand, Z format width)
 }
 
 
-def _stage_write(stage, n_expr, field, k_expr, dtype, expr):
+def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr):
+    """protocol v2:
+    G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
+    `loop` is the RUNTIME cloud-subcycle index (kdm62D's `do loop = 1,loops`, which
+    encloses every injection point), so records from different outer loops are
+    distinguishable instead of collapsing onto loop 1."""
     val, zf = _EMIT[dtype]
-    return (f"{fb.IND}write(*,'(A,1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
-            f"'G33F STAGE {stage}', {n_expr}, '{field}', i, {k_expr}, "
-            f"'{dtype}', {val.format(e=expr)}")
+    return (f"{fb.IND}write(*,'(A,1X,I0,2(1X,A),1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
+            f"'G33F STAGE', loop, '{chain}', '{stage}', {n_expr}, "
+            f"'{field}', i, {k_expr}, '{dtype}', {val.format(e=expr)}")
 
 
-def _stage_block(stage, n_expr, col_fields, whole_k_fields):
+def _stage_block(stage, chain, n_expr, col_fields, whole_k_fields):
     """An injected whole-K emission loop for a pre-sed stage snapshot. Per-column
     scalars (mstep/gate/dtcld) carry k=-1; whole-K fields carry top-first kte-k."""
     lines = ["#ifdef KDM6_G33_FORTRAN_DUMP", f"{fb.IND}do i = its, ite"]
     for field, dtype, expr in col_fields:
-        lines.append(_stage_write(stage, n_expr, field, "-1", dtype, expr))
+        lines.append(_stage_write(stage, chain, n_expr, field, "-1", dtype, expr))
     lines.append(f"{fb.IND}  do k = kts, kte")
     for field, dtype, expr in whole_k_fields:
-        lines.append(_stage_write(stage, n_expr, field, "kte-k", dtype, expr))
+        lines.append(_stage_write(stage, chain, n_expr, field, "kte-k", dtype, expr))
     lines += [f"{fb.IND}  end do", f"{fb.IND}end do", "#endif"]
     return lines
 
@@ -80,7 +85,8 @@ def _validate_against_schema(algo):
 
 def _emit_lines(algo, role, species, phase):
     """The op-emission lines for one (role, species) — top-first k = kte-k. Each
-    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>.
+    line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>,
+    where <loop> is the RUNTIME cloud-subcycle index (was a hardcoded literal).
     phase 'pre' emits every field EXCEPT the actual post-update q_post/n_post;
     phase 'post' emits ONLY those (the stored value, read after the update)."""
     body = []
@@ -91,9 +97,9 @@ def _emit_lines(algo, role, species, phase):
                 continue
             val, zf = _EMIT[dtype]
             body.append(
-                f"{fb.IND}write(*,'(A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
-                f"'G33FOP 1 main', n, i, kte-k, '{op_id}', '{field}', '{dtype}', "
-                f"{val.format(e=expr)}")
+                f"{fb.IND}write(*,'(A,1X,I0,1X,A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
+                f"'G33FOP', loop, 'main', n, i, kte-k, "
+                f"'{op_id}', '{field}', '{dtype}', {val.format(e=expr)}")
     return ["#ifdef KDM6_G33_FORTRAN_DUMP", *body, "#endif"] if body else []
 
 
@@ -124,14 +130,15 @@ def build_overlay(algo, text):
              # pre-sed snapshots at the sub-cycle boundary: outer_pre_sed once
              # BEFORE `do n=1,mstepmax`, substep_pre per-n right AFTER it.
              (fb.STAGE_ANCHOR, "before",
-              _stage_block("outer_pre_sed", "0", [], fb.OUTER_PRE_SED)),
+              _stage_block("outer_pre_sed", "-", "0", [], fb.OUTER_PRE_SED)),
              (fb.STAGE_ANCHOR, "after",
-              _stage_block("substep_pre", "n", fb.SUBSTEP_PRE_COL, fb.SUBSTEP_PRE_K)),
+              _stage_block("substep_pre", "main", "n", fb.SUBSTEP_PRE_COL,
+                           fb.SUBSTEP_PRE_K)),
              # surface bottom-fall operands, per column, at the accumulation (k=-1;
              # already inside `do i` so no injected loop).
              (fb.SURFACE_ANCHOR, "after",
               ["#ifdef KDM6_G33_FORTRAN_DUMP",
-               *[_stage_write("surface", "0", f, "-1", dt, e)
+               *[_stage_write("surface", "-", "0", f, "-1", dt, e)
                  for f, dt, e in fb.SURFACE_FIELDS],
                "#endif"])]
     for (role, species), anchor in cfg["emit"].items():

@@ -1,7 +1,13 @@
 # Fortran G33F protocol v2 — carrying the real outer loop and chain
 
-Status: **SPECIFIED, NOT IMPLEMENTED.** Required before any multi-outer-loop
-(historical dt=300) four-case verdict. Blocks owner P0-4.
+Status: **IMPLEMENTED.** All six work items below are done, including regenerating
+the committed sample. The Fortran evidence can now EXPRESS multi-outer-loop records;
+producing one still needs a dt large enough for `loops > 1` plus the
+`arithmetic_multisubcycle_v1` fixture (see the scope note).
+
+Equivalence evidence for the migration: a v2 run of the same fixture reproduces the
+v1 sample EXACTLY — identical fixture/parameter SHA, all 579 op records, state,
+precip, mstep, and all 174 stage values. Only the record framing changed.
 
 ## The actual gap (larger than "STAGE lacks two fields")
 
@@ -44,7 +50,7 @@ G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
 `outer_loop` becomes the runtime `loop`; `chain` stays a literal per injection site
 ("main" at the mstepmax anchor, "ice" at mstepmax_i) because the anchor determines it.
 
-## Work items
+## Work items (all done)
 
 1. `make_fortran_overlay._emit_lines` — emit `loop` as a runtime `I0` instead of the
    `1` literal (the record's token SHAPE is unchanged, so the op regex still matches).
@@ -55,9 +61,9 @@ G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
    regenerated, keyed off the banner version so the two cannot be confused.
 4. `g33_fortran_semantics` — stage lookups take the wider key.
 5. `g33_normalize.from_fortran_run` — use the real values; delete the derivation.
-6. **Regenerate `harness/tests/data/g33_legacy_sample.g33f`** (needs gfortran + the
-   gitignored host tree; both are present on this host). This rewrites a COMMITTED
-   evidence artifact, so it wants explicit owner sign-off rather than a silent update.
+6. **Regenerate `harness/tests/data/g33_legacy_sample.g33f`** — done with owner
+   sign-off; the committed sample is now v2 (176 STAGE lines reframed, values
+   unchanged).
 
 ## Scope note
 

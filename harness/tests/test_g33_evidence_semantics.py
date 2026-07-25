@@ -9,6 +9,7 @@ mutation corpus against a CHECKED-IN sample stream
 Regenerate the sample after a protocol/overlay change:
     bash harness/g33_fortran/fortran_build.sh /tmp/o --algo=legacy --dump
     /tmp/o/g33_fortran_driver > harness/tests/data/g33_legacy_sample.g33f
+(the checked-in sample is protocol v2 — records carry the runtime outer loop/chain)
 """
 import sys
 from pathlib import Path
@@ -55,7 +56,7 @@ def test_parser_rejects_structural_mutants():
     op = _first(lambda l: l.startswith("G33FOP"))
     st = _first(lambda l: l.startswith("G33F STATE"))
     ms = _first(lambda l: l.startswith("G33F MSTEP"))
-    sg = _first(lambda l: l.startswith("G33F STAGE outer_pre_sed"))
+    sg = _first(lambda l: l.startswith("G33F STAGE 1 - outer_pre_sed"))
     beg = _first(lambda l: l.startswith("G33F BEGIN"))
     cases = [
         lambda m: m.pop(op),                                    # dropped op
@@ -79,11 +80,11 @@ def test_parser_rejects_structural_mutants():
 def test_semantics_rejects_causal_mutants():
     other = 0x40000000
     cases = [
-        lambda S, P: S.__setitem__(("substep_pre", 1, "mstep", 1, -1), ("i32", 2)),
-        lambda S, P: S.__setitem__(("substep_pre", 1, "gate", 1, -1), ("u8", 0)),
-        lambda S, P: S.__setitem__(("substep_pre", 1, "qr", 1, 0), ("f32", other)),
-        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_qr", 1, -1), ("f32", other)),
-        lambda S, P: S.__setitem__(("surface", 0, "bottom_fall_total", 1, -1), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "mstep", 1, -1), ("i32", 2)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "gate", 1, -1), ("u8", 0)),
+        lambda S, P: S.__setitem__((1, "main", "substep_pre", 1, "qr", 1, 0), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "-", "surface", 0, "bottom_fall_qr", 1, -1), ("f32", other)),
+        lambda S, P: S.__setitem__((1, "-", "surface", 0, "bottom_fall_total", 1, -1), ("f32", other)),
         lambda S, P: P.__setitem__((1, 1), other),
     ]
     for fn in cases:

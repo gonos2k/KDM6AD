@@ -72,34 +72,26 @@ def from_fortran_run(run) -> dict:
             "role": o.cell_role, "species": o.species, "op_id": o.op_id,
             "field": o.field, "dtype": o.dtype, "bits": o.bits}
            for o in run.ops]
-    # The Fortran STAGE protocol carries no loop/chain field, so they are DERIVED.
-    #
-    # CAVEAT (corrects the PR#69 note that claimed the ops verify this): the Fortran
-    # OP records do not carry a runtime loop/chain either — make_fortran_overlay
-    # emits the literal string 'G33FOP 1 main', so o.loop/o.chain are constants, and
-    # the guard below can never fire. It is kept as a tripwire for the protocol v2
-    # that makes them runtime values (see g33_fortran/STAGE_PROTOCOL_V2.md); until
-    # then, single-outer-loop is an ASSUMPTION of this leg, not a verified property.
-    loops = {o["loop"] for o in ops}
-    chains = {o["chain"] for o in ops}
-    if loops - {1} or chains - {"main"}:
-        raise NormalizeError(
-            f"fortran run spans loops={sorted(loops)} chains={sorted(chains)}; "
-            f"stage records carry no loop/chain, so they cannot be attributed")
+    # The stage key carries (outer_loop, chain): real values from a protocol-v2
+    # stream, derived ones from v1 (which does not transmit them and is emitted only
+    # for a single main-chain outer loop).
     stages = []
-    for (stage, n, field, col, k), (dtype, bits) in run.stages.items():
+    for (loop, chain, stage, n, field, col, k), (dtype, bits) in run.stages.items():
         if stage not in _COMPARATOR_STAGES:
             raise NormalizeError(f"fortran run has non-comparator stage {stage!r}")
         if not _semantic(stage, field):          # drop dtcld / surface_denr / etc.
             continue
-        stages.append({"loop": 1, "chain": _STAGE_CHAIN[stage], "stage": stage,
+        stages.append({"loop": loop, "chain": chain, "stage": stage,
                        "n": n, "col": col, "k": k,
                        "field": field, "dtype": dtype, "bits": bits})
+    # PREC is emitted once per column at the end of the sed chain; it belongs to the
+    # LAST outer loop present in the stream.
+    prec_loop = max((s["loop"] for s in stages), default=1)
     for (family, col), bits in run.precip.items():
         field = _PREC_FIELD.get(family)
         if field is None:
             raise NormalizeError(f"fortran run has unknown PREC family {family!r}")
-        stages.append({"loop": 1, "chain": "-", "stage": "surface", "n": 0,
+        stages.append({"loop": prec_loop, "chain": "-", "stage": "surface", "n": 0,
                        "col": col, "k": -1, "field": field, "dtype": "f32",
                        "bits": bits})
     B = max((o["col"] for o in ops), default=0)
