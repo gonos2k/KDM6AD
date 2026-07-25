@@ -54,11 +54,11 @@ _CHAIN_RANK = {"-": 0, "main": 1, "ice": 2}
 _WIDTH = {"f32": 32, "f64": 64, "i32": 32, "u8": 8}
 
 
-def _lane_of(identity):
-    """(loop, chain, n, col) of an op identity — named so a change to the identity
-    layout cannot silently produce a wrong lane key."""
+def _lane_of(identity) -> gev.LaneKey:
+    """The LaneKey of an op identity — destructured by NAME so a change to the
+    identity layout cannot silently produce a wrong lane key."""
     _kind, loop, chain, n, col = identity[:5]
-    return (loop, chain, n, col)
+    return gev.LaneKey(loop, chain, n, col)
 
 
 class StructuralError(Exception):

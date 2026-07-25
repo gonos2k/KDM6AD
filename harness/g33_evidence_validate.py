@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import sys
 from collections import Counter
+from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_dump as gd          # noqa: E402
@@ -90,6 +91,17 @@ def _is_finite(bits, dtype):
     return ((bits >> shift) & mask) != mask
 
 
+class LaneKey(NamedTuple):
+    """The (outer_loop, chain, n, col) a gate applies to. A NAMED type rather than a
+    tuple slice of the event identity: a change to the identity layout would
+    silently produce a wrong lane key, and this is what selects which differences
+    the verdict may ignore."""
+    outer_loop: int
+    chain: str
+    n: int
+    col: int
+
+
 class GateSemanticsError(gd.G33Corruption):
     """A gate/lane invariant the arithmetic itself guarantees was violated."""
 
@@ -104,7 +116,7 @@ def _sign_ok(bits, dtype):
 
 def validate_gate_semantics(run: dict, mech) -> dict:
     """Independent per-run gate contract. Returns the active mask
-    {(loop, chain, n, col): bool}; raises GateSemanticsError on a violation.
+    {LaneKey: bool}; raises GateSemanticsError on a violation.
 
     * COVERAGE: every (loop, chain, n, col) that has ops must have exactly one
       substep_pre gate AND one mstep record — the mask is never defaulted.
@@ -123,7 +135,7 @@ def validate_gate_semantics(run: dict, mech) -> dict:
     for s in run["stages"]:
         if s["stage"] != "substep_pre":
             continue
-        key = (s["loop"], s["chain"], s["n"], s["col"])
+        key = LaneKey(s["loop"], s["chain"], s["n"], s["col"])
         if s["field"] == "gate":
             if key in gates:
                 raise GateSemanticsError(f"duplicate gate record for {key}")
@@ -135,9 +147,9 @@ def validate_gate_semantics(run: dict, mech) -> dict:
 
     groups: dict = {}
     for o in run["ops"]:
-        lane = (o["loop"], o["chain"], o["n"], o["col"])
-        groups.setdefault(lane + (o["k"], o["species"], o["op_id"]), {})[o["field"]] = o
-    op_lanes = {g[:4] for g in groups}
+        lane = LaneKey(o["loop"], o["chain"], o["n"], o["col"])
+        groups.setdefault(tuple(lane) + (o["k"], o["species"], o["op_id"]), {})[o["field"]] = o
+    op_lanes = {LaneKey(*g[:4]) for g in groups}
     if op_lanes != set(gates):
         raise GateSemanticsError(
             f"gate coverage mismatch: {len(op_lanes - set(gates))} op lane(s) without a "
@@ -147,7 +159,7 @@ def validate_gate_semantics(run: dict, mech) -> dict:
     for key, g in gates.items():
         if g not in (0, 1):
             raise GateSemanticsError(f"gate bits {g} are not 0/1 at {key}")
-        n, mstep = key[2], msteps[key]
+        n, mstep = key.n, msteps[key]
         if mstep < 1:
             raise GateSemanticsError(f"mstep {mstep} < 1 at {key}")
         if g != int(n <= mstep):
@@ -155,7 +167,7 @@ def validate_gate_semantics(run: dict, mech) -> dict:
                 f"gate law violated at {key}: gate={g} but n={n}, mstep={mstep}")
 
     for key, fields in groups.items():
-        lane, k, species = key[:4], key[4], key[5]
+        lane, k, species = LaneKey(*key[:4]), key[4], key[5]
         op_id = key[6]
         active = gates[lane] == 1
         for field, rec in fields.items():
