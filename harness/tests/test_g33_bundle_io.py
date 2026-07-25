@@ -252,15 +252,32 @@ def test_truncated_abc_stdout_rejected(tmp_path):
 
 
 def test_two_substep_bundle_verifies(tmp_path):
-    out = bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep=3))
-    assert out["algorithms"]["legacy"].mstep_range == (3, 3)
+    out = bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep=2))
+    assert out["algorithms"]["legacy"].mstep_range == (2, 2)
+
+
+def test_mstep_exceeding_declared_substeps_rejected(tmp_path):
+    # P0-2: the columns really need n=2, but the schedule declares one substep — the
+    # bundle is complete against its OWN contract while the n=2 evidence is absent.
+    with pytest.raises(bio.BundleError, match="mstep max"):
+        bio.verify_cpp_bundle(_bundle(tmp_path, substeps=1, mstep=2))
+
+
+def test_verdict_ready_requires_external_anchors(tmp_path):
+    root = _bundle(tmp_path)
+    leg = bio.verify_cpp_bundle(root)["algorithms"]["legacy"]
+    assert leg.root_attested and not leg.verdict_ready      # internal-only
+    full = bio.verify_cpp_bundle(
+        root, expected_manifest_sha256=_sha(root / "cpp_abc_manifest.json"),
+        expected_repo_commit=COMMIT)["algorithms"]["legacy"]
+    assert full.verdict_ready
 
 
 def test_mstep_vector_drift_between_substeps_rejected(tmp_path):
     # P0-4: each substep is internally consistent (gate law holds for both), so only
     # the cross-substep continuity check sees that the vector changed.
     with pytest.raises(bio.BundleError, match="mstep"):
-        bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep_by_n={1: 3, 2: 2}))
+        bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep_by_n={1: 2, 2: 3}))
 
 
 def test_verified_leg_is_deep_frozen(tmp_path):

@@ -94,27 +94,44 @@ class GateSemanticsError(gd.G33Corruption):
     """A gate/lane invariant the arithmetic itself guarantees was violated."""
 
 
+def _sign_ok(bits, dtype):
+    """Non-negative: the sign bit is clear, or the value is an exact -0."""
+    if dtype not in _EXP:                       # integer/flag dtypes carry no sign bit
+        return True
+    sign_bit = 63 if dtype == "f64" else 31
+    return _is_zero(bits, dtype) or not (bits >> sign_bit) & 1
+
+
 def validate_gate_semantics(run: dict, mech) -> dict:
     """Independent per-run gate contract. Returns the active mask
     {(loop, chain, n, col): bool}; raises GateSemanticsError on a violation.
 
-    * COVERAGE (P0-2): every (loop, chain, n, col) that has ops must have exactly
-      one substep_pre gate record — the active mask is never defaulted.
-    * NO-OP (P0-1): where gate==0 the column transports nothing, so every ACTUAL
-      quantity must hold its no-op value — falk/dq_out/dn_out are ±0, the fall
-      accumulator and the state are unchanged. (Because the gate is a terminal
-      multiply, `s3 * 0` is 0 only when s3 is finite, so this also catches a
-      non-finite value leaking out of a dead lane.)
-    * FINITE (P0-7): where gate==1 every ACTUAL quantity must be finite.
+    * COVERAGE: every (loop, chain, n, col) that has ops must have exactly one
+      substep_pre gate AND one mstep record — the mask is never defaulted.
+    * GATE LAW: gate == (n <= mstep) for that column. Without this a run could
+      declare a well-formed 0/1 gate that its own mstep contradicts, and the
+      comparator would then discard that lane's pre-gate differences as "dead".
+    * NO-OP: where gate==0 each rung must satisfy its MechanismSpec.inactive
+      relation (ZERO / EQUAL_TO its input / FALSE), so a gated-off column that
+      transported anything — even transiently, with the final state coincidentally
+      restored — is caught. (The gate is a multiply, so `s3 * 0` is 0 only for
+      finite s3; ZERO therefore also catches non-finite leakage.)
+    * DOMAIN: where gate==1 every actual transport must be finite and non-negative.
     """
     algo = run["algorithm"]
-    gates: dict = {}
+    gates, msteps = {}, {}
     for s in run["stages"]:
-        if s["stage"] == "substep_pre" and s["field"] == "gate":
-            key = (s["loop"], s["chain"], s["n"], s["col"])
+        if s["stage"] != "substep_pre":
+            continue
+        key = (s["loop"], s["chain"], s["n"], s["col"])
+        if s["field"] == "gate":
             if key in gates:
                 raise GateSemanticsError(f"duplicate gate record for {key}")
             gates[key] = int(s["bits"])
+        elif s["field"] == "mstep":
+            if key in msteps:
+                raise GateSemanticsError(f"duplicate mstep record for {key}")
+            msteps[key] = int(s["bits"])
 
     groups: dict = {}
     for o in run["ops"]:
@@ -125,31 +142,47 @@ def validate_gate_semantics(run: dict, mech) -> dict:
         raise GateSemanticsError(
             f"gate coverage mismatch: {len(op_lanes - set(gates))} op lane(s) without a "
             f"gate, {len(set(gates) - op_lanes)} gate(s) without ops")
-    if any(g not in (0, 1) for g in gates.values()):
-        raise GateSemanticsError("gate bits are not 0/1")
+    if op_lanes != set(msteps):
+        raise GateSemanticsError("mstep coverage does not match the op lanes")
+    for key, g in gates.items():
+        if g not in (0, 1):
+            raise GateSemanticsError(f"gate bits {g} are not 0/1 at {key}")
+        n, mstep = key[2], msteps[key]
+        if mstep < 1:
+            raise GateSemanticsError(f"mstep {mstep} < 1 at {key}")
+        if g != int(n <= mstep):
+            raise GateSemanticsError(
+                f"gate law violated at {key}: gate={g} but n={n}, mstep={mstep}")
 
     for key, fields in groups.items():
-        lane, k, species, op_id = key[:4], key[4], key[5], key[6]
+        lane, k, species = key[:4], key[4], key[5]
+        op_id = key[6]
         active = gates[lane] == 1
         for field, rec in fields.items():
             spec = mech.mechanism(algo, rec["role"], species, op_id, field)
-            if not spec.actual_transport:
-                continue
             bits, dtype = int(rec["bits"]), rec["dtype"]
             if active:
-                if not _is_finite(bits, dtype):
+                if spec.active_nonneg and not _is_finite(bits, dtype):
                     raise GateSemanticsError(
                         f"non-finite {op_id}.{field} in ACTIVE lane {lane} k={k}")
-                continue
-            if field in ("fall_after", "q_post", "n_post"):
-                before = {"fall_after": "fall_before", "q_post": "q_before",
-                          "n_post": "n_before"}[field]
-                if before in fields and int(fields[before]["bits"]) != bits:
+                if spec.active_nonneg and not _sign_ok(bits, dtype):
                     raise GateSemanticsError(
-                        f"{op_id}.{field} changed in INACTIVE lane {lane} k={k} "
-                        f"— a gated-off column transported state")
-            elif not _is_zero(bits, dtype):
-                raise GateSemanticsError(
-                    f"{op_id}.{field} is non-zero in INACTIVE lane {lane} k={k} "
-                    f"— a gated-off column produced transport")
+                        f"negative {op_id}.{field} in ACTIVE lane {lane} k={k} "
+                        f"— outside sedimentation's valid domain")
+                continue
+            if spec.inactive == mech.ZERO:
+                if not _is_zero(bits, dtype):
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} is non-zero in INACTIVE lane {lane} k={k} "
+                        f"— a gated-off column produced transport")
+            elif spec.inactive == mech.EQUAL_TO:
+                ref = fields.get(spec.inactive_ref)
+                if ref is not None and int(ref["bits"]) != bits:
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} != {spec.inactive_ref} in INACTIVE lane "
+                        f"{lane} k={k} — a gated-off column moved state")
+            elif spec.inactive == mech.FALSE:
+                if bits != 0:
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} fired in INACTIVE lane {lane} k={k}")
     return {lane: (g == 1) for lane, g in gates.items()}

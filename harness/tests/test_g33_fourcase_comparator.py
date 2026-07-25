@@ -16,17 +16,20 @@ import g33_schema as schema            # noqa: E402
 
 
 _MASK = {"f32": 0xFFFFFFFF, "f64": 0xFFFFFFFFFFFFFFFF, "u8": 0xFF}
-_NOOP_FROM = {"fall_after": "fall_before", "q_post": "q_before", "n_post": "n_before"}
+# clearing the sign bit and the exponent MSB keeps a synthetic value finite AND
+# non-negative, which the ACTIVE-lane domain check requires.
+_SAFE = {"f32": 0x3FFFFFFF, "f64": 0x3FFFFFFFFFFFFFFF, "u8": 0xFF}
 
 
 def _base(dt, n, col, k, opid, fld):
-    return (hash((n, col, k, opid, fld)) & _MASK[dt]) or 1
+    return (hash((n, col, k, opid, fld)) & _SAFE[dt]) or 1
 
 
-def _species_run(algo, sp, cells, stages, bits, gate=1):
-    """Build a well-formed normalized run. Every op lane gets its substep_pre gate
-    record (coverage is mandatory); with gate=0 the lane's ACTUAL transport fields
-    are filled with their no-op values (0 / unchanged), as a real dead lane must."""
+def _species_run(algo, sp, cells, stages, bits, mstep=1):
+    """Build a well-formed normalized run. Each op lane carries its substep_pre gate
+    AND mstep records, with gate == (n <= mstep); a lane where n > mstep is a real
+    dead lane, so every rung is filled with the no-op value its MechanismSpec
+    relation demands (ZERO / EQUAL_TO its input / FALSE)."""
     bits = bits or {}
     ops, lanes = [], set()
     for n, col, k, role in cells:
@@ -35,24 +38,34 @@ def _species_run(algo, sp, cells, stages, bits, gate=1):
             group = {}
             for fld, dt in schema.op_fields(algo, role, opid):
                 key = (n, col, k, opid, fld)
-                b = bits.get(key, _base(dt, *key)) & _MASK[dt]
-                if not gate and key not in bits:
-                    spec = mech.mechanism(algo, role, sp, opid, fld)
-                    if spec.actual_transport:
-                        b = group.get(_NOOP_FROM.get(fld), 0)
+                if key in bits:
+                    b = bits[key] & _MASK[dt]
+                else:
+                    b = _base(dt, *key)
+                    if n > mstep:                       # dead lane
+                        spec = mech.mechanism(algo, role, sp, opid, fld)
+                        if spec.inactive in (mech.ZERO, mech.FALSE):
+                            b = 0
+                        elif spec.inactive == mech.EQUAL_TO:
+                            b = group.get(spec.inactive_ref, 0)
                 group[fld] = b
                 ops.append({"loop": 1, "chain": "main", "n": n, "col": col, "k": k,
                             "role": role, "species": sp, "op_id": opid,
                             "field": fld, "dtype": dt, "bits": b})
-    st = [{"loop": 1, "chain": "main", "stage": "substep_pre", "n": n, "col": col,
-           "k": -1, "field": "gate", "dtype": "u8", "bits": gate}
-          for n, col in sorted(lanes)]
+    st = []
+    for n, col in sorted(lanes):
+        st.append({"loop": 1, "chain": "main", "stage": "substep_pre", "n": n,
+                   "col": col, "k": -1, "field": "gate", "dtype": "u8",
+                   "bits": 1 if n <= mstep else 0})
+        st.append({"loop": 1, "chain": "main", "stage": "substep_pre", "n": n,
+                   "col": col, "k": -1, "field": "mstep", "dtype": "i32",
+                   "bits": mstep})
     st += list(stages or [])
     return {"algorithm": algo, "B": 3, "K": 4, "ops": ops, "stages": st}
 
 
-def _run(algo, cells=((1, 1, 1, "INTERIOR"),), stages=None, bits=None, gate=1):
-    return _species_run(algo, "qr", cells, stages, bits, gate)
+def _run(algo, cells=((1, 1, 1, "INTERIOR"),), stages=None, bits=None, mstep=1):
+    return _species_run(algo, "qr", cells, stages, bits, mstep)
 
 
 def _nr_run(algo, cells=((1, 1, 1, "INTERIOR"),), bits=None):
@@ -62,8 +75,12 @@ def _nr_run(algo, cells=((1, 1, 1, "INTERIOR"),), bits=None):
 def _surface(bits=None):
     bits = bits or {}
     return [{"loop": 1, "chain": "-", "stage": "surface", "n": 0, "col": 1, "k": -1,
-             "field": f, "dtype": "f32", "bits": bits.get(f, (hash(f) & 0xFFFFFFFF) or 1)}
+             "field": f, "dtype": "f32", "bits": bits.get(f, (hash(f) & 0x3FFFFFFF) or 1)}
             for f in schema.semantic_surface_fields()]
+
+
+# a dead lane can only exist at n > mstep, so the inactive cases run at n=2/mstep=1
+DEAD = ((2, 1, 1, "INTERIOR"),)
 
 
 def _verdict(lf, lc, cf, cc):
@@ -281,9 +298,9 @@ def test_mechanism_out_of_schema_key_raises():
 
 # ── gate semantics: only PRE-GATE rungs may differ in a dead lane ─────────────
 def test_inactive_lane_pre_gate_diff_is_not_the_verdict():
-    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}      # pre-gate diagnostic
-    div = cmp.compare_pair(_run("legacy", gate=0),
-                           _run("legacy", gate=0, bits=d))
+    d = {(2, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}      # pre-gate diagnostic
+    div = cmp.compare_pair(_run("legacy", cells=DEAD, mstep=1),
+                           _run("legacy", cells=DEAD, mstep=1, bits=d))
     assert div.phase is None and div.inactive_diffs and not div.invalid
 
 
@@ -293,29 +310,33 @@ def test_active_lane_op_diff_is_the_verdict():
     assert div.phase == "op" and div.tag == "FALK/mul_work1"
 
 
-@pytest.mark.parametrize("field", ["falk_f32", "falk_precast"])
-def test_inactive_lane_nonzero_falk_is_invalid(field):
-    # gate=0 but an actual fall rate is non-zero: the dead lane transported.
-    d = {(1, 1, 1, "QR_FALK", field): 0x3F800000}
-    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+@pytest.mark.parametrize("op_id,field", [
+    ("QR_FALK", "falk_f32"), ("QR_FALK", "falk_precast"),
+    ("QR_OUTFLOW", "dq_out"), ("QR_OUTFLOW", "mul_dt"),
+    ("QR_FALLACC", "fall_increment"), ("QR_INFLOW", "inflow_final"),
+])
+def test_inactive_lane_nonzero_transport_is_invalid(op_id, field):
+    d = {(2, 1, 1, op_id, field): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", cells=DEAD, mstep=1),
+                           _run("legacy", cells=DEAD, mstep=1, bits=d))
     assert div.invalid and "gate semantics" in div.invalid
 
 
-def test_inactive_lane_nonzero_outflow_is_invalid():
-    d = {(1, 1, 1, "QR_OUTFLOW", "dq_out"): 0x3F800000}
-    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+@pytest.mark.parametrize("op_id,field", [
+    ("QR_FALLACC", "fall_after"), ("QR_UPDATE", "q_minus_out"),
+    ("QR_UPDATE", "q_plus_in_preclamp"), ("QR_UPDATE", "q_post"),
+])
+def test_inactive_lane_moved_state_is_invalid(op_id, field):
+    d = {(2, 1, 1, op_id, field): 0x3F800000}
+    div = cmp.compare_pair(_run("legacy", cells=DEAD, mstep=1),
+                           _run("legacy", cells=DEAD, mstep=1, bits=d))
     assert div.invalid and "gate semantics" in div.invalid
 
 
-def test_inactive_lane_changed_accumulator_is_invalid():
-    d = {(1, 1, 1, "QR_FALLACC", "fall_after"): 0x3F800000}
-    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
-    assert div.invalid and "gate semantics" in div.invalid
-
-
-def test_inactive_lane_changed_state_is_invalid():
-    d = {(1, 1, 1, "QR_UPDATE", "q_post"): 0x3F800000}
-    div = cmp.compare_pair(_run("legacy", gate=0), _run("legacy", gate=0, bits=d))
+def test_inactive_lane_clamp_fired_is_invalid():
+    d = {(2, 1, 1, "QR_UPDATE", "clamp_active"): 1}
+    div = cmp.compare_pair(_run("legacy", cells=DEAD, mstep=1),
+                           _run("legacy", cells=DEAD, mstep=1, bits=d))
     assert div.invalid and "gate semantics" in div.invalid
 
 
@@ -325,16 +346,45 @@ def test_active_lane_nonfinite_transport_is_invalid():
     assert div.invalid and "gate semantics" in div.invalid
 
 
+def test_active_lane_negative_transport_is_invalid():
+    d = {(1, 1, 1, "QR_UPDATE", "q_post"): 0xBF800000}   # -1.0 state
+    div = cmp.compare_pair(_run("legacy", bits=d), _run("legacy", bits=d))
+    assert div.invalid and "domain" in div.invalid
+
+
+# ── P0-1: the gate must follow from this column's own mstep ──────────────────
+def test_gate_contradicting_its_own_mstep_is_invalid():
+    r = _run("legacy")                       # n=1, mstep=1 -> gate must be 1
+    for st in r["stages"]:
+        if st["field"] == "gate":
+            st["bits"] = 0
+    div = cmp.compare_pair(r, r)
+    assert div.invalid and "gate law" in div.invalid
+
+
+def test_missing_mstep_record_is_invalid():
+    r = _run("legacy")
+    r["stages"] = [s for s in r["stages"] if s["field"] != "mstep"]
+    assert cmp.compare_pair(r, r).invalid
+
+
+# ── P0-7: a VALID but different gate is upstream, not corrupt evidence ───────
+def test_backends_with_different_valid_mstep_is_inconclusive():
+    # both runs obey gate == (n <= mstep), but their mstep differs -> a CFL /
+    # fall-speed difference upstream of sedimentation, NOT evidence corruption.
+    f = _run("legacy", cells=DEAD, mstep=1)      # n=2 inactive
+    c = _run("legacy", cells=DEAD, mstep=2)      # n=2 active
+    div = cmp.compare_pair(f, c)
+    assert div.invalid is None and div.phase == "substep_pre"
+    verdict, reason = cmp.classify(div, cmp.Divergence())
+    assert verdict == "INCONCLUSIVE" and "upstream" in reason
+
+
 # ── P0-2: the active mask is never defaulted ─────────────────────────────────
 def test_missing_gate_record_is_invalid():
     r = _run("legacy")
     r["stages"] = [s for s in r["stages"] if s["field"] != "gate"]
     assert cmp.compare_pair(r, r).invalid
-
-
-def test_gate_mask_mismatch_between_backends_is_invalid():
-    div = cmp.compare_pair(_run("legacy", gate=1), _run("legacy", gate=0))
-    assert div.invalid
 
 
 # ── P0-3: outer_loop / chain are part of the event identity ──────────────────

@@ -74,7 +74,17 @@ class VerifiedCppLeg:
     contract: dict
     containers: dict
     mstep_range: tuple | None
-    root_attested: bool = False
+    root_attested: bool = False              # bundle-internal root manifest verified
+    external_manifest_attested: bool = False  # root manifest pinned to an OUTSIDE SHA
+    source_commit_attested: bool = False      # producer_commit pinned to a reviewed rev
+
+    @property
+    def verdict_ready(self) -> bool:
+        """A C4 decision needs BOTH the internal verification and the external
+        anchors — a bundle that rewrites its manifest and its own sidecars stays
+        self-consistent, so internal checks alone cannot attest it."""
+        return (self.root_attested and self.external_manifest_attested
+                and self.source_commit_attested)
 
 
 def _no_dup_keys(pairs):
@@ -253,6 +263,7 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
     # FALSELY reports exact=1 (or a wrong dtcld) is rejected — never trusted (P0-1/P0-6).
     qcrmin, dtcld = schedule.get("qcrmin"), schedule.get("dtcld")
     mstep_vals, mstep_anchor = [], {}
+    mstep_max, substeps_seen = {}, {}       # (outer_loop, chain) -> max / {n}
     for cid, c in parsed.items():
         subpre = [r for r in c["records"] if r.get("stage") == "substep_pre"]
         if not subpre:
@@ -278,7 +289,28 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
                         f"{anchor_key[:2]} — the per-column mstep vector is not "
                         f"constant across the substep loop")
             if r["field"] == "mstep_decoded_i32":
-                mstep_vals.extend(int(v) for v in gdv.unpack_values(r["dtype"], r["payload"]))
+                vals = [int(v) for v in gdv.unpack_values(r["dtype"], r["payload"])]
+                mstep_vals.extend(vals)
+                lc = (r["outer_loop"], r["chain"])
+                mstep_max[lc] = max(mstep_max.get(lc, 0), max(vals))
+                substeps_seen.setdefault(lc, set()).add(r["n"])
+    # P0-2: the OBSERVED per-column mstep maximum must equal the schedule's declared
+    # mstepmax for that (outer_loop, chain), and the substep containers must cover
+    # exactly n = 1..that maximum. Otherwise a bundle whose columns really need n=3
+    # can declare mstepmax=2, satisfy completeness against its own contract, and
+    # simply omit the n=3 evidence.
+    for (loop, chain), mx in sorted(mstep_max.items()):
+        declared = schedule.get(f"mstepmax_{chain}")
+        if not isinstance(declared, list) or len(declared) < loop:
+            raise BundleError(f"schedule has no mstepmax_{chain}[{loop}]")
+        if declared[loop - 1] != mx:
+            raise BundleError(
+                f"loop {loop} chain {chain}: observed mstep max {mx} != schedule "
+                f"mstepmax_{chain}[{loop - 1}]={declared[loop - 1]}")
+        if substeps_seen[(loop, chain)] != set(range(1, mx + 1)):
+            raise BundleError(
+                f"loop {loop} chain {chain}: substep containers "
+                f"{sorted(substeps_seen[(loop, chain)])} != 1..{mx}")
     mstep_range = (min(mstep_vals), max(mstep_vals)) if mstep_vals else None
     return VerifiedCppLeg(contract=_freeze(contract), containers=_freeze(parsed),
                           mstep_range=mstep_range, root_attested=False)
@@ -366,7 +398,9 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
         if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
-        out[algo] = replace(leg, root_attested=True)
+        out[algo] = replace(leg, root_attested=True,
+                            external_manifest_attested=expected_manifest_sha256 is not None,
+                            source_commit_attested=expected_repo_commit is not None)
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")

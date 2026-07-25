@@ -46,9 +46,19 @@ VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
 _PRESED = ("outer_pre_sed", "substep_pre")
-_SURFACE_N = 10 ** 9          # order surface after every substep
+# Canonical execution order within one outer loop: the pre-sed snapshot, then each
+# CHAIN's full substep sequence (chain is the OUTER loop, n the inner — matching the
+# schedule), then the surface accumulation. Encoded as the leading order fields
+# (loop, major, chain_rank, n, phase, ...).
 _CHAIN_RANK = {"-": 0, "main": 1, "ice": 2}
 _WIDTH = {"f32": 32, "f64": 64, "i32": 32, "u8": 8}
+
+
+def _lane_of(identity):
+    """(loop, chain, n, col) of an op identity — named so a change to the identity
+    layout cannot silently produce a wrong lane key."""
+    _kind, loop, chain, n, col = identity[:5]
+    return (loop, chain, n, col)
 
 
 class StructuralError(Exception):
@@ -65,7 +75,7 @@ class Event:
     tag: str | None
     dtype: str
     bits: int
-    policy: str | None = None    # MechanismSpec.inactive_policy (ops only)
+    policy: str | None = None    # MechanismSpec.inactive relation (ops only)
 
 
 def _int(v, what):
@@ -120,12 +130,12 @@ def _events(run) -> list[Event]:
             if loop < 1 or chain not in _CHAIN_RANK:
                 raise StructuralError(f"bad op loop/chain {loop}/{chain!r}")
             out.append(Event(
-                order=(loop, n, 1, _CHAIN_RANK[chain], k, sr, oo, fo, col),
+                order=(loop, 1, _CHAIN_RANK[chain], n, 1, k, sr, oo, fo, col),
                 phase="op",
                 identity=("op", loop, chain, n, col, k, role, sp, op_id, fld, dt),
                 shared_key=("op", loop, chain, n, col, k, role, sp, spec.tag, dt),
                 kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(o["bits"], dt),
-                policy=spec.inactive_policy))
+                policy=spec.inactive))
         for s in run["stages"]:
             stage, fld, dt = s["stage"], s["field"], s["dtype"]
             if stage not in _STAGES:
@@ -148,7 +158,7 @@ def _events(run) -> list[Event]:
                     raise StructuralError(f"surface must have n=0 k=-1, got n={n} k={k}")
                 spec = mech.surface_mechanism(fld)
                 out.append(Event(
-                    order=(loop, _SURFACE_N, 0, 0, 0, 0, 0, fo, col),
+                    order=(loop, 2, 0, 0, 0, 0, 0, 0, fo, col),
                     phase="surface",
                     identity=("surface", loop, n, col, k, fld, dt),
                     shared_key=("surface", loop, col, spec.tag, dt),
@@ -160,9 +170,9 @@ def _events(run) -> list[Event]:
                     raise StructuralError(f"outer_pre_sed must have n=0, got {n}")
                 if stage == "substep_pre" and n < 1:
                     raise StructuralError(f"substep_pre must have n>=1, got {n}")
-                order_n = 0 if stage == "outer_pre_sed" else n
+                major = 0 if stage == "outer_pre_sed" else 1
                 out.append(Event(
-                    order=(loop, order_n, 0, _CHAIN_RANK[chain], k, 0, 0, fo, col),
+                    order=(loop, major, _CHAIN_RANK[chain], n, 0, k, 0, 0, fo, col),
                     phase=stage,
                     identity=(stage, loop, chain, n, col, k, fld, dt),
                     shared_key=None, kind=None, tag=None, dtype=dt,
@@ -220,8 +230,11 @@ def compare_pair(f_run, c_run) -> Divergence:
         c_active = gev.validate_gate_semantics(c_run, mech)
     except gev.GateSemanticsError as e:
         return Divergence(invalid=f"gate semantics: {e}")
-    if f_active != c_active:
-        return Divergence(invalid="Fortran and C++ active-lane masks differ")
+    # NOTE: the two masks may legitimately DIFFER — each run's gate obeys its own
+    # mstep, and a different mstep is a CFL/fall-speed difference upstream of the
+    # sedimentation arithmetic. That shows up as the substep_pre gate/mstep event,
+    # which sorts before the ops of that substep, so it is reported as an upstream
+    # divergence (INCONCLUSIVE) rather than as evidence corruption.
 
     fmap = {e.identity: e for e in fe}
     cmap = {e.identity: e for e in ce}
@@ -237,8 +250,8 @@ def compare_pair(f_run, c_run) -> Divergence:
         # A dead lane may differ ONLY in a pre-gate diagnostic rung — its gated
         # results are already pinned to the no-op values above, so this cannot hide
         # real transport (P0-1).
-        if (e.phase == "op" and e.policy == mech.IGNORE_PRE_GATE
-                and not f_active[e.identity[1:5]]):
+        if (e.phase == "op" and e.policy == mech.IGNORE
+                and not f_active.get(_lane_of(e.identity), True)):
             inactive.append(e.identity)
             continue
         return Divergence(phase=e.phase, identity=e.identity,
