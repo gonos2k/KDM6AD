@@ -38,14 +38,16 @@ import sys
 from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import g33_mechanism as mech  # noqa: E402
-import g33_schema as schema    # noqa: E402
+import g33_evidence_validate as gev  # noqa: E402
+import g33_mechanism as mech         # noqa: E402
+import g33_schema as schema          # noqa: E402
 
 VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
 _PRESED = ("outer_pre_sed", "substep_pre")
 _SURFACE_N = 10 ** 9          # order surface after every substep
+_CHAIN_RANK = {"-": 0, "main": 1, "ice": 2}
 _WIDTH = {"f32": 32, "f64": 64, "i32": 32, "u8": 8}
 
 
@@ -63,6 +65,7 @@ class Event:
     tag: str | None
     dtype: str
     bits: int
+    policy: str | None = None    # MechanismSpec.inactive_policy (ops only)
 
 
 def _int(v, what):
@@ -113,17 +116,24 @@ def _events(run) -> list[Event]:
             if dt != want_dt:
                 raise StructuralError(f"dtype {op_id}.{fld}: got {dt} want {want_dt}")
             spec = mech.mechanism(algo, role, sp, op_id, fld)
+            loop, chain = _int(o["loop"], "loop"), o["chain"]
+            if loop < 1 or chain not in _CHAIN_RANK:
+                raise StructuralError(f"bad op loop/chain {loop}/{chain!r}")
             out.append(Event(
-                order=(n, 1, k, sr, oo, fo, col),
+                order=(loop, n, 1, _CHAIN_RANK[chain], k, sr, oo, fo, col),
                 phase="op",
-                identity=("op", n, col, k, role, sp, op_id, fld, dt),
-                shared_key=("op", n, col, k, role, sp, spec.tag, dt),
-                kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(o["bits"], dt)))
+                identity=("op", loop, chain, n, col, k, role, sp, op_id, fld, dt),
+                shared_key=("op", loop, chain, n, col, k, role, sp, spec.tag, dt),
+                kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(o["bits"], dt),
+                policy=spec.inactive_policy))
         for s in run["stages"]:
             stage, fld, dt = s["stage"], s["field"], s["dtype"]
             if stage not in _STAGES:
                 raise StructuralError(f"unknown stage {stage!r}")
             col, k, n = _int(s["col"], "col"), _int(s["k"], "k"), _int(s["n"], "n")
+            loop, chain = _int(s["loop"], "loop"), s["chain"]
+            if loop < 1 or chain not in _CHAIN_RANK:
+                raise StructuralError(f"bad stage loop/chain {loop}/{chain!r}")
             if not (1 <= col <= B):
                 raise StructuralError(f"stage col {col} out of 1..{B}")
             try:                                  # rejects unknown field AND dtype
@@ -138,10 +148,10 @@ def _events(run) -> list[Event]:
                     raise StructuralError(f"surface must have n=0 k=-1, got n={n} k={k}")
                 spec = mech.surface_mechanism(fld)
                 out.append(Event(
-                    order=(_SURFACE_N, 0, 0, 0, 0, fo, col),
+                    order=(loop, _SURFACE_N, 0, 0, 0, 0, 0, fo, col),
                     phase="surface",
-                    identity=("surface", n, col, k, fld, dt),
-                    shared_key=("surface", col, spec.tag, dt),
+                    identity=("surface", loop, n, col, k, fld, dt),
+                    shared_key=("surface", loop, col, spec.tag, dt),
                     kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(s["bits"], dt)))
             else:                                 # outer_pre_sed | substep_pre(n)
                 if not (k == -1 or 0 <= k < K):
@@ -152,9 +162,9 @@ def _events(run) -> list[Event]:
                     raise StructuralError(f"substep_pre must have n>=1, got {n}")
                 order_n = 0 if stage == "outer_pre_sed" else n
                 out.append(Event(
-                    order=(order_n, 0, k, 0, 0, fo, col),
+                    order=(loop, order_n, 0, _CHAIN_RANK[chain], k, 0, 0, fo, col),
                     phase=stage,
-                    identity=(stage, n, col, k, fld, dt),
+                    identity=(stage, loop, chain, n, col, k, fld, dt),
                     shared_key=None, kind=None, tag=None, dtype=dt,
                     bits=_bits(s["bits"], dt)))
     except (KeyError, TypeError, ValueError, IndexError, NotImplementedError) as e:
@@ -197,37 +207,39 @@ class Divergence:
     inactive_diffs: tuple = ()   # op diffs in gate-inactive lanes (diagnostics only)
 
 
-def _active_mask(run) -> dict:
-    """(n, col) -> is the column's gate active this substep. A column whose gate is
-    0 at substep n does no transport there, so an intermediate-rung difference in it
-    changes no state and must not be a first-divergence candidate (P0-3)."""
-    m = {}
-    for s in run["stages"]:
-        if s["stage"] == "substep_pre" and s["field"] == "gate":
-            m[(s["n"], s["col"])] = int(s["bits"]) == 1
-    return m
-
-
 def compare_pair(f_run, c_run) -> Divergence:
     """First Fortran↔C++ divergence for one variant, in canonical event order."""
     try:
         fe, ce = _events(f_run), _events(c_run)
     except StructuralError as e:
         return Divergence(invalid=str(e))
+    try:
+        # Independent per-run gate contract: coverage (no defaulted lane), the
+        # inactive no-op invariants, and finiteness of active transport.
+        f_active = gev.validate_gate_semantics(f_run, mech)
+        c_active = gev.validate_gate_semantics(c_run, mech)
+    except gev.GateSemanticsError as e:
+        return Divergence(invalid=f"gate semantics: {e}")
+    if f_active != c_active:
+        return Divergence(invalid="Fortran and C++ active-lane masks differ")
+
     fmap = {e.identity: e for e in fe}
     cmap = {e.identity: e for e in ce}
     if set(fmap) != set(cmap):
         fo, co = len(set(fmap) - set(cmap)), len(set(cmap) - set(fmap))
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
-    active = _active_mask(f_run)   # gate matched F↔C++ here (else caught in substep_pre)
     inactive = []
     for e in fe:                                  # canonical order
         ce_e = cmap[e.identity]
         if e.bits == ce_e.bits:
             continue
-        if e.phase == "op" and not active.get((e.identity[1], e.identity[2]), True):
-            inactive.append(e.identity)           # dead lane — record, don't attribute
+        # A dead lane may differ ONLY in a pre-gate diagnostic rung — its gated
+        # results are already pinned to the no-op values above, so this cannot hide
+        # real transport (P0-1).
+        if (e.phase == "op" and e.policy == mech.IGNORE_PRE_GATE
+                and not f_active[e.identity[1:5]]):
+            inactive.append(e.identity)
             continue
         return Divergence(phase=e.phase, identity=e.identity,
                           shared_key=e.shared_key, kind=e.kind, tag=e.tag,

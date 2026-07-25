@@ -60,26 +60,45 @@ def _semantic(stage, field):
     return field in schema.semantic_stage_fields(stage)
 
 
+# The stage chain each stage belongs to (matches the C++ record keys): the outer
+# pre-sed snapshot and the surface accumulation are outer-loop stages ("-"), the
+# per-substep entry state belongs to the transporting chain.
+_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
+
+
 def from_fortran_run(run) -> dict:
     """FortranRun -> normalized run, projected onto the common semantic schema."""
-    ops = [{"n": o.n, "col": o.col, "k": o.k, "role": o.cell_role,
-            "species": o.species, "op_id": o.op_id, "field": o.field,
-            "dtype": o.dtype, "bits": o.bits}
+    ops = [{"loop": o.loop, "chain": o.chain, "n": o.n, "col": o.col, "k": o.k,
+            "role": o.cell_role, "species": o.species, "op_id": o.op_id,
+            "field": o.field, "dtype": o.dtype, "bits": o.bits}
            for o in run.ops]
+    # The Fortran STAGE protocol carries no loop/chain field, so they are DERIVED —
+    # which is only sound while the overlay stays scoped to a single outer loop on
+    # the main chain. Verify that scope against the ops and refuse otherwise, so a
+    # future multi-loop run fails loudly instead of collapsing loop 2 onto loop 1.
+    loops = {o["loop"] for o in ops}
+    chains = {o["chain"] for o in ops}
+    if loops - {1} or chains - {"main"}:
+        raise NormalizeError(
+            f"fortran stage records carry no loop/chain, but the run spans "
+            f"loops={sorted(loops)} chains={sorted(chains)} — the derivation is "
+            f"only valid for a single main-chain outer loop")
     stages = []
     for (stage, n, field, col, k), (dtype, bits) in run.stages.items():
         if stage not in _COMPARATOR_STAGES:
             raise NormalizeError(f"fortran run has non-comparator stage {stage!r}")
         if not _semantic(stage, field):          # drop dtcld / surface_denr / etc.
             continue
-        stages.append({"stage": stage, "n": n, "col": col, "k": k,
+        stages.append({"loop": 1, "chain": _STAGE_CHAIN[stage], "stage": stage,
+                       "n": n, "col": col, "k": k,
                        "field": field, "dtype": dtype, "bits": bits})
     for (family, col), bits in run.precip.items():
         field = _PREC_FIELD.get(family)
         if field is None:
             raise NormalizeError(f"fortran run has unknown PREC family {family!r}")
-        stages.append({"stage": "surface", "n": 0, "col": col, "k": -1,
-                       "field": field, "dtype": "f32", "bits": bits})
+        stages.append({"loop": 1, "chain": "-", "stage": "surface", "n": 0,
+                       "col": col, "k": -1, "field": field, "dtype": "f32",
+                       "bits": bits})
     B = max((o["col"] for o in ops), default=0)
     K = max((o["k"] for o in ops), default=-1) + 1
     return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops, "stages": stages}
@@ -102,12 +121,13 @@ def _expand(record, B, K, lane_to_col):
     The container declares canonical top-first k (k=0 top) — with the driver's
     fixture now loaded in host order (abc_driver to_host_order), the emitted
     tensors are already top-first, so the storage index IS the canonical k."""
-    dtype, shape = record["dtype"], record["shape"]
+    # a verified leg is deep-frozen, so `shape` arrives as a tuple, not a list
+    dtype, shape = record["dtype"], tuple(record["shape"])
     bits = dv._raw_bits(dtype, record["payload"])
-    if shape == [B]:
+    if shape == (B,):
         for b in range(B):
             yield lane_to_col[b], -1, dtype, bits[b]
-    elif shape == [B, K]:
+    elif shape == (B, K):
         for b in range(B):
             for k in range(K):
                 yield lane_to_col[b], k, dtype, bits[b * K + k]
@@ -146,7 +166,8 @@ def from_cpp_evidence(evidence) -> dict:
             if stage == "op":
                 col_k = list(_expand(r, B, K, lane_to_col))
                 for col, k, dtype, bits in col_k:
-                    ops.append({"n": r["n"], "col": col, "k": r["k"],
+                    ops.append({"loop": r["outer_loop"], "chain": r["chain"],
+                                "n": r["n"], "col": col, "k": r["k"],
                                 "role": r["cell_role"], "species": r["species"],
                                 "op_id": r["op_id"], "field": r["field"],
                                 "dtype": dtype, "bits": bits})
@@ -159,7 +180,9 @@ def from_cpp_evidence(evidence) -> dict:
                 if not _semantic(stage, field):
                     continue
                 for col, k, dtype, bits in _expand(r, B, K, lane_to_col):
-                    stages.append({"stage": stage, "n": (r["n"] if stage == "substep_pre" else 0),
+                    stages.append({"loop": r["outer_loop"], "chain": r["chain"],
+                                   "stage": stage,
+                                   "n": (r["n"] if stage == "substep_pre" else 0),
                                    "col": col, "k": k, "field": field,
                                    "dtype": dtype, "bits": bits})
             # op-less non-comparator stages (outer_post_*) are simply not emitted

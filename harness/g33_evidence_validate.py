@@ -72,3 +72,84 @@ def validate_evidence(schedule: dict, contract_containers, parsed_containers) ->
     op_seq tiling. Raises gd.G33Corruption on any gap. Returns logical records."""
     validate_container_index(schedule, contract_containers)
     return validate_logical_completeness(schedule, parsed_containers)
+
+
+# ── gate semantics on a NORMALIZED run (backend-agnostic) ────────────────────
+_ZERO_MASK = {"f32": 0x7FFFFFFF, "f64": 0x7FFFFFFFFFFFFFFF}
+_EXP = {"f32": (23, 0xFF), "f64": (52, 0x7FF)}
+
+
+def _is_zero(bits, dtype):          # ±0 both count as "no transport"
+    return (bits & _ZERO_MASK.get(dtype, 0xFF)) == 0
+
+
+def _is_finite(bits, dtype):
+    if dtype not in _EXP:           # integer/flag dtypes are always finite
+        return True
+    shift, mask = _EXP[dtype]
+    return ((bits >> shift) & mask) != mask
+
+
+class GateSemanticsError(gd.G33Corruption):
+    """A gate/lane invariant the arithmetic itself guarantees was violated."""
+
+
+def validate_gate_semantics(run: dict, mech) -> dict:
+    """Independent per-run gate contract. Returns the active mask
+    {(loop, chain, n, col): bool}; raises GateSemanticsError on a violation.
+
+    * COVERAGE (P0-2): every (loop, chain, n, col) that has ops must have exactly
+      one substep_pre gate record — the active mask is never defaulted.
+    * NO-OP (P0-1): where gate==0 the column transports nothing, so every ACTUAL
+      quantity must hold its no-op value — falk/dq_out/dn_out are ±0, the fall
+      accumulator and the state are unchanged. (Because the gate is a terminal
+      multiply, `s3 * 0` is 0 only when s3 is finite, so this also catches a
+      non-finite value leaking out of a dead lane.)
+    * FINITE (P0-7): where gate==1 every ACTUAL quantity must be finite.
+    """
+    algo = run["algorithm"]
+    gates: dict = {}
+    for s in run["stages"]:
+        if s["stage"] == "substep_pre" and s["field"] == "gate":
+            key = (s["loop"], s["chain"], s["n"], s["col"])
+            if key in gates:
+                raise GateSemanticsError(f"duplicate gate record for {key}")
+            gates[key] = int(s["bits"])
+
+    groups: dict = {}
+    for o in run["ops"]:
+        lane = (o["loop"], o["chain"], o["n"], o["col"])
+        groups.setdefault(lane + (o["k"], o["species"], o["op_id"]), {})[o["field"]] = o
+    op_lanes = {g[:4] for g in groups}
+    if op_lanes != set(gates):
+        raise GateSemanticsError(
+            f"gate coverage mismatch: {len(op_lanes - set(gates))} op lane(s) without a "
+            f"gate, {len(set(gates) - op_lanes)} gate(s) without ops")
+    if any(g not in (0, 1) for g in gates.values()):
+        raise GateSemanticsError("gate bits are not 0/1")
+
+    for key, fields in groups.items():
+        lane, k, species, op_id = key[:4], key[4], key[5], key[6]
+        active = gates[lane] == 1
+        for field, rec in fields.items():
+            spec = mech.mechanism(algo, rec["role"], species, op_id, field)
+            if not spec.actual_transport:
+                continue
+            bits, dtype = int(rec["bits"]), rec["dtype"]
+            if active:
+                if not _is_finite(bits, dtype):
+                    raise GateSemanticsError(
+                        f"non-finite {op_id}.{field} in ACTIVE lane {lane} k={k}")
+                continue
+            if field in ("fall_after", "q_post", "n_post"):
+                before = {"fall_after": "fall_before", "q_post": "q_before",
+                          "n_post": "n_before"}[field]
+                if before in fields and int(fields[before]["bits"]) != bits:
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} changed in INACTIVE lane {lane} k={k} "
+                        f"— a gated-off column transported state")
+            elif not _is_zero(bits, dtype):
+                raise GateSemanticsError(
+                    f"{op_id}.{field} is non-zero in INACTIVE lane {lane} k={k} "
+                    f"— a gated-off column produced transport")
+    return {lane: (g == 1) for lane, g in gates.items()}
