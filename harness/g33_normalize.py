@@ -72,17 +72,20 @@ def from_fortran_run(run) -> dict:
             "role": o.cell_role, "species": o.species, "op_id": o.op_id,
             "field": o.field, "dtype": o.dtype, "bits": o.bits}
            for o in run.ops]
-    # The Fortran STAGE protocol carries no loop/chain field, so they are DERIVED —
-    # which is only sound while the overlay stays scoped to a single outer loop on
-    # the main chain. Verify that scope against the ops and refuse otherwise, so a
-    # future multi-loop run fails loudly instead of collapsing loop 2 onto loop 1.
+    # The Fortran STAGE protocol carries no loop/chain field, so they are DERIVED.
+    #
+    # CAVEAT (corrects the PR#69 note that claimed the ops verify this): the Fortran
+    # OP records do not carry a runtime loop/chain either — make_fortran_overlay
+    # emits the literal string 'G33FOP 1 main', so o.loop/o.chain are constants, and
+    # the guard below can never fire. It is kept as a tripwire for the protocol v2
+    # that makes them runtime values (see g33_fortran/STAGE_PROTOCOL_V2.md); until
+    # then, single-outer-loop is an ASSUMPTION of this leg, not a verified property.
     loops = {o["loop"] for o in ops}
     chains = {o["chain"] for o in ops}
     if loops - {1} or chains - {"main"}:
         raise NormalizeError(
-            f"fortran stage records carry no loop/chain, but the run spans "
-            f"loops={sorted(loops)} chains={sorted(chains)} — the derivation is "
-            f"only valid for a single main-chain outer loop")
+            f"fortran run spans loops={sorted(loops)} chains={sorted(chains)}; "
+            f"stage records carry no loop/chain, so they cannot be attributed")
     stages = []
     for (stage, n, field, col, k), (dtype, bits) in run.stages.items():
         if stage not in _COMPARATOR_STAGES:
