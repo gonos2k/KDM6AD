@@ -20,9 +20,13 @@ DEFS=$(sed -n 's/^CXX_DEFINES = //p' "$FM")
 INCS=$(sed -n 's/^CXX_INCLUDES = //p' "$FM")
 # --fixture=multisubcycle compiles the multi-sub-cycle raw bits instead of the
 # default one-substep fixture (see abc_driver.cpp).
-FIXDEF=()
+# A plain string, not an array: this script runs under `set -u` and macOS ships
+# bash 3.2, where expanding an EMPTY array as "${x[@]}" is an unbound-variable
+# error (fixed in bash 4.4, which is why Linux CI passed and macOS did not).
+# $DEFS and $FLGS are word-split the same way.
+FIXDEF=""
 for a in "$@"; do
-    case "$a" in --fixture=multisubcycle) FIXDEF=(-DKDM6_G33_FIXTURE_MULTISUBCYCLE) ;; esac
+    case "$a" in --fixture=multisubcycle) FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;; esac
 done
 FLGS=$(sed -n 's/^CXX_FLAGS = //p' "$FM")
 CXX=$(xcrun -f c++ 2>/dev/null || command -v c++ || true)
@@ -66,14 +70,14 @@ fi
 
 compile() {  # $1 src  $2 out.o
     # shellcheck disable=SC2086
-    "$CXX" $DEFS -DKDM6_G33_OP_DUMP "${FIXDEF[@]}" $FLGS $INCS -I harness/g33_overlay \
+    "$CXX" $DEFS -DKDM6_G33_OP_DUMP $FIXDEF $FLGS $INCS -I harness/g33_overlay \
         "${MACFLAGS[@]}" -x c++ -c "$1" -o "$2" 2>"$2.err" \
         || { echo "COMPILE FAILED: $1"; head -30 "$2.err"; exit 1; }
 }
 
 link_substep_driver() {  # $1 sed.o  $2 sed_cons.o  $3 outdir  $4 label
     # shellcheck disable=SC2086
-    "$CXX" $FLGS "${FIXDEF[@]}" "${MACFLAGS[@]}" "$OUT/driver.o" "$1" "$2" "$AR" \
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/driver.o" "$1" "$2" "$AR" \
         "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
         -o "$3/selfcheck_driver" 2>"$3/link.err" \
         || { echo "LINK FAILED ($4)"; head -40 "$3/link.err"; exit 1; }
@@ -82,7 +86,7 @@ link_substep_driver() {  # $1 sed.o  $2 sed_cons.o  $3 outdir  $4 label
 
 link_surface_driver() {  # $1 sed.o  $2 sed_cons.o  $3 coord.o  $4 outdir  $5 label
     # shellcheck disable=SC2086
-    "$CXX" $FLGS "${FIXDEF[@]}" "${MACFLAGS[@]}" "$OUT/surface_driver.o" "$1" "$2" "$3" "$AR" \
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/surface_driver.o" "$1" "$2" "$3" "$AR" \
         "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
         -o "$4/surface_selfcheck_driver" 2>"$4/surface_link.err" \
         || { echo "SURFACE LINK FAILED ($5)"; head -40 "$4/surface_link.err"; exit 1; }
@@ -91,7 +95,7 @@ link_surface_driver() {  # $1 sed.o  $2 sed_cons.o  $3 coord.o  $4 outdir  $5 la
 
 link_abc_canonical() {
     # shellcheck disable=SC2086
-    "$CXX" $FLGS "${FIXDEF[@]}" "${MACFLAGS[@]}" "$OUT/abc_driver.o" "$AR" \
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/abc_driver.o" "$AR" \
         "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
         -o "$OUT/abc_canonical_driver" 2>"$OUT/abc_canonical_link.err" \
         || { echo "ABC CANONICAL LINK FAILED"; head -40 "$OUT/abc_canonical_link.err"; exit 1; }
@@ -104,7 +108,7 @@ link_abc_diagnostic() {
     # canonical members. B and C are the SAME executable; only the environment
     # differs.
     # shellcheck disable=SC2086
-    "$CXX" $FLGS "${FIXDEF[@]}" "${MACFLAGS[@]}" "$OUT/abc_driver.o" \
+    "$CXX" $FLGS "${MACFLAGS[@]}" "$OUT/abc_driver.o" \
         "$OUT/runtime.o" "$OUT/coord.o" "$OUT/sed.o" "$OUT/sed_cons.o" "$AR" \
         "${TORCHLIBS[@]}" -Wl,-rpath,"$TORCHLIB" \
         -o "$OUT/abc_diagnostic_driver" 2>"$OUT/abc_diagnostic_link.err" \
