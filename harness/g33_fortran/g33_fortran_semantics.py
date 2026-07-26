@@ -14,7 +14,8 @@ Checks (all bit-exact; f32 arithmetic via numpy.float32 in the reference order):
   4  substep_pre(n=1) qr/nr == outer_pre_sed qr/nr (sed-entry linkage).
   5  substep_pre(n+1) qr/nr == QR/NR_UPDATE.q_post/n_post of substep n (continuity).
   6  QR_FALLACC.fall_after at (bottom cell, last substep) == surface.bottom_fall_qr.
-  7  bottom_fall_total == (((qr+qs)+qg)+qi); rain PREC == the surface increment.
+  7  bottom_fall_total == (((qr+qs)+qg)+qi); rain PREC == sum_L of the per-loop
+     surface increments (it is the whole-step accumulator, not one loop's value).
 """
 import struct
 

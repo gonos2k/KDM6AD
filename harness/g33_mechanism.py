@@ -221,14 +221,30 @@ _SURFACE = {
     "bottom_fall_total": (SHARED, "SURFACE/species_sum"),
     "delz_bottom": (EXTERNAL_INPUT, "EXTERNAL/delz_bottom"),
     "surface_denr": (EXTERNAL_INPUT, "EXTERNAL/surface_denr"),
-    "rain_increment": (SHARED, "SURFACE/rain_conversion"),
-    "snow_increment": (OUT_OF_SCOPE, "OOS/snow_increment"),
-    "graupel_increment": (OUT_OF_SCOPE, "OOS/graupel_increment"),
-    # whole-step cumulative output: sum_L of the per-loop conversion
+    # whole-step cumulative output: sum_L of the per-loop conversion. The per-loop
+    # increments themselves are NOT here: only the C++ leg emits them, so they are
+    # native evidence gated by the replay, never a cross-tree comparable.
     "rain_precip_cumulative": (SHARED, "OUTPUT/rain_cumulative"),
     "snow_precip_cumulative": (OUT_OF_SCOPE, "OOS/snow_cumulative"),
     "graupel_precip_cumulative": (OUT_OF_SCOPE, "OOS/graupel_cumulative"),
 }
+
+
+#: ACTIVE-domain rule per surface / final_output field, enumerated like the op table.
+_SURFACE_DOMAIN = dict(
+    {f: NONNEG_FINITE for f in
+     ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi",
+      "bottom_fall_total", "rain_precip_cumulative", "snow_precip_cumulative",
+      "graupel_precip_cumulative")},
+    delz_bottom=POSITIVE_FINITE, surface_denr=POSITIVE_FINITE)
+
+
+def surface_domain_rule(field: str) -> str:
+    """Domain of a surface / final_output field, or TaxonomyHole if unknown."""
+    try:
+        return _SURFACE_DOMAIN[field]
+    except KeyError:
+        raise TaxonomyHole(f"{field!r} has no surface domain rule") from None
 
 
 def surface_mechanism(field) -> MechanismSpec:
@@ -279,6 +295,16 @@ def check_universe():
         pass
     else:
         raise AssertionError("domain_rule is fail-open")
+    # the surface world, both ways: a stale entry for a field the schema no longer
+    # compares is as much a defect as a missing one
+    surf = (set(schema.semantic_stage_fields("surface"))
+            | set(schema.semantic_stage_fields("final_output")))
+    assert set(_SURFACE) == surf, (
+        f"surface mechanisms != schema: missing {sorted(surf - set(_SURFACE))}, "
+        f"stale {sorted(set(_SURFACE) - surf)}")
+    assert set(_SURFACE_DOMAIN) == surf, (
+        f"surface domains != schema: missing {sorted(surf - set(_SURFACE_DOMAIN))}, "
+        f"stale {sorted(set(_SURFACE_DOMAIN) - surf)}")
     try:
         _classify("legacy", "INTERIOR", "qr", "QR_FALK", "not_a_real_field")
     except TaxonomyHole:

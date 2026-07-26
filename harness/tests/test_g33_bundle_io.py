@@ -120,20 +120,21 @@ def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False,
     return ev
 
 
-def _abc_stdout(algo: str, truncate=False) -> str:
+def _abc_stdout(algo: str, truncate=False, rain="00000000") -> str:
     """A complete ABC frame: 12 state fields [B,K] + 3 increments [B], all f32."""
     lines = [f"KDM6ABC 1 {algo} fourcase_v1 {B} {K}"]
     for name in gfx.STATE_FIELDS:
         lines.append(f"FIELD {name} f32 2 {B} {K} {B * K} " + " ".join(["3f800000"] * (B * K)))
     for name in ("rain_increment", "snow_increment", "graupel_increment"):
-        lines.append(f"FIELD {name} f32 1 {B} {B} " + " ".join(["00000000"] * B))
+        word = rain if name == "rain_increment" else "00000000"
+        lines.append(f"FIELD {name} f32 1 {B} {B} " + " ".join([word] * B))
     if truncate:
         lines = lines[:6]
     lines.append("END")
     return "\n".join(lines) + "\n"
 
 
-def _bundle(root: Path, truncate_abc=False, **ev):
+def _bundle(root: Path, truncate_abc=False, rain="00000000", **ev):
     """A full two-leg bundle with manifest + A/B/C stdout for root attestation.
     Fixture/parameter SHAs come from the CHECKED-IN authority, so the bundle is
     bound to the real problem rather than to its own self-consistent manifest."""
@@ -143,7 +144,7 @@ def _bundle(root: Path, truncate_abc=False, **ev):
         for lane in ("A", "B", "C"):
             d = root / f"{algo}-{lane}"
             d.mkdir()
-            (d / "stdout.abc").write_text(_abc_stdout(algo, truncate_abc))
+            (d / "stdout.abc").write_text(_abc_stdout(algo, truncate_abc, rain))
     manifest = {"schema_version": 1, "diagnostic_driver_sha256": DIAG,
                 "canonical_driver_sha256": "c" * 64, "fixture_id": "f",
                 "fixture_manifest_sha256": gfx.manifest_sha256(authority),
@@ -357,3 +358,17 @@ def test_non_commit_producer_rejected(tmp_path):
     ev = _full_evidence(tmp_path, "legacy")
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_evidence(ev, "legacy", expected_repo_commit="b2" * 20)
+
+
+def test_the_runs_actual_returned_output_is_preserved(tmp_path):
+    # Structural A/B/C equality alone threw the returned values away, so the decision
+    # compared a harness re-derivation instead of what the runtime handed back.
+    out = bio.verify_cpp_bundle(_bundle(tmp_path, rain="3f800000"))
+    leg = out["algorithms"]["legacy"]
+    assert leg.actual_final_output["rain"] == (0x3F800000,) * B
+    assert leg.actual_final_output["snow"] == (0,) * B
+
+
+def test_the_actual_output_is_read_from_the_evidence_not_assumed(tmp_path):
+    out = bio.verify_cpp_bundle(_bundle(tmp_path, rain="40000000"))
+    assert out["algorithms"]["legacy"].actual_final_output["rain"] == (0x40000000,) * B

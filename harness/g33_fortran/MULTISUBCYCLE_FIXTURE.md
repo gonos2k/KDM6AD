@@ -1,7 +1,9 @@
 # Why the current fixture cannot reach multi-subcycle, and what would
 
-Status: **measurement, not yet a fixture.** Grounds the design of
-`arithmetic_multisubcycle_v1`.
+Status: **built and committed.** `harness/g33_fixture_multisubcycle_v1.json` plus
+`harness/tests/data/g33_multisubcycle_legacy_sample.g33f` (3 outer loops, mstep
+heterogeneous across both columns and loops). This page records the measurement the
+design came from, and the switch-margin limit that is still open.
 
 ## The substep count is set by one relation
 
@@ -14,9 +16,17 @@ mstep = max over k of numdt
 
 `work1 = vt / delz` (fall speed over layer thickness). So
 
+For `x >= 0`, `nint(x + 0.5)` is exactly `floor(x + 1)` — ties round away from zero,
+so the two agree at every point (verified over `x` in [0, 4] at 1e-3 spacing), and
+the C++ path computes `floor(vmax*dtcld + 1.0)` directly. Therefore
+
 ```
-mstep >= 2   <=>   work1 * dtcld >= 1.5
+mstep >= m   <=>   work1 * dtcld >= m - 1
+mstep >= 2   <=>   work1 * dtcld >= 1.0        (NOT 1.5)
 ```
+
+An earlier revision of this page used `>= 1.5` and the timestep/geometry table below
+was computed from it; both are corrected here.
 
 ## What the current fixture actually contains
 
@@ -32,7 +42,7 @@ Measured from the committed evidence (`g33_legacy_sample.g33f`), not assumed:
 Therefore `mstep >= 2` would need
 
 ```
-dtcld >= 1.5 / 1.143e-4 = 13,123 s
+dtcld >= 1.0 / 1.143e-4 = 8,749 s
 ```
 
 **No timestep change can reach multi-subcycle in this fixture** — dt=300 gives
@@ -49,16 +59,59 @@ domain validation the parser already enforces.
 
 Holding the fixture's fall speed (~0.98 m/s) and thinning the layers:
 
-| `delz` | `work1` | `mstep >= 2` needs `dtcld >=` | at dt=300 (`dtcld=100 s`) |
-|---|---|---|---|
-| 8,550 m (today) | 1.14e-4 | 13,123 s | mstep = 1 |
-| 500 m | 2.0e-3 | 767 s | mstep = 1 |
-| 200 m | 4.9e-3 | 307 s | mstep = 1 |
-| 100 m | 9.8e-3 | 154 s | mstep = 1 |
-| **50 m** | **1.95e-2** | **77 s** | **mstep = 2** |
+| `delz` | `work1` | `mstep >= 2` needs `dtcld >=` | `x` at `dtcld=100 s` | mstep |
+|---|---|---|---|---|
+| 8,550 m (original) | 1.14e-4 | 8,749 s | 0.011 | 1 |
+| 500 m | 1.96e-3 | 511 s | 0.196 | 1 |
+| 200 m | 4.9e-3 | 204 s | 0.49 | 1 |
+| 100 m | 9.8e-3 | 102 s | 0.98 | 1 |
+| **65 m** | **1.51e-2** | **66 s** | **1.51** | **2** |
+| **50 m** | **1.96e-2** | **51 s** | **1.96** | **2** |
 
 So a fixture that exercises BOTH the historical multi-outer-loop path (dt=300 ->
-loops=3) and multi-substep transport wants `delz` of roughly **50-65 m**.
+loops=3) and multi-substep transport wants `delz` at or below roughly **100 m** —
+the 98 m point is where `x` reaches 1.0 at `dtcld = 100 s`. The built fixture uses
+150 / 65 / 32 m per column.
+
+## The switch margin cannot be computed from current evidence (OPEN)
+
+A mechanism fixture must not sit near an `mstep` switch: if
+
+```
+x = max_k(work) * dtcld        m = floor(x + 1)
+delta = min( x - (m-1),  m - x )
+```
+
+is small, a sub-ULP fall-speed difference between the backends flips the substep
+count, and the comparison is then about scheduling rather than about arithmetic.
+
+Measured on the committed 3-loop evidence, using the operands the dump actually
+carries (`work1_qr`, `workn_qr`):
+
+| cell | x | observed mstep | floor(x+1) | delta (lower bound) |
+|---|---|---|---|---|
+| L1 col1 | 0.610 | 1 | 1 | 0.390 |
+| L1 col2 | 1.374 | **5** | 2 | — |
+| L1 col3 | 2.410 | **9** | 3 | — |
+| L2 col1 | 0.606 | 1 | 1 | 0.394 |
+| L2 col2 | 1.329 | 2 | 2 | 0.329 |
+| L2 col3 | 5.807 | **10** | 6 | — |
+| L3 col1 | 0.285 | 1 | 1 | 0.285 |
+| L3 col2 | 0.625 | 1 | 1 | 0.375 |
+| L3 col3 | 3.581 | **7** | 4 | — |
+
+In four of the nine cells the observed `mstep` is LARGER than the instrumented
+species predict. That is not an inconsistency — `numdt` maximises over
+`work1_qr, workn_qr, work1_qs, work1_qg`, and the last two are **not dumped**. So:
+
+- `floor(x+1) <= mstep` is a genuine invariant (more species can only raise `x`),
+  and it holds in all nine cells; the harness asserts it.
+- the true `delta` is **not computable from the current evidence** in those cells,
+  because the operand that sets `mstep` there is missing from the protocol.
+
+Closing it requires adding `work1_qs` / `work1_qg` to `substep_pre`. Until then the
+margin claim for this fixture is limited to the five cells where the instrumented
+species dominate, where `delta` is 0.29-0.39 — comfortably clear of a switch.
 
 ## Heterogeneous mstep needs per-column geometry
 

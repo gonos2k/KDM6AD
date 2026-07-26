@@ -102,21 +102,40 @@ The normalized run therefore separates them:
   to build it; `loop = 0` marks "not loop-scoped", so the record's identity does not
   depend on how many loops the run took.
 
-The comparable OUTPUT is the cumulative. A per-loop increment is not compared at all —
-the reference does not emit one — but every per-loop conversion IS replayed, so a
-corrupted loop-1 or loop-2 surface record fails at the fidelity gate rather than
-passing unexamined.
+The comparable OUTPUT is the cumulative, and it is the value the run **returned** —
+the `FnResult` the runtime accumulated, taken from the ABC C lane — not a sum the
+harness re-derived. The whole path is gated in three steps:
+
+```
+dP_L^actual  ==  dP_L^replay            for every loop L      (per-loop gate)
+P_returned   ==  fold32(dP_1^actual, ..., dP_N^actual)        (accumulation gate)
+P_returned   ==  the other tree's P_returned                  (cross-tree)
+```
+
+Checking only the last two is blind twice over, and both cases are real on the
+committed 3-loop evidence rather than theoretical:
+
+- **cancellation** — loop 1 high by 1 ULP and loop 2 low by 1 ULP leaves the f32
+  total bit-identical, so every loop is wrong and the total still matches;
+- **absorption** — on column 3 a 1-ULP error in *any single* loop leaves the total
+  bit-identical, because the perturbation is below the ULP of the accumulated sum.
+
+Both are committed as tests that assert the total is unchanged AND that the per-loop
+gate kills them anyway.
 
 ## Ladder replay: exact coverage and pinned operands
 
 `g33_replay.py` re-derives every rung from the operands the producer itself dumped.
 Two properties make it a gate rather than a sample:
 
-1. **Exact coverage.** The decision path requires the set of relation NAMES to equal
-   `RELATION_COVERAGE[variant]`, not merely a count. Both committed fixtures — a
-   1-loop `mstep = 1` run and a 3-loop run with `mstep` heterogeneous across both
-   columns and loops — produce the identical set, so a leg whose INFLOW family has
-   vanished reads as INVALID_EVIDENCE instead of as a thinner check that passes.
+1. **Exact coverage, per value.** The relation NAME set must equal
+   `RELATION_COVERAGE[variant]` — both committed fixtures produce the identical set,
+   so a leg whose INFLOW family has vanished reads as INVALID_EVIDENCE rather than as
+   a thinner check that passes. Names alone are not enough, though: a replay that
+   skips one *cell* still emits that relation's name from every other cell. So
+   coverage is also a per-value property — every dumped field, at every cell, must be
+   read by some relation. The only exemptions are the three branch flags, which the
+   4-state branch authority in `validate_gate_semantics` owns instead.
 2. **No inert operands.** A value that reaches a result only through `min()` or a
    guard is invisible to a pure recomputation whenever it does not bind, so those are
    pinned to the state they must equal:
