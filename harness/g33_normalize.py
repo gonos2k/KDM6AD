@@ -14,9 +14,8 @@ that form, projecting BOTH backends onto the common semantic schema
 
   * Fortran — a `FortranRun` (g33_fortran_dump.parse_fortran_run). Ops map directly;
     the whitelisted outer_pre_sed / substep_pre / surface stages are FILTERED to the
-    common semantic set (dropping the Fortran-only `dtcld`; `surface_denr` IS kept —
-    both backends emit it now); the PREC family (1=rain, 2=snow, 3=graupel) projects
-    onto the surface OUTPUT fields.
+    common semantic set (`dtcld` and `surface_denr` are both kept — see g33_schema);
+    the PREC family (1=rain, 2=snow, 3=graupel) projects onto the surface OUTPUTs.
   * C++ — a verified bundle (g33_bundle_io.verify_cpp_evidence). Whole-tensor
     records are expanded to per-(col,k) scalars via the container column map; the
     C++-native substep_pre diagnostics are projected to the canonical set (the
@@ -31,6 +30,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import struct                # noqa: E402
 import g33_schema as schema  # noqa: E402
 import g33_derived as dv      # noqa: E402
 
@@ -39,13 +39,16 @@ _PREC_FIELD = {1: "rain_increment", 2: "snow_increment", 3: "graupel_increment"}
 
 # C++-native substep_pre field -> canonical semantic field. Everything not listed
 # (dend_raw, *_floor_active, mstep_native/_input_native/_exact_integer, gate_native/
-# _exact_01, active_mask, dtcld_effective, qcrmin_effective) is a diagnostic the
-# comparator does not bit-compare cross-backend, and is dropped.
+# _exact_01, active_mask, qcrmin_effective) is a diagnostic the comparator does not
+# bit-compare cross-backend, and is dropped.
 _CPP_SUBPRE = {
     "qr": "qr", "nr": "nr", "work1_qr": "work1_qr", "workn_qr": "workn_qr",
     "delz_safe": "delz_safe", "dend_safe": "dend_safe",
     "mstep_decoded_i32": "mstep", "gate_decoded_u8": "gate",
+    "dtcld_effective": "dtcld",          # f64 -> exact-f32 semantic projection
 }
+
+
 # The decoded mstep/gate are trustworthy only because g33_bundle_io.verify_cpp_evidence
 # has already RECOMPUTED their exactness (+ floor/dtcld) from the raw native operands
 # via g33_derived.check_producer_flags — this module only projects, it does not
@@ -54,6 +57,17 @@ _CPP_SUBPRE = {
 
 class NormalizeError(ValueError):
     """The backend run cannot be projected onto the comparator form."""
+
+
+def _f64_bits_to_semantic_f32(bits):
+    """The C++ dtcld is stored as a double but is semantically the f32 timestep the
+    Fortran carries. Project it to f32 bits, refusing anything that is not an EXACT
+    round-trip — a double not representable in f32 would make the two backends'
+    'same' dtcld incomparable rather than equal."""
+    (value,) = struct.unpack(">d", struct.pack(">Q", bits))
+    if struct.unpack(">f", struct.pack(">f", value))[0] != value:
+        raise NormalizeError(f"dtcld {value!r} is not an exact f32 round-trip")
+    return struct.unpack(">I", struct.pack(">f", value))[0]
 
 
 def _semantic(stage, field):
@@ -130,7 +144,7 @@ def _expand(record, B, K, lane_to_col):
         raise NormalizeError(f"unexpected record shape {shape} for B={B} K={K}")
 
 
-def from_cpp_evidence(evidence) -> dict:
+def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     """A verified {contract, containers} (g33_bundle_io.verify_cpp_evidence) ->
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
@@ -141,9 +155,16 @@ def from_cpp_evidence(evidence) -> dict:
     top-first [B,K] stage orientation, and the op stream are all validated; the
     remaining C4-verdict gate is a real multi-subcycle fixture (this fixture is
     mstep=1, so bit-identical F↔C++ is the correct INCONCLUSIVE)."""
-    if not (getattr(evidence, "root_attested", False)):
-        raise NormalizeError("from_cpp_evidence requires a root-attested VerifiedCppLeg "
+    if not getattr(evidence, "root_attested", False):
+        raise NormalizeError("requires a root-attested VerifiedCppLeg "
                              "(run g33_bundle_io.verify_cpp_bundle)")
+    if require_verdict_ready and not evidence.verdict_ready:
+        raise NormalizeError(
+            "leg is not verdict_ready: internal verification passed but the EXTERNAL "
+            "anchors are missing (expected_manifest_sha256 / expected_repo_commit). "
+            "A bundle that rewrites its own manifest stays self-consistent, so a C4 "
+            "verdict needs an anchor held outside it. Pass require_verdict_ready=False "
+            "only for local debugging.")
     contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
@@ -175,6 +196,8 @@ def from_cpp_evidence(evidence) -> dict:
                 if not _semantic(stage, field):
                     continue
                 for col, k, dtype, bits in _expand(r, B, K, lane_to_col):
+                    if field == "dtcld":
+                        dtype, bits = "f32", _f64_bits_to_semantic_f32(bits)
                     stages.append({"loop": r["outer_loop"], "chain": r["chain"],
                                    "stage": stage,
                                    "n": (r["n"] if stage == "substep_pre" else 0),

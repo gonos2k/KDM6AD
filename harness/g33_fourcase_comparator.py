@@ -54,11 +54,11 @@ _CHAIN_RANK = {"-": 0, "main": 1, "ice": 2}
 _WIDTH = {"f32": 32, "f64": 64, "i32": 32, "u8": 8}
 
 
-def _lane_of(identity):
-    """(loop, chain, n, col) of an op identity — named so a change to the identity
-    layout cannot silently produce a wrong lane key."""
+def _lane_of(identity) -> gev.LaneKey:
+    """The LaneKey of an op identity — destructured by NAME so a change to the
+    identity layout cannot silently produce a wrong lane key."""
     _kind, loop, chain, n, col = identity[:5]
-    return (loop, chain, n, col)
+    return gev.LaneKey(loop, chain, n, col)
 
 
 class StructuralError(Exception):
@@ -217,46 +217,92 @@ class Divergence:
     inactive_diffs: tuple = ()   # op diffs in gate-inactive lanes (diagnostics only)
 
 
+def _gate_defining(e) -> bool:
+    """A substep_pre gate/mstep event — the pair that DEFINES which op records exist."""
+    return e.phase == "substep_pre" and e.identity[6] in ("gate", "mstep")
+
+
 def compare_pair(f_run, c_run) -> Divergence:
-    """First Fortran↔C++ divergence for one variant, in canonical event order."""
+    """First Fortran↔C++ divergence for one variant, in canonical event order.
+
+    The two producers have different op topologies (Fortran emits ACTIVE columns
+    only; C++ writes whole [B] payloads), and a legitimately different mstep makes
+    even the ACTIVE universes differ. So the comparison is bounded rather than
+    global:
+
+      1. Each run's own gate contract is validated independently.
+      2. The gate/mstep sub-stream — which DEFINES the op universe — is compared
+         first to find the earliest point where the two runs stop describing the
+         same set of records. Everything before that point is comparable.
+      3. Inside that comparable prefix the events are walked in true INTERLEAVED
+         execution order, so a divergence born in an n=1 op is still attributed to
+         that op and not to a later stage.
+      4. Only ACTIVE-lane ops enter the verdict stream. An inactive lane's rungs are
+         already pinned to their no-op values by the gate contract, so they are
+         diagnostics, never the first divergence.
+    """
     try:
         fe, ce = _events(f_run), _events(c_run)
     except StructuralError as e:
         return Divergence(invalid=str(e))
     try:
-        # Independent per-run gate contract: coverage (no defaulted lane), the
-        # inactive no-op invariants, and finiteness of active transport.
         f_active = gev.validate_gate_semantics(f_run, mech)
-        c_active = gev.validate_gate_semantics(c_run, mech)
+        gev.validate_gate_semantics(c_run, mech)
     except gev.GateSemanticsError as e:
         return Divergence(invalid=f"gate semantics: {e}")
-    # NOTE: the two masks may legitimately DIFFER — each run's gate obeys its own
-    # mstep, and a different mstep is a CFL/fall-speed difference upstream of the
-    # sedimentation arithmetic. That shows up as the substep_pre gate/mstep event,
-    # which sorts before the ops of that substep, so it is reported as an upstream
-    # divergence (INCONCLUSIVE) rather than as evidence corruption.
 
-    fmap = {e.identity: e for e in fe}
-    cmap = {e.identity: e for e in ce}
-    if set(fmap) != set(cmap):
-        fo, co = len(set(fmap) - set(cmap)), len(set(cmap) - set(fmap))
+    fmap, cmap = {e.identity: e for e in fe}, {e.identity: e for e in ce}
+    # (2) the gate/mstep universe itself must match — both producers emit one per
+    # lane, so a difference here is malformed evidence, not a physics difference.
+    # (2) A different mstep means a different NUMBER of substeps, so the gate/mstep
+    # records themselves need not cover the same set — each run emits its own range.
+    # The earliest disagreement is therefore either a differing value on a shared
+    # record, or a record only one run has at all; both are upstream differences.
+    f_gate = {e.identity: e for e in fe if _gate_defining(e)}
+    c_gate = {e.identity: e for e in ce if _gate_defining(e)}
+    disagreements = [(e.order, e, c_gate[i].bits)
+                     for i, e in f_gate.items()
+                     if i in c_gate and e.bits != c_gate[i].bits]
+    disagreements += [((f_gate.get(i) or c_gate[i]).order, f_gate.get(i) or c_gate[i], None)
+                      for i in set(f_gate) ^ set(c_gate)]
+    cutoff = cut_ev = cut_other = None
+    if disagreements:
+        cutoff, cut_ev, cut_other = min(disagreements, key=lambda t: t[0])
+
+    def _in_scope(e):
+        if cutoff is not None and e.order >= cutoff:
+            return False
+        if e.phase != "op":
+            return True
+        return f_active.get(_lane_of(e.identity), True)     # ACTIVE ops only
+
+    f_scope = [e for e in fe if _in_scope(e)]
+    c_ids = {e.identity for e in ce if _in_scope(e)}
+    f_ids = {e.identity for e in f_scope}
+    if f_ids != c_ids:
+        fo, co = len(f_ids - c_ids), len(c_ids - f_ids)
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
-    inactive = []
-    for e in fe:                                  # canonical order
+
+    inactive = [e.identity for e in fe
+                if e.phase == "op" and not f_active.get(_lane_of(e.identity), True)
+                and e.bits != cmap[e.identity].bits] if not cutoff else []
+    for e in f_scope:                                  # canonical interleaved order
         ce_e = cmap[e.identity]
-        if e.bits == ce_e.bits:
-            continue
-        # A dead lane may differ ONLY in a pre-gate diagnostic rung — its gated
-        # results are already pinned to the no-op values above, so this cannot hide
-        # real transport (P0-1).
-        if (e.phase == "op" and e.policy == mech.IGNORE
-                and not f_active.get(_lane_of(e.identity), True)):
-            inactive.append(e.identity)
-            continue
-        return Divergence(phase=e.phase, identity=e.identity,
-                          shared_key=e.shared_key, kind=e.kind, tag=e.tag,
-                          signature=_signature(e.dtype, e.bits, ce_e.bits),
+        if e.bits != ce_e.bits:
+            return Divergence(phase=e.phase, identity=e.identity,
+                              shared_key=e.shared_key, kind=e.kind, tag=e.tag,
+                              signature=_signature(e.dtype, e.bits, ce_e.bits),
+                              inactive_diffs=tuple(inactive))
+    if cut_ev is not None:
+        # the comparable prefix is clean, so the earliest real difference is the
+        # gate/mstep itself — an upstream CFL / fall-speed difference. (No signature
+        # when the record exists in only one run: there is nothing to subtract.)
+        sig = (_signature(cut_ev.dtype, cut_ev.bits, cut_other)
+               if cut_other is not None else None)
+        return Divergence(phase=cut_ev.phase, identity=cut_ev.identity,
+                          shared_key=cut_ev.shared_key, kind=cut_ev.kind,
+                          tag=cut_ev.tag, signature=sig,
                           inactive_diffs=tuple(inactive))
     return Divergence(inactive_diffs=tuple(inactive))   # no active divergence
 

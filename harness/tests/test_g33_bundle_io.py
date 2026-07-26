@@ -303,7 +303,9 @@ def test_manifest_duplicate_json_key_rejected(tmp_path):
 
 # ── P1-2 C++ normalize on synthetic evidence ──────────────────────────────────
 def test_cpp_evidence_normalizes_and_events_build(tmp_path):
-    res = bio.verify_cpp_bundle(_bundle(tmp_path))     # root-attested leg
+    root = _bundle(tmp_path)
+    res = bio.verify_cpp_bundle(root, expected_manifest_sha256=_sha(root / "cpp_abc_manifest.json"),
+                                expected_repo_commit=COMMIT)      # fully attested
     run = nz.from_cpp_evidence(res["algorithms"]["legacy"])
     assert run["algorithm"] == "legacy" and run["B"] == B and run["K"] == K
     import g33_fourcase_comparator as cmp
@@ -315,6 +317,16 @@ def test_unattested_leg_refused_by_normalizer(tmp_path):
     leg = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy"), "legacy")
     with pytest.raises(nz.NormalizeError):          # root_attested is False
         nz.from_cpp_evidence(leg)
+
+
+def test_internally_verified_but_unanchored_leg_is_not_verdict_ready(tmp_path):
+    # P0-3: verify_cpp_bundle without the external anchors gives root_attested=True
+    # but NOT verdict_ready — the decision path must refuse it.
+    leg = bio.verify_cpp_bundle(_bundle(tmp_path))["algorithms"]["legacy"]
+    assert leg.root_attested and not leg.verdict_ready
+    with pytest.raises(nz.NormalizeError, match="verdict_ready"):
+        nz.from_cpp_evidence(leg)
+    nz.from_cpp_evidence(leg, require_verdict_ready=False)      # debug path only
 
 
 def test_falsely_exact_mstep_flag_rejected(tmp_path):

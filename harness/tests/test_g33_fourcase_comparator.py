@@ -413,3 +413,76 @@ def test_loop2_sorts_after_loop1_surface():
     ev = cmp._events(merged)
     loops = [e.identity[1] for e in ev]
     assert loops == sorted(loops)        # every loop-1 event precedes every loop-2
+
+
+# ── heterogeneous mstep: the REAL producer topologies ────────────────────────
+def _topo_run(algo, mstep_by_col, emit_inactive, bits=None):
+    """One run with per-column mstep. `emit_inactive` picks the producer shape:
+    False = Fortran (op records for ACTIVE columns only), True = C++ (a whole [B]
+    payload per substep, so inactive lanes carry op records at their no-op values)."""
+    bits, ops, st = bits or {}, [], []
+    maxn = max(mstep_by_col.values())
+    for col, m in sorted(mstep_by_col.items()):
+        for n in range(1, maxn + 1):
+            active = n <= m
+            for field, dt, b in (("gate", "u8", 1 if active else 0), ("mstep", "i32", m)):
+                st.append({"loop": 1, "chain": "main", "stage": "substep_pre", "n": n,
+                           "col": col, "k": -1, "field": field, "dtype": dt, "bits": b})
+            if not active and not emit_inactive:
+                continue
+            for opid in schema.ops_for_species(algo, "INTERIOR", "qr"):
+                group = {}
+                for fld, dt in schema.op_fields(algo, "INTERIOR", opid):
+                    key = (n, col, 1, opid, fld)
+                    if key in bits:
+                        b = bits[key] & _MASK[dt]
+                    else:
+                        b = _base(dt, *key)
+                        if not active:
+                            spec = mech.mechanism(algo, "INTERIOR", "qr", opid, fld)
+                            if spec.inactive in (mech.ZERO, mech.FALSE):
+                                b = 0
+                            elif spec.inactive == mech.EQUAL_TO:
+                                b = group.get(spec.inactive_ref, 0)
+                    group[fld] = b
+                    ops.append({"loop": 1, "chain": "main", "n": n, "col": col, "k": 1,
+                                "role": "INTERIOR", "species": "qr", "op_id": opid,
+                                "field": fld, "dtype": dt, "bits": b})
+    return {"algorithm": algo, "B": 3, "K": 4, "ops": ops, "stages": st}
+
+
+def test_fortran_active_only_vs_cpp_all_lanes_compares():
+    # mstep = {col1: 1, col2: 2}: at n=2 the Fortran run has NO col-1 op records
+    # while the C++ run does. The universes still align on the ACTIVE stream.
+    m = {1: 1, 2: 2}
+    fort = _topo_run("legacy", m, emit_inactive=False)
+    cpp = _topo_run("legacy", m, emit_inactive=True)
+    d = cmp.compare_pair(fort, cpp)
+    assert d.invalid is None and d.phase is None       # identical where comparable
+
+
+def test_heterogeneous_topology_still_finds_an_active_divergence():
+    m = {1: 1, 2: 2}
+    d = {(2, 2, 1, "QR_FALK", "mul_work1"): 0xABCD}     # col 2 is ACTIVE at n=2
+    div = cmp.compare_pair(_topo_run("legacy", m, False),
+                           _topo_run("legacy", m, True, bits=d))
+    assert div.phase == "op" and div.tag == "FALK/mul_work1" and div.identity[4] == 2
+
+
+def test_cpp_inactive_lane_diff_is_diagnostics_only():
+    m = {1: 1, 2: 2}
+    # col 1 at n=2 is INACTIVE and exists only in the C++ run -> not the verdict.
+    div = cmp.compare_pair(_topo_run("legacy", m, False), _topo_run("legacy", m, True))
+    assert div.phase is None and div.invalid is None
+
+
+def test_backends_with_different_mstep_is_inconclusive_not_invalid():
+    # Fortran mstep=1 (no n=2 ops at all), C++ mstep=2 (real n=2 ops): the op
+    # universes genuinely differ, but the cause is the upstream substep count.
+    fort = _topo_run("legacy", {1: 1, 2: 1}, emit_inactive=False)
+    cpp = _topo_run("legacy", {1: 2, 2: 2}, emit_inactive=True)
+    div = cmp.compare_pair(fort, cpp)
+    assert div.invalid is None, div.invalid
+    assert div.phase == "substep_pre" and div.identity[6] in ("gate", "mstep")
+    verdict, reason = cmp.classify(div, cmp.Divergence())
+    assert verdict == "INCONCLUSIVE" and "upstream" in reason
