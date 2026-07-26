@@ -74,6 +74,7 @@ class VerifiedCppLeg:
     contract: dict
     containers: dict
     mstep_range: tuple | None
+    problem: dict | None = None              # fixture/parameter identity of the run
     root_attested: bool = False              # bundle-internal root manifest verified
     external_manifest_attested: bool = False  # root manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False      # producer_commit pinned to a reviewed rev
@@ -415,6 +416,8 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
         out[algo] = replace(leg, root_attested=True,
+                            problem={"fixture_sha256": meta.get("fixture_sha256"),
+                                     "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,
                             source_commit_attested=expected_repo_commit is not None)
     # SAME-PROBLEM: both legs share one fixture + one parameter set.

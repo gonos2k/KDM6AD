@@ -114,18 +114,18 @@ def test_no_divergence_is_inconclusive():
                     _run("conservative"), _run("conservative")) == "INCONCLUSIVE"
 
 
-def test_shared_falk_divergence_is_pass():
+def test_shared_falk_divergence_is_shared_seed():
     d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
     assert _verdict(_run("legacy"), _run("legacy", bits=d),
-                    _run("conservative"), _run("conservative", bits=d)) == "PASS"
+                    _run("conservative"), _run("conservative", bits=d)) == cmp.SHARED_SEED_CANDIDATE
 
 
 # ── P0-1: fall_after is a shared accumulator add, not a variant result ─────────
-def test_fall_after_both_pairs_is_pass_not_fail():
+def test_fall_after_both_pairs_is_shared_seed_not_fail():
     d = {(1, 1, 1, "QR_FALLACC", "fall_after"): 0x4242}
     v = _verdict(_run("legacy"), _run("legacy", bits=d),
                  _run("conservative"), _run("conservative", bits=d))
-    assert v == "PASS"
+    assert v == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_conservative_fall_increment_is_fail():
@@ -162,11 +162,11 @@ def test_taxonomy_is_closed_world():
 
 
 # ── P0-4: surface output increments ───────────────────────────────────────────
-def test_surface_rain_increment_both_pairs_is_pass():
+def test_surface_rain_increment_both_pairs_is_shared_seed():
     d = {"rain_increment": 0x77}
     assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
                     _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == "PASS"
+                    _run("conservative", stages=_surface(d))) == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_surface_snow_increment_both_pairs_is_inconclusive():
@@ -176,11 +176,11 @@ def test_surface_snow_increment_both_pairs_is_inconclusive():
                     _run("conservative", stages=_surface(d))) == "INCONCLUSIVE"
 
 
-def test_surface_species_sum_both_pairs_is_pass():
+def test_surface_species_sum_both_pairs_is_shared_seed():
     d = {"bottom_fall_total": 0x5678}
     assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
                     _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == "PASS"
+                    _run("conservative", stages=_surface(d))) == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_surface_out_of_scope_species_both_pairs_is_inconclusive():
@@ -228,10 +228,10 @@ def test_top_q_minus_out_both_pairs_is_not_pass():
     assert v == "FAIL"
 
 
-def test_interior_q_minus_out_both_pairs_is_pass():
+def test_interior_q_minus_out_both_pairs_is_shared_seed():
     d = {(1, 1, 1, "QR_UPDATE", "q_minus_out"): 0xBEEF}
     assert _verdict(_run("legacy"), _run("legacy", bits=d),
-                    _run("conservative"), _run("conservative", bits=d)) == "PASS"
+                    _run("conservative"), _run("conservative", bits=d)) == cmp.SHARED_SEED_CANDIDATE
 
 
 # ── structural guards ─────────────────────────────────────────────────────────
@@ -591,3 +591,30 @@ def test_reverse_topology_order_does_not_crash():
     div = cmp.compare_pair(_topo_run("legacy", m, emit_inactive=True),
                            _topo_run("legacy", m, emit_inactive=False))
     assert div.invalid is not None or div.phase is None
+
+
+# ── the pure comparator may not declare PASS ─────────────────────────────────
+def test_pure_adjudicate_never_returns_pass():
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
+    r = cmp.adjudicate(_run("legacy"), _run("legacy", bits=d),
+                       _run("conservative"), _run("conservative", bits=d))
+    assert r["verdict"] == cmp.SHARED_SEED_CANDIDATE
+    assert "PASS" not in r["verdict"]          # promotion belongs to the verified entry
+
+
+def test_verified_entry_refuses_legs_without_identity():
+    # the synthetic runs carry no problem identity, so the decision entry stops
+    # before it ever looks at the arithmetic
+    r = cmp.adjudicate_verified(_run("legacy"), _run("legacy"),
+                                _run("conservative"), _run("conservative"))
+    assert r["verdict"] == "INVALID_EVIDENCE" and "problem identity" in r["reason"]
+
+
+def test_verified_entry_refuses_a_different_problem():
+    ident = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4}
+    legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
+    for leg in legs:
+        leg["problem"] = dict(ident)
+    legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
+    r = cmp.adjudicate_verified(*legs)
+    assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]
