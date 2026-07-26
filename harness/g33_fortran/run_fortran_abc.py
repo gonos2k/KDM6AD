@@ -75,12 +75,17 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--algo", required=True, choices=["legacy", "conservative"])
     ap.add_argument("--out", required=True, help="fresh output directory")
+    ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
+                    choices=sorted(fixture.FIXTURES),
+                    help="which fixture authority this run uses")
     args = ap.parse_args()
 
-    authority = fixture.load_manifest()
+    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
     B, K = authority["B"], authority["K"]
     os.makedirs(args.out)
-    cases = {"A": [], "B": ["--overlay"], "C": ["--dump"]}
+    fixture_flag = [f"--fixture={fixture.spec(args.fixture_id).fortran_build_name}"]
+    cases = {"A": fixture_flag, "B": [*fixture_flag, "--overlay"],
+             "C": [*fixture_flag, "--dump"]}
     out = {}
     for name, flags in cases.items():
         sub = os.path.join(args.out, name)

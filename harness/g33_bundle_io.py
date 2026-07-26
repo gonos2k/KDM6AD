@@ -335,7 +335,8 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
 
 
 def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
-                      expected_repo_commit=None) -> dict:
+                      expected_repo_commit=None,
+                      expected_fixture_id=gfx.DEFAULT_FIXTURE_ID) -> dict:
     """Re-verify the whole C++ ABC bundle root incl. attestation. Returns
     {manifest, algorithms:{algo: VerifiedCppLeg}}.
 
@@ -363,10 +364,18 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     if not _is_hex64(diag_sha):                # P0-2: mandatory, well-formed
         raise BundleError("manifest diagnostic_driver_sha256 missing or not 64-hex")
 
-    authority = gfx.load_manifest()
+    # The fixture is named by the CALLER, not read out of the bundle: a bundle that
+    # declares its own fixture and is checked against that declaration attests
+    # nothing. The named authority is the checked-in JSON, so the bundle must match a
+    # fixture someone outside it chose.
+    try:
+        authority = gfx.load_manifest(gfx.spec(expected_fixture_id).manifest)
+    except gfx.UnknownFixture as e:
+        raise BundleError(str(e)) from None
     want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
     if manifest.get("fixture_manifest_sha256") != gfx.manifest_sha256(authority):
-        raise BundleError("manifest fixture_manifest_sha256 != checked-in authority")
+        raise BundleError(f"manifest fixture_manifest_sha256 != the checked-in "
+                          f"{expected_fixture_id} authority")
 
     fixtures, params, out = set(), set(), {}
     for algo in _ALGOS:
