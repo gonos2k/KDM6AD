@@ -8,7 +8,15 @@
 #include "kdm6/constants.h"
 #include "kdm6/runtime.h"
 #include "kdm6/state.h"
+// Both generated fixtures declare the SAME namespace (g33_fixture_v1) so exactly
+// one is compiled in — the Fortran side selects its module the same way. The case
+// name stays `fourcase_v1` ("the shared four-case fixture"); which raw bits that is
+// comes from the build.
+#ifdef KDM6_G33_FIXTURE_MULTISUBCYCLE
+#include "g33_fixture_multisubcycle_v1.h"
+#else
 #include "g33_fixture_v1.h"
+#endif
 
 #include <torch/torch.h>
 

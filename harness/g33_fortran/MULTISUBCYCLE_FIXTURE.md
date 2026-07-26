@@ -86,3 +86,46 @@ needs **per-column `delz`**, e.g. 200 / 100 / 50 m giving a 4x `work1` spread an
    positive, pressure strictly increasing downward) for the new geometry — thinner
    layers change the hydrostatic column, so `p`, `rho` and `phb` must be rebuilt
    consistently rather than edited field by field.
+
+---
+
+# The sealed-contract problem for the C++ leg (OPEN)
+
+The Fortran leg derives its expected universe FROM the observed mstep, so it needed
+no prior declaration. The C++ leg is the opposite by design: its expectation
+manifest is sealed BEFORE the run, which is what makes it independent evidence.
+
+For a multi-sub-cycle fixture that creates a genuine ordering problem:
+
+```
+the sealed schedule must declare   loops and mstepmax_main[loop]
+but the per-loop mstepmax is knowable only BY running
+```
+
+`abc._schedule()` now takes `loops` / `mstepmax_main` / `mstepmax_ice` / `dtcld`
+instead of hardcoding 1, so the machinery is ready. What remains is WHERE the
+declared value comes from.
+
+## Do not take it from the other leg
+
+The Fortran run of this fixture reports `loops = 3`, `mstepmax_main = [9, 10, 7]`.
+Sealing the C++ contract with those numbers would COUPLE the two legs: if the two
+backends ever computed a different mstep — a CFL / fall-speed difference upstream of
+sedimentation, which the comparator classifies as INCONCLUSIVE and is exactly the
+sort of thing G3.3-M exists to surface — the C++ contract would have been built from
+the Fortran answer and the disagreement would be masked rather than reported.
+
+## Options
+
+1. **Declare it in the fixture authority** (preferred). Add `loops` and
+   `mstepmax_*` to `g33_fixture_multisubcycle_v1.json` as reviewed, committed
+   metadata, obtained once from a discovery run whose output is NOT evidence. Both
+   legs must then satisfy the declaration, and either one disagreeing is a finding.
+   Cost: the manifest SHA changes, and the fixture validator must accept the fields.
+2. **A C++ discovery mode** that emits only `substep_pre` without a sealed container
+   set, used solely to obtain the numbers for option 1. More machinery, same result.
+3. Take the numbers from the Fortran leg. **Rejected** for the reason above.
+
+Until this is settled the C++ multi-sub-cycle bundle cannot be produced, so the
+four-case gate at dt=300 runs Fortran-only. The one-loop four-leg path is unaffected
+and still returns INCONCLUSIVE / exit 2 / attested.
