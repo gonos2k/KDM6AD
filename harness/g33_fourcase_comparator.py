@@ -40,6 +40,7 @@ from dataclasses import dataclass
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_evidence_validate as gev  # noqa: E402
 import g33_mechanism as mech         # noqa: E402
+import g33_replay as replay          # noqa: E402
 import g33_schema as schema          # noqa: E402
 
 VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
@@ -377,3 +378,30 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     return {"verdict": verdict, "reason": reason,
             "legacy_first_divergence": _d(leg),
             "conservative_first_divergence": _d(con)}
+
+
+def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
+    """DECISION entry point — use this, not adjudicate(), for a C4 verdict.
+
+    `adjudicate()` is pure verdict logic over four already-trusted runs. It answers
+    "where do they first differ", not "is this evidence real". This wrapper adds the
+    checks a decision needs before that question is even meaningful, starting with
+    LADDER FIDELITY: each run's dumped rungs must equal a recomputation from its own
+    operands (g33_replay). Without it a COMMONLY-wrong instrumentation shadow — the
+    same wrong expression emitted by both variants of one backend — would appear as a
+    shared-mechanism first divergence and could read as PASS.
+
+    Attestation of the four legs (VerifiedFortranLeg / same-problem preflight) is the
+    remaining piece and lands with the CLI; until then this promotes nothing on its
+    own, it only refuses evidence that is not self-consistent."""
+    legs = (("legacy-F", legacy_f), ("legacy-C++", legacy_c),
+            ("conservative-F", conservative_f), ("conservative-C++", conservative_c))
+    for name, run in legs:
+        try:
+            replay.replay_run(run)
+        except (replay.FidelityError, KeyError, TypeError, ValueError) as e:
+            return {"verdict": "INVALID_EVIDENCE",
+                    "reason": f"{name} ladder fidelity: {e}",
+                    "legacy_first_divergence": None,
+                    "conservative_first_divergence": None}
+    return adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
