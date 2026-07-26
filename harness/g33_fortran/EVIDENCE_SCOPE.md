@@ -79,6 +79,70 @@ from those fields without mutating them. This is not assumed silently:
   verdict. So the differing capture point cannot silently corrupt the comparison;
   at worst it is surfaced as an upstream divergence.
 
+## Surface: per-loop conversion vs whole-step accumulation
+
+The two backends report precipitation at different granularities, and conflating them
+compares different quantities:
+
+| | Fortran | C++ |
+|---|---|---|
+| what is dumped | `PREC`, the whole-step accumulator | one increment per outer loop |
+| granularity | once per column | once per (loop, column) |
+
+While the dumped `PREC` was attached to the last loop's `surface` stage, the
+comparison put `sum_L dP_L` (Fortran) against `dP_last` (C++). With `dt = 300` that is
+three loops, so the two agreed only when the later loops contributed nothing.
+
+The normalized run therefore separates them:
+
+- **`surface`** (per loop) — the conversion operands only:
+  `bottom_fall_{qr,qs,qg,qi}`, `bottom_fall_total`, `delz_bottom`, `surface_denr`.
+- **`final_output`** (whole step, `loop = 0`) — `{rain,snow,graupel}_precip_cumulative`.
+  The C++ leg's per-loop increments are summed in loop order with left-associated f32
+  to build it; `loop = 0` marks "not loop-scoped", so the record's identity does not
+  depend on how many loops the run took.
+
+The comparable OUTPUT is the cumulative. A per-loop increment is not compared at all —
+the reference does not emit one — but every per-loop conversion IS replayed, so a
+corrupted loop-1 or loop-2 surface record fails at the fidelity gate rather than
+passing unexamined.
+
+## Ladder replay: exact coverage and pinned operands
+
+`g33_replay.py` re-derives every rung from the operands the producer itself dumped.
+Two properties make it a gate rather than a sample:
+
+1. **Exact coverage.** The decision path requires the set of relation NAMES to equal
+   `RELATION_COVERAGE[variant]`, not merely a count. Both committed fixtures — a
+   1-loop `mstep = 1` run and a 3-loop run with `mstep` heterogeneous across both
+   columns and loops — produce the identical set, so a leg whose INFLOW family has
+   vanished reads as INVALID_EVIDENCE instead of as a thinner check that passes.
+2. **No inert operands.** A value that reaches a result only through `min()` or a
+   guard is invisible to a pure recomputation whenever it does not bind, so those are
+   pinned to the state they must equal:
+   `OUTFLOW.source_reservoir == UPDATE.q_before/n_before` (same cell),
+   legacy `INFLOW.source_reservoir == UPDATE.q_post/n_post` (cell above),
+   `FALLACC.fall_before == the previous substep's fall_after` (0 at the first, so a
+   wrong increment cannot be absorbed by a compensating carry),
+   each INFLOW metric operand to the cell state it copies,
+   `surface.bottom_fall_qr == FALLACC.fall_after` (bottom cell, last substep of that
+   loop), `surface.delz_bottom == delz_safe` (bottom cell), and `surface_denr` to the
+   reference's own `denr = 1000.` parameter (`module_mp_wsm6r.F:51`).
+3. **The metric floor is proved inert, not assumed.** The ladder divides by
+   `dend_safe`/`delz_safe`; a floored metric would silently change that divisor. The
+   normalized C++ run therefore keeps the pre-floor `dend_raw`/`delz_raw` (outside
+   the comparable `stages`, since the reference has no floor and so no counterpart)
+   and the replay requires `safe == raw`. These two relations are the only ones a leg
+   may legitimately lack — the reference Fortran structurally cannot emit them, while
+   the C++ bundle layer independently requires them, so a C++ leg cannot drop them.
+
+Each was verified bit-exactly on all four legs before becoming a gate, and each has a
+committed mutation proving it dies at its OWN named relation.
+
+Pinning is about the leg's internal consistency; it does not change the mechanism
+class. `delz_bottom` and `surface_denr` remain external inputs, so a genuine
+cross-tree divergence there is still INCONCLUSIVE, never FAIL.
+
 ## Verdict bounds
 
 - **PASS** — both pairs (legacy-F↔legacy-C++, conservative-F↔conservative-C++)
@@ -94,9 +158,10 @@ from those fields without mutating them. This is not assumed silently:
 - **INCONCLUSIVE** — `outer_pre_sed` or `substep_pre` already differ (upstream /
   fall-speed / gating divergence, incl. any `ccn0`/`scale_h` mismatch); the first
   divergence is a **causal carry** or **external input** (grid metric / baked
-  constant such as `delz_bottom`/`surface_denr`, not yet sealed by preflight); it
-  is in a non-instrumented / out-of-scope species or output (`bottom_fall_qs/qg/qi`,
-  snow/graupel increment); or the surface causal set cannot be closed.
+  constant such as `delz_bottom`/`surface_denr` — now bit-pinned by the replay, but
+  still not conservative-only arithmetic); it is in a non-instrumented /
+  out-of-scope species or output (`bottom_fall_qs/qg/qi`, snow/graupel cumulative);
+  or the surface causal set cannot be closed.
 
 A G3.3-M PASS certifies only that the observed Fortran↔C++ difference did **not
 originate in conservative-only arithmetic**. It never licenses "conservative-

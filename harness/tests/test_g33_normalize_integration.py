@@ -47,6 +47,11 @@ def test_real_run_shared_rung_mutation_first_diverges_there():
     assert d.signature and "ulp_delta" in d.signature
 
 
-def test_real_run_projects_prec_to_surface_outputs():
+def test_real_run_projects_prec_to_cumulative_outputs():
+    # PREC is the whole-step accumulator, so it lands in final_output, NOT in the
+    # per-loop surface stage: attaching it there compared sum_L dP_L against dP_last.
     surf = {s["field"] for s in NORM["stages"] if s["stage"] == "surface"}
-    assert {"rain_increment", "snow_increment", "graupel_increment"} <= surf
+    assert not ({"rain_increment", "snow_increment", "graupel_increment"} & surf)
+    final = {s["field"] for s in NORM["stages"] if s["stage"] == "final_output"}
+    assert {"rain_precip_cumulative", "snow_precip_cumulative",
+            "graupel_precip_cumulative"} <= final

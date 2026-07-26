@@ -52,7 +52,8 @@ SHARED_SEED_CANDIDATE = "SHARED_SEED_CANDIDATE"
 SEED_VERDICTS = (SHARED_SEED_CANDIDATE, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
-_STAGES = ("outer_pre_sed", "substep_pre", "surface")
+_STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output")
+_LOOP_LAST = 1 << 30      # sorts a whole-step record after every loop
 _PRESED = ("outer_pre_sed", "substep_pre")
 # Canonical execution order within one outer loop: the pre-sed snapshot, then each
 # CHAIN's full substep sequence (chain is the OUTER loop, n the inner — matching the
@@ -150,7 +151,10 @@ def _events(run) -> list[Event]:
                 raise StructuralError(f"unknown stage {stage!r}")
             col, k, n = _int(s["col"], "col"), _int(s["k"], "k"), _int(s["n"], "n")
             loop, chain = _int(s["loop"], "loop"), s["chain"]
-            if loop < 1 or chain not in _CHAIN_RANK:
+            # final_output is the whole-step result: loop 0 marks "not loop-scoped",
+            # so its identity does not depend on how many loops the run took.
+            lo_min = 0 if stage == "final_output" else 1
+            if loop < lo_min or chain not in _CHAIN_RANK:
                 raise StructuralError(f"bad stage loop/chain {loop}/{chain!r}")
             if not (1 <= col <= B):
                 raise StructuralError(f"stage col {col} out of 1..{B}")
@@ -161,15 +165,20 @@ def _events(run) -> list[Event]:
             if dt != want_dt:
                 raise StructuralError(f"stage dtype {stage}.{fld}: got {dt} want {want_dt}")
             fo = schema.stage_field_ordinal(stage, fld)
-            if stage == "surface":
+            if stage in ("surface", "final_output"):
                 if n != 0 or k != -1:
-                    raise StructuralError(f"surface must have n=0 k=-1, got n={n} k={k}")
+                    raise StructuralError(f"{stage} must have n=0 k=-1, got n={n} k={k}")
                 spec = mech.surface_mechanism(fld)
+                final = stage == "final_output"
+                if final and loop != 0:
+                    raise StructuralError(f"final_output must have loop=0, got {loop}")
                 out.append(Event(
-                    order=(loop, 2, 0, 0, 0, 0, 0, 0, fo, col),
-                    phase="surface",
-                    identity=("surface", loop, n, col, k, fld, dt),
-                    shared_key=("surface", loop, col, spec.tag, dt),
+                    # a whole-step output sorts after every loop's surface records
+                    order=((_LOOP_LAST if final else loop), (3 if final else 2),
+                           0, 0, 0, 0, 0, 0, fo, col),
+                    phase=stage,
+                    identity=(stage, loop, n, col, k, fld, dt),
+                    shared_key=(stage, loop, col, spec.tag, dt),
                     kind=spec.kind, tag=spec.tag, dtype=dt, bits=_bits(s["bits"], dt)))
             else:                                 # outer_pre_sed | substep_pre(n)
                 if not (k == -1 or 0 <= k < K):
