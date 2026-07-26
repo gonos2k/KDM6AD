@@ -284,9 +284,13 @@ def compare_pair(f_run, c_run) -> Divergence:
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
 
+    # `.get` not `[]`: with the runs supplied in the other order the second run may
+    # not carry that inactive identity at all (its producer emits active lanes only),
+    # and the comparator must not raise on a shape it is designed to tolerate.
     inactive = [e.identity for e in fe
                 if e.phase == "op" and not f_active.get(_lane_of(e.identity), True)
-                and e.bits != cmap[e.identity].bits] if not cutoff else []
+                and (o := cmap.get(e.identity)) is not None and e.bits != o.bits
+                ] if not cutoff else []
     for e in f_scope:                                  # canonical interleaved order
         ce_e = cmap[e.identity]
         if e.bits != ce_e.bits:

@@ -17,6 +17,7 @@ from collections import Counter
 from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_derived as gdv      # noqa: E402
 import g33_dump as gd          # noqa: E402
 import g33_expectation as ge   # noqa: E402
 
@@ -106,6 +107,54 @@ class GateSemanticsError(gd.G33Corruption):
     """A gate/lane invariant the arithmetic itself guarantees was violated."""
 
 
+# Producer branch flags are a DEBUGGING AID, never the authority: the branch is
+# recomputed here from the raw operands the producer itself dumped. `min` is a
+# 4-state relation (LEFT/RIGHT/TIE/UNORDERED), so a boolean cannot express a TIE
+# (both backends agree by different semantics) or a NaN (both `<` are false, which a
+# boolean silently reports as "not capped").
+_BRANCH_MIN = {          # flag -> (left operand, right operand); cap binds on RIGHT
+    "cap_active": ("outflow_pre_cap", "source_reservoir"),
+    "inflow_cap_active": ("inflow_pre_cap", "source_reservoir"),
+}
+# clamp_active is a SIGN test on the pre-clamp value (q_plus_in_preclamp where the
+# cell has inflow, else q_minus_out at TOP).
+_CLAMP_OPERANDS = ("q_plus_in_preclamp", "n_plus_in_preclamp",
+                   "q_minus_out", "n_minus_out")
+
+
+def _check_branch(op_id, field, rec, fields, lane, k, active):
+    """Recompute a branch from its operands and hold the producer flag to it."""
+    flag = int(rec["bits"])
+    if flag not in (0, 1):
+        raise GateSemanticsError(f"{op_id}.{field} flag {flag} is not 0/1 at {lane} k={k}")
+    if field in _BRANCH_MIN:
+        ln, rn = _BRANCH_MIN[field]
+        left, right = fields.get(ln), fields.get(rn)
+        if left is None or right is None:
+            raise GateSemanticsError(
+                f"{op_id}.{field} cannot be recomputed: missing {ln}/{rn}")
+        branch = gdv.classify_min_bits(left["dtype"], int(left["bits"]), int(right["bits"]))
+        expected = int(branch == gd.BRANCH_RIGHT_SELECTED)   # cap binds when reservoir < candidate
+    else:                                                    # clamp: preclamp < 0
+        src = next((fields[f] for f in _CLAMP_OPERANDS if f in fields), None)
+        if src is None:
+            raise GateSemanticsError(f"{op_id}.{field} cannot be recomputed: no pre-clamp operand")
+        value = gdv.value_from_bits(src["dtype"], int(src["bits"]))
+        branch = gd.BRANCH_UNORDERED if value != value else (
+            gd.BRANCH_RIGHT_SELECTED if value < 0.0 else gd.BRANCH_LEFT_SELECTED)
+        expected = int(branch == gd.BRANCH_RIGHT_SELECTED)
+    if branch == gd.BRANCH_UNORDERED:
+        if active:
+            raise GateSemanticsError(
+                f"{op_id}.{field} is UNORDERED (NaN operand) in ACTIVE lane {lane} k={k}")
+        return branch          # a dead branch may carry NaN; recorded, not judged
+    if flag != expected:
+        raise GateSemanticsError(
+            f"{op_id}.{field}={flag} contradicts its own operands (branch={branch}) "
+            f"at {lane} k={k} — the producer flag is not authoritative")
+    return branch
+
+
 _MSTEP_RANGE = (1, 100)          # the algorithmic sub-cycle contract
 
 
@@ -183,6 +232,7 @@ def validate_gate_semantics(run: dict, mech) -> dict:
         if g == 1 and key not in op_lanes:
             raise GateSemanticsError(f"ACTIVE lane {key} carries no op records")
 
+    branches: dict = {}
     for key, fields in groups.items():
         lane, k, species = LaneKey(*key[:4]), key[4], key[5]
         op_id = key[6]
@@ -190,14 +240,23 @@ def validate_gate_semantics(run: dict, mech) -> dict:
         for field, rec in fields.items():
             spec = mech.mechanism(algo, rec["role"], species, op_id, field)
             bits, dtype = int(rec["bits"]), rec["dtype"]
+            rule = mech.domain_rule(field)
+            if rule == mech.BOOL_BRANCH:
+                branches[(key, field)] = _check_branch(
+                    op_id, field, rec, fields, lane, k, active)
+                continue
             if active:
-                if spec.active_nonneg and not _is_finite(bits, dtype):
+                if not _is_finite(bits, dtype):
                     raise GateSemanticsError(
                         f"non-finite {op_id}.{field} in ACTIVE lane {lane} k={k}")
-                if spec.active_nonneg and not _sign_ok(bits, dtype):
+                if rule in (mech.NONNEG_FINITE, mech.POSITIVE_FINITE) and not _sign_ok(bits, dtype):
                     raise GateSemanticsError(
                         f"negative {op_id}.{field} in ACTIVE lane {lane} k={k} "
                         f"— outside sedimentation's valid domain")
+                if rule == mech.POSITIVE_FINITE and _is_zero(bits, dtype):
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} is zero in ACTIVE lane {lane} k={k} "
+                        f"— a grid metric must be strictly positive")
                 continue
             if spec.inactive == mech.ZERO:
                 if not _is_zero(bits, dtype):

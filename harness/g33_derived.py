@@ -216,6 +216,25 @@ def classify_min(dtype: str, left_payload: bytes, right_payload: bytes) -> list:
     return out
 
 
+def classify_min_bits(dtype: str, left_bits: int, right_bits: int) -> int:
+    """Scalar BRANCH enum for min(left, right) from raw BIT patterns — the
+    per-record form of classify_min(), for evidence already scalarized per (col,k).
+    Same semantics: NaN on either side is UNORDERED, equality is TIE."""
+    w = {"f32": 4, "f64": 8}[dtype]
+    fmt = {4: ">I", 8: ">Q"}[w]
+    a, b = (unpack_values(dtype, struct.pack(fmt, v))[0] for v in (left_bits, right_bits))
+    if math.isnan(a) or math.isnan(b):
+        return BRANCH_UNORDERED
+    return (BRANCH_LEFT_SELECTED if a < b
+            else BRANCH_RIGHT_SELECTED if b < a else BRANCH_TIE)
+
+
+def value_from_bits(dtype: str, bits: int) -> float:
+    """The float a raw bit pattern denotes (scalar form of unpack_values)."""
+    fmt = {"f32": ">I", "f64": ">Q"}[dtype]
+    return unpack_values(dtype, struct.pack(fmt, bits))[0]
+
+
 def unordered_failures(branches: list, active_mask: list,
                        finite_required_mask: list) -> list:
     """Indices where min() was UNORDERED in an active, finite-required cell.
