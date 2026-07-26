@@ -79,9 +79,16 @@ _SEMANTIC_STAGE_FIELDS = {
     "outer_pre_sed": ["qr", "nr", "qv", "t", "rho", "delz"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
                     "dtcld", "gate", "mstep"],
+    # OPERANDS only. The per-loop rain/snow/graupel increments are C++-only (the
+    # Fortran overlay does not emit them), so they are NOT comparable here; they are
+    # validated inside the C++ leg by the surface replay. The comparable OUTPUT is
+    # the whole-step cumulative precipitation, in its own phase below — attaching
+    # Fortran's cumulative PREC to the last loop's per-loop increment compared two
+    # different physical quantities (sum_L dP_L against dP_last).
     "surface": ["bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
-                "bottom_fall_qi", "bottom_fall_total", "delz_bottom", "surface_denr",
-                "rain_increment", "snow_increment", "graupel_increment"],
+                "bottom_fall_qi", "bottom_fall_total", "delz_bottom", "surface_denr"],
+    "final_output": ["rain_precip_cumulative", "snow_precip_cumulative",
+                     "graupel_precip_cumulative"],
 }
 
 
@@ -96,6 +103,8 @@ _SEMANTIC_STAGE_DTYPE.update({
     ("substep_pre", "gate"): "u8", ("substep_pre", "mstep"): "i32"})
 _SEMANTIC_STAGE_DTYPE.update({
     ("surface", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["surface"]})
+_SEMANTIC_STAGE_DTYPE.update({
+    ("final_output", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["final_output"]})
 
 
 def species_rank(species: str) -> int:

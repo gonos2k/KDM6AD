@@ -93,6 +93,15 @@ def _nr_run(algo, cells=((1, 1, 1, "INTERIOR"),), bits=None):
     return _species_run(algo, "nr", cells, None, bits)
 
 
+def _final(bits=None):
+    """The whole-step cumulative precipitation phase."""
+    bits = bits or {}
+    return [{"loop": 0, "chain": "-", "stage": "final_output", "n": 0, "col": 1,
+             "k": -1, "field": f, "dtype": "f32",
+             "bits": bits.get(f, (hash(f) & 0x3FFFFFFF) or 1)}
+            for f in schema.semantic_stage_fields("final_output")]
+
+
 def _surface(bits=None):
     bits = bits or {}
     return [{"loop": 1, "chain": "-", "stage": "surface", "n": 0, "col": 1, "k": -1,
@@ -162,18 +171,25 @@ def test_taxonomy_is_closed_world():
 
 
 # ── P0-4: surface output increments ───────────────────────────────────────────
-def test_surface_rain_increment_both_pairs_is_shared_seed():
-    d = {"rain_increment": 0x77}
-    assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
-                    _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == cmp.SHARED_SEED_CANDIDATE
+def test_cumulative_rain_output_both_pairs_is_shared_seed():
+    # the comparable OUTPUT is the whole-step cumulative, not a per-loop increment
+    d = {"rain_precip_cumulative": 0x77}
+    assert _verdict(_run("legacy", stages=_final()), _run("legacy", stages=_final(d)),
+                    _run("conservative", stages=_final()),
+                    _run("conservative", stages=_final(d))) == cmp.SHARED_SEED_CANDIDATE
 
 
-def test_surface_snow_increment_both_pairs_is_inconclusive():
-    d = {"snow_increment": 0x77}
-    assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
-                    _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == "INCONCLUSIVE"
+def test_cumulative_snow_output_both_pairs_is_inconclusive():
+    d = {"snow_precip_cumulative": 0x77}
+    assert _verdict(_run("legacy", stages=_final()), _run("legacy", stages=_final(d)),
+                    _run("conservative", stages=_final()),
+                    _run("conservative", stages=_final(d))) == "INCONCLUSIVE"
+
+
+def test_per_loop_increment_is_not_in_the_comparable_set():
+    # Fortran does not emit it, so comparing it would compare different quantities
+    assert "rain_increment" not in schema.semantic_stage_fields("surface")
+    assert "rain_precip_cumulative" in schema.semantic_stage_fields("final_output")
 
 
 def test_surface_species_sum_both_pairs_is_shared_seed():

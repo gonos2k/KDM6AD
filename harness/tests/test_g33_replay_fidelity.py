@@ -24,40 +24,89 @@ RUN = nz.from_fortran_run(fd.parse_fortran_run(SAMPLE.read_text(), "legacy", 4, 
 
 
 def test_real_fortran_ladder_replays_exactly():
-    assert rp.replay_run(RUN) > 300         # the whole ladder, not a token check
+    report = rp.replay_report(RUN)
+    # EXACT coverage, not "more than N": a count cannot tell a full ladder from one
+    # whose INFLOW family vanished, and a thinner check must not read as a pass.
+    assert set(report) == rp.RELATION_COVERAGE["legacy"]
+    assert sum(report.values()) == 516
 
 
-def _mutate(op_id, field):
+def _with_raw_metric(bits_xor):
+    """Attach a raw metric to the run. The reference emits no raw/safe distinction,
+    so this exercises the RELATION, not the Fortran producer: only a C++ leg carries
+    these, and its bundle layer already requires them to be present."""
+    st = next(x for x in RUN["stages"] if x["field"] == "dend_safe")
+    m = copy.deepcopy(RUN)
+    m["raw_metrics"] = {(st["loop"], st["chain"], st["n"], st["col"], st["k"],
+                         "dend_raw"): st["bits"] ^ bits_xor}
+    return m
+
+
+def test_an_unfloored_raw_metric_passes():
+    assert rp.replay_run(_with_raw_metric(0)) == 517      # 516 + the one metric rung
+
+
+def test_a_floored_metric_dies_at_the_fidelity_gate():
+    # a floored metric silently changes the divisor the whole ladder uses
+    with pytest.raises(rp.FidelityError) as e:
+        rp.replay_run(_with_raw_metric(1))
+    assert str(e.value).startswith("METRIC.dend_safe==dend_raw at ")
+
+
+def test_coverage_shrink_is_a_fidelity_failure():
+    thin = copy.deepcopy(RUN)
+    thin["ops"] = [o for o in thin["ops"] if "INFLOW" not in o["op_id"]]
+    with pytest.raises(rp.FidelityError):
+        rp.replay_run(thin)
+
+
+def _mutate(op_id, field, k=None):
     m = copy.deepcopy(RUN)
     for o in m["ops"]:
-        if o["op_id"] == op_id and o["field"] == field:
+        if o["op_id"] == op_id and o["field"] == field and (k is None or o["k"] == k):
             o["bits"] ^= 1                  # 1 ULP is enough
             return m
-    raise AssertionError(f"no {op_id}.{field} in the sample")
+    raise AssertionError(f"no {op_id}.{field} (k={k}) in the sample")
 
 
-@pytest.mark.parametrize("op_id,field", [
-    ("QR_FALK", "shadow_falk_f32"),     # the shadow itself
-    ("QR_FALK", "falk_f32"),            # the ACTUAL value the transport used
-    ("QR_FALK", "mul_work1"),
-    ("QR_FALK", "div_mstep"),
-    ("QR_FALK", "falk_precast"),
-    ("NR_FALK", "mul_workn"),
-    ("QR_OUTFLOW", "mul_dt"),
-    ("QR_OUTFLOW", "outflow_pre_cap"),
-    ("QR_OUTFLOW", "dq_out"),
-    ("QR_INFLOW", "mul_delz_src"),
-    ("QR_INFLOW", "div_delz_dst"),
-    ("QR_INFLOW", "inflow_pre_cap"),
-    ("QR_INFLOW", "inflow_final"),
-    ("QR_FALLACC", "fall_after"),
-    ("QR_UPDATE", "q_minus_out"),
-    ("QR_UPDATE", "q_plus_in_preclamp"),
-    ("QR_UPDATE", "q_post"),
+# Every row was measured against the real sample, including WHICH relation kills it:
+# a mutation that merely "fails somewhere" would not prove the intended rung is gated.
+@pytest.mark.parametrize("op_id,field,k,relation", [
+    ("QR_FALK", "shadow_falk_f32", None, "FALK.shadow_falk_f32"),
+    ("QR_FALK", "falk_f32", None, "FALK.actual==shadow"),   # the value transport used
+    ("QR_FALK", "mul_dend_q", None, "FALK.mul_dend_q"),
+    ("QR_FALK", "mul_work1", None, "FALK.mul_work1"),
+    ("QR_FALK", "div_mstep", None, "FALK.div_mstep"),
+    ("QR_FALK", "falk_precast", None, "FALK.falk_precast"),
+    ("NR_FALK", "mul_workn", None, "FALK.mul_workn"),
+    ("QR_OUTFLOW", "mul_dt", None, "OUTFLOW.mul_dt"),
+    ("QR_OUTFLOW", "outflow_pre_cap", None, "OUTFLOW.outflow_pre_cap"),
+    ("QR_OUTFLOW", "dq_out", None, "OUTFLOW.dq_out"),
+    ("NR_OUTFLOW", "dn_out", None, "OUTFLOW.dn_out"),
+    # the cap operands: inert when the cap does not bind, so they need their own rung
+    ("QR_OUTFLOW", "source_reservoir", None, "OUTFLOW.source_reservoir(state)"),
+    ("NR_OUTFLOW", "source_reservoir", None, "OUTFLOW.source_reservoir(state)"),
+    ("QR_INFLOW", "source_reservoir", None, "INFLOW.source_reservoir(state)"),
+    ("QR_INFLOW", "mul_delz_src", None, "INFLOW.mul_delz_src"),
+    ("QR_INFLOW", "div_delz_dst", None, "INFLOW.div_delz_dst"),
+    ("QR_INFLOW", "inflow_pre_cap", None, "INFLOW.inflow_pre_cap"),
+    ("QR_INFLOW", "inflow_final", None, "INFLOW.inflow_final"),
+    ("QR_INFLOW", "stored_falk_prev", None, "INFLOW.stored_falk_prev(carry)"),
+    ("NR_INFLOW", "stored_falk_nr_prev", None, "INFLOW.stored_falk_nr_prev(carry)"),
+    ("QR_FALLACC", "fall_increment", None, "FALLACC.fall_increment"),
+    ("NR_FALLACC", "fall_increment", None, "FALLACC.fall_increment"),
+    ("QR_FALLACC", "fall_after", None, "FALLACC.fall_after"),
+    ("QR_UPDATE", "q_minus_out", 0, "UPDATE.q_minus_out(raw depletion)"),   # TOP cell
+    ("NR_UPDATE", "n_minus_out", 0, "UPDATE.n_minus_out(raw depletion)"),
+    ("QR_UPDATE", "q_minus_out", 2, "UPDATE.q_minus_out"),                  # capped
+    ("QR_UPDATE", "q_plus_in_preclamp", None, "UPDATE.q_plus_in_preclamp"),
+    ("QR_UPDATE", "q_post", None, "UPDATE.q_post"),
+    ("NR_UPDATE", "n_post", None, "UPDATE.n_post"),
 ])
-def test_every_rung_mutant_dies_at_the_fidelity_gate(op_id, field):
-    with pytest.raises(rp.FidelityError):
-        rp.replay_run(_mutate(op_id, field))
+def test_every_rung_mutant_dies_at_the_fidelity_gate(op_id, field, k, relation):
+    with pytest.raises(rp.FidelityError) as e:
+        rp.replay_run(_mutate(op_id, field, k))
+    assert str(e.value).startswith(relation + " at ")
 
 
 def test_a_commonly_wrong_shadow_is_invalid_not_a_verdict():

@@ -93,22 +93,34 @@ _METRICS = ("delz_raw_src", "delz_safe_dst", "dend_safe_dst", "dend_safe_src",
 # pre-clamp rungs may be negative — that is exactly what the legacy clamp exists for
 _SIGNED = ("q_minus_out", "n_minus_out", "q_plus_in_preclamp", "n_plus_in_preclamp")
 _FLAGS = ("cap_active", "inflow_cap_active", "clamp_active")
+# Enumerated, NOT a fallback. A default arm would hand any new field the loosest of
+# the four domains, so a rung that may never go negative could be added and silently
+# arrive unconstrained; check_universe() requires this map to equal the schema exactly.
+_NONNEG = ("div_delz_dst", "div_mstep", "dn_out", "dq_out", "falk_f32",
+           "falk_precast", "fall_after", "fall_before", "fall_increment",
+           "inflow_final", "inflow_pre_cap", "mul_delz_src", "mul_dend_q",
+           "mul_dend_safe", "mul_dt", "mul_src", "mul_work1", "mul_workn",
+           "n_before", "n_post", "outflow_pre_cap", "prev_out", "prev_out_nr",
+           "q_before", "q_post", "shadow_falk_f32", "source_reservoir",
+           "stored_falk_nr_prev", "stored_falk_prev")
 
-
-def domain_rule(field: str) -> str:
-    """The ACTIVE-lane domain of a field. Closed world: check_universe() proves every
-    schema field is covered, so a new field cannot slip in unconstrained."""
-    if field in _FLAGS:
-        return BOOL_BRANCH
-    if field in _METRICS:
-        return POSITIVE_FINITE
-    if field in _SIGNED:
-        return SIGNED_FINITE
-    return NONNEG_FINITE          # every remaining rung is a mass/number/flux
+_DOMAIN_RULES = {f: r for fields, r in ((_FLAGS, BOOL_BRANCH),
+                                        (_METRICS, POSITIVE_FINITE),
+                                        (_SIGNED, SIGNED_FINITE),
+                                        (_NONNEG, NONNEG_FINITE))
+                 for f in fields}
 
 
 class TaxonomyHole(KeyError):
     """A schema field has no explicit mechanism entry — a fail-open must not exist."""
+
+
+def domain_rule(field: str) -> str:
+    """The ACTIVE-lane domain of a field, or TaxonomyHole if the field is unknown."""
+    try:
+        return _DOMAIN_RULES[field]
+    except KeyError:
+        raise TaxonomyHole(f"{field!r} has no domain rule") from None
 
 
 def _mass_or_number(species):     # LABEL only; kind is conservative either way
@@ -212,6 +224,10 @@ _SURFACE = {
     "rain_increment": (SHARED, "SURFACE/rain_conversion"),
     "snow_increment": (OUT_OF_SCOPE, "OOS/snow_increment"),
     "graupel_increment": (OUT_OF_SCOPE, "OOS/graupel_increment"),
+    # whole-step cumulative output: sum_L of the per-loop conversion
+    "rain_precip_cumulative": (SHARED, "OUTPUT/rain_cumulative"),
+    "snow_precip_cumulative": (OUT_OF_SCOPE, "OOS/snow_cumulative"),
+    "graupel_precip_cumulative": (OUT_OF_SCOPE, "OOS/graupel_cumulative"),
 }
 
 
@@ -252,10 +268,17 @@ def check_universe():
     field outside it fails loudly (not a silent variant default)."""
     universe = set(_schema_universe())
     assert set(MECHANISMS) == universe, "mechanism table != schema universe"
-    for _a, _r, _s, _o, field in universe:          # every field has a domain rule
-        rule = domain_rule(field)
-        assert rule in (POSITIVE_FINITE, NONNEG_FINITE, SIGNED_FINITE, BOOL_BRANCH), \
-            f"{field} has no domain rule"
+    # exact, both ways: a missing rule is a fail-open, a stale one is dead taxonomy
+    fields = {field for _a, _r, _s, _o, field in universe}
+    assert set(_DOMAIN_RULES) == fields, (
+        f"domain rules != schema fields: missing {sorted(fields - set(_DOMAIN_RULES))}, "
+        f"stale {sorted(set(_DOMAIN_RULES) - fields)}")
+    try:
+        domain_rule("not_a_real_field")
+    except TaxonomyHole:
+        pass
+    else:
+        raise AssertionError("domain_rule is fail-open")
     try:
         _classify("legacy", "INTERIOR", "qr", "QR_FALK", "not_a_real_field")
     except TaxonomyHole:

@@ -31,11 +31,19 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import struct                # noqa: E402
+
+import numpy as np           # noqa: E402
 import g33_schema as schema  # noqa: E402
 import g33_derived as dv      # noqa: E402
 
 _COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface")
-_PREC_FIELD = {1: "rain_increment", 2: "snow_increment", 3: "graupel_increment"}
+# Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
+# every outer loop), not one loop's increment.
+_PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",
+               3: "graupel_precip_cumulative"}
+_CPP_INCREMENT = {"rain_increment": "rain_precip_cumulative",
+                  "snow_increment": "snow_precip_cumulative",
+                  "graupel_increment": "graupel_precip_cumulative"}
 
 # C++-native substep_pre field -> canonical semantic field. Everything not listed
 # (dend_raw, *_floor_active, mstep_native/_input_native/_exact_integer, gate_native/
@@ -57,6 +65,14 @@ _CPP_SUBPRE = {
 
 class NormalizeError(ValueError):
     """The backend run cannot be projected onto the comparator form."""
+
+
+def _f32_of(bits):
+    return np.float32(struct.unpack(">f", struct.pack(">I", bits & 0xFFFFFFFF))[0])
+
+
+def _f32_bits(value):
+    return struct.unpack(">I", struct.pack(">f", np.float32(value)))[0]
 
 
 def _f64_bits_to_semantic_f32(bits):
@@ -98,15 +114,15 @@ def from_fortran_run(run) -> dict:
         stages.append({"loop": loop, "chain": chain, "stage": stage,
                        "n": n, "col": col, "k": k,
                        "field": field, "dtype": dtype, "bits": bits})
-    # PREC is emitted once per column at the end of the sed chain; it belongs to the
-    # LAST outer loop present in the stream.
-    prec_loop = max((s["loop"] for s in stages), default=1)
+    # The cumulative precipitation is a WHOLE-STEP output, so it goes in its own
+    # phase rather than being attached to the last loop's surface increment.
+    last_loop = max((s["loop"] for s in stages), default=1)
     for (family, col), bits in run.precip.items():
         field = _PREC_FIELD.get(family)
         if field is None:
             raise NormalizeError(f"fortran run has unknown PREC family {family!r}")
-        stages.append({"loop": prec_loop, "chain": "-", "stage": "surface", "n": 0,
-                       "col": col, "k": -1, "field": field, "dtype": "f32",
+        stages.append({"loop": 0, "chain": "-", "stage": "final_output",
+                       "n": 0, "col": col, "k": -1, "field": field, "dtype": "f32",
                        "bits": bits})
     B = max((o["col"] for o in ops), default=0)
     K = max((o["k"] for o in ops), default=-1) + 1
@@ -173,6 +189,8 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
+    increments: dict = {}          # (cumulative field, col) -> {outer_loop: bits}
+    raw_metrics: dict = {}         # stage key -> raw (pre-floor) metric bits
     bk = set()
     for cid, c in evidence.containers.items():
         h = c["header"]
@@ -192,6 +210,19 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                                 "role": r["cell_role"], "species": r["species"],
                                 "op_id": r["op_id"], "field": r["field"],
                                 "dtype": dtype, "bits": bits})
+            elif stage == "substep_pre" and r["field"] in ("dend_raw", "delz_raw"):
+                # Kept OUT of `stages`: the reference Fortran has no metric floor, so
+                # it emits no raw/safe distinction and a comparable record here would
+                # have no counterpart. The replay uses them to prove safe == raw.
+                for col, k, _dtype, bits in _expand(r, B, K, lane_to_col):
+                    raw_metrics[(r["outer_loop"], r["chain"],
+                                 r["n"], col, k, r["field"])] = bits
+            elif stage == "surface" and r["field"] in _CPP_INCREMENT:
+                # C++ dumps a PER-LOOP increment; the comparable output is the
+                # whole-step cumulative, accumulated below.
+                for col, _k, _dt, bits in _expand(r, B, K, lane_to_col):
+                    increments.setdefault((_CPP_INCREMENT[r["field"]], col),
+                                          {})[r["outer_loop"]] = bits
             elif stage in _COMPARATOR_STAGES:
                 field = r["field"]
                 if stage == "substep_pre":
@@ -209,9 +240,20 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                                    "col": col, "k": k, "field": field,
                                    "dtype": dtype, "bits": bits})
             # op-less non-comparator stages (outer_post_*) are simply not emitted
+    # Sum each column's per-loop increments in LOOP ORDER with the same
+    # left-associated f32 the Fortran accumulator uses. Every per-loop increment is
+    # itself checked against its own operands by the surface replay, so this is not a
+    # shortcut past verification.
+    for (field, col), by_loop in sorted(increments.items()):
+        acc = np.float32(0.0)
+        for loop in sorted(by_loop):
+            acc = np.float32(_f32_of(by_loop[loop]) + acc)
+        stages.append({"loop": 0, "chain": "-", "stage": "final_output",
+                       "n": 0, "col": col, "k": -1, "field": field, "dtype": "f32",
+                       "bits": _f32_bits(acc)})
     if len(bk) != 1:
         raise NormalizeError(f"containers disagree on (B,K): {sorted(bk)}")
     B, K = bk.pop()
     problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K)
     return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages,
-            "problem": problem}
+            "raw_metrics": raw_metrics, "problem": problem}
