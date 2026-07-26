@@ -100,3 +100,39 @@ def test_generated_fortran_binding_compiles(tmp_path):
          "-J", str(tmp_path), "-o", str(tmp_path / "fixture.o")],
         capture_output=True, text=True)
     assert run.returncode == 0, run.stdout + run.stderr
+
+
+# ---- fixture registry --------------------------------------------------------
+
+def test_every_registry_entry_matches_its_own_manifest():
+    # a mislabelled row must not be able to pass one fixture off as another
+    for fid in fixture.FIXTURES:
+        assert fixture.spec(fid).fixture_id == fid
+
+
+def test_registry_entries_have_distinct_identities():
+    shas = {fid: fixture.fixture_sha256(fixture.load_manifest(fixture.spec(fid).manifest))
+            for fid in fixture.FIXTURES}
+    assert len(set(shas.values())) == len(shas), f"fixtures share an identity: {shas}"
+
+
+def test_registry_artifacts_all_exist():
+    for fid in fixture.FIXTURES:
+        sp = fixture.spec(fid)
+        for path in (sp.manifest, sp.cpp_header, sp.fortran_module):
+            assert path.is_file(), f"{fid}: missing {path}"
+
+
+def test_unknown_fixture_id_is_refused():
+    with pytest.raises(fixture.UnknownFixture):
+        fixture.spec("no_such_fixture")
+
+
+def test_each_backend_build_selector_is_derived_from_one_id():
+    # the two builds spell their flags differently; the registry is what stops a
+    # caller pairing one backend's fixture with the other's
+    ms = fixture.spec("arithmetic_multisubcycle_v1")
+    assert ms.fortran_build_name == "g33_fixture_multisubcycle_v1"
+    assert ms.cpp_define == "multisubcycle"
+    base = fixture.spec(fixture.DEFAULT_FIXTURE_ID)
+    assert base.fortran_build_name == "g33_fixture_v1" and base.cpp_define == ""

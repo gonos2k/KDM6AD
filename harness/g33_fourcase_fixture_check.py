@@ -68,12 +68,15 @@ def main() -> None:
     # four-case comparator has a durable C++ artifact (owner P0-6/item 10).
     ap.add_argument("--out", type=Path, default=None,
                     help="fresh dir; persist the bundle + manifest here")
+    ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
+                    choices=sorted(fixture.FIXTURES),
+                    help="which fixture authority this run uses")
     args = ap.parse_args()
     for path in (args.canonical_driver, args.diagnostic_driver):
         if not path.is_file():
             _die(EXIT_SKIP, f"SKIP: ABC driver not found: {path}")
 
-    authority = fixture.load_manifest()
+    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
     B, K = authority["B"], authority["K"]
     abc.CASES[CASE] = (B, K)
     canonical = args.canonical_driver.resolve()
