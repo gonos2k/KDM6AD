@@ -53,6 +53,22 @@ def test_a_floored_metric_dies_at_the_fidelity_gate():
     assert str(e.value).startswith("METRIC.dend_safe==dend_raw at ")
 
 
+def test_a_dumped_value_no_relation_reads_is_a_coverage_hole():
+    # Comparing relation NAMES cannot see a value nothing checks: the name still
+    # appears from every other cell. Coverage is a per-VALUE property.
+    m = copy.deepcopy(RUN)
+    extra = dict(m["ops"][0], field="unwatched_rung", bits=0x3F800000)
+    m["ops"].append(extra)
+    with pytest.raises(rp.FidelityError) as e:
+        rp.replay_run(m)
+    assert "never checked by any relation" in str(e.value)
+
+
+def test_branch_flags_are_exempt_because_another_gate_owns_them():
+    # they are recomputed by validate_gate_semantics._check_branch, not by a rung
+    assert rp._EXEMPT_FIELDS == {"cap_active", "inflow_cap_active", "clamp_active"}
+
+
 def test_coverage_shrink_is_a_fidelity_failure():
     thin = copy.deepcopy(RUN)
     thin["ops"] = [o for o in thin["ops"] if "INFLOW" not in o["op_id"]]

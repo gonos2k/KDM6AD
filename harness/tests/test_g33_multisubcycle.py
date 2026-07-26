@@ -7,9 +7,12 @@ continuity, cumulative surface precipitation. This runs the checked-in
 BOTH across columns and BETWEEN loops — through the whole reader/validator chain.
 """
 import copy
+import math
+import struct
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +25,10 @@ import g33_fortran_semantics as sem     # noqa: E402
 import g33_mechanism as mech            # noqa: E402
 import g33_normalize as nz              # noqa: E402
 import g33_replay as rp                 # noqa: E402
+
+_f32 = lambda b: np.float32(struct.unpack(">f", struct.pack(">I", b))[0])
+_bits = lambda v: struct.unpack(">I", struct.pack(">f", np.float32(v)))[0]
+_f64 = lambda b: np.float64(struct.unpack(">d", struct.pack(">Q", b))[0])
 
 RUN = fd.parse_fortran_run(SAMPLE.read_text(), "legacy", 4, 3)
 NORM = nz.from_fortran_run(RUN)
@@ -108,3 +115,113 @@ def test_cumulative_is_the_sum_over_loops_not_the_last_loop():
     assert len({s["loop"] for s in per_loop}) == 3
     finals = [s for s in NORM["stages"] if s["stage"] == "final_output"]
     assert finals and {s["loop"] for s in finals} == {0}    # not loop-scoped
+
+
+# ---- the producer's OWN per-loop output --------------------------------------
+# The Fortran reference emits no per-loop increment, so these exercise the RELATION
+# on real multi-loop operands: only a C++ leg carries actuals, and this fixture is
+# the only committed evidence with enough loops to show what folding first hides.
+EXPECTED_INC = rp.expected_surface_increments(NORM)
+
+
+def _with_increments(*overrides):
+    m = copy.deepcopy(NORM)
+    m["surface_increments"] = dict(EXPECTED_INC)
+    for key, delta in overrides:
+        m["surface_increments"][key] += delta
+    return m
+
+
+def _fold(run, family, col):
+    """The whole-step total the way the accumulator builds it."""
+    inc = run["surface_increments"]
+    acc = np.float32(0.0)
+    for loop in sorted(l for (f, l, c) in inc if f == family and c == col):
+        acc = np.float32(_f32(inc[(family, loop, col)]) + acc)
+    return _bits(acc)
+
+
+def test_the_producers_own_increments_replay_exactly():
+    assert rp.replay_run(_with_increments()) > 6150      # +1 relation per (fam,loop,col)
+
+
+@pytest.mark.parametrize("loop", [1, 2, 3])
+def test_a_single_loop_error_the_total_absorbs_still_dies(loop):
+    # On col 3 a 1-ULP error in ANY loop leaves the f32 total bit-identical, so the
+    # cumulative comparison alone cannot see it. Assert that blindness, then assert
+    # the per-loop gate catches it anyway.
+    bad = _with_increments((("rain", loop, 3), 1))
+    assert _fold(bad, "rain", 3) == _fold(_with_increments(), "rain", 3)
+    with pytest.raises(rp.FidelityError) as e:
+        rp.replay_run(bad)
+    assert str(e.value).startswith("OUTPUT.rain_increment(actual) at ")
+
+
+@pytest.mark.parametrize("hi,lo", [(1, 2), (2, 3), (1, 3)])
+def test_two_loop_errors_that_cancel_in_the_total_still_die(hi, lo):
+    # every loop wrong, total right -- the exact false pass the fold-only check allows
+    bad = _with_increments((("rain", hi, 3), 1), (("rain", lo, 3), -1))
+    assert _fold(bad, "rain", 3) == _fold(_with_increments(), "rain", 3)
+    with pytest.raises(rp.FidelityError) as e:
+        rp.replay_run(bad)
+    assert str(e.value).startswith("OUTPUT.rain_increment(actual) at ")
+
+
+# ---- surface / whole-step output domain --------------------------------------
+
+def _with_surface(field, bits, stage="surface"):
+    m = copy.deepcopy(NORM)
+    m["stages"].append({"loop": 1 if stage == "surface" else 0, "chain": "-",
+                        "stage": stage, "n": 0, "col": 1, "k": -1, "field": field,
+                        "dtype": "f32", "bits": bits})
+    return m
+
+
+@pytest.mark.parametrize("field,bits,stage", [
+    ("bottom_fall_qr", 0xBF800000, "surface"),          # negative
+    ("bottom_fall_total", 0x7F800000, "surface"),       # +inf
+    ("delz_bottom", 0x00000000, "surface"),             # zero metric
+    ("surface_denr", 0xBF800000, "surface"),            # negative metric
+    ("rain_precip_cumulative", 0x7FC00000, "final_output"),   # NaN
+    ("snow_precip_cumulative", 0xBF800000, "final_output"),   # negative
+])
+def test_a_corrupt_surface_value_is_invalid_evidence_not_a_divergence(field, bits,
+                                                                     stage):
+    # Unchecked, these reach the comparator and are reported as an out-of-scope or
+    # external-input DIVERGENCE — a scientific verdict rendered on corrupt evidence.
+    with pytest.raises(gev.GateSemanticsError):
+        gev.validate_gate_semantics(_with_surface(field, bits, stage), mech)
+
+
+def test_an_unknown_surface_field_has_no_silent_default():
+    with pytest.raises(mech.TaxonomyHole):
+        gev.validate_gate_semantics(_with_surface("invented_field", 0x3F800000), mech)
+
+
+def test_mstep_is_bounded_below_by_the_instrumented_fall_speeds():
+    """numdt maximises over work1_qr, workn_qr, work1_qs, work1_qg — and the last two
+    are NOT dumped. So floor(x+1) computed from the instrumented species is a LOWER
+    bound on mstep, never an equality. Violating it would mean the dumped operands or
+    the schedule formula is wrong. See MULTISUBCYCLE_FIXTURE.md for the switch margin
+    this leaves open."""
+    w, ms, dt = {}, {}, {}
+    for s in NORM["stages"]:
+        if s["field"] in ("work1_qr", "workn_qr"):
+            v = _f64(s["bits"]) if s["dtype"] == "f64" else _f32(s["bits"])
+            key = (s["loop"], s["col"])
+            w[key] = max(w.get(key, 0.0), float(v))
+        elif s["field"] == "mstep":
+            ms[(s["loop"], s["col"])] = int(s["bits"])
+        elif s["field"] == "dtcld":
+            dt[(s["loop"], s["col"])] = float(_f32(s["bits"]))
+    assert len(w) == 9                                  # 3 loops x 3 columns
+    dominated = 0
+    for key in w:
+        x = w[key] * dt[key]
+        lower = math.floor(x + 1.0)                     # nint(x+0.5) == floor(x+1)
+        assert lower <= ms[key], f"{key}: floor(x+1)={lower} > mstep={ms[key]}"
+        if lower == ms[key]:
+            margin = min(x - (lower - 1), lower - x)
+            assert margin > 0.25, f"{key} sits {margin:.3f} from an mstep switch"
+            dominated += 1
+    assert dominated == 5      # the other four are set by uninstrumented qs/qg

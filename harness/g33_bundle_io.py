@@ -75,6 +75,7 @@ class VerifiedCppLeg:
     containers: dict
     mstep_range: tuple | None
     problem: dict | None = None              # fixture/parameter identity of the run
+    actual_final_output: dict | None = None  # what the run RETURNED, per family
     root_attested: bool = False              # bundle-internal root manifest verified
     external_manifest_attested: bool = False  # root manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False      # producer_commit pinned to a reviewed rev
@@ -409,13 +410,18 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                 raise BundleError(f"{algo}-{lane} stdout.abc: {e}") from None
         if parsed_lanes[0] != parsed_lanes[1] or parsed_lanes[0] != parsed_lanes[2]:
             raise BundleError(f"{algo}: parsed A/B/C outputs differ")
+        # Keep what the run actually RETURNED. Structural A/B/C equality alone threw
+        # these away, so the decision compared a value the harness re-derived instead
+        # of the one the runtime handed back — the output path was never gated.
+        actual = _freeze({f.split("_")[0]: tuple(parsed_lanes[2][f]["bits"])
+                          for f in abcp.INCREMENT_FIELDS})
         # the manifest's declared mstep summary must equal what the raw evidence shows
         # (P0-4) — no [1,1] hard-pin, so a real multi-subcycle bundle is admissible.
         obs = leg.mstep_range
         if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
-        out[algo] = replace(leg, root_attested=True,
+        out[algo] = replace(leg, root_attested=True, actual_final_output=actual,
                             problem={"fixture_sha256": meta.get("fixture_sha256"),
                                      "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,

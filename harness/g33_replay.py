@@ -73,7 +73,9 @@ _COMMON = {
 #: a coverage hole; the C++ bundle layer independently REQUIRES dend_raw/delz_raw, so
 #: a C++ leg cannot drop them to dodge these.
 OPTIONAL_RELATIONS = frozenset({"METRIC.dend_safe==dend_raw",
-                                "METRIC.delz_safe==delz_raw"})
+                                "METRIC.delz_safe==delz_raw"}
+                               | {f"OUTPUT.{p}_increment(actual)"
+                                  for p in ("rain", "snow", "graupel")})
 RELATION_COVERAGE = {
     "legacy": frozenset(_COMMON | {
         "INFLOW.div_delz_dst", "INFLOW.mul_dt", "INFLOW.inflow_pre_cap",
@@ -89,6 +91,53 @@ RELATION_COVERAGE = {
         "INFLOW.dend_safe_src(state)",
     }),
 }
+
+
+def surface_increment(operands: dict, dtcld_bits: int, family: str):
+    """One loop's precipitation increment for one family, from that loop's surface
+    operands (module_mp_kdm6.F:1461-1479). Returns f32 bits."""
+    q = lambda nm: _F32(operands[nm])
+    fs = q(_PRECIP[family][0])           # rain's first source IS bottom_fall_total
+    for nm in _PRECIP[family][1:]:
+        fs = np.float32(fs + q(nm))
+    if not fs > 0:                       # the source's own guard
+        return _B32(np.float32(0.0))
+    scaled = np.float32(np.float32(np.float32(fs * q("delz_bottom"))
+                                   / q("surface_denr")) * _F32(dtcld_bits))
+    return _B32(np.float32(scaled * np.float32(1000.0)))
+
+
+def expected_surface_increments(run: dict) -> dict:
+    """(family, loop, col) -> the increment that loop's own operands imply."""
+    srf, dts = {}, {}
+    for s in run["stages"]:
+        if s["stage"] == "surface":
+            srf.setdefault((s["loop"], s["col"]), {})[s["field"]] = int(s["bits"])
+        elif s["field"] == "dtcld":
+            dts[(s["loop"], s["col"])] = int(s["bits"])
+    return {(fam, loop, col): surface_increment(f, dts[(loop, col)], fam)
+            for (loop, col), f in srf.items() for fam in _PRECIP}
+
+
+#: Checked by validate_gate_semantics._check_branch (4-state branch authority from
+#: the raw operands), not by an arithmetic rung — so the replay does not read them.
+_EXEMPT_FIELDS = frozenset({"cap_active", "inflow_cap_active", "clamp_active"})
+
+
+class _Tracked(dict):
+    """A record whose reads are logged. Comparing relation NAMES alone cannot see a
+    replay that skips one cell — the name still appears from every other cell. This
+    turns coverage into a per-value property: every dumped field must be read by some
+    relation, at every cell, or the run is not fully replayed."""
+    __slots__ = ("seen",)
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.seen: set = set()
+
+    def __getitem__(self, key):
+        self.seen.add(key)
+        return super().__getitem__(key)
 
 
 class FidelityError(Exception):
@@ -138,15 +187,16 @@ def _replay(run: dict) -> Counter:
     srf: dict = {}      # (loop, col) -> surface operands
     fin: dict = {}      # col        -> whole-step accumulators
     dts: dict = {}      # (loop, col) -> dtcld
+    incs: dict = run.get("surface_increments", {})   # producer's own per-loop values
     for o in run["ops"]:
         ops.setdefault((o["loop"], o["chain"], o["n"], o["col"], o["k"],
-                        o["species"], o["op_id"]), {})[o["field"]] = int(o["bits"])
+                        o["species"], o["op_id"]), _Tracked())[o["field"]] = int(o["bits"])
     for s in run["stages"]:
         stg[(s["loop"], s["chain"], s["n"], s["col"], s["k"], s["field"])] = int(s["bits"])
         if s["stage"] == "surface":
-            srf.setdefault((s["loop"], s["col"]), {})[s["field"]] = int(s["bits"])
+            srf.setdefault((s["loop"], s["col"]), _Tracked())[s["field"]] = int(s["bits"])
         elif s["stage"] == "final_output":
-            fin.setdefault(s["col"], {})[s["field"]] = int(s["bits"])
+            fin.setdefault(s["col"], _Tracked())[s["field"]] = int(s["bits"])
         elif s["field"] == "dtcld":
             dts[(s["loop"], s["col"])] = int(s["bits"])
     kbot = max((k for (_l, _c, _n, _co, k, _f) in stg), default=-1)   # bottom cell
@@ -359,17 +409,29 @@ def _replay(run: dict) -> Counter:
                 total = np.float32(total + q(nm))
             eq("SURFACE.bottom_fall_total", _B32(total), f["bottom_fall_total"], where)
             eq("SURFACE.surface_denr", _DENR_BITS, f["surface_denr"], where)
-            z, dn = q("delz_bottom"), q("surface_denr")
-            dt = _F32(_need(dts, (loop, col), where))
-            for p, src in _PRECIP.items():
-                fs = total if p == "rain" else q(src[0])
-                for nm in src[1:]:
-                    fs = np.float32(fs + q(nm))
-                if fs > 0:                       # the source's own guard
-                    inc = np.float32(np.float32(np.float32(fs * z) / dn) * dt)
-                    acc[p] = np.float32(np.float32(inc * np.float32(1000.0)) + acc[p])
+            for p in _PRECIP:
+                inc_bits = surface_increment(f, _need(dts, (loop, col), where), p)
+                # If the producer emitted THIS loop's increment, gate it HERE. Folding
+                # first and comparing only the total is blind twice over: loop 1 high
+                # by eps and loop 2 low by eps cancel, and on this very fixture a
+                # 1-ULP error in ANY loop leaves the f32 total bit-identical.
+                actual = incs.get((p, loop, col))
+                if actual is not None:
+                    eq(f"OUTPUT.{p}_increment(actual)", inc_bits, actual, where)
+                    inc_bits = actual
+                acc[p] = np.float32(_F32(inc_bits) + acc[p])
+        # the RETURNED whole-step output must be the fold of those same increments
         for p in _PRECIP:                        # sum_L, not the last loop's value
             eq(f"OUTPUT.{p}_precip_cumulative", _B32(acc[p]),
                _need(fin[col], f"{p}_precip_cumulative", f"col{col}/final_output"),
                f"col{col}")
+
+    # Per-VALUE coverage: every dumped field, at every cell, was read by some relation.
+    unchecked = sorted({f"{key[-1]}.{fld}" if isinstance(key, tuple) else f"surface.{fld}"
+                        for group in (ops, srf, fin)
+                        for key, rec in group.items()
+                        for fld in rec
+                        if fld not in rec.seen and fld not in _EXEMPT_FIELDS})
+    if unchecked:
+        raise FidelityError(f"dumped values never checked by any relation: {unchecked}")
     return counts

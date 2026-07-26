@@ -15,7 +15,8 @@ that form, projecting BOTH backends onto the common semantic schema
   * Fortran — a `FortranRun` (g33_fortran_dump.parse_fortran_run). Ops map directly;
     the whitelisted outer_pre_sed / substep_pre / surface stages are FILTERED to the
     common semantic set (`dtcld` and `surface_denr` are both kept — see g33_schema);
-    the PREC family (1=rain, 2=snow, 3=graupel) projects onto the surface OUTPUTs.
+    the PREC family (1=rain, 2=snow, 3=graupel) is the WHOLE-STEP accumulator, so it
+    projects onto `final_output`, not onto a loop's surface stage.
   * C++ — a verified bundle (g33_bundle_io.verify_cpp_evidence). Whole-tensor
     records are expanded to per-(col,k) scalars via the container column map; the
     C++-native substep_pre diagnostics are projected to the canonical set (the
@@ -189,8 +190,9 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
-    increments: dict = {}          # (cumulative field, col) -> {outer_loop: bits}
+    increments: dict = {}          # (family, col) -> {outer_loop: bits}, PRESERVED
     raw_metrics: dict = {}         # stage key -> raw (pre-floor) metric bits
+    lane_maps: set = set()         # every container must agree on lane -> column
     bk = set()
     for cid, c in evidence.containers.items():
         h = c["header"]
@@ -200,6 +202,7 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
         B, K = h["B"], h["K"]
         bk.add((B, K))
         lane_to_col = _lane_to_col(h["column_index_map"])
+        lane_maps.add(tuple(sorted(lane_to_col.items())))
         for r in c["records"]:
             stage = r["stage"]
             if stage == "op":
@@ -218,8 +221,9 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                     raw_metrics[(r["outer_loop"], r["chain"],
                                  r["n"], col, k, r["field"])] = bits
             elif stage == "surface" and r["field"] in _CPP_INCREMENT:
-                # C++ dumps a PER-LOOP increment; the comparable output is the
-                # whole-step cumulative, accumulated below.
+                # C++ dumps a PER-LOOP increment. Keep every one: collapsing them to a
+                # sum here would let two loops' errors cancel, or a 1-ULP error be
+                # absorbed by a larger total, with nothing ever checking the loop.
                 for col, _k, _dt, bits in _expand(r, B, K, lane_to_col):
                     increments.setdefault((_CPP_INCREMENT[r["field"]], col),
                                           {})[r["outer_loop"]] = bits
@@ -240,20 +244,34 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                                    "col": col, "k": k, "field": field,
                                    "dtype": dtype, "bits": bits})
             # op-less non-comparator stages (outer_post_*) are simply not emitted
-    # Sum each column's per-loop increments in LOOP ORDER with the same
-    # left-associated f32 the Fortran accumulator uses. Every per-loop increment is
-    # itself checked against its own operands by the surface replay, so this is not a
-    # shortcut past verification.
-    for (field, col), by_loop in sorted(increments.items()):
-        acc = np.float32(0.0)
-        for loop in sorted(by_loop):
-            acc = np.float32(_f32_of(by_loop[loop]) + acc)
-        stages.append({"loop": 0, "chain": "-", "stage": "final_output",
-                       "n": 0, "col": col, "k": -1, "field": field, "dtype": "f32",
-                       "bits": _f32_bits(acc)})
     if len(bk) != 1:
         raise NormalizeError(f"containers disagree on (B,K): {sorted(bk)}")
     B, K = bk.pop()
+    if len(lane_maps) != 1:
+        raise NormalizeError("containers disagree on the column_index_map")
+    # final_output is what the run RETURNED (the FnResult the runtime accumulated),
+    # not a value the harness re-derived. The replay separately requires each per-loop
+    # increment to equal its own operands AND their fold to equal this, so the whole
+    # output path is gated instead of just its endpoint.
+    if evidence.actual_final_output is None:
+        raise NormalizeError("leg carries no actual_final_output — the returned "
+                             "precipitation was never captured, so the output path "
+                             "cannot be verified")
+    for family, per_lane in sorted(evidence.actual_final_output.items()):
+        if len(per_lane) != B:
+            raise NormalizeError(f"actual {family} output has {len(per_lane)} lanes, "
+                                 f"expected B={B}")
+        for lane, bits in enumerate(per_lane):
+            stages.append({"loop": 0, "chain": "-", "stage": "final_output", "n": 0,
+                           "col": lane_to_col[lane], "k": -1,
+                           "field": f"{family}_precip_cumulative",
+                           "dtype": "f32", "bits": bits})
+
     problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K)
+    # (family, loop, col) -> the increment the producer actually emitted for that loop
+    per_loop = {(fld.replace("_precip_cumulative", ""), loop, col): bits
+                for (fld, col), by_loop in increments.items()
+                for loop, bits in by_loop.items()}
     return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages,
-            "raw_metrics": raw_metrics, "problem": problem}
+            "raw_metrics": raw_metrics, "surface_increments": per_loop,
+            "problem": problem}

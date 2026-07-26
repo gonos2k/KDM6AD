@@ -277,4 +277,21 @@ def validate_gate_semantics(run: dict, mech) -> dict:
                 if bits != 0:
                     raise GateSemanticsError(
                         f"{op_id}.{field} fired in INACTIVE lane {lane} k={k}")
+    # Surface and whole-step outputs get the same numeric domain as the ladder. Left
+    # unchecked, a negative or non-finite C++ surface value would surface as an
+    # out-of-scope or external-input DIVERGENCE — a scientific verdict on corrupt
+    # evidence, when the honest answer is INVALID_EVIDENCE.
+    for s in run["stages"]:
+        if s["stage"] not in ("surface", "final_output"):
+            continue
+        field, bits, dtype = s["field"], int(s["bits"]), s["dtype"]
+        rule = mech.surface_domain_rule(field)
+        where = f"{s['stage']}.{field} loop{s['loop']} col{s['col']}"
+        if not _is_finite(bits, dtype):
+            raise GateSemanticsError(f"non-finite {where}")
+        if not _sign_ok(bits, dtype):
+            raise GateSemanticsError(
+                f"negative {where} — outside the precipitation domain")
+        if rule == mech.POSITIVE_FINITE and _is_zero(bits, dtype):
+            raise GateSemanticsError(f"{where} is zero — must be strictly positive")
     return {lane: (g == 1) for lane, g in gates.items()}
