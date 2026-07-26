@@ -109,7 +109,9 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
         if field in ("mul_dt", "outflow_pre_cap"):          # falk*dt, /dend -> 0
             return MechanismSpec(SHARED, f"OUTFLOW/{field}", ZERO)
         if field == "cap_active":
-            return MechanismSpec(SHARED, "OUTFLOW/cap_active", CARRY)
+            # falk==0 -> outflow_pre_cap==0, and the reservoir is non-negative, so
+            # the min-cap cannot bind in a dead lane.
+            return MechanismSpec(SHARED, "OUTFLOW/cap_active", FALSE)
 
     elif fam == "FALLACC":
         if field == "fall_before":
@@ -137,7 +139,9 @@ def _classify(algo, role, species, op_id, field) -> MechanismSpec:
                                   "inflow_pre_cap", "inflow_final"):
             return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW", ZERO)
         if not cons and field == "inflow_cap_active":
-            return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW", CARRY)
+            # the whole column is gated off, so the upstream fall (and hence the
+            # inflow candidate) is 0 and the cap cannot bind.
+            return MechanismSpec(LEGACY, "LEG_DZ_CAPPED_INFLOW", FALSE)
         if cons and field in ("mul_src", "mul_delz_src", "inflow_final"):
             # qr: rho*dz mass transport; nr: dz-only number transport.
             tag = "CONS_MASS_RHODZ_INFLOW" if species == "qr" else "CONS_NUMBER_DZ_INFLOW"

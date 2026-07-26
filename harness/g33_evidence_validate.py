@@ -106,6 +106,13 @@ class GateSemanticsError(gd.G33Corruption):
     """A gate/lane invariant the arithmetic itself guarantees was violated."""
 
 
+_MSTEP_RANGE = (1, 100)          # the algorithmic sub-cycle contract
+
+
+def _signed_i32(bits):
+    return bits - (1 << 32) if bits >= (1 << 31) else bits
+
+
 def _sign_ok(bits, dtype):
     """Non-negative: the sign bit is clear, or the value is an exact -0."""
     if dtype not in _EXP:                       # integer/flag dtypes carry no sign bit
@@ -143,28 +150,38 @@ def validate_gate_semantics(run: dict, mech) -> dict:
         elif s["field"] == "mstep":
             if key in msteps:
                 raise GateSemanticsError(f"duplicate mstep record for {key}")
-            msteps[key] = int(s["bits"])
+            # raw i32 BITS, so 0xFFFFFFFF is -1 and must not read as 4294967295
+            msteps[key] = _signed_i32(int(s["bits"]))
 
     groups: dict = {}
     for o in run["ops"]:
         lane = LaneKey(o["loop"], o["chain"], o["n"], o["col"])
         groups.setdefault(tuple(lane) + (o["k"], o["species"], o["op_id"]), {})[o["field"]] = o
+    # COVERAGE. The two producers have DIFFERENT op topologies and both are valid:
+    # Fortran emits op records only for ACTIVE columns, while C++ writes a whole [B]
+    # payload per substep and therefore also carries inactive lanes. So the rule is
+    # not "op lanes == gate lanes" but:
+    #   * every op lane must have a gate (nothing unexplained), and
+    #   * every ACTIVE lane must have ops (an active column must transport).
+    # A gate-only INACTIVE lane is the legitimate Fortran shape; an inactive lane
+    # that does carry ops is the legitimate C++ shape, checked by the no-op rules.
     op_lanes = {LaneKey(*g[:4]) for g in groups}
-    if op_lanes != set(gates):
-        raise GateSemanticsError(
-            f"gate coverage mismatch: {len(op_lanes - set(gates))} op lane(s) without a "
-            f"gate, {len(set(gates) - op_lanes)} gate(s) without ops")
-    if op_lanes != set(msteps):
-        raise GateSemanticsError("mstep coverage does not match the op lanes")
+    if set(gates) != set(msteps):
+        raise GateSemanticsError("gate and mstep lane coverage differ")
+    orphan = op_lanes - set(gates)
+    if orphan:
+        raise GateSemanticsError(f"{len(orphan)} op lane(s) without a gate record")
     for key, g in gates.items():
         if g not in (0, 1):
             raise GateSemanticsError(f"gate bits {g} are not 0/1 at {key}")
         n, mstep = key.n, msteps[key]
-        if mstep < 1:
-            raise GateSemanticsError(f"mstep {mstep} < 1 at {key}")
+        if not (_MSTEP_RANGE[0] <= mstep <= _MSTEP_RANGE[1]):
+            raise GateSemanticsError(f"mstep {mstep} outside {_MSTEP_RANGE} at {key}")
         if g != int(n <= mstep):
             raise GateSemanticsError(
                 f"gate law violated at {key}: gate={g} but n={n}, mstep={mstep}")
+        if g == 1 and key not in op_lanes:
+            raise GateSemanticsError(f"ACTIVE lane {key} carries no op records")
 
     for key, fields in groups.items():
         lane, k, species = LaneKey(*key[:4]), key[4], key[5]
@@ -189,7 +206,11 @@ def validate_gate_semantics(run: dict, mech) -> dict:
                         f"— a gated-off column produced transport")
             elif spec.inactive == mech.EQUAL_TO:
                 ref = fields.get(spec.inactive_ref)
-                if ref is not None and int(ref["bits"]) != bits:
+                if ref is None:      # fail-closed: the relation cannot be checked
+                    raise GateSemanticsError(
+                        f"{op_id}.{field} needs reference {spec.inactive_ref} to "
+                        f"prove the INACTIVE lane {lane} k={k} moved nothing")
+                if int(ref["bits"]) != bits:
                     raise GateSemanticsError(
                         f"{op_id}.{field} != {spec.inactive_ref} in INACTIVE lane "
                         f"{lane} k={k} — a gated-off column moved state")

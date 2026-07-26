@@ -144,7 +144,7 @@ def _expand(record, B, K, lane_to_col):
         raise NormalizeError(f"unexpected record shape {shape} for B={B} K={K}")
 
 
-def from_cpp_evidence(evidence) -> dict:
+def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     """A verified {contract, containers} (g33_bundle_io.verify_cpp_evidence) ->
     normalized run. Whole tensors are scalarized per (col,k); substep_pre natives
     are projected to the canonical set.
@@ -155,9 +155,16 @@ def from_cpp_evidence(evidence) -> dict:
     top-first [B,K] stage orientation, and the op stream are all validated; the
     remaining C4-verdict gate is a real multi-subcycle fixture (this fixture is
     mstep=1, so bit-identical F↔C++ is the correct INCONCLUSIVE)."""
-    if not (getattr(evidence, "root_attested", False)):
-        raise NormalizeError("from_cpp_evidence requires a root-attested VerifiedCppLeg "
+    if not getattr(evidence, "root_attested", False):
+        raise NormalizeError("requires a root-attested VerifiedCppLeg "
                              "(run g33_bundle_io.verify_cpp_bundle)")
+    if require_verdict_ready and not evidence.verdict_ready:
+        raise NormalizeError(
+            "leg is not verdict_ready: internal verification passed but the EXTERNAL "
+            "anchors are missing (expected_manifest_sha256 / expected_repo_commit). "
+            "A bundle that rewrites its own manifest stays self-consistent, so a C4 "
+            "verdict needs an anchor held outside it. Pass require_verdict_ready=False "
+            "only for local debugging.")
     contract = evidence.contract
     algo = contract["schedule"]["algorithm"] if "schedule" in contract else contract.get("algorithm")
     ops, stages = [], []
