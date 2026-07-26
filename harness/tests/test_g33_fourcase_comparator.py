@@ -13,6 +13,25 @@ sys.path.insert(0, str(ROOT / "harness"))
 import g33_fourcase_comparator as cmp  # noqa: E402
 import g33_mechanism as mech           # noqa: E402
 import g33_schema as schema            # noqa: E402
+import struct                          # noqa: E402
+
+
+def _f32(bits):
+    return struct.unpack(">f", struct.pack(">I", bits & 0xFFFFFFFF))[0]
+
+
+def _branch_bits(field, group):
+    """Derive a branch flag from the operands already placed in this op group —
+    a real producer's flag agrees with its own operands, and the validator now
+    recomputes it, so synthetic evidence must too."""
+    if field == "cap_active":
+        return int(_f32(group["source_reservoir"]) < _f32(group["outflow_pre_cap"]))
+    if field == "inflow_cap_active":
+        return int(_f32(group["source_reservoir"]) < _f32(group["inflow_pre_cap"]))
+    for f in ("q_plus_in_preclamp", "n_plus_in_preclamp", "q_minus_out", "n_minus_out"):
+        if f in group:
+            return int(_f32(group[f]) < 0.0)
+    return 0
 
 
 _MASK = {"f32": 0xFFFFFFFF, "f64": 0xFFFFFFFFFFFFFFFF, "u8": 0xFF}
@@ -40,6 +59,8 @@ def _species_run(algo, sp, cells, stages, bits, mstep=1):
                 key = (n, col, k, opid, fld)
                 if key in bits:
                     b = bits[key] & _MASK[dt]
+                elif mech.domain_rule(fld) == mech.BOOL_BRANCH:
+                    b = _branch_bits(fld, group) if n <= mstep else 0
                 else:
                     b = _base(dt, *key)
                     if n > mstep:                       # dead lane
@@ -93,18 +114,18 @@ def test_no_divergence_is_inconclusive():
                     _run("conservative"), _run("conservative")) == "INCONCLUSIVE"
 
 
-def test_shared_falk_divergence_is_pass():
+def test_shared_falk_divergence_is_shared_seed():
     d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
     assert _verdict(_run("legacy"), _run("legacy", bits=d),
-                    _run("conservative"), _run("conservative", bits=d)) == "PASS"
+                    _run("conservative"), _run("conservative", bits=d)) == cmp.SHARED_SEED_CANDIDATE
 
 
 # ── P0-1: fall_after is a shared accumulator add, not a variant result ─────────
-def test_fall_after_both_pairs_is_pass_not_fail():
+def test_fall_after_both_pairs_is_shared_seed_not_fail():
     d = {(1, 1, 1, "QR_FALLACC", "fall_after"): 0x4242}
     v = _verdict(_run("legacy"), _run("legacy", bits=d),
                  _run("conservative"), _run("conservative", bits=d))
-    assert v == "PASS"
+    assert v == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_conservative_fall_increment_is_fail():
@@ -141,11 +162,11 @@ def test_taxonomy_is_closed_world():
 
 
 # ── P0-4: surface output increments ───────────────────────────────────────────
-def test_surface_rain_increment_both_pairs_is_pass():
+def test_surface_rain_increment_both_pairs_is_shared_seed():
     d = {"rain_increment": 0x77}
     assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
                     _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == "PASS"
+                    _run("conservative", stages=_surface(d))) == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_surface_snow_increment_both_pairs_is_inconclusive():
@@ -155,11 +176,11 @@ def test_surface_snow_increment_both_pairs_is_inconclusive():
                     _run("conservative", stages=_surface(d))) == "INCONCLUSIVE"
 
 
-def test_surface_species_sum_both_pairs_is_pass():
+def test_surface_species_sum_both_pairs_is_shared_seed():
     d = {"bottom_fall_total": 0x5678}
     assert _verdict(_run("legacy", stages=_surface()), _run("legacy", stages=_surface(d)),
                     _run("conservative", stages=_surface()),
-                    _run("conservative", stages=_surface(d))) == "PASS"
+                    _run("conservative", stages=_surface(d))) == cmp.SHARED_SEED_CANDIDATE
 
 
 def test_surface_out_of_scope_species_both_pairs_is_inconclusive():
@@ -207,10 +228,10 @@ def test_top_q_minus_out_both_pairs_is_not_pass():
     assert v == "FAIL"
 
 
-def test_interior_q_minus_out_both_pairs_is_pass():
+def test_interior_q_minus_out_both_pairs_is_shared_seed():
     d = {(1, 1, 1, "QR_UPDATE", "q_minus_out"): 0xBEEF}
     assert _verdict(_run("legacy"), _run("legacy", bits=d),
-                    _run("conservative"), _run("conservative", bits=d)) == "PASS"
+                    _run("conservative"), _run("conservative", bits=d)) == cmp.SHARED_SEED_CANDIDATE
 
 
 # ── structural guards ─────────────────────────────────────────────────────────
@@ -436,6 +457,8 @@ def _topo_run(algo, mstep_by_col, emit_inactive, bits=None):
                     key = (n, col, 1, opid, fld)
                     if key in bits:
                         b = bits[key] & _MASK[dt]
+                    elif mech.domain_rule(fld) == mech.BOOL_BRANCH:
+                        b = _branch_bits(fld, group) if active else 0
                     else:
                         b = _base(dt, *key)
                         if not active:
@@ -486,3 +509,112 @@ def test_backends_with_different_mstep_is_inconclusive_not_invalid():
     assert div.phase == "substep_pre" and div.identity[6] in ("gate", "mstep")
     verdict, reason = cmp.classify(div, cmp.Divergence())
     assert verdict == "INCONCLUSIVE" and "upstream" in reason
+
+
+# ── branch authority: the producer flag is checked, never trusted ────────────
+def _both(**kw):
+    """A run pair identical on both sides (so any rejection is the validator's)."""
+    r = _run("legacy", **kw)
+    return r, _run("legacy", **kw)
+
+
+def test_branch_flag_out_of_range_is_invalid():
+    r, c = _both(bits={(1, 1, 1, "QR_OUTFLOW", "cap_active"): 2})
+    div = cmp.compare_pair(r, c)
+    assert div.invalid and "not 0/1" in div.invalid
+
+
+def test_branch_flag_contradicting_its_operands_is_invalid():
+    # flip cap_active away from what min(pre_cap, reservoir) actually selects
+    base = _run("legacy")
+    grp = {o["field"]: o["bits"] for o in base["ops"] if o["op_id"] == "QR_OUTFLOW"}
+    truth = int(_f32(grp["source_reservoir"]) < _f32(grp["outflow_pre_cap"]))
+    r, c = _both(bits={(1, 1, 1, "QR_OUTFLOW", "cap_active"): 1 - truth})
+    div = cmp.compare_pair(r, c)
+    assert div.invalid and "contradicts its own operands" in div.invalid
+
+
+def test_branch_tie_is_accepted_and_flag_must_be_zero():
+    # pre_cap == reservoir: min() TIEs, so `pre_cap > reservoir` is false.
+    same = 0x3F800000
+    ok = {(1, 1, 1, "QR_OUTFLOW", "outflow_pre_cap"): same,
+          (1, 1, 1, "QR_OUTFLOW", "source_reservoir"): same,
+          (1, 1, 1, "QR_OUTFLOW", "cap_active"): 0}
+    assert cmp.compare_pair(*_both(bits=ok)).invalid is None
+    bad = {**ok, (1, 1, 1, "QR_OUTFLOW", "cap_active"): 1}
+    assert cmp.compare_pair(*_both(bits=bad)).invalid is not None
+
+
+def test_nan_operand_in_active_branch_is_invalid():
+    nan = 0x7FC00000
+    r, c = _both(bits={(1, 1, 1, "QR_OUTFLOW", "outflow_pre_cap"): nan})
+    div = cmp.compare_pair(r, c)
+    assert div.invalid and ("UNORDERED" in div.invalid or "non-finite" in div.invalid)
+
+
+def test_clamp_flag_contradicting_preclamp_sign_is_invalid():
+    # preclamp is positive, so the positivity clamp cannot have fired
+    r, c = _both(bits={(1, 1, 1, "QR_UPDATE", "q_plus_in_preclamp"): 0x3F800000,
+                       (1, 1, 1, "QR_UPDATE", "clamp_active"): 1})
+    div = cmp.compare_pair(r, c)
+    assert div.invalid and "contradicts its own operands" in div.invalid
+
+
+# ── active-lane numerical domain (closed world) ──────────────────────────────
+def test_nan_in_a_shared_intermediate_cannot_pass():
+    # both pairs diverge at the SAME shared rung, but the value is NaN: the domain
+    # gate must reject it before the shared-key PASS rule is reached.
+    nan64 = 0x7FF8000000000000            # mul_work1 is f64
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): nan64}
+    v = _verdict(_run("legacy"), _run("legacy", bits=d),
+                 _run("conservative"), _run("conservative", bits=d))
+    assert v == "INVALID_EVIDENCE"
+
+
+def test_negative_conservative_transport_is_invalid_before_fail():
+    neg = 0xBF800000                       # -1.0
+    r = cmp.adjudicate(_run("legacy"), _run("legacy"), _run("conservative"),
+                       _run("conservative", bits={(1, 1, 1, "QR_INFLOW", "inflow_final"): neg}))
+    assert r["verdict"] == "INVALID_EVIDENCE"
+
+
+def test_zero_grid_metric_is_invalid():
+    r, c = _both(bits={(1, 1, 1, "QR_INFLOW", "delz_safe_dst"): 0})
+    div = cmp.compare_pair(r, c)
+    assert div.invalid and "strictly positive" in div.invalid
+
+
+def test_reverse_topology_order_does_not_crash():
+    # P1-1: C++-shaped run first, Fortran-shaped second — the second lacks the
+    # inactive identities entirely. The comparator must report, not raise.
+    m = {1: 1, 2: 2}
+    div = cmp.compare_pair(_topo_run("legacy", m, emit_inactive=True),
+                           _topo_run("legacy", m, emit_inactive=False))
+    assert div.invalid is not None or div.phase is None
+
+
+# ── the pure comparator may not declare PASS ─────────────────────────────────
+def test_pure_adjudicate_never_returns_pass():
+    d = {(1, 1, 1, "QR_FALK", "mul_work1"): 0xABCD}
+    r = cmp.adjudicate(_run("legacy"), _run("legacy", bits=d),
+                       _run("conservative"), _run("conservative", bits=d))
+    assert r["verdict"] == cmp.SHARED_SEED_CANDIDATE
+    assert "PASS" not in r["verdict"]          # promotion belongs to the verified entry
+
+
+def test_verified_entry_refuses_legs_without_identity():
+    # the synthetic runs carry no problem identity, so the decision entry stops
+    # before it ever looks at the arithmetic
+    r = cmp.adjudicate_verified(_run("legacy"), _run("legacy"),
+                                _run("conservative"), _run("conservative"))
+    assert r["verdict"] == "INVALID_EVIDENCE" and "problem identity" in r["reason"]
+
+
+def test_verified_entry_refuses_a_different_problem():
+    ident = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4}
+    legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
+    for leg in legs:
+        leg["problem"] = dict(ident)
+    legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
+    r = cmp.adjudicate_verified(*legs)
+    assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]

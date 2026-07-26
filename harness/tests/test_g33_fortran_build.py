@@ -54,7 +54,7 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33F BEGIN v2 {algo}" in out and f"G33F END v2 {algo}" in out
+    assert f"G33F BEGIN v3 {algo}" in out and f"G33F END v3 {algo}" in out
     # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
     state = fd.parse_state(out)
     assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"

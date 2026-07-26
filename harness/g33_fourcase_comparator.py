@@ -40,8 +40,16 @@ from dataclasses import dataclass
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_evidence_validate as gev  # noqa: E402
 import g33_mechanism as mech         # noqa: E402
+import g33_replay as replay          # noqa: E402
 import g33_schema as schema          # noqa: E402
 
+# The PURE comparator answers "where do they first differ", so its best outcome is a
+# CANDIDATE: both pairs first diverged at the same shared rung. Promoting that to
+# PASS additionally requires ladder fidelity, branch/domain validity, four-way
+# same-problem identity and external attestation — only adjudicate_verified() has
+# seen those, so only it may return PASS.
+SHARED_SEED_CANDIDATE = "SHARED_SEED_CANDIDATE"
+SEED_VERDICTS = (SHARED_SEED_CANDIDATE, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface")
@@ -284,9 +292,13 @@ def compare_pair(f_run, c_run) -> Divergence:
         return Divergence(invalid=f"record identity universe differs "
                           f"(F-only {fo}, C-only {co})")
 
+    # `.get` not `[]`: with the runs supplied in the other order the second run may
+    # not carry that inactive identity at all (its producer emits active lanes only),
+    # and the comparator must not raise on a shape it is designed to tolerate.
     inactive = [e.identity for e in fe
                 if e.phase == "op" and not f_active.get(_lane_of(e.identity), True)
-                and e.bits != cmap[e.identity].bits] if not cutoff else []
+                and (o := cmap.get(e.identity)) is not None and e.bits != o.bits
+                ] if not cutoff else []
     for e in f_scope:                                  # canonical interleaved order
         ce_e = cmap[e.identity]
         if e.bits != ce_e.bits:
@@ -342,8 +354,10 @@ def classify(legacy: Divergence, conservative: Divergence):
     if (legacy.kind == mech.SHARED and conservative.kind == mech.SHARED  # 8. shared
             and legacy.shared_key is not None
             and legacy.shared_key == conservative.shared_key):
-        return "PASS", (f"both pairs first-diverge at the shared mechanism {legacy.tag} "
-                        f"{legacy.shared_key} — common to both variants")
+        return SHARED_SEED_CANDIDATE, (
+            f"both pairs first-diverge at the shared mechanism {legacy.tag} "
+            f"{legacy.shared_key} — common to both variants (a PASS candidate: "
+            f"promotion also needs fidelity, identity and attestation)")
     return "INCONCLUSIVE", (f"pairs diverge differently: legacy {legacy.phase}/"
                             f"{legacy.tag}, conservative {conservative.phase}/{conservative.tag}")
 
@@ -373,3 +387,48 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     return {"verdict": verdict, "reason": reason,
             "legacy_first_divergence": _d(leg),
             "conservative_first_divergence": _d(con)}
+
+
+def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
+    """DECISION entry point — use this, not adjudicate(), for a C4 verdict.
+
+    `adjudicate()` is pure verdict logic over four already-trusted runs. It answers
+    "where do they first differ", not "is this evidence real". This wrapper adds the
+    checks a decision needs before that question is even meaningful, starting with
+    LADDER FIDELITY: each run's dumped rungs must equal a recomputation from its own
+    operands (g33_replay). Without it a COMMONLY-wrong instrumentation shadow — the
+    same wrong expression emitted by both variants of one backend — would appear as a
+    shared-mechanism first divergence and could read as PASS.
+
+    Attestation of the four legs (VerifiedFortranLeg / same-problem preflight) is the
+    remaining piece and lands with the CLI; until then this promotes nothing on its
+    own, it only refuses evidence that is not self-consistent."""
+    legs = (("legacy-F", legacy_f), ("legacy-C++", legacy_c),
+            ("conservative-F", conservative_f), ("conservative-C++", conservative_c))
+    def _invalid(reason):
+        return {"verdict": "INVALID_EVIDENCE", "reason": reason,
+                "legacy_first_divergence": None, "conservative_first_divergence": None}
+
+    # FOUR-WAY SAME PROBLEM: all four legs must describe one problem. Comparing
+    # legs built from different fixtures or parameters would be a category error,
+    # not a mechanism finding.
+    ids = {name: run.get("problem") for name, run in legs}
+    if any(v is None for v in ids.values()):
+        missing = sorted(n for n, v in ids.items() if v is None)
+        return _invalid(f"legs without a problem identity: {missing}")
+    distinct = {tuple(sorted(v.items())) for v in ids.values()}
+    if len(distinct) != 1:
+        return _invalid(f"the four legs do not describe the same problem: {ids}")
+
+    for name, run in legs:
+        try:
+            replay.replay_run(run)
+        except (replay.FidelityError, KeyError, TypeError, ValueError) as e:
+            return _invalid(f"{name} ladder fidelity: {e}")
+    result = adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
+    if result["verdict"] == SHARED_SEED_CANDIDATE:
+        # every gate above has passed, so the candidate may be promoted
+        result["verdict"] = "PASS"
+        result["reason"] = "PASS (promoted from a shared seed): " + result["reason"]
+    result["problem"] = dict(ids["legacy-F"])
+    return result

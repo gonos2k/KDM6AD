@@ -110,7 +110,12 @@ def from_fortran_run(run) -> dict:
                        "bits": bits})
     B = max((o["col"] for o in ops), default=0)
     K = max((o["k"] for o in ops), default=-1) + 1
-    return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops, "stages": stages}
+    # the identity of the PROBLEM this leg solved, so a four-way comparison can
+    # refuse legs built from different fixtures or parameters
+    problem = {"fixture_sha256": run.fixture_sha256,
+               "parameter_sha256": run.parameter_sha256, "B": B, "K": K}
+    return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops,
+            "stages": stages, "problem": problem}
 
 
 def _lane_to_col(column_index_map):
@@ -207,4 +212,6 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     if len(bk) != 1:
         raise NormalizeError(f"containers disagree on (B,K): {sorted(bk)}")
     B, K = bk.pop()
-    return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages}
+    problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K)
+    return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages,
+            "problem": problem}

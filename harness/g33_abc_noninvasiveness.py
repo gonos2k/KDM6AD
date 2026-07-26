@@ -53,7 +53,12 @@ def _die(code: int, message: str) -> None:
     raise SystemExit(code)
 
 
-def _schedule(algorithm: str, case_name: str) -> dict:
+def _schedule(algorithm: str, case_name: str, *, loops: int = 1,
+              mstepmax_main=None, mstepmax_ice=None, dtcld: float = None) -> dict:
+    """The sealed schedule. `loops`/`mstepmax_*` are DECLARED, never discovered at
+    run time — that is what makes the expectation manifest independent evidence. For
+    a multi-sub-cycle fixture the declaration comes from a prior discovery run whose
+    output is NOT evidence, and it must be committed so it is reviewable."""
     B, K = CASES[case_name]
     return {
         "case_id": f"abc-{case_name}",
@@ -62,14 +67,14 @@ def _schedule(algorithm: str, case_name: str) -> dict:
         "algorithm": algorithm,
         "B": B,
         "K": K,
-        "loops": 1,
-        # dt=20 s and ~8 km layers deliberately keep this a one-substep fixture.
-        # If execution ever needs n=2, the sealed container set fails immediately.
-        "mstepmax_main": [1],
-        "mstepmax_ice": [1],
+        "loops": loops,
+        # The default fixture (dt=20 s, ~8 km layers) is deliberately one-substep:
+        # if execution ever needs n=2, the sealed container set fails immediately.
+        "mstepmax_main": list(mstepmax_main or [1] * loops),
+        "mstepmax_ice": list(mstepmax_ice or [1] * loops),
         "species_scope": ["qr", "nr"],
         "qcrmin": QCRMIN,
-        "dtcld": DTCLD,
+        "dtcld": DTCLD if dtcld is None else dtcld,
         "instrumented_stages": list(ge.CPP_OVERLAY_STAGES),
     }
 

@@ -158,7 +158,10 @@ def main():
                                  "fortran_parameter": runs[n].local_parameter_sha256}
                              for n in cases},
         "abc_equal": abc_equal,
-        "mstep_per_column": parsed.mstep,
+        # keys are (outer_loop, chain, column) tuples since protocol v3, which JSON
+        # cannot express — render them as "L<loop>/<chain>/col<c>"
+        "mstep_per_column": {f"L{lp}/{ch}/col{c}": v
+                             for (lp, ch, c), v in sorted(parsed.mstep.items())},
         "op_record_count": len(parsed.ops),
         "executable_sha256": {n: _sha_path(out[n]["exe"]) for n in cases},
         "stdout_sha256": {n: _sha(out[n]["stdout"]) for n in cases},

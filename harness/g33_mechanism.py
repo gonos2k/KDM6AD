@@ -78,6 +78,35 @@ class MechanismSpec:
     active_nonneg: bool = False
 
 
+# ── ACTIVE-lane numerical domain (closed world, like the mechanism kinds) ────
+# Every schema field declares the domain its value must occupy in an ACTIVE lane.
+# A single `active_nonneg` boolean covered only the final transports, so a NaN or a
+# negative value in an intermediate rung could reach the verdict and — if both pairs
+# hit the same shared rung — even PASS.
+POSITIVE_FINITE = "positive_finite"   # a grid metric: must be > 0
+NONNEG_FINITE = "nonneg_finite"       # a mass/number/flux quantity: >= 0
+SIGNED_FINITE = "signed_finite"       # may legitimately be negative (pre-clamp)
+BOOL_BRANCH = "bool_branch"           # a branch flag: 0/1, recomputed from operands
+
+_METRICS = ("delz_raw_src", "delz_safe_dst", "dend_safe_dst", "dend_safe_src",
+            "src_metric", "dst_metric")
+# pre-clamp rungs may be negative — that is exactly what the legacy clamp exists for
+_SIGNED = ("q_minus_out", "n_minus_out", "q_plus_in_preclamp", "n_plus_in_preclamp")
+_FLAGS = ("cap_active", "inflow_cap_active", "clamp_active")
+
+
+def domain_rule(field: str) -> str:
+    """The ACTIVE-lane domain of a field. Closed world: check_universe() proves every
+    schema field is covered, so a new field cannot slip in unconstrained."""
+    if field in _FLAGS:
+        return BOOL_BRANCH
+    if field in _METRICS:
+        return POSITIVE_FINITE
+    if field in _SIGNED:
+        return SIGNED_FINITE
+    return NONNEG_FINITE          # every remaining rung is a mass/number/flux
+
+
 class TaxonomyHole(KeyError):
     """A schema field has no explicit mechanism entry — a fail-open must not exist."""
 
@@ -223,6 +252,10 @@ def check_universe():
     field outside it fails loudly (not a silent variant default)."""
     universe = set(_schema_universe())
     assert set(MECHANISMS) == universe, "mechanism table != schema universe"
+    for _a, _r, _s, _o, field in universe:          # every field has a domain rule
+        rule = domain_rule(field)
+        assert rule in (POSITIVE_FINITE, NONNEG_FINITE, SIGNED_FINITE, BOOL_BRANCH), \
+            f"{field} has no domain rule"
     try:
         _classify("legacy", "INTERIOR", "qr", "QR_FALK", "not_a_real_field")
     except TaxonomyHole:

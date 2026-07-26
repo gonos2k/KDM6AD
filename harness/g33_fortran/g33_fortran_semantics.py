@@ -47,21 +47,34 @@ def _sv(stages, stage, n, field, col, k, loop=1):
     return stages[(loop, _CHAIN[stage], stage, n, field, col, k)]
 
 
+def _f32_of(bits):
+    return np.float32(struct.unpack(">f", struct.pack(">I", bits))[0])
+
+
 def verify_semantics(run):
     B, K, S = run.B, run.K, run.stages
-    mm = max(run.mstep.values())
+    scopes = sorted({(lp, ch) for lp, ch, _c in run.mstep})
+    loops = sorted({lp for lp, _ch in scopes})
+    # The cloud timestep is the host step divided by the number of outer loops, so
+    # `dtcld == dt` holds only at loops == 1.
+    dt = run.params["dt"]                                  # f32 bits
+    want_dtcld = (dt if len(loops) == 1 else
+                  struct.unpack(">I", struct.pack(">f", _f32_of(dt) / np.float32(len(loops))))[0])
 
     # (3) mstep / gate / dtcld are the ACTUAL run's, not a self-report.
-    dt = run.params["dt"]                                  # f32 bits
-    for c in range(1, B + 1):
-        for n in range(1, mm + 1):
-            if _signed_i32(_sv(S, "substep_pre", n, "mstep", c, -1)[1]) != run.mstep[c]:
-                raise SemanticError(f"substep_pre.mstep(c={c},n={n}) != MSTEP record")
-            g = _sv(S, "substep_pre", n, "gate", c, -1)[1]
-            if g not in (0, 1) or g != (1 if n <= run.mstep[c] else 0):
-                raise SemanticError(f"substep_pre.gate(c={c},n={n})={g} != [n<=mstep]")
-            if _sv(S, "substep_pre", n, "dtcld", c, -1)[1] != dt:
-                raise SemanticError(f"substep_pre.dtcld(c={c},n={n}) != PARAM dt")
+    for loop, chain in scopes:
+        top = max(v for (lp, ch, _c), v in run.mstep.items() if (lp, ch) == (loop, chain))
+        for c in range(1, B + 1):
+            m = run.mstep[(loop, chain, c)]
+            for n in range(1, top + 1):
+                if _signed_i32(_sv(S, "substep_pre", n, "mstep", c, -1, loop)[1]) != m:
+                    raise SemanticError(f"substep_pre.mstep(L{loop},c={c},n={n}) != MSTEP record")
+                g = _sv(S, "substep_pre", n, "gate", c, -1, loop)[1]
+                if g not in (0, 1) or g != (1 if n <= m else 0):
+                    raise SemanticError(f"substep_pre.gate(L{loop},c={c},n={n})={g} != [n<=mstep]")
+                if _sv(S, "substep_pre", n, "dtcld", c, -1, loop)[1] != want_dtcld:
+                    raise SemanticError(
+                        f"substep_pre.dtcld(L{loop},c={c},n={n}) != f32(dt/{len(loops)})")
 
     # (4) the first substep's entry state IS the pre-sed snapshot.
     for c in range(1, B + 1):
@@ -72,42 +85,60 @@ def verify_semantics(run):
                         f"substep_pre(n=1).{sp} != outer_pre_sed.{sp} c={c} k={k}")
 
     # (5) each substep's entry state is the previous substep's stored update.
-    qpost = {(o.col, o.k, o.n): o.bits for o in run.ops
+    # Keyed by the OUTER LOOP too: the same (col,k,n) recurs in every cloud
+    # subcycle, so a loop-blind map would silently compare one loop's entry state
+    # against another loop's stored update.
+    qpost = {(o.loop, o.chain, o.col, o.k, o.n): o.bits for o in run.ops
              if o.op_id == "QR_UPDATE" and o.field == "q_post"}
-    npost = {(o.col, o.k, o.n): o.bits for o in run.ops
+    npost = {(o.loop, o.chain, o.col, o.k, o.n): o.bits for o in run.ops
              if o.op_id == "NR_UPDATE" and o.field == "n_post"}
-    for c in range(1, B + 1):
-        for n in range(1, run.mstep[c]):                   # n and n+1 both active
-            for k in range(K):
-                if _sv(S, "substep_pre", n + 1, "qr", c, k)[1] != qpost[(c, k, n)]:
-                    raise SemanticError(f"qr continuity broken c={c} k={k} n={n}->{n+1}")
-                if _sv(S, "substep_pre", n + 1, "nr", c, k)[1] != npost[(c, k, n)]:
-                    raise SemanticError(f"nr continuity broken c={c} k={k} n={n}->{n+1}")
+    for loop, chain in scopes:
+        for c in range(1, B + 1):
+            for n in range(1, run.mstep[(loop, chain, c)]):   # n and n+1 both active
+                for k in range(K):
+                    if _sv(S, "substep_pre", n + 1, "qr", c, k, loop)[1] != \
+                            qpost[(loop, chain, c, k, n)]:
+                        raise SemanticError(
+                            f"qr continuity broken L{loop} c={c} k={k} n={n}->{n+1}")
+                    if _sv(S, "substep_pre", n + 1, "nr", c, k, loop)[1] != \
+                            npost[(loop, chain, c, k, n)]:
+                        raise SemanticError(
+                            f"nr continuity broken L{loop} c={c} k={k} n={n}->{n+1}")
 
     # (6) the seed reaches the surface: bottom-cell accumulator == surface fall.
-    fall_after = {(o.col, o.k, o.n): o.bits for o in run.ops
+    # The surface accumulates over the WHOLE micro step, so it is compared against
+    # the LAST outer loop's final substep.
+    last_loop = max(lp for lp, _ch in scopes)
+    fall_after = {(o.loop, o.col, o.k, o.n): o.bits for o in run.ops
                   if o.op_id == "QR_FALLACC" and o.field == "fall_after"}
     for c in range(1, B + 1):
-        if fall_after[(c, K - 1, run.mstep[c])] != _sv(S, "surface", 0, "bottom_fall_qr", c, -1)[1]:
+        if fall_after[(last_loop, c, K - 1, run.mstep[(last_loop, "main", c)])] != \
+                _sv(S, "surface", 0, "bottom_fall_qr", c, -1, last_loop)[1]:
             raise SemanticError(f"bottom qr fall_after != surface.bottom_fall_qr c={c}")
 
     # (7) surface species sum + rain increment, replayed bit-exact.
+    dtcld = _f32(want_dtcld)
     for c in range(1, B + 1):
-        qr, qs, qg, qi = (_f32(_sv(S, "surface", 0, f, c, -1)[1]) for f in
-                          ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi"))
-        total = np.float32(np.float32(np.float32(qr + qs) + qg) + qi)
-        if _f32_bits(total) != _sv(S, "surface", 0, "bottom_fall_total", c, -1)[1]:
-            raise SemanticError(f"bottom_fall_total != (((qr+qs)+qg)+qi) c={c}")
-        tot = _f32(_sv(S, "surface", 0, "bottom_fall_total", c, -1)[1])
-        delz_b = _f32(_sv(S, "surface", 0, "delz_bottom", c, -1)[1])
-        denr = _f32(_sv(S, "surface", 0, "surface_denr", c, -1)[1])
-        dtcld = _f32(dt)
-        # rainncv(i) = fallsum*delz(i,kts)/denr*dtcld*1000. + rainncv(i), rainncv0=0,
-        # guarded by fallsum>0. Left-associated f32.
+        # PREC is CUMULATIVE over the whole micro step: the surface accumulation runs
+        # once per outer loop and adds into rainncv, which starts at 0. So the replay
+        # sums the per-loop increments in loop order, in the same left-associated f32
+        # the Fortran uses — a single-surface replay only happens to work at loops==1.
         rain = np.float32(0.0)
-        if tot > np.float32(0.0):
-            rain = np.float32(np.float32(np.float32(np.float32(tot * delz_b) / denr)
-                                         * dtcld) * np.float32(1000.0))
+        for loop in loops:
+            qr, qs, qg, qi = (_f32(_sv(S, "surface", 0, f, c, -1, loop)[1]) for f in
+                              ("bottom_fall_qr", "bottom_fall_qs",
+                               "bottom_fall_qg", "bottom_fall_qi"))
+            total = np.float32(np.float32(np.float32(qr + qs) + qg) + qi)
+            if _f32_bits(total) != _sv(S, "surface", 0, "bottom_fall_total", c, -1, loop)[1]:
+                raise SemanticError(f"bottom_fall_total != (((qr+qs)+qg)+qi) L{loop} c={c}")
+            tot = _f32(_sv(S, "surface", 0, "bottom_fall_total", c, -1, loop)[1])
+            delz_b = _f32(_sv(S, "surface", 0, "delz_bottom", c, -1, loop)[1])
+            denr = _f32(_sv(S, "surface", 0, "surface_denr", c, -1, loop)[1])
+            # rainncv = fallsum*delz/denr*dtcld*1000 + rainncv, guarded by fallsum>0
+            if tot > np.float32(0.0):
+                rain = np.float32(np.float32(np.float32(np.float32(np.float32(tot * delz_b)
+                                                                   / denr) * dtcld)
+                                             * np.float32(1000.0)) + rain)
         if _f32_bits(rain) != run.precip[(1, c)]:
             raise SemanticError(f"PREC rain replay mismatch c={c}")
     return True

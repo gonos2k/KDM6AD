@@ -29,7 +29,9 @@ import re
 _OP = re.compile(
     r"^G33FOP\s+(\d+)\s+(\S+)\s+(\d+)\s+(\d+)\s+(-?\d+)\s+(\S+)\s+(\S+)\s+"
     r"(f32|f64|u8)\s+([0-9A-Fa-f]+)$")
-_MSTEP = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
+# v1/v2: G33F MSTEP <col> i32 <hex>   v3: G33F MSTEP <loop> <chain> <col> i32 <hex>
+_MSTEP_V1 = re.compile(r"^G33F MSTEP\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
+_MSTEP_V3 = re.compile(r"^G33F MSTEP\s+(\d+)\s+(\S+)\s+(\d+)\s+i32\s+([0-9A-Fa-f]{8})$")
 # v1: G33F STAGE <stage> <n> <field> <col> <k> <dtype> <hex>
 # v2: G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
 _STAGE_V1 = re.compile(
@@ -46,8 +48,8 @@ _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_BEGIN = re.compile(r"^G33F BEGIN v([12]) (\S+)$")
-_END = re.compile(r"^G33F END v([12]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([123]) (\S+)$")
+_END = re.compile(r"^G33F END v([123]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -114,12 +116,22 @@ def parse_localparam(text):
     return lp
 
 
-def parse_mstep(text):
+def parse_mstep(text, version=1):
+    """(loop, chain, col) -> substep count.
+
+    The per-column mstep is recomputed at the start of EACH cloud outer loop from
+    that loop's state, so m[L,c] and m[L+1,c] can legitimately differ. v1/v2 do not
+    transmit loop/chain, so they fill (1, "main"); v3 carries the real values."""
     ms = {}
     for line in text.splitlines():
-        m = _MSTEP.match(line)
-        if m:
-            ms[int(m.group(1))] = int(m.group(2), 16)
+        if version >= 3:
+            m = _MSTEP_V3.match(line)
+            if m:
+                ms[(int(m.group(1)), m.group(2), int(m.group(3)))] = int(m.group(4), 16)
+        else:
+            m = _MSTEP_V1.match(line)
+            if m:
+                ms[(1, "main", int(m.group(1)))] = int(m.group(2), 16)
     return ms
 
 
@@ -131,7 +143,7 @@ def parse_stage(text, version=1):
     derived from the stage under the single-main-loop scope the v1 overlay emits."""
     st = {}
     for line in text.splitlines():
-        if version == 2:
+        if version >= 2:          # v2 introduced loop/chain; v3 keeps it
             m = _STAGE_V2.match(line)
             if not m:
                 continue
@@ -242,16 +254,22 @@ def _validate_stages(stages, n_raw, mstep, K, B):
     outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
     if n_raw != len(stages):
         raise FortranRunError(f"STAGE: {n_raw - len(stages)} duplicate key(s)")
-    L, MAIN = 1, "main"          # the emitted scope: one outer loop, main chain
-    exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for f in _OUTER_PRE_SED_FIELDS
-           for c in range(1, B + 1) for k in range(K)}
-    for n in range(1, max(mstep.values()) + 1):
-        for c in range(1, B + 1):
-            exp |= {(L, MAIN, "substep_pre", n, f, c, -1) for f in _SUBSTEP_PRE_COL_FIELDS}
-            exp |= {(L, MAIN, "substep_pre", n, f, c, k) for f in _SUBSTEP_PRE_K_FIELDS
-                    for k in range(K)}
-    exp |= {(L, "-", "surface", 0, f, c, -1) for f in _SURFACE_FIELDS
-            for c in range(1, B + 1)}
+    # one snapshot set PER OUTER LOOP, and one substep set per (loop, chain) sized
+    # by THAT scope's own mstep maximum
+    scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
+    loops = sorted({lp for lp, _ch in scopes})
+    exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
+           for f in _OUTER_PRE_SED_FIELDS for c in range(1, B + 1) for k in range(K)}
+    for L, chain in scopes:
+        top = max(v for (lp, ch, _c), v in mstep.items() if (lp, ch) == (L, chain))
+        for n in range(1, top + 1):
+            for c in range(1, B + 1):
+                exp |= {(L, chain, "substep_pre", n, f, c, -1)
+                        for f in _SUBSTEP_PRE_COL_FIELDS}
+                exp |= {(L, chain, "substep_pre", n, f, c, k)
+                        for f in _SUBSTEP_PRE_K_FIELDS for k in range(K)}
+    exp |= {(L, "-", "surface", 0, f, c, -1) for L in loops
+            for f in _SURFACE_FIELDS for c in range(1, B + 1)}
     if set(stages) != exp:
         missing, extra = exp - set(stages), set(stages) - exp
         raise FortranRunError(
@@ -308,7 +326,7 @@ class FortranRun:
     algorithm: str
     K: int
     B: int
-    mstep: dict            # col -> substep count
+    mstep: dict            # (outer_loop, chain, col) -> substep count
     fixture_sha256: str          # over the FIXIN inputs only
     parameter_sha256: str        # over the common PARAM scalars only
     local_parameter_sha256: str  # over the ACTUAL-runtime LOCALPARAM (ccn0/scale_h)
@@ -321,8 +339,8 @@ class FortranRun:
     localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM, _LOCALPARAM,
-          _STATE, _PREC, _BEGIN, _END)
+_KNOWN = (_OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
+          _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
 _OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
@@ -342,22 +360,27 @@ def _expected_op_universe(algo, K, B, mstep):
     """(observed-key Counter target, key->op_seq_id map) derived from the schedule
     the mstep implies + the schema — NOT from the observed records."""
     from collections import Counter
-    max_mstep = max(mstep.values())
-    sched = {"case_id": "fortran", "pair_id": "fortran", "backend": "fortran",
-             "algorithm": algo, "B": B, "K": K, "loops": 1,
-             "mstepmax_main": [max_mstep], "mstepmax_ice": [1],
-             "species_scope": ["qr", "nr"], "qcrmin": 1e-9, "dtcld": 20.0,
-             "instrumented_stages": ["op"]}
-    want = Counter()
-    seq = {}
-    for r in _schema.expected_records(sched):
-        if r["stage"] != "op":
-            continue
-        key_bk = (r["n"], r["k"], r["op_id"], r["field"], r["dtype"])
-        seq[key_bk] = r["op_seq_id"]
-        for col in range(1, B + 1):            # per-column: gate n<=mstep[col]
-            if r["n"] <= mstep[col]:
-                want[(r["n"], col, r["k"], r["op_id"], r["field"], r["dtype"])] += 1
+    # One schedule PER (outer_loop, chain): each cloud subcycle recomputes its own
+    # per-column mstep, so its substep count is its own max — deriving a single
+    # global mstepmax would demand records the later loops never produce.
+    scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
+    want, seq = Counter(), {}
+    for loop, chain in scopes:
+        cols = {c: v for (lp, ch, c), v in mstep.items() if (lp, ch) == (loop, chain)}
+        sched = {"case_id": "fortran", "pair_id": "fortran", "backend": "fortran",
+                 "algorithm": algo, "B": B, "K": K, "loops": 1,
+                 "mstepmax_main": [max(cols.values())], "mstepmax_ice": [1],
+                 "species_scope": ["qr", "nr"], "qcrmin": 1e-9, "dtcld": 20.0,
+                 "instrumented_stages": ["op"]}
+        for r in _schema.expected_records(sched):
+            if r["stage"] != "op":
+                continue
+            seq[(loop, chain, r["n"], r["k"], r["op_id"], r["field"], r["dtype"])] = \
+                r["op_seq_id"]
+            for col in range(1, B + 1):        # per-column gate: n <= mstep[col]
+                if r["n"] <= cols[col]:
+                    want[(loop, chain, r["n"], col, r["k"],
+                          r["op_id"], r["field"], r["dtype"])] += 1
     return want, seq
 
 
@@ -398,7 +421,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
             return 0
         if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
-        if (_MSTEP.match(line) or _OP.match(line)
+        if (_MSTEP_V1.match(line) or _MSTEP_V3.match(line) or _OP.match(line)
                 or _STAGE_V1.match(line) or _STAGE_V2.match(line)):
             return 2
         if _STATE.match(line) or _PREC.match(line):
@@ -409,7 +432,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         raise FortranRunError("G33F records out of phase order "
                               "(BEGIN < FIXIN/PARAM < MSTEP/OP < STATE/PREC < END)")
 
-    n_mstep_raw = sum(1 for line in lines if _MSTEP.match(line))
+    _mstep_re = _MSTEP_V3 if version >= 3 else _MSTEP_V1
+    n_mstep_raw = sum(1 for line in lines if _mstep_re.match(line))
     raw_ops = parse_ops(text)
 
     if evidence_mode == "noninstrumented":
@@ -421,28 +445,38 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     else:
         # MSTEP: exactly B records (no duplicate/stale), each a SIGNED int32 in
         # [1,100] (the Fortran cap), covering columns 1..B.
-        mstep_raw = parse_mstep(text)
-        if n_mstep_raw != B:
-            raise FortranRunError(f"MSTEP has {n_mstep_raw} records, expected exactly {B}")
-        if set(mstep_raw) != set(range(1, B + 1)):
-            raise FortranRunError(f"MSTEP must cover columns 1..{B}, got {sorted(mstep_raw)}")
-        mstep = {c: _signed_i32(w) for c, w in mstep_raw.items()}
-        for c, v in mstep.items():
+        mstep_raw = parse_mstep(text, version)
+        mstep = {key: _signed_i32(w) for key, w in mstep_raw.items()}
+        scopes = sorted({(loop, chain) for loop, chain, _c in mstep})
+        if not scopes:
+            raise FortranRunError("instrumented run emitted no MSTEP records")
+        if n_mstep_raw != B * len(scopes):
+            raise FortranRunError(
+                f"MSTEP has {n_mstep_raw} records, expected {B} per (loop,chain) "
+                f"over {len(scopes)} scope(s)")
+        for loop, chain in scopes:               # every scope covers columns 1..B
+            cols = {c for (lp, ch, c) in mstep if (lp, ch) == (loop, chain)}
+            if cols != set(range(1, B + 1)):
+                raise FortranRunError(
+                    f"MSTEP loop{loop}/{chain} must cover columns 1..{B}, got {sorted(cols)}")
+        for key, v in mstep.items():
             if not (1 <= v <= 100):
-                raise FortranRunError(f"mstep[{c}]={v} out of [1,100]")
+                raise FortranRunError(f"mstep{key}={v} out of [1,100]")
 
         _, seq = _expected_op_universe(algo, K, B, mstep)
         obs = Counter()
         for o in raw_ops:
-            if o["loop"] != 1 or o["chain"] != "main":
-                raise FortranRunError(f"op loop/chain must be 1/main: {o}")
+            scope = (o["loop"], o["chain"], o["col"])
+            if scope not in mstep:
+                raise FortranRunError(f"op has no MSTEP for loop/chain/col: {o}")
             if not (1 <= o["col"] <= B):
                 raise FortranRunError(f"op col out of range 1..{B}: {o}")
             if not (0 <= o["k"] <= K - 1):
                 raise FortranRunError(f"op k out of range 0..{K-1}: {o}")
-            if not (1 <= o["n"] <= mstep[o["col"]]):
-                raise FortranRunError(f"op n out of gate 1..mstep[{o['col']}]: {o}")
-            obs[(o["n"], o["col"], o["k"], o["op"], o["field"], o["dtype"])] += 1
+            if not (1 <= o["n"] <= mstep[scope]):
+                raise FortranRunError(f"op n out of gate 1..mstep{scope}: {o}")
+            obs[(o["loop"], o["chain"], o["n"], o["col"], o["k"],
+                 o["op"], o["field"], o["dtype"])] += 1
         want, _ = _expected_op_universe(algo, K, B, mstep)
         if obs != want:
             missing, extra = want - obs, obs - want
@@ -458,9 +492,12 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         # by its canonical op_seq. Contiguity is the integrity invariant and it
         # rejects a rung moved out of its cell, a spliced run, or an interleaved
         # second stream. Phase-order + this catch the meaningful reorderings.
+        # The cell key includes the OUTER LOOP and chain: the same (col,n,k) recurs
+        # once per cloud subcycle, so a global contiguity rule would reject a valid
+        # multi-loop stream. Contiguity is required WITHIN a scope.
         seen_cells, prev_cell = set(), None
         for o in raw_ops:
-            cell = (o["col"], o["n"], o["k"])
+            cell = (o["loop"], o["chain"], o["col"], o["n"], o["k"])
             if cell != prev_cell:
                 if cell in seen_cells:
                     raise FortranRunError(f"op records for cell {cell} are not contiguous")
@@ -471,7 +508,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         # total order both trees scalarize to (C++ carries a [B] payload per
         # logical record; a column-first order would pick a different first diff).
         ops = tuple(sorted(
-            (OpRecord(op_seq_id=(sid := seq[(o["n"], o["k"], o["op"], o["field"], o["dtype"])]),
+            (OpRecord(op_seq_id=(sid := seq[(o["loop"], o["chain"], o["n"], o["k"],
+                                             o["op"], o["field"], o["dtype"])]),
                       scalar_seq_id=sid * B + (o["col"] - 1),
                       loop=o["loop"], chain=o["chain"], n=o["n"], col=o["col"], k=o["k"],
                       cell_role=cell_role(o["k"], K), species=species_of(o["op"]),
@@ -480,7 +518,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
             key=lambda r: r.scalar_seq_id))
 
     stages = parse_stage(text, version)
-    _stage_re = _STAGE_V2 if version == 2 else _STAGE_V1
+    _stage_re = _STAGE_V2 if version >= 2 else _STAGE_V1
     n_stage_raw = sum(1 for line in lines if _stage_re.match(line))
     if evidence_mode == "noninstrumented":
         if n_stage_raw:

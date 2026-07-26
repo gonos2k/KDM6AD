@@ -18,6 +18,16 @@ if [ ! -f "$FM" ] || [ ! -f "$AR" ]; then
 fi
 DEFS=$(sed -n 's/^CXX_DEFINES = //p' "$FM")
 INCS=$(sed -n 's/^CXX_INCLUDES = //p' "$FM")
+# --fixture=multisubcycle compiles the multi-sub-cycle raw bits instead of the
+# default one-substep fixture (see abc_driver.cpp).
+# A plain string, not an array: this script runs under `set -u` and macOS ships
+# bash 3.2, where expanding an EMPTY array as "${x[@]}" is an unbound-variable
+# error (fixed in bash 4.4, which is why Linux CI passed and macOS did not).
+# $DEFS and $FLGS are word-split the same way.
+FIXDEF=""
+for a in "$@"; do
+    case "$a" in --fixture=multisubcycle) FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;; esac
+done
 FLGS=$(sed -n 's/^CXX_FLAGS = //p' "$FM")
 CXX=$(xcrun -f c++ 2>/dev/null || command -v c++ || true)
 [ -n "$CXX" ] || { echo "no C++ compiler (xcrun/c++ not found)" >&2; exit 2; }
@@ -60,7 +70,7 @@ fi
 
 compile() {  # $1 src  $2 out.o
     # shellcheck disable=SC2086
-    "$CXX" $DEFS -DKDM6_G33_OP_DUMP $FLGS $INCS -I harness/g33_overlay \
+    "$CXX" $DEFS -DKDM6_G33_OP_DUMP $FIXDEF $FLGS $INCS -I harness/g33_overlay \
         "${MACFLAGS[@]}" -x c++ -c "$1" -o "$2" 2>"$2.err" \
         || { echo "COMPILE FAILED: $1"; head -30 "$2.err"; exit 1; }
 }
