@@ -76,7 +76,10 @@ def main() -> None:
         "fixture_sha256": parsed.fixture_sha256,
         "parameter_sha256": parsed.parameter_sha256,
         "fortran_parameter_sha256": parsed.local_parameter_sha256,  # actual runtime bits
-        "K": K, "B": B, "mstep_per_column": parsed.mstep,
+        # protocol v3 keys mstep by (outer_loop, chain, column); JSON needs strings
+        "K": K, "B": B,
+        "mstep_per_column": {f"L{lp}/{ch}/col{c}": v
+                             for (lp, ch, c), v in sorted(parsed.mstep.items())},
         "stdout_sha256": _sha_bytes(run.stdout),
         "stderr_sha256": _sha_bytes(run.stderr),
         "executable_sha256": _sha_path(driver),

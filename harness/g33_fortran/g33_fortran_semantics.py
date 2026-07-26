@@ -47,21 +47,34 @@ def _sv(stages, stage, n, field, col, k, loop=1):
     return stages[(loop, _CHAIN[stage], stage, n, field, col, k)]
 
 
+def _f32_of(bits):
+    return np.float32(struct.unpack(">f", struct.pack(">I", bits))[0])
+
+
 def verify_semantics(run):
     B, K, S = run.B, run.K, run.stages
-    mm = max(run.mstep.values())
+    scopes = sorted({(lp, ch) for lp, ch, _c in run.mstep})
+    loops = sorted({lp for lp, _ch in scopes})
+    # The cloud timestep is the host step divided by the number of outer loops, so
+    # `dtcld == dt` holds only at loops == 1.
+    dt = run.params["dt"]                                  # f32 bits
+    want_dtcld = (dt if len(loops) == 1 else
+                  struct.unpack(">I", struct.pack(">f", _f32_of(dt) / np.float32(len(loops))))[0])
 
     # (3) mstep / gate / dtcld are the ACTUAL run's, not a self-report.
-    dt = run.params["dt"]                                  # f32 bits
-    for c in range(1, B + 1):
-        for n in range(1, mm + 1):
-            if _signed_i32(_sv(S, "substep_pre", n, "mstep", c, -1)[1]) != run.mstep[c]:
-                raise SemanticError(f"substep_pre.mstep(c={c},n={n}) != MSTEP record")
-            g = _sv(S, "substep_pre", n, "gate", c, -1)[1]
-            if g not in (0, 1) or g != (1 if n <= run.mstep[c] else 0):
-                raise SemanticError(f"substep_pre.gate(c={c},n={n})={g} != [n<=mstep]")
-            if _sv(S, "substep_pre", n, "dtcld", c, -1)[1] != dt:
-                raise SemanticError(f"substep_pre.dtcld(c={c},n={n}) != PARAM dt")
+    for loop, chain in scopes:
+        top = max(v for (lp, ch, _c), v in run.mstep.items() if (lp, ch) == (loop, chain))
+        for c in range(1, B + 1):
+            m = run.mstep[(loop, chain, c)]
+            for n in range(1, top + 1):
+                if _signed_i32(_sv(S, "substep_pre", n, "mstep", c, -1, loop)[1]) != m:
+                    raise SemanticError(f"substep_pre.mstep(L{loop},c={c},n={n}) != MSTEP record")
+                g = _sv(S, "substep_pre", n, "gate", c, -1, loop)[1]
+                if g not in (0, 1) or g != (1 if n <= m else 0):
+                    raise SemanticError(f"substep_pre.gate(L{loop},c={c},n={n})={g} != [n<=mstep]")
+                if _sv(S, "substep_pre", n, "dtcld", c, -1, loop)[1] != want_dtcld:
+                    raise SemanticError(
+                        f"substep_pre.dtcld(L{loop},c={c},n={n}) != f32(dt/{len(loops)})")
 
     # (4) the first substep's entry state IS the pre-sed snapshot.
     for c in range(1, B + 1):
@@ -77,7 +90,7 @@ def verify_semantics(run):
     npost = {(o.col, o.k, o.n): o.bits for o in run.ops
              if o.op_id == "NR_UPDATE" and o.field == "n_post"}
     for c in range(1, B + 1):
-        for n in range(1, run.mstep[c]):                   # n and n+1 both active
+        for n in range(1, run.mstep[(1, "main", c)]):      # n and n+1 both active
             for k in range(K):
                 if _sv(S, "substep_pre", n + 1, "qr", c, k)[1] != qpost[(c, k, n)]:
                     raise SemanticError(f"qr continuity broken c={c} k={k} n={n}->{n+1}")
@@ -88,7 +101,7 @@ def verify_semantics(run):
     fall_after = {(o.col, o.k, o.n): o.bits for o in run.ops
                   if o.op_id == "QR_FALLACC" and o.field == "fall_after"}
     for c in range(1, B + 1):
-        if fall_after[(c, K - 1, run.mstep[c])] != _sv(S, "surface", 0, "bottom_fall_qr", c, -1)[1]:
+        if fall_after[(c, K - 1, run.mstep[(1, "main", c)])] != _sv(S, "surface", 0, "bottom_fall_qr", c, -1)[1]:
             raise SemanticError(f"bottom qr fall_after != surface.bottom_fall_qr c={c}")
 
     # (7) surface species sum + rain increment, replayed bit-exact.

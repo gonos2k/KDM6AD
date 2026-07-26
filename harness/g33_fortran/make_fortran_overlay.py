@@ -112,8 +112,8 @@ def _cap_lines(top):
              f"{fb.IND}g33_fnb = falln(i,k,1)"]
     if top:
         lines.append(
-            f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,A,1X,Z8.8)') "
-            f"'G33F MSTEP', i, 'i32', mstep(i)")
+            f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,A,1X,I0,1X,A,1X,Z8.8)') "
+            f"'G33F MSTEP', loop, 'main', i, 'i32', mstep(i)")
     lines.append("#endif")
     return lines
 

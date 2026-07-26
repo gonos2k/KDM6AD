@@ -73,7 +73,33 @@ dt large enough for `loops > 1` (dt=300 → loops = ceil(300/120) = 3).
 
 ---
 
-# v2.1 — what is still single-loop (owner P0-1)
+# v3 — MSTEP carries loop/chain, and the reader is multi-loop (DONE)
+
+Implemented. `G33F MSTEP <outer_loop> <chain> <column> i32 <hex>`, banner `v3`, and
+the reader is no longer single-loop:
+
+* `FortranRun.mstep` is keyed `(outer_loop, chain, column)`, so `m[L,c]` and
+  `m[L+1,c]` can differ — the per-column count is recomputed each outer loop.
+* the expected OP and STAGE universes are built PER `(outer_loop, chain)`, each
+  sized by that scope's own mstep maximum (a single global max would demand records
+  the later loops never produce);
+* the `loop != 1 or chain != "main"` guard is gone — op records are gated by their
+  own scope's mstep;
+* semantics iterates the observed scopes and requires
+  `dtcld == f32(dt / loops)`, which reduces to `dtcld == dt` only at `loops == 1`;
+* v1/v2 streams still parse (their MSTEP fills `(1, "main", col)`), so the grammar
+  is selected by the banner and the three versions cannot be confused.
+
+Equivalence proven before regenerating the committed samples: a v3 run reproduces
+the v2 sample exactly — same fixture/parameter SHA, all 579 ops, all 174 stage
+records, state and precip. Both committed Fortran samples are now v3, and the
+gfortran build suite (15 tests, both variants) passes.
+
+Still open for a real multi-loop run: per-loop `surface_increment` vs the single
+cumulative `PREC` (item 6 below), and the `substep_post` / `reslope_*` stages the
+comparator currently drops.
+
+# v2.1 — the original plan (historical)
 
 v2 made multi-loop records *distinguishable*; the Fortran reader still models a
 single loop. Concretely, on `main@bb243e98`:

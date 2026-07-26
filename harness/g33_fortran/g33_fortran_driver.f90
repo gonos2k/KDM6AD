@@ -84,7 +84,7 @@ contains
     inF(:,:,4)=qr(:,:,1); inF(:,:,5)=qi(:,:,1); inF(:,:,6)=qs(:,:,1)
     inF(:,:,7)=qg(:,:,1); inF(:,:,8)=nn(:,:,1); inF(:,:,9)=nc(:,:,1)
     inF(:,:,10)=ni(:,:,1); inF(:,:,11)=nr(:,:,1); inF(:,:,12)=bg(:,:,1)
-    write(*,'(A)') 'G33F BEGIN v2 '//ALGOTAG
+    write(*,'(A)') 'G33F BEGIN v3 '//ALGOTAG
     do f=1,NFLD_ST
       do k=1,km
         do i=1,im
@@ -194,6 +194,6 @@ program g33_fortran_driver
       call emit_prec(f, i, precF(f,i))
     end do
   end do
-  write(*,'(A)') 'G33F END v2 '//ALGOTAG
+  write(*,'(A)') 'G33F END v3 '//ALGOTAG
   write(*,'(A)') 'FORTRAN DRIVER OK ('//ALGOTAG//', fixture='//G33_FIXTURE_ID//')'
 end program g33_fortran_driver
