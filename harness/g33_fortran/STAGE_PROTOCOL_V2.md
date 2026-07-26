@@ -70,3 +70,60 @@ G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
 v2 makes the multi-loop evidence *expressible*. It does not by itself produce a
 multi-loop run: that still needs the `arithmetic_multisubcycle_v1` fixture and a
 dt large enough for `loops > 1` (dt=300 → loops = ceil(300/120) = 3).
+
+---
+
+# v2.1 — what is still single-loop (owner P0-1)
+
+v2 made multi-loop records *distinguishable*; the Fortran reader still models a
+single loop. Concretely, on `main@bb243e98`:
+
+| Site | Loop-1 assumption |
+|---|---|
+| `G33F MSTEP <col> i32 <bits>` | no loop/chain at all — loop 2's mstep would collide with loop 1's |
+| `FortranRun.mstep: dict` | keyed `col -> count`, cannot express `m[L,c] != m[L+1,c]` |
+| `_validate_stages` | `L, MAIN = 1, "main"`; a valid loop-2 stage is rejected as an EXTRA record |
+| `parse_fortran_run` | `if o["loop"] != 1 or o["chain"] != "main": raise` — v2 records loop 2 correctly, then the strict parser refuses it |
+| `_expected_op_universe` | builds a schedule with `loops: 1`, `mstepmax_main=[max_mstep]` |
+| `g33_fortran_semantics` | `_sv(..., loop=1)`, one global mstep, and requires `substep_pre.dtcld == PARAM dt` |
+
+That last one is a genuine physics constraint, not just plumbing: with
+`loops > 1` the cloud timestep is `dtcld = f32(dt_host / loops)`, so `dtcld == dt`
+holds only at `loops == 1`.
+
+## Wire change
+
+```
+G33F MSTEP <outer_loop> <chain> <column> i32 <hex>
+```
+
+`loop` is in scope at the capture site exactly as for OP/STAGE (see above), so this
+is again a format change, not a data-flow change.
+
+## Work items
+
+1. `make_fortran_overlay._cap_lines` — emit `loop` and the chain literal.
+2. `g33_fortran_dump` — `_MSTEP` v2 regex; `FortranRun.mstep[(loop, chain, col)]`;
+   v1 streams fill `(1, "main", col)` so the key shape is uniform.
+3. `_validate_stages` — expected universe per `(outer_loop, chain)` instead of the
+   `L, MAIN = 1, "main"` constants, with `n = 1..max(mstep[L, chain, :])`.
+4. `_expected_op_universe` — schedule with the observed `loops` and a per-loop
+   `mstepmax_<chain>` list; op keys gain `(loop, chain)`; drop the loop/chain guard.
+5. `g33_fortran_semantics` — per-loop lookups; `dtcld == f32(dt / loops)`;
+   state continuity checked WITHIN a loop, and loop L's exit state against loop
+   L+1's `outer_pre_sed`.
+6. Surface: separate the per-loop `surface_increment` from the single cumulative
+   `PREC`, and check `PREC == sum_L increment_L` in a defined f32 association order
+   (today the normalizer attaches the cumulative PREC to the last loop, which is
+   ambiguous once `loops > 1`).
+7. Regenerate the committed sample; prove single-loop equivalence first, exactly as
+   the v1→v2 migration did.
+8. Decision parser accepts v2 only; keep v1 in a `parse_historical_v1()` migration
+   path so the two grammars stop costing a branch everywhere.
+
+## Why this is not yet exercised
+
+No multi-loop fixture exists: `dt=20` gives `loops = 1`. The generalisation is a
+PREREQUISITE for `arithmetic_multisubcycle_v1` (`dt=300` → `loops = ceil(300/120) = 3`),
+so its multi-loop paths can only be covered by synthetic parser tests until that
+fixture lands.
