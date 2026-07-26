@@ -36,7 +36,9 @@ def _require(condition: bool, message: str) -> None:
 def load_manifest(path: Path = MANIFEST) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     _require(data.get("schema_version") == 1, "fixture schema_version must be 1")
-    _require(data.get("fixture_id") == "arithmetic_synthetic_v1", "unexpected fixture_id")
+    _require(data.get("fixture_id") in ("arithmetic_synthetic_v1",
+                                        "arithmetic_multisubcycle_v1"),
+             "unexpected fixture_id")
     _require(data.get("science_role") == "arithmetic_synthetic", "science_role must be explicit")
     _require(data.get("vertical_layout") == "top_first", "vertical_layout must be top_first")
     B, K = data.get("B"), data.get("K")
@@ -299,9 +301,17 @@ def main() -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--write", action="store_true")
     group.add_argument("--check", action="store_true")
+    # A second fixture (arithmetic_multisubcycle_v1) renders through the SAME
+    # generator so both are built from one authority format. The generated Fortran
+    # module keeps the name g33_fixture_v1 so the driver needs no change; the build
+    # script selects which .f90 to compile.
+    parser.add_argument("--manifest", type=Path, default=MANIFEST)
+    parser.add_argument("--cpp-out", type=Path, default=CPP_OUT)
+    parser.add_argument("--fortran-out", type=Path, default=FORTRAN_OUT)
     args = parser.parse_args()
-    data = load_manifest()
-    for path, content in generated(data).items():
+    data = load_manifest(args.manifest)
+    for path, content in {args.cpp_out: render_cpp(data),
+                          args.fortran_out: render_fortran(data)}.items():
         if args.write:
             path.write_text(content, encoding="utf-8")
             print(f"wrote {path.relative_to(ROOT)}")

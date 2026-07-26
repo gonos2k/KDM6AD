@@ -492,9 +492,12 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         # by its canonical op_seq. Contiguity is the integrity invariant and it
         # rejects a rung moved out of its cell, a spliced run, or an interleaved
         # second stream. Phase-order + this catch the meaningful reorderings.
+        # The cell key includes the OUTER LOOP and chain: the same (col,n,k) recurs
+        # once per cloud subcycle, so a global contiguity rule would reject a valid
+        # multi-loop stream. Contiguity is required WITHIN a scope.
         seen_cells, prev_cell = set(), None
         for o in raw_ops:
-            cell = (o["col"], o["n"], o["k"])
+            cell = (o["loop"], o["chain"], o["col"], o["n"], o["k"])
             if cell != prev_cell:
                 if cell in seen_cells:
                     raise FortranRunError(f"op records for cell {cell} are not contiguous")

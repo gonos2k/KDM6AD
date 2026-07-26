@@ -18,6 +18,7 @@ for a in "$@"; do
         --overlay) OVERLAY=1 ;;
         --overlay-file=*) OVERLAY_FILE_ARG="${a#--overlay-file=}"; OVERLAY=1; DUMP=1 ;;
         --algo=*) ALGO="${a#--algo=}" ;;
+        --fixture=*) FIXTURE_NAME="${a#--fixture=}" ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -31,7 +32,11 @@ esac
 LIBMASSV="$HOST/frame/libmassv.F"
 CONSTS="$HOST/share/module_model_constants.F"
 RADAR="$HOST/phys/module_mp_radar.F"
-FIXTURE_SRC="$HERE/g33_fixture_v1.f90"
+# --fixture=<name> (parsed above) selects the generated fixture module. Both render
+# from the same authority format and define the SAME module name, so the driver is
+# unchanged; only the raw-bit data differs.
+FIXTURE_SRC="$HERE/${FIXTURE_NAME:-g33_fixture_v1}.f90"
+[ -f "$FIXTURE_SRC" ] || { echo "no such fixture: $FIXTURE_SRC" >&2; exit 2; }
 for f in "$LIBMASSV" "$CONSTS" "$RADAR" "$MODULE" "$FIXTURE_SRC"; do
     [ -f "$f" ] || { echo "missing source: $f" >&2; exit 2; }
 done
