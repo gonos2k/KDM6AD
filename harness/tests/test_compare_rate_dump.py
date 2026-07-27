@@ -41,12 +41,16 @@ def cpp_bytes(D):
     return np.array([B, NK], dtype=">i4").tobytes() + C.tobytes()
 
 
-def run(tmp, fort, cpp, extra=()):
+def run(tmp, fort, cpp, extra=(), k_order="same"):
+    """--k-order is MANDATORY: the tool no longer picks the orientation that
+    happens to differ less. Tests declare it like any other caller."""
     fp, cp = tmp / "fort_x.bin", tmp / "cpp_x.bin"
     fp.write_bytes(fort)
     cp.write_bytes(cpp)
-    p = subprocess.run([sys.executable, str(TOOL), str(fp), str(cp), *extra],
-                       capture_output=True, text=True)
+    cmd = [sys.executable, str(TOOL), str(fp), str(cp), *extra]
+    if k_order is not None:
+        cmd += ["--k-order", k_order]
+    p = subprocess.run(cmd, capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
 
 
@@ -90,9 +94,11 @@ def test_min_fields_optin_labels_subset():
     C = cpp_bytes(D)
     C = C[:-NI * NJ * NK * 4]                       # cpp has NF-1 fields
     with tempfile.TemporaryDirectory() as d:
+        names = [f"f{i}" for i in range(NF - 1)]     # the correspondence, declared
         rc, out = run(pathlib.Path(d), fort_bytes(D), C,
-                      extra=(f"--min-fields", str(NF - 1)))
-        assert rc == 0 and "SUBSET" in out, out
+                      extra=("--min-fields", str(NF - 1), *names))
+        # a SUBSET compare is clean but PARTIAL: exit 3, never 0
+        assert rc == 3 and "SUBSET" in out and "PARTIAL-CLEAN" in out, out
 
 
 def test_degenerate_all_zero_refused():
@@ -135,3 +141,36 @@ def _selftest():
 
 if __name__ == "__main__":
     sys.exit(1 if _selftest() else 0)
+
+
+# ── what the tool refuses to guess (owner PR E) ───────────────────────────────
+
+def test_the_k_orientation_must_be_declared():
+    """It used to be chosen by whichever flip produced fewer differences, so on a
+    genuinely diverging pair the tool reported the reading that made the divergence
+    look smallest."""
+    D = mk_data()
+    with tempfile.TemporaryDirectory() as d:
+        rc, out = run(pathlib.Path(d), fort_bytes(D), cpp_bytes(D), k_order=None)
+        assert rc != 0 and "--k-order" in out, out
+
+
+def test_the_declared_orientation_is_used_even_when_the_other_matches_better():
+    # cpp written K-reversed: declaring "same" must FAIL rather than quietly
+    # flipping to the reading that agrees
+    D = mk_data()
+    C = cpp_bytes(D[:, :, ::-1, :])          # D is (NF, NJ, NK, NI)
+    with tempfile.TemporaryDirectory() as d:
+        rc, out = run(pathlib.Path(d), fort_bytes(D), C, k_order="same")
+        assert rc == 1 and "RESULT: FAIL" in out, out
+        rc2, out2 = run(pathlib.Path(d), fort_bytes(D), C, k_order="flip")
+        assert rc2 == 0 and "RESULT: PASS" in out2, out2
+
+
+def test_a_subset_compare_needs_the_field_names():
+    D = mk_data()
+    C = cpp_bytes(D)[:-NI * NJ * NK * 4]
+    with tempfile.TemporaryDirectory() as d:
+        rc, out = run(pathlib.Path(d), fort_bytes(D), C,
+                      extra=("--min-fields", str(NF - 1)))
+        assert rc == 2 and "field names" in out, out
