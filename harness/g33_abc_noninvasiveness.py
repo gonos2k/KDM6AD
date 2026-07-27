@@ -216,7 +216,10 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
         gdv.check_producer_flags(
             {key: (record["dtype"], record["payload"])
              for key, record in pre.items()},
-            int(spec["n"]), QCRMIN, DTCLD)
+            # from the SCHEDULE being validated, not the module defaults: those
+            # coincide only for the original dt=20 fixture, so a fixture with a
+            # different sub-cycle would be checked against the wrong threshold
+            int(spec["n"]), schedule["qcrmin"], schedule["dtcld"])
         B, K = schedule["B"], schedule["K"]
         w1 = _values(pre["work1_qr"]).astype(np.float64).reshape(B, K)
         wn = _values(pre["workn_qr"]).astype(np.float64).reshape(B, K)
