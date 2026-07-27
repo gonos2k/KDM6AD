@@ -268,9 +268,12 @@ def test_mstep_exceeding_declared_substeps_rejected(tmp_path):
 
 
 def _anchors(root):
+    _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
     return {"expected_manifest_sha256": _sha(root / "cpp_abc_manifest.json"),
             "expected_repo_commit": COMMIT,
-            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID}
+            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID,
+            # the fixture BYTES, not just its name
+            "expected_fixture_manifest_sha256": gfx.manifest_sha256(authority)}
 
 
 def test_verdict_ready_requires_external_anchors(tmp_path):
@@ -282,7 +285,8 @@ def test_verdict_ready_requires_external_anchors(tmp_path):
 
 
 @pytest.mark.parametrize("drop", ["expected_manifest_sha256", "expected_repo_commit",
-                                  "expected_fixture_id"])
+                                  "expected_fixture_id",
+                                  "expected_fixture_manifest_sha256"])
 def test_no_single_anchor_can_be_omitted_at_the_API(tmp_path, drop):
     # The CLI requires all three, but a Python caller reaches this function directly.
     # If the fixture defaulted here, omitting it would still mint a verdict-ready leg
@@ -392,16 +396,10 @@ def test_the_actual_output_is_read_from_the_evidence_not_assumed(tmp_path):
     assert out["algorithms"]["legacy"].actual_final_output["rain"] == (0x40000000,) * B
 
 
-# ── discovery mode (schedule probe) ───────────────────────────────────────────
-
-def test_discovery_mode_is_refused_for_a_real_case(tmp_path):
-    # A real bundle short of its declared containers must stay INVALID. If discovery
-    # could be asked for on any case, it would be a switch that turns the
-    # completeness gate off for the very bundles it exists to police.
-    ev = _full_evidence(tmp_path, "legacy")
-    with pytest.raises(bio.BundleError, match="not marked one"):
-        bio.verify_cpp_evidence(ev, "legacy", discovery=True)
-
+# ── completeness has no opt-out ───────────────────────────────────────────────
+# The abandoned container-discovery mode used to let a probe-marked case write fewer
+# containers than it declared. It is gone: a schedule now comes from the KDM6SCHED
+# stream, so nothing needs a switch that turns the completeness gate off.
 
 def test_a_real_case_still_needs_every_declared_container(tmp_path):
     ev = _full_evidence(tmp_path, "legacy", omit_container="L1_outer_post_sed")

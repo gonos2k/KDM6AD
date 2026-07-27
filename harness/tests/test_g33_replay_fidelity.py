@@ -155,3 +155,16 @@ def test_variant_mislabelled_evidence_is_rejected():
 def test_pure_comparator_still_reaches_a_verdict_on_the_real_pair():
     # the legacy pair compared against itself is clean (mstep=1 fixture)
     assert cmp.compare_pair(RUN, RUN).phase is None
+
+
+def test_the_tool_never_returns_a_bare_PASS():
+    """PASS_MECHANISM is the ceiling. The protocol's PASS also requires the seed to
+    be causally connected to the HISTORICAL output divergence and to propagate
+    downstream — neither is a property of a synthetic fixture, so no check inside
+    this harness can supply them. A bare PASS invited exactly that over-reading."""
+    assert "PASS" not in cmp.VERDICTS
+    assert cmp.PASS_MECHANISM in cmp.VERDICTS
+    r = cmp.adjudicate_verified(RUN, RUN, RUN, RUN)
+    if r["verdict"] == cmp.PASS_MECHANISM:
+        assert r["evidence_strength"] == "PARTIAL"
+        assert r["not_established"]          # says what it did NOT show

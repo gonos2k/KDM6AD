@@ -23,8 +23,9 @@ Three ways out; two are closed:
     set). That is what this module reads.
 
 A probe run carries no run identity, no binary binding and no sealed descriptor, so
-it is a SCHEDULE-DISCOVERY artifact and never physics evidence; `assert_not_evidence`
-enforces that at the decision boundary.
+it is a SCHEDULE-DISCOVERY artifact and never physics evidence. Nothing here produces
+a sealed container, so a probe cannot be mistaken for one: it is a different artifact,
+not a flagged one.
 
 The producer is not trusted either: Python re-derives the mstep vector from the raw
 fall speeds in the stream and requires the run's own `mstep_native` to match. The
@@ -40,29 +41,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_derived as gd            # noqa: E402
 
-PROBE_MARKER = "schedparse"          # appears in the probe run's case id
-
-
 class ProbeError(Exception):
     """The probe cannot yield a schedule that can be sealed."""
-
-
-def probe_case_id(case_name: str) -> str:
-    """A probe's case id is visibly not an evidence case id."""
-    return f"{case_name}-{PROBE_MARKER}"
-
-
-def is_probe(case_id: str) -> bool:
-    return str(case_id).endswith(f"-{PROBE_MARKER}")
-
-
-def assert_not_evidence(case_id: str) -> None:
-    """Refuse to treat a probe artifact as physics evidence."""
-    if is_probe(case_id):
-        raise ProbeError(
-            f"{case_id!r} is a schedule-discovery probe, not G3.3 evidence — it is "
-            f"produced under an over-declared contract whose container set is "
-            f"deliberately incomplete, so it can never support a verdict")
 
 
 def derive_mstep(vmax_per_column, dtcld: float) -> list[int]:
@@ -176,6 +156,10 @@ _WORK_FIELDS = ("work1_qr", "workn_qr", "work1_qs", "work1_qg")
 
 _SCHED_TAG = "KDM6SCHED"
 
+#: Exactly what a probe scope may carry. Closed, because the stream's whole purpose
+#: is to become a sealed container universe.
+_PROBE_FIELDS = frozenset((*_WORK_FIELDS, "mstep_native", "dtcld"))
+
 
 def parse_sched_stream(raw) -> dict:
     """(loop, chain, n) -> {field: [decoded values]} from a KDM6SCHED stdout stream.
@@ -206,8 +190,15 @@ def parse_sched_stream(raw) -> dict:
         width = {"f32": 8, "f64": 16, "i32": 8}.get(dtype)
         if width is None or any(len(w) != width for w in words):
             raise ProbeError(f"probe line has bad dtype/word width: {line!r}")
+        if field not in _PROBE_FIELDS:
+            raise ProbeError(f"unknown probe field {field!r}: the stream builds a "
+                             f"sealed contract, so its schema is closed")
         payload = bytes.fromhex("".join(words))
-        out.setdefault(scope, {})[field] = list(gd.unpack_values(dtype, payload))
+        rec = out.setdefault(scope, {})
+        if field in rec:
+            # last-wins is never right here: the survivor would seal the contract
+            raise ProbeError(f"duplicate {field!r} record for {scope}")
+        rec[field] = list(gd.unpack_values(dtype, payload))
     if not out:
         raise ProbeError("probe stream carries no KDM6SCHED records")
     return out
@@ -236,6 +227,18 @@ def probe_from_stream(raw) -> dict:
         if len(set(dtcld)) != 1:
             raise ProbeError(f"loop {loop} chain {chain}: dtcld differs across "
                              f"columns: {sorted(set(dtcld))}")
+        if not (math.isfinite(dtcld[0]) and dtcld[0] > 0):
+            raise ProbeError(f"loop {loop} chain {chain}: dtcld {dtcld[0]!r} is not "
+                             f"a positive finite timestep")
+        # ADMISSIBILITY, not arithmetic. derive_mstep clamps a negative speed to 1,
+        # which is the right formula and the wrong conclusion: a negative or
+        # non-finite fall speed is a broken measurement, not a one-substep run.
+        for field in _WORK_FIELDS:
+            for i, v in enumerate(rec[field]):
+                if not math.isfinite(v) or v < 0:
+                    raise ProbeError(
+                        f"loop {loop} chain {chain}: {field}[{i}] = {v!r} is outside "
+                        f"the fall-speed domain (finite, >= 0)")
         vmax = _vmax_per_column(rec, len(rec["mstep_native"]))
         derived = derive_mstep(vmax, dtcld[0])
         claimed = []

@@ -25,7 +25,6 @@ from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_abc_protocol as abcp      # noqa: E402
-import g33_schedule_probe as gsp     # noqa: E402
 import g33_derived as gdv            # noqa: E402
 import g33_dump as gd                # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
@@ -177,16 +176,10 @@ def _under(root: Path, child: Path) -> Path:
 
 
 def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
-                        expected_repo_commit=None, allow_metric_floor=False,
-                        discovery: bool = False) -> dict:
+                        expected_repo_commit=None,
+                        allow_metric_floor=False) -> dict:
     """Re-verify one {algo}-C-evidence tree and return {contract, containers}.
-
-    `discovery=True` reads a SCHEDULE PROBE: a run under a deliberately
-    over-declared contract, whose container set is short of that declaration by
-    construction — the shortfall IS the measurement. Every other check still
-    applies: hashes, descriptor binding, producer semantics, same-run identity.
-    It is refused for any case id not marked a probe, so it can never be used to
-    wave a real bundle's missing containers through."""
+"""
     evidence_dir = Path(evidence_dir)
     if not evidence_dir.is_dir():
         raise BundleError(f"evidence dir not found: {evidence_dir}")
@@ -240,27 +233,17 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
         parsed[cid] = c
 
     declared = {n[:-5] for n in desc_shas if n.endswith(".desc")}
-    if discovery:
-        if not gsp.is_probe(schedule.get("case_id", "")):
-            raise BundleError(
-                f"discovery mode is only for a schedule probe, but case_id "
-                f"{schedule.get('case_id')!r} is not marked one")
-        # the probe may write FEWER containers than it declared — never more
-        if not set(parsed) <= declared:
-            raise BundleError(f"probe wrote undeclared containers: "
-                              f"{sorted(set(parsed) - declared)}")
-    else:
-        if declared != set(parsed):
-            raise BundleError(f"container/descriptor set mismatch: {sorted(parsed)} vs {sorted(declared)}")
-        missing = set(COMPARATOR_CONTAINERS) - set(parsed)
-        if missing:
-            raise BundleError(f"bundle missing comparator container(s): {sorted(missing)}")
+    if declared != set(parsed):
+        raise BundleError(f"container/descriptor set mismatch: {sorted(parsed)} vs {sorted(declared)}")
+    missing = set(COMPARATOR_CONTAINERS) - set(parsed)
+    if missing:
+        raise BundleError(f"bundle missing comparator container(s): {sorted(missing)}")
 
-        # INDEPENDENT completeness — same gate as the live A/B/C checker (P0-2).
-        try:
-            gev.validate_evidence(schedule, contract.get("containers", []), list(parsed.values()))
-        except gd.G33Corruption as e:
-            raise BundleError(f"evidence completeness: {e}") from None
+    # INDEPENDENT completeness — same gate as the live A/B/C checker (P0-2).
+    try:
+        gev.validate_evidence(schedule, contract.get("containers", []), list(parsed.values()))
+    except gd.G33Corruption as e:
+        raise BundleError(f"evidence completeness: {e}") from None
 
     # SAME-RUN invariants: every container shares one run identity (P0-5), and the
     # producing revision is a real commit (optionally pinned to a reviewed one).
@@ -356,7 +339,8 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
 
 def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                       expected_repo_commit=None,
-                      expected_fixture_id=None) -> dict:
+                      expected_fixture_id=None,
+                      expected_fixture_manifest_sha256=None) -> dict:
     """Re-verify the whole C++ ABC bundle root incl. attestation. Returns
     {manifest, algorithms:{algo: VerifiedCppLeg}}.
 
@@ -392,10 +376,21 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     # verdict-ready leg for whichever fixture happens to be the module default —
     # the CLI would be anchored while the API it calls was not.
     try:
-        authority = gfx.load_manifest(
-            gfx.spec(expected_fixture_id or gfx.DEFAULT_FIXTURE_ID).manifest)
+        _, authority = gfx.load_fixture(
+            expected_fixture_id or gfx.DEFAULT_FIXTURE_ID)
     except gfx.UnknownFixture as e:
         raise BundleError(str(e)) from None
+    # CONTENT anchor. The id names a registry entry, but the verifier reads that
+    # JSON from its OWN working tree — on a divergent or dirty tree that is not the
+    # file anyone reviewed. expected_repo_commit does not close this either: it pins
+    # the evidence PRODUCER's commit, not the fixture the verifier read.
+    resolved = gfx.manifest_sha256(authority)
+    if expected_fixture_manifest_sha256 and resolved != expected_fixture_manifest_sha256:
+        raise BundleError(
+            f"fixture manifest sha256 {resolved} != expected "
+            f"{expected_fixture_manifest_sha256} — the verifier read a different "
+            f"fixture file than the anchored one")
+
     want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
     # the SHAs bind the CONTENT; this binds the bundle's own label, so a manifest
     # cannot carry one fixture's hashes under another fixture's name
@@ -464,7 +459,9 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                                      "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,
                             source_commit_attested=expected_repo_commit is not None,
-                            fixture_attested=expected_fixture_id is not None)
+                            # the NAME alone is not an anchor; the bytes are
+                            fixture_attested=bool(expected_fixture_id
+                                                  and expected_fixture_manifest_sha256))
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")

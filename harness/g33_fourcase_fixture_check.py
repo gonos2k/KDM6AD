@@ -79,7 +79,6 @@ def _sealed_schedule(pairs, algo):
     if path is None:
         return None
     sealed = json.loads(path.read_text())
-    gsp.assert_not_evidence(sealed.get("case_id", ""))   # a probe is not a contract
     return sealed
 
 
@@ -117,7 +116,7 @@ def main() -> None:
         if not path.is_file():
             _die(EXIT_SKIP, f"SKIP: ABC driver not found: {path}")
 
-    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
+    _, authority = fixture.load_fixture(args.fixture_id)
     B, K = authority["B"], authority["K"]
     abc.CASES[CASE] = (B, K)
     canonical = args.canonical_driver.resolve()

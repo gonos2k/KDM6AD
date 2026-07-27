@@ -26,7 +26,10 @@ def _args(tmp_path, out, **over):
 
 
 def test_exit_code_contract_is_the_documented_one():
-    assert gate.EXIT == {"PASS": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+    # PASS_MECHANISM, not PASS: the protocol's PASS needs historical causality
+    # and downstream propagation, which no synthetic fixture can supply
+    assert gate.EXIT == {"PASS_MECHANISM": 0, "FAIL": 1,
+                         "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
     assert gate.EXIT_USAGE == 4
 
 
@@ -37,9 +40,14 @@ def test_refuses_to_run_without_external_anchors(tmp_path, capsys):
     assert not out.exists()          # no result is written for a usage error
 
 
+# All four legs. The C++ side was externally anchored long before the Fortran side
+# had a bundle to anchor, and "attested" meant only the former.
 _ANCHORS = {"expected-manifest-sha256": "a" * 64,
             "expected-repo-commit": "b" * 40,
-            "expected-fixture-id": "arithmetic_synthetic_v1"}
+            "expected-fixture-id": "arithmetic_synthetic_v1",
+            "expected-fixture-manifest-sha256": "e" * 64,
+            "expected-fortran-legacy-manifest-sha256": "c" * 64,
+            "expected-fortran-conservative-manifest-sha256": "d" * 64}
 
 
 def test_missing_evidence_is_invalid_not_a_traceback(tmp_path):
@@ -47,7 +55,8 @@ def test_missing_evidence_is_invalid_not_a_traceback(tmp_path):
     rc = gate.main(_args(tmp_path, out, **_ANCHORS))
     assert rc == gate.EXIT["INVALID_EVIDENCE"]
     r = json.loads(out.read_text())
-    assert r["verdict"] == "INVALID_EVIDENCE" and r["attested"] is True
+    # attested is what the LEGS reported; verification failed, so nothing attested
+    assert r["verdict"] == "INVALID_EVIDENCE" and r["attested"] is False
     assert r["inputs"]["expected_fixture_id"] == "arithmetic_synthetic_v1"
 
 
