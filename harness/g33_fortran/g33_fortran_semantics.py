@@ -11,7 +11,7 @@ be misread as a backend divergence.
 
 Checks (all bit-exact; f32 arithmetic via numpy.float32 in the reference order):
   3  substep_pre mstep == MSTEP record; gate == [n<=mstep] in {0,1}; dtcld == dt.
-  4  substep_pre(n=1) qr/nr == outer_pre_sed qr/nr (sed-entry linkage).
+  4  substep_pre(n=1) qr/nr == outer_pre_sed qr/nr, in EVERY outer loop.
   5  substep_pre(n+1) qr/nr == QR/NR_UPDATE.q_post/n_post of substep n (continuity).
   6  QR_FALLACC.fall_after at (bottom cell, last substep) == surface.bottom_fall_qr.
   7  bottom_fall_total == (((qr+qs)+qg)+qi); rain PREC == sum_L of the per-loop
@@ -77,13 +77,18 @@ def verify_semantics(run):
                     raise SemanticError(
                         f"substep_pre.dtcld(L{loop},c={c},n={n}) != f32(dt/{len(loops)})")
 
-    # (4) the first substep's entry state IS the pre-sed snapshot.
-    for c in range(1, B + 1):
-        for k in range(K):
-            for sp in ("qr", "nr"):
-                if _sv(S, "substep_pre", 1, sp, c, k)[1] != _sv(S, "outer_pre_sed", 0, sp, c, k)[1]:
-                    raise SemanticError(
-                        f"substep_pre(n=1).{sp} != outer_pre_sed.{sp} c={c} k={k}")
+    # (4) EVERY loop's first substep entry state IS that loop's pre-sed snapshot.
+    # This omitted the loop argument, so it checked loop 1 and defaulted the rest:
+    # a stale or mislinked loop-2 entry snapshot passed unexamined.
+    for loop, _chain in scopes:
+        for c in range(1, B + 1):
+            for k in range(K):
+                for sp in ("qr", "nr"):
+                    if _sv(S, "substep_pre", 1, sp, c, k, loop)[1] != \
+                            _sv(S, "outer_pre_sed", 0, sp, c, k, loop)[1]:
+                        raise SemanticError(
+                            f"substep_pre(n=1).{sp} != outer_pre_sed.{sp} "
+                            f"L{loop} c={c} k={k}")
 
     # (5) each substep's entry state is the previous substep's stored update.
     # Keyed by the OUTER LOOP too: the same (col,k,n) recurs in every cloud
@@ -106,16 +111,18 @@ def verify_semantics(run):
                         raise SemanticError(
                             f"nr continuity broken L{loop} c={c} k={k} n={n}->{n+1}")
 
-    # (6) the seed reaches the surface: bottom-cell accumulator == surface fall.
-    # The surface accumulates over the WHOLE micro step, so it is compared against
-    # the LAST outer loop's final substep.
-    last_loop = max(lp for lp, _ch in scopes)
+    # (6) the seed reaches the surface, in EVERY loop: each loop's bottom-cell
+    # accumulator at its own final substep is that loop's surface fall. The surface
+    # record is per loop, so comparing only the last one left the earlier loops'
+    # bottom-fall values linked to nothing.
     fall_after = {(o.loop, o.col, o.k, o.n): o.bits for o in run.ops
                   if o.op_id == "QR_FALLACC" and o.field == "fall_after"}
-    for c in range(1, B + 1):
-        if fall_after[(last_loop, c, K - 1, run.mstep[(last_loop, "main", c)])] != \
-                _sv(S, "surface", 0, "bottom_fall_qr", c, -1, last_loop)[1]:
-            raise SemanticError(f"bottom qr fall_after != surface.bottom_fall_qr c={c}")
+    for loop, _chain in scopes:
+        for c in range(1, B + 1):
+            if fall_after[(loop, c, K - 1, run.mstep[(loop, "main", c)])] != \
+                    _sv(S, "surface", 0, "bottom_fall_qr", c, -1, loop)[1]:
+                raise SemanticError(
+                    f"bottom qr fall_after != surface.bottom_fall_qr L{loop} c={c}")
 
     # (7) surface species sum + rain increment, replayed bit-exact.
     dtcld = _f32(want_dtcld)
