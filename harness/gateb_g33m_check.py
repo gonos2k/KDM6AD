@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -30,8 +29,6 @@ sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE / "g33_fortran"))
 import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
-import g33_fortran_dump as fd           # noqa: E402
-import g33_fortran_semantics as sem     # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
 import g33_normalize as nz              # noqa: E402
 

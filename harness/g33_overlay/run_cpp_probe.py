@@ -30,6 +30,7 @@ comparator as INCONCLUSIVE instead of being sealed away.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import struct
@@ -46,6 +47,9 @@ import g33_fixture_v1 as gfx           # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
 
 CASE = "fourcase_v1"
+#: The lineage artifacts, named by the probe PROTOCOL module so the producer here and
+#: the bundle verifier cannot drift apart on what the bundle is supposed to contain.
+PROBE_MANIFEST, PROBE_STREAM = gsp.PROBE_MANIFEST, gsp.PROBE_STREAM
 SUBCYCLE_SECONDS = 120.0               # the cloud sub-cycle threshold: loops=ceil(dt/it)
 
 
@@ -101,7 +105,8 @@ def main(argv=None) -> int:
     clean = _clean_env()
     raw = _run(a.diagnostic_driver, a.algo, {**clean, "KDM6_G33_SCHED_PROBE": "1"})
     sched_lines = [ln for ln in raw.splitlines() if ln.startswith("KDM6SCHED ")]
-    (a.out / "probe.sched").write_text("\n".join(sched_lines) + "\n")
+    stream_text = "\n".join(sched_lines) + "\n"
+    (a.out / PROBE_STREAM).write_text(stream_text)
 
     if a.check_noninvasive:
         off = _run(a.diagnostic_driver, a.algo, clean)
@@ -126,8 +131,23 @@ def main(argv=None) -> int:
         raise SystemExit(f"probe ran {sealed['loops']} outer loops but the fixture's "
                          f"dt implies {loops} — the run is not the declared problem")
 
-    (a.out / "schedule.json").write_text(json.dumps(sealed, indent=2, sort_keys=True)
-                                         + "\n")
+    schedule_text = json.dumps(sealed, indent=2, sort_keys=True) + "\n"
+    (a.out / gsp.PROBE_SCHEDULE).write_text(schedule_text)
+    # LINEAGE. The schedule alone says what to run; this says WHERE it came from —
+    # which binary was measured, which fixture, and the exact bytes of the stream it
+    # was derived from. A verifier holding the bundle can then redo the derivation
+    # instead of trusting that someone ran the reproduce gate.
+    (a.out / PROBE_MANIFEST).write_text(json.dumps({
+        "schema_version": 1,
+        "algorithm": a.algo,
+        "fixture_id": authority["fixture_id"],
+        "fixture_manifest_sha256": gfx.manifest_sha256(authority),
+        "diagnostic_driver_sha256": hashlib.sha256(
+            a.diagnostic_driver.read_bytes()).hexdigest(),
+        "probe_stream_sha256": hashlib.sha256(stream_text.encode()).hexdigest(),
+        "schedule_sha256": hashlib.sha256(schedule_text.encode()).hexdigest(),
+        "noninvasiveness_checked": bool(a.check_noninvasive),
+    }, indent=2, sort_keys=True) + "\n")
     (a.out / "switch_margin.json").write_text(json.dumps(
         {f"L{k[0]}/{k[1]}/col{k[2]}": v
          for k, v in sorted(gsp.switch_margin("\n".join(sched_lines)).items())},

@@ -91,12 +91,6 @@ def _semantic(stage, field):
     return field in schema.semantic_stage_fields(stage)
 
 
-# The stage chain each stage belongs to (matches the C++ record keys): the outer
-# pre-sed snapshot and the surface accumulation are outer-loop stages ("-"), the
-# per-substep entry state belongs to the transporting chain.
-_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
-
-
 def from_fortran_run(run) -> dict:
     """FortranRun -> normalized run, projected onto the common semantic schema."""
     ops = [{"loop": o.loop, "chain": o.chain, "n": o.n, "col": o.col, "k": o.k,
@@ -117,7 +111,6 @@ def from_fortran_run(run) -> dict:
                        "field": field, "dtype": dtype, "bits": bits})
     # The cumulative precipitation is a WHOLE-STEP output, so it goes in its own
     # phase rather than being attached to the last loop's surface increment.
-    last_loop = max((s["loop"] for s in stages), default=1)
     for (family, col), bits in run.precip.items():
         field = _PREC_FIELD.get(family)
         if field is None:

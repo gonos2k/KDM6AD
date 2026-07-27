@@ -29,6 +29,7 @@ import g33_derived as gdv            # noqa: E402
 import g33_dump as gd                # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
 import g33_fixture_v1 as gfx         # noqa: E402
+import g33_schedule_probe as gsp     # noqa: E402
 
 _HEX64 = tuple("0123456789abcdef")
 # Header fields that must be IDENTICAL across every container of one run — a bundle
@@ -80,6 +81,10 @@ class VerifiedCppLeg:
     external_manifest_attested: bool = False  # root manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False      # producer_commit pinned to a reviewed rev
     fixture_attested: bool = False            # the fixture was NAMED from outside
+    #: How the sealed schedule was ESTABLISHED: the shipped probe stream, re-derived
+    #: offline. None only when the contract is a single loop of single substeps, where
+    #: there is nothing a probe could establish.
+    probe_lineage: dict | None = None
 
     @property
     def verdict_ready(self) -> bool:
@@ -337,6 +342,98 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
                           mstep_range=mstep_range, root_attested=False)
 
 
+def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha):
+    """Re-derive the sealed schedule from the probe stream the bundle SHIPS.
+
+    The reproduce gate already runs in g33_fourcase_fixture_check, but at PRODUCTION
+    time — and the probe stream never travelled with the bundle, so a later reader had
+    the producer's word and nothing else. Here the derivation is redone from bytes the
+    bundle carries: the stream's own fall speeds must imply the schedule the evidence
+    was sealed with, and the evidence must show the same substeps the probe ran.
+
+    A single-substep run needs no probe (there is nothing to derive), so lineage is
+    required exactly when the contract declares more than one loop or substep. That is
+    read from the CONTRACT, not from whether the bundle chose to ship a probe.
+    """
+    sched = leg.contract["schedule"]
+    maxima = [*sched.get("mstepmax_main", []), *sched.get("mstepmax_ice", [])]
+    needs_probe = int(sched.get("loops", 1)) > 1 or any(int(m) > 1 for m in maxima)
+    if not meta.get("probe_dir"):
+        if needs_probe:
+            raise BundleError(
+                f"{algo}: the contract declares loops={sched.get('loops')} "
+                f"mstepmax={maxima}, which only a probe can establish, but the "
+                f"bundle ships no probe lineage")
+        return None
+
+    d = _under(bundle_dir, bundle_dir / meta["probe_dir"])
+    files = {}
+    for name, key in ((gsp.PROBE_STREAM, "probe_stream_sha256"),
+                      (gsp.PROBE_SCHEDULE, "schedule_sha256"),
+                      (gsp.PROBE_MANIFEST, "probe_manifest_sha256")):
+        f = _under(bundle_dir, d / name)
+        got = _sha256_file(f)
+        if got != meta.get(key):
+            raise BundleError(f"{algo}: probe {name} sha256 {got} != manifest "
+                              f"{meta.get(key)}")
+        files[name] = f
+
+    pm = _load_json(files[gsp.PROBE_MANIFEST], f"{algo} probe manifest")
+    # The probe must have measured the SAME binary that produced the evidence.
+    # Otherwise the schedule describes one build's substep decisions and the sealed
+    # containers another's, which is the exact thing the two-pass design exists to rule
+    # out.
+    if pm.get("diagnostic_driver_sha256") != diag_sha:
+        raise BundleError(
+            f"{algo}: the probe measured driver {pm.get('diagnostic_driver_sha256')} "
+            f"but the evidence came from {diag_sha}")
+    if pm.get("algorithm") != algo:
+        raise BundleError(f"{algo}: probe manifest is for {pm.get('algorithm')!r}")
+    # both records of the stream, not just the root manifest's: a probe manifest
+    # that describes a different stream than the one shipped beside it is a bundle
+    # assembled from two runs
+    if _sha256_file(files[gsp.PROBE_STREAM]) != pm.get("probe_stream_sha256"):
+        raise BundleError(f"{algo}: probe stream != its own probe manifest")
+    if _sha256_file(files[gsp.PROBE_SCHEDULE]) != pm.get("schedule_sha256"):
+        raise BundleError(f"{algo}: probe schedule.json != its own probe manifest")
+    stream = files[gsp.PROBE_STREAM].read_text()
+
+    # THE re-derivation. probe_from_stream recomputes mstep from the raw fall speeds
+    # and refuses a stream whose own mstep_native disagrees, so this is not a replay of
+    # the producer's arithmetic.
+    try:
+        probe = gsp.probe_from_stream(stream)
+    except gsp.ProbeError as e:
+        raise BundleError(f"{algo}: shipped probe stream does not derive: {e}") from None
+    derived = {}
+    for (loop, chain), entry in probe.items():
+        derived.setdefault(chain, {})[loop] = max(entry["mstep"])
+    for chain in ("main", "ice"):
+        declared = list(sched.get(f"mstepmax_{chain}", []))
+        per_loop = derived.get(chain, {})
+        if not per_loop:
+            # A chain with no in-scope species emits nothing — no probe records and
+            # no containers either way — so its declaration is inert and cannot be
+            # corroborated. What matters is that the probe and the evidence agree on
+            # which scopes exist at all, which assert_reproduced below enforces.
+            continue
+        got = [per_loop.get(i + 1) for i in range(len(declared))]
+        if got != [int(m) for m in declared]:
+            raise BundleError(
+                f"{algo}: the shipped probe stream implies mstepmax_{chain}={got} "
+                f"but the evidence was sealed with {declared}")
+
+    # ...and the evidence must have made those same decisions substep for substep.
+    try:
+        gsp.assert_reproduced(probe, gsp.read_probe(leg.containers))
+    except gsp.ProbeError as e:
+        raise BundleError(f"{algo}: sealed evidence does not reproduce the shipped "
+                          f"probe schedule: {e}") from None
+    return {"probe_stream_sha256": meta["probe_stream_sha256"],
+            "schedule_sha256": meta["schedule_sha256"],
+            "diagnostic_driver_sha256": pm["diagnostic_driver_sha256"]}
+
+
 def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                       expected_repo_commit=None,
                       expected_fixture_id=None,
@@ -454,7 +551,9 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
         if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
+        lineage = _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha)
         out[algo] = replace(leg, root_attested=True, actual_final_output=actual,
+                            probe_lineage=_freeze(lineage) if lineage else None,
                             problem={"fixture_sha256": meta.get("fixture_sha256"),
                                      "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,

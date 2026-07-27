@@ -87,7 +87,7 @@ def _probe_reading(pairs, algo):
     path = _schedule_arg(pairs, algo)
     if path is None:
         return None
-    stream = path.parent / "probe.sched"
+    stream = path.parent / gsp.PROBE_STREAM
     if not stream.is_file():
         _die(EXIT_SKIP, f"{path} has no probe.sched beside it — the schedule cannot "
                         f"be traced back to the run that produced it")
@@ -178,6 +178,28 @@ def main() -> None:
             if persist:
                 for name, raw in (("A", out_a), ("B", out_b), ("C", out_c)):
                     (root / f"{algo}-{name}" / "stdout.abc").write_bytes(raw)
+                # LINEAGE: the probe travels WITH the bundle. Pointing at a probe
+                # directory outside it leaves a verifier unable to redo the
+                # derivation — it would have only the reproduce-gate print above,
+                # which is this process's own word for what it did.
+                probe_src = _schedule_arg(args.schedule, algo)
+                probe_meta = {}
+                if probe_src is not None:
+                    dst = root / f"{algo}-probe"
+                    dst.mkdir()
+                    for name in (gsp.PROBE_STREAM, gsp.PROBE_SCHEDULE,
+                                 gsp.PROBE_MANIFEST):
+                        src = probe_src.parent / name
+                        if not src.is_file():
+                            _die(EXIT_SKIP, f"{probe_src.parent} has no {name} — the "
+                                            f"schedule cannot be traced to a run")
+                        shutil.copyfile(src, dst / name)
+                    probe_meta = {
+                        "probe_dir": f"{algo}-probe",
+                        "probe_stream_sha256": _sha_path(dst / gsp.PROBE_STREAM),
+                        "schedule_sha256": _sha_path(dst / gsp.PROBE_SCHEDULE),
+                        "probe_manifest_sha256": _sha_path(dst / gsp.PROBE_MANIFEST),
+                    }
                 bundle["algorithms"][algo] = {
                     "fixture_sha256": got_a[0], "parameter_sha256": got_a[1],
                     "abc_equal": True,
@@ -185,6 +207,7 @@ def main() -> None:
                     "containers": diag["containers"],
                     "mstep_min": diag["mstep_min"], "mstep_max": diag["mstep_max"],
                     "evidence_dir": f"{algo}-C-evidence",
+                    **probe_meta,
                 }
         print("FOURCASE FIXTURE PASS — actual C++ A/B/C tensors and common "
               "parameters match the shared raw-bit authority")
