@@ -125,10 +125,15 @@ def from_fortran_run(run) -> dict:
                        "bits": bits})
     B = max((o["col"] for o in ops), default=0)
     K = max((o["k"] for o in ops), default=-1) + 1
-    # the identity of the PROBLEM this leg solved, so a four-way comparison can
-    # refuse legs built from different fixtures or parameters
+    # The identity of the PROBLEM this leg solved, at two levels (owner P0-C2).
+    # `local_parameter_sha256` covers ccn0/scale_h, which only the Fortran backend
+    # has: it was previously dropped here so that four-way equality could succeed,
+    # which silently discarded a precondition rather than checking it at the level
+    # where it applies. It now travels as a BACKEND-LOCAL key, compared between the
+    # two Fortran legs instead of against C++.
     problem = {"fixture_sha256": run.fixture_sha256,
-               "parameter_sha256": run.parameter_sha256, "B": B, "K": K}
+               "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
+               "local_parameter_sha256": run.local_parameter_sha256}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 

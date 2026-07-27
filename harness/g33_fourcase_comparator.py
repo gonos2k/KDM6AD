@@ -130,6 +130,23 @@ class AttestedLeg:
         return bool(getattr(self.verified, "verdict_ready", False))
 
 
+@dataclass(frozen=True)
+class SedimentationIdentity:
+    """What makes four legs comparable: one fixture, one common parameter set, one
+    grid. Deliberately EXCLUDES parameters only one backend has — those are a
+    full-step property, and holding all four legs to them would either fail always or
+    force the value to be dropped (which is what used to happen)."""
+    fixture_sha256: str
+    parameter_sha256: str
+    B: int
+    K: int
+
+    @classmethod
+    def of(cls, problem: dict) -> "SedimentationIdentity":
+        return cls(problem["fixture_sha256"], problem["parameter_sha256"],
+                   problem["B"], problem["K"])
+
+
 class StructuralError(Exception):
     """Evidence is malformed — verdict is INVALID_EVIDENCE, never a divergence."""
 
@@ -500,16 +517,38 @@ def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
         return {"verdict": "INVALID_EVIDENCE", "reason": reason,
                 "legacy_first_divergence": None, "conservative_first_divergence": None}
 
-    # FOUR-WAY SAME PROBLEM: all four legs must describe one problem. Comparing
-    # legs built from different fixtures or parameters would be a category error,
-    # not a mechanism finding.
+    # SAME PROBLEM, AT TWO LEVELS (owner P0-C2). Comparing legs built from different
+    # fixtures or parameters would be a category error, not a mechanism finding — but
+    # "the same problem" is not one predicate:
+    #
+    #   SedimentationIdentity  the fixture, the common parameters and the grid. All
+    #                          FOUR legs must share it; it is what makes them
+    #                          comparable at all.
+    #   FullStepIdentity       the above PLUS parameters only one backend has
+    #                          (Fortran's ccn0/scale_h). Only the two legs of that
+    #                          backend can be held to it.
+    #
+    # Flattening these into one dict forced a choice between dropping the local
+    # parameters — which is what happened, so they were never checked anywhere — and
+    # demanding C++ carry a hash of variables it does not have.
     ids = {name: run.get("problem") for name, run in legs}
     if any(v is None for v in ids.values()):
         missing = sorted(n for n, v in ids.items() if v is None)
         return _invalid(f"legs without a problem identity: {missing}")
-    distinct = {tuple(sorted(v.items())) for v in ids.values()}
-    if len(distinct) != 1:
+    try:
+        sed = {name: SedimentationIdentity.of(v) for name, v in ids.items()}
+    except KeyError as e:
+        return _invalid(f"a leg's problem identity lacks {e}")
+    if len(set(sed.values())) != 1:
         return _invalid(f"the four legs do not describe the same problem: {ids}")
+    # ...and within one backend, the full-step preconditions must agree too.
+    for backend, pair in (("F", ("legacy-F", "conservative-F")),
+                          ("C++", ("legacy-C++", "conservative-C++"))):
+        local = {n: ids[n].get("local_parameter_sha256") for n in pair}
+        if len(set(local.values())) != 1:
+            return _invalid(
+                f"the two {backend} legs disagree on backend-local parameters, so "
+                f"they are not the same full step: {local}")
 
     for name, run in legs:
         try:

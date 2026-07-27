@@ -671,3 +671,46 @@ def test_verified_entry_refuses_a_different_problem():
     legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
     r = cmp.adjudicate_verified(_evidence(legs))
     assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]
+
+
+
+# -- problem identity has TWO levels (owner P0-C2) -----------------------------
+
+_IDENT = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4,
+          "local_parameter_sha256": "c" * 64}
+
+
+def _four_legs(**per_leg):
+    """Four legs sharing one problem identity; per_leg patches an index's problem."""
+    legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
+    for leg in legs:
+        leg["problem"] = dict(_IDENT)
+    for idx, patch in per_leg.items():
+        legs[int(idx[1:])]["problem"] = dict(_IDENT, **patch)
+    return _evidence(legs)
+
+
+def test_the_four_legs_must_share_the_SEDIMENTATION_identity():
+    r = cmp.adjudicate_verified(_four_legs(i2={"fixture_sha256": "f" * 64}))
+    assert r["verdict"] == "INVALID_EVIDENCE"
+    assert "same problem" in r["reason"]
+
+
+def test_backend_local_parameters_are_compared_WITHIN_a_backend():
+    """ccn0/scale_h exist only in the Fortran leg. Flattening them into the four-way
+    identity forced a choice between dropping them — which is what happened, so they
+    were checked nowhere — and demanding C++ carry a hash of variables it does not
+    have. Two Fortran legs built with different local parameters are not the same
+    full step, and that is now said at the level where it applies."""
+    # index 2 is conservative-F; index 0 is legacy-F
+    r = cmp.adjudicate_verified(_four_legs(i2={"local_parameter_sha256": "9" * 64}))
+    assert r["verdict"] == "INVALID_EVIDENCE"
+    assert "backend-local parameters" in r["reason"]
+
+
+def test_a_local_parameter_difference_ACROSS_backends_is_not_an_error():
+    # the C++ legs have no ccn0/scale_h at all; requiring them to match Fortran's
+    # hash would make every real four-case run INVALID
+    r = cmp.adjudicate_verified(_four_legs(i1={"local_parameter_sha256": None},
+                                           i3={"local_parameter_sha256": None}))
+    assert "backend-local" not in (r.get("reason") or "")
