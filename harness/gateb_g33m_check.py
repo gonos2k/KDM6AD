@@ -152,6 +152,15 @@ def main(argv=None) -> int:
                 bundle, algo, manifest_sha=sha,
                 commit=a.expected_repo_commit, fixture_id=a.expected_fixture_id,
                 fixture_sha=a.expected_fixture_manifest_sha256, anchored=anchored)
+        # The two Fortran CONTROL legs must come from one toolchain and one source.
+        # Built by different compilers or from different sources they are not a
+        # controlled pair, and nothing in the four-way problem identity shows it.
+        builds = {algo: leg.build for algo, leg in fortran_legs.items()}
+        if len(set(builds.values())) != 1:
+            raise fbio.FortranBundleError(
+                "the Fortran legs were not built from one toolchain/source: "
+                + ", ".join(f"{algo}={b.compiler_version}/{b.compiler_binary_sha256[:12]}"
+                            for algo, b in sorted(builds.items())))
     except Exception as e:                       # every reader is fail-closed
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")
         _write(a.out, result)

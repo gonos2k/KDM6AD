@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / "harness"))
 sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
 import g33_fixture_v1 as gfx                # noqa: E402
 import g33_fortran_bundle_io as fbio        # noqa: E402
+import g33_fortran_dump as fd               # noqa: E402
 
 SAMPLE = Path(__file__).parent / "data" / "g33_legacy_sample.g33f"
 COMMIT = "c" * 40
@@ -36,14 +37,36 @@ def _noninstrumented(raw: bytes) -> bytes:
                       if not any(line.startswith(d) for d in drop))
 
 
+def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
+                version="GNU Fortran 13.2.0", host_sha=None) -> dict:
+    """A real build record for one lane."""
+    module = "m" * 64 if canonical else "n" * 64
+    return {
+        "schema_version": 2,
+        "algorithm": "legacy",
+        "dump_instrumented": not canonical,
+        "host_source_sha256": host_sha or {"module_mp_kdm6.F": "h" * 64},
+        "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
+        "module_compiled_sha256": module,
+        "module_canonical_sha256": "m" * 64,
+        "executable_sha256": hashlib.sha256(exe_bytes).hexdigest(),
+        "compiler_path": "/usr/bin/gfortran",
+        "compiler_binary_sha256": compiler,
+        "compiler_version": version,
+        "commands": ["gfortran -c ..."],
+    }
+
+
 def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
-            manifest_edit=None) -> Path:
-    """A bundle around the CHECKED-IN sample, so the streams are real evidence."""
+            manifest_edit=None, prov_edit=None) -> Path:
+    """A full bundle around the CHECKED-IN sample: real streams, real provenance,
+    real executables. Everything the verifier claims to check must EXIST here, or the
+    tests certify that unverified provenance is acceptable."""
     _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
     raw = SAMPLE.read_bytes()
     plain = _noninstrumented(raw)
     root.mkdir(parents=True, exist_ok=True)
-    stdout_sha = {}
+    stdout_sha, stderr_sha, exe_sha, prov_sha = {}, {}, {}, {}
     for lane in ("A", "B", "C"):
         d = root / lane
         d.mkdir()
@@ -51,8 +74,19 @@ def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
         data = lane_edit(lane, base) if lane_edit else base
         (d / "stdout.g33f").write_bytes(data)
         (d / "stderr.txt").write_bytes(b"")
-        (d / "provenance.json").write_text("{}")
+        exe_bytes = f"#!/bin/sh\n# lane {lane} driver\n".encode()
+        (d / "g33_fortran_driver").write_bytes(exe_bytes)
+        prov = _provenance(exe_bytes, canonical=(lane == "A"))
+        if prov_edit:
+            prov_edit(lane, prov)
+        (d / "provenance.json").write_text(json.dumps(prov, sort_keys=True))
         stdout_sha[lane] = hashlib.sha256(data).hexdigest()
+        stderr_sha[lane] = hashlib.sha256(b"").hexdigest()
+        exe_sha[lane] = hashlib.sha256(exe_bytes).hexdigest()
+        prov_sha[lane] = hashlib.sha256(
+            (d / "provenance.json").read_bytes()).hexdigest()
+
+    run = fd.parse_fortran_run(raw.decode(), algo, authority["K"], authority["B"])
     manifest = {
         "schema_version": 2, "algorithm": algo,
         "repo_commit": COMMIT, "repo_dirty": dirty,
@@ -62,11 +96,16 @@ def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
         "parameter_sha256": gfx.parameter_sha256(authority),
         "fortran_parameter_sha256": gfx.fortran_parameter_sha256(authority),
         "abc_equal": True,
-        "stdout_sha256": stdout_sha,
-        "executable_sha256": {lane: "e" * 64 for lane in ("A", "B", "C")},
-        "stderr_sha256": {lane: hashlib.sha256(b"").hexdigest()
-                          for lane in ("A", "B", "C")},
-        "compiler_binary_sha256": "f" * 64, "compiler_version": "gfortran 13",
+        "stdout_sha256": stdout_sha, "stderr_sha256": stderr_sha,
+        "executable_sha256": exe_sha, "build_provenance_sha256": prov_sha,
+        "op_record_count": len(run.ops),
+        "mstep_per_column": {f"L{lp}/{ch}/col{c}": v
+                             for (lp, ch, c), v in run.mstep.items()},
+        "module_canonical_sha256": "m" * 64,
+        "compiler_binary_sha256": "f" * 64,
+        "compiler_version": "GNU Fortran 13.2.0",
+        "host_source_sha256": {"module_mp_kdm6.F": "h" * 64},
+        "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
     }
     if manifest_edit:
         manifest_edit(manifest)
@@ -209,3 +248,93 @@ def test_a_fixture_file_that_is_not_the_anchored_one_is_refused(tmp_path):
     kw = dict(_anchors(root), expected_fixture_manifest_sha256="9" * 64)
     with pytest.raises(fbio.FortranBundleError, match="different fixture file"):
         fbio.verify_fortran_bundle(root, "legacy", **kw)
+
+
+# ── provenance is CONSUMED, not merely recorded ───────────────────────────────
+# Each of these used to pass: the verifier hashed stdout and stopped.
+
+def test_a_missing_provenance_file_is_refused(tmp_path):
+    root = _bundle(tmp_path / "b")
+    (root / "A" / "provenance.json").unlink()
+    with pytest.raises(fbio.FortranBundleError, match="missing bundle file"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_modified_executable_is_refused(tmp_path):
+    # the old check asked whether the recorded string was 64 characters long
+    root = _bundle(tmp_path / "b")
+    exe = root / "B" / "g33_fortran_driver"
+    exe.write_bytes(exe.read_bytes() + b"x")
+    with pytest.raises(fbio.FortranBundleError, match="executable"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_modified_stderr_is_refused(tmp_path):
+    root = _bundle(tmp_path / "b")
+    (root / "C" / "stderr.txt").write_bytes(b"warning: something\n")
+    with pytest.raises(fbio.FortranBundleError, match="stderr"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_lane_A_must_be_the_canonical_module(tmp_path):
+    # A is the control: an overlay there invalidates the non-invasiveness claim
+    root = _bundle(tmp_path / "b",
+                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="z" * 64)
+                   if lane == "A" else None)
+    with pytest.raises(fbio.FortranBundleError, match="canonical module"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_lanes_B_and_C_must_compile_the_same_module(tmp_path):
+    root = _bundle(tmp_path / "b",
+                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="q" * 64)
+                   if lane == "C" else None)
+    with pytest.raises(fbio.FortranBundleError, match="different modules"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_lane_built_by_a_different_compiler_is_refused(tmp_path):
+    root = _bundle(tmp_path / "b",
+                   prov_edit=lambda lane, p: p.update(compiler_binary_sha256="0" * 64)
+                   if lane == "B" else None)
+    with pytest.raises(fbio.FortranBundleError, match="different toolchain"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_manifest_summary_that_disagrees_with_the_stream_is_refused(tmp_path):
+    # a bundle whose op count describes a different run than the one it ships
+    root = _bundle(tmp_path / "b",
+                   manifest_edit=lambda m: m.update(op_record_count=1))
+    with pytest.raises(fbio.FortranBundleError, match="op_record_count"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_manifest_mstep_table_that_disagrees_is_refused(tmp_path):
+    root = _bundle(tmp_path / "b",
+                   manifest_edit=lambda m: m.update(
+                       mstep_per_column={"L1/main/col1": 99}))
+    with pytest.raises(fbio.FortranBundleError, match="mstep_per_column"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_the_two_control_legs_must_share_a_build_identity(tmp_path):
+    # legacy and conservative could have been built by different compilers and the
+    # four-way problem identity would never have shown it
+    a = fbio.verify_fortran_bundle(_bundle(tmp_path / "a"), "legacy",
+                                   **_anchors(tmp_path / "a"))
+    # a COHERENT bundle built by a different compiler: root and lanes agree with
+    # each other, they just disagree with the first leg
+    other = _bundle(tmp_path / "c",
+                    prov_edit=lambda lane, p: p.update(
+                        compiler_version="GNU Fortran 9.4.0"),
+                    manifest_edit=lambda m: m.update(
+                        compiler_version="GNU Fortran 9.4.0"))
+    b = fbio.verify_fortran_bundle(other, "legacy", **_anchors(other))
+    assert a.build != b.build, "a differing toolchain must be visible in BuildIdentity"
+
+
+def test_a_verified_leg_cannot_be_forged_afterwards(tmp_path):
+    root = _bundle(tmp_path / "b")
+    leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+    with pytest.raises(TypeError):
+        leg.manifest["abc_equal"] = False
