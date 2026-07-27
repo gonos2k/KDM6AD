@@ -5,6 +5,7 @@ knowable BY running. These tests pin the way out: pre-declare to the algorithm's
 ceiling, read back what the run actually did, derive the exact schedule in Python,
 and require a second run to reproduce it.
 """
+import math
 import struct
 import sys
 from pathlib import Path
@@ -16,6 +17,8 @@ sys.path.insert(0, str(ROOT / "harness"))
 import g33_derived as gd              # noqa: E402
 import g33_expectation as ge          # noqa: E402
 import g33_schedule_probe as sp       # noqa: E402
+sys.path.insert(0, str(ROOT / 'harness' / 'g33_overlay'))
+import run_cpp_probe as probe_mod     # noqa: E402
 
 BASE = {"case_id": "abc-fourcase_v1", "pair_id": "abc-legacy", "backend": "cpp",
         "algorithm": "legacy", "B": 3, "K": 4, "loops": 1,
@@ -122,12 +125,45 @@ def test_switch_margin_uses_all_four_fall_speeds():
     assert margin[(1, "main", 1)] == pytest.approx(0.5, abs=1e-5)
 
 
-def test_a_probe_artifact_can_never_be_evidence():
-    case = sp.probe_case_id("fourcase_v1")
-    assert sp.is_probe(case)
-    with pytest.raises(sp.ProbeError):
-        sp.assert_not_evidence(case)
-    sp.assert_not_evidence("fourcase_v1")        # a real case id is untouched
+def test_a_duplicate_record_is_refused_not_overwritten():
+    # last-wins is never right here: the survivor would seal the container universe
+    line = _line(1, 1, "work1_qr", [0.0])
+    with pytest.raises(sp.ProbeError, match="duplicate"):
+        sp.parse_sched_stream(line + "\n" + line + "\n")
+
+
+def test_an_unknown_probe_field_is_refused():
+    with pytest.raises(sp.ProbeError, match="unknown probe field"):
+        sp.parse_sched_stream(_line(1, 1, "work1_qx", [0.0]) + "\n")
+
+
+@pytest.mark.parametrize("bad_value", [float("nan"), float("inf"), -1.0])
+def test_an_inadmissible_fall_speed_is_refused(bad_value):
+    # derive_mstep clamps a negative speed to 1 — right as arithmetic, wrong as a
+    # conclusion. A broken measurement is not a one-substep run.
+    raw = _stream(1, 1, work1_qr=[bad_value], workn_qr=[0.0], work1_qs=[0.0],
+                  work1_qg=[0.0], mstep=[1.0], dtcld=[100.0])
+    with pytest.raises(sp.ProbeError, match="fall-speed domain"):
+        sp.probe_from_stream(raw)
+
+
+@pytest.mark.parametrize("bad_dt", [0.0, -100.0, float("inf")])
+def test_a_nonpositive_dtcld_is_refused(bad_dt):
+    raw = _stream(1, 1, work1_qr=[0.0], workn_qr=[0.0], work1_qs=[0.0],
+                  work1_qg=[0.0], mstep=[1.0], dtcld=[bad_dt])
+    with pytest.raises(sp.ProbeError, match="positive finite timestep"):
+        sp.probe_from_stream(raw)
+
+
+def test_the_abandoned_discovery_path_is_gone():
+    # two designs for one job were live at once; the container-discovery one was
+    # disproved by experiment and became unreachable. Leaving it invited a later
+    # reader to switch it back on.
+    import inspect
+    import g33_bundle_io as bio
+    assert "discovery" not in inspect.signature(bio.verify_cpp_evidence).parameters
+    for gone in ("PROBE_MARKER", "probe_case_id", "is_probe", "assert_not_evidence"):
+        assert not hasattr(sp, gone), f"{gone} survived the removal"
 
 
 # ---- the derivation ----------------------------------------------------------
@@ -194,3 +230,55 @@ def test_a_scope_appearing_in_only_one_run_is_a_finding():
     probe = _probe({(1, "main"): [1]})
     with pytest.raises(sp.ProbeError, match="scopes"):
         sp.assert_reproduced(probe, _probe({(1, "main"): [1], (2, "main"): [1]}))
+
+
+# ---- the outer-loop count ----------------------------------------------------
+
+def _authority_with_dt(dt: float) -> dict:
+    return {"common_parameters": {"dt": struct.pack(">f", dt).hex()}}
+
+
+def _next_f32(v: float) -> float:
+    """The next representable f32 above v.
+
+    A double nextafter is the wrong boundary here: the fixture stores dt as f32, so
+    120.00000000000001 rounds straight back to 120.0 on the way in and the step is
+    invisible.
+    """
+    import numpy as np
+    return float(np.nextafter(np.float32(v), np.float32(np.inf)))
+
+
+_NEXT_120 = _next_f32(120.0)
+_NEXT_240 = _next_f32(240.0)
+
+
+@pytest.mark.parametrize("dt,loops", [
+    (20.0, 1), (120.0, 1),                      # exactly the threshold: still one
+    (_NEXT_120, 2),                             # a hair over, in f32: two
+    (120.5, 2),                                 # int(dt)//120 truncated this to 1
+    (239.9, 2), (240.0, 2),
+    (_NEXT_240, 3),
+    (300.0, 3),
+])
+def test_outer_loop_count_ceils_the_real_dt(dt, loops):
+    """`int(dt) // 120` truncates BEFORE dividing, so dt = 120.5 gave 1 loop where the
+    reference takes 2. Both shipped fixtures are integral (20 s, 300 s), which is
+    exactly why it stayed invisible."""
+    got_loops, _ = probe_mod.step_schedule(_authority_with_dt(dt))
+    assert got_loops == loops
+
+
+def test_dtcld_is_an_f32_not_a_python_double():
+    # the backends carry an f32 cloud timestep; a double here would seal a value
+    # neither of them computes with
+    _, dtcld = probe_mod.step_schedule(_authority_with_dt(100.0))
+    assert dtcld == struct.unpack(">f", struct.pack(">f", dtcld))[0]
+    loops, dtcld = probe_mod.step_schedule(_authority_with_dt(300.0))
+    assert (loops, dtcld) == (3, 100.0)
+
+
+@pytest.mark.parametrize("bad", [0.0, -20.0, float("inf"), float("nan")])
+def test_a_nonsense_dt_is_refused(bad):
+    with pytest.raises(SystemExit):
+        probe_mod.step_schedule(_authority_with_dt(bad))

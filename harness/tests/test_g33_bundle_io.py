@@ -396,16 +396,10 @@ def test_the_actual_output_is_read_from_the_evidence_not_assumed(tmp_path):
     assert out["algorithms"]["legacy"].actual_final_output["rain"] == (0x40000000,) * B
 
 
-# ── discovery mode (schedule probe) ───────────────────────────────────────────
-
-def test_discovery_mode_is_refused_for_a_real_case(tmp_path):
-    # A real bundle short of its declared containers must stay INVALID. If discovery
-    # could be asked for on any case, it would be a switch that turns the
-    # completeness gate off for the very bundles it exists to police.
-    ev = _full_evidence(tmp_path, "legacy")
-    with pytest.raises(bio.BundleError, match="not marked one"):
-        bio.verify_cpp_evidence(ev, "legacy", discovery=True)
-
+# ── completeness has no opt-out ───────────────────────────────────────────────
+# The abandoned container-discovery mode used to let a probe-marked case write fewer
+# containers than it declared. It is gone: a schedule now comes from the KDM6SCHED
+# stream, so nothing needs a switch that turns the completeness gate off.
 
 def test_a_real_case_still_needs_every_declared_container(tmp_path):
     ev = _full_evidence(tmp_path, "legacy", omit_container="L1_outer_post_sed")

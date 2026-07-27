@@ -79,7 +79,6 @@ def _sealed_schedule(pairs, algo):
     if path is None:
         return None
     sealed = json.loads(path.read_text())
-    gsp.assert_not_evidence(sealed.get("case_id", ""))   # a probe is not a contract
     return sealed
 
 

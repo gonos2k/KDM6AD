@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import struct
 import os
 import subprocess
 import sys
@@ -62,11 +64,21 @@ def _run(driver: Path, algo: str, env: dict) -> str:
 
 
 def step_schedule(authority: dict) -> tuple[int, float]:
-    """(loops, dtcld) implied by the fixture's own dt — never passed in by hand."""
-    import struct
+    """(loops, dtcld) implied by the fixture's own dt — never passed in by hand.
+
+    ceil on the REAL dt: `int(dt) // 120` truncates before dividing, so dt = 120.5 s
+    would give 1 outer loop where the reference takes 2. Both current fixtures are
+    integral (20 s, 300 s), which is exactly why the bug was invisible.
+
+    dtcld comes back through f32: it is the f32 cloud timestep the backends carry, and
+    a Python double here would seal a value neither of them computes with.
+    """
     dt = struct.unpack(">f", bytes.fromhex(authority["common_parameters"]["dt"]))[0]
-    loops = max(1, -(-int(dt) // int(SUBCYCLE_SECONDS)))       # ceil
-    return loops, dt / loops
+    if not (math.isfinite(dt) and dt > 0):
+        raise SystemExit(f"fixture dt is not a positive finite value: {dt!r}")
+    loops = max(1, math.ceil(float(dt) / SUBCYCLE_SECONDS))
+    dtcld = struct.unpack(">f", struct.pack(">f", float(dt) / loops))[0]
+    return loops, dtcld
 
 
 def main(argv=None) -> int:
@@ -93,8 +105,12 @@ def main(argv=None) -> int:
 
     if a.check_noninvasive:
         off = _run(a.diagnostic_driver, a.algo, clean)
-        on = "\n".join(ln for ln in raw.splitlines() if not ln.startswith("KDM6SCHED "))
-        if off.strip() != on.strip():
+        # Remove exactly the probe lines and compare the remainder BYTE for BYTE.
+        # Comparing .strip()ed text would forgive trailing-whitespace or newline
+        # differences, which is not what "the probe does not perturb the run" means.
+        on = "".join(ln + "\n" for ln in raw.split("\n")[:-1]
+                     if not ln.startswith("KDM6SCHED "))
+        if off != on:
             raise SystemExit("the probe PERTURBS the run it measures — a schedule "
                              "sealed from it would describe a different execution")
         print("noninvasive: ABC stream byte-identical with the probe on and off")
