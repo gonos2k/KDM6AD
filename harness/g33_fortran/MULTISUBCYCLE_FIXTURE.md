@@ -73,7 +73,7 @@ loops=3) and multi-substep transport wants `delz` at or below roughly **100 m** 
 the 98 m point is where `x` reaches 1.0 at `dtcld = 100 s`. The built fixture uses
 150 / 65 / 32 m per column.
 
-## The switch margin cannot be computed from current evidence (OPEN)
+## The switch margin — measured, all cells (CLOSED)
 
 A mechanism fixture must not sit near an `mstep` switch: if
 
@@ -83,35 +83,33 @@ delta = min( x - (m-1),  m - x )
 ```
 
 is small, a sub-ULP fall-speed difference between the backends flips the substep
-count, and the comparison is then about scheduling rather than about arithmetic.
+count and the comparison becomes one about scheduling rather than arithmetic.
 
-Measured on the committed 3-loop evidence, using the operands the dump actually
-carries (`work1_qr`, `workn_qr`):
+`delta` was previously uncomputable in four of nine cells: `numdt` maximises over
+`work1_qr, workn_qr, work1_qs, work1_qg`, and the sealed evidence carries only the
+first two, so in those cells the operand that SET `mstep` was absent entirely. The
+schedule probe carries all four, which closes it.
 
-| cell | x | observed mstep | floor(x+1) | delta (lower bound) |
-|---|---|---|---|---|
-| L1 col1 | 0.610 | 1 | 1 | 0.390 |
-| L1 col2 | 1.374 | **5** | 2 | — |
-| L1 col3 | 2.410 | **9** | 3 | — |
-| L2 col1 | 0.606 | 1 | 1 | 0.394 |
-| L2 col2 | 1.329 | 2 | 2 | 0.329 |
-| L2 col3 | 5.807 | **10** | 6 | — |
-| L3 col1 | 0.285 | 1 | 1 | 0.285 |
-| L3 col2 | 0.625 | 1 | 1 | 0.375 |
-| L3 col3 | 3.581 | **7** | 4 | — |
+Measured with `run_cpp_probe.py --fixture-id arithmetic_multisubcycle_v1`
+(identical for both algorithms):
 
-In four of the nine cells the observed `mstep` is LARGER than the instrumented
-species predict. That is not an inconsistency — `numdt` maximises over
-`work1_qr, workn_qr, work1_qs, work1_qg`, and the last two are **not dumped**. So:
+| cell | mstep | delta | | cell | mstep | delta |
+|---|---|---|---|---|---|---|
+| L1 col1 | 1 | 0.3904 | | L2 col3 | 10 | 0.2613 |
+| L1 col2 | 5 | 0.2066 | | L3 col1 | 1 | 0.2847 |
+| L1 col3 | 9 | 0.2606 | | L3 col2 | 1 | 0.3755 |
+| L2 col1 | 1 | 0.3942 | | L3 col3 | 7 | 0.4388 |
+| L2 col2 | 2 | 0.3290 | | | | |
 
-- `floor(x+1) <= mstep` is a genuine invariant (more species can only raise `x`),
-  and it holds in all nine cells; the harness asserts it.
-- the true `delta` is **not computable from the current evidence** in those cells,
-  because the operand that sets `mstep` there is missing from the protocol.
+The minimum is **0.2066** — every cell is a comfortable distance from a switch, so
+the fixture is usable as a mechanism fixture. `floor(x+1) <= mstep` remains a
+standing invariant on the sealed evidence (more species can only raise `x`), and the
+harness asserts it there.
 
-Closing it requires adding `work1_qs` / `work1_qg` to `substep_pre`. Until then the
-margin claim for this fixture is limited to the five cells where the instrumented
-species dominate, where `delta` is 0.29-0.39 — comfortably clear of a switch.
+Independently, the Fortran leg observed the same `mstep` vectors column by column
+(`[1,5,9] [1,2,10] [1,1,7]`). That agreement is an OBSERVATION, not an input: the
+C++ contract is sealed from C++ operands alone, so a future backend disagreement
+would surface at the comparator rather than being absorbed into the contract.
 
 ## Heterogeneous mstep needs per-column geometry
 
@@ -142,43 +140,61 @@ needs **per-column `delz`**, e.g. 200 / 100 / 50 m giving a 4x `work1` spread an
 
 ---
 
-# The sealed-contract problem for the C++ leg (OPEN)
+# The sealed-contract problem for the C++ leg — RESOLVED
 
 The Fortran leg derives its expected universe FROM the observed mstep, so it needed
-no prior declaration. The C++ leg is the opposite by design: its expectation
-manifest is sealed BEFORE the run, which is what makes it independent evidence.
-
-For a multi-sub-cycle fixture that creates a genuine ordering problem:
+no prior declaration. The C++ leg is the opposite by design: its expectation manifest
+is sealed BEFORE the run, which is what makes it independent evidence. For a
+multi-sub-cycle fixture that is circular:
 
 ```
 the sealed schedule must declare   loops and mstepmax_main[loop]
 but the per-loop mstepmax is knowable only BY running
 ```
 
-`abc._schedule()` now takes `loops` / `mstepmax_main` / `mstepmax_ice` / `dtcld`
-instead of hardcoding 1, so the machinery is ready. What remains is WHERE the
-declared value comes from.
+## What was rejected, and why
 
-## Do not take it from the other leg
+**Take the numbers from the Fortran leg.** Rejected. If the backends ever computed a
+different mstep — an upstream CFL / fall-speed difference, precisely what G3.3-M
+exists to surface — the C++ contract would have been built from the Fortran answer
+and the disagreement masked rather than reported.
 
-The Fortran run of this fixture reports `loops = 3`, `mstepmax_main = [9, 10, 7]`.
-Sealing the C++ contract with those numbers would COUPLE the two legs: if the two
-backends ever computed a different mstep — a CFL / fall-speed difference upstream of
-sedimentation, which the comparator classifies as INCONCLUSIVE and is exactly the
-sort of thing G3.3-M exists to surface — the C++ contract would have been built from
-the Fortran answer and the disagreement would be masked rather than reported.
+**Let the sealed run discover its own containers.** Impossible: the sink refuses any
+container id with no pre-sealed op-seq entry and descriptor.
 
-## Options
+**Over-declare the sealed contract to the mstep ceiling and write fewer containers.**
+Disproved by experiment. `op_seq_id` is a process-global counter and each descriptor
+line pins it, so loop 2's descriptor expects ids after loop 1's DECLARED substeps
+while the run has advanced only by its ACTUAL ones. On the real driver:
 
-1. **Declare it in the fixture authority** (preferred). Add `loops` and
-   `mstepmax_*` to `g33_fixture_multisubcycle_v1.json` as reviewed, committed
-   metadata, obtained once from a discovery run whose output is NOT evidence. Both
-   legs must then satisfy the declaration, and either one disagreeing is a finding.
-   Cost: the manifest SHA changes, and the fixture validator must accept the fields.
-2. **A C++ discovery mode** that emits only `substep_pre` without a sealed container
-   set, used solely to obtain the numbers for option 1. More machinery, same result.
-3. Take the numbers from the Fortran leg. **Rejected** for the reason above.
+```
+expected: 21806|surface|-|-1|-|-|bottom_fall_qr|f32|3
+actual:    1968|surface|-|-1|-|-|bottom_fall_qr|f32|3
+```
 
-Until this is settled the C++ multi-sub-cycle bundle cannot be produced, so the
-four-case gate at dt=300 runs Fortran-only. The one-loop four-leg path is unaffected
-and still returns INCONCLUSIVE / exit 2 / attested.
+The shortfall is survivable only at the very end of the stream, which is exactly not
+the multi-loop case.
+
+## What resolves it: a separate probe channel
+
+`sched_emit` (overlay, gated by `KDM6_G33_SCHED_PROBE`) writes a `KDM6SCHED` stdout
+stream and touches no container, descriptor or op-seq machinery. It carries all four
+fall speeds `numdt` maximises over — `work1_qs` / `work1_qg` included, which the
+sealed evidence omits.
+
+```
+pass 1  run_cpp_probe.py   ->  probe.sched, schedule.json, switch_margin.json
+        Python RE-DERIVES the mstep vector from the raw fall speeds and requires
+        the run's own mstep_native to match. The producer is not trusted.
+pass 2  seal that schedule, run for real, and require assert_reproduced():
+        the evidence run's mstep vectors must equal the probe's exactly.
+```
+
+The probe is not evidence and cannot become it: no run identity, no binary binding,
+no descriptors, a case id marked with the probe marker, and `assert_not_evidence()`
+at the decision boundary.
+
+Measured for `arithmetic_multisubcycle_v1`, identical for both algorithms:
+`loops = 3`, `mstepmax_main = [9, 10, 7]`, `mstepmax_ice = [1, 1, 1]`. The ABC stream
+is byte-identical with the probe on and off, and `--check-noninvasive` keeps that a
+gate rather than a one-off observation.

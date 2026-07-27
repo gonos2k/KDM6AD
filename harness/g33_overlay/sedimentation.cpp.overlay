@@ -50,6 +50,10 @@ private:
 
 }}}  // namespace kdm6::sed::g33ovl
 #define G33_REC(g, stage, role, k, sp, op, field, t) do { (g).rec(stage, role, k, sp, op, field, t); } while (0)
+// Probe channel: stdout only, no container. Carries work1_qs/work1_qg too —
+// numdt maximises over four fall speeds and the sealed stream dumps only two,
+// so the operand that DECIDES mstep is often not in the evidence at all.
+#define G33_SCHED(chain, n, field, t) do { ::kdm6::g33::trace::sched_emit(chain, n, field, t); } while (0)
 #else
 #define G33_REC(g, stage, role, k, sp, op, field, t) do { } while (0)
 #endif  // KDM6_G33_OP_DUMP
@@ -136,6 +140,17 @@ SubstepAdvectionOutputs substep_advection_torch(
     torch::Tensor falk_qr_prev, falk_nr_prev, falk_qs_prev, falk_qg_prev, falk_brs_prev;
 
 #ifdef KDM6_G33_OP_DUMP
+    // OUTSIDE any g33.on() guard: the probe channel exists precisely for the run
+    // that has no sealed container contract, where on() is false. All four fall
+    // speeds numdt maximises over, plus what the run actually used — the sealed
+    // stream carries only work1_qr/workn_qr, so the operand that DECIDES mstep is
+    // frequently absent from the evidence entirely.
+    G33_SCHED("main", n, "work1_qr", in.work1_qr);
+    G33_SCHED("main", n, "workn_qr", in.workn_qr);
+    G33_SCHED("main", n, "work1_qs", in.work1_qs);
+    G33_SCHED("main", n, "work1_qg", in.work1_qg);
+    G33_SCHED("main", n, "mstep_native", mstep_col_safe);
+    G33_SCHED("main", n, "dtcld", torch::full_like(mstep_col_safe, dtcld));
     g33ovl::Substep g33("main", n, in.state.qr);
     torch::Tensor g33_q_entry, g33_n_entry;   // diagnostic-only pre-update capture
     torch::Tensor g33_fq_entry, g33_fn_entry; // fall accumulators at cell entry

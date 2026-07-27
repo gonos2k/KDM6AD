@@ -180,6 +180,26 @@ inline void be_i32(std::vector<uint8_t>& out, int32_t v) {
 }
 inline void be_u8(std::vector<uint8_t>& out, uint8_t v) { out.push_back(v); }
 
+
+// ── schedule probe ──────────────────────────────────────────────────────────
+// The substep count is knowable only BY running, but the sealed container path
+// refuses any container id that was not declared BEFORE the run — so the schedule
+// cannot be discovered through it. This is the separate, deliberately tiny probe
+// channel: it writes raw operands to stdout and touches none of the container,
+// descriptor or op-seq machinery.
+//
+// Inert unless KDM6_G33_SCHED_PROBE is set, so an evidence run is unaffected. The
+// stream is NOT evidence: it carries no run identity, no binary binding and no
+// sealed descriptor, and the reader marks anything derived from it as a probe.
+inline bool sched_probe_on() {
+    static const bool on = [] {
+        const char* v = std::getenv("KDM6_G33_SCHED_PROBE");
+        return v && *v && std::string(v) != "0";
+    }();
+    return on;
+}
+
+
 // ── fail-closed container writer (matches the Python reader) ─────────────────
 class Writer {
 public:

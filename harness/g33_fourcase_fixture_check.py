@@ -27,6 +27,8 @@ import g33_abc_noninvasiveness as abc  # noqa: E402
 import g33_dump as gd  # noqa: E402
 import g33_fixture_v1 as fixture  # noqa: E402
 import g33_run_env as gre  # noqa: E402
+import g33_bundle_io as bio  # noqa: E402
+import g33_schedule_probe as gsp  # noqa: E402
 
 EXIT_SKIP, EXIT_DRIVER, EXIT_EVIDENCE, EXIT_FIDELITY = 2, 3, 4, 5
 CASE = "fourcase_v1"
@@ -59,6 +61,39 @@ def _sha_path(p: Path) -> str:
     return _sha(p.read_bytes())
 
 
+
+def _schedule_arg(pairs, algo):
+    """The ALGO=path entry for `algo`, or None."""
+    for raw in pairs:
+        text = str(raw)
+        if "=" not in text:
+            _die(EXIT_SKIP, f"--schedule wants ALGO=path, got {text!r}")
+        name, path = text.split("=", 1)
+        if name == algo:
+            return Path(path)
+    return None
+
+
+def _sealed_schedule(pairs, algo):
+    path = _schedule_arg(pairs, algo)
+    if path is None:
+        return None
+    sealed = json.loads(path.read_text())
+    gsp.assert_not_evidence(sealed.get("case_id", ""))   # a probe is not a contract
+    return sealed
+
+
+def _probe_reading(pairs, algo):
+    """The probe's own mstep vectors, alongside the schedule it produced."""
+    path = _schedule_arg(pairs, algo)
+    if path is None:
+        return None
+    stream = path.parent / "probe.sched"
+    if not stream.is_file():
+        _die(EXIT_SKIP, f"{path} has no probe.sched beside it — the schedule cannot "
+                        f"be traced back to the run that produced it")
+    return gsp.probe_from_stream(stream.read_text())
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--canonical-driver", type=Path, required=True)
@@ -71,6 +106,12 @@ def main() -> None:
     ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
                     choices=sorted(fixture.FIXTURES),
                     help="which fixture authority this run uses")
+    ap.add_argument("--schedule", type=Path, action="append", default=[],
+                    metavar="ALGO=schedule.json",
+                    help="sealed schedule from run_cpp_probe.py (pass 2). Required "
+                         "for any fixture whose substep count is not 1: the "
+                         "declaration cannot be guessed and must not come from the "
+                         "other backend.")
     args = ap.parse_args()
     for path in (args.canonical_driver, args.diagnostic_driver):
         if not path.is_file():
@@ -107,7 +148,7 @@ def main() -> None:
             if out_a != out_b:
                 _die(EXIT_FIDELITY, f"shared fixture A!=B: {algo}")
 
-            schedule = abc._schedule(algo, CASE)
+            schedule = _sealed_schedule(args.schedule, algo) or abc._schedule(algo, CASE)
             evidence = root / f"{algo}-C-evidence"
             env_c = gre.build_env(
                 schedule, evidence, binary=diagnostic,
@@ -120,6 +161,18 @@ def main() -> None:
             if out_a != out_c:
                 _die(EXIT_FIDELITY, f"shared fixture A!=C: {algo}")
             diag = abc._validate_c_evidence(evidence, env_c, schedule)
+            # REPRODUCE GATE: the sealed run must have made the same scheduling
+            # decisions the probe did. Otherwise the contract describes one
+            # execution and the evidence another.
+            probe_read = _probe_reading(args.schedule, algo)
+            if probe_read is not None:
+                try:
+                    gsp.assert_reproduced(probe_read, gsp.read_probe(
+                        bio.verify_cpp_evidence(evidence, algo).containers))
+                except (gsp.ProbeError, bio.BundleError) as e:
+                    _die(EXIT_EVIDENCE, f"FAIL: {algo} evidence does not reproduce "
+                                        f"the probe schedule: {e}")
+                print(f"  reproduced the probe schedule exactly ({algo})")
             print(f"FOURCASE PASS {algo} fixture={got_a[0][:16]} "
                   f"params={got_a[1][:16]} containers={diag['containers']} "
                   f"mstep={diag['mstep_min']}..{diag['mstep_max']}")

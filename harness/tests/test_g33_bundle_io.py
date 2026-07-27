@@ -390,3 +390,20 @@ def test_the_runs_actual_returned_output_is_preserved(tmp_path):
 def test_the_actual_output_is_read_from_the_evidence_not_assumed(tmp_path):
     out = bio.verify_cpp_bundle(_bundle(tmp_path, rain="40000000"))
     assert out["algorithms"]["legacy"].actual_final_output["rain"] == (0x40000000,) * B
+
+
+# ── discovery mode (schedule probe) ───────────────────────────────────────────
+
+def test_discovery_mode_is_refused_for_a_real_case(tmp_path):
+    # A real bundle short of its declared containers must stay INVALID. If discovery
+    # could be asked for on any case, it would be a switch that turns the
+    # completeness gate off for the very bundles it exists to police.
+    ev = _full_evidence(tmp_path, "legacy")
+    with pytest.raises(bio.BundleError, match="not marked one"):
+        bio.verify_cpp_evidence(ev, "legacy", discovery=True)
+
+
+def test_a_real_case_still_needs_every_declared_container(tmp_path):
+    ev = _full_evidence(tmp_path, "legacy", omit_container="L1_outer_post_sed")
+    with pytest.raises(bio.BundleError):
+        bio.verify_cpp_evidence(ev, "legacy")

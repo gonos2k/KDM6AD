@@ -2,6 +2,7 @@
 """Pure fail-closed tests for the C++ A/B/C non-invasiveness harness."""
 import hashlib
 import json
+import pathlib
 import sys
 from pathlib import Path
 
@@ -112,3 +113,26 @@ def test_first_diff_identifies_the_first_changed_output_line():
     b = a.replace(b"FIELD qr", b"FIELD qx", 1)
     msg = abc._first_diff(a, b)
     assert "line" in msg and "FIELD qr" in msg and "FIELD qx" in msg
+
+
+# ── fixture-dependent scalars must come from the schedule ─────────────────────
+
+def test_the_evidence_validator_reads_qcrmin_dtcld_from_the_schedule():
+    """QCRMIN/DTCLD are the DEFAULT fixture's values, not every fixture's.
+
+    _validate_c_evidence used the module constants directly. That is invisible while
+    only the dt=20 fixture exists — its dtcld IS 20 — and wrong the moment a fixture
+    with a different sub-cycle appears: the dt=300 fixture runs at dtcld=100 and the
+    run was checked against 20. Same shape as taking B/K independently of the fixture.
+    """
+    import ast
+
+    module = ast.parse(pathlib.Path(abc.__file__).read_text())
+    fn = next(n for n in ast.walk(module)
+              if isinstance(n, ast.FunctionDef) and n.name == "_validate_c_evidence")
+    names = {n.id for n in ast.walk(fn) if isinstance(n, ast.Name)}
+    leaked = names & {"QCRMIN", "DTCLD"}
+    assert not leaked, (
+        f"_validate_c_evidence references the module default(s) {sorted(leaked)}; "
+        f"these are fixture-dependent and must be read from the schedule it is "
+        f"validating, or a non-default fixture is checked against the wrong value")

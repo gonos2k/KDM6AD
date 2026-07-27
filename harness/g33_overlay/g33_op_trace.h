@@ -19,6 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <iostream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -107,6 +108,44 @@ inline bool lookup_op_seq(const std::string& cid, uint64_t& first, uint64_t& las
 // §7e). `outer_tail == nullptr` names a per-substep container
 // L{loop}_{chain}_n{n}; otherwise the container is L{loop}_{outer_tail}
 // (outer_pre / outer_post) and chain/n are recorded as given ("-"/0).
+// KDM6SCHED <loop> <chain> <n> <field> <dtype> <count> <hex>...
+inline void sched_emit(const char* chain, int n, const char* field,
+                       const torch::Tensor& t) {
+    if (!sched_probe_on()) return;
+    const int loop = g_context ? g_context->outer_loop_1based : 0;
+    auto c = t.detach().cpu().contiguous();
+    const auto st = c.scalar_type();
+    std::vector<uint8_t> pay;
+    const char* dtype = nullptr;
+    const int64_t n_el = c.numel();
+    if (st == torch::kFloat64) {
+        dtype = "f64";
+        const double* q = c.data_ptr<double>();
+        for (int64_t i = 0; i < n_el; ++i) be_f64(pay, q[i]);
+    } else if (st == torch::kFloat32) {
+        dtype = "f32";
+        const float* q = c.data_ptr<float>();
+        for (int64_t i = 0; i < n_el; ++i) be_f32(pay, q[i]);
+    } else if (st == torch::kInt32) {
+        dtype = "i32";
+        const int32_t* q = c.data_ptr<int32_t>();
+        for (int64_t i = 0; i < n_el; ++i) be_i32(pay, q[i]);
+    } else {
+        return;                      // the probe reads metrics only
+    }
+    const int width = (dtype[0] == 'f' && dtype[1] == '6') ? 8 : 4;
+    std::ostringstream line;
+    line << "KDM6SCHED " << loop << " " << (chain ? chain : "-") << " " << n
+         << " " << field << " " << dtype << " " << n_el;
+    static const char* kHex = "0123456789abcdef";
+    for (size_t i = 0; i < pay.size(); ++i) {
+        if (i % size_t(width) == 0) line << " ";
+        line << kHex[pay[i] >> 4] << kHex[pay[i] & 0xf];
+    }
+    std::cout << line.str() << "\n";
+}
+
+
 class ContainerTrace {
 public:
     ContainerTrace(const char* chain, int n, const char* outer_tail,

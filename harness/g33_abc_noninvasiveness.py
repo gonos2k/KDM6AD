@@ -216,7 +216,10 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
         gdv.check_producer_flags(
             {key: (record["dtype"], record["payload"])
              for key, record in pre.items()},
-            int(spec["n"]), QCRMIN, DTCLD)
+            # from the SCHEDULE being validated, not the module defaults: those
+            # coincide only for the original dt=20 fixture, so a fixture with a
+            # different sub-cycle would be checked against the wrong threshold
+            int(spec["n"]), schedule["qcrmin"], schedule["dtcld"])
         B, K = schedule["B"], schedule["K"]
         w1 = _values(pre["work1_qr"]).astype(np.float64).reshape(B, K)
         wn = _values(pre["workn_qr"]).astype(np.float64).reshape(B, K)
@@ -268,18 +271,26 @@ def _validate_c_evidence(outdir: Path, env: dict[str, str], schedule: dict) -> d
         raise gd.G33Corruption(
             f"A/B/C valid-metric fixture activated {floor_count} metric floors")
 
+    # ONE PER OUTER LOOP, not one per run: a dt=300 fixture has three. Requiring a
+    # single container encoded the dt=20 fixture's shape, and checking only the first
+    # would leave the later loops' bottom-fall values unexamined for exactly the
+    # negatives this check exists to catch.
     surface_specs = [spec for spec in specs
                      if spec["container_id"].endswith("_surface")]
-    if len(surface_specs) != 1:
-        raise gd.G33Corruption("C run has no unique surface container")
-    surface_records = containers[surface_specs[0]["container_id"]]["records"]
+    if len(surface_specs) != schedule["loops"]:
+        raise gd.G33Corruption(
+            f"C run has {len(surface_specs)} surface container(s), expected one per "
+            f"outer loop ({schedule['loops']})")
     surface_negative = 0
-    for name in ("bottom_fall_qr", "bottom_fall_qs",
-                 "bottom_fall_qg", "bottom_fall_qi"):
-        values = _values(_record(surface_records, stage="surface", field=name))
-        if not np.isfinite(values).all():
-            raise gd.G33Corruption(f"surface {name} is non-finite")
-        surface_negative += int(np.count_nonzero(values < 0))
+    for spec in surface_specs:
+        surface_records = containers[spec["container_id"]]["records"]
+        for name in ("bottom_fall_qr", "bottom_fall_qs",
+                     "bottom_fall_qg", "bottom_fall_qi"):
+            values = _values(_record(surface_records, stage="surface", field=name))
+            if not np.isfinite(values).all():
+                raise gd.G33Corruption(
+                    f"surface {name} is non-finite in {spec['container_id']}")
+            surface_negative += int(np.count_nonzero(values < 0))
     if surface_negative:
         raise gd.G33Corruption(
             f"surface clamp would hide {surface_negative} negative bottom-fall values")
