@@ -27,8 +27,10 @@ Design contract (owner P0 closeout):
       external_input differs first -> INCONCLUSIVE (unsealed precondition)
       pre-sed / out_of_scope       -> INCONCLUSIVE
       conservative-only arithmetic -> FAIL
-      same SHARED rung both pairs   -> PASS  (tag + dtype + cell), with the raw-bit
-                                       signature (ULP delta + direction) recorded.
+      same SHARED rung both pairs   -> SHARED_SEED_CANDIDATE (tag + dtype + cell),
+                                       with the raw-bit signature (ULP delta +
+                                       direction) recorded. Only adjudicate_verified
+                                       promotes it, and only to PASS_MECHANISM.
 """
 from __future__ import annotations
 
@@ -44,13 +46,20 @@ import g33_replay as replay          # noqa: E402
 import g33_schema as schema          # noqa: E402
 
 # The PURE comparator answers "where do they first differ", so its best outcome is a
-# CANDIDATE: both pairs first diverged at the same shared rung. Promoting that to
-# PASS additionally requires ladder fidelity, branch/domain validity, four-way
+# CANDIDATE: both pairs first diverged at the same shared rung. Promoting that
+# additionally requires ladder fidelity, branch/domain validity, four-way
 # same-problem identity and external attestation — only adjudicate_verified() has
-# seen those, so only it may return PASS.
+# seen those, and even it stops at PASS_MECHANISM.
 SHARED_SEED_CANDIDATE = "SHARED_SEED_CANDIDATE"
 SEED_VERDICTS = (SHARED_SEED_CANDIDATE, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
-VERDICTS = ("PASS", "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
+#: The strongest verdict this tool can reach. It certifies the MECHANISM question —
+#: the observed Fortran<->C++ difference did not originate in conservative-only
+#: arithmetic — on the fixture at hand. It is deliberately NOT called PASS: the
+#: protocol's PASS additionally requires the seed to be causally connected to the
+#: historical output divergence and to propagate downstream, neither of which a
+#: synthetic fixture can establish. That promotion is the owner's, not the tool's.
+PASS_MECHANISM = "PASS_MECHANISM"
+VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output")
 _LOOP_LAST = 1 << 30      # sorts a whole-step record after every loop
@@ -436,8 +445,17 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
             return _invalid(f"{name} ladder fidelity: {e}")
     result = adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
     if result["verdict"] == SHARED_SEED_CANDIDATE:
-        # every gate above has passed, so the candidate may be promoted
-        result["verdict"] = "PASS"
-        result["reason"] = "PASS (promoted from a shared seed): " + result["reason"]
+        # Every gate above has passed, so the candidate may be promoted — but only
+        # to the MECHANISM tier. What is still missing is not a check that could be
+        # added here; it is evidence a synthetic fixture cannot contain.
+        result["verdict"] = PASS_MECHANISM
+        result["reason"] = ("PASS_MECHANISM (promoted from a shared seed): "
+                            + result["reason"])
+        result["evidence_strength"] = "PARTIAL"
+        result["not_established"] = [
+            "the seed is causally connected to the historical output divergence",
+            "the difference propagates downstream through qv/t to the final state",
+            "the mechanism is the one the historical Gate-B failure exhibited",
+        ]
     result["problem"] = dict(ids["legacy-F"])
     return result

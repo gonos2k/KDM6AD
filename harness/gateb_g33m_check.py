@@ -35,7 +35,10 @@ import g33_fortran_semantics as sem     # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
 import g33_normalize as nz              # noqa: E402
 
-EXIT = {"PASS": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+# PASS_MECHANISM, not PASS: the tool cannot reach the protocol's PASS, which also
+# needs historical causality and downstream propagation. Exit 0 still means "the
+# mechanism question came back clean", never "C4 may be released".
+EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
 EXIT_USAGE = 4
 
 
@@ -172,7 +175,8 @@ def main(argv=None) -> int:
                                       legs["conservative_fortran"], legs["conservative_cpp"])
     result.update(verdict)
     result["scope"] = {
-        "note": "A PASS certifies only that the observed Fortran<->C++ difference did "
+        "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ "
+                "difference did "
                 "not originate in conservative-only arithmetic. It does not certify "
                 "column-number (rho*dz*nr) conservation, multi-subcycle behaviour "
                 "beyond this fixture's mstep range, or meteorological accuracy.",

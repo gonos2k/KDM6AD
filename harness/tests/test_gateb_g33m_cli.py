@@ -26,7 +26,10 @@ def _args(tmp_path, out, **over):
 
 
 def test_exit_code_contract_is_the_documented_one():
-    assert gate.EXIT == {"PASS": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+    # PASS_MECHANISM, not PASS: the protocol's PASS needs historical causality
+    # and downstream propagation, which no synthetic fixture can supply
+    assert gate.EXIT == {"PASS_MECHANISM": 0, "FAIL": 1,
+                         "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
     assert gate.EXIT_USAGE == 4
 
 
