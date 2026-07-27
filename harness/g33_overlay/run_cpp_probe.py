@@ -120,7 +120,8 @@ def main(argv=None) -> int:
                              "sealed from it would describe a different execution")
         print("noninvasive: ABC stream byte-identical with the probe on and off")
 
-    probe = gsp.probe_from_stream("\n".join(sched_lines))
+    probe = gsp.probe_from_stream("\n".join(sched_lines),
+                                  expected_shape=(authority["B"], authority["K"]))
     # Build the base from the CANONICAL schedule builder and let the probe override
     # only what it measured. Hand-rolling the dict here would silently drop whatever
     # keys the contract gains later — qcrmin and instrumented_stages already.

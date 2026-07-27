@@ -293,3 +293,65 @@ def test_dtcld_is_an_f32_not_a_python_double():
 def test_a_nonsense_dt_is_refused(bad):
     with pytest.raises(SystemExit):
         probe_mod.step_schedule(_authority_with_dt(bad))
+
+
+# -- the probe's own shape/vocabulary contract (owner PR C) --------------------
+
+def _shape_line(loop, chain, n, field, vals, dtype="f32"):
+    import struct
+    w = "".join(struct.pack(">f", float(v)).hex() for v in vals)
+    words = " ".join(w[i:i + 8] for i in range(0, len(w), 8))
+    return f"KDM6SCHED {loop} {chain} {n} {field} {dtype} {len(vals)} {words}"
+
+
+def _shape_stream(B=2, K=3, mstep=1, chain="main", work_len=None):
+    """A complete one-substep scope; work_len overrides the [B,K] payload length."""
+    v = (mstep - 0.5) / 100.0
+    n_work = work_len if work_len is not None else B * K
+    out = []
+    for f in ("work1_qr", "workn_qr", "work1_qs", "work1_qg"):
+        vals = [v] * n_work if f == "work1_qr" else [0.0] * n_work
+        out.append(_shape_line(1, chain, 1, f, vals))
+    out.append(_shape_line(1, chain, 1, "mstep_native", [mstep] * B))
+    out.append(_shape_line(1, chain, 1, "dtcld", [100.0] * B))
+    return "\n".join(out) + "\n"
+
+
+def test_an_unknown_chain_is_refused():
+    # an unknown chain would form its own scope and seal a schedule for a transport
+    # chain the runtime never ran
+    with pytest.raises(sp.ProbeError, match="unknown chain"):
+        sp.parse_sched_stream(_shape_stream(chain="rain"))
+
+
+def test_a_truncated_work_tensor_is_refused():
+    """[B, K-1] still divides evenly by B, so it reads as a shorter column and the
+    stream — which declares no K — cannot say otherwise. The grid therefore comes
+    from the fixture authority."""
+    truncated = _shape_stream(B=2, K=3, work_len=2 * 2)
+    with pytest.raises(sp.ProbeError, match="fixture declares"):
+        sp.probe_from_stream(truncated, expected_shape=(2, 3))
+    # ...and without the declaration it is genuinely indistinguishable
+    assert sp.probe_from_stream(truncated)[(1, "main")]["mstep"] == [1, 1]
+
+
+def test_work_fields_of_differing_lengths_are_refused():
+    s = _shape_stream(B=2, K=3)
+    s = s.replace(_shape_line(1, "main", 1, "work1_qs", [0.0] * 6),
+                  _shape_line(1, "main", 1, "work1_qs", [0.0] * 4))
+    with pytest.raises(sp.ProbeError, match="differing lengths"):
+        sp.probe_from_stream(s)
+
+
+def test_a_scope_without_one_column_count_is_refused():
+    s = _shape_stream(B=2, K=3)
+    s = s.replace(_shape_line(1, "main", 1, "dtcld", [100.0] * 2),
+                  _shape_line(1, "main", 1, "dtcld", [100.0] * 3))
+    with pytest.raises(sp.ProbeError, match="no single column count"):
+        sp.probe_from_stream(s)
+
+
+def test_a_well_formed_scope_still_derives():
+    # the guards must not refuse the shape the runtime actually emits
+    probe = sp.probe_from_stream(_shape_stream(B=2, K=3, mstep=1))
+    assert probe[(1, "main")]["mstep"] == [1, 1]

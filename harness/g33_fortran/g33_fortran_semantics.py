@@ -16,6 +16,8 @@ Checks (all bit-exact; f32 arithmetic via numpy.float32 in the reference order):
   6  QR_FALLACC.fall_after at (bottom cell, last substep) == surface.bottom_fall_qr.
   7  bottom_fall_total == (((qr+qs)+qg)+qi); rain PREC == sum_L of the per-loop
      surface increments (it is the whole-step accumulator, not one loop's value).
+  9  outer_post_micro(N) == the returned STATE, for every carried field the state
+     also carries — the last loop's exit is bound to the subroutine's output.
   8  outer_post_micro(L) == outer_pre_sed(L+1) for every carried prognostic — the
      outer-loop carry is evidence, not an assumption (owner P0-C1). Skipped for a
      pre-v4 stream, which carries no bridge records at all; whether their absence
@@ -25,6 +27,12 @@ import struct
 
 import numpy as np
 
+
+#: The carried fields that the FINAL STATE also carries, so the last loop's exit can
+#: be bound to what the subroutine actually returned. `t` is excluded on purpose: the
+#: state carries `th`, and th = t/pii is a computation, not a copy — asserting bit
+#: equality there would be asserting the conversion, not the binding.
+_FINAL_BOUND = ("qv", "qc", "qr", "qi", "qs", "qg", "nr")
 
 #: What the outer loop carries from one cloud sub-cycle to the next. The INTERSECTION
 #: of the two bridge snapshots' field sets, since the carry can only be stated about
@@ -179,4 +187,21 @@ def verify_semantics(run):
                         raise SemanticError(
                             f"outer carry broken: outer_post_micro(L{loop}).{f} != "
                             f"outer_pre_sed(L{loop + 1}).{f} c={c} k={k}")
+
+    # (9) THE LAST LOOP'S EXIT IS WHAT THE SUBROUTINE RETURNED. Without this the
+    # bridge would chain the loops to each other but leave the final one attached to
+    # nothing, and a difference introduced after the last outer_post_micro — in the
+    # pack-out — would be invisible to every check above.
+    if has_bridge and run.state:
+        last = max(loops)
+        for c in range(1, B + 1):
+            for k in range(K):
+                for f in _FINAL_BOUND:
+                    got = run.state.get((f, c, k))
+                    if got is None:
+                        continue                  # not a state field on this protocol
+                    if _sv(S, "outer_post_micro", 0, f, c, k, last)[1] != got:
+                        raise SemanticError(
+                            f"final state not bound: outer_post_micro(L{last}).{f} "
+                            f"!= STATE.{f} c={c} k={k}")
     return True

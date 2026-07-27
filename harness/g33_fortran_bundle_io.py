@@ -37,6 +37,13 @@ import g33_fortran_semantics as sem    # noqa: E402
 LANES = ("A", "B", "C")
 
 
+#: Every FortranRun field that carries evidence in a mutable mapping. Named rather
+#: than discovered, so a field added later is a deliberate decision about whether it
+#: is evidence — a dir()-based sweep would freeze new fields silently either way.
+_RUN_MAPPINGS = ("stages", "state", "precip", "fixin", "params", "localparams",
+                 "mstep")
+
+
 class FortranBundleError(Exception):
     """The Fortran bundle cannot be re-verified."""
 
@@ -110,6 +117,18 @@ class VerifiedFortranLeg:
                 and self.repo_clean)
 
 
+def _no_dup_keys(pairs):
+    """A repeated JSON key silently keeps the LAST value, so a manifest could carry
+    two executable_sha256 entries and be verified against whichever survived. The C++
+    reader already refused this; the Fortran one parsed with plain json.loads."""
+    seen = {}
+    for k, v in pairs:
+        if k in seen:
+            raise FortranBundleError(f"duplicate JSON key {k!r}")
+        seen[k] = v
+    return seen
+
+
 def _freeze(obj):
     """Recursively read-only. MappingProxyType guards only the TOP dict — a nested
     one stays writable, so a caller could forge run.stages after verification while
@@ -119,6 +138,11 @@ def _freeze(obj):
     if isinstance(obj, list):
         return tuple(_freeze(v) for v in obj)
     return obj
+
+
+def _freeze_run(run):
+    """A FortranRun whose payload mappings are read-only."""
+    return replace(run, **{f: _freeze(getattr(run, f)) for f in _RUN_MAPPINGS})
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -165,7 +189,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         raise FortranBundleError(
             f"manifest sha256 {manifest_sha} != expected {expected_manifest_sha256}")
     try:
-        manifest = json.loads(manifest_bytes)
+        manifest = json.loads(manifest_bytes, object_pairs_hook=_no_dup_keys)
     except json.JSONDecodeError as e:
         raise FortranBundleError(f"abc_manifest.json is not JSON: {e}") from None
 
@@ -234,7 +258,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                 manifest.get("build_provenance_sha256") or {}).get(lane):
             raise FortranBundleError(f"lane {lane} provenance sha256 != manifest")
         try:
-            prov = json.loads(prov_bytes)
+            prov = json.loads(prov_bytes, object_pairs_hook=_no_dup_keys)
         except json.JSONDecodeError as e:
             raise FortranBundleError(f"lane {lane} provenance is not JSON: {e}") from None
         need = ("compiler_binary_sha256", "compiler_version", "module_canonical_sha256",
@@ -336,7 +360,15 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     return VerifiedFortranLeg(
         algorithm=algorithm,
         manifest=_freeze(manifest),
-        run=run,
+        # DEEP-frozen (owner P1 §8). FortranRun is a frozen dataclass, but its
+        # stages/state/precip/fixin/params/localparams were plain mutable dicts, so
+        #     leg = verify_fortran_bundle(...)
+        #     leg.run.stages[key] = forged
+        # left verdict_ready True while the evidence had changed under it. Frozen
+        # HERE and not in parse_fortran_run: the parser is also used for ad-hoc
+        # analysis and for building mutants, and only this path produces
+        # decision-grade evidence.
+        run=_freeze_run(run),
         build=build,
         problem=problem,
         bundle_verified=True,

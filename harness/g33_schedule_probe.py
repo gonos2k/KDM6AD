@@ -56,20 +56,24 @@ def derive_mstep(vmax_per_column, dtcld: float) -> list[int]:
     return [min(hi, max(lo, math.floor(v * dtcld + 1.0))) for v in vmax_per_column]
 
 
-def _vmax_per_column(rec: dict, columns: int) -> list:
+def _vmax_per_column(rec: dict, columns: int, levels: int) -> list:
     """max_k over every fall speed numdt maximises over, per column.
 
     The work fields are whole-column (B, K) payloads in row-major order; mstep is
     (B,). Treating a work field as per-column would read K levels of column 0 and
     call them B columns.
+
+    `levels` is passed in and the length checked EXACTLY. Accepting any multiple of B
+    let a [B, K-1] tensor through as a shorter column — a truncated dump that still
+    divides evenly (owner P0-S3).
     """
     out = []
     for field in _WORK_FIELDS:
         values = rec[field]
-        if len(values) % columns:
-            raise ProbeError(f"{field} has {len(values)} values, not a multiple of "
-                             f"the {columns} columns")
-        levels = len(values) // columns
+        if len(values) != columns * levels:
+            raise ProbeError(f"{field} carries {len(values)} values, not the "
+                             f"{columns}x{levels} = {columns * levels} its scope "
+                             f"declares")
         per_col = [max(values[c * levels:(c + 1) * levels]) for c in range(columns)]
         out = per_col if not out else [max(a, b) for a, b in zip(out, per_col)]
     return out
@@ -172,6 +176,13 @@ PROBE_SCHEDULE = "schedule.json"
 #: Exactly what a probe scope may carry. Closed, because the stream's whole purpose
 #: is to become a sealed container universe.
 _PROBE_FIELDS = frozenset((*_WORK_FIELDS, "mstep_native", "dtcld"))
+#: The only chains that exist. Open to anything, an unknown chain would form its own
+#: scope and seal a schedule for a transport chain the runtime never ran.
+_CHAINS = frozenset(("main", "ice"))
+#: Payload rank per field: the work speeds are whole-column [B, K], the schedule
+#: scalars are per-column [B]. Checked EXACTLY rather than as "a multiple of B",
+#: which accepted a [B, K-1] tensor as a shorter column.
+_PER_COLUMN = frozenset(("mstep_native", "dtcld"))
 
 
 def parse_sched_stream(raw) -> dict:
@@ -203,6 +214,9 @@ def parse_sched_stream(raw) -> dict:
         width = {"f32": 8, "f64": 16, "i32": 8}.get(dtype)
         if width is None or any(len(w) != width for w in words):
             raise ProbeError(f"probe line has bad dtype/word width: {line!r}")
+        if chain not in _CHAINS:
+            raise ProbeError(f"unknown chain {chain!r}: the runtime has "
+                             f"{sorted(_CHAINS)} and nothing else")
         if field not in _PROBE_FIELDS:
             raise ProbeError(f"unknown probe field {field!r}: the stream builds a "
                              f"sealed contract, so its schema is closed")
@@ -217,15 +231,20 @@ def parse_sched_stream(raw) -> dict:
     return out
 
 
-def probe_from_stream(raw) -> dict:
+def probe_from_stream(raw, expected_shape=None) -> dict:
     """A probe reading, with the producer's own mstep INDEPENDENTLY re-derived.
 
     Returns the same shape `sealed_schedule` consumes. The derivation is the point:
     reading `mstep_native` alone would seal whatever the producer claimed, so the
     vector is recomputed from the fall speeds and the two must agree exactly.
+
+    `expected_shape=(B, K)` comes from the fixture authority. Without it a truncated
+    work tensor that still divides evenly by the column count — [B, K-1] — reads as a
+    shorter column, and nothing in the stream itself can say otherwise.
     """
     parsed = parse_sched_stream(raw)
     seen: dict = {}
+    want_b, want_k = expected_shape or (None, None)
     for (loop, chain, n), rec in sorted(parsed.items()):
         entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": set()})
         entry["n_seen"].add(n)
@@ -252,7 +271,31 @@ def probe_from_stream(raw) -> dict:
                     raise ProbeError(
                         f"loop {loop} chain {chain}: {field}[{i}] = {v!r} is outside "
                         f"the fall-speed domain (finite, >= 0)")
-        vmax = _vmax_per_column(rec, len(rec["mstep_native"]))
+        # the per-column fields fix B, and every whole-column field must then be
+        # exactly BxK for one consistent K
+        columns = len(rec["mstep_native"])
+        if len(rec["dtcld"]) != columns:
+            raise ProbeError(f"loop {loop} chain {chain}: dtcld carries "
+                             f"{len(rec['dtcld'])} values but mstep_native "
+                             f"{columns} — the scope has no single column count")
+        widths = {len(rec[f]) for f in _WORK_FIELDS}
+        if len(widths) != 1:
+            raise ProbeError(f"loop {loop} chain {chain}: the fall-speed fields have "
+                             f"differing lengths {sorted(widths)}")
+        span = widths.pop()
+        if span % columns or span == 0:
+            raise ProbeError(f"loop {loop} chain {chain}: {span} work values do not "
+                             f"form whole columns over {columns} columns")
+        levels = span // columns
+        # The stream declares no K, so a [B, K-1] truncation still forms whole
+        # columns and cannot be caught from the inside. The grid comes from the
+        # FIXTURE AUTHORITY when the caller has it — the same reason the K order in
+        # compare_rate_dump must be declared rather than inferred.
+        if want_b is not None and (columns, levels) != (want_b, want_k):
+            raise ProbeError(
+                f"loop {loop} chain {chain}: probe carries a {columns}x{levels} grid "
+                f"but the fixture declares {want_b}x{want_k}")
+        vmax = _vmax_per_column(rec, columns, levels)
         derived = derive_mstep(vmax, dtcld[0])
         claimed = []
         for v in rec["mstep_native"]:
@@ -286,7 +329,8 @@ def switch_margin(raw) -> dict:
         if n != 1 or "dtcld" not in rec:
             continue
         dt = rec["dtcld"][0]
-        vmax = _vmax_per_column(rec, len(rec["mstep_native"]))
+        columns = len(rec["mstep_native"])
+        vmax = _vmax_per_column(rec, columns, len(rec[_WORK_FIELDS[0]]) // columns)
         for col, v in enumerate(vmax):
             x = v * dt
             m = derive_mstep([v], dt)[0]
