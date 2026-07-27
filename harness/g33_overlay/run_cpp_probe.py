@@ -50,7 +50,9 @@ CASE = "fourcase_v1"
 #: The lineage artifacts, named by the probe PROTOCOL module so the producer here and
 #: the bundle verifier cannot drift apart on what the bundle is supposed to contain.
 PROBE_MANIFEST, PROBE_STREAM = gsp.PROBE_MANIFEST, gsp.PROBE_STREAM
-SUBCYCLE_SECONDS = 120.0               # the cloud sub-cycle threshold: loops=ceil(dt/it)
+#: (loops, dtcld) from the fixture's own dt — defined by the probe protocol so
+#: the evidence checker can ask the same question without importing this CLI.
+step_schedule = gsp.step_schedule
 
 
 def _clean_env() -> dict:
@@ -66,23 +68,6 @@ def _run(driver: Path, algo: str, env: dict) -> str:
                          f"{proc.stderr.decode('utf-8', 'replace')[:2000]}")
     return proc.stdout.decode("ascii", "replace")
 
-
-def step_schedule(authority: dict) -> tuple[int, float]:
-    """(loops, dtcld) implied by the fixture's own dt — never passed in by hand.
-
-    ceil on the REAL dt: `int(dt) // 120` truncates before dividing, so dt = 120.5 s
-    would give 1 outer loop where the reference takes 2. Both current fixtures are
-    integral (20 s, 300 s), which is exactly why the bug was invisible.
-
-    dtcld comes back through f32: it is the f32 cloud timestep the backends carry, and
-    a Python double here would seal a value neither of them computes with.
-    """
-    dt = struct.unpack(">f", bytes.fromhex(authority["common_parameters"]["dt"]))[0]
-    if not (math.isfinite(dt) and dt > 0):
-        raise SystemExit(f"fixture dt is not a positive finite value: {dt!r}")
-    loops = max(1, math.ceil(float(dt) / SUBCYCLE_SECONDS))
-    dtcld = struct.unpack(">f", struct.pack(">f", float(dt) / loops))[0]
-    return loops, dtcld
 
 
 def main(argv=None) -> int:

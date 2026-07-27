@@ -6,16 +6,34 @@ writes a deterministic result.json. It produces a TOOL verdict; the four-case ve
 on real data is the owner's adjudication, so this never edits STATUS or any gate file.
 
     gateb_g33m_check.py --cpp-bundle DIR \\
-        --fortran-legacy legacy.g33f --fortran-conservative conservative.g33f \\
+        --fortran-legacy DIR --fortran-conservative DIR \\
         --expected-manifest-sha256 HEX --expected-repo-commit SHA \\
+        --expected-fixture-id ID --expected-fixture-manifest-sha256 HEX \\
+        --expected-fortran-legacy-manifest-sha256 HEX \\
+        --expected-fortran-conservative-manifest-sha256 HEX \\
         --out result.json
+
+All SIX anchors are required together: each pins one thing the bundle would
+otherwise assert about itself. The Fortran arguments are run_fortran_abc.py --out
+DIRECTORIES, not raw .g33f streams — a bare stream carries no build provenance to
+verify.
 
 The external anchors are REQUIRED by default: a bundle that rewrites its own manifest
 and sidecars stays self-consistent, so a decision needs a value held outside it. They
 may be relaxed with --allow-unattested for local debugging, which stamps the result
 `attested: false` — such a result must not be used to close C4.
 
-Exit codes:  0 PASS   1 FAIL   2 INCONCLUSIVE   3 INVALID_EVIDENCE   4 usage/IO
+Exit codes
+    0  PASS_MECHANISM     the tool's ceiling — NOT the protocol's PASS
+    1  FAIL
+    2  INCONCLUSIVE
+    3  INVALID_EVIDENCE
+    4  usage/IO
+    5  UNATTESTED_MECHANISM_CANDIDATE   --allow-unattested; never shares 0
+
+There is no bare PASS. The three verdict names are SHARED_SEED_CANDIDATE (internal),
+PASS_MECHANISM (the tool's maximum) and PASS_C4 — the last reachable only by owner
+adjudication over historical evidence this harness cannot hold.
 """
 from __future__ import annotations
 

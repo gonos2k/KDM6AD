@@ -35,6 +35,7 @@ stream carries all FOUR speeds `numdt` maximises over — including `work1_qs` a
 from __future__ import annotations
 
 import math
+import struct
 import os
 import sys
 
@@ -43,6 +44,24 @@ import g33_derived as gd            # noqa: E402
 
 class ProbeError(Exception):
     """The probe cannot yield a schedule that can be sealed."""
+
+
+def step_schedule(authority: dict) -> tuple[int, float]:
+    """(loops, dtcld) implied by the fixture's own dt — never passed in by hand.
+
+    ceil on the REAL dt: `int(dt) // 120` truncates before dividing, so dt = 120.5 s
+    would give 1 outer loop where the reference takes 2. Both current fixtures are
+    integral (20 s, 300 s), which is exactly why the bug was invisible.
+
+    dtcld comes back through f32: it is the f32 cloud timestep the backends carry, and
+    a Python double here would seal a value neither of them computes with.
+    """
+    dt = struct.unpack(">f", bytes.fromhex(authority["common_parameters"]["dt"]))[0]
+    if not (math.isfinite(dt) and dt > 0):
+        raise SystemExit(f"fixture dt is not a positive finite value: {dt!r}")
+    loops = max(1, math.ceil(float(dt) / SUBCYCLE_SECONDS))
+    dtcld = struct.unpack(">f", struct.pack(">f", float(dt) / loops))[0]
+    return loops, dtcld
 
 
 def derive_mstep(vmax_per_column, dtcld: float) -> list[int]:
@@ -165,6 +184,9 @@ def assert_reproduced(probe: dict, evidence: dict) -> None:
 _WORK_FIELDS = ("work1_qr", "workn_qr", "work1_qs", "work1_qg")
 
 _SCHED_TAG = "KDM6SCHED"
+
+#: The cloud sub-cycle threshold: loops = ceil(dt / this).
+SUBCYCLE_SECONDS = 120.0
 
 #: The probe's lineage record, written beside schedule.json and copied into the
 #: bundle. Named here because the producer and the verifier both need it: a bundle
