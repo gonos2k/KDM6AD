@@ -68,14 +68,16 @@ _COMMON = {
     "OUTPUT.rain_precip_cumulative", "OUTPUT.snow_precip_cumulative",
     "OUTPUT.graupel_precip_cumulative",
 }
-#: Emitted only by a producer that distinguishes a RAW metric from its floored SAFE
-#: value. The reference Fortran has no floor, so its absence there is structural, not
-#: a coverage hole; the C++ bundle layer independently REQUIRES dend_raw/delz_raw, so
-#: a C++ leg cannot drop them to dodge these.
-OPTIONAL_RELATIONS = frozenset({"METRIC.dend_safe==dend_raw",
-                                "METRIC.delz_safe==delz_raw"}
-                               | {f"OUTPUT.{p}_increment(actual)"
-                                  for p in ("rain", "snow", "graupel")})
+#: Relations only ONE backend can produce. Not optional — REQUIRED of the backend
+#: that has them and forbidden of the one that does not. "Present, so checked" would
+#: mean a normalizer regression that dropped every actual per-loop increment simply
+#: made the run fall back to the harness's own values and still pass.
+BACKEND_RELATIONS = {
+    "cpp": frozenset({"METRIC.dend_safe==dend_raw", "METRIC.delz_safe==delz_raw"}
+                     | {f"OUTPUT.{p}_increment(actual)"
+                        for p in ("rain", "snow", "graupel")}),
+    "fortran": frozenset(),          # no metric floor, no per-loop output
+}
 RELATION_COVERAGE = {
     "legacy": frozenset(_COMMON | {
         "INFLOW.div_delz_dst", "INFLOW.mul_dt", "INFLOW.inflow_pre_cap",
@@ -171,11 +173,14 @@ def replay_run(run: dict) -> int:
     ladder labelled conservative, say) lacks the operands the other variant's
     relations need, and that must READ as a fidelity failure."""
     report = replay_report(run)
-    want = RELATION_COVERAGE[run["algorithm"]]
-    got = set(report) - OPTIONAL_RELATIONS
+    backend = run.get("backend")
+    if backend not in BACKEND_RELATIONS:
+        raise FidelityError(f"run has no usable backend label: {backend!r}")
+    want = RELATION_COVERAGE[run["algorithm"]] | BACKEND_RELATIONS[backend]
+    got = set(report)
     if got != want:
         raise FidelityError(
-            f"{run['algorithm']} coverage mismatch: missing "
+            f"{backend} {run['algorithm']} coverage mismatch: missing "
             f"{sorted(want - got)}, unexpected {sorted(got - want)}")
     return sum(report.values())
 
@@ -188,6 +193,7 @@ def _replay(run: dict) -> Counter:
     fin: dict = {}      # col        -> whole-step accumulators
     dts: dict = {}      # (loop, col) -> dtcld
     incs: dict = run.get("surface_increments", {})   # producer's own per-loop values
+    native_output = run.get("backend") == "cpp"      # only this backend emits them
     for o in run["ops"]:
         ops.setdefault((o["loop"], o["chain"], o["n"], o["col"], o["k"],
                         o["species"], o["op_id"]), _Tracked())[o["field"]] = int(o["bits"])
@@ -411,6 +417,11 @@ def _replay(run: dict) -> Counter:
             eq("SURFACE.surface_denr", _DENR_BITS, f["surface_denr"], where)
             for p in _PRECIP:
                 inc_bits = surface_increment(f, _need(dts, (loop, col), where), p)
+                if native_output and (p, loop, col) not in incs:
+                    raise FidelityError(
+                        f"{where}: no actual {p} increment for this loop — the "
+                        f"producer emits one, so its absence is missing evidence, "
+                        f"not a reason to fall back to a recomputation")
                 # If the producer emitted THIS loop's increment, gate it HERE. Folding
                 # first and comparing only the total is blind twice over: loop 1 high
                 # by eps and loop 2 low by eps cancel, and on this very fixture a

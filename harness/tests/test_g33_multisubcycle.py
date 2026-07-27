@@ -142,7 +142,12 @@ def _fold(run, family, col):
 
 
 def test_the_producers_own_increments_replay_exactly():
-    assert rp.replay_run(_with_increments()) > 6150      # +1 relation per (fam,loop,col)
+    # replay_report, not replay_run: the coverage contract requires the FULL C++ set
+    # of a cpp run, and this is a Fortran run carrying C++-shaped records to exercise
+    # the relation on real multi-loop operands.
+    report = rp.replay_report(_with_increments())
+    checked = sum(v for k, v in report.items() if k.endswith("_increment(actual)"))
+    assert checked == 27                     # 3 families x 3 loops x 3 columns
 
 
 @pytest.mark.parametrize("loop", [1, 2, 3])

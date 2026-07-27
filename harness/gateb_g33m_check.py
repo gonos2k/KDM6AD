@@ -54,36 +54,51 @@ def main(argv=None) -> int:
     ap.add_argument("--fortran-conservative", type=Path, required=True)
     ap.add_argument("--expected-manifest-sha256")
     ap.add_argument("--expected-repo-commit")
+    ap.add_argument("--expected-fixture-id",
+                    help="which fixture this run is supposed to be (registry id). "
+                         "An anchor like the other two: a bundle checked against the "
+                         "fixture it declares attests nothing.")
     ap.add_argument("--allow-unattested", action="store_true",
                     help="debug only; the result is stamped attested:false")
-    ap.add_argument("--K", type=int, default=4)
-    ap.add_argument("--B", type=int, default=3)
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
 
-    anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit)
+    anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit
+                    and a.expected_fixture_id)
     if not anchored and not a.allow_unattested:
-        print("refusing to run without --expected-manifest-sha256 and "
-              "--expected-repo-commit (or --allow-unattested for debugging)",
-              file=sys.stderr)
+        print("refusing to run without --expected-manifest-sha256, "
+              "--expected-repo-commit and --expected-fixture-id "
+              "(or --allow-unattested for debugging)", file=sys.stderr)
         return EXIT_USAGE
+    fixture_id = a.expected_fixture_id or bio.gfx.DEFAULT_FIXTURE_ID
+    # (B, K) are a PROPERTY of the fixture. Taken as separate arguments they could
+    # disagree with the fixture actually named — invisible while every fixture
+    # happens to be 3x4.
+    try:
+        authority = bio.gfx.load_manifest(bio.gfx.spec(fixture_id).manifest)
+    except (bio.gfx.UnknownFixture, ValueError) as e:
+        print(f"unusable fixture id: {e}", file=sys.stderr)
+        return EXIT_USAGE
+    B, K = authority["B"], authority["K"]
 
     result = {"verdict": None, "reason": None, "attested": anchored,
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
                          "fortran_legacy": str(a.fortran_legacy),
-                         "fortran_conservative": str(a.fortran_conservative)}}
+                         "fortran_conservative": str(a.fortran_conservative),
+                         "expected_fixture_id": fixture_id, "B": B, "K": K}}
     try:
         bundle = bio.verify_cpp_bundle(
             a.cpp_bundle, expected_manifest_sha256=a.expected_manifest_sha256,
-            expected_repo_commit=a.expected_repo_commit)
+            expected_repo_commit=a.expected_repo_commit,
+            expected_fixture_id=fixture_id)
         legs = {
             "legacy_cpp": nz.from_cpp_evidence(bundle["algorithms"]["legacy"],
                                                require_verdict_ready=anchored),
             "conservative_cpp": nz.from_cpp_evidence(bundle["algorithms"]["conservative"],
                                                      require_verdict_ready=anchored),
-            "legacy_fortran": _load_fortran(a.fortran_legacy, "legacy", a.K, a.B),
+            "legacy_fortran": _load_fortran(a.fortran_legacy, "legacy", K, B),
             "conservative_fortran": _load_fortran(a.fortran_conservative,
-                                                  "conservative", a.K, a.B),
+                                                  "conservative", K, B),
         }
     except Exception as e:                       # every reader is fail-closed
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")

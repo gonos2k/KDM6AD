@@ -79,6 +79,7 @@ class VerifiedCppLeg:
     root_attested: bool = False              # bundle-internal root manifest verified
     external_manifest_attested: bool = False  # root manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False      # producer_commit pinned to a reviewed rev
+    fixture_attested: bool = False            # the fixture was NAMED from outside
 
     @property
     def verdict_ready(self) -> bool:
@@ -86,7 +87,7 @@ class VerifiedCppLeg:
         anchors — a bundle that rewrites its manifest and its own sidecars stays
         self-consistent, so internal checks alone cannot attest it."""
         return (self.root_attested and self.external_manifest_attested
-                and self.source_commit_attested)
+                and self.source_commit_attested and self.fixture_attested)
 
 
 def _no_dup_keys(pairs):
@@ -335,7 +336,8 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
 
 
 def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
-                      expected_repo_commit=None) -> dict:
+                      expected_repo_commit=None,
+                      expected_fixture_id=None) -> dict:
     """Re-verify the whole C++ ABC bundle root incl. attestation. Returns
     {manifest, algorithms:{algo: VerifiedCppLeg}}.
 
@@ -363,10 +365,27 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     if not _is_hex64(diag_sha):                # P0-2: mandatory, well-formed
         raise BundleError("manifest diagnostic_driver_sha256 missing or not 64-hex")
 
-    authority = gfx.load_manifest()
+    # The fixture is named by the CALLER, not read out of the bundle: a bundle that
+    # declares its own fixture and is checked against that declaration attests
+    # nothing. The named authority is the checked-in JSON, so the bundle must match a
+    # fixture someone outside it chose.
+    # Defaulting this would let any caller that simply omits it mint a
+    # verdict-ready leg for whichever fixture happens to be the module default —
+    # the CLI would be anchored while the API it calls was not.
+    try:
+        authority = gfx.load_manifest(
+            gfx.spec(expected_fixture_id or gfx.DEFAULT_FIXTURE_ID).manifest)
+    except gfx.UnknownFixture as e:
+        raise BundleError(str(e)) from None
     want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
+    # the SHAs bind the CONTENT; this binds the bundle's own label, so a manifest
+    # cannot carry one fixture's hashes under another fixture's name
+    if manifest.get("fixture_id") != authority["fixture_id"]:
+        raise BundleError(f"manifest fixture_id {manifest.get('fixture_id')!r} != "
+                          f"{authority['fixture_id']!r}")
     if manifest.get("fixture_manifest_sha256") != gfx.manifest_sha256(authority):
-        raise BundleError("manifest fixture_manifest_sha256 != checked-in authority")
+        raise BundleError(f"manifest fixture_manifest_sha256 != the checked-in "
+                          f"{expected_fixture_id} authority")
 
     fixtures, params, out = set(), set(), {}
     for algo in _ALGOS:
@@ -425,7 +444,8 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                             problem={"fixture_sha256": meta.get("fixture_sha256"),
                                      "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,
-                            source_commit_attested=expected_repo_commit is not None)
+                            source_commit_attested=expected_repo_commit is not None,
+                            fixture_attested=expected_fixture_id is not None)
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")

@@ -17,11 +17,17 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+sys.path.insert(0, str(ROOT / "harness"))
+import g33_fixture_v1 as gfx      # noqa: E402
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, required=True, help="fresh bundle directory")
+    ap.add_argument("--fixture-id", default=gfx.DEFAULT_FIXTURE_ID,
+                    choices=sorted(gfx.FIXTURES),
+                    help="selects BOTH the build's fixture header and the "
+                         "checker's authority")
     args = ap.parse_args()
     if args.out.exists():
         raise SystemExit(f"output path already exists (refusing): {args.out}")
@@ -32,7 +38,14 @@ def main() -> None:
     # selfcheck_build.sh creates the dir itself and REFUSES a pre-existing one, so
     # the parent must exist but the build dir must not — do not mkdir it here.
     build.parent.mkdir(parents=True, exist_ok=True)
-    r = subprocess.run(["bash", str(HERE / "selfcheck_build.sh"), str(build)], cwd=ROOT)
+    spec = gfx.spec(args.fixture_id)
+    # The build selects the fixture HEADER and the checker selects the AUTHORITY.
+    # Driving both from one id is what stops a driver built for one fixture being
+    # checked against another's authority.
+    build_cmd = ["bash", str(HERE / "selfcheck_build.sh"), str(build)]
+    if spec.cpp_define:
+        build_cmd.append(f"--fixture={spec.cpp_define}")
+    r = subprocess.run(build_cmd, cwd=ROOT)
     if r.returncode != 0:
         raise SystemExit("C++ ABC build failed")
 
@@ -41,7 +54,8 @@ def main() -> None:
     r = subprocess.run(
         [sys.executable, str(ROOT / "harness" / "g33_fourcase_fixture_check.py"),
          "--canonical-driver", str(canonical),
-         "--diagnostic-driver", str(diagnostic), "--out", str(args.out)],
+         "--diagnostic-driver", str(diagnostic), "--out", str(args.out),
+         "--fixture-id", args.fixture_id],
         cwd=ROOT)
     raise SystemExit(r.returncode)
 

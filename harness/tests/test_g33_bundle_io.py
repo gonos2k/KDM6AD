@@ -146,7 +146,10 @@ def _bundle(root: Path, truncate_abc=False, rain="00000000", **ev):
             d.mkdir()
             (d / "stdout.abc").write_text(_abc_stdout(algo, truncate_abc, rain))
     manifest = {"schema_version": 1, "diagnostic_driver_sha256": DIAG,
-                "canonical_driver_sha256": "c" * 64, "fixture_id": "f",
+                "canonical_driver_sha256": "c" * 64,
+                # the real label: the bundle already carries the real SHAs, and the
+                # verifier now binds the name to them too
+                "fixture_id": authority["fixture_id"],
                 "fixture_manifest_sha256": gfx.manifest_sha256(authority),
                 "algorithms": {}}
     substeps = ev.get("substeps", 1)
@@ -264,14 +267,30 @@ def test_mstep_exceeding_declared_substeps_rejected(tmp_path):
         bio.verify_cpp_bundle(_bundle(tmp_path, substeps=1, mstep=2))
 
 
+def _anchors(root):
+    return {"expected_manifest_sha256": _sha(root / "cpp_abc_manifest.json"),
+            "expected_repo_commit": COMMIT,
+            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID}
+
+
 def test_verdict_ready_requires_external_anchors(tmp_path):
     root = _bundle(tmp_path)
     leg = bio.verify_cpp_bundle(root)["algorithms"]["legacy"]
     assert leg.root_attested and not leg.verdict_ready      # internal-only
-    full = bio.verify_cpp_bundle(
-        root, expected_manifest_sha256=_sha(root / "cpp_abc_manifest.json"),
-        expected_repo_commit=COMMIT)["algorithms"]["legacy"]
+    full = bio.verify_cpp_bundle(root, **_anchors(root))["algorithms"]["legacy"]
     assert full.verdict_ready
+
+
+@pytest.mark.parametrize("drop", ["expected_manifest_sha256", "expected_repo_commit",
+                                  "expected_fixture_id"])
+def test_no_single_anchor_can_be_omitted_at_the_API(tmp_path, drop):
+    # The CLI requires all three, but a Python caller reaches this function directly.
+    # If the fixture defaulted here, omitting it would still mint a verdict-ready leg
+    # — the CLI would be anchored while the API it calls was not.
+    root = _bundle(tmp_path)
+    kw = {k: v for k, v in _anchors(root).items() if k != drop}
+    leg = bio.verify_cpp_bundle(root, **kw)["algorithms"]["legacy"]
+    assert not leg.verdict_ready
 
 
 def test_mstep_vector_drift_between_substeps_rejected(tmp_path):
@@ -305,8 +324,7 @@ def test_manifest_duplicate_json_key_rejected(tmp_path):
 # ── P1-2 C++ normalize on synthetic evidence ──────────────────────────────────
 def test_cpp_evidence_normalizes_and_events_build(tmp_path):
     root = _bundle(tmp_path)
-    res = bio.verify_cpp_bundle(root, expected_manifest_sha256=_sha(root / "cpp_abc_manifest.json"),
-                                expected_repo_commit=COMMIT)      # fully attested
+    res = bio.verify_cpp_bundle(root, **_anchors(root))          # fully attested
     run = nz.from_cpp_evidence(res["algorithms"]["legacy"])
     assert run["algorithm"] == "legacy" and run["B"] == B and run["K"] == K
     import g33_fourcase_comparator as cmp
