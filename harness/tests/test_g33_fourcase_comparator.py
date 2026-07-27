@@ -618,11 +618,48 @@ def test_pure_adjudicate_never_returns_pass():
     assert "PASS" not in r["verdict"]          # promotion belongs to the verified entry
 
 
+class _ReadyLeg:
+    """A leg that reports itself decision-grade, so these tests reach the arithmetic."""
+    def __init__(self, run):
+        self.normalized, self.verdict_ready = run, True
+
+
+def _evidence(runs):
+    return cmp.VerifiedFourCase(*[_ReadyLeg(r) for r in runs])
+
+
+def test_the_decision_api_refuses_plain_dictionaries():
+    # normalized runs carry no attestation; a verdict built from them would describe
+    # evidence nobody anchored. Enforced by TYPE, not by callers remembering.
+    with pytest.raises(TypeError, match="VerifiedFourCase"):
+        cmp.adjudicate_verified({"algorithm": "legacy"})
+
+
+def test_an_unready_leg_cannot_reach_a_verdict():
+    class _Unready(_ReadyLeg):
+        def __init__(self, run):
+            super().__init__(run)
+            self.verdict_ready = False
+    ev = cmp.VerifiedFourCase(_Unready(_run("legacy")), _ReadyLeg(_run("legacy")),
+                              _ReadyLeg(_run("conservative")),
+                              _ReadyLeg(_run("conservative")))
+    r = cmp.adjudicate_verified(ev)
+    assert r["verdict"] == "INVALID_EVIDENCE" and "not decision-grade" in r["reason"]
+
+
+def test_the_debug_path_cannot_report_a_decision_verdict():
+    # a shared seed in an unattested run reports its own name, so automation reading
+    # only the verdict string cannot mistake it for a decision
+    r = cmp.adjudicate_unattested(_run("legacy"), _run("legacy"),
+                                  _run("conservative"), _run("conservative"))
+    assert r["verdict"] != cmp.PASS_MECHANISM
+
+
 def test_verified_entry_refuses_legs_without_identity():
     # the synthetic runs carry no problem identity, so the decision entry stops
     # before it ever looks at the arithmetic
-    r = cmp.adjudicate_verified(_run("legacy"), _run("legacy"),
-                                _run("conservative"), _run("conservative"))
+    r = cmp.adjudicate_verified(_evidence([_run("legacy"), _run("legacy"),
+                                           _run("conservative"), _run("conservative")]))
     assert r["verdict"] == "INVALID_EVIDENCE" and "problem identity" in r["reason"]
 
 
@@ -632,5 +669,5 @@ def test_verified_entry_refuses_a_different_problem():
     for leg in legs:
         leg["problem"] = dict(ident)
     legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
-    r = cmp.adjudicate_verified(*legs)
+    r = cmp.adjudicate_verified(_evidence(legs))
     assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]

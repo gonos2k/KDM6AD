@@ -59,6 +59,9 @@ SEED_VERDICTS = (SHARED_SEED_CANDIDATE, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENC
 #: historical output divergence and to propagate downstream, neither of which a
 #: synthetic fixture can establish. That promotion is the owner's, not the tool's.
 PASS_MECHANISM = "PASS_MECHANISM"
+#: What an unattested debug run may report at best. A separate name so a caller that
+#: reads only the verdict cannot mistake it for a decision-grade result.
+UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output")
@@ -77,6 +80,46 @@ def _lane_of(identity) -> gev.LaneKey:
     identity layout cannot silently produce a wrong lane key."""
     _kind, loop, chain, n, col = identity[:5]
     return gev.LaneKey(loop, chain, n, col)
+
+
+@dataclass(frozen=True)
+class VerifiedFourCase:
+    """The four attested legs, as one object.
+
+    Exists so the decision API cannot be reached with anything less. Each leg is the
+    backend's own Verified*Leg (which owns its attestation state) paired with the
+    normalized run the comparator reads. Constructing this is the ONLY way to obtain
+    PASS_MECHANISM.
+    """
+    legacy_fortran: object
+    legacy_cpp: object
+    conservative_fortran: object
+    conservative_cpp: object
+
+    @property
+    def legs(self):
+        return (("legacy-F", self.legacy_fortran), ("legacy-C++", self.legacy_cpp),
+                ("conservative-F", self.conservative_fortran),
+                ("conservative-C++", self.conservative_cpp))
+
+    def unready(self) -> list:
+        """Names of legs that are not decision-grade."""
+        return [name for name, leg in self.legs
+                if not getattr(leg, "verdict_ready", False)]
+
+    def runs(self) -> tuple:
+        return tuple(leg.normalized for _name, leg in self.legs)
+
+
+@dataclass(frozen=True)
+class AttestedLeg:
+    """One backend leg: its attested artifact and the run the comparator reads."""
+    verified: object          # VerifiedCppLeg | VerifiedFortranLeg
+    normalized: dict
+
+    @property
+    def verdict_ready(self) -> bool:
+        return bool(getattr(self.verified, "verdict_ready", False))
 
 
 class StructuralError(Exception):
@@ -407,7 +450,8 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
             "conservative_first_divergence": _d(con)}
 
 
-def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
+def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
+                           *, promote: bool):
     """DECISION entry point — use this, not adjudicate(), for a C4 verdict.
 
     `adjudicate()` is pure verdict logic over four already-trusted runs. It answers
@@ -444,7 +488,7 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
         except (replay.FidelityError, KeyError, TypeError, ValueError) as e:
             return _invalid(f"{name} ladder fidelity: {e}")
     result = adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
-    if result["verdict"] == SHARED_SEED_CANDIDATE:
+    if result["verdict"] == SHARED_SEED_CANDIDATE and promote:
         # Every gate above has passed, so the candidate may be promoted — but only
         # to the MECHANISM tier. What is still missing is not a check that could be
         # added here; it is evidence a synthetic fixture cannot contain.
@@ -458,4 +502,38 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
             "the mechanism is the one the historical Gate-B failure exhibited",
         ]
     result["problem"] = dict(ids["legacy-F"])
+    return result
+
+
+def adjudicate_verified(evidence: VerifiedFourCase) -> dict:
+    """THE decision entry point. Only a VerifiedFourCase can reach PASS_MECHANISM.
+
+    Taking four plain dicts made the promotion reachable by any caller willing to
+    build them, with the readiness check living in the CLI. A property enforced by
+    convention at one call site is not a property of the system.
+    """
+    if not isinstance(evidence, VerifiedFourCase):
+        raise TypeError(
+            "adjudicate_verified requires a VerifiedFourCase — normalized dicts alone "
+            "carry no attestation, and a verdict built from them would describe "
+            "evidence nobody anchored")
+    unready = evidence.unready()
+    if unready:
+        return {"verdict": "INVALID_EVIDENCE",
+                "reason": f"legs that are not decision-grade: {unready}",
+                "legacy_first_divergence": None,
+                "conservative_first_divergence": None}
+    return _adjudicate_normalized(*evidence.runs(), promote=True)
+
+
+def adjudicate_unattested(legacy_f, legacy_c, conservative_f, conservative_c) -> dict:
+    """Numerics only, for debugging. Structurally cannot return PASS_MECHANISM.
+
+    A shared seed here reports UNATTESTED_MECHANISM_CANDIDATE, so an automation that
+    reads only the verdict string cannot mistake a debug run for a decision.
+    """
+    result = _adjudicate_normalized(legacy_f, legacy_c, conservative_f,
+                                    conservative_c, promote=False)
+    if result["verdict"] == SHARED_SEED_CANDIDATE:
+        result["verdict"] = UNATTESTED_MECHANISM_CANDIDATE
     return result

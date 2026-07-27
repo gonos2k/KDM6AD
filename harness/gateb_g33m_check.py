@@ -38,7 +38,10 @@ import g33_normalize as nz              # noqa: E402
 # PASS_MECHANISM, not PASS: the tool cannot reach the protocol's PASS, which also
 # needs historical causality and downstream propagation. Exit 0 still means "the
 # mechanism question came back clean", never "C4 may be released".
-EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3,
+        # A debug run must never share exit 0 with a decision. Automation that reads
+        # only the return code would otherwise take one for the other.
+        "UNATTESTED_MECHANISM_CANDIDATE": 5}
 EXIT_USAGE = 4
 
 
@@ -180,8 +183,24 @@ def main(argv=None) -> int:
         for name, leg in sorted(per_leg.items())}
     result["attested"] = all(leg.verdict_ready for leg in per_leg.values())
 
-    verdict = cmp.adjudicate_verified(legs["legacy_fortran"], legs["legacy_cpp"],
-                                      legs["conservative_fortran"], legs["conservative_cpp"])
+    # The decision API takes a TYPE, not four dicts: normalized runs carry no
+    # attestation, and a verdict built from them would describe evidence nobody
+    # anchored. An unattested debug run goes down a path that cannot promote.
+    if anchored:
+        evidence = cmp.VerifiedFourCase(
+            legacy_fortran=cmp.AttestedLeg(fortran_legs["legacy"],
+                                           legs["legacy_fortran"]),
+            legacy_cpp=cmp.AttestedLeg(bundle["algorithms"]["legacy"],
+                                       legs["legacy_cpp"]),
+            conservative_fortran=cmp.AttestedLeg(fortran_legs["conservative"],
+                                                 legs["conservative_fortran"]),
+            conservative_cpp=cmp.AttestedLeg(bundle["algorithms"]["conservative"],
+                                             legs["conservative_cpp"]))
+        verdict = cmp.adjudicate_verified(evidence)
+    else:
+        verdict = cmp.adjudicate_unattested(
+            legs["legacy_fortran"], legs["legacy_cpp"],
+            legs["conservative_fortran"], legs["conservative_cpp"])
     result.update(verdict)
     result["scope"] = {
         "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ "
