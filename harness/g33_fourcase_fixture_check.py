@@ -117,7 +117,7 @@ def main() -> None:
         if not path.is_file():
             _die(EXIT_SKIP, f"SKIP: ABC driver not found: {path}")
 
-    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
+    _, authority = fixture.load_fixture(args.fixture_id)
     B, K = authority["B"], authority["K"]
     abc.CASES[CASE] = (B, K)
     canonical = args.canonical_driver.resolve()

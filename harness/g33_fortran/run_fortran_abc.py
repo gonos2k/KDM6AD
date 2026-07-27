@@ -80,7 +80,7 @@ def main():
                     help="which fixture authority this run uses")
     args = ap.parse_args()
 
-    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
+    _, authority = fixture.load_fixture(args.fixture_id)
     B, K = authority["B"], authority["K"]
     os.makedirs(args.out)
     fixture_flag = [f"--fixture={fixture.spec(args.fixture_id).fortran_build_name}"]

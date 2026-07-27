@@ -115,7 +115,7 @@ def test_every_registry_entry_matches_its_own_manifest():
 
 
 def test_registry_entries_have_distinct_identities():
-    shas = {fid: fixture.fixture_sha256(fixture.load_manifest(fixture.spec(fid).manifest))
+    shas = {fid: fixture.fixture_sha256(fixture.load_fixture(fid)[1])
             for fid in fixture.FIXTURES}
     assert len(set(shas.values())) == len(shas), f"fixtures share an identity: {shas}"
 

@@ -42,7 +42,7 @@ def main() -> None:
                     help="which fixture authority this run uses")
     args = ap.parse_args()
 
-    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
+    _, authority = fixture.load_fixture(args.fixture_id)
     B, K = authority["B"], authority["K"]
     spec = fixture.spec(args.fixture_id)
     build_run = subprocess.run(

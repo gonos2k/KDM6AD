@@ -392,8 +392,8 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     # verdict-ready leg for whichever fixture happens to be the module default —
     # the CLI would be anchored while the API it calls was not.
     try:
-        authority = gfx.load_manifest(
-            gfx.spec(expected_fixture_id or gfx.DEFAULT_FIXTURE_ID).manifest)
+        _, authority = gfx.load_fixture(
+            expected_fixture_id or gfx.DEFAULT_FIXTURE_ID)
     except gfx.UnknownFixture as e:
         raise BundleError(str(e)) from None
     want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
