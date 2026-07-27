@@ -5,6 +5,7 @@ knowable BY running. These tests pin the way out: pre-declare to the algorithm's
 ceiling, read back what the run actually did, derive the exact schedule in Python,
 and require a second run to reproduce it.
 """
+import struct
 import sys
 from pathlib import Path
 
@@ -28,21 +29,97 @@ def _probe(scopes):
     return {k: {"mstep": v, "n_seen": max(v)} for k, v in scopes.items()}
 
 
-# ---- the probe contract ------------------------------------------------------
+# ---- the probe stream --------------------------------------------------------
 
-def test_probe_declares_the_algorithms_own_ceiling_not_a_guess():
-    s = sp.probe_schedule(BASE, 3)
-    assert s["mstepmax_main"] == [gd.MSTEP_RANGE[1]] * 3
-    assert s["mstepmax_ice"] == [gd.MSTEP_RANGE[1]] * 3
-    assert s["loops"] == 3
+def _f32w(v):
+    return struct.pack(">f", v).hex()
 
 
-def test_probe_contract_is_small_enough_to_seal():
-    # the whole point of a bounded over-declaration: every reachable container is
-    # pre-declared, and the cost stays the same order as a real bundle
-    recs = ge.expected_records(sp.probe_schedule(BASE, 3))
-    containers = {(r.get("outer_loop"), r.get("chain"), r.get("n")) for r in recs}
-    assert len(containers) < 400
+def _line(loop, n, field, values, dtype="f32"):
+    words = "".join(_f32w(v) for v in values) if dtype == "f32" else None
+    hexed = " ".join(words[i:i + 8] for i in range(0, len(words), 8))
+    return f"KDM6SCHED {loop} main {n} {field} {dtype} {len(values)} {hexed}"
+
+
+def _stream(loop, n, *, work1_qr, workn_qr, work1_qs, work1_qg, mstep, dtcld):
+    return "\n".join([
+        _line(loop, n, "work1_qr", work1_qr), _line(loop, n, "workn_qr", workn_qr),
+        _line(loop, n, "work1_qs", work1_qs), _line(loop, n, "work1_qg", work1_qg),
+        _line(loop, n, "mstep_native", mstep), _line(loop, n, "dtcld", dtcld),
+    ]) + "\n"
+
+
+def test_a_probe_stream_parses_to_its_scopes():
+    raw = _stream(1, 1, work1_qr=[0.0], workn_qr=[0.0], work1_qs=[0.0],
+                  work1_qg=[0.0], mstep=[1.0], dtcld=[100.0])
+    parsed = sp.parse_sched_stream(raw)
+    assert set(parsed) == {(1, "main", 1)}
+    assert parsed[(1, "main", 1)]["dtcld"] == [100.0]
+
+
+@pytest.mark.parametrize("bad", [
+    "KDM6SCHED 1 main 1 work1_qr f32 2 3f800000",          # count != words
+    "KDM6SCHED 1 main 1 work1_qr f32 1 3f80",               # short word
+    "KDM6SCHED 1 main 1 work1_qr f16 1 3f800000",           # unknown dtype
+    "KDM6SCHED x main 1 work1_qr f32 1 3f800000",           # non-integer scope
+    "KDM6SCHED 1 main",                                      # truncated
+])
+def test_a_malformed_probe_line_is_a_broken_probe(bad):
+    # skipping it would seal a schedule built from whatever survived truncation
+    with pytest.raises(sp.ProbeError):
+        sp.parse_sched_stream(bad + "\n")
+
+
+def test_an_empty_stream_is_not_an_empty_schedule():
+    with pytest.raises(sp.ProbeError, match="no KDM6SCHED"):
+        sp.parse_sched_stream("KDM6ABC 1 legacy fourcase_v1 3 4\nEND\n")
+
+
+# ---- the independent re-derivation -------------------------------------------
+
+def test_the_producers_mstep_must_match_its_own_operands():
+    # x = f32(0.025)*100 = 2.50000004 -> floor(3.5) = 3. NOT 0.02: its f32
+    # round-trip is 0.0199999996, so x lands just under the 2.0 switch and gives 2 —
+    # the very sensitivity switch_margin() exists to measure.
+    ok = _stream(1, 1, work1_qr=[0.025], workn_qr=[0.0], work1_qs=[0.0],
+                 work1_qg=[0.0], mstep=[3.0], dtcld=[100.0])
+    assert sp.probe_from_stream(ok)[(1, "main")]["mstep"] == [3]
+
+    lying = _stream(1, 1, work1_qr=[0.025], workn_qr=[0.0], work1_qs=[0.0],
+                    work1_qg=[0.0], mstep=[2.0], dtcld=[100.0])
+    with pytest.raises(sp.ProbeError, match="not what its operands imply"):
+        sp.probe_from_stream(lying)
+
+
+def test_the_uninstrumented_species_are_part_of_the_maximum():
+    # work1_qg alone sets mstep here; reading only qr/nr would derive 1 and the
+    # cross-check would then reject a run that is perfectly correct
+    raw = _stream(1, 1, work1_qr=[0.0], workn_qr=[0.0], work1_qs=[0.0],
+                  work1_qg=[0.025], mstep=[3.0], dtcld=[100.0])
+    assert sp.probe_from_stream(raw)[(1, "main")]["mstep"] == [3]
+
+
+def test_a_probe_missing_an_operand_cannot_be_derived():
+    raw = _line(1, 1, "work1_qr", [0.0]) + "\n" + _line(1, 1, "mstep_native", [1.0])
+    with pytest.raises(sp.ProbeError, match="missing"):
+        sp.probe_from_stream(raw + "\n")
+
+
+def test_a_non_integral_mstep_is_refused():
+    raw = _stream(1, 1, work1_qr=[0.0], workn_qr=[0.0], work1_qs=[0.0],
+                  work1_qg=[0.0], mstep=[2.5], dtcld=[100.0])
+    with pytest.raises(sp.ProbeError, match="not integral"):
+        sp.probe_from_stream(raw)
+
+
+# ---- the switch margin -------------------------------------------------------
+
+def test_switch_margin_uses_all_four_fall_speeds():
+    # x = 1.5 -> m = 2, so the distance to either switch is 0.5
+    raw = _stream(1, 1, work1_qr=[0.0], workn_qr=[0.0], work1_qs=[0.015],
+                  work1_qg=[0.0], mstep=[2.0], dtcld=[100.0])
+    margin = sp.switch_margin(raw)
+    assert margin[(1, "main", 1)] == pytest.approx(0.5, abs=1e-5)
 
 
 def test_a_probe_artifact_can_never_be_evidence():

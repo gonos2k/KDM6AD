@@ -41,6 +41,10 @@ private:
 
 }}}  // namespace kdm6::sed::g33ovl
 #define G33_REC(g, stage, role, k, sp, op, field, t) do { (g).rec(stage, role, k, sp, op, field, t); } while (0)
+// Probe channel: stdout only, no container, no descriptor. Defined only
+// under the dump macro — every call site is inside it too, so the
+// macro-off text stays identical to the frozen source.
+#define G33_SCHED(chain, n, field, t) do { ::kdm6::g33::trace::sched_emit(chain, n, field, t); } while (0)
 #endif  // KDM6_G33_OP_DUMP
 
 //
@@ -90,6 +94,16 @@ SubstepAdvectionOutputs substep_advection_conservative(
     auto mstep_col_safe = torch::clamp(mstep_col, /*min=*/1.0);
     auto gate_col = (mstep_col_safe >= static_cast<double>(n)).to(in.state.qr.dtype()); // (B,)
 #ifdef KDM6_G33_OP_DUMP
+    // OUTSIDE the on() guard: the probe exists for the run with no sealed contract,
+    // where on() is false. All four fall speeds numdt maximises over — the sealed
+    // stream carries only work1_qr/workn_qr, so the operand that DECIDES mstep is
+    // frequently absent from the evidence entirely.
+    G33_SCHED("main", n, "work1_qr", in.work1_qr);
+    G33_SCHED("main", n, "workn_qr", in.workn_qr);
+    G33_SCHED("main", n, "work1_qs", in.work1_qs);
+    G33_SCHED("main", n, "work1_qg", in.work1_qg);
+    G33_SCHED("main", n, "mstep_native", mstep_col_safe);
+    G33_SCHED("main", n, "dtcld", torch::full_like(mstep_col_safe, dtcld));
     g33ovl::Substep g33("main", n, in.state.qr);
     if (g33.on()) {
         G33_REC(g33, "substep_pre", "-", -1, "-", "-", "qr", in.state.qr);

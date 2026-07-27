@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
-"""Two-pass C++ substep schedule: discover it, derive it in Python, then seal it.
+"""Two-pass C++ substep schedule: probe it, re-derive it in Python, then seal it.
 
 The C++ expectation manifest must declare `loops` and `mstepmax_{chain}[loop]` BEFORE
 the run, because that declaration is what makes it independent evidence. But the
-per-loop mstep is only knowable by running: it comes from the fall speeds of that
+per-loop mstep is knowable only BY running: it comes from the fall speeds of that
 loop's evolved state.
 
-Three ways out were considered and two rejected:
+Three ways out; two are closed:
 
   * take the numbers from the Fortran leg — REJECTED. If the backends ever computed a
     different mstep (an upstream CFL/fall-speed difference, exactly what G3.3-M exists
     to surface), the C++ contract would have been built from the Fortran answer and
     the disagreement would be masked instead of reported.
-  * let the run DISCOVER its containers — IMPOSSIBLE. The sink refuses any container
-    whose id has no pre-sealed op-seq entry and descriptor (g33_op_trace.h), so an
-    undeclared substep aborts the run rather than revealing itself.
-  * PRE-DECLARE every container the run could possibly need, bounded by the
-    algorithm's own ceiling (`MSTEP_RANGE`), and read the schedule back out of what
-    the run actually wrote. That is this module.
+  * over-declare the sealed contract to the algorithm's mstep ceiling and let the run
+    write fewer containers — DISPROVED BY EXPERIMENT, not by argument. `op_seq_id` is
+    a process-global counter and each descriptor line pins it, so loop 2's descriptor
+    expects ids after loop 1's DECLARED substeps while the run has only advanced by
+    its ACTUAL ones. Observed on the real driver as
+    `expected: 21806|surface|... actual: 1968|surface|...`.
+  * a separate PROBE CHANNEL that bypasses the sealed machinery entirely — the
+    `KDM6SCHED` stdout stream (`sched_emit`, inert unless `KDM6_G33_SCHED_PROBE` is
+    set). That is what this module reads.
 
-The probe is a SCHEDULE-DISCOVERY artifact, not G3.3 physics evidence: its case id
-carries a probe marker and `assert_not_evidence()` refuses to let one be adjudicated.
-Nothing derived here is trusted from the producer either — Python recomputes the mstep
-vector from the raw operands and requires the producer's own claim to match.
+A probe run carries no run identity, no binary binding and no sealed descriptor, so
+it is a SCHEDULE-DISCOVERY artifact and never physics evidence; `assert_not_evidence`
+enforces that at the decision boundary.
+
+The producer is not trusted either: Python re-derives the mstep vector from the raw
+fall speeds in the stream and requires the run's own `mstep_native` to match. The
+stream carries all FOUR speeds `numdt` maximises over — including `work1_qs` and
+`work1_qg`, which the sealed evidence omits and which frequently decide mstep.
 """
 from __future__ import annotations
 
@@ -58,20 +65,6 @@ def assert_not_evidence(case_id: str) -> None:
             f"deliberately incomplete, so it can never support a verdict")
 
 
-def probe_schedule(base: dict, loops: int) -> dict:
-    """A contract that pre-declares every container the run could reach.
-
-    The cap is the algorithm's OWN contract ceiling, not a guess and not a number
-    borrowed from the other backend: a run needing more than `MSTEP_RANGE[1]`
-    substeps is already an invalid run by `check_producer_flags`.
-    """
-    cap = gd.MSTEP_RANGE[1]
-    if loops < 1:
-        raise ProbeError(f"loops must be >= 1, got {loops}")
-    return dict(base, case_id=probe_case_id(base["case_id"]), loops=loops,
-                mstepmax_main=[cap] * loops, mstepmax_ice=[cap] * loops)
-
-
 def derive_mstep(vmax_per_column, dtcld: float) -> list[int]:
     """The substep count Python computes from the raw fall speeds.
 
@@ -82,6 +75,24 @@ def derive_mstep(vmax_per_column, dtcld: float) -> list[int]:
     lo, hi = gd.MSTEP_RANGE
     return [min(hi, max(lo, math.floor(v * dtcld + 1.0))) for v in vmax_per_column]
 
+
+def _vmax_per_column(rec: dict, columns: int) -> list:
+    """max_k over every fall speed numdt maximises over, per column.
+
+    The work fields are whole-column (B, K) payloads in row-major order; mstep is
+    (B,). Treating a work field as per-column would read K levels of column 0 and
+    call them B columns.
+    """
+    out = []
+    for field in _WORK_FIELDS:
+        values = rec[field]
+        if len(values) % columns:
+            raise ProbeError(f"{field} has {len(values)} values, not a multiple of "
+                             f"the {columns} columns")
+        levels = len(values) // columns
+        per_col = [max(values[c * levels:(c + 1) * levels]) for c in range(columns)]
+        out = per_col if not out else [max(a, b) for a, b in zip(out, per_col)]
+    return out
 
 def read_probe(containers: dict) -> dict:
     """(loop, chain) -> {"mstep": [...], "n_seen": int} from a probe run's output.
@@ -157,3 +168,111 @@ def assert_reproduced(probe: dict, evidence: dict) -> None:
         want, got = probe[scope]["mstep"], evidence[scope]["mstep"]
         if want != got:
             raise ProbeError(f"{scope}: probe mstep {want} != evidence {got}")
+
+#: every fall speed `numdt` maximises over (module_mp_kdm6.F:1126). The sealed
+#: evidence carries only the first two, which is why a probe is the only place the
+#: substep count can be re-derived from ALL of its own inputs.
+_WORK_FIELDS = ("work1_qr", "workn_qr", "work1_qs", "work1_qg")
+
+_SCHED_TAG = "KDM6SCHED"
+
+
+def parse_sched_stream(raw) -> dict:
+    """(loop, chain, n) -> {field: [decoded values]} from a KDM6SCHED stdout stream.
+
+    Strict: a malformed line is a broken probe, not a line to skip. Silently
+    tolerating one would let a truncated stream seal a schedule built from whatever
+    survived.
+    """
+    if isinstance(raw, bytes):
+        raw = raw.decode("ascii", errors="strict")
+    out: dict = {}
+    for line in raw.splitlines():
+        if not line.startswith(_SCHED_TAG + " "):
+            continue
+        tok = line.split()
+        if len(tok) < 7:
+            raise ProbeError(f"malformed probe line: {line!r}")
+        _, loop, chain, n, field, dtype, count = tok[:7]
+        words = tok[7:]
+        try:
+            scope = (int(loop), chain, int(n))
+            n_el = int(count)
+        except ValueError:
+            raise ProbeError(f"non-integer scope in probe line: {line!r}") from None
+        if len(words) != n_el:
+            raise ProbeError(f"probe line declares {n_el} values, carries "
+                             f"{len(words)}: {line!r}")
+        width = {"f32": 8, "f64": 16, "i32": 8}.get(dtype)
+        if width is None or any(len(w) != width for w in words):
+            raise ProbeError(f"probe line has bad dtype/word width: {line!r}")
+        payload = bytes.fromhex("".join(words))
+        out.setdefault(scope, {})[field] = list(gd.unpack_values(dtype, payload))
+    if not out:
+        raise ProbeError("probe stream carries no KDM6SCHED records")
+    return out
+
+
+def probe_from_stream(raw) -> dict:
+    """A probe reading, with the producer's own mstep INDEPENDENTLY re-derived.
+
+    Returns the same shape `sealed_schedule` consumes. The derivation is the point:
+    reading `mstep_native` alone would seal whatever the producer claimed, so the
+    vector is recomputed from the fall speeds and the two must agree exactly.
+    """
+    parsed = parse_sched_stream(raw)
+    seen: dict = {}
+    for (loop, chain, n), rec in sorted(parsed.items()):
+        entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": 0})
+        entry["n_seen"] = max(entry["n_seen"], n)
+        if n != 1:
+            continue                      # mstep is fixed before the substep loop
+        missing = [f for f in (*_WORK_FIELDS, "mstep_native", "dtcld")
+                   if f not in rec]
+        if missing:
+            raise ProbeError(f"loop {loop} chain {chain}: probe is missing "
+                             f"{missing} — the substep count cannot be re-derived")
+        dtcld = rec["dtcld"]
+        if len(set(dtcld)) != 1:
+            raise ProbeError(f"loop {loop} chain {chain}: dtcld differs across "
+                             f"columns: {sorted(set(dtcld))}")
+        vmax = _vmax_per_column(rec, len(rec["mstep_native"]))
+        derived = derive_mstep(vmax, dtcld[0])
+        claimed = []
+        for v in rec["mstep_native"]:
+            if float(v) != int(v):
+                raise ProbeError(f"loop {loop} chain {chain}: mstep_native {v} is "
+                                 f"not integral")
+            claimed.append(int(v))
+        if derived != claimed:
+            raise ProbeError(
+                f"loop {loop} chain {chain}: the run used mstep {claimed} but its "
+                f"own fall speeds give {derived} — the producer's schedule is not "
+                f"what its operands imply")
+        entry["mstep"] = derived
+    missing = sorted(k for k, v in seen.items() if not v["mstep"])
+    if missing:
+        raise ProbeError(f"probe has no n=1 record for {missing}")
+    return seen
+
+
+def switch_margin(raw) -> dict:
+    """(loop, chain, column) -> distance to the nearest mstep switch.
+
+    A mechanism fixture must not sit near one: if delta is small a sub-ULP
+    fall-speed difference between backends flips the substep count, and the
+    comparison is then about scheduling rather than arithmetic. Computable only
+    here, because it needs the two fall speeds the sealed evidence omits.
+    """
+    parsed = parse_sched_stream(raw)
+    out: dict = {}
+    for (loop, chain, n), rec in sorted(parsed.items()):
+        if n != 1 or "dtcld" not in rec:
+            continue
+        dt = rec["dtcld"][0]
+        vmax = _vmax_per_column(rec, len(rec["mstep_native"]))
+        for col, v in enumerate(vmax):
+            x = v * dt
+            m = derive_mstep([v], dt)[0]
+            out[(loop, chain, col + 1)] = min(x - (m - 1), m - x)
+    return out
