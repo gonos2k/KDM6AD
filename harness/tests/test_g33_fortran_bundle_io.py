@@ -338,3 +338,47 @@ def test_a_verified_leg_cannot_be_forged_afterwards(tmp_path):
     leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
     with pytest.raises(TypeError):
         leg.manifest["abc_equal"] = False
+
+
+# ── the two control legs differ by MODULE and only by module ──────────────────
+
+def test_the_two_legs_may_compile_DIFFERENT_modules(tmp_path):
+    """legacy builds module_mp_kdm6.F, conservative module_mp_kdm6_cons.F. Those
+    hashes MUST differ — that difference is the comparison. Requiring the whole
+    BuildIdentity to match across legs made every real four-case run
+    INVALID_EVIDENCE, which is how the mistake was found: on the dt=300 bundle, not
+    in this file, because the fixture gave both legs the same module hash."""
+    a = _bundle(tmp_path / "a")
+    def _module(lane, p):                       # a whole variant, consistently
+        p["module_canonical_sha256"] = "k" * 64
+        if lane == "A":
+            p["module_compiled_sha256"] = "k" * 64
+    b = _bundle(tmp_path / "b", prov_edit=_module,
+                manifest_edit=lambda m: m.update(module_canonical_sha256="k" * 64))
+    lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert lg.build != cn.build, "the module hash must be visible in BuildIdentity"
+    assert lg.build.toolchain() == cn.build.toolchain(), (
+        "...but the TOOLCHAIN is what the two control legs share")
+
+
+def test_a_differing_toolchain_is_still_caught_across_legs(tmp_path):
+    a = _bundle(tmp_path / "a")
+    b = _bundle(tmp_path / "b",
+                prov_edit=lambda lane, p: p.update(compiler_binary_sha256="0" * 64),
+                manifest_edit=lambda m: m.update(compiler_binary_sha256="0" * 64))
+    lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert lg.build.toolchain() != cn.build.toolchain()
+
+
+def test_a_differing_harness_source_is_caught_across_legs(tmp_path):
+    # the module is dropped from toolchain() BY NAME, so everything else still counts
+    a = _bundle(tmp_path / "a")
+    harness = {"g33_fortran_driver.f90": "z" * 64}
+    b = _bundle(tmp_path / "b",
+                prov_edit=lambda lane, p: p.update(harness_source_sha256=harness),
+                manifest_edit=lambda m: m.update(harness_source_sha256=harness))
+    lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert lg.build.toolchain() != cn.build.toolchain()

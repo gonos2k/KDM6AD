@@ -43,11 +43,17 @@ class FortranBundleError(Exception):
 
 @dataclass(frozen=True)
 class BuildIdentity:
-    """What produced this leg's binaries.
+    """What produced this leg's binaries, at two levels.
 
-    The two Fortran control legs must share it. Nothing compared them before, so
-    legacy and conservative could have come from different compilers, sources or
-    flags and the four-way problem identity would not have shown it.
+    The WHOLE identity — microphysics module included — must hold across a bundle's
+    own A/B/C lanes: they are three builds of one variant, so a differing module
+    there means the control and the instrumented run are not the same program.
+
+    ACROSS the two control legs only `toolchain()` may be compared. Legacy compiles
+    module_mp_kdm6.F and conservative module_mp_kdm6_cons.F: those hashes MUST differ,
+    because that difference IS the comparison. Requiring the full identity to match
+    made every real four-case run INVALID_EVIDENCE — the same shape of mistake as the
+    flat problem identity in the comparator (owner P0-C2).
     """
     compiler_binary_sha256: str
     compiler_version: str
@@ -64,6 +70,18 @@ class BuildIdentity:
             host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
             harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
         )
+
+    def toolchain(self) -> tuple:
+        """Everything the two control legs must share: the compiler, the harness, and
+        the host sources OTHER than the microphysics module under test.
+
+        The module is carried in host_source_sha256 under one normalized key
+        (`module_mp_kdm6[_cons].F`), so it is dropped by name rather than by value —
+        dropping whichever entry happens to differ would make the check vacuous."""
+        shared_host = tuple((n, h) for n, h in self.host_source_sha256
+                            if "kdm6" not in n)
+        return (self.compiler_binary_sha256, self.compiler_version,
+                shared_host, self.harness_source_sha256)
 
 
 @dataclass(frozen=True)

@@ -131,34 +131,42 @@ def main(argv=None) -> int:
                   "fortran_parameter_sha256":
                       bio.gfx.fortran_parameter_sha256(authority)}}
     try:
-        bundle = bio.verify_cpp_bundle(
+        cpp_bundle = bio.verify_cpp_bundle(
             a.cpp_bundle, expected_manifest_sha256=a.expected_manifest_sha256,
             expected_repo_commit=a.expected_repo_commit,
             expected_fixture_id=fixture_id,
             expected_fixture_manifest_sha256=a.expected_fixture_manifest_sha256)
+        cpp_legs = cpp_bundle["algorithms"]
         legs = {
-            "legacy_cpp": nz.from_cpp_evidence(bundle["algorithms"]["legacy"],
+            "legacy_cpp": nz.from_cpp_evidence(cpp_legs["legacy"],
                                                require_verdict_ready=anchored),
-            "conservative_cpp": nz.from_cpp_evidence(bundle["algorithms"]["conservative"],
+            "conservative_cpp": nz.from_cpp_evidence(cpp_legs["conservative"],
                                                      require_verdict_ready=anchored),
         }
         fortran_legs = {}
-        for algo, bundle, sha in (
+        # `bundle_dir`, not `bundle`: this loop used to rebind the name the C++
+        # bundle dict was loaded under, so any later read of it got a Path.
+        for algo, bundle_dir, sha in (
                 ("legacy", a.fortran_legacy,
                  a.expected_fortran_legacy_manifest_sha256),
                 ("conservative", a.fortran_conservative,
                  a.expected_fortran_conservative_manifest_sha256)):
             fortran_legs[algo], legs[f"{algo}_fortran"] = _load_fortran(
-                bundle, algo, manifest_sha=sha,
+                bundle_dir, algo, manifest_sha=sha,
                 commit=a.expected_repo_commit, fixture_id=a.expected_fixture_id,
                 fixture_sha=a.expected_fixture_manifest_sha256, anchored=anchored)
-        # The two Fortran CONTROL legs must come from one toolchain and one source.
-        # Built by different compilers or from different sources they are not a
+        # The two Fortran CONTROL legs must come from one TOOLCHAIN. Built by
+        # different compilers or from different harness/host sources they are not a
         # controlled pair, and nothing in the four-way problem identity shows it.
+        #
+        # Compared at toolchain() and not on the whole BuildIdentity: legacy compiles
+        # module_mp_kdm6.F and conservative module_mp_kdm6_cons.F, so their module
+        # hashes MUST differ — that difference is the comparison. The full identity is
+        # still enforced WITHIN each bundle's A/B/C lanes, where it does hold.
         builds = {algo: leg.build for algo, leg in fortran_legs.items()}
-        if len(set(builds.values())) != 1:
+        if len({b.toolchain() for b in builds.values()}) != 1:
             raise fbio.FortranBundleError(
-                "the Fortran legs were not built from one toolchain/source: "
+                "the Fortran legs were not built from one toolchain: "
                 + ", ".join(f"{algo}={b.compiler_version}/{b.compiler_binary_sha256[:12]}"
                             for algo, b in sorted(builds.items())))
     except Exception as e:                       # every reader is fail-closed
@@ -169,8 +177,7 @@ def main(argv=None) -> int:
     # `attested` is what the LEGS reported, not what the caller asked for. Four legs
     # or the word overstates the check: the C++ side was externally anchored long
     # before the Fortran side had a bundle to anchor.
-    per_leg = {f"{algo}_cpp": bundle["algorithms"][algo] for algo in ("legacy",
-                                                                     "conservative")}
+    per_leg = {f"{algo}_cpp": cpp_legs[algo] for algo in ("legacy", "conservative")}
     per_leg.update({f"{algo}_fortran": leg for algo, leg in fortran_legs.items()})
     result["attestation"] = {
         name: {"verdict_ready": bool(leg.verdict_ready),
@@ -187,11 +194,10 @@ def main(argv=None) -> int:
         evidence = cmp.VerifiedFourCase(
             legacy_fortran=cmp.AttestedLeg(fortran_legs["legacy"],
                                            legs["legacy_fortran"]),
-            legacy_cpp=cmp.AttestedLeg(bundle["algorithms"]["legacy"],
-                                       legs["legacy_cpp"]),
+            legacy_cpp=cmp.AttestedLeg(cpp_legs["legacy"], legs["legacy_cpp"]),
             conservative_fortran=cmp.AttestedLeg(fortran_legs["conservative"],
                                                  legs["conservative_fortran"]),
-            conservative_cpp=cmp.AttestedLeg(bundle["algorithms"]["conservative"],
+            conservative_cpp=cmp.AttestedLeg(cpp_legs["conservative"],
                                              legs["conservative_cpp"]))
         verdict = cmp.adjudicate_verified(evidence)
     else:
@@ -205,8 +211,7 @@ def main(argv=None) -> int:
                 "not originate in conservative-only arithmetic. It does not certify "
                 "column-number (rho*dz*nr) conservation, multi-subcycle behaviour "
                 "beyond this fixture's mstep range, or meteorological accuracy.",
-        "mstep_range": {k: list(v.mstep_range or ())
-                        for k, v in bundle["algorithms"].items()},
+        "mstep_range": {k: list(v.mstep_range or ()) for k, v in cpp_legs.items()},
     }
     _write(a.out, result)
     print(f"G3.3-M {result['verdict']}: {result['reason']}")
