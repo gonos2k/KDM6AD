@@ -618,11 +618,48 @@ def test_pure_adjudicate_never_returns_pass():
     assert "PASS" not in r["verdict"]          # promotion belongs to the verified entry
 
 
+class _ReadyLeg:
+    """A leg that reports itself decision-grade, so these tests reach the arithmetic."""
+    def __init__(self, run):
+        self.normalized, self.verdict_ready = run, True
+
+
+def _evidence(runs):
+    return cmp.VerifiedFourCase(*[_ReadyLeg(r) for r in runs])
+
+
+def test_the_decision_api_refuses_plain_dictionaries():
+    # normalized runs carry no attestation; a verdict built from them would describe
+    # evidence nobody anchored. Enforced by TYPE, not by callers remembering.
+    with pytest.raises(TypeError, match="VerifiedFourCase"):
+        cmp.adjudicate_verified({"algorithm": "legacy"})
+
+
+def test_an_unready_leg_cannot_reach_a_verdict():
+    class _Unready(_ReadyLeg):
+        def __init__(self, run):
+            super().__init__(run)
+            self.verdict_ready = False
+    ev = cmp.VerifiedFourCase(_Unready(_run("legacy")), _ReadyLeg(_run("legacy")),
+                              _ReadyLeg(_run("conservative")),
+                              _ReadyLeg(_run("conservative")))
+    r = cmp.adjudicate_verified(ev)
+    assert r["verdict"] == "INVALID_EVIDENCE" and "not decision-grade" in r["reason"]
+
+
+def test_the_debug_path_cannot_report_a_decision_verdict():
+    # a shared seed in an unattested run reports its own name, so automation reading
+    # only the verdict string cannot mistake it for a decision
+    r = cmp.adjudicate_unattested(_run("legacy"), _run("legacy"),
+                                  _run("conservative"), _run("conservative"))
+    assert r["verdict"] != cmp.PASS_MECHANISM
+
+
 def test_verified_entry_refuses_legs_without_identity():
     # the synthetic runs carry no problem identity, so the decision entry stops
     # before it ever looks at the arithmetic
-    r = cmp.adjudicate_verified(_run("legacy"), _run("legacy"),
-                                _run("conservative"), _run("conservative"))
+    r = cmp.adjudicate_verified(_evidence([_run("legacy"), _run("legacy"),
+                                           _run("conservative"), _run("conservative")]))
     assert r["verdict"] == "INVALID_EVIDENCE" and "problem identity" in r["reason"]
 
 
@@ -632,5 +669,48 @@ def test_verified_entry_refuses_a_different_problem():
     for leg in legs:
         leg["problem"] = dict(ident)
     legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
-    r = cmp.adjudicate_verified(*legs)
+    r = cmp.adjudicate_verified(_evidence(legs))
     assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]
+
+
+
+# -- problem identity has TWO levels (owner P0-C2) -----------------------------
+
+_IDENT = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4,
+          "local_parameter_sha256": "c" * 64}
+
+
+def _four_legs(**per_leg):
+    """Four legs sharing one problem identity; per_leg patches an index's problem."""
+    legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
+    for leg in legs:
+        leg["problem"] = dict(_IDENT)
+    for idx, patch in per_leg.items():
+        legs[int(idx[1:])]["problem"] = dict(_IDENT, **patch)
+    return _evidence(legs)
+
+
+def test_the_four_legs_must_share_the_SEDIMENTATION_identity():
+    r = cmp.adjudicate_verified(_four_legs(i2={"fixture_sha256": "f" * 64}))
+    assert r["verdict"] == "INVALID_EVIDENCE"
+    assert "same problem" in r["reason"]
+
+
+def test_backend_local_parameters_are_compared_WITHIN_a_backend():
+    """ccn0/scale_h exist only in the Fortran leg. Flattening them into the four-way
+    identity forced a choice between dropping them — which is what happened, so they
+    were checked nowhere — and demanding C++ carry a hash of variables it does not
+    have. Two Fortran legs built with different local parameters are not the same
+    full step, and that is now said at the level where it applies."""
+    # index 2 is conservative-F; index 0 is legacy-F
+    r = cmp.adjudicate_verified(_four_legs(i2={"local_parameter_sha256": "9" * 64}))
+    assert r["verdict"] == "INVALID_EVIDENCE"
+    assert "backend-local parameters" in r["reason"]
+
+
+def test_a_local_parameter_difference_ACROSS_backends_is_not_an_error():
+    # the C++ legs have no ccn0/scale_h at all; requiring them to match Fortran's
+    # hash would make every real four-case run INVALID
+    r = cmp.adjudicate_verified(_four_legs(i1={"local_parameter_sha256": None},
+                                           i3={"local_parameter_sha256": None}))
+    assert "backend-local" not in (r.get("reason") or "")

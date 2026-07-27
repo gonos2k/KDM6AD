@@ -183,16 +183,28 @@ fall speeds `numdt` maximises over — `work1_qs` / `work1_qg` included, which t
 sealed evidence omits.
 
 ```
-pass 1  run_cpp_probe.py   ->  probe.sched, schedule.json, switch_margin.json
+pass 1  run_cpp_probe.py   ->  probe.sched, schedule.json, probe_manifest.json,
+                               switch_margin.json
         Python RE-DERIVES the mstep vector from the raw fall speeds and requires
         the run's own mstep_native to match. The producer is not trusted.
 pass 2  seal that schedule, run for real, and require assert_reproduced():
         the evidence run's mstep vectors must equal the probe's exactly.
+seal    the probe TRAVELS WITH THE BUNDLE ({algo}-probe/), and
+        verify_cpp_bundle redoes the whole derivation offline.
 ```
 
-The probe is not evidence and cannot become it: no run identity, no binary binding,
-no descriptors, a case id marked with the probe marker, and `assert_not_evidence()`
-at the decision boundary.
+The probe is not evidence and cannot become it: it produces no run identity, no
+binary binding and no descriptors, and the sealed path refuses any container id that
+was not declared in advance — so nothing a probe writes can enter the evidence tree.
+
+The reproduce gate above runs at PRODUCTION time. That is not enough on its own: a
+bundle read later would carry the schedule and the producer's word that the two
+matched. So `{algo}-probe/` ships inside the bundle and `verify_cpp_bundle` re-derives
+from those bytes — the stream's own fall speeds must imply the schedule the evidence
+was sealed with, the probe manifest must name the same diagnostic binary the evidence
+came from, and the sealed containers must show the same substeps the probe ran. A
+contract declaring more than one loop or substep with no probe beside it is refused:
+the number could not have been established.
 
 Measured for `arithmetic_multisubcycle_v1`, identical for both algorithms:
 `loops = 3`, `mstepmax_main = [9, 10, 7]`, `mstepmax_ice = [1, 1, 1]`. The ABC stream

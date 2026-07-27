@@ -59,9 +59,20 @@ SEED_VERDICTS = (SHARED_SEED_CANDIDATE, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENC
 #: historical output divergence and to propagate downstream, neither of which a
 #: synthetic fixture can establish. That promotion is the owner's, not the tool's.
 PASS_MECHANISM = "PASS_MECHANISM"
+#: What an unattested debug run may report at best. A separate name so a caller that
+#: reads only the verdict cannot mistake it for a decision-grade result.
+UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
-_STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output")
+_STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output",
+           "outer_post_sed", "outer_post_micro")
+#: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
+#: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
+#: is what the next loop starts from (owner P0-C1).
+_STAGE_MAJOR = {"outer_pre_sed": 0, "substep_pre": 1, "surface": 2,
+                "outer_post_sed": 3, "outer_post_micro": 4, "final_output": 5}
+#: Whole-K snapshots taken once per outer loop (n=0), as opposed to per substep.
+_OUTER_SNAPSHOTS = ("outer_pre_sed", "outer_post_sed", "outer_post_micro")
 _LOOP_LAST = 1 << 30      # sorts a whole-step record after every loop
 _PRESED = ("outer_pre_sed", "substep_pre")
 # Canonical execution order within one outer loop: the pre-sed snapshot, then each
@@ -77,6 +88,63 @@ def _lane_of(identity) -> gev.LaneKey:
     identity layout cannot silently produce a wrong lane key."""
     _kind, loop, chain, n, col = identity[:5]
     return gev.LaneKey(loop, chain, n, col)
+
+
+@dataclass(frozen=True)
+class VerifiedFourCase:
+    """The four attested legs, as one object.
+
+    Exists so the decision API cannot be reached with anything less. Each leg is the
+    backend's own Verified*Leg (which owns its attestation state) paired with the
+    normalized run the comparator reads. Constructing this is the ONLY way to obtain
+    PASS_MECHANISM.
+    """
+    legacy_fortran: object
+    legacy_cpp: object
+    conservative_fortran: object
+    conservative_cpp: object
+
+    @property
+    def legs(self):
+        return (("legacy-F", self.legacy_fortran), ("legacy-C++", self.legacy_cpp),
+                ("conservative-F", self.conservative_fortran),
+                ("conservative-C++", self.conservative_cpp))
+
+    def unready(self) -> list:
+        """Names of legs that are not decision-grade."""
+        return [name for name, leg in self.legs
+                if not getattr(leg, "verdict_ready", False)]
+
+    def runs(self) -> tuple:
+        return tuple(leg.normalized for _name, leg in self.legs)
+
+
+@dataclass(frozen=True)
+class AttestedLeg:
+    """One backend leg: its attested artifact and the run the comparator reads."""
+    verified: object          # VerifiedCppLeg | VerifiedFortranLeg
+    normalized: dict
+
+    @property
+    def verdict_ready(self) -> bool:
+        return bool(getattr(self.verified, "verdict_ready", False))
+
+
+@dataclass(frozen=True)
+class SedimentationIdentity:
+    """What makes four legs comparable: one fixture, one common parameter set, one
+    grid. Deliberately EXCLUDES parameters only one backend has — those are a
+    full-step property, and holding all four legs to them would either fail always or
+    force the value to be dropped (which is what used to happen)."""
+    fixture_sha256: str
+    parameter_sha256: str
+    B: int
+    K: int
+
+    @classmethod
+    def of(cls, problem: dict) -> "SedimentationIdentity":
+        return cls(problem["fixture_sha256"], problem["parameter_sha256"],
+                   problem["B"], problem["K"])
 
 
 class StructuralError(Exception):
@@ -183,7 +251,7 @@ def _events(run) -> list[Event]:
                     raise StructuralError(f"final_output must have loop=0, got {loop}")
                 out.append(Event(
                     # a whole-step output sorts after every loop's surface records
-                    order=((_LOOP_LAST if final else loop), (3 if final else 2),
+                    order=((_LOOP_LAST if final else loop), _STAGE_MAJOR[stage],
                            0, 0, 0, 0, 0, 0, fo, col),
                     phase=stage,
                     identity=(stage, loop, n, col, k, fld, dt),
@@ -192,11 +260,11 @@ def _events(run) -> list[Event]:
             else:                                 # outer_pre_sed | substep_pre(n)
                 if not (k == -1 or 0 <= k < K):
                     raise StructuralError(f"{stage} k {k} out of -1..{K - 1}")
-                if stage == "outer_pre_sed" and n != 0:
-                    raise StructuralError(f"outer_pre_sed must have n=0, got {n}")
+                if stage in _OUTER_SNAPSHOTS and n != 0:
+                    raise StructuralError(f"{stage} must have n=0, got {n}")
                 if stage == "substep_pre" and n < 1:
                     raise StructuralError(f"substep_pre must have n>=1, got {n}")
-                major = 0 if stage == "outer_pre_sed" else 1
+                major = _STAGE_MAJOR[stage]
                 out.append(Event(
                     order=(loop, major, _CHAIN_RANK[chain], n, 0, k, 0, 0, fo, col),
                     phase=stage,
@@ -350,6 +418,27 @@ def classify(legacy: Divergence, conservative: Divergence):
     for name, d in pairs:                         # 3. upstream (pre-sed)
         if d.phase in _PRESED:
             return "INCONCLUSIVE", f"{name} divergence upstream at {d.phase} {d.identity}"
+    # 3b. BORN AFTER SEDIMENTATION (owner P0-C1). The bridge makes this sayable at
+    # all: before it, a difference born in loop L's microphysics first became visible
+    # at loop L+1's pre-sed entry and was reported as "upstream at outer_pre_sed",
+    # which named where it was SEEN rather than where it came from.
+    #
+    # Still INCONCLUSIVE, and deliberately so. That a divergence appeared after the
+    # sedimentation result matched is evidence it did not come from conservative-only
+    # arithmetic — but calling that a mechanism PASS is a C4 adjudication, which is
+    # the owner's and not this tool's. What changes here is the attribution the
+    # reason carries, not the tier.
+    for name, d in pairs:
+        if d.phase == "outer_post_micro":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — born AFTER "
+                f"sedimentation, in the microphysics of the same outer loop (the "
+                f"sedimentation result matched); attribution is owner adjudication")
+        if d.phase == "outer_post_sed":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the sedimentation "
+                f"RESULT differs while every instrumented substep matched, so the "
+                f"difference is in sedimentation but not on the recorded ladder")
     for name, d in pairs:                         # 4. unsealed external precondition
         if d.kind == mech.EXTERNAL_INPUT:
             return "INCONCLUSIVE", (f"{name} first-diverges at external input {d.tag} "
@@ -407,7 +496,8 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
             "conservative_first_divergence": _d(con)}
 
 
-def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
+def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
+                           *, promote: bool):
     """DECISION entry point — use this, not adjudicate(), for a C4 verdict.
 
     `adjudicate()` is pure verdict logic over four already-trusted runs. It answers
@@ -427,16 +517,38 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
         return {"verdict": "INVALID_EVIDENCE", "reason": reason,
                 "legacy_first_divergence": None, "conservative_first_divergence": None}
 
-    # FOUR-WAY SAME PROBLEM: all four legs must describe one problem. Comparing
-    # legs built from different fixtures or parameters would be a category error,
-    # not a mechanism finding.
+    # SAME PROBLEM, AT TWO LEVELS (owner P0-C2). Comparing legs built from different
+    # fixtures or parameters would be a category error, not a mechanism finding — but
+    # "the same problem" is not one predicate:
+    #
+    #   SedimentationIdentity  the fixture, the common parameters and the grid. All
+    #                          FOUR legs must share it; it is what makes them
+    #                          comparable at all.
+    #   FullStepIdentity       the above PLUS parameters only one backend has
+    #                          (Fortran's ccn0/scale_h). Only the two legs of that
+    #                          backend can be held to it.
+    #
+    # Flattening these into one dict forced a choice between dropping the local
+    # parameters — which is what happened, so they were never checked anywhere — and
+    # demanding C++ carry a hash of variables it does not have.
     ids = {name: run.get("problem") for name, run in legs}
     if any(v is None for v in ids.values()):
         missing = sorted(n for n, v in ids.items() if v is None)
         return _invalid(f"legs without a problem identity: {missing}")
-    distinct = {tuple(sorted(v.items())) for v in ids.values()}
-    if len(distinct) != 1:
+    try:
+        sed = {name: SedimentationIdentity.of(v) for name, v in ids.items()}
+    except KeyError as e:
+        return _invalid(f"a leg's problem identity lacks {e}")
+    if len(set(sed.values())) != 1:
         return _invalid(f"the four legs do not describe the same problem: {ids}")
+    # ...and within one backend, the full-step preconditions must agree too.
+    for backend, pair in (("F", ("legacy-F", "conservative-F")),
+                          ("C++", ("legacy-C++", "conservative-C++"))):
+        local = {n: ids[n].get("local_parameter_sha256") for n in pair}
+        if len(set(local.values())) != 1:
+            return _invalid(
+                f"the two {backend} legs disagree on backend-local parameters, so "
+                f"they are not the same full step: {local}")
 
     for name, run in legs:
         try:
@@ -444,7 +556,7 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
         except (replay.FidelityError, KeyError, TypeError, ValueError) as e:
             return _invalid(f"{name} ladder fidelity: {e}")
     result = adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
-    if result["verdict"] == SHARED_SEED_CANDIDATE:
+    if result["verdict"] == SHARED_SEED_CANDIDATE and promote:
         # Every gate above has passed, so the candidate may be promoted — but only
         # to the MECHANISM tier. What is still missing is not a check that could be
         # added here; it is evidence a synthetic fixture cannot contain.
@@ -458,4 +570,38 @@ def adjudicate_verified(legacy_f, legacy_c, conservative_f, conservative_c):
             "the mechanism is the one the historical Gate-B failure exhibited",
         ]
     result["problem"] = dict(ids["legacy-F"])
+    return result
+
+
+def adjudicate_verified(evidence: VerifiedFourCase) -> dict:
+    """THE decision entry point. Only a VerifiedFourCase can reach PASS_MECHANISM.
+
+    Taking four plain dicts made the promotion reachable by any caller willing to
+    build them, with the readiness check living in the CLI. A property enforced by
+    convention at one call site is not a property of the system.
+    """
+    if not isinstance(evidence, VerifiedFourCase):
+        raise TypeError(
+            "adjudicate_verified requires a VerifiedFourCase — normalized dicts alone "
+            "carry no attestation, and a verdict built from them would describe "
+            "evidence nobody anchored")
+    unready = evidence.unready()
+    if unready:
+        return {"verdict": "INVALID_EVIDENCE",
+                "reason": f"legs that are not decision-grade: {unready}",
+                "legacy_first_divergence": None,
+                "conservative_first_divergence": None}
+    return _adjudicate_normalized(*evidence.runs(), promote=True)
+
+
+def adjudicate_unattested(legacy_f, legacy_c, conservative_f, conservative_c) -> dict:
+    """Numerics only, for debugging. Structurally cannot return PASS_MECHANISM.
+
+    A shared seed here reports UNATTESTED_MECHANISM_CANDIDATE, so an automation that
+    reads only the verdict string cannot mistake a debug run for a decision.
+    """
+    result = _adjudicate_normalized(legacy_f, legacy_c, conservative_f,
+                                    conservative_c, promote=False)
+    if result["verdict"] == SHARED_SEED_CANDIDATE:
+        result["verdict"] = UNATTESTED_MECHANISM_CANDIDATE
     return result

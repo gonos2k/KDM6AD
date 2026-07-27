@@ -37,7 +37,12 @@ import numpy as np           # noqa: E402
 import g33_schema as schema  # noqa: E402
 import g33_derived as dv      # noqa: E402
 
-_COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface")
+#: The bridge stages (outer_post_sed / outer_post_micro) are compared like any other
+#: snapshot: both backends emit them, so a divergence in the carry between outer loops
+#: is a comparator finding rather than something only a human reading two dumps could
+#: notice (owner P0-C1).
+_COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface",
+                      "outer_post_sed", "outer_post_micro")
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
 _PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",
@@ -91,12 +96,6 @@ def _semantic(stage, field):
     return field in schema.semantic_stage_fields(stage)
 
 
-# The stage chain each stage belongs to (matches the C++ record keys): the outer
-# pre-sed snapshot and the surface accumulation are outer-loop stages ("-"), the
-# per-substep entry state belongs to the transporting chain.
-_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
-
-
 def from_fortran_run(run) -> dict:
     """FortranRun -> normalized run, projected onto the common semantic schema."""
     ops = [{"loop": o.loop, "chain": o.chain, "n": o.n, "col": o.col, "k": o.k,
@@ -117,7 +116,6 @@ def from_fortran_run(run) -> dict:
                        "field": field, "dtype": dtype, "bits": bits})
     # The cumulative precipitation is a WHOLE-STEP output, so it goes in its own
     # phase rather than being attached to the last loop's surface increment.
-    last_loop = max((s["loop"] for s in stages), default=1)
     for (family, col), bits in run.precip.items():
         field = _PREC_FIELD.get(family)
         if field is None:
@@ -127,10 +125,15 @@ def from_fortran_run(run) -> dict:
                        "bits": bits})
     B = max((o["col"] for o in ops), default=0)
     K = max((o["k"] for o in ops), default=-1) + 1
-    # the identity of the PROBLEM this leg solved, so a four-way comparison can
-    # refuse legs built from different fixtures or parameters
+    # The identity of the PROBLEM this leg solved, at two levels (owner P0-C2).
+    # `local_parameter_sha256` covers ccn0/scale_h, which only the Fortran backend
+    # has: it was previously dropped here so that four-way equality could succeed,
+    # which silently discarded a precondition rather than checking it at the level
+    # where it applies. It now travels as a BACKEND-LOCAL key, compared between the
+    # two Fortran legs instead of against C++.
     problem = {"fixture_sha256": run.fixture_sha256,
-               "parameter_sha256": run.parameter_sha256, "B": B, "K": K}
+               "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
+               "local_parameter_sha256": run.local_parameter_sha256}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 

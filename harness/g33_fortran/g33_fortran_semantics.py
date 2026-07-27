@@ -16,10 +16,20 @@ Checks (all bit-exact; f32 arithmetic via numpy.float32 in the reference order):
   6  QR_FALLACC.fall_after at (bottom cell, last substep) == surface.bottom_fall_qr.
   7  bottom_fall_total == (((qr+qs)+qg)+qi); rain PREC == sum_L of the per-loop
      surface increments (it is the whole-step accumulator, not one loop's value).
+  8  outer_post_micro(L) == outer_pre_sed(L+1) for every carried prognostic — the
+     outer-loop carry is evidence, not an assumption (owner P0-C1). Skipped for a
+     pre-v4 stream, which carries no bridge records at all; whether their absence
+     is admissible is the record-universe validator's call, keyed off the banner.
 """
 import struct
 
 import numpy as np
+
+
+#: What the outer loop carries from one cloud sub-cycle to the next. The INTERSECTION
+#: of the two bridge snapshots' field sets, since the carry can only be stated about
+#: fields both of them observe.
+_CARRIED_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg")
 
 
 class SemanticError(ValueError):
@@ -38,7 +48,8 @@ def _signed_i32(u):
     return u - 0x100000000 if u >= 0x80000000 else u
 
 
-_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
+_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main",
+          "outer_post_sed": "-", "outer_post_micro": "-"}
 
 
 def _sv(stages, stage, n, field, col, k, loop=1):
@@ -149,4 +160,23 @@ def verify_semantics(run):
                                              * np.float32(1000.0)) + rain)
         if _f32_bits(rain) != run.precip[(1, c)]:
             raise SemanticError(f"PREC rain replay mismatch c={c}")
+
+    # (8) THE OUTER-LOOP CARRY. What loop L ends with is what loop L+1 begins with,
+    # for every prognostic the loop carries. Without this the outer loops are a
+    # sequence of snapshots with nothing linking them: a divergence first visible at
+    # loop 2's pre-sed entry could have been born in loop 1's sedimentation, in the
+    # microphysics that follows it, or in the carry itself, and the evidence could
+    # not tell those apart. Bit-exact, because a carry is a copy and not a
+    # computation — anything but equality is a defect in the evidence, not a
+    # tolerance question.
+    has_bridge = any(key[2] == "outer_post_micro" for key in S)
+    for loop in (loops[:-1] if has_bridge else ()):
+        for c in range(1, B + 1):
+            for k in range(K):
+                for f in _CARRIED_FIELDS:
+                    if _sv(S, "outer_post_micro", 0, f, c, k, loop)[1] != \
+                            _sv(S, "outer_pre_sed", 0, f, c, k, loop + 1)[1]:
+                        raise SemanticError(
+                            f"outer carry broken: outer_post_micro(L{loop}).{f} != "
+                            f"outer_pre_sed(L{loop + 1}).{f} c={c} k={k}")
     return True

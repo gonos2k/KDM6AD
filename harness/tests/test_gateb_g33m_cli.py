@@ -29,7 +29,9 @@ def test_exit_code_contract_is_the_documented_one():
     # PASS_MECHANISM, not PASS: the protocol's PASS needs historical causality
     # and downstream propagation, which no synthetic fixture can supply
     assert gate.EXIT == {"PASS_MECHANISM": 0, "FAIL": 1,
-                         "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+                         "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3,
+                         # a debug run must not share exit 0 with a decision
+                         "UNATTESTED_MECHANISM_CANDIDATE": 5}
     assert gate.EXIT_USAGE == 4
 
 

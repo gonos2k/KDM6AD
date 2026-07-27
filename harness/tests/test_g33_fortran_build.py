@@ -28,10 +28,12 @@ pytestmark = pytest.mark.skipif(
 ALGOS = ["legacy", "conservative"]
 
 
-def _build_and_run(algo="legacy", *, overlay=False, dump=False):
+def _build_and_run(algo="legacy", *, overlay=False, dump=False, fixture=None):
     with tempfile.TemporaryDirectory(prefix="g33-fortran-test.") as td:
         out = Path(td) / "build"
         flags = [f"--algo={algo}"]
+        if fixture:
+            flags.append(f"--fixture={fixture}")
         if dump:
             flags.append("--dump")        # implies --overlay
         elif overlay:
@@ -54,7 +56,7 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33F BEGIN v3 {algo}" in out and f"G33F END v3 {algo}" in out
+    assert f"G33F BEGIN v4 {algo}" in out and f"G33F END v4 {algo}" in out
     # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
     state = fd.parse_state(out)
     assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
@@ -297,12 +299,18 @@ def test_presed_stage_records():
 
     C = _build_and_run("legacy", overlay=True, dump=True)
     run = fd.parse_fortran_run(C, "legacy", 4, 3)
-    # outer_pre_sed = 6 fields x 3 x 4; both stages present.
-    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 6 * 3 * 4
+    # v4: outer_pre_sed = 8 carried + rho/delz, x 3 cols x 4 levels
+    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 10 * 3 * 4
     assert any(k[2] == "substep_pre" for k in run.stages)
     assert sum(1 for k in run.stages if k[2] == "surface") == 7 * 3   # P0-8 (+denr)
     assert (1, "-", "outer_pre_sed", 0, "qr", 1, 0) in run.stages
     assert (1, "-", "surface", 0, "bottom_fall_qr", 1, -1) in run.stages
+    # the outer-loop causal bridge (P0-C1): both ends of the loop body, carrying the
+    # whole state, so a divergence between two loops has an attributable origin
+    for stage in ("outer_post_sed", "outer_post_micro"):
+        assert sum(1 for k in run.stages if k[2] == stage) == 8 * 3 * 4, stage
+        for field in ("qv", "t", "qc", "qi", "qs", "qg"):
+            assert (1, "-", stage, 0, field, 1, 0) in run.stages, f"{stage}.{field}"
 
     cl = C.splitlines()
     sg = next(i for i, l in enumerate(cl) if l.startswith("G33F STAGE 1 - outer_pre_sed"))
@@ -438,3 +446,32 @@ def test_run_wrapper_writes_complete_manifest():
         assert man["algorithm"] == "legacy" and man["op_record_count"] > 0
         assert all(len(man[k]) == 64 for k in ("fixture_sha256", "stdout_sha256",
                                                "compiler_binary_sha256"))
+
+
+def test_the_outer_loop_carry_is_checked_and_a_break_is_caught():
+    """outer_post_micro(L) must BE outer_pre_sed(L+1) — owner P0-C1.
+
+    Runs the multi-subcycle fixture, because the default one takes a single outer
+    loop and a single-loop run has no carry to check: a test on that fixture would
+    pass whether or not check (8) existed.
+    """
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+    import g33_fortran_semantics as sem
+
+    C = _build_and_run("legacy", dump=True,
+                       fixture="g33_fixture_multisubcycle_v1")
+    run = fd.parse_fortran_run(C, "legacy", 4, 3)
+    loops = sorted({k[0] for k in run.stages})
+    assert len(loops) > 1, "the multi-subcycle fixture must take more than one loop"
+    sem.verify_semantics(run)                                   # the carry holds
+
+    # break it: what loop 1 ends with is no longer what loop 2 begins with
+    broken = fd.parse_fortran_run(C, "legacy", 4, 3)
+    key = (1, "-", "outer_post_micro", 0, "qv", 1, 0)
+    dtype, bits = broken.stages[key]
+    broken.stages[key] = (dtype, bits ^ 0x1)                    # one ULP is enough
+    with pytest.raises(sem.SemanticError, match="outer carry broken"):
+        sem.verify_semantics(broken)

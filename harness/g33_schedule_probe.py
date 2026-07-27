@@ -88,8 +88,8 @@ def read_probe(containers: dict) -> dict:
             loop, chain, n = r.get("outer_loop"), r.get("chain"), r.get("n")
             if not isinstance(n, int) or n < 1 or chain in (None, "-"):
                 continue                   # outer_* snapshots carry no substep
-            entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": 0})
-            entry["n_seen"] = max(entry["n_seen"], n)
+            entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": set()})
+            entry["n_seen"].add(n)
             if n == 1 and r.get("stage") == "substep_pre" \
                     and r["field"] == "mstep_decoded_i32":
                 entry["mstep"] = list(gd.unpack_values(r["dtype"], r["payload"]))
@@ -126,10 +126,16 @@ def sealed_schedule(base: dict, probe: dict) -> dict:
         for loop in loops:
             entry = probe[(loop, chain)]
             mx = max(entry["mstep"])
-            if entry["n_seen"] != mx:
+            # EVERY substep, not the furthest one. Comparing max(n) against mx let a
+            # probe that emitted only {1, 9} seal a nine-substep schedule: the gap is
+            # exactly where a producer that skipped work would hide.
+            ran = set(entry["n_seen"])
+            if ran != set(range(1, mx + 1)):
+                gaps = sorted(set(range(1, mx + 1)) - ran)
                 raise ProbeError(
-                    f"loop {loop} chain {chain}: ran {entry['n_seen']} substeps but "
-                    f"its own mstep implies {mx} — the probe did not complete")
+                    f"loop {loop} chain {chain}: mstep implies substeps 1..{mx} but "
+                    f"the probe ran {sorted(ran)}"
+                    + (f" — never {gaps}" if gaps else " — and more besides"))
             maxima.append(mx)
         out[f"mstepmax_{chain}"] = maxima
     return out
@@ -155,6 +161,13 @@ def assert_reproduced(probe: dict, evidence: dict) -> None:
 _WORK_FIELDS = ("work1_qr", "workn_qr", "work1_qs", "work1_qg")
 
 _SCHED_TAG = "KDM6SCHED"
+
+#: The probe's lineage record, written beside schedule.json and copied into the
+#: bundle. Named here because the producer and the verifier both need it: a bundle
+#: that ships a schedule without the stream it came from can only be taken on trust.
+PROBE_MANIFEST = "probe_manifest.json"
+PROBE_STREAM = "probe.sched"
+PROBE_SCHEDULE = "schedule.json"
 
 #: Exactly what a probe scope may carry. Closed, because the stream's whole purpose
 #: is to become a sealed container universe.
@@ -214,8 +227,8 @@ def probe_from_stream(raw) -> dict:
     parsed = parse_sched_stream(raw)
     seen: dict = {}
     for (loop, chain, n), rec in sorted(parsed.items()):
-        entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": 0})
-        entry["n_seen"] = max(entry["n_seen"], n)
+        entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": set()})
+        entry["n_seen"].add(n)
         if n != 1:
             continue                      # mstep is fixed before the substep loop
         missing = [f for f in (*_WORK_FIELDS, "mstep_native", "dtcld")

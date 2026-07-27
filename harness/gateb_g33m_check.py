@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -30,15 +29,16 @@ sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE / "g33_fortran"))
 import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
-import g33_fortran_dump as fd           # noqa: E402
-import g33_fortran_semantics as sem     # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
 import g33_normalize as nz              # noqa: E402
 
 # PASS_MECHANISM, not PASS: the tool cannot reach the protocol's PASS, which also
 # needs historical causality and downstream propagation. Exit 0 still means "the
 # mechanism question came back clean", never "C4 may be released".
-EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3}
+EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3,
+        # A debug run must never share exit 0 with a decision. Automation that reads
+        # only the return code would otherwise take one for the other.
+        "UNATTESTED_MECHANISM_CANDIDATE": 5}
 EXIT_USAGE = 4
 
 
@@ -152,6 +152,15 @@ def main(argv=None) -> int:
                 bundle, algo, manifest_sha=sha,
                 commit=a.expected_repo_commit, fixture_id=a.expected_fixture_id,
                 fixture_sha=a.expected_fixture_manifest_sha256, anchored=anchored)
+        # The two Fortran CONTROL legs must come from one toolchain and one source.
+        # Built by different compilers or from different sources they are not a
+        # controlled pair, and nothing in the four-way problem identity shows it.
+        builds = {algo: leg.build for algo, leg in fortran_legs.items()}
+        if len(set(builds.values())) != 1:
+            raise fbio.FortranBundleError(
+                "the Fortran legs were not built from one toolchain/source: "
+                + ", ".join(f"{algo}={b.compiler_version}/{b.compiler_binary_sha256[:12]}"
+                            for algo, b in sorted(builds.items())))
     except Exception as e:                       # every reader is fail-closed
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")
         _write(a.out, result)
@@ -171,8 +180,24 @@ def main(argv=None) -> int:
         for name, leg in sorted(per_leg.items())}
     result["attested"] = all(leg.verdict_ready for leg in per_leg.values())
 
-    verdict = cmp.adjudicate_verified(legs["legacy_fortran"], legs["legacy_cpp"],
-                                      legs["conservative_fortran"], legs["conservative_cpp"])
+    # The decision API takes a TYPE, not four dicts: normalized runs carry no
+    # attestation, and a verdict built from them would describe evidence nobody
+    # anchored. An unattested debug run goes down a path that cannot promote.
+    if anchored:
+        evidence = cmp.VerifiedFourCase(
+            legacy_fortran=cmp.AttestedLeg(fortran_legs["legacy"],
+                                           legs["legacy_fortran"]),
+            legacy_cpp=cmp.AttestedLeg(bundle["algorithms"]["legacy"],
+                                       legs["legacy_cpp"]),
+            conservative_fortran=cmp.AttestedLeg(fortran_legs["conservative"],
+                                                 legs["conservative_fortran"]),
+            conservative_cpp=cmp.AttestedLeg(bundle["algorithms"]["conservative"],
+                                             legs["conservative_cpp"]))
+        verdict = cmp.adjudicate_verified(evidence)
+    else:
+        verdict = cmp.adjudicate_unattested(
+            legs["legacy_fortran"], legs["legacy_cpp"],
+            legs["conservative_fortran"], legs["conservative_cpp"])
     result.update(verdict)
     result["scope"] = {
         "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ "

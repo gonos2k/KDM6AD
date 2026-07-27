@@ -210,6 +210,11 @@ STAGE_ANCHOR = "      do n = 1, mstepmax"
 OUTER_PRE_SED = [   # whole-K, once, before the sub-cycle (n=0)
     ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
     ("qv", "f32", "q(i,k)"), ("t", "f32", "t(i,k)"),
+    # the rest of the carried condensate, so the outer-loop carry can be stated
+    # about the WHOLE state both bridge snapshots observe (owner P0-C1)
+    ("qc", "f32", "qci(i,k,1)"), ("qi", "f32", "qci(i,k,2)"),
+    ("qs", "f32", "qrs(i,k,2)"), ("qg", "f32", "qrs(i,k,3)"),
+    # forcings, not carried prognostics — pre-sed only
     ("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)"),
 ]
 SUBSTEP_PRE_K = [   # whole-K, per substep n
@@ -221,6 +226,36 @@ SUBSTEP_PRE_COL = [  # per-column scalar (k=-1), per substep n
     ("mstep", "i32", "mstep(i)"), ("gate", "u8", "n.le.mstep(i)"),
     ("dtcld", "f32", "dtcld"),
 ]
+
+# ── outer-loop CAUSAL BRIDGE (owner P0-C1). outer_pre_sed alone shows the state at
+# each loop's sedimentation entry but nothing links loop L's exit to loop L+1's
+# entry, so a divergence appearing at loop 2's outer_pre_sed had no attributable
+# origin: it could have been born in loop 1's sedimentation, in the microphysics
+# that follows it, or in the carry between them. These two snapshots close that.
+#
+#   outer_post_sed    end of the ice chain — the sedimentation result
+#   outer_post_micro  end of the outer loop body — what loop L+1 starts from
+#
+# and the semantics check requires outer_post_micro(L) == outer_pre_sed(L+1)
+# bit-for-bit, so the carry itself is evidence rather than an assumption.
+#
+# Species indices are read from kdm62D's own pack (module_mp_kdm6.F:380-384 and
+# module_mp_kdm6_cons.F:400-404 — identical in both), not from WRF convention:
+#   qc = qci(:,:,1)  qi = qci(:,:,2)  qr = qrs(:,:,1)  qs = qrs(:,:,2)  qg = qrs(:,:,3)
+POST_SED_ANCHOR = "      enddo ! do n = 1, mstepmax_i"
+POST_MICRO_ANCHOR = "   enddo                  ! big loops"
+
+#: Every prognostic the outer loop carries. qr/nr alone would leave the observed
+#: loop-2 qv/t divergence outside the bridge — which is the divergence that made the
+#: bridge necessary.
+_CARRIED = [
+    ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
+    ("qv", "f32", "q(i,k)"), ("t", "f32", "t(i,k)"),
+    ("qc", "f32", "qci(i,k,1)"), ("qi", "f32", "qci(i,k,2)"),
+    ("qs", "f32", "qrs(i,k,2)"), ("qg", "f32", "qrs(i,k,3)"),
+]
+OUTER_POST_SED = list(_CARRIED)
+OUTER_POST_MICRO = list(_CARRIED)
 
 # ── surface causal operands (owner P0-8): the per-species bottom fall that feeds
 # rain/snow/graupel increments, so the qr-seed -> precip path is an operand set,

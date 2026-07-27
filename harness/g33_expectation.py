@@ -137,12 +137,22 @@ _STAGE_FIELDS_BASE = {
     # `t`, not "th": the evidence names what the code has — CoordinatorState's
     # member is t, and a field name the state does not carry would make the
     # comparator's identity claims subtly wrong. `rho` is the forcing `den`.
+    # The three snapshots share the CARRIED state (owner P0-C1): the outer-loop
+    # carry outer_post_micro(L) == outer_pre_sed(L+1) can only be stated about
+    # fields all of them observe, so qc/qi/qs/qg are here as well as qr/nr/qv/t.
+    # rho/delz are pre-sed forcings, not carried prognostics.
     "outer_pre_sed":   [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("t", "f32", "BK"), ("rho", "f32", "BK"), ("delz", "f32", "BK")],
+                        ("t", "f32", "BK"), ("qc", "f32", "BK"), ("qi", "f32", "BK"),
+                        ("qs", "f32", "BK"), ("qg", "f32", "BK"),
+                        ("rho", "f32", "BK"), ("delz", "f32", "BK")],
     "outer_post_sed":  [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("t", "f32", "BK")],
+                        ("t", "f32", "BK"), ("qc", "f32", "BK"),
+                        ("qi", "f32", "BK"), ("qs", "f32", "BK"),
+                        ("qg", "f32", "BK")],
     "outer_post_micro": [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
-                        ("t", "f32", "BK")],
+                        ("t", "f32", "BK"), ("qc", "f32", "BK"),
+                        ("qi", "f32", "BK"), ("qs", "f32", "BK"),
+                        ("qg", "f32", "BK")],
     # substep_pre is WHOLE-K, emitted once per substep (k=-1). Three fields the
     # protocol names are NOT here, each for a stated reason rather than omission:
     #   mstepmax_i32 (§55) — DERIVED offline, not dumped. Owner adjudication

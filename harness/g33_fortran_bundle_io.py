@@ -42,6 +42,31 @@ class FortranBundleError(Exception):
 
 
 @dataclass(frozen=True)
+class BuildIdentity:
+    """What produced this leg's binaries.
+
+    The two Fortran control legs must share it. Nothing compared them before, so
+    legacy and conservative could have come from different compilers, sources or
+    flags and the four-way problem identity would not have shown it.
+    """
+    compiler_binary_sha256: str
+    compiler_version: str
+    module_canonical_sha256: str
+    host_source_sha256: tuple          # sorted (name, sha) pairs
+    harness_source_sha256: tuple
+
+    @classmethod
+    def of(cls, prov: dict) -> "BuildIdentity":
+        return cls(
+            compiler_binary_sha256=prov["compiler_binary_sha256"],
+            compiler_version=prov["compiler_version"],
+            module_canonical_sha256=prov["module_canonical_sha256"],
+            host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
+            harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
+        )
+
+
+@dataclass(frozen=True)
 class VerifiedFortranLeg:
     """One Fortran leg that has passed re-verification.
 
@@ -53,6 +78,7 @@ class VerifiedFortranLeg:
     manifest: dict
     run: object                                # the parsed C-lane run
     problem: dict | None = None
+    build: BuildIdentity | None = None      # what produced the binaries
     bundle_verified: bool = False              # structure, hashes, A==B==C, semantics
     external_manifest_attested: bool = False   # manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False       # repo_commit pinned to a reviewed rev
@@ -64,6 +90,17 @@ class VerifiedFortranLeg:
         return (self.bundle_verified and self.external_manifest_attested
                 and self.source_commit_attested and self.fixture_attested
                 and self.repo_clean)
+
+
+def _freeze(obj):
+    """Recursively read-only. MappingProxyType guards only the TOP dict — a nested
+    one stays writable, so a caller could forge run.stages after verification while
+    verdict_ready stayed True. The C++ leg already froze deeply; this did not."""
+    if isinstance(obj, dict):
+        return MappingProxyType({k: _freeze(v) for k, v in obj.items()})
+    if isinstance(obj, list):
+        return tuple(_freeze(v) for v in obj)
+    return obj
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -158,18 +195,68 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         if manifest.get(key) != want:
             raise FortranBundleError(f"manifest {key} != the {fixture_id} authority")
 
-    # LANES: re-hash the bytes on disk. The manifest's own sha is an assertion.
-    streams = {}
+    # LANES: re-hash every artifact on disk. A manifest's own sha is an assertion
+    # about a file, not a fact about it — and an executable "verified" by checking
+    # that its recorded string is 64 characters long is not verified at all.
+    streams, provenance = {}, {}
     for lane in LANES:
-        path = _under(root, root / lane / "stdout.g33f")
-        data = path.read_bytes()
-        declared = (manifest.get("stdout_sha256") or {}).get(lane)
-        if _sha256_bytes(data) != declared:
+        lane_dir = root / lane
+        data = _under(root, lane_dir / "stdout.g33f").read_bytes()
+        if _sha256_bytes(data) != (manifest.get("stdout_sha256") or {}).get(lane):
             raise FortranBundleError(f"lane {lane} stdout sha256 != manifest")
-        exe_declared = (manifest.get("executable_sha256") or {}).get(lane)
-        if not exe_declared or len(exe_declared) != 64:
-            raise FortranBundleError(f"lane {lane} has no executable_sha256")
         streams[lane] = data
+
+        err = _under(root, lane_dir / "stderr.txt").read_bytes()
+        if _sha256_bytes(err) != (manifest.get("stderr_sha256") or {}).get(lane):
+            raise FortranBundleError(f"lane {lane} stderr sha256 != manifest")
+
+        prov_path = _under(root, lane_dir / "provenance.json")
+        prov_bytes = prov_path.read_bytes()
+        if _sha256_bytes(prov_bytes) != (
+                manifest.get("build_provenance_sha256") or {}).get(lane):
+            raise FortranBundleError(f"lane {lane} provenance sha256 != manifest")
+        try:
+            prov = json.loads(prov_bytes)
+        except json.JSONDecodeError as e:
+            raise FortranBundleError(f"lane {lane} provenance is not JSON: {e}") from None
+        need = ("compiler_binary_sha256", "compiler_version", "module_canonical_sha256",
+                "module_compiled_sha256", "executable_sha256", "host_source_sha256",
+                "harness_source_sha256")
+        missing = [k for k in need if k not in prov]
+        if missing:
+            raise FortranBundleError(f"lane {lane} provenance lacks {missing}")
+        provenance[lane] = prov
+
+        # the ACTUAL binary, hashed, against BOTH records of it
+        exe = _under(root, lane_dir / "g33_fortran_driver")
+        exe_sha = _sha256_file(exe)
+        if exe_sha != prov["executable_sha256"]:
+            raise FortranBundleError(
+                f"lane {lane} executable {exe_sha} != its own provenance")
+        if exe_sha != (manifest.get("executable_sha256") or {}).get(lane):
+            raise FortranBundleError(f"lane {lane} executable != root manifest")
+
+    # BUILD COHERENCE across the lanes. A is the canonical build; B and C carry the
+    # overlay, so their compiled module differs from A's by exactly the
+    # instrumentation and must agree with each other.
+    if provenance["A"]["module_compiled_sha256"] != \
+            provenance["A"]["module_canonical_sha256"]:
+        raise FortranBundleError("lane A is not the canonical module — it is the "
+                                 "control, so an overlay there invalidates the run")
+    if provenance["B"]["module_compiled_sha256"] != \
+            provenance["C"]["module_compiled_sha256"]:
+        raise FortranBundleError("lanes B and C compiled different modules")
+    build = BuildIdentity.of(provenance["A"])
+    for lane in ("B", "C"):
+        if BuildIdentity.of(provenance[lane]) != build:
+            raise FortranBundleError(
+                f"lane {lane} was built from a different toolchain or source than A")
+    # the root manifest's copies of the build facts must equal the lanes' own
+    for key in ("module_canonical_sha256", "compiler_binary_sha256",
+                "compiler_version", "host_source_sha256", "harness_source_sha256"):
+        declared = manifest.get(key)
+        if declared is not None and declared != provenance["A"][key]:
+            raise FortranBundleError(f"root manifest {key} != lane provenance")
 
     # NON-INVASIVENESS, re-derived. A and B are non-instrumented and C is not, so
     # their BYTES differ by construction — that difference is the instrumentation.
@@ -203,6 +290,18 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
             raise FortranBundleError(f"lane {lane} consumed a different fixture")
 
     run = parsed["C"]                           # the instrumented lane
+    # The manifest's SUMMARIES are claims about the stream. Recompute them: a bundle
+    # whose mstep table or op count disagrees with its own evidence is describing a
+    # different run than the one it ships.
+    declared_ops = manifest.get("op_record_count")
+    if declared_ops is not None and declared_ops != len(run.ops):
+        raise FortranBundleError(
+            f"manifest op_record_count {declared_ops} != {len(run.ops)} in the C lane")
+    declared_mstep = manifest.get("mstep_per_column") or {}
+    actual_mstep = {f"L{lp}/{ch}/col{c}": v for (lp, ch, c), v in run.mstep.items()}
+    if declared_mstep and declared_mstep != actual_mstep:
+        raise FortranBundleError(
+            f"manifest mstep_per_column != the C lane's own records")
     try:
         sem.verify_semantics(run)
         fd.verify_offline_replay(run)
@@ -218,8 +317,9 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
 
     return VerifiedFortranLeg(
         algorithm=algorithm,
-        manifest=MappingProxyType(manifest),
+        manifest=_freeze(manifest),
         run=run,
+        build=build,
         problem=problem,
         bundle_verified=True,
         external_manifest_attested=expected_manifest_sha256 is not None,

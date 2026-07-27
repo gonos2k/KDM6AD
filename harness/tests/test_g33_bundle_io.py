@@ -6,6 +6,8 @@ independent record-completeness gate, and verify_cpp_bundle the root attestation
 No torch."""
 import hashlib
 import json
+import shutil
+import struct
 import sys
 from pathlib import Path
 
@@ -120,6 +122,61 @@ def _full_evidence(root: Path, algo: str, omit_container=None, lie_mstep=False,
     return ev
 
 
+def _probe_stream(algo: str, mstep: int, dtcld=20.0) -> str:
+    """A KDM6SCHED stream whose RAW FALL SPEEDS derive exactly `mstep`.
+
+    floor(v * dtcld + 1) == mstep, so v sits in the middle of [m-1, m) / dtcld. The
+    verifier recomputes this from the stream, so a bundle cannot simply assert its
+    substep count.
+    """
+    v = (mstep - 0.5) / dtcld
+
+    def hexes(vals):
+        return " ".join(struct.pack(">f", float(x)).hex() for x in vals)
+
+    lines = []
+    # species_scope is [qr, nr], so only the main chain runs: the ice chain emits no
+    # probe records and no containers
+    for n in range(1, mstep + 1):
+        # the work fields are whole-column [B, K]; mstep and dtcld are [B]
+        lines.append(f"KDM6SCHED 1 main {n} work1_qr f32 {B * K} " + hexes([v] * (B * K)))
+        for field in ("workn_qr", "work1_qs", "work1_qg"):
+            lines.append(f"KDM6SCHED 1 main {n} {field} f32 {B * K} "
+                         + hexes([0.0] * (B * K)))
+        lines.append(f"KDM6SCHED 1 main {n} mstep_native f32 {B} " + hexes([mstep] * B))
+        lines.append(f"KDM6SCHED 1 main {n} dtcld f32 {B} " + hexes([dtcld] * B))
+    return "\n".join(lines) + "\n"
+
+
+def _probe_dir(root: Path, algo: str, mstep: int) -> dict:
+    """The probe a multi-substep bundle must ship, plus its lineage record.
+
+    A bundle that declares more than one substep has to show where that number came
+    from; the verifier re-derives it from this stream rather than trusting the
+    contract. Building it here keeps the synthetic multi-substep bundle honest — it
+    used to assert that such a bundle verifies while shipping nothing that could
+    establish its own substep count.
+    """
+    d = root / f"{algo}-probe"
+    d.mkdir()
+    stream = _probe_stream(algo, mstep)
+    (d / "probe.sched").write_text(stream)
+    schedule = json.dumps({"loops": 1, "mstepmax_main": [mstep],
+                           "mstepmax_ice": [mstep]}, indent=2, sort_keys=True) + "\n"
+    (d / "schedule.json").write_text(schedule)
+    (d / "probe_manifest.json").write_text(json.dumps({
+        "schema_version": 1, "algorithm": algo,
+        "fixture_id": gfx.load_manifest()["fixture_id"],
+        "diagnostic_driver_sha256": DIAG,
+        "probe_stream_sha256": hashlib.sha256(stream.encode()).hexdigest(),
+        "schedule_sha256": hashlib.sha256(schedule.encode()).hexdigest(),
+    }, indent=2, sort_keys=True) + "\n")
+    return {"probe_dir": f"{algo}-probe",
+            "probe_stream_sha256": _sha(d / "probe.sched"),
+            "schedule_sha256": _sha(d / "schedule.json"),
+            "probe_manifest_sha256": _sha(d / "probe_manifest.json")}
+
+
 def _abc_stdout(algo: str, truncate=False, rain="00000000") -> str:
     """A complete ABC frame: 12 state fields [B,K] + 3 increments [B], all f32."""
     lines = [f"KDM6ABC 1 {algo} fourcase_v1 {B} {K}"]
@@ -154,9 +211,14 @@ def _bundle(root: Path, truncate_abc=False, rain="00000000", **ev):
                 "algorithms": {}}
     substeps = ev.get("substeps", 1)
     msteps = list((ev.get("mstep_by_n") or {}).values()) or [ev.get("mstep", 1)]
+    declared = (ev.get("mstep_by_n") or {}).get(1, ev.get("mstep", 1))
     for algo in ("legacy", "conservative"):
         sha = _sha(root / f"{algo}-A" / "stdout.abc")
+        # A multi-substep contract must ship the probe that establishes it, exactly
+        # as a real bundle does.
+        probe = _probe_dir(root, algo, declared) if max(declared, substeps) > 1 else {}
         manifest["algorithms"][algo] = {
+            **probe,
             "abc_equal": True, "containers": 4 + substeps,
             "evidence_dir": f"{algo}-C-evidence",
             "fixture_sha256": gfx.fixture_sha256(authority),
@@ -405,3 +467,76 @@ def test_a_real_case_still_needs_every_declared_container(tmp_path):
     ev = _full_evidence(tmp_path, "legacy", omit_container="L1_outer_post_sed")
     with pytest.raises(bio.BundleError):
         bio.verify_cpp_evidence(ev, "legacy")
+
+
+# ── probe lineage: the schedule must be traceable to a run of THIS binary ──────
+# The reproduce gate lives in g33_fourcase_fixture_check, but it runs at PRODUCTION
+# time and the probe stream never travelled with the bundle. A later reader had the
+# producer's word and nothing else.
+
+def test_a_multi_substep_bundle_without_a_probe_is_refused(tmp_path):
+    root = _bundle(tmp_path, substeps=2, mstep=2)
+    shutil.rmtree(root / "legacy-probe")
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    for key in ("probe_dir", "probe_stream_sha256", "schedule_sha256",
+                "probe_manifest_sha256"):
+        m["algorithms"]["legacy"].pop(key)
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(bio.BundleError, match="no probe lineage"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_probe_of_a_DIFFERENT_binary_is_refused(tmp_path):
+    # the schedule would then describe one build's substep decisions and the sealed
+    # containers another's — the exact thing the two-pass design exists to rule out
+    root = _bundle(tmp_path, substeps=2, mstep=2)
+    pm = root / "legacy-probe" / "probe_manifest.json"
+    doc = json.loads(pm.read_text())
+    doc["diagnostic_driver_sha256"] = "9" * 64
+    pm.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    m["algorithms"]["legacy"]["probe_manifest_sha256"] = _sha(pm)
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(bio.BundleError, match="the evidence came from"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_probe_stream_that_derives_a_DIFFERENT_schedule_is_refused(tmp_path):
+    """The bundle ships a real stream, but its fall speeds imply one substep while the
+    evidence was sealed with two. Re-deriving offline is the only thing that can see
+    this: every hash in the bundle still agrees with every other."""
+    root = _bundle(tmp_path, substeps=2, mstep=2)
+    d = root / "legacy-probe"
+    slow = _probe_stream("legacy", mstep=1)          # v placed in [0, 1)/dtcld
+    (d / "probe.sched").write_text(slow)
+    pm = d / "probe_manifest.json"
+    doc = json.loads(pm.read_text())
+    doc["probe_stream_sha256"] = hashlib.sha256(slow.encode()).hexdigest()
+    pm.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    m["algorithms"]["legacy"]["probe_stream_sha256"] = _sha(d / "probe.sched")
+    m["algorithms"]["legacy"]["probe_manifest_sha256"] = _sha(pm)
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    with pytest.raises(bio.BundleError, match="but the evidence was sealed with"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_tampered_probe_stream_is_refused(tmp_path):
+    root = _bundle(tmp_path, substeps=2, mstep=2)
+    f = root / "legacy-probe" / "probe.sched"
+    f.write_text(f.read_text() + "KDM6SCHED 1 main 1 dtcld f32 1 41a00000\n")
+    with pytest.raises(bio.BundleError, match="probe.sched sha256"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_lineage_is_recorded_on_the_verified_leg(tmp_path):
+    leg = bio.verify_cpp_bundle(_bundle(tmp_path, substeps=2, mstep=2))["algorithms"]["legacy"]
+    assert leg.probe_lineage["diagnostic_driver_sha256"] == DIAG
+    with pytest.raises(TypeError):                    # frozen like the rest of the leg
+        leg.probe_lineage["diagnostic_driver_sha256"] = "0" * 64
+
+
+def test_a_single_substep_bundle_needs_no_probe(tmp_path):
+    # nothing to derive: the contract declares one loop of one substep
+    leg = bio.verify_cpp_bundle(_bundle(tmp_path))["algorithms"]["legacy"]
+    assert leg.probe_lineage is None

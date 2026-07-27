@@ -29,7 +29,8 @@ BASE = {"case_id": "abc-fourcase_v1", "pair_id": "abc-legacy", "backend": "cpp",
 
 def _probe(scopes):
     """{(loop, chain): mstep vector} -> a probe reading that ran to completion."""
-    return {k: {"mstep": v, "n_seen": max(v)} for k, v in scopes.items()}
+    return {k: {"mstep": v, "n_seen": set(range(1, max(v) + 1))}
+            for k, v in scopes.items()}
 
 
 # ---- the probe stream --------------------------------------------------------
@@ -200,8 +201,18 @@ def test_a_chain_that_emits_nothing_seals_as_the_neutral_one():
 def test_a_probe_that_stopped_early_cannot_be_sealed():
     # its own mstep says 9 substeps; it wrote 4. Sealing that would produce a
     # contract the evidence run could never satisfy.
-    probe = {(1, "main"): {"mstep": [1, 5, 9], "n_seen": 4}}
-    with pytest.raises(sp.ProbeError, match="did not complete"):
+    probe = {(1, "main"): {"mstep": [1, 5, 9], "n_seen": {1, 2, 3, 4}}}
+    with pytest.raises(sp.ProbeError, match=r"substeps 1\.\.9"):
+        sp.sealed_schedule(dict(BASE), probe)
+
+
+def test_a_probe_with_a_HOLE_cannot_be_sealed():
+    # It reached substep 9, so max(n) == mstep and the old completeness check was
+    # satisfied — while substeps 2..8 never ran at all. A summary that keeps only
+    # the furthest index cannot tell "ran 1..9" from "ran 1 and 9", and the gap is
+    # exactly where a producer that skipped work would hide.
+    probe = {(1, "main"): {"mstep": [1, 5, 9], "n_seen": {1, 9}}}
+    with pytest.raises(sp.ProbeError, match=r"never \[2, 3, 4, 5, 6, 7, 8\]"):
         sp.sealed_schedule(dict(BASE), probe)
 
 

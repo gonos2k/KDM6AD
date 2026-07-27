@@ -4,8 +4,23 @@
 Compares fort_<tag>.bin (per-j records: header lat,its,ite,kts,kte BE i4 +
 NF fields of (ni,nk) BE f4 col-major) against cpp_<tag>.bin (header B,K BE
 i4 + NF fields of (B,K) BE f4 row-major, b = i*jme + j, FIRST-TILE only).
-NF is inferred from the file structure on each side. Strict uint32 bit
-equality; K-flip auto-chosen as in compare_substep_stage.py.
+NF is inferred from the file structure on each side. Strict uint32 bit equality.
+
+WHAT THIS TOOL REQUIRES YOU TO DECLARE (owner PR E). Three properties used to be
+guessed, and each guess made a clean result mean less than it appeared to:
+
+  * --k-order {same,flip} is MANDATORY. The orientation used to be chosen by
+    whichever flip produced FEWER differences, which fits the orientation to the
+    data: on a genuinely diverging pair the tool picked the reading that minimised
+    the divergence it then reported. The other orientation's count is still printed,
+    as information, but never decides anything.
+  * --column-map names the b <-> (i,j) packing rather than baking it in. Only
+    i_major (b = i*jme + j) is implemented; naming it makes it a stated assumption
+    instead of a hidden one.
+  * --min-fields N requires N field NAMES. Comparing "the first N of each side"
+    assumes field i on one side is field i on the other, and nothing in the files
+    establishes that. The names do not verify the correspondence either — they make
+    the claim explicit and reviewable, which is the most this format allows.
 
 False-pass guards (Codex stop-review: an incomplete dump must never PASS):
   * HARD ERROR (exit 2) on: missing/too-small file, bad header (its>ite,
@@ -20,11 +35,17 @@ False-pass guards (Codex stop-review: an incomplete dump must never PASS):
     AND no compared field varies along K — all-zero / never-fired /
     degenerate dumps must not report PASS (mirrors FALSE-PASS GUARD 1 of
     compare_substep_stage.py).
-  * The RESULT line always carries the scope (FIRST-TILE vs FULL-DOMAIN)
-    and, when --min-fields was used, the SUBSET label — a first-tile or
-    subset pass must never read as a full validation.
+  * A partial comparison CANNOT report PASS or exit 0. FIRST-TILE scope or a
+    SUBSET of fields yields PARTIAL-CLEAN and exit 3, because a caller reading
+    only the return code would otherwise take a first-tile subset comparison for
+    a full validation. The label alone did not stop that: it was printed for a
+    human, while exit 0 was what automation read.
+
+exit: 0 full-domain, all-fields, bit-clean     1 differences found
+      2 hard error (malformed/degenerate)      3 clean but PARTIAL
 
 usage: compare_rate_dump.py <fort_TAG.bin> <cpp_TAG.bin>
+           --k-order {same,flip} [--column-map i_major]
            [--min-fields N] [field names...]
 """
 import argparse
@@ -123,7 +144,15 @@ def main():
     ap.add_argument("--min-fields", type=int, default=None,
                     help="explicit opt-in for a KNOWN cross-tree field-count "
                          "mismatch: compare exactly the first N fields (both "
-                         "sides must have >= N); RESULT carries a SUBSET label")
+                         "sides must have >= N, and N names must be given); "
+                         "the result is PARTIAL, never PASS")
+    ap.add_argument("--k-order", required=True, choices=("same", "flip"),
+                    help="DECLARED K orientation of the cpp dump relative to the "
+                         "fortran one. Required: choosing it by whichever flip "
+                         "differs less fits the orientation to the data")
+    ap.add_argument("--column-map", default="i_major", choices=("i_major",),
+                    help="b <-> (i,j) packing of the cpp dump; i_major is "
+                         "b = i*jme + j. Named so it is a stated assumption")
     args = ap.parse_intermixed_args()
 
     F, nf_f = read_fortran(args.fort)         # [nf, nj, nk, ni]
@@ -135,6 +164,14 @@ def main():
             die(f"--min-fields {nf} exceeds a side's field count "
                 f"(fort={nf_f} cpp={nf_c})")
         subset = (nf_f != nf) or (nf_c != nf)
+        # A field-count mismatch means the two sides' field LISTS differ, so
+        # "the first N of each" is a correspondence claim about data that does
+        # not carry one. Names do not prove it; they put it on the record.
+        if len(args.names) < nf:
+            die(f"--min-fields {nf} needs {nf} field names: comparing the first "
+                f"{nf} of each side asserts field i means the same thing in both "
+                f"dumps, and nothing in the files establishes that (got "
+                f"{len(args.names)} names)")
     else:
         if nf_f != nf_c:
             die(f"field-count mismatch fort={nf_f} cpp={nf_c} — a truncated "
@@ -150,23 +187,24 @@ def main():
     nj_cpp = B // ni
     if nj_cpp > nj:
         die(f"cpp covers more j ({nj_cpp}) than fortran ({nj})")
-    # cpp b = i*jme + j -> [i, j, K] -> transpose to [j, K, i]
+    # the DECLARED packing (only i_major exists today); b = i*jme + j
+    #   -> [i, j, K] -> transpose to [j, K, i]
+    assert args.column_map == "i_major"       # argparse restricts the choices
     Cr = C.reshape(nf_c, ni, nj_cpp, K).transpose(0, 2, 3, 1)
     Ft = F[:, :nj_cpp]                        # first-tile scope
-    best = None
-    for flip in (False, True):
-        Cx = Cr[:, :, ::-1, :] if flip else Cr
-        tot = int(np.count_nonzero(u32(Ft[:nf]) != u32(Cx[:nf])))
-        if best is None or tot < best[1]:
-            best = (flip, tot, Cx)
-    flip, tot, Cx = best
+    # The DECLARED orientation, not the flattering one. Picking the flip with
+    # fewer differences meant that on a genuinely diverging pair the tool chose
+    # the reading that minimised the divergence it then reported.
+    flip = args.k_order == "flip"
+    Cx = Cr[:, :, ::-1, :] if flip else Cr
+    tot = int(np.count_nonzero(u32(Ft[:nf]) != u32(Cx[:nf])))
+    # the other orientation, as INFORMATION — it decides nothing
+    other = Cr if flip else Cr[:, :, ::-1, :]
+    other_tot = int(np.count_nonzero(u32(Ft[:nf]) != u32(other[:nf])))
 
     # FALSE-PASS GUARD (degenerate data): a 0-diff result under BOTH flips is
     # only meaningful if some compared field actually varies along K —
     # otherwise the dump is empty/uniform/never-fired and PASS is spurious.
-    other_tot = int(np.count_nonzero(
-        u32(Ft[:nf]) !=
-        u32((Cr[:, :, ::-1, :] if not flip else Cr)[:nf])))
     if tot == 0 and other_tot == 0:
         kvar = any(
             int(np.count_nonzero(u32(Ft[f][:, :-1, :]) !=
@@ -177,9 +215,11 @@ def main():
                 "varies along K (empty/uniform/never-fired dump) — refusing "
                 "to report PASS.")
 
-    scope = (f"FIRST-TILE({nj_cpp}/{nj} j)" if nj_cpp != nj else "FULL-DOMAIN")
+    first_tile = nj_cpp != nj
+    scope = (f"FIRST-TILE({nj_cpp}/{nj} j)" if first_tile else "FULL-DOMAIN")
     label = scope + (f" SUBSET(first {nf}: fort={nf_f} cpp={nf_c})" if subset else "")
-    print(f"K-flip={'TOP<->SURFACE' if flip else 'none'}  scope={label}")
+    print(f"K-order={args.k_order} (declared; the other reading gives "
+          f"{other_tot} diffs)  column-map={args.column_map}  scope={label}")
     ok = True
     for f in range(nf):
         nm = args.names[f] if f < len(args.names) else f"field{f}"
@@ -191,8 +231,20 @@ def main():
             print(f"  {nm:12s} DIVERGES {nd}/{Ft[f].size}  k={k_lv[:10]}")
         else:
             print(f"  {nm:12s} BITWISE-MATCH")
-    print(f"RESULT: {'PASS' if ok else 'FAIL'} ({label})")
-    sys.exit(0 if ok else 1)
+    # A PARTIAL comparison cannot report PASS or exit 0. The label was printed for
+    # a human while exit 0 was what automation read, so a first-tile subset compare
+    # could be consumed as a full validation.
+    partial = first_tile or subset
+    if not ok:
+        verdict, code = "FAIL", 1
+    elif partial:
+        verdict, code = "PARTIAL-CLEAN", 3
+    else:
+        verdict, code = "PASS", 0
+    print(f"RESULT: {verdict} ({label})")
+    if partial and ok:
+        print("  NOT a full validation: bit-clean only over the compared scope.")
+    sys.exit(code)
 
 
 if __name__ == "__main__":
