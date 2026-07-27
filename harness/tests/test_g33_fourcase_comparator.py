@@ -714,3 +714,32 @@ def test_a_local_parameter_difference_ACROSS_backends_is_not_an_error():
     r = cmp.adjudicate_verified(_four_legs(i1={"local_parameter_sha256": None},
                                            i3={"local_parameter_sha256": None}))
     assert "backend-local" not in (r.get("reason") or "")
+
+
+# -- promotion is scoped to what the identity establishes (owner P0-C2 6) ------
+
+def test_only_a_seed_inside_sedimentation_may_promote():
+    """SedimentationIdentity is the whole precondition for a seed inside
+    sedimentation. Anywhere else the seed is a FULL-STEP claim, whose preconditions
+    include what runs between the sub-cycles."""
+    for phase in ("op", "outer_pre_sed", "substep_pre"):
+        assert cmp.promotable_phase(phase), phase
+    for phase in ("surface", "final_output", "outer_post_sed", "outer_post_micro"):
+        assert not cmp.promotable_phase(phase), phase
+
+
+def test_the_sedimentation_phase_set_is_exactly_the_sed_stages():
+    # a phase added later must be classified deliberately, not inherit promotion
+    assert cmp._SEDIMENTATION_PHASES == frozenset(
+        ("op", "outer_pre_sed", "substep_pre"))
+
+
+def test_a_whole_step_seed_is_reported_as_a_full_step_claim():
+    d = {"rain_precip_cumulative": 0x77}
+    legs = [_run("legacy", stages=_final()), _run("legacy", stages=_final(d)),
+            _run("conservative", stages=_final()), _run("conservative", stages=_final(d))]
+    # the pure comparator still calls it a shared seed...
+    assert cmp.adjudicate(*legs)["verdict"] == cmp.SHARED_SEED_CANDIDATE
+    # ...and the phase it sits at is one that cannot be promoted
+    phase = cmp.adjudicate(*legs)["legacy_first_divergence"]["phase"]
+    assert phase == "final_output" and not cmp.promotable_phase(phase)

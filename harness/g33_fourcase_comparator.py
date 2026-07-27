@@ -71,6 +71,13 @@ _STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output",
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"outer_pre_sed": 0, "substep_pre": 1, "surface": 2,
                 "outer_post_sed": 3, "outer_post_micro": 4, "final_output": 5}
+#: Phases whose shared seed is INSIDE sedimentation, where SedimentationIdentity is
+#: the whole precondition. A seed anywhere else (the surface accumulation, the
+#: whole-step output, or either bridge snapshot) is a claim about the FULL step, whose
+#: preconditions include what runs between the sub-cycles — so it may not be promoted
+#: on the sedimentation identity alone (owner P0-C2 §6).
+_SEDIMENTATION_PHASES = frozenset(("op", "outer_pre_sed", "substep_pre"))
+
 #: Whole-K snapshots taken once per outer loop (n=0), as opposed to per substep.
 _OUTER_SNAPSHOTS = ("outer_pre_sed", "outer_post_sed", "outer_post_micro")
 _LOOP_LAST = 1 << 30      # sorts a whole-step record after every loop
@@ -496,6 +503,17 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
             "conservative_first_divergence": _d(con)}
 
 
+def promotable_phase(phase) -> bool:
+    """May a shared seed at `phase` be promoted on the SEDIMENTATION identity alone?
+
+    Only inside sedimentation. Elsewhere — the surface accumulation, the whole-step
+    output, either bridge snapshot — the seed is a claim about the FULL step, whose
+    preconditions include everything that runs between the sub-cycles, and
+    SedimentationIdentity does not establish those (owner P0-C2 §6).
+    """
+    return phase is None or phase in _SEDIMENTATION_PHASES
+
+
 def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
                            *, promote: bool):
     """DECISION entry point — use this, not adjudicate(), for a C4 verdict.
@@ -557,10 +575,22 @@ def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
             return _invalid(f"{name} ladder fidelity: {e}")
     result = adjudicate(legacy_f, legacy_c, conservative_f, conservative_c)
     if result["verdict"] == SHARED_SEED_CANDIDATE and promote:
-        # Every gate above has passed, so the candidate may be promoted — but only
-        # to the MECHANISM tier. What is still missing is not a check that could be
-        # added here; it is evidence a synthetic fixture cannot contain.
-        result["verdict"] = PASS_MECHANISM
+        # A seed OUTSIDE sedimentation is a statement about the whole step, and the
+        # whole step's preconditions are not the sedimentation ones: what happens
+        # between the sub-cycles enters it. Promoting such a seed on
+        # SedimentationIdentity alone would claim more than the identity establishes.
+        phase = (result.get("legacy_first_divergence") or {}).get("phase")
+        if not promotable_phase(phase):
+            result["verdict"] = "INCONCLUSIVE"
+            result["reason"] = (
+                f"both pairs share a seed, but at {phase} — outside sedimentation, so "
+                f"this is a FULL-STEP claim and the sedimentation identity does not "
+                f"establish its preconditions: " + result["reason"])
+        else:
+            # Every gate above has passed, so the candidate may be promoted — but only
+            # to the MECHANISM tier. What is still missing is not a check that could be
+            # added here; it is evidence a synthetic fixture cannot contain.
+            result["verdict"] = PASS_MECHANISM
         result["reason"] = ("PASS_MECHANISM (promoted from a shared seed): "
                             + result["reason"])
         result["evidence_strength"] = "PARTIAL"

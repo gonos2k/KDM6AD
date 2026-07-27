@@ -92,3 +92,33 @@ def test_semantics_rejects_causal_mutants():
         fn(run.stages, run.precip)
         with pytest.raises(sem.SemanticError):
             sem.verify_semantics(run)
+
+
+# ── ccn0/scale_h have no C++ counterpart to be equal TO (owner P0-C2/§6) ───────
+
+def test_the_cpp_tree_has_no_ccn0_or_scale_h_to_compare():
+    """The review asks for a probe of the C++ baked ccn0/scale_h actual bits. There
+    is nothing to probe: the C++ port has no such constant.
+
+    That is what makes the cross-tree question answerable at all. The Fortran leg
+    passes both parameters and P0-8 measured them inert (tripling ccn0, 7e7 -> 2.1e8,
+    changed zero of 9,892 dumped lines); the C++ leg does not have them. So there is
+    no value to make equal — but if someone later introduces one, the four-case
+    identity question reopens and this test is what says so.
+
+    Scoped to the physics tree: the two GENERATED fixture headers legitimately carry
+    the expected Fortran bits so the Fortran driver can be pinned to the authority.
+    """
+    import re
+    root = Path(__file__).resolve().parents[2]
+    pattern = re.compile(r"\b(ccn0|scale_h)\b")
+    offenders = []
+    for path in (root / "libtorch").rglob("*"):
+        if path.suffix not in (".cpp", ".h", ".hpp", ".cu") or not path.is_file():
+            continue
+        if pattern.search(path.read_text(errors="ignore")):
+            offenders.append(path.relative_to(root))
+    assert not offenders, (
+        f"the C++ tree now names ccn0/scale_h ({offenders}) — it did not before, so "
+        f"the Fortran-only parameter argument no longer holds and the four-case "
+        f"problem identity must account for them")
