@@ -39,6 +39,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "harness"))
+import g33_abc_noninvasiveness as abc   # noqa: E402
 import g33_fixture_v1 as gfx           # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
 
@@ -99,9 +100,11 @@ def main(argv=None) -> int:
         print("noninvasive: ABC stream byte-identical with the probe on and off")
 
     probe = gsp.probe_from_stream("\n".join(sched_lines))
-    base = {"case_id": f"abc-{CASE}", "pair_id": f"abc-{a.algo}", "backend": "cpp",
-            "algorithm": a.algo, "B": authority["B"], "K": authority["K"],
-            "species_scope": ["qr", "nr"], "dtcld": dtcld}
+    # Build the base from the CANONICAL schedule builder and let the probe override
+    # only what it measured. Hand-rolling the dict here would silently drop whatever
+    # keys the contract gains later — qcrmin and instrumented_stages already.
+    abc.CASES[CASE] = (authority["B"], authority["K"])
+    base = abc._schedule(a.algo, CASE, loops=loops, dtcld=dtcld)
     sealed = gsp.sealed_schedule(base, probe)
     if sealed["loops"] != loops:
         raise SystemExit(f"probe ran {sealed['loops']} outer loops but the fixture's "
