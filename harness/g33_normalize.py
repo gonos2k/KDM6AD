@@ -131,8 +131,8 @@ def from_fortran_run(run) -> dict:
     # refuse legs built from different fixtures or parameters
     problem = {"fixture_sha256": run.fixture_sha256,
                "parameter_sha256": run.parameter_sha256, "B": B, "K": K}
-    return {"algorithm": run.algorithm, "B": B, "K": K, "ops": ops,
-            "stages": stages, "problem": problem}
+    return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
+            "ops": ops, "stages": stages, "problem": problem}
 
 
 def _lane_to_col(column_index_map):
@@ -272,6 +272,6 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     per_loop = {(fld.replace("_precip_cumulative", ""), loop, col): bits
                 for (fld, col), by_loop in increments.items()
                 for loop, bits in by_loop.items()}
-    return {"algorithm": algo, "B": B, "K": K, "ops": ops, "stages": stages,
-            "raw_metrics": raw_metrics, "surface_increments": per_loop,
-            "problem": problem}
+    return {"algorithm": algo, "backend": "cpp", "B": B, "K": K, "ops": ops,
+            "stages": stages, "raw_metrics": raw_metrics,
+            "surface_increments": per_loop, "problem": problem}

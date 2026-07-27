@@ -15,9 +15,13 @@ sys.path.insert(0, str(ROOT / "harness"))
 import g33_fixture_v1 as fixture  # noqa: E402
 
 
-def test_generated_bindings_are_current():
+@pytest.mark.parametrize("fixture_id", sorted(fixture.FIXTURES))
+def test_generated_bindings_are_current(fixture_id):
+    # EVERY registry entry, not just the default: a fixture whose JSON is edited
+    # without regenerating its header/module would otherwise pass on existence alone
     run = subprocess.run(
-        [sys.executable, str(ROOT / "harness/g33_fixture_v1.py"), "--check"],
+        [sys.executable, str(ROOT / "harness/g33_fixture_v1.py"), "--check",
+         "--fixture-id", fixture_id],
         cwd=ROOT, capture_output=True, text=True)
     assert run.returncode == 0, run.stdout + run.stderr
 
@@ -121,6 +125,14 @@ def test_registry_artifacts_all_exist():
         sp = fixture.spec(fid)
         for path in (sp.manifest, sp.cpp_header, sp.fortran_module):
             assert path.is_file(), f"{fid}: missing {path}"
+
+
+@pytest.mark.parametrize("fixture_id", sorted(fixture.FIXTURES))
+def test_fixture_protocol_round_trips_for_every_entry(fixture_id):
+    _, data = fixture.load_fixture(fixture_id)
+    text = fixture.render_fixture_protocol(data)
+    assert fixture.parse_fixture_protocol(text, data) == (
+        fixture.fixture_sha256(data), fixture.parameter_sha256(data))
 
 
 def test_unknown_fixture_id_is_refused():

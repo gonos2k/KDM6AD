@@ -62,16 +62,23 @@ class UnknownFixture(KeyError):
 
 def spec(fixture_id: str) -> FixtureSpec:
     """The registry entry for `fixture_id`, verified against its own manifest."""
+    return load_fixture(fixture_id)[0]
+
+
+def load_fixture(fixture_id: str) -> tuple[FixtureSpec, dict]:
+    """The registry entry AND its validated authority, in ONE strict load. Reading
+    the manifest twice — once raw to check the label, once strict for the data —
+    leaves a window where the two disagree."""
     try:
         entry = FIXTURES[fixture_id]
     except KeyError:
         raise UnknownFixture(
             f"unknown fixture id {fixture_id!r} (known: {sorted(FIXTURES)})") from None
-    declared = json.loads(entry.manifest.read_text()).get("fixture_id")
-    if declared != fixture_id:
+    data = load_manifest(entry.manifest)
+    if data["fixture_id"] != fixture_id:
         raise ValueError(f"registry says {fixture_id!r} but "
-                         f"{entry.manifest.name} declares {declared!r}")
-    return entry
+                         f"{entry.manifest.name} declares {data['fixture_id']!r}")
+    return entry, data
 
 STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                 "nccn", "nc", "ni", "nr", "bg")
@@ -90,8 +97,7 @@ def _require(condition: bool, message: str) -> None:
 def load_manifest(path: Path = MANIFEST) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     _require(data.get("schema_version") == 1, "fixture schema_version must be 1")
-    _require(data.get("fixture_id") in ("arithmetic_synthetic_v1",
-                                        "arithmetic_multisubcycle_v1"),
+    _require(data.get("fixture_id") in FIXTURES,
              "unexpected fixture_id")
     _require(data.get("science_role") == "arithmetic_synthetic", "science_role must be explicit")
     _require(data.get("vertical_layout") == "top_first", "vertical_layout must be top_first")
@@ -359,11 +365,18 @@ def main() -> None:
     # generator so both are built from one authority format. The generated Fortran
     # module keeps the name g33_fixture_v1 so the driver needs no change; the build
     # script selects which .f90 to compile.
+    parser.add_argument("--fixture-id", default=None, choices=sorted(FIXTURES),
+                        help="render/check one registry entry (paths come from it)")
     parser.add_argument("--manifest", type=Path, default=MANIFEST)
     parser.add_argument("--cpp-out", type=Path, default=CPP_OUT)
     parser.add_argument("--fortran-out", type=Path, default=FORTRAN_OUT)
     args = parser.parse_args()
-    data = load_manifest(args.manifest)
+    if args.fixture_id:
+        entry, data = load_fixture(args.fixture_id)
+        args.manifest, args.cpp_out, args.fortran_out = (
+            entry.manifest, entry.cpp_header, entry.fortran_module)
+    else:
+        data = load_manifest(args.manifest)
     for path, content in {args.cpp_out: render_cpp(data),
                           args.fortran_out: render_fortran(data)}.items():
         if args.write:

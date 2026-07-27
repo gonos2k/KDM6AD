@@ -43,7 +43,11 @@ def _with_raw_metric(bits_xor):
 
 
 def test_an_unfloored_raw_metric_passes():
-    assert rp.replay_run(_with_raw_metric(0)) == 517      # 516 + the one metric rung
+    # replay_report, not replay_run: the coverage contract is backend-scoped and this
+    # is a Fortran run carrying one C++-shaped record to exercise the RELATION.
+    report = rp.replay_report(_with_raw_metric(0))
+    assert report["METRIC.dend_safe==dend_raw"] == 1
+    assert sum(report.values()) == 517                    # 516 + the one metric rung
 
 
 def test_a_floored_metric_dies_at_the_fidelity_gate():
