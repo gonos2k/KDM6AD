@@ -268,9 +268,12 @@ def test_mstep_exceeding_declared_substeps_rejected(tmp_path):
 
 
 def _anchors(root):
+    _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
     return {"expected_manifest_sha256": _sha(root / "cpp_abc_manifest.json"),
             "expected_repo_commit": COMMIT,
-            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID}
+            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID,
+            # the fixture BYTES, not just its name
+            "expected_fixture_manifest_sha256": gfx.manifest_sha256(authority)}
 
 
 def test_verdict_ready_requires_external_anchors(tmp_path):
@@ -282,7 +285,8 @@ def test_verdict_ready_requires_external_anchors(tmp_path):
 
 
 @pytest.mark.parametrize("drop", ["expected_manifest_sha256", "expected_repo_commit",
-                                  "expected_fixture_id"])
+                                  "expected_fixture_id",
+                                  "expected_fixture_manifest_sha256"])
 def test_no_single_anchor_can_be_omitted_at_the_API(tmp_path, drop):
     # The CLI requires all three, but a Python caller reaches this function directly.
     # If the fixture defaulted here, omitting it would still mint a verdict-ready leg

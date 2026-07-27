@@ -40,14 +40,15 @@ EXIT_USAGE = 4
 
 
 def _load_fortran(bundle: Path, algorithm: str, *, manifest_sha, commit,
-                  fixture_id, anchored: bool) -> tuple:
+                  fixture_id, fixture_sha, anchored: bool) -> tuple:
     """Re-verify one Fortran A/B/C bundle, then normalize its instrumented lane.
 
     Returns (VerifiedFortranLeg, normalized run). The leg is what carries the
     attestation state; the normalized run is what the comparator sees."""
     leg = fbio.verify_fortran_bundle(
         bundle, algorithm, expected_manifest_sha256=manifest_sha,
-        expected_repo_commit=commit, expected_fixture_id=fixture_id)
+        expected_repo_commit=commit, expected_fixture_id=fixture_id,
+        expected_fixture_manifest_sha256=fixture_sha)
     if anchored and not leg.verdict_ready:
         raise fbio.FortranBundleError(
             f"{algorithm} Fortran leg is not verdict_ready "
@@ -68,6 +69,10 @@ def main(argv=None) -> int:
                          "stream alone carries no compiler, source or fixture binding")
     ap.add_argument("--fortran-conservative", type=Path, required=True,
                     metavar="BUNDLE_DIR")
+    ap.add_argument("--expected-fixture-manifest-sha256",
+                    help="the fixture manifest BYTES, not just its name: the "
+                         "verifier reads that JSON from its own working tree, so "
+                         "the id alone anchors a string rather than the reviewed file")
     ap.add_argument("--expected-fortran-legacy-manifest-sha256",
                     help="external anchor for the legacy Fortran bundle")
     ap.add_argument("--expected-fortran-conservative-manifest-sha256",
@@ -86,12 +91,13 @@ def main(argv=None) -> int:
     # ALL FOUR legs, or the word "attested" overstates what was checked.
     anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit
                     and a.expected_fixture_id
+                    and a.expected_fixture_manifest_sha256
                     and a.expected_fortran_legacy_manifest_sha256
                     and a.expected_fortran_conservative_manifest_sha256)
     if not anchored and not a.allow_unattested:
         print("refusing to run without the external anchors for all four legs: "
               "--expected-manifest-sha256, --expected-repo-commit, "
-              "--expected-fixture-id, "
+              "--expected-fixture-id, --expected-fixture-manifest-sha256, "
               "--expected-fortran-legacy-manifest-sha256 and "
               "--expected-fortran-conservative-manifest-sha256 "
               "(or --allow-unattested for debugging)", file=sys.stderr)
@@ -111,12 +117,22 @@ def main(argv=None) -> int:
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
                          "fortran_legacy": str(a.fortran_legacy),
                          "fortran_conservative": str(a.fortran_conservative),
-                         "expected_fixture_id": fixture_id, "B": B, "K": K}}
+                         "expected_fixture_id": fixture_id, "B": B, "K": K},
+              # the identity actually compared, so a later reader can re-derive it
+              # without the fixture file that produced this run
+              "fixture_identity": {
+                  "fixture_id": authority["fixture_id"],
+                  "fixture_manifest_sha256": bio.gfx.manifest_sha256(authority),
+                  "fixture_sha256": bio.gfx.fixture_sha256(authority),
+                  "parameter_sha256": bio.gfx.parameter_sha256(authority),
+                  "fortran_parameter_sha256":
+                      bio.gfx.fortran_parameter_sha256(authority)}}
     try:
         bundle = bio.verify_cpp_bundle(
             a.cpp_bundle, expected_manifest_sha256=a.expected_manifest_sha256,
             expected_repo_commit=a.expected_repo_commit,
-            expected_fixture_id=fixture_id)
+            expected_fixture_id=fixture_id,
+            expected_fixture_manifest_sha256=a.expected_fixture_manifest_sha256)
         legs = {
             "legacy_cpp": nz.from_cpp_evidence(bundle["algorithms"]["legacy"],
                                                require_verdict_ready=anchored),
@@ -132,7 +148,7 @@ def main(argv=None) -> int:
             fortran_legs[algo], legs[f"{algo}_fortran"] = _load_fortran(
                 bundle, algo, manifest_sha=sha,
                 commit=a.expected_repo_commit, fixture_id=a.expected_fixture_id,
-                anchored=anchored)
+                fixture_sha=a.expected_fixture_manifest_sha256, anchored=anchored)
     except Exception as e:                       # every reader is fail-closed
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")
         _write(a.out, result)

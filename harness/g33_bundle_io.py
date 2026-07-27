@@ -356,7 +356,8 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
 
 def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                       expected_repo_commit=None,
-                      expected_fixture_id=None) -> dict:
+                      expected_fixture_id=None,
+                      expected_fixture_manifest_sha256=None) -> dict:
     """Re-verify the whole C++ ABC bundle root incl. attestation. Returns
     {manifest, algorithms:{algo: VerifiedCppLeg}}.
 
@@ -396,6 +397,17 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
             expected_fixture_id or gfx.DEFAULT_FIXTURE_ID)
     except gfx.UnknownFixture as e:
         raise BundleError(str(e)) from None
+    # CONTENT anchor. The id names a registry entry, but the verifier reads that
+    # JSON from its OWN working tree — on a divergent or dirty tree that is not the
+    # file anyone reviewed. expected_repo_commit does not close this either: it pins
+    # the evidence PRODUCER's commit, not the fixture the verifier read.
+    resolved = gfx.manifest_sha256(authority)
+    if expected_fixture_manifest_sha256 and resolved != expected_fixture_manifest_sha256:
+        raise BundleError(
+            f"fixture manifest sha256 {resolved} != expected "
+            f"{expected_fixture_manifest_sha256} — the verifier read a different "
+            f"fixture file than the anchored one")
+
     want_fixture, want_param = gfx.fixture_sha256(authority), gfx.parameter_sha256(authority)
     # the SHAs bind the CONTENT; this binds the bundle's own label, so a manifest
     # cannot carry one fixture's hashes under another fixture's name
@@ -464,7 +476,9 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                                      "parameter_sha256": meta.get("parameter_sha256")},
                             external_manifest_attested=expected_manifest_sha256 is not None,
                             source_commit_attested=expected_repo_commit is not None,
-                            fixture_attested=expected_fixture_id is not None)
+                            # the NAME alone is not an anchor; the bytes are
+                            fixture_attested=bool(expected_fixture_id
+                                                  and expected_fixture_manifest_sha256))
     # SAME-PROBLEM: both legs share one fixture + one parameter set.
     if len(fixtures) != 1 or None in fixtures:
         raise BundleError(f"legs disagree on fixture_sha256: {fixtures}")

@@ -79,9 +79,13 @@ def _sha(path: Path) -> str:
 
 
 def _anchors(root: Path) -> dict:
+    _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
     return {"expected_manifest_sha256": _sha(root / "abc_manifest.json"),
             "expected_repo_commit": COMMIT,
-            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID}
+            "expected_fixture_id": gfx.DEFAULT_FIXTURE_ID,
+            # the fixture BYTES: the id alone anchors a string, and the verifier
+            # reads that JSON from its own tree
+            "expected_fixture_manifest_sha256": gfx.manifest_sha256(authority)}
 
 
 # ---- the happy path ----------------------------------------------------------
@@ -102,7 +106,8 @@ def test_internal_verification_alone_is_not_verdict_ready(tmp_path):
 
 
 @pytest.mark.parametrize("drop", ["expected_manifest_sha256", "expected_repo_commit",
-                                  "expected_fixture_id"])
+                                  "expected_fixture_id",
+                                  "expected_fixture_manifest_sha256"])
 def test_no_single_anchor_can_be_omitted(tmp_path, drop):
     root = _bundle(tmp_path / "b")
     kw = {k: v for k, v in _anchors(root).items() if k != drop}
@@ -195,3 +200,12 @@ def test_the_leg_mirrors_the_cpp_verdict_ready_contract():
     assert shared <= set(fbio.VerifiedFortranLeg.__dataclass_fields__)
     assert hasattr(bio.VerifiedCppLeg, "verdict_ready")
     assert hasattr(fbio.VerifiedFortranLeg, "verdict_ready")
+
+
+def test_a_fixture_file_that_is_not_the_anchored_one_is_refused(tmp_path):
+    # the id would still match; only the bytes reveal that the verifier read a
+    # different file than the one anchored
+    root = _bundle(tmp_path / "b")
+    kw = dict(_anchors(root), expected_fixture_manifest_sha256="9" * 64)
+    with pytest.raises(fbio.FortranBundleError, match="different fixture file"):
+        fbio.verify_fortran_bundle(root, "legacy", **kw)

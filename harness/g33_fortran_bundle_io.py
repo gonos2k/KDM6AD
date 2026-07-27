@@ -89,7 +89,8 @@ def _under(root: Path, path: Path) -> Path:
 def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                           expected_manifest_sha256: str | None = None,
                           expected_repo_commit: str | None = None,
-                          expected_fixture_id: str | None = None
+                          expected_fixture_id: str | None = None,
+                          expected_fixture_manifest_sha256: str | None = None
                           ) -> VerifiedFortranLeg:
     """Re-verify one Fortran A/B/C bundle.
 
@@ -135,6 +136,16 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         _, authority = gfx.load_fixture(fixture_id)
     except (gfx.UnknownFixture, ValueError, KeyError) as e:
         raise FortranBundleError(f"unusable fixture id {fixture_id!r}: {e}") from None
+    # CONTENT anchor. The id names a registry entry, but the verifier reads that
+    # JSON from its OWN working tree — on a divergent or dirty tree that is not the
+    # file anyone reviewed. expected_repo_commit does not close this either: it pins
+    # the evidence PRODUCER's commit, not the fixture the verifier read.
+    resolved = gfx.manifest_sha256(authority)
+    if expected_fixture_manifest_sha256 and resolved != expected_fixture_manifest_sha256:
+        raise FortranBundleError(
+            f"fixture manifest sha256 {resolved} != expected "
+            f"{expected_fixture_manifest_sha256} — the verifier read a different "
+            f"fixture file than the anchored one")
     if manifest.get("fixture_id") != authority["fixture_id"]:
         raise FortranBundleError(
             f"manifest fixture_id {manifest.get('fixture_id')!r} != "
@@ -213,6 +224,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         bundle_verified=True,
         external_manifest_attested=expected_manifest_sha256 is not None,
         source_commit_attested=expected_repo_commit is not None,
-        fixture_attested=expected_fixture_id is not None,
+        fixture_attested=bool(expected_fixture_id
+                              and expected_fixture_manifest_sha256),
         repo_clean=repo_clean,
     )

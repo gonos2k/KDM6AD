@@ -42,6 +42,7 @@ def test_refuses_to_run_without_external_anchors(tmp_path, capsys):
 _ANCHORS = {"expected-manifest-sha256": "a" * 64,
             "expected-repo-commit": "b" * 40,
             "expected-fixture-id": "arithmetic_synthetic_v1",
+            "expected-fixture-manifest-sha256": "e" * 64,
             "expected-fortran-legacy-manifest-sha256": "c" * 64,
             "expected-fortran-conservative-manifest-sha256": "d" * 64}
 
