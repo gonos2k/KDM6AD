@@ -168,7 +168,7 @@ def main() -> None:
             if probe_read is not None:
                 try:
                     gsp.assert_reproduced(probe_read, gsp.read_probe(
-                        bio.verify_cpp_evidence(evidence, algo)["containers"]))
+                        bio.verify_cpp_evidence(evidence, algo).containers))
                 except (gsp.ProbeError, bio.BundleError) as e:
                     _die(EXIT_EVIDENCE, f"FAIL: {algo} evidence does not reproduce "
                                         f"the probe schedule: {e}")
