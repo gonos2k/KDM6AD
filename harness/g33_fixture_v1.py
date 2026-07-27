@@ -12,12 +12,66 @@ import argparse
 import hashlib
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "harness" / "g33_fixture_v1.json"
 CPP_OUT = ROOT / "harness" / "g33_overlay" / "g33_fixture_v1.h"
 FORTRAN_OUT = ROOT / "harness" / "g33_fortran" / "g33_fixture_v1.f90"
+
+
+@dataclass(frozen=True)
+class FixtureSpec:
+    """One fixture's authority, its generated bindings, and how each build selects
+    it. The two builds took differently-spelled flags; keeping the mapping here means
+    a caller names the fixture once and cannot pair one backend's fixture with the
+    other's by mistake."""
+    fixture_id: str
+    manifest: Path
+    cpp_header: Path
+    fortran_module: Path
+    cpp_define: str = ""            # selfcheck_build.sh --fixture=... selector
+
+    @property
+    def fortran_build_name(self) -> str:
+        """fortran_build.sh --fixture=<name> (the generated module's stem)."""
+        return self.fortran_module.stem
+
+
+#: Every fixture a four-case run may use. Explicit: a caller names the fixture it
+#: wants, so no entry point can be silently bound to whichever authority happens to
+#: be the module default. `spec()` re-reads the manifest's own `fixture_id`, so a
+#: mislabelled row here cannot pass a fixture off as another.
+FIXTURES = {
+    "arithmetic_synthetic_v1": FixtureSpec(
+        "arithmetic_synthetic_v1", MANIFEST, CPP_OUT, FORTRAN_OUT),
+    "arithmetic_multisubcycle_v1": FixtureSpec(
+        "arithmetic_multisubcycle_v1",
+        ROOT / "harness" / "g33_fixture_multisubcycle_v1.json",
+        ROOT / "harness" / "g33_overlay" / "g33_fixture_multisubcycle_v1.h",
+        ROOT / "harness" / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90",
+        cpp_define="multisubcycle"),
+}
+DEFAULT_FIXTURE_ID = "arithmetic_synthetic_v1"
+
+
+class UnknownFixture(KeyError):
+    """A fixture id that is not in the registry."""
+
+
+def spec(fixture_id: str) -> FixtureSpec:
+    """The registry entry for `fixture_id`, verified against its own manifest."""
+    try:
+        entry = FIXTURES[fixture_id]
+    except KeyError:
+        raise UnknownFixture(
+            f"unknown fixture id {fixture_id!r} (known: {sorted(FIXTURES)})") from None
+    declared = json.loads(entry.manifest.read_text()).get("fixture_id")
+    if declared != fixture_id:
+        raise ValueError(f"registry says {fixture_id!r} but "
+                         f"{entry.manifest.name} declares {declared!r}")
+    return entry
 
 STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                 "nccn", "nc", "ni", "nr", "bg")

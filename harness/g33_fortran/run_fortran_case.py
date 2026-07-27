@@ -37,13 +37,19 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--algo", required=True, choices=["legacy", "conservative"])
     ap.add_argument("--out", required=True, help="fresh output directory")
+    ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
+                    choices=sorted(fixture.FIXTURES),
+                    help="which fixture authority this run uses")
     args = ap.parse_args()
 
-    authority = fixture.load_manifest()
+    authority = fixture.load_manifest(fixture.spec(args.fixture_id).manifest)
     B, K = authority["B"], authority["K"]
+    spec = fixture.spec(args.fixture_id)
     build_run = subprocess.run(
         ["bash", os.path.join(HERE, "fortran_build.sh"), args.out,
-         f"--algo={args.algo}", "--dump"], cwd=ROOT, capture_output=True, text=True)
+         f"--algo={args.algo}", "--dump",
+         f"--fixture={spec.fortran_build_name}"],
+        cwd=ROOT, capture_output=True, text=True)
     if build_run.returncode != 0:
         raise SystemExit(f"build failed:\n{build_run.stdout}\n{build_run.stderr}")
     driver = os.path.join(args.out, "g33_fortran_driver")

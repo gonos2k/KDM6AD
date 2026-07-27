@@ -54,6 +54,10 @@ def main(argv=None) -> int:
     ap.add_argument("--fortran-conservative", type=Path, required=True)
     ap.add_argument("--expected-manifest-sha256")
     ap.add_argument("--expected-repo-commit")
+    ap.add_argument("--expected-fixture-id",
+                    help="which fixture this run is supposed to be (registry id). "
+                         "An anchor like the other two: a bundle checked against the "
+                         "fixture it declares attests nothing.")
     ap.add_argument("--allow-unattested", action="store_true",
                     help="debug only; the result is stamped attested:false")
     ap.add_argument("--K", type=int, default=4)
@@ -61,21 +65,25 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
 
-    anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit)
+    anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit
+                    and a.expected_fixture_id)
     if not anchored and not a.allow_unattested:
-        print("refusing to run without --expected-manifest-sha256 and "
-              "--expected-repo-commit (or --allow-unattested for debugging)",
-              file=sys.stderr)
+        print("refusing to run without --expected-manifest-sha256, "
+              "--expected-repo-commit and --expected-fixture-id "
+              "(or --allow-unattested for debugging)", file=sys.stderr)
         return EXIT_USAGE
+    fixture_id = a.expected_fixture_id or bio.gfx.DEFAULT_FIXTURE_ID
 
     result = {"verdict": None, "reason": None, "attested": anchored,
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
                          "fortran_legacy": str(a.fortran_legacy),
-                         "fortran_conservative": str(a.fortran_conservative)}}
+                         "fortran_conservative": str(a.fortran_conservative),
+                         "expected_fixture_id": fixture_id}}
     try:
         bundle = bio.verify_cpp_bundle(
             a.cpp_bundle, expected_manifest_sha256=a.expected_manifest_sha256,
-            expected_repo_commit=a.expected_repo_commit)
+            expected_repo_commit=a.expected_repo_commit,
+            expected_fixture_id=fixture_id)
         legs = {
             "legacy_cpp": nz.from_cpp_evidence(bundle["algorithms"]["legacy"],
                                                require_verdict_ready=anchored),
