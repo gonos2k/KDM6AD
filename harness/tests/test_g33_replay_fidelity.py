@@ -185,3 +185,55 @@ def test_the_tool_never_returns_a_bare_PASS():
     if r["verdict"] == cmp.PASS_MECHANISM:
         assert r["evidence_strength"] == "PARTIAL"
         assert r["not_established"]          # says what it did NOT show
+
+
+# -- the outer-loop bridge changes ATTRIBUTION, not the tier (owner P0-C1) ------
+# classify() is the rule layer: it takes the two pairs' first divergences, so the
+# attribution can be tested without a real conservative run (the checked-in sample
+# is legacy, and relabelling it fails the fidelity replay by design).
+
+def _first_divergence_at(stage, field="qv"):
+    """The Divergence a real F-vs-C++ comparison yields when the earliest difference
+    is at `stage` — produced by perturbing the sample, not hand-built, so the phase
+    comes from the comparator's own ordering."""
+    import copy as _copy
+    other = _copy.deepcopy(RUN)
+    hit = 0
+    for rec in other["stages"]:
+        if rec["stage"] == stage and rec["field"] == field:
+            rec["bits"] ^= 0x1                      # one ULP
+            hit += 1
+    assert hit, "the sample carries no %s.%s record to perturb" % (stage, field)
+    d = cmp.compare_pair(RUN, other)
+    assert d.phase == stage, "expected the first divergence at %s, got %s" % (
+        stage, d.phase)
+    return d
+
+
+def test_a_divergence_after_sedimentation_is_attributed_to_the_microphysics():
+    """Before the bridge, a difference born in loop L's microphysics first became
+    VISIBLE at loop L+1's pre-sed entry, and the reason named where it was SEEN. Now
+    it names where it came from.
+
+    Still INCONCLUSIVE: that the sedimentation result matched is evidence the
+    difference is not conservative-only arithmetic, but saying so is the owner's
+    adjudication, not this tool's."""
+    d = _first_divergence_at("outer_post_micro")
+    verdict, reason = cmp.classify(cmp.compare_pair(RUN, RUN), d)
+    assert verdict == "INCONCLUSIVE"
+    assert "born AFTER sedimentation" in reason and "outer_post_micro" in reason
+
+
+def test_a_divergence_in_the_sedimentation_RESULT_says_so():
+    d = _first_divergence_at("outer_post_sed")
+    verdict, reason = cmp.classify(cmp.compare_pair(RUN, RUN), d)
+    assert verdict == "INCONCLUSIVE"
+    assert "RESULT differs" in reason
+
+
+def test_the_upstream_rule_still_wins_over_the_bridge_rules():
+    # a difference already present at sed ENTRY is not attributable either way, and
+    # that rule is checked BEFORE the bridge rules
+    d = _first_divergence_at("outer_pre_sed")
+    verdict, reason = cmp.classify(cmp.compare_pair(RUN, RUN), d)
+    assert verdict == "INCONCLUSIVE" and "upstream" in reason

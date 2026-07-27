@@ -37,7 +37,12 @@ import numpy as np           # noqa: E402
 import g33_schema as schema  # noqa: E402
 import g33_derived as dv      # noqa: E402
 
-_COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface")
+#: The bridge stages (outer_post_sed / outer_post_micro) are compared like any other
+#: snapshot: both backends emit them, so a divergence in the carry between outer loops
+#: is a comparator finding rather than something only a human reading two dumps could
+#: notice (owner P0-C1).
+_COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface",
+                      "outer_post_sed", "outer_post_micro")
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
 _PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",

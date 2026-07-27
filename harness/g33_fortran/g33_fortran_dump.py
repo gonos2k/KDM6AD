@@ -42,14 +42,15 @@ _STAGE_V2 = re.compile(
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 # A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
 # that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
-_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main"}
+_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main",
+                "outer_post_sed": "-", "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_BEGIN = re.compile(r"^G33F BEGIN v([123]) (\S+)$")
-_END = re.compile(r"^G33F END v([123]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([1234]) (\S+)$")
+_END = re.compile(r"^G33F END v([1234]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -249,7 +250,7 @@ def _f64(bits):
     return _struct.unpack(">d", bits.to_bytes(8, "big"))[0]
 
 
-def _validate_stages(stages, n_raw, mstep, K, B):
+def _validate_stages(stages, n_raw, mstep, K, B, version=4):
     """Exact pre-sed STAGE universe from mstep + the schema (owner P0-7): once
     outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
     if n_raw != len(stages):
@@ -258,8 +259,10 @@ def _validate_stages(stages, n_raw, mstep, K, B):
     # by THAT scope's own mstep maximum
     scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
     loops = sorted({lp for lp, _ch in scopes})
+    pre_sed_fields = (_OUTER_PRE_SED_FIELDS if version >= 4
+                      else _OUTER_PRE_SED_FIELDS_V3)
     exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
-           for f in _OUTER_PRE_SED_FIELDS for c in range(1, B + 1) for k in range(K)}
+           for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
     for L, chain in scopes:
         top = max(v for (lp, ch, _c), v in mstep.items() if (lp, ch) == (L, chain))
         for n in range(1, top + 1):
@@ -270,6 +273,15 @@ def _validate_stages(stages, n_raw, mstep, K, B):
                         for f in _SUBSTEP_PRE_K_FIELDS for k in range(K)}
     exp |= {(L, "-", "surface", 0, f, c, -1) for L in loops
             for f in _SURFACE_FIELDS for c in range(1, B + 1)}
+    # The causal bridge: one snapshot set per outer loop at each end of the body.
+    # v4 introduced it, so the universe is keyed off the BANNER — an older stream
+    # genuinely does not contain these records, and demanding them would report a
+    # protocol difference as missing evidence.
+    if version >= 4:
+        for stage in ("outer_post_sed", "outer_post_micro"):
+            exp |= {(L, "-", stage, 0, f, c, k) for L in loops
+                    for f in _OUTER_POST_FIELDS for c in range(1, B + 1)
+                    for k in range(K)}
     if set(stages) != exp:
         missing, extra = exp - set(stages), set(stages) - exp
         raise FortranRunError(
@@ -343,7 +355,18 @@ _KNOWN = (_OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
           _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
-_OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "rho", "delz")
+_OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                         "rho", "delz")
+#: What v3 emitted, kept so a pre-bridge stream still parses and the equivalence
+#: proof (a new run reproduces the old sample's shared records exactly) stays
+#: possible — that proof is how the bridge is shown not to perturb the run.
+_OUTER_PRE_SED_FIELDS_V3 = ("qr", "nr", "qv", "t", "rho", "delz")
+#: The outer-loop CAUSAL BRIDGE (owner P0-C1). Every prognostic the loop carries, so
+#: that outer_post_micro(L) == outer_pre_sed(L+1) is a bit-for-bit statement about the
+#: whole carried state rather than about qr/nr with the rest assumed. Declared here
+#: rather than imported from the bindings: a parser that read the emitter's own list
+#: would accept whatever the emitter chose to write.
+_OUTER_POST_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg")
 _SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
 _SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
 _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
@@ -351,6 +374,8 @@ _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
                    "surface_denr")
 _STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
                 "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
+                # the carried species the bridge adds
+                "qc": "f32", "qi": "f32", "qs": "f32", "qg": "f32",
                 "dend_safe": "f32", "delz_safe": "f32",
                 "mstep": "i32", "gate": "u8", "dtcld": "f32",
                 **{f: "f32" for f in _SURFACE_FIELDS}}
@@ -524,7 +549,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         if n_stage_raw:
             raise FortranRunError(f"noninstrumented run emitted {n_stage_raw} STAGE records")
     else:
-        _validate_stages(stages, n_stage_raw, mstep, K, B)
+        _validate_stages(stages, n_stage_raw, mstep, K, B, version)
 
     state = parse_state(text)
     exp_state = {(f, c, k) for f in _STATE_FIELDS

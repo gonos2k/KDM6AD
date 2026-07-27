@@ -76,7 +76,13 @@ _SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[cha
 # `surface_denr` (the unsealed rain-conversion constant) is emitted by both. Both
 # normalizers project onto exactly this set, so the F↔C++ identity universes match.
 _SEMANTIC_STAGE_FIELDS = {
-    "outer_pre_sed": ["qr", "nr", "qv", "t", "rho", "delz"],
+    "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                      "rho", "delz"],
+    # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a
+    # divergence in what one loop hands the next is a comparator finding rather
+    # than something only a human reading two dumps side by side would notice.
+    "outer_post_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"],
+    "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
                     "dtcld", "gate", "mstep"],
     # OPERANDS only. The per-loop rain/snow/graupel increments are C++-only (the
@@ -101,6 +107,9 @@ _SEMANTIC_STAGE_DTYPE.update({
     ("substep_pre", "delz_safe"): "f32", ("substep_pre", "dend_safe"): "f32",
     ("substep_pre", "dtcld"): "f32",
     ("substep_pre", "gate"): "u8", ("substep_pre", "mstep"): "i32"})
+_SEMANTIC_STAGE_DTYPE.update({
+    (stage, f): "f32" for stage in ("outer_post_sed", "outer_post_micro")
+    for f in _SEMANTIC_STAGE_FIELDS[stage]})
 _SEMANTIC_STAGE_DTYPE.update({
     ("surface", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["surface"]})
 _SEMANTIC_STAGE_DTYPE.update({

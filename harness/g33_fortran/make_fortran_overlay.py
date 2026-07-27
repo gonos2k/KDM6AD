@@ -134,6 +134,14 @@ def build_overlay(algo, text):
              (fb.STAGE_ANCHOR, "after",
               _stage_block("substep_pre", "main", "n", fb.SUBSTEP_PRE_COL,
                            fb.SUBSTEP_PRE_K)),
+             # the outer-loop CAUSAL BRIDGE (owner P0-C1): the sedimentation result
+             # at the end of the ice chain, and the state the NEXT outer loop starts
+             # from at the end of the loop body. Without them a divergence first
+             # visible at loop 2's outer_pre_sed has no attributable origin.
+             (fb.POST_SED_ANCHOR, "after",
+              _stage_block("outer_post_sed", "-", "0", [], fb.OUTER_POST_SED)),
+             (fb.POST_MICRO_ANCHOR, "before",
+              _stage_block("outer_post_micro", "-", "0", [], fb.OUTER_POST_MICRO)),
              # surface bottom-fall operands, per column, at the accumulation (k=-1;
              # already inside `do i` so no injected loop).
              (fb.SURFACE_ANCHOR, "after",
