@@ -48,6 +48,42 @@ class FortranBundleError(Exception):
     """The Fortran bundle cannot be re-verified."""
 
 
+#: The single normalized key under which provenance records whichever microphysics
+#: variant this leg compiled. It is the ONE host source that legitimately differs
+#: between the two control legs.
+VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
+
+#: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
+#: fuses multiply-adds, so the same compiler and the same sources still give a
+#: different answer — and comparing whole command strings instead would break on
+#: paths and on the variant/instrumentation defines that are supposed to differ.
+_NUMERIC_FLAGS = ("-ffp-contract=", "-O", "-ffast-math", "-funroll-loops",
+                  "-ftree-vectorize", "-fno-", "-march=", "-mtune=", "-mfpmath=")
+
+
+def _numeric_flags(commands) -> tuple:
+    """The numerics-affecting flags each compile command carries, deduplicated and
+    ordered. Paths, output names and the -D defines that SHOULD differ between the
+    variants and between instrumented and control lanes are excluded."""
+    out = set()
+    for cmd in commands or ():
+        for tok in str(cmd).split():
+            if any(tok.startswith(f) for f in _NUMERIC_FLAGS):
+                out.add(tok)
+    return tuple(sorted(out))
+
+
+@dataclass(frozen=True)
+class ToolchainIdentity:
+    """What produced both control legs. Compared ACROSS them; excludes the variant
+    module, which is authorized separately (owner P0-2/P0-3)."""
+    compiler_binary_sha256: str
+    compiler_version: str
+    compile_flags: tuple
+    shared_host_sources: tuple
+    shared_harness_sources: tuple
+
+
 @dataclass(frozen=True)
 class BuildIdentity:
     """What produced this leg's binaries, at two levels.
@@ -67,6 +103,7 @@ class BuildIdentity:
     module_canonical_sha256: str
     host_source_sha256: tuple          # sorted (name, sha) pairs
     harness_source_sha256: tuple
+    compile_flags: tuple = ()          # numerics-affecting flags, from `commands`
 
     @classmethod
     def of(cls, prov: dict) -> "BuildIdentity":
@@ -76,19 +113,31 @@ class BuildIdentity:
             module_canonical_sha256=prov["module_canonical_sha256"],
             host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
             harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
+            compile_flags=_numeric_flags(prov.get("commands")),
         )
 
-    def toolchain(self) -> tuple:
-        """Everything the two control legs must share: the compiler, the harness, and
-        the host sources OTHER than the microphysics module under test.
+    def toolchain(self) -> "ToolchainIdentity":
+        """Everything the two control legs must share.
 
-        The module is carried in host_source_sha256 under one normalized key
-        (`module_mp_kdm6[_cons].F`), so it is dropped by name rather than by value —
-        dropping whichever entry happens to differ would make the check vacuous."""
-        shared_host = tuple((n, h) for n, h in self.host_source_sha256
-                            if "kdm6" not in n)
-        return (self.compiler_binary_sha256, self.compiler_version,
-                shared_host, self.harness_source_sha256)
+        The variant module is excluded by its EXACT normalized key, not by a
+        substring: `"kdm6" not in name` also dropped any future shared file whose
+        name contains kdm6 — kdm6_constants.inc, kdm6_shared_helpers.F — silently
+        moving it outside the comparison. Excluding one known key means a new shared
+        source is compared by default and a new variant key fails loudly.
+        """
+        shared = tuple((n, h) for n, h in self.host_source_sha256
+                       if n != VARIANT_MODULE_KEY)
+        if len(shared) == len(self.host_source_sha256):
+            raise FortranBundleError(
+                f"provenance has no {VARIANT_MODULE_KEY!r} entry — the variant "
+                f"module is not where the attestation scope expects it, so nothing "
+                f"can be said about which sources the two legs share")
+        return ToolchainIdentity(
+            compiler_binary_sha256=self.compiler_binary_sha256,
+            compiler_version=self.compiler_version,
+            compile_flags=self.compile_flags,
+            shared_host_sources=shared,
+            shared_harness_sources=self.harness_source_sha256)
 
 
 @dataclass(frozen=True)

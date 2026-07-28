@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / "harness"))
 sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
 import g33_fixture_v1 as gfx                # noqa: E402
 import g33_fortran_bundle_io as fbio        # noqa: E402
+VARIANT_KEY = fbio.VARIANT_MODULE_KEY
 import g33_fortran_dump as fd               # noqa: E402
 
 SAMPLE = Path(__file__).parent / "data" / "g33_legacy_sample.g33f"
@@ -45,7 +46,8 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
         "schema_version": 2,
         "algorithm": "legacy",
         "dump_instrumented": not canonical,
-        "host_source_sha256": host_sha or {"module_mp_kdm6.F": "h" * 64},
+        "host_source_sha256": host_sha or {"libmassv.F": "l" * 64,
+                                           VARIANT_KEY: "h" * 64},
         "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
         "module_compiled_sha256": module,
         "module_canonical_sha256": "m" * 64,
@@ -53,7 +55,11 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
         "compiler_path": "/usr/bin/gfortran",
         "compiler_binary_sha256": compiler,
         "compiler_version": version,
-        "commands": ["gfortran -c ..."],
+        # the real flag set: -ffp-contract=off is load-bearing for f32 parity, so a
+        # placeholder command string would make the flags identity untestable
+        "commands": ["/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize "
+                     "-funroll-loops -ffp-contract=off -fconvert=big-endian "
+                     "-o m.o module.F"],
     }
 
 
@@ -104,7 +110,7 @@ def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
         "module_canonical_sha256": "m" * 64,
         "compiler_binary_sha256": "f" * 64,
         "compiler_version": "GNU Fortran 13.2.0",
-        "host_source_sha256": {"module_mp_kdm6.F": "h" * 64},
+        "host_source_sha256": {"libmassv.F": "l" * 64, VARIANT_KEY: "h" * 64},
         "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
     }
     if manifest_edit:
@@ -382,3 +388,58 @@ def test_a_differing_harness_source_is_caught_across_legs(tmp_path):
     lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
     cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
     assert lg.build.toolchain() != cn.build.toolchain()
+
+
+# ── the toolchain excludes ONE key, and includes the flags that move numbers ───
+
+def test_the_variant_module_is_excluded_by_exact_key_not_by_substring(tmp_path):
+    """`"kdm6" not in name` also dropped any future SHARED file whose name contains
+    kdm6 — kdm6_constants.inc, kdm6_shared_helpers.F — silently moving it outside the
+    comparison. One known key means a new shared source is compared by default."""
+    shared = {"libmassv.F": "1" * 64, "kdm6_shared_helpers.F": "2" * 64,
+              fbio.VARIANT_MODULE_KEY: "3" * 64}
+    a = _bundle(tmp_path / "a",
+                prov_edit=lambda lane, p: p.update(host_source_sha256=shared),
+                manifest_edit=lambda m: m.update(host_source_sha256=shared))
+    other = dict(shared, **{"kdm6_shared_helpers.F": "9" * 64})
+    b = _bundle(tmp_path / "b",
+                prov_edit=lambda lane, p: p.update(host_source_sha256=other),
+                manifest_edit=lambda m: m.update(host_source_sha256=other))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() != lb.build.toolchain(), (
+        "a shared source whose name contains kdm6 must still be compared")
+
+
+def test_the_variant_module_key_must_be_present(tmp_path):
+    # without it nothing can be said about which sources the two legs share
+    only_shared = {"libmassv.F": "1" * 64}
+    root = _bundle(tmp_path / "a",
+                   prov_edit=lambda lane, p: p.update(host_source_sha256=only_shared),
+                   manifest_edit=lambda m: m.update(host_source_sha256=only_shared))
+    leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+    with pytest.raises(fbio.FortranBundleError, match="variant module is not where"):
+        leg.build.toolchain()
+
+
+def test_dropping_ffp_contract_off_is_a_different_toolchain(tmp_path):
+    """Same compiler, same sources — but fused multiply-add changes the numbers, so
+    the two legs are no longer a controlled pair. Whole command strings could not be
+    compared instead: they carry paths and the -D defines that are SUPPOSED to
+    differ between variants and between instrumented and control lanes."""
+    a = _bundle(tmp_path / "a")
+    b = _bundle(tmp_path / "b", prov_edit=lambda lane, p: p.update(
+        commands=[c.replace("-ffp-contract=off", "") for c in p["commands"]]))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() != lb.build.toolchain()
+
+
+def test_variant_and_instrumentation_defines_do_not_split_the_toolchain(tmp_path):
+    # -DKDM6_CONS and -DKDM6_G33_FORTRAN_DUMP are the differences the design REQUIRES
+    a = _bundle(tmp_path / "a")
+    b = _bundle(tmp_path / "b", prov_edit=lambda lane, p: p.update(
+        commands=[c + " -DKDM6_CONS -DKDM6_G33_FORTRAN_DUMP" for c in p["commands"]]))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() == lb.build.toolchain()
