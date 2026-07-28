@@ -209,14 +209,15 @@ def main(argv=None) -> int:
     # attestation, and a verdict built from them would describe evidence nobody
     # anchored. An unattested debug run goes down a path that cannot promote.
     if anchored:
-        evidence = cmp.VerifiedFourCase(
-            legacy_fortran=cmp.AttestedLeg(fortran_legs["legacy"],
-                                           legs["legacy_fortran"]),
-            legacy_cpp=cmp.AttestedLeg(cpp_legs["legacy"], legs["legacy_cpp"]),
-            conservative_fortran=cmp.AttestedLeg(fortran_legs["conservative"],
-                                                 legs["conservative_fortran"]),
-            conservative_cpp=cmp.AttestedLeg(cpp_legs["conservative"],
-                                             legs["conservative_cpp"]))
+        # The factory normalizes each VERIFIED ARTIFACT itself. Handing it the runs
+        # this CLI already parsed would re-open exactly the hole P0-4 describes: the
+        # artifact carries the attestation, the dict carries the numbers, and nothing
+        # ties them together.
+        evidence = cmp.VerifiedFourCase.of(
+            legacy_fortran=fortran_legs["legacy"],
+            legacy_cpp=cpp_legs["legacy"],
+            conservative_fortran=fortran_legs["conservative"],
+            conservative_cpp=cpp_legs["conservative"])
         verdict = cmp.adjudicate_verified(evidence)
     else:
         verdict = cmp.adjudicate_unattested(

@@ -21,20 +21,15 @@ import g33_normalize as nz               # noqa: E402
 import g33_replay as rp                  # noqa: E402
 
 
-class _ReadyLeg:
-    """Reports itself decision-grade, so these tests reach the fidelity gate.
+def _decide(lf, lc, cf, cc):
+    """The identity + fidelity + arithmetic layer, on four normalized runs.
 
-    The point here is that a WRONG ladder must be refused even when every
-    attestation is in order — fidelity is not something attestation can substitute
-    for.
+    A WRONG ladder must be refused however impeccable the attestation — fidelity is
+    not something attestation can substitute for. adjudicate_verified now derives its
+    runs from the verified artifacts (owner P0-4), so these cases go through the
+    layer they are actually about.
     """
-    def __init__(self, run):
-        self.normalized, self.verdict_ready = run, True
-
-
-def _evidence(lf, lc, cf, cc):
-    return cmp.VerifiedFourCase(_ReadyLeg(lf), _ReadyLeg(lc),
-                                _ReadyLeg(cf), _ReadyLeg(cc))
+    return cmp._adjudicate_normalized(lf, lc, cf, cc, promote=False)
 
 
 RUN = nz.from_fortran_run(fd.parse_fortran_run(SAMPLE.read_text(), "legacy", 4, 3))
@@ -153,7 +148,7 @@ def test_a_commonly_wrong_shadow_is_invalid_not_a_verdict():
     bad = _mutate("QR_FALK", "shadow_falk_f32")
     cons_bad = copy.deepcopy(bad)
     cons_bad["algorithm"] = "conservative"
-    r = cmp.adjudicate_verified(_evidence(bad, RUN, cons_bad, cons_bad))
+    r = _decide(bad, RUN, cons_bad, cons_bad)
     assert r["verdict"] == "INVALID_EVIDENCE" and "fidelity" in r["reason"]
 
 
@@ -165,7 +160,7 @@ def test_variant_mislabelled_evidence_is_rejected():
     mislabelled["algorithm"] = "conservative"
     with pytest.raises(rp.FidelityError):
         rp.replay_run(mislabelled)
-    r = cmp.adjudicate_verified(_evidence(RUN, RUN, mislabelled, mislabelled))
+    r = _decide(RUN, RUN, mislabelled, mislabelled)
     assert r["verdict"] == "INVALID_EVIDENCE" and "fidelity" in r["reason"]
 
 
@@ -181,7 +176,7 @@ def test_the_tool_never_returns_a_bare_PASS():
     this harness can supply them. A bare PASS invited exactly that over-reading."""
     assert "PASS" not in cmp.VERDICTS
     assert cmp.PASS_MECHANISM in cmp.VERDICTS
-    r = cmp.adjudicate_verified(_evidence(RUN, RUN, RUN, RUN))
+    r = _decide(RUN, RUN, RUN, RUN)
     if r["verdict"] == cmp.PASS_MECHANISM:
         assert r["evidence_strength"] == "PARTIAL"
         assert r["not_established"]          # says what it did NOT show
