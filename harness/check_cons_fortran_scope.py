@@ -53,6 +53,20 @@ RENAMES_CONS_TO_LEGACY = [
 CLUSTER_GAP = 10
 
 
+def _git_head() -> str:
+    """The revision of the checker itself, or "unknown-dirty" when the tree does not
+    describe it — never a bare commit that misrepresents modified code."""
+    import subprocess
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True,
+                              text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain"], capture_output=True,
+                               text=True, check=True).stdout.strip()
+        return f"{head}-dirty" if dirty else head
+    except Exception:
+        return "unknown"
+
+
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -108,6 +122,13 @@ def main() -> int:
     manifest = json.loads(args.manifest.read_text())
     report = {
         "checker": "check_cons_fortran_scope",
+        # WHAT produced this verdict. A report carrying only pass/fail and two SHAs
+        # says a checker somewhere approved something — which any hand-written JSON
+        # also says. The consumer (g33_fortran_bundle_io.authorized_by_gate_a)
+        # requires these, so a decision cannot rest on an unattributable approval.
+        "schema_version": 1,
+        "checker_commit": _git_head(),
+        "scope_manifest_sha256": sha256_file(args.manifest),
         "legacy": str(args.legacy),
         "cons": str(args.cons),
         "manifest": str(args.manifest),

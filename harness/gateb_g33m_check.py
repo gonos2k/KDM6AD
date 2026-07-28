@@ -38,6 +38,7 @@ adjudication over historical evidence this harness cannot hold.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -98,6 +99,10 @@ def main(argv=None) -> int:
                     help="external anchor for the legacy Fortran bundle")
     ap.add_argument("--expected-fortran-conservative-manifest-sha256",
                     help="external anchor for the conservative Fortran bundle")
+    ap.add_argument("--expected-gate-a-scope-report-sha256", default=None,
+                    help="external anchor for the Gate A report. Without it the "
+                         "report is only self-consistent, and a self-consistent "
+                         "report is exactly what a forgery produces.")
     ap.add_argument("--gate-a-scope-report", type=Path, default=None,
                     help="check_cons_fortran_scope.py --json-out. Binds the "
                          "conservative leg's module to the source whose edits the "
@@ -190,10 +195,27 @@ def main(argv=None) -> int:
         # WHICH conservative module, not just "a different one". Without this the
         # toolchain gate accepts any conservative source at all, since excluding the
         # variant module from the comparison is what lets the two legs differ there.
+        # Gate A is a DECISION PREREQUISITE, not an option. Excluding the variant
+        # module from the toolchain comparison is what lets the two legs differ
+        # there; authorizing which conservative source may differ is a separate
+        # fact, and a decision that skips it has not established it.
+        gate_a = None
         if a.gate_a_scope_report is not None:
-            fbio.authorized_by_gate_a(
-                bio._load_json(a.gate_a_scope_report, "Gate A scope report"),
-                fortran_legs)
+            got = hashlib.sha256(a.gate_a_scope_report.read_bytes()).hexdigest()
+            if a.expected_gate_a_scope_report_sha256 not in (None, got):
+                raise fbio.FortranBundleError(
+                    f"Gate A report sha256 {got} != external anchor "
+                    f"{a.expected_gate_a_scope_report_sha256}")
+            if anchored and a.expected_gate_a_scope_report_sha256 is None:
+                raise fbio.FortranBundleError(
+                    "a decision-grade run needs --expected-gate-a-scope-report-"
+                    "sha256: a report checked only against itself attests nothing")
+            gate_a = bio._load_json(a.gate_a_scope_report, "Gate A scope report")
+            fbio.authorized_by_gate_a(gate_a, fortran_legs)
+        elif anchored:
+            raise fbio.FortranBundleError(
+                "a decision-grade run needs --gate-a-scope-report: allowing the two "
+                "legs to compile different modules is not authorizing one")
         builds = {algo: leg.build for algo, leg in fortran_legs.items()}
         if len({b.toolchain() for b in builds.values()}) != 1:
             raise fbio.FortranBundleError(
@@ -230,7 +252,8 @@ def main(argv=None) -> int:
             legacy_fortran=fortran_legs["legacy"],
             legacy_cpp=cpp_legs["legacy"],
             conservative_fortran=fortran_legs["conservative"],
-            conservative_cpp=cpp_legs["conservative"])
+            conservative_cpp=cpp_legs["conservative"],
+            gate_a_report=gate_a, require_source_authorization=True)
         verdict = cmp.adjudicate_verified(evidence)
     else:
         verdict = cmp.adjudicate_unattested(

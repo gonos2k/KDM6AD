@@ -136,6 +136,13 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
     if report.get("pass") is not True:
         raise FortranBundleError(
             "the Gate A scope report does not pass: %r" % (report.get("failures"),))
+    # WHAT produced this verdict. Without these the report says a checker somewhere
+    # approved something, which any hand-written JSON also says.
+    for field in ("schema_version", "checker_commit", "scope_manifest_sha256"):
+        if not report.get(field):
+            raise FortranBundleError(
+                "the Gate A report lacks %s — it records a verdict but not what "
+                "produced it, which a self-consistent forgery also does" % field)
     pinned = report.get("sha256") or dict()
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
