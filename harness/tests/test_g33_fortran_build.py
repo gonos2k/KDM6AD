@@ -475,3 +475,25 @@ def test_the_outer_loop_carry_is_checked_and_a_break_is_caught():
     broken.stages[key] = (dtype, bits ^ 0x1)                    # one ULP is enough
     with pytest.raises(sem.SemanticError, match="outer carry broken"):
         sem.verify_semantics(broken)
+
+
+def test_the_last_loop_exit_is_bound_to_the_returned_state():
+    """outer_post_micro(N) == the STATE the subroutine returned.
+
+    Without it the bridge chains the loops to each other but leaves the last one
+    attached to nothing, so a difference introduced after the final snapshot — in the
+    pack-out — would pass every other check."""
+    import sys
+    sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_dump as fd
+    import g33_fortran_semantics as sem
+
+    C = _build_and_run("legacy", dump=True,
+                       fixture="g33_fixture_multisubcycle_v1")
+    sem.verify_semantics(fd.parse_fortran_run(C, "legacy", 4, 3))       # holds
+
+    broken = fd.parse_fortran_run(C, "legacy", 4, 3)
+    broken.state[("qv", 1, 0)] ^= 0x1                                   # one ULP
+    with pytest.raises(sem.SemanticError, match="final state not bound"):
+        sem.verify_semantics(broken)

@@ -121,6 +121,8 @@ def main() -> None:
     abc.CASES[CASE] = (B, K)
     canonical = args.canonical_driver.resolve()
     diagnostic = args.diagnostic_driver.resolve()
+    # the fixture's OWN dt decides whether a probe is required
+    loops_from_dt = gsp.step_schedule(authority)[0]
     clean = _clean_env()
     persist = args.out is not None
     if persist:
@@ -147,7 +149,19 @@ def main() -> None:
             if out_a != out_b:
                 _die(EXIT_FIDELITY, f"shared fixture A!=B: {algo}")
 
-            schedule = _sealed_schedule(args.schedule, algo) or abc._schedule(algo, CASE)
+            schedule = _sealed_schedule(args.schedule, algo)
+            if schedule is None:
+                # The fallback is only admissible where there is nothing to derive.
+                # A fixture whose own dt implies more than one outer loop would be
+                # sealed against a one-loop contract its run cannot satisfy — a loud
+                # failure later, but from the wrong place and with the wrong reason.
+                if loops_from_dt > 1:
+                    _die(EXIT_SKIP,
+                         f"fixture {args.fixture_id} takes {loops_from_dt} outer "
+                         f"loops, so its schedule must come from a probe: pass "
+                         f"--schedule {algo}=PROBE_DIR/schedule.json (or use "
+                         f"run_cpp_abc.py, which runs both passes)")
+                schedule = abc._schedule(algo, CASE)
             evidence = root / f"{algo}-C-evidence"
             env_c = gre.build_env(
                 schedule, evidence, binary=diagnostic,

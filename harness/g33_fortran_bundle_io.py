@@ -37,17 +37,30 @@ import g33_fortran_semantics as sem    # noqa: E402
 LANES = ("A", "B", "C")
 
 
+#: Every FortranRun field that carries evidence in a mutable mapping. Named rather
+#: than discovered, so a field added later is a deliberate decision about whether it
+#: is evidence — a dir()-based sweep would freeze new fields silently either way.
+_RUN_MAPPINGS = ("stages", "state", "precip", "fixin", "params", "localparams",
+                 "mstep")
+
+
 class FortranBundleError(Exception):
     """The Fortran bundle cannot be re-verified."""
 
 
 @dataclass(frozen=True)
 class BuildIdentity:
-    """What produced this leg's binaries.
+    """What produced this leg's binaries, at two levels.
 
-    The two Fortran control legs must share it. Nothing compared them before, so
-    legacy and conservative could have come from different compilers, sources or
-    flags and the four-way problem identity would not have shown it.
+    The WHOLE identity — microphysics module included — must hold across a bundle's
+    own A/B/C lanes: they are three builds of one variant, so a differing module
+    there means the control and the instrumented run are not the same program.
+
+    ACROSS the two control legs only `toolchain()` may be compared. Legacy compiles
+    module_mp_kdm6.F and conservative module_mp_kdm6_cons.F: those hashes MUST differ,
+    because that difference IS the comparison. Requiring the full identity to match
+    made every real four-case run INVALID_EVIDENCE — the same shape of mistake as the
+    flat problem identity in the comparator (owner P0-C2).
     """
     compiler_binary_sha256: str
     compiler_version: str
@@ -64,6 +77,18 @@ class BuildIdentity:
             host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
             harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
         )
+
+    def toolchain(self) -> tuple:
+        """Everything the two control legs must share: the compiler, the harness, and
+        the host sources OTHER than the microphysics module under test.
+
+        The module is carried in host_source_sha256 under one normalized key
+        (`module_mp_kdm6[_cons].F`), so it is dropped by name rather than by value —
+        dropping whichever entry happens to differ would make the check vacuous."""
+        shared_host = tuple((n, h) for n, h in self.host_source_sha256
+                            if "kdm6" not in n)
+        return (self.compiler_binary_sha256, self.compiler_version,
+                shared_host, self.harness_source_sha256)
 
 
 @dataclass(frozen=True)
@@ -92,6 +117,18 @@ class VerifiedFortranLeg:
                 and self.repo_clean)
 
 
+def _no_dup_keys(pairs):
+    """A repeated JSON key silently keeps the LAST value, so a manifest could carry
+    two executable_sha256 entries and be verified against whichever survived. The C++
+    reader already refused this; the Fortran one parsed with plain json.loads."""
+    seen = {}
+    for k, v in pairs:
+        if k in seen:
+            raise FortranBundleError(f"duplicate JSON key {k!r}")
+        seen[k] = v
+    return seen
+
+
 def _freeze(obj):
     """Recursively read-only. MappingProxyType guards only the TOP dict — a nested
     one stays writable, so a caller could forge run.stages after verification while
@@ -101,6 +138,11 @@ def _freeze(obj):
     if isinstance(obj, list):
         return tuple(_freeze(v) for v in obj)
     return obj
+
+
+def _freeze_run(run):
+    """A FortranRun whose payload mappings are read-only."""
+    return replace(run, **{f: _freeze(getattr(run, f)) for f in _RUN_MAPPINGS})
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -147,7 +189,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         raise FortranBundleError(
             f"manifest sha256 {manifest_sha} != expected {expected_manifest_sha256}")
     try:
-        manifest = json.loads(manifest_bytes)
+        manifest = json.loads(manifest_bytes, object_pairs_hook=_no_dup_keys)
     except json.JSONDecodeError as e:
         raise FortranBundleError(f"abc_manifest.json is not JSON: {e}") from None
 
@@ -216,7 +258,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                 manifest.get("build_provenance_sha256") or {}).get(lane):
             raise FortranBundleError(f"lane {lane} provenance sha256 != manifest")
         try:
-            prov = json.loads(prov_bytes)
+            prov = json.loads(prov_bytes, object_pairs_hook=_no_dup_keys)
         except json.JSONDecodeError as e:
             raise FortranBundleError(f"lane {lane} provenance is not JSON: {e}") from None
         need = ("compiler_binary_sha256", "compiler_version", "module_canonical_sha256",
@@ -318,7 +360,15 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     return VerifiedFortranLeg(
         algorithm=algorithm,
         manifest=_freeze(manifest),
-        run=run,
+        # DEEP-frozen (owner P1 §8). FortranRun is a frozen dataclass, but its
+        # stages/state/precip/fixin/params/localparams were plain mutable dicts, so
+        #     leg = verify_fortran_bundle(...)
+        #     leg.run.stages[key] = forged
+        # left verdict_ready True while the evidence had changed under it. Frozen
+        # HERE and not in parse_fortran_run: the parser is also used for ad-hoc
+        # analysis and for building mutants, and only this path produces
+        # decision-grade evidence.
+        run=_freeze_run(run),
         build=build,
         problem=problem,
         bundle_verified=True,
