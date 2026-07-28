@@ -32,12 +32,18 @@ import numpy as np
 #: be bound to what the subroutine actually returned. `t` is excluded on purpose: the
 #: state carries `th`, and th = t/pii is a computation, not a copy — asserting bit
 #: equality there would be asserting the conversion, not the binding.
-_FINAL_BOUND = ("qv", "qc", "qr", "qi", "qs", "qg", "nr")
+#: stage field -> the name the returned STATE uses for it. Only `brs`/`bg` differ,
+#: and that is a rename across a copy, not a computation — unlike t/th, which is why
+#: `t` stays out.
+_FINAL_BOUND = {"qv": "qv", "qc": "qc", "qr": "qr", "qi": "qi", "qs": "qs",
+                "qg": "qg", "nr": "nr", "nc": "nc", "ni": "ni", "nccn": "nccn",
+                "brs": "bg"}
 
 #: What the outer loop carries from one cloud sub-cycle to the next. The INTERSECTION
 #: of the two bridge snapshots' field sets, since the carry can only be stated about
 #: fields both of them observe.
-_CARRIED_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg")
+_CARRIED_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                   "nc", "ni", "nccn", "brs")
 
 
 class SemanticError(ValueError):
@@ -196,8 +202,8 @@ def verify_semantics(run):
         last = max(loops)
         for c in range(1, B + 1):
             for k in range(K):
-                for f in _FINAL_BOUND:
-                    got = run.state.get((f, c, k))
+                for f, state_name in _FINAL_BOUND.items():
+                    got = run.state.get((state_name, c, k))
                     if got is None:
                         continue                  # not a state field on this protocol
                     if _sv(S, "outer_post_micro", 0, f, c, k, last)[1] != got:

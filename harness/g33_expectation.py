@@ -144,15 +144,19 @@ _STAGE_FIELDS_BASE = {
     "outer_pre_sed":   [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"), ("qi", "f32", "BK"),
                         ("qs", "f32", "BK"), ("qg", "f32", "BK"),
+                        ("nc", "f32", "BK"), ("ni", "f32", "BK"),
+                        ("nccn", "f32", "BK"), ("brs", "f32", "BK"),
                         ("rho", "f32", "BK"), ("delz", "f32", "BK")],
     "outer_post_sed":  [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"),
                         ("qi", "f32", "BK"), ("qs", "f32", "BK"),
-                        ("qg", "f32", "BK")],
+                        ("qg", "f32", "BK"), ("nc", "f32", "BK"), ("ni", "f32", "BK"),
+                        ("nccn", "f32", "BK"), ("brs", "f32", "BK")],
     "outer_post_micro": [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"),
                         ("qi", "f32", "BK"), ("qs", "f32", "BK"),
-                        ("qg", "f32", "BK")],
+                        ("qg", "f32", "BK"), ("nc", "f32", "BK"), ("ni", "f32", "BK"),
+                        ("nccn", "f32", "BK"), ("brs", "f32", "BK")],
     # substep_pre is WHOLE-K, emitted once per substep (k=-1). Three fields the
     # protocol names are NOT here, each for a stated reason rather than omission:
     #   mstepmax_i32 (§55) — DERIVED offline, not dumped. Owner adjudication

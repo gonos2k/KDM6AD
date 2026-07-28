@@ -49,8 +49,8 @@ _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_BEGIN = re.compile(r"^G33F BEGIN v([1234]) (\S+)$")
-_END = re.compile(r"^G33F END v([1234]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([12345]) (\S+)$")
+_END = re.compile(r"^G33F END v([12345]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -259,7 +259,8 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4):
     # by THAT scope's own mstep maximum
     scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
     loops = sorted({lp for lp, _ch in scopes})
-    pre_sed_fields = (_OUTER_PRE_SED_FIELDS if version >= 4
+    carried = _CARRIED_BY_VERSION.get(min(version, 5), ())
+    pre_sed_fields = ((carried + _FORCINGS) if version >= 4
                       else _OUTER_PRE_SED_FIELDS_V3)
     exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
            for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
@@ -280,7 +281,7 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4):
     if version >= 4:
         for stage in ("outer_post_sed", "outer_post_micro"):
             exp |= {(L, "-", stage, 0, f, c, k) for L in loops
-                    for f in _OUTER_POST_FIELDS for c in range(1, B + 1)
+                    for f in carried for c in range(1, B + 1)
                     for k in range(K)}
     if set(stages) != exp:
         missing, extra = exp - set(stages), set(stages) - exp
@@ -355,8 +356,16 @@ _KNOWN = (_OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
           _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
-_OUTER_PRE_SED_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
-                         "rho", "delz")
+#: The carried state, by protocol version. Keyed rather than versioned by constant
+#: name so a new tier is one row, and an older stream is refused for the right reason
+#: instead of being reported as missing evidence.
+_CARRIED_BY_VERSION = {
+    4: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"),
+    5: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+        "nc", "ni", "nccn", "brs"),
+}
+_FORCINGS = ("rho", "delz")          # pre-sed only; not carried between loops
+_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[5] + _FORCINGS
 #: What v3 emitted, kept so a pre-bridge stream still parses and the equivalence
 #: proof (a new run reproduces the old sample's shared records exactly) stays
 #: possible — that proof is how the bridge is shown not to perturb the run.
@@ -366,7 +375,7 @@ _OUTER_PRE_SED_FIELDS_V3 = ("qr", "nr", "qv", "t", "rho", "delz")
 #: whole carried state rather than about qr/nr with the rest assumed. Declared here
 #: rather than imported from the bindings: a parser that read the emitter's own list
 #: would accept whatever the emitter chose to write.
-_OUTER_POST_FIELDS = ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg")
+_OUTER_POST_FIELDS = _CARRIED_BY_VERSION[5]
 _SUBSTEP_PRE_K_FIELDS = ("qr", "nr", "work1_qr", "workn_qr", "dend_safe", "delz_safe")
 _SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
 _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
@@ -376,6 +385,7 @@ _STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
                 "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
                 # the carried species the bridge adds
                 "qc": "f32", "qi": "f32", "qs": "f32", "qg": "f32",
+                "nc": "f32", "ni": "f32", "nccn": "f32", "brs": "f32",
                 "dend_safe": "f32", "delz_safe": "f32",
                 "mstep": "i32", "gate": "u8", "dtcld": "f32",
                 **{f: "f32" for f in _SURFACE_FIELDS}}

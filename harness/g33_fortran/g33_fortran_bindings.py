@@ -207,16 +207,6 @@ POST_FIELDS = ("q_post", "n_post")
 # floor, so dend_raw==dend_safe and delz_raw==delz_safe; qcrmin has no Fortran
 # counterpart in kdm62D and is intentionally omitted.
 STAGE_ANCHOR = "      do n = 1, mstepmax"
-OUTER_PRE_SED = [   # whole-K, once, before the sub-cycle (n=0)
-    ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
-    ("qv", "f32", "q(i,k)"), ("t", "f32", "t(i,k)"),
-    # the rest of the carried condensate, so the outer-loop carry can be stated
-    # about the WHOLE state both bridge snapshots observe (owner P0-C1)
-    ("qc", "f32", "qci(i,k,1)"), ("qi", "f32", "qci(i,k,2)"),
-    ("qs", "f32", "qrs(i,k,2)"), ("qg", "f32", "qrs(i,k,3)"),
-    # forcings, not carried prognostics — pre-sed only
-    ("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)"),
-]
 SUBSTEP_PRE_K = [   # whole-K, per substep n
     ("qr", "f32", "qrs(i,k,1)"), ("nr", "f32", "nrs(i,k,1)"),
     ("work1_qr", "f64", "work1(i,k,1)"), ("workn_qr", "f64", "workn(i,k,1)"),
@@ -241,7 +231,10 @@ SUBSTEP_PRE_COL = [  # per-column scalar (k=-1), per substep n
 #
 # Species indices are read from kdm62D's own pack (module_mp_kdm6.F:380-384 and
 # module_mp_kdm6_cons.F:400-404 — identical in both), not from WRF convention:
-#   qc = qci(:,:,1)  qi = qci(:,:,2)  qr = qrs(:,:,1)  qs = qrs(:,:,2)  qg = qrs(:,:,3)
+#   qc = qci(:,:,1)  qi   = qci(:,:,2)  qr  = qrs(:,:,1)
+#   qs = qrs(:,:,2)  qg   = qrs(:,:,3)  nr  = nrs(:,:,1)
+#   nc = nci(:,:,1)  ni   = nci(:,:,2)  nccn = nci(:,:,3)   (packed from `nn`)
+#   brs = brs(i,k)   -- 2-D, packed from `bg`; the C++ state calls it brs
 POST_SED_ANCHOR = "      enddo ! do n = 1, mstepmax_i"
 POST_MICRO_ANCHOR = "   enddo                  ! big loops"
 
@@ -253,9 +246,23 @@ _CARRIED = [
     ("qv", "f32", "q(i,k)"), ("t", "f32", "t(i,k)"),
     ("qc", "f32", "qci(i,k,1)"), ("qi", "f32", "qci(i,k,2)"),
     ("qs", "f32", "qrs(i,k,2)"), ("qg", "f32", "qrs(i,k,3)"),
+    # v5: the NUMBER concentrations and the graupel volume. With only the mass
+    # fields, "the sedimentation result matched" was a statement about 8 of the 12
+    # state members, and a difference in one of these could have crossed
+    # outer_post_sed unobserved (owner P0-6).
+    ("nc", "f32", "nci(i,k,1)"), ("ni", "f32", "nci(i,k,2)"),
+    ("nccn", "f32", "nci(i,k,3)"), ("brs", "f32", "brs(i,k)"),
 ]
 OUTER_POST_SED = list(_CARRIED)
 OUTER_POST_MICRO = list(_CARRIED)
+
+#: Pre-sed forcings: not carried between loops, so not part of the bridge identity.
+_FORCINGS = [("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)")]
+
+#: DERIVED from _CARRIED, not maintained beside it. Keeping a parallel list is how
+#: the two drifted at v5: the post snapshots gained the number concentrations and
+#: this one did not, so the carry was checked over fields one end never emitted.
+OUTER_PRE_SED = _CARRIED + _FORCINGS
 
 # ── surface causal operands (owner P0-8): the per-species bottom fall that feeds
 # rain/snow/graupel increments, so the qr-seed -> precip path is an operand set,

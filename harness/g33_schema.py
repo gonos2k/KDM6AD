@@ -77,12 +77,14 @@ _SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[cha
 # normalizers project onto exactly this set, so the F↔C++ identity universes match.
 _SEMANTIC_STAGE_FIELDS = {
     "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
-                      "rho", "delz"],
+                      "nc", "ni", "nccn", "brs", "rho", "delz"],
     # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a
     # divergence in what one loop hands the next is a comparator finding rather
     # than something only a human reading two dumps side by side would notice.
-    "outer_post_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"],
-    "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"],
+    "outer_post_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                       "nc", "ni", "nccn", "brs"],
+    "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                         "nc", "ni", "nccn", "brs"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",
                     "dtcld", "gate", "mstep"],
     # OPERANDS only. The per-loop rain/snow/graupel increments are C++-only (the
