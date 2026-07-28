@@ -48,6 +48,30 @@ class FortranBundleError(Exception):
     """The Fortran bundle cannot be re-verified."""
 
 
+#: The EXACT host sources every lane must attest. Provenance checked only that the
+#: map existed, so dropping one from all three lanes and the root manifest left
+#: BuildIdentity comparing a smaller set and agreeing — and with the variant module
+#: excluded from toolchain(), the fail-open surface was the whole shared tree.
+#:
+#: A closed world: adding a source makes CI fail until someone widens the attestation
+#: scope deliberately (owner P1).
+EXPECTED_HOST_SOURCES = frozenset((
+    "libmassv.F", "module_model_constants.F", "module_mp_radar.F",
+    "module_mp_kdm6[_cons].F",
+))
+
+#: Same, for the harness. `fixture.f90`/`fixture.h` are keyed by ROLE because the
+#: build selects which generated fixture to compile.
+EXPECTED_HARNESS_SOURCES = frozenset((
+    "make_fortran_overlay.py", "g33_fortran_bindings.py", "g33_fortran_driver.f90",
+    "stub_wrf_error.f90", "fortran_build.sh", "g33_provenance.py",
+    "g33_fortran_dump.py", "run_fortran_case.py",
+    "fixture.f90", "fixture.h",
+    "g33_fixture_v1.json", "g33_fixture_v1.py",
+    "g33_fourcase_fixture_check.py", "g33_schema.py", "g33_expectation.py",
+))
+
+
 #: The single normalized key under which provenance records whichever microphysics
 #: variant this leg compiled. It is the ONE host source that legitimately differs
 #: between the two control legs.
@@ -360,6 +384,15 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         missing = [k for k in need if k not in prov]
         if missing:
             raise FortranBundleError(f"lane {lane} provenance lacks {missing}")
+        # EXACT source universe, not merely "the map is present"
+        for field, expected in (("host_source_sha256", EXPECTED_HOST_SOURCES),
+                                ("harness_source_sha256", EXPECTED_HARNESS_SOURCES)):
+            got = frozenset(prov[field])
+            if got != expected:
+                raise FortranBundleError(
+                    f"lane {lane} {field} is not the attested set: "
+                    f"missing {sorted(expected - got)}, "
+                    f"unexpected {sorted(got - expected)}")
         provenance[lane] = prov
 
         # the ACTUAL binary, hashed, against BOTH records of it

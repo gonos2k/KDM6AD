@@ -19,6 +19,13 @@ def _sha(path: str) -> str:
 
 def main() -> None:
     out_dir, algo, dump, fc, module_src, module_canon = sys.argv[1:7]
+    # The build selects a fixture with --fixture, which picks a DIFFERENT generated
+    # module. Hardcoding the default names attested a source the build never
+    # compiled. The raw inputs are checked separately against the authority, so this
+    # was not a numerical false pass — it was an inaccurate attestation (owner P1).
+    fixture_id, fixture_src = (sys.argv[7:9] + ["g33_fixture_v1", ""])[:2]
+    fixture_src = fixture_src or f"{HERE}/g33_fixture_v1.f90"
+    fixture_stem = fixture_id.replace("g33_fixture_", "").rstrip("_") or "v1"
     host_sources = {
         "libmassv.F": f"{HOST}/frame/libmassv.F",
         "module_model_constants.F": f"{HOST}/share/module_model_constants.F",
@@ -28,12 +35,14 @@ def main() -> None:
     harness_sources = {
         **{n: f"{HERE}/{n}" for n in (
             "make_fortran_overlay.py", "g33_fortran_bindings.py",
-            "g33_fortran_driver.f90", "g33_fixture_v1.f90",
+            "g33_fortran_driver.f90",
             "stub_wrf_error.f90", "fortran_build.sh", "g33_provenance.py",
             "g33_fortran_dump.py", "run_fortran_case.py")},
+        # keyed by ROLE, valued by the file this build actually used
+        "fixture.f90": fixture_src,
+        "fixture.h": f"harness/g33_overlay/g33_fixture_{fixture_stem}.h",
         "g33_fixture_v1.json": "harness/g33_fixture_v1.json",
         "g33_fixture_v1.py": "harness/g33_fixture_v1.py",
-        "g33_fixture_v1.h": "harness/g33_overlay/g33_fixture_v1.h",
         "g33_fourcase_fixture_check.py": "harness/g33_fourcase_fixture_check.py",
         "g33_schema.py": "harness/g33_schema.py",
         "g33_expectation.py": "harness/g33_expectation.py",
@@ -47,6 +56,7 @@ def main() -> None:
     manifest = {
         "schema_version": 2,
         "algorithm": algo,
+        "fixture_id": fixture_id,
         "dump_instrumented": dump == "1",
         "host_source_sha256": {k: _sha(v) for k, v in host_sources.items()},
         "harness_source_sha256": {k: _sha(v) for k, v in harness_sources.items()},
