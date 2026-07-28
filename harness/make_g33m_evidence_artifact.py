@@ -151,9 +151,14 @@ def main() -> int:
         }
         carry[algo] = _carry_proof(diff, loops)
 
-        if algo == "legacy" and earliest is not None:
-            col = earliest[4]
-            for k in range(auth["K"]):
+        if algo == "legacy":
+            # EVERY cell where the condensation triple actually differs, not the
+            # column the first divergence happens to sit in — those need not be the
+            # same place, and pinning the closure to the latter reported zeros.
+            cells = sorted({(k[4], k[5]) for k in diff
+                            if k[0] == "outer_post_micro" and k[1] == 1
+                            and k[6] in ("qv", "qc", "t")})
+            for col, k in cells:
                 try:
                     g = lambda f: (_f32(fk[("outer_post_micro", 1, "-", 0, col, k, f)]),
                                    _f32(ck[("outer_post_micro", 1, "-", 0, col, k, f)]))
