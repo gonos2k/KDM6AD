@@ -72,12 +72,19 @@ _STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output",
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"outer_pre_sed": 0, "substep_pre": 1, "surface": 2,
                 "outer_post_sed": 3, "outer_post_micro": 4, "final_output": 5}
-#: Phases whose shared seed is INSIDE sedimentation, where SedimentationIdentity is
-#: the whole precondition. A seed anywhere else (the surface accumulation, the
-#: whole-step output, or either bridge snapshot) is a claim about the FULL step, whose
-#: preconditions include what runs between the sub-cycles — so it may not be promoted
-#: on the sedimentation identity alone (owner P0-C2 §6).
-_SEDIMENTATION_PHASES = frozenset(("op", "outer_pre_sed", "substep_pre"))
+#: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
+#:
+#: Only the op ladder. Every rung there is replayed from its own dumped operands, so
+#: the causal inputs of the divergence are sealed by the evidence itself. Nothing else
+#: is: `outer_pre_sed` and `substep_pre` are ENTRY snapshots, and a difference first
+#: appearing at a snapshot says the state arriving at sedimentation already differed —
+#: which is a statement about what produced that state, not about sedimentation. The
+#: surface accumulation, the whole-step output and both bridge snapshots are full-step
+#: claims whose preconditions include what runs between the sub-cycles.
+#:
+#: Widening this needs a per-field argument that the causal inputs are sealed, not a
+#: judgement that the phase feels close enough to sedimentation (owner P0-8).
+_SEDIMENTATION_PHASES = frozenset(("op",))
 
 #: Whole-K snapshots taken once per outer loop (n=0), as opposed to per substep.
 _OUTER_SNAPSHOTS = ("outer_pre_sed", "outer_post_sed", "outer_post_micro")

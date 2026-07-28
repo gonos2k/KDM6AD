@@ -736,20 +736,24 @@ def test_a_local_parameter_difference_ACROSS_backends_is_not_an_error():
 
 # -- promotion is scoped to what the identity establishes (owner P0-C2 6) ------
 
-def test_only_a_seed_inside_sedimentation_may_promote():
-    """SedimentationIdentity is the whole precondition for a seed inside
-    sedimentation. Anywhere else the seed is a FULL-STEP claim, whose preconditions
-    include what runs between the sub-cycles."""
-    for phase in ("op", "outer_pre_sed", "substep_pre"):
-        assert cmp.promotable_phase(phase), phase
-    for phase in ("surface", "final_output", "outer_post_sed", "outer_post_micro"):
+def test_only_the_op_ladder_may_promote():
+    """Every op rung is replayed from its own dumped operands, so the causal inputs
+    of a divergence there are sealed by the evidence itself.
+
+    The entry snapshots are NOT: a difference first appearing at outer_pre_sed or
+    substep_pre says the state ARRIVING at sedimentation already differed, which is a
+    statement about what produced that state. Widening this needs a per-field argument
+    that the inputs are sealed, not a judgement that a phase feels close enough.
+    """
+    assert cmp.promotable_phase("op")
+    for phase in ("outer_pre_sed", "substep_pre", "surface", "final_output",
+                  "outer_post_sed", "outer_post_micro"):
         assert not cmp.promotable_phase(phase), phase
 
 
-def test_the_sedimentation_phase_set_is_exactly_the_sed_stages():
+def test_the_promotable_phase_set_is_exactly_the_op_ladder():
     # a phase added later must be classified deliberately, not inherit promotion
-    assert cmp._SEDIMENTATION_PHASES == frozenset(
-        ("op", "outer_pre_sed", "substep_pre"))
+    assert cmp._SEDIMENTATION_PHASES == frozenset(("op",))
 
 
 def test_a_whole_step_seed_is_reported_as_a_full_step_claim():

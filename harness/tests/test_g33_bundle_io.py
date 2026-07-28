@@ -148,7 +148,7 @@ def _probe_stream(algo: str, mstep: int, dtcld=20.0) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _probe_dir(root: Path, algo: str, mstep: int) -> dict:
+def _probe_dir(root: Path, algo: str, mstep: int, schedule=None) -> dict:
     """The probe a multi-substep bundle must ship, plus its lineage record.
 
     A bundle that declares more than one substep has to show where that number came
@@ -161,12 +161,16 @@ def _probe_dir(root: Path, algo: str, mstep: int) -> dict:
     d.mkdir()
     stream = _probe_stream(algo, mstep)
     (d / "probe.sched").write_text(stream)
-    schedule = json.dumps({"loops": 1, "mstepmax_main": [mstep],
-                           "mstepmax_ice": [mstep]}, indent=2, sort_keys=True) + "\n"
+    # A real probe writes the WHOLE sealed schedule, and the verifier now requires it
+    # to equal the contract the evidence was sealed with — hashing the file only
+    # proves it is the one the probe wrote (owner P0-9).
+    schedule = json.dumps(schedule, indent=2, sort_keys=True) + "\n"
     (d / "schedule.json").write_text(schedule)
     (d / "probe_manifest.json").write_text(json.dumps({
         "schema_version": 1, "algorithm": algo,
         "fixture_id": gfx.load_manifest()["fixture_id"],
+        "fixture_manifest_sha256": gfx.manifest_sha256(gfx.load_manifest()),
+        "noninvasiveness_checked": True,
         "diagnostic_driver_sha256": DIAG,
         "probe_stream_sha256": hashlib.sha256(stream.encode()).hexdigest(),
         "schedule_sha256": hashlib.sha256(schedule.encode()).hexdigest(),
@@ -216,7 +220,8 @@ def _bundle(root: Path, truncate_abc=False, rain="00000000", **ev):
         sha = _sha(root / f"{algo}-A" / "stdout.abc")
         # A multi-substep contract must ship the probe that establishes it, exactly
         # as a real bundle does.
-        probe = _probe_dir(root, algo, declared) if max(declared, substeps) > 1 else {}
+        probe = (_probe_dir(root, algo, declared, schedule=_sched(algo, substeps))
+                 if max(declared, substeps) > 1 else {})
         manifest["algorithms"][algo] = {
             **probe,
             "abc_equal": True, "containers": 4 + substeps,
@@ -540,3 +545,71 @@ def test_a_single_substep_bundle_needs_no_probe(tmp_path):
     # nothing to derive: the contract declares one loop of one substep
     leg = bio.verify_cpp_bundle(_bundle(tmp_path))["algorithms"]["legacy"]
     assert leg.probe_lineage is None
+
+
+# ── the WHOLE schedule, and the fixture the probe was of (owner P0-9) ──────────
+
+def _repoint(root, algo="legacy", **probe_edit):
+    """Edit the shipped probe manifest/schedule and re-anchor every hash, so the
+    bundle stays self-consistent — which is the point: these forgeries are invisible
+    to any check that only re-hashes files."""
+    d = root / f"{algo}-probe"
+    for name, edit in probe_edit.items():
+        f = d / name.replace("__", ".")
+        doc = json.loads(f.read_text())
+        edit(doc)
+        f.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+    pm = d / "probe_manifest.json"
+    doc = json.loads(pm.read_text())
+    doc["schedule_sha256"] = _sha(d / "schedule.json")
+    doc["probe_stream_sha256"] = _sha(d / "probe.sched")
+    pm.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+    m = json.loads((root / "cpp_abc_manifest.json").read_text())
+    m["algorithms"][algo].update(
+        schedule_sha256=_sha(d / "schedule.json"),
+        probe_manifest_sha256=_sha(pm),
+        probe_stream_sha256=_sha(d / "probe.sched"))
+    (root / "cpp_abc_manifest.json").write_text(json.dumps(m))
+    return root
+
+
+def test_a_schedule_matching_only_in_mstepmax_is_refused(tmp_path):
+    """qcrmin, dtcld, B/K, species_scope, instrumented_stages and the case/pair ids
+    could all differ while the substep counts agreed, and the evidence would have
+    been sealed against a contract the probe never produced."""
+    root = _repoint(_bundle(tmp_path / "b", substeps=2, mstep=2),
+                    schedule__json=lambda d: d.update(qcrmin=1.0))
+    with pytest.raises(bio.BundleError, match="not the schedule the probe derived"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_schedule_differing_in_species_scope_is_refused(tmp_path):
+    root = _repoint(_bundle(tmp_path / "b", substeps=2, mstep=2),
+                    schedule__json=lambda d: d.update(species_scope=["qr"]))
+    with pytest.raises(bio.BundleError, match=r"differ on \['species_scope'\]"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_probe_of_a_DIFFERENT_fixture_is_refused(tmp_path):
+    root = _repoint(_bundle(tmp_path / "b", substeps=2, mstep=2),
+                    probe_manifest__json=lambda d: d.update(fixture_id="other_v1"))
+    with pytest.raises(bio.BundleError, match="probe is for fixture"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_probe_whose_fixture_hash_differs_is_refused(tmp_path):
+    root = _repoint(
+        _bundle(tmp_path / "b", substeps=2, mstep=2),
+        probe_manifest__json=lambda d: d.update(fixture_manifest_sha256="0" * 64))
+    with pytest.raises(bio.BundleError, match="fixture manifest sha"):
+        bio.verify_cpp_bundle(root)
+
+
+def test_a_probe_that_skipped_the_noninvasiveness_check_is_refused(tmp_path):
+    # a probe that perturbed the run it measured would seal a schedule for a
+    # different execution than the one under test
+    root = _repoint(
+        _bundle(tmp_path / "b", substeps=2, mstep=2),
+        probe_manifest__json=lambda d: d.update(noninvasiveness_checked=False))
+    with pytest.raises(bio.BundleError, match="non-invasiveness"):
+        bio.verify_cpp_bundle(root)
