@@ -51,7 +51,10 @@ emits the same two stages from `runtime.cpp.overlay`, inside `KDM6_G33_OP_DUMP`.
 
 ### The fields
 
-All three outer snapshots now carry the same CARRIED state:
+All three outer snapshots carry the same CARRIED state — **at v4**, eight of
+`CoordinatorState`'s twelve members. See the v5 section below for the rest; reading
+this list as current would understate what "the sedimentation result matched" covers,
+which is exactly the mistake v5 was written to correct.
 
 ```
 qr, nr, qv, t, qc, qi, qs, qg

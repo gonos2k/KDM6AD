@@ -644,7 +644,8 @@ def test_an_unready_leg_cannot_reach_a_verdict():
              for n in ("legacy-C++", "conservative-F", "conservative-C++")]
     unready = cmp.DecisionLeg("legacy-F",
                               type("A", (), {"verdict_ready": False})(), frozen)
-    r = cmp.adjudicate_verified(cmp.VerifiedFourCase(unready, *ready))
+    r = cmp.adjudicate_verified(
+        cmp.VerifiedFourCase(unready, *ready, _token=cmp._FACTORY_TOKEN))
     assert r["verdict"] == "INVALID_EVIDENCE" and "not decision-grade" in r["reason"]
 
 
@@ -801,3 +802,11 @@ def test_a_missing_phase_is_not_promotable():
     # a shared seed always has a phase, so a missing one is malformed, not permissive
     assert cmp.promotable_phase(None) is False
     assert cmp.promotable_phase("op") is True
+
+
+def test_the_four_case_cannot_be_assembled_by_hand():
+    """Documenting of() as "the" path is not the same as making it the only one. A
+    public dataclass constructor let a caller assemble the object from legs it built
+    itself — which is exactly what the factory exists to prevent."""
+    with pytest.raises(TypeError, match="built by VerifiedFourCase.of"):
+        cmp.VerifiedFourCase(1, 2, 3, 4)

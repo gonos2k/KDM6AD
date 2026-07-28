@@ -133,17 +133,32 @@ def _deep_freeze(obj):
     return obj
 
 
+#: Handed to __init__ by of() and nothing else. A public dataclass constructor let a
+#: caller assemble the object from legs it built itself, which is the whole thing the
+#: factory exists to prevent — documenting of() as "the" path is not the same as
+#: making it the only one.
+_FACTORY_TOKEN = object()
+
+
 @dataclass(frozen=True)
 class VerifiedFourCase:
     """The four decision-grade legs, as one object.
 
-    Constructing this is the ONLY way to obtain PASS_MECHANISM, and `of()` is the only
-    way to construct it with runs that belong to their artifacts.
+    Constructing this is the ONLY way to obtain PASS_MECHANISM, and `of()` is the
+    only way to construct it at all — the constructor refuses anyone else.
     """
     legacy_fortran: DecisionLeg
     legacy_cpp: DecisionLeg
     conservative_fortran: DecisionLeg
     conservative_cpp: DecisionLeg
+    _token: object = None
+
+    def __post_init__(self):
+        if self._token is not _FACTORY_TOKEN:
+            raise TypeError(
+                "VerifiedFourCase is built by VerifiedFourCase.of(), which derives "
+                "each run from its verified artifact and applies the cross-leg "
+                "conditions — assembling one directly skips both")
 
     @classmethod
     def of(cls, *, legacy_fortran, legacy_cpp, conservative_fortran,
@@ -198,7 +213,7 @@ class VerifiedFourCase:
                 "a decision needs the Gate A scope report: excluding the variant "
                 "module from the toolchain comparison is what lets the legs differ "
                 "there, and allowing them to differ is not authorizing one")
-        return cls(*legs)
+        return cls(*legs, _token=_FACTORY_TOKEN)
 
     @property
     def legs(self):
