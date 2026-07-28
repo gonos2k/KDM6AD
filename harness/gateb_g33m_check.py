@@ -50,6 +50,7 @@ import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
 import g33_normalize as nz              # noqa: E402
+import g33_dump as gd                   # noqa: E402
 
 # PASS_MECHANISM, not PASS: the tool cannot reach the protocol's PASS, which also
 # needs historical causality and downstream propagation. Exit 0 still means "the
@@ -59,6 +60,9 @@ EXIT = {"PASS_MECHANISM": 0, "FAIL": 1, "INCONCLUSIVE": 2, "INVALID_EVIDENCE": 3
         # only the return code would otherwise take one for the other.
         "UNATTESTED_MECHANISM_CANDIDATE": 5}
 EXIT_USAGE = 4
+#: A defect in this harness, not in the evidence. Distinct from INVALID_EVIDENCE so
+#: an operator is not sent to audit a bundle that is fine.
+EXIT_INTERNAL = 6
 
 
 def _load_fortran(bundle: Path, algorithm: str, *, manifest_sha, commit,
@@ -103,6 +107,10 @@ def main(argv=None) -> int:
                     help="external anchor for the Gate A report. Without it the "
                          "report is only self-consistent, and a self-consistent "
                          "report is exactly what a forgery produces.")
+    ap.add_argument("--force", action="store_true",
+                    help="replace an existing result.json. Off by default: a decision "
+                         "artifact records one run, and overwriting loses the earlier "
+                         "verdict without trace.")
     ap.add_argument("--gate-a-scope-report", type=Path, default=None,
                     help="check_cons_fortran_scope.py --json-out. Binds the "
                          "conservative leg's module to the source whose edits the "
@@ -222,9 +230,15 @@ def main(argv=None) -> int:
                 "the Fortran legs were not built from one toolchain: "
                 + ", ".join(f"{algo}={b.compiler_version}/{b.compiler_binary_sha256[:12]}"
                             for algo, b in sorted(builds.items())))
-    except Exception as e:                       # every reader is fail-closed
+    except (bio.BundleError, fbio.FortranBundleError, nz.NormalizeError,
+            cmp.StructuralError, gd.G33Corruption, bio.gfx.UnknownFixture,
+            OSError, ValueError, KeyError) as e:
+        # EVIDENCE errors only. A blanket `except Exception` also turned a
+        # TypeError or an AttributeError — a defect in this harness — into
+        # INVALID_EVIDENCE, which reads as "the bundle is bad" and sends the reader
+        # to look at the wrong thing. Anything else propagates and exits 6.
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")
-        _write(a.out, result)
+        _write(a.out, result, force=a.force)
         return EXIT["INVALID_EVIDENCE"]
 
     # `attested` is what the LEGS reported, not what the caller asked for. Four legs
@@ -268,14 +282,25 @@ def main(argv=None) -> int:
                 "beyond this fixture's mstep range, or meteorological accuracy.",
         "mstep_range": {k: list(v.mstep_range or ()) for k, v in cpp_legs.items()},
     }
-    _write(a.out, result)
+    _write(a.out, result, force=a.force)
     print(f"G3.3-M {result['verdict']}: {result['reason']}")
     return EXIT[result["verdict"]]
 
 
-def _write(path: Path, result: dict) -> None:
-    """Deterministic: sorted keys, stable separators, trailing newline."""
-    path.write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
+def _write(path: Path, result: dict, *, force: bool = False) -> None:
+    """Deterministic, atomic, and no-clobber.
+
+    A decision artifact is the record of one run. Overwriting an existing one in
+    place loses the earlier verdict with no trace, and a partial write on
+    interruption leaves a file that parses but describes nothing that happened.
+    """
+    if path.exists() and not force:
+        raise SystemExit(
+            f"refusing to overwrite an existing decision artifact: {path} "
+            f"(move it aside, or pass --force to replace it deliberately)")
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
+    tmp.replace(path)
 
 
 if __name__ == "__main__":

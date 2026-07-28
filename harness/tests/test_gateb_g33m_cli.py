@@ -85,3 +85,43 @@ def test_result_json_is_deterministic(tmp_path):
     for out in (a, b):
         gate.main(_args(tmp_path, out, **{"allow-unattested": True}))
     assert a.read_text() == b.read_text() and a.read_text().endswith("\n")
+
+
+# ── a defect here is not a bad bundle, and a decision is not overwritten (P1) ──
+
+def test_an_internal_defect_has_its_own_exit_code():
+    """A blanket `except Exception` turned a TypeError in this harness into
+    INVALID_EVIDENCE, which reads as "the bundle is bad" and sends an operator to
+    audit evidence that is fine."""
+    assert gate.EXIT_INTERNAL == 6
+    assert gate.EXIT_INTERNAL not in gate.EXIT.values()
+    assert gate.EXIT_INTERNAL != gate.EXIT_USAGE
+
+
+def test_only_evidence_errors_are_converted_to_a_verdict():
+    import inspect, re
+    caught = re.search(r"except \((.*?)\) as e", inspect.getsource(gate.main), re.S)
+    names = {n.strip() for n in caught.group(1).split(",")}
+    assert "Exception" not in names, (
+        "a blanket except hides programming defects as evidence errors")
+    for suspicious in ("TypeError", "AttributeError", "NameError"):
+        assert suspicious not in names, suspicious
+
+
+def test_a_decision_artifact_is_not_silently_overwritten(tmp_path):
+    out = tmp_path / "result.json"
+    out.write_text('{"verdict": "PASS_MECHANISM"}')
+    with pytest.raises(SystemExit, match="refusing to overwrite"):
+        gate._write(out, {"verdict": "FAIL"})
+    assert json.loads(out.read_text())["verdict"] == "PASS_MECHANISM", (
+        "the earlier verdict must survive the refusal")
+    gate._write(out, {"verdict": "FAIL"}, force=True)     # deliberate replacement
+    assert json.loads(out.read_text())["verdict"] == "FAIL"
+
+
+def test_the_writer_is_atomic(tmp_path):
+    # a partial write leaves a file that parses but describes nothing that happened
+    out = tmp_path / "result.json"
+    gate._write(out, {"verdict": "INCONCLUSIVE"})
+    assert json.loads(out.read_text())["verdict"] == "INCONCLUSIVE"
+    assert not list(tmp_path.glob("*.tmp")), "the temp file must not survive"
