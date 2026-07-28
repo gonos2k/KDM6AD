@@ -63,12 +63,28 @@ def test_absolute_and_relative_deltas_are_distinct_quantities():
         assert lvl["delta_qv_abs_kg_kg"] != lvl["delta_qv_rel"]
 
 
-def test_the_latent_residual_is_reported_as_a_diagnostic_not_a_bound():
+def test_both_closures_are_recorded_and_the_constant_one_is_not_a_bound():
+    """The constant-coefficient residual was described as an upper bound. It is not:
+    at ~243 K the model form is 2.7% larger — the same order as the residual — and at
+    one level the residual changes SIGN under it. A quantity that can flip sign
+    bounds nothing."""
     note = DOC["condensation_closure"]["note"]
-    assert "CONSTANTS" in note and "not a bound" in note
-    assert "CONSISTENT" in note
+    assert "never a bound" in note and "CONSISTENT" in note
+    assert "not a proof" in note
+    signs = set()
     for lvl in DOC["condensation_closure"]["levels"]:
         assert lvl["Lv_J_kg"] == 2.5e6 and lvl["cp_J_kg_K"] == 1004.0
+        # the model's own coefficients, from cpmcal/xlcal
+        assert 2.55e6 < lvl["Lv_T_J_kg"] < 2.60e6, lvl["Lv_T_J_kg"]
+        assert 1004.0 < lvl["cpm_q_J_kg_K"] < 1005.0, lvl["cpm_q_J_kg_K"]
+        # the model form closes better, everywhere
+        assert abs(lvl["model_closure_residual_T_K"]) < \
+               abs(lvl["closure_residual_T_K"]), lvl["k"]
+        assert abs(lvl["model_closure_residual_T_K"]) < 0.01 * abs(lvl["delta_T_K"])
+        signs.add(lvl["model_closure_residual_T_K"] > 0)
+    assert len(signs) == 2, (
+        "the model residual straddles zero; the constant one is one-signed, which is "
+        "what made it look like a bound")
 
 
 def test_every_bundle_and_the_gate_a_report_are_pinned():

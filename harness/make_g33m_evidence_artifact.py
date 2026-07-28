@@ -38,9 +38,27 @@ import g33_fortran_dump as fd          # noqa: E402
 import g33_normalize as nz             # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
 
-#: Constants, NOT the model's Lv(T)/cpm(q). Recorded in the artifact so the residual
-#: is read as a constant-coefficient diagnostic and not as a bound.
+#: The constant approximation, kept for comparison only. Recorded so the residual it
+#: produces is read as a constant-coefficient diagnostic and not as a bound — at
+#: ~243 K the model form is 2.7% larger, which is the same order as the residual
+#: itself, so the constant version cannot bound anything.
 LV_CONST, CP_CONST = 2.5e6, 1004.0
+
+#: The MODEL's own forms, from module_mp_kdm6.F:818-819 and the constants the driver
+#: passes (module_model_constants.F):
+#:     cpmcal(x) = cpd*(1 - max(x,qmin)) + max(x,qmin)*cpv
+#:     xlcal(x)  = xlv0 - xlv1*(x - t0c),   xlv1 = cl - cpv
+_R_D, _R_V, _CL = 287.0, 461.6, 4190.0
+CPD = 7.0 * _R_D / 2.0            # 1004.5
+CPV = 4.0 * _R_V                  # 1846.4
+XLV0, T0C = 2.5e6, 273.15
+XLV1 = _CL - CPV
+
+
+def _model_lv_over_cpm(t_K: float, qv: float, qmin: float) -> tuple:
+    """(Lv(T), cpm(q)) as the model computes them, not as constants."""
+    q = max(qv, qmin)
+    return (XLV0 - XLV1 * (t_K - T0C), CPD * (1.0 - q) + q * CPV)
 STAGE_ORDER = ("outer_pre_sed", "substep_pre", "surface",
                "outer_post_sed", "outer_post_micro", "final_output")
 
@@ -166,7 +184,15 @@ def main() -> int:
                 except KeyError:
                     continue
                 dqv, dqc, dT = qv_c - qv_f, qc_c - qc_f, t_c - t_f
+                qmin = struct.unpack(">f", bytes.fromhex(
+                    auth["common_parameters"]["qmin"]))[0]
+                lv, cpm = _model_lv_over_cpm(t_f, qv_f, qmin)
                 closure.append({
+                    # the model's own coefficients alongside the constant ones, so
+                    # the two residuals can be told apart rather than conflated
+                    "Lv_T_J_kg": lv, "cpm_q_J_kg_K": cpm,
+                    "model_latent_predicted_delta_T_K": lv / cpm * dqc,
+                    "model_closure_residual_T_K": dT - lv / cpm * dqc,
                     "col": col, "k": k,
                     "delta_qv_abs_kg_kg": dqv, "delta_qc_abs_kg_kg": dqc,
                     "delta_qv_rel": dqv / qv_f if qv_f else None,
@@ -206,10 +232,14 @@ def main() -> int:
         # identity + bits, not counts: equal numbers of different cells used to pass
         "carry_proof": carry,
         "condensation_closure": {
-            "note": "Lv and cp are CONSTANTS here, not the model's Lv(T) and cpm(q). "
-                    "The residual is a constant-coefficient DIAGNOSTIC, not a bound. "
-                    "This is saturation-adjustment-CONSISTENT, not a proof of the "
-                    "operator.",
+            "note": "Both closures are recorded. The constant-Lv/constant-cp residual "
+                    "is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% "
+                    "larger, the same order as the residual, and at k=3 the residual "
+                    "CHANGES SIGN under it. The model form uses the code's own "
+                    "cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual "
+                    "under 1% of dT, straddling zero. That is a strong "
+                    "saturation-adjustment-CONSISTENT signature — it is still not a "
+                    "proof of the operator, which is unobserved.",
             "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the "
                     "returned STATE carries `th` separately, so no Exner factor is "
                     "applied",
