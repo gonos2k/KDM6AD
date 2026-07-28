@@ -64,9 +64,16 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
         "compiler_version": version,
         # the real flag set: -ffp-contract=off is load-bearing for f32 parity, so a
         # placeholder command string would make the flags identity untestable
-        "commands": ["/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize "
-                     "-funroll-loops -ffp-contract=off -fconvert=big-endian "
-                     "-o m.o module.F"],
+        # per-role commands, as a real build records them: the module and the
+        # driver are separate compiles and both carry -ffp-contract=off, which is
+        # what made a pooled flag set unable to see a module-only loss
+        "commands": [
+            "/opt/homebrew/bin/gfortran -c -O2 -ffp-contract=off -DRWORDSIZE=4 "
+            "-o build/module_mp.o phys/module_mp_kdm6.F",
+            "/opt/homebrew/bin/gfortran -c -O2 -ffp-contract=off -DRWORDSIZE=4 "
+            "-o build/g33_fortran_driver.o harness/g33_fortran_driver.f90",
+            "/opt/homebrew/bin/gfortran -o build/g33_fortran_driver "
+            "build/module_mp.o build/g33_fortran_driver.o"],
     }
 
 
@@ -543,3 +550,54 @@ def test_a_gate_a_report_without_its_own_provenance_is_refused(field):
     report = _gate_a("m" * 64, "c" * 64, **{field: None})
     with pytest.raises(fbio.FortranBundleError, match="lacks " + field):
         fbio.authorized_by_gate_a(report, _legs())
+
+
+# -- compile flags are checked per COMMAND, not pooled (owner P0-3) ------------
+
+def _prov_with(commands):
+    exe = b"#!/bin/sh\n"
+    return fbio.BuildIdentity.of(dict(
+        _provenance(exe), commands=commands)).toolchain()
+
+
+_MODULE = ("/opt/homebrew/bin/gfortran -c -O2 -ffp-contract=off "
+           "-o build/module_mp.o phys/module_mp_kdm6.F")
+_DRIVER = ("/opt/homebrew/bin/gfortran -c -O2 -ffp-contract=off "
+           "-o build/g33_fortran_driver.o harness/g33_fortran_driver.f90")
+
+
+def test_a_module_only_flag_loss_is_caught(tmp_path):
+    """The exact false pass a pooled flag set allowed: the module is built WITHOUT
+    -ffp-contract=off while the driver keeps it, so the union still contains the flag
+    and the numerics-producing compile is the one that lost it."""
+    good = _prov_with([_MODULE, _DRIVER])
+    bad = _prov_with([_MODULE.replace(" -ffp-contract=off", ""), _DRIVER])
+    assert good != bad
+    pooled = lambda t: {f for pr in t.compile_profiles for f in pr.ordered_flags}
+    assert pooled(good) == pooled(bad), (
+        "...and the pooled set genuinely cannot see it, which is why the profile "
+        "is per-role")
+
+
+def test_flag_ORDER_is_part_of_the_identity():
+    # -O2 -O0 and -O0 -O2 are different builds; a set says they are the same
+    a = _prov_with(["gfortran -c -O2 -O0 -o build/module_mp.o m.F"])
+    b = _prov_with(["gfortran -c -O0 -O2 -o build/module_mp.o m.F"])
+    assert a != b
+
+
+def test_the_sanctioned_defines_do_not_split_the_toolchain():
+    # -DKDM6_CONS and -DKDM6_G33_FORTRAN_DUMP are the differences the design requires
+    a = _prov_with([_MODULE])
+    b = _prov_with([_MODULE + " -DKDM6_CONS -DKDM6_G33_FORTRAN_DUMP"])
+    assert a == b
+
+
+def test_an_unsanctioned_define_DOES_split_the_toolchain():
+    a = _prov_with([_MODULE])
+    b = _prov_with([_MODULE + " -DRWORDSIZE=8"])
+    assert a != b
+
+
+def test_a_role_present_in_one_leg_only_is_a_difference():
+    assert _prov_with([_MODULE]) != _prov_with([_MODULE, _DRIVER])
