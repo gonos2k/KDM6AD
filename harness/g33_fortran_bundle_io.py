@@ -85,6 +85,49 @@ class ToolchainIdentity:
 
 
 @dataclass(frozen=True)
+class VariantSourceIdentity:
+    """WHICH microphysics source this leg compiled.
+
+    toolchain() excludes the variant module because the two control legs must be
+    allowed to differ there. Excluding it is not the same as authorizing it: on its
+    own, an entirely different conservative module passes the toolchain gate as long
+    as the bundle is internally self-consistent. This is the other half — the module
+    is named, and `authorized_by_gate_a` binds it to the scope report that pins which
+    edits the freeze-lift permitted (owner P0-2).
+    """
+    algorithm: str
+    canonical_module_sha256: str
+    compiled_module_sha256: str
+
+
+def authorized_by_gate_a(report: dict, legs: dict) -> None:
+    """The legs' modules must be the ones Gate A checked and passed.
+
+    `report` is check_cons_fortran_scope.py's JSON output, which verifies that the
+    conservative module is the legacy one modulo the renames and the EXACT pinned
+    sedimentation-interface edits. Binding to it turns "the modules may differ" into
+    "they differ in the authorized way" — without it the decision boundary accepts
+    any conservative source whatsoever.
+    """
+    if report.get("pass") is not True:
+        raise FortranBundleError(
+            "the Gate A scope report does not pass: %r" % (report.get("failures"),))
+    pinned = report.get("sha256") or dict()
+    for algo, filename in (("legacy", "module_mp_kdm6.F"),
+                           ("conservative", "module_mp_kdm6_cons.F")):
+        want = pinned.get(filename)
+        if not want:
+            raise FortranBundleError(
+                "the Gate A report pins no sha256 for %s" % filename)
+        got = legs[algo].variant_source.canonical_module_sha256
+        if got != want:
+            raise FortranBundleError(
+                "the %s leg compiled module %s but Gate A authorized %s — this "
+                "bundle's source is not the one whose edits were reviewed"
+                % (algo, got, want))
+
+
+@dataclass(frozen=True)
 class BuildIdentity:
     """What produced this leg's binaries, at two levels.
 
@@ -153,6 +196,7 @@ class VerifiedFortranLeg:
     run: object                                # the parsed C-lane run
     problem: dict | None = None
     build: BuildIdentity | None = None      # what produced the binaries
+    variant_source: VariantSourceIdentity | None = None   # WHICH module it compiled
     bundle_verified: bool = False              # structure, hashes, A==B==C, semantics
     external_manifest_attested: bool = False   # manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False       # repo_commit pinned to a reviewed rev
@@ -417,6 +461,10 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         # HERE and not in parse_fortran_run: the parser is also used for ad-hoc
         # analysis and for building mutants, and only this path produces
         # decision-grade evidence.
+        variant_source=VariantSourceIdentity(
+            algorithm=algorithm,
+            canonical_module_sha256=provenance["A"]["module_canonical_sha256"],
+            compiled_module_sha256=provenance["A"]["module_compiled_sha256"]),
         run=_freeze_run(run),
         build=build,
         problem=problem,

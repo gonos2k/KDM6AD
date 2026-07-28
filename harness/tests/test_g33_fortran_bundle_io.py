@@ -443,3 +443,65 @@ def test_variant_and_instrumentation_defines_do_not_split_the_toolchain(tmp_path
     la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
     lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
     assert la.build.toolchain() == lb.build.toolchain()
+
+
+# -- excluding the variant module is not authorizing it (owner P0-2) -----------
+# authorized_by_gate_a reads one thing from each leg: which module it compiled. Built
+# through full bundles these cases would exercise the bundle builder instead, and the
+# checked-in sample is a legacy stream, so a conservative bundle cannot be made from
+# it at all.
+
+def _gate_a(legacy_sha, cons_sha, passing=True):
+    return {"pass": passing, "failures": [] if passing else ["pinned edit missing"],
+            "sha256": {"module_mp_kdm6.F": legacy_sha,
+                       "module_mp_kdm6_cons.F": cons_sha}}
+
+
+def _legs(cons_module="c" * 64, legacy_module="m" * 64):
+    make = lambda algo, mod: type("L", (), {"variant_source":
+        fbio.VariantSourceIdentity(algo, mod, mod)})()
+    return {"legacy": make("legacy", legacy_module),
+            "conservative": make("conservative", cons_module)}
+
+
+def test_the_authorized_conservative_module_passes():
+    fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64), _legs())   # no raise
+
+
+def test_an_unauthorized_conservative_module_is_refused():
+    """toolchain() must ALLOW the two legs to compile different modules — that
+    difference is the comparison. Allowing is not authorizing: on its own an entirely
+    different conservative source passes the toolchain gate, as long as the bundle is
+    internally self-consistent."""
+    with pytest.raises(fbio.FortranBundleError, match="Gate A authorized"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64),
+                                  _legs(cons_module="9" * 64))
+
+
+def test_an_unauthorized_LEGACY_module_is_refused():
+    # the legacy module is a never-modify file; Gate A pins it too
+    with pytest.raises(fbio.FortranBundleError, match="Gate A authorized"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64),
+                                  _legs(legacy_module="8" * 64))
+
+
+def test_a_failing_gate_a_report_is_refused():
+    with pytest.raises(fbio.FortranBundleError, match="does not pass"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64, passing=False), _legs())
+
+
+def test_a_report_pinning_no_module_is_refused():
+    report = _gate_a("m" * 64, "c" * 64)
+    del report["sha256"]["module_mp_kdm6_cons.F"]
+    with pytest.raises(fbio.FortranBundleError, match="pins no sha256"):
+        fbio.authorized_by_gate_a(report, _legs())
+
+
+def test_a_verified_leg_names_the_module_it_compiled():
+    # the identity has to be populated for any of the above to mean anything
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        root = _bundle(Path(td) / "b")
+        leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+    assert leg.variant_source.algorithm == "legacy"
+    assert leg.variant_source.canonical_module_sha256 == "m" * 64
