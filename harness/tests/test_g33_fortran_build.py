@@ -56,7 +56,7 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33F BEGIN v4 {algo}" in out and f"G33F END v4 {algo}" in out
+    assert f"G33F BEGIN v5 {algo}" in out and f"G33F END v5 {algo}" in out
     # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
     state = fd.parse_state(out)
     assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
@@ -299,8 +299,8 @@ def test_presed_stage_records():
 
     C = _build_and_run("legacy", overlay=True, dump=True)
     run = fd.parse_fortran_run(C, "legacy", 4, 3)
-    # v4: outer_pre_sed = 8 carried + rho/delz, x 3 cols x 4 levels
-    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 10 * 3 * 4
+    # v5: outer_pre_sed = 12 carried + rho/delz, x 3 cols x 4 levels
+    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 14 * 3 * 4
     assert any(k[2] == "substep_pre" for k in run.stages)
     assert sum(1 for k in run.stages if k[2] == "surface") == 7 * 3   # P0-8 (+denr)
     assert (1, "-", "outer_pre_sed", 0, "qr", 1, 0) in run.stages
@@ -308,8 +308,8 @@ def test_presed_stage_records():
     # the outer-loop causal bridge (P0-C1): both ends of the loop body, carrying the
     # whole state, so a divergence between two loops has an attributable origin
     for stage in ("outer_post_sed", "outer_post_micro"):
-        assert sum(1 for k in run.stages if k[2] == stage) == 8 * 3 * 4, stage
-        for field in ("qv", "t", "qc", "qi", "qs", "qg"):
+        assert sum(1 for k in run.stages if k[2] == stage) == 12 * 3 * 4, stage
+        for field in ("qv", "t", "qc", "qi", "qs", "qg", "nc", "ni", "nccn", "brs"):
             assert (1, "-", stage, 0, field, 1, 0) in run.stages, f"{stage}.{field}"
 
     cl = C.splitlines()

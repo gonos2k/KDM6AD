@@ -644,7 +644,8 @@ def test_an_unready_leg_cannot_reach_a_verdict():
              for n in ("legacy-C++", "conservative-F", "conservative-C++")]
     unready = cmp.DecisionLeg("legacy-F",
                               type("A", (), {"verdict_ready": False})(), frozen)
-    r = cmp.adjudicate_verified(cmp.VerifiedFourCase(unready, *ready))
+    r = cmp.adjudicate_verified(
+        cmp.VerifiedFourCase(unready, *ready, _token=cmp._FACTORY_TOKEN))
     assert r["verdict"] == "INVALID_EVIDENCE" and "not decision-grade" in r["reason"]
 
 
@@ -765,3 +766,47 @@ def test_a_whole_step_seed_is_reported_as_a_full_step_claim():
     # ...and the phase it sits at is one that cannot be promoted
     phase = cmp.adjudicate(*legs)["legacy_first_divergence"]["phase"]
     assert phase == "final_output" and not cmp.promotable_phase(phase)
+
+
+# -- a refusal must not carry a promotion's words (owner P0-4) -----------------
+
+def _promotion_branch(phase, reason="both pairs at that phase"):
+    """Drive the promotion branch the way _adjudicate_normalized does.
+
+    The verdict and the reason used to be assigned in different places: the branch
+    chose the verdict, and the promotion wording was applied unconditionally after
+    it. So an INCONCLUSIVE result came back reading "PASS_MECHANISM (promoted from a
+    shared seed)" with evidence_strength PARTIAL.
+    """
+    r = {"verdict": cmp.SHARED_SEED_CANDIDATE, "reason": reason,
+         "legacy_first_divergence": {"phase": phase}}
+    return cmp._promote_shared_seed(r) if hasattr(cmp, "_promote_shared_seed") else None
+
+
+def test_a_non_promotable_phase_yields_a_consistent_refusal():
+    d = {"rain_precip_cumulative": 0x77}
+    legs = [_run("legacy", stages=_final()), _run("legacy", stages=_final(d)),
+            _run("conservative", stages=_final()), _run("conservative", stages=_final(d))]
+    for leg in legs:
+        leg["problem"] = dict(_IDENT)
+    r = cmp._adjudicate_normalized(*legs, promote=True)
+    if r["verdict"] == "INCONCLUSIVE":
+        assert "PASS_MECHANISM" not in r["reason"], (
+            "a refusal must not be worded as a promotion — a reader taking the "
+            "reason at face value would misread it")
+        assert r.get("evidence_strength") in (None, "NONE")
+        assert "not_established" not in r or not r["not_established"]
+
+
+def test_a_missing_phase_is_not_promotable():
+    # a shared seed always has a phase, so a missing one is malformed, not permissive
+    assert cmp.promotable_phase(None) is False
+    assert cmp.promotable_phase("op") is True
+
+
+def test_the_four_case_cannot_be_assembled_by_hand():
+    """Documenting of() as "the" path is not the same as making it the only one. A
+    public dataclass constructor let a caller assemble the object from legs it built
+    itself — which is exactly what the factory exists to prevent."""
+    with pytest.raises(TypeError, match="built by VerifiedFourCase.of"):
+        cmp.VerifiedFourCase(1, 2, 3, 4)

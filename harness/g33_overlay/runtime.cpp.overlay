@@ -518,6 +518,13 @@ FnResult kdm6_fn(const State& state,
                 G33_REC(g33, "outer_pre_sed", "qi",   cur_pyc.qi);
                 G33_REC(g33, "outer_pre_sed", "qs",   cur_pyc.qs);
                 G33_REC(g33, "outer_pre_sed", "qg",   cur_pyc.qg);
+                // v5: the number concentrations and the graupel volume complete the
+                // carried state, so "the sedimentation result matched" covers all 12
+                // members rather than 8 of them (owner P0-6)
+                G33_REC(g33, "outer_pre_sed", "nc",   cur_pyc.nc);
+                G33_REC(g33, "outer_pre_sed", "ni",   cur_pyc.ni);
+                G33_REC(g33, "outer_pre_sed", "nccn", cur_pyc.nccn);
+                G33_REC(g33, "outer_pre_sed", "brs",  cur_pyc.brs);
                 G33_REC(g33, "outer_pre_sed", "rho",  cf_pyc.den);
                 G33_REC(g33, "outer_pre_sed", "delz", cf_pyc.delz);
             }
@@ -619,6 +626,10 @@ FnResult kdm6_fn(const State& state,
                 G33_REC(g33, "outer_post_sed", "qi", flip_k(cur.qi));
                 G33_REC(g33, "outer_post_sed", "qs", flip_k(cur.qs));
                 G33_REC(g33, "outer_post_sed", "qg", flip_k(cur.qg));
+                G33_REC(g33, "outer_post_sed", "nc", flip_k(cur.nc));
+                G33_REC(g33, "outer_post_sed", "ni", flip_k(cur.ni));
+                G33_REC(g33, "outer_post_sed", "nccn", flip_k(cur.nccn));
+                G33_REC(g33, "outer_post_sed", "brs", flip_k(cur.brs));
             }
             g33.finalize();
         }
@@ -661,6 +672,10 @@ FnResult kdm6_fn(const State& state,
                 G33_REC(g33, "outer_post_micro", "qi", flip_k(cur.qi));
                 G33_REC(g33, "outer_post_micro", "qs", flip_k(cur.qs));
                 G33_REC(g33, "outer_post_micro", "qg", flip_k(cur.qg));
+                G33_REC(g33, "outer_post_micro", "nc", flip_k(cur.nc));
+                G33_REC(g33, "outer_post_micro", "ni", flip_k(cur.ni));
+                G33_REC(g33, "outer_post_micro", "nccn", flip_k(cur.nccn));
+                G33_REC(g33, "outer_post_micro", "brs", flip_k(cur.brs));
             }
             g33.finalize();
         }

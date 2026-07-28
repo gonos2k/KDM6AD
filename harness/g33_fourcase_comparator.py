@@ -133,44 +133,87 @@ def _deep_freeze(obj):
     return obj
 
 
+#: Handed to __init__ by of() and nothing else. A public dataclass constructor let a
+#: caller assemble the object from legs it built itself, which is the whole thing the
+#: factory exists to prevent — documenting of() as "the" path is not the same as
+#: making it the only one.
+_FACTORY_TOKEN = object()
+
+
 @dataclass(frozen=True)
 class VerifiedFourCase:
     """The four decision-grade legs, as one object.
 
-    Constructing this is the ONLY way to obtain PASS_MECHANISM, and `of()` is the only
-    way to construct it with runs that belong to their artifacts.
+    Constructing this is the ONLY way to obtain PASS_MECHANISM, and `of()` is the
+    only way to construct it at all — the constructor refuses anyone else.
     """
     legacy_fortran: DecisionLeg
     legacy_cpp: DecisionLeg
     conservative_fortran: DecisionLeg
     conservative_cpp: DecisionLeg
+    _token: object = None
+
+    def __post_init__(self):
+        if self._token is not _FACTORY_TOKEN:
+            raise TypeError(
+                "VerifiedFourCase is built by VerifiedFourCase.of(), which derives "
+                "each run from its verified artifact and applies the cross-leg "
+                "conditions — assembling one directly skips both")
 
     @classmethod
     def of(cls, *, legacy_fortran, legacy_cpp, conservative_fortran,
-           conservative_cpp) -> "VerifiedFourCase":
+           conservative_cpp, gate_a_report=None,
+           require_source_authorization: bool = False) -> "VerifiedFourCase":
         """Normalize each VERIFIED ARTIFACT here, deep-freeze it, and pair them.
 
         The caller hands over four verified legs and nothing else, so a forged event
         stream has nowhere to enter: the run is derived from the artifact whose
         attestation is being relied upon.
         """
+        import g33_bundle_io as _bio
+        import g33_fortran_bundle_io as _fbio
         import g33_normalize as _nz
-        named = (("legacy-F", legacy_fortran), ("legacy-C++", legacy_cpp),
-                 ("conservative-F", conservative_fortran),
-                 ("conservative-C++", conservative_cpp))
+        named = (("legacy-F", legacy_fortran, "legacy", _fbio.VerifiedFortranLeg),
+                 ("legacy-C++", legacy_cpp, "legacy", _bio.VerifiedCppLeg),
+                 ("conservative-F", conservative_fortran, "conservative",
+                  _fbio.VerifiedFortranLeg),
+                 ("conservative-C++", conservative_cpp, "conservative",
+                  _bio.VerifiedCppLeg))
         legs = []
-        for name, art in named:
-            if hasattr(art, "run"):                     # VerifiedFortranLeg
-                run = _nz.from_fortran_run(art.run)
-            elif hasattr(art, "containers"):            # VerifiedCppLeg
-                run = _nz.from_cpp_evidence(art)
-            else:
+        for name, art, algo, want in named:
+            # isinstance, not hasattr. Duck typing let anything carrying `.run` and
+            # `verdict_ready=True` through — the attributes a stub has by accident are
+            # exactly the ones a forgery would supply on purpose.
+            if not isinstance(art, want):
                 raise TypeError(
-                    f"{name}: expected a verified Fortran or C++ leg, got "
-                    f"{type(art).__name__} — the decision API derives the run from "
-                    f"the artifact, so there is nowhere to pass one in")
+                    f"{name}: expected {want.__name__}, got {type(art).__name__} — "
+                    f"the decision API derives the run from the artifact, so there is "
+                    f"nowhere to pass one in")
+            if want is _fbio.VerifiedFortranLeg:
+                if art.run.algorithm != algo:
+                    raise TypeError(f"{name}: leg is {art.run.algorithm!r}, not {algo!r}")
+                run = _nz.from_fortran_run(art.run)
+            else:
+                if str(art.contract["schedule"].get("algorithm")) != algo:
+                    raise TypeError(
+                        f"{name}: leg is "
+                        f"{art.contract['schedule'].get('algorithm')!r}, not {algo!r}")
+                run = _nz.from_cpp_evidence(art)
             legs.append(DecisionLeg(name, art, _deep_freeze(run)))
-        return cls(*legs)
+        # CROSS-LEG conditions, inside the factory. They used to live only in the CLI,
+        # so a library caller reaching of() directly skipped them entirely.
+        pair = {"legacy": legacy_fortran, "conservative": conservative_fortran}
+        if len({leg.build.toolchain() for leg in pair.values()}) != 1:
+            raise TypeError(
+                "the two Fortran control legs were not built from one toolchain")
+        if gate_a_report is not None:
+            _fbio.authorized_by_gate_a(gate_a_report, pair)
+        elif require_source_authorization:
+            raise TypeError(
+                "a decision needs the Gate A scope report: excluding the variant "
+                "module from the toolchain comparison is what lets the legs differ "
+                "there, and allowing them to differ is not authorizing one")
+        return cls(*legs, _token=_FACTORY_TOKEN)
 
     @property
     def legs(self):
@@ -560,7 +603,10 @@ def promotable_phase(phase) -> bool:
     preconditions include everything that runs between the sub-cycles, and
     SedimentationIdentity does not establish those (owner P0-C2 §6).
     """
-    return phase is None or phase in _SEDIMENTATION_PHASES
+    # None is NOT promotable. A shared seed always HAS a phase, so a missing one is a
+    # malformed result rather than a permissive case, and fail-open is the wrong
+    # default at a decision boundary.
+    return phase in _SEDIMENTATION_PHASES
 
 
 def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
@@ -630,24 +676,31 @@ def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
         # SedimentationIdentity alone would claim more than the identity establishes.
         phase = (result.get("legacy_first_divergence") or {}).get("phase")
         if not promotable_phase(phase):
+            # A refusal must not carry a promotion's words. The reason and the
+            # evidence_strength used to be assigned OUTSIDE this branch, so an
+            # INCONCLUSIVE verdict came back reading "PASS_MECHANISM (promoted from a
+            # shared seed)" with evidence_strength PARTIAL — a result that contradicts
+            # itself, and that any reader taking the reason at face value would
+            # misread as a promotion.
             result["verdict"] = "INCONCLUSIVE"
             result["reason"] = (
                 f"both pairs share a seed, but at {phase} — outside sedimentation, so "
                 f"this is a FULL-STEP claim and the sedimentation identity does not "
                 f"establish its preconditions: " + result["reason"])
+            result["evidence_strength"] = "NONE"
         else:
             # Every gate above has passed, so the candidate may be promoted — but only
             # to the MECHANISM tier. What is still missing is not a check that could be
             # added here; it is evidence a synthetic fixture cannot contain.
             result["verdict"] = PASS_MECHANISM
-        result["reason"] = ("PASS_MECHANISM (promoted from a shared seed): "
-                            + result["reason"])
-        result["evidence_strength"] = "PARTIAL"
-        result["not_established"] = [
-            "the seed is causally connected to the historical output divergence",
-            "the difference propagates downstream through qv/t to the final state",
-            "the mechanism is the one the historical Gate-B failure exhibited",
-        ]
+            result["reason"] = ("PASS_MECHANISM (promoted from a shared seed): "
+                                + result["reason"])
+            result["evidence_strength"] = "PARTIAL"
+            result["not_established"] = [
+                "the seed is causally connected to the historical output divergence",
+                "the difference propagates downstream through qv/t to the final state",
+                "the mechanism is the one the historical Gate-B failure exhibited",
+            ]
     result["problem"] = dict(ids["legacy-F"])
     return result
 

@@ -1,0 +1,89 @@
+{
+  "checker": "check_cons_fortran_scope",
+  "schema_version": 1,
+  "checker_commit": "0acedb589d6355a120c526f145ef7d53e5450344-dirty",
+  "scope_manifest_sha256": "a7b6e626de5d644b1b0a351ee55916940d8080b0a87961ca913ffb3d88b19948",
+  "legacy": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+  "cons": "host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F",
+  "manifest": "/Users/yhlee/KDM6AD-k/harness/cons_fortran_scope_manifest.json",
+  "pass": true,
+  "failures": [],
+  "sha256": {
+    "module_mp_kdm6.F": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+    "module_mp_kdm6_cons.F": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e"
+  },
+  "clusters": [
+    {
+      "name": "header-comment",
+      "legacy_span": [
+        10,
+        9
+      ],
+      "cons_span": [
+        10,
+        29
+      ],
+      "n_old": 0,
+      "n_new": 20,
+      "match": true
+    },
+    {
+      "name": "decl-interface-transfer-temporaries",
+      "legacy_span": [
+        729,
+        728
+      ],
+      "cons_span": [
+        749,
+        752
+      ],
+      "n_old": 0,
+      "n_new": 4,
+      "match": true
+    },
+    {
+      "name": "sed-main-chain (top cell + interior; qr/nr/brs/qs/qg)",
+      "legacy_span": [
+        1193,
+        1243
+      ],
+      "cons_span": [
+        1217,
+        1274
+      ],
+      "n_old": 51,
+      "n_new": 58,
+      "match": true
+    },
+    {
+      "name": "sed-ice-chain (top cell + interior; qi/ni)",
+      "legacy_span": [
+        1285,
+        1309
+      ],
+      "cons_span": [
+        1316,
+        1347
+      ],
+      "n_old": 25,
+      "n_new": 32,
+      "match": true
+    }
+  ],
+  "handoff_blocks": [
+    {
+      "name": "main-reslope-normalization-leaves-ice-raw",
+      "count_legacy": 1,
+      "count_cons": 1,
+      "expect": 1,
+      "match": true
+    },
+    {
+      "name": "ice-reslope-normalization",
+      "count_legacy": 1,
+      "count_cons": 1,
+      "expect": 1,
+      "match": true
+    }
+  ]
+}

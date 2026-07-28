@@ -1,0 +1,1 @@
+See [STAGE_PROTOCOL_V4.md](STAGE_PROTOCOL_V4.md) — v5 is documented there, in the section "v5 — the carried state is all twelve members". Kept as one file because v5 changes the field set of the same three stages v4 introduced; splitting them would separate the bridge from its own field list.

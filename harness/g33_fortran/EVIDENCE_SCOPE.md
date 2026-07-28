@@ -164,9 +164,16 @@ cross-tree divergence there is still INCONCLUSIVE, never FAIL.
 
 ## Verdict bounds
 
-- **PASS** — both pairs (legacy-F↔legacy-C++, conservative-F↔conservative-C++)
-  first diverge at the **same shared** expression family, with `outer_pre_sed` and
-  `substep_pre` (work1/workn/mstep/gate) equal.
+- **PASS_MECHANISM** — the tool's ceiling; there is no bare `PASS`. Both pairs
+  (legacy-F↔legacy-C++, conservative-F↔conservative-C++) first diverge at the **same
+  shared** expression family, with `outer_pre_sed` and `substep_pre`
+  (work1/workn/mstep/gate) equal, AND that divergence is on the sedimentation **op
+  ladder**. A shared seed anywhere else — the surface accumulation, the whole-step
+  output, either outer-loop bridge snapshot — is a FULL-STEP claim whose
+  preconditions the sedimentation identity does not establish, so it stays
+  INCONCLUSIVE. Only the op rungs are replayed from their own dumped operands, which
+  is what makes their causal inputs sealed by the evidence.
+  `PASS_C4` is owner adjudication over historical evidence this harness cannot hold.
 - **FAIL** — the conservative pair's first divergence is at a **conservative-only**
   arithmetic rung (ρΔz mass inflow, Δz number inflow, rate accumulation, capped
   TOP depletion, no-clamp update). **One-sentence definition (owner-pinned):**
@@ -182,7 +189,7 @@ cross-tree divergence there is still INCONCLUSIVE, never FAIL.
   out-of-scope species or output (`bottom_fall_qs/qg/qi`, snow/graupel cumulative);
   or the surface causal set cannot be closed.
 
-A G3.3-M PASS certifies only that the observed Fortran↔C++ difference did **not
+A G3.3-M `PASS_MECHANISM` certifies only that the observed Fortran↔C++ difference did **not
 originate in conservative-only arithmetic**. It never licenses "conservative-
 interface-v1 conserves two-moment sedimentation": the interface is
 water-mass-conservative, and number transport is reference-faithful (Δz-only), not

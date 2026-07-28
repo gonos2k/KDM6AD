@@ -97,13 +97,72 @@ def _numeric_flags(commands) -> tuple:
     return tuple(sorted(out))
 
 
+#: Differences the design REQUIRES between the two control legs and between the
+#: instrumented and control lanes. Everything else must match exactly.
+_SANCTIONED_DEFINES = frozenset(("KDM6_CONS", "KDM6_G33_FORTRAN_DUMP"))
+
+
+@dataclass(frozen=True)
+class CompileProfile:
+    """One compile command, identified by WHAT it produced.
+
+    Flags used to be pooled from every command into one set, which loses the only
+    thing that matters: a flag missing from the command that compiles the
+    microphysics is invisible if any other command carries it. The build compiles the
+    module and the driver separately and both pass -ffp-contract=off, so the union
+    still contained it while the module was built with contraction on.
+
+    A set also discarded order (-O2 -O0 vs -O0 -O2), duplicates and overrides.
+    Ordered here, and compared exactly.
+    """
+    role: str                # from the -o target: module_mp, driver, radar, link ...
+    ordered_flags: tuple     # every flag, in order, paths normalized away
+    defines: tuple           # -D..., minus the sanctioned ones
+
+
+def _compile_profiles(commands) -> tuple:
+    """Every command as a role-keyed profile.
+
+    Paths are dropped rather than normalized: build directories and source locations
+    legitimately differ between runs, and keeping them would make the comparison fail
+    for reasons that say nothing about the numbers.
+    """
+    import shlex
+    out = {}
+    for cmd in commands or ():
+        toks = shlex.split(str(cmd))
+        role, flags, defines, skip = None, [], [], False
+        for i, tok in enumerate(toks):
+            if skip:
+                skip = False
+                continue
+            if tok == "-o":
+                nxt = toks[i + 1] if i + 1 < len(toks) else ""
+                role = os.path.basename(nxt).removesuffix(".o") or None
+                skip = True
+            elif tok.startswith("-D"):
+                name = tok[2:].split("=")[0]
+                if name not in _SANCTIONED_DEFINES:
+                    defines.append(tok)
+            elif tok.startswith(("-I", "-J", "-L", "-l")) or "/" in tok:
+                continue                       # paths and library search dirs
+            elif tok.startswith("-"):
+                flags.append(tok)
+        if role is None:
+            continue
+        if "-c" not in toks:
+            role = "link"
+        out[role] = CompileProfile(role, tuple(flags), tuple(sorted(defines)))
+    return tuple(sorted(out.values(), key=lambda p: p.role))
+
+
 @dataclass(frozen=True)
 class ToolchainIdentity:
     """What produced both control legs. Compared ACROSS them; excludes the variant
     module, which is authorized separately (owner P0-2/P0-3)."""
     compiler_binary_sha256: str
     compiler_version: str
-    compile_flags: tuple
+    compile_profiles: tuple            # per-command, per-role — not a pooled set
     shared_host_sources: tuple
     shared_harness_sources: tuple
 
@@ -136,6 +195,13 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
     if report.get("pass") is not True:
         raise FortranBundleError(
             "the Gate A scope report does not pass: %r" % (report.get("failures"),))
+    # WHAT produced this verdict. Without these the report says a checker somewhere
+    # approved something, which any hand-written JSON also says.
+    for field in ("schema_version", "checker_commit", "scope_manifest_sha256"):
+        if not report.get(field):
+            raise FortranBundleError(
+                "the Gate A report lacks %s — it records a verdict but not what "
+                "produced it, which a self-consistent forgery also does" % field)
     pinned = report.get("sha256") or dict()
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
@@ -170,7 +236,7 @@ class BuildIdentity:
     module_canonical_sha256: str
     host_source_sha256: tuple          # sorted (name, sha) pairs
     harness_source_sha256: tuple
-    compile_flags: tuple = ()          # numerics-affecting flags, from `commands`
+    compile_profiles: tuple = ()       # per-role CompileProfile, from `commands`
 
     @classmethod
     def of(cls, prov: dict) -> "BuildIdentity":
@@ -180,7 +246,7 @@ class BuildIdentity:
             module_canonical_sha256=prov["module_canonical_sha256"],
             host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
             harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
-            compile_flags=_numeric_flags(prov.get("commands")),
+            compile_profiles=_compile_profiles(prov.get("commands")),
         )
 
     def toolchain(self) -> "ToolchainIdentity":
@@ -202,7 +268,7 @@ class BuildIdentity:
         return ToolchainIdentity(
             compiler_binary_sha256=self.compiler_binary_sha256,
             compiler_version=self.compiler_version,
-            compile_flags=self.compile_flags,
+            compile_profiles=self.compile_profiles,
             shared_host_sources=shared,
             shared_harness_sources=self.harness_source_sha256)
 

@@ -1,4 +1,4 @@
-# Fortran G33F protocol v4 — the outer-loop carry is evidence
+# Fortran G33F protocol v4/v5 — the outer-loop carry is evidence
 
 Status: **IMPLEMENTED.** Both bridge snapshots are emitted by both backends, the
 carry is checked bit-for-bit, and both committed samples are regenerated at v4 after
@@ -51,7 +51,10 @@ emits the same two stages from `runtime.cpp.overlay`, inside `KDM6_G33_OP_DUMP`.
 
 ### The fields
 
-All three outer snapshots now carry the same CARRIED state:
+All three outer snapshots carry the same CARRIED state — **at v4**, eight of
+`CoordinatorState`'s twelve members. See the v5 section below for the rest; reading
+this list as current would understate what "the sedimentation result matched" covers,
+which is exactly the mistake v5 was written to correct.
 
 ```
 qr, nr, qv, t, qc, qi, qs, qg
@@ -112,8 +115,50 @@ This is the same discipline the v2→v3 migration used, and it is the only thing
 distinguishes "we added observations" from "we added observations and changed the
 answer".
 
+## v5 — the carried state is all twelve members
+
+v4 carried eight fields. `CoordinatorState` has twelve, so "the sedimentation result
+matched" was a statement about two thirds of it, and a difference in one of the
+others could cross `outer_post_sed` unobserved. That mattered concretely: the dt=300
+run's first observed difference is at `outer_post_micro`, and attributing it to the
+microphysics requires knowing that sedimentation left *nothing* different.
+
+v5 adds the number concentrations and the graupel volume:
+
+```
+nc   = nci(:,:,1)        ni  = nci(:,:,2)
+nccn = nci(:,:,3)        brs = brs(i,k)      (2-D; the returned STATE calls it bg)
+```
+
+read, as before, from kdm62D's own pack rather than from convention. All three outer
+snapshots carry the same twelve; `outer_pre_sed` keeps `rho`/`delz` as forcings.
+
+`OUTER_PRE_SED` is now DERIVED from the carried list rather than maintained beside
+it. The parallel list is exactly how the two drifted during this change: the post
+snapshots gained the four fields and the pre snapshot did not, so the carry would
+have been checked over fields one end never emitted. The parser already derived
+its expectation the same way, which is why the mismatch surfaced immediately.
+
+`_FINAL_BOUND` became a NAME MAP for check (9), because the state calls the graupel
+volume `bg` while the bridge calls it `brs`. That is a rename across a copy. `t`
+stays out: `th = t/pii` is a computation, and requiring bit equality there would
+assert the conversion rather than the binding.
+
+The expected universe is keyed by version — `{4: eight fields, 5: twelve}` — so a
+pre-v5 stream is refused as a protocol difference rather than reported as missing
+evidence, and a future tier is one row.
+
+Equivalence proven before the samples were replaced, as at every previous step:
+
+| fixture | shared records | verdict | added |
+|---|---|---|---|
+| `arithmetic_synthetic_v1` | 1351 | byte-identical | 146 |
+| `arithmetic_multisubcycle_v1` | 10610 | byte-identical | 434 |
+
 ## Still open
 
 * `substep_post` and the `reslope_*` stages remain outside the comparator's set.
 * Per-loop `surface_increment` versus the single cumulative `PREC` (carried over
   from the v3 list).
+* The `ProgBOutputs` carried from sedimentation into the microphysics is still not
+  recorded, so even at v5 the state bridge is not the whole handoff.
