@@ -94,6 +94,9 @@ printf '\n' >>"$CMDLOG"
 "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_fortran_driver" "${LINK_OBJS[@]}" \
     2>"$OUT/link.err" || { echo "FORTRAN LINK FAILED"; head -20 "$OUT/link.err"; exit 1; }
 
-python3 "$HERE/g33_provenance.py" "$OUT" "$ALGO" "$DUMP" "$FC" "$MODULE_SRC" "$MODULE"
+# the SELECTED fixture, not the default: --fixture picks a different generated
+# module, and provenance that names the default one attests the wrong source
+python3 "$HERE/g33_provenance.py" "$OUT" "$ALGO" "$DUMP" "$FC" "$MODULE_SRC" "$MODULE" \
+        "${FIXTURE_NAME:-g33_fixture_v1}" "$FIXTURE_SRC"
 echo "built ($ALGO): $OUT/g33_fortran_driver"
 echo "$OUT"

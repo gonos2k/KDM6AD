@@ -497,3 +497,48 @@ def test_the_last_loop_exit_is_bound_to_the_returned_state():
     broken.state[("qv", 1, 0)] ^= 0x1                                   # one ULP
     with pytest.raises(sem.SemanticError, match="final state not bound"):
         sem.verify_semantics(broken)
+
+
+def test_a_real_legacy_conservative_pair_passes_the_toolchain_gate():
+    """Both variants built for real, then held to the cross-leg check.
+
+    This is the case that no synthetic fixture could produce: legacy compiles
+    module_mp_kdm6.F and conservative module_mp_kdm6_cons.F, so their canonical
+    module hashes differ. Requiring the whole BuildIdentity to match across legs made
+    every real four-case run INVALID_EVIDENCE, and the synthetic bundles gave both
+    legs the same module hash, so only an actual pair shows it.
+    """
+    import hashlib
+    import json
+    import sys
+    sys.path.insert(0, str(ROOT / "harness"))
+    import g33_fortran_bundle_io as fbio
+
+    legs = {}
+    for algo in ALGOS:
+        with tempfile.TemporaryDirectory(prefix=f"g33-abc-{algo}.") as td:
+            out = Path(td) / "bundle"
+            r = subprocess.run(
+                [sys.executable, str(ROOT / "harness" / "g33_fortran"
+                                      / "run_fortran_abc.py"),
+                 "--algo", algo, "--out", str(out)],
+                capture_output=True, text=True, cwd=ROOT)
+            assert r.returncode == 0, f"{algo} bundle failed:\n{r.stdout}\n{r.stderr}"
+            manifest = json.loads((out / "abc_manifest.json").read_text())
+            legs[algo] = fbio.verify_fortran_bundle(
+                out, algo,
+                expected_manifest_sha256=hashlib.sha256(
+                    (out / "abc_manifest.json").read_bytes()).hexdigest(),
+                expected_repo_commit=manifest["repo_commit"])
+
+    a, b = legs["legacy"].build, legs["conservative"].build
+    assert a.module_canonical_sha256 != b.module_canonical_sha256, (
+        "the two variants must compile DIFFERENT modules — that difference is the "
+        "comparison")
+    assert a.toolchain() == b.toolchain(), (
+        "...built by one compiler from one set of shared sources, which is what the "
+        "cross-leg gate may require")
+
+    # and the verified run is immutable, on a real bundle rather than a fixture
+    with pytest.raises(TypeError):
+        legs["legacy"].run.stages[next(iter(legs["legacy"].run.stages))] = ("f32", 0)

@@ -48,6 +48,109 @@ class FortranBundleError(Exception):
     """The Fortran bundle cannot be re-verified."""
 
 
+#: The EXACT host sources every lane must attest. Provenance checked only that the
+#: map existed, so dropping one from all three lanes and the root manifest left
+#: BuildIdentity comparing a smaller set and agreeing — and with the variant module
+#: excluded from toolchain(), the fail-open surface was the whole shared tree.
+#:
+#: A closed world: adding a source makes CI fail until someone widens the attestation
+#: scope deliberately (owner P1).
+EXPECTED_HOST_SOURCES = frozenset((
+    "libmassv.F", "module_model_constants.F", "module_mp_radar.F",
+    "module_mp_kdm6[_cons].F",
+))
+
+#: Same, for the harness. `fixture.f90`/`fixture.h` are keyed by ROLE because the
+#: build selects which generated fixture to compile.
+EXPECTED_HARNESS_SOURCES = frozenset((
+    "make_fortran_overlay.py", "g33_fortran_bindings.py", "g33_fortran_driver.f90",
+    "stub_wrf_error.f90", "fortran_build.sh", "g33_provenance.py",
+    "g33_fortran_dump.py", "run_fortran_case.py",
+    "fixture.f90", "fixture.h",
+    "g33_fixture_v1.json", "g33_fixture_v1.py",
+    "g33_fourcase_fixture_check.py", "g33_schema.py", "g33_expectation.py",
+))
+
+
+#: The single normalized key under which provenance records whichever microphysics
+#: variant this leg compiled. It is the ONE host source that legitimately differs
+#: between the two control legs.
+VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
+
+#: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
+#: fuses multiply-adds, so the same compiler and the same sources still give a
+#: different answer — and comparing whole command strings instead would break on
+#: paths and on the variant/instrumentation defines that are supposed to differ.
+_NUMERIC_FLAGS = ("-ffp-contract=", "-O", "-ffast-math", "-funroll-loops",
+                  "-ftree-vectorize", "-fno-", "-march=", "-mtune=", "-mfpmath=")
+
+
+def _numeric_flags(commands) -> tuple:
+    """The numerics-affecting flags each compile command carries, deduplicated and
+    ordered. Paths, output names and the -D defines that SHOULD differ between the
+    variants and between instrumented and control lanes are excluded."""
+    out = set()
+    for cmd in commands or ():
+        for tok in str(cmd).split():
+            if any(tok.startswith(f) for f in _NUMERIC_FLAGS):
+                out.add(tok)
+    return tuple(sorted(out))
+
+
+@dataclass(frozen=True)
+class ToolchainIdentity:
+    """What produced both control legs. Compared ACROSS them; excludes the variant
+    module, which is authorized separately (owner P0-2/P0-3)."""
+    compiler_binary_sha256: str
+    compiler_version: str
+    compile_flags: tuple
+    shared_host_sources: tuple
+    shared_harness_sources: tuple
+
+
+@dataclass(frozen=True)
+class VariantSourceIdentity:
+    """WHICH microphysics source this leg compiled.
+
+    toolchain() excludes the variant module because the two control legs must be
+    allowed to differ there. Excluding it is not the same as authorizing it: on its
+    own, an entirely different conservative module passes the toolchain gate as long
+    as the bundle is internally self-consistent. This is the other half — the module
+    is named, and `authorized_by_gate_a` binds it to the scope report that pins which
+    edits the freeze-lift permitted (owner P0-2).
+    """
+    algorithm: str
+    canonical_module_sha256: str
+    compiled_module_sha256: str
+
+
+def authorized_by_gate_a(report: dict, legs: dict) -> None:
+    """The legs' modules must be the ones Gate A checked and passed.
+
+    `report` is check_cons_fortran_scope.py's JSON output, which verifies that the
+    conservative module is the legacy one modulo the renames and the EXACT pinned
+    sedimentation-interface edits. Binding to it turns "the modules may differ" into
+    "they differ in the authorized way" — without it the decision boundary accepts
+    any conservative source whatsoever.
+    """
+    if report.get("pass") is not True:
+        raise FortranBundleError(
+            "the Gate A scope report does not pass: %r" % (report.get("failures"),))
+    pinned = report.get("sha256") or dict()
+    for algo, filename in (("legacy", "module_mp_kdm6.F"),
+                           ("conservative", "module_mp_kdm6_cons.F")):
+        want = pinned.get(filename)
+        if not want:
+            raise FortranBundleError(
+                "the Gate A report pins no sha256 for %s" % filename)
+        got = legs[algo].variant_source.canonical_module_sha256
+        if got != want:
+            raise FortranBundleError(
+                "the %s leg compiled module %s but Gate A authorized %s — this "
+                "bundle's source is not the one whose edits were reviewed"
+                % (algo, got, want))
+
+
 @dataclass(frozen=True)
 class BuildIdentity:
     """What produced this leg's binaries, at two levels.
@@ -67,6 +170,7 @@ class BuildIdentity:
     module_canonical_sha256: str
     host_source_sha256: tuple          # sorted (name, sha) pairs
     harness_source_sha256: tuple
+    compile_flags: tuple = ()          # numerics-affecting flags, from `commands`
 
     @classmethod
     def of(cls, prov: dict) -> "BuildIdentity":
@@ -76,19 +180,31 @@ class BuildIdentity:
             module_canonical_sha256=prov["module_canonical_sha256"],
             host_source_sha256=tuple(sorted(prov["host_source_sha256"].items())),
             harness_source_sha256=tuple(sorted(prov["harness_source_sha256"].items())),
+            compile_flags=_numeric_flags(prov.get("commands")),
         )
 
-    def toolchain(self) -> tuple:
-        """Everything the two control legs must share: the compiler, the harness, and
-        the host sources OTHER than the microphysics module under test.
+    def toolchain(self) -> "ToolchainIdentity":
+        """Everything the two control legs must share.
 
-        The module is carried in host_source_sha256 under one normalized key
-        (`module_mp_kdm6[_cons].F`), so it is dropped by name rather than by value —
-        dropping whichever entry happens to differ would make the check vacuous."""
-        shared_host = tuple((n, h) for n, h in self.host_source_sha256
-                            if "kdm6" not in n)
-        return (self.compiler_binary_sha256, self.compiler_version,
-                shared_host, self.harness_source_sha256)
+        The variant module is excluded by its EXACT normalized key, not by a
+        substring: `"kdm6" not in name` also dropped any future shared file whose
+        name contains kdm6 — kdm6_constants.inc, kdm6_shared_helpers.F — silently
+        moving it outside the comparison. Excluding one known key means a new shared
+        source is compared by default and a new variant key fails loudly.
+        """
+        shared = tuple((n, h) for n, h in self.host_source_sha256
+                       if n != VARIANT_MODULE_KEY)
+        if len(shared) == len(self.host_source_sha256):
+            raise FortranBundleError(
+                f"provenance has no {VARIANT_MODULE_KEY!r} entry — the variant "
+                f"module is not where the attestation scope expects it, so nothing "
+                f"can be said about which sources the two legs share")
+        return ToolchainIdentity(
+            compiler_binary_sha256=self.compiler_binary_sha256,
+            compiler_version=self.compiler_version,
+            compile_flags=self.compile_flags,
+            shared_host_sources=shared,
+            shared_harness_sources=self.harness_source_sha256)
 
 
 @dataclass(frozen=True)
@@ -104,6 +220,7 @@ class VerifiedFortranLeg:
     run: object                                # the parsed C-lane run
     problem: dict | None = None
     build: BuildIdentity | None = None      # what produced the binaries
+    variant_source: VariantSourceIdentity | None = None   # WHICH module it compiled
     bundle_verified: bool = False              # structure, hashes, A==B==C, semantics
     external_manifest_attested: bool = False   # manifest pinned to an OUTSIDE SHA
     source_commit_attested: bool = False       # repo_commit pinned to a reviewed rev
@@ -267,6 +384,15 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         missing = [k for k in need if k not in prov]
         if missing:
             raise FortranBundleError(f"lane {lane} provenance lacks {missing}")
+        # EXACT source universe, not merely "the map is present"
+        for field, expected in (("host_source_sha256", EXPECTED_HOST_SOURCES),
+                                ("harness_source_sha256", EXPECTED_HARNESS_SOURCES)):
+            got = frozenset(prov[field])
+            if got != expected:
+                raise FortranBundleError(
+                    f"lane {lane} {field} is not the attested set: "
+                    f"missing {sorted(expected - got)}, "
+                    f"unexpected {sorted(got - expected)}")
         provenance[lane] = prov
 
         # the ACTUAL binary, hashed, against BOTH records of it
@@ -368,6 +494,10 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         # HERE and not in parse_fortran_run: the parser is also used for ad-hoc
         # analysis and for building mutants, and only this path produces
         # decision-grade evidence.
+        variant_source=VariantSourceIdentity(
+            algorithm=algorithm,
+            canonical_module_sha256=provenance["A"]["module_canonical_sha256"],
+            compiled_module_sha256=provenance["A"]["module_compiled_sha256"]),
         run=_freeze_run(run),
         build=build,
         problem=problem,

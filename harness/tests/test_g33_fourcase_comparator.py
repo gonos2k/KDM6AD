@@ -618,14 +618,15 @@ def test_pure_adjudicate_never_returns_pass():
     assert "PASS" not in r["verdict"]          # promotion belongs to the verified entry
 
 
-class _ReadyLeg:
-    """A leg that reports itself decision-grade, so these tests reach the arithmetic."""
-    def __init__(self, run):
-        self.normalized, self.verdict_ready = run, True
+def _decide(runs):
+    """The IDENTITY + arithmetic layer, on four normalized runs.
 
-
-def _evidence(runs):
-    return cmp.VerifiedFourCase(*[_ReadyLeg(r) for r in runs])
+    Not adjudicate_verified: that entry now derives each run from the verified
+    artifact itself (owner P0-4), so there is no place to hand it a synthetic run —
+    which is the property under test elsewhere. _adjudicate_normalized is the layer
+    these cases are about, and it cannot promote.
+    """
+    return cmp._adjudicate_normalized(*runs, promote=False)
 
 
 def test_the_decision_api_refuses_plain_dictionaries():
@@ -636,15 +637,32 @@ def test_the_decision_api_refuses_plain_dictionaries():
 
 
 def test_an_unready_leg_cannot_reach_a_verdict():
-    class _Unready(_ReadyLeg):
-        def __init__(self, run):
-            super().__init__(run)
-            self.verdict_ready = False
-    ev = cmp.VerifiedFourCase(_Unready(_run("legacy")), _ReadyLeg(_run("legacy")),
-                              _ReadyLeg(_run("conservative")),
-                              _ReadyLeg(_run("conservative")))
-    r = cmp.adjudicate_verified(ev)
+    """A leg whose artifact is not decision-grade stops the decision, whatever its
+    numbers say."""
+    frozen = cmp._deep_freeze({"algorithm": "legacy"})
+    ready = [cmp.DecisionLeg(n, type("A", (), {"verdict_ready": True})(), frozen)
+             for n in ("legacy-C++", "conservative-F", "conservative-C++")]
+    unready = cmp.DecisionLeg("legacy-F",
+                              type("A", (), {"verdict_ready": False})(), frozen)
+    r = cmp.adjudicate_verified(cmp.VerifiedFourCase(unready, *ready))
     assert r["verdict"] == "INVALID_EVIDENCE" and "not decision-grade" in r["reason"]
+
+
+def test_a_decision_leg_cannot_be_handed_a_run(monkeypatch):
+    """The factory derives each run from the ARTIFACT. Previously the carrier took
+    the verified artifact and the normalized dict separately, so a genuine leg could
+    be paired with a run from another fixture — the artifact carried the attestation
+    while the comparator read the dict (owner P0-4)."""
+    with pytest.raises(TypeError, match="nowhere to pass one in"):
+        cmp.VerifiedFourCase.of(legacy_fortran={"algorithm": "legacy"},
+                                legacy_cpp=None, conservative_fortran=None,
+                                conservative_cpp=None)
+
+
+def test_a_paired_run_is_read_only():
+    frozen = cmp._deep_freeze({"stages": [{"bits": 1}], "ops": []})
+    with pytest.raises(TypeError):
+        frozen["stages"] = []
 
 
 def test_the_debug_path_cannot_report_a_decision_verdict():
@@ -658,7 +676,7 @@ def test_the_debug_path_cannot_report_a_decision_verdict():
 def test_verified_entry_refuses_legs_without_identity():
     # the synthetic runs carry no problem identity, so the decision entry stops
     # before it ever looks at the arithmetic
-    r = cmp.adjudicate_verified(_evidence([_run("legacy"), _run("legacy"),
+    r = _decide(([_run("legacy"), _run("legacy"),
                                            _run("conservative"), _run("conservative")]))
     assert r["verdict"] == "INVALID_EVIDENCE" and "problem identity" in r["reason"]
 
@@ -669,7 +687,7 @@ def test_verified_entry_refuses_a_different_problem():
     for leg in legs:
         leg["problem"] = dict(ident)
     legs[3]["problem"] = dict(ident, fixture_sha256="c" * 64)     # a different fixture
-    r = cmp.adjudicate_verified(_evidence(legs))
+    r = _decide((legs))
     assert r["verdict"] == "INVALID_EVIDENCE" and "same problem" in r["reason"]
 
 
@@ -681,17 +699,17 @@ _IDENT = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K":
 
 
 def _four_legs(**per_leg):
-    """Four legs sharing one problem identity; per_leg patches an index's problem."""
+    """Four runs sharing one problem identity; per_leg patches an index's problem."""
     legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
     for leg in legs:
         leg["problem"] = dict(_IDENT)
     for idx, patch in per_leg.items():
         legs[int(idx[1:])]["problem"] = dict(_IDENT, **patch)
-    return _evidence(legs)
+    return _decide(legs)
 
 
 def test_the_four_legs_must_share_the_SEDIMENTATION_identity():
-    r = cmp.adjudicate_verified(_four_legs(i2={"fixture_sha256": "f" * 64}))
+    r = (_four_legs(i2={"fixture_sha256": "f" * 64}))
     assert r["verdict"] == "INVALID_EVIDENCE"
     assert "same problem" in r["reason"]
 
@@ -703,7 +721,7 @@ def test_backend_local_parameters_are_compared_WITHIN_a_backend():
     have. Two Fortran legs built with different local parameters are not the same
     full step, and that is now said at the level where it applies."""
     # index 2 is conservative-F; index 0 is legacy-F
-    r = cmp.adjudicate_verified(_four_legs(i2={"local_parameter_sha256": "9" * 64}))
+    r = (_four_legs(i2={"local_parameter_sha256": "9" * 64}))
     assert r["verdict"] == "INVALID_EVIDENCE"
     assert "backend-local parameters" in r["reason"]
 
@@ -711,27 +729,31 @@ def test_backend_local_parameters_are_compared_WITHIN_a_backend():
 def test_a_local_parameter_difference_ACROSS_backends_is_not_an_error():
     # the C++ legs have no ccn0/scale_h at all; requiring them to match Fortran's
     # hash would make every real four-case run INVALID
-    r = cmp.adjudicate_verified(_four_legs(i1={"local_parameter_sha256": None},
+    r = (_four_legs(i1={"local_parameter_sha256": None},
                                            i3={"local_parameter_sha256": None}))
     assert "backend-local" not in (r.get("reason") or "")
 
 
 # -- promotion is scoped to what the identity establishes (owner P0-C2 6) ------
 
-def test_only_a_seed_inside_sedimentation_may_promote():
-    """SedimentationIdentity is the whole precondition for a seed inside
-    sedimentation. Anywhere else the seed is a FULL-STEP claim, whose preconditions
-    include what runs between the sub-cycles."""
-    for phase in ("op", "outer_pre_sed", "substep_pre"):
-        assert cmp.promotable_phase(phase), phase
-    for phase in ("surface", "final_output", "outer_post_sed", "outer_post_micro"):
+def test_only_the_op_ladder_may_promote():
+    """Every op rung is replayed from its own dumped operands, so the causal inputs
+    of a divergence there are sealed by the evidence itself.
+
+    The entry snapshots are NOT: a difference first appearing at outer_pre_sed or
+    substep_pre says the state ARRIVING at sedimentation already differed, which is a
+    statement about what produced that state. Widening this needs a per-field argument
+    that the inputs are sealed, not a judgement that a phase feels close enough.
+    """
+    assert cmp.promotable_phase("op")
+    for phase in ("outer_pre_sed", "substep_pre", "surface", "final_output",
+                  "outer_post_sed", "outer_post_micro"):
         assert not cmp.promotable_phase(phase), phase
 
 
-def test_the_sedimentation_phase_set_is_exactly_the_sed_stages():
+def test_the_promotable_phase_set_is_exactly_the_op_ladder():
     # a phase added later must be classified deliberately, not inherit promotion
-    assert cmp._SEDIMENTATION_PHASES == frozenset(
-        ("op", "outer_pre_sed", "substep_pre"))
+    assert cmp._SEDIMENTATION_PHASES == frozenset(("op",))
 
 
 def test_a_whole_step_seed_is_reported_as_a_full_step_claim():

@@ -98,6 +98,12 @@ def main(argv=None) -> int:
                     help="external anchor for the legacy Fortran bundle")
     ap.add_argument("--expected-fortran-conservative-manifest-sha256",
                     help="external anchor for the conservative Fortran bundle")
+    ap.add_argument("--gate-a-scope-report", type=Path, default=None,
+                    help="check_cons_fortran_scope.py --json-out. Binds the "
+                         "conservative leg's module to the source whose edits the "
+                         "freeze-lift authorized: the toolchain check must ALLOW the "
+                         "two legs to compile different modules, and allowing is not "
+                         "authorizing.")
     ap.add_argument("--expected-manifest-sha256")
     ap.add_argument("--expected-repo-commit")
     ap.add_argument("--expected-fixture-id",
@@ -181,6 +187,13 @@ def main(argv=None) -> int:
         # module_mp_kdm6.F and conservative module_mp_kdm6_cons.F, so their module
         # hashes MUST differ — that difference is the comparison. The full identity is
         # still enforced WITHIN each bundle's A/B/C lanes, where it does hold.
+        # WHICH conservative module, not just "a different one". Without this the
+        # toolchain gate accepts any conservative source at all, since excluding the
+        # variant module from the comparison is what lets the two legs differ there.
+        if a.gate_a_scope_report is not None:
+            fbio.authorized_by_gate_a(
+                bio._load_json(a.gate_a_scope_report, "Gate A scope report"),
+                fortran_legs)
         builds = {algo: leg.build for algo, leg in fortran_legs.items()}
         if len({b.toolchain() for b in builds.values()}) != 1:
             raise fbio.FortranBundleError(
@@ -209,14 +222,15 @@ def main(argv=None) -> int:
     # attestation, and a verdict built from them would describe evidence nobody
     # anchored. An unattested debug run goes down a path that cannot promote.
     if anchored:
-        evidence = cmp.VerifiedFourCase(
-            legacy_fortran=cmp.AttestedLeg(fortran_legs["legacy"],
-                                           legs["legacy_fortran"]),
-            legacy_cpp=cmp.AttestedLeg(cpp_legs["legacy"], legs["legacy_cpp"]),
-            conservative_fortran=cmp.AttestedLeg(fortran_legs["conservative"],
-                                                 legs["conservative_fortran"]),
-            conservative_cpp=cmp.AttestedLeg(cpp_legs["conservative"],
-                                             legs["conservative_cpp"]))
+        # The factory normalizes each VERIFIED ARTIFACT itself. Handing it the runs
+        # this CLI already parsed would re-open exactly the hole P0-4 describes: the
+        # artifact carries the attestation, the dict carries the numbers, and nothing
+        # ties them together.
+        evidence = cmp.VerifiedFourCase.of(
+            legacy_fortran=fortran_legs["legacy"],
+            legacy_cpp=cpp_legs["legacy"],
+            conservative_fortran=fortran_legs["conservative"],
+            conservative_cpp=cpp_legs["conservative"])
         verdict = cmp.adjudicate_verified(evidence)
     else:
         verdict = cmp.adjudicate_unattested(

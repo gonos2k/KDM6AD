@@ -342,7 +342,7 @@ def verify_cpp_evidence(evidence_dir, algorithm: str, expected_binary_sha=None,
                           mstep_range=mstep_range, root_attested=False)
 
 
-def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha):
+def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha, authority):
     """Re-derive the sealed schedule from the probe stream the bundle SHIPS.
 
     The reproduce gate already runs in g33_fourcase_fixture_check, but at PRODUCTION
@@ -396,6 +396,38 @@ def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha):
         raise BundleError(f"{algo}: probe stream != its own probe manifest")
     if _sha256_file(files[gsp.PROBE_SCHEDULE]) != pm.get("schedule_sha256"):
         raise BundleError(f"{algo}: probe schedule.json != its own probe manifest")
+
+    # THE WHOLE SCHEDULE, not just its substep counts. Hashing schedule.json against
+    # the probe manifest proves the file is the one the probe wrote; it says nothing
+    # about whether the evidence was SEALED with it. qcrmin, dtcld, B/K,
+    # species_scope, instrumented_stages and the case/pair ids could all differ while
+    # mstepmax matched, and the run would have been sealed against a contract the
+    # probe never produced (owner P0-9).
+    probe_schedule = _load_json(files[gsp.PROBE_SCHEDULE], f"{algo} probe schedule")
+    # compared in canonical JSON form: the verified contract has been deep-frozen, so
+    # its lists are tuples, and a bare != would report every list-valued key as a
+    # difference while saying nothing about the values
+    canon = lambda d: json.loads(json.dumps(d, sort_keys=True, default=list))
+    probe_canon, sched_canon = canon(probe_schedule), canon(dict(sched))
+    if probe_canon != sched_canon:
+        differing = sorted(
+            k for k in set(probe_canon) | set(sched_canon)
+            if probe_canon.get(k) != sched_canon.get(k))
+        raise BundleError(
+            f"{algo}: the sealed contract is not the schedule the probe derived — "
+            f"they differ on {differing}")
+
+    # the probe must also be OF the anchored fixture, not merely of some fixture
+    if pm.get("fixture_id") != authority["fixture_id"]:
+        raise BundleError(f"{algo}: probe is for fixture {pm.get('fixture_id')!r}, "
+                          f"not {authority['fixture_id']!r}")
+    if pm.get("fixture_manifest_sha256") != gfx.manifest_sha256(authority):
+        raise BundleError(f"{algo}: probe fixture manifest sha != the anchored "
+                          f"authority")
+    if pm.get("noninvasiveness_checked") is not True:
+        raise BundleError(
+            f"{algo}: the probe did not run its non-invasiveness check, so the "
+            f"schedule may describe a run the probe itself perturbed")
     stream = files[gsp.PROBE_STREAM].read_text()
 
     # THE re-derivation. probe_from_stream recomputes mstep from the raw fall speeds
@@ -551,7 +583,8 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
         if obs is None or obs[0] < 1 or (meta.get("mstep_min"), meta.get("mstep_max")) != obs:
             raise BundleError(f"{algo}: manifest mstep [{meta.get('mstep_min')},"
                               f"{meta.get('mstep_max')}] != evidence {obs}")
-        lineage = _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha)
+        lineage = _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha,
+                                        authority)
         out[algo] = replace(leg, root_attested=True, actual_final_output=actual,
                             probe_lineage=_freeze(lineage) if lineage else None,
                             problem={"fixture_sha256": meta.get("fixture_sha256"),

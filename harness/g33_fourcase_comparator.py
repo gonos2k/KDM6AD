@@ -38,6 +38,7 @@ import os
 import struct
 import sys
 from dataclasses import dataclass
+from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_evidence_validate as gev  # noqa: E402
@@ -71,12 +72,19 @@ _STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output",
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"outer_pre_sed": 0, "substep_pre": 1, "surface": 2,
                 "outer_post_sed": 3, "outer_post_micro": 4, "final_output": 5}
-#: Phases whose shared seed is INSIDE sedimentation, where SedimentationIdentity is
-#: the whole precondition. A seed anywhere else (the surface accumulation, the
-#: whole-step output, or either bridge snapshot) is a claim about the FULL step, whose
-#: preconditions include what runs between the sub-cycles — so it may not be promoted
-#: on the sedimentation identity alone (owner P0-C2 §6).
-_SEDIMENTATION_PHASES = frozenset(("op", "outer_pre_sed", "substep_pre"))
+#: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
+#:
+#: Only the op ladder. Every rung there is replayed from its own dumped operands, so
+#: the causal inputs of the divergence are sealed by the evidence itself. Nothing else
+#: is: `outer_pre_sed` and `substep_pre` are ENTRY snapshots, and a difference first
+#: appearing at a snapshot says the state arriving at sedimentation already differed —
+#: which is a statement about what produced that state, not about sedimentation. The
+#: surface accumulation, the whole-step output and both bridge snapshots are full-step
+#: claims whose preconditions include what runs between the sub-cycles.
+#:
+#: Widening this needs a per-field argument that the causal inputs are sealed, not a
+#: judgement that the phase feels close enough to sedimentation (owner P0-8).
+_SEDIMENTATION_PHASES = frozenset(("op",))
 
 #: Whole-K snapshots taken once per outer loop (n=0), as opposed to per substep.
 _OUTER_SNAPSHOTS = ("outer_pre_sed", "outer_post_sed", "outer_post_micro")
@@ -98,43 +106,84 @@ def _lane_of(identity) -> gev.LaneKey:
 
 
 @dataclass(frozen=True)
-class VerifiedFourCase:
-    """The four attested legs, as one object.
+class DecisionLeg:
+    """One backend leg, with its normalized run derived from the artifact ITSELF.
 
-    Exists so the decision API cannot be reached with anything less. Each leg is the
-    backend's own Verified*Leg (which owns its attestation state) paired with the
-    normalized run the comparator reads. Constructing this is the ONLY way to obtain
-    PASS_MECHANISM.
+    Built only by VerifiedFourCase.of(); no public path lets a caller supply the run.
+    The previous carrier took the verified artifact and the normalized dict
+    SEPARATELY, so a genuine leg could be paired with a run from another fixture — the
+    artifact carried the attestation while the comparator read the dict, and nothing
+    tied the two together (owner P0-4).
     """
-    legacy_fortran: object
-    legacy_cpp: object
-    conservative_fortran: object
-    conservative_cpp: object
-
-    @property
-    def legs(self):
-        return (("legacy-F", self.legacy_fortran), ("legacy-C++", self.legacy_cpp),
-                ("conservative-F", self.conservative_fortran),
-                ("conservative-C++", self.conservative_cpp))
-
-    def unready(self) -> list:
-        """Names of legs that are not decision-grade."""
-        return [name for name, leg in self.legs
-                if not getattr(leg, "verdict_ready", False)]
-
-    def runs(self) -> tuple:
-        return tuple(leg.normalized for _name, leg in self.legs)
-
-
-@dataclass(frozen=True)
-class AttestedLeg:
-    """One backend leg: its attested artifact and the run the comparator reads."""
-    verified: object          # VerifiedCppLeg | VerifiedFortranLeg
-    normalized: dict
+    name: str
+    verified: object                 # VerifiedCppLeg | VerifiedFortranLeg
+    normalized: MappingProxyType     # derived here, read-only
 
     @property
     def verdict_ready(self) -> bool:
         return bool(getattr(self.verified, "verdict_ready", False))
+
+
+def _deep_freeze(obj):
+    """Read-only all the way down, so a paired run cannot be edited afterwards."""
+    if isinstance(obj, dict):
+        return MappingProxyType({k: _deep_freeze(v) for k, v in obj.items()})
+    if isinstance(obj, (list, tuple)):
+        return tuple(_deep_freeze(v) for v in obj)
+    return obj
+
+
+@dataclass(frozen=True)
+class VerifiedFourCase:
+    """The four decision-grade legs, as one object.
+
+    Constructing this is the ONLY way to obtain PASS_MECHANISM, and `of()` is the only
+    way to construct it with runs that belong to their artifacts.
+    """
+    legacy_fortran: DecisionLeg
+    legacy_cpp: DecisionLeg
+    conservative_fortran: DecisionLeg
+    conservative_cpp: DecisionLeg
+
+    @classmethod
+    def of(cls, *, legacy_fortran, legacy_cpp, conservative_fortran,
+           conservative_cpp) -> "VerifiedFourCase":
+        """Normalize each VERIFIED ARTIFACT here, deep-freeze it, and pair them.
+
+        The caller hands over four verified legs and nothing else, so a forged event
+        stream has nowhere to enter: the run is derived from the artifact whose
+        attestation is being relied upon.
+        """
+        import g33_normalize as _nz
+        named = (("legacy-F", legacy_fortran), ("legacy-C++", legacy_cpp),
+                 ("conservative-F", conservative_fortran),
+                 ("conservative-C++", conservative_cpp))
+        legs = []
+        for name, art in named:
+            if hasattr(art, "run"):                     # VerifiedFortranLeg
+                run = _nz.from_fortran_run(art.run)
+            elif hasattr(art, "containers"):            # VerifiedCppLeg
+                run = _nz.from_cpp_evidence(art)
+            else:
+                raise TypeError(
+                    f"{name}: expected a verified Fortran or C++ leg, got "
+                    f"{type(art).__name__} — the decision API derives the run from "
+                    f"the artifact, so there is nowhere to pass one in")
+            legs.append(DecisionLeg(name, art, _deep_freeze(run)))
+        return cls(*legs)
+
+    @property
+    def legs(self):
+        return tuple((leg.name, leg) for leg in
+                     (self.legacy_fortran, self.legacy_cpp,
+                      self.conservative_fortran, self.conservative_cpp))
+
+    def unready(self) -> list:
+        """Names of legs that are not decision-grade."""
+        return [name for name, leg in self.legs if not leg.verdict_ready]
+
+    def runs(self) -> tuple:
+        return tuple(leg.normalized for _name, leg in self.legs)
 
 
 @dataclass(frozen=True)

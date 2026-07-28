@@ -19,6 +19,14 @@ sys.path.insert(0, str(ROOT / "harness"))
 sys.path.insert(0, str(ROOT / "harness" / "g33_fortran"))
 import g33_fixture_v1 as gfx                # noqa: E402
 import g33_fortran_bundle_io as fbio        # noqa: E402
+VARIANT_KEY = fbio.VARIANT_MODULE_KEY
+
+
+def _sources(names, **override):
+    """A complete source map; a real build attests every name."""
+    out = {n: ("%-64s" % n).replace(' ', 'f')[:64] for n in sorted(names)}
+    out.update(override)
+    return out
 import g33_fortran_dump as fd               # noqa: E402
 
 SAMPLE = Path(__file__).parent / "data" / "g33_legacy_sample.g33f"
@@ -45,15 +53,20 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
         "schema_version": 2,
         "algorithm": "legacy",
         "dump_instrumented": not canonical,
-        "host_source_sha256": host_sha or {"module_mp_kdm6.F": "h" * 64},
-        "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
+        # the FULL attested universe, as a real build records it
+        "host_source_sha256": host_sha or _sources(fbio.EXPECTED_HOST_SOURCES),
+        "harness_source_sha256": _sources(fbio.EXPECTED_HARNESS_SOURCES),
         "module_compiled_sha256": module,
         "module_canonical_sha256": "m" * 64,
         "executable_sha256": hashlib.sha256(exe_bytes).hexdigest(),
         "compiler_path": "/usr/bin/gfortran",
         "compiler_binary_sha256": compiler,
         "compiler_version": version,
-        "commands": ["gfortran -c ..."],
+        # the real flag set: -ffp-contract=off is load-bearing for f32 parity, so a
+        # placeholder command string would make the flags identity untestable
+        "commands": ["/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize "
+                     "-funroll-loops -ffp-contract=off -fconvert=big-endian "
+                     "-o m.o module.F"],
     }
 
 
@@ -104,8 +117,8 @@ def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
         "module_canonical_sha256": "m" * 64,
         "compiler_binary_sha256": "f" * 64,
         "compiler_version": "GNU Fortran 13.2.0",
-        "host_source_sha256": {"module_mp_kdm6.F": "h" * 64},
-        "harness_source_sha256": {"g33_fortran_driver.f90": "j" * 64},
+        "host_source_sha256": _sources(fbio.EXPECTED_HOST_SOURCES),
+        "harness_source_sha256": _sources(fbio.EXPECTED_HARNESS_SOURCES),
     }
     if manifest_edit:
         manifest_edit(manifest)
@@ -375,10 +388,143 @@ def test_a_differing_toolchain_is_still_caught_across_legs(tmp_path):
 def test_a_differing_harness_source_is_caught_across_legs(tmp_path):
     # the module is dropped from toolchain() BY NAME, so everything else still counts
     a = _bundle(tmp_path / "a")
-    harness = {"g33_fortran_driver.f90": "z" * 64}
+    harness = _sources(fbio.EXPECTED_HARNESS_SOURCES,
+                       **{"g33_fortran_driver.f90": "z" * 64})
     b = _bundle(tmp_path / "b",
                 prov_edit=lambda lane, p: p.update(harness_source_sha256=harness),
                 manifest_edit=lambda m: m.update(harness_source_sha256=harness))
     lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
     cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
     assert lg.build.toolchain() != cn.build.toolchain()
+
+
+# ── the toolchain excludes ONE key, and includes the flags that move numbers ───
+
+def test_the_variant_module_is_excluded_by_exact_key_not_by_substring(
+        tmp_path, monkeypatch):
+    """`"kdm6" not in name` also dropped any future SHARED file whose name contains
+    kdm6 — kdm6_constants.inc, kdm6_shared_helpers.F — silently moving it outside the
+    comparison. One known key means a new shared source is compared by default."""
+    # a new shared source must first be added to the attestation scope — the closed
+    # universe makes that a deliberate act, and this test then shows it IS compared
+    monkeypatch.setattr(fbio, "EXPECTED_HOST_SOURCES",
+                        fbio.EXPECTED_HOST_SOURCES | {"kdm6_shared_helpers.F"})
+    shared = _sources(fbio.EXPECTED_HOST_SOURCES)
+    a = _bundle(tmp_path / "a",
+                prov_edit=lambda lane, p: p.update(host_source_sha256=shared),
+                manifest_edit=lambda m: m.update(host_source_sha256=shared))
+    other = dict(shared, **{"kdm6_shared_helpers.F": "9" * 64})
+    b = _bundle(tmp_path / "b",
+                prov_edit=lambda lane, p: p.update(host_source_sha256=other),
+                manifest_edit=lambda m: m.update(host_source_sha256=other))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() != lb.build.toolchain(), (
+        "a shared source whose name contains kdm6 must still be compared")
+
+
+def test_a_source_missing_from_every_lane_is_refused(tmp_path):
+    """Dropping one shared source from all three lanes AND the root manifest left
+    BuildIdentity comparing a smaller set and agreeing with itself. The closed
+    universe catches it at the lane, before any comparison happens."""
+    short = _sources(fbio.EXPECTED_HOST_SOURCES - {"libmassv.F"})
+    root = _bundle(tmp_path / "a",
+                   prov_edit=lambda lane, p: p.update(host_source_sha256=short),
+                   manifest_edit=lambda m: m.update(host_source_sha256=short))
+    with pytest.raises(fbio.FortranBundleError, match="not the attested set"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_an_unexpected_source_is_refused(tmp_path):
+    # a source added without widening the scope must fail, not be attested silently
+    extra = _sources(fbio.EXPECTED_HOST_SOURCES | {"surprise.F"})
+    root = _bundle(tmp_path / "a",
+                   prov_edit=lambda lane, p: p.update(host_source_sha256=extra),
+                   manifest_edit=lambda m: m.update(host_source_sha256=extra))
+    with pytest.raises(fbio.FortranBundleError, match="unexpected"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_dropping_ffp_contract_off_is_a_different_toolchain(tmp_path):
+    """Same compiler, same sources — but fused multiply-add changes the numbers, so
+    the two legs are no longer a controlled pair. Whole command strings could not be
+    compared instead: they carry paths and the -D defines that are SUPPOSED to
+    differ between variants and between instrumented and control lanes."""
+    a = _bundle(tmp_path / "a")
+    b = _bundle(tmp_path / "b", prov_edit=lambda lane, p: p.update(
+        commands=[c.replace("-ffp-contract=off", "") for c in p["commands"]]))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() != lb.build.toolchain()
+
+
+def test_variant_and_instrumentation_defines_do_not_split_the_toolchain(tmp_path):
+    # -DKDM6_CONS and -DKDM6_G33_FORTRAN_DUMP are the differences the design REQUIRES
+    a = _bundle(tmp_path / "a")
+    b = _bundle(tmp_path / "b", prov_edit=lambda lane, p: p.update(
+        commands=[c + " -DKDM6_CONS -DKDM6_G33_FORTRAN_DUMP" for c in p["commands"]]))
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() == lb.build.toolchain()
+
+
+# -- excluding the variant module is not authorizing it (owner P0-2) -----------
+# authorized_by_gate_a reads one thing from each leg: which module it compiled. Built
+# through full bundles these cases would exercise the bundle builder instead, and the
+# checked-in sample is a legacy stream, so a conservative bundle cannot be made from
+# it at all.
+
+def _gate_a(legacy_sha, cons_sha, passing=True):
+    return {"pass": passing, "failures": [] if passing else ["pinned edit missing"],
+            "sha256": {"module_mp_kdm6.F": legacy_sha,
+                       "module_mp_kdm6_cons.F": cons_sha}}
+
+
+def _legs(cons_module="c" * 64, legacy_module="m" * 64):
+    make = lambda algo, mod: type("L", (), {"variant_source":
+        fbio.VariantSourceIdentity(algo, mod, mod)})()
+    return {"legacy": make("legacy", legacy_module),
+            "conservative": make("conservative", cons_module)}
+
+
+def test_the_authorized_conservative_module_passes():
+    fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64), _legs())   # no raise
+
+
+def test_an_unauthorized_conservative_module_is_refused():
+    """toolchain() must ALLOW the two legs to compile different modules — that
+    difference is the comparison. Allowing is not authorizing: on its own an entirely
+    different conservative source passes the toolchain gate, as long as the bundle is
+    internally self-consistent."""
+    with pytest.raises(fbio.FortranBundleError, match="Gate A authorized"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64),
+                                  _legs(cons_module="9" * 64))
+
+
+def test_an_unauthorized_LEGACY_module_is_refused():
+    # the legacy module is a never-modify file; Gate A pins it too
+    with pytest.raises(fbio.FortranBundleError, match="Gate A authorized"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64),
+                                  _legs(legacy_module="8" * 64))
+
+
+def test_a_failing_gate_a_report_is_refused():
+    with pytest.raises(fbio.FortranBundleError, match="does not pass"):
+        fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64, passing=False), _legs())
+
+
+def test_a_report_pinning_no_module_is_refused():
+    report = _gate_a("m" * 64, "c" * 64)
+    del report["sha256"]["module_mp_kdm6_cons.F"]
+    with pytest.raises(fbio.FortranBundleError, match="pins no sha256"):
+        fbio.authorized_by_gate_a(report, _legs())
+
+
+def test_a_verified_leg_names_the_module_it_compiled():
+    # the identity has to be populated for any of the above to mean anything
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        root = _bundle(Path(td) / "b")
+        leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+    assert leg.variant_source.algorithm == "legacy"
+    assert leg.variant_source.canonical_module_sha256 == "m" * 64
