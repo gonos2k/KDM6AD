@@ -10,7 +10,7 @@ records, and the absolute and relative deltas were presented as if interchangeab
 import json
 from pathlib import Path
 
-ART = Path(__file__).resolve().parents[1] / "evidence" / "g33m_dt300_result.json"
+ART = Path(__file__).resolve().parents[1] / "evidence" / "g33m_dt300_wrapper_boundary_result.json"
 DOC = json.loads(ART.read_text())
 
 

@@ -16,7 +16,7 @@ digest over the differing records' (field, column, level) identities AND their r
 bits, so the two ends must differ in the same places by the same amounts.
 
     make_g33m_evidence_artifact.py --evidence DIR --fixture-id ID \
-        [--gate-a-report PATH] --out harness/evidence/g33m_dt300_result.json
+        [--gate-a-report PATH] --out harness/evidence/g33m_dt300_kernel_result.json
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "g33_fortran"))
 import g33_bundle_io as bio            # noqa: E402
 import g33_fixture_v1 as gfx           # noqa: E402
-import g33_fortran_dump as fd          # noqa: E402
+import g33_fourcase_load as fcl        # noqa: E402
 import g33_normalize as nz             # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
 
@@ -119,20 +119,51 @@ def main() -> int:
     ap.add_argument("--evidence", type=Path, required=True)
     ap.add_argument("--fixture-id", default="arithmetic_multisubcycle_v1")
     ap.add_argument("--gate-a-report", type=Path, default=None)
+    # The SAME six anchors the gate takes. Without them this generator read the C++
+    # bundle unanchored and copied a verdict out of a previous result.json, so the
+    # artifact asserted `attested` about evidence it had not itself checked.
+    ap.add_argument("--expected-manifest-sha256")
+    ap.add_argument("--expected-repo-commit")
+    ap.add_argument("--expected-fixture-manifest-sha256")
+    ap.add_argument("--expected-fortran-legacy-manifest-sha256")
+    ap.add_argument("--expected-fortran-conservative-manifest-sha256")
+    ap.add_argument("--expected-gate-a-report-sha256")
+    ap.add_argument("--allow-unattested", action="store_true",
+                    help="DEBUG. Produces an artifact whose verdict cannot promote; "
+                         "the tier is recorded in the artifact itself.")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
 
     EV = a.evidence
     _, auth = gfx.load_fixture(a.fixture_id)
-    bundle = bio.verify_cpp_bundle(EV / "cpp-bundle",
-                                   expected_fixture_id=a.fixture_id)
+    # ONE loader, shared with gateb_g33m_check. The verdict comes from the same
+    # adjudication the gate runs, over the same verified artifacts — not copied from a
+    # previous run's result.json, and not recomputed here (owner P0-7).
+    loaded = fcl.load_verified_fourcase(
+        cpp_bundle=EV / "cpp-bundle",
+        fortran_legacy=EV / "fortran-legacy",
+        fortran_conservative=EV / "fortran-conservative",
+        expected_manifest_sha256=a.expected_manifest_sha256,
+        expected_repo_commit=a.expected_repo_commit,
+        expected_fixture_id=a.fixture_id,
+        expected_fixture_manifest_sha256=a.expected_fixture_manifest_sha256,
+        expected_fortran_legacy_manifest_sha256=(
+            a.expected_fortran_legacy_manifest_sha256),
+        expected_fortran_conservative_manifest_sha256=(
+            a.expected_fortran_conservative_manifest_sha256),
+        gate_a_scope_report=a.gate_a_report,
+        expected_gate_a_scope_report_sha256=a.expected_gate_a_report_sha256)
+    if not loaded.anchored and not a.allow_unattested:
+        print("refusing to write a decision artifact from unanchored evidence: pass "
+              "the six --expected-* anchors, or --allow-unattested for debugging",
+              file=sys.stderr)
+        return 2
+    verdict = loaded.verdict()
 
-    per_algo, closure, first_div, carry = {}, [], {}, {}
+    per_algo, closure, carry = {}, [], {}
     for algo in ("legacy", "conservative"):
-        raw = (EV / f"fortran-{algo}" / "C" / "stdout.g33f").read_text()
-        F = nz.from_fortran_run(fd.parse_fortran_run(raw, algo, auth["K"], auth["B"]))
-        C = nz.from_cpp_evidence(bundle["algorithms"][algo],
-                                 require_verdict_ready=False)
+        F = loaded.normalized[f"{algo}_fortran"]
+        C = loaded.normalized[f"{algo}_cpp"]
         fk = {_key(s): s["bits"] for s in F["stages"]}
         ck = {_key(s): s["bits"] for s in C["stages"]}
         shared = set(fk) & set(ck)
@@ -144,17 +175,6 @@ def main() -> int:
         # raw loop number puts the WHOLE-STEP result before loop 1. It sorts last,
         # as it does in the comparator — otherwise the artifact would name a
         # different first divergence than the gate that produced the verdict.
-        _LAST = 1 << 30
-        earliest = min(diff, key=lambda k: (_LAST if k[0] == "final_output" else k[1],
-                                            STAGE_ORDER.index(k[0]), k[3], k[4],
-                                            k[5], k[6]), default=None)
-        if earliest is not None:
-            fb, cb = diff[earliest]
-            first_div[algo] = {
-                "identity": list(earliest),
-                "f_bits": f"{fb:#010x}", "c_bits": f"{cb:#010x}",
-                "f_value": _f32(fb), "c_value": _f32(cb),
-            }
         per_algo[algo] = {
             "fortran_manifest_sha256": _sha(EV / f"fortran-{algo}" / "abc_manifest.json"),
             "shared_stage_records": len(shared),
@@ -204,14 +224,28 @@ def main() -> int:
                     "closure_residual_T_K": dT - LV_CONST / CP_CONST * dqc,
                 })
 
-    result = json.loads((EV / "result.json").read_text())
     art = {
-        "schema_version": 2,
-        "what": f"Gate B / G3.3-M four-case run at {a.fixture_id}",
+        "schema_version": 3,
+        "what": f"Gate B / G3.3-M four-case run at {a.fixture_id}, "
+                f"{loaded.normalized['legacy_fortran']['problem']['entry_boundary']}",
         "generated_by": "harness/make_g33m_evidence_artifact.py",
-        "verdict": result["verdict"],
-        "attested": result["attested"],
-        "reason": result["reason"],
+        # THE COMPARATOR'S OWN VERDICT, from the same adjudication the gate runs over
+        # the same verified artifacts. Copying it out of a previous result.json meant
+        # the artifact could disagree with the gate and still look authoritative.
+        "verdict": verdict["verdict"],
+        "attested": loaded.attested,
+        "reason": verdict["reason"],
+        "attestation": loaded.attestation,
+        # ADMISSIBILITY, stated rather than inferred. The four legs must all be at the
+        # kernel entry for the result to bear on conservative-interface arithmetic; a
+        # wrapper leg compared against the C++ port is evidence about the BOUNDARY.
+        "comparison_boundary": {
+            name: run["problem"]["entry_boundary"]
+            for name, run in sorted(loaded.normalized.items())},
+        "comparison_admissible": len({
+            run["problem"]["entry_boundary"]
+            for run in loaded.normalized.values()}) == 1,
+        "evidence_tier": "decision" if loaded.anchored else "debug",
         "verifier_commit": _git("rev-parse", "HEAD"),
         "verifier_tree_dirty": bool(_git("status", "--porcelain", default="?")),
         "producer_commit": json.loads(
@@ -227,7 +261,13 @@ def main() -> int:
         },
         "cpp_manifest_sha256": _sha(EV / "cpp-bundle" / "cpp_abc_manifest.json"),
         "gate_a_report_sha256": _sha(a.gate_a_report) if a.gate_a_report else None,
-        "first_divergence": first_div,
+        # The comparator's, which ranges over the OP LADDER as well as the snapshots.
+        # A second first-divergence algorithm here computed it from `stages` alone, so
+        # once the earliest difference moves into the ladder the artifact and the gate
+        # would name different places — and the artifact is what a reader trusts.
+        "first_divergence": {
+            "legacy": verdict.get("legacy_first_divergence"),
+            "conservative": verdict.get("conservative_first_divergence")},
         "per_algorithm": per_algo,
         # identity + bits, not counts: equal numbers of different cells used to pass
         "carry_proof": carry,
