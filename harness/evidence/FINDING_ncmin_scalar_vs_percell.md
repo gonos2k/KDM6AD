@@ -1,6 +1,10 @@
 # Finding: `ncmin` is a scalar in Fortran and per-cell in C++
 
-Status: **SOURCE-LEVEL, awaiting four-leg confirmation.** Reported, not acted on —
+Status: **SOURCE-LEVEL ONLY — the four-leg run did NOT reach it.**
+The `boundary_mapping_v1` run's first divergence is `brs` at `outer_pre_sed`,
+upstream of any ncmin-gated rate, so the comparison stops before this mechanism
+could show. See `FINDING_outer_pre_sed_progb_skew.md`; re-running after that skew
+is fixed is what would test this. Reported, not acted on —
 production physics is frozen and this is owner adjudication.
 
 Found while looking for an injection anchor for `kernel_after_prologue`. It is exactly
