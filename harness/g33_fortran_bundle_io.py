@@ -77,6 +77,17 @@ EXPECTED_HARNESS_SOURCES = frozenset((
 #: between the two control legs.
 VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 
+#: The ONLY G33F protocol version a G3.3-M verdict may rest on.
+#:
+#: The parser deliberately accepts v1-v5 — migration, and re-verifying evidence
+#: produced before a tier existed, both need it — but the decision path must not.
+#: v4's bridge omits nc/ni/nccn/brs, so on a v4 stream "the sedimentation result
+#: matched" is a statement about eight of twelve carried members, and the dt=300
+#: run is the concrete case: at v4 the first difference read as post-microphysics,
+#: and at v5 it moved to nccn BEFORE sedimentation. A v4 bundle with valid external
+#: anchors would otherwise reach verdict_ready and reopen exactly that blind spot.
+DECISION_PROTOCOL_VERSION = 5
+
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a
 #: different answer — and comparing whole command strings instead would break on
@@ -297,7 +308,9 @@ class VerifiedFortranLeg:
     def verdict_ready(self) -> bool:
         return (self.bundle_verified and self.external_manifest_attested
                 and self.source_commit_attested and self.fixture_attested
-                and self.repo_clean)
+                and self.repo_clean
+                and getattr(self.run, "protocol_version", 0)
+                == DECISION_PROTOCOL_VERSION)
 
 
 def _no_dup_keys(pairs):
@@ -536,6 +549,17 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     if declared_mstep and declared_mstep != actual_mstep:
         raise FortranBundleError(
             f"manifest mstep_per_column != the C lane's own records")
+    # Same rule for the two claims that decide ADMISSIBILITY rather than content.
+    # A reader picks a bundle by its manifest — "this is v5 kernel evidence" — and a
+    # manifest that says so over a v4 wrapper stream would route the wrong evidence
+    # into the decision path. The stream's own banner is the authority; the manifest
+    # is a claim about it, and the two must agree.
+    for key, actual in (("g33f_protocol_version", run.protocol_version),
+                        ("entry_boundary", run.entry_boundary)):
+        declared = manifest.get(key)
+        if declared is not None and declared != actual:
+            raise FortranBundleError(
+                f"manifest {key} {declared!r} != {actual!r} in the C lane's stream")
     try:
         sem.verify_semantics(run)
         fd.verify_offline_replay(run)

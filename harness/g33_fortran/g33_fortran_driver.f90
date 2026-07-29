@@ -99,9 +99,9 @@ contains
     ! different questions and their records are not interchangeable, so a stream that
     ! did not say which one it came from would let them be compared by accident.
     if (kernel_entry_mode()) then
-      write(*,'(A)') 'G33F ENTRY kernel'
+      write(*,'(A)') 'G33F ENTRY kdm62d_kernel_entry_v1'
     else
-      write(*,'(A)') 'G33F ENTRY wrapper'
+      write(*,'(A)') 'G33F ENTRY kdm6_wrapper_input_v1'
     end if
     do f=1,NFLD_ST
       do k=1,km

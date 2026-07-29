@@ -53,8 +53,18 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 #: carries kdm6's preprocessing — the height-dependent CCN profile the C++ port has
 #: no counterpart for — so the two are evidence for different questions and must
 #: never be compared to each other.
-_ENTRY = re.compile(r"^G33F ENTRY (kernel|wrapper)$")
-ENTRY_BOUNDARIES = ("kernel", "wrapper")
+#: The comparison boundaries, as VERSIONED ids rather than mode words.
+#:
+#: A bare "kernel" names a driver mode; it does not say which contract that mode
+#: implemented. Redefining what the kernel leg records — adding `p` to the forcing
+#: set, moving the snapshot to before the entry clamp — would leave every earlier
+#: bundle still claiming "kernel" and still comparing equal, so evidence produced
+#: against the old contract would be admitted against the new one. The version is
+#: what makes that a refusal instead of a silent mix.
+KERNEL_ENTRY = "kdm62d_kernel_entry_v1"
+WRAPPER_INPUT = "kdm6_wrapper_input_v1"
+ENTRY_BOUNDARIES = (KERNEL_ENTRY, WRAPPER_INPUT)
+_ENTRY = re.compile(r"^G33F ENTRY (%s)$" % "|".join(map(re.escape, ENTRY_BOUNDARIES)))
 
 _BEGIN = re.compile(r"^G33F BEGIN v([12345]) (\S+)$")
 _END = re.compile(r"^G33F END v([12345]) (\S+)$")
@@ -344,7 +354,14 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K):
 @dataclass(frozen=True)
 class FortranRun:
     algorithm: str
-    entry_boundary: str        # "kernel" | "wrapper"; absent in pre-v5.1 streams
+    #: The G33F banner version this stream was emitted at. Carried because the
+    #: PARSER accepts v1-v5 (migration and re-verification of past evidence need
+    #: that) while the DECISION path must not: a v4 stream's bridge omits nc/ni/
+    #: nccn/brs, so "the sedimentation result matched" would be a claim about
+    #: two thirds of the carried state. Without the version on the run, a v4
+    #: bundle with valid external anchors reaches verdict_ready.
+    protocol_version: int
+    entry_boundary: str        # one of ENTRY_BOUNDARIES; absent in pre-v5.1 streams
     K: int
     B: int
     mstep: dict            # (outer_loop, chain, col) -> substep count
@@ -603,9 +620,9 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         raise FortranRunError(f"stream declares {len(entries)} entry boundaries")
     # A pre-v5.1 stream carries none; it is a WRAPPER run by construction, since the
     # kernel path did not exist. Defaulting is safe here and only here.
-    entry = entries[0] if entries else "wrapper"
+    entry = entries[0] if entries else WRAPPER_INPUT
 
-    return FortranRun(algorithm=algo, entry_boundary=entry, K=K, B=B, mstep=mstep,
+    return FortranRun(algorithm=algo, protocol_version=version, entry_boundary=entry, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
                       ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,

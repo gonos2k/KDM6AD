@@ -415,7 +415,7 @@ def test_cpp_leg_declares_the_kernel_boundary(tmp_path):
     root = _bundle(tmp_path)
     res = bio.verify_cpp_bundle(root, **_anchors(root))
     run = nz.from_cpp_evidence(res["algorithms"]["legacy"])
-    assert run["problem"]["entry_boundary"] == "kernel"
+    assert run["problem"]["entry_boundary"] == "kdm62d_kernel_entry_v1"
 
 
 def test_unattested_leg_refused_by_normalizer(tmp_path):

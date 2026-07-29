@@ -45,6 +45,7 @@ import g33_evidence_validate as gev  # noqa: E402
 import g33_mechanism as mech         # noqa: E402
 import g33_replay as replay          # noqa: E402
 import g33_schema as schema          # noqa: E402
+import g33_fortran_dump as fd        # noqa: E402  (boundary id vocabulary)
 
 # The PURE comparator answers "where do they first differ", so its best outcome is a
 # CANDIDATE: both pairs first diverged at the same shared rung. Promoting that
@@ -242,13 +243,13 @@ class SedimentationIdentity:
     #: The comparison boundary. A wrapper leg and a kernel leg solve different
     #: problems — the wrapper additionally rewrites nccn from a height profile the
     #: C++ port does not have — so this belongs in the identity, not beside it.
-    entry_boundary: str = "wrapper"
+    entry_boundary: str = fd.WRAPPER_INPUT
 
     @classmethod
     def of(cls, problem: dict) -> "SedimentationIdentity":
         return cls(problem["fixture_sha256"], problem["parameter_sha256"],
                    problem["B"], problem["K"],
-                   problem.get("entry_boundary", "wrapper"))
+                   problem.get("entry_boundary", fd.WRAPPER_INPUT))
 
 
 class StructuralError(Exception):

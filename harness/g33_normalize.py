@@ -36,6 +36,9 @@ import struct                # noqa: E402
 import numpy as np           # noqa: E402
 import g33_schema as schema  # noqa: E402
 import g33_derived as dv      # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "g33_fortran"))
+import g33_fortran_dump as fd  # noqa: E402  (the boundary id vocabulary)
 
 #: The bridge stages (outer_post_sed / outer_post_micro) are compared like any other
 #: snapshot: both backends emit them, so a divergence in the carry between outer loops
@@ -139,7 +142,7 @@ def from_fortran_run(run) -> dict:
                # for — so a wrapper leg and a kernel leg are answers to different
                # questions, and comparing them is a category error the same way two
                # fixtures would be (owner: kernel gate vs wrapper contract).
-               "entry_boundary": getattr(run, "entry_boundary", "wrapper")}
+               "entry_boundary": getattr(run, "entry_boundary", fd.WRAPPER_INPUT)}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 
@@ -283,7 +286,7 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
     # kernel leg would both compare equal against it, which is the mismatch that
     # produced the nccn divergence in the first place.
     problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K,
-                   entry_boundary="kernel")
+                   entry_boundary=fd.KERNEL_ENTRY)
     # (family, loop, col) -> the increment the producer actually emitted for that loop
     per_loop = {(fld.replace("_precip_cumulative", ""), loop, col): bits
                 for (fld, col), by_loop in increments.items()

@@ -163,6 +163,7 @@ def main():
         "schema_version": 2,
         "algorithm": args.algo,
         "entry_boundary": args.entry,
+        "g33f_protocol_version": parsed.protocol_version,
         "repo_commit": _git("rev-parse", "HEAD"),
         "repo_dirty": bool(_git("status", "--porcelain")),
         "fixture_id": authority["fixture_id"],
