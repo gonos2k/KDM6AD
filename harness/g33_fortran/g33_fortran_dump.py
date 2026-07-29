@@ -49,6 +49,13 @@ _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
+#: Which comparison boundary the run entered at. The wrapper path additionally
+#: carries kdm6's preprocessing — the height-dependent CCN profile the C++ port has
+#: no counterpart for — so the two are evidence for different questions and must
+#: never be compared to each other.
+_ENTRY = re.compile(r"^G33F ENTRY (kernel|wrapper)$")
+ENTRY_BOUNDARIES = ("kernel", "wrapper")
+
 _BEGIN = re.compile(r"^G33F BEGIN v([12345]) (\S+)$")
 _END = re.compile(r"^G33F END v([12345]) (\S+)$")
 
@@ -337,6 +344,7 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K):
 @dataclass(frozen=True)
 class FortranRun:
     algorithm: str
+    entry_boundary: str        # "kernel" | "wrapper"; absent in pre-v5.1 streams
     K: int
     B: int
     mstep: dict            # (outer_loop, chain, col) -> substep count
@@ -352,7 +360,7 @@ class FortranRun:
     localparams: dict      # name -> bits (ccn0, scale_h)
 
 
-_KNOWN = (_OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
+_KNOWN = (_ENTRY, _OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
           _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
@@ -452,7 +460,9 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     # BRACKETING: the whole stream must be BEGIN, then FIXIN/PARAM, then
     # MSTEP/OP, then STATE/PREC, then END — no stale append or spliced run.
     def _phase(line):
-        if _BEGIN.match(line):
+        # ENTRY belongs with BEGIN: it declares WHICH boundary this stream is
+        # evidence for, before any of that evidence appears.
+        if _BEGIN.match(line) or _ENTRY.match(line):
             return 0
         if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
             return 1
@@ -588,7 +598,14 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     local_parameter_sha256 = _sha(
         "".join(f"{n}:{b:08x}" for n, b in sorted(localparams.items())))
 
-    return FortranRun(algorithm=algo, K=K, B=B, mstep=mstep,
+    entries = [m.group(1) for line in lines if (m := _ENTRY.match(line))]
+    if len(entries) > 1:
+        raise FortranRunError(f"stream declares {len(entries)} entry boundaries")
+    # A pre-v5.1 stream carries none; it is a WRAPPER run by construction, since the
+    # kernel path did not exist. Defaulting is safe here and only here.
+    entry = entries[0] if entries else "wrapper"
+
+    return FortranRun(algorithm=algo, entry_boundary=entry, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
                       ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,

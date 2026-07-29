@@ -133,7 +133,13 @@ def from_fortran_run(run) -> dict:
     # two Fortran legs instead of against C++.
     problem = {"fixture_sha256": run.fixture_sha256,
                "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
-               "local_parameter_sha256": run.local_parameter_sha256}
+               "local_parameter_sha256": run.local_parameter_sha256,
+               # WHICH boundary. The wrapper path additionally applies kdm6's
+               # height-dependent CCN profile, which the C++ port has no counterpart
+               # for — so a wrapper leg and a kernel leg are answers to different
+               # questions, and comparing them is a category error the same way two
+               # fixtures would be (owner: kernel gate vs wrapper contract).
+               "entry_boundary": getattr(run, "entry_boundary", "wrapper")}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 

@@ -810,3 +810,25 @@ def test_the_four_case_cannot_be_assembled_by_hand():
     itself — which is exactly what the factory exists to prevent."""
     with pytest.raises(TypeError, match="built by VerifiedFourCase.of"):
         cmp.VerifiedFourCase(1, 2, 3, 4)
+
+
+# -- the two comparison boundaries are different problems (owner PR A) ---------
+
+def test_a_wrapper_leg_and_a_kernel_leg_are_not_the_same_problem():
+    """The wrapper path applies kdm6's height-dependent CCN profile before the
+    kernel; the C++ port has no counterpart, so the legs enter with different nccn.
+    Mixing them compares two different numerical problems — which is what produced
+    the dt=300 `outer_pre_sed.nccn` divergence in the first place."""
+    r = cmp.adjudicate_verified.__wrapped__ if hasattr(
+        cmp.adjudicate_verified, "__wrapped__") else None
+    mixed = _four_legs(i0={"entry_boundary": "kernel"})
+    assert mixed["verdict"] == "INVALID_EVIDENCE"
+    assert "same problem" in mixed["reason"]
+
+
+def test_the_boundary_is_part_of_the_identity_not_beside_it():
+    a = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary="kernel"))
+    b = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary="wrapper"))
+    assert a != b, "the boundary must distinguish two otherwise-identical problems"
+    assert cmp.SedimentationIdentity.of(_IDENT).entry_boundary == "wrapper", (
+        "a run that predates the kernel path is a wrapper run by construction")

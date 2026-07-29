@@ -13,9 +13,11 @@ module g33_fixture
        P_BITS, DELZ_BITS, XLAND_BITS, DT_BITS, NCMIN_LAND_BITS, &
        NCMIN_SEA_BITS, QMIN_BITS, CCN0_BITS, SCALE_H_BITS
 #ifdef KDM6_CONS
-  use module_mp_kdm6_cons, only: kdm6 => kdm6_cons
+  ! only the wrapper is renamed in the conservative module; the kernel keeps
+  ! its name, so both variants export kdm62D under the same identifier
+  use module_mp_kdm6_cons, only: kdm6 => kdm6_cons, kdm62D
 #else
-  use module_mp_kdm6, only: kdm6
+  use module_mp_kdm6, only: kdm6, kdm62D
 #endif
   implicit none
 #ifdef KDM6_CONS
@@ -47,6 +49,14 @@ contains
     real, dimension(1:im,1:1)      :: xland, rainF, rainncv, snowF, snowncv
     real, dimension(1:im,1:1)      :: srF, graupelF, graupelncv
     real, dimension(1:im,1:km,NFLD_ST) :: inF
+    ! KERNEL-ENTRY locals: the 2-D arrays kdm62D takes. The wrapper builds these
+    ! itself; calling the kernel directly means building them here — and NOT
+    ! applying the wrapper's height-dependent CCN profile, which is the one
+    ! transform the C++ port has no counterpart for and the only reason the two
+    ! legs entered the kernel with different nccn.
+    real, dimension(1:im,1:km)   :: tk, qk, brsk, rhoxk, cmgk
+    real, dimension(1:im,1:km,3) :: qcik, qrsk, ncik, nrsk
+    real, dimension(1:im,1:km)   :: n0so2d, n0go2d
     real :: delt, ccn0, scale_h, ncmin_land, ncmin_sea, qmin
     integer :: i, k, kt, f
 
@@ -85,6 +95,14 @@ contains
     inF(:,:,7)=qg(:,:,1); inF(:,:,8)=nn(:,:,1); inF(:,:,9)=nc(:,:,1)
     inF(:,:,10)=ni(:,:,1); inF(:,:,11)=nr(:,:,1); inF(:,:,12)=bg(:,:,1)
     write(*,'(A)') 'G33F BEGIN v5 '//ALGOTAG
+    ! WHICH BOUNDARY this run is evidence for. The kernel and wrapper paths answer
+    ! different questions and their records are not interchangeable, so a stream that
+    ! did not say which one it came from would let them be compared by accident.
+    if (kernel_entry_mode()) then
+      write(*,'(A)') 'G33F ENTRY kernel'
+    else
+      write(*,'(A)') 'G33F ENTRY wrapper'
+    end if
     do f=1,NFLD_ST
       do k=1,km
         do i=1,im
@@ -113,6 +131,51 @@ contains
     call emit_localparam('ccn0', ccn0)
     call emit_localparam('scale_h', scale_h)
 
+    if (kernel_entry_mode()) then
+      ! KERNEL ENTRY. Everything the wrapper does before calling kdm62D, EXCEPT the
+      ! height-dependent CCN profile that overwrites nccn — the one transform the
+      ! C++ port has no counterpart for, and the reason the two legs were not
+      ! comparing the same kernel input.
+      do i = 1, im
+        do k = 1, km
+          tk(i,k)   = th(i,k,1) * pii(i,k,1)          ! wrapper F:379
+          qk(i,k)   = q(i,k,1)
+          qcik(i,k,1) = qc(i,k,1);  qcik(i,k,2) = qi(i,k,1);  qcik(i,k,3) = 0.
+          qrsk(i,k,1) = qr(i,k,1);  qrsk(i,k,2) = qs(i,k,1);  qrsk(i,k,3) = qg(i,k,1)
+          ncik(i,k,1) = nc(i,k,1);  ncik(i,k,2) = ni(i,k,1);  ncik(i,k,3) = nn(i,k,1)
+          nrsk(i,k,1) = nr(i,k,1);  nrsk(i,k,2) = 0.;         nrsk(i,k,3) = 0.
+          brsk(i,k)   = bg(i,k,1)
+        end do
+      end do
+      call kdm62D(tk, qk, qcik, qrsk, ncik, nrsk, brsk, rhoxk, cmgk            &
+                 ,den(:,:,1), p(:,:,1), delz(:,:,1)                            &
+                 ,delt, g, cp, cpv, ccn0, r_d, r_v, svpt0                      &
+                 ,ep_1, ep_2, qmin                                             &
+                 ,xls, xlv, xlf, rhoair0, rhowater                             &
+                 ,cliq, cice, psat                                             &
+                 ,1                                                            &
+                 ,xland(:,1)                                                   &
+                 ,ncmin_land, ncmin_sea                                        &
+                 ,rainF(:,1), rainncv(:,1)                                     &
+                 ,srF(:,1)                                                     &
+                 ,1,im, 1,1, 1,km                                              &
+                 ,1,im, 1,1, 1,km                                              &
+                 ,1,im, 1,1, 1,km, n0so2d, n0go2d                              &
+                 ,snowF(:,1), snowncv(:,1)                                     &
+                 ,graupelF(:,1), graupelncv(:,1)                               &
+                  )
+      ! unpack, mirroring the wrapper's own pack-out
+      do i = 1, im
+        do k = 1, km
+          th(i,k,1) = tk(i,k) / pii(i,k,1)
+          q(i,k,1)  = qk(i,k)
+          qc(i,k,1) = qcik(i,k,1); qi(i,k,1) = qcik(i,k,2)
+          qr(i,k,1) = qrsk(i,k,1); qs(i,k,1) = qrsk(i,k,2); qg(i,k,1) = qrsk(i,k,3)
+          nc(i,k,1) = ncik(i,k,1); ni(i,k,1) = ncik(i,k,2); nn(i,k,1) = ncik(i,k,3)
+          nr(i,k,1) = nrsk(i,k,1); bg(i,k,1) = brsk(i,k)
+        end do
+      end do
+    else
     call kdm6(th=th, q=q, qc=qc, qr=qr, qi=qi, qs=qs, qg=qg,                &
               nn=nn, nc=nc, ni=ni, nr=nr, bg=bg, diag_rhog=diag_rhog,       &
               den=den, pii=pii, p=p, delz=delz,                             &
@@ -129,6 +192,7 @@ contains
               ids=1, ide=im, jds=1, jde=1, kds=1, kde=km,                   &
               ims=1, ime=im, jms=1, jme=1, kms=1, kme=km,                   &
               its=1, ite=im, jts=1, jte=1, kts=1, kte=km)
+    end if
 
     outF(:,:,1)=th(:,:,1); outF(:,:,2)=q(:,:,1); outF(:,:,3)=qc(:,:,1)
     outF(:,:,4)=qr(:,:,1); outF(:,:,5)=qi(:,:,1); outF(:,:,6)=qs(:,:,1)
@@ -136,6 +200,17 @@ contains
     outF(:,:,10)=ni(:,:,1); outF(:,:,11)=nr(:,:,1); outF(:,:,12)=bg(:,:,1)
     precF(1,:)=rainncv(:,1); precF(2,:)=snowncv(:,1); precF(3,:)=graupelncv(:,1)
   end subroutine run_case
+
+  ! Which comparison boundary this run is on. The kernel gate asks whether the
+  ! CONSERVATIVE INTERFACE arithmetic differs between the backends at the same
+  ! kernel entry; the wrapper path additionally carries kdm6's preprocessing, which
+  ! the C++ port does not have and which is therefore a boundary question, not an
+  ! arithmetic one. Two gates, two answers — so the mode is explicit, never implied.
+  logical function kernel_entry_mode()
+    character(len=32) :: mode
+    call get_environment_variable('G33_ENTRY', mode)
+    kernel_entry_mode = (trim(mode) == 'kernel')
+  end function kernel_entry_mode
 
   subroutine emit_fld(tag, name, i, k_top, val)
     character(len=*), intent(in) :: tag, name

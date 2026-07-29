@@ -239,11 +239,16 @@ class SedimentationIdentity:
     parameter_sha256: str
     B: int
     K: int
+    #: The comparison boundary. A wrapper leg and a kernel leg solve different
+    #: problems — the wrapper additionally rewrites nccn from a height profile the
+    #: C++ port does not have — so this belongs in the identity, not beside it.
+    entry_boundary: str = "wrapper"
 
     @classmethod
     def of(cls, problem: dict) -> "SedimentationIdentity":
         return cls(problem["fixture_sha256"], problem["parameter_sha256"],
-                   problem["B"], problem["K"])
+                   problem["B"], problem["K"],
+                   problem.get("entry_boundary", "wrapper"))
 
 
 class StructuralError(Exception):
