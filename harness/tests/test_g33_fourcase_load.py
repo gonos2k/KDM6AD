@@ -127,3 +127,15 @@ def test_evidence_errors_excludes_programming_errors():
     for bad in (TypeError, AttributeError, NameError, ZeroDivisionError):
         assert bad not in fcl.EVIDENCE_ERRORS, f"{bad.__name__} is not an evidence error"
     assert fcl.EVIDENCE_ERRORS, "no evidence errors declared"
+
+
+def test_every_semantic_stage_field_has_a_dtype():
+    """The dtype map used to name each stage in turn, so adding a stage to the field
+    lists left it absent here and the comparator reported `unknown <stage> field 'qv'`
+    — a structural error about evidence that was correct. It is derived now; this pins
+    that no stage can be half-declared again."""
+    import g33_schema as schema
+    for stage in schema._SEMANTIC_STAGE_FIELDS:
+        for field in schema.semantic_stage_fields(stage):
+            dt = schema.semantic_stage_field_dtype(stage, field)
+            assert dt in ("f32", "f64", "i32", "u8"), f"{stage}.{field} -> {dt!r}"

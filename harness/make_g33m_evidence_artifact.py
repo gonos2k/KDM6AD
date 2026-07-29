@@ -184,8 +184,8 @@ def main() -> int:
                 if cnt.get((lp, st))},
             "differing_digest": _digest(
                 (str(k), f, c) for k, (f, c) in diff.items()),
-            "mstep_range": list(bundle["algorithms"][algo].mstep_range or ()),
-            "probe_lineage": dict(bundle["algorithms"][algo].probe_lineage or {}),
+            "mstep_range": list(loaded.cpp_legs[algo].mstep_range or ()),
+            "probe_lineage": dict(loaded.cpp_legs[algo].probe_lineage or {}),
         }
         carry[algo] = _carry_proof(diff, loops)
 

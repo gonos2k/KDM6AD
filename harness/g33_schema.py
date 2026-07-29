@@ -126,21 +126,19 @@ _SEMANTIC_STAGE_FIELDS = {
 
 
 # Canonical dtype of every common semantic stage field (both backends must agree).
+#
+# DERIVED, not enumerated. This map used to name each stage in turn, so adding a stage
+# to _SEMANTIC_STAGE_FIELDS left it absent here and the comparator reported "unknown
+# <stage> field 'qv'" — a structural error about evidence that was in fact correct.
+# Every stage is all-f32 except substep_pre, which carries the f64 work terms and the
+# decoded integer mstep/gate; so f32 is the rule and substep_pre is the one exception.
+_MIXED_DTYPE_STAGES = {
+    "substep_pre": {"work1_qr": "f64", "workn_qr": "f64",
+                    "gate": "u8", "mstep": "i32"},
+}
 _SEMANTIC_STAGE_DTYPE = {
-    ("outer_pre_sed", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["outer_pre_sed"]}
-_SEMANTIC_STAGE_DTYPE.update({
-    ("substep_pre", "qr"): "f32", ("substep_pre", "nr"): "f32",
-    ("substep_pre", "work1_qr"): "f64", ("substep_pre", "workn_qr"): "f64",
-    ("substep_pre", "delz_safe"): "f32", ("substep_pre", "dend_safe"): "f32",
-    ("substep_pre", "dtcld"): "f32",
-    ("substep_pre", "gate"): "u8", ("substep_pre", "mstep"): "i32"})
-_SEMANTIC_STAGE_DTYPE.update({
-    (stage, f): "f32" for stage in ("outer_post_sed", "outer_post_micro")
-    for f in _SEMANTIC_STAGE_FIELDS[stage]})
-_SEMANTIC_STAGE_DTYPE.update({
-    ("surface", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["surface"]})
-_SEMANTIC_STAGE_DTYPE.update({
-    ("final_output", f): "f32" for f in _SEMANTIC_STAGE_FIELDS["final_output"]})
+    (stage, f): _MIXED_DTYPE_STAGES.get(stage, {}).get(f, "f32")
+    for stage, fields in _SEMANTIC_STAGE_FIELDS.items() for f in fields}
 
 
 def species_rank(species: str) -> int:
