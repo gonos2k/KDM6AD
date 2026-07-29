@@ -500,6 +500,7 @@ def test_variant_and_instrumentation_defines_do_not_split_the_toolchain(tmp_path
 def _gate_a(legacy_sha, cons_sha, passing=True, **drop):
     report = {"pass": passing, "failures": [] if passing else ["pinned edit missing"],
               "schema_version": 1, "checker_commit": "a" * 40,
+              "checker_source_sha256": "d" * 64,
               "scope_manifest_sha256": "b" * 64,
               "sha256": {"module_mp_kdm6.F": legacy_sha,
                          "module_mp_kdm6_cons.F": cons_sha}}
@@ -536,6 +537,16 @@ def test_an_unauthorized_LEGACY_module_is_refused():
                                   _legs(legacy_module="8" * 64))
 
 
+def test_a_gate_a_report_from_a_dirty_checker_is_refused():
+    """`checker_commit` names a revision; on a dirty tree the file at that revision is
+    not the file that ran, so the commit identifies a checker whose behaviour is
+    unknown and the authorization cannot be reproduced (owner P0-8)."""
+    report = _gate_a("m" * 64, "c" * 64)
+    report["checker_commit"] = "a" * 40 + "-dirty"
+    with pytest.raises(fbio.FortranBundleError, match="DIRTY checker"):
+        fbio.authorized_by_gate_a(report, _legs())
+
+
 def test_a_failing_gate_a_report_is_refused():
     with pytest.raises(fbio.FortranBundleError, match="does not pass"):
         fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64, passing=False), _legs())
@@ -559,6 +570,7 @@ def test_a_verified_leg_names_the_module_it_compiled():
 
 
 @pytest.mark.parametrize("field", ["schema_version", "checker_commit",
+                                   "checker_source_sha256",
                                    "scope_manifest_sha256"])
 def test_a_gate_a_report_without_its_own_provenance_is_refused(field):
     """A report carrying only pass/fail and two SHAs says a checker somewhere approved

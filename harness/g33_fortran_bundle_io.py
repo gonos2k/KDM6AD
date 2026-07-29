@@ -215,11 +215,21 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
             "the Gate A scope report does not pass: %r" % (report.get("failures"),))
     # WHAT produced this verdict. Without these the report says a checker somewhere
     # approved something, which any hand-written JSON also says.
-    for field in ("schema_version", "checker_commit", "scope_manifest_sha256"):
+    for field in ("schema_version", "checker_commit", "checker_source_sha256",
+                  "scope_manifest_sha256"):
         if not report.get(field):
             raise FortranBundleError(
                 "the Gate A report lacks %s — it records a verdict but not what "
                 "produced it, which a self-consistent forgery also does" % field)
+    # A DIRTY checker is not a checker anyone reviewed. `checker_commit` names a
+    # revision, and on a dirty tree the file at that revision is not the file that
+    # ran — so the commit identifies a checker whose behaviour is unknown, and the
+    # authorization it grants cannot be reproduced (owner P0-8).
+    if str(report["checker_commit"]).endswith("-dirty"):
+        raise FortranBundleError(
+            "the Gate A report was produced by a DIRTY checker tree (%s): regenerate "
+            "it from a clean commit, or the authorization names a revision that is "
+            "not what ran" % report["checker_commit"])
     pinned = report.get("sha256") or dict()
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
