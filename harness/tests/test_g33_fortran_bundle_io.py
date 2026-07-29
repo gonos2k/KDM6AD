@@ -78,12 +78,15 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
 
 
 def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
-            manifest_edit=None, prov_edit=None) -> Path:
+            manifest_edit=None, prov_edit=None, sample: Path = None) -> Path:
     """A full bundle around the CHECKED-IN sample: real streams, real provenance,
     real executables. Everything the verifier claims to check must EXIST here, or the
     tests certify that unverified provenance is acceptable."""
     _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
-    raw = SAMPLE.read_bytes()
+    # `sample` lets a caller supply the CONSERVATIVE stream: the op universe
+    # differs between the variants, so the parser refuses a relabelled legacy
+    # one — correctly — and a four-case tree needs a genuine one.
+    raw = (sample or SAMPLE).read_bytes()
     plain = _noninstrumented(raw)
     root.mkdir(parents=True, exist_ok=True)
     stdout_sha, stderr_sha, exe_sha, prov_sha = {}, {}, {}, {}

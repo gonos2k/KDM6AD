@@ -33,6 +33,14 @@ class FixtureSpec:
     cpp_header: Path
     fortran_module: Path
     cpp_define: str = ""            # selfcheck_build.sh --fixture=... selector
+    #: The strongest verdict this fixture may support (see _DECISION_CEILINGS).
+    #: Defaults to STRUCTURAL_ONLY so a new fixture cannot support a mechanism verdict
+    #: by omission — stating the stronger claim has to be deliberate.
+    decision_ceiling: str = "STRUCTURAL_ONLY"
+
+    @property
+    def mechanism_admissible(self) -> bool:
+        return self.decision_ceiling == "MECHANISM"
 
     @property
     def fortran_build_name(self) -> str:
@@ -46,13 +54,14 @@ class FixtureSpec:
 #: mislabelled row here cannot pass a fixture off as another.
 FIXTURES = {
     "arithmetic_synthetic_v1": FixtureSpec(
-        "arithmetic_synthetic_v1", MANIFEST, CPP_OUT, FORTRAN_OUT),
+        "arithmetic_synthetic_v1", MANIFEST, CPP_OUT, FORTRAN_OUT,
+        decision_ceiling="MECHANISM"),
     "arithmetic_multisubcycle_v1": FixtureSpec(
         "arithmetic_multisubcycle_v1",
         ROOT / "harness" / "g33_fixture_multisubcycle_v1.json",
         ROOT / "harness" / "g33_overlay" / "g33_fixture_multisubcycle_v1.h",
         ROOT / "harness" / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90",
-        cpp_define="multisubcycle"),
+        cpp_define="multisubcycle", decision_ceiling="MECHANISM"),
     # MAPPING ONLY. Every degeneracy the two arithmetic fixtures share is broken
     # here: pii is non-unity and varies per cell (so `t = th` cannot pass for
     # `t = th*pii`), xland is mixed so `xland >= 1.5` is actually exercised,
@@ -69,7 +78,10 @@ FIXTURES = {
         ROOT / "harness" / "g33_fixture_boundary_mapping_v1.json",
         ROOT / "harness" / "g33_overlay" / "g33_fixture_boundary_mapping_v1.h",
         ROOT / "harness" / "g33_fortran" / "g33_fixture_boundary_mapping_v1.f90",
-        cpp_define="boundary_mapping"),
+        # STRUCTURAL_ONLY: it carries deliberately out-of-band prognostics to exercise
+        # code paths, so a mechanism verdict from it would be a claim about physics
+        # drawn from values chosen to be unphysical (owner P0-8).
+        cpp_define="boundary_mapping", decision_ceiling="STRUCTURAL_ONLY"),
 }
 DEFAULT_FIXTURE_ID = "arithmetic_synthetic_v1"
 
@@ -105,6 +117,15 @@ GRID_FIELDS = STATE_FIELDS + FORCING_FIELDS
 COMMON_PARAMETERS = ("dt", "ncmin_land", "ncmin_sea", "qmin")
 FORTRAN_ONLY_PARAMETERS = ("ccn0", "scale_h")
 _HEX32 = re.compile(r"^[0-9a-f]{8}$")
+#: The strongest verdict a fixture may support. STRUCTURAL_ONLY covers pack,
+#: orientation and mapping; MECHANISM additionally covers the arithmetic question.
+#:
+#: It lives on the REGISTRY entry, not in the manifest JSON. The manifest's hash is a
+#: decision anchor recorded in every bundle, so adding a field to it invalidates every
+#: bundle ever produced — the enforcement would cost a full four-leg rebuild each time
+#: a ceiling is stated. The registry is code: it is attested through the harness source
+#: SHAs, read by the decision path, and cannot be set by a caller.
+_DECISION_CEILINGS = frozenset(("STRUCTURAL_ONLY", "MECHANISM"))
 #: Prognostic inputs that are physically non-negative. `th` is excluded (a potential
 #: temperature is positive but is not a padded prognostic) and so are the forcings,
 #: which are checked as strictly positive elsewhere.

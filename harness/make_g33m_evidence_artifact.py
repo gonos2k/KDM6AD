@@ -35,6 +35,7 @@ sys.path.insert(0, str(ROOT / "g33_fortran"))
 import g33_bundle_io as bio            # noqa: E402
 import g33_fixture_v1 as gfx           # noqa: E402
 import g33_fourcase_load as fcl        # noqa: E402
+import g33_schema as schema            # noqa: E402
 import g33_normalize as nz             # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
 
@@ -112,6 +113,11 @@ def _carry_proof(diff, loops):
             "records": len(post),
         }
     return out
+
+
+def _boundaries(loaded) -> set:
+    """The distinct comparison boundaries the four legs declare."""
+    return {run["problem"]["entry_boundary"] for run in loaded.normalized.values()}
 
 
 def main() -> int:
@@ -242,9 +248,13 @@ def main() -> int:
         "comparison_boundary": {
             name: run["problem"]["entry_boundary"]
             for name, run in sorted(loaded.normalized.items())},
-        "comparison_admissible": len({
-            run["problem"]["entry_boundary"]
-            for run in loaded.normalized.values()}) == 1,
+        # AGREEING is not the same as being at the KERNEL. Four wrapper legs agree
+        # with each other, and that combination is admissible for the wrapper contract
+        # and NOT for a statement about the C++ kernel's conservative-interface
+        # arithmetic — which is the question this artifact exists to answer. Testing
+        # only |B| == 1 made a four-wrapper run report comparison_admissible: true.
+        "comparison_admissible": _boundaries(loaded) == {schema.KERNEL_ENTRY},
+        "wrapper_mapping_admissible": _boundaries(loaded) == {schema.WRAPPER_INPUT},
         "evidence_tier": "decision" if loaded.anchored else "debug",
         "verifier_commit": _git("rev-parse", "HEAD"),
         "verifier_tree_dirty": bool(_git("status", "--porcelain", default="?")),

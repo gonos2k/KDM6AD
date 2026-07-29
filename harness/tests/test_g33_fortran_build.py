@@ -8,6 +8,7 @@ well-formed raw-bit stream — the operand-domain evidence the four-case G3.3-M
 comparator (P4) consumes.
 """
 import re
+import os
 import shutil
 import subprocess
 import tempfile
@@ -28,12 +29,15 @@ pytestmark = pytest.mark.skipif(
 ALGOS = ["legacy", "conservative"]
 
 
-def _build_and_run(algo="legacy", *, overlay=False, dump=False, fixture=None):
+def _build_and_run(algo="legacy", *, overlay=False, dump=False, fixture=None,
+                   aux_sentinel=None, entry=None):
     with tempfile.TemporaryDirectory(prefix="g33-fortran-test.") as td:
         out = Path(td) / "build"
         flags = [f"--algo={algo}"]
         if fixture:
             flags.append(f"--fixture={fixture}")
+        if aux_sentinel is not None:
+            flags.append(f"--aux-sentinel={aux_sentinel}")
         if dump:
             flags.append("--dump")        # implies --overlay
         elif overlay:
@@ -43,7 +47,10 @@ def _build_and_run(algo="legacy", *, overlay=False, dump=False, fixture=None):
         assert r.returncode == 0, f"build failed:\n{r.stdout}\n{r.stderr}"
         driver = out / "g33_fortran_driver"
         assert driver.is_file(), "driver not built"
-        run = subprocess.run([str(driver)], capture_output=True, text=True)
+        env = {k: v for k, v in os.environ.items() if k != "G33_ENTRY"}
+        if entry:
+            env["G33_ENTRY"] = entry
+        run = subprocess.run([str(driver)], capture_output=True, text=True, env=env)
         assert run.returncode == 0, f"driver crashed:\n{run.stderr}"
         return run.stdout
 
@@ -542,3 +549,42 @@ def test_a_real_legacy_conservative_pair_passes_the_toolchain_gate():
     # and the verified run is immutable, on a real bundle rather than a fixture
     with pytest.raises(TypeError):
         legs["legacy"].run.stages[next(iter(legs["legacy"].run.stages))] = ("f32", 0)
+
+
+# ── the kdm62D auxiliaries that carry no intent (owner P0-4) ───────────────────
+
+def test_the_intentless_auxiliaries_are_not_kernel_inputs():
+    """`cmg`, `n0so` and `n0go` are dummy arguments of kdm62D declared with NO intent
+    (:698, :718), so Fortran must assume they may be read before being written, and the
+    driver does not initialise them. The production wrapper does exactly the same —
+    declares them as locals at :282-286 and passes them uninitialised at :398 — so the
+    adapter is faithful. But "faithful to an exposure" is not "no exposure".
+
+    Two builds pre-filling all four with very different sentinels must produce
+    byte-identical output. If they ever diverge, these arrays are real kernel INPUTS and
+    belong in the kernel-entry identity rather than being left to the stack.
+    """
+    a = _build_and_run(dump=True, entry="kernel", aux_sentinel="0.0")
+    b = _build_and_run(dump=True, entry="kernel", aux_sentinel="-7.25e13")
+    assert a == b, "the intentless auxiliaries changed the answer — they are inputs"
+
+
+def test_the_boundary_selector_refuses_anything_else():
+    """`== 'kernel'` made every typo silently mean WRAPPER — a run answering a different
+    question than the one asked."""
+    with tempfile.TemporaryDirectory(prefix="g33-entry-test.") as td:
+        out = Path(td) / "build"
+        r = subprocess.run(["bash", str(BUILD), str(out), "--algo=legacy", "--dump"],
+                           capture_output=True, text=True, cwd=ROOT)
+        assert r.returncode == 0, r.stderr
+        driver = out / "g33_fortran_driver"
+        for bad in ("kerne", "KERNEL", "both"):
+            env = {**{k: v for k, v in os.environ.items()}, "G33_ENTRY": bad}
+            run = subprocess.run([str(driver)], capture_output=True, text=True, env=env)
+            assert run.returncode != 0, f"G33_ENTRY={bad!r} was accepted"
+        for good, tag in (("kernel", "kdm62d_kernel_entry_v1"),
+                          ("wrapper", "kdm6_wrapper_input_v1"), ("", "kdm6_wrapper_input_v1")):
+            env = {**{k: v for k, v in os.environ.items()}, "G33_ENTRY": good}
+            run = subprocess.run([str(driver)], capture_output=True, text=True, env=env)
+            assert run.returncode == 0, f"G33_ENTRY={good!r} rejected: {run.stderr}"
+            assert f"G33F ENTRY {tag}" in run.stdout

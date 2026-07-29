@@ -683,7 +683,8 @@ def test_verified_entry_refuses_legs_without_identity():
 
 
 def test_verified_entry_refuses_a_different_problem():
-    ident = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4}
+    ident = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4,
+             "entry_boundary": schema.KERNEL_ENTRY}
     legs = [_run("legacy"), _run("legacy"), _run("conservative"), _run("conservative")]
     for leg in legs:
         leg["problem"] = dict(ident)
@@ -695,8 +696,12 @@ def test_verified_entry_refuses_a_different_problem():
 
 # -- problem identity has TWO levels (owner P0-C2) -----------------------------
 
+# `entry_boundary` is stated, not defaulted: the identity has no default, because two
+# malformed runs that both omitted it used to be read as wrapper legs and pass the
+# same-problem check.
 _IDENT = {"fixture_sha256": "a" * 64, "parameter_sha256": "b" * 64, "B": 3, "K": 4,
-          "local_parameter_sha256": "c" * 64}
+          "local_parameter_sha256": "c" * 64,
+          "entry_boundary": schema.KERNEL_ENTRY}
 
 
 def _four_legs(**per_leg):
@@ -821,7 +826,9 @@ def test_a_wrapper_leg_and_a_kernel_leg_are_not_the_same_problem():
     the dt=300 `outer_pre_sed.nccn` divergence in the first place."""
     r = cmp.adjudicate_verified.__wrapped__ if hasattr(
         cmp.adjudicate_verified, "__wrapped__") else None
-    mixed = _four_legs(i0={"entry_boundary": schema.KERNEL_ENTRY})
+    # the OTHER boundary: _IDENT is already the kernel one, so overriding leg 0
+    # to the kernel value would leave all four agreeing and test nothing.
+    mixed = _four_legs(i0={"entry_boundary": schema.WRAPPER_INPUT})
     assert mixed["verdict"] == "INVALID_EVIDENCE"
     assert "same problem" in mixed["reason"]
 
@@ -830,5 +837,6 @@ def test_the_boundary_is_part_of_the_identity_not_beside_it():
     a = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=schema.KERNEL_ENTRY))
     b = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=schema.WRAPPER_INPUT))
     assert a != b, "the boundary must distinguish two otherwise-identical problems"
-    assert cmp.SedimentationIdentity.of(_IDENT).entry_boundary == schema.WRAPPER_INPUT, (
-        "a run that predates the kernel path is a wrapper run by construction")
+    with pytest.raises(cmp.StructuralError, match="no comparison boundary"):
+        cmp.SedimentationIdentity.of({k: v for k, v in _IDENT.items()
+                                      if k != "entry_boundary"})
