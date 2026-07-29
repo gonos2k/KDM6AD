@@ -13,7 +13,6 @@ sys.path.insert(0, str(ROOT / "harness"))
 import g33_fourcase_comparator as cmp  # noqa: E402
 import g33_mechanism as mech           # noqa: E402
 import g33_schema as schema            # noqa: E402
-import g33_fortran_dump as fd          # noqa: E402
 import struct                          # noqa: E402
 
 
@@ -822,14 +821,14 @@ def test_a_wrapper_leg_and_a_kernel_leg_are_not_the_same_problem():
     the dt=300 `outer_pre_sed.nccn` divergence in the first place."""
     r = cmp.adjudicate_verified.__wrapped__ if hasattr(
         cmp.adjudicate_verified, "__wrapped__") else None
-    mixed = _four_legs(i0={"entry_boundary": fd.KERNEL_ENTRY})
+    mixed = _four_legs(i0={"entry_boundary": schema.KERNEL_ENTRY})
     assert mixed["verdict"] == "INVALID_EVIDENCE"
     assert "same problem" in mixed["reason"]
 
 
 def test_the_boundary_is_part_of_the_identity_not_beside_it():
-    a = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=fd.KERNEL_ENTRY))
-    b = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=fd.WRAPPER_INPUT))
+    a = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=schema.KERNEL_ENTRY))
+    b = cmp.SedimentationIdentity.of(dict(_IDENT, entry_boundary=schema.WRAPPER_INPUT))
     assert a != b, "the boundary must distinguish two otherwise-identical problems"
-    assert cmp.SedimentationIdentity.of(_IDENT).entry_boundary == fd.WRAPPER_INPUT, (
+    assert cmp.SedimentationIdentity.of(_IDENT).entry_boundary == schema.WRAPPER_INPUT, (
         "a run that predates the kernel path is a wrapper run by construction")

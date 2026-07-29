@@ -75,9 +75,34 @@ _SPECIES_ORDER = [s for chain in ("main", "ice") for s in _ge._CHAIN_SPECIES[cha
 # precipitation directly, so leaving it out left a conversion input unchecked.
 # `surface_denr` (the unsealed rain-conversion constant) is emitted by both. Both
 # normalizers project onto exactly this set, so the F↔C++ identity universes match.
+#: THE COMPARISON BOUNDARIES, as versioned ids rather than mode words.
+#:
+#: A bare "kernel" names a driver mode; it does not say which contract that mode
+#: implemented. Redefining what the kernel leg records — adding `p` to the forcings,
+#: recording the call arguments before the entry clamp — would leave every earlier
+#: bundle still claiming "kernel" and still comparing equal, so evidence produced
+#: against the old contract would be admitted against the new one. The version is
+#: what makes that a refusal instead of a silent mix.
+#:
+#: They live HERE, with the rest of the shared vocabulary, because both backends need
+#: them: the comparator reaching into the Fortran parser for two strings made the
+#: import graph depend on sys.path order, which passed under the full suite and failed
+#: when the comparator's own tests ran alone.
+KERNEL_ENTRY = "kdm62d_kernel_entry_v1"
+WRAPPER_INPUT = "kdm6_wrapper_input_v1"
+ENTRY_BOUNDARIES = (KERNEL_ENTRY, WRAPPER_INPUT)
+
 _SEMANTIC_STAGE_FIELDS = {
+    # WHAT THE KERNEL WAS ACTUALLY CALLED WITH, before its entry clamp (owner P0-3).
+    # outer_pre_sed is recorded AFTER that clamp (F:822-839 / runtime.cpp), so on its
+    # own it cannot separate "both backends were handed the same problem" from "they
+    # were handed different problems and the clamp erased the difference". Same field
+    # set as outer_pre_sed deliberately: the difference between the two snapshots IS
+    # the clamp, readable without a third stage.
+    "kernel_call_input": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                          "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
-                      "nc", "ni", "nccn", "brs", "rho", "delz"],
+                      "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a
     # divergence in what one loop hands the next is a comparator finding rather
     # than something only a human reading two dumps side by side would notice.

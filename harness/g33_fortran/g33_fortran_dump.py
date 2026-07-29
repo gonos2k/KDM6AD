@@ -42,7 +42,8 @@ _STAGE_V2 = re.compile(
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 # A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
 # that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
-_STAGE_CHAIN = {"outer_pre_sed": "-", "surface": "-", "substep_pre": "main",
+_STAGE_CHAIN = {"kernel_call_input": "-", "outer_pre_sed": "-",
+                "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -53,21 +54,12 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 #: carries kdm6's preprocessing — the height-dependent CCN profile the C++ port has
 #: no counterpart for — so the two are evidence for different questions and must
 #: never be compared to each other.
-#: The comparison boundaries, as VERSIONED ids rather than mode words.
-#:
-#: A bare "kernel" names a driver mode; it does not say which contract that mode
-#: implemented. Redefining what the kernel leg records — adding `p` to the forcing
-#: set, moving the snapshot to before the entry clamp — would leave every earlier
-#: bundle still claiming "kernel" and still comparing equal, so evidence produced
-#: against the old contract would be admitted against the new one. The version is
-#: what makes that a refusal instead of a silent mix.
-KERNEL_ENTRY = "kdm62d_kernel_entry_v1"
-WRAPPER_INPUT = "kdm6_wrapper_input_v1"
-ENTRY_BOUNDARIES = (KERNEL_ENTRY, WRAPPER_INPUT)
-_ENTRY = re.compile(r"^G33F ENTRY (%s)$" % "|".join(map(re.escape, ENTRY_BOUNDARIES)))
+# vocabulary lives in g33_schema (imported below as _schema); re-exported
+# here because the parser is also used standalone.
+_ENTRY = re.compile(r"^G33F ENTRY (kdm62d_kernel_entry_v1|kdm6_wrapper_input_v1)$")
 
-_BEGIN = re.compile(r"^G33F BEGIN v([12345]) (\S+)$")
-_END = re.compile(r"^G33F END v([12345]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([123456]) (\S+)$")
+_END = re.compile(r"^G33F END v([123456]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -224,6 +216,9 @@ from dataclasses import dataclass    # noqa: E402
 
 _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
 import g33_schema as _schema         # noqa: E402
+KERNEL_ENTRY = _schema.KERNEL_ENTRY
+WRAPPER_INPUT = _schema.WRAPPER_INPUT
+ENTRY_BOUNDARIES = _schema.ENTRY_BOUNDARIES
 
 
 class FortranRunError(ValueError):
@@ -267,7 +262,8 @@ def _f64(bits):
     return _struct.unpack(">d", bits.to_bytes(8, "big"))[0]
 
 
-def _validate_stages(stages, n_raw, mstep, K, B, version=4):
+def _validate_stages(stages, n_raw, mstep, K, B, version=4,
+                     entry_boundary=None):
     """Exact pre-sed STAGE universe from mstep + the schema (owner P0-7): once
     outer_pre_sed (n=0) + substep_pre for every substep, dtype-checked and finite."""
     if n_raw != len(stages):
@@ -276,8 +272,9 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4):
     # by THAT scope's own mstep maximum
     scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
     loops = sorted({lp for lp, _ch in scopes})
-    carried = _CARRIED_BY_VERSION.get(min(version, 5), ())
-    pre_sed_fields = ((carried + _FORCINGS) if version >= 4
+    carried = _CARRIED_BY_VERSION.get(min(version, 6), ())
+    forcings = _FORCINGS_BY_VERSION.get(min(max(version, 4), 6), ())
+    pre_sed_fields = ((carried + forcings) if version >= 4
                       else _OUTER_PRE_SED_FIELDS_V3)
     exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
            for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
@@ -295,6 +292,15 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4):
     # v4 introduced it, so the universe is keyed off the BANNER — an older stream
     # genuinely does not contain these records, and demanding them would report a
     # protocol difference as missing evidence.
+    # v6: the ACTUAL kernel-call arguments, before the entry clamp. ONE set per run
+    # (loop 0), because a kernel call happens once however many sub-cycles it takes.
+    # ...but ONLY on the kernel leg. In wrapper mode the driver calls kdm6, so it
+    # never sees the kernel arguments — those are the wrapper CONTRACT's business,
+    # measured by a separate gate. Requiring the record of a stream that structurally
+    # cannot produce it would report a boundary choice as missing evidence.
+    if version >= 6 and entry_boundary == KERNEL_ENTRY:
+        exp |= {(0, "-", "kernel_call_input", 0, f, c, k)
+                for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
     if version >= 4:
         for stage in ("outer_post_sed", "outer_post_micro"):
             exp |= {(L, "-", stage, 0, f, c, k) for L in loops
@@ -388,9 +394,16 @@ _CARRIED_BY_VERSION = {
     4: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg"),
     5: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
         "nc", "ni", "nccn", "brs"),
+    6: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+        "nc", "ni", "nccn", "brs"),
 }
-_FORCINGS = ("rho", "delz")          # pre-sed only; not carried between loops
-_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[5] + _FORCINGS
+#: Forcings are keyed the same way, for the same reason. v6 adds `p`: it is a kernel
+#: ARGUMENT that enters saturation vapour pressure, the diffusion/thermodynamic
+#: coefficients and several process rates, so two backends entering with different
+#: pressure would show it only as a rate difference far downstream (owner P0-4).
+_FORCINGS_BY_VERSION = {4: ("rho", "delz"), 5: ("rho", "delz"),
+                        6: ("p", "rho", "delz")}
+_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[6] + _FORCINGS_BY_VERSION[6]
 #: What v3 emitted, kept so a pre-bridge stream still parses and the equivalence
 #: proof (a new run reproduces the old sample's shared records exactly) stays
 #: possible — that proof is how the bridge is shown not to perturb the run.
@@ -407,6 +420,8 @@ _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
                    "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
                    "surface_denr")
 _STAGE_DTYPE = {"qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
+                # v6: pressure, a kernel argument rather than a carried prognostic
+                "p": "f32",
                 "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
                 # the carried species the bridge adds
                 "qc": "f32", "qi": "f32", "qs": "f32", "qg": "f32",
@@ -468,6 +483,13 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     if versions != {int(m.group(1)) for m in end_ms} or len(versions) != 1:
         raise FortranRunError(f"BEGIN/END protocol versions disagree: {versions}")
     version = versions.pop()
+
+    entries = [m.group(1) for line in lines if (m := _ENTRY.match(line))]
+    if len(entries) > 1:
+        raise FortranRunError(f"stream declares {len(entries)} entry boundaries")
+    # A pre-v5.1 stream carries none; it is a WRAPPER run by construction, since the
+    # kernel path did not exist. Defaulting is safe here and only here.
+    entry = entries[0] if entries else WRAPPER_INPUT
 
     # every G33F-prefixed line MUST match a known record — never silently skipped.
     for line in lines:
@@ -586,7 +608,7 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
         if n_stage_raw:
             raise FortranRunError(f"noninstrumented run emitted {n_stage_raw} STAGE records")
     else:
-        _validate_stages(stages, n_stage_raw, mstep, K, B, version)
+        _validate_stages(stages, n_stage_raw, mstep, K, B, version, entry)
 
     state = parse_state(text)
     exp_state = {(f, c, k) for f in _STATE_FIELDS
@@ -614,13 +636,6 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented"):
     parameter_sha256 = _sha("".join(f"{n}:{b:08x}" for n, b in sorted(params.items())))
     local_parameter_sha256 = _sha(
         "".join(f"{n}:{b:08x}" for n, b in sorted(localparams.items())))
-
-    entries = [m.group(1) for line in lines if (m := _ENTRY.match(line))]
-    if len(entries) > 1:
-        raise FortranRunError(f"stream declares {len(entries)} entry boundaries")
-    # A pre-v5.1 stream carries none; it is a WRAPPER run by construction, since the
-    # kernel path did not exist. Defaulting is safe here and only here.
-    entry = entries[0] if entries else WRAPPER_INPUT
 
     return FortranRun(algorithm=algo, protocol_version=version, entry_boundary=entry, K=K, B=B, mstep=mstep,
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,

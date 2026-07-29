@@ -94,7 +94,7 @@ contains
     inF(:,:,4)=qr(:,:,1); inF(:,:,5)=qi(:,:,1); inF(:,:,6)=qs(:,:,1)
     inF(:,:,7)=qg(:,:,1); inF(:,:,8)=nn(:,:,1); inF(:,:,9)=nc(:,:,1)
     inF(:,:,10)=ni(:,:,1); inF(:,:,11)=nr(:,:,1); inF(:,:,12)=bg(:,:,1)
-    write(*,'(A)') 'G33F BEGIN v5 '//ALGOTAG
+    write(*,'(A)') 'G33F BEGIN v6 '//ALGOTAG
     ! WHICH BOUNDARY this run is evidence for. The kernel and wrapper paths answer
     ! different questions and their records are not interchangeable, so a stream that
     ! did not say which one it came from would let them be compared by accident.
@@ -145,6 +145,30 @@ contains
           ncik(i,k,1) = nc(i,k,1);  ncik(i,k,2) = ni(i,k,1);  ncik(i,k,3) = nn(i,k,1)
           nrsk(i,k,1) = nr(i,k,1);  nrsk(i,k,2) = 0.;         nrsk(i,k,3) = 0.
           brsk(i,k)   = bg(i,k,1)
+        end do
+      end do
+      ! THE ACTUAL CALL ARGUMENTS, recorded here and nowhere else (owner P0-3).
+      ! kdm62D's own entry padding (F:822-839) clamps the prognostics before the
+      ! first outer_pre_sed snapshot, so that snapshot cannot tell "both backends
+      ! were handed the same problem" from "they were handed different problems and
+      ! the clamp erased the difference". These are the values as passed.
+      do k = 1, km
+        do i = 1, im
+          call emit_kci('qv',   i, km-k, qk(i,k))
+          call emit_kci('t',    i, km-k, tk(i,k))
+          call emit_kci('qc',   i, km-k, qcik(i,k,1))
+          call emit_kci('qi',   i, km-k, qcik(i,k,2))
+          call emit_kci('qr',   i, km-k, qrsk(i,k,1))
+          call emit_kci('qs',   i, km-k, qrsk(i,k,2))
+          call emit_kci('qg',   i, km-k, qrsk(i,k,3))
+          call emit_kci('nc',   i, km-k, ncik(i,k,1))
+          call emit_kci('ni',   i, km-k, ncik(i,k,2))
+          call emit_kci('nccn', i, km-k, ncik(i,k,3))
+          call emit_kci('nr',   i, km-k, nrsk(i,k,1))
+          call emit_kci('brs',  i, km-k, brsk(i,k))
+          call emit_kci('p',    i, km-k, p(i,k,1))
+          call emit_kci('rho',  i, km-k, den(i,k,1))
+          call emit_kci('delz', i, km-k, delz(i,k,1))
         end do
       end do
       call kdm62D(tk, qk, qcik, qrsk, ncik, nrsk, brsk, rhoxk, cmgk            &
@@ -220,6 +244,18 @@ contains
          transfer(val, 0_int32)
   end subroutine emit_fld
 
+  subroutine emit_kci(name, i, k_top, val)
+    ! One kernel_call_input record. loop 0 / chain '-' / n 0: a kernel call happens
+    ! once however many sub-cycles it takes, and 0 sorts before loop 1 the way
+    ! final_output's 0 sorts after the last loop.
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: i, k_top
+    real, intent(in) :: val
+    write(*,'(A,1X,A,2(1X,I0),1X,A,1X,Z8.8)') &
+         'G33F STAGE 0 - kernel_call_input 0', trim(name), i, k_top, 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_kci
+
   subroutine emit_param(name, val)
     character(len=*), intent(in) :: name
     real, intent(in) :: val
@@ -269,6 +305,6 @@ program g33_fortran_driver
       call emit_prec(f, i, precF(f,i))
     end do
   end do
-  write(*,'(A)') 'G33F END v5 '//ALGOTAG
+  write(*,'(A)') 'G33F END v6 '//ALGOTAG
   write(*,'(A)') 'FORTRAN DRIVER OK ('//ALGOTAG//', fixture='//G33_FIXTURE_ID//')'
 end program g33_fortran_driver

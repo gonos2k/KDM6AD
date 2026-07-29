@@ -79,14 +79,21 @@ VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 
 #: The ONLY G33F protocol version a G3.3-M verdict may rest on.
 #:
-#: The parser deliberately accepts v1-v5 — migration, and re-verifying evidence
-#: produced before a tier existed, both need it — but the decision path must not.
-#: v4's bridge omits nc/ni/nccn/brs, so on a v4 stream "the sedimentation result
-#: matched" is a statement about eight of twelve carried members, and the dt=300
-#: run is the concrete case: at v4 the first difference read as post-microphysics,
-#: and at v5 it moved to nccn BEFORE sedimentation. A v4 bundle with valid external
-#: anchors would otherwise reach verdict_ready and reopen exactly that blind spot.
-DECISION_PROTOCOL_VERSION = 5
+#: The parser deliberately accepts every past version — migration, and re-verifying
+#: evidence produced before a tier existed, both need it — but the decision path must
+#: not. Each bump closed a specific blind spot, and a stream from before it cannot
+#: answer the question the gate asks:
+#:
+#:   v4  the bridge omits nc/ni/nccn/brs, so "the sedimentation result matched" is a
+#:       claim about eight of twelve carried members. dt=300 is the worked example:
+#:       at v4 the first difference read as post-microphysics; at v5 it moved to
+#:       nccn, before sedimentation ran at all.
+#:   v5  no kernel-call arguments and no `p`. outer_pre_sed is recorded AFTER the
+#:       entry clamp, so it cannot separate "both legs were handed the same problem"
+#:       from "the clamp erased the difference" (owner P0-3/P0-4).
+#:
+#: A pre-v6 bundle with valid external anchors would otherwise reach verdict_ready.
+DECISION_PROTOCOL_VERSION = 6
 
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a

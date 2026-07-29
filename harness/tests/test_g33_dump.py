@@ -1840,10 +1840,30 @@ def test_context_is_set_by_the_runtime_overlay_around_the_sub_cycle():
     # sub-cycle loop, before the outer_pre snapshot, with the variant-derived
     # algorithm — not hardcoded "legacy".
     src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
-    ctx = src.index("ScopedDumpContext g33_ctx(")
-    assert src.index("for (int i = 0; i < loops; ++i) {") < ctx
-    assert ctx < src.index('Outer g33("outer_pre"')
+    loop = src.index("for (int i = 0; i < loops; ++i) {")
+    ctx = src.index("ScopedDumpContext g33_ctx(", loop)     # the sub-cycle's own
+    assert loop < ctx < src.index('Outer g33("outer_pre"')
     assert "PhysicsVariant::ConservativeInterface" in src[ctx:ctx + 400]
+
+
+def test_kernel_call_input_is_recorded_before_the_entry_clamp():
+    """The whole point of the stage (owner P0-3).
+
+    outer_pre_sed sits after the F:822-839 entry clamp, so a difference in what the
+    two backends were actually handed can be erased before it is ever recorded — the
+    snapshot would then agree while the premise of the comparison had already failed.
+    Recording after the clamp, or inside the sub-cycle loop, would silently restore
+    exactly that hole, so the position is pinned rather than assumed.
+    """
+    src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    rec = src.index('Outer g33("kernel_call_input"')
+    clamp = src.index("cur.qc = torch::clamp(cur.qc")
+    assert rec < clamp, "kernel_call_input must precede the entry clamp"
+    assert clamp < src.index("for (int i = 0; i < loops; ++i) {"), (
+        "the clamp is once per kernel call; if that changed this test is comparing "
+        "against the wrong landmark")
+    assert 'G33_REC(g33, "kernel_call_input", "p",' in src, (
+        "pressure is a kernel argument and must be recorded at the call boundary")
 
 
 def test_legacy_op_ladder_order_matches_the_manifest():

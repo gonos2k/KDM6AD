@@ -256,8 +256,14 @@ _CARRIED = [
 OUTER_POST_SED = list(_CARRIED)
 OUTER_POST_MICRO = list(_CARRIED)
 
-#: Pre-sed forcings: not carried between loops, so not part of the bridge identity.
-_FORCINGS = [("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)")]
+#: Pre-sed forcings: not carried between loops, so not part of the bridge identity —
+#: but they ARE part of the problem the kernel is given. `p` was missing: pressure
+#: enters saturation vapour pressure, the diffusion/thermodynamic coefficients and
+#: several process rates, so two backends entering the kernel with different pressure
+#: would show it only as a rate difference much later, at a place with no visible
+#: connection to the cause (owner P0-4).
+_FORCINGS = [("p", "f32", "p(i,k)"),
+             ("rho", "f32", "dend(i,k)"), ("delz", "f32", "delz(i,k)")]
 
 #: DERIVED from _CARRIED, not maintained beside it. Keeping a parallel list is how
 #: the two drifted at v5: the post snapshots gained the number concentrations and
