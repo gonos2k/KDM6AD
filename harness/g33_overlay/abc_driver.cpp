@@ -14,6 +14,8 @@
 // comes from the build.
 #ifdef KDM6_G33_FIXTURE_MULTISUBCYCLE
 #include "g33_fixture_multisubcycle_v1.h"
+#elif defined(KDM6_G33_FIXTURE_BOUNDARY_MAPPING)
+#include "g33_fixture_boundary_mapping_v1.h"
 #else
 #include "g33_fixture_v1.h"
 #endif
