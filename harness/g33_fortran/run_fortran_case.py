@@ -63,7 +63,8 @@ def main() -> None:
     if run.returncode != 0:
         raise SystemExit(f"driver crashed:\n{run.stderr.decode(errors='replace')}")
     stdout = run.stdout.decode("ascii")
-    parsed = fd.parse_fortran_run(stdout, args.algo, K=K, B=B)
+    parsed = fd.parse_fortran_run(stdout, args.algo, K=K, B=B,
+                                 allow_negative_input=authority.get("allows_negative_input", False))
     if parsed.fixture_sha256 != fixture.fixture_sha256(authority):
         raise SystemExit("Fortran FIXIN differs from the shared raw-bit authority")
     if parsed.parameter_sha256 != fixture.parameter_sha256(authority):

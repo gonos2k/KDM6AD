@@ -112,7 +112,8 @@ def main():
     # non-invasiveness result.
     runs = {n: fd.parse_fortran_run(
         out[n]["stdout"].decode(), args.algo, K=K, B=B,
-        evidence_mode="instrumented" if n == "C" else "noninstrumented")
+        evidence_mode="instrumented" if n == "C" else "noninstrumented",
+        allow_negative_input=authority.get("allows_negative_input", False))
         for n in cases}
     abc_equal = (runs["A"].state == runs["B"].state == runs["C"].state
                  and runs["A"].precip == runs["B"].precip == runs["C"].precip)

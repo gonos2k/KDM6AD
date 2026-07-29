@@ -524,7 +524,11 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         try:
             parsed[lane] = fd.parse_fortran_run(
                 data.decode("ascii", "strict"), algorithm, K, B,
-                evidence_mode="instrumented" if lane == "C" else "noninstrumented")
+                evidence_mode="instrumented" if lane == "C" else "noninstrumented",
+                # the FIXTURE's declaration, read from the authority this verifier
+                # loads itself — never from the bundle, which would let a stream
+                # authorize its own out-of-domain input
+                allow_negative_input=authority.get("allows_negative_input", False))
         except UnicodeDecodeError as e:
             raise FortranBundleError(f"lane {lane} is not ASCII: {e}") from None
         except Exception as e:                  # every reader here is fail-closed
