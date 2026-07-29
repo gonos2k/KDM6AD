@@ -163,7 +163,10 @@ def main():
     manifest = {
         "schema_version": 2,
         "algorithm": args.algo,
-        "entry_boundary": args.entry,
+        # from the PARSED STREAM, not from the flag: the flag is a mode word
+        # (`kernel`) and the stream declares a versioned contract id, so
+        # recording the flag made the manifest disagree with its own evidence.
+        "entry_boundary": parsed.entry_boundary,
         "g33f_protocol_version": parsed.protocol_version,
         "repo_commit": _git("rev-parse", "HEAD"),
         "repo_dirty": bool(_git("status", "--porcelain")),

@@ -83,7 +83,11 @@ else
     MODULE_SRC="$MODULE"
 fi
 fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DUMP_DEF[@]}" "$MODULE_SRC"
-fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" \
+# DUMP_DEF for the DRIVER too: the kernel_call_input snapshot is emitted at
+# the call site, which is in the driver, and it is instrumentation. Without
+# the define here the non-instrumented A/B lanes would emit STAGE records —
+# the control would carry the thing it is the control for.
+fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" "${DUMP_DEF[@]}" \
     "$HERE/g33_fortran_driver.f90"
 
 LINK_OBJS=("$OUT/g33_fortran_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"

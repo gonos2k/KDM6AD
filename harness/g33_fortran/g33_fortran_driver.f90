@@ -147,6 +147,7 @@ contains
           brsk(i,k)   = bg(i,k,1)
         end do
       end do
+#ifdef KDM6_G33_FORTRAN_DUMP
       ! THE ACTUAL CALL ARGUMENTS, recorded here and nowhere else (owner P0-3).
       ! kdm62D's own entry padding (F:822-839) clamps the prognostics before the
       ! first outer_pre_sed snapshot, so that snapshot cannot tell "both backends
@@ -171,6 +172,7 @@ contains
           call emit_kci('delz', i, km-k, delz(i,k,1))
         end do
       end do
+#endif
       call kdm62D(tk, qk, qcik, qrsk, ncik, nrsk, brsk, rhoxk, cmgk            &
                  ,den(:,:,1), p(:,:,1), delz(:,:,1)                            &
                  ,delt, g, cp, cpv, ccn0, r_d, r_v, svpt0                      &
@@ -244,6 +246,7 @@ contains
          transfer(val, 0_int32)
   end subroutine emit_fld
 
+#ifdef KDM6_G33_FORTRAN_DUMP
   subroutine emit_kci(name, i, k_top, val)
     ! One kernel_call_input record. loop 0 / chain '-' / n 0: a kernel call happens
     ! once however many sub-cycles it takes, and 0 sorts before loop 1 the way
@@ -255,6 +258,7 @@ contains
          'G33F STAGE 0 - kernel_call_input 0', trim(name), i, k_top, 'f32', &
          transfer(val, 0_int32)
   end subroutine emit_kci
+#endif
 
   subroutine emit_param(name, val)
     character(len=*), intent(in) :: name
