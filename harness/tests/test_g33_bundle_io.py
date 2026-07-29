@@ -403,6 +403,21 @@ def test_cpp_evidence_normalizes_and_events_build(tmp_path):
     assert events and run["ops"]
 
 
+def test_cpp_leg_declares_the_kernel_boundary(tmp_path):
+    """The port implements kdm62D and has no wrapper, so it must SAY `kernel`.
+
+    With the field absent on the C++ side, `SedimentationIdentity`'s default would
+    make a Fortran wrapper leg and a Fortran kernel leg both compare equal against
+    it, and the four-way boundary check would agree with whatever it was handed.
+    That silent agreement is what let the dt=300 run compare a wrapper Fortran leg
+    against a kernel C++ leg and report the resulting nccn mismatch as a physics
+    divergence."""
+    root = _bundle(tmp_path)
+    res = bio.verify_cpp_bundle(root, **_anchors(root))
+    run = nz.from_cpp_evidence(res["algorithms"]["legacy"])
+    assert run["problem"]["entry_boundary"] == "kernel"
+
+
 def test_unattested_leg_refused_by_normalizer(tmp_path):
     leg = bio.verify_cpp_evidence(_full_evidence(tmp_path, "legacy"), "legacy")
     with pytest.raises(nz.NormalizeError):          # root_attested is False

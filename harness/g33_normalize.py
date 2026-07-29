@@ -276,7 +276,14 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                            "field": f"{family}_precip_cumulative",
                            "dtype": "f32", "bits": bits})
 
-    problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K)
+    # The C++ port IS the kernel: it implements kdm62D and has no counterpart to
+    # kdm6's preprocessing, so `kernel` is a structural fact about the port rather
+    # than a property of this run. Declaring it is what makes the four-way boundary
+    # check load-bearing — with C++ silent, a Fortran wrapper leg and a Fortran
+    # kernel leg would both compare equal against it, which is the mismatch that
+    # produced the nccn divergence in the first place.
+    problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K,
+                   entry_boundary="kernel")
     # (family, loop, col) -> the increment the producer actually emitted for that loop
     per_loop = {(fld.replace("_precip_cumulative", ""), loop, col): bits
                 for (fld, col), by_loop in increments.items()
