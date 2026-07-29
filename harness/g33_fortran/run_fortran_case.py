@@ -37,6 +37,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--algo", required=True, choices=["legacy", "conservative"])
     ap.add_argument("--out", required=True, help="fresh output directory")
+    ap.add_argument("--entry", default="wrapper", choices=["wrapper", "kernel"],
+                    help="which comparison boundary (see run_fortran_abc)")
     ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
                     choices=sorted(fixture.FIXTURES),
                     help="which fixture authority this run uses")
@@ -53,11 +55,16 @@ def main() -> None:
     if build_run.returncode != 0:
         raise SystemExit(f"build failed:\n{build_run.stdout}\n{build_run.stderr}")
     driver = os.path.join(args.out, "g33_fortran_driver")
-    run = subprocess.run([driver], capture_output=True)
+    # explicit, never inherited — see run_fortran_abc
+    env = {k: v for k, v in os.environ.items() if k != "G33_ENTRY"}
+    if args.entry == "kernel":
+        env["G33_ENTRY"] = "kernel"
+    run = subprocess.run([driver], capture_output=True, env=env)
     if run.returncode != 0:
         raise SystemExit(f"driver crashed:\n{run.stderr.decode(errors='replace')}")
     stdout = run.stdout.decode("ascii")
-    parsed = fd.parse_fortran_run(stdout, args.algo, K=K, B=B)
+    parsed = fd.parse_fortran_run(stdout, args.algo, K=K, B=B,
+                                 allow_negative_input=authority.get("allows_negative_input", False))
     if parsed.fixture_sha256 != fixture.fixture_sha256(authority):
         raise SystemExit("Fortran FIXIN differs from the shared raw-bit authority")
     if parsed.parameter_sha256 != fixture.parameter_sha256(authority):

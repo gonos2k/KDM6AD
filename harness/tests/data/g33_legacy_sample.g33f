@@ -1,4 +1,5 @@
-G33F BEGIN v5 legacy
+G33F BEGIN v6 legacy
+G33F ENTRY kdm6_wrapper_input_v1
 G33F FIXIN th 1 3 f32 43904000
 G33F FIXIN th 2 3 f32 43854000
 G33F FIXIN th 3 3 f32 43708000
@@ -212,6 +213,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 1 3 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 1 3 f32 00000000
 G33F STAGE 1 - outer_pre_sed 0 nccn 1 3 f32 4D66F96E
 G33F STAGE 1 - outer_pre_sed 0 brs 1 3 f32 00000000
+G33F STAGE 1 - outer_pre_sed 0 p 1 3 f32 47AFC800
 G33F STAGE 1 - outer_pre_sed 0 rho 1 3 f32 3F570A3D
 G33F STAGE 1 - outer_pre_sed 0 delz 1 3 f32 460B1000
 G33F STAGE 1 - outer_pre_sed 0 qr 1 2 f32 37FF0381
@@ -226,6 +228,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 1 2 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 1 2 f32 00000000
 G33F STAGE 1 - outer_pre_sed 0 nccn 1 2 f32 4CC76E66
 G33F STAGE 1 - outer_pre_sed 0 brs 1 2 f32 00000000
+G33F STAGE 1 - outer_pre_sed 0 p 1 2 f32 47A7F800
 G33F STAGE 1 - outer_pre_sed 0 rho 1 2 f32 3F4F5C29
 G33F STAGE 1 - outer_pre_sed 0 delz 1 2 f32 46066000
 G33F STAGE 1 - outer_pre_sed 0 qr 1 1 f32 3813A3B6
@@ -240,6 +243,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 1 1 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 1 1 f32 00000000
 G33F STAGE 1 - outer_pre_sed 0 nccn 1 1 f32 4CBF0C9C
 G33F STAGE 1 - outer_pre_sed 0 brs 1 1 f32 00000000
+G33F STAGE 1 - outer_pre_sed 0 p 1 1 f32 47A02800
 G33F STAGE 1 - outer_pre_sed 0 rho 1 1 f32 3F47AE14
 G33F STAGE 1 - outer_pre_sed 0 delz 1 1 f32 4601B000
 G33F STAGE 1 - outer_pre_sed 0 qr 1 0 f32 3827C5AC
@@ -254,6 +258,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 1 0 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 1 0 f32 00000000
 G33F STAGE 1 - outer_pre_sed 0 nccn 1 0 f32 4CBEBF68
 G33F STAGE 1 - outer_pre_sed 0 brs 1 0 f32 00000000
+G33F STAGE 1 - outer_pre_sed 0 p 1 0 f32 47985800
 G33F STAGE 1 - outer_pre_sed 0 rho 1 0 f32 3F400000
 G33F STAGE 1 - outer_pre_sed 0 delz 1 0 f32 45FA0000
 G33F STAGE 1 - outer_pre_sed 0 qr 2 3 f32 3756BF95
@@ -268,6 +273,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 2 3 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 2 3 f32 46480000
 G33F STAGE 1 - outer_pre_sed 0 nccn 2 3 f32 4D61A838
 G33F STAGE 1 - outer_pre_sed 0 brs 2 3 f32 31DBE6FF
+G33F STAGE 1 - outer_pre_sed 0 p 2 3 f32 47AFC800
 G33F STAGE 1 - outer_pre_sed 0 rho 2 3 f32 3F6B851F
 G33F STAGE 1 - outer_pre_sed 0 delz 2 3 f32 460CA000
 G33F STAGE 1 - outer_pre_sed 0 qr 2 2 f32 377F0381
@@ -282,6 +288,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 2 2 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 2 2 f32 466D8000
 G33F STAGE 1 - outer_pre_sed 0 nccn 2 2 f32 4CC6C33C
 G33F STAGE 1 - outer_pre_sed 0 brs 2 2 f32 32029127
+G33F STAGE 1 - outer_pre_sed 0 p 2 2 f32 47A7F800
 G33F STAGE 1 - outer_pre_sed 0 rho 2 2 f32 3F63D70A
 G33F STAGE 1 - outer_pre_sed 0 delz 2 2 f32 4607F000
 G33F STAGE 1 - outer_pre_sed 0 qr 2 1 f32 3793A3B6
@@ -296,6 +303,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 2 1 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 2 1 f32 46898000
 G33F STAGE 1 - outer_pre_sed 0 nccn 2 1 f32 4CBF0382
 G33F STAGE 1 - outer_pre_sed 0 brs 2 1 f32 32172ECF
+G33F STAGE 1 - outer_pre_sed 0 p 2 1 f32 47A02800
 G33F STAGE 1 - outer_pre_sed 0 rho 2 1 f32 3F5C28F6
 G33F STAGE 1 - outer_pre_sed 0 delz 2 1 f32 46034000
 G33F STAGE 1 - outer_pre_sed 0 qr 2 0 f32 37A7C5AC
@@ -310,6 +318,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 2 0 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 2 0 f32 469C4000
 G33F STAGE 1 - outer_pre_sed 0 nccn 2 0 f32 4CBEBEEB
 G33F STAGE 1 - outer_pre_sed 0 brs 2 0 f32 322BCC77
+G33F STAGE 1 - outer_pre_sed 0 p 2 0 f32 47985800
 G33F STAGE 1 - outer_pre_sed 0 rho 2 0 f32 3F547AE1
 G33F STAGE 1 - outer_pre_sed 0 delz 2 0 f32 45FD2000
 G33F STAGE 1 - outer_pre_sed 0 qr 3 3 f32 3656BF95
@@ -324,6 +333,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 3 3 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 3 3 f32 46FA0000
 G33F STAGE 1 - outer_pre_sed 0 nccn 3 3 f32 4D5C8C60
 G33F STAGE 1 - outer_pre_sed 0 brs 3 3 f32 31DBE6FF
+G33F STAGE 1 - outer_pre_sed 0 p 3 3 f32 47AFC800
 G33F STAGE 1 - outer_pre_sed 0 rho 3 3 f32 3F800000
 G33F STAGE 1 - outer_pre_sed 0 delz 3 3 f32 460E3000
 G33F STAGE 1 - outer_pre_sed 0 qr 3 2 f32 367F0381
@@ -338,6 +348,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 3 2 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 3 2 f32 47147000
 G33F STAGE 1 - outer_pre_sed 0 nccn 3 2 f32 4CC6253C
 G33F STAGE 1 - outer_pre_sed 0 brs 3 2 f32 32029127
+G33F STAGE 1 - outer_pre_sed 0 p 3 2 f32 47A7F800
 G33F STAGE 1 - outer_pre_sed 0 rho 3 2 f32 3F7851EC
 G33F STAGE 1 - outer_pre_sed 0 delz 3 2 f32 46098000
 G33F STAGE 1 - outer_pre_sed 0 qr 3 1 f32 3693A3B6
@@ -352,6 +363,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 3 1 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 3 1 f32 472BE000
 G33F STAGE 1 - outer_pre_sed 0 nccn 3 1 f32 4CBEFB70
 G33F STAGE 1 - outer_pre_sed 0 brs 3 1 f32 32172ECF
+G33F STAGE 1 - outer_pre_sed 0 p 3 1 f32 47A02800
 G33F STAGE 1 - outer_pre_sed 0 rho 3 1 f32 3F70A3D7
 G33F STAGE 1 - outer_pre_sed 0 delz 3 1 f32 4604D000
 G33F STAGE 1 - outer_pre_sed 0 qr 3 0 f32 36A7C5AC
@@ -366,6 +378,7 @@ G33F STAGE 1 - outer_pre_sed 0 nc 3 0 f32 4CBEBC20
 G33F STAGE 1 - outer_pre_sed 0 ni 3 0 f32 47435000
 G33F STAGE 1 - outer_pre_sed 0 nccn 3 0 f32 4CBEBE82
 G33F STAGE 1 - outer_pre_sed 0 brs 3 0 f32 322BCC77
+G33F STAGE 1 - outer_pre_sed 0 p 3 0 f32 47985800
 G33F STAGE 1 - outer_pre_sed 0 rho 3 0 f32 3F68F5C3
 G33F STAGE 1 - outer_pre_sed 0 delz 3 0 f32 46002000
 G33F STAGE 1 main substep_pre 1 mstep 1 -1 i32 00000001
@@ -1493,5 +1506,5 @@ G33F PREC 2 3 f32 40C4A07E
 G33F PREC 3 1 f32 00000000
 G33F PREC 3 2 f32 39193783
 G33F PREC 3 3 f32 3921838C
-G33F END v5 legacy
+G33F END v6 legacy
 FORTRAN DRIVER OK (legacy, fixture=arithmetic_synthetic_v1)

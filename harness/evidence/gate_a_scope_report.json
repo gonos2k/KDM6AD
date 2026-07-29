@@ -1,7 +1,8 @@
 {
   "checker": "check_cons_fortran_scope",
   "schema_version": 1,
-  "checker_commit": "0acedb589d6355a120c526f145ef7d53e5450344-dirty",
+  "checker_commit": "a8c025bc4eebf695296d4f16909141b84783086c",
+  "checker_source_sha256": "2d2dea356422987099b4a8449f55c9c4d62fd949b7ab0f4e527990aa39753f8f",
   "scope_manifest_sha256": "a7b6e626de5d644b1b0a351ee55916940d8080b0a87961ca913ffb3d88b19948",
   "legacy": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
   "cons": "host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F",

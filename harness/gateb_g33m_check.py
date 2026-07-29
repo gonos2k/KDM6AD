@@ -49,6 +49,7 @@ sys.path.insert(0, str(_HERE / "g33_fortran"))
 import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
+import g33_fourcase_load as fcl  # noqa: E402
 import g33_normalize as nz              # noqa: E402
 import g33_dump as gd                   # noqa: E402
 
@@ -65,24 +66,6 @@ EXIT_USAGE = 4
 EXIT_INTERNAL = 6
 
 
-def _load_fortran(bundle: Path, algorithm: str, *, manifest_sha, commit,
-                  fixture_id, fixture_sha, anchored: bool) -> tuple:
-    """Re-verify one Fortran A/B/C bundle, then normalize its instrumented lane.
-
-    Returns (VerifiedFortranLeg, normalized run). The leg is what carries the
-    attestation state; the normalized run is what the comparator sees."""
-    leg = fbio.verify_fortran_bundle(
-        bundle, algorithm, expected_manifest_sha256=manifest_sha,
-        expected_repo_commit=commit, expected_fixture_id=fixture_id,
-        expected_fixture_manifest_sha256=fixture_sha)
-    if anchored and not leg.verdict_ready:
-        raise fbio.FortranBundleError(
-            f"{algorithm} Fortran leg is not verdict_ready "
-            f"(bundle_verified={leg.bundle_verified} "
-            f"manifest={leg.external_manifest_attested} "
-            f"commit={leg.source_commit_attested} "
-            f"fixture={leg.fixture_attested} clean={leg.repo_clean})")
-    return leg, nz.from_fortran_run(leg.run)
 
 
 def main(argv=None) -> int:
@@ -143,9 +126,6 @@ def main(argv=None) -> int:
               "(or --allow-unattested for debugging)", file=sys.stderr)
         return EXIT_USAGE
     fixture_id = a.expected_fixture_id or bio.gfx.DEFAULT_FIXTURE_ID
-    # (B, K) are a PROPERTY of the fixture. Taken as separate arguments they could
-    # disagree with the fixture actually named — invisible while every fixture
-    # happens to be 3x4.
     try:
         _, authority = bio.gfx.load_fixture(fixture_id)
     except (bio.gfx.UnknownFixture, ValueError) as e:
@@ -157,123 +137,51 @@ def main(argv=None) -> int:
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
                          "fortran_legacy": str(a.fortran_legacy),
                          "fortran_conservative": str(a.fortran_conservative),
-                         "expected_fixture_id": fixture_id, "B": B, "K": K},
-              # the identity actually compared, so a later reader can re-derive it
-              # without the fixture file that produced this run
-              "fixture_identity": {
-                  "fixture_id": authority["fixture_id"],
-                  "fixture_manifest_sha256": bio.gfx.manifest_sha256(authority),
-                  "fixture_sha256": bio.gfx.fixture_sha256(authority),
-                  "parameter_sha256": bio.gfx.parameter_sha256(authority),
-                  "fortran_parameter_sha256":
-                      bio.gfx.fortran_parameter_sha256(authority)}}
+                         "expected_fixture_id": fixture_id, "B": B, "K": K}}
+    # ONE loader, shared with the evidence-artifact generator. Two loaders is how the
+    # generator came to read the C++ bundle unanchored, parse Fortran stdout directly,
+    # and compute its own first divergence from stages alone (owner P0-7).
     try:
-        cpp_bundle = bio.verify_cpp_bundle(
-            a.cpp_bundle, expected_manifest_sha256=a.expected_manifest_sha256,
+        loaded = fcl.load_verified_fourcase(
+            cpp_bundle=a.cpp_bundle, fortran_legacy=a.fortran_legacy,
+            fortran_conservative=a.fortran_conservative,
+            expected_manifest_sha256=a.expected_manifest_sha256,
             expected_repo_commit=a.expected_repo_commit,
-            expected_fixture_id=fixture_id,
-            expected_fixture_manifest_sha256=a.expected_fixture_manifest_sha256)
-        cpp_legs = cpp_bundle["algorithms"]
-        legs = {
-            "legacy_cpp": nz.from_cpp_evidence(cpp_legs["legacy"],
-                                               require_verdict_ready=anchored),
-            "conservative_cpp": nz.from_cpp_evidence(cpp_legs["conservative"],
-                                                     require_verdict_ready=anchored),
-        }
-        fortran_legs = {}
-        # `bundle_dir`, not `bundle`: this loop used to rebind the name the C++
-        # bundle dict was loaded under, so any later read of it got a Path.
-        for algo, bundle_dir, sha in (
-                ("legacy", a.fortran_legacy,
-                 a.expected_fortran_legacy_manifest_sha256),
-                ("conservative", a.fortran_conservative,
-                 a.expected_fortran_conservative_manifest_sha256)):
-            fortran_legs[algo], legs[f"{algo}_fortran"] = _load_fortran(
-                bundle_dir, algo, manifest_sha=sha,
-                commit=a.expected_repo_commit, fixture_id=a.expected_fixture_id,
-                fixture_sha=a.expected_fixture_manifest_sha256, anchored=anchored)
-        # The two Fortran CONTROL legs must come from one TOOLCHAIN. Built by
-        # different compilers or from different harness/host sources they are not a
-        # controlled pair, and nothing in the four-way problem identity shows it.
-        #
-        # Compared at toolchain() and not on the whole BuildIdentity: legacy compiles
-        # module_mp_kdm6.F and conservative module_mp_kdm6_cons.F, so their module
-        # hashes MUST differ — that difference is the comparison. The full identity is
-        # still enforced WITHIN each bundle's A/B/C lanes, where it does hold.
-        # WHICH conservative module, not just "a different one". Without this the
-        # toolchain gate accepts any conservative source at all, since excluding the
-        # variant module from the comparison is what lets the two legs differ there.
-        # Gate A is a DECISION PREREQUISITE, not an option. Excluding the variant
-        # module from the toolchain comparison is what lets the two legs differ
-        # there; authorizing which conservative source may differ is a separate
-        # fact, and a decision that skips it has not established it.
-        gate_a = None
-        if a.gate_a_scope_report is not None:
-            got = hashlib.sha256(a.gate_a_scope_report.read_bytes()).hexdigest()
-            if a.expected_gate_a_scope_report_sha256 not in (None, got):
-                raise fbio.FortranBundleError(
-                    f"Gate A report sha256 {got} != external anchor "
-                    f"{a.expected_gate_a_scope_report_sha256}")
-            if anchored and a.expected_gate_a_scope_report_sha256 is None:
-                raise fbio.FortranBundleError(
-                    "a decision-grade run needs --expected-gate-a-scope-report-"
-                    "sha256: a report checked only against itself attests nothing")
-            gate_a = bio._load_json(a.gate_a_scope_report, "Gate A scope report")
-            fbio.authorized_by_gate_a(gate_a, fortran_legs)
-        elif anchored:
-            raise fbio.FortranBundleError(
-                "a decision-grade run needs --gate-a-scope-report: allowing the two "
-                "legs to compile different modules is not authorizing one")
-        builds = {algo: leg.build for algo, leg in fortran_legs.items()}
-        if len({b.toolchain() for b in builds.values()}) != 1:
-            raise fbio.FortranBundleError(
-                "the Fortran legs were not built from one toolchain: "
-                + ", ".join(f"{algo}={b.compiler_version}/{b.compiler_binary_sha256[:12]}"
-                            for algo, b in sorted(builds.items())))
-    except (bio.BundleError, fbio.FortranBundleError, nz.NormalizeError,
-            cmp.StructuralError, gd.G33Corruption, bio.gfx.UnknownFixture,
-            OSError, ValueError, KeyError) as e:
-        # EVIDENCE errors only. A blanket `except Exception` also turned a
-        # TypeError or an AttributeError — a defect in this harness — into
-        # INVALID_EVIDENCE, which reads as "the bundle is bad" and sends the reader
-        # to look at the wrong thing. Anything else propagates and exits 6.
+            expected_fixture_id=a.expected_fixture_id,
+            expected_fixture_manifest_sha256=a.expected_fixture_manifest_sha256,
+            expected_fortran_legacy_manifest_sha256=(
+                a.expected_fortran_legacy_manifest_sha256),
+            expected_fortran_conservative_manifest_sha256=(
+                a.expected_fortran_conservative_manifest_sha256),
+            gate_a_scope_report=a.gate_a_scope_report,
+            expected_gate_a_scope_report_sha256=(
+                a.expected_gate_a_scope_report_sha256))
+    except fcl.EVIDENCE_ERRORS as e:
+        # EVIDENCE errors only. A blanket `except Exception` also turned a defect in
+        # this harness into INVALID_EVIDENCE, which reads as "the bundle is bad" and
+        # sends the reader to look at the wrong thing. Anything else exits 6.
+        result["fixture_identity"] = {
+            "fixture_id": authority["fixture_id"],
+            "fixture_manifest_sha256": bio.gfx.manifest_sha256(authority),
+            "fixture_sha256": bio.gfx.fixture_sha256(authority),
+            "parameter_sha256": bio.gfx.parameter_sha256(authority),
+            "fortran_parameter_sha256": bio.gfx.fortran_parameter_sha256(authority)}
         result.update(verdict="INVALID_EVIDENCE", reason=f"{type(e).__name__}: {e}")
         _write(a.out, result, force=a.force)
         return EXIT["INVALID_EVIDENCE"]
+    result["fixture_identity"] = loaded.fixture_identity
+    cpp_legs = loaded.cpp_legs
 
     # `attested` is what the LEGS reported, not what the caller asked for. Four legs
     # or the word overstates the check: the C++ side was externally anchored long
     # before the Fortran side had a bundle to anchor.
-    per_leg = {f"{algo}_cpp": cpp_legs[algo] for algo in ("legacy", "conservative")}
-    per_leg.update({f"{algo}_fortran": leg for algo, leg in fortran_legs.items()})
-    result["attestation"] = {
-        name: {"verdict_ready": bool(leg.verdict_ready),
-               "external_manifest": bool(leg.external_manifest_attested),
-               "source_commit": bool(leg.source_commit_attested),
-               "fixture": bool(leg.fixture_attested)}
-        for name, leg in sorted(per_leg.items())}
-    result["attested"] = all(leg.verdict_ready for leg in per_leg.values())
-
+    result["attestation"] = loaded.attestation
+    result["attested"] = loaded.attested
     # The decision API takes a TYPE, not four dicts: normalized runs carry no
     # attestation, and a verdict built from them would describe evidence nobody
-    # anchored. An unattested debug run goes down a path that cannot promote.
-    if anchored:
-        # The factory normalizes each VERIFIED ARTIFACT itself. Handing it the runs
-        # this CLI already parsed would re-open exactly the hole P0-4 describes: the
-        # artifact carries the attestation, the dict carries the numbers, and nothing
-        # ties them together.
-        evidence = cmp.VerifiedFourCase.of(
-            legacy_fortran=fortran_legs["legacy"],
-            legacy_cpp=cpp_legs["legacy"],
-            conservative_fortran=fortran_legs["conservative"],
-            conservative_cpp=cpp_legs["conservative"],
-            gate_a_report=gate_a, require_source_authorization=True)
-        verdict = cmp.adjudicate_verified(evidence)
-    else:
-        verdict = cmp.adjudicate_unattested(
-            legs["legacy_fortran"], legs["legacy_cpp"],
-            legs["conservative_fortran"], legs["conservative_cpp"])
-    result.update(verdict)
+    # anchored. An unattested debug load has no `evidence`, so it goes down a path
+    # that cannot promote.
+    result.update(loaded.verdict())
     result["scope"] = {
         "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ "
                 "difference did "

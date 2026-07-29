@@ -65,13 +65,15 @@ PASS_MECHANISM = "PASS_MECHANISM"
 UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
-_STAGES = ("outer_pre_sed", "substep_pre", "surface", "final_output",
+_STAGES = ("kernel_call_input", "outer_pre_sed", "substep_pre", "surface",
+           "final_output",
            "outer_post_sed", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
-_STAGE_MAJOR = {"outer_pre_sed": 0, "substep_pre": 1, "surface": 2,
-                "outer_post_sed": 3, "outer_post_micro": 4, "final_output": 5}
+_STAGE_MAJOR = {"kernel_call_input": 0, "outer_pre_sed": 1, "substep_pre": 2,
+                "surface": 3, "outer_post_sed": 4, "outer_post_micro": 5,
+                "final_output": 6}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -239,11 +241,16 @@ class SedimentationIdentity:
     parameter_sha256: str
     B: int
     K: int
+    #: The comparison boundary. A wrapper leg and a kernel leg solve different
+    #: problems — the wrapper additionally rewrites nccn from a height profile the
+    #: C++ port does not have — so this belongs in the identity, not beside it.
+    entry_boundary: str = schema.WRAPPER_INPUT
 
     @classmethod
     def of(cls, problem: dict) -> "SedimentationIdentity":
         return cls(problem["fixture_sha256"], problem["parameter_sha256"],
-                   problem["B"], problem["K"])
+                   problem["B"], problem["K"],
+                   problem.get("entry_boundary", schema.WRAPPER_INPUT))
 
 
 class StructuralError(Exception):
@@ -315,7 +322,12 @@ def _events(run) -> list[Event]:
             if loop < 1 or chain not in _CHAIN_RANK:
                 raise StructuralError(f"bad op loop/chain {loop}/{chain!r}")
             out.append(Event(
-                order=(loop, 1, _CHAIN_RANK[chain], n, 1, k, sr, oo, fo, col),
+                # An op belongs to its substep, so it shares substep_pre's major and
+                # sorts after it on the 5th field. Hardcoding the major here meant
+                # renumbering _STAGE_MAJOR silently reordered ops relative to the
+                # substep gate that scopes them.
+                order=(loop, _STAGE_MAJOR["substep_pre"], _CHAIN_RANK[chain], n, 1,
+                       k, sr, oo, fo, col),
                 phase="op",
                 identity=("op", loop, chain, n, col, k, role, sp, op_id, fld, dt),
                 shared_key=("op", loop, chain, n, col, k, role, sp, spec.tag, dt),
@@ -329,7 +341,7 @@ def _events(run) -> list[Event]:
             loop, chain = _int(s["loop"], "loop"), s["chain"]
             # final_output is the whole-step result: loop 0 marks "not loop-scoped",
             # so its identity does not depend on how many loops the run took.
-            lo_min = 0 if stage == "final_output" else 1
+            lo_min = 0 if stage in ("final_output", "kernel_call_input") else 1
             if loop < lo_min or chain not in _CHAIN_RANK:
                 raise StructuralError(f"bad stage loop/chain {loop}/{chain!r}")
             if not (1 <= col <= B):
@@ -514,6 +526,18 @@ def classify(legacy: Divergence, conservative: Divergence):
         if d.kind == mech.CAUSAL_CARRY:
             return "INVALID_EVIDENCE", (f"{name} pair: causal carry {d.tag} "
                                         f"{d.identity} differs while its source matched")
+    # 2b. THE PREMISE, not a finding (owner P0-3). The same-problem preflight compares
+    # fixture and parameter HASHES — what the two legs were configured with. It cannot
+    # see what actually reached the kernel, which is the thing the wrapper rewrites.
+    # A difference here says the two backends were handed different problems, so every
+    # downstream comparison is a category error; it is an adapter or fixture defect,
+    # never evidence about conservative-only arithmetic.
+    for name, d in pairs:
+        if d.phase == "kernel_call_input":
+            return "INVALID_EVIDENCE", (
+                f"{name} legs entered kdm62D with different arguments at {d.identity} "
+                f"— the comparison premise fails before any physics runs; this is an "
+                f"adapter/fixture defect, not a mechanism finding")
     for name, d in pairs:                         # 3. upstream (pre-sed)
         if d.phase in _PRESED:
             return "INCONCLUSIVE", f"{name} divergence upstream at {d.phase} {d.identity}"

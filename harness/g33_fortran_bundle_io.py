@@ -77,6 +77,24 @@ EXPECTED_HARNESS_SOURCES = frozenset((
 #: between the two control legs.
 VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 
+#: The ONLY G33F protocol version a G3.3-M verdict may rest on.
+#:
+#: The parser deliberately accepts every past version — migration, and re-verifying
+#: evidence produced before a tier existed, both need it — but the decision path must
+#: not. Each bump closed a specific blind spot, and a stream from before it cannot
+#: answer the question the gate asks:
+#:
+#:   v4  the bridge omits nc/ni/nccn/brs, so "the sedimentation result matched" is a
+#:       claim about eight of twelve carried members. dt=300 is the worked example:
+#:       at v4 the first difference read as post-microphysics; at v5 it moved to
+#:       nccn, before sedimentation ran at all.
+#:   v5  no kernel-call arguments and no `p`. outer_pre_sed is recorded AFTER the
+#:       entry clamp, so it cannot separate "both legs were handed the same problem"
+#:       from "the clamp erased the difference" (owner P0-3/P0-4).
+#:
+#: A pre-v6 bundle with valid external anchors would otherwise reach verdict_ready.
+DECISION_PROTOCOL_VERSION = 6
+
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a
 #: different answer — and comparing whole command strings instead would break on
@@ -197,11 +215,21 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
             "the Gate A scope report does not pass: %r" % (report.get("failures"),))
     # WHAT produced this verdict. Without these the report says a checker somewhere
     # approved something, which any hand-written JSON also says.
-    for field in ("schema_version", "checker_commit", "scope_manifest_sha256"):
+    for field in ("schema_version", "checker_commit", "checker_source_sha256",
+                  "scope_manifest_sha256"):
         if not report.get(field):
             raise FortranBundleError(
                 "the Gate A report lacks %s — it records a verdict but not what "
                 "produced it, which a self-consistent forgery also does" % field)
+    # A DIRTY checker is not a checker anyone reviewed. `checker_commit` names a
+    # revision, and on a dirty tree the file at that revision is not the file that
+    # ran — so the commit identifies a checker whose behaviour is unknown, and the
+    # authorization it grants cannot be reproduced (owner P0-8).
+    if str(report["checker_commit"]).endswith("-dirty"):
+        raise FortranBundleError(
+            "the Gate A report was produced by a DIRTY checker tree (%s): regenerate "
+            "it from a clean commit, or the authorization names a revision that is "
+            "not what ran" % report["checker_commit"])
     pinned = report.get("sha256") or dict()
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
@@ -297,7 +325,9 @@ class VerifiedFortranLeg:
     def verdict_ready(self) -> bool:
         return (self.bundle_verified and self.external_manifest_attested
                 and self.source_commit_attested and self.fixture_attested
-                and self.repo_clean)
+                and self.repo_clean
+                and getattr(self.run, "protocol_version", 0)
+                == DECISION_PROTOCOL_VERSION)
 
 
 def _no_dup_keys(pairs):
@@ -504,7 +534,11 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
         try:
             parsed[lane] = fd.parse_fortran_run(
                 data.decode("ascii", "strict"), algorithm, K, B,
-                evidence_mode="instrumented" if lane == "C" else "noninstrumented")
+                evidence_mode="instrumented" if lane == "C" else "noninstrumented",
+                # the FIXTURE's declaration, read from the authority this verifier
+                # loads itself — never from the bundle, which would let a stream
+                # authorize its own out-of-domain input
+                allow_negative_input=authority.get("allows_negative_input", False))
         except UnicodeDecodeError as e:
             raise FortranBundleError(f"lane {lane} is not ASCII: {e}") from None
         except Exception as e:                  # every reader here is fail-closed
@@ -536,6 +570,17 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     if declared_mstep and declared_mstep != actual_mstep:
         raise FortranBundleError(
             f"manifest mstep_per_column != the C lane's own records")
+    # Same rule for the two claims that decide ADMISSIBILITY rather than content.
+    # A reader picks a bundle by its manifest — "this is v5 kernel evidence" — and a
+    # manifest that says so over a v4 wrapper stream would route the wrong evidence
+    # into the decision path. The stream's own banner is the authority; the manifest
+    # is a claim about it, and the two must agree.
+    for key, actual in (("g33f_protocol_version", run.protocol_version),
+                        ("entry_boundary", run.entry_boundary)):
+        declared = manifest.get(key)
+        if declared is not None and declared != actual:
+            raise FortranBundleError(
+                f"manifest {key} {declared!r} != {actual!r} in the C lane's stream")
     try:
         sem.verify_semantics(run)
         fd.verify_offline_replay(run)

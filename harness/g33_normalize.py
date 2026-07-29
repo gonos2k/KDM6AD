@@ -41,7 +41,8 @@ import g33_derived as dv      # noqa: E402
 #: snapshot: both backends emit them, so a divergence in the carry between outer loops
 #: is a comparator finding rather than something only a human reading two dumps could
 #: notice (owner P0-C1).
-_COMPARATOR_STAGES = ("outer_pre_sed", "substep_pre", "surface",
+_COMPARATOR_STAGES = ("kernel_call_input", "outer_pre_sed", "substep_pre",
+                      "surface",
                       "outer_post_sed", "outer_post_micro")
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
@@ -133,7 +134,13 @@ def from_fortran_run(run) -> dict:
     # two Fortran legs instead of against C++.
     problem = {"fixture_sha256": run.fixture_sha256,
                "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
-               "local_parameter_sha256": run.local_parameter_sha256}
+               "local_parameter_sha256": run.local_parameter_sha256,
+               # WHICH boundary. The wrapper path additionally applies kdm6's
+               # height-dependent CCN profile, which the C++ port has no counterpart
+               # for — so a wrapper leg and a kernel leg are answers to different
+               # questions, and comparing them is a category error the same way two
+               # fixtures would be (owner: kernel gate vs wrapper contract).
+               "entry_boundary": getattr(run, "entry_boundary", schema.WRAPPER_INPUT)}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 
@@ -270,7 +277,14 @@ def from_cpp_evidence(evidence, *, require_verdict_ready: bool = True) -> dict:
                            "field": f"{family}_precip_cumulative",
                            "dtype": "f32", "bits": bits})
 
-    problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K)
+    # The C++ port IS the kernel: it implements kdm62D and has no counterpart to
+    # kdm6's preprocessing, so `kernel` is a structural fact about the port rather
+    # than a property of this run. Declaring it is what makes the four-way boundary
+    # check load-bearing — with C++ silent, a Fortran wrapper leg and a Fortran
+    # kernel leg would both compare equal against it, which is the mismatch that
+    # produced the nccn divergence in the first place.
+    problem = dict(getattr(evidence, "problem", None) or {}, B=B, K=K,
+                   entry_boundary=schema.KERNEL_ENTRY)
     # (family, loop, col) -> the increment the producer actually emitted for that loop
     per_loop = {(fld.replace("_precip_cumulative", ""), loop, col): bits
                 for (fld, col), by_loop in increments.items()

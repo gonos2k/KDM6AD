@@ -50,14 +50,20 @@ def _git(*a):
                           text=True, check=False).stdout.strip()
 
 
-def _build_run(sub, algo, flags):
+def _build_run(sub, algo, flags, entry="wrapper"):
     r = subprocess.run(["bash", os.path.join(HERE, "fortran_build.sh"), sub,
                         f"--algo={algo}", *flags], cwd=ROOT,
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"build failed ({flags}):\n{r.stdout}\n{r.stderr}")
     exe = os.path.join(sub, "g33_fortran_driver")
-    run = subprocess.run([exe], capture_output=True)
+    # The boundary is passed EXPLICITLY, never inherited. A bundle whose comparison
+    # boundary depended on the ambient environment would be reproducible only by
+    # someone who happened to have the same shell.
+    env = {k: v for k, v in os.environ.items() if k != "G33_ENTRY"}
+    if entry == "kernel":
+        env["G33_ENTRY"] = "kernel"
+    run = subprocess.run([exe], capture_output=True, env=env)
     if run.returncode != 0:
         raise SystemExit(f"driver crashed ({flags}):\n{run.stderr.decode('replace')}")
     return exe, run.stdout, run.stderr
@@ -75,6 +81,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--algo", required=True, choices=["legacy", "conservative"])
     ap.add_argument("--out", required=True, help="fresh output directory")
+    ap.add_argument("--entry", default="wrapper", choices=["wrapper", "kernel"],
+                    help="which comparison boundary. `kernel` calls kdm62D directly, "
+                         "where the C++ port enters; `wrapper` additionally runs "
+                         "kdm6's preprocessing, including the height-dependent CCN "
+                         "profile the port has no counterpart for. The two are "
+                         "evidence for different questions.")
     ap.add_argument("--fixture-id", default=fixture.DEFAULT_FIXTURE_ID,
                     choices=sorted(fixture.FIXTURES),
                     help="which fixture authority this run uses")
@@ -89,7 +101,7 @@ def main():
     out = {}
     for name, flags in cases.items():
         sub = os.path.join(args.out, name)
-        exe, so, se = _build_run(sub, args.algo, flags)
+        exe, so, se = _build_run(sub, args.algo, flags, entry=args.entry)
         _write(os.path.join(sub, "stdout.g33f"), so)
         _write(os.path.join(sub, "stderr.txt"), se)
         out[name] = {"exe": exe, "stdout": so, "stderr": se}
@@ -100,7 +112,8 @@ def main():
     # non-invasiveness result.
     runs = {n: fd.parse_fortran_run(
         out[n]["stdout"].decode(), args.algo, K=K, B=B,
-        evidence_mode="instrumented" if n == "C" else "noninstrumented")
+        evidence_mode="instrumented" if n == "C" else "noninstrumented",
+        allow_negative_input=authority.get("allows_negative_input", False))
         for n in cases}
     abc_equal = (runs["A"].state == runs["B"].state == runs["C"].state
                  and runs["A"].precip == runs["B"].precip == runs["C"].precip)
@@ -150,6 +163,11 @@ def main():
     manifest = {
         "schema_version": 2,
         "algorithm": args.algo,
+        # from the PARSED STREAM, not from the flag: the flag is a mode word
+        # (`kernel`) and the stream declares a versioned contract id, so
+        # recording the flag made the manifest disagree with its own evidence.
+        "entry_boundary": parsed.entry_boundary,
+        "g33f_protocol_version": parsed.protocol_version,
         "repo_commit": _git("rev-parse", "HEAD"),
         "repo_dirty": bool(_git("status", "--porcelain")),
         "fixture_id": authority["fixture_id"],

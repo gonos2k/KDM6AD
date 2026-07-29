@@ -128,6 +128,10 @@ def main() -> int:
         # requires these, so a decision cannot rest on an unattributable approval.
         "schema_version": 1,
         "checker_commit": _git_head(),
+        # The checker's own bytes. `checker_commit` names a revision, which is only
+        # meaningful if the file at that revision is the file that ran — and on a
+        # dirty tree it is not. Anchoring both means a reader can tell which.
+        "checker_source_sha256": sha256_file(Path(__file__)),
         "scope_manifest_sha256": sha256_file(args.manifest),
         "legacy": str(args.legacy),
         "cons": str(args.cons),

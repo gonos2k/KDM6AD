@@ -470,6 +470,45 @@ FnResult kdm6_fn(const State& state,
     // loop. Missing these left dynamics-negative qc (~-1e-19) alive into satadj,
     // blocking the complete-evap NC->NCCN transfer Fortran fires at qc==0
     // (pcond==-qc/dt -> 0.0==-0.0 true) — the step-46 nn divergence seed.
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // WHAT THE KERNEL WAS ACTUALLY CALLED WITH — before the entry clamp below
+        // (owner P0-3). outer_pre_sed is recorded after it, so on its own it cannot
+        // separate "both backends were handed the same problem" from "they were
+        // handed different problems and the clamp erased the difference". Emitting
+        // the same field set means the difference between the two snapshots IS the
+        // clamp, readable without a third stage.
+        //
+        // Loop 0: a kernel call happens once however many sub-cycles it takes, and
+        // 0 sorts before loop 1 the way final_output's 0 sorts after the last loop.
+        // `cur` is still in WRF K-order here (the flip happens per sub-cycle), so it
+        // is flipped for the record — the dump is canonically top-first.
+        ::kdm6::g33::ScopedDumpContext g33_ctx(
+            0, rt_g33ovl::g33_env("KDM6_G33_CASE_ID"),
+            rt_g33ovl::g33_env("KDM6_G33_PAIR_ID"),
+            physics.variant == PhysicsVariant::ConservativeInterface
+                ? "conservative" : "legacy");
+        rt_g33ovl::Outer g33("kernel_call_input", flip_k(cur.qr));
+        if (g33.on()) {
+            G33_REC(g33, "kernel_call_input", "qr",   flip_k(cur.qr));
+            G33_REC(g33, "kernel_call_input", "nr",   flip_k(cur.nr));
+            G33_REC(g33, "kernel_call_input", "qv",   flip_k(cur.qv));
+            G33_REC(g33, "kernel_call_input", "t",    flip_k(cur.t));
+            G33_REC(g33, "kernel_call_input", "qc",   flip_k(cur.qc));
+            G33_REC(g33, "kernel_call_input", "qi",   flip_k(cur.qi));
+            G33_REC(g33, "kernel_call_input", "qs",   flip_k(cur.qs));
+            G33_REC(g33, "kernel_call_input", "qg",   flip_k(cur.qg));
+            G33_REC(g33, "kernel_call_input", "nc",   flip_k(cur.nc));
+            G33_REC(g33, "kernel_call_input", "ni",   flip_k(cur.ni));
+            G33_REC(g33, "kernel_call_input", "nccn", flip_k(cur.nccn));
+            G33_REC(g33, "kernel_call_input", "brs",  flip_k(cur.brs));
+            G33_REC(g33, "kernel_call_input", "p",    cf_pyc.p);
+            G33_REC(g33, "kernel_call_input", "rho",  cf_pyc.den);
+            G33_REC(g33, "kernel_call_input", "delz", cf_pyc.delz);
+        }
+        g33.finalize();
+    }
+#endif
     cur.qc = torch::clamp(cur.qc, /*min=*/0.0);            // F:824
     cur.qr = torch::clamp(cur.qr, /*min=*/0.0);            // F:825
     cur.qi = torch::clamp(cur.qi, /*min=*/0.0);            // F:826
@@ -525,6 +564,9 @@ FnResult kdm6_fn(const State& state,
                 G33_REC(g33, "outer_pre_sed", "ni",   cur_pyc.ni);
                 G33_REC(g33, "outer_pre_sed", "nccn", cur_pyc.nccn);
                 G33_REC(g33, "outer_pre_sed", "brs",  cur_pyc.brs);
+                // pressure is a kernel INPUT, not a carried prognostic: a mismatch
+                // here surfaces only as a rate difference much later (owner P0-4)
+                G33_REC(g33, "outer_pre_sed", "p",    cf_pyc.p);
                 G33_REC(g33, "outer_pre_sed", "rho",  cf_pyc.den);
                 G33_REC(g33, "outer_pre_sed", "delz", cf_pyc.delz);
             }
