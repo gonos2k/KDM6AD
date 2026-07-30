@@ -101,6 +101,12 @@ _SEMANTIC_STAGE_FIELDS = {
     # the clamp, readable without a third stage.
     "kernel_call_input": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                           "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
+    # WHAT kdm6init BUILT (owner P0-1.1) — the `I` in y = K(x; theta, I). Cross-tree
+    # comparable because fconst.h reproduces the Fortran block f32-stepwise rather than
+    # computing in double and demoting; the two differ by 1 ULP, which was measured as
+    # the step-45 divergence seed, so this is exactly the kind of difference that must
+    # not go unobserved.
+    "kernel_init_constants": ["pi", "cmc", "cmr", "cmi", "g1pmc", "g3pmc", "g4pmc", "g6pmc", "g1pmr", "g2pmr", "g4pmr", "g7pmr", "g1pdrmr", "g1pmi", "g4pmi", "g1pdimi", "pidnc", "pidnr", "pidni", "pidn0s"],
     # AFTER THE ENTRY CLAMP. With kernel_call_input before it and outer_pre_sed after,
     # the clamp becomes a MEASURED interval instead of an inference: what differs from
     # kernel_call_input is the padding, what differs from outer_pre_sed is the rest of
