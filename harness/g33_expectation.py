@@ -148,6 +148,13 @@ _STAGE_FIELDS_BASE = {
                         ("nccn", "f32", "BK"), ("brs", "f32", "BK"),
                         ("p", "f32", "BK"),
                         ("rho", "f32", "BK"), ("delz", "f32", "BK")],
+    "kernel_after_entry_clamp": [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
+                        ("t", "f32", "BK"), ("qc", "f32", "BK"), ("qi", "f32", "BK"),
+                        ("qs", "f32", "BK"), ("qg", "f32", "BK"),
+                        ("nc", "f32", "BK"), ("ni", "f32", "BK"),
+                        ("nccn", "f32", "BK"), ("brs", "f32", "BK"),
+                        ("p", "f32", "BK"),
+                        ("rho", "f32", "BK"), ("delz", "f32", "BK")],
     "outer_pre_sed":   [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"), ("qi", "f32", "BK"),
                         ("qs", "f32", "BK"), ("qg", "f32", "BK"),
@@ -376,6 +383,8 @@ def expected_records(schedule: dict) -> list[dict]:
     # loop-scoped" (as final_output does at the other end) and sorts before loop 1.
     emit("kernel_call_input", _stage_fields("kernel_call_input", backend),
          outer_loop=0, shape=[B, K])
+    emit("kernel_after_entry_clamp",
+         _stage_fields("kernel_after_entry_clamp", backend), outer_loop=0, shape=[B, K])
     for loop in range(1, loops + 1):
         emit("outer_pre_sed", _stage_fields("outer_pre_sed", backend), outer_loop=loop, shape=[B, K])
         for chain, mmax_list in (("main", mm_main), ("ice", mm_ice)):
@@ -470,7 +479,7 @@ def expected_records(schedule: dict) -> list[dict]:
 # built over stages nothing emits offsets every declared op_seq window past the
 # measured counter, and the real overlay can then never produce a valid
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
-CPP_OVERLAY_STAGES = ("kernel_call_input", "outer_pre_sed", "substep_pre", "op", "substep_post",
+CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -492,6 +501,7 @@ def container_id(rec: dict) -> str:
         # in one block; the op_seq tiling stays contiguous because the stages
         # execute in exactly this order.
         tail = {"kernel_call_input": "kernel_call_input",
+                "kernel_after_entry_clamp": "kernel_after_entry_clamp",
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed"}.get(rec["stage"],
                                                         "outer_post_micro")

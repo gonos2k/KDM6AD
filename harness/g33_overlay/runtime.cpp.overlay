@@ -519,6 +519,41 @@ FnResult kdm6_fn(const State& state,
     cur.ni = torch::clamp(cur.ni, 0.0, 1.0e6);             // F:836 [0, 1e6]
     cur.brs = torch::clamp(cur.brs, /*min=*/0.0);          // F:838
     cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // F:833, ONCE
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // AFTER THE ENTRY CLAMP, before the prologue does anything else
+        // (owner P0-3/P0-6). With kernel_call_input on one side and this on the
+        // other, the padding is a MEASURED interval rather than an inference:
+        // what differs from kernel_call_input is the clamp, and what differs
+        // from outer_pre_sed is the rest of the prologue — which is where the
+        // ProgB brs update lives. Same field set as both neighbours, so the two
+        // differences read directly off the records.
+        ::kdm6::g33::ScopedDumpContext g33_ctx(
+            0, rt_g33ovl::g33_env("KDM6_G33_CASE_ID"),
+            rt_g33ovl::g33_env("KDM6_G33_PAIR_ID"),
+            physics.variant == PhysicsVariant::ConservativeInterface
+                ? "conservative" : "legacy");
+        rt_g33ovl::Outer g33("kernel_after_entry_clamp", flip_k(cur.qr));
+        if (g33.on()) {
+            G33_REC(g33, "kernel_after_entry_clamp", "qr",   flip_k(cur.qr));
+            G33_REC(g33, "kernel_after_entry_clamp", "nr",   flip_k(cur.nr));
+            G33_REC(g33, "kernel_after_entry_clamp", "qv",   flip_k(cur.qv));
+            G33_REC(g33, "kernel_after_entry_clamp", "t",    flip_k(cur.t));
+            G33_REC(g33, "kernel_after_entry_clamp", "qc",   flip_k(cur.qc));
+            G33_REC(g33, "kernel_after_entry_clamp", "qi",   flip_k(cur.qi));
+            G33_REC(g33, "kernel_after_entry_clamp", "qs",   flip_k(cur.qs));
+            G33_REC(g33, "kernel_after_entry_clamp", "qg",   flip_k(cur.qg));
+            G33_REC(g33, "kernel_after_entry_clamp", "nc",   flip_k(cur.nc));
+            G33_REC(g33, "kernel_after_entry_clamp", "ni",   flip_k(cur.ni));
+            G33_REC(g33, "kernel_after_entry_clamp", "nccn", flip_k(cur.nccn));
+            G33_REC(g33, "kernel_after_entry_clamp", "brs",  flip_k(cur.brs));
+            G33_REC(g33, "kernel_after_entry_clamp", "p",    cf_pyc.p);
+            G33_REC(g33, "kernel_after_entry_clamp", "rho",  cf_pyc.den);
+            G33_REC(g33, "kernel_after_entry_clamp", "delz", cf_pyc.delz);
+        }
+        g33.finalize();
+    }
+#endif
     torch::Tensor rain_inc, snow_inc, graup_inc;
     torch::Tensor rhog_final;  // diag_rhog/RHOPO3D — LAST sub-cycle's last-ProgB graupel density
 
@@ -539,6 +574,40 @@ FnResult kdm6_fn(const State& state,
             rt_g33ovl::g33_env("KDM6_G33_PAIR_ID"),
             physics.variant == PhysicsVariant::ConservativeInterface
                 ? "conservative" : "legacy");
+#endif
+        // §53d persistent ProgB bundle — F:973-990 zero-init per sub-cycle; merged by EVERY
+        // preamble along the step (pre-sed F:1119, per-substep sed reslopes F:1224/F:1290,
+        // micro reslopes F:1469/F:1664, last ProgB F:2930).
+        auto progb_ret = progb::make_zero_progb_state(cur_pyc.qg);
+        auto pre_sed = preamble(cur_pyc, cf_pyc, full_p, /*ncmin=*/{}, &progb_ret);
+        // BRS density re-clamp #0 (ProgB before the sed fall loop): falkb=dend*brs*vt advects
+        // graupel VOLUME, so sed sees the density-[100,900]-reclamped brs. NOTE (2026-06-20): the
+        // OR-condition fix (where(qg>qcrmin OR brs>BRS_MIN, bg, 0), to not erase Fortran-active
+        // graupel per Codex) was MEASURED WORSE (BG 8787->22394): C++ f64 leaves a ~1.7e-14 residue
+        // in graupel-EMPTY cells that exceeds brs_min=1e-15, so the OR wrongly keeps them while
+        // Fortran's f32 brs underflowed to 0 — those empty-residue cells vastly outnumber the rare
+        // genuinely-active qg<=qcrmin cells. The qg>qcrmin zeroing better approximates Fortran's
+        // f32-underflow (§20 f64-residue-vs-f32-underflow). True fix needs the brs flow to underflow
+        // like Fortran f32. Kept the qg>qcrmin form as the better current approximation.
+        // OR-gate (brs Group-B): keep ProgB.bg where Fortran's ProgB is ACTIVE — qg>qcrmin OR brs_in>brs_min
+        // (F:3534, progb.cpp:89). The qg-only zeroing wrongly dropped cells with tiny qg<qcrmin but real
+        // brs>brs_min (Fortran keeps brs=qg/rhox there). Safe now that the op-state is f32 (§44): both trees
+        // produce the same f32 brs so the gate is consistent (the old "f64 residue>brs_min" regression is gone).
+        // §53 full-fidelity brs (2026-07-01, all-sites sweep): Fortran ProgB (F:3567/3578) writes brs
+        // ONLY in active cells; inactive cells KEEP their incoming brs — and progb.cpp:105 bg_new
+        // already implements exactly that (where(active, qg/rhox, incoming bg)). The outer re-gate
+        // here double-gated that faithful output and zeroed inactive cells, diverging from Fortran's
+        // kept residues (24151-cell brs class) and breaking the sed inflow chain. The old zeroing
+        // rationale (f64 residue > brs_min while Fortran f32 underflows) is stale post-§44: the op
+        // state is f32 and step-1 is globally bitwise, so incoming brs is bit-identical across trees.
+        cur_pyc.brs = pre_sed.progb.bg;
+#ifdef KDM6_G33_OP_DUMP
+        // MOVED (owner P0-6 / the confirmed skew): this snapshot used to sit
+        // BEFORE the ProgB brs update above, while the Fortran one sits AFTER
+        // ProgB_param (:1154 -> outer_pre_sed :1189). The comparator therefore
+        // held C++'s pre-update brs against Fortran's post-update brs — two
+        // different instants, agreeing only where ProgB left brs alone. Measured
+        // on boundary_mapping_v1 as the 1-ULP brs first divergence.
         {
             // Whole-K state ENTERING sedimentation, canonical top-first order
             // (cur_pyc/cf_pyc are already flipped). `t` is the state's actual
@@ -573,32 +642,6 @@ FnResult kdm6_fn(const State& state,
             g33.finalize();
         }
 #endif
-        // §53d persistent ProgB bundle — F:973-990 zero-init per sub-cycle; merged by EVERY
-        // preamble along the step (pre-sed F:1119, per-substep sed reslopes F:1224/F:1290,
-        // micro reslopes F:1469/F:1664, last ProgB F:2930).
-        auto progb_ret = progb::make_zero_progb_state(cur_pyc.qg);
-        auto pre_sed = preamble(cur_pyc, cf_pyc, full_p, /*ncmin=*/{}, &progb_ret);
-        // BRS density re-clamp #0 (ProgB before the sed fall loop): falkb=dend*brs*vt advects
-        // graupel VOLUME, so sed sees the density-[100,900]-reclamped brs. NOTE (2026-06-20): the
-        // OR-condition fix (where(qg>qcrmin OR brs>BRS_MIN, bg, 0), to not erase Fortran-active
-        // graupel per Codex) was MEASURED WORSE (BG 8787->22394): C++ f64 leaves a ~1.7e-14 residue
-        // in graupel-EMPTY cells that exceeds brs_min=1e-15, so the OR wrongly keeps them while
-        // Fortran's f32 brs underflowed to 0 — those empty-residue cells vastly outnumber the rare
-        // genuinely-active qg<=qcrmin cells. The qg>qcrmin zeroing better approximates Fortran's
-        // f32-underflow (§20 f64-residue-vs-f32-underflow). True fix needs the brs flow to underflow
-        // like Fortran f32. Kept the qg>qcrmin form as the better current approximation.
-        // OR-gate (brs Group-B): keep ProgB.bg where Fortran's ProgB is ACTIVE — qg>qcrmin OR brs_in>brs_min
-        // (F:3534, progb.cpp:89). The qg-only zeroing wrongly dropped cells with tiny qg<qcrmin but real
-        // brs>brs_min (Fortran keeps brs=qg/rhox there). Safe now that the op-state is f32 (§44): both trees
-        // produce the same f32 brs so the gate is consistent (the old "f64 residue>brs_min" regression is gone).
-        // §53 full-fidelity brs (2026-07-01, all-sites sweep): Fortran ProgB (F:3567/3578) writes brs
-        // ONLY in active cells; inactive cells KEEP their incoming brs — and progb.cpp:105 bg_new
-        // already implements exactly that (where(active, qg/rhox, incoming bg)). The outer re-gate
-        // here double-gated that faithful output and zeroed inactive cells, diverging from Fortran's
-        // kept residues (24151-cell brs class) and breaking the sed inflow chain. The old zeroing
-        // rationale (f64 residue > brs_min while Fortran f32 underflows) is stale post-§44: the op
-        // state is f32 and step-1 is globally bitwise, so incoming brs is bit-identical across trees.
-        cur_pyc.brs = pre_sed.progb.bg;
         auto w1_qr = pre_sed.slope.vt_r  / delz_safe;
         auto wn_qr = pre_sed.slope.vtn_r / delz_safe;
         auto w1_qs = pre_sed.slope.vt_s  / delz_safe;

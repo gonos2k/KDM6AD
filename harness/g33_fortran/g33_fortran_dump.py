@@ -42,12 +42,19 @@ _STAGE_V2 = re.compile(
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 # A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
 # that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
-_STAGE_CHAIN = {"kernel_call_input": "-", "outer_pre_sed": "-",
+_STAGE_CHAIN = {"kernel_call_input": "-", "kernel_after_entry_clamp": "-",
+                "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
+#: v7: what kdm6init was called with (owner P0-4). Its OWN record class, not LOCALPARAM:
+#: local_parameter_sha256 is contractually the hash of the fixture's declared
+#: fortran_only_parameters, and widening it would make the fixture responsible for host
+#: constants it does not own. hail_opt is an integer, so the dtype is part of the record.
+_INIT = re.compile(r"^G33F INIT\s+(\S+)\s+(f32|i32)\s+([0-9A-Fa-f]{8})$")
+_INIT_ARGS = ("den0", "denr", "dens", "cl", "cpv", "ccn0", "hail_opt")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 #: Which comparison boundary the run entered at. The wrapper path additionally
@@ -58,8 +65,8 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 # here because the parser is also used standalone.
 _ENTRY = re.compile(r"^G33F ENTRY (kdm62d_kernel_entry_v1|kdm6_wrapper_input_v1)$")
 
-_BEGIN = re.compile(r"^G33F BEGIN v([123456]) (\S+)$")
-_END = re.compile(r"^G33F END v([123456]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([1234567]) (\S+)$")
+_END = re.compile(r"^G33F END v([1234567]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -272,8 +279,8 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # by THAT scope's own mstep maximum
     scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
     loops = sorted({lp for lp, _ch in scopes})
-    carried = _CARRIED_BY_VERSION.get(min(version, 6), ())
-    forcings = _FORCINGS_BY_VERSION.get(min(max(version, 4), 6), ())
+    carried = _CARRIED_BY_VERSION.get(min(version, 7), ())
+    forcings = _FORCINGS_BY_VERSION.get(min(max(version, 4), 7), ())
     pre_sed_fields = ((carried + forcings) if version >= 4
                       else _OUTER_PRE_SED_FIELDS_V3)
     exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
@@ -300,6 +307,11 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # cannot produce it would report a boundary choice as missing evidence.
     if version >= 6 and entry_boundary == KERNEL_ENTRY:
         exp |= {(0, "-", "kernel_call_input", 0, f, c, k)
+                for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
+    # v7: after the entry padding. Emitted by the OVERLAY, so it is present on both
+    # boundaries — the clamp runs whichever function was entered.
+    if version >= 7:
+        exp |= {(0, "-", "kernel_after_entry_clamp", 0, f, c, k)
                 for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
     if version >= 4:
         for stage in ("outer_post_sed", "outer_post_micro"):
@@ -370,6 +382,8 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K,
 @dataclass(frozen=True)
 class FortranRun:
     algorithm: str
+    #: kdm6init's arguments -> bits. Empty before v7.
+    init_params: dict
     #: The G33F banner version this stream was emitted at. Carried because the
     #: PARSER accepts v1-v5 (migration and re-verification of past evidence need
     #: that) while the DECISION path must not: a v4 stream's bridge omits nc/ni/
@@ -392,9 +406,23 @@ class FortranRun:
     params: dict           # name -> bits
     localparams: dict      # name -> bits (ccn0, scale_h)
 
+    @property
+    def initialization_digest(self) -> str:
+        """One hash over what kdm6init was called with (owner P0-4).
+
+        A leg can match on every call ARGUMENT and still be solving a different problem,
+        because kdm6init builds module-level derived constants that kdm62D then reads.
+        Compared between the two FORTRAN legs — the C++ side has no kdm6init, it has its
+        own parameter builders, so this is a backend-local precondition in the same way
+        ccn0/scale_h are.
+        """
+        return _hashlib.sha256(
+            "".join(f"{n}:{self.init_params[n]:08x}"
+                    for n in sorted(self.init_params)).encode()).hexdigest()
+
 
 _KNOWN = (_ENTRY, _OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
-          _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
+          _LOCALPARAM, _INIT, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
 #: The carried state, by protocol version. Keyed rather than versioned by constant
@@ -406,14 +434,16 @@ _CARRIED_BY_VERSION = {
         "nc", "ni", "nccn", "brs"),
     6: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
         "nc", "ni", "nccn", "brs"),
+    7: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+        "nc", "ni", "nccn", "brs"),
 }
 #: Forcings are keyed the same way, for the same reason. v6 adds `p`: it is a kernel
 #: ARGUMENT that enters saturation vapour pressure, the diffusion/thermodynamic
 #: coefficients and several process rates, so two backends entering with different
 #: pressure would show it only as a rate difference far downstream (owner P0-4).
 _FORCINGS_BY_VERSION = {4: ("rho", "delz"), 5: ("rho", "delz"),
-                        6: ("p", "rho", "delz")}
-_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[6] + _FORCINGS_BY_VERSION[6]
+                        6: ("p", "rho", "delz"), 7: ("p", "rho", "delz")}
+_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[7] + _FORCINGS_BY_VERSION[7]
 #: What v3 emitted, kept so a pre-bridge stream still parses and the equivalence
 #: proof (a new run reproduces the old sample's shared records exactly) stays
 #: possible — that proof is how the bridge is shown not to perturb the run.
@@ -514,7 +544,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
         # evidence for, before any of that evidence appears.
         if _BEGIN.match(line) or _ENTRY.match(line):
             return 0
-        if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
+        if (_FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line)
+                or _INIT.match(line)):
             return 1
         if (_MSTEP_V1.match(line) or _MSTEP_V3.match(line) or _OP.match(line)
                 or _STAGE_V1.match(line) or _STAGE_V2.match(line)):
@@ -635,6 +666,11 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
     _require_exact(fixin, exp_fixin, _FIXIN, text, "FIXIN")
     params = parse_param(text)
     _require_names(params, _COMMON_PARAMS, _PARAM, lines, "PARAM")
+    init_params = {m.group(1): int(m.group(3), 16)
+                   for line in lines if (m := _INIT.match(line))}
+    if version >= 7 and set(init_params) != set(_INIT_ARGS):
+        raise FortranRunError(
+            f"INIT: expected {sorted(_INIT_ARGS)}, got {sorted(init_params)}")
     localparams = parse_localparam(text)
     _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
     _validate_domain(fixin, params, localparams, state, precip, B, K,
@@ -653,7 +689,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
                       ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,
-                      params=params, localparams=localparams)
+                      params=params, localparams=localparams,
+                      init_params=init_params)
 
 
 def _require_names(parsed, expected, pattern, lines, label):

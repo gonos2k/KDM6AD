@@ -1,4 +1,4 @@
-G33F BEGIN v6 legacy
+G33F BEGIN v7 legacy
 G33F ENTRY kdm6_wrapper_input_v1
 G33F FIXIN th 1 3 f32 43904000
 G33F FIXIN th 2 3 f32 43854000
@@ -195,12 +195,199 @@ G33F FIXIN delz 3 0 f32 42000000
 G33F FIXIN xland 1 -1 f32 3F800000
 G33F FIXIN xland 2 -1 f32 3F800000
 G33F FIXIN xland 3 -1 f32 3F800000
+G33F INIT den0 f32 3FA3D70A
+G33F INIT denr f32 447A0000
+G33F INIT dens f32 42C80000
+G33F INIT cl f32 4582F000
+G33F INIT cpv f32 44E6CCCD
+G33F INIT ccn0 f32 4C8583B0
+G33F INIT hail_opt i32 00000000
 G33F PARAM dt f32 43960000
 G33F PARAM ncmin_land f32 41200000
 G33F PARAM ncmin_sea f32 41200000
 G33F PARAM qmin f32 26901D7D
 G33F LOCALPARAM ccn0 f32 4C8583B0
 G33F LOCALPARAM scale_h f32 443B8000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 1 3 f32 37D6BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 1 3 f32 477A0000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 1 3 f32 3A83126F
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 1 3 f32 43904000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 1 3 f32 35AE7BA9
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 1 3 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 1 3 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 1 3 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 1 3 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 1 3 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 1 3 f32 4F8F5068
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 1 3 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 1 3 f32 47AFC800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 1 3 f32 3F570A3D
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 1 3 f32 43160000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 1 2 f32 37FF0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 1 2 f32 47947000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 1 2 f32 3A83126F
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 1 2 f32 43908000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 1 2 f32 35A10FB0
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 1 2 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 1 2 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 1 2 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 1 2 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 1 2 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 1 2 f32 4F872445
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 1 2 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 1 2 f32 47A7F800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 1 2 f32 3F4F5C29
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 1 2 f32 43160000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 1 1 f32 3813A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 1 1 f32 47ABE000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 1 1 f32 3A83126F
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 1 1 f32 4390C000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 1 1 f32 3593A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 1 1 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 1 1 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 1 1 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 1 1 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 1 1 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 1 1 f32 4F7EE3F0
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 1 1 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 1 1 f32 47A02800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 1 1 f32 3F47AE14
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 1 1 f32 43160000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 1 0 f32 3827C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 1 0 f32 47C35000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 1 0 f32 3A83126F
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 1 0 f32 43910000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 1 0 f32 358637BD
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 1 0 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 1 0 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 1 0 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 1 0 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 1 0 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 1 0 f32 4F7064D3
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 1 0 f32 00000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 1 0 f32 47985800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 1 0 f32 3F400000
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 1 0 f32 43160000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 2 3 f32 3756BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 2 3 f32 46FA0000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 2 3 f32 3A85B185
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 2 3 f32 43854000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 2 3 f32 35AE7BA9
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 2 3 f32 3756BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 2 3 f32 36D6BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 2 3 f32 3656BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 2 3 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 2 3 f32 46480000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 2 3 f32 4F942ADF
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 2 3 f32 31DBE6FF
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 2 3 f32 47AFC800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 2 3 f32 3F6B851F
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 2 3 f32 42820000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 2 2 f32 377F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 2 2 f32 47147000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 2 2 f32 3A85B185
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 2 2 f32 43858000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 2 2 f32 35A10FB0
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 2 2 f32 377F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 2 2 f32 36FF0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 2 2 f32 367F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 2 2 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 2 2 f32 466D8000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 2 2 f32 4F9070F6
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 2 2 f32 32029127
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 2 2 f32 47A7F800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 2 2 f32 3F63D70A
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 2 2 f32 42820000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 2 1 f32 3793A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 2 1 f32 472BE000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 2 1 f32 3A85B185
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 2 1 f32 4385C000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 2 1 f32 3593A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 2 1 f32 3793A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 2 1 f32 3713A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 2 1 f32 3693A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 2 1 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 2 1 f32 46898000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 2 1 f32 4F8CCF88
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 2 1 f32 32172ECF
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 2 1 f32 47A02800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 2 1 f32 3F5C28F6
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 2 1 f32 42820000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 2 0 f32 37A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 2 0 f32 47435000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 2 0 f32 3A85B185
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 2 0 f32 43860000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 2 0 f32 358637BD
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 2 0 f32 37A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 2 0 f32 3727C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 2 0 f32 36A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 2 0 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 2 0 f32 469C4000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 2 0 f32 4F8945F5
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 2 0 f32 322BCC77
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 2 0 f32 47985800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 2 0 f32 3F547AE1
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 2 0 f32 42820000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 3 3 f32 3656BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 3 3 f32 46480000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 3 3 f32 3A88509C
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 3 3 f32 43708000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 3 3 f32 35AE7BA9
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 3 3 f32 380637BD
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 3 3 f32 3756BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 3 3 f32 3656BF95
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 3 3 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 3 3 f32 46FA0000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 3 3 f32 4F9618BE
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 3 3 f32 31DBE6FF
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 3 3 f32 47AFC800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 3 3 f32 3F800000
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 3 3 f32 42000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 3 2 f32 367F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 3 2 f32 466D8000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 3 2 f32 3A88509C
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 3 2 f32 43710000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 3 2 f32 35A10FB0
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 3 2 f32 381F6230
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 3 2 f32 377F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 3 2 f32 367F0381
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 3 2 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 3 2 f32 47147000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 3 2 f32 4F9439BE
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 3 2 f32 32029127
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 3 2 f32 47A7F800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 3 2 f32 3F7851EC
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 3 2 f32 42000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 3 1 f32 3693A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 3 1 f32 46898000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 3 1 f32 3A88509C
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 3 1 f32 43718000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 3 1 f32 3593A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 3 1 f32 38388CA4
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 3 1 f32 3793A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 3 1 f32 3693A3B6
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 3 1 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 3 1 f32 472BE000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 3 1 f32 4F9260D6
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 3 1 f32 32172ECF
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 3 1 f32 47A02800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 3 1 f32 3F70A3D7
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 3 1 f32 42000000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qr 3 0 f32 36A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 nr 3 0 f32 469C4000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qv 3 0 f32 3A88509C
+G33F STAGE 0 - kernel_after_entry_clamp 0 t 3 0 f32 43720000
+G33F STAGE 0 - kernel_after_entry_clamp 0 qc 3 0 f32 358637BD
+G33F STAGE 0 - kernel_after_entry_clamp 0 qi 3 0 f32 3851B717
+G33F STAGE 0 - kernel_after_entry_clamp 0 qs 3 0 f32 37A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 qg 3 0 f32 36A7C5AC
+G33F STAGE 0 - kernel_after_entry_clamp 0 nc 3 0 f32 4CBEBC20
+G33F STAGE 0 - kernel_after_entry_clamp 0 ni 3 0 f32 47435000
+G33F STAGE 0 - kernel_after_entry_clamp 0 nccn 3 0 f32 4F908DF1
+G33F STAGE 0 - kernel_after_entry_clamp 0 brs 3 0 f32 322BCC77
+G33F STAGE 0 - kernel_after_entry_clamp 0 p 3 0 f32 47985800
+G33F STAGE 0 - kernel_after_entry_clamp 0 rho 3 0 f32 3F68F5C3
+G33F STAGE 0 - kernel_after_entry_clamp 0 delz 3 0 f32 42000000
 G33F STAGE 1 - outer_pre_sed 0 qr 1 3 f32 37D6BF95
 G33F STAGE 1 - outer_pre_sed 0 nr 1 3 f32 477A0000
 G33F STAGE 1 - outer_pre_sed 0 qv 1 3 f32 3A83126F
@@ -11077,5 +11264,5 @@ G33F PREC 2 3 f32 3D27ADE7
 G33F PREC 3 1 f32 00000000
 G33F PREC 3 2 f32 39F85C81
 G33F PREC 3 3 f32 39C62886
-G33F END v6 legacy
+G33F END v7 legacy
 FORTRAN DRIVER OK (legacy, fixture=arithmetic_multisubcycle_v1)

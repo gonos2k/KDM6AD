@@ -41,7 +41,8 @@ import g33_derived as dv      # noqa: E402
 #: snapshot: both backends emit them, so a divergence in the carry between outer loops
 #: is a comparator finding rather than something only a human reading two dumps could
 #: notice (owner P0-C1).
-_COMPARATOR_STAGES = ("kernel_call_input", "outer_pre_sed", "substep_pre",
+_COMPARATOR_STAGES = ("kernel_call_input", "kernel_after_entry_clamp",
+                      "outer_pre_sed", "substep_pre",
                       "surface",
                       "outer_post_sed", "outer_post_micro")
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
@@ -135,6 +136,13 @@ def from_fortran_run(run) -> dict:
     problem = {"fixture_sha256": run.fixture_sha256,
                "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
                "local_parameter_sha256": run.local_parameter_sha256,
+               # WHAT THE KERNEL WAS INITIALISED WITH (owner P0-4). Backend-LOCAL, like
+               # ccn0/scale_h: the C++ side has no kdm6init, it has its own parameter
+               # builders, so this is compared between the two FORTRAN legs rather than
+               # across trees. Two legs can agree on every call ARGUMENT and still solve
+               # different problems, because kdm6init builds module-level derived
+               # constants kdm62D then reads.
+               "initialization_digest": getattr(run, "initialization_digest", None),
                # WHICH boundary. The wrapper path additionally applies kdm6's
                # height-dependent CCN profile, which the C++ port has no counterpart
                # for — so a wrapper leg and a kernel leg are answers to different

@@ -37,7 +37,8 @@ _EMIT = {  # dtype -> (value expr wrapping the operand, Z format width)
 }
 
 
-def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr):
+def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr,
+                 loop_expr="loop"):
     """protocol v2:
     G33F STAGE <outer_loop> <chain> <stage> <n> <field> <col> <k> <dtype> <hex>
     `loop` is the RUNTIME cloud-subcycle index (kdm62D's `do loop = 1,loops`, which
@@ -45,19 +46,22 @@ def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr):
     distinguishable instead of collapsing onto loop 1."""
     val, zf = _EMIT[dtype]
     return (f"{fb.IND}write(*,'(A,1X,I0,2(1X,A),1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
-            f"'G33F STAGE', loop, '{chain}', '{stage}', {n_expr}, "
+            f"'G33F STAGE', {loop_expr}, '{chain}', '{stage}', {n_expr}, "
             f"'{field}', i, {k_expr}, '{dtype}', {val.format(e=expr)}")
 
 
-def _stage_block(stage, chain, n_expr, col_fields, whole_k_fields):
+def _stage_block(stage, chain, n_expr, col_fields, whole_k_fields,
+                 loop_expr="loop"):
     """An injected whole-K emission loop for a pre-sed stage snapshot. Per-column
     scalars (mstep/gate/dtcld) carry k=-1; whole-K fields carry top-first kte-k."""
     lines = ["#ifdef KDM6_G33_FORTRAN_DUMP", f"{fb.IND}do i = its, ite"]
     for field, dtype, expr in col_fields:
-        lines.append(_stage_write(stage, chain, n_expr, field, "-1", dtype, expr))
+        lines.append(_stage_write(stage, chain, n_expr, field, "-1", dtype, expr,
+                                  loop_expr))
     lines.append(f"{fb.IND}  do k = kts, kte")
     for field, dtype, expr in whole_k_fields:
-        lines.append(_stage_write(stage, chain, n_expr, field, "kte-k", dtype, expr))
+        lines.append(_stage_write(stage, chain, n_expr, field, "kte-k", dtype,
+                                  expr, loop_expr))
     lines += [f"{fb.IND}  end do", f"{fb.IND}end do", "#endif"]
     return lines
 
@@ -129,6 +133,11 @@ def build_overlay(algo, text):
              (cfg["cap_int"], "after", _cap_lines(top=False)),
              # pre-sed snapshots at the sub-cycle boundary: outer_pre_sed once
              # BEFORE `do n=1,mstepmax`, substep_pre per-n right AFTER it.
+             # after the entry padding, ONCE per kernel call (loop 0) — the clamp is
+             # before `do loop = 1,loops`, so the runtime loop index is not in scope
+             (fb.AFTER_ENTRY_CLAMP_ANCHOR, "before",
+              _stage_block("kernel_after_entry_clamp", "-", "0", [],
+                           fb.AFTER_ENTRY_CLAMP, loop_expr="0")),
              (fb.STAGE_ANCHOR, "before",
               _stage_block("outer_pre_sed", "-", "0", [], fb.OUTER_PRE_SED)),
              (fb.STAGE_ANCHOR, "after",

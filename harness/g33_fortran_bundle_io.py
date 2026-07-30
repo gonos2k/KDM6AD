@@ -41,7 +41,7 @@ LANES = ("A", "B", "C")
 #: than discovered, so a field added later is a deliberate decision about whether it
 #: is evidence — a dir()-based sweep would freeze new fields silently either way.
 _RUN_MAPPINGS = ("stages", "state", "precip", "fixin", "params", "localparams",
-                 "mstep")
+                 "init_params", "mstep")
 
 
 class FortranBundleError(Exception):
@@ -91,9 +91,13 @@ VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 #:   v5  no kernel-call arguments and no `p`. outer_pre_sed is recorded AFTER the
 #:       entry clamp, so it cannot separate "both legs were handed the same problem"
 #:       from "the clamp erased the difference" (owner P0-3/P0-4).
+#:   v6  no snapshot BETWEEN the call arguments and the sedimentation entry, so the
+#:       whole prologue is one unmeasured interval — and the C++ outer_pre_sed sat
+#:       BEFORE its ProgB brs update while the Fortran one sits after ProgB_param, so
+#:       one of the twelve carried fields was compared at two different instants.
 #:
 #: A pre-v6 bundle with valid external anchors would otherwise reach verdict_ready.
-DECISION_PROTOCOL_VERSION = 6
+DECISION_PROTOCOL_VERSION = 7
 
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a
