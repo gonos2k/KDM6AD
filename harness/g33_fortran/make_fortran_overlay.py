@@ -135,6 +135,11 @@ def build_overlay(algo, text):
              # BEFORE `do n=1,mstepmax`, substep_pre per-n right AFTER it.
              # after the entry padding, ONCE per kernel call (loop 0) — the clamp is
              # before `do loop = 1,loops`, so the runtime loop index is not in scope
+             # the kdm6init-derived module constants, once per run, from inside the
+             # module where they are in scope (owner P0-1.1)
+             (fb.AFTER_ENTRY_CLAMP_ANCHOR, "before",
+              _stage_block("kernel_init_constants", "-", "0", [],
+                           fb.INIT_CONSTANTS, loop_expr="0")),
              (fb.AFTER_ENTRY_CLAMP_ANCHOR, "before",
               _stage_block("kernel_after_entry_clamp", "-", "0", [],
                            fb.AFTER_ENTRY_CLAMP, loop_expr="0")),

@@ -65,15 +65,17 @@ PASS_MECHANISM = "PASS_MECHANISM"
 UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 _ALGOS = ("legacy", "conservative")
-_STAGES = ("kernel_call_input", "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
+_STAGES = ("kernel_call_input", "kernel_init_constants",
+           "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
            "outer_post_sed", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
-_STAGE_MAJOR = {"kernel_call_input": 0, "kernel_after_entry_clamp": 1,
-                "outer_pre_sed": 2, "substep_pre": 3, "surface": 4,
-                "outer_post_sed": 5, "outer_post_micro": 6, "final_output": 7}
+_STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
+                "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
+                "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
+                "outer_post_micro": 7, "final_output": 8}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -374,6 +376,7 @@ def _events(run) -> list[Event]:
             # final_output is the whole-step result: loop 0 marks "not loop-scoped",
             # so its identity does not depend on how many loops the run took.
             lo_min = 0 if stage in ("final_output", "kernel_call_input",
+                                    "kernel_init_constants",
                                     "kernel_after_entry_clamp") else 1
             if loop < lo_min or chain not in _CHAIN_RANK:
                 raise StructuralError(f"bad stage loop/chain {loop}/{chain!r}")
@@ -566,7 +569,8 @@ def classify(legacy: Divergence, conservative: Divergence):
     # downstream comparison is a category error; it is an adapter or fixture defect,
     # never evidence about conservative-only arithmetic.
     for name, d in pairs:
-        if d.phase in ("kernel_call_input", "kernel_after_entry_clamp"):
+        if d.phase in ("kernel_init_constants", "kernel_call_input",
+                       "kernel_after_entry_clamp"):
             return "INVALID_EVIDENCE", (
                 f"{name} legs entered kdm62D with different arguments at {d.identity} "
                 f"— the comparison premise fails before any physics runs; this is an "

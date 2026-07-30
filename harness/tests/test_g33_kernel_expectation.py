@@ -184,3 +184,44 @@ def test_the_nccn_band_is_the_source_band():
     assert kx._PADDING["nccn"](1.0e30) == kx.NCCN_MAX
     assert kx._PADDING["ni"](1.0e30) == kx.NI_MAX
     assert kx._PADDING["ni"](-1.0) == 0.0
+
+
+# ── what kdm6init BUILT, cross-tree (owner §1.1) ──────────────────────────────
+
+def test_the_initialization_constants_are_recorded_and_broadcast():
+    """`I` in y = K(x; theta, I). kdm6init builds these and kdm62D reads them, so two
+    legs can agree on every call ARGUMENT and still solve different problems."""
+    import g33_fortran_bindings as fb
+    authority, run = _run("legacy")
+    got = _snapshot(run, "kernel_init_constants")
+    names = {n for n, _c, _k in got}
+    assert names == {n for n, _dt, _e in fb.INIT_CONSTANTS}
+    # each is a scalar broadcast over the grid, so every cell of a given name agrees
+    for name in names:
+        vals = {b for (n, _c, _k), b in got.items() if n == name}
+        assert len(vals) == 1, f"{name} is not constant across the grid: {vals}"
+    assert len(got) == len(names) * authority["B"] * authority["K"]
+
+
+def test_ele2_is_excluded_because_it_is_not_a_kdm6init_product():
+    """fconst.h groups it with F32Consts for convenience, but the Fortran computes it
+    inside kdm62D at :1601 — after this snapshot — so recording it read 0x00000000 on the
+    Fortran side against the real value on the C++ side. A difference in WHEN, not in
+    WHAT, and including it would manufacture a divergence out of the instrumentation."""
+    import g33_fortran_bindings as fb
+    import g33_schema as schema
+    assert "ele2" not in {n for n, _d, _e in fb.INIT_CONSTANTS}
+    assert "ele2" not in schema.semantic_stage_fields("kernel_init_constants")
+
+
+def test_the_f32_stepwise_value_is_what_the_fortran_produces():
+    """fconst.h exists because a double-then-demote differs by 1 ULP from gfortran's
+    REAL(4) stepwise evaluation — its own comment cites pidnc as 0x4402E653 stepwise
+    versus 0x4402E652 demoted, measured as the step-45 divergence seed. So pin that the
+    Fortran really does produce the stepwise value; if it ever produced the other one,
+    the C++ port would be matching the wrong target."""
+    _, run = _run("legacy")
+    got = _snapshot(run, "kernel_init_constants")
+    pidnc = {b for (n, _c, _k), b in got.items() if n == "pidnc"}
+    assert pidnc == {0x4402E653}, (
+        f"pidnc is {pidnc}, not the f32-stepwise 0x4402E653 that fconst.h targets")

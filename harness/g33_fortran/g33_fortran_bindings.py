@@ -235,6 +235,49 @@ SUBSTEP_PRE_COL = [  # per-column scalar (k=-1), per substep n
 #   qs = qrs(:,:,2)  qg   = qrs(:,:,3)  nr  = nrs(:,:,1)
 #   nc = nci(:,:,1)  ni   = nci(:,:,2)  nccn = nci(:,:,3)   (packed from `nn`)
 #   brs = brs(i,k)   -- 2-D, packed from `bg`; the C++ state calls it brs
+#: THE kdm6init-DERIVED CONSTANTS (owner P0-1.1, the `I_F = I_C` condition).
+#:
+#: `kdm6init` builds these module-level values and kdm62D reads them, so two legs can
+#: agree on every call ARGUMENT and still be solving different problems. The C++ port
+#: reproduces the same block f32-stepwise on purpose (fconst.h, struct F32Consts) because
+#: a double-then-demote differs by 1 ULP — measured as the step-45 divergence seed — and
+#: nothing had ever compared that reproduction against the actual Fortran values.
+#:
+#: Carried as a STAGE rather than as its own record class, so the four-case comparator
+#: does the cross-tree comparison with the machinery it already has. A second channel
+#: would be a second path to disagree on.
+#:
+#: Emitted from INSIDE the module, where they are in scope and initialized; the driver
+#: cannot see them.
+#: `ele2` is deliberately EXCLUDED. fconst.h groups it with the F32Consts family for
+#: convenience, but in the Fortran it is not a kdm6init product at all — it is computed
+#: inside kdm62D at :1601, well after this injection point, so recording it here reads
+#: zero on the Fortran side and the real value on the C++ side. Measured: 0x00000000.
+#: That is a difference in WHEN, not in WHAT, and including it would manufacture a
+#: divergence out of the instrumentation.
+INIT_CONSTANTS = [
+    ("pi", "f32", "pi"),
+    ("cmc", "f32", "cmc"),
+    ("cmr", "f32", "cmr"),
+    ("cmi", "f32", "cmi"),
+    ("g1pmc", "f32", "g1pmc"),
+    ("g3pmc", "f32", "g3pmc"),
+    ("g4pmc", "f32", "g4pmc"),
+    ("g6pmc", "f32", "g6pmc"),
+    ("g1pmr", "f32", "g1pmr"),
+    ("g2pmr", "f32", "g2pmr"),
+    ("g4pmr", "f32", "g4pmr"),
+    ("g7pmr", "f32", "g7pmr"),
+    ("g1pdrmr", "f32", "g1pdrmr"),
+    ("g1pmi", "f32", "g1pmi"),
+    ("g4pmi", "f32", "g4pmi"),
+    ("g1pdimi", "f32", "g1pdimi"),
+    ("pidnc", "f32", "pidnc"),
+    ("pidnr", "f32", "pidnr"),
+    ("pidni", "f32", "pidni"),
+    ("pidn0s", "f32", "pidn0s"),
+]
+
 POST_SED_ANCHOR = "      enddo ! do n = 1, mstepmax_i"
 POST_MICRO_ANCHOR = "   enddo                  ! big loops"
 
