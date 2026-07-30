@@ -100,6 +100,26 @@ def _semantic(stage, field):
     return field in schema.semantic_stage_fields(stage)
 
 
+def _entry_boundary(run) -> str:
+    """The boundary this run declared. NO DEFAULT (owner P0-3.4).
+
+    SedimentationIdentity.of() stopped defaulting a missing boundary to the wrapper, but
+    the normalizer still did — so the contract was enforced at one end and quietly
+    supplied at the other, and a run reaching the decision path through here would have
+    arrived carrying a boundary it never declared.
+
+    A stream from before the boundary existed is a wrapper run by construction, and the
+    PARSER still defaults on that basis; that is the right place for it, because the
+    parser can see the protocol version and this cannot.
+    """
+    boundary = getattr(run, "entry_boundary", None)
+    if boundary not in schema.ENTRY_BOUNDARIES:
+        raise NormalizeError(
+            f"the run declares no usable comparison boundary ({boundary!r}); a decision "
+            f"cannot assume which function the leg entered")
+    return boundary
+
+
 def from_fortran_run(run) -> dict:
     """FortranRun -> normalized run, projected onto the common semantic schema."""
     ops = [{"loop": o.loop, "chain": o.chain, "n": o.n, "col": o.col, "k": o.k,
@@ -150,7 +170,7 @@ def from_fortran_run(run) -> dict:
                # for — so a wrapper leg and a kernel leg are answers to different
                # questions, and comparing them is a category error the same way two
                # fixtures would be (owner: kernel gate vs wrapper contract).
-               "entry_boundary": getattr(run, "entry_boundary", schema.WRAPPER_INPUT)}
+               "entry_boundary": _entry_boundary(run)}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 

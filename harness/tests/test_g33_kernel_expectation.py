@@ -267,3 +267,39 @@ def test_the_auxiliary_is_recorded_where_the_consumer_reads_it():
         "the anchor should be the slope_kdm6 call that consumes the bundle, so a source "
         "change that moves the consumer breaks the anchor rather than silently relocating "
         "the snapshot")
+
+
+# ── the last thing produced, bound to the last thing returned (owner §1.5) ────
+
+def test_the_returned_th_is_bound_to_the_final_t():
+    """`t` was excluded from the final-state binding because it is not a COPY — the
+    state carries `th` and the pack-out computes `th = t/pii`. Excluding it entirely
+    left the last thing the kernel produced unbound to the last thing it returned, so a
+    defect in the conversion was invisible to every check.
+
+    It is checked as the CONVERSION now, and this test perturbs one cell by 1 ULP to
+    confirm the check can fail — an assertion that cannot fail certifies nothing.
+    """
+    import dataclasses
+    import g33_fortran_semantics as sem
+    _, run = _run("legacy")
+    assert sem.verify_semantics(run) is True
+
+    state = dict(run.state)
+    cell = ("th", 1, 0)
+    state[cell] = state[cell] ^ 1                 # one ULP
+    with pytest.raises(sem.SemanticError, match="final th not bound"):
+        sem.verify_semantics(dataclasses.replace(run, state=state))
+
+
+def test_the_normalizer_refuses_a_run_with_no_boundary():
+    """The decision identity stopped defaulting a missing boundary to the wrapper, but
+    the normalizer still did — the contract enforced at one end and quietly supplied at
+    the other, so a run could reach the decision path carrying a boundary it never
+    declared (owner §3.4)."""
+    import dataclasses
+    import g33_normalize as nz
+    _, run = _run("legacy")
+    assert nz.from_fortran_run(run)["problem"]["entry_boundary"]
+    with pytest.raises(nz.NormalizeError, match="no usable comparison boundary"):
+        nz.from_fortran_run(dataclasses.replace(run, entry_boundary=""))
