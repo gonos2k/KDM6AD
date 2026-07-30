@@ -1,11 +1,49 @@
 # Finding: `ncmin` is a scalar in Fortran and per-cell in C++
 
-Status: **SOURCE-LEVEL ONLY — the four-leg run did NOT reach it.**
-The `boundary_mapping_v1` run's first divergence is `brs` at `outer_pre_sed`,
-upstream of any ncmin-gated rate, so the comparison stops before this mechanism
-could show. See `FINDING_outer_pre_sed_progb_skew.md`; re-running after that skew
-is fixed is what would test this. Reported, not acted on —
-production physics is frozen and this is owner adjudication.
+Status: **CONFIRMED by measurement.** A column permutation changes **46 of 144**
+final-state cells, so the pinned Fortran operator is not column-local. Reported, not
+acted on — production physics is frozen and which implementation is correct is owner
+adjudication.
+
+## The measurement
+
+Microphysics is column-local, so the operator is block-separable and therefore
+equivariant under any column permutation `P`:
+
+    M(P X) = P M(X)
+
+`harness/tests/test_g33_column_separability.py` runs the same atmosphere twice with its
+columns in two orders, un-permutes the second, and compares the final state bit for bit.
+On `boundary_mapping_v1`, legacy, kernel boundary:
+
+    46 of 144 final-state cells differ
+    e.g. bg(1,2) bg(2,2) bg(3,2) nc(1,1) nc(1,2) nc(2,2)
+
+144 = 12 carried fields x 3 columns x 4 levels. The permutation moves the SEA column to
+`ite`, which is what changes the scalar's selection; the fixture's `nc` is 4.0e7..5.04e7,
+between `ncmin_sea` 2.5e7 and `ncmin_land` 1e8, so `nci <= ncmin` genuinely flips.
+
+The test is a `strict` xfail: it documents a property the code does not have, and if it
+ever starts passing the behaviour changed and the test must be promoted to a requirement.
+
+### It passed vacuously the first time
+
+My first permutation was `(1, 0, 2)`, which swaps two columns but leaves the LAND column
+at `ite` — so the scalar `ncmin` never moved and the test could not have failed however
+wrong the code was. Worse, the precondition I wrote asserted
+`sea[PERM[-1]] == sea[-1]` — that the surface type at `ite` is UNCHANGED, the opposite of
+what the test needs. Both are fixed, and the precondition now also requires `nc` to
+straddle the two thresholds so the gate can actually flip.
+
+## What it means beyond parity
+
+Column ordering is not a physical property of an atmosphere. A result that depends on it
+depends on tile decomposition and on MPI partitioning, which means the same case can give
+different answers at different rank counts — and coastal tiles, where land and water
+columns share a tile, are exactly where mixed surface types occur.
+
+The `dt=300` fixture is all-land with equal `ncmin`, so this mechanism is inert there and
+is NOT the cause of that run's -3 ULP `qr` difference.
 
 Found while looking for an injection anchor for `kernel_after_prologue`. It is exactly
 the class of defect the degenerate-fixture finding (owner P0-6) predicted, and it is

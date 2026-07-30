@@ -65,8 +65,9 @@ def test_the_generator_actually_runs(tmp_path, monkeypatch, capsys):
     art = json.loads(out.read_text())
     # the fields a reader depends on, including the ones the NameError sat behind
     for key in ("schema_version", "verdict", "attested", "reason", "per_algorithm",
-                "comparison_boundary", "comparison_admissible", "evidence_tier",
-                "first_divergence", "carry_proof", "fixture"):
+                "comparison_boundary", "admissibility", "evidence_tier",
+                "first_divergence", "intra_backend_carry_proof",
+                "cross_backend_difference_propagation", "fixture"):
         assert key in art, f"artifact lacks {key}"
     for algo in ("legacy", "conservative"):
         per = art["per_algorithm"][algo]
@@ -121,8 +122,64 @@ def test_a_wrapper_fortran_leg_is_not_comparison_admissible(tmp_path, monkeypatc
     art = json.loads(out.read_text())
     assert set(art["comparison_boundary"].values()) == {
         "kdm6_wrapper_input_v1", "kdm62d_kernel_entry_v1"}
-    assert art["comparison_admissible"] is False
+    assert art["admissibility"]["boundary"] is False
+    assert art["admissibility"]["overall"] is False
     assert art["wrapper_mapping_admissible"] is False
     # and the mixture is refused as evidence, not reported as a divergence
     assert art["verdict"] == "INVALID_EVIDENCE"
     assert "same problem" in art["reason"]
+
+
+def test_an_unmeasured_precondition_is_named_not_omitted(tmp_path, monkeypatch):
+    """A missing row reads as satisfied to anyone scanning the JSON, so the conditions
+    that are not yet measured say `null` rather than being absent (owner P0-2.3)."""
+    ev = _fourcase_tree(tmp_path)
+    out = tmp_path / "a.json"
+    monkeypatch.setattr(sys, "argv", [
+        "x", "--evidence", str(ev), "--fixture-id", gfx.DEFAULT_FIXTURE_ID,
+        "--allow-unattested", "--out", str(out)])
+    gen.main()
+    adm = json.loads(out.read_text())["admissibility"]
+    for unmeasured in ("scalar_parameter_identity", "cross_tree_initialization_identity",
+                       "stage_program_points", "dynamic_aux_identity"):
+        assert unmeasured in adm, f"{unmeasured} omitted rather than declared unmeasured"
+        assert adm[unmeasured] is None
+    # and a not-yet-measured condition can never make `overall` true
+    assert adm["overall"] is False
+
+
+def test_a_vacuous_propagation_row_says_so(tmp_path, monkeypatch):
+    """The old single carry_proof reported `identical: true, records: 0` — the SHA256 of
+    the empty string on both sides — for the bridge where the two backends agreed
+    everywhere. Nothing-to-nothing is not a finding, and the row now labels itself."""
+    ev = _fourcase_tree(tmp_path)
+    out = tmp_path / "a.json"
+    monkeypatch.setattr(sys, "argv", [
+        "x", "--evidence", str(ev), "--fixture-id", gfx.DEFAULT_FIXTURE_ID,
+        "--allow-unattested", "--out", str(out)])
+    gen.main()
+    art = json.loads(out.read_text())
+    for algo, spans in art["cross_backend_difference_propagation"].items():
+        for span, row in spans.items():
+            assert "vacuous" in row, f"{algo} {span} does not say whether it compared anything"
+            if row["differing_records"] == 0:
+                assert row["vacuous"] is True
+
+
+def test_the_intra_carry_proof_covers_the_whole_carried_state(tmp_path, monkeypatch):
+    """12 carried fields x B columns x K levels, per leg per bridge. A proof over an
+    empty set is the one thing this must not accept."""
+    ev = _fourcase_tree(tmp_path)
+    out = tmp_path / "a.json"
+    monkeypatch.setattr(sys, "argv", [
+        "x", "--evidence", str(ev), "--fixture-id", gfx.DEFAULT_FIXTURE_ID,
+        "--allow-unattested", "--out", str(out)])
+    gen.main()
+    _, auth = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
+    want = 12 * auth["B"] * auth["K"]
+    proofs = json.loads(out.read_text())["intra_backend_carry_proof"]
+    assert proofs, "no intra-backend carry proof at all"
+    for leg, spans in proofs.items():
+        for span, row in spans.items():
+            assert row["records"] == want, f"{leg} {span}: {row['records']} != {want}"
+            assert row["identical"] is True, f"{leg} {span} carry is not exact"
