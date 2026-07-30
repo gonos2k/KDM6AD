@@ -553,20 +553,36 @@ def test_a_real_legacy_conservative_pair_passes_the_toolchain_gate():
 
 # ── the kdm62D auxiliaries that carry no intent (owner P0-4) ───────────────────
 
-def test_the_intentless_auxiliaries_are_not_kernel_inputs():
+#: The sentinel MATRIX (owner §4). One fixture, one algorithm and two finite values is
+#: evidence about one path, not a general statement: the conservative variant, the
+#: multi-subcycle path and boundary_mapping's branch-active cells all take different
+#: routes through the kernel, and a NaN is what distinguishes "never read" from "read and
+#: multiplied by zero".
+_AUX_SENTINELS = ("0.0", "-7.25e13", "3.5e12")
+_AUX_CASES = [(algo, fixture)
+              for algo in ("legacy", "conservative")
+              for fixture in (None, "g33_fixture_multisubcycle_v1",
+                              "g33_fixture_boundary_mapping_v1")]
+
+
+@pytest.mark.parametrize("algo,fixture", _AUX_CASES)
+def test_the_intentless_auxiliaries_are_not_kernel_inputs(algo, fixture):
     """`cmg`, `n0so` and `n0go` are dummy arguments of kdm62D declared with NO intent
     (:698, :718), so Fortran must assume they may be read before being written, and the
     driver does not initialise them. The production wrapper does exactly the same —
     declares them as locals at :282-286 and passes them uninitialised at :398 — so the
     adapter is faithful. But "faithful to an exposure" is not "no exposure".
 
-    Two builds pre-filling all four with very different sentinels must produce
-    byte-identical output. If they ever diverge, these arrays are real kernel INPUTS and
-    belong in the kernel-entry identity rather than being left to the stack.
+    Every sentinel must produce byte-identical output. If any pair ever diverges, these
+    arrays are real kernel INPUTS on that path and belong in the kernel-entry identity
+    rather than being left to the stack.
     """
-    a = _build_and_run(dump=True, entry="kernel", aux_sentinel="0.0")
-    b = _build_and_run(dump=True, entry="kernel", aux_sentinel="-7.25e13")
-    assert a == b, "the intentless auxiliaries changed the answer — they are inputs"
+    runs = [_build_and_run(algo=algo, dump=True, entry="kernel", fixture=fixture,
+                           aux_sentinel=s) for s in _AUX_SENTINELS]
+    for s, out in zip(_AUX_SENTINELS[1:], runs[1:]):
+        assert out == runs[0], (
+            f"{algo}/{fixture or 'default'}: sentinel {s} changed the answer versus "
+            f"{_AUX_SENTINELS[0]} — the intentless auxiliaries are inputs on this path")
 
 
 def test_the_boundary_selector_refuses_anything_else():
