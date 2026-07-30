@@ -278,6 +278,40 @@ INIT_CONSTANTS = [
     ("pidn0s", "f32", "pidn0s"),
 ]
 
+#: WHAT THE MICROPHYSICS IS HANDED besides the 12 prognostics (owner P0-1.3).
+#:
+#: Recorded immediately after ProgB_param (:1504) and its first consumer slope_kdm6
+#: (:1509), which takes the bundle intent(in).
+#: The 4th of the seven identical `slope_kdm6` continuation lines: the ProgB_param at
+#: :1504 fills the bundle and slope_kdm6 at :1509 is its first consumer, which takes
+#: pidn0g/pvtg/bvtg/rslopegbmax as intent(in) and so does not disturb it. Recording just
+#: after that call is therefore the same values the microphysics receives, at a point
+#: OUTSIDE the do-loops — the nearby unique `! pihmf:` comment sits inside them, and
+#: injecting a whole-K emission there produced nested loops over i and k.
+MICRO_CALL_AUX_ANCHOR = (
+    "                   ite,kts,kte,qmin,pidn0g,pvtg,bvtg,rslopegbmax)", (3, 7))
+MICRO_CALL_AUX = [
+    ("rhox", "f32", "rhox(i,k)"),
+    ("bg", "f32", "brs(i,k)"),
+    ("cmg", "f32", "cmg(i,k)"),
+    ("pidn0g", "f32", "pidn0g(i,k)"),
+    ("avtg", "f32", "avtg(i,k)"),
+    ("bvtg", "f32", "bvtg(i,k)"),
+    ("bvtg1", "f32", "bvtg1(i,k)"),
+    ("bvtg2", "f32", "bvtg2(i,k)"),
+    ("bvtg3", "f32", "bvtg3(i,k)"),
+    ("bvtg4", "f32", "bvtg4(i,k)"),
+    ("g1pbg", "f32", "g1pbg(i,k)"),
+    ("g3pbg", "f32", "g3pbg(i,k)"),
+    ("g4pbg", "f32", "g4pbg(i,k)"),
+    ("g5pbgo2", "f32", "g5pbgo2(i,k)"),
+    ("g1pdgbgmg", "f32", "g1pdgbgmg(i,k)"),
+    ("dgbgmug1", "f32", "dgbgmug1(i,k)"),
+    ("rslopegbmax", "f32", "rslopegbmax(i,k)"),
+    ("pvtg", "f32", "pvtg(i,k)"),
+    ("precg2", "f32", "precg2(i,k)"),
+]
+
 POST_SED_ANCHOR = "      enddo ! do n = 1, mstepmax_i"
 POST_MICRO_ANCHOR = "   enddo                  ! big loops"
 

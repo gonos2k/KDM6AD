@@ -91,6 +91,10 @@ VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 #:   v5  no kernel-call arguments and no `p`. outer_pre_sed is recorded AFTER the
 #:       entry clamp, so it cannot separate "both legs were handed the same problem"
 #:       from "the clamp erased the difference" (owner P0-3/P0-4).
+#:   v8  the 12 prognostics are not the whole input to the microphysics: the ProgB
+#:       auxiliary bundle it also consumes was unrecorded, so `x_F == x_C` with
+#:       `a_F != a_C` was consistent with everything observed and "the difference is in
+#:       the microphysics" was stronger than the records (owner P0-1.3).
 #:   v7  records what kdm6init was CALLED with but not what it BUILT, so the module
 #:       constants kdm62D actually reads were never compared across trees — and the C++
 #:       port reproduces that block f32-stepwise on purpose, because a double-then-demote
@@ -101,7 +105,7 @@ VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 #:       one of the twelve carried fields was compared at two different instants.
 #:
 #: A pre-v6 bundle with valid external anchors would otherwise reach verdict_ready.
-DECISION_PROTOCOL_VERSION = 8
+DECISION_PROTOCOL_VERSION = 9
 
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a

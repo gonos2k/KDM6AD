@@ -115,6 +115,11 @@ _SEMANTIC_STAGE_FIELDS = {
                                 "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                       "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
+    # THE AUXILIARY THE MICROPHYSICS CONSUMES (owner P0-1.3). The 12 prognostics are not
+    # its whole input: this ProgB bundle is too, so "the sedimentation output matched" is
+    # consistent with a_F != a_C, and then the seed is in the auxiliary calculation rather
+    # than in the microphysics arithmetic.
+    "micro_call_aux": ["rhox", "bg", "cmg", "pidn0g", "avtg", "bvtg", "bvtg1", "bvtg2", "bvtg3", "bvtg4", "g1pbg", "g3pbg", "g4pbg", "g5pbgo2", "g1pdgbgmg", "dgbgmug1", "rslopegbmax", "pvtg", "precg2"],
     # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a
     # divergence in what one loop hands the next is a comparator finding rather
     # than something only a human reading two dumps side by side would notice.
