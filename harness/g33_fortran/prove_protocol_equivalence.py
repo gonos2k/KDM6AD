@@ -26,7 +26,9 @@ def records(text: str) -> list:
             if ln.startswith("G33F") and not ln.startswith(_BANNER)]
 
 
-def _is_added(line: str, stages: set, fields: set) -> bool:
+def _is_added(line: str, stages: set, fields: set, prefixes=()) -> bool:
+    if prefixes and line.startswith(tuple(prefixes)):
+        return True
     if line.startswith("G33F ENTRY"):
         return "G33F ENTRY" in fields          # only when declared as added
     if line.startswith("G33F STAGE"):
@@ -49,6 +51,9 @@ def main() -> int:
                     metavar="STAGE:FIELD", help="a field added to an EXISTING stage")
     ap.add_argument("--added-entry", action="store_true",
                     help="the G33F ENTRY record itself is new")
+    ap.add_argument("--added-record", action="append", default=[],
+                    metavar="PREFIX",
+                    help="a whole new record class, e.g. 'G33F INIT'")
     a = ap.parse_args()
 
     stages = set(a.added_stage)
@@ -57,8 +62,9 @@ def main() -> int:
         fields.add("G33F ENTRY")
 
     old, new = records(a.old.read_text()), records(a.new.read_text())
-    added = [ln for ln in new if _is_added(ln, stages, fields)]
-    kept = [ln for ln in new if not _is_added(ln, stages, fields)]
+    pref = tuple(a.added_record)
+    added = [ln for ln in new if _is_added(ln, stages, fields, pref)]
+    kept = [ln for ln in new if not _is_added(ln, stages, fields, pref)]
 
     print(f"  old records : {len(old)}")
     print(f"  shared      : {len(kept)}   "

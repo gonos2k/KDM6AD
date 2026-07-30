@@ -136,6 +136,13 @@ def from_fortran_run(run) -> dict:
     problem = {"fixture_sha256": run.fixture_sha256,
                "parameter_sha256": run.parameter_sha256, "B": B, "K": K,
                "local_parameter_sha256": run.local_parameter_sha256,
+               # WHAT THE KERNEL WAS INITIALISED WITH (owner P0-4). Backend-LOCAL, like
+               # ccn0/scale_h: the C++ side has no kdm6init, it has its own parameter
+               # builders, so this is compared between the two FORTRAN legs rather than
+               # across trees. Two legs can agree on every call ARGUMENT and still solve
+               # different problems, because kdm6init builds module-level derived
+               # constants kdm62D then reads.
+               "initialization_digest": getattr(run, "initialization_digest", None),
                # WHICH boundary. The wrapper path additionally applies kdm6's
                # height-dependent CCN profile, which the C++ port has no counterpart
                # for — so a wrapper leg and a kernel leg are answers to different

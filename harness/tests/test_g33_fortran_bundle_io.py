@@ -632,3 +632,35 @@ def test_an_unsanctioned_define_DOES_split_the_toolchain():
 
 def test_a_role_present_in_one_leg_only_is_a_difference():
     assert _prov_with([_MODULE]) != _prov_with([_MODULE, _DRIVER])
+
+
+# ── what kdm6init was called with (owner P0-4) ────────────────────────────────
+
+def test_the_initialization_digest_is_recorded_and_load_bearing(tmp_path):
+    """A leg can match on every kernel-call ARGUMENT and still solve a different
+    problem: kdm6init builds module-level derived constants that kdm62D then reads.
+    The direct-kernel adapter does call it — the variant-appropriate one, before
+    run_case — but nothing in the evidence said so, so a future adapter change could
+    drop it silently."""
+    root = _bundle(tmp_path / "b")
+    leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+    assert set(leg.run.init_params) == {"den0", "denr", "dens", "cl", "cpv", "ccn0",
+                                        "hail_opt"}
+    digest = leg.run.initialization_digest
+    assert len(digest) == 64
+    # it must actually depend on the values, or it certifies nothing
+    import dataclasses
+    other = dataclasses.replace(
+        leg.run, init_params={**leg.run.init_params, "cpv": 0x40000000})
+    assert other.initialization_digest != digest
+
+
+def test_a_v7_stream_without_INIT_records_is_refused():
+    """Declared and unenforced is the failure mode every version bump here exists to
+    close, so the record set is required at v7 rather than merely parsed."""
+    raw = SAMPLE.read_text()
+    stripped = "\n".join(ln for ln in raw.splitlines()
+                         if not ln.startswith("G33F INIT")) + "\n"
+    _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
+    with pytest.raises(fd.FortranRunError, match="INIT"):
+        fd.parse_fortran_run(stripped, "legacy", authority["K"], authority["B"])

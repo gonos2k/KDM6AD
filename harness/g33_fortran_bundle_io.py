@@ -41,7 +41,7 @@ LANES = ("A", "B", "C")
 #: than discovered, so a field added later is a deliberate decision about whether it
 #: is evidence — a dir()-based sweep would freeze new fields silently either way.
 _RUN_MAPPINGS = ("stages", "state", "precip", "fixin", "params", "localparams",
-                 "mstep")
+                 "init_params", "mstep")
 
 
 class FortranBundleError(Exception):

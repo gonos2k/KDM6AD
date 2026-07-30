@@ -121,6 +121,22 @@ contains
     do i=1,im
       call emit_fld('G33F FIXIN', 'xland', i, -1, xland(i,1))
     end do
+    ! WHAT THE KERNEL WAS INITIALISED WITH (owner P0-4). kdm6init builds module-level
+    ! derived constants that kdm62D then reads, so two legs can agree on every call
+    ! ARGUMENT and still be solving different problems. The direct-kernel adapter does
+    ! call it — the variant-appropriate one, before run_case — but nothing in the evidence
+    ! said so, which means a future adapter change could drop it silently.
+    !
+    ! Its own record class, not LOCALPARAM: local_parameter_sha256 is contractually the
+    ! hash of the fixture's declared fortran_only_parameters, and widening it would make
+    ! the fixture responsible for host constants it does not own.
+    call emit_init('den0', rhoair0)
+    call emit_init('denr', rhowater)
+    call emit_init('dens', rhosnow)
+    call emit_init('cl', cliq)
+    call emit_init('cpv', cpv)
+    call emit_init('ccn0', f32(G33_CCN0_BITS))
+    call emit_init_i('hail_opt', 0)
     call emit_param('dt', delt)
     call emit_param('ncmin_land', ncmin_land)
     call emit_param('ncmin_sea', ncmin_sea)
@@ -289,6 +305,19 @@ contains
          transfer(val, 0_int32)
   end subroutine emit_kci
 #endif
+
+  subroutine emit_init(name, val)
+    character(len=*), intent(in) :: name
+    real, intent(in) :: val
+    write(*,'(A,1X,A,1X,A,1X,Z8.8)') 'G33F INIT', trim(name), 'f32', &
+         transfer(val, 0_int32)
+  end subroutine emit_init
+
+  subroutine emit_init_i(name, val)
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: val
+    write(*,'(A,1X,A,1X,A,1X,Z8.8)') 'G33F INIT', trim(name), 'i32', val
+  end subroutine emit_init_i
 
   subroutine emit_param(name, val)
     character(len=*), intent(in) :: name

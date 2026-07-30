@@ -49,6 +49,12 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_after_entry_clamp": "-",
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
+#: v7: what kdm6init was called with (owner P0-4). Its OWN record class, not LOCALPARAM:
+#: local_parameter_sha256 is contractually the hash of the fixture's declared
+#: fortran_only_parameters, and widening it would make the fixture responsible for host
+#: constants it does not own. hail_opt is an integer, so the dtype is part of the record.
+_INIT = re.compile(r"^G33F INIT\s+(\S+)\s+(f32|i32)\s+([0-9A-Fa-f]{8})$")
+_INIT_ARGS = ("den0", "denr", "dens", "cl", "cpv", "ccn0", "hail_opt")
 _STATE = re.compile(r"^G33F STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 #: Which comparison boundary the run entered at. The wrapper path additionally
@@ -376,6 +382,8 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K,
 @dataclass(frozen=True)
 class FortranRun:
     algorithm: str
+    #: kdm6init's arguments -> bits. Empty before v7.
+    init_params: dict
     #: The G33F banner version this stream was emitted at. Carried because the
     #: PARSER accepts v1-v5 (migration and re-verification of past evidence need
     #: that) while the DECISION path must not: a v4 stream's bridge omits nc/ni/
@@ -398,9 +406,23 @@ class FortranRun:
     params: dict           # name -> bits
     localparams: dict      # name -> bits (ccn0, scale_h)
 
+    @property
+    def initialization_digest(self) -> str:
+        """One hash over what kdm6init was called with (owner P0-4).
+
+        A leg can match on every call ARGUMENT and still be solving a different problem,
+        because kdm6init builds module-level derived constants that kdm62D then reads.
+        Compared between the two FORTRAN legs — the C++ side has no kdm6init, it has its
+        own parameter builders, so this is a backend-local precondition in the same way
+        ccn0/scale_h are.
+        """
+        return _hashlib.sha256(
+            "".join(f"{n}:{self.init_params[n]:08x}"
+                    for n in sorted(self.init_params)).encode()).hexdigest()
+
 
 _KNOWN = (_ENTRY, _OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
-          _LOCALPARAM, _STATE, _PREC, _BEGIN, _END)
+          _LOCALPARAM, _INIT, _STATE, _PREC, _BEGIN, _END)
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
 #: The carried state, by protocol version. Keyed rather than versioned by constant
@@ -522,7 +544,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
         # evidence for, before any of that evidence appears.
         if _BEGIN.match(line) or _ENTRY.match(line):
             return 0
-        if _FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line):
+        if (_FIXIN.match(line) or _PARAM.match(line) or _LOCALPARAM.match(line)
+                or _INIT.match(line)):
             return 1
         if (_MSTEP_V1.match(line) or _MSTEP_V3.match(line) or _OP.match(line)
                 or _STAGE_V1.match(line) or _STAGE_V2.match(line)):
@@ -643,6 +666,11 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
     _require_exact(fixin, exp_fixin, _FIXIN, text, "FIXIN")
     params = parse_param(text)
     _require_names(params, _COMMON_PARAMS, _PARAM, lines, "PARAM")
+    init_params = {m.group(1): int(m.group(3), 16)
+                   for line in lines if (m := _INIT.match(line))}
+    if version >= 7 and set(init_params) != set(_INIT_ARGS):
+        raise FortranRunError(
+            f"INIT: expected {sorted(_INIT_ARGS)}, got {sorted(init_params)}")
     localparams = parse_localparam(text)
     _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
     _validate_domain(fixin, params, localparams, state, precip, B, K,
@@ -661,7 +689,8 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
                       fixture_sha256=fixture_sha256, parameter_sha256=parameter_sha256,
                       local_parameter_sha256=local_parameter_sha256,
                       ops=ops, stages=stages, state=state, precip=precip, fixin=fixin,
-                      params=params, localparams=localparams)
+                      params=params, localparams=localparams,
+                      init_params=init_params)
 
 
 def _require_names(parsed, expected, pattern, lines, label):

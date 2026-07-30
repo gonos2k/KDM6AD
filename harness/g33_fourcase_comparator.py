@@ -718,7 +718,8 @@ def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
     # ...and within one backend, the full-step preconditions must agree too.
     for backend, pair in (("F", ("legacy-F", "conservative-F")),
                           ("C++", ("legacy-C++", "conservative-C++"))):
-        local = {n: ids[n].get("local_parameter_sha256") for n in pair}
+        local = {n: (ids[n].get("local_parameter_sha256"),
+                     ids[n].get("initialization_digest")) for n in pair}
         if len(set(local.values())) != 1:
             return _invalid(
                 f"the two {backend} legs disagree on backend-local parameters, so "
