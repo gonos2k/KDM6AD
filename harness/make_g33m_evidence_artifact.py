@@ -93,12 +93,52 @@ def _digest(pairs) -> str:
     return h.hexdigest()
 
 
-def _carry_proof(diff, loops):
-    """The carry, proven by identity and bits rather than by counting.
+def _intra_backend_carry(run, loops) -> dict:
+    """The carry each backend makes WITHIN ITSELF, over the whole carried state.
 
-    outer_post_micro(L) and outer_pre_sed(L+1) are the same state observed twice, so
-    the SAME cells must differ by the SAME amounts. Equal counts of different cells
-    is what the previous check accepted.
+    outer_post_micro(L) and outer_pre_sed(L+1) are the same state observed twice, so the
+    copy must be bit-exact. This compares the ACTUAL RECORDS of one leg — it is a
+    statement about that leg, and it holds or fails regardless of what the other backend
+    did.
+
+    What was here before compared the two backends' DIFFERENCE SETS at the two instants.
+    That is a useful diagnostic — it says a difference propagated unchanged — but when
+    both sets are empty it compares nothing to nothing and reports `identical: true`
+    with `records: 0` and the SHA256 of the empty string. The committed dt=300 artifact
+    carries exactly that for L1->L2, so the strongest-looking row in the carry proof was
+    the one proving least.
+    """
+    by_stage = {}
+    for r in run["stages"]:
+        if r["stage"] in ("outer_post_micro", "outer_pre_sed"):
+            by_stage.setdefault((r["stage"], r["loop"]), {})[
+                (r["field"], r["col"], r["k"])] = r["bits"]
+    out = {}
+    for loop in loops[:-1]:
+        post = by_stage.get(("outer_post_micro", loop), {})
+        pre = by_stage.get(("outer_pre_sed", loop + 1), {})
+        # The carry is over the CARRIED state only: outer_pre_sed additionally carries
+        # p/rho/delz, which are forcings and not handed from one loop to the next.
+        shared = post.keys() & pre.keys()
+        differing = sorted(k for k in shared if post[k] != pre[k])
+        out[f"L{loop}->L{loop + 1}"] = {
+            "records": len(shared),
+            "post_micro_only": len(post.keys() - pre.keys()),
+            "pre_sed_only": len(pre.keys() - post.keys()),
+            "identical": not differing and bool(shared),
+            "differing": [list(k) for k in differing[:8]],
+            "state_digest": _digest((str(k), post[k]) for k in sorted(shared)),
+        }
+    return out
+
+
+def _cross_backend_propagation(diff, loops) -> dict:
+    """Whether a cross-backend DIFFERENCE crossed the bridge unchanged.
+
+    Deliberately separate from the carry proof above, and deliberately not called one:
+    equal difference sets at the two instants say the difference propagated, which is a
+    diagnostic about the pair, not evidence that either leg copied its own state
+    correctly.
     """
     out = {}
     for loop in loops[:-1]:
@@ -109,10 +149,74 @@ def _carry_proof(diff, loops):
         out[f"L{loop}->L{loop + 1}"] = {
             "post_micro_digest": _digest((str(i), f, c) for i, (f, c) in post.items()),
             "pre_sed_digest": _digest((str(i), f, c) for i, (f, c) in pre.items()),
-            "identical": post == pre,
-            "records": len(post),
+            "propagated_unchanged": post == pre,
+            "differing_records": len(post),
+            # an EMPTY comparison is not a finding either way, and saying so stops the
+            # row from reading as a proof
+            "vacuous": not post and not pre,
         }
     return out
+
+
+def _closure_section(levels: list) -> dict:
+    """The saturation-adjustment closure, or an explicit statement that it does not
+    apply. The note is an interpretation OF LEVELS: without levels it interprets
+    nothing, and printing it anyway is how the kernel artifact came to assert a
+    conclusion its own evidence did not contain."""
+    if not levels:
+        return {"status": "not_applicable",
+                "reason": "no qv/qc/t divergence at the compared boundary, so there is "
+                          "no condensation step to close",
+                "levels": []}
+    return {
+        "status": "computed",
+        "note": "Both closures are recorded. The constant-Lv/constant-cp residual is a "
+                "DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% larger, "
+                "the same order as the residual, and at k=3 the residual CHANGES SIGN "
+                "under it. The model form uses the code's own cpmcal/xlcal "
+                "(module_mp_kdm6.F:818-819) and brings the residual under 1% of dT, "
+                "straddling zero. That is a strong saturation-adjustment-CONSISTENT "
+                "signature — it is still not a proof of the operator, which is "
+                "unobserved.",
+        "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the "
+                "returned STATE carries `th` separately, so no Exner factor is applied",
+        "levels": levels,
+    }
+
+
+#: The necessary conditions for a C4-admissible kernel comparison, each measured
+#: independently. `None` means NOT YET MEASURED — distinct from False, and distinct from
+#: absent: a row that simply is not there reads as satisfied to anyone scanning the JSON.
+_UNMEASURED = None
+
+
+def _admissibility(loaded) -> dict:
+    """Every precondition, separately, plus their conjunction.
+
+    A single boolean could not express the actual state, which is that the boundary and
+    the tensor inputs are established while the scalar parameters, the initialized module
+    state, the stage program points and the dynamic ProgB auxiliaries are not.
+    """
+    boundary = _boundaries(loaded) == {schema.KERNEL_ENTRY}
+    # The two Fortran legs must agree on what kdm6init built. Cross-tree it is not
+    # comparable — the C++ side has no kdm6init — so this is the strongest statement the
+    # evidence supports today.
+    inits = {run["problem"].get("initialization_digest")
+             for name, run in loaded.normalized.items() if name.endswith("_fortran")}
+    rows = {
+        "boundary": boundary,
+        "tensor_inputs": boundary,      # kernel_call_input equality is checked by the
+                                        # comparator; a mismatch is INVALID_EVIDENCE, so
+                                        # reaching a verdict at all implies it
+        "fortran_initialization_agrees": len(inits) == 1 and None not in inits,
+        # NOT YET MEASURED, and named so rather than omitted:
+        "scalar_parameter_identity": _UNMEASURED,
+        "cross_tree_initialization_identity": _UNMEASURED,
+        "stage_program_points": _UNMEASURED,
+        "dynamic_aux_identity": _UNMEASURED,
+    }
+    rows["overall"] = all(v is True for v in rows.values())
+    return rows
 
 
 def _boundaries(loaded) -> set:
@@ -166,7 +270,8 @@ def main() -> int:
         return 2
     verdict = loaded.verdict()
 
-    per_algo, closure, carry = {}, [], {}
+    per_algo, closure = {}, []
+    intra, propagation = {}, {}
     for algo in ("legacy", "conservative"):
         F = loaded.normalized[f"{algo}_fortran"]
         C = loaded.normalized[f"{algo}_cpp"]
@@ -193,7 +298,12 @@ def main() -> int:
             "mstep_range": list(loaded.cpp_legs[algo].mstep_range or ()),
             "probe_lineage": dict(loaded.cpp_legs[algo].probe_lineage or {}),
         }
-        carry[algo] = _carry_proof(diff, loops)
+        # TWO DIFFERENT CLAIMS, kept apart (owner P0-2.1). The first is about each leg
+        # on its own and is what "the carry is exact" means; the second is a diagnostic
+        # about the pair.
+        for backend, run in (("fortran", F), ("cpp", C)):
+            intra[f"{algo}_{backend}"] = _intra_backend_carry(run, loops)
+        propagation[algo] = _cross_backend_propagation(diff, loops)
 
         if algo == "legacy":
             # EVERY cell where the condensation triple actually differs, not the
@@ -253,7 +363,12 @@ def main() -> int:
         # and NOT for a statement about the C++ kernel's conservative-interface
         # arithmetic — which is the question this artifact exists to answer. Testing
         # only |B| == 1 made a four-wrapper run report comparison_admissible: true.
-        "comparison_admissible": _boundaries(loaded) == {schema.KERNEL_ENTRY},
+        # STRUCTURED (owner P0-2.3). One boolean called `comparison_admissible` was
+        # answering only the BOUNDARY question while its name claimed the whole
+        # precondition set. Each row is one necessary condition, `overall` is their
+        # conjunction, and a condition that is not yet measured says so rather than
+        # being absent — a missing row reads as satisfied.
+        "admissibility": _admissibility(loaded),
         "wrapper_mapping_admissible": _boundaries(loaded) == {schema.WRAPPER_INPUT},
         "evidence_tier": "decision" if loaded.anchored else "debug",
         "verifier_commit": _git("rev-parse", "HEAD"),
@@ -279,22 +394,21 @@ def main() -> int:
             "legacy": verdict.get("legacy_first_divergence"),
             "conservative": verdict.get("conservative_first_divergence")},
         "per_algorithm": per_algo,
-        # identity + bits, not counts: equal numbers of different cells used to pass
-        "carry_proof": carry,
-        "condensation_closure": {
-            "note": "Both closures are recorded. The constant-Lv/constant-cp residual "
-                    "is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% "
-                    "larger, the same order as the residual, and at k=3 the residual "
-                    "CHANGES SIGN under it. The model form uses the code's own "
-                    "cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual "
-                    "under 1% of dT, straddling zero. That is a strong "
-                    "saturation-adjustment-CONSISTENT signature — it is still not a "
-                    "proof of the operator, which is unobserved.",
-            "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the "
-                    "returned STATE carries `th` separately, so no Exner factor is "
-                    "applied",
-            "levels": closure,
-        },
+        # WITHIN each leg: the bit-exact copy from one loop to the next, over the whole
+        # carried state. This is what "the carry is exact" means, and it is a statement
+        # about one leg rather than about the pair.
+        "intra_backend_carry_proof": intra,
+        # BETWEEN the two backends: whether a cross-backend difference crossed the
+        # bridge unchanged. A useful diagnostic, and NOT a carry proof — when both
+        # difference sets are empty it compares nothing to nothing, which is what the
+        # previous single "carry_proof" reported as identical with records: 0.
+        "cross_backend_difference_propagation": propagation,
+        # PHASE-DRIVEN (owner P0-2.2). The note used to be emitted unconditionally,
+        # so the kernel-boundary artifact carried "Both closures are recorded ...
+        # saturation-adjustment-CONSISTENT" above an EMPTY `levels` — an interpretation
+        # of a previous run's divergence sitting over evidence that has none. The
+        # closure only means something when there is a qv/qc/t divergence to close.
+        "condensation_closure": _closure_section(closure),
     }
     a.out.parent.mkdir(parents=True, exist_ok=True)
     tmp = a.out.with_suffix(a.out.suffix + ".tmp")
@@ -303,10 +417,13 @@ def main() -> int:
     print(f"wrote {a.out}")
     print(f"  verdict {art['verdict']} | attested {art['attested']} | "
           f"dirty {art['verifier_tree_dirty']}")
-    for algo, c in carry.items():
+    for leg, c in sorted(intra.items()):
         for span, v in c.items():
-            print(f"  carry {algo:13s} {span}: identical={v['identical']} "
+            print(f"  carry {leg:22s} {span}: identical={v['identical']} "
                   f"({v['records']} records)")
+    adm = art["admissibility"]
+    print("  admissibility: " + " ".join(
+        f"{k}={'?' if v is None else v}" for k, v in adm.items()))
     return 0
 
 
