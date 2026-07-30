@@ -147,6 +147,23 @@ contains
           brsk(i,k)   = bg(i,k,1)
         end do
       end do
+      ! AUXILIARY EXPOSURE (owner P0-4). `cmg`, `n0so` and `n0go` are dummy arguments
+      ! of kdm62D declared with NO intent (:698, :718), so Fortran must assume they may
+      ! be read before being written; `rhox` is intent(out) and safe. The production
+      ! wrapper passes exactly the same four as UNINITIALISED locals (:282-286 -> :398),
+      ! so this adapter is faithful to it — but "faithful to an exposure" is not "no
+      ! exposure", and whether the kernel actually reads them is a fact to measure.
+      !
+      ! Built with -DKDM6_G33_AUX_SENTINEL=<value>, the four are pre-filled with that
+      ! value. Two builds with different sentinels must produce byte-identical
+      ! observables; if they do not, these arrays are real kernel INPUTS and belong in
+      ! the kernel-entry identity.
+#ifdef KDM6_G33_AUX_SENTINEL
+      rhoxk  = KDM6_G33_AUX_SENTINEL
+      cmgk   = KDM6_G33_AUX_SENTINEL
+      n0so2d = KDM6_G33_AUX_SENTINEL
+      n0go2d = KDM6_G33_AUX_SENTINEL
+#endif
 #ifdef KDM6_G33_FORTRAN_DUMP
       ! THE ACTUAL CALL ARGUMENTS, recorded here and nowhere else (owner P0-3).
       ! kdm62D's own entry padding (F:822-839) clamps the prognostics before the
@@ -235,7 +252,20 @@ contains
   logical function kernel_entry_mode()
     character(len=32) :: mode
     call get_environment_variable('G33_ENTRY', mode)
-    kernel_entry_mode = (trim(mode) == 'kernel')
+    ! FAIL LOUD on anything else. `== 'kernel'` made every typo, every truncation and
+    ! every unrelated value silently mean WRAPPER — a run that answers a different
+    ! question than the one asked, and the only trace would be the ENTRY line in a
+    ! stream nobody reads until the comparison already happened. An empty value is the
+    ! documented default, since the wrapper path is the operational one.
+    select case (trim(mode))
+    case ('kernel')
+      kernel_entry_mode = .true.
+    case ('wrapper', '')
+      kernel_entry_mode = .false.
+    case default
+      write(*,'(A)') 'G33_ENTRY must be kernel or wrapper, got: '//trim(mode)
+      error stop 'G33_ENTRY invalid'
+    end select
   end function kernel_entry_mode
 
   subroutine emit_fld(tag, name, i, k_top, val)

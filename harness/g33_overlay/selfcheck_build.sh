@@ -26,7 +26,15 @@ INCS=$(sed -n 's/^CXX_INCLUDES = //p' "$FM")
 # $DEFS and $FLGS are word-split the same way.
 FIXDEF=""
 for a in "$@"; do
-    case "$a" in --fixture=multisubcycle) FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;; esac
+    case "$a" in
+        --fixture=multisubcycle)    FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;;
+        --fixture=boundary_mapping) FIXDEF="-DKDM6_G33_FIXTURE_BOUNDARY_MAPPING" ;;
+        # An unknown value used to fall through SILENTLY, so the driver compiled the
+        # DEFAULT fixture while the checker used the requested authority — a binary
+        # for the wrong problem, reported as "the fixture stream has a missing or
+        # wrong BEGIN or END" from three layers away.
+        --fixture=*) echo "unknown --fixture: $a" >&2; exit 2 ;;
+    esac
 done
 FLGS=$(sed -n 's/^CXX_FLAGS = //p' "$FM")
 CXX=$(xcrun -f c++ 2>/dev/null || command -v c++ || true)

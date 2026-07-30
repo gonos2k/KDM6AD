@@ -12,6 +12,7 @@ FC=$(command -v gfortran || true)
 
 # A canonical, B generated overlay/macro OFF, C same overlay/macro ON.
 OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy; OVERLAY_FILE_ARG=""
+AUXDEF=""          # set by --aux-sentinel below; must precede the parse loop
 for a in "$@"; do
     case "$a" in
         --dump) DUMP=1; OVERLAY=1 ;;
@@ -19,6 +20,9 @@ for a in "$@"; do
         --overlay-file=*) OVERLAY_FILE_ARG="${a#--overlay-file=}"; OVERLAY=1; DUMP=1 ;;
         --algo=*) ALGO="${a#--algo=}" ;;
         --fixture=*) FIXTURE_NAME="${a#--fixture=}" ;;
+        # DIAGNOSTIC ONLY: pre-fill the kdm62D auxiliary arguments that carry
+        # no intent, so two builds with different values can be compared.
+        --aux-sentinel=*) AUXDEF="-DKDM6_G33_AUX_SENTINEL=${a#--aux-sentinel=}" ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -87,7 +91,7 @@ fc "$OUT/module_mp.o" "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DUMP_DEF[@]}" "$MO
 # the call site, which is in the driver, and it is instrumentation. Without
 # the define here the non-instrumented A/B lanes would emit STAGE records —
 # the control would carry the thing it is the control for.
-fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" "${DUMP_DEF[@]}" \
+fc "$OUT/g33_fortran_driver.o" "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "${DRVDEF[@]}" "${DUMP_DEF[@]}" $AUXDEF \
     "$HERE/g33_fortran_driver.f90"
 
 LINK_OBJS=("$OUT/g33_fortran_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"

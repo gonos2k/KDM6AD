@@ -230,6 +230,28 @@ class VerifiedFourCase:
     def runs(self) -> tuple:
         return tuple(leg.normalized for _name, leg in self.legs)
 
+    def mechanism_admissible(self) -> bool:
+        """Whether this fixture may support a MECHANISM verdict (owner P0-8).
+
+        Resolved from the fixture authority on disk by the `fixture_sha256` the legs
+        themselves carry — not from a field on this object, which a caller could set.
+        Fails closed: an unresolvable or disagreeing fixture is not admissible, because
+        the alternative is promoting on a fixture nobody can look up.
+        """
+        import g33_fixture_v1 as gfx
+        shas = {leg.normalized["problem"]["fixture_sha256"] for _n, leg in self.legs}
+        if len(shas) != 1:
+            return False
+        want = shas.pop()
+        for fixture_id in gfx.FIXTURES:
+            try:
+                _spec, authority = gfx.load_fixture(fixture_id)
+            except Exception:                 # an unloadable entry decides nothing
+                continue
+            if gfx.fixture_sha256(authority) == want:
+                return gfx.FIXTURES[fixture_id].mechanism_admissible
+        return False
+
 
 @dataclass(frozen=True)
 class SedimentationIdentity:
@@ -244,13 +266,23 @@ class SedimentationIdentity:
     #: The comparison boundary. A wrapper leg and a kernel leg solve different
     #: problems — the wrapper additionally rewrites nccn from a height profile the
     #: C++ port does not have — so this belongs in the identity, not beside it.
-    entry_boundary: str = schema.WRAPPER_INPUT
+    entry_boundary: str
 
     @classmethod
     def of(cls, problem: dict) -> "SedimentationIdentity":
+        # NO DEFAULT (owner P0-9). Defaulting to the wrapper boundary meant two
+        # malformed runs that BOTH omitted it were both read as wrapper legs and passed
+        # the same-problem check — the field would have been declared and unenforced,
+        # which is the failure mode the versioned ids exist to prevent. Support for
+        # pre-boundary streams belongs in the parser (which does still default, since a
+        # stream from before the kernel path was a wrapper run by construction), not in
+        # the decision identity.
+        if "entry_boundary" not in problem:
+            raise StructuralError(
+                "a leg's problem identity has no comparison boundary: a decision "
+                "cannot assume which function the leg entered")
         return cls(problem["fixture_sha256"], problem["parameter_sha256"],
-                   problem["B"], problem["K"],
-                   problem.get("entry_boundary", schema.WRAPPER_INPUT))
+                   problem["B"], problem["K"], problem["entry_boundary"])
 
 
 class StructuralError(Exception):
@@ -674,8 +706,12 @@ def _adjudicate_normalized(legacy_f, legacy_c, conservative_f, conservative_c,
         return _invalid(f"legs without a problem identity: {missing}")
     try:
         sed = {name: SedimentationIdentity.of(v) for name, v in ids.items()}
-    except KeyError as e:
-        return _invalid(f"a leg's problem identity lacks {e}")
+    except (KeyError, StructuralError) as e:
+        # A missing key and a missing BOUNDARY are the same kind of fact about the
+        # evidence, so both become INVALID_EVIDENCE. Letting the StructuralError
+        # propagate would exit 6 (a harness defect) for something that is a defect in
+        # the bundle.
+        return _invalid(f"a leg's problem identity is unusable: {e}")
     if len(set(sed.values())) != 1:
         return _invalid(f"the four legs do not describe the same problem: {ids}")
     # ...and within one backend, the full-step preconditions must agree too.
@@ -747,7 +783,13 @@ def adjudicate_verified(evidence: VerifiedFourCase) -> dict:
                 "reason": f"legs that are not decision-grade: {unready}",
                 "legacy_first_divergence": None,
                 "conservative_first_divergence": None}
-    return _adjudicate_normalized(*evidence.runs(), promote=True)
+    # WHAT THE FIXTURE MAY DECIDE (owner P0-8). A structural probe like
+    # boundary_mapping_v1 carries deliberately out-of-band prognostics to exercise code
+    # paths; a mechanism verdict from it would be a claim about physics drawn from
+    # values chosen to be unphysical. The fixture declares its ceiling and this is
+    # where it binds — a declaration nothing reads stops nothing.
+    return _adjudicate_normalized(*evidence.runs(),
+                                  promote=evidence.mechanism_admissible())
 
 
 def adjudicate_unattested(legacy_f, legacy_c, conservative_f, conservative_c) -> dict:
