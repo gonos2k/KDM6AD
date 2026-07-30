@@ -45,7 +45,8 @@ _COMPARATOR_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp",
                       "outer_pre_sed", "substep_pre",
                       "surface",
-                      "outer_post_sed", "outer_post_micro")
+                      "outer_post_sed", "micro_call_aux",
+                      "outer_post_micro")
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
 _PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",
