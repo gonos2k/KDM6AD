@@ -101,6 +101,12 @@ _SEMANTIC_STAGE_FIELDS = {
     # the clamp, readable without a third stage.
     "kernel_call_input": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                           "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
+    # AFTER THE ENTRY CLAMP. With kernel_call_input before it and outer_pre_sed after,
+    # the clamp becomes a MEASURED interval instead of an inference: what differs from
+    # kernel_call_input is the padding, what differs from outer_pre_sed is the rest of
+    # the prologue — which is where ProgB_param rewrites brs (owner P0-3/P0-6).
+    "kernel_after_entry_clamp": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                                "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                       "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a

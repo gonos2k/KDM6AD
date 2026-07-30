@@ -103,8 +103,9 @@ def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
             assert sched["instrumented_stages"] == list(ge.CPP_OVERLAY_STAGES)
             index = ge.run_index(sched)
             assert {c["container_id"] for c in index["containers"]} == {
-                # L0: the kernel-call arguments, once per call rather than per loop
-                "L0_kernel_call_input",
+                # L0: the once-per-call snapshots — the arguments, and the state after
+                # the entry padding. Neither is loop-scoped.
+                "L0_kernel_call_input", "L0_kernel_after_entry_clamp",
                 "L1_outer_pre", "L1_main_n1", "L1_surface",
                 "L1_outer_post_sed", "L1_outer_post_micro",
             }

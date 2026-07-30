@@ -270,6 +270,14 @@ _FORCINGS = [("p", "f32", "p(i,k)"),
 #: this one did not, so the carry was checked over fields one end never emitted.
 OUTER_PRE_SED = _CARRIED + _FORCINGS
 
+#: AFTER THE ENTRY CLAMP (owner P0-3/P0-6). The clamp block (F:822-864) ends two lines
+#: above `! imsi`, but injecting there would record `rho` from `dend`, which the very
+#: next loop assigns — so the anchor is the line after that copy. `dend(i,k)=den(i,k)`
+#: is a pure forcing copy and touches none of the twelve carried fields, so the interval
+#: this snapshot closes is the padding and nothing else.
+AFTER_ENTRY_CLAMP_ANCHOR = "! 20250205 ncmin setting"
+AFTER_ENTRY_CLAMP = _CARRIED + _FORCINGS
+
 # ── surface causal operands (owner P0-8): the per-species bottom fall that feeds
 # rain/snow/graupel increments, so the qr-seed -> precip path is an operand set,
 # not just the final PREC. Emitted per column at the surface accumulation (k=-1).

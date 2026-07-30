@@ -167,7 +167,7 @@ def test_internal_verification_alone_is_not_verdict_ready(tmp_path):
     assert leg.bundle_verified and not leg.verdict_ready
 
 
-def test_a_pre_v6_stream_is_never_verdict_ready(tmp_path):
+def test_a_pre_v7_stream_is_never_verdict_ready(tmp_path):
     """The parser accepts v1-v5 so past evidence stays re-verifiable; the DECISION
     path takes v5 only. A v4 bridge omits nc/ni/nccn/brs, and the dt=300 run is the
     worked example: at v4 the first difference read as post-microphysics, at v5 it
@@ -176,8 +176,8 @@ def test_a_pre_v6_stream_is_never_verdict_ready(tmp_path):
     import dataclasses
     root = _bundle(tmp_path / "b")
     leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
-    assert leg.verdict_ready and leg.run.protocol_version == 6
-    for older in (1, 2, 3, 4, 5):
+    assert leg.verdict_ready and leg.run.protocol_version == 7
+    for older in (1, 2, 3, 4, 5, 6):
         downgraded = dataclasses.replace(
             leg, run=dataclasses.replace(leg.run, protocol_version=older))
         assert not downgraded.verdict_ready, f"v{older} reached the decision path"

@@ -57,7 +57,27 @@ at `outer_pre_sed` in that run too, which means one of the twelve carried fields
 being compared at two different instants. The claim "loop 1 was bit-identical" holds for
 the other eleven and is only accidentally true for `brs`.
 
-## The fix, and why it is not applied here
+## Localized at protocol v7, and the C++ snapshot moved
+
+`kernel_after_entry_clamp` splits the prologue into two measured intervals. On
+`boundary_mapping_v1` at the kernel boundary, Fortran alone:
+
+| interval | cells | what |
+|---|---|---|
+| `kernel_call_input` -> `kernel_after_entry_clamp` | **3** | `ni` cap `2.4e6 -> 1e6`, `qc` `-3.5e-19 -> 0`, `qi` `-1.25e-18 -> 0` |
+| `kernel_after_entry_clamp` -> `outer_pre_sed` | **1** | `brs` `0x327c8b49 -> 0x327c8b48` |
+
+The padding interval contains exactly the three documented clamps and nothing else, and
+the `brs` change is on the OTHER side of it — in the interval that contains
+`ProgB_param` at `:1154`. That is the owner's own discriminator (a change at the clamp
+would be an argument-association problem; a change after it is a prologue one), and it
+lands on the prologue.
+
+The C++ `outer_pre_sed` snapshot has moved to AFTER `cur_pyc.brs = pre_sed.progb.bg`, so
+both backends now record the state that actually enters sedimentation. The old placement
+recorded C++ before its ProgB brs update while Fortran records after ProgB_param.
+
+## The earlier plan, kept for the record
 
 Either the C++ snapshot moves after ProgB, or the Fortran injection moves before
 `ProgB_param`. The C++ side is the overlay, so both are harness-only — no production

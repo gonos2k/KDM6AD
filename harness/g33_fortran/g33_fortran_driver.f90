@@ -94,7 +94,7 @@ contains
     inF(:,:,4)=qr(:,:,1); inF(:,:,5)=qi(:,:,1); inF(:,:,6)=qs(:,:,1)
     inF(:,:,7)=qg(:,:,1); inF(:,:,8)=nn(:,:,1); inF(:,:,9)=nc(:,:,1)
     inF(:,:,10)=ni(:,:,1); inF(:,:,11)=nr(:,:,1); inF(:,:,12)=bg(:,:,1)
-    write(*,'(A)') 'G33F BEGIN v6 '//ALGOTAG
+    write(*,'(A)') 'G33F BEGIN v7 '//ALGOTAG
     ! WHICH BOUNDARY this run is evidence for. The kernel and wrapper paths answer
     ! different questions and their records are not interchangeable, so a stream that
     ! did not say which one it came from would let them be compared by accident.
@@ -339,6 +339,6 @@ program g33_fortran_driver
       call emit_prec(f, i, precF(f,i))
     end do
   end do
-  write(*,'(A)') 'G33F END v6 '//ALGOTAG
+  write(*,'(A)') 'G33F END v7 '//ALGOTAG
   write(*,'(A)') 'FORTRAN DRIVER OK ('//ALGOTAG//', fixture='//G33_FIXTURE_ID//')'
 end program g33_fortran_driver

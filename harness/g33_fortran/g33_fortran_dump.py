@@ -42,7 +42,8 @@ _STAGE_V2 = re.compile(
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
 # A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
 # that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
-_STAGE_CHAIN = {"kernel_call_input": "-", "outer_pre_sed": "-",
+_STAGE_CHAIN = {"kernel_call_input": "-", "kernel_after_entry_clamp": "-",
+                "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -58,8 +59,8 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 # here because the parser is also used standalone.
 _ENTRY = re.compile(r"^G33F ENTRY (kdm62d_kernel_entry_v1|kdm6_wrapper_input_v1)$")
 
-_BEGIN = re.compile(r"^G33F BEGIN v([123456]) (\S+)$")
-_END = re.compile(r"^G33F END v([123456]) (\S+)$")
+_BEGIN = re.compile(r"^G33F BEGIN v([1234567]) (\S+)$")
+_END = re.compile(r"^G33F END v([1234567]) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -272,8 +273,8 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # by THAT scope's own mstep maximum
     scopes = sorted({(lp, ch) for lp, ch, _c in mstep})
     loops = sorted({lp for lp, _ch in scopes})
-    carried = _CARRIED_BY_VERSION.get(min(version, 6), ())
-    forcings = _FORCINGS_BY_VERSION.get(min(max(version, 4), 6), ())
+    carried = _CARRIED_BY_VERSION.get(min(version, 7), ())
+    forcings = _FORCINGS_BY_VERSION.get(min(max(version, 4), 7), ())
     pre_sed_fields = ((carried + forcings) if version >= 4
                       else _OUTER_PRE_SED_FIELDS_V3)
     exp = {(L, "-", "outer_pre_sed", 0, f, c, k) for L in loops
@@ -300,6 +301,11 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # cannot produce it would report a boundary choice as missing evidence.
     if version >= 6 and entry_boundary == KERNEL_ENTRY:
         exp |= {(0, "-", "kernel_call_input", 0, f, c, k)
+                for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
+    # v7: after the entry padding. Emitted by the OVERLAY, so it is present on both
+    # boundaries — the clamp runs whichever function was entered.
+    if version >= 7:
+        exp |= {(0, "-", "kernel_after_entry_clamp", 0, f, c, k)
                 for f in pre_sed_fields for c in range(1, B + 1) for k in range(K)}
     if version >= 4:
         for stage in ("outer_post_sed", "outer_post_micro"):
@@ -406,14 +412,16 @@ _CARRIED_BY_VERSION = {
         "nc", "ni", "nccn", "brs"),
     6: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
         "nc", "ni", "nccn", "brs"),
+    7: ("qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+        "nc", "ni", "nccn", "brs"),
 }
 #: Forcings are keyed the same way, for the same reason. v6 adds `p`: it is a kernel
 #: ARGUMENT that enters saturation vapour pressure, the diffusion/thermodynamic
 #: coefficients and several process rates, so two backends entering with different
 #: pressure would show it only as a rate difference far downstream (owner P0-4).
 _FORCINGS_BY_VERSION = {4: ("rho", "delz"), 5: ("rho", "delz"),
-                        6: ("p", "rho", "delz")}
-_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[6] + _FORCINGS_BY_VERSION[6]
+                        6: ("p", "rho", "delz"), 7: ("p", "rho", "delz")}
+_OUTER_PRE_SED_FIELDS = _CARRIED_BY_VERSION[7] + _FORCINGS_BY_VERSION[7]
 #: What v3 emitted, kept so a pre-bridge stream still parses and the equivalence
 #: proof (a new run reproduces the old sample's shared records exactly) stays
 #: possible — that proof is how the bridge is shown not to perturb the run.

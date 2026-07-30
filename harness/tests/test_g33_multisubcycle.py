@@ -52,11 +52,17 @@ def test_strict_parse_and_semantics_hold():
 
 def test_normalized_run_spans_every_outer_loop():
     assert sorted({o["loop"] for o in NORM["ops"]}) == [1, 2, 3]
-    loop_scoped = [s for s in NORM["stages"] if s["stage"] != "final_output"]
+    # ONCE-PER-CALL stages carry loop 0, meaning "not loop-scoped": the whole-step
+    # output at one end, and the kernel-entry snapshots at the other. A kernel call
+    # happens once however many sub-cycles it takes.
+    once = {"final_output", "kernel_call_input", "kernel_after_entry_clamp"}
+    loop_scoped = [s for s in NORM["stages"] if s["stage"] not in once]
     assert sorted({s["loop"] for s in loop_scoped}) == [1, 2, 3]
-    # the whole-step output is not loop-scoped: loop 0, emitted once per column
-    final = [s for s in NORM["stages"] if s["stage"] == "final_output"]
-    assert final and {s["loop"] for s in final} == {0}
+    for stage in sorted(once):
+        rows = [s for s in NORM["stages"] if s["stage"] == stage]
+        if stage == "kernel_call_input":
+            continue           # wrapper-boundary sample: the driver does not emit it
+        assert rows and {s["loop"] for s in rows} == {0}, stage
 
 
 def test_gate_contract_holds_with_real_inactive_lanes():
