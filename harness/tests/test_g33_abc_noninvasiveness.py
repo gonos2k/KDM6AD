@@ -108,7 +108,7 @@ def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
                 "L0_kernel_call_input", "L0_kernel_init_constants",
                 "L0_kernel_after_entry_clamp",
                 "L1_outer_pre", "L1_main_n1", "L1_surface",
-                "L1_outer_post_sed", "L1_outer_post_micro",
+                "L1_outer_post_sed", "L1_micro_call_aux", "L1_outer_post_micro",
             }
 
 

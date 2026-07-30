@@ -152,6 +152,9 @@ def build_overlay(algo, text):
              # at the end of the ice chain, and the state the NEXT outer loop starts
              # from at the end of the loop body. Without them a divergence first
              # visible at loop 2's outer_pre_sed has no attributable origin.
+             # the ProgB bundle the micro rates consume, per outer loop
+             (fb.MICRO_CALL_AUX_ANCHOR, "after",
+              _stage_block("micro_call_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
              (fb.POST_SED_ANCHOR, "after",
               _stage_block("outer_post_sed", "-", "0", [], fb.OUTER_POST_SED)),
              (fb.POST_MICRO_ANCHOR, "before",
@@ -172,12 +175,30 @@ def build_overlay(algo, text):
     # line gets the pre-ladder before + the actual q_post after).
     plan = {}
     for anchor, place, block in edits:
+        # An anchor may be (line, occurrence): several injection points sit on lines that
+        # repeat verbatim — `call slope_kdm6(...)` occurs seven times, once per rate
+        # block — and requiring a unique line would mean either finding no anchor at all
+        # or picking a nearby unique COMMENT, which drifts independently of the code it
+        # is standing in for. An explicit occurrence index says which one and still fails
+        # loudly if the count changes.
+        want = None
+        if isinstance(anchor, tuple):
+            anchor, want = anchor
         idx = [i for i, ln in enumerate(lines) if ln == anchor]
-        if len(idx) != 1:
-            raise SystemExit(
-                f"anchor matched {len(idx)} whole lines, expected 1 — the source "
-                f"changed:\n  {anchor}")
-        plan.setdefault(idx[0], {"before": [], "after": []})[place] += block
+        if want is None:
+            if len(idx) != 1:
+                raise SystemExit(
+                    f"anchor matched {len(idx)} whole lines, expected 1 — the source "
+                    f"changed:\n  {anchor}")
+            at = idx[0]
+        else:
+            n, total = want
+            if len(idx) != total:
+                raise SystemExit(
+                    f"anchor matched {len(idx)} whole lines, expected {total} — the "
+                    f"source changed:\n  {anchor}")
+            at = idx[n]
+        plan.setdefault(at, {"before": [], "after": []})[place] += block
 
     out = []
     for i, ln in enumerate(lines):

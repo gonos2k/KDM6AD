@@ -225,3 +225,45 @@ def test_the_f32_stepwise_value_is_what_the_fortran_produces():
     pidnc = {b for (n, _c, _k), b in got.items() if n == "pidnc"}
     assert pidnc == {0x4402E653}, (
         f"pidnc is {pidnc}, not the f32-stepwise 0x4402E653 that fconst.h targets")
+
+
+# ── the auxiliary the microphysics consumes (owner §1.3) ──────────────────────
+
+def test_the_micro_auxiliary_bundle_is_recorded_per_outer_loop():
+    """The 12 prognostics are not the whole input to the microphysics.
+
+    `x_F == x_C` with `a_F != a_C` gives `M(x, a_F) != M(x, a_C)`, so "the sedimentation
+    output matched" was consistent with the seed being in the auxiliary calculation rather
+    than in the microphysics arithmetic. The bundle is recorded now, so the comparator can
+    see it instead of the reason string asserting past it.
+    """
+    import g33_fortran_bindings as fb
+    authority, run = _run("legacy")
+    names = {n for n, _d, _e in fb.MICRO_CALL_AUX}
+    assert len(names) == 19, f"expected the 19-field ProgB bundle, got {len(names)}"
+    per_loop = {}
+    for k, v in run.stages.items():
+        if k[2] == "micro_call_aux":
+            per_loop.setdefault(k[0], set()).add(k[4])
+    assert per_loop, "no micro_call_aux records"
+    for loop, got in sorted(per_loop.items()):
+        assert got == names, f"loop {loop} carries {got ^ names}"
+
+
+def test_the_auxiliary_is_recorded_where_the_consumer_reads_it():
+    """The anchor is the 4th of seven identical `slope_kdm6` continuation lines.
+
+    Requiring a unique line would have meant anchoring on the nearby `! pihmf:` comment,
+    which sits INSIDE the do-loops — injecting a whole-K emission there produced nested
+    loops over i and k and would not compile. An occurrence index says which of the seven,
+    and still fails loudly if the count changes.
+    """
+    import g33_fortran_bindings as fb
+    anchor = fb.MICRO_CALL_AUX_ANCHOR
+    assert isinstance(anchor, tuple), "the anchor must carry its occurrence index"
+    line, (n, total) = anchor
+    assert (n, total) == (3, 7)
+    assert "pidn0g" in line and "pvtg" in line, (
+        "the anchor should be the slope_kdm6 call that consumes the bundle, so a source "
+        "change that moves the consumer breaks the anchor rather than silently relocating "
+        "the snapshot")
