@@ -1351,6 +1351,42 @@ CoordinatorState kdm62d_one_step(
 #ifdef KDM6_SUBSTEP_DUMP
     if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "poststateupdate");
 #endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE BISECTION. micro_call_progb_aux and outer_post_micro used to be adjacent
+        // in the ladder, so a divergence first seen at outer_post_micro was attributable
+        // only to "somewhere in the microphysics" — the rate blocks, the mass-conservation
+        // feedback, the two-branch state update, the brs re-clamp, Picons/Nicons and the
+        // saturation adjustment, all at once. This snapshot splits that span.
+        //
+        // It is placed on the SAME line as the existing substep dump above, which the
+        // pinned Fortran's own dump at F:3041 names as its mirror. Reusing a reconciled
+        // pair rather than establishing a new correspondence is deliberate: both
+        // placement defects this protocol has produced came from a site where the
+        // correspondence had to be worked out here.
+        //
+        // flip_k: new_state is host-K, the dump is top-first. Recording it raw reverses
+        // every column, which is exactly how the ProgB bundle read as 58 divergent cells
+        // when it was bit-identical.
+        coord_g33ovl::Outer g33("micro_post_state_update",
+                                coord_g33ovl::flip_k(new_state.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_state_update", "qr",   coord_g33ovl::flip_k(new_state.qr));
+            G33_REC(g33, "micro_post_state_update", "nr",   coord_g33ovl::flip_k(new_state.nr));
+            G33_REC(g33, "micro_post_state_update", "qv",   coord_g33ovl::flip_k(new_state.qv));
+            G33_REC(g33, "micro_post_state_update", "t",    coord_g33ovl::flip_k(new_state.t));
+            G33_REC(g33, "micro_post_state_update", "qc",   coord_g33ovl::flip_k(new_state.qc));
+            G33_REC(g33, "micro_post_state_update", "qi",   coord_g33ovl::flip_k(new_state.qi));
+            G33_REC(g33, "micro_post_state_update", "qs",   coord_g33ovl::flip_k(new_state.qs));
+            G33_REC(g33, "micro_post_state_update", "qg",   coord_g33ovl::flip_k(new_state.qg));
+            G33_REC(g33, "micro_post_state_update", "nc",   coord_g33ovl::flip_k(new_state.nc));
+            G33_REC(g33, "micro_post_state_update", "ni",   coord_g33ovl::flip_k(new_state.ni));
+            G33_REC(g33, "micro_post_state_update", "nccn", coord_g33ovl::flip_k(new_state.nccn));
+            G33_REC(g33, "micro_post_state_update", "brs",  coord_g33ovl::flip_k(new_state.brs));
+        }
+        g33.finalize();
+    }
+#endif
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).
     new_state = reclassify_large_ice_to_snow(new_state, forcing.den);

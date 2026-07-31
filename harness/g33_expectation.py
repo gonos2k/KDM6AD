@@ -268,6 +268,14 @@ _STAGE_FIELDS_BASE = {
 # Cross-tree comparison therefore uses the SEMANTIC fields
 # (mstep_decoded_i32 / mstep_exact_integer / gate_decoded_u8); the native bits are
 # retained for per-backend provenance only.
+# The microphysics bisection carries the same twelve fields as outer_post_micro, in
+# the same order, and both producers emit them in that order. DERIVED rather than
+# spelled out again: the field ORDER here is not documentation, it is what the
+# op_seq windows are computed from, so a hand-copy that drifted by one position
+# would surface as a sealed-descriptor container mismatch with no hint of the cause.
+_STAGE_FIELDS_BASE["micro_post_state_update"] = list(
+    _STAGE_FIELDS_BASE["outer_post_micro"])
+
 _NATIVE = {
     "cpp":     {"NATIVE_MSTEP": "f64", "NATIVE_GATE": "f32"},
     "fortran": {"NATIVE_MSTEP": "i32", "NATIVE_GATE": "u8"},
@@ -434,6 +442,14 @@ def expected_records(schedule: dict) -> list[dict]:
         # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
         emit("micro_call_progb_aux", _stage_fields("micro_call_progb_aux", backend),
              outer_loop=loop, shape=[B, K])
+        # BETWEEN the ProgB bundle and the post-micro bridge, because that is where the
+        # producers emit it: C++ on the same line as the `poststateupdate` substep dump
+        # (after the brs sweep, before reclassify_large_ice_to_snow), Fortran after the
+        # sixth ProgB_param call at :3032. Getting this order wrong does not read as an
+        # ordering bug — op_seq is a measured counter, so a misplaced stage shifts every
+        # window after it and surfaces as a sealed-descriptor container mismatch.
+        emit("micro_post_state_update", _stage_fields("micro_post_state_update", backend),
+             outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
     # INSTRUMENTED SCOPE. op_seq_id is a MEASURED process-global counter, and it
     # only counts records the overlay actually emits. Numbering the manifest over
@@ -492,6 +508,7 @@ def expected_records(schedule: dict) -> list[dict]:
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
+                      "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 

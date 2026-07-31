@@ -47,6 +47,7 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
                 "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "micro_call_progb_aux": "-",
+                "micro_post_state_update": "-",
                 "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -80,8 +81,11 @@ _PREC = re.compile(r"^G33F PREC\s+(\d+)\s+(\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 # here because the parser is also used standalone.
 _ENTRY = re.compile(r"^G33F ENTRY (kdm62d_kernel_entry_v1|kdm6_wrapper_input_v1)$")
 
-_BEGIN = re.compile(r"^G33F BEGIN v([1-9]) (\S+)$")
-_END = re.compile(r"^G33F END v([1-9]) (\S+)$")
+# Multi-digit from v10 on. `v([1-9])` matched for nine bumps and then
+# silently stopped matching, which surfaces as "expected exactly one
+# G33F BEGIN" — a missing-header error for a stream whose header is fine.
+_BEGIN = re.compile(r"^G33F BEGIN v([1-9][0-9]*) (\S+)$")
+_END = re.compile(r"^G33F END v([1-9][0-9]*) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
@@ -321,6 +325,14 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # measured by a separate gate. Requiring the record of a stream that structurally
     # cannot produce it would report a boundary choice as missing evidence.
     # v8: what kdm6init BUILT. Emitted by the overlay, so present on both boundaries.
+    # v10: the microphysics bisection — the state after the two-branch update and
+    # its brs re-clamp, before Picons/Nicons and the saturation adjustment. Same
+    # twelve fields as outer_post_micro, so the two snapshots are comparable
+    # directly and the interval between them is the second half of the micro step.
+    if version >= 10:
+        exp |= {(L, "-", "micro_post_state_update", 0, fld, c, k) for L in loops
+                for fld in carried for c in range(1, B + 1)
+                for k in range(K)}
     # v9: the ProgB bundle the micro rates consume, per outer loop.
     if version >= 9:
         exp |= {(L, "-", "micro_call_progb_aux", 0, fld, c, k) for L in loops

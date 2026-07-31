@@ -41,12 +41,19 @@ import g33_derived as dv      # noqa: E402
 #: snapshot: both backends emit them, so a divergence in the carry between outer loops
 #: is a comparator finding rather than something only a human reading two dumps could
 #: notice (owner P0-C1).
-_COMPARATOR_STAGES = ("kernel_call_input", "kernel_init_constants",
-                      "kernel_after_entry_clamp",
-                      "outer_pre_sed", "substep_pre",
-                      "surface",
-                      "outer_post_sed", "micro_call_progb_aux",
-                      "outer_post_micro")
+#
+# DERIVED from the schema, not listed again. Adding micro_post_state_update meant
+# touching five separate hand-kept stage lists, and each one that was missed failed
+# on its own with an error that named the symptom rather than the omission — here,
+# "fortran run has non-comparator stage", about a stage the schema does define. The
+# schema is the authority for what stages exist; this is the authority only for the
+# ONE that is deliberately excluded.
+#
+# final_output is not a per-cell snapshot: it carries the whole-step cumulative
+# precipitation, which the comparator handles on its own path.
+_NOT_COMPARED = ("final_output",)
+_COMPARATOR_STAGES = tuple(s for s in schema._SEMANTIC_STAGE_FIELDS
+                           if s not in _NOT_COMPARED)
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
 _PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",

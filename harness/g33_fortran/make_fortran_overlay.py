@@ -155,6 +155,11 @@ def build_overlay(algo, text):
              # the ProgB bundle the micro rates consume, per outer loop
              (fb.MICRO_CALL_AUX_ANCHOR, "after",
               _stage_block("micro_call_progb_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
+             # the bisection of the micro step: after the state update and its brs
+             # re-clamp, before Picons/satadj (F:3032, the sixth ProgB_param call)
+             (fb.MICRO_POST_STATE_UPDATE_ANCHOR, "after",
+              _stage_block("micro_post_state_update", "-", "0", [],
+                           fb.MICRO_POST_STATE_UPDATE)),
              (fb.POST_SED_ANCHOR, "after",
               _stage_block("outer_post_sed", "-", "0", [], fb.OUTER_POST_SED)),
              (fb.POST_MICRO_ANCHOR, "before",

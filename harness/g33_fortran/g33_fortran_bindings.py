@@ -344,6 +344,22 @@ _CARRIED = [
 OUTER_POST_SED = list(_CARRIED)
 OUTER_POST_MICRO = list(_CARRIED)
 
+#: THE BISECTION of the microphysics step, at the sixth of the seven ProgB_param
+#: calls (F:3032) — after the two-branch state update and its brs re-clamp, before
+#: Picons/Nicons and the saturation adjustment. The pinned source already dumps
+#: exactly this instant to fort_substep_poststateupdate.bin four lines below,
+#: describing itself as mirroring the C++ `poststateupdate`, so the correspondence
+#: between the backends is one that already exists and was reconciled rather than
+#: one established here. That matters: both placement defects this protocol has
+#: produced came from a site where it had to be established fresh.
+#:
+#: Derived from _CARRIED, so the twelve expressions are literally the ones
+#: outer_post_micro already uses. A separate list would be a second mapping to keep
+#: correct, which is how the pre-sed and post snapshots drifted apart at v5.
+MICRO_POST_STATE_UPDATE_ANCHOR = (
+    "                   ,g1pbg,g3pbg,g4pbg,g5pbgo2,g1pdgbgmg,dgbgmug1)", (6, 7))
+MICRO_POST_STATE_UPDATE = list(_CARRIED)
+
 #: Pre-sed forcings: not carried between loops, so not part of the bridge identity —
 #: but they ARE part of the problem the kernel is given. `p` was missing: pressure
 #: enters saturation vapour pressure, the diffusion/thermodynamic coefficients and

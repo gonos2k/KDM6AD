@@ -136,6 +136,27 @@ _SEMANTIC_STAGE_FIELDS = {
     # than something only a human reading two dumps side by side would notice.
     "outer_post_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                        "nc", "ni", "nccn", "brs"],
+    # THE BISECTION OF THE MICROPHYSICS STEP. micro_call_progb_aux and
+    # outer_post_micro used to sit next to each other in the ladder with nothing
+    # between them, so a divergence first seen at outer_post_micro was attributable
+    # only to "somewhere in the microphysics" — which is the whole of it: the warm
+    # and cold rate blocks, the mass-conservation feedback, the two-branch state
+    # update, the ProgB brs re-clamp, Picons/Nicons, and the saturation adjustment.
+    #
+    # This stage splits that span in two at the one interior point where BOTH
+    # backends already have a reconciled, commented program point — Fortran's
+    # fort_substep_poststateupdate (F:3041, "post-budget + post-ProgB brs-reclamp,
+    # PRE-Picons/satadj") and the C++ `poststateupdate` dump on new_state after the
+    # brs sweep and before reclassify_large_ice_to_snow. Reusing that pair rather
+    # than inventing a program point is the point: the two placement defects this
+    # protocol has already produced both came from a site where the correspondence
+    # had to be established fresh.
+    #
+    # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
+    # add a new mapping between the backends, and a new mapping is a new way to
+    # manufacture a difference that is not there.
+    "micro_post_state_update": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                                "nc", "ni", "nccn", "brs"],
     "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                          "nc", "ni", "nccn", "brs"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",

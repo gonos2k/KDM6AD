@@ -68,15 +68,16 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_call_progb_aux", "outer_post_micro")
+           "outer_post_sed", "micro_call_progb_aux", "micro_post_state_update",
+           "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_call_progb_aux": 7, "outer_post_micro": 8,
-                "final_output": 9}
+                "micro_call_progb_aux": 7, "micro_post_state_update": 8,
+                "outer_post_micro": 9, "final_output": 10}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -603,11 +604,15 @@ def classify(legacy: Divergence, conservative: Divergence):
     for name, d in pairs:
         if d.phase == "outer_post_micro":
             return "INCONCLUSIVE", (
-                f"{name} first-diverges at {d.phase} {d.identity} — the recorded "
-                f"sedimentation OUTPUT matched, so this is the first OBSERVED "
-                f"difference. Whether it ORIGINATED here is a separate question: "
-                f"micro_call_progb_aux carries the ProgB bundle the microphysics also "
-                f"consumes, so read that stage before attributing. Attribution is "
+                f"{name} first-diverges at {d.phase} {d.identity} — the sedimentation "
+                f"OUTPUT, micro_call_progb_aux (the ProgB bundle, one of the six groups "
+                f"the micro call receives) and micro_post_state_update all matched, "
+                f"so this is the first OBSERVED difference and it appeared after the "
+                f"two-branch state update and its ProgB brs re-clamp: in Picons/Nicons, "
+                f"the saturation adjustment, or the final re-slope. The rate blocks, the "
+                f"mass-conservation feedback and the state update itself are EXCLUDED by "
+                f"micro_post_state_update. That narrows WHERE it was observed; whether "
+                f"it ORIGINATED there is still a separate question, and attribution is "
                 f"owner adjudication")
     # 3c. THE PRE-MICRO AUXILIARY (owner P0-4). Without a branch of its own this fell
     # through to the generic "pairs diverge differently", which names the phase and says
@@ -620,6 +625,22 @@ def classify(legacy: Divergence, conservative: Divergence):
     # not have matched, and ordering these two by source position rather than by phase
     # rank would make the reason depend on where the code sits.
     for name, d in pairs:
+        # 3b'. THE BISECTION. Reached only when the ProgB bundle handed to the
+        # microphysics matched, so the difference is inside the microphysics and on
+        # the FIRST half of it: the warm and cold rate blocks, the mass-conservation
+        # feedback, the two-branch state update, or the ProgB brs re-clamp. Picons,
+        # the saturation adjustment and the final re-slope are excluded — they run
+        # after this snapshot. That is a narrower statement than "in the
+        # microphysics" and it is the reason this stage exists.
+        if d.phase == "micro_post_state_update":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the ProgB bundle "
+                f"the rates read matched, so the difference is inside the microphysics "
+                f"and BEFORE Picons/Nicons and the saturation adjustment: in the rate "
+                f"blocks, the mass-conservation feedback, the two-branch state update, "
+                f"or the ProgB brs re-clamp. This is NOT a statement about "
+                f"conservative-only interface arithmetic; attribution is owner "
+                f"adjudication")
         if d.phase == "micro_call_progb_aux":
             return "INCONCLUSIVE", (
                 f"{name} first-diverges at {d.phase} {d.identity} — the ProgB auxiliary "
