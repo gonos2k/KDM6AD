@@ -15,6 +15,7 @@ Uses the committed samples, which are WRAPPER-boundary runs and therefore carry 
 `kernel_after_entry_clamp`, which the overlay emits on both boundaries, so the padding
 half is checkable here and the mapping half is checked against the fixture directly.
 """
+import re
 import struct
 import sys
 from pathlib import Path
@@ -287,7 +288,11 @@ def test_the_two_backends_record_the_SAME_progb_instant():
     co = (ROOT / "g33_overlay" / "coordinator.cpp.overlay").read_text()
     assert "micro_call_progb_aux" not in rt, (
         "the handoff recording is the retained bundle, not what the rates read")
-    assert 'Outer g33("micro_call_progb_aux", pre2.progb.rhox)' in co
+    # The SOURCE of the record is what this test is about; the orientation wrapper
+    # around it is test_g33_overlay_orientation's business, so match past it.
+    assert re.search(r'Outer g33\("micro_call_progb_aux",\s*'
+                     r'(?:(?:\w+::)*flip_k\()?pre2\.progb\.rhox', co), (
+        "the container must be opened on the recomputed pre2 bundle")
     assert "progb_ret_host" not in co.split("micro_call_progb_aux")[1][:600], (
         "the C++ record must come from the recomputed pre2, not the retained input")
 
