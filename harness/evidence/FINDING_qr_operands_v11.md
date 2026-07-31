@@ -35,9 +35,23 @@ cold (F:2803)  qrs(1) += (praut+pracw+prevp-piacr-pgacr-psacr-pmulrs-pmulrg)*dtc
 warm (F:2922)  qrs(1) += (praut+pracw+prevp+paacw+paacw-pseml-pgeml)*dtcld
 ```
 
-Closed is the point: the incoming `qrs(1)` is already compared (it comes from
-`outer_post_sed`) and `dtcld` is a sealed scalar, so if every operand matches and
-`qr` still differs, the difference is in the summation and not in an operand.
+> **CORRECTION (owner review, §2).** The word "closed" above overstates what
+> this stage seals, and the reasoning under it was wrong. It read: the incoming
+> `qrs(1)` is already compared because it comes from `outer_post_sed`, so if
+> every operand matches and `qr` still differs the difference must be in the
+> summation. **`state_update` does not read `outer_post_sed.qr`.** Between that
+> snapshot and the update the step runs D1 melt, homogeneous freeze, the
+> post-melt re-slope, D2–D4 freeze, the post-freeze re-slope, the rate blocks and
+> the mass-conservation scaling; the base is `working.qr`, which no G3.3 stage
+> records. (The C++ dumps it as the `prestate` substep forensic, which is not a
+> decision stage.)
+>
+> So the set is closed over the RATE operands and not over the update line. The
+> measured first divergence below stands — `prevp` differs, and that is an
+> observation, not an inference. What does not stand is the converse: "all
+> operands equal ⇒ the difference is in the summation" needs the exact
+> pre-update state, and is not available until `micro_pre_state_update` and an
+> exact f32 replay of the update are added.
 
 Three C++ names carry a suffix and the same quantity: Fortran adjusts
 `psacr`/`pgacr`/`paacw` **in place** after the Hallett-Mossop block
@@ -69,14 +83,29 @@ conservative_cpp      0xa985531c   -5.92080367e-14
 
 Only **three** of the twelve operands differ anywhere, all in column 3:
 
-| loop | field | k | Fortran | C++ | Δ | variant-independent |
-|---|---|---|---|---|---|---|
-| 2 | `prevp` | 0 | −5.919258e-14 | −5.920804e-14 | +2281 | **both sides** |
-| 2 | `psacr` | 0 | +5.535328e-16 | +5.535317e-16 | −21 | **both sides** |
-| 2 | `paacw` | 0 | +9.838063e-14 | +9.838044e-14 | −28 | **both sides** |
-| 2 | `paacw` | 1–3 | 4.06e-12 … 1.85e-10 | | −18, −23, −8 | no |
-| 3 | `paacw` | 0 | +3.041082e-15 | +3.041087e-15 | +19 | **both sides** |
-| 3 | `paacw` | 1–3 | 1.67e-13 … 1.85e-11 | | +53, +54, +12 | no |
+`signed_ulp_delta` is `ordered(C) − ordered(F)` under the order-preserving
+(Dawson) transform. It is NOT the raw bit difference: for a negative float the
+bit ordering runs the other way, so `prevp`'s raw `c_bits − f_bits` is +2281
+while its signed ULP delta is **−2281**. An earlier version of this table printed
+the raw difference under a bare `Δ` and so reported that one row with the wrong
+sign.
+
+| loop | field | k | Fortran | C++ | `signed_ulp_delta` | dir | branch-active here | variant-independent |
+|---|---|---|---|---|---|---|---|---|
+| 2 | `prevp` | 0 | −5.919258e-14 | −5.920804e-14 | **−2281** | C<F | **yes** (common) | **both sides** |
+| 2 | `psacr` | 0 | +5.535328e-16 | +5.535317e-16 | −21 | C<F | **yes** (cold) | **both sides** |
+| 2 | `paacw` | 0 | +9.838063e-14 | +9.838044e-14 | −28 | C<F | **no** (warm-only) | both sides |
+| 2 | `paacw` | 1 | +4.061015e-12 | | −18 | C<F | **no** (warm-only) | no |
+| 2 | `paacw` | 2 | +4.073789e-11 | | −23 | C<F | **no** (warm-only) | no |
+| 2 | `paacw` | 3 | +1.849350e-10 | | −8 | C<F | **no** (warm-only) | no |
+| 3 | `paacw` | 0 | +3.041082e-15 | +3.041087e-15 | +19 | C>F | **no** (warm-only) | both sides |
+| 3 | `paacw` | 1–3 | 1.67e-13 … 1.85e-11 | | +53, +54, +12 | C>F | **no** (warm-only) | no |
+
+**`paacw` is not causal at this cell.** Column 3 runs at 242–244 K, so every level
+takes the COLD arm, whose qr line does not read `paacw` at all — it is a
+warm-arm operand. Its differences are diagnostics. The operands that are
+branch-active AND differ here are `prevp` and `psacr`, and of those `prevp`
+dominates by four orders of magnitude (below).
 
 ## Three controls
 
@@ -96,24 +125,56 @@ on. It is not where the seed is.
 
 ## Magnitudes
 
-These rates are ~1e-14 to 1e-16. `prevp`'s 2281 ULP is 2.6e-4 *relative* on a
-rate of −5.9e-14, i.e. about 1.5e-17 absolute; over `dtcld` that is ~1e-15,
-which tips `qr` (3.8e-8 at that cell) by the 3 ULP seen downstream. The large
-relative deviation on a near-zero evaporation rate is the signature of
-cancellation — evaporation is a saturation deficit, a difference of nearly equal
-terms — so a small absolute difference upstream becomes a large relative one
-here. Physically the rate is zero to any meaningful precision.
+`prevp` is −5.919258e-14 s⁻¹ in Fortran and −5.920804e-14 s⁻¹ in C++, so
+
+    Δprevp          ≈ −1.546e-17 s⁻¹     (2.6e-4 relative, 2281 ULP)
+    Δprevp · dtcld  ≈ −1.546e-15 kg/kg   (dtcld ≈ 100 s)
+
+and the `qr` difference actually observed at that cell is
+
+    0x31974466 → 0x31974463  ≈ −1.332e-15 kg/kg
+
+The sign and magnitude of the `prevp` backend difference match the 3-ULP `qr`
+difference. `psacr`'s difference is ~1e-21 s⁻¹ — four orders of magnitude
+smaller — so it cannot account for it. That is quantitative evidence that
+`prevp` is the **dominant branch-active operand** at this cell.
+
+Two things this does NOT say.
+
+The rate itself is small but **not** zero: `prevp · dtcld ≈ −5.92e-12 kg/kg`.
+An earlier wording here said "physically the rate is zero to any meaningful
+precision", which overstates it — what is meteorologically negligible is the
+Fortran↔C++ *difference*, not the rate.
+
+And a large relative deviation on a near-zero evaporation rate is
+**cancellation-consistent**, not a demonstrated cancellation. Evaporation is a
+saturation deficit, a difference of nearly equal terms, which would produce
+exactly this; but establishing that as the origin needs the rungs of the
+computation, and they are not recorded.
 
 ## What this does and does not establish
 
-It establishes that the first observed Fortran↔C++ difference is an operand of
-the qr update line, that exactly three rates differ anywhere in that set, that
-the branch is not implicated, and that at the seed cell the difference is
+It establishes that the first observed Fortran↔C++ difference is a **scaled**
+operand of the qr update line, that exactly three rates differ anywhere in that
+set and only two of them are branch-active at the seed cell, that the branch
+itself is not implicated, and that at the seed cell the difference is
 bit-identically the same with and without the conservative interface.
 
-It does not establish which arithmetic step inside `prevp` produces it. That
-needs the rungs of the evaporation computation itself, which is the next
-bisection and a new operand vocabulary.
+It does not establish the root cause, and three things stand between:
+
+1. **The exact pre-update state is not sealed** (correction above). Until
+   `micro_pre_state_update` and an exact f32 replay of the update line exist,
+   "all operands equal ⇒ summation" cannot be asserted.
+2. **The recorded `prevp` is the post-budget SCALED rate**, not the raw
+   evaporation rate: the C++ path is `warm_phase` → `cold_phase` → D5 →
+   `scale_rates_for_conservation` → `micro_qr_operands` → `state_update`. So the
+   candidates are the raw formula, the conservation scale factor, or the
+   multiply/cast/store that applies it — three different answers, not one.
+3. **Which arithmetic step inside the raw `prevp`** produces it, if it is (1).
+
+Going straight to the evaporation formula's internal rungs would skip (1) and
+(2). The order is: seal the update base and the branch-active operand set, then
+split raw from scaled, then bisect the formula.
 
 The gate returns `INCONCLUSIVE`. Attribution is owner adjudication; the tool
 makes no C4 claim.

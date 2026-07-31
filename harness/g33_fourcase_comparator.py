@@ -438,13 +438,22 @@ def _mono(bits, w):
 
 
 def _signature(dt, f_bits, c_bits):
-    """Raw-bit divergence signature for the result — direction + ULP distance."""
+    """Raw-bit divergence signature for the result — direction + ULP distance.
+
+    The magnitude is emitted TWICE, under names that say which is which. A single
+    `ulp_delta` was read as a distance in one place and as a signed difference in
+    another — the artifact carried -2281 while a finding table wrote it as +2281
+    with a bare delta sign, and nothing in either said which convention applied.
+    A quantity whose sign a reader has to infer is a quantity whose sign gets
+    inferred wrong.
+    """
     sig = {"dtype": dt, "f_bits": f"{f_bits:#x}", "c_bits": f"{c_bits:#x}",
            "xor": f"{f_bits ^ c_bits:#x}"}
     w = {"f32": 32, "f64": 64}.get(dt)        # ULP ordering is float-only
     if w:
         ulp = _mono(c_bits, w) - _mono(f_bits, w)
-        sig["ulp_delta"] = ulp
+        sig["signed_ulp_delta"] = ulp          # ordered(C) - ordered(F)
+        sig["ulp_distance_abs"] = abs(ulp)
         sig["direction"] = "C>F" if ulp > 0 else ("C<F" if ulp < 0 else "equal")
     return sig
 

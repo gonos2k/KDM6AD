@@ -1,226 +1,233 @@
 {
-  "attested": true,
-  "carry_proof": {
-    "conservative": {
-      "L1->L2": {
-        "identical": true,
-        "post_micro_digest": "2f0db49c08942c3862bbefa0861ef443bfaa4ee3189ecc4aaf41ed6b410a30fd",
-        "pre_sed_digest": "2f0db49c08942c3862bbefa0861ef443bfaa4ee3189ecc4aaf41ed6b410a30fd",
-        "records": 24
-      },
-      "L2->L3": {
-        "identical": true,
-        "post_micro_digest": "bd272479776ee84e0575184285943798599bc16f6120487e220fb5a4fafd90f8",
-        "pre_sed_digest": "bd272479776ee84e0575184285943798599bc16f6120487e220fb5a4fafd90f8",
-        "records": 46
-      }
-    },
-    "legacy": {
-      "L1->L2": {
-        "identical": true,
-        "post_micro_digest": "58d3e04867356af67e5729ea349468fc3050da19e7f665e44b73ccf238604ba0",
-        "pre_sed_digest": "58d3e04867356af67e5729ea349468fc3050da19e7f665e44b73ccf238604ba0",
-        "records": 24
-      },
-      "L2->L3": {
-        "identical": true,
-        "post_micro_digest": "4acf07c22d936aba5e85c69d19a87e031331a04ba5a84fafe215ad7ecfa56b07",
-        "pre_sed_digest": "4acf07c22d936aba5e85c69d19a87e031331a04ba5a84fafe215ad7ecfa56b07",
-        "records": 46
-      }
-    }
+ "attested": true,
+ "carry_proof": {
+  "conservative": {
+   "L1->L2": {
+    "identical": true,
+    "post_micro_digest": "2f0db49c08942c3862bbefa0861ef443bfaa4ee3189ecc4aaf41ed6b410a30fd",
+    "pre_sed_digest": "2f0db49c08942c3862bbefa0861ef443bfaa4ee3189ecc4aaf41ed6b410a30fd",
+    "records": 24
+   },
+   "L2->L3": {
+    "identical": true,
+    "post_micro_digest": "bd272479776ee84e0575184285943798599bc16f6120487e220fb5a4fafd90f8",
+    "pre_sed_digest": "bd272479776ee84e0575184285943798599bc16f6120487e220fb5a4fafd90f8",
+    "records": 46
+   }
   },
-  "condensation_closure": {
-    "levels": [
-      {
-        "Lv_J_kg": 2500000.0,
-        "Lv_T_J_kg": 2569284.6561315916,
-        "closure_residual_T_K": 5.146626761531924e-05,
-        "closure_residual_q_kg_kg": -5.820766091346741e-11,
-        "col": 3,
-        "cp_J_kg_K": 1004.0,
-        "cpm_q_J_kg_K": 1004.854359731375,
-        "delta_T_K": 0.0016021728515625,
-        "delta_T_rel": 6.577424587478024e-06,
-        "delta_qc_abs_kg_kg": 6.227637641131878e-07,
-        "delta_qc_rel": 0.001018214417931385,
-        "delta_qv_abs_kg_kg": -6.228219717741013e-07,
-        "delta_qv_rel": -0.0014797217957073963,
-        "k": 0,
-        "latent_predicted_delta_T_K": 0.0015507065839471808,
-        "model_closure_residual_T_K": 9.84519926619477e-06,
-        "model_latent_predicted_delta_T_K": 0.0015923276522963052
-      },
-      {
-        "Lv_J_kg": 2500000.0,
-        "Lv_T_J_kg": 2570233.775510254,
-        "closure_residual_T_K": 4.4888171155851734e-05,
-        "closure_residual_q_kg_kg": -1.1641532182693481e-10,
-        "col": 3,
-        "cp_J_kg_K": 1004.0,
-        "cpm_q_J_kg_K": 1004.8241970865754,
-        "delta_T_K": 0.00152587890625,
-        "delta_T_rel": 6.274646025256454e-06,
-        "delta_qc_abs_kg_kg": 5.9476587921381e-07,
-        "delta_qc_rel": 0.0009293337119305603,
-        "delta_qv_abs_kg_kg": -5.948822945356369e-07,
-        "delta_qv_rel": -0.0015448362261978829,
-        "k": 1,
-        "latent_predicted_delta_T_K": 0.0014809907350941483,
-        "model_closure_residual_T_K": 4.5308378926502135e-06,
-        "model_latent_predicted_delta_T_K": 0.0015213480683573498
-      },
-      {
-        "Lv_J_kg": 2500000.0,
-        "Lv_T_J_kg": 2571205.066397705,
-        "closure_residual_T_K": 4.048416561695692e-05,
-        "closure_residual_q_kg_kg": 0.0,
-        "col": 3,
-        "cp_J_kg_K": 1004.0,
-        "cpm_q_J_kg_K": 1004.7970115953416,
-        "delta_T_K": 0.0014495849609375,
-        "delta_T_rel": 5.971089993565679e-06,
-        "delta_qc_abs_kg_kg": 5.658948794007301e-07,
-        "delta_qc_rel": 0.0008500605762155114,
-        "delta_qv_abs_kg_kg": -5.658948794007301e-07,
-        "delta_qv_rel": -0.0016040683476330588,
-        "k": 2,
-        "latent_predicted_delta_T_K": 0.001409100795320543,
-        "model_closure_residual_T_K": 1.4996619441393338e-06,
-        "model_latent_predicted_delta_T_K": 0.0014480852989933607
-      },
-      {
-        "Lv_J_kg": 2500000.0,
-        "Lv_T_J_kg": 2572196.812290039,
-        "closure_residual_T_K": 3.376112976278449e-05,
-        "closure_residual_q_kg_kg": 5.820766091346741e-11,
-        "col": 3,
-        "cp_J_kg_K": 1004.0,
-        "cpm_q_J_kg_K": 1004.7724194012757,
-        "delta_T_K": 0.001373291015625,
-        "delta_T_rel": 5.666699827354545e-06,
-        "delta_qc_abs_kg_kg": 5.379552021622658e-07,
-        "delta_qc_rel": 0.0007782107720133782,
-        "delta_qv_abs_kg_kg": -5.378969945013523e-07,
-        "delta_qv_rel": -0.0016623466520741376,
-        "k": 3,
-        "latent_predicted_delta_T_K": 0.0013395298858622155,
-        "model_closure_residual_T_K": -3.863282640033123e-06,
-        "model_latent_predicted_delta_T_K": 0.0013771542982650331
-      }
-    ],
-    "note": "Both closures are recorded. The constant-Lv/constant-cp residual is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% larger, the same order as the residual, and at k=3 the residual CHANGES SIGN under it. The model form uses the code's own cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual under 1% of dT, straddling zero. That is a strong saturation-adjustment-CONSISTENT signature \u2014 it is still not a proof of the operator, which is unobserved.",
-    "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the returned STATE carries `th` separately, so no Exner factor is applied"
+  "legacy": {
+   "L1->L2": {
+    "identical": true,
+    "post_micro_digest": "58d3e04867356af67e5729ea349468fc3050da19e7f665e44b73ccf238604ba0",
+    "pre_sed_digest": "58d3e04867356af67e5729ea349468fc3050da19e7f665e44b73ccf238604ba0",
+    "records": 24
+   },
+   "L2->L3": {
+    "identical": true,
+    "post_micro_digest": "4acf07c22d936aba5e85c69d19a87e031331a04ba5a84fafe215ad7ecfa56b07",
+    "pre_sed_digest": "4acf07c22d936aba5e85c69d19a87e031331a04ba5a84fafe215ad7ecfa56b07",
+    "records": 46
+   }
+  }
+ },
+ "condensation_closure": {
+  "levels": [
+   {
+    "Lv_J_kg": 2500000.0,
+    "Lv_T_J_kg": 2569284.6561315916,
+    "closure_residual_T_K": 5.146626761531924e-05,
+    "closure_residual_q_kg_kg": -5.820766091346741e-11,
+    "col": 3,
+    "cp_J_kg_K": 1004.0,
+    "cpm_q_J_kg_K": 1004.854359731375,
+    "delta_T_K": 0.0016021728515625,
+    "delta_T_rel": 6.577424587478024e-06,
+    "delta_qc_abs_kg_kg": 6.227637641131878e-07,
+    "delta_qc_rel": 0.001018214417931385,
+    "delta_qv_abs_kg_kg": -6.228219717741013e-07,
+    "delta_qv_rel": -0.0014797217957073963,
+    "k": 0,
+    "latent_predicted_delta_T_K": 0.0015507065839471808,
+    "model_closure_residual_T_K": 9.84519926619477e-06,
+    "model_latent_predicted_delta_T_K": 0.0015923276522963052
+   },
+   {
+    "Lv_J_kg": 2500000.0,
+    "Lv_T_J_kg": 2570233.775510254,
+    "closure_residual_T_K": 4.4888171155851734e-05,
+    "closure_residual_q_kg_kg": -1.1641532182693481e-10,
+    "col": 3,
+    "cp_J_kg_K": 1004.0,
+    "cpm_q_J_kg_K": 1004.8241970865754,
+    "delta_T_K": 0.00152587890625,
+    "delta_T_rel": 6.274646025256454e-06,
+    "delta_qc_abs_kg_kg": 5.9476587921381e-07,
+    "delta_qc_rel": 0.0009293337119305603,
+    "delta_qv_abs_kg_kg": -5.948822945356369e-07,
+    "delta_qv_rel": -0.0015448362261978829,
+    "k": 1,
+    "latent_predicted_delta_T_K": 0.0014809907350941483,
+    "model_closure_residual_T_K": 4.5308378926502135e-06,
+    "model_latent_predicted_delta_T_K": 0.0015213480683573498
+   },
+   {
+    "Lv_J_kg": 2500000.0,
+    "Lv_T_J_kg": 2571205.066397705,
+    "closure_residual_T_K": 4.048416561695692e-05,
+    "closure_residual_q_kg_kg": 0.0,
+    "col": 3,
+    "cp_J_kg_K": 1004.0,
+    "cpm_q_J_kg_K": 1004.7970115953416,
+    "delta_T_K": 0.0014495849609375,
+    "delta_T_rel": 5.971089993565679e-06,
+    "delta_qc_abs_kg_kg": 5.658948794007301e-07,
+    "delta_qc_rel": 0.0008500605762155114,
+    "delta_qv_abs_kg_kg": -5.658948794007301e-07,
+    "delta_qv_rel": -0.0016040683476330588,
+    "k": 2,
+    "latent_predicted_delta_T_K": 0.001409100795320543,
+    "model_closure_residual_T_K": 1.4996619441393338e-06,
+    "model_latent_predicted_delta_T_K": 0.0014480852989933607
+   },
+   {
+    "Lv_J_kg": 2500000.0,
+    "Lv_T_J_kg": 2572196.812290039,
+    "closure_residual_T_K": 3.376112976278449e-05,
+    "closure_residual_q_kg_kg": 5.820766091346741e-11,
+    "col": 3,
+    "cp_J_kg_K": 1004.0,
+    "cpm_q_J_kg_K": 1004.7724194012757,
+    "delta_T_K": 0.001373291015625,
+    "delta_T_rel": 5.666699827354545e-06,
+    "delta_qc_abs_kg_kg": 5.379552021622658e-07,
+    "delta_qc_rel": 0.0007782107720133782,
+    "delta_qv_abs_kg_kg": -5.378969945013523e-07,
+    "delta_qv_rel": -0.0016623466520741376,
+    "k": 3,
+    "latent_predicted_delta_T_K": 0.0013395298858622155,
+    "model_closure_residual_T_K": -3.863282640033123e-06,
+    "model_latent_predicted_delta_T_K": 0.0013771542982650331
+   }
+  ],
+  "note": "Both closures are recorded. The constant-Lv/constant-cp residual is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% larger, the same order as the residual, and at k=3 the residual CHANGES SIGN under it. The model form uses the code's own cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual under 1% of dT, straddling zero. That is a strong saturation-adjustment-CONSISTENT signature \u2014 it is still not a proof of the operator, which is unobserved.",
+  "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the returned STATE carries `th` separately, so no Exner factor is applied"
+ },
+ "cpp_manifest_sha256": "952490a78af6c42fb9488533a45cf927d1d13ae5b0d2ea9b316c6ad7429f6de0",
+ "first_divergence": {
+  "conservative": {
+   "c_bits": "0x4e6e6b28",
+   "c_value": 1000000000.0,
+   "f_bits": "0x4f7064d3",
+   "f_value": 4033139456.0,
+   "identity": [
+    "outer_pre_sed",
+    1,
+    "-",
+    0,
+    1,
+    0,
+    "nccn"
+   ]
   },
-  "cpp_manifest_sha256": "952490a78af6c42fb9488533a45cf927d1d13ae5b0d2ea9b316c6ad7429f6de0",
-  "first_divergence": {
-    "conservative": {
-      "c_bits": "0x4e6e6b28",
-      "c_value": 1000000000.0,
-      "f_bits": "0x4f7064d3",
-      "f_value": 4033139456.0,
-      "identity": [
-        "outer_pre_sed",
-        1,
-        "-",
-        0,
-        1,
-        0,
-        "nccn"
-      ]
-    },
-    "legacy": {
-      "c_bits": "0x4e6e6b28",
-      "c_value": 1000000000.0,
-      "f_bits": "0x4f7064d3",
-      "f_value": 4033139456.0,
-      "identity": [
-        "outer_pre_sed",
-        1,
-        "-",
-        0,
-        1,
-        0,
-        "nccn"
-      ]
-    }
+  "legacy": {
+   "c_bits": "0x4e6e6b28",
+   "c_value": 1000000000.0,
+   "f_bits": "0x4f7064d3",
+   "f_value": 4033139456.0,
+   "identity": [
+    "outer_pre_sed",
+    1,
+    "-",
+    0,
+    1,
+    0,
+    "nccn"
+   ]
+  }
+ },
+ "fixture": {
+  "B": 3,
+  "K": 4,
+  "dt_s": 300.0,
+  "dtcld_s": 100.0,
+  "id": "arithmetic_multisubcycle_v1",
+  "manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "outer_loops": 3
+ },
+ "gate_a_report_sha256": "4263eb59aa975ccb6b5cbccf40d782a36ea1f30a1616261708bd696c1bf1e3a2",
+ "generated_by": "harness/make_g33m_evidence_artifact.py",
+ "per_algorithm": {
+  "conservative": {
+   "differing_by_loop_and_stage": {
+    "L1/outer_post_micro": 24,
+    "L1/outer_post_sed": 12,
+    "L1/outer_pre_sed": 12,
+    "L2/outer_post_micro": 46,
+    "L2/outer_post_sed": 28,
+    "L2/outer_pre_sed": 24,
+    "L2/surface": 2,
+    "L3/outer_post_micro": 43,
+    "L3/outer_post_sed": 50,
+    "L3/outer_pre_sed": 46,
+    "L3/substep_pre": 72,
+    "L3/surface": 5
+   },
+   "differing_digest": "e6bd8746cffac463dcb29f3de9ad4e689623bbcff063d3bed0e1a7d96deecafa",
+   "differing_stage_records": 367,
+   "fortran_manifest_sha256": "df490285cc97e334a4bbd3c91d4ec852488a6ecf5d8ff2b599443bf59498f125",
+   "mstep_range": [
+    1,
+    10
+   ],
+   "probe_lineage": {
+    "diagnostic_driver_sha256": "f32977cd4e1b035a55dca379cebc5e15e9a0738dcb3cef5ec67ab9f186c7cdd8",
+    "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
+    "schedule_sha256": "0bb82911357a075dd86610d3e109c65f94452d65ec2309389461cb079e37d21d"
+   },
+   "shared_stage_records": 3546
   },
-  "fixture": {
-    "B": 3,
-    "K": 4,
-    "dt_s": 300.0,
-    "dtcld_s": 100.0,
-    "id": "arithmetic_multisubcycle_v1",
-    "manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-    "outer_loops": 3
-  },
-  "gate_a_report_sha256": "4263eb59aa975ccb6b5cbccf40d782a36ea1f30a1616261708bd696c1bf1e3a2",
-  "generated_by": "harness/make_g33m_evidence_artifact.py",
-  "per_algorithm": {
-    "conservative": {
-      "differing_by_loop_and_stage": {
-        "L1/outer_post_micro": 24,
-        "L1/outer_post_sed": 12,
-        "L1/outer_pre_sed": 12,
-        "L2/outer_post_micro": 46,
-        "L2/outer_post_sed": 28,
-        "L2/outer_pre_sed": 24,
-        "L2/surface": 2,
-        "L3/outer_post_micro": 43,
-        "L3/outer_post_sed": 50,
-        "L3/outer_pre_sed": 46,
-        "L3/substep_pre": 72,
-        "L3/surface": 5
-      },
-      "differing_digest": "e6bd8746cffac463dcb29f3de9ad4e689623bbcff063d3bed0e1a7d96deecafa",
-      "differing_stage_records": 367,
-      "fortran_manifest_sha256": "df490285cc97e334a4bbd3c91d4ec852488a6ecf5d8ff2b599443bf59498f125",
-      "mstep_range": [
-        1,
-        10
-      ],
-      "probe_lineage": {
-        "diagnostic_driver_sha256": "f32977cd4e1b035a55dca379cebc5e15e9a0738dcb3cef5ec67ab9f186c7cdd8",
-        "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
-        "schedule_sha256": "0bb82911357a075dd86610d3e109c65f94452d65ec2309389461cb079e37d21d"
-      },
-      "shared_stage_records": 3546
-    },
-    "legacy": {
-      "differing_by_loop_and_stage": {
-        "L1/outer_post_micro": 24,
-        "L1/outer_post_sed": 12,
-        "L1/outer_pre_sed": 12,
-        "L2/outer_post_micro": 46,
-        "L2/outer_post_sed": 28,
-        "L2/outer_pre_sed": 24,
-        "L2/surface": 2,
-        "L3/outer_post_micro": 43,
-        "L3/outer_post_sed": 44,
-        "L3/outer_pre_sed": 46,
-        "L3/substep_pre": 72,
-        "L3/surface": 5
-      },
-      "differing_digest": "199760290c0914640c99e740df0fa932e6a879e2322e689b0d5257a1872aa311",
-      "differing_stage_records": 361,
-      "fortran_manifest_sha256": "6b98e6a64cfd30e94ce6e07487b3ddb59af616b61441189fdd3a5f7d0839464e",
-      "mstep_range": [
-        1,
-        10
-      ],
-      "probe_lineage": {
-        "diagnostic_driver_sha256": "f32977cd4e1b035a55dca379cebc5e15e9a0738dcb3cef5ec67ab9f186c7cdd8",
-        "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
-        "schedule_sha256": "8bfe9f6cc49e2ec4e5390851b327b6a346a8bf30a0f0f038bebc3b05458f5d4e"
-      },
-      "shared_stage_records": 3546
-    }
-  },
-  "producer_commit": "0acedb589d6355a120c526f145ef7d53e5450344",
-  "reason": "legacy divergence upstream at outer_pre_sed ('outer_pre_sed', 1, '-', 0, 1, 0, 'nccn', 'f32')",
-  "schema_version": 2,
-  "verdict": "INCONCLUSIVE",
-  "verifier_commit": "76de03d517046a3ea31f00093e1ea15aa2aa0d31",
-  "verifier_tree_dirty": false,
-  "what": "Gate B / G3.3-M four-case run at arithmetic_multisubcycle_v1"
+  "legacy": {
+   "differing_by_loop_and_stage": {
+    "L1/outer_post_micro": 24,
+    "L1/outer_post_sed": 12,
+    "L1/outer_pre_sed": 12,
+    "L2/outer_post_micro": 46,
+    "L2/outer_post_sed": 28,
+    "L2/outer_pre_sed": 24,
+    "L2/surface": 2,
+    "L3/outer_post_micro": 43,
+    "L3/outer_post_sed": 44,
+    "L3/outer_pre_sed": 46,
+    "L3/substep_pre": 72,
+    "L3/surface": 5
+   },
+   "differing_digest": "199760290c0914640c99e740df0fa932e6a879e2322e689b0d5257a1872aa311",
+   "differing_stage_records": 361,
+   "fortran_manifest_sha256": "6b98e6a64cfd30e94ce6e07487b3ddb59af616b61441189fdd3a5f7d0839464e",
+   "mstep_range": [
+    1,
+    10
+   ],
+   "probe_lineage": {
+    "diagnostic_driver_sha256": "f32977cd4e1b035a55dca379cebc5e15e9a0738dcb3cef5ec67ab9f186c7cdd8",
+    "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
+    "schedule_sha256": "8bfe9f6cc49e2ec4e5390851b327b6a346a8bf30a0f0f038bebc3b05458f5d4e"
+   },
+   "shared_stage_records": 3546
+  }
+ },
+ "producer_commit": "0acedb589d6355a120c526f145ef7d53e5450344",
+ "reason": "legacy divergence upstream at outer_pre_sed ('outer_pre_sed', 1, '-', 0, 1, 0, 'nccn', 'f32')",
+ "schema_version": 2,
+ "supersession": {
+  "note": "The WRAPPER-boundary companion; a different comparison boundary, so it answers a different question and is not a decision result at any protocol version. test_g33m_dt300_artifact pins this path.",
+  "status": "superseded",
+  "superseded_by": "g33m_v11_fourcase_result.json",
+  "valid_for_decision": false,
+  "withdrawal_reason": null
+ },
+ "verdict": "INCONCLUSIVE",
+ "verifier_commit": "76de03d517046a3ea31f00093e1ea15aa2aa0d31",
+ "verifier_tree_dirty": false,
+ "what": "Gate B / G3.3-M four-case run at arithmetic_multisubcycle_v1"
 }
