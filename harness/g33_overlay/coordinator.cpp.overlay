@@ -41,6 +41,24 @@ private:
     ::kdm6::g33::trace::ContainerTrace t_;
 };
 
+// Same shape as Surface, but the container tail is a parameter: this TU now opens a
+// second whole-K container (the ProgB bundle the rates read), and Surface hardcodes
+// "surface". Kept alongside rather than generalising Surface, so the existing container's
+// identity cannot shift under a refactor.
+class Outer {
+public:
+    Outer(const char* tail, const torch::Tensor& probe)
+        : t_("-", 0, tail, int(probe.size(0)), int(probe.size(-1)),
+             g33_loaded_binary()) {}
+    bool on() const { return t_.on(); }
+    void rec(const char* stage, const char* field, const torch::Tensor& t) {
+        t_.rec(stage, "-", -1, "-", "-", field, t);
+    }
+    void finalize() { t_.finalize(); }
+private:
+    ::kdm6::g33::trace::ContainerTrace t_;
+};
+
 }}  // namespace kdm6::coord_g33ovl
 #define G33_REC(g, stage, field, t) do { (g).rec(stage, field, t); } while (0)
 #endif  // KDM6_G33_OP_DUMP
@@ -978,7 +996,7 @@ CoordinatorState kdm62d_one_step(
         // different instant from the Fortran side and from what the rates read, so the
         // stage would have manufactured differences out of its own placement — the same
         // failure outer_pre_sed had.
-        rt_g33ovl::Outer g33("micro_call_progb_aux", pre2.progb.rhox);
+        coord_g33ovl::Outer g33("micro_call_progb_aux", pre2.progb.rhox);
         if (g33.on()) {
             G33_REC(g33, "micro_call_progb_aux", "rhox",         pre2.progb.rhox);
             G33_REC(g33, "micro_call_progb_aux", "bg",           pre2.progb.bg);
