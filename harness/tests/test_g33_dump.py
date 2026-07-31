@@ -638,6 +638,44 @@ def test_overlay_stage_scope_matches_the_source():
         f"{sorted(ge.CPP_OVERLAY_STAGES)}")
 
 
+def test_the_expected_record_ORDER_matches_the_overlay_source():
+    """A SET comparison above says WHICH stages; this says in what ORDER.
+
+    `expected_records` fixes the op_seq sequence the sealed descriptor is built from, so
+    its per-loop emission order is a claim about the overlay. Getting it wrong does not
+    change any stage's presence — it shifts every record after the first misplaced one,
+    which the four-case fixture gate reports as a container mismatch at some op_seq, from
+    a C++ build, in CI.
+
+    That is exactly what happened when micro_call_aux was added: the overlay emits it
+    AFTER outer_post_sed (ProgB runs between them), the expectation emitted it before, and
+    every local test passed because they all compare sets.
+    """
+    src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    # the ORDER the runtime overlay opens its whole-K containers
+    actual = [m for m in re.findall(r'Outer g33\("([a-z_]+)"', src)]
+    # container tails -> stage names, mirroring g33_expectation.container_id
+    tail_to_stage = {"outer_pre": "outer_pre_sed"}
+    actual = [tail_to_stage.get(t, t) for t in actual]
+
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    seen, expected = set(), []
+    for r in ge.expected_records(sched):
+        st = r["stage"]
+        if st in actual and st not in seen:
+            seen.add(st)
+            expected.append(st)
+    # compare only the stages this schedule actually produces, in first-appearance order
+    actual_seen, ordered = set(), []
+    for st in actual:
+        if st in seen and st not in actual_seen:
+            actual_seen.add(st)
+            ordered.append(st)
+    assert expected == ordered, (
+        f"expected_records emits {expected} but the overlay emits {ordered}; the "
+        f"descriptor would be sealed against a sequence the producer does not follow")
+
+
 def test_declared_windows_accept_a_real_overlay_emission_order(tmp_path):
     # End-to-end shape of an actual run: one container per substep, records
     # numbered by a single process-global counter that starts at 0 and only

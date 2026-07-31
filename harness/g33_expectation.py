@@ -426,9 +426,14 @@ def expected_records(schedule: dict) -> list[dict]:
                          chain=chain, n=n, shape=[B, K])
         # surface accumulation runs once per outer loop, after main+ice chains
         emit("surface", _stage_fields("surface", backend), outer_loop=loop, shape=[B])
+        emit("outer_post_sed", _stage_fields("outer_post_sed", backend), outer_loop=loop, shape=[B, K])
+        # AFTER the sedimentation result, not before it: ProgB runs between them, and the
+        # producers emit in that order — C++ at runtime.cpp 747 -> 797, Fortran at
+        # :1340 (end of the sed substep loop) -> :1509 (after ProgB_param). Emitting it
+        # first here made the expected record sequence disagree with the actual one at
+        # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
         emit("micro_call_aux", _stage_fields("micro_call_aux", backend),
              outer_loop=loop, shape=[B, K])
-        emit("outer_post_sed", _stage_fields("outer_post_sed", backend), outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
     # INSTRUMENTED SCOPE. op_seq_id is a MEASURED process-global counter, and it
     # only counts records the overlay actually emits. Numbering the manifest over
