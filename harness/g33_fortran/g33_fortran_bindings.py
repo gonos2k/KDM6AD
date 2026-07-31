@@ -400,6 +400,25 @@ MICRO_POST_STATE_UPDATE = list(_CARRIED)
 #: cold_gate is recorded because the two arms read different operands: a branch
 #: that disagreed between the backends would otherwise show up as several rates
 #: differing at once, with nothing saying why.
+#: THE MELT-FREEZE CHAIN, bisected (protocol v13).
+#:
+#: v12 put the first divergence at the update base, in ONE field -- t, by one ULP
+#: -- with every other prognostic bit-identical. t matches at outer_post_sed, so
+#: it acquires that difference in D1 melt, the homogeneous freeze, the post-melt
+#: re-slope, D2-D4 freeze or the post-freeze re-slope. These two snapshots split
+#: that span at the two points where BOTH backends already have a reconciled dump:
+#: fort_substep_postmelt (F:1440) against the C++ `postmelt` on working1, and
+#: fort_substep_postfreeze (F:1722) against `postfreeze` on working.
+#:
+#: post-melt sits inside `do k`/`do i` (the loop closes two lines later and the
+#: pinned dump runs after it), so it emits per cell; post-freeze is at the top
+#: level, on the same anchor micro_call_progb_aux uses, emitted AFTER it so both
+#: backends order the two records the same way.
+MICRO_POST_MELT_ANCHOR = (
+    "          endif  !supcol", None, "fort_substep_postmelt.bin")
+MICRO_POST_MELT = list(_CARRIED)
+MICRO_POST_FREEZE = list(_CARRIED)
+
 #: THE EXACT BASE state_update READS (owner review §2).
 #:
 #: micro_qr_operands seals the RATE operands of the qr update line and nothing

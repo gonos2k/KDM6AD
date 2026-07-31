@@ -801,6 +801,31 @@ CoordinatorState kdm62d_one_step(
     // entry→postfreeze qs/qr/nr divergence into D1-melt (psmlt/pgmlt) vs D2-D4-freeze.
     if (kdm6_dump_on) kdm6_dump_state_substep(working1, "postmelt");
 #endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE MELT-FREEZE BISECTION, first half. v12 put the seed in ONE field of
+        // the update base -- t, one ULP -- and t matches at outer_post_sed, so it is
+        // acquired somewhere in this chain. Same line as the reconciled `postmelt`
+        // dump above; the Fortran side records at the end of the melt do-loop, where
+        // its own fort_substep_postmelt is written.
+        coord_g33ovl::Outer g33("micro_post_melt", coord_g33ovl::flip_k(working1.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_melt", "qr",    coord_g33ovl::flip_k(working1.qr));
+            G33_REC(g33, "micro_post_melt", "nr",    coord_g33ovl::flip_k(working1.nr));
+            G33_REC(g33, "micro_post_melt", "qv",    coord_g33ovl::flip_k(working1.qv));
+            G33_REC(g33, "micro_post_melt", "t",     coord_g33ovl::flip_k(working1.t));
+            G33_REC(g33, "micro_post_melt", "qc",    coord_g33ovl::flip_k(working1.qc));
+            G33_REC(g33, "micro_post_melt", "qi",    coord_g33ovl::flip_k(working1.qi));
+            G33_REC(g33, "micro_post_melt", "qs",    coord_g33ovl::flip_k(working1.qs));
+            G33_REC(g33, "micro_post_melt", "qg",    coord_g33ovl::flip_k(working1.qg));
+            G33_REC(g33, "micro_post_melt", "nc",    coord_g33ovl::flip_k(working1.nc));
+            G33_REC(g33, "micro_post_melt", "ni",    coord_g33ovl::flip_k(working1.ni));
+            G33_REC(g33, "micro_post_melt", "nccn",  coord_g33ovl::flip_k(working1.nccn));
+            G33_REC(g33, "micro_post_melt", "brs",   coord_g33ovl::flip_k(working1.brs));
+        }
+        g33.finalize();
+    }
+#endif
 
     // 1b. Homogeneous freeze (Fortran :1410-1420): at supcol>40 (T<-40°C) freeze
     // ALL cloud water → ice (qi+=qc, ni+=nc, t+=xlf/cpm·qc, qc=nc=0). Runs BETWEEN
@@ -1026,6 +1051,30 @@ CoordinatorState kdm62d_one_step(
             G33_REC(g33, "micro_call_progb_aux", "rslopegbmax",  coord_g33ovl::flip_k(pre2.progb.rslopegbmax));
             G33_REC(g33, "micro_call_progb_aux", "pvtg",         coord_g33ovl::flip_k(pre2.progb.pvtg));
             G33_REC(g33, "micro_call_progb_aux", "precg2",       coord_g33ovl::flip_k(pre2.progb.precg2));
+        }
+        g33.finalize();
+    }
+#endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE MELT-FREEZE BISECTION, second half: the post-freeze STATE, as opposed to
+        // the ProgB auxiliary recorded just above. micro_call_progb_aux matching says
+        // nothing about t -- it carries the 19 ProgB fields, not the state -- so without
+        // this the whole melt-freeze chain stays one interval.
+        coord_g33ovl::Outer g33("micro_post_freeze", coord_g33ovl::flip_k(working.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_freeze", "qr",    coord_g33ovl::flip_k(working.qr));
+            G33_REC(g33, "micro_post_freeze", "nr",    coord_g33ovl::flip_k(working.nr));
+            G33_REC(g33, "micro_post_freeze", "qv",    coord_g33ovl::flip_k(working.qv));
+            G33_REC(g33, "micro_post_freeze", "t",     coord_g33ovl::flip_k(working.t));
+            G33_REC(g33, "micro_post_freeze", "qc",    coord_g33ovl::flip_k(working.qc));
+            G33_REC(g33, "micro_post_freeze", "qi",    coord_g33ovl::flip_k(working.qi));
+            G33_REC(g33, "micro_post_freeze", "qs",    coord_g33ovl::flip_k(working.qs));
+            G33_REC(g33, "micro_post_freeze", "qg",    coord_g33ovl::flip_k(working.qg));
+            G33_REC(g33, "micro_post_freeze", "nc",    coord_g33ovl::flip_k(working.nc));
+            G33_REC(g33, "micro_post_freeze", "ni",    coord_g33ovl::flip_k(working.ni));
+            G33_REC(g33, "micro_post_freeze", "nccn",  coord_g33ovl::flip_k(working.nccn));
+            G33_REC(g33, "micro_post_freeze", "brs",   coord_g33ovl::flip_k(working.brs));
         }
         g33.finalize();
     }

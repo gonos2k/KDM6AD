@@ -175,6 +175,13 @@ def build_overlay(algo, text):
              # the ProgB bundle the micro rates consume, per outer loop
              (fb.MICRO_CALL_AUX_ANCHOR, "after",
               _stage_block("micro_call_progb_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
+             # the post-freeze STATE, at the same anchor and after the ProgB
+             # bundle — the C++ emits them in that order too
+             (fb.MICRO_CALL_AUX_ANCHOR, "after",
+              _stage_block("micro_post_freeze", "-", "0", [], fb.MICRO_POST_FREEZE)),
+             # the post-D1-melt state, per cell (still inside do k / do i)
+             (fb.MICRO_POST_MELT_ANCHOR, "after",
+              _cell_stage_block("micro_post_melt", "-", "0", fb.MICRO_POST_MELT)),
              # the EXACT base state_update reads, once per cell, BEFORE the
              # F:2638 branch (the state is unmodified from there to either arm's
              # `!     update`, so one record covers both)

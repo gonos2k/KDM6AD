@@ -108,7 +108,10 @@ def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
                 "L0_kernel_call_input", "L0_kernel_init_constants",
                 "L0_kernel_after_entry_clamp",
                 "L1_outer_pre", "L1_main_n1", "L1_surface",
-                "L1_outer_post_sed", "L1_micro_call_progb_aux",
+                "L1_outer_post_sed",
+                # the melt-freeze bisection, either side of the ProgB bundle
+                "L1_micro_post_melt", "L1_micro_call_progb_aux",
+                "L1_micro_post_freeze",
                 # the exact base state_update reads, then the rate operands
                 "L1_micro_pre_state_update", "L1_micro_qr_operands",
                 # the microphysics bisection, between the ProgB bundle and the

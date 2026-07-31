@@ -155,6 +155,17 @@ _SEMANTIC_STAGE_FIELDS = {
     # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
     # add a new mapping between the backends, and a new mapping is a new way to
     # manufacture a difference that is not there.
+    # THE MELT-FREEZE CHAIN, bisected (protocol v13).
+    #
+    # v12 localised the seed to one field of the update base -- t, one ULP, with
+    # the other eleven prognostics bit-identical -- and to the span between
+    # outer_post_sed (where t matches) and that base. These two split the span at
+    # the only two interior points where both backends already have a reconciled
+    # dump, so the correspondence is reused rather than established.
+    "micro_post_melt": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                        "nc", "ni", "nccn", "brs"],
+    "micro_post_freeze": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                          "nc", "ni", "nccn", "brs"],
     # THE EXACT BASE state_update READS (protocol v12, owner review §2).
     #
     # The qr update is  qr_post = max(fl32(qr_base + fl32(S*dtcld)), 0), and until
