@@ -21,7 +21,7 @@ Fortran anchor's landmark is checked, and now each state stage declares the
 substep-dump tag it mirrors and must FOLLOW it within 20 lines with nothing
 executable in between — which is exactly what the assignment to `brs` was.
 
-## Result (`c0a4dc1`, fixture `arithmetic_multisubcycle_v1`, manifest `290ddce1…`)
+## Result (`1b09d24`, fixture `arithmetic_multisubcycle_v1`, manifest `290ddce1…`)
 
 | stage | L1 | L2 | L3 |
 |---|---|---|---|
@@ -72,10 +72,28 @@ Whether those are the same arithmetic is the next measurement, not a conclusion.
 
 ## Controls
 
-- **Variant-independent.** Both Fortran legs `0x437396ba`, both C++ legs
-  `0x437396bb`.
-- **Replay still exact.** 144 cells × 4 legs × 3 loops, 0 misses — the stages
-  remain mutually consistent within each backend.
+- **Variant-independent AT THE SEED CELL.** At k 0 both Fortran legs give
+  `0x437396ba` and both C++ legs `0x437396bb`. This does NOT extend up the
+  column: at k 1–3 the two variants hold different temperatures (e.g. k 1,
+  243.183975 legacy against 243.185989 conservative), which is why conservative
+  shows 3 differing cells and legacy 4 — at conservative k 1 the two backends
+  happen to agree. The claim is about the seed cell, not the column.
+- **Replay exact, with its scope stated.** 144 cells, 0 misses — but "144 cells,
+  0 misses" reads as 144 checks and is not, and the earlier phrasing let it. Where
+  every branch-active rate is zero the replay reduces to `qr_post == qr_pre` and
+  confirms nothing about the arithmetic; where the `max(…,0)` clamp binds, the sum
+  is discarded. `g33_update_replay.coverage()` reports it so this is not worked out
+  by hand again — and it corrected a hand count that had looked only at loop 3:
+
+  | cells | moved | zero-sum (vacuous) | clamped | **load-bearing** |
+  |---|---|---|---|---|
+  | 144 | 72 | 72 | 6 | **66** |
+
+  So 66 of 144, not 144. What the 66 do cover is real: the branch is exercised
+  both ways (48 of 144 cells take the warm arm), and the branch recomputed from
+  `t` agrees with the producer's `cold_gate` in **144 of 144** — so the placement
+  guarantee the replay exists to give holds across the whole set, while the
+  arithmetic claim rests on the 66.
 - **One field of twelve**, four cells of 144.
 
 ## Next

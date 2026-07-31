@@ -122,6 +122,37 @@ def verify_leg(pre: dict, operands: dict, post: dict, dtcld) -> list[dict]:
     return bad
 
 
+def coverage(pre: dict, operands: dict, post: dict, dtcld) -> dict:
+    """How much of a passing replay is load-bearing.
+
+    "144 cells, 0 misses" reads as 144 checks and is not. Where every rate is
+    zero the replay reduces to `qr_post == qr_pre` and confirms nothing about the
+    arithmetic; on this fixture that is every cell of outer loop 3. Where the
+    `max(…, 0)` clamp binds, the sum is discarded and the check is weaker again.
+
+    Reported by the tool rather than worked out afterwards, because the
+    overstatement it prevents is one this protocol already made.
+
+    Returns cells / moved (qr changed) / zero_sum (vacuous) / clamped, and
+    `load_bearing` = cells that are neither vacuous nor clamped.
+    """
+    cells = sorted({(c, k) for (f, c, k) in pre if f == "qr"})
+    moved = zero_sum = clamped = 0
+    for c, k in cells:
+        cold = is_cold(pre[("t", c, k)])
+        ops = {n: f32(operands[(n, c, k)]) for n in branch_active_fields(cold)}
+        if rate_sum(ops, cold) == 0:
+            zero_sum += 1
+        if pre[("qr", c, k)] != post[("qr", c, k)]:
+            moved += 1
+        if replay_qr(pre[("qr", c, k)], ops, dtcld, cold, clamp=False) \
+                != post[("qr", c, k)]:
+            clamped += 1
+    return {"cells": len(cells), "moved": moved, "zero_sum": zero_sum,
+            "clamped": clamped,
+            "load_bearing": len(cells) - zero_sum - clamped}
+
+
 def branch_active_fields(cold: bool) -> frozenset:
     """Which operands the taken arm actually reads (owner review §3).
 

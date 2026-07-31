@@ -38,11 +38,13 @@ MIRRORS = {
     "micro_post_state_update": "poststateupdate",
 }
 
-#: How far the G33 emission may sit from the dump it mirrors. Wide enough for the
-#: `#endif` and the block's own comment header, narrow enough that another
-#: statement — an assignment to the state being recorded, say — cannot fit
-#: between them unnoticed.
-MAX_LINES = 20
+#: A COARSE ordering bound: the emission must follow its dump and stay in the same
+#: neighbourhood, so a stage placed in another function or another phase fails. It
+#: is deliberately loose, because the substantive guard is the next test — nothing
+#: EXECUTABLE between the two, which is what makes them the same instant. A tight
+#: bound here would fail on an added comment line, which is a bad reason to fail;
+#: the shortest real gap is 9 and the longest 19, all comment.
+MAX_LINES = 40
 
 
 def _lines():
@@ -91,13 +93,37 @@ def test_nothing_executable_sits_between_the_dump_and_the_record(stage, tag):
         f"mirror:\n" + "\n".join(f"  line {n}: {s}" for n, s in offenders))
 
 
+def _implied_mirrors():
+    """Stages that LOOK like dump mirrors, by name, whether or not they say so.
+
+    Stage names carry underscores (`micro_post_freeze`) and dump tags do not
+    (`postfreeze`), so a substring test between them matches nothing — the first
+    version of this asserted `set() <= MIRRORS` and constrained zero stages while
+    reading as a completeness guard. Both sides are normalised now.
+    """
+    text = OVERLAY.read_text()
+    opened = set(re.findall(r'Outer g33\("([a-z_]+)"', text))
+    tags = set(re.findall(r'kdm6_dump_state_substep\([^,]+,\s*"([a-z_]+)"\)', text))
+    flat = {t: t.replace("_", "") for t in tags}
+    return {s for s in opened
+            if any(f in s.replace("_", "") for f in flat.values())}, opened, tags
+
+
+def test_the_implied_set_is_not_empty():
+    """The completeness guard below is only worth anything if its premise matches
+    something. Asserting `set() <= MIRRORS` passes forever."""
+    implied, opened, tags = _implied_mirrors()
+    assert implied, (
+        f"no stage name matches any dump tag, so the completeness guard is vacuous. "
+        f"stages={sorted(opened)} tags={sorted(tags)}")
+    assert implied >= set(MIRRORS), (
+        f"the declared mirrors {sorted(set(MIRRORS) - implied)} are not even matched "
+        f"by the rule meant to find them")
+
+
 def test_every_state_mirroring_stage_is_declared():
     """A new state stage added at a dump site must be listed, or it is unchecked."""
-    opened = set(re.findall(r'Outer g33\("([a-z_]+)"', OVERLAY.read_text()))
-    dump_tags = set(re.findall(r'kdm6_dump_state_substep\([^,]+,\s*"([a-z_]+)"\)',
-                               OVERLAY.read_text()))
-    # Stages named after a dump tag are mirrors whether or not they say so.
-    implied = {s for s in opened if any(s.endswith(t) or t in s for t in dump_tags)}
+    implied, _opened, _tags = _implied_mirrors()
     assert implied <= set(MIRRORS), (
         f"stage(s) {sorted(implied - set(MIRRORS))} look like dump mirrors but are "
         f"not declared in MIRRORS, so nothing checks where they sit")

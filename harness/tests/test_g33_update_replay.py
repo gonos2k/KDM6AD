@@ -148,3 +148,33 @@ def test_a_warm_cell_uses_the_warm_arm():
     operands = dict(operands)
     operands[("paacw", 1, 0)] = rp.bits32(1.0e-9)   # active in the warm arm
     assert rp.verify_leg(pre, operands, post, DT)
+
+
+# ── how much of a passing replay is load-bearing ──────────────────────────────
+
+def test_coverage_reports_an_all_zero_leg_as_vacuous():
+    """A leg where every rate is zero replays perfectly and checks nothing. The
+    tool has to say so: `144 cells, 0 misses` was reported for a run where 48 of
+    those cells had an identically zero rate sum."""
+    pre, operands, post = _leg(praut=0.0)
+    assert rp.verify_leg(pre, operands, post, DT) == []      # passes...
+    cov = rp.coverage(pre, operands, post, DT)               # ...and says nothing
+    assert cov == {"cells": 1, "moved": 0, "zero_sum": 1,
+                   "clamped": 0, "load_bearing": 0}
+
+
+def test_coverage_counts_a_real_update_as_load_bearing():
+    pre, operands, post = _leg(praut=2.0e-10)
+    cov = rp.coverage(pre, operands, post, DT)
+    assert cov["load_bearing"] == 1 and cov["moved"] == 1 and cov["zero_sum"] == 0
+
+
+def test_coverage_excludes_a_clamped_cell():
+    """When max(...,0) binds, the sum is discarded and the replay is weaker."""
+    qr, ops = _cell(qr_pre=1.0e-9, prevp=-1.0)
+    pre = {("qr", 1, 0): qr, ("t", 1, 0): rp.bits32(243.0)}
+    operands = {(n, 1, 0): rp.bits32(v) for n, v in ops.items()}
+    post = {("qr", 1, 0): rp.bits32(0.0)}
+    assert rp.verify_leg(pre, operands, post, DT) == []
+    assert rp.coverage(pre, operands, post, DT)["clamped"] == 1
+    assert rp.coverage(pre, operands, post, DT)["load_bearing"] == 0
