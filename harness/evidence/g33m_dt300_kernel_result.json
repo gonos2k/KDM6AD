@@ -184,6 +184,16 @@
   "producer_commit": "754a46e46aa0d3759280c8ff3d0d36ff9e3091e9",
   "reason": "legacy first-diverges at outer_post_micro ('outer_post_micro', 2, '-', 0, 3, 0, 'qr', 'f32') \u2014 born AFTER sedimentation, in the microphysics of the same outer loop (the sedimentation result matched); attribution is owner adjudication",
   "schema_version": 3,
+  "superseded": {
+    "regenerate_at": "protocol v9 or later, with four fresh legs at one revision",
+    "status": "HISTORICAL \u2014 not decision-grade under the current contract",
+    "why": [
+      "carry_proof compares the two backends' DIFFERENCE SETS, so its L1->L2 row reads identical:true with records:0 and the SHA256 of the empty string. It does not establish that either leg copied its own state correctly.",
+      "comparison_admissible answers only the BOUNDARY question while its name claims the whole precondition set; parameters, initialization, stage program points and the dynamic auxiliary were all unmeasured when this was produced.",
+      "condensation_closure carries the interpretive note above an EMPTY levels array.",
+      "produced at protocol v6, before the C++ outer_pre_sed moved after the ProgB brs update, so one of the twelve carried fields was compared at two different instants (see FINDING_outer_pre_sed_progb_skew.md)."
+    ]
+  },
   "verdict": "INCONCLUSIVE",
   "verifier_commit": "fd2b673f479c1a2fc5826238862fb48e65ded63a",
   "verifier_tree_dirty": false,
