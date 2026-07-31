@@ -1055,12 +1055,29 @@ CoordinatorState kdm62d_one_step(
         g33.finalize();
     }
 #endif
+    auto aux2 = rebuilt.aux;   // mutable: n0c recomputed from the snapped nc below
+    // §35 diag_rhog shadow: post-freeze reslope — update active (qg>qcrmin), retain else.
+    rhog_acc = torch::where(working.qg > full_params.progb.qcrmin, pre2.progb.rhox, rhog_acc);
+    // BRS density re-clamp #3 (F:1664 post-freeze ProgB, §53d merged): pre2.progb.rhox is the
+    // persistent rhox the cold b-terms / state_update consume (F:2767, F:2858-2859).
+    working.brs = pre2.progb.bg;  // §53 (site #3): progb keep-semantics, no outer re-gate (F:3567/3578)
+#ifdef KDM6_SUBSTEP_DUMP
+    if (kdm6_dump_on) kdm6_dump_state_substep(working, "postfreeze");
+#endif
 #ifdef KDM6_G33_OP_DUMP
     {
         // THE MELT-FREEZE BISECTION, second half: the post-freeze STATE, as opposed to
-        // the ProgB auxiliary recorded just above. micro_call_progb_aux matching says
+        // the ProgB auxiliary recorded earlier. micro_call_progb_aux matching says
         // nothing about t -- it carries the 19 ProgB fields, not the state -- so without
         // this the whole melt-freeze chain stays one interval.
+        //
+        // ON THIS LINE, not before the brs re-clamp above. The first placement sat 25
+        // lines earlier, ahead of `working.brs = pre2.progb.bg`, and reported brs as
+        // 8.8% divergent at every level of column 3 -- a difference that then healed
+        // completely by the next stage, because the Fortran side records after
+        // ProgB_param has already rewritten brs in place. The comment claimed the
+        // reconciled dump and the code sat somewhere else; test_g33_overlay_mirror_sites
+        // now checks the claim.
         coord_g33ovl::Outer g33("micro_post_freeze", coord_g33ovl::flip_k(working.qr));
         if (g33.on()) {
             G33_REC(g33, "micro_post_freeze", "qr",    coord_g33ovl::flip_k(working.qr));
@@ -1078,15 +1095,6 @@ CoordinatorState kdm62d_one_step(
         }
         g33.finalize();
     }
-#endif
-    auto aux2 = rebuilt.aux;   // mutable: n0c recomputed from the snapped nc below
-    // §35 diag_rhog shadow: post-freeze reslope — update active (qg>qcrmin), retain else.
-    rhog_acc = torch::where(working.qg > full_params.progb.qcrmin, pre2.progb.rhox, rhog_acc);
-    // BRS density re-clamp #3 (F:1664 post-freeze ProgB, §53d merged): pre2.progb.rhox is the
-    // persistent rhox the cold b-terms / state_update consume (F:2767, F:2858-2859).
-    working.brs = pre2.progb.bg;  // §53 (site #3): progb keep-semantics, no outer re-gate (F:3567/3578)
-#ifdef KDM6_SUBSTEP_DUMP
-    if (kdm6_dump_on) kdm6_dump_state_substep(working, "postfreeze");
 #endif
     // SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): same cloud
     // lamda-snap back-mutation, here BEFORE the warm rate loop. The rewritten
