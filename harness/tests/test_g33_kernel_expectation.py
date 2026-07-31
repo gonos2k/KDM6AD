@@ -15,6 +15,7 @@ Uses the committed samples, which are WRAPPER-boundary runs and therefore carry 
 `kernel_after_entry_clamp`, which the overlay emits on both boundaries, so the padding
 half is checkable here and the mapping half is checked against the fixture directly.
 """
+import re
 import struct
 import sys
 from pathlib import Path
@@ -225,3 +226,114 @@ def test_the_f32_stepwise_value_is_what_the_fortran_produces():
     pidnc = {b for (n, _c, _k), b in got.items() if n == "pidnc"}
     assert pidnc == {0x4402E653}, (
         f"pidnc is {pidnc}, not the f32-stepwise 0x4402E653 that fconst.h targets")
+
+
+# ── the auxiliary the microphysics consumes (owner §1.3) ──────────────────────
+
+def test_the_micro_auxiliary_bundle_is_recorded_per_outer_loop():
+    """The 12 prognostics are not the whole input to the microphysics.
+
+    `x_F == x_C` with `a_F != a_C` gives `M(x, a_F) != M(x, a_C)`, so "the sedimentation
+    output matched" was consistent with the seed being in the auxiliary calculation rather
+    than in the microphysics arithmetic. The bundle is recorded now, so the comparator can
+    see it instead of the reason string asserting past it.
+    """
+    import g33_fortran_bindings as fb
+    authority, run = _run("legacy")
+    names = {n for n, _d, _e in fb.MICRO_CALL_AUX}
+    assert len(names) == 19, f"expected the 19-field ProgB bundle, got {len(names)}"
+    per_loop = {}
+    for k, v in run.stages.items():
+        if k[2] == "micro_call_progb_aux":
+            per_loop.setdefault(k[0], set()).add(k[4])
+    assert per_loop, "no micro_call_progb_aux records"
+    for loop, got in sorted(per_loop.items()):
+        assert got == names, f"loop {loop} carries {got ^ names}"
+
+
+def test_the_auxiliary_is_recorded_where_the_RATES_read_it():
+    """The 5th of seven identical `slope_kdm6` continuation lines (:1714), after the
+    POST-FREEZE ProgB_param at :1707 — the last before the rate loop at :1864.
+
+    My first version used the 4th (:1511), after the POST-MELT ProgB at :1504. That is a
+    different point in the chain and not what the rates read, so the stage would have
+    compared a mid-chain bundle against the C++ side and reported placement as physics.
+
+    Which ProgB is which comes from the PINNED source, not from the C++ comments — those
+    cite :1469 and :1664, and neither is a ProgB_param call in the pinned file.
+    """
+    import g33_fortran_bindings as fb
+    anchor = fb.MICRO_CALL_AUX_ANCHOR
+    assert isinstance(anchor, tuple), "the anchor must carry its occurrence index"
+    line, (n, total), landmark = anchor
+    assert (n, total) == (4, 7), "the post-MELT ProgB is not what the rates read"
+    # The index is 0-BASED and reading it as "the nth" put micro_post_state_update
+    # after the SEVENTH ProgB_param call when it meant the sixth. The landmark says
+    # which site was meant in the source's own terms, and the overlay builder
+    # refuses to inject if it is not there.
+    assert landmark == "fort_substep_postfreeze.bin", (
+        "the anchor must name the site it means, not just count occurrences")
+    assert "pidn0g" in line and "pvtg" in line, (
+        "the anchor should be the slope_kdm6 call that consumes the bundle, so a source "
+        "change that moves the consumer breaks the anchor rather than silently relocating "
+        "the snapshot")
+
+
+def test_the_two_backends_record_the_SAME_progb_instant():
+    """The stage is only meaningful if both sides record the bundle the RATES read.
+
+    C++: `pre2.progb` from the post-freeze rebuild_aux, which that function's own mirror
+    describes as step 5, "warm/cold/D5 read `working` + pre2/aux2".
+    Fortran: after the post-freeze ProgB_param at :1707.
+
+    The first version recorded C++'s `progb_ret` at the handoff — the RETAINED bundle
+    going in, before either rebuild recomputes it — which is neither the Fortran instant
+    nor what the rates read.
+    """
+    rt = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    co = (ROOT / "g33_overlay" / "coordinator.cpp.overlay").read_text()
+    assert "micro_call_progb_aux" not in rt, (
+        "the handoff recording is the retained bundle, not what the rates read")
+    # The SOURCE of the record is what this test is about; the orientation wrapper
+    # around it is test_g33_overlay_orientation's business, so match past it.
+    assert re.search(r'Outer g33\("micro_call_progb_aux",\s*'
+                     r'(?:(?:\w+::)*flip_k\()?pre2\.progb\.rhox', co), (
+        "the container must be opened on the recomputed pre2 bundle")
+    assert "progb_ret_host" not in co.split("micro_call_progb_aux")[1][:600], (
+        "the C++ record must come from the recomputed pre2, not the retained input")
+
+
+# ── the last thing produced, bound to the last thing returned (owner §1.5) ────
+
+def test_the_returned_th_is_bound_to_the_final_t():
+    """`t` was excluded from the final-state binding because it is not a COPY — the
+    state carries `th` and the pack-out computes `th = t/pii`. Excluding it entirely
+    left the last thing the kernel produced unbound to the last thing it returned, so a
+    defect in the conversion was invisible to every check.
+
+    It is checked as the CONVERSION now, and this test perturbs one cell by 1 ULP to
+    confirm the check can fail — an assertion that cannot fail certifies nothing.
+    """
+    import dataclasses
+    import g33_fortran_semantics as sem
+    _, run = _run("legacy")
+    assert sem.verify_semantics(run) is True
+
+    state = dict(run.state)
+    cell = ("th", 1, 0)
+    state[cell] = state[cell] ^ 1                 # one ULP
+    with pytest.raises(sem.SemanticError, match="final th not bound"):
+        sem.verify_semantics(dataclasses.replace(run, state=state))
+
+
+def test_the_normalizer_refuses_a_run_with_no_boundary():
+    """The decision identity stopped defaulting a missing boundary to the wrapper, but
+    the normalizer still did — the contract enforced at one end and quietly supplied at
+    the other, so a run could reach the decision path carrying a boundary it never
+    declared (owner §3.4)."""
+    import dataclasses
+    import g33_normalize as nz
+    _, run = _run("legacy")
+    assert nz.from_fortran_run(run)["problem"]["entry_boundary"]
+    with pytest.raises(nz.NormalizeError, match="no usable comparison boundary"):
+        nz.from_fortran_run(dataclasses.replace(run, entry_boundary=""))

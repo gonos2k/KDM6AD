@@ -115,11 +115,67 @@ _SEMANTIC_STAGE_FIELDS = {
                                 "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
     "outer_pre_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                       "nc", "ni", "nccn", "brs", "p", "rho", "delz"],
+    # THE ProgB AUXILIARY THE MICROPHYSICS CONSUMES (owner P0-1.3, narrowed by P0-2).
+    #
+    # NAMED FOR ITS SCOPE. `kdm62d_one_step` receives six groups, and this seals ONE:
+    #
+    #     cur          12 prognostic state        -> outer_post_sed
+    #     cf           forcing                    -> outer_pre_sed carries p/rho/delz
+    #     aux          slope / qcr / thermo       -> NOT SEALED
+    #     sea_mask, ncmin_for_slope               -> NOT SEALED
+    #     full_p / warm_p / cold_p / mf_p, dtcld  -> NOT SEALED
+    #     progb                                   -> THIS STAGE
+    #
+    # So equality here is a NECESSARY condition for "the microphysics received the same
+    # input", not a sufficient one. The earlier name `micro_call_aux` read as though the
+    # whole auxiliary set were sealed, which would turn a necessary condition into a
+    # claimed sufficient one at exactly the point where that matters.
+    "micro_call_progb_aux": ["rhox", "bg", "cmg", "pidn0g", "avtg", "bvtg", "bvtg1", "bvtg2", "bvtg3", "bvtg4", "g1pbg", "g3pbg", "g4pbg", "g5pbgo2", "g1pdgbgmg", "dgbgmug1", "rslopegbmax", "pvtg", "precg2"],
     # The outer-loop CAUSAL BRIDGE (owner P0-C1). Both backends emit these, so a
     # divergence in what one loop hands the next is a comparator finding rather
     # than something only a human reading two dumps side by side would notice.
     "outer_post_sed": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                        "nc", "ni", "nccn", "brs"],
+    # THE BISECTION OF THE MICROPHYSICS STEP. micro_call_progb_aux and
+    # outer_post_micro used to sit next to each other in the ladder with nothing
+    # between them, so a divergence first seen at outer_post_micro was attributable
+    # only to "somewhere in the microphysics" — which is the whole of it: the warm
+    # and cold rate blocks, the mass-conservation feedback, the two-branch state
+    # update, the ProgB brs re-clamp, Picons/Nicons, and the saturation adjustment.
+    #
+    # This stage splits that span in two at the one interior point where BOTH
+    # backends already have a reconciled, commented program point — Fortran's
+    # fort_substep_poststateupdate (F:3041, "post-budget + post-ProgB brs-reclamp,
+    # PRE-Picons/satadj") and the C++ `poststateupdate` dump on new_state after the
+    # brs sweep and before reclassify_large_ice_to_snow. Reusing that pair rather
+    # than inventing a program point is the point: the two placement defects this
+    # protocol has already produced both came from a site where the correspondence
+    # had to be established fresh.
+    #
+    # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
+    # add a new mapping between the backends, and a new mapping is a new way to
+    # manufacture a difference that is not there.
+    # THE OPERANDS OF THE qr UPDATE LINE — a CLOSED set (protocol v11).
+    #
+    # micro_post_state_update put the first divergence in this line with the
+    # incoming state and the ProgB bundle bit-identical. The line reads exactly
+    # these rates, plus the incoming qrs(1) (already compared, it comes from
+    # outer_post_sed) and dtcld (a sealed scalar). So if every field here matches
+    # and qr still differs, the difference is in the SUMMATION rather than in any
+    # operand — a decisive outcome that a partial set could not produce.
+    #
+    # Fortran adjusts psacr/pgacr/paacw in place after the Hallett-Mossop block
+    # (F:2383/F:2436/F:2368/F:2420); the C++ carries the same post-HM quantity as
+    # psacr_adj/pgacr_adj/paacw_adj. Different names, same value, established from
+    # both sources rather than from the suffix.
+    #
+    # cold_gate: the two arms of F:2638 read different operands, so a branch that
+    # disagreed would otherwise appear as several rates differing with nothing
+    # saying why.
+    "micro_qr_operands": [f for f, _d, _k in
+                          _ge._STAGE_FIELDS_BASE["micro_qr_operands"]],
+    "micro_post_state_update": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                                "nc", "ni", "nccn", "brs"],
     "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                          "nc", "ni", "nccn", "brs"],
     "substep_pre": ["qr", "nr", "work1_qr", "workn_qr", "delz_safe", "dend_safe",

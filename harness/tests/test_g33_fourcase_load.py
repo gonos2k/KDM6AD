@@ -139,3 +139,41 @@ def test_every_semantic_stage_field_has_a_dtype():
         for field in schema.semantic_stage_fields(stage):
             dt = schema.semantic_stage_field_dtype(stage, field)
             assert dt in ("f32", "f64", "i32", "u8"), f"{stage}.{field} -> {dt!r}"
+
+
+def test_no_module_level_name_is_defined_twice_in_the_parser():
+    """A second assignment silently shadows the first, and the two stay equal only until
+    someone edits one — which is how eight names came to be defined twice consecutively
+    while every test passed (owner P0-10)."""
+    import ast
+    from collections import Counter
+    src = (ROOT / "g33_fortran" / "g33_fortran_dump.py").read_text()
+    tree = ast.parse(src)
+    names = Counter(
+        t.id for node in tree.body if isinstance(node, ast.Assign)
+        for t in node.targets if isinstance(t, ast.Name))
+    dupes = {n: c for n, c in names.items() if c > 1}
+    assert not dupes, f"module-level names assigned more than once: {dupes}"
+
+
+def test_every_comparator_stage_has_a_classifier_branch():
+    """A stage with no branch of its own falls through to "pairs diverge differently",
+    which names the phase and says nothing about what it means. micro_call_progb_aux did
+    exactly that until it got one (owner P0-4)."""
+    import ast
+    import g33_fourcase_comparator as cmp
+    src = (ROOT / "g33_fourcase_comparator.py").read_text()
+    fn = next(n for n in ast.walk(ast.parse(src))
+              if isinstance(n, ast.FunctionDef) and n.name == "classify")
+    handled = {c.value for c in ast.walk(fn)
+               if isinstance(c, ast.Constant) and isinstance(c.value, str)}
+    # phases the comparator can report as a first divergence, minus the ones deliberately
+    # grouped: substep_pre and outer_pre_sed share the _PRESED branch, ops are the
+    # promotable path, final_output/surface share the whole-step handling
+    grouped = {"substep_pre", "outer_pre_sed", "op", "surface", "final_output"}
+    for stage in cmp._STAGES:
+        if stage in grouped:
+            continue
+        assert stage in handled, (
+            f"{stage} has no branch in classify(); a first divergence there would fall "
+            f"through to the generic reason")

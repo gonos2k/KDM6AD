@@ -638,6 +638,61 @@ def test_overlay_stage_scope_matches_the_source():
         f"{sorted(ge.CPP_OVERLAY_STAGES)}")
 
 
+def test_the_expected_record_ORDER_matches_the_overlay_source():
+    """A SET comparison above says WHICH stages; this says in what ORDER.
+
+    `expected_records` fixes the op_seq sequence the sealed descriptor is built from, so
+    its per-loop emission order is a claim about the overlay. Getting it wrong does not
+    change any stage's presence — it shifts every record after the first misplaced one,
+    which the four-case fixture gate reports as a container mismatch at some op_seq, from
+    a C++ build, in CI.
+
+    That is exactly what happened when micro_call_progb_aux was added: the overlay emits it
+    AFTER outer_post_sed (ProgB runs between them), the expectation emitted it before, and
+    every local test passed because they all compare sets.
+    """
+    # The order is CROSS-TU. runtime.cpp opens most of the containers, but the
+    # microphysics auxiliary is recorded inside kdm62d_one_step — coordinator.cpp — at
+    # the post-freeze rebuild the rates read. Reading only runtime.cpp silently dropped
+    # micro_call_progb_aux from this comparison the moment it moved there, which is the same
+    # vacuity this test exists to prevent.
+    #
+    # runtime.cpp calls kdm62d_one_step between outer_post_sed and outer_post_micro, so
+    # splicing coordinator.cpp's containers in at that call site reconstructs the order a
+    # single run actually emits.
+    def _opens(name):
+        src = (ROOT / "g33_overlay" / name).read_text()
+        return src, [m for m in re.findall(r'Outer g33\("([a-z_]+)"', src)]
+
+    rt_src, rt = _opens("runtime.cpp.overlay")
+    _, co = _opens("coordinator.cpp.overlay")
+    # coordinator's own surface container is emitted inside the sed chain, before
+    # one_step; only the micro-step ones splice in at the call.
+    at_one_step = [t for t in co if t == "micro_call_progb_aux"]
+    assert at_one_step, "coordinator.cpp.overlay no longer opens micro_call_progb_aux"
+    cut = rt.index("outer_post_micro")
+    actual = rt[:cut] + at_one_step + rt[cut:]
+    tail_to_stage = {"outer_pre": "outer_pre_sed"}
+    actual = [tail_to_stage.get(t, t) for t in actual]
+
+    sched = {**SCHED, "instrumented_stages": list(ge.CPP_OVERLAY_STAGES)}
+    seen, expected = set(), []
+    for r in ge.expected_records(sched):
+        st = r["stage"]
+        if st in actual and st not in seen:
+            seen.add(st)
+            expected.append(st)
+    # compare only the stages this schedule actually produces, in first-appearance order
+    actual_seen, ordered = set(), []
+    for st in actual:
+        if st in seen and st not in actual_seen:
+            actual_seen.add(st)
+            ordered.append(st)
+    assert expected == ordered, (
+        f"expected_records emits {expected} but the overlay emits {ordered}; the "
+        f"descriptor would be sealed against a sequence the producer does not follow")
+
+
 def test_declared_windows_accept_a_real_overlay_emission_order(tmp_path):
     # End-to-end shape of an actual run: one container per substep, records
     # numbered by a single process-global counter that starts at 0 and only

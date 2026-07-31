@@ -205,18 +205,25 @@ def _first_divergence_at(stage, field="qv"):
     return d
 
 
-def test_a_divergence_after_sedimentation_is_attributed_to_the_microphysics():
+def test_a_divergence_after_sedimentation_says_OBSERVED_not_ORIGINATED():
     """Before the bridge, a difference born in loop L's microphysics first became
     VISIBLE at loop L+1's pre-sed entry, and the reason named where it was SEEN. Now
     it names where it came from.
 
-    Still INCONCLUSIVE: that the sedimentation result matched is evidence the
-    difference is not conservative-only arithmetic, but saying so is the owner's
-    adjudication, not this tool's."""
+    It now names the sedimentation OUTPUT as having matched and stops there, pointing at
+    micro_call_aux — the ProgB bundle the microphysics also consumes — rather than
+    asserting past it (owner P0-1.3)."""
     d = _first_divergence_at("outer_post_micro")
     verdict, reason = cmp.classify(cmp.compare_pair(RUN, RUN), d)
     assert verdict == "INCONCLUSIVE"
-    assert "born AFTER sedimentation" in reason and "outer_post_micro" in reason
+    assert "outer_post_micro" in reason
+    assert "OBSERVED" in reason, "the reason must distinguish observed from originated"
+    assert "micro_call_progb_aux" in reason, (
+        "it must point at the ProgB bundle stage, whose NAME states its scope: it's\n"
+        "        one of the six groups the micro call receives, not all of them")
+    # and it must NOT claim the microphysics arithmetic as the origin; this test pinned
+    # that overstatement, which is how the overstatement survived
+    assert "born AFTER sedimentation" not in reason
 
 
 def test_a_divergence_in_the_sedimentation_RESULT_says_so():

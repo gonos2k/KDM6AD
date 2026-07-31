@@ -68,14 +68,17 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "outer_post_micro")
+           "outer_post_sed", "micro_call_progb_aux", "micro_qr_operands",
+           "micro_post_state_update", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "outer_post_micro": 7, "final_output": 8}
+                "micro_call_progb_aux": 7, "micro_qr_operands": 8,
+                "micro_post_state_update": 9,
+                "outer_post_micro": 10, "final_output": 11}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -578,7 +581,18 @@ def classify(legacy: Divergence, conservative: Divergence):
     for name, d in pairs:                         # 3. upstream (pre-sed)
         if d.phase in _PRESED:
             return "INCONCLUSIVE", f"{name} divergence upstream at {d.phase} {d.identity}"
-    # 3b. BORN AFTER SEDIMENTATION (owner P0-C1). The bridge makes this sayable at
+    # 3b. AFTER THE SEDIMENTATION OUTPUT (owner P0-C1, narrowed by owner P0-1.3). The
+    # wording used to say "born AFTER sedimentation, in the microphysics", which is
+    # stronger than the records: the 12 carried prognostics are not the whole input to the
+    # microphysics, so
+    #
+    #     x_F == x_C   and   a_F != a_C   =>   M(x, a_F) != M(x, a_C)
+    #
+    # was consistent with everything observed, and the seed would then be in the auxiliary
+    # calculation. `micro_call_progb_aux` records that bundle now, so the reason points at it
+    # rather than asserting past it.
+    #
+    # The bridge makes this sayable at
     # all: before it, a difference born in loop L's microphysics first became visible
     # at loop L+1's pre-sed entry and was reported as "upstream at outer_pre_sed",
     # which named where it was SEEN rather than where it came from.
@@ -591,9 +605,66 @@ def classify(legacy: Divergence, conservative: Divergence):
     for name, d in pairs:
         if d.phase == "outer_post_micro":
             return "INCONCLUSIVE", (
-                f"{name} first-diverges at {d.phase} {d.identity} — born AFTER "
-                f"sedimentation, in the microphysics of the same outer loop (the "
-                f"sedimentation result matched); attribution is owner adjudication")
+                f"{name} first-diverges at {d.phase} {d.identity} — the sedimentation "
+                f"OUTPUT, micro_call_progb_aux (the ProgB bundle, one of the six groups "
+                f"the micro call receives) and micro_post_state_update all matched, "
+                f"so this is the first OBSERVED difference and it appeared after the "
+                f"two-branch state update and its ProgB brs re-clamp: in Picons/Nicons, "
+                f"the saturation adjustment, or the final re-slope. The rate blocks, the "
+                f"mass-conservation feedback and the state update itself are EXCLUDED by "
+                f"micro_post_state_update. That narrows WHERE it was observed; whether "
+                f"it ORIGINATED there is still a separate question, and attribution is "
+                f"owner adjudication")
+    # 3c. THE PRE-MICRO AUXILIARY (owner P0-4). Without a branch of its own this fell
+    # through to the generic "pairs diverge differently", which names the phase and says
+    # nothing about what it means — and what it means is specific: the ProgB bundle the
+    # rates read already differs BEFORE any prognostic-state update, so the seed is
+    # upstream of the microphysics arithmetic, not in it.
+    #
+    # It is placed after the post-micro branch deliberately: micro_call_progb_aux sorts EARLIER
+    # in canonical order, so if it were the first divergence the post-micro branch could
+    # not have matched, and ordering these two by source position rather than by phase
+    # rank would make the reason depend on where the code sits.
+    for name, d in pairs:
+        # 3b'. THE BISECTION. Reached only when the ProgB bundle handed to the
+        # microphysics matched, so the difference is inside the microphysics and on
+        # the FIRST half of it: the warm and cold rate blocks, the mass-conservation
+        # feedback, the two-branch state update, or the ProgB brs re-clamp. Picons,
+        # the saturation adjustment and the final re-slope are excluded — they run
+        # after this snapshot. That is a narrower statement than "in the
+        # microphysics" and it is the reason this stage exists.
+        if d.phase == "micro_post_state_update":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the ProgB bundle "
+                f"the rates read matched, and so did micro_qr_operands, the CLOSED "
+                f"operand set of the qr update line; the difference is inside the "
+                f"microphysics and BEFORE Picons/Nicons and the saturation "
+                f"adjustment: in the summation itself, in another update line's "
+                f"operands, the mass-conservation feedback, or the ProgB brs "
+                f"re-clamp. This is NOT a statement about "
+                f"conservative-only interface arithmetic; attribution is owner "
+                f"adjudication")
+        # 3b''. THE OPERANDS. Reached when the state at micro_post_state_update
+        # matched but an operand of the qr update line did not — so the difference is
+        # in whichever rate produced that operand, upstream of the update arithmetic.
+        # The closed-set property is what makes the converse readable too: if this
+        # stage matches and micro_post_state_update does not, the operands were equal
+        # and the summation was not.
+        if d.phase == "micro_qr_operands":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — an OPERAND of the "
+                f"qr update line differs while the state entering the microphysics and "
+                f"the ProgB bundle matched, so the difference is in the rate that "
+                f"produced it, not in the update arithmetic. This is NOT a statement "
+                f"about conservative-only interface arithmetic; attribution is owner "
+                f"adjudication")
+        if d.phase == "micro_call_progb_aux":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the ProgB auxiliary "
+                f"entering the microphysics differs BEFORE any prognostic-state update, "
+                f"so the seed is upstream of the microphysics arithmetic. This is NOT a "
+                f"statement about conservative-only interface arithmetic; attribution is "
+                f"owner adjudication")
         if d.phase == "outer_post_sed":
             return "INCONCLUSIVE", (
                 f"{name} first-diverges at {d.phase} {d.identity} — the sedimentation "

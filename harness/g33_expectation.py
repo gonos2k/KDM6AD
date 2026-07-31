@@ -163,6 +163,7 @@ _STAGE_FIELDS_BASE = {
                         ("nccn", "f32", "BK"), ("brs", "f32", "BK"),
                         ("p", "f32", "BK"),
                         ("rho", "f32", "BK"), ("delz", "f32", "BK")],
+    "micro_call_progb_aux": [("rhox", "f32", "BK"), ("bg", "f32", "BK"), ("cmg", "f32", "BK"), ("pidn0g", "f32", "BK"), ("avtg", "f32", "BK"), ("bvtg", "f32", "BK"), ("bvtg1", "f32", "BK"), ("bvtg2", "f32", "BK"), ("bvtg3", "f32", "BK"), ("bvtg4", "f32", "BK"), ("g1pbg", "f32", "BK"), ("g3pbg", "f32", "BK"), ("g4pbg", "f32", "BK"), ("g5pbgo2", "f32", "BK"), ("g1pdgbgmg", "f32", "BK"), ("dgbgmug1", "f32", "BK"), ("rslopegbmax", "f32", "BK"), ("pvtg", "f32", "BK"), ("precg2", "f32", "BK")],
     "outer_post_sed":  [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"),
                         ("qi", "f32", "BK"), ("qs", "f32", "BK"),
@@ -267,6 +268,22 @@ _STAGE_FIELDS_BASE = {
 # Cross-tree comparison therefore uses the SEMANTIC fields
 # (mstep_decoded_i32 / mstep_exact_integer / gate_decoded_u8); the native bits are
 # retained for per-backend provenance only.
+# The microphysics bisection carries the same twelve fields as outer_post_micro, in
+# the same order, and both producers emit them in that order. DERIVED rather than
+# spelled out again: the field ORDER here is not documentation, it is what the
+# op_seq windows are computed from, so a hand-copy that drifted by one position
+# would surface as a sealed-descriptor container mismatch with no hint of the cause.
+_STAGE_FIELDS_BASE["micro_post_state_update"] = list(
+    _STAGE_FIELDS_BASE["outer_post_micro"])
+
+# The qr update operands, in the order both producers emit them. This module is
+# the authority (g33_schema imports it, not the reverse), so the list is spelled
+# here once and the schema facade derives its own view from it — op_seq windows
+# are computed from this order, so two copies of it would be two chances to drift.
+_STAGE_FIELDS_BASE["micro_qr_operands"] = [
+    (f, "f32", "BK") for f in
+    ['praut', 'pracw', 'prevp', 'piacr', 'pgacr', 'psacr', 'pmulrs', 'pmulrg', 'paacw', 'pseml', 'pgeml', 'cold_gate']]
+
 _NATIVE = {
     "cpp":     {"NATIVE_MSTEP": "f64", "NATIVE_GATE": "f32"},
     "fortran": {"NATIVE_MSTEP": "i32", "NATIVE_GATE": "u8"},
@@ -426,6 +443,24 @@ def expected_records(schedule: dict) -> list[dict]:
         # surface accumulation runs once per outer loop, after main+ice chains
         emit("surface", _stage_fields("surface", backend), outer_loop=loop, shape=[B])
         emit("outer_post_sed", _stage_fields("outer_post_sed", backend), outer_loop=loop, shape=[B, K])
+        # AFTER the sedimentation result, not before it: ProgB runs between them, and the
+        # producers emit in that order — C++ at runtime.cpp 747 -> 797, Fortran at
+        # :1340 (end of the sed substep loop) -> :1509 (after ProgB_param). Emitting it
+        # first here made the expected record sequence disagree with the actual one at
+        # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
+        emit("micro_call_progb_aux", _stage_fields("micro_call_progb_aux", backend),
+             outer_loop=loop, shape=[B, K])
+        # BETWEEN the ProgB bundle and the post-micro bridge, because that is where the
+        # producers emit it: C++ on the same line as the `poststateupdate` substep dump
+        # (after the brs sweep, before reclassify_large_ice_to_snow), Fortran after the
+        # sixth ProgB_param call at :3032. Getting this order wrong does not read as an
+        # ordering bug — op_seq is a measured counter, so a misplaced stage shifts every
+        # window after it and surfaces as a sealed-descriptor container mismatch.
+        # the qr update operands come BEFORE the state they produce
+        emit("micro_qr_operands", _stage_fields("micro_qr_operands", backend),
+             outer_loop=loop, shape=[B, K])
+        emit("micro_post_state_update", _stage_fields("micro_post_state_update", backend),
+             outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
     # INSTRUMENTED SCOPE. op_seq_id is a MEASURED process-global counter, and it
     # only counts records the overlay actually emits. Numbering the manifest over
@@ -483,7 +518,8 @@ def expected_records(schedule: dict) -> list[dict]:
 # measured counter, and the real overlay can then never produce a valid
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
-                      "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post",
+                      "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
+                      "micro_qr_operands", "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -504,12 +540,29 @@ def container_id(rec: dict) -> str:
         # object spanning two TUs. Per-stage containers open, emit and finalize
         # in one block; the op_seq tiling stays contiguous because the stages
         # execute in exactly this order.
+        # EXHAUSTIVE, with no default. This used to end in
+        # `.get(stage, "outer_post_micro")`, which filed any stage the table did not
+        # name into the post-micro container — so adding micro_post_state_update
+        # produced a declared container set that disagreed with the one the overlay
+        # actually opens, and the driver failed with "OP_SEQ_MAP has no entry for
+        # container L1_micro_post_state_update": a symptom two steps from the
+        # omission. A fallback that turns a missing entry into a plausible one is the
+        # same hazard the dtype table had.
         tail = {"kernel_call_input": "kernel_call_input",
                 "kernel_init_constants": "kernel_init_constants",
                 "kernel_after_entry_clamp": "kernel_after_entry_clamp",
                 "outer_pre_sed": "outer_pre", "surface": "surface",
-                "outer_post_sed": "outer_post_sed"}.get(rec["stage"],
-                                                        "outer_post_micro")
+                "outer_post_sed": "outer_post_sed",
+                "micro_call_progb_aux": "micro_call_progb_aux",
+                "micro_qr_operands": "micro_qr_operands",
+                "micro_post_state_update": "micro_post_state_update",
+                "outer_post_micro": "outer_post_micro"}.get(rec["stage"])
+        if tail is None:
+            raise ValueError(
+                f"container_id: no container tail declared for stage "
+                f"{rec['stage']!r}. Name it here — the overlay opens a container per "
+                f"outer stage, and an undeclared one cannot be reconciled with the "
+                f"measured op_seq counter")
         return f"L{rec['outer_loop']}_{tail}"
     return f"L{rec['outer_loop']}_{rec['chain']}_n{rec['n']}"
 

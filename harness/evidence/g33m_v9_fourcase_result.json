@@ -1,0 +1,118 @@
+{
+  "attestation": {
+    "conservative_cpp": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
+    },
+    "conservative_fortran": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
+    },
+    "legacy_cpp": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
+    },
+    "legacy_fortran": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
+    }
+  },
+  "attested": true,
+  "conservative_first_divergence": {
+    "identity": [
+      "outer_post_micro",
+      2,
+      "-",
+      0,
+      3,
+      0,
+      "qr",
+      "f32"
+    ],
+    "inactive_lane_diffs": 0,
+    "invalid": null,
+    "kind": null,
+    "phase": "outer_post_micro",
+    "signature": {
+      "c_bits": "0x31974463",
+      "direction": "C<F",
+      "dtype": "f32",
+      "f_bits": "0x31974466",
+      "ulp_delta": -3,
+      "xor": "0x5"
+    },
+    "tag": null
+  },
+  "fixture_identity": {
+    "fixture_id": "arithmetic_multisubcycle_v1",
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "fortran_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+  },
+  "inputs": {
+    "B": 3,
+    "K": 4,
+    "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v9b/cpp-bundle",
+    "expected_fixture_id": "arithmetic_multisubcycle_v1",
+    "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v9b/fortran-conservative",
+    "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v9b/fortran-legacy"
+  },
+  "legacy_first_divergence": {
+    "identity": [
+      "outer_post_micro",
+      2,
+      "-",
+      0,
+      3,
+      0,
+      "qr",
+      "f32"
+    ],
+    "inactive_lane_diffs": 0,
+    "invalid": null,
+    "kind": null,
+    "phase": "outer_post_micro",
+    "signature": {
+      "c_bits": "0x31974463",
+      "direction": "C<F",
+      "dtype": "f32",
+      "f_bits": "0x31974466",
+      "ulp_delta": -3,
+      "xor": "0x5"
+    },
+    "tag": null
+  },
+  "problem": {
+    "B": 3,
+    "K": 4,
+    "entry_boundary": "kdm62d_kernel_entry_v1",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "initialization_digest": "591da317c54d5f20f0bbefac793b5062ca402d1f380e7aab96dbd460fe012e76",
+    "local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+  },
+  "reason": "legacy first-diverges at outer_post_micro ('outer_post_micro', 2, '-', 0, 3, 0, 'qr', 'f32') \u2014 the recorded sedimentation OUTPUT matched, so this is the first OBSERVED difference. Whether it ORIGINATED here is a separate question: micro_call_progb_aux carries the ProgB bundle the microphysics also consumes, so read that stage before attributing. Attribution is owner adjudication",
+  "scope": {
+    "mstep_range": {
+      "conservative": [
+        1,
+        10
+      ],
+      "legacy": [
+        1,
+        10
+      ]
+    },
+    "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
+  },
+  "verdict": "INCONCLUSIVE"
+}

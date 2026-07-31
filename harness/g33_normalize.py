@@ -41,11 +41,19 @@ import g33_derived as dv      # noqa: E402
 #: snapshot: both backends emit them, so a divergence in the carry between outer loops
 #: is a comparator finding rather than something only a human reading two dumps could
 #: notice (owner P0-C1).
-_COMPARATOR_STAGES = ("kernel_call_input", "kernel_init_constants",
-                      "kernel_after_entry_clamp",
-                      "outer_pre_sed", "substep_pre",
-                      "surface",
-                      "outer_post_sed", "outer_post_micro")
+#
+# DERIVED from the schema, not listed again. Adding micro_post_state_update meant
+# touching five separate hand-kept stage lists, and each one that was missed failed
+# on its own with an error that named the symptom rather than the omission — here,
+# "fortran run has non-comparator stage", about a stage the schema does define. The
+# schema is the authority for what stages exist; this is the authority only for the
+# ONE that is deliberately excluded.
+#
+# final_output is not a per-cell snapshot: it carries the whole-step cumulative
+# precipitation, which the comparator handles on its own path.
+_NOT_COMPARED = ("final_output",)
+_COMPARATOR_STAGES = tuple(s for s in schema._SEMANTIC_STAGE_FIELDS
+                           if s not in _NOT_COMPARED)
 # Fortran PREC is the WHOLE-STEP cumulative precipitation (rainncv accumulates over
 # every outer loop), not one loop's increment.
 _PREC_FIELD = {1: "rain_precip_cumulative", 2: "snow_precip_cumulative",
@@ -99,6 +107,26 @@ def _semantic(stage, field):
     return field in schema.semantic_stage_fields(stage)
 
 
+def _entry_boundary(run) -> str:
+    """The boundary this run declared. NO DEFAULT (owner P0-3.4).
+
+    SedimentationIdentity.of() stopped defaulting a missing boundary to the wrapper, but
+    the normalizer still did — so the contract was enforced at one end and quietly
+    supplied at the other, and a run reaching the decision path through here would have
+    arrived carrying a boundary it never declared.
+
+    A stream from before the boundary existed is a wrapper run by construction, and the
+    PARSER still defaults on that basis; that is the right place for it, because the
+    parser can see the protocol version and this cannot.
+    """
+    boundary = getattr(run, "entry_boundary", None)
+    if boundary not in schema.ENTRY_BOUNDARIES:
+        raise NormalizeError(
+            f"the run declares no usable comparison boundary ({boundary!r}); a decision "
+            f"cannot assume which function the leg entered")
+    return boundary
+
+
 def from_fortran_run(run) -> dict:
     """FortranRun -> normalized run, projected onto the common semantic schema."""
     ops = [{"loop": o.loop, "chain": o.chain, "n": o.n, "col": o.col, "k": o.k,
@@ -149,7 +177,7 @@ def from_fortran_run(run) -> dict:
                # for — so a wrapper leg and a kernel leg are answers to different
                # questions, and comparing them is a category error the same way two
                # fixtures would be (owner: kernel gate vs wrapper contract).
-               "entry_boundary": getattr(run, "entry_boundary", schema.WRAPPER_INPUT)}
+               "entry_boundary": _entry_boundary(run)}
     return {"algorithm": run.algorithm, "backend": "fortran", "B": B, "K": K,
             "ops": ops, "stages": stages, "problem": problem}
 

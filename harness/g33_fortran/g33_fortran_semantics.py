@@ -26,12 +26,23 @@ Checks (all bit-exact; f32 arithmetic via numpy.float32 in the reference order):
 import struct
 
 import numpy as np
+import struct as _struct
+
+
+def _f32(bits: int) -> np.float32:
+    return np.float32(_struct.unpack(">f", _struct.pack(">I", bits))[0])
+
+
+def _f32_bits(value) -> int:
+    return _struct.unpack(">I", _struct.pack(">f", np.float32(value)))[0]
 
 
 #: The carried fields that the FINAL STATE also carries, so the last loop's exit can
-#: be bound to what the subroutine actually returned. `t` is excluded on purpose: the
-#: state carries `th`, and th = t/pii is a computation, not a copy — asserting bit
-#: equality there would be asserting the conversion, not the binding.
+#: be bound to what the subroutine actually returned. `t` is not here because it is not
+#: a COPY — the state carries `th` and the pack-out computes th = t/pii — so it is
+#: checked separately, as the conversion (owner P0-1.5). Leaving it out entirely, which
+#: is what happened before, left the last thing the kernel produced unbound to the last
+#: thing it returned.
 #: stage field -> the name the returned STATE uses for it. Only `brs`/`bg` differ,
 #: and that is a rename across a copy, not a computation — unlike t/th, which is why
 #: `t` stays out.
@@ -210,4 +221,34 @@ def verify_semantics(run):
                         raise SemanticError(
                             f"final state not bound: outer_post_micro(L{last}).{f} "
                             f"!= STATE.{f} c={c} k={k}")
+                # `t` is the one that is NOT a copy — the state carries `th`, and the
+                # wrapper's pack-out computes th = t/pii. Excluding it left the last
+                # thing the kernel produced unbound to the last thing it returned, so
+                # a defect in the conversion itself was invisible (owner P0-1.5).
+                #
+                # Checked as the CONVERSION rather than as equality, in the same f32
+                # arithmetic the driver uses, against pii from the run's own FIXIN.
+                # FAIL LOUD on a missing operand (owner P0-10). Skipping when either is
+                # absent means a stream that stopped emitting `th` or `pii` would pass
+                # this check by not supplying it — the binding would be declared and
+                # unenforced, which is the failure every version bump here has been
+                # closing. Both are required at every protocol version that reaches this
+                # code, since `has_bridge` already implies v4+.
+                th, pii = run.state.get(("th", c, k)), run.fixin.get(("pii", c, k))
+                if th is None:
+                    raise SemanticError(f"final state has no th at c={c} k={k}, so the "
+                                        f"t -> th conversion cannot be checked")
+                if pii is None:
+                    raise SemanticError(f"FIXIN has no pii at c={c} k={k}, so the "
+                                        f"t -> th conversion cannot be checked")
+                pii_v = _f32(pii)
+                if not np.isfinite(pii_v) or pii_v <= 0:
+                    raise SemanticError(f"FIXIN pii at c={c} k={k} is {pii_v!r}; the "
+                                        f"Exner factor must be finite and positive")
+                t = _sv(S, "outer_post_micro", 0, "t", c, k, last)[1]
+                want = _f32_bits(_f32(t) / pii_v)
+                if want != th:
+                    raise SemanticError(
+                        f"final th not bound: f32(outer_post_micro(L{last}).t / "
+                        f"pii) = {want:#010x} != STATE.th {th:#010x} c={c} k={k}")
     return True

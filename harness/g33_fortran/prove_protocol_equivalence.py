@@ -65,8 +65,19 @@ def main() -> int:
     pref = tuple(a.added_record)
     added = [ln for ln in new if _is_added(ln, stages, fields, pref)]
     kept = [ln for ln in new if not _is_added(ln, stages, fields, pref)]
+    # FILTER BOTH SIDES. Only filtering the new stream is right for a pure ADDITION, and
+    # silently wrong for a MOVE: when the old stream already contains the named stage —
+    # at a different program point — the comparison becomes old-with-it against
+    # new-without-it and reports DIFFERS at the first such record, which reads as the
+    # instrumentation having changed the run. It has not; the tool was comparing two
+    # different things.
+    old_kept = [ln for ln in old if not _is_added(ln, stages, fields, pref)]
+    old_dropped = len(old) - len(old_kept)
+    old = old_kept
 
-    print(f"  old records : {len(old)}")
+    print(f"  old records : {len(old)}"
+          + (f"   ({old_dropped} of the changed class filtered out too)"
+             if old_dropped else ""))
     print(f"  shared      : {len(kept)}   "
           f"{'BYTE-IDENTICAL' if kept == old else 'DIFFERS'}")
     print(f"  added       : {len(added)}")
@@ -84,3 +95,26 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# Self-test: a MOVE must not be reported as a physics change. Run with -m pytest, or
+# directly — it needs no fixtures.
+def _selftest():
+    same = ["G33F STAGE 1 - op 0 qr 1 0 f32 AAAA",
+            "G33F STAGE 1 - micro_call_progb_aux 0 rhox 1 0 f32 1111",
+            "G33F STAGE 1 - outer_post_micro 0 qr 1 0 f32 BBBB"]
+    moved = ["G33F STAGE 1 - op 0 qr 1 0 f32 AAAA",
+             "G33F STAGE 1 - outer_post_micro 0 qr 1 0 f32 BBBB",
+             "G33F STAGE 1 - micro_call_progb_aux 0 rhox 1 0 f32 2222"]
+    st, fl = {"micro_call_progb_aux"}, set()
+    a = [ln for ln in same if not _is_added(ln, st, fl)]
+    b = [ln for ln in moved if not _is_added(ln, st, fl)]
+    assert a == b, "filtering both sides should make a MOVE byte-identical"
+    # and a genuine content change must still be caught
+    changed = [ln.replace("AAAA", "CCCC") for ln in moved]
+    c = [ln for ln in changed if not _is_added(ln, st, fl)]
+    assert c != a, "a real difference outside the moved stage must still show"
+    return True
+
+
+assert _selftest()

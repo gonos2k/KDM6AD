@@ -41,6 +41,33 @@ private:
     ::kdm6::g33::trace::ContainerTrace t_;
 };
 
+// The dump is canonically TOP-FIRST (the Fortran side emits k = kte-k), but every
+// whole-K tensor inside the coordinator is in host-K (WRF bottom-first) order — see
+// the §53d flip that hands the sed-era ProgB bundle into the micro step. Recording a
+// coordinator tensor raw therefore lands each column reversed in k, which reads as a
+// physics difference and is not one. Same spelling as runtime.cpp.overlay's flip_k so
+// the one convention is visibly identical in both TUs; test_g33_overlay_orientation
+// enforces it mechanically across both.
+inline torch::Tensor flip_k(const torch::Tensor& t) { return torch::flip(t, {1}); }
+
+// Same shape as Surface, but the container tail is a parameter: this TU now opens a
+// second whole-K container (the ProgB bundle the rates read), and Surface hardcodes
+// "surface". Kept alongside rather than generalising Surface, so the existing container's
+// identity cannot shift under a refactor.
+class Outer {
+public:
+    Outer(const char* tail, const torch::Tensor& probe)
+        : t_("-", 0, tail, int(probe.size(0)), int(probe.size(-1)),
+             g33_loaded_binary()) {}
+    bool on() const { return t_.on(); }
+    void rec(const char* stage, const char* field, const torch::Tensor& t) {
+        t_.rec(stage, "-", -1, "-", "-", field, t);
+    }
+    void finalize() { t_.finalize(); }
+private:
+    ::kdm6::g33::trace::ContainerTrace t_;
+};
+
 }}  // namespace kdm6::coord_g33ovl
 #define G33_REC(g, stage, field, t) do { (g).rec(stage, field, t); } while (0)
 #endif  // KDM6_G33_OP_DUMP
@@ -965,6 +992,44 @@ CoordinatorState kdm62d_one_step(
     }
     auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope, PR);
     const auto& pre2 = rebuilt.pre;
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // WHAT THE RATES ACTUALLY READ (owner P0-1.3). `pre2` is the POST-FREEZE
+        // rebuild_aux — step 5 of this function's own mirror is "warm/cold/D5 read
+        // `working` + pre2/aux2" — so pre2.progb is the ProgB bundle the microphysics
+        // consumes, and it corresponds to the Fortran ProgB_param at :1707, the last
+        // before the rate loop at :1864.
+        //
+        // My first version recorded progb_ret at the handoff in runtime.cpp: the
+        // RETAINED bundle going in, before either rebuild_aux recomputes it. That is a
+        // different instant from the Fortran side and from what the rates read, so the
+        // stage would have manufactured differences out of its own placement — the same
+        // failure outer_pre_sed had.
+        coord_g33ovl::Outer g33("micro_call_progb_aux", coord_g33ovl::flip_k(pre2.progb.rhox));
+        if (g33.on()) {
+            G33_REC(g33, "micro_call_progb_aux", "rhox",         coord_g33ovl::flip_k(pre2.progb.rhox));
+            G33_REC(g33, "micro_call_progb_aux", "bg",           coord_g33ovl::flip_k(pre2.progb.bg));
+            G33_REC(g33, "micro_call_progb_aux", "cmg",          coord_g33ovl::flip_k(pre2.progb.cmg));
+            G33_REC(g33, "micro_call_progb_aux", "pidn0g",       coord_g33ovl::flip_k(pre2.progb.pidn0g));
+            G33_REC(g33, "micro_call_progb_aux", "avtg",         coord_g33ovl::flip_k(pre2.progb.avtg));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg",         coord_g33ovl::flip_k(pre2.progb.bvtg));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg1",        coord_g33ovl::flip_k(pre2.progb.bvtg1));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg2",        coord_g33ovl::flip_k(pre2.progb.bvtg2));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg3",        coord_g33ovl::flip_k(pre2.progb.bvtg3));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg4",        coord_g33ovl::flip_k(pre2.progb.bvtg4));
+            G33_REC(g33, "micro_call_progb_aux", "g1pbg",        coord_g33ovl::flip_k(pre2.progb.g1pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g3pbg",        coord_g33ovl::flip_k(pre2.progb.g3pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g4pbg",        coord_g33ovl::flip_k(pre2.progb.g4pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g5pbgo2",      coord_g33ovl::flip_k(pre2.progb.g5pbgo2));
+            G33_REC(g33, "micro_call_progb_aux", "g1pdgbgmg",    coord_g33ovl::flip_k(pre2.progb.g1pdgbgmg));
+            G33_REC(g33, "micro_call_progb_aux", "dgbgmug1",     coord_g33ovl::flip_k(pre2.progb.dgbgmug1));
+            G33_REC(g33, "micro_call_progb_aux", "rslopegbmax",  coord_g33ovl::flip_k(pre2.progb.rslopegbmax));
+            G33_REC(g33, "micro_call_progb_aux", "pvtg",         coord_g33ovl::flip_k(pre2.progb.pvtg));
+            G33_REC(g33, "micro_call_progb_aux", "precg2",       coord_g33ovl::flip_k(pre2.progb.precg2));
+        }
+        g33.finalize();
+    }
+#endif
     auto aux2 = rebuilt.aux;   // mutable: n0c recomputed from the snapped nc below
     // §35 diag_rhog shadow: post-freeze reslope — update active (qg>qcrmin), retain else.
     rhog_acc = torch::where(working.qg > full_params.progb.qcrmin, pre2.progb.rhox, rhog_acc);
@@ -1206,6 +1271,48 @@ CoordinatorState kdm62d_one_step(
     // postfreeze (= Fortran budget base) to isolate base-vs-budget for the structural qr/qs/qg residual.
     if (kdm6_dump_on) kdm6_dump_state_substep(working, "prestate");
 #endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE OPERANDS OF THE qr UPDATE LINE, at the call that consumes them — a
+        // CLOSED set for that line. Everything else it reads is already compared
+        // (the incoming qr, from outer_post_sed) or sealed (dtcld), so if all of
+        // these match and qr still differs, the difference is in the summation and
+        // not in an operand.
+        //
+        // The three _adj names are the SAME quantity the Fortran update line reads:
+        // Fortran adjusts psacr/pgacr/paacw in place after the Hallett-Mossop block
+        // (F:2383/F:2436/F:2368/F:2420), so by the update its array already holds the
+        // post-HM value. Established from both sources — the suffix alone is not an
+        // argument, and this is the kind of site the protocol's two placement defects
+        // came from.
+        //
+        // cold_gate is recorded rather than assumed. state_update's cold_mask is
+        // supcol > 0 and Fortran's branch is t <= t0c; supcol = t0c - t, so the two
+        // disagree exactly at t == t0c. Recording both sides makes that visible
+        // instead of leaving it to show up as several rates differing at once.
+        // Fully inlined, with no local bindings: the non-invasiveness tripwire reads
+        // any name introduced here as a potential production assignment, and a
+        // checker that has to be argued with is worse than three extra characters.
+        coord_g33ovl::Outer g33("micro_qr_operands",
+                                coord_g33ovl::flip_k(scaled.warm.praut));
+        if (g33.on()) {
+            G33_REC(g33, "micro_qr_operands", "praut",  coord_g33ovl::flip_k(scaled.warm.praut));
+            G33_REC(g33, "micro_qr_operands", "pracw",  coord_g33ovl::flip_k(scaled.warm.pracw));
+            G33_REC(g33, "micro_qr_operands", "prevp",  coord_g33ovl::flip_k(scaled.warm.prevp));
+            G33_REC(g33, "micro_qr_operands", "piacr",  coord_g33ovl::flip_k(scaled.cold.piacr));
+            G33_REC(g33, "micro_qr_operands", "pgacr",  coord_g33ovl::flip_k(scaled.cold.pgacr_adj));
+            G33_REC(g33, "micro_qr_operands", "psacr",  coord_g33ovl::flip_k(scaled.cold.psacr_adj));
+            G33_REC(g33, "micro_qr_operands", "pmulrs", coord_g33ovl::flip_k(scaled.cold.pmulrs));
+            G33_REC(g33, "micro_qr_operands", "pmulrg", coord_g33ovl::flip_k(scaled.cold.pmulrg));
+            G33_REC(g33, "micro_qr_operands", "paacw",  coord_g33ovl::flip_k(scaled.cold.paacw_adj));
+            G33_REC(g33, "micro_qr_operands", "pseml",  coord_g33ovl::flip_k(scaled.mf.pseml));
+            G33_REC(g33, "micro_qr_operands", "pgeml",  coord_g33ovl::flip_k(scaled.mf.pgeml));
+            G33_REC(g33, "micro_qr_operands", "cold_gate",
+                    coord_g33ovl::flip_k((pre2.supcol > 0).to(working.qr.scalar_type())));
+        }
+        g33.finalize();
+    }
+#endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
         full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on
@@ -1285,6 +1392,42 @@ CoordinatorState kdm62d_one_step(
     }
 #ifdef KDM6_SUBSTEP_DUMP
     if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "poststateupdate");
+#endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE BISECTION. micro_call_progb_aux and outer_post_micro used to be adjacent
+        // in the ladder, so a divergence first seen at outer_post_micro was attributable
+        // only to "somewhere in the microphysics" — the rate blocks, the mass-conservation
+        // feedback, the two-branch state update, the brs re-clamp, Picons/Nicons and the
+        // saturation adjustment, all at once. This snapshot splits that span.
+        //
+        // It is placed on the SAME line as the existing substep dump above, which the
+        // pinned Fortran's own dump at F:3041 names as its mirror. Reusing a reconciled
+        // pair rather than establishing a new correspondence is deliberate: both
+        // placement defects this protocol has produced came from a site where the
+        // correspondence had to be worked out here.
+        //
+        // flip_k: new_state is host-K, the dump is top-first. Recording it raw reverses
+        // every column, which is exactly how the ProgB bundle read as 58 divergent cells
+        // when it was bit-identical.
+        coord_g33ovl::Outer g33("micro_post_state_update",
+                                coord_g33ovl::flip_k(new_state.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_state_update", "qr",   coord_g33ovl::flip_k(new_state.qr));
+            G33_REC(g33, "micro_post_state_update", "nr",   coord_g33ovl::flip_k(new_state.nr));
+            G33_REC(g33, "micro_post_state_update", "qv",   coord_g33ovl::flip_k(new_state.qv));
+            G33_REC(g33, "micro_post_state_update", "t",    coord_g33ovl::flip_k(new_state.t));
+            G33_REC(g33, "micro_post_state_update", "qc",   coord_g33ovl::flip_k(new_state.qc));
+            G33_REC(g33, "micro_post_state_update", "qi",   coord_g33ovl::flip_k(new_state.qi));
+            G33_REC(g33, "micro_post_state_update", "qs",   coord_g33ovl::flip_k(new_state.qs));
+            G33_REC(g33, "micro_post_state_update", "qg",   coord_g33ovl::flip_k(new_state.qg));
+            G33_REC(g33, "micro_post_state_update", "nc",   coord_g33ovl::flip_k(new_state.nc));
+            G33_REC(g33, "micro_post_state_update", "ni",   coord_g33ovl::flip_k(new_state.ni));
+            G33_REC(g33, "micro_post_state_update", "nccn", coord_g33ovl::flip_k(new_state.nccn));
+            G33_REC(g33, "micro_post_state_update", "brs",  coord_g33ovl::flip_k(new_state.brs));
+        }
+        g33.finalize();
+    }
 #endif
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).

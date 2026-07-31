@@ -63,7 +63,11 @@ def test_fortran_driver_builds_runs_and_emits_raw_bits(algo):
 
     out = _build_and_run(algo)
     assert f"FORTRAN DRIVER OK ({algo}" in out
-    assert f"G33F BEGIN v5 {algo}" in out and f"G33F END v5 {algo}" in out
+    # the stream version comes from the one place that defines it — a literal here
+    # goes stale on every protocol bump and the test then fails for the wrong reason.
+    import g33_fortran_bundle_io as bio
+    v = bio.DECISION_PROTOCOL_VERSION
+    assert f"G33F BEGIN v{v} {algo}" in out and f"G33F END v{v} {algo}" in out
     # final state: 12 fields x 3 cols x 4 levels (top-first k = 0..3).
     state = fd.parse_state(out)
     assert len(state) == 12 * 3 * 4, f"expected 144 STATE records, got {len(state)}"
@@ -306,8 +310,11 @@ def test_presed_stage_records():
 
     C = _build_and_run("legacy", overlay=True, dump=True)
     run = fd.parse_fortran_run(C, "legacy", 4, 3)
-    # v5: outer_pre_sed = 12 carried + rho/delz, x 3 cols x 4 levels
-    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == 14 * 3 * 4
+    # outer_pre_sed = the schema's field list x 3 cols x 4 levels. Counted from the
+    # schema so adding a field cannot silently pass, and cannot stale-fail either.
+    import g33_schema as schema
+    n_presed = len(schema._SEMANTIC_STAGE_FIELDS["outer_pre_sed"])
+    assert sum(1 for k in run.stages if k[2] == "outer_pre_sed") == n_presed * 3 * 4
     assert any(k[2] == "substep_pre" for k in run.stages)
     assert sum(1 for k in run.stages if k[2] == "surface") == 7 * 3   # P0-8 (+denr)
     assert (1, "-", "outer_pre_sed", 0, "qr", 1, 0) in run.stages
