@@ -1271,6 +1271,48 @@ CoordinatorState kdm62d_one_step(
     // postfreeze (= Fortran budget base) to isolate base-vs-budget for the structural qr/qs/qg residual.
     if (kdm6_dump_on) kdm6_dump_state_substep(working, "prestate");
 #endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE OPERANDS OF THE qr UPDATE LINE, at the call that consumes them — a
+        // CLOSED set for that line. Everything else it reads is already compared
+        // (the incoming qr, from outer_post_sed) or sealed (dtcld), so if all of
+        // these match and qr still differs, the difference is in the summation and
+        // not in an operand.
+        //
+        // The three _adj names are the SAME quantity the Fortran update line reads:
+        // Fortran adjusts psacr/pgacr/paacw in place after the Hallett-Mossop block
+        // (F:2383/F:2436/F:2368/F:2420), so by the update its array already holds the
+        // post-HM value. Established from both sources — the suffix alone is not an
+        // argument, and this is the kind of site the protocol's two placement defects
+        // came from.
+        //
+        // cold_gate is recorded rather than assumed. state_update's cold_mask is
+        // supcol > 0 and Fortran's branch is t <= t0c; supcol = t0c - t, so the two
+        // disagree exactly at t == t0c. Recording both sides makes that visible
+        // instead of leaving it to show up as several rates differing at once.
+        // Fully inlined, with no local bindings: the non-invasiveness tripwire reads
+        // any name introduced here as a potential production assignment, and a
+        // checker that has to be argued with is worse than three extra characters.
+        coord_g33ovl::Outer g33("micro_qr_operands",
+                                coord_g33ovl::flip_k(scaled.warm.praut));
+        if (g33.on()) {
+            G33_REC(g33, "micro_qr_operands", "praut",  coord_g33ovl::flip_k(scaled.warm.praut));
+            G33_REC(g33, "micro_qr_operands", "pracw",  coord_g33ovl::flip_k(scaled.warm.pracw));
+            G33_REC(g33, "micro_qr_operands", "prevp",  coord_g33ovl::flip_k(scaled.warm.prevp));
+            G33_REC(g33, "micro_qr_operands", "piacr",  coord_g33ovl::flip_k(scaled.cold.piacr));
+            G33_REC(g33, "micro_qr_operands", "pgacr",  coord_g33ovl::flip_k(scaled.cold.pgacr_adj));
+            G33_REC(g33, "micro_qr_operands", "psacr",  coord_g33ovl::flip_k(scaled.cold.psacr_adj));
+            G33_REC(g33, "micro_qr_operands", "pmulrs", coord_g33ovl::flip_k(scaled.cold.pmulrs));
+            G33_REC(g33, "micro_qr_operands", "pmulrg", coord_g33ovl::flip_k(scaled.cold.pmulrg));
+            G33_REC(g33, "micro_qr_operands", "paacw",  coord_g33ovl::flip_k(scaled.cold.paacw_adj));
+            G33_REC(g33, "micro_qr_operands", "pseml",  coord_g33ovl::flip_k(scaled.mf.pseml));
+            G33_REC(g33, "micro_qr_operands", "pgeml",  coord_g33ovl::flip_k(scaled.mf.pgeml));
+            G33_REC(g33, "micro_qr_operands", "cold_gate",
+                    coord_g33ovl::flip_k((pre2.supcol > 0).to(working.qr.scalar_type())));
+        }
+        g33.finalize();
+    }
+#endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
         full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on

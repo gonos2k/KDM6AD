@@ -66,6 +66,26 @@ def _stage_block(stage, chain, n_expr, col_fields, whole_k_fields,
     return lines
 
 
+#: How far after a resolved anchor its landmark may sit. Wide enough for the
+#: comment block a dump site carries, narrow enough that the next call site
+#: cannot satisfy it.
+_LANDMARK_WINDOW = 12
+
+
+def _cell_stage_block(stage, chain, n_expr, fields, loop_expr="loop"):
+    """Emission for an injection point ALREADY INSIDE `do k` / `do i`.
+
+    _stage_block opens its own loops, which at a site like the state update would
+    nest a second `do i` inside the live one and emit B*K records per cell. Here
+    the surrounding loops supply i and k; only the top-first k = kte-k conversion
+    is applied, exactly as the injected-loop form does.
+    """
+    return ["#ifdef KDM6_G33_FORTRAN_DUMP",
+            *[_stage_write(stage, chain, n_expr, f, "kte-k", dt, e, loop_expr)
+              for f, dt, e in fields],
+            "#endif"]
+
+
 def _validate_against_schema(algo):
     """Emitted field list MUST equal schema.op_fields(...), in order, for every
     (role, species, op) in scope — ties the bindings to the one schema."""
@@ -155,6 +175,13 @@ def build_overlay(algo, text):
              # the ProgB bundle the micro rates consume, per outer loop
              (fb.MICRO_CALL_AUX_ANCHOR, "after",
               _stage_block("micro_call_progb_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
+             # the qr update's operands, in BOTH arms of the F:2638 branch: the
+             # rates are scaled per-arm, so the scaled values only exist inside,
+             # and every cell takes exactly one arm so each emits exactly once.
+             (fb.MICRO_QR_OPERANDS_COLD_ANCHOR, "after",
+              _cell_stage_block("micro_qr_operands", "-", "0", fb.MICRO_QR_OPERANDS)),
+             (fb.MICRO_QR_OPERANDS_WARM_ANCHOR, "after",
+              _cell_stage_block("micro_qr_operands", "-", "0", fb.MICRO_QR_OPERANDS)),
              # the bisection of the micro step: after the state update and its brs
              # re-clamp, before Picons/satadj (F:3032, the sixth ProgB_param call)
              (fb.MICRO_POST_STATE_UPDATE_ANCHOR, "after",
@@ -180,15 +207,29 @@ def build_overlay(algo, text):
     # line gets the pre-ladder before + the actual q_post after).
     plan = {}
     for anchor, place, block in edits:
-        # An anchor may be (line, occurrence): several injection points sit on lines that
-        # repeat verbatim — `call slope_kdm6(...)` occurs seven times, once per rate
-        # block — and requiring a unique line would mean either finding no anchor at all
-        # or picking a nearby unique COMMENT, which drifts independently of the code it
-        # is standing in for. An explicit occurrence index says which one and still fails
-        # loudly if the count changes.
-        want = None
+        # An anchor may be (line, occurrence[, landmark]): several injection points sit
+        # on lines that repeat verbatim — `call slope_kdm6(...)` occurs seven times, once
+        # per rate block — and requiring a unique line would mean either finding no anchor
+        # at all or picking a nearby unique COMMENT, which drifts independently of the
+        # code it is standing in for. An explicit occurrence index says which one and
+        # still fails loudly if the count changes.
+        #
+        # The occurrence index is 0-BASED, and reading it as "the nth" is how the
+        # micro_post_state_update stage got injected after the SEVENTH ProgB_param call
+        # (post-satadj) when it meant the sixth (pre-Picons). Nothing failed: both are
+        # real ProgB calls, so the overlay built, the run produced records, and the
+        # comparison silently ran against a different instant than the C++ side.
+        #
+        # `landmark` is the fix, and it is not a convention tweak: a substring that must
+        # appear within _LANDMARK_WINDOW lines after the resolved point. It states which
+        # site was MEANT in terms of the source itself, so an off-by-one lands on a
+        # different site and says so, instead of producing evidence about the wrong place.
+        want = landmark = None
         if isinstance(anchor, tuple):
-            anchor, want = anchor
+            if len(anchor) == 3:
+                anchor, want, landmark = anchor
+            else:
+                anchor, want = anchor
         idx = [i for i, ln in enumerate(lines) if ln == anchor]
         if want is None:
             if len(idx) != 1:
@@ -203,6 +244,15 @@ def build_overlay(algo, text):
                     f"anchor matched {len(idx)} whole lines, expected {total} — the "
                     f"source changed:\n  {anchor}")
             at = idx[n]
+        if landmark is not None:
+            window = lines[at + 1:at + 1 + _LANDMARK_WINDOW]
+            if not any(landmark in ln for ln in window):
+                raise SystemExit(
+                    f"anchor resolved to source line {at + 1}, but the landmark that "
+                    f"names the intended site is not within {_LANDMARK_WINDOW} lines "
+                    f"after it:\n  anchor:   {anchor}\n  landmark: {landmark}\n"
+                    f"Either the occurrence index is wrong (it is 0-BASED) or the "
+                    f"source moved.")
         plan.setdefault(at, {"before": [], "after": []})[place] += block
 
     out = []

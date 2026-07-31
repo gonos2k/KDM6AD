@@ -47,6 +47,7 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
                 "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "micro_call_progb_aux": "-",
+                "micro_qr_operands": "-",
                 "micro_post_state_update": "-",
                 "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -325,6 +326,11 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # measured by a separate gate. Requiring the record of a stream that structurally
     # cannot produce it would report a boundary choice as missing evidence.
     # v8: what kdm6init BUILT. Emitted by the overlay, so present on both boundaries.
+    # v11: the operands of the qr update line, a closed set for that line.
+    if version >= 11:
+        exp |= {(L, "-", "micro_qr_operands", 0, fld, c, k) for L in loops
+                for fld in _schema._SEMANTIC_STAGE_FIELDS["micro_qr_operands"]
+                for c in range(1, B + 1) for k in range(K)}
     # v10: the microphysics bisection — the state after the two-branch update and
     # its brs re-clamp, before Picons/Nicons and the saturation adjustment. Same
     # twelve fields as outer_post_micro, so the two snapshots are comparable
@@ -495,18 +501,32 @@ _SUBSTEP_PRE_COL_FIELDS = ("mstep", "gate", "dtcld")
 _SURFACE_FIELDS = ("bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg",
                    "bottom_fall_qi", "bottom_fall_total", "delz_bottom",
                    "surface_denr")
-_STAGE_DTYPE = {"rhox": "f32", "bg": "f32", "cmg": "f32", "pidn0g": "f32", "avtg": "f32", "bvtg": "f32", "bvtg1": "f32", "bvtg2": "f32", "bvtg3": "f32", "bvtg4": "f32", "g1pbg": "f32", "g3pbg": "f32", "g4pbg": "f32", "g5pbgo2": "f32", "g1pdgbgmg": "f32", "dgbgmug1": "f32", "rslopegbmax": "f32", "pvtg": "f32", "precg2": "f32",
-                "pi": "f32", "cmc": "f32", "cmr": "f32", "cmi": "f32", "g1pmc": "f32", "g3pmc": "f32", "g4pmc": "f32", "g6pmc": "f32", "g1pmr": "f32", "g2pmr": "f32", "g4pmr": "f32", "g7pmr": "f32", "g1pdrmr": "f32", "g1pmi": "f32", "g4pmi": "f32", "g1pdimi": "f32", "pidnc": "f32", "pidnr": "f32", "pidni": "f32", "pidn0s": "f32", "ele2": "f32",
-                "qr": "f32", "nr": "f32", "qv": "f32", "t": "f32", "rho": "f32",
-                # v6: pressure, a kernel argument rather than a carried prognostic
-                "p": "f32",
-                "delz": "f32", "work1_qr": "f64", "workn_qr": "f64",
-                # the carried species the bridge adds
-                "qc": "f32", "qi": "f32", "qs": "f32", "qg": "f32",
-                "nc": "f32", "ni": "f32", "nccn": "f32", "brs": "f32",
-                "dend_safe": "f32", "delz_safe": "f32",
-                "mstep": "i32", "gate": "u8", "dtcld": "f32",
-                **{f: "f32" for f in _SURFACE_FIELDS}}
+#: Field -> dtype for STAGE records, DERIVED from the schema.
+#
+# This was enumerated by hand, so every stage added to the schema had to be
+# transcribed here too, and the one that was not raised KeyError on the field name
+# with nothing pointing at the schema. Same defect the schema's own dtype map had
+# before it was derived; the fix is the same.
+#
+# STAGE records carry no stage in the dtype check, so a field appearing in two
+# stages with different dtypes would be ambiguous — asserted against rather than
+# assumed, since silently taking one of the two is how such a thing survives.
+def _derive_stage_dtype():
+    out = {}
+    for (stage, field), dt in _schema._SEMANTIC_STAGE_DTYPE.items():
+        if out.setdefault(field, dt) != dt:
+            raise AssertionError(
+                f"field {field!r} has conflicting dtypes across stages "
+                f"({out[field]} vs {dt}); the flat STAGE dtype check cannot "
+                f"disambiguate it")
+    # Not stage fields: emitted alongside them by the same record class.
+    out.update({"ele2": "f32", "dend_safe": "f32", "delz_safe": "f32",
+                "dtcld": "f32"})
+    out.update({f: "f32" for f in _SURFACE_FIELDS})
+    return out
+
+
+_STAGE_DTYPE = _derive_stage_dtype()
 
 
 def _expected_op_universe(algo, K, B, mstep):

@@ -68,16 +68,17 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_call_progb_aux", "micro_post_state_update",
-           "outer_post_micro")
+           "outer_post_sed", "micro_call_progb_aux", "micro_qr_operands",
+           "micro_post_state_update", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_call_progb_aux": 7, "micro_post_state_update": 8,
-                "outer_post_micro": 9, "final_output": 10}
+                "micro_call_progb_aux": 7, "micro_qr_operands": 8,
+                "micro_post_state_update": 9,
+                "outer_post_micro": 10, "final_output": 11}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -635,11 +636,27 @@ def classify(legacy: Divergence, conservative: Divergence):
         if d.phase == "micro_post_state_update":
             return "INCONCLUSIVE", (
                 f"{name} first-diverges at {d.phase} {d.identity} — the ProgB bundle "
-                f"the rates read matched, so the difference is inside the microphysics "
-                f"and BEFORE Picons/Nicons and the saturation adjustment: in the rate "
-                f"blocks, the mass-conservation feedback, the two-branch state update, "
-                f"or the ProgB brs re-clamp. This is NOT a statement about "
+                f"the rates read matched, and so did micro_qr_operands, the CLOSED "
+                f"operand set of the qr update line; the difference is inside the "
+                f"microphysics and BEFORE Picons/Nicons and the saturation "
+                f"adjustment: in the summation itself, in another update line's "
+                f"operands, the mass-conservation feedback, or the ProgB brs "
+                f"re-clamp. This is NOT a statement about "
                 f"conservative-only interface arithmetic; attribution is owner "
+                f"adjudication")
+        # 3b''. THE OPERANDS. Reached when the state at micro_post_state_update
+        # matched but an operand of the qr update line did not — so the difference is
+        # in whichever rate produced that operand, upstream of the update arithmetic.
+        # The closed-set property is what makes the converse readable too: if this
+        # stage matches and micro_post_state_update does not, the operands were equal
+        # and the summation was not.
+        if d.phase == "micro_qr_operands":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — an OPERAND of the "
+                f"qr update line differs while the state entering the microphysics and "
+                f"the ProgB bundle matched, so the difference is in the rate that "
+                f"produced it, not in the update arithmetic. This is NOT a statement "
+                f"about conservative-only interface arithmetic; attribution is owner "
                 f"adjudication")
         if d.phase == "micro_call_progb_aux":
             return "INCONCLUSIVE", (

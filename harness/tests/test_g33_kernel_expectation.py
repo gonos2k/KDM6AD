@@ -265,8 +265,14 @@ def test_the_auxiliary_is_recorded_where_the_RATES_read_it():
     import g33_fortran_bindings as fb
     anchor = fb.MICRO_CALL_AUX_ANCHOR
     assert isinstance(anchor, tuple), "the anchor must carry its occurrence index"
-    line, (n, total) = anchor
+    line, (n, total), landmark = anchor
     assert (n, total) == (4, 7), "the post-MELT ProgB is not what the rates read"
+    # The index is 0-BASED and reading it as "the nth" put micro_post_state_update
+    # after the SEVENTH ProgB_param call when it meant the sixth. The landmark says
+    # which site was meant in the source's own terms, and the overlay builder
+    # refuses to inject if it is not there.
+    assert landmark == "fort_substep_postfreeze.bin", (
+        "the anchor must name the site it means, not just count occurrences")
     assert "pidn0g" in line and "pvtg" in line, (
         "the anchor should be the slope_kdm6 call that consumes the bundle, so a source "
         "change that moves the consumer breaks the anchor rather than silently relocating "

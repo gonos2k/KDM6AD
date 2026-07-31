@@ -155,6 +155,25 @@ _SEMANTIC_STAGE_FIELDS = {
     # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
     # add a new mapping between the backends, and a new mapping is a new way to
     # manufacture a difference that is not there.
+    # THE OPERANDS OF THE qr UPDATE LINE — a CLOSED set (protocol v11).
+    #
+    # micro_post_state_update put the first divergence in this line with the
+    # incoming state and the ProgB bundle bit-identical. The line reads exactly
+    # these rates, plus the incoming qrs(1) (already compared, it comes from
+    # outer_post_sed) and dtcld (a sealed scalar). So if every field here matches
+    # and qr still differs, the difference is in the SUMMATION rather than in any
+    # operand — a decisive outcome that a partial set could not produce.
+    #
+    # Fortran adjusts psacr/pgacr/paacw in place after the Hallett-Mossop block
+    # (F:2383/F:2436/F:2368/F:2420); the C++ carries the same post-HM quantity as
+    # psacr_adj/pgacr_adj/paacw_adj. Different names, same value, established from
+    # both sources rather than from the suffix.
+    #
+    # cold_gate: the two arms of F:2638 read different operands, so a branch that
+    # disagreed would otherwise appear as several rates differing with nothing
+    # saying why.
+    "micro_qr_operands": [f for f, _d, _k in
+                          _ge._STAGE_FIELDS_BASE["micro_qr_operands"]],
     "micro_post_state_update": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
                                 "nc", "ni", "nccn", "brs"],
     "outer_post_micro": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",

@@ -276,6 +276,14 @@ _STAGE_FIELDS_BASE = {
 _STAGE_FIELDS_BASE["micro_post_state_update"] = list(
     _STAGE_FIELDS_BASE["outer_post_micro"])
 
+# The qr update operands, in the order both producers emit them. This module is
+# the authority (g33_schema imports it, not the reverse), so the list is spelled
+# here once and the schema facade derives its own view from it — op_seq windows
+# are computed from this order, so two copies of it would be two chances to drift.
+_STAGE_FIELDS_BASE["micro_qr_operands"] = [
+    (f, "f32", "BK") for f in
+    ['praut', 'pracw', 'prevp', 'piacr', 'pgacr', 'psacr', 'pmulrs', 'pmulrg', 'paacw', 'pseml', 'pgeml', 'cold_gate']]
+
 _NATIVE = {
     "cpp":     {"NATIVE_MSTEP": "f64", "NATIVE_GATE": "f32"},
     "fortran": {"NATIVE_MSTEP": "i32", "NATIVE_GATE": "u8"},
@@ -448,6 +456,9 @@ def expected_records(schedule: dict) -> list[dict]:
         # sixth ProgB_param call at :3032. Getting this order wrong does not read as an
         # ordering bug — op_seq is a measured counter, so a misplaced stage shifts every
         # window after it and surfaces as a sealed-descriptor container mismatch.
+        # the qr update operands come BEFORE the state they produce
+        emit("micro_qr_operands", _stage_fields("micro_qr_operands", backend),
+             outer_loop=loop, shape=[B, K])
         emit("micro_post_state_update", _stage_fields("micro_post_state_update", backend),
              outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
@@ -508,7 +519,7 @@ def expected_records(schedule: dict) -> list[dict]:
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
-                      "micro_post_state_update",
+                      "micro_qr_operands", "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -543,6 +554,7 @@ def container_id(rec: dict) -> str:
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed",
                 "micro_call_progb_aux": "micro_call_progb_aux",
+                "micro_qr_operands": "micro_qr_operands",
                 "micro_post_state_update": "micro_post_state_update",
                 "outer_post_micro": "outer_post_micro"}.get(rec["stage"])
         if tail is None:

@@ -299,8 +299,12 @@ INIT_CONSTANTS = [
 #: slope_kdm6 takes pidn0g/pvtg/bvtg/rslopegbmax as intent(in), so recording just after
 #: it is the same values — and it is OUTSIDE the do-loops, which the nearby unique
 #: `! pihmf:` comment is not (a whole-K emission there nests i and k).
+#: idx 4 (0-BASED) = the FIFTH slope_kdm6 call, the one after the post-freeze
+#: ProgB_param at F:1707. Verified against the pinned source, and pinned by the
+#: landmark below so it stays verified rather than re-counted.
 MICRO_CALL_AUX_ANCHOR = (
-    "                   ite,kts,kte,qmin,pidn0g,pvtg,bvtg,rslopegbmax)", (4, 7))
+    "                   ite,kts,kte,qmin,pidn0g,pvtg,bvtg,rslopegbmax)", (4, 7),
+    "fort_substep_postfreeze.bin")
 MICRO_CALL_AUX = [
     ("rhox", "f32", "rhox(i,k)"),
     ("bg", "f32", "brs(i,k)"),
@@ -356,9 +360,64 @@ OUTER_POST_MICRO = list(_CARRIED)
 #: Derived from _CARRIED, so the twelve expressions are literally the ones
 #: outer_post_micro already uses. A separate list would be a second mapping to keep
 #: correct, which is how the pre-sed and post snapshots drifted apart at v5.
+#: idx is 0-BASED: the SIXTH ProgB_param call (F:3032) is index 5. Written as 6
+#: first, which resolved to the seventh (F:3146, post-satadj) and compared a
+#: different instant than the C++ side without anything failing. The landmark is
+#: the pinned source's own dump at that site, so the intended place is stated in
+#: terms of the source rather than by an index the reader has to count.
 MICRO_POST_STATE_UPDATE_ANCHOR = (
-    "                   ,g1pbg,g3pbg,g4pbg,g5pbgo2,g1pdgbgmg,dgbgmug1)", (6, 7))
+    "                   ,g1pbg,g3pbg,g4pbg,g5pbgo2,g1pdgbgmg,dgbgmug1)", (5, 7),
+    "fort_substep_poststateupdate.bin")
 MICRO_POST_STATE_UPDATE = list(_CARRIED)
+
+#: THE OPERANDS OF THE qr UPDATE LINE, as the update reads them — a CLOSED set.
+#:
+#: The v10 bisection put the first divergence at micro_post_state_update L2 col3
+#: k0 qr with the incoming state and the ProgB bundle bit-identical, so the seed
+#: is in this line and nowhere else for that cell:
+#:
+#:   cold (F:2803)  qrs(1) += (praut+pracw+prevp-piacr-pgacr-psacr-pmulrs-pmulrg)*dtcld
+#:   warm (F:2922)  qrs(1) += (praut+pracw+prevp+paacw+paacw-pseml-pgeml)*dtcld
+#:
+#: Closed matters: the incoming qrs(1) is already compared (it comes from
+#: outer_post_sed) and dtcld is a sealed scalar, so if every operand here matches
+#: and qr still differs, the difference is in the SUMMATION — order, or the fused
+#: multiply-add the C++ uses — not in any operand. That is a decisive outcome
+#: either way, which a partial set would not give.
+#:
+#: Emitted in BOTH arms of the F:2638 `if (t<=t0c)` branch. The rates are scaled
+#: per-arm (cold F:2649-2730, warm F:2846-2859), so the scaled values only exist
+#: inside; every cell passes through exactly one arm, so each still emits exactly
+#: once and the expectation stays uniform over all cells.
+#:
+#: NAMING. Fortran adjusts three of these IN PLACE after the Hallett-Mossop block
+#: -- psacr -= pmulrs (F:2383), pgacr -= pmulrg (F:2436), paacw -= pmulcs/pmulcg
+#: (F:2368/F:2420) -- so by the update the array holds the post-HM value. The C++
+#: carries that same quantity under a different name (psacr_adj, pgacr_adj,
+#: paacw_adj, "post-HM" in coordinator.h). The names differ and the quantities do
+#: not; that was established from the two sources, not from the suffix.
+#:
+#: cold_gate is recorded because the two arms read different operands: a branch
+#: that disagreed between the backends would otherwise show up as several rates
+#: differing at once, with nothing saying why.
+MICRO_QR_OPERANDS_COLD_ANCHOR = (
+    "              bsdep(i,k)=psdep(i,k)/dens", (0, 1), "!     update")
+MICRO_QR_OPERANDS_WARM_ANCHOR = (
+    "            bgeml(i,k)=pgeml(i,k)/rhox(i,k)", (0, 1), "!     update")
+MICRO_QR_OPERANDS = [
+    # common to both arms (F:2803 and F:2922)
+    ("praut", "f32", "praut(i,k)"), ("pracw", "f32", "pracw(i,k)"),
+    ("prevp", "f32", "prevp(i,k)"),
+    # cold arm only
+    ("piacr", "f32", "piacr(i,k)"), ("pgacr", "f32", "pgacr(i,k)"),
+    ("psacr", "f32", "psacr(i,k)"), ("pmulrs", "f32", "pmulrs(i,k)"),
+    ("pmulrg", "f32", "pmulrg(i,k)"),
+    # warm arm only
+    ("paacw", "f32", "paacw(i,k)"), ("pseml", "f32", "pseml(i,k)"),
+    ("pgeml", "f32", "pgeml(i,k)"),
+    # which arm this cell took
+    ("cold_gate", "f32", "merge(1.0,0.0,t(i,k).le.t0c)"),
+]
 
 #: Pre-sed forcings: not carried between loops, so not part of the bridge identity —
 #: but they ARE part of the problem the kernel is given. `p` was missing: pressure
