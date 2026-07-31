@@ -41,6 +41,15 @@ private:
     ::kdm6::g33::trace::ContainerTrace t_;
 };
 
+// The dump is canonically TOP-FIRST (the Fortran side emits k = kte-k), but every
+// whole-K tensor inside the coordinator is in host-K (WRF bottom-first) order — see
+// the §53d flip that hands the sed-era ProgB bundle into the micro step. Recording a
+// coordinator tensor raw therefore lands each column reversed in k, which reads as a
+// physics difference and is not one. Same spelling as runtime.cpp.overlay's flip_k so
+// the one convention is visibly identical in both TUs; test_g33_overlay_orientation
+// enforces it mechanically across both.
+inline torch::Tensor flip_k(const torch::Tensor& t) { return torch::flip(t, {1}); }
+
 // Same shape as Surface, but the container tail is a parameter: this TU now opens a
 // second whole-K container (the ProgB bundle the rates read), and Surface hardcodes
 // "surface". Kept alongside rather than generalising Surface, so the existing container's
@@ -996,27 +1005,27 @@ CoordinatorState kdm62d_one_step(
         // different instant from the Fortran side and from what the rates read, so the
         // stage would have manufactured differences out of its own placement — the same
         // failure outer_pre_sed had.
-        coord_g33ovl::Outer g33("micro_call_progb_aux", pre2.progb.rhox);
+        coord_g33ovl::Outer g33("micro_call_progb_aux", coord_g33ovl::flip_k(pre2.progb.rhox));
         if (g33.on()) {
-            G33_REC(g33, "micro_call_progb_aux", "rhox",         pre2.progb.rhox);
-            G33_REC(g33, "micro_call_progb_aux", "bg",           pre2.progb.bg);
-            G33_REC(g33, "micro_call_progb_aux", "cmg",          pre2.progb.cmg);
-            G33_REC(g33, "micro_call_progb_aux", "pidn0g",       pre2.progb.pidn0g);
-            G33_REC(g33, "micro_call_progb_aux", "avtg",         pre2.progb.avtg);
-            G33_REC(g33, "micro_call_progb_aux", "bvtg",         pre2.progb.bvtg);
-            G33_REC(g33, "micro_call_progb_aux", "bvtg1",        pre2.progb.bvtg1);
-            G33_REC(g33, "micro_call_progb_aux", "bvtg2",        pre2.progb.bvtg2);
-            G33_REC(g33, "micro_call_progb_aux", "bvtg3",        pre2.progb.bvtg3);
-            G33_REC(g33, "micro_call_progb_aux", "bvtg4",        pre2.progb.bvtg4);
-            G33_REC(g33, "micro_call_progb_aux", "g1pbg",        pre2.progb.g1pbg);
-            G33_REC(g33, "micro_call_progb_aux", "g3pbg",        pre2.progb.g3pbg);
-            G33_REC(g33, "micro_call_progb_aux", "g4pbg",        pre2.progb.g4pbg);
-            G33_REC(g33, "micro_call_progb_aux", "g5pbgo2",      pre2.progb.g5pbgo2);
-            G33_REC(g33, "micro_call_progb_aux", "g1pdgbgmg",    pre2.progb.g1pdgbgmg);
-            G33_REC(g33, "micro_call_progb_aux", "dgbgmug1",     pre2.progb.dgbgmug1);
-            G33_REC(g33, "micro_call_progb_aux", "rslopegbmax",  pre2.progb.rslopegbmax);
-            G33_REC(g33, "micro_call_progb_aux", "pvtg",         pre2.progb.pvtg);
-            G33_REC(g33, "micro_call_progb_aux", "precg2",       pre2.progb.precg2);
+            G33_REC(g33, "micro_call_progb_aux", "rhox",         coord_g33ovl::flip_k(pre2.progb.rhox));
+            G33_REC(g33, "micro_call_progb_aux", "bg",           coord_g33ovl::flip_k(pre2.progb.bg));
+            G33_REC(g33, "micro_call_progb_aux", "cmg",          coord_g33ovl::flip_k(pre2.progb.cmg));
+            G33_REC(g33, "micro_call_progb_aux", "pidn0g",       coord_g33ovl::flip_k(pre2.progb.pidn0g));
+            G33_REC(g33, "micro_call_progb_aux", "avtg",         coord_g33ovl::flip_k(pre2.progb.avtg));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg",         coord_g33ovl::flip_k(pre2.progb.bvtg));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg1",        coord_g33ovl::flip_k(pre2.progb.bvtg1));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg2",        coord_g33ovl::flip_k(pre2.progb.bvtg2));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg3",        coord_g33ovl::flip_k(pre2.progb.bvtg3));
+            G33_REC(g33, "micro_call_progb_aux", "bvtg4",        coord_g33ovl::flip_k(pre2.progb.bvtg4));
+            G33_REC(g33, "micro_call_progb_aux", "g1pbg",        coord_g33ovl::flip_k(pre2.progb.g1pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g3pbg",        coord_g33ovl::flip_k(pre2.progb.g3pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g4pbg",        coord_g33ovl::flip_k(pre2.progb.g4pbg));
+            G33_REC(g33, "micro_call_progb_aux", "g5pbgo2",      coord_g33ovl::flip_k(pre2.progb.g5pbgo2));
+            G33_REC(g33, "micro_call_progb_aux", "g1pdgbgmg",    coord_g33ovl::flip_k(pre2.progb.g1pdgbgmg));
+            G33_REC(g33, "micro_call_progb_aux", "dgbgmug1",     coord_g33ovl::flip_k(pre2.progb.dgbgmug1));
+            G33_REC(g33, "micro_call_progb_aux", "rslopegbmax",  coord_g33ovl::flip_k(pre2.progb.rslopegbmax));
+            G33_REC(g33, "micro_call_progb_aux", "pvtg",         coord_g33ovl::flip_k(pre2.progb.pvtg));
+            G33_REC(g33, "micro_call_progb_aux", "precg2",       coord_g33ovl::flip_k(pre2.progb.precg2));
         }
         g33.finalize();
     }
