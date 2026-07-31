@@ -28,7 +28,7 @@
  "attested": true,
  "conservative_first_divergence": {
   "identity": [
-   "micro_pre_state_update",
+   "micro_post_freeze",
    2,
    "-",
    0,
@@ -40,7 +40,7 @@
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_pre_state_update",
+  "phase": "micro_post_freeze",
   "signature": {
    "c_bits": "0x437396bb",
    "direction": "C>F",
@@ -62,14 +62,14 @@
  "inputs": {
   "B": 3,
   "K": 4,
-  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v12/cpp-bundle",
+  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v13b/cpp-bundle",
   "expected_fixture_id": "arithmetic_multisubcycle_v1",
-  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v12/fortran-conservative",
-  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v12/fortran-legacy"
+  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v13b/fortran-conservative",
+  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v13b/fortran-legacy"
  },
  "legacy_first_divergence": {
   "identity": [
-   "micro_pre_state_update",
+   "micro_post_freeze",
    2,
    "-",
    0,
@@ -81,7 +81,7 @@
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_pre_state_update",
+  "phase": "micro_post_freeze",
   "signature": {
    "c_bits": "0x437396bb",
    "direction": "C>F",
@@ -103,19 +103,19 @@
   "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
  },
  "provenance": {
-  "cpp_root_manifest_sha256": "f35a6eaec311a55dc2201560394774f5cdeb51d4b9370a65d1fb88633ebdd6af",
-  "decision_protocol_version": 12,
+  "cpp_root_manifest_sha256": "5fa926ce6da2098f24a91dd561bb4f8e25005be2ad5c513ca03224ed278c28fc",
+  "decision_protocol_version": 13,
   "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-  "fortran_conservative_manifest_sha256": "33abfcc6b07f7c4cee759ba280d03f29c3fb9d2d605574612d938a9390e2c0f9",
-  "fortran_legacy_manifest_sha256": "11fbd032b84d306175917b41bf004653aebab23842dd19022a8dcb6dff48e6bd",
+  "fortran_conservative_manifest_sha256": "3ac0f69cd058a5514e65a3a5a1ae42ee2b86c2616c6b5b86223e0c918c950666",
+  "fortran_legacy_manifest_sha256": "6a29d5dfb22597adabf667e84aa3ed99f0a2bbe9673fdb2fbf35df8f78fb19c2",
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
-  "note": "SHAs are the authority. The `inputs` paths are local and informational: a decision artifact has to be readable as a reproduction lineage on its own, without a companion shell file.",
-  "producer_commit": "6ca59455d04120b9832a5ef750faa6606c48203c",
+  "note": "SHAs are the authority; `inputs` paths are local and informational.",
+  "producer_commit": "1b09d24f58a086855c5228eeedbd10ddbd6b1496",
   "result_schema_version": 1,
-  "verifier_commit": "6ca59455d04120b9832a5ef750faa6606c48203c",
-  "verifier_tree_dirty": true
+  "verifier_commit": "1b09d24f58a086855c5228eeedbd10ddbd6b1496",
+  "verifier_tree_dirty": false
  },
- "reason": "legacy first-diverges at micro_pre_state_update ('micro_pre_state_update', 2, '-', 0, 3, 0, 't', 'f32') \u2014 the BASE state state_update reads differs, while the ProgB bundle and the sedimentation result matched. What runs between them is D1 melt, homogeneous freeze, the post-melt re-slope, D2-D4 freeze and the post-freeze re-slope, and the difference is in one of those. The rate operands downstream cannot be read as the cause while their base differs. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+ "reason": "legacy first-diverges at micro_post_freeze ('micro_post_freeze', 2, '-', 0, 3, 0, 't', 'f32') \u2014 the post-D1-melt state matched, so the difference is in what runs between: the post-melt re-slope, the D2-D4 freeze, or the post-freeze re-slope. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
  "scope": {
   "mstep_range": {
    "conservative": [
@@ -130,10 +130,9 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Superseded by resolution: v12's first divergence (micro_pre_state_update.t) is still true, and v13 shows t already carries it at micro_post_freeze.",
-  "status": "superseded",
-  "superseded_by": "g33m_v13_fourcase_result.json",
-  "valid_for_decision": false,
+  "status": "current",
+  "superseded_by": null,
+  "valid_for_decision": true,
   "withdrawal_reason": null
  },
  "verdict": "INCONCLUSIVE"
