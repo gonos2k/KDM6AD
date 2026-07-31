@@ -218,7 +218,9 @@ def test_a_divergence_after_sedimentation_says_OBSERVED_not_ORIGINATED():
     assert verdict == "INCONCLUSIVE"
     assert "outer_post_micro" in reason
     assert "OBSERVED" in reason, "the reason must distinguish observed from originated"
-    assert "micro_call_aux" in reason, "it must point at the unrecorded-until-v9 bundle"
+    assert "micro_call_progb_aux" in reason, (
+        "it must point at the ProgB bundle stage, whose NAME states its scope: it's\n"
+        "        one of the six groups the micro call receives, not all of them")
     # and it must NOT claim the microphysics arithmetic as the origin; this test pinned
     # that overstatement, which is how the overstatement survived
     assert "born AFTER sedimentation" not in reason

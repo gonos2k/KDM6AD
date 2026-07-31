@@ -163,7 +163,7 @@ _STAGE_FIELDS_BASE = {
                         ("nccn", "f32", "BK"), ("brs", "f32", "BK"),
                         ("p", "f32", "BK"),
                         ("rho", "f32", "BK"), ("delz", "f32", "BK")],
-    "micro_call_aux": [("rhox", "f32", "BK"), ("bg", "f32", "BK"), ("cmg", "f32", "BK"), ("pidn0g", "f32", "BK"), ("avtg", "f32", "BK"), ("bvtg", "f32", "BK"), ("bvtg1", "f32", "BK"), ("bvtg2", "f32", "BK"), ("bvtg3", "f32", "BK"), ("bvtg4", "f32", "BK"), ("g1pbg", "f32", "BK"), ("g3pbg", "f32", "BK"), ("g4pbg", "f32", "BK"), ("g5pbgo2", "f32", "BK"), ("g1pdgbgmg", "f32", "BK"), ("dgbgmug1", "f32", "BK"), ("rslopegbmax", "f32", "BK"), ("pvtg", "f32", "BK"), ("precg2", "f32", "BK")],
+    "micro_call_progb_aux": [("rhox", "f32", "BK"), ("bg", "f32", "BK"), ("cmg", "f32", "BK"), ("pidn0g", "f32", "BK"), ("avtg", "f32", "BK"), ("bvtg", "f32", "BK"), ("bvtg1", "f32", "BK"), ("bvtg2", "f32", "BK"), ("bvtg3", "f32", "BK"), ("bvtg4", "f32", "BK"), ("g1pbg", "f32", "BK"), ("g3pbg", "f32", "BK"), ("g4pbg", "f32", "BK"), ("g5pbgo2", "f32", "BK"), ("g1pdgbgmg", "f32", "BK"), ("dgbgmug1", "f32", "BK"), ("rslopegbmax", "f32", "BK"), ("pvtg", "f32", "BK"), ("precg2", "f32", "BK")],
     "outer_post_sed":  [("qr", "f32", "BK"), ("nr", "f32", "BK"), ("qv", "f32", "BK"),
                         ("t", "f32", "BK"), ("qc", "f32", "BK"),
                         ("qi", "f32", "BK"), ("qs", "f32", "BK"),
@@ -432,7 +432,7 @@ def expected_records(schedule: dict) -> list[dict]:
         # :1340 (end of the sed substep loop) -> :1509 (after ProgB_param). Emitting it
         # first here made the expected record sequence disagree with the actual one at
         # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
-        emit("micro_call_aux", _stage_fields("micro_call_aux", backend),
+        emit("micro_call_progb_aux", _stage_fields("micro_call_progb_aux", backend),
              outer_loop=loop, shape=[B, K])
         emit("outer_post_micro", _stage_fields("outer_post_micro", backend), outer_loop=loop, shape=[B, K])
     # INSTRUMENTED SCOPE. op_seq_id is a MEASURED process-global counter, and it
@@ -491,7 +491,7 @@ def expected_records(schedule: dict) -> list[dict]:
 # measured counter, and the real overlay can then never produce a valid
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
-                      "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_aux",
+                      "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -517,7 +517,7 @@ def container_id(rec: dict) -> str:
                 "kernel_after_entry_clamp": "kernel_after_entry_clamp",
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed",
-                "micro_call_aux": "micro_call_aux"}.get(rec["stage"],
+                "micro_call_progb_aux": "micro_call_progb_aux"}.get(rec["stage"],
                                                         "outer_post_micro")
         return f"L{rec['outer_loop']}_{tail}"
     return f"L{rec['outer_loop']}_{rec['chain']}_n{rec['n']}"

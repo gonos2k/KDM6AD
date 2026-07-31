@@ -243,9 +243,9 @@ def test_the_micro_auxiliary_bundle_is_recorded_per_outer_loop():
     assert len(names) == 19, f"expected the 19-field ProgB bundle, got {len(names)}"
     per_loop = {}
     for k, v in run.stages.items():
-        if k[2] == "micro_call_aux":
+        if k[2] == "micro_call_progb_aux":
             per_loop.setdefault(k[0], set()).add(k[4])
-    assert per_loop, "no micro_call_aux records"
+    assert per_loop, "no micro_call_progb_aux records"
     for loop, got in sorted(per_loop.items()):
         assert got == names, f"loop {loop} carries {got ^ names}"
 
@@ -285,10 +285,10 @@ def test_the_two_backends_record_the_SAME_progb_instant():
     """
     rt = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
     co = (ROOT / "g33_overlay" / "coordinator.cpp.overlay").read_text()
-    assert "micro_call_aux" not in rt, (
+    assert "micro_call_progb_aux" not in rt, (
         "the handoff recording is the retained bundle, not what the rates read")
-    assert 'Outer g33("micro_call_aux", pre2.progb.rhox)' in co
-    assert "progb_ret_host" not in co.split("micro_call_aux")[1][:600], (
+    assert 'Outer g33("micro_call_progb_aux", pre2.progb.rhox)' in co
+    assert "progb_ret_host" not in co.split("micro_call_progb_aux")[1][:600], (
         "the C++ record must come from the recomputed pre2, not the retained input")
 
 

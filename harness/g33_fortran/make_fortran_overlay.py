@@ -154,7 +154,7 @@ def build_overlay(algo, text):
              # visible at loop 2's outer_pre_sed has no attributable origin.
              # the ProgB bundle the micro rates consume, per outer loop
              (fb.MICRO_CALL_AUX_ANCHOR, "after",
-              _stage_block("micro_call_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
+              _stage_block("micro_call_progb_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
              (fb.POST_SED_ANCHOR, "after",
               _stage_block("outer_post_sed", "-", "0", [], fb.OUTER_POST_SED)),
              (fb.POST_MICRO_ANCHOR, "before",

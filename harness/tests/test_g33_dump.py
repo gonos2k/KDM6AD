@@ -647,14 +647,14 @@ def test_the_expected_record_ORDER_matches_the_overlay_source():
     which the four-case fixture gate reports as a container mismatch at some op_seq, from
     a C++ build, in CI.
 
-    That is exactly what happened when micro_call_aux was added: the overlay emits it
+    That is exactly what happened when micro_call_progb_aux was added: the overlay emits it
     AFTER outer_post_sed (ProgB runs between them), the expectation emitted it before, and
     every local test passed because they all compare sets.
     """
     # The order is CROSS-TU. runtime.cpp opens most of the containers, but the
     # microphysics auxiliary is recorded inside kdm62d_one_step — coordinator.cpp — at
     # the post-freeze rebuild the rates read. Reading only runtime.cpp silently dropped
-    # micro_call_aux from this comparison the moment it moved there, which is the same
+    # micro_call_progb_aux from this comparison the moment it moved there, which is the same
     # vacuity this test exists to prevent.
     #
     # runtime.cpp calls kdm62d_one_step between outer_post_sed and outer_post_micro, so
@@ -668,8 +668,8 @@ def test_the_expected_record_ORDER_matches_the_overlay_source():
     _, co = _opens("coordinator.cpp.overlay")
     # coordinator's own surface container is emitted inside the sed chain, before
     # one_step; only the micro-step ones splice in at the call.
-    at_one_step = [t for t in co if t == "micro_call_aux"]
-    assert at_one_step, "coordinator.cpp.overlay no longer opens micro_call_aux"
+    at_one_step = [t for t in co if t == "micro_call_progb_aux"]
+    assert at_one_step, "coordinator.cpp.overlay no longer opens micro_call_progb_aux"
     cut = rt.index("outer_post_micro")
     actual = rt[:cut] + at_one_step + rt[cut:]
     tail_to_stage = {"outer_pre": "outer_pre_sed"}

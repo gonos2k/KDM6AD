@@ -228,12 +228,27 @@ def verify_semantics(run):
                 #
                 # Checked as the CONVERSION rather than as equality, in the same f32
                 # arithmetic the driver uses, against pii from the run's own FIXIN.
+                # FAIL LOUD on a missing operand (owner P0-10). Skipping when either is
+                # absent means a stream that stopped emitting `th` or `pii` would pass
+                # this check by not supplying it — the binding would be declared and
+                # unenforced, which is the failure every version bump here has been
+                # closing. Both are required at every protocol version that reaches this
+                # code, since `has_bridge` already implies v4+.
                 th, pii = run.state.get(("th", c, k)), run.fixin.get(("pii", c, k))
-                if th is not None and pii is not None:
-                    t = _sv(S, "outer_post_micro", 0, "t", c, k, last)[1]
-                    want = _f32_bits(_f32(t) / _f32(pii))
-                    if want != th:
-                        raise SemanticError(
-                            f"final th not bound: f32(outer_post_micro(L{last}).t / "
-                            f"pii) = {want:#010x} != STATE.th {th:#010x} c={c} k={k}")
+                if th is None:
+                    raise SemanticError(f"final state has no th at c={c} k={k}, so the "
+                                        f"t -> th conversion cannot be checked")
+                if pii is None:
+                    raise SemanticError(f"FIXIN has no pii at c={c} k={k}, so the "
+                                        f"t -> th conversion cannot be checked")
+                pii_v = _f32(pii)
+                if not np.isfinite(pii_v) or pii_v <= 0:
+                    raise SemanticError(f"FIXIN pii at c={c} k={k} is {pii_v!r}; the "
+                                        f"Exner factor must be finite and positive")
+                t = _sv(S, "outer_post_micro", 0, "t", c, k, last)[1]
+                want = _f32_bits(_f32(t) / pii_v)
+                if want != th:
+                    raise SemanticError(
+                        f"final th not bound: f32(outer_post_micro(L{last}).t / "
+                        f"pii) = {want:#010x} != STATE.th {th:#010x} c={c} k={k}")
     return True

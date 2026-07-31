@@ -101,12 +101,12 @@ if __name__ == "__main__":
 # directly — it needs no fixtures.
 def _selftest():
     same = ["G33F STAGE 1 - op 0 qr 1 0 f32 AAAA",
-            "G33F STAGE 1 - micro_call_aux 0 rhox 1 0 f32 1111",
+            "G33F STAGE 1 - micro_call_progb_aux 0 rhox 1 0 f32 1111",
             "G33F STAGE 1 - outer_post_micro 0 qr 1 0 f32 BBBB"]
     moved = ["G33F STAGE 1 - op 0 qr 1 0 f32 AAAA",
              "G33F STAGE 1 - outer_post_micro 0 qr 1 0 f32 BBBB",
-             "G33F STAGE 1 - micro_call_aux 0 rhox 1 0 f32 2222"]
-    st, fl = {"micro_call_aux"}, set()
+             "G33F STAGE 1 - micro_call_progb_aux 0 rhox 1 0 f32 2222"]
+    st, fl = {"micro_call_progb_aux"}, set()
     a = [ln for ln in same if not _is_added(ln, st, fl)]
     b = [ln for ln in moved if not _is_added(ln, st, fl)]
     assert a == b, "filtering both sides should make a MOVE byte-identical"

@@ -46,26 +46,7 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
                 "kernel_after_entry_clamp": "-",
                 "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
-                "outer_post_sed": "-", "micro_call_aux": "-",
-                "outer_post_micro": "-"}
-_FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
-_LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
-#: v7: what kdm6init was called with (owner P0-4). Its OWN record class, not LOCALPARAM:
-#: local_parameter_sha256 is contractually the hash of the fixture's declared
-#: fortran_only_parameters, and widening it would make the fixture responsible for host
-#: constants it does not own. hail_opt is an integer, so the dtype is part of the record.
-_INIT = re.compile(r"^G33F INIT\s+(\S+)\s+(f32|i32)\s+([0-9A-Fa-f]{8})$")
-_INIT_ARGS = ("den0", "denr", "dens", "cl", "cpv", "ccn0", "hail_opt")
-#: v8 stage fields: what kdm6init BUILT (owner P0-1.1).
-#: v9 stage fields: the ProgB bundle the micro rates consume (owner P0-1.3).
-_MICRO_AUX_FIELDS = ("rhox", "bg", "cmg", "pidn0g", "avtg", "bvtg", "bvtg1", "bvtg2", "bvtg3", "bvtg4", "g1pbg", "g3pbg", "g4pbg", "g5pbgo2", "g1pdgbgmg", "dgbgmug1", "rslopegbmax", "pvtg", "precg2")
-_INITC_STAGE_FIELDS = ("pi", "cmc", "cmr", "cmi", "g1pmc", "g3pmc", "g4pmc", "g6pmc", "g1pmr", "g2pmr", "g4pmr", "g7pmr", "g1pdrmr", "g1pmi", "g4pmi", "g1pdimi", "pidnc", "pidnr", "pidni", "pidn0s")
-_STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
-                "kernel_after_entry_clamp": "-",
-                "outer_pre_sed": "-",
-                "surface": "-", "substep_pre": "main",
-                "outer_post_sed": "-", "micro_call_aux": "-",
+                "outer_post_sed": "-", "micro_call_progb_aux": "-",
                 "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -342,7 +323,7 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # v8: what kdm6init BUILT. Emitted by the overlay, so present on both boundaries.
     # v9: the ProgB bundle the micro rates consume, per outer loop.
     if version >= 9:
-        exp |= {(L, "-", "micro_call_aux", 0, fld, c, k) for L in loops
+        exp |= {(L, "-", "micro_call_progb_aux", 0, fld, c, k) for L in loops
                 for fld in _MICRO_AUX_FIELDS for c in range(1, B + 1)
                 for k in range(K)}
     if version >= 8:

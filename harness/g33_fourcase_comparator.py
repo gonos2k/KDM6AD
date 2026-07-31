@@ -68,14 +68,14 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_call_aux", "outer_post_micro")
+           "outer_post_sed", "micro_call_progb_aux", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_call_aux": 7, "outer_post_micro": 8,
+                "micro_call_progb_aux": 7, "outer_post_micro": 8,
                 "final_output": 9}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
@@ -587,7 +587,7 @@ def classify(legacy: Divergence, conservative: Divergence):
     #     x_F == x_C   and   a_F != a_C   =>   M(x, a_F) != M(x, a_C)
     #
     # was consistent with everything observed, and the seed would then be in the auxiliary
-    # calculation. `micro_call_aux` records that bundle now, so the reason points at it
+    # calculation. `micro_call_progb_aux` records that bundle now, so the reason points at it
     # rather than asserting past it.
     #
     # The bridge makes this sayable at
@@ -606,8 +606,26 @@ def classify(legacy: Divergence, conservative: Divergence):
                 f"{name} first-diverges at {d.phase} {d.identity} — the recorded "
                 f"sedimentation OUTPUT matched, so this is the first OBSERVED "
                 f"difference. Whether it ORIGINATED here is a separate question: "
-                f"micro_call_aux carries the ProgB bundle the microphysics also "
+                f"micro_call_progb_aux carries the ProgB bundle the microphysics also "
                 f"consumes, so read that stage before attributing. Attribution is "
+                f"owner adjudication")
+    # 3c. THE PRE-MICRO AUXILIARY (owner P0-4). Without a branch of its own this fell
+    # through to the generic "pairs diverge differently", which names the phase and says
+    # nothing about what it means — and what it means is specific: the ProgB bundle the
+    # rates read already differs BEFORE any prognostic-state update, so the seed is
+    # upstream of the microphysics arithmetic, not in it.
+    #
+    # It is placed after the post-micro branch deliberately: micro_call_progb_aux sorts EARLIER
+    # in canonical order, so if it were the first divergence the post-micro branch could
+    # not have matched, and ordering these two by source position rather than by phase
+    # rank would make the reason depend on where the code sits.
+    for name, d in pairs:
+        if d.phase == "micro_call_progb_aux":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the ProgB auxiliary "
+                f"entering the microphysics differs BEFORE any prognostic-state update, "
+                f"so the seed is upstream of the microphysics arithmetic. This is NOT a "
+                f"statement about conservative-only interface arithmetic; attribution is "
                 f"owner adjudication")
         if d.phase == "outer_post_sed":
             return "INCONCLUSIVE", (
