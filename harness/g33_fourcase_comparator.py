@@ -68,7 +68,8 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_post_melt", "micro_call_progb_aux",
+           "outer_post_sed", "micro_post_melt", "micro_freeze_heat",
+           "micro_call_progb_aux",
            "micro_post_freeze", "micro_pre_state_update",
            "micro_qr_operands", "micro_post_state_update",
            "outer_post_micro")
@@ -78,10 +79,11 @@ _STAGES = ("kernel_call_input", "kernel_init_constants",
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_post_melt": 7, "micro_call_progb_aux": 8,
-                "micro_post_freeze": 9, "micro_pre_state_update": 10,
-                "micro_qr_operands": 11, "micro_post_state_update": 12,
-                "outer_post_micro": 13, "final_output": 14}
+                "micro_post_melt": 7, "micro_freeze_heat": 8,
+                "micro_call_progb_aux": 9, "micro_post_freeze": 10,
+                "micro_pre_state_update": 11, "micro_qr_operands": 12,
+                "micro_post_state_update": 13,
+                "outer_post_micro": 14, "final_output": 15}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -670,6 +672,17 @@ def classify(legacy: Divergence, conservative: Divergence):
                 f"produced it, not in the update arithmetic. This is NOT a statement "
                 f"about conservative-only interface arithmetic; attribution is owner "
                 f"adjudication")
+        # THE FREEZE HEAT OPERANDS. Reached when the post-melt state matched but
+        # an operand of the three t-stores did not — so the difference is in
+        # whichever rate produced it, upstream of the heat arithmetic.
+        if d.phase == "micro_freeze_heat":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — an OPERAND of "
+                f"the D2-D4 freeze heat term differs while the post-D1-melt state "
+                f"matched, so the difference is in the rate or coefficient that "
+                f"produced it, not in the t-store arithmetic. This is NOT a "
+                f"statement about conservative-only interface arithmetic; "
+                f"attribution is owner adjudication")
         # THE MELT-FREEZE CHAIN, split. v12 showed the seed is one field of the
         # update base (t, one ULP) acquired somewhere between outer_post_sed and
         # that base. These two snapshots say which half.

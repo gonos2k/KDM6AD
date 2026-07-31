@@ -281,6 +281,12 @@ _STAGE_FIELDS_BASE["micro_pre_state_update"] = list(
 # The melt-freeze bisection: the same twelve again, at the two reconciled dumps.
 for _s in ("micro_post_melt", "micro_post_freeze"):
     _STAGE_FIELDS_BASE[_s] = list(_STAGE_FIELDS_BASE["outer_post_micro"])
+# The freeze heat operands. The three rates are f64 — the reference declares
+# them `double precision`, and comparing at that width is the point.
+_STAGE_FIELDS_BASE["micro_freeze_heat"] = [
+    ("t_pre_freeze", "f32", "BK"), ("xlf", "f32", "BK"), ("cpm", "f32", "BK"),
+    ("phom", "f32", "BK"), ("pinuc", "f64", "BK"),
+    ("pfrzdtc", "f64", "BK"), ("pfrzdtr", "f64", "BK")]
 
 # The qr update operands, in the order both producers emit them. This module is
 # the authority (g33_schema imports it, not the reverse), so the list is spelled
@@ -456,6 +462,8 @@ def expected_records(schedule: dict) -> list[dict]:
         # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
         emit("micro_post_melt", _stage_fields("micro_post_melt", backend),
              outer_loop=loop, shape=[B, K])
+        emit("micro_freeze_heat", _stage_fields("micro_freeze_heat", backend),
+             outer_loop=loop, shape=[B, K])
         emit("micro_call_progb_aux", _stage_fields("micro_call_progb_aux", backend),
              outer_loop=loop, shape=[B, K])
         emit("micro_post_freeze", _stage_fields("micro_post_freeze", backend),
@@ -531,7 +539,8 @@ def expected_records(schedule: dict) -> list[dict]:
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
-                      "micro_post_melt", "micro_post_freeze",
+                      "micro_post_melt", "micro_freeze_heat",
+                      "micro_post_freeze",
                       "micro_pre_state_update", "micro_qr_operands",
                       "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
@@ -569,6 +578,7 @@ def container_id(rec: dict) -> str:
                 "outer_post_sed": "outer_post_sed",
                 "micro_call_progb_aux": "micro_call_progb_aux",
                 "micro_post_melt": "micro_post_melt",
+                "micro_freeze_heat": "micro_freeze_heat",
                 "micro_post_freeze": "micro_post_freeze",
                 "micro_pre_state_update": "micro_pre_state_update",
                 "micro_qr_operands": "micro_qr_operands",

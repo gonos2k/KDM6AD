@@ -504,6 +504,14 @@ DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [
     "#ifdef KDM6_G33_FORTRAN_DUMP",
     "   real :: g33_fqb, g33_fnb   ! G3.3-M: fall/falln captured at cell entry",
+    "   ! v14 freeze-heat operands. pinuc/pfrzdtc/pfrzdtr are per-cell DOUBLE",
+    "   ! SCALARS set inside branches (F:758, F:781-782), so they cannot be read",
+    "   ! from the top-level emission point — captured at the site of use, zeroed",
+    "   ! per cell, which is what a skipped branch means numerically. DOUBLE here",
+    "   ! deliberately: an f32 cast (as the source's own dbg_d4a does) would erase",
+    "   ! the precision difference this stage exists to look for.",
+    "   double precision, dimension(its:ite,kts:kte) :: g33_pinuc, g33_pfrzdtc, g33_pfrzdtr",
+    "   real, dimension(its:ite,kts:kte) :: g33_xlf, g33_tprefrz, g33_phom",
     "#endif",
 ]
 IND = "             "  # 13-space body indent
@@ -563,3 +571,70 @@ VARIANTS = {
         },
     },
 }
+
+
+# ── v14: the freeze heat term ────────────────────────────────────────────────
+#: The three sequential t-stores of the D2-D4 freeze, as a CLOSED operand set:
+#:
+#:   c  = f32(xlf/cpm)
+#:   t2 = f32(t_pre + c*pinuc)      F:1618   pinuc   DOUBLE
+#:   t3 = f32(t2    + c*pfrzdtc)    F:1648   pfrzdtc DOUBLE
+#:   t4 = f32(t3    + c*pfrzdtr)    F:1679   pfrzdtr DOUBLE
+#:
+#: t4 must equal micro_post_freeze.t. Every other input is already compared
+#: (micro_post_melt.t) or recorded here, so the set is closed for those three
+#: statements the way micro_qr_operands is for the qr line — and this time the
+#: base IS sealed, which v12 established is the precondition.
+#:
+#: phom (F:1529, homogeneous freeze at T < -40 C) is recorded and REQUIRED TO BE
+#: ZERO. The C++ handles homogeneous freezing outside apply_melt_freeze_inline, so
+#: that term is not in its t chain; on a fixture where it fires the two sides would
+#: cover different arithmetic. Asserting zero makes such a fixture fail loudly
+#: rather than compare different things quietly. On arithmetic_multisubcycle_v1 no
+#: cell reaches 233.15 K, so it is zero throughout.
+#: The landmark must sit within the builder's window (12 lines); `prevp(i,k) = 0.`
+#: is the natural name for this block but is 17 lines below, and the guard said
+#: so rather than injecting somewhere unintended. bgacr is inside the window and
+#: in the same zero-init run.
+FREEZE_ZERO_ANCHOR = ("          biacr(i,k) =0.", None, "bgacr(i,k) =0.")
+FREEZE_ZERO_BLOCK = [
+    "#ifdef KDM6_G33_FORTRAN_DUMP",
+    "          g33_pinuc(i,k) = 0.d0",
+    "          g33_pfrzdtc(i,k) = 0.d0",
+    "          g33_pfrzdtr(i,k) = 0.d0",
+    "          g33_xlf(i,k) = 0.",
+    "          g33_tprefrz(i,k) = 0.",
+    "          g33_phom(i,k) = 0.",
+    "#endif",
+]
+#: idx 1 (0-BASED) = the SECOND `if(supcol.lt.0.) xlf = xlf0`, at the head of the
+#: FREEZE loop (F:1517); the first (F:1366) heads the melt loop. The landmark is
+#: the pihmf comment two lines below, so the wrong one cannot be taken silently.
+FREEZE_BASE_ANCHOR = ("          if(supcol.lt.0.) xlf = xlf0", (1, 2), "pihmf")
+FREEZE_BASE_BLOCK = [
+    "#ifdef KDM6_G33_FORTRAN_DUMP",
+    "          g33_tprefrz(i,k) = t(i,k)",
+    "          g33_xlf(i,k) = xlf",
+    "#endif",
+]
+#: Each capture goes BEFORE its t-store, because the store's own operand is
+#: consumed there (qci(i,k,1) is zeroed on the next line).
+FREEZE_CAPTURES = [
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*qci(i,k,1)",
+     "g33_phom(i,k) = qci(i,k,1)"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*pinuc ",
+     "g33_pinuc(i,k) = pinuc"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*(pfrzdtc)",
+     "g33_pfrzdtc(i,k) = pfrzdtc"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*pfrzdtr",
+     "g33_pfrzdtr(i,k) = pfrzdtr"),
+]
+MICRO_FREEZE_HEAT = [
+    ("t_pre_freeze", "f32", "g33_tprefrz(i,k)"),
+    ("xlf", "f32", "g33_xlf(i,k)"),
+    ("cpm", "f32", "cpm(i,k)"),
+    ("phom", "f32", "g33_phom(i,k)"),
+    ("pinuc", "f64", "g33_pinuc(i,k)"),
+    ("pfrzdtc", "f64", "g33_pfrzdtc(i,k)"),
+    ("pfrzdtr", "f64", "g33_pfrzdtr(i,k)"),
+]

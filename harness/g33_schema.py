@@ -155,6 +155,19 @@ _SEMANTIC_STAGE_FIELDS = {
     # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
     # add a new mapping between the backends, and a new mapping is a new way to
     # manufacture a difference that is not there.
+    # THE FREEZE HEAT TERM (protocol v14) — a CLOSED set for the three t-stores.
+    #
+    # v13 put the seed in `t` at micro_post_freeze with every companion prognostic
+    # bit-identical, so the rates very likely agree and the difference is in
+    # `t += xlf/cpm * rate`. These are its operands.
+    #
+    # The three rates are f64 DELIBERATELY. The pinned Fortran declares all three
+    # `double precision` (F:758, F:781-782); the C++ comment above its mirror calls
+    # D4's an "f32 rate". Recording them as f32 would erase exactly the difference
+    # this stage exists to find — an f32 widened to f64 carries zeros in the low
+    # mantissa where a real f64 does not.
+    "micro_freeze_heat": ["t_pre_freeze", "xlf", "cpm", "phom",
+                          "pinuc", "pfrzdtc", "pfrzdtr"],
     # THE MELT-FREEZE CHAIN, bisected (protocol v13).
     #
     # v12 localised the seed to one field of the update base -- t, one ULP, with
@@ -223,6 +236,10 @@ _SEMANTIC_STAGE_FIELDS = {
 _MIXED_DTYPE_STAGES = {
     "substep_pre": {"work1_qr": "f64", "workn_qr": "f64",
                     "gate": "u8", "mstep": "i32"},
+    # The three freeze rates are DOUBLE in the reference and are compared at that
+    # width, so a backend that computes one in f32 shows it as a value difference
+    # rather than having it cast away.
+    "micro_freeze_heat": {"pinuc": "f64", "pfrzdtc": "f64", "pfrzdtr": "f64"},
 }
 _SEMANTIC_STAGE_DTYPE = {
     (stage, f): _MIXED_DTYPE_STAGES.get(stage, {}).get(f, "f32")

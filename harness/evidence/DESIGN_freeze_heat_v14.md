@@ -51,7 +51,33 @@ DOUBLE D2/D3 rates exactly like gfortran"*.
 `pfrzdtr` `double precision`, on the same line as `pfrzdtc`.** The comment is
 wrong about the reference for that one term.
 
-## Why that is a candidate and not a conclusion
+## RETRACTED: the rate precision cannot be the mechanism
+
+Before building the measurement, the hypothesis was tested arithmetically — and it
+fails. `t += c*rate` rounds to f32 on **every** store, so whether `c*rate` was
+formed in f32 or f64 can change the stored `t` only when the f32 rounding of the
+STEP is itself comparable to an ULP of `t`:
+
+    step ≳ t   ⇒   rate ≳ t/c ≈ 243.5 / 332.3 ≈ 0.73 kg/kg
+
+The freeze rates on this fixture are ~1e-8. A search over 400 000 rate values
+spanning 1e-11 to 1e-5 found **zero** cases where the two forms give a different
+`t`; at ~1.5 kg/kg — 10⁸× physical — they do differ, which confirms the comparison
+works and the result is about magnitude, not a broken check.
+
+So the section below stands as a **documentation defect in the C++ comment**
+(`pfrzdtr` is `double precision` in the reference, not an "f32 rate") and not as a
+candidate root cause. `test_the_rate_precision_CANNOT_move_t_at_physical_magnitudes`
+pins it so it is not re-asserted.
+
+What the measurement still settles, and why it is still worth running: the only
+inputs to those three stores are `t_pre_freeze`, `xlf`, `cpm` and the three rates.
+If the rates agree in VALUE and `c` agrees, the difference is in the store
+sequence itself; if `t_pre_freeze` differs, the C++ `t_d1` is not the Fortran's
+post-melt `t` and the correspondence is wrong. All four outcomes are readable
+from the same seven fields.
+
+## The original candidate, kept for the record
 
 Whether the C++ *value* is f32 cannot be settled by reading. `pfrzdtr` is built as
 

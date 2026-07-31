@@ -162,3 +162,69 @@ def branch_active_fields(cold: bool) -> frozenset:
     divergence would name a value the update did not use.
     """
     return frozenset(n for _s, n in (COLD_TERMS if cold else WARM_TERMS))
+
+
+# ── the D2–D4 freeze heat term (protocol v14) ────────────────────────────────
+#
+# Fortran F:1618 / F:1648 / F:1679, three sequential stores into the REAL(4) t:
+#
+#     c  = f32(xlf / cpm)
+#     t2 = f32(t_pre + c*pinuc)      pinuc   DOUBLE (F:758)
+#     t3 = f32(t2    + c*pfrzdtc)    pfrzdtc DOUBLE (F:781-782)
+#     t4 = f32(t3    + c*pfrzdtr)    pfrzdtr DOUBLE (F:781-782)
+#
+# Each rate is DOUBLE, so `c * rate` is evaluated in double and the store rounds
+# ONCE. Replaying it in f32 throughout would round twice and would not reproduce
+# either backend — which is the point: the arithmetic is a claim, and it has to
+# reproduce the reference before any difference between the two is interpreted.
+
+FREEZE_TERMS = ("pinuc", "pfrzdtc", "pfrzdtr")
+
+
+def replay_freeze_t(operands: dict, as_f32_rates: bool = False) -> int:
+    """Predicted post-freeze `t` bits for one cell.
+
+    `as_f32_rates` narrows each rate to f32 before the multiply — the shape a
+    backend would have if it treated the reference's DOUBLE rate as f32. It is
+    here so the difference between the two forms is measurable rather than argued.
+    """
+    import numpy as _np
+    c = np.float32(np.float32(operands["xlf"]) / np.float32(operands["cpm"]))
+    t = np.float32(operands["t_pre_freeze"])
+    for name in FREEZE_TERMS:
+        r = operands[name]
+        r = np.float32(r) if as_f32_rates else np.float64(r)
+        step = np.float32(c) * r          # f32*f64 -> f64 (or f32*f32 -> f32)
+        t = np.float32(np.float64(t) + step) if not as_f32_rates \
+            else np.float32(t + np.float32(step))
+    return bits32(t)
+
+
+def verify_freeze_heat(operands: dict, post_t: dict) -> list[dict]:
+    """Every cell of one leg. `operands` and `post_t` are {(field,col,k): bits}.
+
+    phom must be zero: the C++ chain has no homogeneous-freeze term, so a fixture
+    that reaches −40 °C would have the two backends replaying different chains.
+    Raising is the point — a silent pass there would compare two different things.
+    """
+    cells = sorted({(c, k) for (f, c, k) in operands if f == "t_pre_freeze"})
+    if not cells:
+        raise ValueError("no micro_freeze_heat cells — nothing to replay")
+    bad = []
+    for c, k in cells:
+        if f32(operands[("phom", c, k)]) != 0.0:
+            raise ValueError(
+                f"col{c} k{k}: phom is non-zero, so the Fortran t chain has a "
+                f"homogeneous-freeze term the C++ chain does not. This replay does "
+                f"not cover that fixture.")
+        vals = {"xlf": f32(operands[("xlf", c, k)]),
+                "cpm": f32(operands[("cpm", c, k)]),
+                "t_pre_freeze": f32(operands[("t_pre_freeze", c, k)])}
+        for name in FREEZE_TERMS:
+            vals[name] = struct.unpack(
+                "<d", struct.pack("<Q", operands[(name, c, k)]))[0]
+        got, want = replay_freeze_t(vals), post_t[("t", c, k)]
+        if got != want:
+            bad.append({"col": c, "k": k, "replayed": f"{got:#010x}",
+                        "recorded": f"{want:#010x}"})
+    return bad

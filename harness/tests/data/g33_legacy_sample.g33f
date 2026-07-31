@@ -1,4 +1,4 @@
-G33F BEGIN v13 legacy
+G33F BEGIN v14 legacy
 G33F ENTRY kdm6_wrapper_input_v1
 G33F FIXIN th 1 3 f32 43904000
 G33F FIXIN th 2 3 f32 43854000
@@ -2152,6 +2152,90 @@ G33F STAGE 1 - micro_post_freeze 0 nc 3 0 f32 4CBEBB5D
 G33F STAGE 1 - micro_post_freeze 0 ni 3 0 f32 44C30601
 G33F STAGE 1 - micro_post_freeze 0 nccn 3 0 f32 4CBEBE82
 G33F STAGE 1 - micro_post_freeze 0 brs 3 0 f32 328036E4
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 1 3 f32 43904000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 1 3 f32 48AAE600
+G33F STAGE 1 - micro_freeze_heat 0 cpm 1 3 f32 447B55E1
+G33F STAGE 1 - micro_freeze_heat 0 phom 1 3 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 1 3 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 1 3 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 1 3 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 1 2 f32 43908000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 1 2 f32 48AAE600
+G33F STAGE 1 - micro_freeze_heat 0 cpm 1 2 f32 447B55E1
+G33F STAGE 1 - micro_freeze_heat 0 phom 1 2 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 1 2 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 1 2 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 1 2 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 1 1 f32 4390C000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 1 1 f32 48AAE600
+G33F STAGE 1 - micro_freeze_heat 0 cpm 1 1 f32 447B55E1
+G33F STAGE 1 - micro_freeze_heat 0 phom 1 1 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 1 1 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 1 1 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 1 1 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 1 0 f32 43910000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 1 0 f32 48AAE600
+G33F STAGE 1 - micro_freeze_heat 0 cpm 1 0 f32 447B55E1
+G33F STAGE 1 - micro_freeze_heat 0 phom 1 0 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 1 0 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 1 0 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 1 0 f64 0000000000000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 2 3 f32 43854000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 2 3 f32 48A349E0
+G33F STAGE 1 - micro_freeze_heat 0 cpm 2 3 f32 447B56F5
+G33F STAGE 1 - micro_freeze_heat 0 phom 2 3 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 2 3 f64 3CC1ABB34C7B60A6
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 2 3 f64 3C56D17BD88E5BBC
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 2 3 f64 3D9CDB1CDFCD971B
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 2 2 f32 43858000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 2 2 f32 48A3DC58
+G33F STAGE 1 - micro_freeze_heat 0 cpm 2 2 f32 447B56F5
+G33F STAGE 1 - micro_freeze_heat 0 phom 2 2 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 2 2 f64 3CBC24C41213C155
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 2 2 f64 3C4AE9506D9EB3C0
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 2 2 f64 3D97B673EF28CC8A
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 2 1 f32 4385C000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 2 1 f32 48A46ED8
+G33F STAGE 1 - micro_freeze_heat 0 cpm 2 1 f32 447B56F5
+G33F STAGE 1 - micro_freeze_heat 0 phom 2 1 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 2 1 f64 3CB63AEEECCB9552
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 2 1 f64 3C3F33D0BC88161E
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 2 1 f64 3D92F1225F6E207E
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 2 0 f32 43860000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 2 0 f32 48A50150
+G33F STAGE 1 - micro_freeze_heat 0 cpm 2 0 f32 447B56F5
+G33F STAGE 1 - micro_freeze_heat 0 phom 2 0 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 2 0 f64 3CB1638AC4123444
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 2 0 f64 3C31B857A9788EA4
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 2 0 f64 3D8D7952EC0978B7
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 3 3 f32 43708000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 3 3 f32 48858930
+G33F STAGE 1 - micro_freeze_heat 0 cpm 3 3 f32 447B5809
+G33F STAGE 1 - micro_freeze_heat 0 phom 3 3 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 3 3 f64 3D5E542A9D73E3AB
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 3 3 f64 3DE5374C7945E7E0
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 3 3 f64 3ECAD9C580000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 3 2 f32 43710000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 3 2 f32 48861BA8
+G33F STAGE 1 - micro_freeze_heat 0 cpm 3 2 f32 447B5809
+G33F STAGE 1 - micro_freeze_heat 0 phom 3 2 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 3 2 f64 3D582593C7B53862
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 3 2 f64 3DD9369028D60278
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 3 2 f64 3ECFE24640000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 3 1 f32 43718000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 3 1 f32 4886AE20
+G33F STAGE 1 - micro_freeze_heat 0 cpm 3 1 f32 447B5809
+G33F STAGE 1 - micro_freeze_heat 0 phom 3 1 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 3 1 f64 3D5311AF9628D388
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 3 1 f64 3DCD852439AD22C1
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 3 1 f64 3ED2756300000000
+G33F STAGE 1 - micro_freeze_heat 0 t_pre_freeze 3 0 f32 43720000
+G33F STAGE 1 - micro_freeze_heat 0 xlf 3 0 f32 488740A0
+G33F STAGE 1 - micro_freeze_heat 0 cpm 3 0 f32 447B5809
+G33F STAGE 1 - micro_freeze_heat 0 phom 3 0 f32 00000000
+G33F STAGE 1 - micro_freeze_heat 0 pinuc 3 0 f64 3D4DD380CDEE0F63
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtc 3 0 f64 3DC0FACB942476FE
+G33F STAGE 1 - micro_freeze_heat 0 pfrzdtr 3 0 f64 3ED4EE9CA0000000
 G33F STAGE 1 - micro_pre_state_update 0 qr 1 3 f32 37D6D09F
 G33F STAGE 1 - micro_pre_state_update 0 nr 1 3 f32 00000000
 G33F STAGE 1 - micro_pre_state_update 0 qv 1 3 f32 3A83126F
@@ -2881,5 +2965,5 @@ G33F PREC 2 3 f32 40C4A07E
 G33F PREC 3 1 f32 00000000
 G33F PREC 3 2 f32 39193783
 G33F PREC 3 3 f32 3921838C
-G33F END v13 legacy
+G33F END v14 legacy
 FORTRAN DRIVER OK (legacy, fixture=arithmetic_synthetic_v1)

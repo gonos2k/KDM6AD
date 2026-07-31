@@ -48,6 +48,7 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "micro_call_progb_aux": "-",
                 "micro_post_melt": "-", "micro_post_freeze": "-",
+                "micro_freeze_heat": "-",
                 "micro_pre_state_update": "-",
                 "micro_qr_operands": "-",
                 "micro_post_state_update": "-",
@@ -328,6 +329,11 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # measured by a separate gate. Requiring the record of a stream that structurally
     # cannot produce it would report a boundary choice as missing evidence.
     # v8: what kdm6init BUILT. Emitted by the overlay, so present on both boundaries.
+    # v14: the freeze heat term operands.
+    if version >= 14:
+        exp |= {(L, "-", "micro_freeze_heat", 0, fld, c, k) for L in loops
+                for fld in _schema._SEMANTIC_STAGE_FIELDS["micro_freeze_heat"]
+                for c in range(1, B + 1) for k in range(K)}
     # v13: the melt-freeze chain, bisected at the two reconciled dumps.
     if version >= 13:
         exp |= {(L, "-", st, 0, fld, c, k)
