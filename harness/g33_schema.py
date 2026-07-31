@@ -155,7 +155,16 @@ _SEMANTIC_STAGE_FIELDS = {
     # Same twelve fields as outer_post_micro, deliberately — a new vocabulary would
     # add a new mapping between the backends, and a new mapping is a new way to
     # manufacture a difference that is not there.
-    # THE OPERANDS OF THE qr UPDATE LINE — a CLOSED set (protocol v11).
+    # THE EXACT BASE state_update READS (protocol v12, owner review §2).
+    #
+    # The qr update is  qr_post = max(fl32(qr_base + fl32(S*dtcld)), 0), and until
+    # this stage existed the evidence carried S and dtcld but not qr_base. It is
+    # NOT outer_post_sed.qr: melt, freeze, two re-slopes, the rate blocks and the
+    # conservation scaling run in between. With it, the update line can be
+    # REPLAYED backend-neutrally instead of reasoned about.
+    "micro_pre_state_update": ["qr", "nr", "qv", "t", "qc", "qi", "qs", "qg",
+                               "nc", "ni", "nccn", "brs"],
+    # THE OPERANDS OF THE qr UPDATE LINE — the RATE operands (protocol v11).
     #
     # micro_post_state_update put the first divergence in this line with the
     # incoming state and the ProgB bundle bit-identical. The line reads exactly

@@ -175,6 +175,12 @@ def build_overlay(algo, text):
              # the ProgB bundle the micro rates consume, per outer loop
              (fb.MICRO_CALL_AUX_ANCHOR, "after",
               _stage_block("micro_call_progb_aux", "-", "0", [], fb.MICRO_CALL_AUX)),
+             # the EXACT base state_update reads, once per cell, BEFORE the
+             # F:2638 branch (the state is unmodified from there to either arm's
+             # `!     update`, so one record covers both)
+             (fb.MICRO_PRE_STATE_UPDATE_ANCHOR, "before",
+              _cell_stage_block("micro_pre_state_update", "-", "0",
+                                fb.MICRO_PRE_STATE_UPDATE)),
              # the qr update's operands, in BOTH arms of the F:2638 branch: the
              # rates are scaled per-arm, so the scaled values only exist inside,
              # and every cell takes exactly one arm so each emits exactly once.
@@ -227,6 +233,9 @@ def build_overlay(algo, text):
         want = landmark = None
         if isinstance(anchor, tuple):
             if len(anchor) == 3:
+                # want may be None: a UNIQUE line can still carry a
+                # landmark, and there is no reason to make it count
+                # occurrences to get one.
                 anchor, want, landmark = anchor
             else:
                 anchor, want = anchor

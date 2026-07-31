@@ -47,6 +47,7 @@ _STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
                 "outer_pre_sed": "-",
                 "surface": "-", "substep_pre": "main",
                 "outer_post_sed": "-", "micro_call_progb_aux": "-",
+                "micro_pre_state_update": "-",
                 "micro_qr_operands": "-",
                 "micro_post_state_update": "-",
                 "outer_post_micro": "-"}
@@ -326,7 +327,12 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
     # measured by a separate gate. Requiring the record of a stream that structurally
     # cannot produce it would report a boundary choice as missing evidence.
     # v8: what kdm6init BUILT. Emitted by the overlay, so present on both boundaries.
-    # v11: the operands of the qr update line, a closed set for that line.
+    # v12: the EXACT base state_update reads (owner review §2).
+    if version >= 12:
+        exp |= {(L, "-", "micro_pre_state_update", 0, fld, c, k)
+                for L in loops for fld in carried
+                for c in range(1, B + 1) for k in range(K)}
+    # v11: the RATE operands of the qr update line.
     if version >= 11:
         exp |= {(L, "-", "micro_qr_operands", 0, fld, c, k) for L in loops
                 for fld in _schema._SEMANTIC_STAGE_FIELDS["micro_qr_operands"]

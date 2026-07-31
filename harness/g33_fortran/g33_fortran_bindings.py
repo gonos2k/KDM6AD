@@ -400,6 +400,29 @@ MICRO_POST_STATE_UPDATE = list(_CARRIED)
 #: cold_gate is recorded because the two arms read different operands: a branch
 #: that disagreed between the backends would otherwise show up as several rates
 #: differing at once, with nothing saying why.
+#: THE EXACT BASE state_update READS (owner review §2).
+#:
+#: micro_qr_operands seals the RATE operands of the qr update line and nothing
+#: else. Its own note claimed the base was already compared because the incoming
+#: qrs(1) comes from outer_post_sed -- it does not: D1 melt, homogeneous freeze,
+#: the post-melt re-slope, D2-D4, the post-freeze re-slope, the rate blocks and
+#: the conservation scaling all run in between. Without this stage the converse
+#: ("all operands equal => the difference is in the summation") is unavailable.
+#:
+#: Injected BEFORE the F:2638 branch, so one record per cell whichever arm it
+#: takes, and the state is unmodified between there and either `!     update`.
+#: The C++ already dumps exactly this instant as the `prestate` substep forensic,
+#: describing it as "the EXACT state_update base".
+#:
+#: supcol is NOT recorded: it is a scalar local reassigned in earlier loops, so at
+#: this point it holds another iteration's value. The branch is recomputed by the
+#: comparator from this stage's `t` and t0c instead -- which is also what owner
+#: review §3 asks for, since a producer-emitted gate is the producer's claim about
+#: its own branch rather than an independent check of it.
+MICRO_PRE_STATE_UPDATE_ANCHOR = (
+    "          if(t(i,k).le.t0c) then", None, "!     cloud water")
+MICRO_PRE_STATE_UPDATE = list(_CARRIED)
+
 MICRO_QR_OPERANDS_COLD_ANCHOR = (
     "              bsdep(i,k)=psdep(i,k)/dens", (0, 1), "!     update")
 MICRO_QR_OPERANDS_WARM_ANCHOR = (

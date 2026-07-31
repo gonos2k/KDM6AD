@@ -68,7 +68,8 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_call_progb_aux", "micro_qr_operands",
+           "outer_post_sed", "micro_call_progb_aux",
+           "micro_pre_state_update", "micro_qr_operands",
            "micro_post_state_update", "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
@@ -76,9 +77,9 @@ _STAGES = ("kernel_call_input", "kernel_init_constants",
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_call_progb_aux": 7, "micro_qr_operands": 8,
-                "micro_post_state_update": 9,
-                "outer_post_micro": 10, "final_output": 11}
+                "micro_call_progb_aux": 7, "micro_pre_state_update": 8,
+                "micro_qr_operands": 9, "micro_post_state_update": 10,
+                "outer_post_micro": 11, "final_output": 12}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -667,6 +668,22 @@ def classify(legacy: Divergence, conservative: Divergence):
                 f"produced it, not in the update arithmetic. This is NOT a statement "
                 f"about conservative-only interface arithmetic; attribution is owner "
                 f"adjudication")
+        # THE UPDATE BASE. Reached when the ProgB bundle matched but the state
+        # state_update actually reads did not. That state is NOT outer_post_sed's:
+        # D1 melt, homogeneous freeze, both re-slopes and the rate blocks run in
+        # between. A difference here means the qr update line cannot be replayed
+        # from equal inputs, whatever the rate operands do downstream — so it is
+        # reported ahead of them rather than as one more differing quantity.
+        if d.phase == "micro_pre_state_update":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the BASE state "
+                f"state_update reads differs, while the ProgB bundle and the "
+                f"sedimentation result matched. What runs between them is D1 melt, "
+                f"homogeneous freeze, the post-melt re-slope, D2-D4 freeze and the "
+                f"post-freeze re-slope, and the difference is in one of those. The "
+                f"rate operands downstream cannot be read as the cause while their "
+                f"base differs. This is NOT a statement about conservative-only "
+                f"interface arithmetic; attribution is owner adjudication")
         if d.phase == "micro_call_progb_aux":
             return "INCONCLUSIVE", (
                 f"{name} first-diverges at {d.phase} {d.identity} — the ProgB auxiliary "

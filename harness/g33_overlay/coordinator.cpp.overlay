@@ -1273,6 +1273,35 @@ CoordinatorState kdm62d_one_step(
 #endif
 #ifdef KDM6_G33_OP_DUMP
     {
+        // THE EXACT BASE state_update READS (owner review §2). micro_qr_operands
+        // seals the RATE operands and nothing else; its note claimed the base was
+        // already compared because the incoming qr comes from outer_post_sed, which
+        // it does not — melt, freeze, two re-slopes, the rate blocks and the
+        // conservation scaling all run in between. Without this the update line
+        // cannot be replayed, only reasoned about.
+        //
+        // Same line as the `prestate` substep dump above, which already calls itself
+        // "the EXACT state_update base"; the Fortran side records before the F:2638
+        // branch, where the state is unmodified through either arm's update.
+        coord_g33ovl::Outer g33("micro_pre_state_update",
+                                coord_g33ovl::flip_k(working.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_pre_state_update", "qr",   coord_g33ovl::flip_k(working.qr));
+            G33_REC(g33, "micro_pre_state_update", "nr",   coord_g33ovl::flip_k(working.nr));
+            G33_REC(g33, "micro_pre_state_update", "qv",   coord_g33ovl::flip_k(working.qv));
+            G33_REC(g33, "micro_pre_state_update", "t",    coord_g33ovl::flip_k(working.t));
+            G33_REC(g33, "micro_pre_state_update", "qc",   coord_g33ovl::flip_k(working.qc));
+            G33_REC(g33, "micro_pre_state_update", "qi",   coord_g33ovl::flip_k(working.qi));
+            G33_REC(g33, "micro_pre_state_update", "qs",   coord_g33ovl::flip_k(working.qs));
+            G33_REC(g33, "micro_pre_state_update", "qg",   coord_g33ovl::flip_k(working.qg));
+            G33_REC(g33, "micro_pre_state_update", "nc",   coord_g33ovl::flip_k(working.nc));
+            G33_REC(g33, "micro_pre_state_update", "ni",   coord_g33ovl::flip_k(working.ni));
+            G33_REC(g33, "micro_pre_state_update", "nccn", coord_g33ovl::flip_k(working.nccn));
+            G33_REC(g33, "micro_pre_state_update", "brs",  coord_g33ovl::flip_k(working.brs));
+        }
+        g33.finalize();
+    }
+    {
         // THE OPERANDS OF THE qr UPDATE LINE, at the call that consumes them — a
         // CLOSED set for that line. Everything else it reads is already compared
         // (the incoming qr, from outer_post_sed) or sealed (dtcld), so if all of

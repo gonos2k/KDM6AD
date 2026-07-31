@@ -105,7 +105,7 @@ VARIANT_MODULE_KEY = "module_mp_kdm6[_cons].F"
 #:       one of the twelve carried fields was compared at two different instants.
 #:
 #: A pre-v6 bundle with valid external anchors would otherwise reach verdict_ready.
-DECISION_PROTOCOL_VERSION = 11
+DECISION_PROTOCOL_VERSION = 12
 
 #: Compile flags that change the NUMBERS. A leg built without -ffp-contract=off
 #: fuses multiply-adds, so the same compiler and the same sources still give a

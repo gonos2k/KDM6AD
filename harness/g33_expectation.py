@@ -275,6 +275,9 @@ _STAGE_FIELDS_BASE = {
 # would surface as a sealed-descriptor container mismatch with no hint of the cause.
 _STAGE_FIELDS_BASE["micro_post_state_update"] = list(
     _STAGE_FIELDS_BASE["outer_post_micro"])
+# The exact state_update base: the same twelve, at the other end of the update.
+_STAGE_FIELDS_BASE["micro_pre_state_update"] = list(
+    _STAGE_FIELDS_BASE["outer_post_micro"])
 
 # The qr update operands, in the order both producers emit them. This module is
 # the authority (g33_schema imports it, not the reverse), so the list is spelled
@@ -456,7 +459,9 @@ def expected_records(schedule: dict) -> list[dict]:
         # sixth ProgB_param call at :3032. Getting this order wrong does not read as an
         # ordering bug — op_seq is a measured counter, so a misplaced stage shifts every
         # window after it and surfaces as a sealed-descriptor container mismatch.
-        # the qr update operands come BEFORE the state they produce
+        # base, then operands, then the state they produce
+        emit("micro_pre_state_update", _stage_fields("micro_pre_state_update", backend),
+             outer_loop=loop, shape=[B, K])
         emit("micro_qr_operands", _stage_fields("micro_qr_operands", backend),
              outer_loop=loop, shape=[B, K])
         emit("micro_post_state_update", _stage_fields("micro_post_state_update", backend),
@@ -519,7 +524,8 @@ def expected_records(schedule: dict) -> list[dict]:
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
-                      "micro_qr_operands", "micro_post_state_update",
+                      "micro_pre_state_update", "micro_qr_operands",
+                      "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -554,6 +560,7 @@ def container_id(rec: dict) -> str:
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed",
                 "micro_call_progb_aux": "micro_call_progb_aux",
+                "micro_pre_state_update": "micro_pre_state_update",
                 "micro_qr_operands": "micro_qr_operands",
                 "micro_post_state_update": "micro_post_state_update",
                 "outer_post_micro": "outer_post_micro"}.get(rec["stage"])

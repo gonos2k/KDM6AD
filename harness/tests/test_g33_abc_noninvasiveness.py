@@ -109,8 +109,8 @@ def test_schedule_declares_one_substep_and_the_actual_cpp_overlay_scope():
                 "L0_kernel_after_entry_clamp",
                 "L1_outer_pre", "L1_main_n1", "L1_surface",
                 "L1_outer_post_sed", "L1_micro_call_progb_aux",
-                # the closed operand set of the qr update line
-                "L1_micro_qr_operands",
+                # the exact base state_update reads, then the rate operands
+                "L1_micro_pre_state_update", "L1_micro_qr_operands",
                 # the microphysics bisection, between the ProgB bundle and the
                 # post-micro bridge — its own container because the outer stages
                 # tile op_seq contiguously and each opens and finalizes in one block
