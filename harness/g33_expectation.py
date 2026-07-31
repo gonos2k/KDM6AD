@@ -529,13 +529,28 @@ def container_id(rec: dict) -> str:
         # object spanning two TUs. Per-stage containers open, emit and finalize
         # in one block; the op_seq tiling stays contiguous because the stages
         # execute in exactly this order.
+        # EXHAUSTIVE, with no default. This used to end in
+        # `.get(stage, "outer_post_micro")`, which filed any stage the table did not
+        # name into the post-micro container — so adding micro_post_state_update
+        # produced a declared container set that disagreed with the one the overlay
+        # actually opens, and the driver failed with "OP_SEQ_MAP has no entry for
+        # container L1_micro_post_state_update": a symptom two steps from the
+        # omission. A fallback that turns a missing entry into a plausible one is the
+        # same hazard the dtype table had.
         tail = {"kernel_call_input": "kernel_call_input",
                 "kernel_init_constants": "kernel_init_constants",
                 "kernel_after_entry_clamp": "kernel_after_entry_clamp",
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed",
-                "micro_call_progb_aux": "micro_call_progb_aux"}.get(rec["stage"],
-                                                        "outer_post_micro")
+                "micro_call_progb_aux": "micro_call_progb_aux",
+                "micro_post_state_update": "micro_post_state_update",
+                "outer_post_micro": "outer_post_micro"}.get(rec["stage"])
+        if tail is None:
+            raise ValueError(
+                f"container_id: no container tail declared for stage "
+                f"{rec['stage']!r}. Name it here — the overlay opens a container per "
+                f"outer stage, and an undeclared one cannot be reconciled with the "
+                f"measured op_seq counter")
         return f"L{rec['outer_loop']}_{tail}"
     return f"L{rec['outer_loop']}_{rec['chain']}_n{rec['n']}"
 
