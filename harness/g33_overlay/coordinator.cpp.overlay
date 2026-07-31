@@ -965,6 +965,44 @@ CoordinatorState kdm62d_one_step(
     }
     auto rebuilt = rebuild_aux(working, /*entry_pre=*/pre, forcing, full_params, aux.qcr, ncmin_for_slope, PR);
     const auto& pre2 = rebuilt.pre;
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // WHAT THE RATES ACTUALLY READ (owner P0-1.3). `pre2` is the POST-FREEZE
+        // rebuild_aux — step 5 of this function's own mirror is "warm/cold/D5 read
+        // `working` + pre2/aux2" — so pre2.progb is the ProgB bundle the microphysics
+        // consumes, and it corresponds to the Fortran ProgB_param at :1707, the last
+        // before the rate loop at :1864.
+        //
+        // My first version recorded progb_ret at the handoff in runtime.cpp: the
+        // RETAINED bundle going in, before either rebuild_aux recomputes it. That is a
+        // different instant from the Fortran side and from what the rates read, so the
+        // stage would have manufactured differences out of its own placement — the same
+        // failure outer_pre_sed had.
+        rt_g33ovl::Outer g33("micro_call_aux", pre2.progb.rhox);
+        if (g33.on()) {
+            G33_REC(g33, "micro_call_aux", "rhox",         pre2.progb.rhox);
+            G33_REC(g33, "micro_call_aux", "bg",           pre2.progb.bg);
+            G33_REC(g33, "micro_call_aux", "cmg",          pre2.progb.cmg);
+            G33_REC(g33, "micro_call_aux", "pidn0g",       pre2.progb.pidn0g);
+            G33_REC(g33, "micro_call_aux", "avtg",         pre2.progb.avtg);
+            G33_REC(g33, "micro_call_aux", "bvtg",         pre2.progb.bvtg);
+            G33_REC(g33, "micro_call_aux", "bvtg1",        pre2.progb.bvtg1);
+            G33_REC(g33, "micro_call_aux", "bvtg2",        pre2.progb.bvtg2);
+            G33_REC(g33, "micro_call_aux", "bvtg3",        pre2.progb.bvtg3);
+            G33_REC(g33, "micro_call_aux", "bvtg4",        pre2.progb.bvtg4);
+            G33_REC(g33, "micro_call_aux", "g1pbg",        pre2.progb.g1pbg);
+            G33_REC(g33, "micro_call_aux", "g3pbg",        pre2.progb.g3pbg);
+            G33_REC(g33, "micro_call_aux", "g4pbg",        pre2.progb.g4pbg);
+            G33_REC(g33, "micro_call_aux", "g5pbgo2",      pre2.progb.g5pbgo2);
+            G33_REC(g33, "micro_call_aux", "g1pdgbgmg",    pre2.progb.g1pdgbgmg);
+            G33_REC(g33, "micro_call_aux", "dgbgmug1",     pre2.progb.dgbgmug1);
+            G33_REC(g33, "micro_call_aux", "rslopegbmax",  pre2.progb.rslopegbmax);
+            G33_REC(g33, "micro_call_aux", "pvtg",         pre2.progb.pvtg);
+            G33_REC(g33, "micro_call_aux", "precg2",       pre2.progb.precg2);
+        }
+        g33.finalize();
+    }
+#endif
     auto aux2 = rebuilt.aux;   // mutable: n0c recomputed from the snapped nc below
     // §35 diag_rhog shadow: post-freeze reslope — update active (qg>qcrmin), retain else.
     rhog_acc = torch::where(working.qg > full_params.progb.qcrmin, pre2.progb.rhox, rhog_acc);

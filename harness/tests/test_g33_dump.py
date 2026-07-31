@@ -651,10 +651,27 @@ def test_the_expected_record_ORDER_matches_the_overlay_source():
     AFTER outer_post_sed (ProgB runs between them), the expectation emitted it before, and
     every local test passed because they all compare sets.
     """
-    src = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
-    # the ORDER the runtime overlay opens its whole-K containers
-    actual = [m for m in re.findall(r'Outer g33\("([a-z_]+)"', src)]
-    # container tails -> stage names, mirroring g33_expectation.container_id
+    # The order is CROSS-TU. runtime.cpp opens most of the containers, but the
+    # microphysics auxiliary is recorded inside kdm62d_one_step — coordinator.cpp — at
+    # the post-freeze rebuild the rates read. Reading only runtime.cpp silently dropped
+    # micro_call_aux from this comparison the moment it moved there, which is the same
+    # vacuity this test exists to prevent.
+    #
+    # runtime.cpp calls kdm62d_one_step between outer_post_sed and outer_post_micro, so
+    # splicing coordinator.cpp's containers in at that call site reconstructs the order a
+    # single run actually emits.
+    def _opens(name):
+        src = (ROOT / "g33_overlay" / name).read_text()
+        return src, [m for m in re.findall(r'Outer g33\("([a-z_]+)"', src)]
+
+    rt_src, rt = _opens("runtime.cpp.overlay")
+    _, co = _opens("coordinator.cpp.overlay")
+    # coordinator's own surface container is emitted inside the sed chain, before
+    # one_step; only the micro-step ones splice in at the call.
+    at_one_step = [t for t in co if t == "micro_call_aux"]
+    assert at_one_step, "coordinator.cpp.overlay no longer opens micro_call_aux"
+    cut = rt.index("outer_post_micro")
+    actual = rt[:cut] + at_one_step + rt[cut:]
     tail_to_stage = {"outer_pre": "outer_pre_sed"}
     actual = [tail_to_stage.get(t, t) for t in actual]
 

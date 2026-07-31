@@ -250,23 +250,46 @@ def test_the_micro_auxiliary_bundle_is_recorded_per_outer_loop():
         assert got == names, f"loop {loop} carries {got ^ names}"
 
 
-def test_the_auxiliary_is_recorded_where_the_consumer_reads_it():
-    """The anchor is the 4th of seven identical `slope_kdm6` continuation lines.
+def test_the_auxiliary_is_recorded_where_the_RATES_read_it():
+    """The 5th of seven identical `slope_kdm6` continuation lines (:1714), after the
+    POST-FREEZE ProgB_param at :1707 — the last before the rate loop at :1864.
 
-    Requiring a unique line would have meant anchoring on the nearby `! pihmf:` comment,
-    which sits INSIDE the do-loops — injecting a whole-K emission there produced nested
-    loops over i and k and would not compile. An occurrence index says which of the seven,
-    and still fails loudly if the count changes.
+    My first version used the 4th (:1511), after the POST-MELT ProgB at :1504. That is a
+    different point in the chain and not what the rates read, so the stage would have
+    compared a mid-chain bundle against the C++ side and reported placement as physics.
+
+    Which ProgB is which comes from the PINNED source, not from the C++ comments — those
+    cite :1469 and :1664, and neither is a ProgB_param call in the pinned file.
     """
     import g33_fortran_bindings as fb
     anchor = fb.MICRO_CALL_AUX_ANCHOR
     assert isinstance(anchor, tuple), "the anchor must carry its occurrence index"
     line, (n, total) = anchor
-    assert (n, total) == (3, 7)
+    assert (n, total) == (4, 7), "the post-MELT ProgB is not what the rates read"
     assert "pidn0g" in line and "pvtg" in line, (
         "the anchor should be the slope_kdm6 call that consumes the bundle, so a source "
         "change that moves the consumer breaks the anchor rather than silently relocating "
         "the snapshot")
+
+
+def test_the_two_backends_record_the_SAME_progb_instant():
+    """The stage is only meaningful if both sides record the bundle the RATES read.
+
+    C++: `pre2.progb` from the post-freeze rebuild_aux, which that function's own mirror
+    describes as step 5, "warm/cold/D5 read `working` + pre2/aux2".
+    Fortran: after the post-freeze ProgB_param at :1707.
+
+    The first version recorded C++'s `progb_ret` at the handoff — the RETAINED bundle
+    going in, before either rebuild recomputes it — which is neither the Fortran instant
+    nor what the rates read.
+    """
+    rt = (ROOT / "g33_overlay" / "runtime.cpp.overlay").read_text()
+    co = (ROOT / "g33_overlay" / "coordinator.cpp.overlay").read_text()
+    assert "micro_call_aux" not in rt, (
+        "the handoff recording is the retained bundle, not what the rates read")
+    assert 'Outer g33("micro_call_aux", pre2.progb.rhox)' in co
+    assert "progb_ret_host" not in co.split("micro_call_aux")[1][:600], (
+        "the C++ record must come from the recomputed pre2, not the retained input")
 
 
 # ── the last thing produced, bound to the last thing returned (owner §1.5) ────

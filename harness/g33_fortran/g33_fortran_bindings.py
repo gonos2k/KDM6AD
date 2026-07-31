@@ -282,14 +282,25 @@ INIT_CONSTANTS = [
 #:
 #: Recorded immediately after ProgB_param (:1504) and its first consumer slope_kdm6
 #: (:1509), which takes the bundle intent(in).
-#: The 4th of the seven identical `slope_kdm6` continuation lines: the ProgB_param at
-#: :1504 fills the bundle and slope_kdm6 at :1509 is its first consumer, which takes
-#: pidn0g/pvtg/bvtg/rslopegbmax as intent(in) and so does not disturb it. Recording just
-#: after that call is therefore the same values the microphysics receives, at a point
-#: OUTSIDE the do-loops — the nearby unique `! pihmf:` comment sits inside them, and
-#: injecting a whole-K emission there produced nested loops over i and k.
+#: The 5th of the seven identical `slope_kdm6` continuation lines (:1714), which follows
+#: the POST-FREEZE ProgB_param at :1707 — the LAST one before the rate loop.
+#:
+#: My first version anchored on the 4th (:1511), after the POST-MELT ProgB at :1504. That
+#: is a different point in the chain and not what the rates read, so the stage would have
+#: compared a mid-chain bundle against the C++ side and any difference would have been an
+#: artifact of the placement. Determined from the pinned source, NOT from the C++
+#: comments, which cite :1469 and :1664 — neither is a ProgB_param call in the pinned
+#: file, so those line numbers are from another revision:
+#:
+#:   :1440   fort_substep_postmelt.bin opens   -> the :1504 ProgB is POST-MELT
+#:   :1594-1651  pinuc / pinui / pgfrz         -> the :1707 ProgB is POST-FREEZE
+#:   :1864   praut                             -> the rate loop starts, reading :1707's
+#:
+#: slope_kdm6 takes pidn0g/pvtg/bvtg/rslopegbmax as intent(in), so recording just after
+#: it is the same values — and it is OUTSIDE the do-loops, which the nearby unique
+#: `! pihmf:` comment is not (a whole-K emission there nests i and k).
 MICRO_CALL_AUX_ANCHOR = (
-    "                   ite,kts,kte,qmin,pidn0g,pvtg,bvtg,rslopegbmax)", (3, 7))
+    "                   ite,kts,kte,qmin,pidn0g,pvtg,bvtg,rslopegbmax)", (4, 7))
 MICRO_CALL_AUX = [
     ("rhox", "f32", "rhox(i,k)"),
     ("bg", "f32", "brs(i,k)"),
