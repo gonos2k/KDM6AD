@@ -288,3 +288,22 @@ def test_the_current_artifact_is_at_result_schema_v3_or_later():
     assert d["provenance"]["result_schema_version"] >= 3, (
         "verifier_semantics_sha256 and the operand-group counterfactual became "
         "required, so a current artifact is at least schema v3")
+
+
+def test_the_current_artifact_was_produced_on_the_REQUIRED_runtime():
+    """Recording the runtime is not requiring it (owner review §2).
+
+    The replay is NumPy f32/f64 arithmetic and this decision turns on an f32
+    storage boundary — the analytic coefficient effect is ~0.46 ULP and the stored
+    result is 1 ULP. An artifact produced on a different NumPy than the one CI
+    pins is not shown to be wrong, but it is not a runtime-reproducible decision
+    artifact either, and `valid_for_decision: true` claims that it is.
+    """
+    import sys
+    sys.path.insert(0, str(EVIDENCE.parent))
+    import g33_verifier_identity as vid
+    p, d = _current()
+    bad = vid.runtime_matches(d["provenance"].get("verifier_runtime", {}))
+    assert not bad, (
+        f"{p.name} was produced on a runtime the decision path does not accept: "
+        + "; ".join(f"{k}: want {w}, got {g}" for k, w, g in bad))

@@ -504,11 +504,31 @@ def test_variant_and_instrumentation_defines_do_not_split_the_toolchain(tmp_path
 # checked-in sample is a legacy stream, so a conservative bundle cannot be made from
 # it at all.
 
+def _real_checker_provenance():
+    """What a real Gate A run records: HEAD, and the digests OF HEAD's files.
+
+    The fixture used a placeholder commit and invented digests, which passed while
+    nothing recomputed them. Now that the consumer reads the checker and the scope
+    manifest back out of the commit the report names, a fixture that invents them
+    is a fixture that describes a checker which does not exist — so it has to be
+    built the way the checker builds it.
+    """
+    import hashlib
+    import subprocess
+    root = ROOT          # ROOT is already the repository root (parents[2])
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
+                          capture_output=True, text=True).stdout.strip()
+    out = {"checker_commit": head}
+    for field, path in fbio._CHECKER_PROVENANCE:
+        blob = subprocess.run(["git", "show", f"{head}:{path}"], cwd=root,
+                              capture_output=True).stdout
+        out[field] = hashlib.sha256(blob).hexdigest()
+    return out
+
+
 def _gate_a(legacy_sha, cons_sha, passing=True, **drop):
     report = {"pass": passing, "failures": [] if passing else ["pinned edit missing"],
-              "schema_version": 1, "checker_commit": "a" * 40,
-              "checker_source_sha256": "d" * 64,
-              "scope_manifest_sha256": "b" * 64,
+              "schema_version": 1, **_real_checker_provenance(),
               "sha256": {"module_mp_kdm6.F": legacy_sha,
                          "module_mp_kdm6_cons.F": cons_sha}}
     for k in drop:
@@ -668,3 +688,91 @@ def test_a_v7_stream_without_INIT_records_is_refused():
     _, authority = gfx.load_fixture(gfx.DEFAULT_FIXTURE_ID)
     with pytest.raises(fd.FortranRunError, match="INIT"):
         fd.parse_fortran_run(stripped, "legacy", authority["K"], authority["B"])
+
+
+# ── compile provenance may not be satisfied by DELETING it ───────────────────
+
+def test_a_bundle_with_NO_commands_is_rejected(tmp_path):
+    """Removing `commands` from both legs used to give empty compile profiles, so
+    the cross-leg toolchain comparison passed over nothing while still reporting
+    one toolchain — -ffp-contract=off, the optimization level, the real-kind flags
+    and the variant defines all unchecked. Satisfying a gate by deleting the
+    evidence it reads is the failure mode, not the flags themselves."""
+    def drop(_lane, prov):
+        prov.pop("commands", None)
+    # Malformed provenance RAISES here, as every other malformed-provenance
+    # case in this file does; it is not a verdict about physics.
+    root = _bundle(tmp_path / "b", prov_edit=drop)
+    with pytest.raises(fbio.FortranBundleError, match="commands"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_bundle_with_EMPTY_commands_is_rejected(tmp_path):
+    def empty(_lane, prov):
+        prov["commands"] = []
+    # Malformed provenance RAISES here, as every other malformed-provenance
+    # case in this file does; it is not a verdict about physics.
+    root = _bundle(tmp_path / "b", prov_edit=empty)
+    with pytest.raises(fbio.FortranBundleError, match="EMPTY commands"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_a_DUPLICATE_compile_role_is_rejected(tmp_path):
+    """The second command used to overwrite the first, so a bundle could carry the
+    checked flags in a command that never produced the binary."""
+    def dup(_lane, prov):
+        cmds = list(prov["commands"])
+        first = next(c for c in cmds if " -c " in c and "-o " in c)
+        prov["commands"] = cmds + [first.replace("-ffp-contract=off", "")]
+    # Malformed provenance RAISES here, as every other malformed-provenance
+    # case in this file does; it is not a verdict about physics.
+    root = _bundle(tmp_path / "b", prov_edit=dup)
+    with pytest.raises(fbio.FortranBundleError, match="twice in commands"):
+        fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
+
+
+def test_dropping_ffp_contract_off_still_changes_the_toolchain(tmp_path):
+    """The flag the whole f32 parity argument rests on. If removing it left the
+    identity unchanged, `commands` being present would prove nothing either."""
+    a = _bundle(tmp_path / "a")
+    def strip(_lane, prov):
+        prov["commands"] = [c.replace(" -ffp-contract=off", "")
+                            for c in prov["commands"]]
+    b = _bundle(tmp_path / "b", prov_edit=strip)
+    la = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
+    lb = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
+    assert la.build.toolchain() != lb.build.toolchain()
+
+
+# ── the Gate A report's own claims are RECOMPUTED, not believed ──────────────
+
+def test_a_report_claiming_the_WRONG_checker_source_is_refused():
+    """`checker_source_sha256` is written into the report BY the checker. Anchoring
+    the report's bytes fixes what it says; it does not make what it says true. A
+    report naming a real clean commit and an arbitrary checker digest passed every
+    check here until the consumer read it back out of that commit."""
+    r = _gate_a("m" * 64, "c" * 64)
+    r["checker_source_sha256"] = "e" * 64
+    with pytest.raises(fbio.FortranBundleError, match="checker_source_sha256"):
+        fbio.authorized_by_gate_a(r, _legs())
+
+
+def test_a_report_claiming_the_WRONG_scope_manifest_is_refused():
+    """The scope manifest is what says which edits were authorized at all."""
+    r = _gate_a("m" * 64, "c" * 64)
+    r["scope_manifest_sha256"] = "f" * 64
+    with pytest.raises(fbio.FortranBundleError, match="scope_manifest_sha256"):
+        fbio.authorized_by_gate_a(r, _legs())
+
+
+def test_a_report_naming_a_commit_without_the_checker_is_refused():
+    r = _gate_a("m" * 64, "c" * 64)
+    r["checker_commit"] = "0" * 40
+    with pytest.raises(fbio.FortranBundleError, match="cannot be read there"):
+        fbio.authorized_by_gate_a(r, _legs())
+
+
+def test_a_report_with_the_REAL_provenance_passes():
+    """The positive side, so the four refusals above are not passing because the
+    check refuses everything."""
+    fbio.authorized_by_gate_a(_gate_a("m" * 64, "c" * 64), _legs())

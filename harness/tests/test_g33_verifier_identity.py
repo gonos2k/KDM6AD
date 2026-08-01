@@ -49,23 +49,41 @@ def test_every_declared_file_exists():
 
 
 @pytest.mark.parametrize("name", sorted(vid.DECISION_LOGIC))
-def test_one_byte_in_ANY_covered_file_moves_the_digest(name):
-    """A digest that does not respond to every file it claims to cover is a digest
-    over a subset, whatever its docstring says."""
-    import hashlib
-    before = vid.semantics_sha256()
-    orig = (vid.HARNESS / name).read_bytes()
-    h = hashlib.sha256()
-    h.update(vid._DOMAIN)
-    for n in vid.DECISION_LOGIC:
-        body = (orig + b"\n# mutation\n") if n == name \
-            else (vid.HARNESS / n).read_bytes()
-        nb = n.encode()
-        h.update(len(nb).to_bytes(4, "big"))
-        h.update(nb)
-        h.update(len(body).to_bytes(8, "big"))
-        h.update(body)
-    assert h.hexdigest() != before, f"editing {name} does not move the digest"
+def test_one_byte_in_ANY_covered_file_moves_the_PRODUCTION_digest(name):
+    """The mutation goes through the real hasher, not a copy of it.
+
+    The first version built its own hash beside the production one and compared
+    the two. That can pass while the production hasher SKIPS a file entirely: the
+    baseline would then be a digest over 19 files and the test's hash over 20, so
+    they differ for every parametrisation regardless of the mutation. It proved
+    nothing about which files the shipped code reads.
+
+    Same shape this repository was already burned by — a manifest replayed into
+    the writer in manifest order, passing while the real overlay differed in k,
+    shape, count and field set. So `semantics_sha256` now takes the reader, and
+    this perturbs exactly one file through it.
+    """
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    baseline = vid.semantics_sha256(real.__getitem__)
+    assert baseline == vid.semantics_sha256(), (
+        "the injected reader must reproduce the default digest, or this test is "
+        "measuring a different function than production uses")
+    mutated = dict(real, **{name: real[name] + b"\n# mutation\n"})
+    assert vid.semantics_sha256(mutated.__getitem__) != baseline, (
+        f"editing {name} does not move the digest the verifier actually computes")
+
+
+def test_a_hasher_that_SKIPPED_a_file_would_be_caught():
+    """The failure the previous test could not see, made explicit.
+
+    A digest over a subset must not equal the digest over the whole set — if it
+    did, dropping a file from DECISION_LOGIC would be invisible.
+    """
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    full = vid.semantics_sha256(real.__getitem__)
+    for drop in vid.DECISION_LOGIC[:3]:
+        short = dict(real, **{drop: b""})
+        assert vid.semantics_sha256(short.__getitem__) != full
 
 
 def test_the_digest_is_domain_separated_and_length_prefixed():

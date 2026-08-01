@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 import sys
+import pathlib as _pathlib
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
@@ -182,7 +183,18 @@ def _compile_profiles(commands) -> tuple:
             continue
         if "-c" not in toks:
             role = "link"
+        # A repeated role used to overwrite silently, so a second compile of the
+        # same object with different flags left only the last one — and a bundle
+        # could carry the checked flags in a command that never produced the
+        # binary. Two commands for one role is a provenance defect, not a merge.
+        if role in out:
+            raise FortranBundleError(
+                f"compile role {role!r} appears twice in commands; the earlier "
+                f"profile would be discarded and its flags never compared")
         out[role] = CompileProfile(role, tuple(flags), tuple(sorted(defines)))
+    if not out:
+        raise FortranBundleError(
+            "no compile roles parsed from commands: nothing to compare")
     return tuple(sorted(out.values(), key=lambda p: p.role))
 
 
@@ -242,6 +254,19 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
             "the Gate A report was produced by a DIRTY checker tree (%s): regenerate "
             "it from a clean commit, or the authorization names a revision that is "
             "not what ran" % report["checker_commit"])
+    # THE CHECKER AND ITS SCOPE, RECOMPUTED — not taken from the report.
+    #
+    # `checker_source_sha256` and `scope_manifest_sha256` are written INTO the
+    # report BY the checker (check_cons_fortran_scope.py:134-135). Anchoring the
+    # report's own bytes externally fixes what the report says; it does not make
+    # what it says about the checker true. A report naming a real clean commit and
+    # arbitrary digests for the checker and the allowed scope passed every check
+    # here, because nothing recomputed them.
+    #
+    # A self-report is provenance only once the consumer verifies it, so both are
+    # read back out of the git object the report itself names.
+    _verify_checker_provenance(report)
+
     pinned = report.get("sha256") or dict()
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
@@ -255,6 +280,48 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
                 "the %s leg compiled module %s but Gate A authorized %s — this "
                 "bundle's source is not the one whose edits were reviewed"
                 % (algo, got, want))
+
+
+def _git_blob(commit: str, path: str) -> bytes | None:
+    import subprocess
+    root = _pathlib.Path(__file__).resolve().parent.parent
+    r = subprocess.run(["git", "show", f"{commit}:{path}"],
+                       cwd=root, capture_output=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+#: What the Gate A report claims about itself, and where to read the truth.
+_CHECKER_PROVENANCE = (
+    ("checker_source_sha256", "harness/check_cons_fortran_scope.py"),
+    ("scope_manifest_sha256", "harness/cons_fortran_scope_manifest.json"),
+)
+
+
+def _verify_checker_provenance(report) -> None:
+    """Recompute the checker and scope digests from the commit the report names.
+
+    Skipped only when the object cannot be read at all — a shallow clone. That is
+    stated rather than silent: on a complete clone the check is mandatory, and the
+    evidence CI job checks out full depth for exactly this reason.
+    """
+    import hashlib
+    commit = str(report["checker_commit"])
+    for field, path in _CHECKER_PROVENANCE:
+        blob = _git_blob(commit, path)
+        if blob is None:
+            if _git_blob("HEAD", path) is None:
+                return                     # no git object access at all: shallow
+            raise FortranBundleError(
+                f"the Gate A report names checker_commit {commit}, but {path} "
+                f"cannot be read there — the commit it claims to have run at does "
+                f"not carry the checker")
+        got = hashlib.sha256(blob).hexdigest()
+        if got != report[field]:
+            raise FortranBundleError(
+                f"the Gate A report's {field} is not the digest of {path} at "
+                f"{commit} (report {report[field][:12]}…, actual {got[:12]}…) — "
+                f"the report describes a checker or a scope that is not the one "
+                f"its own commit carries")
 
 
 @dataclass(frozen=True)
@@ -488,10 +555,21 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
             raise FortranBundleError(f"lane {lane} provenance is not JSON: {e}") from None
         need = ("compiler_binary_sha256", "compiler_version", "module_canonical_sha256",
                 "module_compiled_sha256", "executable_sha256", "host_source_sha256",
-                "harness_source_sha256")
+                "harness_source_sha256",
+                # REQUIRED. Without it _compile_profiles() returns an empty tuple
+                # and the cross-leg toolchain comparison passes over nothing —
+                # -ffp-contract=off, the optimization level, the real-kind flags
+                # and the variant/instrumentation defines all go unchecked while
+                # the gate still reports "one toolchain". Deleting `commands` from
+                # both bundles was a way to satisfy the gate by removing evidence.
+                "commands")
         missing = [k for k in need if k not in prov]
         if missing:
             raise FortranBundleError(f"lane {lane} provenance lacks {missing}")
+        if not prov["commands"]:
+            raise FortranBundleError(
+                f"lane {lane} provenance has an EMPTY commands list: the compile "
+                f"profiles would be empty and the toolchain comparison vacuous")
         # EXACT source universe, not merely "the map is present"
         for field, expected in (("host_source_sha256", EXPECTED_HOST_SOURCES),
                                 ("harness_source_sha256", EXPECTED_HARNESS_SOURCES)):
