@@ -228,7 +228,7 @@
     "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
     "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
     "result_schema_version": 3,
-    "verifier_commit": "d4923ee15df3b7fa86c65757b5b788ec967ef100",
+    "verifier_commit": "8daf6d92019981fe42dd14d09745a733b7ca8fb8",
     "verifier_runtime": {
       "byteorder": "little",
       "numpy_version": "2.4.6",
@@ -253,7 +253,7 @@
     "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
   },
   "supersession": {
-    "note": "produced by gateb_g33m_check.py at d4923ee15df3 on CPython 3.11.14 / numpy 2.4.6, verifier semantics a75c08bc82e96ccd",
+    "note": "produced by gateb_g33m_check.py at 8daf6d920199 on CPython 3.11.14 / numpy 2.4.6, verifier semantics a75c08bc82e96ccd",
     "status": "current",
     "superseded_by": null,
     "valid_for_decision": true,
