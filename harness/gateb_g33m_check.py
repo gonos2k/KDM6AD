@@ -38,6 +38,7 @@ adjudication over historical evidence this harness cannot hold.
 from __future__ import annotations
 
 import argparse
+import platform
 import hashlib
 import json
 import sys
@@ -46,6 +47,7 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE / "g33_fortran"))
+import numpy as np                      # noqa: E402
 import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
 import g33_verifier_identity as vid     # noqa: E402
@@ -218,7 +220,9 @@ def _provenance(a, protocol_version: int) -> dict:
     the input paths in `inputs` are local and informational.
     """
     return {
-        "result_schema_version": 2,
+        # v3: verifier_semantics_sha256 and the operand-group counterfactual
+        # became required parts of a current artifact, so the contract changed.
+        "result_schema_version": 3,
         "decision_protocol_version": protocol_version,
         "producer_commit": a.expected_repo_commit,
         "verifier_commit": _git("rev-parse", "HEAD"),
@@ -235,6 +239,14 @@ def _provenance(a, protocol_version: int) -> dict:
         # touching the protocol version, and without this the artifact stays
         # `current` while no longer describing what the tree would now conclude.
         "verifier_semantics_sha256": vid.semantics_sha256(),
+        # The replay is NumPy f32/f64 arithmetic, so the same sources on a
+        # different runtime are not self-evidently the same verifier.
+        "verifier_runtime": {
+            "python_implementation": platform.python_implementation(),
+            "python_version": platform.python_version(),
+            "numpy_version": np.__version__,
+            "byteorder": sys.byteorder,
+        },
     }
 
 
