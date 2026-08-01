@@ -207,3 +207,105 @@ def test_a_stage_with_no_simultaneity_rule_gets_no_group():
         phase = "outer_post_micro"
         identity = ("outer_post_micro", 2, "-", 0, 3, 0, "qr", "f32")
     assert cmp._operand_group({"stages": []}, {"stages": []}, D()) is None
+
+
+# ── fail-closed preconditions on the counterfactual (owner review §4) ─────────
+
+def _set(run, field, value, f64=False):
+    for st in run["stages"]:
+        if st["stage"] == "micro_freeze_heat" and st["field"] == field:
+            st["bits"] = _f64bits(value) if f64 else rp.bits32(value)
+    return run
+
+
+def test_a_NONZERO_phom_keeps_the_coefficients_visible():
+    """The Fortran chain then has a homogeneous-freeze term this replay does not
+    model, so the replay is not the arithmetic and cannot be used to exclude."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)     # would be excluded with phom == 0
+    assert {"xlf", "cpm"} <= _co(f, c)
+    _set(f, "phom", 1.0e-6)
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_a_MISSING_phom_keeps_the_coefficients_visible():
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    f["stages"] = [s for s in f["stages"]
+                   if not (s["stage"] == "micro_freeze_heat" and s["field"] == "phom")]
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_a_DIFFERING_base_makes_the_swap_meaningless_and_is_kept():
+    """A coefficient-only swap answers a different question once the base differs."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    assert {"xlf", "cpm"} <= _co(f, c)
+    _set(c, "t_pre_freeze", 243.0 + 1e-3)
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_a_DIFFERING_rate_is_kept_for_the_same_reason():
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    _set(c, "pfrzdtr", 2.0e-30, f64=True)
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_the_swap_is_tried_in_BOTH_directions():
+    """Whether the difference survives can depend on which base it is applied to;
+    if either direction moves t, the group stays in the verdict."""
+    import g33_activity as a
+    hi = {"t_pre_freeze": rp.bits32(243.5), "xlf": rp.bits32(3.34e5),
+          "cpm": rp.bits32(1005.0), "phom": rp.bits32(0.0),
+          **{n: _f64bits(1.0e-3) for n in a._FREEZE_RATES}}
+    lo = dict(hi, xlf=rp.bits32(3.40e5))
+    assert a._moves_t(hi, lo) is True
+    assert a._swap_moves_t(hi, lo) or a._swap_moves_t(lo, hi)
+
+
+def test_the_2x2_counterfactual_splits_xlf_and_cpm(tmp_path):
+    """Simultaneous operands have no ordering answer, but they have a replay one:
+    vary each coefficient through the actual three f32 stores with everything else
+    held at the reference. The Shapley form averages both attribution orders, so
+    neither operand absorbs the interaction term (owner review §6)."""
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "micro_freeze_heat"
+        identity = ("micro_freeze_heat", 2, "-", 0, 3, 0, "xlf", "f32")
+
+    def leg(xlf, cpm):
+        st = [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+               "field": n, "bits": rp.bits32(v)}
+              for n, v in (("xlf", xlf), ("cpm", cpm),
+                           ("t_pre_freeze", 243.5), ("phom", 0.0))]
+        st += [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                "field": n, "bits": _f64bits(1.0e-3)} for n in rp.FREEZE_TERMS]
+        return {"stages": st}
+
+    g = cmp._operand_group(leg(3.34e5, 1005.0), leg(3.40e5, 1004.0), D())
+    cf = g["counterfactual"]
+    assert set(cf["bits"]) == {"FF", "CF", "FC", "CC"}
+    sh = cf["shapley_delta_T_K"]
+    # the two shares must reconstruct the total exactly
+    assert abs((sh["xlf"] + sh["cpm"]) - cf["total_delta_T_K"]) < 1e-12
+    # raising xlf and lowering cpm both raise c, so both shares are positive here
+    assert sh["xlf"] > 0 and sh["cpm"] > 0
+
+
+def test_the_counterfactual_is_OMITTED_when_the_base_or_rates_differ():
+    """It would answer a different question, so it is not reported at all."""
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "micro_freeze_heat"
+        identity = ("micro_freeze_heat", 2, "-", 0, 3, 0, "xlf", "f32")
+
+    def leg(t):
+        st = [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+               "field": n, "bits": rp.bits32(v)}
+              for n, v in (("xlf", 3.34e5), ("cpm", 1005.0),
+                           ("t_pre_freeze", t), ("phom", 0.0))]
+        st += [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                "field": n, "bits": _f64bits(1.0e-3)} for n in rp.FREEZE_TERMS]
+        return {"stages": st}
+
+    g = cmp._operand_group(leg(243.5), leg(244.0), D())
+    assert "counterfactual" not in g

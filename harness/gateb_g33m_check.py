@@ -48,6 +48,7 @@ sys.path.insert(0, str(_HERE))
 sys.path.insert(0, str(_HERE / "g33_fortran"))
 import g33_bundle_io as bio             # noqa: E402
 import g33_fortran_bundle_io as fbio    # noqa: E402
+import g33_verifier_identity as vid     # noqa: E402
 import g33_fourcase_comparator as cmp   # noqa: E402
 import g33_fourcase_load as fcl  # noqa: E402
 import g33_normalize as nz              # noqa: E402
@@ -228,6 +229,12 @@ def _provenance(a, protocol_version: int) -> dict:
             a.expected_fortran_conservative_manifest_sha256,
         "gate_a_report_sha256": a.expected_gate_a_scope_report_sha256,
         "fixture_manifest_sha256": a.expected_fixture_manifest_sha256,
+        # WHAT IT WAS DECIDED BY (owner review §3). The protocol version covers the
+        # evidence contract; this covers the code that turns evidence into a
+        # verdict. A comparator or activity-rule change moves the answer without
+        # touching the protocol version, and without this the artifact stays
+        # `current` while no longer describing what the tree would now conclude.
+        "verifier_semantics_sha256": vid.semantics_sha256(),
     }
 
 
