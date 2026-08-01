@@ -147,3 +147,29 @@ def test_no_module_stem_is_resolvable_in_TWO_search_directories():
     assert not dup, (
         f"module stem(s) present in both harness/ and harness/g33_fortran/: "
         f"{list(dup)} — one of them is shadowed and unhashed")
+
+
+def test_the_module_that_DEFINES_coverage_is_itself_covered():
+    """It was excluded on the grounds that "it digests, it does not decide".
+
+    That is wrong. DECISION_LOGIC, NOT_DECISION_LOGIC and `_digest` between them
+    determine what is covered at all, so a change here changes what the digest
+    MEANS — and the one thing coverage did not include was the module defining
+    coverage. There is no circularity: the digest reads bytes off disk, it does not
+    depend on its own value.
+    """
+    assert "g33_verifier_identity.py" in vid.DECISION_LOGIC
+    assert vid.NOT_DECISION_LOGIC == frozenset(), (
+        "an exception needs a reason recorded next to it; an empty set is the "
+        "default because every exception is a hole in the coverage claim")
+
+
+def test_editing_the_DECISION_LOGIC_LIST_moves_the_digest():
+    """The list is inside a covered file, so shortening it is visible — which is
+    what stops a future edit from quietly narrowing what a verdict depends on."""
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    baseline = vid.semantics_sha256(real.__getitem__)
+    edited = dict(real)
+    edited["g33_verifier_identity.py"] = real["g33_verifier_identity.py"].replace(
+        b'"g33_schema.py",', b"")
+    assert vid.semantics_sha256(edited.__getitem__) != baseline

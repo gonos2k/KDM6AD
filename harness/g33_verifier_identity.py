@@ -44,9 +44,14 @@ DECISION_ROOTS = (
 #: Local modules that are NOT decision logic even though a root imports them.
 #: Each needs a reason; the point of the exception list is that it is short and
 #: read, not that it exists.
-NOT_DECISION_LOGIC = frozenset({
-    "g33_verifier_identity",   # this module: it digests, it does not decide
-})
+#:
+#: EMPTY, and this module is deliberately not in it. It was, on the grounds that
+#: "it digests, it does not decide" — which is wrong: DECISION_LOGIC, this
+#: exception set and `_digest` between them determine WHAT IS COVERED, so a change
+#: here changes what the digest means. The module that defines coverage was the one
+#: thing coverage did not include. There is no circularity: the digest reads bytes
+#: off disk, it does not depend on its own value.
+NOT_DECISION_LOGIC = frozenset()
 
 _SEARCH = (HARNESS, HARNESS / "g33_fortran")
 
@@ -166,6 +171,7 @@ DECISION_LOGIC = (
     "g33_schedule_probe.py",
     "g33_schema.py",
     "g33_update_replay.py",
+    "g33_verifier_identity.py",
     "gateb_g33m_check.py",
 )
 
