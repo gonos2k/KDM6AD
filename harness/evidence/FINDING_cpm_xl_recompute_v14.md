@@ -98,18 +98,32 @@ emission point needed, since it has no reconciled substep dump.
   arguably more accurate physics and is certainly different. Changing either is
   owner adjudication and both are frozen.
 
-## A comparator gap this exposed
+## A comparator gap this exposed, and closed
 
-The gate's first divergence is reported at loop 1, column 1, `xlf` — a **warm**
+The gate first reported the divergence at loop 1, column 1, `xlf` — a **warm**
 cell (289 K) where Fortran applies the `xlf = xlf0` override at F:1517 and the
-C++ does not. All three freeze rates are zero there, so that coefficient is
-multiplied by zero and is not causal. The comparator has no branch-activity
-filter for this stage, so it named a value the arithmetic did not use — the same
-class of defect owner review §3 raised for `micro_qr_operands`.
+C++ does not. All three freeze rates are zero there, so the coefficient is
+multiplied by zero and cannot move `t`. The comparator had no branch-activity
+filter for stage records, so it named a value the arithmetic did not use — the
+same class of defect owner review §3 raised for `micro_qr_operands`.
 
-Measured: of the differing cells, loop 1 has **0** with a nonzero freeze rate,
-loops 2 and 3 have **4 each**, all in column 3. The causally meaningful first
-divergence is loop 2, column 3.
+`g33_activity` closes it. The REFERENCE defines activity (taking it from the port
+would let a port bug decide which port bugs are visible), and non-causal records
+are routed to the same diagnostics-only channel the gate-inactive op lanes
+already use — kept in the artifact, out of the verdict.
+
+The filter moves the answer, which is the check that it is not decoration:
+
+| | first divergence | diagnostics |
+|---|---|---|
+| before | `micro_freeze_heat` L1 col 1 `xlf` | — |
+| after | `micro_freeze_heat` **L2 col 3** `xlf` | 44 legacy / 43 conservative |
+
+and both variants now report the same identity. Two rules are implemented:
+`xlf`/`cpm` are read only where some freeze rate is nonzero, and a qr operand is
+read only on the arm its cell takes — with the branch recomputed from the base
+state rather than taken from the producer's own `cold_gate`, which stays visible
+precisely because it is the producer's claim.
 
 ## Also retracted here
 

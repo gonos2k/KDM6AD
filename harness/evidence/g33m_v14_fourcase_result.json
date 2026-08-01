@@ -28,27 +28,27 @@
  "attested": true,
  "conservative_first_divergence": {
   "identity": [
-   "micro_post_freeze",
+   "micro_freeze_heat",
    2,
    "-",
    0,
    3,
    0,
-   "t",
+   "xlf",
    "f32"
   ],
-  "inactive_lane_diffs": 0,
+  "inactive_lane_diffs": 43,
   "invalid": null,
   "kind": null,
-  "phase": "micro_post_freeze",
+  "phase": "micro_freeze_heat",
   "signature": {
-   "c_bits": "0x437396bb",
+   "c_bits": "0x488911e0",
    "direction": "C>F",
    "dtype": "f32",
-   "f_bits": "0x437396ba",
-   "signed_ulp_delta": 1,
-   "ulp_distance_abs": 1,
-   "xor": "0x1"
+   "f_bits": "0x488740a0",
+   "signed_ulp_delta": 119104,
+   "ulp_distance_abs": 119104,
+   "xor": "0xe5140"
   },
   "tag": null
  },
@@ -62,34 +62,34 @@
  "inputs": {
   "B": 3,
   "K": 4,
-  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v13b/cpp-bundle",
+  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v14/cpp-bundle",
   "expected_fixture_id": "arithmetic_multisubcycle_v1",
-  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v13b/fortran-conservative",
-  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v13b/fortran-legacy"
+  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v14/fortran-conservative",
+  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v14/fortran-legacy"
  },
  "legacy_first_divergence": {
   "identity": [
-   "micro_post_freeze",
+   "micro_freeze_heat",
    2,
    "-",
    0,
    3,
    0,
-   "t",
+   "xlf",
    "f32"
   ],
-  "inactive_lane_diffs": 0,
+  "inactive_lane_diffs": 44,
   "invalid": null,
   "kind": null,
-  "phase": "micro_post_freeze",
+  "phase": "micro_freeze_heat",
   "signature": {
-   "c_bits": "0x437396bb",
+   "c_bits": "0x488911e0",
    "direction": "C>F",
    "dtype": "f32",
-   "f_bits": "0x437396ba",
-   "signed_ulp_delta": 1,
-   "ulp_distance_abs": 1,
-   "xor": "0x1"
+   "f_bits": "0x488740a0",
+   "signed_ulp_delta": 119104,
+   "ulp_distance_abs": 119104,
+   "xor": "0xe5140"
   },
   "tag": null
  },
@@ -103,19 +103,19 @@
   "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
  },
  "provenance": {
-  "cpp_root_manifest_sha256": "5fa926ce6da2098f24a91dd561bb4f8e25005be2ad5c513ca03224ed278c28fc",
-  "decision_protocol_version": 13,
+  "cpp_root_manifest_sha256": "f323a7f9c4c612b9094a73de2d0ada6b5291a3b58cbae6142b3f7b12daca5270",
+  "decision_protocol_version": 14,
   "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-  "fortran_conservative_manifest_sha256": "3ac0f69cd058a5514e65a3a5a1ae42ee2b86c2616c6b5b86223e0c918c950666",
-  "fortran_legacy_manifest_sha256": "6a29d5dfb22597adabf667e84aa3ed99f0a2bbe9673fdb2fbf35df8f78fb19c2",
+  "fortran_conservative_manifest_sha256": "bf5f46965cde5c3ab8541211576f6d11ba43912ad0a9673f2da69d69c768869b",
+  "fortran_legacy_manifest_sha256": "ddc65e280bc0beb8dc32c8d1ca9b42a53dada375c2eca8279602104a51f26012",
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
-  "note": "SHAs are the authority; `inputs` paths are local and informational.",
-  "producer_commit": "1b09d24f58a086855c5228eeedbd10ddbd6b1496",
+  "note": "SHAs are the authority; `inputs` paths are local and informational. Produced with the branch-activity filter: records the reference's arithmetic does not read at a cell are diagnostics, not candidates for first divergence (see inactive_lane_diffs).",
+  "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
   "result_schema_version": 1,
-  "verifier_commit": "1b09d24f58a086855c5228eeedbd10ddbd6b1496",
-  "verifier_tree_dirty": false
+  "verifier_commit": "9c0cbed6e645def93472520040e2a89324ca7f21",
+  "verifier_tree_dirty": true
  },
- "reason": "legacy first-diverges at micro_post_freeze ('micro_post_freeze', 2, '-', 0, 3, 0, 't', 'f32') \u2014 the post-D1-melt state matched, so the difference is in what runs between: the post-melt re-slope, the D2-D4 freeze, or the post-freeze re-slope. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+ "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
  "scope": {
   "mstep_range": {
    "conservative": [
@@ -130,10 +130,9 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Superseded by resolution: v13's first divergence (micro_post_freeze.t) is still true, and v14 shows the operand behind it \u2014 the xlf/cpm coefficient, with all three freeze rates bit-identical.",
-  "status": "superseded",
-  "superseded_by": "g33m_v14_fourcase_result.json",
-  "valid_for_decision": false,
+  "status": "current",
+  "superseded_by": null,
+  "valid_for_decision": true,
   "withdrawal_reason": null
  },
  "verdict": "INCONCLUSIVE"

@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_activity as activity     # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
 import g33_mechanism as mech         # noqa: E402
 import g33_replay as replay          # noqa: E402
@@ -527,8 +528,16 @@ def compare_pair(f_run, c_run) -> Divergence:
     if disagreements:
         cutoff, cut_ev, cut_other = min(disagreements, key=lambda t: t[0])
 
+    # Stage records the REFERENCE's arithmetic does not read at that cell. Same
+    # treatment as a gate-inactive op lane: out of the verdict, into diagnostics.
+    # The v14 gate named `xlf` at a 289 K cell with all three freeze rates zero —
+    # a coefficient multiplied by zero — as its first divergence.
+    noncausal = activity.noncausal_stage_records(f_run)
+
     def _in_scope(e):
         if cutoff is not None and e.order >= cutoff:
+            return False
+        if e.identity in noncausal:
             return False
         if e.phase != "op":
             return True
@@ -546,7 +555,9 @@ def compare_pair(f_run, c_run) -> Divergence:
     # not carry that inactive identity at all (its producer emits active lanes only),
     # and the comparator must not raise on a shape it is designed to tolerate.
     inactive = [e.identity for e in fe
-                if e.phase == "op" and not f_active.get(_lane_of(e.identity), True)
+                if (e.identity in noncausal
+                    or (e.phase == "op"
+                        and not f_active.get(_lane_of(e.identity), True)))
                 and (o := cmap.get(e.identity)) is not None and e.bits != o.bits
                 ] if not cutoff else []
     for e in f_scope:                                  # canonical interleaved order

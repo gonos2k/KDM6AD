@@ -1,8 +1,13 @@
 {
  "index_schema_version": 1,
- "current_decision_result": "g33m_v13_fourcase_result.json",
- "decision_protocol_version": 13,
+ "current_decision_result": "g33m_v14_fourcase_result.json",
+ "decision_protocol_version": 14,
  "superseded": [
+  {
+   "file": "g33m_v13_fourcase_result.json",
+   "status": "superseded",
+   "protocol_version": 13
+  },
   {
    "file": "g33m_v12_fourcase_result.json",
    "status": "superseded",
