@@ -556,7 +556,11 @@ def compare_pair(f_run, c_run) -> Divergence:
     # treatment as a gate-inactive op lane: out of the verdict, into diagnostics.
     # The v14 gate named `xlf` at a 289 K cell with all three freeze rates zero —
     # a coefficient multiplied by zero — as its first divergence.
-    noncausal = activity.noncausal_stage_records(f_run)
+    # Both runs: the freeze coefficients are judged by an exact counterfactual
+    # (does the OTHER backend's coefficient change the stored t?) rather than by
+    # whether a rate happens to be nonzero. The reference still supplies the base
+    # and the rates.
+    noncausal = activity.noncausal_stage_records(f_run, c_run)
 
     def _in_scope(e):
         if cutoff is not None and e.order >= cutoff:

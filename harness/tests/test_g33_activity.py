@@ -125,3 +125,52 @@ def test_the_identity_shape_matches_the_comparators():
     assert ids
     for i in ids:
         assert len(i) == 8 and i[2] == "-" and i[3] == 0
+
+
+# ── the EXACT counterfactual (owner review §8) ───────────────────────────────
+#
+# "is some rate nonzero" is a proxy. The question is whether the coefficient
+# difference survives the three f32 stores, and a nonzero rate can be far too
+# small for that. These exercise the two-run path; the tests above exercise the
+# one-run fallback, which excludes strictly less.
+
+def _pair(rate, xlf_f=3.34e5, xlf_c=3.34e5):
+    f = _run(freeze_rates=(0.0, 0.0, rate))
+    c = _run(freeze_rates=(0.0, 0.0, rate))
+    for st in c["stages"]:
+        if st["stage"] == "micro_freeze_heat" and st["field"] == "xlf":
+            st["bits"] = rp.bits32(xlf_c)
+    for st in f["stages"]:
+        if st["stage"] == "micro_freeze_heat" and st["field"] == "xlf":
+            st["bits"] = rp.bits32(xlf_f)
+    return f, c
+
+
+def _co(f, c):
+    return {i[6] for i in act.noncausal_stage_records(f, c)}
+
+
+def test_a_coefficient_that_moves_t_is_CAUSAL():
+    f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)     # big enough to tip the store
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_a_NONZERO_rate_too_small_to_move_t_is_NOT_causal():
+    """The case the any-rate-nonzero proxy gets wrong: the formula reads the
+    coefficient, but no difference in it survives the rounding, so it cannot be the
+    load-bearing operand of this divergence."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    assert {"xlf", "cpm"} <= _co(f, c)
+    # ...and the weaker one-run rule keeps it, which is why the pair matters
+    assert not ({"xlf", "cpm"} & _ids(f))
+
+
+def test_identical_coefficients_are_never_causal():
+    f, c = _pair(rate=1.0e-3)                    # same xlf on both sides
+    assert {"xlf", "cpm"} <= _co(f, c)
+
+
+def test_a_missing_counterpart_falls_back_and_excludes_LESS():
+    f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)
+    c["stages"] = [s for s in c["stages"] if s["stage"] != "micro_freeze_heat"]
+    assert not ({"xlf", "cpm"} & _co(f, c)), "fallback must not start hiding things"

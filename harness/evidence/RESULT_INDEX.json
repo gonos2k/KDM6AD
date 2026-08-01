@@ -1,13 +1,8 @@
 {
  "index_schema_version": 1,
- "current_decision_result": null,
+ "current_decision_result": "g33m_v14_fourcase_result.json",
  "decision_protocol_version": 14,
  "superseded": [
-  {
-   "file": "g33m_v14_fourcase_result.json",
-   "status": "withdrawn",
-   "protocol_version": 14
-  },
   {
    "file": "g33m_v13_fourcase_result.json",
    "status": "superseded",
@@ -44,5 +39,5 @@
    "protocol_version": 5
   }
  ],
- "note": "EXACTLY ONE result is decision-valid at a time. A reader that takes `attested: true` as decision validity would have read a withdrawn conclusion as evidence; `attested` is about the BUNDLES, and `supersession.valid_for_decision` is about the CONCLUSION. v9/v10 were MOVED to historical/withdrawn/ because nothing references them; the dt300 pair stays in place because two tests pin those paths. Location is secondary \u2014 the machine-readable field is the contract, and this index is the authority for which single result is current. NO current decision result at present: the v14 artifact was withdrawn for having been produced from a dirty verifier tree, and clean regeneration is pending."
+ "note": "EXACTLY ONE result is decision-valid at a time. A reader that takes `attested: true` as decision validity would have read a withdrawn conclusion as evidence; `attested` is about the BUNDLES, and `supersession.valid_for_decision` is about the CONCLUSION. v9/v10 were MOVED to historical/withdrawn/ because nothing references them; the dt300 pair stays in place because two tests pin those paths. Location is secondary \u2014 the machine-readable field is the contract, and this index is the authority for which single result is current."
 }
