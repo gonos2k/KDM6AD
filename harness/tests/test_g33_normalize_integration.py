@@ -44,7 +44,11 @@ def test_real_run_shared_rung_mutation_first_diverges_there():
                   and o["field"] == "mul_work1")
     d = cmp.compare_pair(NORM, mut)
     assert d.phase == "op" and d.tag == "FALK/mul_work1" and d.kind == cmp.mech.SHARED
-    assert d.signature and "ulp_delta" in d.signature
+    # BOTH names, so neither can be read as the other: signed_ulp_delta is
+    # ordered(C) - ordered(F); ulp_distance_abs is its magnitude.
+    assert d.signature
+    assert {"signed_ulp_delta", "ulp_distance_abs", "direction"} <= set(d.signature)
+    assert d.signature["ulp_distance_abs"] == abs(d.signature["signed_ulp_delta"])
 
 
 def test_real_run_projects_prec_to_cumulative_outputs():

@@ -275,6 +275,18 @@ _STAGE_FIELDS_BASE = {
 # would surface as a sealed-descriptor container mismatch with no hint of the cause.
 _STAGE_FIELDS_BASE["micro_post_state_update"] = list(
     _STAGE_FIELDS_BASE["outer_post_micro"])
+# The exact state_update base: the same twelve, at the other end of the update.
+_STAGE_FIELDS_BASE["micro_pre_state_update"] = list(
+    _STAGE_FIELDS_BASE["outer_post_micro"])
+# The melt-freeze bisection: the same twelve again, at the two reconciled dumps.
+for _s in ("micro_post_melt", "micro_post_freeze"):
+    _STAGE_FIELDS_BASE[_s] = list(_STAGE_FIELDS_BASE["outer_post_micro"])
+# The freeze heat operands. The three rates are f64 — the reference declares
+# them `double precision`, and comparing at that width is the point.
+_STAGE_FIELDS_BASE["micro_freeze_heat"] = [
+    ("t_pre_freeze", "f32", "BK"), ("xlf", "f32", "BK"), ("cpm", "f32", "BK"),
+    ("phom", "f32", "BK"), ("pinuc", "f64", "BK"),
+    ("pfrzdtc", "f64", "BK"), ("pfrzdtr", "f64", "BK")]
 
 # The qr update operands, in the order both producers emit them. This module is
 # the authority (g33_schema imports it, not the reverse), so the list is spelled
@@ -448,7 +460,13 @@ def expected_records(schedule: dict) -> list[dict]:
         # :1340 (end of the sed substep loop) -> :1509 (after ProgB_param). Emitting it
         # first here made the expected record sequence disagree with the actual one at
         # op_seq 293, which the sealed-descriptor check reported as a container mismatch.
+        emit("micro_post_melt", _stage_fields("micro_post_melt", backend),
+             outer_loop=loop, shape=[B, K])
+        emit("micro_freeze_heat", _stage_fields("micro_freeze_heat", backend),
+             outer_loop=loop, shape=[B, K])
         emit("micro_call_progb_aux", _stage_fields("micro_call_progb_aux", backend),
+             outer_loop=loop, shape=[B, K])
+        emit("micro_post_freeze", _stage_fields("micro_post_freeze", backend),
              outer_loop=loop, shape=[B, K])
         # BETWEEN the ProgB bundle and the post-micro bridge, because that is where the
         # producers emit it: C++ on the same line as the `poststateupdate` substep dump
@@ -456,7 +474,9 @@ def expected_records(schedule: dict) -> list[dict]:
         # sixth ProgB_param call at :3032. Getting this order wrong does not read as an
         # ordering bug — op_seq is a measured counter, so a misplaced stage shifts every
         # window after it and surfaces as a sealed-descriptor container mismatch.
-        # the qr update operands come BEFORE the state they produce
+        # base, then operands, then the state they produce
+        emit("micro_pre_state_update", _stage_fields("micro_pre_state_update", backend),
+             outer_loop=loop, shape=[B, K])
         emit("micro_qr_operands", _stage_fields("micro_qr_operands", backend),
              outer_loop=loop, shape=[B, K])
         emit("micro_post_state_update", _stage_fields("micro_post_state_update", backend),
@@ -519,7 +539,10 @@ def expected_records(schedule: dict) -> list[dict]:
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
 CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
                       "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
-                      "micro_qr_operands", "micro_post_state_update",
+                      "micro_post_melt", "micro_freeze_heat",
+                      "micro_post_freeze",
+                      "micro_pre_state_update", "micro_qr_operands",
+                      "micro_post_state_update",
                       "surface", "outer_post_sed", "outer_post_micro")
 
 
@@ -554,6 +577,10 @@ def container_id(rec: dict) -> str:
                 "outer_pre_sed": "outer_pre", "surface": "surface",
                 "outer_post_sed": "outer_post_sed",
                 "micro_call_progb_aux": "micro_call_progb_aux",
+                "micro_post_melt": "micro_post_melt",
+                "micro_freeze_heat": "micro_freeze_heat",
+                "micro_post_freeze": "micro_post_freeze",
+                "micro_pre_state_update": "micro_pre_state_update",
                 "micro_qr_operands": "micro_qr_operands",
                 "micro_post_state_update": "micro_post_state_update",
                 "outer_post_micro": "outer_post_micro"}.get(rec["stage"])

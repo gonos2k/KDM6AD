@@ -28,26 +28,26 @@
  "attested": true,
  "conservative_first_divergence": {
   "identity": [
-   "micro_qr_operands",
+   "outer_post_micro",
    2,
    "-",
    0,
    3,
    0,
-   "prevp",
+   "qr",
    "f32"
   ],
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_qr_operands",
+  "phase": "outer_post_micro",
   "signature": {
-   "c_bits": "0xa985531c",
+   "c_bits": "0x31974463",
    "direction": "C<F",
    "dtype": "f32",
-   "f_bits": "0xa9854a33",
-   "ulp_delta": -2281,
-   "xor": "0x192f"
+   "f_bits": "0x31974466",
+   "ulp_delta": -3,
+   "xor": "0x5"
   },
   "tag": null
  },
@@ -61,33 +61,33 @@
  "inputs": {
   "B": 3,
   "K": 4,
-  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v11/cpp-bundle",
+  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v9b/cpp-bundle",
   "expected_fixture_id": "arithmetic_multisubcycle_v1",
-  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v11/fortran-conservative",
-  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v11/fortran-legacy"
+  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v9b/fortran-conservative",
+  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v9b/fortran-legacy"
  },
  "legacy_first_divergence": {
   "identity": [
-   "micro_qr_operands",
+   "outer_post_micro",
    2,
    "-",
    0,
    3,
    0,
-   "prevp",
+   "qr",
    "f32"
   ],
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_qr_operands",
+  "phase": "outer_post_micro",
   "signature": {
-   "c_bits": "0xa985531c",
+   "c_bits": "0x31974463",
    "direction": "C<F",
    "dtype": "f32",
-   "f_bits": "0xa9854a33",
-   "ulp_delta": -2281,
-   "xor": "0x192f"
+   "f_bits": "0x31974466",
+   "ulp_delta": -3,
+   "xor": "0x5"
   },
   "tag": null
  },
@@ -100,7 +100,7 @@
   "local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
   "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
  },
- "reason": "legacy first-diverges at micro_qr_operands ('micro_qr_operands', 2, '-', 0, 3, 0, 'prevp', 'f32') \u2014 an OPERAND of the qr update line differs while the state entering the microphysics and the ProgB bundle matched, so the difference is in the rate that produced it, not in the update arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+ "reason": "legacy first-diverges at outer_post_micro ('outer_post_micro', 2, '-', 0, 3, 0, 'qr', 'f32') \u2014 the recorded sedimentation OUTPUT matched, so this is the first OBSERVED difference. Whether it ORIGINATED here is a separate question: micro_call_progb_aux carries the ProgB bundle the microphysics also consumes, so read that stage before attributing. Attribution is owner adjudication",
  "scope": {
   "mstep_range": {
    "conservative": [
@@ -115,9 +115,9 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Superseded by resolution, not corrected: `prevp` really was the first divergence among the stages that existed at v11. v12 added micro_pre_state_update, the base state_update reads, which sorts earlier and differs \u2014 in `t`, by one ULP.",
+  "note": "Not withdrawn as false: at protocol v9's resolution the first divergence WAS outer_post_micro. v10 and v11 added instrumentation between micro_call_progb_aux and outer_post_micro, which moved the first divergence upstream. Superseded by resolution, not corrected.",
   "status": "superseded",
-  "superseded_by": "g33m_v12_fourcase_result.json",
+  "superseded_by": "g33m_v11_fourcase_result.json",
   "valid_for_decision": false,
   "withdrawal_reason": null
  },

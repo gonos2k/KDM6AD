@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import g33_activity as activity     # noqa: E402
 import g33_evidence_validate as gev  # noqa: E402
 import g33_mechanism as mech         # noqa: E402
 import g33_replay as replay          # noqa: E402
@@ -68,17 +69,22 @@ _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
            "final_output",
-           "outer_post_sed", "micro_call_progb_aux", "micro_qr_operands",
-           "micro_post_state_update", "outer_post_micro")
+           "outer_post_sed", "micro_post_melt", "micro_freeze_heat",
+           "micro_call_progb_aux",
+           "micro_post_freeze", "micro_pre_state_update",
+           "micro_qr_operands", "micro_post_state_update",
+           "outer_post_micro")
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
 _STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
                 "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
                 "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_call_progb_aux": 7, "micro_qr_operands": 8,
-                "micro_post_state_update": 9,
-                "outer_post_micro": 10, "final_output": 11}
+                "micro_post_melt": 7, "micro_freeze_heat": 8,
+                "micro_call_progb_aux": 9, "micro_post_freeze": 10,
+                "micro_pre_state_update": 11, "micro_qr_operands": 12,
+                "micro_post_state_update": 13,
+                "outer_post_micro": 14, "final_output": 15}
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so
@@ -438,13 +444,22 @@ def _mono(bits, w):
 
 
 def _signature(dt, f_bits, c_bits):
-    """Raw-bit divergence signature for the result — direction + ULP distance."""
+    """Raw-bit divergence signature for the result — direction + ULP distance.
+
+    The magnitude is emitted TWICE, under names that say which is which. A single
+    `ulp_delta` was read as a distance in one place and as a signed difference in
+    another — the artifact carried -2281 while a finding table wrote it as +2281
+    with a bare delta sign, and nothing in either said which convention applied.
+    A quantity whose sign a reader has to infer is a quantity whose sign gets
+    inferred wrong.
+    """
     sig = {"dtype": dt, "f_bits": f"{f_bits:#x}", "c_bits": f"{c_bits:#x}",
            "xor": f"{f_bits ^ c_bits:#x}"}
     w = {"f32": 32, "f64": 64}.get(dt)        # ULP ordering is float-only
     if w:
         ulp = _mono(c_bits, w) - _mono(f_bits, w)
-        sig["ulp_delta"] = ulp
+        sig["signed_ulp_delta"] = ulp          # ordered(C) - ordered(F)
+        sig["ulp_distance_abs"] = abs(ulp)
         sig["direction"] = "C>F" if ulp > 0 else ("C<F" if ulp < 0 else "equal")
     return sig
 
@@ -513,8 +528,16 @@ def compare_pair(f_run, c_run) -> Divergence:
     if disagreements:
         cutoff, cut_ev, cut_other = min(disagreements, key=lambda t: t[0])
 
+    # Stage records the REFERENCE's arithmetic does not read at that cell. Same
+    # treatment as a gate-inactive op lane: out of the verdict, into diagnostics.
+    # The v14 gate named `xlf` at a 289 K cell with all three freeze rates zero —
+    # a coefficient multiplied by zero — as its first divergence.
+    noncausal = activity.noncausal_stage_records(f_run)
+
     def _in_scope(e):
         if cutoff is not None and e.order >= cutoff:
+            return False
+        if e.identity in noncausal:
             return False
         if e.phase != "op":
             return True
@@ -532,7 +555,9 @@ def compare_pair(f_run, c_run) -> Divergence:
     # not carry that inactive identity at all (its producer emits active lanes only),
     # and the comparator must not raise on a shape it is designed to tolerate.
     inactive = [e.identity for e in fe
-                if e.phase == "op" and not f_active.get(_lane_of(e.identity), True)
+                if (e.identity in noncausal
+                    or (e.phase == "op"
+                        and not f_active.get(_lane_of(e.identity), True)))
                 and (o := cmap.get(e.identity)) is not None and e.bits != o.bits
                 ] if not cutoff else []
     for e in f_scope:                                  # canonical interleaved order
@@ -658,6 +683,50 @@ def classify(legacy: Divergence, conservative: Divergence):
                 f"produced it, not in the update arithmetic. This is NOT a statement "
                 f"about conservative-only interface arithmetic; attribution is owner "
                 f"adjudication")
+        # THE FREEZE HEAT OPERANDS. Reached when the post-melt state matched but
+        # an operand of the three t-stores did not — so the difference is in
+        # whichever rate produced it, upstream of the heat arithmetic.
+        if d.phase == "micro_freeze_heat":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — an OPERAND of "
+                f"the D2-D4 freeze heat term differs while the post-D1-melt state "
+                f"matched, so the difference is in the rate or coefficient that "
+                f"produced it, not in the t-store arithmetic. This is NOT a "
+                f"statement about conservative-only interface arithmetic; "
+                f"attribution is owner adjudication")
+        # THE MELT-FREEZE CHAIN, split. v12 showed the seed is one field of the
+        # update base (t, one ULP) acquired somewhere between outer_post_sed and
+        # that base. These two snapshots say which half.
+        if d.phase == "micro_post_freeze":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the post-D1-melt "
+                f"state matched, so the difference is in what runs between: the "
+                f"post-melt re-slope, the D2-D4 freeze, or the post-freeze re-slope. "
+                f"This is NOT a statement about conservative-only interface "
+                f"arithmetic; attribution is owner adjudication")
+        if d.phase == "micro_post_melt":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the sedimentation "
+                f"result matched and the state differs by the end of the D1 melt loop, "
+                f"so the difference is in D1 melt or the homogeneous freeze that shares "
+                f"it. This is NOT a statement about conservative-only interface "
+                f"arithmetic; attribution is owner adjudication")
+        # THE UPDATE BASE. Reached when the ProgB bundle matched but the state
+        # state_update actually reads did not. That state is NOT outer_post_sed's:
+        # D1 melt, homogeneous freeze, both re-slopes and the rate blocks run in
+        # between. A difference here means the qr update line cannot be replayed
+        # from equal inputs, whatever the rate operands do downstream — so it is
+        # reported ahead of them rather than as one more differing quantity.
+        if d.phase == "micro_pre_state_update":
+            return "INCONCLUSIVE", (
+                f"{name} first-diverges at {d.phase} {d.identity} — the BASE state "
+                f"state_update reads differs, while the ProgB bundle and the "
+                f"sedimentation result matched. What runs between them is D1 melt, "
+                f"homogeneous freeze, the post-melt re-slope, D2-D4 freeze and the "
+                f"post-freeze re-slope, and the difference is in one of those. The "
+                f"rate operands downstream cannot be read as the cause while their "
+                f"base differs. This is NOT a statement about conservative-only "
+                f"interface arithmetic; attribution is owner adjudication")
         if d.phase == "micro_call_progb_aux":
             return "INCONCLUSIVE", (
                 f"{name} first-diverges at {d.phase} {d.identity} — the ProgB auxiliary "

@@ -801,6 +801,31 @@ CoordinatorState kdm62d_one_step(
     // entry→postfreeze qs/qr/nr divergence into D1-melt (psmlt/pgmlt) vs D2-D4-freeze.
     if (kdm6_dump_on) kdm6_dump_state_substep(working1, "postmelt");
 #endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE MELT-FREEZE BISECTION, first half. v12 put the seed in ONE field of
+        // the update base -- t, one ULP -- and t matches at outer_post_sed, so it is
+        // acquired somewhere in this chain. Same line as the reconciled `postmelt`
+        // dump above; the Fortran side records at the end of the melt do-loop, where
+        // its own fort_substep_postmelt is written.
+        coord_g33ovl::Outer g33("micro_post_melt", coord_g33ovl::flip_k(working1.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_melt", "qr",    coord_g33ovl::flip_k(working1.qr));
+            G33_REC(g33, "micro_post_melt", "nr",    coord_g33ovl::flip_k(working1.nr));
+            G33_REC(g33, "micro_post_melt", "qv",    coord_g33ovl::flip_k(working1.qv));
+            G33_REC(g33, "micro_post_melt", "t",     coord_g33ovl::flip_k(working1.t));
+            G33_REC(g33, "micro_post_melt", "qc",    coord_g33ovl::flip_k(working1.qc));
+            G33_REC(g33, "micro_post_melt", "qi",    coord_g33ovl::flip_k(working1.qi));
+            G33_REC(g33, "micro_post_melt", "qs",    coord_g33ovl::flip_k(working1.qs));
+            G33_REC(g33, "micro_post_melt", "qg",    coord_g33ovl::flip_k(working1.qg));
+            G33_REC(g33, "micro_post_melt", "nc",    coord_g33ovl::flip_k(working1.nc));
+            G33_REC(g33, "micro_post_melt", "ni",    coord_g33ovl::flip_k(working1.ni));
+            G33_REC(g33, "micro_post_melt", "nccn",  coord_g33ovl::flip_k(working1.nccn));
+            G33_REC(g33, "micro_post_melt", "brs",   coord_g33ovl::flip_k(working1.brs));
+        }
+        g33.finalize();
+    }
+#endif
 
     // 1b. Homogeneous freeze (Fortran :1410-1420): at supcol>40 (T<-40°C) freeze
     // ALL cloud water → ice (qi+=qc, ni+=nc, t+=xlf/cpm·qc, qc=nc=0). Runs BETWEEN
@@ -970,6 +995,53 @@ CoordinatorState kdm62d_one_step(
 #endif
     auto working = apply_melt_freeze_inline(
         working1b, mf_d234, pre_core, dtcld, full_params.thermo.xls);
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE FREEZE HEAT TERM's operands (v14), at the D2-D4 CALL SITE.
+        //
+        // apply_melt_freeze_inline is called TWICE — once for D1 melt (working1)
+        // and once for the D2-D4 freeze (working) — so an emission inside it fires
+        // twice per outer loop and the container's sealed descriptor rejects the
+        // stream. Here the seven operands are all arguments to the freeze call, so
+        // no internal is needed and the instant is unambiguous.
+        //
+        // This point has no reconciled substep dump, so test_g33_overlay_mirror_sites
+        // does not apply. The check on the correspondence is the per-leg REPLAY:
+        //     t4 = f32(f32(f32(t_pre + c*pinuc) + c*pfrzdtc) + c*pfrzdtr)
+        // must reproduce micro_post_freeze.t on THIS backend. If working1b.t is not
+        // the Fortran's t at the head of the freeze loop (F:1517), it will not.
+        //
+        // The three rates go out at f64: the reference declares them
+        // `double precision` (F:758, F:781-782). That is to MEASURE whether they
+        // differ — the rate width is NOT a candidate mechanism for the observed
+        // 1-ULP t, which test_the_rate_precision_CANNOT_move_t_at_physical_magnitudes
+        // establishes arithmetically.
+        //
+        // phom is ZERO here: Fortran's homogeneous freeze (F:1529, T<-40C) adds a
+        // fourth term its chain has and this one does not. The replay REQUIRES zero,
+        // so a fixture reaching -40C stops rather than comparing two chains.
+        auto g33_dt = working1b.qr.scalar_type();
+        coord_g33ovl::Outer g33("micro_freeze_heat",
+                                coord_g33ovl::flip_k(working1b.t.to(g33_dt)));
+        if (g33.on()) {
+            G33_REC(g33, "micro_freeze_heat", "t_pre_freeze",
+                    coord_g33ovl::flip_k(working1b.t.to(g33_dt)));
+            G33_REC(g33, "micro_freeze_heat", "xlf",
+                    coord_g33ovl::flip_k((full_params.thermo.xls - pre_core.xl).to(g33_dt)));
+            G33_REC(g33, "micro_freeze_heat", "cpm",
+                    coord_g33ovl::flip_k(pre_core.cpm.to(g33_dt)));
+            G33_REC(g33, "micro_freeze_heat", "phom",
+                    coord_g33ovl::flip_k(torch::zeros_like(pre_core.cpm.to(g33_dt))));
+            G33_REC(g33, "micro_freeze_heat", "pinuc",
+                    coord_g33ovl::flip_k(mf_d234.pinuc.to(torch::kFloat64)));
+            G33_REC(g33, "micro_freeze_heat", "pfrzdtc",
+                    coord_g33ovl::flip_k(mf_d234.pfrzdtc.to(torch::kFloat64)));
+            G33_REC(g33, "micro_freeze_heat", "pfrzdtr",
+                    coord_g33ovl::flip_k(mf_d234.pfrzdtr.to(torch::kFloat64)));
+        }
+        g33.finalize();
+    }
+#endif
 
     // 4. rebuild on the post-freeze state (re-slope :1596-1683; the prior STEP-2
     // rebuild). qcr carried; entry `pre` supplies the substep-top thermo (qs/xl/rh/
@@ -1038,6 +1110,38 @@ CoordinatorState kdm62d_one_step(
     working.brs = pre2.progb.bg;  // §53 (site #3): progb keep-semantics, no outer re-gate (F:3567/3578)
 #ifdef KDM6_SUBSTEP_DUMP
     if (kdm6_dump_on) kdm6_dump_state_substep(working, "postfreeze");
+#endif
+#ifdef KDM6_G33_OP_DUMP
+    {
+        // THE MELT-FREEZE BISECTION, second half: the post-freeze STATE, as opposed to
+        // the ProgB auxiliary recorded earlier. micro_call_progb_aux matching says
+        // nothing about t -- it carries the 19 ProgB fields, not the state -- so without
+        // this the whole melt-freeze chain stays one interval.
+        //
+        // ON THIS LINE, not before the brs re-clamp above. The first placement sat 25
+        // lines earlier, ahead of `working.brs = pre2.progb.bg`, and reported brs as
+        // 8.8% divergent at every level of column 3 -- a difference that then healed
+        // completely by the next stage, because the Fortran side records after
+        // ProgB_param has already rewritten brs in place. The comment claimed the
+        // reconciled dump and the code sat somewhere else; test_g33_overlay_mirror_sites
+        // now checks the claim.
+        coord_g33ovl::Outer g33("micro_post_freeze", coord_g33ovl::flip_k(working.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_post_freeze", "qr",    coord_g33ovl::flip_k(working.qr));
+            G33_REC(g33, "micro_post_freeze", "nr",    coord_g33ovl::flip_k(working.nr));
+            G33_REC(g33, "micro_post_freeze", "qv",    coord_g33ovl::flip_k(working.qv));
+            G33_REC(g33, "micro_post_freeze", "t",     coord_g33ovl::flip_k(working.t));
+            G33_REC(g33, "micro_post_freeze", "qc",    coord_g33ovl::flip_k(working.qc));
+            G33_REC(g33, "micro_post_freeze", "qi",    coord_g33ovl::flip_k(working.qi));
+            G33_REC(g33, "micro_post_freeze", "qs",    coord_g33ovl::flip_k(working.qs));
+            G33_REC(g33, "micro_post_freeze", "qg",    coord_g33ovl::flip_k(working.qg));
+            G33_REC(g33, "micro_post_freeze", "nc",    coord_g33ovl::flip_k(working.nc));
+            G33_REC(g33, "micro_post_freeze", "ni",    coord_g33ovl::flip_k(working.ni));
+            G33_REC(g33, "micro_post_freeze", "nccn",  coord_g33ovl::flip_k(working.nccn));
+            G33_REC(g33, "micro_post_freeze", "brs",   coord_g33ovl::flip_k(working.brs));
+        }
+        g33.finalize();
+    }
 #endif
     // SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): same cloud
     // lamda-snap back-mutation, here BEFORE the warm rate loop. The rewritten
@@ -1272,6 +1376,35 @@ CoordinatorState kdm62d_one_step(
     if (kdm6_dump_on) kdm6_dump_state_substep(working, "prestate");
 #endif
 #ifdef KDM6_G33_OP_DUMP
+    {
+        // THE EXACT BASE state_update READS (owner review §2). micro_qr_operands
+        // seals the RATE operands and nothing else; its note claimed the base was
+        // already compared because the incoming qr comes from outer_post_sed, which
+        // it does not — melt, freeze, two re-slopes, the rate blocks and the
+        // conservation scaling all run in between. Without this the update line
+        // cannot be replayed, only reasoned about.
+        //
+        // Same line as the `prestate` substep dump above, which already calls itself
+        // "the EXACT state_update base"; the Fortran side records before the F:2638
+        // branch, where the state is unmodified through either arm's update.
+        coord_g33ovl::Outer g33("micro_pre_state_update",
+                                coord_g33ovl::flip_k(working.qr));
+        if (g33.on()) {
+            G33_REC(g33, "micro_pre_state_update", "qr",   coord_g33ovl::flip_k(working.qr));
+            G33_REC(g33, "micro_pre_state_update", "nr",   coord_g33ovl::flip_k(working.nr));
+            G33_REC(g33, "micro_pre_state_update", "qv",   coord_g33ovl::flip_k(working.qv));
+            G33_REC(g33, "micro_pre_state_update", "t",    coord_g33ovl::flip_k(working.t));
+            G33_REC(g33, "micro_pre_state_update", "qc",   coord_g33ovl::flip_k(working.qc));
+            G33_REC(g33, "micro_pre_state_update", "qi",   coord_g33ovl::flip_k(working.qi));
+            G33_REC(g33, "micro_pre_state_update", "qs",   coord_g33ovl::flip_k(working.qs));
+            G33_REC(g33, "micro_pre_state_update", "qg",   coord_g33ovl::flip_k(working.qg));
+            G33_REC(g33, "micro_pre_state_update", "nc",   coord_g33ovl::flip_k(working.nc));
+            G33_REC(g33, "micro_pre_state_update", "ni",   coord_g33ovl::flip_k(working.ni));
+            G33_REC(g33, "micro_pre_state_update", "nccn", coord_g33ovl::flip_k(working.nccn));
+            G33_REC(g33, "micro_pre_state_update", "brs",  coord_g33ovl::flip_k(working.brs));
+        }
+        g33.finalize();
+    }
     {
         // THE OPERANDS OF THE qr UPDATE LINE, at the call that consumes them — a
         // CLOSED set for that line. Everything else it reads is already compared

@@ -1,201 +1,208 @@
 {
-  "attestation": {
-    "conservative_cpp": {
-      "external_manifest": true,
-      "fixture": true,
-      "source_commit": true,
-      "verdict_ready": true
-    },
-    "conservative_fortran": {
-      "external_manifest": true,
-      "fixture": true,
-      "source_commit": true,
-      "verdict_ready": true
-    },
-    "legacy_cpp": {
-      "external_manifest": true,
-      "fixture": true,
-      "source_commit": true,
-      "verdict_ready": true
-    },
-    "legacy_fortran": {
-      "external_manifest": true,
-      "fixture": true,
-      "source_commit": true,
-      "verdict_ready": true
-    }
+ "attestation": {
+  "conservative_cpp": {
+   "external_manifest": true,
+   "fixture": true,
+   "source_commit": true,
+   "verdict_ready": true
   },
-  "attested": true,
-  "carry_proof": {
-    "conservative": {
-      "L1->L2": {
-        "identical": true,
-        "post_micro_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "pre_sed_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "records": 0
-      },
-      "L2->L3": {
-        "identical": true,
-        "post_micro_digest": "6d2e1cbb557463d9775f429a64a370d1da1563a5a63a3ca1cc0e9a0654d470d1",
-        "pre_sed_digest": "6d2e1cbb557463d9775f429a64a370d1da1563a5a63a3ca1cc0e9a0654d470d1",
-        "records": 20
-      }
-    },
-    "legacy": {
-      "L1->L2": {
-        "identical": true,
-        "post_micro_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "pre_sed_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "records": 0
-      },
-      "L2->L3": {
-        "identical": true,
-        "post_micro_digest": "7664384756ae6b2a2798abc0122d5fe326f061a23b000d118768bdecf2dc71fb",
-        "pre_sed_digest": "7664384756ae6b2a2798abc0122d5fe326f061a23b000d118768bdecf2dc71fb",
-        "records": 24
-      }
-    }
+  "conservative_fortran": {
+   "external_manifest": true,
+   "fixture": true,
+   "source_commit": true,
+   "verdict_ready": true
   },
-  "comparison_admissible": true,
-  "comparison_boundary": {
-    "conservative_cpp": "kdm62d_kernel_entry_v1",
-    "conservative_fortran": "kdm62d_kernel_entry_v1",
-    "legacy_cpp": "kdm62d_kernel_entry_v1",
-    "legacy_fortran": "kdm62d_kernel_entry_v1"
+  "legacy_cpp": {
+   "external_manifest": true,
+   "fixture": true,
+   "source_commit": true,
+   "verdict_ready": true
   },
-  "condensation_closure": {
-    "levels": [],
-    "note": "Both closures are recorded. The constant-Lv/constant-cp residual is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% larger, the same order as the residual, and at k=3 the residual CHANGES SIGN under it. The model form uses the code's own cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual under 1% of dT, straddling zero. That is a strong saturation-adjustment-CONSISTENT signature \u2014 it is still not a proof of the operator, which is unobserved.",
-    "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the returned STATE carries `th` separately, so no Exner factor is applied"
+  "legacy_fortran": {
+   "external_manifest": true,
+   "fixture": true,
+   "source_commit": true,
+   "verdict_ready": true
+  }
+ },
+ "attested": true,
+ "carry_proof": {
+  "conservative": {
+   "L1->L2": {
+    "identical": true,
+    "post_micro_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pre_sed_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "records": 0
+   },
+   "L2->L3": {
+    "identical": true,
+    "post_micro_digest": "6d2e1cbb557463d9775f429a64a370d1da1563a5a63a3ca1cc0e9a0654d470d1",
+    "pre_sed_digest": "6d2e1cbb557463d9775f429a64a370d1da1563a5a63a3ca1cc0e9a0654d470d1",
+    "records": 20
+   }
   },
-  "cpp_manifest_sha256": "7fe90b813a6353bd8d392627a09f450fe3dab6e411027b63dd48d2950c51ff64",
-  "evidence_tier": "decision",
-  "first_divergence": {
-    "conservative": {
-      "identity": [
-        "outer_post_micro",
-        2,
-        "-",
-        0,
-        3,
-        0,
-        "qr",
-        "f32"
-      ],
-      "inactive_lane_diffs": 0,
-      "invalid": null,
-      "kind": null,
-      "phase": "outer_post_micro",
-      "signature": {
-        "c_bits": "0x31974463",
-        "direction": "C<F",
-        "dtype": "f32",
-        "f_bits": "0x31974466",
-        "ulp_delta": -3,
-        "xor": "0x5"
-      },
-      "tag": null
-    },
-    "legacy": {
-      "identity": [
-        "outer_post_micro",
-        2,
-        "-",
-        0,
-        3,
-        0,
-        "qr",
-        "f32"
-      ],
-      "inactive_lane_diffs": 0,
-      "invalid": null,
-      "kind": null,
-      "phase": "outer_post_micro",
-      "signature": {
-        "c_bits": "0x31974463",
-        "direction": "C<F",
-        "dtype": "f32",
-        "f_bits": "0x31974466",
-        "ulp_delta": -3,
-        "xor": "0x5"
-      },
-      "tag": null
-    }
+  "legacy": {
+   "L1->L2": {
+    "identical": true,
+    "post_micro_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "pre_sed_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "records": 0
+   },
+   "L2->L3": {
+    "identical": true,
+    "post_micro_digest": "7664384756ae6b2a2798abc0122d5fe326f061a23b000d118768bdecf2dc71fb",
+    "pre_sed_digest": "7664384756ae6b2a2798abc0122d5fe326f061a23b000d118768bdecf2dc71fb",
+    "records": 24
+   }
+  }
+ },
+ "comparison_admissible": true,
+ "comparison_boundary": {
+  "conservative_cpp": "kdm62d_kernel_entry_v1",
+  "conservative_fortran": "kdm62d_kernel_entry_v1",
+  "legacy_cpp": "kdm62d_kernel_entry_v1",
+  "legacy_fortran": "kdm62d_kernel_entry_v1"
+ },
+ "condensation_closure": {
+  "levels": [],
+  "note": "Both closures are recorded. The constant-Lv/constant-cp residual is a DIAGNOSTIC, never a bound: at ~243 K the model form is 2.7% larger, the same order as the residual, and at k=3 the residual CHANGES SIGN under it. The model form uses the code's own cpmcal/xlcal (module_mp_kdm6.F:818-819) and brings the residual under 1% of dT, straddling zero. That is a strong saturation-adjustment-CONSISTENT signature \u2014 it is still not a proof of the operator, which is unobserved.",
+  "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the returned STATE carries `th` separately, so no Exner factor is applied"
+ },
+ "cpp_manifest_sha256": "7fe90b813a6353bd8d392627a09f450fe3dab6e411027b63dd48d2950c51ff64",
+ "evidence_tier": "decision",
+ "first_divergence": {
+  "conservative": {
+   "identity": [
+    "outer_post_micro",
+    2,
+    "-",
+    0,
+    3,
+    0,
+    "qr",
+    "f32"
+   ],
+   "inactive_lane_diffs": 0,
+   "invalid": null,
+   "kind": null,
+   "phase": "outer_post_micro",
+   "signature": {
+    "c_bits": "0x31974463",
+    "direction": "C<F",
+    "dtype": "f32",
+    "f_bits": "0x31974466",
+    "ulp_delta": -3,
+    "xor": "0x5"
+   },
+   "tag": null
   },
-  "fixture": {
-    "B": 3,
-    "K": 4,
-    "dt_s": 300.0,
-    "dtcld_s": 100.0,
-    "id": "arithmetic_multisubcycle_v1",
-    "manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-    "outer_loops": 3
+  "legacy": {
+   "identity": [
+    "outer_post_micro",
+    2,
+    "-",
+    0,
+    3,
+    0,
+    "qr",
+    "f32"
+   ],
+   "inactive_lane_diffs": 0,
+   "invalid": null,
+   "kind": null,
+   "phase": "outer_post_micro",
+   "signature": {
+    "c_bits": "0x31974463",
+    "direction": "C<F",
+    "dtype": "f32",
+    "f_bits": "0x31974466",
+    "ulp_delta": -3,
+    "xor": "0x5"
+   },
+   "tag": null
+  }
+ },
+ "fixture": {
+  "B": 3,
+  "K": 4,
+  "dt_s": 300.0,
+  "dtcld_s": 100.0,
+  "id": "arithmetic_multisubcycle_v1",
+  "manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "outer_loops": 3
+ },
+ "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
+ "generated_by": "harness/make_g33m_evidence_artifact.py",
+ "per_algorithm": {
+  "conservative": {
+   "differing_by_loop_and_stage": {
+    "L2/outer_post_micro": 20,
+    "L3/outer_post_micro": 35,
+    "L3/outer_post_sed": 21,
+    "L3/outer_pre_sed": 20,
+    "L3/substep_pre": 22,
+    "L3/surface": 4
+   },
+   "differing_digest": "edd3d8ff1459801950eb44f8a6b5680237b3191e1a29db03ba1d9346b73a1ec1",
+   "differing_stage_records": 124,
+   "fortran_manifest_sha256": "7f440f8e1046513c755666ef24f1b0e1b4316fc68b21d23798499a102474ec61",
+   "mstep_range": [
+    1,
+    10
+   ],
+   "probe_lineage": {
+    "diagnostic_driver_sha256": "3718c872210e080ae2a538c7472a07a4f90f29db5dd2a0573c68fe8ec179ff5d",
+    "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
+    "schedule_sha256": "562754a4c66e7d3a201f3a279de229326244e2bcf713f9f1ecd81f00ec88f74c"
+   },
+   "shared_stage_records": 3762
   },
-  "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
-  "generated_by": "harness/make_g33m_evidence_artifact.py",
-  "per_algorithm": {
-    "conservative": {
-      "differing_by_loop_and_stage": {
-        "L2/outer_post_micro": 20,
-        "L3/outer_post_micro": 35,
-        "L3/outer_post_sed": 21,
-        "L3/outer_pre_sed": 20,
-        "L3/substep_pre": 22,
-        "L3/surface": 4
-      },
-      "differing_digest": "edd3d8ff1459801950eb44f8a6b5680237b3191e1a29db03ba1d9346b73a1ec1",
-      "differing_stage_records": 124,
-      "fortran_manifest_sha256": "7f440f8e1046513c755666ef24f1b0e1b4316fc68b21d23798499a102474ec61",
-      "mstep_range": [
-        1,
-        10
-      ],
-      "probe_lineage": {
-        "diagnostic_driver_sha256": "3718c872210e080ae2a538c7472a07a4f90f29db5dd2a0573c68fe8ec179ff5d",
-        "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
-        "schedule_sha256": "562754a4c66e7d3a201f3a279de229326244e2bcf713f9f1ecd81f00ec88f74c"
-      },
-      "shared_stage_records": 3762
-    },
-    "legacy": {
-      "differing_by_loop_and_stage": {
-        "L2/outer_post_micro": 24,
-        "L3/outer_post_micro": 35,
-        "L3/outer_post_sed": 26,
-        "L3/outer_pre_sed": 24,
-        "L3/substep_pre": 22,
-        "L3/surface": 3
-      },
-      "differing_digest": "6499b419d5e464247b5e7946debae1c9ff8222ab3c86e92540107a7216d1ca58",
-      "differing_stage_records": 134,
-      "fortran_manifest_sha256": "ffde3089af07efa7d2b6df40907acb0a2d248bdcd3a6e8dc74fcd0b6a17bbb27",
-      "mstep_range": [
-        1,
-        10
-      ],
-      "probe_lineage": {
-        "diagnostic_driver_sha256": "3718c872210e080ae2a538c7472a07a4f90f29db5dd2a0573c68fe8ec179ff5d",
-        "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
-        "schedule_sha256": "a8a70c79057f160db9a064d2047ebcd93ce020867e50c9ed61b594b33fe5cf24"
-      },
-      "shared_stage_records": 3762
-    }
-  },
-  "producer_commit": "754a46e46aa0d3759280c8ff3d0d36ff9e3091e9",
-  "reason": "legacy first-diverges at outer_post_micro ('outer_post_micro', 2, '-', 0, 3, 0, 'qr', 'f32') \u2014 born AFTER sedimentation, in the microphysics of the same outer loop (the sedimentation result matched); attribution is owner adjudication",
-  "schema_version": 3,
-  "superseded": {
-    "regenerate_at": "protocol v9 or later, with four fresh legs at one revision",
-    "status": "HISTORICAL \u2014 not decision-grade under the current contract",
-    "why": [
-      "carry_proof compares the two backends' DIFFERENCE SETS, so its L1->L2 row reads identical:true with records:0 and the SHA256 of the empty string. It does not establish that either leg copied its own state correctly.",
-      "comparison_admissible answers only the BOUNDARY question while its name claims the whole precondition set; parameters, initialization, stage program points and the dynamic auxiliary were all unmeasured when this was produced.",
-      "condensation_closure carries the interpretive note above an EMPTY levels array.",
-      "produced at protocol v6, before the C++ outer_pre_sed moved after the ProgB brs update, so one of the twelve carried fields was compared at two different instants (see FINDING_outer_pre_sed_progb_skew.md)."
-    ]
-  },
-  "verdict": "INCONCLUSIVE",
-  "verifier_commit": "fd2b673f479c1a2fc5826238862fb48e65ded63a",
-  "verifier_tree_dirty": false,
-  "what": "Gate B / G3.3-M four-case run at arithmetic_multisubcycle_v1, kdm62d_kernel_entry_v1"
+  "legacy": {
+   "differing_by_loop_and_stage": {
+    "L2/outer_post_micro": 24,
+    "L3/outer_post_micro": 35,
+    "L3/outer_post_sed": 26,
+    "L3/outer_pre_sed": 24,
+    "L3/substep_pre": 22,
+    "L3/surface": 3
+   },
+   "differing_digest": "6499b419d5e464247b5e7946debae1c9ff8222ab3c86e92540107a7216d1ca58",
+   "differing_stage_records": 134,
+   "fortran_manifest_sha256": "ffde3089af07efa7d2b6df40907acb0a2d248bdcd3a6e8dc74fcd0b6a17bbb27",
+   "mstep_range": [
+    1,
+    10
+   ],
+   "probe_lineage": {
+    "diagnostic_driver_sha256": "3718c872210e080ae2a538c7472a07a4f90f29db5dd2a0573c68fe8ec179ff5d",
+    "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
+    "schedule_sha256": "a8a70c79057f160db9a064d2047ebcd93ce020867e50c9ed61b594b33fe5cf24"
+   },
+   "shared_stage_records": 3762
+  }
+ },
+ "producer_commit": "754a46e46aa0d3759280c8ff3d0d36ff9e3091e9",
+ "reason": "legacy first-diverges at outer_post_micro ('outer_post_micro', 2, '-', 0, 3, 0, 'qr', 'f32') \u2014 born AFTER sedimentation, in the microphysics of the same outer loop (the sedimentation result matched); attribution is owner adjudication",
+ "schema_version": 3,
+ "superseded": {
+  "regenerate_at": "protocol v9 or later, with four fresh legs at one revision",
+  "status": "HISTORICAL \u2014 not decision-grade under the current contract",
+  "why": [
+   "carry_proof compares the two backends' DIFFERENCE SETS, so its L1->L2 row reads identical:true with records:0 and the SHA256 of the empty string. It does not establish that either leg copied its own state correctly.",
+   "comparison_admissible answers only the BOUNDARY question while its name claims the whole precondition set; parameters, initialization, stage program points and the dynamic auxiliary were all unmeasured when this was produced.",
+   "condensation_closure carries the interpretive note above an EMPTY levels array.",
+   "produced at protocol v6, before the C++ outer_pre_sed moved after the ProgB brs update, so one of the twelve carried fields was compared at two different instants (see FINDING_outer_pre_sed_progb_skew.md)."
+  ]
+ },
+ "supersession": {
+  "note": "Carried a free-text `superseded` block, which a machine reading only `attested: true` would not see. Kept in place rather than moved: test_g33m_kernel_artifact pins this path.",
+  "status": "superseded",
+  "superseded_by": "g33m_v11_fourcase_result.json",
+  "valid_for_decision": false,
+  "withdrawal_reason": null
+ },
+ "verdict": "INCONCLUSIVE",
+ "verifier_commit": "fd2b673f479c1a2fc5826238862fb48e65ded63a",
+ "verifier_tree_dirty": false,
+ "what": "Gate B / G3.3-M four-case run at arithmetic_multisubcycle_v1, kdm62d_kernel_entry_v1"
 }

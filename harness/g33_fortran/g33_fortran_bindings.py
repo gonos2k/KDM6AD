@@ -400,6 +400,48 @@ MICRO_POST_STATE_UPDATE = list(_CARRIED)
 #: cold_gate is recorded because the two arms read different operands: a branch
 #: that disagreed between the backends would otherwise show up as several rates
 #: differing at once, with nothing saying why.
+#: THE MELT-FREEZE CHAIN, bisected (protocol v13).
+#:
+#: v12 put the first divergence at the update base, in ONE field -- t, by one ULP
+#: -- with every other prognostic bit-identical. t matches at outer_post_sed, so
+#: it acquires that difference in D1 melt, the homogeneous freeze, the post-melt
+#: re-slope, D2-D4 freeze or the post-freeze re-slope. These two snapshots split
+#: that span at the two points where BOTH backends already have a reconciled dump:
+#: fort_substep_postmelt (F:1440) against the C++ `postmelt` on working1, and
+#: fort_substep_postfreeze (F:1722) against `postfreeze` on working.
+#:
+#: post-melt sits inside `do k`/`do i` (the loop closes two lines later and the
+#: pinned dump runs after it), so it emits per cell; post-freeze is at the top
+#: level, on the same anchor micro_call_progb_aux uses, emitted AFTER it so both
+#: backends order the two records the same way.
+MICRO_POST_MELT_ANCHOR = (
+    "          endif  !supcol", None, "fort_substep_postmelt.bin")
+MICRO_POST_MELT = list(_CARRIED)
+MICRO_POST_FREEZE = list(_CARRIED)
+
+#: THE EXACT BASE state_update READS (owner review §2).
+#:
+#: micro_qr_operands seals the RATE operands of the qr update line and nothing
+#: else. Its own note claimed the base was already compared because the incoming
+#: qrs(1) comes from outer_post_sed -- it does not: D1 melt, homogeneous freeze,
+#: the post-melt re-slope, D2-D4, the post-freeze re-slope, the rate blocks and
+#: the conservation scaling all run in between. Without this stage the converse
+#: ("all operands equal => the difference is in the summation") is unavailable.
+#:
+#: Injected BEFORE the F:2638 branch, so one record per cell whichever arm it
+#: takes, and the state is unmodified between there and either `!     update`.
+#: The C++ already dumps exactly this instant as the `prestate` substep forensic,
+#: describing it as "the EXACT state_update base".
+#:
+#: supcol is NOT recorded: it is a scalar local reassigned in earlier loops, so at
+#: this point it holds another iteration's value. The branch is recomputed by the
+#: comparator from this stage's `t` and t0c instead -- which is also what owner
+#: review §3 asks for, since a producer-emitted gate is the producer's claim about
+#: its own branch rather than an independent check of it.
+MICRO_PRE_STATE_UPDATE_ANCHOR = (
+    "          if(t(i,k).le.t0c) then", None, "!     cloud water")
+MICRO_PRE_STATE_UPDATE = list(_CARRIED)
+
 MICRO_QR_OPERANDS_COLD_ANCHOR = (
     "              bsdep(i,k)=psdep(i,k)/dens", (0, 1), "!     update")
 MICRO_QR_OPERANDS_WARM_ANCHOR = (
@@ -462,6 +504,14 @@ DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [
     "#ifdef KDM6_G33_FORTRAN_DUMP",
     "   real :: g33_fqb, g33_fnb   ! G3.3-M: fall/falln captured at cell entry",
+    "   ! v14 freeze-heat operands. pinuc/pfrzdtc/pfrzdtr are per-cell DOUBLE",
+    "   ! SCALARS set inside branches (F:758, F:781-782), so they cannot be read",
+    "   ! from the top-level emission point — captured at the site of use, zeroed",
+    "   ! per cell, which is what a skipped branch means numerically. DOUBLE here",
+    "   ! deliberately: an f32 cast (as the source's own dbg_d4a does) would erase",
+    "   ! the precision difference this stage exists to look for.",
+    "   double precision, dimension(its:ite,kts:kte) :: g33_pinuc, g33_pfrzdtc, g33_pfrzdtr",
+    "   real, dimension(its:ite,kts:kte) :: g33_xlf, g33_tprefrz, g33_phom",
     "#endif",
 ]
 IND = "             "  # 13-space body indent
@@ -521,3 +571,70 @@ VARIANTS = {
         },
     },
 }
+
+
+# ── v14: the freeze heat term ────────────────────────────────────────────────
+#: The three sequential t-stores of the D2-D4 freeze, as a CLOSED operand set:
+#:
+#:   c  = f32(xlf/cpm)
+#:   t2 = f32(t_pre + c*pinuc)      F:1618   pinuc   DOUBLE
+#:   t3 = f32(t2    + c*pfrzdtc)    F:1648   pfrzdtc DOUBLE
+#:   t4 = f32(t3    + c*pfrzdtr)    F:1679   pfrzdtr DOUBLE
+#:
+#: t4 must equal micro_post_freeze.t. Every other input is already compared
+#: (micro_post_melt.t) or recorded here, so the set is closed for those three
+#: statements the way micro_qr_operands is for the qr line — and this time the
+#: base IS sealed, which v12 established is the precondition.
+#:
+#: phom (F:1529, homogeneous freeze at T < -40 C) is recorded and REQUIRED TO BE
+#: ZERO. The C++ handles homogeneous freezing outside apply_melt_freeze_inline, so
+#: that term is not in its t chain; on a fixture where it fires the two sides would
+#: cover different arithmetic. Asserting zero makes such a fixture fail loudly
+#: rather than compare different things quietly. On arithmetic_multisubcycle_v1 no
+#: cell reaches 233.15 K, so it is zero throughout.
+#: The landmark must sit within the builder's window (12 lines); `prevp(i,k) = 0.`
+#: is the natural name for this block but is 17 lines below, and the guard said
+#: so rather than injecting somewhere unintended. bgacr is inside the window and
+#: in the same zero-init run.
+FREEZE_ZERO_ANCHOR = ("          biacr(i,k) =0.", None, "bgacr(i,k) =0.")
+FREEZE_ZERO_BLOCK = [
+    "#ifdef KDM6_G33_FORTRAN_DUMP",
+    "          g33_pinuc(i,k) = 0.d0",
+    "          g33_pfrzdtc(i,k) = 0.d0",
+    "          g33_pfrzdtr(i,k) = 0.d0",
+    "          g33_xlf(i,k) = 0.",
+    "          g33_tprefrz(i,k) = 0.",
+    "          g33_phom(i,k) = 0.",
+    "#endif",
+]
+#: idx 1 (0-BASED) = the SECOND `if(supcol.lt.0.) xlf = xlf0`, at the head of the
+#: FREEZE loop (F:1517); the first (F:1366) heads the melt loop. The landmark is
+#: the pihmf comment two lines below, so the wrong one cannot be taken silently.
+FREEZE_BASE_ANCHOR = ("          if(supcol.lt.0.) xlf = xlf0", (1, 2), "pihmf")
+FREEZE_BASE_BLOCK = [
+    "#ifdef KDM6_G33_FORTRAN_DUMP",
+    "          g33_tprefrz(i,k) = t(i,k)",
+    "          g33_xlf(i,k) = xlf",
+    "#endif",
+]
+#: Each capture goes BEFORE its t-store, because the store's own operand is
+#: consumed there (qci(i,k,1) is zeroed on the next line).
+FREEZE_CAPTURES = [
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*qci(i,k,1)",
+     "g33_phom(i,k) = qci(i,k,1)"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*pinuc ",
+     "g33_pinuc(i,k) = pinuc"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*(pfrzdtc)",
+     "g33_pfrzdtc(i,k) = pfrzdtc"),
+    ("            t(i,k) = t(i,k) + xlf/cpm(i,k)*pfrzdtr",
+     "g33_pfrzdtr(i,k) = pfrzdtr"),
+]
+MICRO_FREEZE_HEAT = [
+    ("t_pre_freeze", "f32", "g33_tprefrz(i,k)"),
+    ("xlf", "f32", "g33_xlf(i,k)"),
+    ("cpm", "f32", "cpm(i,k)"),
+    ("phom", "f32", "g33_phom(i,k)"),
+    ("pinuc", "f64", "g33_pinuc(i,k)"),
+    ("pfrzdtc", "f64", "g33_pfrzdtc(i,k)"),
+    ("pfrzdtr", "f64", "g33_pfrzdtr(i,k)"),
+]

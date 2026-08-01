@@ -28,26 +28,27 @@
  "attested": true,
  "conservative_first_divergence": {
   "identity": [
-   "micro_qr_operands",
+   "micro_pre_state_update",
    2,
    "-",
    0,
    3,
    0,
-   "prevp",
+   "t",
    "f32"
   ],
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_qr_operands",
+  "phase": "micro_pre_state_update",
   "signature": {
-   "c_bits": "0xa985531c",
-   "direction": "C<F",
+   "c_bits": "0x437396bb",
+   "direction": "C>F",
    "dtype": "f32",
-   "f_bits": "0xa9854a33",
-   "ulp_delta": -2281,
-   "xor": "0x192f"
+   "f_bits": "0x437396ba",
+   "signed_ulp_delta": 1,
+   "ulp_distance_abs": 1,
+   "xor": "0x1"
   },
   "tag": null
  },
@@ -61,33 +62,34 @@
  "inputs": {
   "B": 3,
   "K": 4,
-  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v11/cpp-bundle",
+  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v12/cpp-bundle",
   "expected_fixture_id": "arithmetic_multisubcycle_v1",
-  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v11/fortran-conservative",
-  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v11/fortran-legacy"
+  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v12/fortran-conservative",
+  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v12/fortran-legacy"
  },
  "legacy_first_divergence": {
   "identity": [
-   "micro_qr_operands",
+   "micro_pre_state_update",
    2,
    "-",
    0,
    3,
    0,
-   "prevp",
+   "t",
    "f32"
   ],
   "inactive_lane_diffs": 0,
   "invalid": null,
   "kind": null,
-  "phase": "micro_qr_operands",
+  "phase": "micro_pre_state_update",
   "signature": {
-   "c_bits": "0xa985531c",
-   "direction": "C<F",
+   "c_bits": "0x437396bb",
+   "direction": "C>F",
    "dtype": "f32",
-   "f_bits": "0xa9854a33",
-   "ulp_delta": -2281,
-   "xor": "0x192f"
+   "f_bits": "0x437396ba",
+   "signed_ulp_delta": 1,
+   "ulp_distance_abs": 1,
+   "xor": "0x1"
   },
   "tag": null
  },
@@ -100,7 +102,20 @@
   "local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
   "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
  },
- "reason": "legacy first-diverges at micro_qr_operands ('micro_qr_operands', 2, '-', 0, 3, 0, 'prevp', 'f32') \u2014 an OPERAND of the qr update line differs while the state entering the microphysics and the ProgB bundle matched, so the difference is in the rate that produced it, not in the update arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+ "provenance": {
+  "cpp_root_manifest_sha256": "f35a6eaec311a55dc2201560394774f5cdeb51d4b9370a65d1fb88633ebdd6af",
+  "decision_protocol_version": 12,
+  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "fortran_conservative_manifest_sha256": "33abfcc6b07f7c4cee759ba280d03f29c3fb9d2d605574612d938a9390e2c0f9",
+  "fortran_legacy_manifest_sha256": "11fbd032b84d306175917b41bf004653aebab23842dd19022a8dcb6dff48e6bd",
+  "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
+  "note": "SHAs are the authority. The `inputs` paths are local and informational: a decision artifact has to be readable as a reproduction lineage on its own, without a companion shell file.",
+  "producer_commit": "6ca59455d04120b9832a5ef750faa6606c48203c",
+  "result_schema_version": 1,
+  "verifier_commit": "6ca59455d04120b9832a5ef750faa6606c48203c",
+  "verifier_tree_dirty": true
+ },
+ "reason": "legacy first-diverges at micro_pre_state_update ('micro_pre_state_update', 2, '-', 0, 3, 0, 't', 'f32') \u2014 the BASE state state_update reads differs, while the ProgB bundle and the sedimentation result matched. What runs between them is D1 melt, homogeneous freeze, the post-melt re-slope, D2-D4 freeze and the post-freeze re-slope, and the difference is in one of those. The rate operands downstream cannot be read as the cause while their base differs. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
  "scope": {
   "mstep_range": {
    "conservative": [
@@ -115,9 +130,9 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Superseded by resolution, not corrected: `prevp` really was the first divergence among the stages that existed at v11. v12 added micro_pre_state_update, the base state_update reads, which sorts earlier and differs \u2014 in `t`, by one ULP.",
+  "note": "Superseded by resolution: v12's first divergence (micro_pre_state_update.t) is still true, and v13 shows t already carries it at micro_post_freeze.",
   "status": "superseded",
-  "superseded_by": "g33m_v12_fourcase_result.json",
+  "superseded_by": "g33m_v13_fourcase_result.json",
   "valid_for_decision": false,
   "withdrawal_reason": null
  },
