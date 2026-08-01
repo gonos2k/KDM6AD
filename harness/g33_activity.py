@@ -55,6 +55,12 @@ def _f64(bits):
 #: rate already differs, swapping coefficients answers a question nobody asked.
 _COUNTERFACTUAL_PRECONDITION = ("t_pre_freeze",) + _FREEZE_RATES
 
+#: Everything BOTH legs must carry before an exclusion is even considered.
+#: A missing counterpart field is missing evidence, and missing evidence is
+#: the identity gate's to report — never this filter's to absorb.
+_COUNTERFACTUAL_REQUIRED = (
+    "t_pre_freeze", "phom", "xlf", "cpm") + _FREEZE_RATES
+
 
 def _swap_moves_t(base_of: dict, c_from: dict) -> bool:
     """One direction: `base_of`'s base and rates, `c_from`'s coefficient."""
@@ -83,11 +89,14 @@ def _moves_t(mine: dict, theirs: dict) -> bool | None:
     * everything the stores read besides the coefficient must be cross-backend
       bitwise EQUAL. If the base or a rate already differs, a coefficient-only swap
       is answering a different question.
-    * BOTH directions are tried. If the swap moves `t` on either backend's own base
-      and rates, the coefficient group stays in the verdict.
-
     Returns None when the preconditions do not hold, which the caller treats as
     "keep it visible".
+
+    ONE direction, not two. An earlier version tried the swap both ways "in case
+    it depends which base it is applied to" — but the equality precondition above
+    forces a common base and common rates, so both directions compute
+    `T(b,r,c_F) != T(b,r,c_C)` and the two booleans are identical by construction.
+    The test asserting they were both tried could not have distinguished them.
     """
     for d in (mine, theirs):
         if _rp.f32(d.get("phom", _rp.bits32(1.0))) != 0.0:
@@ -95,7 +104,24 @@ def _moves_t(mine: dict, theirs: dict) -> bool | None:
     for n in _COUNTERFACTUAL_PRECONDITION:
         if n not in mine or n not in theirs or mine[n] != theirs[n]:
             return None                       # not a coefficient-only difference
-    return _swap_moves_t(mine, theirs) or _swap_moves_t(theirs, mine)
+    return _swap_moves_t(mine, theirs)
+
+
+def noncausal_by_category(run, other=None) -> dict:
+    """The same exclusions, split by WHY (owner review §5).
+
+    "Branch-inactive" and "rounding-absorbed" are different states and the names
+    used so far ran them together. A warm cell's `paacw` is never read by the cold
+    qr line — the arithmetic does not consume it. A coefficient whose difference
+    does not survive the f32 stores IS read by the formula; it simply is not
+    load-bearing for this divergence. Both are diagnostics rather than verdict
+    candidates, and a reader should be able to tell which is which.
+    """
+    out = {"branch_inactive": set(), "rounding_absorbed": set()}
+    for i in noncausal_stage_records(run, other):
+        key = "rounding_absorbed" if i[0] == "micro_freeze_heat" else "branch_inactive"
+        out[key].add(i)
+    return {k: frozenset(v) for k, v in out.items()}
 
 
 def noncausal_stage_records(run, other=None) -> frozenset:
@@ -123,15 +149,20 @@ def noncausal_stage_records(run, other=None) -> frozenset:
         if not all(n in fields for n in ("t_pre_freeze", "xlf", "cpm")):
             continue
         if other is not None:
+            # PRODUCTION PATH. An incomplete counterpart may NEVER lead to an
+            # exclusion. The previous shape fell back to "is some reference rate
+            # nonzero", so a cell with all-zero rates whose C++ counterpart was
+            # MISSING `xlf` had its Fortran `xlf` identity removed — hiding a
+            # missing record from the comparator's identity-first check, which is
+            # contracted to report that as INVALID_EVIDENCE. Completeness is not
+            # this filter's to adjudicate; leaving it visible hands it back.
             o = _by_cell(other, "micro_freeze_heat").get((loop, col, k))
-            if o and all(n in o for n in ("xlf", "cpm")):
-                moves = _moves_t(fields, o)
-                if moves is None or moves:
-                    continue              # load-bearing, or cannot tell: keep it
-            elif any(_f64(fields[n]) != 0.0 for n in _FREEZE_RATES):
-                continue                  # no counterpart record: fall back
+            if o is None or not all(n in o for n in _COUNTERFACTUAL_REQUIRED):
+                continue                  # leave visible: the identity gate decides
+            if _moves_t(fields, o) is not False:
+                continue                  # load-bearing, or cannot tell: keep it
         elif any(_f64(fields[n]) != 0.0 for n in _FREEZE_RATES):
-            continue                      # something freezes here
+            continue                      # one-run fallback: something freezes here
         for name in _FREEZE_COEFFICIENTS:
             if name in fields:
                 out.add(("micro_freeze_heat", loop, "-", 0, col, k, name, "f32"))

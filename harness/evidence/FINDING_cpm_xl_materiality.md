@@ -73,10 +73,20 @@ Shapley:  xlf  1.5259e-05 K        cpm  0.0 K
 
 So the two layers say different things and both are true:
 
-| | `xlf` | `cpm` |
+| layer | `xlf` | `cpm` |
 |---|---|---|
-| analytic (relative) | +1.344 % | −0.052 % |
-| discrete (stored ΔT) | **1 ULP** | **0** |
+| operand relative change | **+1.3437 %** | **−0.0519 %** |
+| direction of its effect on `c = xlf/cpm` | **+** | **+** |
+| discrete stored Shapley share | **+1 ULP** | **0** |
+
+The two `cpm` rows have opposite signs and both are correct — which is exactly
+why the earlier two-row table could be misread (owner review §7). `cpm` **falls**
+by 0.0519 %, and because it is the **denominator** that **raises** `c` by about
+the same 0.0519 %. Exactly:
+
+    c_C / c_F  =  (xlf_C/xlf_F) · (cpm_F/cpm_C)  =  1.013437 × 1.000519 = 1.013963
+
+so the coefficient is +1.3963 % and both operands push it the same way.
 
 `cpm`'s share is real in the coefficient and vanishes in the f32 store at this
 cell. That is not "xlf is the cause" — both operands differ, and both are

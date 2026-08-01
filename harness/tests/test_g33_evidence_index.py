@@ -221,3 +221,70 @@ def test_the_current_artifact_was_decided_by_THIS_verifier():
         f"{p.name} was decided by different logic than this tree carries "
         f"(recorded {recorded[:12] if recorded else None}…, tree "
         f"{vid.semantics_sha256()[:12]}…). Regenerate it, or supersede it.")
+
+
+def test_the_recorded_digest_MATCHES_the_recorded_commit():
+    """The two provenance fields must point at the SAME tree (owner review §2).
+
+    An artifact records a `verifier_commit` and a `verifier_semantics_sha256`.
+    Checked separately, each is merely plausible — one is a real commit, the other
+    matches this tree — and nothing says they describe each other. That is the same
+    shape as the hand-attached provenance block: fields that look right beside a
+    run they do not describe.
+
+    Needs the commit's tree, so it skips on a shallow clone. The evidence CI job
+    checks out with fetch-depth: 0 precisely so it runs there.
+    """
+    import subprocess
+    import sys
+    sys.path.insert(0, str(EVIDENCE.parent))
+    import g33_verifier_identity as vid
+    p, d = _current()
+    sha = d["provenance"]["verifier_commit"]
+    root = EVIDENCE.parent.parent
+    if subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=root,
+                      capture_output=True, text=True).stdout.strip() != "false":
+        pytest.skip("shallow clone: cannot read the tree at verifier_commit")
+    at = vid.semantics_sha256_at(sha)
+    assert at is not None, f"{p.name}: cannot read the decision logic at {sha}"
+    assert at == d["provenance"]["verifier_semantics_sha256"], (
+        f"{p.name}: the recorded digest is not the digest of the recorded commit "
+        f"— the two provenance fields describe different trees")
+
+
+def test_the_verifier_commit_is_an_ANCESTOR_of_HEAD():
+    """"A commit in this repository" is weaker than "a commit that got here".
+
+    A result decided on a branch that was never merged is not a result this tree
+    stands behind. Skips on a shallow clone for the same reason as above.
+    """
+    import subprocess
+    p, d = _current()
+    sha = d["provenance"]["verifier_commit"]
+    root = EVIDENCE.parent.parent
+    if subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=root,
+                      capture_output=True, text=True).stdout.strip() != "false":
+        pytest.skip("shallow clone: cannot walk history")
+    r = subprocess.run(["git", "merge-base", "--is-ancestor", sha, "HEAD"],
+                       cwd=root, capture_output=True)
+    assert r.returncode == 0, (
+        f"{p.name}: verifier_commit {sha[:12]} is not an ancestor of HEAD — the "
+        f"result was decided on a line this tree does not contain")
+
+
+def test_the_current_artifact_records_its_RUNTIME():
+    """The replay is NumPy f32/f64 arithmetic; the same sources on a different
+    runtime are not self-evidently the same verifier."""
+    p, d = _current()
+    rt = d["provenance"].get("verifier_runtime")
+    assert rt, f"{p.name}: no verifier_runtime"
+    for k in ("python_implementation", "python_version", "numpy_version",
+              "byteorder"):
+        assert rt.get(k), f"{p.name}: verifier_runtime is missing {k}"
+
+
+def test_the_current_artifact_is_at_result_schema_v3_or_later():
+    p, d = _current()
+    assert d["provenance"]["result_schema_version"] >= 3, (
+        "verifier_semantics_sha256 and the operand-group counterfactual became "
+        "required, so a current artifact is at least schema v3")

@@ -719,9 +719,13 @@ def classify(legacy: Divergence, conservative: Divergence):
                 f"{name} first-diverges at {d.phase} {d.identity} — an OPERAND of "
                 f"the D2-D4 freeze heat term differs while the post-D1-melt state "
                 f"matched, so the difference is in the rate or coefficient that "
-                f"produced it, not in the t-store arithmetic. This is NOT a "
-                f"statement about conservative-only interface arithmetic; "
-                f"attribution is owner adjudication")
+                f"produced it, not in the t-store arithmetic. The field named in "
+                f"the identity is the SCHEMA-ORDERED REPRESENTATIVE of a "
+                f"simultaneous operand group at one program point, not a single "
+                f"cause — read `operand_group` for the fields that differ and the "
+                f"exact f32 counterfactual that allocates the stored difference "
+                f"between them. This is NOT a statement about conservative-only "
+                f"interface arithmetic; attribution is owner adjudication")
         # THE MELT-FREEZE CHAIN, split. v12 showed the seed is one field of the
         # update base (t, one ULP) acquired somewhere between outer_post_sed and
         # that base. These two snapshots say which half.
@@ -883,7 +887,19 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     def _d(x, f_run, c_run):
         d = {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
              "kind": x.kind, "tag": x.tag, "signature": x.signature,
+             # Kept for continuity, but it sums two different states; the
+             # breakdown below is what a reader should use.
              "inactive_lane_diffs": len(x.inactive_diffs)}
+        cats = activity.noncausal_by_category(f_run, c_run)
+        d["diagnostic_only_diffs"] = {
+            "branch_inactive": sum(1 for i in x.inactive_diffs
+                                   if i in cats["branch_inactive"]),
+            "rounding_absorbed": sum(1 for i in x.inactive_diffs
+                                     if i in cats["rounding_absorbed"]),
+            "gate_inactive_op": sum(1 for i in x.inactive_diffs
+                                    if i not in cats["branch_inactive"]
+                                    and i not in cats["rounding_absorbed"]),
+        }
         g = _operand_group(f_run, c_run, x)
         if g:
             d["operand_group"] = g

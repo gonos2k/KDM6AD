@@ -248,16 +248,27 @@ def test_a_DIFFERING_rate_is_kept_for_the_same_reason():
     assert not ({"xlf", "cpm"} & _co(f, c))
 
 
-def test_the_swap_is_tried_in_BOTH_directions():
-    """Whether the difference survives can depend on which base it is applied to;
-    if either direction moves t, the group stays in the verdict."""
+def test_the_two_swap_directions_are_IDENTICAL_by_construction():
+    """So only one is computed.
+
+    An earlier version tried both "in case it depends which base it is applied
+    to". The equality precondition forces a common base and common rates, so both
+    directions compute T(b,r,c_F) != T(b,r,c_C) and the booleans coincide — the
+    test asserting both were tried could not have distinguished them, which is the
+    vacuity mode this suite keeps finding.
+    """
+    import random
+
     import g33_activity as a
-    hi = {"t_pre_freeze": rp.bits32(243.5), "xlf": rp.bits32(3.34e5),
-          "cpm": rp.bits32(1005.0), "phom": rp.bits32(0.0),
-          **{n: _f64bits(1.0e-3) for n in a._FREEZE_RATES}}
-    lo = dict(hi, xlf=rp.bits32(3.40e5))
-    assert a._moves_t(hi, lo) is True
-    assert a._swap_moves_t(hi, lo) or a._swap_moves_t(lo, hi)
+    random.seed(11)
+    for _ in range(300):
+        r = 10 ** random.uniform(-9, -2)
+        base = {"t_pre_freeze": rp.bits32(random.uniform(230, 270)),
+                "cpm": rp.bits32(1005.0), "phom": rp.bits32(0.0),
+                **{n: _f64bits(r) for n in a._FREEZE_RATES}}
+        f = dict(base, xlf=rp.bits32(3.34e5))
+        c = dict(base, xlf=rp.bits32(random.uniform(3.3e5, 3.5e5)))
+        assert a._swap_moves_t(f, c) == a._swap_moves_t(c, f)
 
 
 def test_the_2x2_counterfactual_splits_xlf_and_cpm(tmp_path):
@@ -309,3 +320,29 @@ def test_the_counterfactual_is_OMITTED_when_the_base_or_rates_differ():
 
     g = cmp._operand_group(leg(243.5), leg(244.0), D())
     assert "counterfactual" not in g
+
+
+# ── an incomplete counterpart may never lead to an exclusion (§3 of the review) ─
+
+@pytest.mark.parametrize("drop", ["xlf", "cpm", "phom", "pfrzdtr", "t_pre_freeze"])
+def test_a_MISSING_counterpart_field_never_hides_the_identity(drop):
+    """With ZERO rates the old shape fell back to "is some reference rate nonzero"
+    and excluded the coefficients — removing a Fortran identity whose C++
+    counterpart was absent, and so hiding a missing record from the comparator's
+    identity-first check, which is contracted to call that INVALID_EVIDENCE.
+
+    Completeness is not this filter's to adjudicate. The zero-rate case is the one
+    that matters: the earlier missing-counterpart test used a nonzero rate and
+    never exercised this path.
+    """
+    f, c = _pair(rate=0.0)
+    c["stages"] = [s for s in c["stages"]
+                   if not (s["stage"] == "micro_freeze_heat" and s["field"] == drop)]
+    assert not ({"xlf", "cpm"} & _co(f, c)), (
+        f"dropping {drop} from the counterpart let the coefficients be excluded")
+
+
+def test_a_wholly_missing_counterpart_cell_never_hides_the_identity():
+    f, c = _pair(rate=0.0)
+    c["stages"] = [s for s in c["stages"] if s["stage"] != "micro_freeze_heat"]
+    assert not ({"xlf", "cpm"} & _co(f, c))
