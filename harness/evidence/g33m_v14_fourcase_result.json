@@ -1,217 +1,217 @@
 {
- "attestation": {
-  "conservative_cpp": {
-   "external_manifest": true,
-   "fixture": true,
-   "source_commit": true,
-   "verdict_ready": true
-  },
-  "conservative_fortran": {
-   "external_manifest": true,
-   "fixture": true,
-   "source_commit": true,
-   "verdict_ready": true
-  },
-  "legacy_cpp": {
-   "external_manifest": true,
-   "fixture": true,
-   "source_commit": true,
-   "verdict_ready": true
-  },
-  "legacy_fortran": {
-   "external_manifest": true,
-   "fixture": true,
-   "source_commit": true,
-   "verdict_ready": true
-  }
- },
- "attested": true,
- "conservative_first_divergence": {
-  "diagnostic_only_diffs": {
-   "branch_inactive": 7,
-   "gate_inactive_op": 0,
-   "rounding_absorbed": 38
-  },
-  "identity": [
-   "micro_freeze_heat",
-   2,
-   "-",
-   0,
-   3,
-   0,
-   "xlf",
-   "f32"
-  ],
-  "inactive_lane_diffs": 45,
-  "invalid": null,
-  "kind": null,
-  "operand_group": {
-   "cell": [
-    2,
-    3,
-    0
-   ],
-   "counterfactual": {
-    "bits": {
-     "CC": "0x437396bb",
-     "CF": "0x437396bb",
-     "FC": "0x437396ba",
-     "FF": "0x437396ba"
+  "attestation": {
+    "conservative_cpp": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
     },
-    "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
-    "shapley_delta_T_K": {
-     "cpm": 0.0,
-     "xlf": 1.52587890625e-05
+    "conservative_fortran": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
     },
-    "total_delta_T_K": 1.52587890625e-05
-   },
-   "derived": {
-    "cpp": 279.363037109375,
-    "expression": "fl32(xlf/cpm)",
-    "fortran": 275.5159606933594
-   },
-   "differing_operands": [
-    "cpm",
-    "xlf"
-   ]
-  },
-  "phase": "micro_freeze_heat",
-  "signature": {
-   "c_bits": "0x488911e0",
-   "direction": "C>F",
-   "dtype": "f32",
-   "f_bits": "0x488740a0",
-   "signed_ulp_delta": 119104,
-   "ulp_distance_abs": 119104,
-   "xor": "0xe5140"
-  },
-  "tag": null
- },
- "debug_only": false,
- "fixture_identity": {
-  "fixture_id": "arithmetic_multisubcycle_v1",
-  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-  "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
-  "fortran_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
-  "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
- },
- "inputs": {
-  "B": 3,
-  "K": 4,
-  "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v14/cpp-bundle",
-  "expected_fixture_id": "arithmetic_multisubcycle_v1",
-  "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v14/fortran-conservative",
-  "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v14/fortran-legacy"
- },
- "legacy_first_divergence": {
-  "diagnostic_only_diffs": {
-   "branch_inactive": 8,
-   "gate_inactive_op": 0,
-   "rounding_absorbed": 36
-  },
-  "identity": [
-   "micro_freeze_heat",
-   2,
-   "-",
-   0,
-   3,
-   0,
-   "xlf",
-   "f32"
-  ],
-  "inactive_lane_diffs": 44,
-  "invalid": null,
-  "kind": null,
-  "operand_group": {
-   "cell": [
-    2,
-    3,
-    0
-   ],
-   "counterfactual": {
-    "bits": {
-     "CC": "0x437396bb",
-     "CF": "0x437396bb",
-     "FC": "0x437396ba",
-     "FF": "0x437396ba"
+    "legacy_cpp": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
     },
-    "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
-    "shapley_delta_T_K": {
-     "cpm": 0.0,
-     "xlf": 1.52587890625e-05
+    "legacy_fortran": {
+      "external_manifest": true,
+      "fixture": true,
+      "source_commit": true,
+      "verdict_ready": true
+    }
+  },
+  "attested": true,
+  "conservative_first_divergence": {
+    "diagnostic_only_diffs": {
+      "branch_inactive": 7,
+      "gate_inactive_op": 0,
+      "rounding_absorbed": 38
     },
-    "total_delta_T_K": 1.52587890625e-05
-   },
-   "derived": {
-    "cpp": 279.363037109375,
-    "expression": "fl32(xlf/cpm)",
-    "fortran": 275.5159606933594
-   },
-   "differing_operands": [
-    "cpm",
-    "xlf"
-   ]
+    "identity": [
+      "micro_freeze_heat",
+      2,
+      "-",
+      0,
+      3,
+      0,
+      "xlf",
+      "f32"
+    ],
+    "inactive_lane_diffs": 45,
+    "invalid": null,
+    "kind": null,
+    "operand_group": {
+      "cell": [
+        2,
+        3,
+        0
+      ],
+      "counterfactual": {
+        "bits": {
+          "CC": "0x437396bb",
+          "CF": "0x437396bb",
+          "FC": "0x437396ba",
+          "FF": "0x437396ba"
+        },
+        "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
+        "shapley_delta_T_K": {
+          "cpm": 0.0,
+          "xlf": 1.52587890625e-05
+        },
+        "total_delta_T_K": 1.52587890625e-05
+      },
+      "derived": {
+        "cpp": 279.363037109375,
+        "expression": "fl32(xlf/cpm)",
+        "fortran": 275.5159606933594
+      },
+      "differing_operands": [
+        "cpm",
+        "xlf"
+      ]
+    },
+    "phase": "micro_freeze_heat",
+    "signature": {
+      "c_bits": "0x488911e0",
+      "direction": "C>F",
+      "dtype": "f32",
+      "f_bits": "0x488740a0",
+      "signed_ulp_delta": 119104,
+      "ulp_distance_abs": 119104,
+      "xor": "0xe5140"
+    },
+    "tag": null
   },
-  "phase": "micro_freeze_heat",
-  "signature": {
-   "c_bits": "0x488911e0",
-   "direction": "C>F",
-   "dtype": "f32",
-   "f_bits": "0x488740a0",
-   "signed_ulp_delta": 119104,
-   "ulp_distance_abs": 119104,
-   "xor": "0xe5140"
+  "debug_only": false,
+  "fixture_identity": {
+    "fixture_id": "arithmetic_multisubcycle_v1",
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "fortran_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
   },
-  "tag": null
- },
- "problem": {
-  "B": 3,
-  "K": 4,
-  "entry_boundary": "kdm62d_kernel_entry_v1",
-  "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
-  "initialization_digest": "591da317c54d5f20f0bbefac793b5062ca402d1f380e7aab96dbd460fe012e76",
-  "local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
-  "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
- },
- "provenance": {
-  "cpp_root_manifest_sha256": "f323a7f9c4c612b9094a73de2d0ada6b5291a3b58cbae6142b3f7b12daca5270",
-  "decision_protocol_version": 14,
-  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
-  "fortran_conservative_manifest_sha256": "bf5f46965cde5c3ab8541211576f6d11ba43912ad0a9673f2da69d69c768869b",
-  "fortran_legacy_manifest_sha256": "ddc65e280bc0beb8dc32c8d1ca9b42a53dada375c2eca8279602104a51f26012",
-  "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
-  "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
-  "result_schema_version": 3,
-  "verifier_commit": "e92091791f8a6f9fdd1243d0e648a917df86ffb9",
-  "verifier_runtime": {
-   "byteorder": "little",
-   "numpy_version": "2.4.6",
-   "python_implementation": "CPython",
-   "python_version": "3.11.13"
+  "inputs": {
+    "B": 3,
+    "K": 4,
+    "cpp_bundle": "/Users/yhlee/kdm6ad-g33m-v14/cpp-bundle",
+    "expected_fixture_id": "arithmetic_multisubcycle_v1",
+    "fortran_conservative": "/Users/yhlee/kdm6ad-g33m-v14/fortran-conservative",
+    "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v14/fortran-legacy"
   },
-  "verifier_semantics_sha256": "c7fccee89bfbbf32a7b75357f93a7b26de4b5c2a97f8297165e7af6fb2c32ee0",
-  "verifier_tree_dirty": false
- },
- "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. The field named in the identity is the SCHEMA-ORDERED REPRESENTATIVE of a simultaneous operand group at one program point, not a single cause \u2014 read `operand_group` for the fields that differ and the exact f32 counterfactual that allocates the stored difference between them. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
- "scope": {
-  "mstep_range": {
-   "conservative": [
-    1,
-    10
-   ],
-   "legacy": [
-    1,
-    10
-   ]
+  "legacy_first_divergence": {
+    "diagnostic_only_diffs": {
+      "branch_inactive": 8,
+      "gate_inactive_op": 0,
+      "rounding_absorbed": 36
+    },
+    "identity": [
+      "micro_freeze_heat",
+      2,
+      "-",
+      0,
+      3,
+      0,
+      "xlf",
+      "f32"
+    ],
+    "inactive_lane_diffs": 44,
+    "invalid": null,
+    "kind": null,
+    "operand_group": {
+      "cell": [
+        2,
+        3,
+        0
+      ],
+      "counterfactual": {
+        "bits": {
+          "CC": "0x437396bb",
+          "CF": "0x437396bb",
+          "FC": "0x437396ba",
+          "FF": "0x437396ba"
+        },
+        "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
+        "shapley_delta_T_K": {
+          "cpm": 0.0,
+          "xlf": 1.52587890625e-05
+        },
+        "total_delta_T_K": 1.52587890625e-05
+      },
+      "derived": {
+        "cpp": 279.363037109375,
+        "expression": "fl32(xlf/cpm)",
+        "fortran": 275.5159606933594
+      },
+      "differing_operands": [
+        "cpm",
+        "xlf"
+      ]
+    },
+    "phase": "micro_freeze_heat",
+    "signature": {
+      "c_bits": "0x488911e0",
+      "direction": "C>F",
+      "dtype": "f32",
+      "f_bits": "0x488740a0",
+      "signed_ulp_delta": 119104,
+      "ulp_distance_abs": 119104,
+      "xor": "0xe5140"
+    },
+    "tag": null
   },
-  "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
- },
- "supersession": {
-  "note": "Produced on the CI-pinned runtime with the self-covering verifier digest (21 files).",
-  "status": "current",
-  "superseded_by": null,
-  "valid_for_decision": true,
-  "withdrawal_reason": null
- },
- "verdict": "INCONCLUSIVE"
+  "problem": {
+    "B": 3,
+    "K": 4,
+    "entry_boundary": "kdm62d_kernel_entry_v1",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "initialization_digest": "591da317c54d5f20f0bbefac793b5062ca402d1f380e7aab96dbd460fe012e76",
+    "local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+  },
+  "provenance": {
+    "cpp_root_manifest_sha256": "f323a7f9c4c612b9094a73de2d0ada6b5291a3b58cbae6142b3f7b12daca5270",
+    "decision_protocol_version": 14,
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fortran_conservative_manifest_sha256": "bf5f46965cde5c3ab8541211576f6d11ba43912ad0a9673f2da69d69c768869b",
+    "fortran_legacy_manifest_sha256": "ddc65e280bc0beb8dc32c8d1ca9b42a53dada375c2eca8279602104a51f26012",
+    "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
+    "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
+    "result_schema_version": 3,
+    "verifier_commit": "bfdb63b353c341b1f2d96fcb4838f343ffcf2f44",
+    "verifier_runtime": {
+      "byteorder": "little",
+      "numpy_version": "2.4.6",
+      "python_implementation": "CPython",
+      "python_version": "3.11.14"
+    },
+    "verifier_semantics_sha256": "fe19895ea33c564995ba2baf4bc69153f1b334f7f497b8c4b38634b72af83c19",
+    "verifier_tree_dirty": false
+  },
+  "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. The field named in the identity is the SCHEMA-ORDERED REPRESENTATIVE of a simultaneous operand group at one program point, not a single cause \u2014 read `operand_group` for the fields that differ and the exact f32 counterfactual that allocates the stored difference between them. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+  "scope": {
+    "mstep_range": {
+      "conservative": [
+        1,
+        10
+      ],
+      "legacy": [
+        1,
+        10
+      ]
+    },
+    "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
+  },
+  "supersession": {
+    "note": "produced by gateb_g33m_check.py at bfdb63b353c3 on CPython 3.11.14 / numpy 2.4.6, verifier semantics fe19895ea33c5649",
+    "status": "current",
+    "superseded_by": null,
+    "valid_for_decision": true,
+    "withdrawal_reason": null
+  },
+  "verdict": "INCONCLUSIVE"
 }
