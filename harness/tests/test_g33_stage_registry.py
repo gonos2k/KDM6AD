@@ -78,10 +78,17 @@ def test_the_fortran_parser_derives_its_chain_map():
 
 
 def test_the_normalizer_still_agrees_with_the_registry():
-    """`normalize` derives its own list from the schema. It is the module that
-    decides which records reach the comparator at all, so a divergence here would
-    drop stages rather than misrank them."""
-    assert set(normalize._COMPARATOR_STAGES) <= set(schema.compared_stages())
+    """`normalize` decides which records reach the comparator at all, so a
+    divergence here DROPS stages rather than misranking them.
+
+    The relationship is exact, not a containment: normalize compares every stage
+    the registry marks compared, less `final_output`, which is whole-step
+    cumulative precipitation and travels its own path. Asserting a subset would
+    pass just as well against an empty list, which is the failure being guarded.
+    """
+    assert (set(normalize._COMPARATOR_STAGES)
+            == set(schema.compared_stages()) - set(normalize._NOT_COMPARED))
+    assert set(normalize._NOT_COMPARED) == {"final_output"}
 
 
 def test_every_schema_stage_with_semantic_fields_is_registered():
@@ -113,26 +120,34 @@ def test_substep_pre_opens_no_outer_container():
     assert sp.container_suffix is None and sp.chain == "main"
 
 
-@pytest.mark.parametrize("mod,name", [
-    ("g33_fourcase_comparator.py", "_STAGE_MAJOR"),
-    ("g33_fourcase_comparator.py", "_STAGES"),
-    ("g33_expectation.py", "CPP_OVERLAY_STAGES"),
-    ("g33_fortran/g33_fortran_dump.py", "_STAGE_CHAIN"),
-])
-def test_the_derived_tables_are_not_re_hardcoded(mod, name):
+#: The registry accessor each derived table must be built from. Naming the
+#: accessor rather than rejecting bracket syntax is what makes this test mean
+#: something: `_STAGE_MAJOR = dict(kernel_init_constants=0, ...)` is a hardcoded
+#: table that opens with a letter, and a "must not start with `{`" check passes it.
+_DERIVED_FROM = [
+    ("g33_fourcase_comparator.py", "_STAGE_MAJOR", "stage_major"),
+    ("g33_fourcase_comparator.py", "_STAGES", "compared_stages"),
+    ("g33_expectation.py", "CPP_OVERLAY_STAGES", "cpp_overlay_stages"),
+    ("g33_fortran/g33_fortran_dump.py", "_STAGE_CHAIN", "stage_chains"),
+]
+
+
+@pytest.mark.parametrize("mod,name,accessor", _DERIVED_FROM)
+def test_the_derived_tables_are_not_re_hardcoded(mod, name, accessor):
     """The equality tests above pass just as well against a re-pasted literal.
 
-    This one reads the source: the binding must be an expression, not a literal
-    tuple or dict of stage names. That is the failure mode being defended against
-    — someone adds a stage, the derived call is inconvenient, and a literal goes
-    back in. Six of those is where this refactor started.
+    This one reads the source and requires the binding to CALL the registry. That
+    is the failure mode being defended against — someone adds a stage, the derived
+    call is inconvenient, and a table goes back in. Six of those is where this
+    refactor started, and each was a plausible local edit at the time.
     """
     src = open(os.path.join(_H, mod)).read()
     m = re.search(rf"^{re.escape(name)} = (.+)$", src, re.M)
     assert m, f"{name} not found at module level in {mod}"
     rhs = m.group(1).strip()
-    assert not rhs.startswith(("(", "{", "[")), \
-        f"{mod}:{name} is a literal again — derive it from the stage registry"
+    assert f"{accessor}(" in rhs, (
+        f"{mod}:{name} no longer calls {accessor}() — it reads `{rhs[:60]}`. "
+        f"Derive it from the stage registry rather than restating it.")
 
 
 # ── supersession is produced, not typed ──────────────────────────────────────
