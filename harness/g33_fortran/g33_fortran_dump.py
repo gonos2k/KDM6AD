@@ -40,19 +40,6 @@ _STAGE_V1 = re.compile(
 _STAGE_V2 = re.compile(
     r"^G33F STAGE\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+"
     r"(f32|f64|i32|u8)\s+([0-9A-Fa-f]+)$")
-# A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
-# that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
-_STAGE_CHAIN = {"kernel_call_input": "-", "kernel_init_constants": "-",
-                "kernel_after_entry_clamp": "-",
-                "outer_pre_sed": "-",
-                "surface": "-", "substep_pre": "main",
-                "outer_post_sed": "-", "micro_call_progb_aux": "-",
-                "micro_post_melt": "-", "micro_post_freeze": "-",
-                "micro_freeze_heat": "-",
-                "micro_pre_state_update": "-",
-                "micro_qr_operands": "-",
-                "micro_post_state_update": "-",
-                "outer_post_micro": "-"}
 _FIXIN = re.compile(r"^G33F FIXIN\s+(\S+)\s+(\d+)\s+(-?\d+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _PARAM = re.compile(r"^G33F PARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
 _LOCALPARAM = re.compile(r"^G33F LOCALPARAM\s+(\S+)\s+f32\s+([0-9A-Fa-f]{8})$")
@@ -246,6 +233,12 @@ from dataclasses import dataclass    # noqa: E402
 
 _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
 import g33_schema as _schema         # noqa: E402
+# A v1 stream carries no loop/chain, so they are DERIVED from the stage: the overlay
+# that emits v1 is scoped to one main-chain outer loop. v2 carries the real values.
+# Defined HERE, beside the import, rather than up with the regexes: it comes from
+# the ONE stage registry, and a placeholder up there plus a reassignment down here
+# is exactly the duplicate module-level binding this parser has a test against.
+_STAGE_CHAIN = _schema.stage_chains()
 KERNEL_ENTRY = _schema.KERNEL_ENTRY
 WRAPPER_INPUT = _schema.WRAPPER_INPUT
 ENTRY_BOUNDARIES = _schema.ENTRY_BOUNDARIES

@@ -24,6 +24,16 @@ record_key = _ge.record_key
 expected_key_counts = _ge.expected_key_counts
 completeness_diff = _ge.completeness_diff
 run_index = _ge.run_index
+# The ONE stage registry: order, chain, container id, emitting backend.
+# Six tables across five modules used to carry these separately and every
+# protocol step put them out of step differently.
+StageSpec = _ge.StageSpec
+STAGES = _ge.STAGES
+stage_major = _ge.stage_major
+compared_stages = _ge.compared_stages
+cpp_overlay_stages = _ge.cpp_overlay_stages
+container_suffixes = _ge.container_suffixes
+stage_chains = _ge.stage_chains
 write_descriptors = _ge.write_descriptors
 
 

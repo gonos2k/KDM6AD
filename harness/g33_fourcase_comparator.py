@@ -69,25 +69,11 @@ VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
 #: an omitted argument looks like, and the two must not be confusable.
 _UNATTESTED = object()
 _ALGOS = ("legacy", "conservative")
-_STAGES = ("kernel_call_input", "kernel_init_constants",
-           "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
-           "final_output",
-           "outer_post_sed", "micro_post_melt", "micro_freeze_heat",
-           "micro_call_progb_aux",
-           "micro_post_freeze", "micro_pre_state_update",
-           "micro_qr_operands", "micro_post_state_update",
-           "outer_post_micro")
+_STAGES = schema.compared_stages()
 #: Execution order WITHIN one outer loop. The two bridge snapshots sit after the
 #: surface accumulation: outer_post_sed is the sedimentation result, outer_post_micro
 #: is what the next loop starts from (owner P0-C1).
-_STAGE_MAJOR = {"kernel_init_constants": 0, "kernel_call_input": 1,
-                "kernel_after_entry_clamp": 2, "outer_pre_sed": 3,
-                "substep_pre": 4, "surface": 5, "outer_post_sed": 6,
-                "micro_post_melt": 7, "micro_freeze_heat": 8,
-                "micro_call_progb_aux": 9, "micro_post_freeze": 10,
-                "micro_pre_state_update": 11, "micro_qr_operands": 12,
-                "micro_post_state_update": 13,
-                "outer_post_micro": 14, "final_output": 15}
+_STAGE_MAJOR = schema.stage_major()
 #: Where a shared seed may be promoted on the SEDIMENTATION identity alone.
 #:
 #: Only the op ladder. Every rung there is replayed from its own dumped operands, so

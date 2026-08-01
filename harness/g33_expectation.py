@@ -19,6 +19,7 @@ boundary. Widen only on INCONCLUSIVE.
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 
 # ── op templates: (algorithm, cell_role, species) -> [op_id, ...] ────────────
 # Mass and number are DISTINCT expression families (§3): falk_nr omits dend,
@@ -133,6 +134,84 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
 # interior level, so a TOP-only snapshot could show equal inputs there while
 # work1_qr had already diverged at k=3 — and the gate would misattribute the
 # seed to `falk`.
+# ── ONE stage registry ───────────────────────────────────────────────────────
+#
+# Stage order, container id, chain and emitting-backend used to live in six
+# tables across five modules, and every protocol step that added a stage put them
+# out of step with each other in a different way: a renumbered order silently
+# reordered ops, an undeclared container id failed two steps away at
+# "OP_SEQ_MAP has no entry", a chain map omission surfaced as "non-comparator
+# stage" about a stage the schema does define.
+#
+# Declared here because g33_schema documents itself as the public facade over this
+# module, so this is the direction the dependency already runs. The tables below
+# and in the comparator, the parser and the schema DERIVE from it; the field lists
+# stay where they are, since those genuinely differ per stage.
+#
+# `container_suffix=None` means the stage does not open a whole-K outer container
+# (substep_pre rides the chain/n container; final_output is a whole-step record).
+@dataclass(frozen=True)
+class StageSpec:
+    name: str
+    execution_order: int          # canonical order WITHIN one outer loop
+    chain: str                    # "-" for whole-K, "main"/"ice" for per-substep
+    container_suffix: str | None
+    cpp_emitted: bool             # the C++ overlay emits it
+    compared: bool                # the four-case comparator ranks it
+
+
+STAGES = (
+    StageSpec("kernel_init_constants",     0, "-", "kernel_init_constants",    True,  True),
+    StageSpec("kernel_call_input",         1, "-", "kernel_call_input",        True,  True),
+    StageSpec("kernel_after_entry_clamp",  2, "-", "kernel_after_entry_clamp", True,  True),
+    StageSpec("outer_pre_sed",             3, "-", "outer_pre",                True,  True),
+    StageSpec("substep_pre",               4, "main", None,                    True,  True),
+    StageSpec("surface",                   5, "-", "surface",                  True,  True),
+    StageSpec("outer_post_sed",            6, "-", "outer_post_sed",           True,  True),
+    StageSpec("micro_post_melt",           7, "-", "micro_post_melt",          True,  True),
+    StageSpec("micro_freeze_heat",         8, "-", "micro_freeze_heat",        True,  True),
+    StageSpec("micro_call_progb_aux",      9, "-", "micro_call_progb_aux",     True,  True),
+    StageSpec("micro_post_freeze",        10, "-", "micro_post_freeze",        True,  True),
+    StageSpec("micro_pre_state_update",   11, "-", "micro_pre_state_update",   True,  True),
+    StageSpec("micro_qr_operands",        12, "-", "micro_qr_operands",        True,  True),
+    StageSpec("micro_post_state_update",  13, "-", "micro_post_state_update",  True,  True),
+    StageSpec("outer_post_micro",         14, "-", "outer_post_micro",         True,  True),
+    # Whole-step cumulative precipitation: compared, but the C++ overlay does not
+    # emit it as a stage record and it opens no outer container.
+    StageSpec("final_output",             15, "-", None,                       False, True),
+    # C++-only op-phase records. They are emitted and they carry op_seq, but the
+    # comparator ranks them through the op ladder rather than the stage order.
+    StageSpec("op",                       -1, "main", None,                    True,  False),
+    StageSpec("substep_post",             -1, "main", None,                    True,  False),
+)
+
+STAGE_BY_NAME = {sp.name: sp for sp in STAGES}
+
+
+def stage_major() -> dict:
+    return {sp.name: sp.execution_order for sp in STAGES if sp.compared}
+
+
+def compared_stages() -> tuple:
+    return tuple(sp.name for sp in STAGES if sp.compared)
+
+
+def cpp_overlay_stages() -> tuple:
+    return tuple(sp.name for sp in STAGES if sp.cpp_emitted)
+
+
+def container_suffixes() -> dict:
+    return {sp.name: sp.container_suffix for sp in STAGES
+            if sp.container_suffix is not None}
+
+
+def stage_chains() -> dict:
+    """Chain per stage for the Fortran parser: compared stages only, since that is
+    the universe its record expectation is built over."""
+    return {sp.name: sp.chain for sp in STAGES
+            if sp.compared and sp.name != "final_output"}
+
+
 _STAGE_FIELDS_BASE = {
     # `t`, not "th": the evidence names what the code has — CoordinatorState's
     # member is t, and a field name the state does not carry would make the
@@ -537,13 +616,7 @@ def expected_records(schedule: dict) -> list[dict]:
 # built over stages nothing emits offsets every declared op_seq window past the
 # measured counter, and the real overlay can then never produce a valid
 # container. test_overlay_stage_scope_matches_the_source pins it to the source.
-CPP_OVERLAY_STAGES = ("kernel_call_input", "kernel_init_constants",
-                      "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "op", "substep_post", "micro_call_progb_aux",
-                      "micro_post_melt", "micro_freeze_heat",
-                      "micro_post_freeze",
-                      "micro_pre_state_update", "micro_qr_operands",
-                      "micro_post_state_update",
-                      "surface", "outer_post_sed", "outer_post_micro")
+CPP_OVERLAY_STAGES = cpp_overlay_stages()   # derived from STAGES
 
 
 def container_id(rec: dict) -> str:
@@ -571,19 +644,7 @@ def container_id(rec: dict) -> str:
         # container L1_micro_post_state_update": a symptom two steps from the
         # omission. A fallback that turns a missing entry into a plausible one is the
         # same hazard the dtype table had.
-        tail = {"kernel_call_input": "kernel_call_input",
-                "kernel_init_constants": "kernel_init_constants",
-                "kernel_after_entry_clamp": "kernel_after_entry_clamp",
-                "outer_pre_sed": "outer_pre", "surface": "surface",
-                "outer_post_sed": "outer_post_sed",
-                "micro_call_progb_aux": "micro_call_progb_aux",
-                "micro_post_melt": "micro_post_melt",
-                "micro_freeze_heat": "micro_freeze_heat",
-                "micro_post_freeze": "micro_post_freeze",
-                "micro_pre_state_update": "micro_pre_state_update",
-                "micro_qr_operands": "micro_qr_operands",
-                "micro_post_state_update": "micro_post_state_update",
-                "outer_post_micro": "outer_post_micro"}.get(rec["stage"])
+        tail = container_suffixes().get(rec["stage"])
         if tail is None:
             raise ValueError(
                 f"container_id: no container tail declared for stage "
