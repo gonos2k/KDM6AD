@@ -37,7 +37,7 @@
    "xlf",
    "f32"
   ],
-  "inactive_lane_diffs": 43,
+  "inactive_lane_diffs": 45,
   "invalid": null,
   "kind": null,
   "phase": "micro_freeze_heat",
@@ -79,7 +79,7 @@
    "xlf",
    "f32"
   ],
-  "inactive_lane_diffs": 44,
+  "inactive_lane_diffs": 46,
   "invalid": null,
   "kind": null,
   "phase": "micro_freeze_heat",
@@ -112,7 +112,7 @@
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
   "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
   "result_schema_version": 2,
-  "verifier_commit": "bb5406d466f88d0319d3f3b8665e01a9f0b2389e",
+  "verifier_commit": "cf5ee0699aa4ab06f2dcd926110d60b234b1d489",
   "verifier_tree_dirty": false
  },
  "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
@@ -130,7 +130,7 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Clean regeneration of the v14 run: same four leg bundles (producer_commit fcb9763), same verdict and first divergence, produced from a clean verifier tree so the recorded lineage reproduces it.",
+  "note": "Clean regeneration of the v14 run with the exact-counterfactual activity filter. Same four leg bundles (producer_commit fcb9763), same verdict and first divergence.",
   "status": "current",
   "superseded_by": null,
   "valid_for_decision": true,

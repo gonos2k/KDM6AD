@@ -802,6 +802,41 @@ def _require_algorithm(run, want, label):
         raise StructuralError(f"{label} run algorithm is {run.get('algorithm')!r}, want {want!r}")
 
 
+#: Stages where several recorded fields are operands of ONE expression at ONE
+#: program point. Naming a single "first divergent field" there reports schema
+#: field ORDER as if it were execution order — `xlf` and `cpm` both feed
+#: c = fl32(xlf/cpm), and "first divergence = xlf" reads as "xlf is the cause",
+#: which is not what the evidence says (owner review §7).
+_SIMULTANEOUS_OPERANDS = {"micro_freeze_heat": ("xlf", "cpm", "fl32(xlf/cpm)")}
+
+
+def _operand_group(f_run, c_run, div) -> dict | None:
+    """Every differing field at the first-divergent CELL, plus what they form."""
+    if not div or not div.identity or div.phase not in _SIMULTANEOUS_OPERANDS:
+        return None
+    stage, loop = div.identity[0], div.identity[1]
+    col, k = div.identity[4], div.identity[5]
+
+    def cell(run):
+        return {r["field"]: r["bits"] for r in run["stages"]
+                if r["stage"] == stage and r["loop"] == loop
+                and r["col"] == col and r["k"] == k}
+    f, c = cell(f_run), cell(c_run)
+    num, den, expr = _SIMULTANEOUS_OPERANDS[stage]
+    out = {"cell": [loop, col, k],
+           "differing_operands": sorted(n for n in f if n in c and f[n] != c[n])}
+    if all(n in f and n in c for n in (num, den)):
+        def _f32(b):
+            return struct.unpack("<f", struct.pack("<I", b))[0]
+
+        def _q(d):
+            v = _f32(d[num]) / _f32(d[den])
+            return struct.unpack("<f", struct.pack("<f", v))[0]
+        out["derived"] = {"expression": expr,
+                          "fortran": _q(f), "cpp": _q(c)}
+    return out
+
+
 def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     try:                                          # algorithm preflight
         _require_algorithm(legacy_f, "legacy", "legacy_f")
@@ -815,13 +850,17 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     con = compare_pair(conservative_f, conservative_c)
     verdict, reason = classify(leg, con)
 
-    def _d(x):
-        return {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
-                "kind": x.kind, "tag": x.tag, "signature": x.signature,
-                "inactive_lane_diffs": len(x.inactive_diffs)}
+    def _d(x, f_run, c_run):
+        d = {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
+             "kind": x.kind, "tag": x.tag, "signature": x.signature,
+             "inactive_lane_diffs": len(x.inactive_diffs)}
+        g = _operand_group(f_run, c_run, x)
+        if g:
+            d["operand_group"] = g
+        return d
     return {"verdict": verdict, "reason": reason,
-            "legacy_first_divergence": _d(leg),
-            "conservative_first_divergence": _d(con)}
+            "legacy_first_divergence": _d(leg, legacy_f, legacy_c),
+            "conservative_first_divergence": _d(con, conservative_f, conservative_c)}
 
 
 def promotable_phase(phase) -> bool:

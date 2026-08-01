@@ -174,3 +174,36 @@ def test_a_missing_counterpart_falls_back_and_excludes_LESS():
     f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)
     c["stages"] = [s for s in c["stages"] if s["stage"] != "micro_freeze_heat"]
     assert not ({"xlf", "cpm"} & _co(f, c)), "fallback must not start hiding things"
+
+
+# ── the operand group (owner review §7) ──────────────────────────────────────
+
+def test_a_simultaneous_stage_reports_the_GROUP_not_one_field():
+    """`xlf` and `cpm` are operands of one expression at one program point.
+    Reporting only the lexicographically-first one reads as a single cause."""
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "micro_freeze_heat"
+        identity = ("micro_freeze_heat", 2, "-", 0, 3, 0, "xlf", "f32")
+
+    f = {"stages": [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                     "field": n, "bits": rp.bits32(v)}
+                    for n, v in (("xlf", 276997.0), ("cpm", 1005.37555))]}
+    c = {"stages": [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                     "field": n, "bits": rp.bits32(v)}
+                    for n, v in (("xlf", 280719.0), ("cpm", 1004.85382))]}
+    g = cmp._operand_group(f, c, D())
+    assert g["differing_operands"] == ["cpm", "xlf"]
+    assert g["derived"]["expression"] == "fl32(xlf/cpm)"
+    assert abs(g["derived"]["fortran"] - 275.52) < 0.1
+    assert abs(g["derived"]["cpp"] - 279.36) < 0.1
+
+
+def test_a_stage_with_no_simultaneity_rule_gets_no_group():
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "outer_post_micro"
+        identity = ("outer_post_micro", 2, "-", 0, 3, 0, "qr", "f32")
+    assert cmp._operand_group({"stages": []}, {"stages": []}, D()) is None
