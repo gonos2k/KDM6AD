@@ -44,9 +44,14 @@ DECISION_ROOTS = (
 #: Local modules that are NOT decision logic even though a root imports them.
 #: Each needs a reason; the point of the exception list is that it is short and
 #: read, not that it exists.
-NOT_DECISION_LOGIC = frozenset({
-    "g33_verifier_identity",   # this module: it digests, it does not decide
-})
+#:
+#: EMPTY, and this module is deliberately not in it. It was, on the grounds that
+#: "it digests, it does not decide" — which is wrong: DECISION_LOGIC, this
+#: exception set and `_digest` between them determine WHAT IS COVERED, so a change
+#: here changes what the digest means. The module that defines coverage was the one
+#: thing coverage did not include. There is no circularity: the digest reads bytes
+#: off disk, it does not depend on its own value.
+NOT_DECISION_LOGIC = frozenset()
 
 _SEARCH = (HARNESS, HARNESS / "g33_fortran")
 
@@ -74,6 +79,54 @@ def _local_imports(path: pathlib.Path) -> set[str]:
             if head.startswith("g33") and _resolve(head):
                 out.add(head)
     return out
+
+
+#: How a local module can be pulled in without an `import` statement the AST walk
+#: above can see. None of these appear in the closure today; the point is that if
+#: one arrives, the closure stops being complete SILENTLY — the digest would keep
+#: reporting a set that no longer matches what runs.
+_DYNAMIC_IMPORT_CALLS = ("import_module", "__import__", "load_module", "exec_module")
+
+
+def dynamic_imports_in_closure() -> tuple:
+    """(file, line, call) for every dynamic-import call inside the closure.
+
+    Not a digest input — a tripwire. The AST walk resolves `import g33_x` and
+    `from g33_x import ...`; anything that names a module at runtime is outside
+    what it can follow, so the honest response is to fail rather than to widen the
+    parser and hope. This project has already learned that lesson on the C++ side,
+    where each round of making a static expression checker cleverer produced
+    another fail-open.
+    """
+    found = []
+    for rel in closure():
+        path = HARNESS / rel
+        for node in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            name = (fn.attr if isinstance(fn, ast.Attribute)
+                    else fn.id if isinstance(fn, ast.Name) else None)
+            if name in _DYNAMIC_IMPORT_CALLS:
+                found.append((rel, node.lineno, name))
+    return tuple(sorted(found))
+
+
+def duplicate_module_stems() -> tuple:
+    """Module stems resolvable in more than one search directory.
+
+    `_resolve` returns the first hit, so a second file with the same stem would be
+    shadowed and never digested while an import of that name might well load it.
+    """
+    seen, dup = {}, set()
+    for d in _SEARCH:
+        if not d.is_dir():
+            continue
+        for f in d.glob("g33*.py"):
+            if f.stem in seen and seen[f.stem] != f:
+                dup.add(f.stem)
+            seen.setdefault(f.stem, f)
+    return tuple(sorted(dup))
 
 
 def closure() -> tuple[str, ...]:
@@ -118,6 +171,7 @@ DECISION_LOGIC = (
     "g33_schedule_probe.py",
     "g33_schema.py",
     "g33_update_replay.py",
+    "g33_verifier_identity.py",
     "gateb_g33m_check.py",
 )
 
@@ -126,23 +180,37 @@ DECISION_LOGIC = (
 _DOMAIN = b"KDM6AD-G33-VERIFIER\0V2\0"
 
 
-def semantics_sha256() -> str:
+def _digest(read_bytes) -> str:
+    """The one hashing routine. Every caller goes through it, including the tests.
+
+    `read_bytes(name) -> bytes` is injected so a test can perturb ONE file and
+    exercise THIS function. The previous mutation test built its own hash instead
+    and compared that to the production digest — so it could pass while the
+    production hasher skipped a file entirely, which is the circular shape this
+    repository has already been burned by once (a manifest replayed into the
+    writer in manifest order, passing while the real overlay differed in k, shape,
+    count and field set).
+    """
+    h = hashlib.sha256()
+    h.update(_DOMAIN)
+    for name in DECISION_LOGIC:
+        nb = name.encode()
+        body = read_bytes(name)
+        h.update(len(nb).to_bytes(4, "big"))
+        h.update(nb)
+        h.update(len(body).to_bytes(8, "big"))
+        h.update(body)
+    return h.hexdigest()
+
+
+def semantics_sha256(read_bytes=None) -> str:
     """SHA256 over the decision-logic sources, in the declared order.
 
     Length-prefixed and domain-separated: without explicit lengths, a rename that
     shifts a byte boundary between two files could leave the concatenation — and
     therefore the digest — unchanged.
     """
-    h = hashlib.sha256()
-    h.update(_DOMAIN)
-    for name in DECISION_LOGIC:
-        nb = name.encode()
-        body = (HARNESS / name).read_bytes()
-        h.update(len(nb).to_bytes(4, "big"))
-        h.update(nb)
-        h.update(len(body).to_bytes(8, "big"))
-        h.update(body)
-    return h.hexdigest()
+    return _digest(read_bytes or (lambda n: (HARNESS / n).read_bytes()))
 
 
 def semantics_sha256_at(commit: str) -> str | None:
@@ -154,21 +222,50 @@ def semantics_sha256_at(commit: str) -> str | None:
     """
     import subprocess
     root = HARNESS.parent
-    h = hashlib.sha256()
-    h.update(_DOMAIN)
+    blobs = {}
     for name in DECISION_LOGIC:
         r = subprocess.run(["git", "show", f"{commit}:harness/{name}"],
                            cwd=root, capture_output=True)
         if r.returncode != 0:
             return None
-        nb, body = name.encode(), r.stdout
-        h.update(len(nb).to_bytes(4, "big"))
-        h.update(nb)
-        h.update(len(body).to_bytes(8, "big"))
-        h.update(body)
-    return h.hexdigest()
+        blobs[name] = r.stdout
+    # THE SAME routine as the working-tree digest. Two hashing implementations
+    # would be two things to keep in step, and the one that drifted would be the
+    # one nothing exercised.
+    return _digest(blobs.__getitem__)
 
 
 def missing() -> tuple:
     """Declared files that are not present — a rename must fail loudly."""
     return tuple(n for n in DECISION_LOGIC if not (HARNESS / n).is_file())
+
+
+#: The runtime a DECISION artifact must be produced on — the one public CI pins
+#: (.github/workflows/g33-harness-ci.yml).
+#:
+#: Not decoration. The replay is NumPy f32/f64 arithmetic and this decision turns
+#: on an f32 storage boundary: the analytic coefficient effect is ~0.46 ULP and the
+#: stored result is 1 ULP. Identical sources on a different runtime are not
+#: self-evidently the same verifier, and recording the runtime without requiring
+#: it left a decision-valid artifact produced on NumPy 1.23.5 while CI ran 2.4.6.
+#:
+#: The patch level is deliberately not pinned for Python: CI resolves 3.11.x and
+#: pinning it would fail on a runner image update for a reason unrelated to the
+#: arithmetic. NumPy IS pinned exactly, because it is the arithmetic.
+VERIFIER_RUNTIME = {
+    "python_implementation": "CPython",
+    "python_major_minor": "3.11",
+    "numpy_version": "2.4.6",
+    "byteorder": "little",
+}
+
+
+def runtime_matches(recorded: dict) -> tuple:
+    """Fields of `recorded` that disagree with the required runtime, as (k, want, got)."""
+    bad = []
+    for k, want in VERIFIER_RUNTIME.items():
+        got = (".".join(recorded.get("python_version", "").split(".")[:2])
+               if k == "python_major_minor" else recorded.get(k))
+        if got != want:
+            bad.append((k, want, got))
+    return tuple(bad)

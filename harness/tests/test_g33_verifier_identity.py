@@ -49,23 +49,41 @@ def test_every_declared_file_exists():
 
 
 @pytest.mark.parametrize("name", sorted(vid.DECISION_LOGIC))
-def test_one_byte_in_ANY_covered_file_moves_the_digest(name):
-    """A digest that does not respond to every file it claims to cover is a digest
-    over a subset, whatever its docstring says."""
-    import hashlib
-    before = vid.semantics_sha256()
-    orig = (vid.HARNESS / name).read_bytes()
-    h = hashlib.sha256()
-    h.update(vid._DOMAIN)
-    for n in vid.DECISION_LOGIC:
-        body = (orig + b"\n# mutation\n") if n == name \
-            else (vid.HARNESS / n).read_bytes()
-        nb = n.encode()
-        h.update(len(nb).to_bytes(4, "big"))
-        h.update(nb)
-        h.update(len(body).to_bytes(8, "big"))
-        h.update(body)
-    assert h.hexdigest() != before, f"editing {name} does not move the digest"
+def test_one_byte_in_ANY_covered_file_moves_the_PRODUCTION_digest(name):
+    """The mutation goes through the real hasher, not a copy of it.
+
+    The first version built its own hash beside the production one and compared
+    the two. That can pass while the production hasher SKIPS a file entirely: the
+    baseline would then be a digest over 19 files and the test's hash over 20, so
+    they differ for every parametrisation regardless of the mutation. It proved
+    nothing about which files the shipped code reads.
+
+    Same shape this repository was already burned by — a manifest replayed into
+    the writer in manifest order, passing while the real overlay differed in k,
+    shape, count and field set. So `semantics_sha256` now takes the reader, and
+    this perturbs exactly one file through it.
+    """
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    baseline = vid.semantics_sha256(real.__getitem__)
+    assert baseline == vid.semantics_sha256(), (
+        "the injected reader must reproduce the default digest, or this test is "
+        "measuring a different function than production uses")
+    mutated = dict(real, **{name: real[name] + b"\n# mutation\n"})
+    assert vid.semantics_sha256(mutated.__getitem__) != baseline, (
+        f"editing {name} does not move the digest the verifier actually computes")
+
+
+def test_a_hasher_that_SKIPPED_a_file_would_be_caught():
+    """The failure the previous test could not see, made explicit.
+
+    A digest over a subset must not equal the digest over the whole set — if it
+    did, dropping a file from DECISION_LOGIC would be invisible.
+    """
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    full = vid.semantics_sha256(real.__getitem__)
+    for drop in vid.DECISION_LOGIC[:3]:
+        short = dict(real, **{drop: b""})
+        assert vid.semantics_sha256(short.__getitem__) != full
 
 
 def test_the_digest_is_domain_separated_and_length_prefixed():
@@ -91,3 +109,67 @@ def test_the_digest_can_be_computed_at_a_COMMIT():
 
 def test_an_unknown_commit_returns_None_rather_than_raising():
     assert vid.semantics_sha256_at("0" * 40) is None
+
+
+# ── the closure's own blind spots, made loud (owner review §6) ────────────────
+
+def test_no_DYNAMIC_import_hides_a_dependency():
+    """The AST walk resolves `import g33_x` and `from g33_x import …`. A module
+    named at runtime is outside what it can follow, so the closure would stop
+    being complete SILENTLY and the digest would keep reporting a set that no
+    longer matches what runs.
+
+    Failing is the right response, not making the parser cleverer: this project
+    has already learned on the C++ side that each round of teaching a static
+    checker one more construct produced another fail-open.
+    """
+    found = vid.dynamic_imports_in_closure()
+    assert not found, (
+        "dynamic import inside the decision closure — the digest can no longer be "
+        "trusted to cover what runs:\n"
+        + "\n".join(f"  {f}:{ln} {call}(…)" for f, ln, call in found))
+
+
+def test_the_tripwire_would_actually_FIRE():
+    """A tripwire that has never been shown to trip is a comment."""
+    import ast as _ast
+    tree = _ast.parse("import importlib\nx = importlib.import_module('g33_schema')\n")
+    calls = [n for n in _ast.walk(tree) if isinstance(n, _ast.Call)]
+    names = [n.func.attr for n in calls if isinstance(n.func, _ast.Attribute)]
+    assert set(names) & set(vid._DYNAMIC_IMPORT_CALLS), (
+        "the call the detector looks for is not the call this construct makes")
+
+
+def test_no_module_stem_is_resolvable_in_TWO_search_directories():
+    """`_resolve` returns the first hit, so a shadowed second file would never be
+    digested while an import of that name might load it."""
+    dup = vid.duplicate_module_stems()
+    assert not dup, (
+        f"module stem(s) present in both harness/ and harness/g33_fortran/: "
+        f"{list(dup)} — one of them is shadowed and unhashed")
+
+
+def test_the_module_that_DEFINES_coverage_is_itself_covered():
+    """It was excluded on the grounds that "it digests, it does not decide".
+
+    That is wrong. DECISION_LOGIC, NOT_DECISION_LOGIC and `_digest` between them
+    determine what is covered at all, so a change here changes what the digest
+    MEANS — and the one thing coverage did not include was the module defining
+    coverage. There is no circularity: the digest reads bytes off disk, it does not
+    depend on its own value.
+    """
+    assert "g33_verifier_identity.py" in vid.DECISION_LOGIC
+    assert vid.NOT_DECISION_LOGIC == frozenset(), (
+        "an exception needs a reason recorded next to it; an empty set is the "
+        "default because every exception is a hole in the coverage claim")
+
+
+def test_editing_the_DECISION_LOGIC_LIST_moves_the_digest():
+    """The list is inside a covered file, so shortening it is visible — which is
+    what stops a future edit from quietly narrowing what a verdict depends on."""
+    real = {n: (vid.HARNESS / n).read_bytes() for n in vid.DECISION_LOGIC}
+    baseline = vid.semantics_sha256(real.__getitem__)
+    edited = dict(real)
+    edited["g33_verifier_identity.py"] = real["g33_verifier_identity.py"].replace(
+        b'"g33_schema.py",', b"")
+    assert vid.semantics_sha256(edited.__getitem__) != baseline
