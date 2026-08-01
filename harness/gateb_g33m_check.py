@@ -271,6 +271,29 @@ def _write(path: Path, result: dict, *, force: bool = False) -> None:
             "refusing to write a decision artifact from a DIRTY working tree: the "
             "recorded verifier_commit would not reproduce this result. Commit or "
             "stash first, or pass --debug-only to mark the artifact non-decisional.")
+    # The evidence index requires `supersession` on every artifact and reads
+    # `status` to enforce exactly-one-current. Nothing PRODUCED it: it was typed
+    # onto each artifact by hand after the run, so a regeneration either lost the
+    # field or reintroduced it from memory, and a hand-edited field in a decision
+    # artifact is indistinguishable from a hand-edited verdict. Produced here, and
+    # only the fields a fresh run can actually know: a run supersedes nothing and
+    # is withdrawn by nothing. Retiring an artifact stays a deliberate edit of the
+    # OLD file, which is the direction that should need a human.
+    result.setdefault("supersession", {
+        "status": "current",
+        "superseded_by": None,
+        "valid_for_decision": not result.get("debug_only", False),
+        "withdrawal_reason": None,
+        "note": ("debug-only run: not valid for decision"
+                 if result.get("debug_only")
+                 else f"produced by {Path(__file__).name} at "
+                      f"{prov.get('verifier_commit', 'unknown')[:12]} on "
+                      f"{vid.VERIFIER_RUNTIME['python_implementation']} "
+                      f"{prov.get('verifier_runtime', {}).get('python_version', '?')} "
+                      f"/ numpy {vid.VERIFIER_RUNTIME['numpy_version']}, "
+                      f"verifier semantics "
+                      f"{prov.get('verifier_semantics_sha256', '?')[:16]}"),
+    })
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
     tmp.replace(path)
