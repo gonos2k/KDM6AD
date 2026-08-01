@@ -34,7 +34,23 @@ auto xl  = thermo::compute_xl(state.t,  params.thermo);    // coordinator.cpp:41
 ```
 
 and `runtime.cpp:625` calls `preamble(cur_pyc, …)` **inside** the sub-cycle loop,
-with the current state. So they are recomputed every outer loop.
+with that sub-cycle's state. `pre_core_view(pre)` is annotated "ENTRY xl/cpm/…
+(Fortran-fixed)", and within one micro step it is fixed — but "entry" there means
+the entry of THAT OUTER LOOP, not of the kernel call.
+
+So the difference is precisely: **the reference fixes them once per kernel call;
+the port re-fixes them at each sub-cycle entry.** That predicts agreement on the
+first sub-cycle and divergence from the second onward, and the evidence shows
+exactly that:
+
+| loop | `cpm` cells differing | Fortran distinct | C++ distinct |
+|---|---|---|---|
+| 1 | **0 / 12** | 3 | **3** |
+| 2 | 12 / 12 | 3 | 12 |
+| 3 | 12 / 12 | 3 | 12 |
+
+The Fortran's three values (1005.34186, 1005.35870, 1005.37555) are byte-identical
+across all three loops — fixed at kernel entry and never recomputed.
 
 ## The measurement (`micro_freeze_heat`, loop 2)
 

@@ -128,10 +128,12 @@ amplification is a measurement that has not been made.
 - **§4 raw vs scaled `prevp`.** The recorded `prevp` is post-`scale_rates_for_conservation`.
   Splitting raw / scale factor / scaled is still needed, and is now arguably
   lower priority than the melt–freeze chain that produces the 1-ULP `t`.
-- **§3 t == t0c.** Fortran branches on `t <= t0c`, the C++ on `supcol > 0`
-  (i.e. `t < t0c`); they disagree at exactly the boundary. Encoded as a passing
-  assertion in `test_g33_update_replay`, needs a threshold fixture and an owner
-  decision — not a silent fix.
+- ~~**§3 t == t0c.**~~ **WITHDRAWN (checked against the code, v14).** The C++
+  `cold_mask` is `pre.supcol >= 0` (coordinator.cpp:1737), i.e. `t <= t0c` — the
+  same predicate as Fortran F:2638, boundary included. Near t0c the subtraction
+  `t0c - t` is exact in f32 by Sterbenz, so `supcol` adds no rounding of its own.
+  There is no gap and no threshold fixture is needed. This was taken from a review
+  note and repeated here without checking the code.
 - **§8** single-file provenance, **§9** historical Gate-D witness, and the
   column-number / moist-energy gates.
 

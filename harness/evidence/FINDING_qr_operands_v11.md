@@ -110,7 +110,9 @@ dominates by four orders of magnitude (below).
 ## Three controls
 
 **The branch agrees.** `cold_gate` is bit-identical between the backends at every
-cell of every loop, so this is not the `supcol > 0` / `t <= t0c` disagreement the
+cell of every loop. (An earlier note here called that a `supcol > 0` / `t <= t0c`
+disagreement; the C++ predicate is `supcol >= 0`, so there is none — see
+FINDING_cpm_xl_recompute_v14.) It is still the check the
 field was added to detect.
 
 **At the seed cell nothing depends on the variant.** At k = 0 — where the first

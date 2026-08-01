@@ -65,10 +65,17 @@ def bits32(x) -> int:
 def is_cold(t_bits: int) -> bool:
     """The branch, recomputed from the recorded temperature (owner review §3).
 
-    Fortran branches on `t <= t0c` (F:2638). The C++ gates on `supcol > 0` with
-    `supcol = t0c - t`, which is `t < t0c` — the two disagree at exactly t == t0c.
-    Deriving the branch here rather than trusting a producer-emitted flag means the
-    flag is EVIDENCE about the producer instead of the definition of the answer.
+    Fortran branches on `t <= t0c` (F:2638); the C++ `cold_mask` is
+    `pre.supcol >= 0` (coordinator.cpp:1737) with `supcol = t0c - t`, i.e. also
+    `t <= t0c`. They AGREE, including at the boundary: near t0c the subtraction
+    `t0c - t` is exact in f32 by Sterbenz, so `supcol` carries no rounding of its
+    own. An earlier version of this docstring said the C++ gated on `supcol > 0`
+    and that the two disagreed at exactly t == t0c; that was taken from a review
+    note and never checked against the code, and it is wrong.
+
+    Deriving the branch here rather than trusting a producer-emitted flag still
+    matters, and for the original reason: the flag is then EVIDENCE about the
+    producer instead of the definition of the answer.
     """
     return bool(f32(t_bits) <= T0C)
 

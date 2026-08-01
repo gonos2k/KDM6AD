@@ -29,13 +29,16 @@ def test_the_branch_comes_from_the_recorded_temperature():
     assert not rp.is_cold(rp.bits32(300.0))
 
 
-def test_the_boundary_goes_to_COLD_because_Fortran_uses_le():
-    """Fortran F:2638 is `t <= t0c`; the C++ gates on `supcol > 0`, i.e. `t < t0c`.
+def test_the_boundary_goes_to_COLD_and_BOTH_backends_agree_there():
+    """Fortran F:2638 is `t <= t0c`; the C++ `cold_mask` is `supcol >= 0`
+    (coordinator.cpp:1737) with `supcol = t0c - t` — the same predicate.
 
-    They disagree at exactly t == t0c, and this replay follows the REFERENCE. The
-    disagreement is a real contract gap that needs its own threshold fixture and an
-    owner decision — encoding it here as a passing assertion is how it stays visible
-    instead of becoming a silent convention.
+    This test used to claim they disagreed at exactly t == t0c and to call for a
+    threshold fixture. That came from a review note and was never checked against
+    the code; the code says `>= 0`, not `> 0`. And near t0c the subtraction is
+    exact in f32 by Sterbenz, so `supcol` introduces no rounding of its own.
+    There is no boundary gap. The assertion stays — it now pins the AGREEMENT,
+    which is worth keeping pinned.
     """
     assert rp.is_cold(rp.bits32(rp.T0C)), "t == t0c must take the cold arm (Fortran)"
     assert not rp.is_cold(np.uint32(rp.bits32(rp.T0C) + 1).item()), "one ULP above is warm"
