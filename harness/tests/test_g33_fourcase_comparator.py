@@ -655,7 +655,11 @@ def test_a_decision_leg_cannot_be_handed_a_run(monkeypatch):
     be paired with a run from another fixture — the artifact carried the attestation
     while the comparator read the dict (owner P0-4)."""
     with pytest.raises(TypeError, match="nowhere to pass one in"):
-        cmp.VerifiedFourCase.of(legacy_fortran={"algorithm": "legacy"},
+        # gate_a_report is supplied so the TYPE check is what fires: it is now a
+        # required argument, and omitting it would raise about the signature rather
+        # than about the artifact this test is actually about.
+        cmp.VerifiedFourCase.of(gate_a_report=object(),
+                                legacy_fortran={"algorithm": "legacy"},
                                 legacy_cpp=None, conservative_fortran=None,
                                 conservative_cpp=None)
 

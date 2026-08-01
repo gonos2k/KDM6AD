@@ -86,8 +86,15 @@ def test_the_common_operands_are_never_excluded():
 
 
 def test_cold_gate_is_always_shown():
-    """It is the producer's own claim about its branch. Hiding it would remove the
-    evidence that the two backends disagree at t == t0c."""
+    """It is the producer's own claim about its branch, and a claim is evidence
+    about the producer whether or not it turns out to match.
+
+    An earlier version of this docstring said it was "the evidence that the two
+    backends disagree at t == t0c". That disagreement was withdrawn: the C++
+    predicate is `supcol >= 0` (coordinator.cpp:1737), i.e. `t <= t0c`, the same
+    as Fortran F:2638 — and near t0c the subtraction is exact in f32, so `supcol`
+    adds no rounding either. What this field now verifies is that the two
+    predicates AGREE, boundary included."""
     for t in (243.0, 300.0):
         assert "cold_gate" not in _ids(_run(t=t))
 

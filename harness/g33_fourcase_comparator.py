@@ -65,6 +65,9 @@ PASS_MECHANISM = "PASS_MECHANISM"
 #: reads only the verdict cannot mistake it for a decision-grade result.
 UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
+#: Sentinel for of_unattested(). A distinct object, not None: `None` is what
+#: an omitted argument looks like, and the two must not be confusable.
+_UNATTESTED = object()
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
@@ -175,13 +178,23 @@ class VerifiedFourCase:
 
     @classmethod
     def of(cls, *, legacy_fortran, legacy_cpp, conservative_fortran,
-           conservative_cpp, gate_a_report=None,
-           require_source_authorization: bool = False) -> "VerifiedFourCase":
+           conservative_cpp, gate_a_report) -> "VerifiedFourCase":
         """Normalize each VERIFIED ARTIFACT here, deep-freeze it, and pair them.
 
         The caller hands over four verified legs and nothing else, so a forged event
         stream has nowhere to enter: the run is derived from the artifact whose
         attestation is being relied upon.
+
+        `gate_a_report` is REQUIRED and has no default (owner review §2). It used to
+        default to None alongside `require_source_authorization=False`, so the
+        anchored CLI demanded Gate A while any library caller reaching this
+        constructor skipped it silently — a two-boolean fail-open. Excluding the
+        variant module from the toolchain comparison is what LETS the two Fortran
+        legs differ there; allowing them to differ is not authorizing one, and the
+        report is where that authorization lives.
+
+        A debug comparison uses `of_unattested()`, which says in its name what it
+        does not have.
         """
         import g33_bundle_io as _bio
         import g33_fortran_bundle_io as _fbio
@@ -219,14 +232,25 @@ class VerifiedFourCase:
         if len({leg.build.toolchain() for leg in pair.values()}) != 1:
             raise TypeError(
                 "the two Fortran control legs were not built from one toolchain")
-        if gate_a_report is not None:
-            _fbio.authorized_by_gate_a(gate_a_report, pair)
-        elif require_source_authorization:
+        if gate_a_report is _UNATTESTED:
+            pass                       # of_unattested(): named, not defaulted
+        elif gate_a_report is None:
             raise TypeError(
-                "a decision needs the Gate A scope report: excluding the variant "
-                "module from the toolchain comparison is what lets the legs differ "
-                "there, and allowing them to differ is not authorizing one")
+                "gate_a_report is required: a decision needs the Gate A scope "
+                "report. Use of_unattested() if this is a debug comparison.")
+        else:
+            _fbio.authorized_by_gate_a(gate_a_report, pair)
         return cls(*legs, _token=_FACTORY_TOKEN)
+
+    @classmethod
+    def of_unattested(cls, **kw) -> "VerifiedFourCase":
+        """A four-case WITHOUT Gate A source authorization — debug only.
+
+        Separate entry point rather than a flag, so skipping the authorization is
+        something a caller has to write down. Callers that hand this to the
+        decision path get UNATTESTED_MECHANISM_CANDIDATE at best.
+        """
+        return cls.of(**kw, gate_a_report=_UNATTESTED)
 
     @property
     def legs(self):

@@ -130,10 +130,11 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "status": "current",
+  "note": "The provenance block was also attached by hand rather than produced by gateb_g33m_check, which is why nothing refused to write it. Both are fixed: provenance is emitted by the tool, and a dirty tree now refuses.",
+  "status": "withdrawn",
   "superseded_by": null,
-  "valid_for_decision": true,
-  "withdrawal_reason": null
+  "valid_for_decision": false,
+  "withdrawal_reason": "Produced from a DIRTY verifier tree (provenance.verifier_tree_dirty = true) while simultaneously marked decision-valid. The recorded verifier_commit 9c0cbed does not reproduce this result: the branch-activity filter was applied to the working tree after it. The verdict and first divergence are believed correct, but a decision artifact whose stated lineage does not reproduce it is not decision-grade. Pending clean regeneration from main."
  },
  "verdict": "INCONCLUSIVE"
 }
