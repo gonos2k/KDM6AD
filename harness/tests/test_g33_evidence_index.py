@@ -118,7 +118,7 @@ def test_named_successors_exist():
 REQUIRED_DIGESTS = (
     "cpp_root_manifest_sha256", "fortran_legacy_manifest_sha256",
     "fortran_conservative_manifest_sha256", "gate_a_report_sha256",
-    "fixture_manifest_sha256",
+    "fixture_manifest_sha256", "verifier_semantics_sha256",
 )
 
 
@@ -197,3 +197,27 @@ def test_a_debug_only_artifact_can_never_be_current():
         if d.get("debug_only"):
             assert d["supersession"]["status"] != "current", (
                 f"{p.name} is debug_only and cannot be the decision result")
+
+
+def test_the_current_artifact_was_decided_by_THIS_verifier():
+    """Stale-by-logic, not only stale-by-protocol (owner review §3).
+
+    `decision_protocol_version` covers the evidence contract. It does not cover the
+    code that turns evidence into a verdict: a change to the comparator's ordering,
+    the activity rule or the replay's association moves the answer with the protocol
+    version untouched, and the artifact would stay `current` while no longer
+    describing what this tree concludes.
+
+    Editing a test or a document does not trip this — only the declared decision
+    logic does.
+    """
+    import sys
+    sys.path.insert(0, str(EVIDENCE.parent))
+    import g33_verifier_identity as vid
+    assert not vid.missing(), f"declared decision-logic files are missing: {vid.missing()}"
+    p, d = _current()
+    recorded = d["provenance"].get("verifier_semantics_sha256")
+    assert recorded == vid.semantics_sha256(), (
+        f"{p.name} was decided by different logic than this tree carries "
+        f"(recorded {recorded[:12] if recorded else None}…, tree "
+        f"{vid.semantics_sha256()[:12]}…). Regenerate it, or supersede it.")

@@ -46,6 +46,20 @@
     3,
     0
    ],
+   "counterfactual": {
+    "bits": {
+     "CC": "0x437396bb",
+     "CF": "0x437396bb",
+     "FC": "0x437396ba",
+     "FF": "0x437396ba"
+    },
+    "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
+    "shapley_delta_T_K": {
+     "cpm": 0.0,
+     "xlf": 1.52587890625e-05
+    },
+    "total_delta_T_K": 1.52587890625e-05
+   },
    "derived": {
     "cpp": 279.363037109375,
     "expression": "fl32(xlf/cpm)",
@@ -95,7 +109,7 @@
    "xlf",
    "f32"
   ],
-  "inactive_lane_diffs": 46,
+  "inactive_lane_diffs": 44,
   "invalid": null,
   "kind": null,
   "operand_group": {
@@ -104,6 +118,20 @@
     3,
     0
    ],
+   "counterfactual": {
+    "bits": {
+     "CC": "0x437396bb",
+     "CF": "0x437396bb",
+     "FC": "0x437396ba",
+     "FF": "0x437396ba"
+    },
+    "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
+    "shapley_delta_T_K": {
+     "cpm": 0.0,
+     "xlf": 1.52587890625e-05
+    },
+    "total_delta_T_K": 1.52587890625e-05
+   },
    "derived": {
     "cpp": 279.363037109375,
     "expression": "fl32(xlf/cpm)",
@@ -144,7 +172,8 @@
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
   "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
   "result_schema_version": 2,
-  "verifier_commit": "0e30e61dcbe604e4f17371bc559254cf0e845be9",
+  "verifier_commit": "fa1bf94daf935186c09d380bd629f0bdde742de5",
+  "verifier_semantics_sha256": "f50904bce1dc006706df79ea1730f7f68b696a99697b733d4a40be1bbf970b68",
   "verifier_tree_dirty": false
  },
  "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
@@ -162,7 +191,7 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Clean regeneration with the exact-counterfactual activity filter and the simultaneous-operand group.",
+  "note": "Clean regeneration carrying the verifier-semantics digest, the fail-closed activity counterfactual, and the 2x2 operand split.",
   "status": "current",
   "superseded_by": null,
   "valid_for_decision": true,

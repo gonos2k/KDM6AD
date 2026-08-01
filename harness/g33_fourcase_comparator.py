@@ -826,14 +826,44 @@ def _operand_group(f_run, c_run, div) -> dict | None:
     out = {"cell": [loop, col, k],
            "differing_operands": sorted(n for n in f if n in c and f[n] != c[n])}
     if all(n in f and n in c for n in (num, den)):
-        def _f32(b):
-            return struct.unpack("<f", struct.pack("<I", b))[0]
+        import g33_update_replay as _rp
 
         def _q(d):
-            v = _f32(d[num]) / _f32(d[den])
-            return struct.unpack("<f", struct.pack("<f", v))[0]
-        out["derived"] = {"expression": expr,
-                          "fortran": _q(f), "cpp": _q(c)}
+            return float(_rp.np.float32(_rp.f32(d[num]) / _rp.f32(d[den])))
+        out["derived"] = {"expression": expr, "fortran": _q(f), "cpp": _q(c)}
+
+        # 2x2 EXACT COUNTERFACTUAL and its Shapley split (owner review §6). The two
+        # operands are simultaneous, so "which one caused it" has no answer from
+        # ordering — but it has one from replay: hold everything else at the
+        # reference and vary each coefficient, in f32, through the actual three
+        # sequential stores. The Shapley form averages both orders of attribution,
+        # so neither operand is credited with the interaction term.
+        need = ("t_pre_freeze", "phom") + _rp.FREEZE_TERMS
+        if all(n in f for n in need) and f.get("phom") == c.get("phom") \
+                and _rp.f32(f["phom"]) == 0.0 \
+                and all(f[n] == c[n] for n in ("t_pre_freeze",) + _rp.FREEZE_TERMS):
+            def _T(xlf_bits, cpm_bits):
+                ops = {"t_pre_freeze": _rp.f32(f["t_pre_freeze"]),
+                       "xlf": _rp.f32(xlf_bits), "cpm": _rp.f32(cpm_bits),
+                       **{n: struct.unpack("<d", struct.pack("<Q", f[n]))[0]
+                          for n in _rp.FREEZE_TERMS}}
+                b = _rp.replay_freeze_t(ops)
+                return b, struct.unpack("<f", struct.pack("<I", b))[0]
+            bFF, tFF = _T(f[num], f[den])
+            bCF, tCF = _T(c[num], f[den])
+            bFC, tFC = _T(f[num], c[den])
+            bCC, tCC = _T(c[num], c[den])
+            out["counterfactual"] = {
+                "note": "exact f32 replay of the three sequential stores; base and "
+                        "rates held at the reference and bitwise equal on both legs",
+                "bits": {"FF": f"{bFF:#010x}", "CF": f"{bCF:#010x}",
+                         "FC": f"{bFC:#010x}", "CC": f"{bCC:#010x}"},
+                "total_delta_T_K": tCC - tFF,
+                "shapley_delta_T_K": {
+                    num: 0.5 * ((tCF - tFF) + (tCC - tFC)),
+                    den: 0.5 * ((tFC - tFF) + (tCC - tCF)),
+                },
+            }
     return out
 
 

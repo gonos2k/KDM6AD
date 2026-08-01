@@ -50,22 +50,52 @@ def _f64(bits):
     return struct.unpack("<d", struct.pack("<Q", bits))[0]
 
 
-def _moves_t(mine: dict, theirs: dict) -> bool:
-    """Does swapping in the other backend's coefficient change the STORED t?
+#: The coefficient-only counterfactual is only meaningful when everything ELSE the
+#: three stores read is identical across the backends. If the base temperature or a
+#: rate already differs, swapping coefficients answers a question nobody asked.
+_COUNTERFACTUAL_PRECONDITION = ("t_pre_freeze",) + _FREEZE_RATES
 
-    The exact test, replacing "is some rate nonzero". Same base and same rates —
-    only the coefficient differs — so what this isolates is precisely whether the
-    coefficient difference survives the three f32 stores. It answers correctly for
-    a rate that is exactly zero, for one that is subnormal, and for one that is
+
+def _swap_moves_t(base_of: dict, c_from: dict) -> bool:
+    """One direction: `base_of`'s base and rates, `c_from`'s coefficient."""
+    base = {"t_pre_freeze": _rp.f32(base_of["t_pre_freeze"]),
+            **{n: _f64(base_of[n]) for n in _FREEZE_RATES}}
+    own = _rp.replay_freeze_t(
+        {**base, "xlf": _rp.f32(base_of["xlf"]), "cpm": _rp.f32(base_of["cpm"])})
+    swapped = _rp.replay_freeze_t(
+        {**base, "xlf": _rp.f32(c_from["xlf"]), "cpm": _rp.f32(c_from["cpm"])})
+    return own != swapped
+
+
+def _moves_t(mine: dict, theirs: dict) -> bool | None:
+    """Does the coefficient difference change the STORED t? None = cannot tell.
+
+    The exact test, replacing "is some rate nonzero". It answers correctly for a
+    rate that is exactly zero, for one that is subnormal, and for one that is
     simply too small to tip the rounding.
+
+    Fail-closed in three ways (owner review §4), because a filter that hides a real
+    divergence is worse than the proxy it replaced:
+
+    * `phom` — the homogeneous-freeze term this replay does not model — must be
+      present and zero. A fixture reaching −40 °C has a fourth term in the Fortran
+      chain and none here, so the replay is not the arithmetic and cannot exclude.
+    * everything the stores read besides the coefficient must be cross-backend
+      bitwise EQUAL. If the base or a rate already differs, a coefficient-only swap
+      is answering a different question.
+    * BOTH directions are tried. If the swap moves `t` on either backend's own base
+      and rates, the coefficient group stays in the verdict.
+
+    Returns None when the preconditions do not hold, which the caller treats as
+    "keep it visible".
     """
-    base = {"t_pre_freeze": _rp.f32(mine["t_pre_freeze"]),
-            **{n: _f64(mine[n]) for n in _FREEZE_RATES}}
-    with_mine = _rp.replay_freeze_t(
-        {**base, "xlf": _rp.f32(mine["xlf"]), "cpm": _rp.f32(mine["cpm"])})
-    with_theirs = _rp.replay_freeze_t(
-        {**base, "xlf": _rp.f32(theirs["xlf"]), "cpm": _rp.f32(theirs["cpm"])})
-    return with_mine != with_theirs
+    for d in (mine, theirs):
+        if _rp.f32(d.get("phom", _rp.bits32(1.0))) != 0.0:
+            return None                       # unmodelled fourth term
+    for n in _COUNTERFACTUAL_PRECONDITION:
+        if n not in mine or n not in theirs or mine[n] != theirs[n]:
+            return None                       # not a coefficient-only difference
+    return _swap_moves_t(mine, theirs) or _swap_moves_t(theirs, mine)
 
 
 def noncausal_stage_records(run, other=None) -> frozenset:
@@ -95,8 +125,9 @@ def noncausal_stage_records(run, other=None) -> frozenset:
         if other is not None:
             o = _by_cell(other, "micro_freeze_heat").get((loop, col, k))
             if o and all(n in o for n in ("xlf", "cpm")):
-                if _moves_t(fields, o):
-                    continue              # load-bearing: keep it in the verdict
+                moves = _moves_t(fields, o)
+                if moves is None or moves:
+                    continue              # load-bearing, or cannot tell: keep it
             elif any(_f64(fields[n]) != 0.0 for n in _FREEZE_RATES):
                 continue                  # no counterpart record: fall back
         elif any(_f64(fields[n]) != 0.0 for n in _FREEZE_RATES):

@@ -35,6 +35,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The evidence-index tests check that an artifact's producer and verifier
+          # commits are commits IN THIS REPOSITORY. A shallow clone cannot see a
+          # commit that is genuinely present, so with the default fetch-depth those
+          # checks skip and the membership half of the lineage goes unverified in
+          # public CI (owner review §11). This job is cheap; the full history is
+          # the price of the check actually running here.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
