@@ -182,7 +182,7 @@
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
   "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
   "result_schema_version": 3,
-  "verifier_commit": "4c09c06152380f1edc57f4e10b0248815757bec0",
+  "verifier_commit": "efa82c6ed7369c4320472537e2be79314ec22617",
   "verifier_runtime": {
    "byteorder": "little",
    "numpy_version": "1.23.5",
@@ -207,7 +207,7 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Regenerated after rebasing onto main: the previous verifier_commit no longer existed, which the new ancestor check caught.",
+  "note": "Regenerated after the rebase. The artifact is its OWN commit: it records the commit it was produced at, so amending it into that commit destroys the reference \u2014 which the ancestor check catches.",
   "status": "current",
   "superseded_by": null,
   "valid_for_decision": true,
