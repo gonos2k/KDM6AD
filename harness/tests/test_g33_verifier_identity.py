@@ -109,3 +109,41 @@ def test_the_digest_can_be_computed_at_a_COMMIT():
 
 def test_an_unknown_commit_returns_None_rather_than_raising():
     assert vid.semantics_sha256_at("0" * 40) is None
+
+
+# ── the closure's own blind spots, made loud (owner review §6) ────────────────
+
+def test_no_DYNAMIC_import_hides_a_dependency():
+    """The AST walk resolves `import g33_x` and `from g33_x import …`. A module
+    named at runtime is outside what it can follow, so the closure would stop
+    being complete SILENTLY and the digest would keep reporting a set that no
+    longer matches what runs.
+
+    Failing is the right response, not making the parser cleverer: this project
+    has already learned on the C++ side that each round of teaching a static
+    checker one more construct produced another fail-open.
+    """
+    found = vid.dynamic_imports_in_closure()
+    assert not found, (
+        "dynamic import inside the decision closure — the digest can no longer be "
+        "trusted to cover what runs:\n"
+        + "\n".join(f"  {f}:{ln} {call}(…)" for f, ln, call in found))
+
+
+def test_the_tripwire_would_actually_FIRE():
+    """A tripwire that has never been shown to trip is a comment."""
+    import ast as _ast
+    tree = _ast.parse("import importlib\nx = importlib.import_module('g33_schema')\n")
+    calls = [n for n in _ast.walk(tree) if isinstance(n, _ast.Call)]
+    names = [n.func.attr for n in calls if isinstance(n.func, _ast.Attribute)]
+    assert set(names) & set(vid._DYNAMIC_IMPORT_CALLS), (
+        "the call the detector looks for is not the call this construct makes")
+
+
+def test_no_module_stem_is_resolvable_in_TWO_search_directories():
+    """`_resolve` returns the first hit, so a shadowed second file would never be
+    digested while an import of that name might load it."""
+    dup = vid.duplicate_module_stems()
+    assert not dup, (
+        f"module stem(s) present in both harness/ and harness/g33_fortran/: "
+        f"{list(dup)} — one of them is shadowed and unhashed")

@@ -76,6 +76,54 @@ def _local_imports(path: pathlib.Path) -> set[str]:
     return out
 
 
+#: How a local module can be pulled in without an `import` statement the AST walk
+#: above can see. None of these appear in the closure today; the point is that if
+#: one arrives, the closure stops being complete SILENTLY — the digest would keep
+#: reporting a set that no longer matches what runs.
+_DYNAMIC_IMPORT_CALLS = ("import_module", "__import__", "load_module", "exec_module")
+
+
+def dynamic_imports_in_closure() -> tuple:
+    """(file, line, call) for every dynamic-import call inside the closure.
+
+    Not a digest input — a tripwire. The AST walk resolves `import g33_x` and
+    `from g33_x import ...`; anything that names a module at runtime is outside
+    what it can follow, so the honest response is to fail rather than to widen the
+    parser and hope. This project has already learned that lesson on the C++ side,
+    where each round of making a static expression checker cleverer produced
+    another fail-open.
+    """
+    found = []
+    for rel in closure():
+        path = HARNESS / rel
+        for node in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func
+            name = (fn.attr if isinstance(fn, ast.Attribute)
+                    else fn.id if isinstance(fn, ast.Name) else None)
+            if name in _DYNAMIC_IMPORT_CALLS:
+                found.append((rel, node.lineno, name))
+    return tuple(sorted(found))
+
+
+def duplicate_module_stems() -> tuple:
+    """Module stems resolvable in more than one search directory.
+
+    `_resolve` returns the first hit, so a second file with the same stem would be
+    shadowed and never digested while an import of that name might well load it.
+    """
+    seen, dup = {}, set()
+    for d in _SEARCH:
+        if not d.is_dir():
+            continue
+        for f in d.glob("g33*.py"):
+            if f.stem in seen and seen[f.stem] != f:
+                dup.add(f.stem)
+            seen.setdefault(f.stem, f)
+    return tuple(sorted(dup))
+
+
 def closure() -> tuple[str, ...]:
     """The transitive local-import closure of the roots, as repo-relative paths."""
     seen, stack = set(), [r[:-3] for r in DECISION_ROOTS]
