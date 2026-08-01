@@ -36,6 +36,27 @@ import g33_update_replay as _rp   # noqa: E402  (branch rule + T0C, one definiti
 _FREEZE_COEFFICIENTS = ("xlf", "cpm")
 _FREEZE_RATES = ("pinuc", "pfrzdtc", "pfrzdtr")
 
+#: OTHER consumers of the same two coefficients in the pinned reference. Owner
+#: review §4: the replay below seals the FREEZE stores and nothing else, so an
+#: exclusion derived from it is `active(field, freeze, cell)` and was being applied
+#: as `active(field, cell)`.
+#:
+#: `cpm(i,k)` is the decisive case. It is computed ONCE at F:893 and never
+#: reassigned, so every line below divides by the SAME array element — a value
+#: whose difference the freeze stores happen to round away is bit-for-bit the value
+#: the saturation adjustment then divides by. `xlf` is a scalar recomputed per
+#: block from `xls - xl(i,k)`, and `xl` is likewise fixed for the whole call
+#: (F:894), so the freeze-block value equals the state-update value whenever the
+#: `supcol < 0` override agrees. (F:2453 sets `xlf = xlf0`, a constant, so the
+#: pseml/pgeml rate divisors are NOT the recorded coefficient.)
+_OTHER_COEFFICIENT_CONSUMERS = {
+    "cpm": ("melt heat F:1394,1418,1430,1529",
+            "state update xlwork2 F:2833,2937",
+            "saturation adjustment F:3197,3210,3226"),
+    "xlf": ("melt heat F:1394,1418,1430,1529",
+            "state update xlwork2 F:2830,2936"),
+}
+
 
 def _by_cell(run, stage):
     """{(loop, col, k): {field: bits}} for one stage of one normalized run."""
@@ -105,6 +126,43 @@ def _moves_t(mine: dict, theirs: dict) -> bool | None:
         if n not in mine or n not in theirs or mine[n] != theirs[n]:
             return None                       # not a coefficient-only difference
     return _swap_moves_t(mine, theirs)
+
+
+def deferred_coefficient_records(run, other=None) -> frozenset:
+    """Coefficient identities whose exclusion is SCOPED to the freeze consumer.
+
+    Owner review §4. `noncausal_stage_records` excludes `xlf`/`cpm` when an exact
+    replay shows the difference does not survive the three f32 freeze stores. That
+    conclusion is correct and it is also consumer-local: the replay models the
+    freeze stores and nothing else, while the same two coefficients are read by
+    the melt heat term, by `xlwork2` in the state update, and — for `cpm` — by the
+    saturation adjustment. `cpm(i,k)` is computed once per kernel call and never
+    reassigned, so it is not merely a similar value downstream, it is the same one.
+
+    Removing such a record from the verdict universe entirely creates a specific
+    misattribution: the early coefficient difference disappears, a later stage
+    differs because of it, and the comparator names the later stage as though the
+    difference originated there.
+
+    These identities are therefore held back rather than dropped. They stay out of
+    the PRIMARY scan, so the reported first divergence is still something the
+    arithmetic demonstrably consumed — re-admitting them wholesale would return to
+    the v14 behaviour of naming a coefficient multiplied by zero. But they are
+    carried to the verdict as an explicit unresolved-consumer caveat, and if they
+    are the only differences left, that is reported rather than called clean.
+
+    Branch-inactive records are NOT deferred: the qr-operand rule reads the source
+    branch, so a warm-arm operand at a cold cell is not read by any consumer of
+    that line.
+    """
+    return frozenset(i for i in noncausal_stage_records(run, other)
+                     if i[0] == "micro_freeze_heat"
+                     and i[6] in _FREEZE_COEFFICIENTS)
+
+
+def unresolved_consumers(field: str) -> tuple:
+    """The reference lines that read `field` and that no replay has sealed."""
+    return _OTHER_COEFFICIENT_CONSUMERS.get(field, ())
 
 
 def noncausal_by_category(run, other=None) -> dict:

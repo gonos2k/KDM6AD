@@ -844,3 +844,81 @@ def test_the_boundary_is_part_of_the_identity_not_beside_it():
     with pytest.raises(cmp.StructuralError, match="no comparison boundary"):
         cmp.SedimentationIdentity.of({k: v for k, v in _IDENT.items()
                                       if k != "entry_boundary"})
+
+
+# ── owner review §4: an absorbed coefficient is deferred, not silently dropped ─
+
+def _freeze_stage(xlf, *, loop=1, col=1, k=1, rate=1.0e-30):
+    """One `micro_freeze_heat` record set: a tiny freeze rate, so the formula READS
+    the coefficient but no difference in it survives the three f32 stores."""
+    import struct
+    f64 = lambda v: struct.unpack("<Q", struct.pack("<d", float(v)))[0]
+    f32 = lambda v: struct.unpack("<I", struct.pack("<f", float(v)))[0]
+    vals = {"t_pre_freeze": f32(243.0), "xlf": f32(xlf), "cpm": f32(1005.0),
+            "phom": f32(0.0), "pinuc": f64(0.0), "pfrzdtc": f64(0.0),
+            "pfrzdtr": f64(rate)}
+    return [{"loop": loop, "chain": "-", "stage": "micro_freeze_heat", "n": 0,
+             "col": col, "k": k, "field": f,
+             "dtype": "f64" if f in ("pinuc", "pfrzdtc", "pfrzdtr") else "f32",
+             "bits": b} for f, b in vals.items()]
+
+
+def test_an_absorbed_coefficient_difference_is_not_reported_as_clean():
+    """The failure this guards: the freeze replay absorbs the difference, the record
+    leaves the verdict universe, and a run whose ONLY difference is a coefficient
+    read by melt, `xlwork2` and satadj comes back with nothing to report.
+
+    It must not become the first divergence either — re-admitting it wholesale is
+    the v14 behaviour of naming a coefficient the arithmetic multiplied by zero.
+    It is named only because nothing load-bearing differs.
+    """
+    f = _run("legacy", stages=_freeze_stage(3.34e5))
+    c = _run("legacy", stages=_freeze_stage(3.40e5))
+    div = cmp.compare_pair(f, c)
+    assert div.invalid is None, div.invalid
+    assert div.identity is not None, "an absorbed-only difference read as CLEAN"
+    assert div.kind == "deferred_coefficient"
+    assert div.identity[6] == "xlf"
+    assert div.deferred_coefficients
+
+
+def test_an_identical_pair_is_still_clean():
+    """The complement: the marker must not manufacture a divergence where the
+    coefficient does not differ at all."""
+    f = _run("legacy", stages=_freeze_stage(3.34e5))
+    c = _run("legacy", stages=_freeze_stage(3.34e5))
+    div = cmp.compare_pair(f, c)
+    assert div.identity is None and div.invalid is None
+    assert not div.deferred_coefficients
+
+
+def test_a_load_bearing_divergence_DOWNSTREAM_still_outranks_the_deferred_one():
+    """Ordering is the whole reason these are held back rather than re-admitted:
+    the reported identity must stay something the arithmetic demonstrably consumed,
+    with the suppressed coefficient carried alongside as the caveat that it may be
+    the origin. `final_output` (stage-major 15) sits after `micro_freeze_heat` (8),
+    which is the real shape — in the v14 evidence the named divergence is at loop 2
+    and six suppressed `xlf` differences start at loop 1.
+    """
+    fo = schema.semantic_stage_fields("final_output")[0]
+    f = _run("legacy", stages=_freeze_stage(3.34e5) + _final())
+    c = _run("legacy", stages=_freeze_stage(3.40e5) + _final(bits={fo: 0x7F7FFFFF}))
+    div = cmp.compare_pair(f, c)
+    assert div.kind != "deferred_coefficient", "a real difference was outranked"
+    assert div.phase == "final_output"
+    assert div.deferred_coefficients, "the suppressed coefficient must still surface"
+    assert div.deferred_coefficients[0][6] == "xlf"
+
+
+def test_a_deferred_coefficient_AFTER_the_divergence_is_not_called_upstream():
+    """The caveat says the named identity may sit downstream of a suppressed
+    difference. A coefficient that comes LATER cannot be its origin, and listing it
+    would turn a precise statement into a blanket disclaimer."""
+    op = schema.ops_for_species("legacy", "INTERIOR", "qr")[0]
+    fld = schema.op_fields("legacy", "INTERIOR", op)[0][0]
+    f = _run("legacy", stages=_freeze_stage(3.34e5))
+    c = _run("legacy", stages=_freeze_stage(3.40e5),
+             bits={(1, 1, 1, op, fld): 0x7F7FFFFF})
+    div = cmp.compare_pair(f, c)
+    assert div.phase == "op", "precondition: the op difference is found first"
+    assert div.deferred_coefficients == ()
