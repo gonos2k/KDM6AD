@@ -133,3 +133,53 @@ def test_the_derived_tables_are_not_re_hardcoded(mod, name):
     rhs = m.group(1).strip()
     assert not rhs.startswith(("(", "{", "[")), \
         f"{mod}:{name} is a literal again — derive it from the stage registry"
+
+
+# ── supersession is produced, not typed ──────────────────────────────────────
+#
+# Lives here rather than in test_g33_evidence_index because that module tests the
+# INDEX over artifacts; this tests the writer that fills the field the index reads.
+
+def _write_result(tmp_path, result):
+    import importlib
+    g = importlib.import_module("gateb_g33m_check")
+    out = tmp_path / "r.json"
+    g._write(out, result)
+    import json
+    return json.loads(out.read_text())
+
+
+def test_the_writer_supplies_supersession(tmp_path):
+    """The index requires the field on every artifact and nothing produced it: it
+    was typed on by hand after each run, so a regeneration either dropped it or
+    reintroduced it from memory. A hand-edited field in a decision artifact is
+    indistinguishable from a hand-edited verdict."""
+    d = _write_result(tmp_path, {"verdict": "INCONCLUSIVE", "provenance": {
+        "verifier_commit": "a" * 40, "verifier_semantics_sha256": "b" * 64,
+        "verifier_tree_dirty": False, "verifier_runtime": {"python_version": "3.11.14"}}})
+    s = d["supersession"]
+    assert s["status"] == "current"
+    assert s["valid_for_decision"] is True
+    assert s["superseded_by"] is None and s["withdrawal_reason"] is None
+    assert "a" * 12 in s["note"] and "b" * 16 in s["note"]
+
+
+def test_a_debug_only_run_is_not_valid_for_decision(tmp_path):
+    """--debug-only exists so a dirty tree can still produce something readable.
+    That artifact must never be usable as evidence, and the index reads exactly
+    this field to decide."""
+    d = _write_result(tmp_path, {"verdict": "INCONCLUSIVE", "debug_only": True,
+                                 "provenance": {"verifier_tree_dirty": True}})
+    assert d["supersession"]["valid_for_decision"] is False
+    assert d["supersession"]["status"] == "current"
+
+
+def test_an_explicit_supersession_is_never_overwritten(tmp_path):
+    """Retiring an artifact is a deliberate edit of the OLD file. The writer fills
+    an absence; it must not overrule a withdrawal someone recorded."""
+    d = _write_result(tmp_path, {"verdict": "INCONCLUSIVE", "supersession": {
+        "status": "withdrawn", "superseded_by": "later.json",
+        "valid_for_decision": False, "withdrawal_reason": "placement defect",
+        "note": "kept"}, "provenance": {}})
+    assert d["supersession"]["status"] == "withdrawn"
+    assert d["supersession"]["note"] == "kept"
