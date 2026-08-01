@@ -182,14 +182,14 @@
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
   "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
   "result_schema_version": 3,
-  "verifier_commit": "46ec6e2169bdfba99155fd8309681f94f5c2616f",
+  "verifier_commit": "e92091791f8a6f9fdd1243d0e648a917df86ffb9",
   "verifier_runtime": {
    "byteorder": "little",
    "numpy_version": "2.4.6",
    "python_implementation": "CPython",
    "python_version": "3.11.13"
   },
-  "verifier_semantics_sha256": "b2bddf44cb064a5af44e1e0a11198421217ce25b7185ecc658704659671181a3",
+  "verifier_semantics_sha256": "c7fccee89bfbbf32a7b75357f93a7b26de4b5c2a97f8297165e7af6fb2c32ee0",
   "verifier_tree_dirty": false
  },
  "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. The field named in the identity is the SCHEMA-ORDERED REPRESENTATIVE of a simultaneous operand group at one program point, not a single cause \u2014 read `operand_group` for the fields that differ and the exact f32 counterfactual that allocates the stored difference between them. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
@@ -207,7 +207,7 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Produced on the CI-pinned runtime (CPython 3.11.13 / NumPy 2.4.6). The verdict, first divergence, 2x2 corners and Shapley shares are identical to the run on 3.9.10 / 1.23.5, so the result does not depend on the runtime.",
+  "note": "Produced on the CI-pinned runtime with the self-covering verifier digest (21 files).",
   "status": "current",
   "superseded_by": null,
   "valid_for_decision": true,
