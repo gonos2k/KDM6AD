@@ -27,6 +27,11 @@
  },
  "attested": true,
  "conservative_first_divergence": {
+  "diagnostic_only_diffs": {
+   "branch_inactive": 7,
+   "gate_inactive_op": 0,
+   "rounding_absorbed": 38
+  },
   "identity": [
    "micro_freeze_heat",
    2,
@@ -99,6 +104,11 @@
   "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v14/fortran-legacy"
  },
  "legacy_first_divergence": {
+  "diagnostic_only_diffs": {
+   "branch_inactive": 8,
+   "gate_inactive_op": 0,
+   "rounding_absorbed": 36
+  },
   "identity": [
    "micro_freeze_heat",
    2,
@@ -171,12 +181,18 @@
   "fortran_legacy_manifest_sha256": "ddc65e280bc0beb8dc32c8d1ca9b42a53dada375c2eca8279602104a51f26012",
   "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
   "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
-  "result_schema_version": 2,
-  "verifier_commit": "fa1bf94daf935186c09d380bd629f0bdde742de5",
-  "verifier_semantics_sha256": "f50904bce1dc006706df79ea1730f7f68b696a99697b733d4a40be1bbf970b68",
+  "result_schema_version": 3,
+  "verifier_commit": "4c09c06152380f1edc57f4e10b0248815757bec0",
+  "verifier_runtime": {
+   "byteorder": "little",
+   "numpy_version": "1.23.5",
+   "python_implementation": "CPython",
+   "python_version": "3.9.10"
+  },
+  "verifier_semantics_sha256": "7b80308464948edb14a87f5cc33a1fd545bd0768c37d78d17a8a41d0797b9aa2",
   "verifier_tree_dirty": false
  },
- "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
+ "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. The field named in the identity is the SCHEMA-ORDERED REPRESENTATIVE of a simultaneous operand group at one program point, not a single cause \u2014 read `operand_group` for the fields that differ and the exact f32 counterfactual that allocates the stored difference between them. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
  "scope": {
   "mstep_range": {
    "conservative": [
@@ -191,7 +207,7 @@
   "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
  },
  "supersession": {
-  "note": "Clean regeneration carrying the verifier-semantics digest, the fail-closed activity counterfactual, and the 2x2 operand split.",
+  "note": "Regenerated after rebasing onto main: the previous verifier_commit no longer existed, which the new ancestor check caught.",
   "status": "current",
   "superseded_by": null,
   "valid_for_decision": true,
