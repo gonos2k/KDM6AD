@@ -27,6 +27,29 @@
   },
   "attested": true,
   "conservative_first_divergence": {
+    "deferred_coefficients": {
+      "count": 6,
+      "earliest": [
+        "micro_freeze_heat",
+        1,
+        "-",
+        0,
+        1,
+        0,
+        "xlf",
+        "f32"
+      ],
+      "fields": [
+        "xlf"
+      ],
+      "note": "these coefficient differences are absorbed by the f32 freeze stores, which is the only consumer a replay seals. The same values are read by the consumers listed above, so the identity named here may be DOWNSTREAM of one of them rather than its origin",
+      "unresolved_consumers": {
+        "xlf": [
+          "melt heat F:1394,1418,1430,1529",
+          "state update xlwork2 F:2830,2936"
+        ]
+      }
+    },
     "diagnostic_only_diffs": {
       "branch_inactive": 7,
       "gate_inactive_op": 0,
@@ -104,6 +127,29 @@
     "fortran_legacy": "/Users/yhlee/kdm6ad-g33m-v14/fortran-legacy"
   },
   "legacy_first_divergence": {
+    "deferred_coefficients": {
+      "count": 6,
+      "earliest": [
+        "micro_freeze_heat",
+        1,
+        "-",
+        0,
+        1,
+        0,
+        "xlf",
+        "f32"
+      ],
+      "fields": [
+        "xlf"
+      ],
+      "note": "these coefficient differences are absorbed by the f32 freeze stores, which is the only consumer a replay seals. The same values are read by the consumers listed above, so the identity named here may be DOWNSTREAM of one of them rather than its origin",
+      "unresolved_consumers": {
+        "xlf": [
+          "melt heat F:1394,1418,1430,1529",
+          "state update xlwork2 F:2830,2936"
+        ]
+      }
+    },
     "diagnostic_only_diffs": {
       "branch_inactive": 8,
       "gate_inactive_op": 0,
@@ -182,14 +228,14 @@
     "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
     "producer_commit": "fcb97638066a5233d4738c1c15fc19adbb46e8ad",
     "result_schema_version": 3,
-    "verifier_commit": "bfdb63b353c341b1f2d96fcb4838f343ffcf2f44",
+    "verifier_commit": "d4923ee15df3b7fa86c65757b5b788ec967ef100",
     "verifier_runtime": {
       "byteorder": "little",
       "numpy_version": "2.4.6",
       "python_implementation": "CPython",
       "python_version": "3.11.14"
     },
-    "verifier_semantics_sha256": "fe19895ea33c564995ba2baf4bc69153f1b334f7f497b8c4b38634b72af83c19",
+    "verifier_semantics_sha256": "a75c08bc82e96ccd5c2ea47d9265784c02ee822187cb49bceb7f594119078126",
     "verifier_tree_dirty": false
   },
   "reason": "legacy first-diverges at micro_freeze_heat ('micro_freeze_heat', 2, '-', 0, 3, 0, 'xlf', 'f32') \u2014 an OPERAND of the D2-D4 freeze heat term differs while the post-D1-melt state matched, so the difference is in the rate or coefficient that produced it, not in the t-store arithmetic. The field named in the identity is the SCHEMA-ORDERED REPRESENTATIVE of a simultaneous operand group at one program point, not a single cause \u2014 read `operand_group` for the fields that differ and the exact f32 counterfactual that allocates the stored difference between them. This is NOT a statement about conservative-only interface arithmetic; attribution is owner adjudication",
@@ -207,7 +253,7 @@
     "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ difference did not originate in conservative-only arithmetic. It does not certify column-number (rho*dz*nr) conservation, multi-subcycle behaviour beyond this fixture's mstep range, or meteorological accuracy."
   },
   "supersession": {
-    "note": "produced by gateb_g33m_check.py at bfdb63b353c3 on CPython 3.11.14 / numpy 2.4.6, verifier semantics fe19895ea33c5649",
+    "note": "produced by gateb_g33m_check.py at d4923ee15df3 on CPython 3.11.14 / numpy 2.4.6, verifier semantics a75c08bc82e96ccd",
     "status": "current",
     "superseded_by": null,
     "valid_for_decision": true,
