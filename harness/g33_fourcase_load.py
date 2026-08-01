@@ -196,7 +196,7 @@ def load_verified_fourcase(
             legacy_fortran=fortran_legs["legacy"], legacy_cpp=cpp_legs["legacy"],
             conservative_fortran=fortran_legs["conservative"],
             conservative_cpp=cpp_legs["conservative"],
-            gate_a_report=gate_a, require_source_authorization=True)
+            gate_a_report=gate_a)
 
     return LoadedFourCase(
         fixture_id=fixture_id, authority=authority,

@@ -1,10 +1,26 @@
-# The port recomputes `cpm` and `xl`; the reference deliberately does not
+# The port re-fixes `cpm` and `xl` per sub-cycle; the reference fixes them once
 
-Protocol v14. The 1-ULP `t` traces to a **semantic divergence in production code**,
-not to rounding: the C++ recomputes the latent-heat and heat-capacity
-coefficients every outer loop from the evolved state, while the pinned Fortran
-computes them once per kernel call and says in its own comment that this is
-intentional.
+Protocol v14. The root cause of the 1-ULP `t` is a **semantic divergence in
+production code** — the coefficient policy — and the 1 ULP itself is the
+**discrete manifestation** of that continuous difference crossing an f32 storage
+boundary.
+
+Both halves matter and were previously run together as "semantic divergence, not
+rounding" (owner review §6). The continuous coefficient contribution at the seed
+cell is
+
+    Δc · Σrates ≈ 7.1e-06 K        against   ULP(t at 243.6 K) = 1.526e-05 K
+                                             ⇒ ≈ 0.46 ULP
+
+so the analytic difference is **sub-ULP**; it appears as a whole ULP in the stored
+state because it lands across a rounding boundary. There is no unexplained
+rounding-order defect — and equally, the observed 1 ULP is not independent of
+rounding. Both numbers belong in the record:
+
+| quantity | value |
+|---|---|
+| analytic coefficient contribution | 7.1e-06 K ≈ **0.46 ULP** |
+| stored f32 state difference | **1 ULP** (`0x437396ba` → `0x437396bb`) |
 
 ## The reference
 

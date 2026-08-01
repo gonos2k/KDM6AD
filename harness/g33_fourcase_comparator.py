@@ -65,6 +65,9 @@ PASS_MECHANISM = "PASS_MECHANISM"
 #: reads only the verdict cannot mistake it for a decision-grade result.
 UNATTESTED_MECHANISM_CANDIDATE = "UNATTESTED_MECHANISM_CANDIDATE"
 VERDICTS = (PASS_MECHANISM, "FAIL", "INCONCLUSIVE", "INVALID_EVIDENCE")
+#: Sentinel for of_unattested(). A distinct object, not None: `None` is what
+#: an omitted argument looks like, and the two must not be confusable.
+_UNATTESTED = object()
 _ALGOS = ("legacy", "conservative")
 _STAGES = ("kernel_call_input", "kernel_init_constants",
            "kernel_after_entry_clamp", "outer_pre_sed", "substep_pre", "surface",
@@ -175,13 +178,23 @@ class VerifiedFourCase:
 
     @classmethod
     def of(cls, *, legacy_fortran, legacy_cpp, conservative_fortran,
-           conservative_cpp, gate_a_report=None,
-           require_source_authorization: bool = False) -> "VerifiedFourCase":
+           conservative_cpp, gate_a_report) -> "VerifiedFourCase":
         """Normalize each VERIFIED ARTIFACT here, deep-freeze it, and pair them.
 
         The caller hands over four verified legs and nothing else, so a forged event
         stream has nowhere to enter: the run is derived from the artifact whose
         attestation is being relied upon.
+
+        `gate_a_report` is REQUIRED and has no default (owner review §2). It used to
+        default to None alongside `require_source_authorization=False`, so the
+        anchored CLI demanded Gate A while any library caller reaching this
+        constructor skipped it silently — a two-boolean fail-open. Excluding the
+        variant module from the toolchain comparison is what LETS the two Fortran
+        legs differ there; allowing them to differ is not authorizing one, and the
+        report is where that authorization lives.
+
+        A debug comparison uses `of_unattested()`, which says in its name what it
+        does not have.
         """
         import g33_bundle_io as _bio
         import g33_fortran_bundle_io as _fbio
@@ -219,14 +232,25 @@ class VerifiedFourCase:
         if len({leg.build.toolchain() for leg in pair.values()}) != 1:
             raise TypeError(
                 "the two Fortran control legs were not built from one toolchain")
-        if gate_a_report is not None:
-            _fbio.authorized_by_gate_a(gate_a_report, pair)
-        elif require_source_authorization:
+        if gate_a_report is _UNATTESTED:
+            pass                       # of_unattested(): named, not defaulted
+        elif gate_a_report is None:
             raise TypeError(
-                "a decision needs the Gate A scope report: excluding the variant "
-                "module from the toolchain comparison is what lets the legs differ "
-                "there, and allowing them to differ is not authorizing one")
+                "gate_a_report is required: a decision needs the Gate A scope "
+                "report. Use of_unattested() if this is a debug comparison.")
+        else:
+            _fbio.authorized_by_gate_a(gate_a_report, pair)
         return cls(*legs, _token=_FACTORY_TOKEN)
+
+    @classmethod
+    def of_unattested(cls, **kw) -> "VerifiedFourCase":
+        """A four-case WITHOUT Gate A source authorization — debug only.
+
+        Separate entry point rather than a flag, so skipping the authorization is
+        something a caller has to write down. Callers that hand this to the
+        decision path get UNATTESTED_MECHANISM_CANDIDATE at best.
+        """
+        return cls.of(**kw, gate_a_report=_UNATTESTED)
 
     @property
     def legs(self):
@@ -532,7 +556,11 @@ def compare_pair(f_run, c_run) -> Divergence:
     # treatment as a gate-inactive op lane: out of the verdict, into diagnostics.
     # The v14 gate named `xlf` at a 289 K cell with all three freeze rates zero —
     # a coefficient multiplied by zero — as its first divergence.
-    noncausal = activity.noncausal_stage_records(f_run)
+    # Both runs: the freeze coefficients are judged by an exact counterfactual
+    # (does the OTHER backend's coefficient change the stored t?) rather than by
+    # whether a rate happens to be nonzero. The reference still supplies the base
+    # and the rates.
+    noncausal = activity.noncausal_stage_records(f_run, c_run)
 
     def _in_scope(e):
         if cutoff is not None and e.order >= cutoff:
@@ -774,6 +802,41 @@ def _require_algorithm(run, want, label):
         raise StructuralError(f"{label} run algorithm is {run.get('algorithm')!r}, want {want!r}")
 
 
+#: Stages where several recorded fields are operands of ONE expression at ONE
+#: program point. Naming a single "first divergent field" there reports schema
+#: field ORDER as if it were execution order — `xlf` and `cpm` both feed
+#: c = fl32(xlf/cpm), and "first divergence = xlf" reads as "xlf is the cause",
+#: which is not what the evidence says (owner review §7).
+_SIMULTANEOUS_OPERANDS = {"micro_freeze_heat": ("xlf", "cpm", "fl32(xlf/cpm)")}
+
+
+def _operand_group(f_run, c_run, div) -> dict | None:
+    """Every differing field at the first-divergent CELL, plus what they form."""
+    if not div or not div.identity or div.phase not in _SIMULTANEOUS_OPERANDS:
+        return None
+    stage, loop = div.identity[0], div.identity[1]
+    col, k = div.identity[4], div.identity[5]
+
+    def cell(run):
+        return {r["field"]: r["bits"] for r in run["stages"]
+                if r["stage"] == stage and r["loop"] == loop
+                and r["col"] == col and r["k"] == k}
+    f, c = cell(f_run), cell(c_run)
+    num, den, expr = _SIMULTANEOUS_OPERANDS[stage]
+    out = {"cell": [loop, col, k],
+           "differing_operands": sorted(n for n in f if n in c and f[n] != c[n])}
+    if all(n in f and n in c for n in (num, den)):
+        def _f32(b):
+            return struct.unpack("<f", struct.pack("<I", b))[0]
+
+        def _q(d):
+            v = _f32(d[num]) / _f32(d[den])
+            return struct.unpack("<f", struct.pack("<f", v))[0]
+        out["derived"] = {"expression": expr,
+                          "fortran": _q(f), "cpp": _q(c)}
+    return out
+
+
 def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     try:                                          # algorithm preflight
         _require_algorithm(legacy_f, "legacy", "legacy_f")
@@ -787,13 +850,17 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
     con = compare_pair(conservative_f, conservative_c)
     verdict, reason = classify(leg, con)
 
-    def _d(x):
-        return {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
-                "kind": x.kind, "tag": x.tag, "signature": x.signature,
-                "inactive_lane_diffs": len(x.inactive_diffs)}
+    def _d(x, f_run, c_run):
+        d = {"invalid": x.invalid, "phase": x.phase, "identity": x.identity,
+             "kind": x.kind, "tag": x.tag, "signature": x.signature,
+             "inactive_lane_diffs": len(x.inactive_diffs)}
+        g = _operand_group(f_run, c_run, x)
+        if g:
+            d["operand_group"] = g
+        return d
     return {"verdict": verdict, "reason": reason,
-            "legacy_first_divergence": _d(leg),
-            "conservative_first_divergence": _d(con)}
+            "legacy_first_divergence": _d(leg, legacy_f, legacy_c),
+            "conservative_first_divergence": _d(con, conservative_f, conservative_c)}
 
 
 def promotable_phase(phase) -> bool:

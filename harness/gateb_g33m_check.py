@@ -108,6 +108,10 @@ def main(argv=None) -> int:
                          "fixture it declares attests nothing.")
     ap.add_argument("--allow-unattested", action="store_true",
                     help="debug only; the result is stamped attested:false")
+    ap.add_argument("--debug-only", action="store_true",
+                    help="mark the artifact non-decisional, which is the ONLY way "
+                         "to write one from a dirty tree. It is recorded in the "
+                         "artifact, so a reader cannot mistake it for a decision.")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
 
@@ -134,6 +138,8 @@ def main(argv=None) -> int:
     B, K = authority["B"], authority["K"]
 
     result = {"verdict": None, "reason": None, "attested": False,
+              "provenance": _provenance(a, fbio.DECISION_PROTOCOL_VERSION),
+              "debug_only": bool(a.debug_only),
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
                          "fortran_legacy": str(a.fortran_legacy),
                          "fortran_conservative": str(a.fortran_conservative),
@@ -195,6 +201,36 @@ def main(argv=None) -> int:
     return EXIT[result["verdict"]]
 
 
+def _git(*args) -> str:
+    import subprocess
+    return subprocess.run(["git", *args], capture_output=True, text=True,
+                          cwd=Path(__file__).resolve().parent.parent).stdout.strip()
+
+
+def _provenance(a, protocol_version: int) -> dict:
+    """The reproduction lineage, produced HERE rather than added afterwards.
+
+    This block used to be attached by hand after the run. A field a tool does not
+    produce cannot be gated by that tool, cannot be trusted to describe the run it
+    sits in, and — as happened — can record `verifier_tree_dirty: true` on an
+    artifact that is simultaneously marked decision-valid. SHAs are the authority;
+    the input paths in `inputs` are local and informational.
+    """
+    return {
+        "result_schema_version": 2,
+        "decision_protocol_version": protocol_version,
+        "producer_commit": a.expected_repo_commit,
+        "verifier_commit": _git("rev-parse", "HEAD"),
+        "verifier_tree_dirty": bool(_git("status", "--porcelain")),
+        "cpp_root_manifest_sha256": a.expected_manifest_sha256,
+        "fortran_legacy_manifest_sha256": a.expected_fortran_legacy_manifest_sha256,
+        "fortran_conservative_manifest_sha256":
+            a.expected_fortran_conservative_manifest_sha256,
+        "gate_a_report_sha256": a.expected_gate_a_scope_report_sha256,
+        "fixture_manifest_sha256": a.expected_fixture_manifest_sha256,
+    }
+
+
 def _write(path: Path, result: dict, *, force: bool = False) -> None:
     """Deterministic, atomic, and no-clobber.
 
@@ -206,6 +242,16 @@ def _write(path: Path, result: dict, *, force: bool = False) -> None:
         raise SystemExit(
             f"refusing to overwrite an existing decision artifact: {path} "
             f"(move it aside, or pass --force to replace it deliberately)")
+    # A DIRTY TREE CANNOT PRODUCE A DECISION ARTIFACT. `verifier_commit` is then a
+    # commit the run was not made from, so checking it out does not reproduce the
+    # result — which is the whole content of the provenance block. The v14 artifact
+    # was written this way and marked decision-valid at the same time.
+    prov = result.get("provenance", {})
+    if prov.get("verifier_tree_dirty") and not result.get("debug_only"):
+        raise SystemExit(
+            "refusing to write a decision artifact from a DIRTY working tree: the "
+            "recorded verifier_commit would not reproduce this result. Commit or "
+            "stash first, or pass --debug-only to mark the artifact non-decisional.")
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
     tmp.replace(path)

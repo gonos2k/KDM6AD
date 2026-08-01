@@ -86,8 +86,15 @@ def test_the_common_operands_are_never_excluded():
 
 
 def test_cold_gate_is_always_shown():
-    """It is the producer's own claim about its branch. Hiding it would remove the
-    evidence that the two backends disagree at t == t0c."""
+    """It is the producer's own claim about its branch, and a claim is evidence
+    about the producer whether or not it turns out to match.
+
+    An earlier version of this docstring said it was "the evidence that the two
+    backends disagree at t == t0c". That disagreement was withdrawn: the C++
+    predicate is `supcol >= 0` (coordinator.cpp:1737), i.e. `t <= t0c`, the same
+    as Fortran F:2638 — and near t0c the subtraction is exact in f32, so `supcol`
+    adds no rounding either. What this field now verifies is that the two
+    predicates AGREE, boundary included."""
     for t in (243.0, 300.0):
         assert "cold_gate" not in _ids(_run(t=t))
 
@@ -118,3 +125,85 @@ def test_the_identity_shape_matches_the_comparators():
     assert ids
     for i in ids:
         assert len(i) == 8 and i[2] == "-" and i[3] == 0
+
+
+# ── the EXACT counterfactual (owner review §8) ───────────────────────────────
+#
+# "is some rate nonzero" is a proxy. The question is whether the coefficient
+# difference survives the three f32 stores, and a nonzero rate can be far too
+# small for that. These exercise the two-run path; the tests above exercise the
+# one-run fallback, which excludes strictly less.
+
+def _pair(rate, xlf_f=3.34e5, xlf_c=3.34e5):
+    f = _run(freeze_rates=(0.0, 0.0, rate))
+    c = _run(freeze_rates=(0.0, 0.0, rate))
+    for st in c["stages"]:
+        if st["stage"] == "micro_freeze_heat" and st["field"] == "xlf":
+            st["bits"] = rp.bits32(xlf_c)
+    for st in f["stages"]:
+        if st["stage"] == "micro_freeze_heat" and st["field"] == "xlf":
+            st["bits"] = rp.bits32(xlf_f)
+    return f, c
+
+
+def _co(f, c):
+    return {i[6] for i in act.noncausal_stage_records(f, c)}
+
+
+def test_a_coefficient_that_moves_t_is_CAUSAL():
+    f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)     # big enough to tip the store
+    assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+def test_a_NONZERO_rate_too_small_to_move_t_is_NOT_causal():
+    """The case the any-rate-nonzero proxy gets wrong: the formula reads the
+    coefficient, but no difference in it survives the rounding, so it cannot be the
+    load-bearing operand of this divergence."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    assert {"xlf", "cpm"} <= _co(f, c)
+    # ...and the weaker one-run rule keeps it, which is why the pair matters
+    assert not ({"xlf", "cpm"} & _ids(f))
+
+
+def test_identical_coefficients_are_never_causal():
+    f, c = _pair(rate=1.0e-3)                    # same xlf on both sides
+    assert {"xlf", "cpm"} <= _co(f, c)
+
+
+def test_a_missing_counterpart_falls_back_and_excludes_LESS():
+    f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)
+    c["stages"] = [s for s in c["stages"] if s["stage"] != "micro_freeze_heat"]
+    assert not ({"xlf", "cpm"} & _co(f, c)), "fallback must not start hiding things"
+
+
+# ── the operand group (owner review §7) ──────────────────────────────────────
+
+def test_a_simultaneous_stage_reports_the_GROUP_not_one_field():
+    """`xlf` and `cpm` are operands of one expression at one program point.
+    Reporting only the lexicographically-first one reads as a single cause."""
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "micro_freeze_heat"
+        identity = ("micro_freeze_heat", 2, "-", 0, 3, 0, "xlf", "f32")
+
+    f = {"stages": [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                     "field": n, "bits": rp.bits32(v)}
+                    for n, v in (("xlf", 276997.0), ("cpm", 1005.37555))]}
+    c = {"stages": [{"stage": "micro_freeze_heat", "loop": 2, "col": 3, "k": 0,
+                     "field": n, "bits": rp.bits32(v)}
+                    for n, v in (("xlf", 280719.0), ("cpm", 1004.85382))]}
+    g = cmp._operand_group(f, c, D())
+    assert g["differing_operands"] == ["cpm", "xlf"]
+    assert g["derived"]["expression"] == "fl32(xlf/cpm)"
+    assert abs(g["derived"]["fortran"] - 275.52) < 0.1
+    assert abs(g["derived"]["cpp"] - 279.36) < 0.1
+
+
+def test_a_stage_with_no_simultaneity_rule_gets_no_group():
+    import g33_fourcase_comparator as cmp
+
+    class D:
+        phase = "outer_post_micro"
+        identity = ("outer_post_micro", 2, "-", 0, 3, 0, "qr", "f32")
+    assert cmp._operand_group({"stages": []}, {"stages": []}, D()) is None

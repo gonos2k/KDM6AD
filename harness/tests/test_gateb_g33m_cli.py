@@ -16,10 +16,14 @@ import gateb_g33m_check as gate  # noqa: E402
 
 
 def _args(tmp_path, out, **over):
+    # --debug-only on every CLI test: these ARE debug runs, written from a working
+    # tree that is dirty by definition during development, and the gate refuses to
+    # write a DECISION artifact from one. Marking them is honest and keeps the
+    # refusal strict rather than making it skippable.
     a = ["--cpp-bundle", str(tmp_path / "nope"),
          "--fortran-legacy", str(tmp_path / "l.g33f"),
          "--fortran-conservative", str(tmp_path / "c.g33f"),
-         "--out", str(out)]
+         "--debug-only", "--out", str(out)]
     for k, v in over.items():
         a += [f"--{k}", v] if v is not True else [f"--{k}"]
     return a
@@ -125,3 +129,41 @@ def test_the_writer_is_atomic(tmp_path):
     gate._write(out, {"verdict": "INCONCLUSIVE"})
     assert json.loads(out.read_text())["verdict"] == "INCONCLUSIVE"
     assert not list(tmp_path.glob("*.tmp")), "the temp file must not survive"
+
+
+def test_a_dirty_tree_cannot_write_a_DECISION_artifact(tmp_path, monkeypatch):
+    """The v14 artifact was written from a dirty tree AND marked decision-valid.
+
+    Its recorded verifier_commit does not reproduce it, which is the whole content
+    of the provenance block, so the refusal has to be in the producer — a field a
+    tool does not enforce is a field a reader cannot rely on.
+    """
+    out = tmp_path / "r.json"
+    monkeypatch.setattr(gate, "_git",
+                        lambda *a: "M x" if a[0] == "status" else "0" * 40)
+    args = [x for x in _args(tmp_path, out, **_ANCHORS) if x != "--debug-only"]
+    with pytest.raises(SystemExit, match="DIRTY working tree"):
+        gate.main(args)
+    assert not out.exists(), "nothing may be written when the refusal fires"
+
+
+def test_a_dirty_tree_MAY_write_a_debug_artifact_and_it_says_so(tmp_path, monkeypatch):
+    out = tmp_path / "r.json"
+    monkeypatch.setattr(gate, "_git",
+                        lambda *a: "M x" if a[0] == "status" else "0" * 40)
+    gate.main(_args(tmp_path, out, **_ANCHORS))
+    r = json.loads(out.read_text())
+    assert r["debug_only"] is True and r["provenance"]["verifier_tree_dirty"] is True
+
+
+def test_the_provenance_block_is_produced_by_the_TOOL(tmp_path):
+    """It used to be attached by hand afterwards, which is why it could record a
+    dirty tree on an artifact simultaneously marked decision-valid."""
+    out = tmp_path / "r.json"
+    gate.main(_args(tmp_path, out, **_ANCHORS))
+    prov = json.loads(out.read_text())["provenance"]
+    for k in ("result_schema_version", "decision_protocol_version",
+              "producer_commit", "verifier_commit", "verifier_tree_dirty",
+              "cpp_root_manifest_sha256", "gate_a_report_sha256",
+              "fixture_manifest_sha256"):
+        assert k in prov, f"provenance is missing {k}"
