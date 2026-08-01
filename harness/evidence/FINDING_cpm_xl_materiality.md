@@ -10,14 +10,17 @@ For every cell, replay the D2–D4 freeze heat twice with the **same rates** (th
 are bit-identical between the backends at f64) and each backend's own coefficient:
 
     c_F = f32(xlf_F / cpm_F)        c_C = f32(xlf_C / cpm_C)
-    heating = c_F · Σ rates         dT_err = (c_C − c_F) · Σ rates
+    analytic_freeze_heat_contribution = c_F · Σ rates
+    analytic_difference               = (c_C − c_F) · Σ rates
 
-`heating` is the latent warming that freeze block delivers; `dT_err` is the part
-of it attributable to the coefficient divergence.
+Both are CONTINUOUS quantities. The model stores `t` through three sequential f32
+rounds, so neither equals the stored-state difference; the discrete counterpart is
+below. Naming them "heating" and "error" invited exactly that conflation (owner
+review §5).
 
 ## Result
 
-| loop | col | k | heating (K) | dT_err (K) | err / heating |
+| loop | col | k | analytic freeze-heat contribution (K) | analytic difference (K) | ratio |
 |---|---|---|---|---|---|
 | 1 | 3 | 0–3 | 4.5e-05 … 8.5e-04 | **0** | **0 %** |
 | 2 | 3 | 0 | 5.184e-04 | 7.238e-06 | **1.40 %** |
@@ -54,6 +57,31 @@ for a case.
 
 Within this fixture the ratio does move: 1.40 % at k 0 to 1.64 % at k 3, tracking
 how far each cell has drifted from the sub-cycle entry the port re-fixed at.
+
+## The discrete counterpart, measured (owner review §6)
+
+The artifact now carries the 2×2 exact counterfactual at the seed cell — the three
+sequential f32 stores replayed with each combination of the two coefficients —
+and the Shapley split, which averages both attribution orders so neither operand
+absorbs the interaction:
+
+```
+T(xlf_F,cpm_F) = 0x437396ba        T(xlf_C,cpm_C) = 0x437396bb
+total stored ΔT = 1.5259e-05 K  =  exactly 1 ULP
+Shapley:  xlf  1.5259e-05 K        cpm  0.0 K
+```
+
+So the two layers say different things and both are true:
+
+| | `xlf` | `cpm` |
+|---|---|---|
+| analytic (relative) | +1.344 % | −0.052 % |
+| discrete (stored ΔT) | **1 ULP** | **0** |
+
+`cpm`'s share is real in the coefficient and vanishes in the f32 store at this
+cell. That is not "xlf is the cause" — both operands differ, and both are
+consequences of one policy difference — it is the statement that at this cell, at
+storage granularity, only `xlf`'s share survives the rounding.
 
 ## Three things this does NOT bound
 
