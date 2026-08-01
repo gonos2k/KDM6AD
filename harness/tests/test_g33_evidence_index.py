@@ -155,12 +155,33 @@ def test_the_current_artifact_is_at_the_decision_protocol_version():
 
 @pytest.mark.parametrize("field", ["producer_commit", "verifier_commit"])
 def test_the_recorded_commits_are_real_git_objects(field):
-    """A commit that is not in this repository is a string, not a lineage."""
+    """A commit that is not in this repository is a string, not a lineage.
+
+    The existence half needs a complete clone to answer. CI checks out with the
+    `actions/checkout` default `fetch-depth: 1`, where `git cat-file` cannot see a
+    commit that is genuinely present in the repository — the first version of this
+    test failed there on two perfectly good SHAs, asserting a property of the
+    LOCAL CLONE rather than of the artifact.
+
+    So the SHAPE is checked always (that IS a property of the artifact), and
+    existence only where the clone can answer. The skip is conditioned on the repo
+    actually being shallow, not on the lookup failing — conditioning it on failure
+    is how such a check goes quietly vacuous.
+    """
+    import re as _re
     import subprocess
     p, d = _current()
     sha = d["provenance"][field]
+    assert _re.fullmatch(r"[0-9a-f]{40}", sha or ""), (
+        f"{p.name}: {field}={sha!r} is not a full 40-hex commit id")
+
+    root = EVIDENCE.parent.parent
+    shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                             cwd=root, capture_output=True, text=True).stdout.strip()
+    if shallow != "false":
+        pytest.skip(f"shallow clone: cannot resolve {field}; shape checked")
     r = subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"],
-                       cwd=EVIDENCE.parent.parent, capture_output=True)
+                       cwd=root, capture_output=True)
     assert r.returncode == 0, f"{p.name}: {field}={sha} is not a commit in this repo"
 
 
