@@ -346,3 +346,71 @@ def test_a_wholly_missing_counterpart_cell_never_hides_the_identity():
     f, c = _pair(rate=0.0)
     c["stages"] = [s for s in c["stages"] if s["stage"] != "micro_freeze_heat"]
     assert not ({"xlf", "cpm"} & _co(f, c))
+
+
+# ── owner review §4: the exclusion is scoped to the consumer it replayed ──────
+#
+# `noncausal_stage_records` seals the three f32 FREEZE stores and nothing else,
+# but the same `xlf`/`cpm` are read by the melt heat term, by `xlwork2` in the
+# state update, and — for `cpm` — by the saturation adjustment. `cpm(i,k)` is
+# computed once at F:893 and never reassigned, so a difference the freeze stores
+# round away is bit-for-bit the value satadj later divides by.
+#
+# Dropping such a record from the verdict universe creates one specific error:
+# the early difference disappears, a later stage differs because of it, and the
+# comparator names the later stage as though the difference started there.
+
+def test_an_absorbed_coefficient_is_deferred_not_simply_dropped():
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    excluded = {i[6] for i in act.noncausal_stage_records(f, c)}
+    deferred = {i[6] for i in act.deferred_coefficient_records(f, c)}
+    assert "xlf" in excluded, "precondition: the replay absorbs this difference"
+    assert "xlf" in deferred, "and it must remain reachable as a caveat"
+
+
+def test_deferred_is_a_subset_of_excluded():
+    """It marks a REASON for an exclusion, so it can never name something that was
+    not excluded — that would put a record in two states at once."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    assert (act.deferred_coefficient_records(f, c)
+            <= act.noncausal_stage_records(f, c))
+
+
+def test_only_the_freeze_coefficients_are_deferred():
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    for ident in act.deferred_coefficient_records(f, c):
+        assert ident[0] == "micro_freeze_heat"
+        assert ident[6] in act._FREEZE_COEFFICIENTS
+
+
+def test_branch_inactive_operands_are_NOT_deferred():
+    """The qr-operand rule reads the source branch: a warm-arm operand at a cold
+    cell is not read by ANY consumer of that line, so there is no later consumer
+    to defer to. Deferring it would re-admit exactly the noise the filter exists
+    to remove."""
+    f, c = _pair(rate=1.0e-30, xlf_c=3.40e5)
+    excluded = act.noncausal_stage_records(f, c)
+    deferred = act.deferred_coefficient_records(f, c)
+    qr = {i for i in excluded if i[0] == "micro_qr_operands"}
+    assert qr, "precondition: the fixture has branch-inactive qr operands"
+    assert not (qr & deferred)
+
+
+def test_a_load_bearing_coefficient_is_not_deferred_because_it_is_not_excluded():
+    f, c = _pair(rate=1.0e-3, xlf_c=3.40e5)
+    assert not ({"xlf", "cpm"} & {i[6] for i in act.deferred_coefficient_records(f, c)})
+
+
+@pytest.mark.parametrize("field", ["xlf", "cpm"])
+def test_every_deferrable_coefficient_names_its_unsealed_consumers(field):
+    """The caveat is only worth emitting if it says WHERE the coefficient is still
+    read. An empty list would render the marker unfalsifiable."""
+    assert act.unresolved_consumers(field)
+
+
+def test_cpm_carries_the_saturation_adjustment_consumer():
+    """`cpm` is the decisive case and the reason this is a P0 rather than a
+    tidy-up: F:893 computes it once per kernel call and nothing reassigns it, so
+    satadj divides by the identical differing value."""
+    assert any("3210" in s or "satur" in s.lower()
+               for s in act.unresolved_consumers("cpm"))

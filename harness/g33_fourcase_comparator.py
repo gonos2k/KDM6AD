@@ -484,6 +484,11 @@ class Divergence:
     tag: str | None = None
     signature: dict | None = None
     inactive_diffs: tuple = ()   # op diffs in gate-inactive lanes (diagnostics only)
+    #: Coefficient differences excluded by a replay that seals only the FREEZE
+    #: consumer, while the same coefficient is read by melt, `xlwork2` and satadj
+    #: (owner review §4). Non-empty means the identity named above may sit
+    #: DOWNSTREAM of a suppressed difference rather than being its origin.
+    deferred_coefficients: tuple = ()
 
 
 def _gate_defining(e) -> bool:
@@ -547,6 +552,11 @@ def compare_pair(f_run, c_run) -> Divergence:
     # whether a rate happens to be nonzero. The reference still supplies the base
     # and the rates.
     noncausal = activity.noncausal_stage_records(f_run, c_run)
+    # Owner review §4: of those, the coefficient exclusions are scoped to the
+    # freeze consumer only. Held back from the primary scan (so the named
+    # divergence is still something the arithmetic consumed) but never silently
+    # dropped — see `_deferred_diffs` below.
+    deferred = activity.deferred_coefficient_records(f_run, c_run)
 
     def _in_scope(e):
         if cutoff is not None and e.order >= cutoff:
@@ -574,13 +584,35 @@ def compare_pair(f_run, c_run) -> Divergence:
                         and not f_active.get(_lane_of(e.identity), True)))
                 and (o := cmap.get(e.identity)) is not None and e.bits != o.bits
                 ] if not cutoff else []
+    # Coefficient differences the freeze replay absorbed, in canonical order. They
+    # are evidence about attribution, not about detection: a difference that IS
+    # load-bearing downstream still shows up as a later-stage difference, but
+    # without this the later stage is named as though it were the origin.
+    def _deferred_diffs(before=None):
+        return tuple(e.identity for e in fe
+                     if e.identity in deferred
+                     and (before is None or e.order <= before)
+                     and (o := cmap.get(e.identity)) is not None and e.bits != o.bits)
+
     for e in f_scope:                                  # canonical interleaved order
         ce_e = cmap[e.identity]
         if e.bits != ce_e.bits:
             return Divergence(phase=e.phase, identity=e.identity,
                               shared_key=e.shared_key, kind=e.kind, tag=e.tag,
                               signature=_signature(e.dtype, e.bits, ce_e.bits),
-                              inactive_diffs=tuple(inactive))
+                              inactive_diffs=tuple(inactive),
+                              deferred_coefficients=_deferred_diffs(e.order))
+    # Nothing the arithmetic demonstrably consumed differs. If coefficients whose
+    # OTHER consumers are unsealed still differ, that is not a clean run: report
+    # the earliest rather than returning a pass the evidence does not support.
+    if not cutoff and (dd := _deferred_diffs()):
+        first = next(e for e in fe if e.identity == dd[0])
+        return Divergence(
+            phase=first.phase, identity=first.identity, kind="deferred_coefficient",
+            shared_key=first.shared_key, tag=first.tag,
+            signature=_signature(first.dtype, first.bits,
+                                 cmap[first.identity].bits),
+            inactive_diffs=tuple(inactive), deferred_coefficients=dd)
     if cut_ev is not None:
         # the comparable prefix is clean, so the earliest real difference is the
         # gate/mstep itself — an upstream CFL / fall-speed difference. (No signature
@@ -886,6 +918,25 @@ def adjudicate(legacy_f, legacy_c, conservative_f, conservative_c):
                                     if i not in cats["branch_inactive"]
                                     and i not in cats["rounding_absorbed"]),
         }
+        # Owner review §4. Whether the named identity is the ORIGIN of the
+        # difference or sits downstream of a coefficient the freeze replay
+        # absorbed. Emitted whenever any such coefficient differs at or before it,
+        # with the reference lines that read the coefficient and that no replay
+        # has sealed, so the limit of the attribution is stated rather than known.
+        if x.deferred_coefficients:
+            fields = sorted({i[6] for i in x.deferred_coefficients})
+            d["deferred_coefficients"] = {
+                "count": len(x.deferred_coefficients),
+                "fields": fields,
+                "earliest": x.deferred_coefficients[0],
+                "unresolved_consumers": {
+                    f: list(activity.unresolved_consumers(f)) for f in fields},
+                "note": ("these coefficient differences are absorbed by the f32 "
+                         "freeze stores, which is the only consumer a replay "
+                         "seals. The same values are read by the consumers listed "
+                         "above, so the identity named here may be DOWNSTREAM of "
+                         "one of them rather than its origin"),
+            }
         g = _operand_group(f_run, c_run, x)
         if g:
             d["operand_group"] = g
