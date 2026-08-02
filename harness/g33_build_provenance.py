@@ -36,11 +36,15 @@ def collect(out: Path, fc: str, module: Path, fixture: Path,
     because the digest of whatever `gfortran` resolved to is the point."""
     binary = shutil.which(fc) or fc
     cmds = out / "commands.txt"
+    # A compiler that prints no version gets `null`, not "" -- and never an
+    # exception, which would abort an otherwise successful build at its last
+    # step. The digest above is the field that identifies the binary anyway.
+    version = subprocess.run([binary, "--version"], text=True,
+                             capture_output=True).stdout.splitlines()
     return {
         "compiler_path": binary,
         "compiler_sha256": sha256(binary),
-        "compiler_version": subprocess.run([binary, "--version"], text=True,
-                                           capture_output=True).stdout.splitlines()[0],
+        "compiler_version": version[0] if version else None,
         # From the log the build wrote as it compiled -- not from a caller that
         # may pass nothing, which would be indistinguishable from a build that
         # ran no commands.
