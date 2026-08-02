@@ -115,8 +115,11 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   the O(1) swings in its convergence exponents (−5.86, +3.88, −1.02, +0.41). The
   flip is real; the attribution was asserted from its existence without checking its
   magnitude, and is **withdrawn**. Column 3's erratic orders are currently
-  **unattributed**, which also weakens the "§9 is structurally unanswerable"
-  argument that leaned partly on it. The analyzer now prints each flip's share of
+  **unattributed** — rounding noise is also ruled out (differences are 1,000–74,000×
+  the f32 floor), so the non-smoothness is real but unexplained. §9's conclusion
+  survives, since an erratic sequence yields no rate whatever causes it, but the
+  obstacle is now **unexplained rather than understood** — so the possibility that
+  column 3 could be made usable, and §9 answerable, is open rather than closed. The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **`ncmin` column non-locality now fails two independent acceptance gates**, both

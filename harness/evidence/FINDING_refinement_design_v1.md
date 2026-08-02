@@ -281,8 +281,10 @@ ncmin gate                  not recorded, inside the kernel
 surface precipitation onset not recorded, needs per-call increments
 ```
 
-The two that are recorded are enough to settle the question for column 3: the
-topology **does** move there, so its exponents are not rates.
+The two that are recorded show the topology **does** move in column 3 — but see the
+correction above: the moving species carries 3.88e-06 of that column's water, far
+too little to explain its O(1) exponent swings. **The record establishes that the
+topology moves; it does not establish that this is why the exponents are erratic.**
 
 ## Precipitation: RESOLVED by extending the chain
 
@@ -431,7 +433,7 @@ is not evidence of that, because of what column 1 is:
 |---|---|---|---|---|
 | 1 | 288–290 | no | **valid** | **no** |
 | 2 | 266–268 | no | marginal | no |
-| 3 | 242–244 | **yes** | **invalid** (qg flips) | **yes** |
+| 3 | 242–244 | **yes** | **erratic** (cause open) | **yes** |
 
 The coefficient policy acts through `xlf`/`cpm` in the **melt and freeze heat
 terms**, which are cold-phase. Column 1 carries no ice at all, so the policy is
@@ -441,8 +443,16 @@ measurement is untrustworthy exactly where the policy acts.
 **The domain where a convergence order is well defined and the domain where the
 thermodynamic policy acts are disjoint on this fixture.** That is not a matter of
 the chain being too short: extending it from 12.5 s to 3.125 s did not move column
-3 into an asymptotic regime, because what breaks there is a species appearing and
-disappearing, not a step size being too large.
+3 into an asymptotic regime.
+
+**Why** column 3 is erratic is open. An earlier version said "because a species
+appears and disappears"; that is withdrawn — the species in question is 3.88e-06 of
+the column. Rounding noise is also ruled out (the differences are 1,000–74,000×
+the f32 floor). The conclusion above does **not** depend on the reason: an
+erratic, non-monotone sequence cannot yield a rate whatever produces it. What
+changes is that the obstacle is now unexplained rather than understood, so the
+possibility that column 3 could be made usable — and §9 answerable — is open
+rather than closed.
 
 So §9's experiment, run correctly and to six members on both legs, **cannot select
 between the coefficient policies here**, and no amount of further refinement on this
