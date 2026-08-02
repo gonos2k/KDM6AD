@@ -108,7 +108,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   makes the *final-state manifestation* small at a fine step and does **not** make
   the measure mismatch non-structural: the transfer still uses ρΔz for mass and
   Δz-only for number, in the source, independent of timestep. No column-number CLOSURE is possible from the current drivers — the surface
-  NUMBER flux is not emitted, only mass precipitation — and the measurement is the
+  NUMBER flux is not emitted, only mass precipitation; it is `falln(i,kts,1:2)`
+  (rain and ice number), a kernel **local** at `module_mp_kdm6.F:719` with no
+  `intent`, so it is reachable only through the SHA-pinned macro-gated overlay that
+  recovered `mstep`, **not** by a driver edit as an earlier note claimed — and the measurement is the
   **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
   the rain-number channel this row names is still unexercised.
   See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
