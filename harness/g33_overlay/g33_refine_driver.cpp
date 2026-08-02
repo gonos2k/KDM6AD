@@ -261,6 +261,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 12; ++i) emit(names[i], *fields[i], fx::B, fx::K);
         emit("rho", f.rho, fx::B, fx::K, "FORCING");
         emit("delz", f.delz, fx::B, fx::K, "FORCING");
+        emit("pii", f.pii, fx::B, fx::K, "FORCING");
         emit_prec(1, rain, fx::B);
         emit_prec(2, snow, fx::B);
         emit_prec(3, graupel, fx::B);

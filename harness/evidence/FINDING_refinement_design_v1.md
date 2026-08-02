@@ -175,6 +175,57 @@ thresholds are active, which is precisely the condition under which a classical
 order stops being meaningful — and the topology record that would confirm it is
 still not built.
 
+## The branch topology DOES move, and it is measured
+
+Owner review §5 warned that a classical order is meaningful only within one smooth
+branch. That was carried as a caution. It is now a measurement, and it needed no
+kernel instrumentation: the final branch state is recoverable from the emitted
+fields, given `pii` — the cold/warm mask from `t = th·pii` against `t0c`, and which
+species are present above `qmin`.
+
+Against the coarsest member, every finer member differs — and always the same way:
+
+```
+N=  6 (h=50s)   : 3 flips  qg@c3k1, qg@c3k2, qg@c3k3
+N= 12 (h=25s)   : 3 flips  qg@c3k1, qg@c3k2, qg@c3k3
+N= 24 (h=12.5s) : 3 flips  qg@c3k1, qg@c3k2, qg@c3k3
+N= 48 (h=6.25s) : 3 flips  qg@c3k1, qg@c3k2, qg@c3k3
+N= 96 (h=3.125s): 2 flips  qg@c3k1, qg@c3k2
+```
+
+Graupel in the cold column:
+
+| h (s) | k1 | k2 | k3 |
+|---|---|---|---|
+| 100 | 2.860e-09 ✓ | 4.229e-09 ✓ | 8.460e-09 ✓ |
+| 50 | 0 | 0 | 0 |
+| 25 | 0 | 0 | 0 |
+| 12.5 | 0 | 0 | 0 |
+| 6.25 | 0 | 0 | 0 |
+| 3.125 | 0 | 0 | 1.615e-09 ✓ |
+
+**Exactly zero**, not small — a threshold fired and removed the species. So graupel
+presence in column 3 switches on at 100 s, off for four members, and on again at
+3.125 s. The chain is **not integrating the same set of processes at different
+resolutions**.
+
+Three consequences, and they close the column-3 story:
+
+1. **Any order computed across members that straddle this flip is not a rate.**
+   That covers every column-3 exponent in this document.
+2. It explains why the column-3 water budget has no order: the species set changes.
+3. It explains why `qg` shows `n/a` in the per-field table — the norm hits exact
+   zeros, which the analyzer already declines to convert into an exponent.
+
+The cold/warm mask itself never flips, and no other species does. The instability is
+graupel presence alone, and it is in the same three cells as everything else.
+
+What this does NOT recover is the per-sub-cycle topology — the `mstep` vector, the
+cap-active masks, the intermediate branch history. Those are inside the kernel. The
+final-state record is one-sided: a difference proves the topology moved, but
+agreement would not prove it stayed put, since an intermediate flip can heal before
+the end.
+
 ## What may and may not be said about convergence
 
 Established: **selected max norms of a synthetic fixture decreased monotonically
@@ -189,11 +240,19 @@ order at all. None of the following is currently recorded per member, and until 
 is, the numbers above are a trend and not a rate:
 
 ```
-outer-loop count            cold/warm branch mask
-sedimentation mstep vector  complete-evaporation mask
-cap-active mask             entry-clamp mask
-ncmin gate                  surface precipitation onset
+outer-loop count            RECORDED (loops, in the stream)
+cold/warm branch mask       RECORDED (final state; stable across the chain)
+species presence mask       RECORDED (final state; qg FLIPS -- see above)
+sedimentation mstep vector  not recorded, inside the kernel
+cap-active mask             not recorded, inside the kernel
+complete-evaporation mask   not recorded, inside the kernel
+entry-clamp mask            not recorded, inside the kernel
+ncmin gate                  not recorded, inside the kernel
+surface precipitation onset not recorded, needs per-call increments
 ```
+
+The two that are recorded are enough to settle the question for column 3: the
+topology **does** move there, so its exponents are not rates.
 
 ## Precipitation: RESOLVED by extending the chain
 

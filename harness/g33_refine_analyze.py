@@ -65,7 +65,7 @@ from pathlib import Path
 
 _STATE = re.compile(r"^G33R STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33R PREC\s+(\d+)\s+(\d+)\s+([0-9A-Fa-f]{8})$")
-_FORCING = re.compile(r"^G33R FORCING\s+(rho|delz)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
+_FORCING = re.compile(r"^G33R FORCING\s+(rho|delz|pii)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 
 #: Reported separately. A mass field and a number moment can converge at
 #: different rates, and averaging them hides exactly the number-moment behaviour
@@ -174,7 +174,7 @@ def read(path: Path, *, nsplit=None) -> dict:
     # but if either is present BOTH must be complete -- a half-populated forcing
     # set would silently drop columns from a physical budget.
     if fo:
-        for nm in ("rho", "delz"):
+        for nm in {k[1] for k in fo}:
             got = {(k[2], k[3]) for k in fo if k[1] == nm}
             _expect(got == cells,
                     f"forcing `{nm}` covers {len(got)} cells, state covers "
@@ -396,6 +396,63 @@ def per_field(runs: dict) -> None:
         print(f"    {g:7} " + " -> ".join(trail))
 
 
+#: Above this a species counts as PRESENT. The kernel's own qmin; a crossing of it
+#: between two members is a branch the arithmetic took differently, not a smaller
+#: number.
+_PRESENCE_EPS = 1.0e-12
+T0C = 273.15
+
+
+def topology(run: dict) -> dict:
+    """Discrete state recoverable from the emitted fields alone.
+
+    Owner review §5: a classical order is meaningful within one smooth branch, and
+    this kernel has phase branches, hydrometeor thresholds and caps. If the branch
+    topology moves with h the exponent is not an order.
+
+    The mstep vector and the cap-active masks live inside the kernel and are not
+    here. What IS recoverable without instrumentation is the FINAL branch state:
+    the cold/warm mask, from t = th * pii against t0c, and which species are
+    present. Those are the two that decide which arm of F:2638 and which
+    hydrometeor blocks ran at the end of the integration. A difference in them
+    between members is direct evidence of topology change; agreement is consistent
+    with stability but does not establish it, since an intermediate flip can heal.
+    """
+    if not any(k[0] == "forcing" and k[1] == "pii" for k in run):
+        return {}
+    cells = sorted({(k[2], k[3]) for k in run if k[0] == "state"})
+    out = {}
+    for c, k in cells:
+        t = run[("state", "th", c, k)] * run[("forcing", "pii", c, k)]
+        out[("cold", c, k)] = t <= T0C
+        for f in _WATER + ("nr", "ni", "nc"):
+            out[(f, c, k)] = abs(run[("state", f, c, k)]) > _PRESENCE_EPS
+    return out
+
+
+def topology_report(runs: dict) -> None:
+    ns = sorted(runs)
+    t = {n: topology(runs[n]) for n in ns}
+    if not t[ns[0]]:
+        print("\n  topology: `pii` not present in this stream set")
+        return
+    ref = t[ns[0]]
+    print(f"\n  final branch topology, against the coarsest member (N={ns[0]})")
+    any_diff = False
+    for n in ns[1:]:
+        diff = sorted(k for k in ref if ref[k] != t[n][k])
+        if diff:
+            any_diff = True
+            print(f"    N={n:3d} (h={300/n:g}s): {len(diff)} flips  " +
+                  ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]))
+        else:
+            print(f"    N={n:3d} (h={300/n:g}s): identical")
+    if not any_diff:
+        print("    -> the FINAL topology is stable across the whole chain. That is "
+              "consistent\n       with the exponents being rates, and does not "
+              "establish it: an\n       intermediate flip can heal before the end.")
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
@@ -411,6 +468,7 @@ def main(argv) -> int:
     report(runs, d.name)
     per_field(runs)
     budget_report(runs)
+    topology_report(runs)
     return 0
 
 

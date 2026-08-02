@@ -468,3 +468,53 @@ def test_budgets_are_reported_per_column_not_summed(tmp_path):
     fixture column 3 behaves quite differently from column 1."""
     b = ra.column_budgets(ra.read(_write(tmp_path, _stream_fc(B=3))))
     assert {c for q, c in b if q == "water"} == {1, 2, 3}
+
+
+# ── branch topology (owner review §5) ────────────────────────────────────────
+
+def _stream_top(nsplit=3, th="43800000", qg="00000000", B=1, K=1):
+    """th = 256.0 by default (cold); qg zero unless given."""
+    out = [f"G33R BEGIN nsplit {nsplit} rezero legacy "
+           f"delt {300/nsplit:.6f} loops 1 dtcld {300/nsplit:.6f}"]
+    for f in ra.STATE_FIELDS:
+        v = th if f == "th" else (qg if f == "qg" else "3F800000")
+        for i in range(1, B + 1):
+            for k in range(K):
+                out.append(f"G33R STATE {f} {i} {k} {v}")
+    for n in ("rho", "delz", "pii"):
+        for i in range(1, B + 1):
+            for k in range(K):
+                out.append(f"G33R FORCING {n} {i} {k} 3F800000")
+    for f in (1, 2, 3):
+        for i in range(1, B + 1):
+            out.append(f"G33R PREC {f} {i} 3F800000")
+    return "\n".join(out + ["G33R END"]) + "\n"
+
+
+def test_topology_needs_pii_and_says_so_without_it(tmp_path):
+    assert ra.topology(ra.read(_write(tmp_path, _stream_fc()))) == {}
+
+
+def test_the_cold_mask_uses_t_not_theta(tmp_path):
+    """The branch is on t = th * pii against t0c. Reading `th` directly would put
+    every cell on the wrong arm wherever pii != 1."""
+    r = ra.read(_write(tmp_path, _stream_top(th="43800000")))   # 256 K, pii = 1
+    assert ra.topology(r)[("cold", 1, 0)] is True
+    r = ra.read(_write(tmp_path, _stream_top(th="43960000")))   # 300 K
+    assert ra.topology(r)[("cold", 1, 0)] is False
+
+
+def test_a_species_presence_flip_is_detected(tmp_path):
+    """The measured instability: qg present at h=100 s, exactly zero for four
+    members, present again at 3.125 s. A member set that straddles that is not
+    computing a convergence rate."""
+    a = ra.topology(ra.read(_write(tmp_path, _stream_top(qg="00000000"), "a.txt")))
+    b = ra.topology(ra.read(_write(tmp_path, _stream_top(qg="30D1B717"), "b.txt")))
+    assert a[("qg", 1, 0)] is False and b[("qg", 1, 0)] is True
+
+
+def test_a_value_below_qmin_does_not_count_as_present(tmp_path):
+    """Otherwise every denormal counts as a branch and the record is noise."""
+    tiny = struct.unpack("<I", struct.pack("<f", 1.0e-20))[0]
+    r = ra.read(_write(tmp_path, _stream_top(qg=f"{tiny:08X}")))
+    assert ra.topology(r)[("qg", 1, 0)] is False
