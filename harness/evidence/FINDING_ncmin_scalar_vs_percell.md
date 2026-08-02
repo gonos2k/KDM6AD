@@ -152,3 +152,70 @@ touches this code.
 
 No production change. `host/**` is frozen, this is a physics-behaviour question, and
 which of the two implementations is correct is not the harness's call.
+
+
+---
+
+# Tile decomposition, measured (owner review §6 acceptance gates 2 and 3)
+
+Column permutation is §6's first gate and already measured. The second is now
+measured too: splitting the SAME columns across separate `kdm62D` calls, the way a
+tile or MPI decomposition does. `its:ite` is a call argument, so this is
+driver-side only and needs no production change — and it reaches the mechanism from
+a completely different direction than permuting the input.
+
+**Exhaustive over the contiguous partitions of the domain**, not just even splits.
+`boundary_mapping_v1` (xland 1, 2, 1 — the middle column is sea; ncmin_land = 1e8,
+ncmin_sea = 2.5e7), legacy:
+
+| partition | tile ends | cells differing | columns |
+|---|---|---|---|
+| (3,) | 3: land | — | baseline |
+| (1, 2) | 1: land, 3: land | **0 / 144** | — |
+| (1, 1, 1) | 1: land, **2: SEA**, 3: land | **16 / 144** | 2 |
+| (2, 1) | **2: SEA**, 3: land | **31 / 144** | 1, 2 |
+
+Up to **21% of the final state** is decided by where the tile boundary falls, and
+all twelve prognostics move in the affected columns — a whole-state difference, not
+a rounding one.
+
+The pattern is predicted exactly by the scalar mechanism. `ncmin` survives the
+column loop holding the LAST column's threshold, so what matters is the surface
+type at each tile's `ite`:
+
+* **(3,)** ends on land, so every column is gated on `ncmin_land`.
+* **(1,2)** — both tiles end on land, identical gating, 0 cells differ. That
+  agreement is **not** evidence of correctness, and an even-split test that only
+  reached this partition would pass while the operator was arbitrarily non-local.
+* **(1,1,1)** puts the sea column at its own tile end, so that column alone is
+  gated on `ncmin_sea`.
+* **(2,1)** ends its first tile on the sea column, so **both** columns 1 and 2 are
+  gated on `ncmin_sea` — the worst case, and the one an even split misses entirely.
+
+**This is the MPI rank-count gate as well.** A rank boundary is a tile boundary;
+the mechanism cannot distinguish them, and the partition set above is exhaustive
+for this domain. What a real MPI driver would add is halo and reduction behaviour,
+which is not what `ncmin` depends on.
+
+An earlier run of this on `arithmetic_multisubcycle_v1` gave 0/144 at every
+partition. That fixture is all-land (xland 1, 1, 1), so `ncmin` is identical for
+every column and the mechanism cannot fire — the result was vacuous and is not
+evidence. The gate now asserts both that some partition can expose the mechanism
+and that some multi-tile partition is expected to agree trivially, so neither a
+vacuous fixture nor a lucky partition can be read as a pass.
+
+Remaining from §6's four gates: a **mixed coastal real case**, which needs a real
+fixture rather than a synthetic one.
+
+## Independently strengthened under adversarial review
+
+An independent check tried to break the `ncmin` attribution by constructing two
+**new** surface layouts specifically designed to make the last-column rule fail. It
+held. Keying every column-run by `(column index, its own xland, the ncmin selected
+by its tile's LAST column)`, **all 60 column-runs across 5 fixtures × 4 partitions
+are bitwise identical within each key** — a bit-level confirmation rather than the
+column-level one above, and stronger than the original measurement.
+
+The `(1,2)` partition agreeing (0/144) remains the control against a slicing or
+loop-bound artifact: if the difference came from how the array is sliced rather than
+from which threshold is selected, `(1,2)` would differ too.

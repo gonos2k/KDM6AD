@@ -96,6 +96,59 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   package: [`P0-4b1_interface_sink_prevalence.md`](P0-4b1_interface_sink_prevalence.md).
 - Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
   default); the earlier "water budget" was an unweighted layer-sum.
+- The **number-transport measure mismatch is now measured**, not only reasoned about
+  (owner §7). Mass moves with `ρΔz` and number with the legacy `Δz`-only measure, so a
+  transferred population's mean particle mass shifts by `ρ_u/ρ_l`. Predicted 1.0330 /
+  1.0319 / 1.0309 for the three column-3 transfers; **measured 1.0331 / 1.0296 / 1.0126**
+  against the legacy run at the same cell, with the no-inflow top level at exactly
+  1.0000 as the control. **The mechanism is real and it is ~3% per transfer.** The much
+  larger differences at coarse steps (up to 8.7×) are dominated by branch-topology
+  divergence, not by the transport arithmetic, and the effect vanishes at the finest
+  step. No column-number CLOSURE is possible from the current drivers — the surface
+  NUMBER flux is not emitted, only mass precipitation — and the measurement is the
+  **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
+  the rain-number channel this row names is still unexercised.
+  See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
+- **`ncmin` column non-locality now fails two independent acceptance gates**, both
+  `xfail(strict=True)` in `harness/tests/test_g33_column_separability.py`. Column
+  permutation moves 46 of 144 final-state cells. Tile decomposition, exhaustive over the
+  contiguous partitions of the domain, moves **16/144 at (1,1,1) and 31/144 at (2,1)** —
+  up to 21% of the state decided by where the tile boundary falls, with all twelve
+  prognostics moving in the affected columns. A tile ending on the sea column gates *all*
+  of its columns on `ncmin_sea`, which is why `(2,1)` is worse than isolating the sea
+  column, and why an even split misses it. **An MPI rank boundary is a tile boundary**, so
+  this is the rank-count dependence as well. Both gates are inert on the all-land
+  arithmetic fixtures and require `boundary_mapping_v1`. A mixed coastal **real** case
+  remains untested. See [`../harness/evidence/FINDING_ncmin_scalar_vs_percell.md`](../harness/evidence/FINDING_ncmin_scalar_vs_percell.md).
+- **The P0-4b diagnostic/column-loss disagreement is a strong function of timestep,
+  and the conservative interface removes it entirely.** Under the conservative
+  interface the total fallout equals the column water loss **exactly at every
+  timestep** (total/−ΔW = 1.0000). Under legacy the diagnostic is **6.56× its own
+  fine-step limit at dtcld = 100 s** while the water loss is only 1.31×, converging
+  only near 3 s — and the departure **changes sign with phase**: the pure-liquid
+  column 1 UNDER-reports by 19% (0.808) while the 97–99% frozen columns 2 and 3
+  over-report by 9.2× and 3.9×, which a column-summed figure hides. So STATUS's
+  "non-constant O(1) amount" is a strong function of the step. **Not** a claim that
+  the variants precipitate differently by 6× — the column water losses differ by
+  ~14%. Column 1 (warm, no ice) is bit-identical at five of six steps but NOT at the
+  coarsest, where 5 records differ (`nccn`, `qv`, `th` — never a condensate). Synthetic fixture, microphysics
+  only. (Species note: WRF's `rain` is the TOTAL fallout and `snow`/`graupel` are
+  components of it, F:1462-1464 — summing the three double-counts.)
+  See [`../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md`](../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md).
+- **Both §8 energy ledgers are built. Corrected twice after adversarial review**,
+  which found two independent defects: the enthalpy flux was taken from the
+  known-defective fallout diagnostic (P0-4b), and the frozen species were
+  double-counted — WRF's `rain` is the TOTAL fallout while `snow` and `graupel` are
+  **components of it** (F:1462-1464), so summing the three over-counts. With both
+  fixed: **the conservative interface closes the column water budget EXACTLY at every
+  timestep** (total/−ΔW = 1.0000), while legacy over-reports ~5× at coarse steps and
+  converges only near 3 s — the P0-4b defect measured as a function of resolution.
+  On the ledgers the conservative interface is **~10× better in column 2** (the
+  topologically stable one) and **neutral in column 3**. The coefficient-policy
+  contrast is **1.6× in column 2 and nil in column 3** — a weak single-column signal
+  that does not separate the policies, and which compares implementations rather than
+  policies in any case. The earlier ~74×/~2200× figures are withdrawn.
+  See [`../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md`](../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md).
 
 Provenance for the closed hardening line: [`RELEASE_ABI_V2_HARDENED.md`](RELEASE_ABI_V2_HARDENED.md),
 [`PR1B_OPENMP_DIAGNOSTIC.md`](PR1B_OPENMP_DIAGNOSTIC.md). External deep review that motivated

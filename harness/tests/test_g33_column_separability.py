@@ -170,3 +170,94 @@ def test_column_permutation_equivariance():
         f"{len(bad)} of {len(want)} final-state cells are not permutation-equivariant, "
         f"e.g. {bad[:6]} — the operator is not column-local. See "
         f"harness/evidence/FINDING_ncmin_scalar_vs_percell.md")
+
+
+# ── tile-decomposition invariance (owner review §6 acceptance gate) ──────────
+#
+# Column permutation is one of the four gates §6 asks for. This is the second:
+# splitting the SAME columns across separate kdm62D calls, the way a tile or MPI
+# decomposition does. It is driver-side only -- `its:ite` is a call argument -- so
+# it needs no production change, and it exercises the mechanism from a completely
+# different direction than permuting the input.
+
+REFINE_BUILD = ROOT / "harness" / "g33_fortran" / "refine_build.sh"
+
+
+def _compositions(n):
+    """Every contiguous partition of `n` columns — (3,), (1,2), (2,1), (1,1,1)."""
+    if n == 0:
+        yield ()
+        return
+    for first in range(1, n + 1):
+        for rest in _compositions(n - first):
+            yield (first,) + rest
+
+
+def _tiled(tmp: Path, tiles) -> dict:
+    """Final state after the fixture's step, columns split as `tiles`."""
+    out = tmp / "build"
+    if not out.exists():
+        b = subprocess.run(["bash", str(REFINE_BUILD), str(out),
+                            "--fixture=g33_fixture_boundary_mapping_v1",
+                            "--algo=legacy"], capture_output=True, text=True, cwd=ROOT)
+        assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+    p = subprocess.run([str(out / "g33_refine_driver"), "1", "rezero",
+                        ",".join(str(t) for t in tiles)],
+                       capture_output=True, text=True)
+    assert p.returncode == 0, f"driver crashed:\n{p.stderr}"
+    return {tuple(ln.split()[2:5]): ln.split()[5]
+            for ln in p.stdout.splitlines() if ln.startswith("G33R STATE")}
+
+
+def test_the_partitions_include_one_that_can_expose_the_mechanism():
+    """Without this the gate is vacuous however wrong the code is: the scalar
+    `ncmin` keeps the LAST column's threshold, so a partition whose tiles all end on
+    the same surface type as the whole domain gives identical gating. (1,2) is such
+    a partition and is EXPECTED to agree -- testing only that would pass while the
+    operator was arbitrarily non-local."""
+    _, a = gfx.load_fixture(FIXTURE)
+    sea = [_f32(x) >= 1.5 for x in a["xland"]]
+    whole = sea[-1]
+
+    def ends(tiles):
+        i, out = 0, []
+        for w in tiles:
+            i += w
+            out.append(sea[i - 1])
+        return out
+
+    parts = list(_compositions(a["B"]))
+    assert any(t != whole for p in parts for t in ends(p)), (
+        "no partition puts a different surface type at a tile end")
+    assert any(all(t == whole for t in ends(p)) for p in parts if len(p) > 1), (
+        "expected at least one multi-tile partition that agrees trivially")
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "MEASURED FAILURE, not a harness bug. Over ALL four contiguous partitions of the "
+    "3-column domain, two change the final state: (1,1,1) moves 16 of 144 cells and "
+    "(2,1) moves 31, up to 21% of the state, decided purely by where the tile "
+    "boundary falls. The `ncmin` scalar keeps the last column's threshold, so a tile "
+    "ending on the sea column gates ALL of its columns on ncmin_sea. An MPI rank "
+    "boundary IS a tile boundary, so this is the rank-count dependence too. "
+    "strict=True: if it starts passing the behaviour changed and it must be promoted "
+    "to a requirement. Production physics is frozen; the corrected variant is an "
+    "owner decision."))
+def test_tile_decomposition_invariance():
+    """M(X) must not depend on how the columns are split across kernel calls.
+
+    Exhaustive over the compositions of the domain, not just even splits: the even
+    split misses (2,1), which is the worst case here.
+    """
+    _, authority = gfx.load_fixture(FIXTURE)
+    with tempfile.TemporaryDirectory(prefix="g33-tile.") as td:
+        tmp = Path(td)
+        whole = _tiled(tmp, (authority["B"],))
+        moved = {p: _tiled(tmp, p) for p in _compositions(authority["B"])
+                 if len(p) > 1}
+    bad = {p: sorted(k for k in whole if whole[k] != r[k]) for p, r in moved.items()}
+    offenders = {p: v for p, v in bad.items() if v}
+    assert not offenders, (
+        "the final state depends on the tiling: "
+        + "; ".join(f"{p} moves {len(v)}/{len(whole)} cells in columns "
+                    f"{sorted({k[1] for k in v})}" for p, v in offenders.items()))

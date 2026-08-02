@@ -1,32 +1,16 @@
 #!/usr/bin/env python3
-"""A place for the owner's scientific judgment that cannot forge the tool's.
+"""A place for the owner's scientific judgment that cannot forge the tool's (§13).
 
-Owner review §13. The automatic verdict is `INCONCLUSIVE` and should stay that
-way: the tool is built not to promote itself to an owner-level scientific finding,
-and the honest fix is a SEPARATE layer, not a looser verdict.
+The automatic verdict stays INCONCLUSIVE; this is a separate layer, not a looser
+verdict. Three properties, each a way it could otherwise become the tool's own:
 
-Three properties make that layer worth having rather than a comment in a
-changelog.
+  * the gate never writes one — an adjudication is human-authored, in its own file
+  * it cannot write `verdict` — no parameter, no code path
+  * it is BOUND to the artifact it judges — the one that matters, since an unbound
+    one would keep applying after a regeneration that moved the result
 
-**The gate never writes it.** `gateb_g33m_check` produces the automatic result and
-nothing else. An adjudication is authored by a human and lives in its own file, so
-no rerun can invent one and no rerun can silently drop one.
-
-**It cannot overwrite the automatic verdict.** `attach` returns a new mapping with
-the adjudication under its own key. `verdict` is not writable through this module
-at all — there is no code path from an adjudication to the field the gate decided.
-
-**It is BOUND to the artifact it judges.** This is the one that matters. An
-adjudication that merely sat next to the evidence would keep applying after a
-regeneration that moved the first divergence, and would then read as though a
-human had reviewed a result nobody had seen. The binding pins the artifact's own
-digest and the four leg manifests, so a regeneration that changes any of them
-detaches the adjudication and says so, rather than carrying a stale judgment
-forward.
-
-This module deliberately contains NO adjudication content. The classification in
-the owner review is a recommendation, not an issued verdict, and writing one here
-would be the tool declaring the thing it is built not to declare.
+Contains NO adjudication content: the classification in the review is a
+recommendation, not an issued verdict.
 """
 from __future__ import annotations
 
@@ -59,12 +43,8 @@ BINDING_FIELDS = (
 
 
 def artifact_digest(artifact: dict) -> str:
-    """Digest of the automatic result WITHOUT any attached adjudication.
-
-    Excluding the adjudication is what makes the binding stable: including it
-    would make the digest depend on the judgment being bound, so no adjudication
-    could ever be written that matched.
-    """
+    """Digest of the result WITHOUT any attached adjudication — including it would
+    make the binding circular and nothing could ever match."""
     body = {k: v for k, v in artifact.items() if k != "owner_adjudication"}
     return hashlib.sha256(
         json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
@@ -79,12 +59,8 @@ def binding_for(artifact: dict) -> dict:
 
 
 def problems(adjudication: dict, artifact: dict) -> tuple:
-    """Every reason this adjudication does not apply to this artifact.
-
-    A tuple, not a bool: an adjudication that fails should say what changed, since
-    "the fixture was regenerated" and "someone edited the classification" call for
-    different responses.
-    """
+    """Every reason this adjudication does not apply. A tuple, not a bool: "the
+    fixture was regenerated" and "someone edited it" need different responses."""
     out = []
     body = adjudication.get("owner_adjudication")
     if not isinstance(body, dict):
@@ -112,13 +88,8 @@ def problems(adjudication: dict, artifact: dict) -> tuple:
 
 
 def attach(artifact: dict, adjudication: dict) -> dict:
-    """Return a copy of `artifact` carrying the adjudication, or raise.
-
-    `verdict` is copied through untouched. There is no parameter that changes it
-    and no branch that writes it: the owner layer records a judgment ABOUT the
-    automatic result, and a layer that could rewrite the result would be the tool
-    promoting itself by another route.
-    """
+    """A copy of `artifact` carrying the adjudication, or raise. `verdict` is copied
+    through untouched — no parameter changes it and no branch writes it."""
     bad = problems(adjudication, artifact)
     if bad:
         raise ValueError("adjudication does not apply to this artifact:\n  - "
@@ -133,23 +104,15 @@ def load(path: str | Path) -> dict:
 
 
 def template(artifact: dict) -> dict:
-    """A skeleton bound to `artifact`, with every judgment left unfilled.
-
-    `None` rather than a plausible default. The owner review's classification is a
-    RECOMMENDATION, and pre-filling it here would put the tool's words in the
-    owner's file — which is the substitution this whole module exists to prevent.
-    """
+    """A skeleton bound to `artifact`, every judgment None — a plausible default
+    would put the tool's words in the owner's file."""
     return {"owner_adjudication": {**{f: None for f in REQUIRED_FIELDS},
                                    "bound_to": binding_for(artifact)}}
 
 
 def _main(argv) -> int:
-    """Print a bound template, or validate an adjudication against an artifact.
-
-    A generator rather than a committed template file: a bound template goes stale
-    the moment the artifact is regenerated, and a stale one in the tree is a
-    half-filled form that no longer applies to anything.
-    """
+    """Print a bound template, or validate one against an artifact. A generator
+    rather than a committed file, which would go stale on the next regeneration."""
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("artifact", type=Path)
