@@ -139,6 +139,19 @@ def _cap_lines(top):
             f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,A,1X,I0,1X,A,1X,Z8.8)') "
             f"'G33F MSTEP', loop, 'main', i, 'i32', mstep(i)")
     lines.append("#endif")
+    if top:
+        # The ICE sub-step count, under its OWN macro and its OWN record name.
+        # Not `G33F MSTEP ... 'ice'`: that record is keyed (loop, chain, col) and
+        # the four-case semantics validator iterates every (loop, chain) scope,
+        # looking up substep_pre by (n, field, col) with NO chain -- so an ice
+        # scope would compare ice counts against the main chain's substep_pre and
+        # raise. And any unrecognised G33F line is a hard parse error. Keeping
+        # this out of KDM6_G33_FORTRAN_DUMP leaves the decision-grade stream
+        # byte-for-byte what it was.
+        lines += ["#ifdef KDM6_G33_NUMBER_DUMP",
+                  f"{fb.IND}if (n .eq. 1) write(*,'(A,1X,I0,1X,I0,1X,A,1X,Z8.8)') "
+                  f"'G33F MSTEPI', loop, i, 'i32', mstep_i(i)",
+                  "#endif"]
     return lines
 
 
@@ -220,6 +233,17 @@ def build_overlay(algo, text):
               ["#ifdef KDM6_G33_FORTRAN_DUMP",
                *[_stage_write("surface", "-", "0", f, "-1", dt, e)
                  for f, dt, e in fb.SURFACE_FIELDS],
+               "#endif"]),
+             # The surface NUMBER flux, which no driver can reach: falln is a
+             # kernel LOCAL (F:719). Operands, not a result -- the same discipline
+             # SURFACE_FIELDS follows. Its own macro keeps it out of the
+             # decision-grade record universe, whose field set is a v14 contract
+             # with the C++ mirror.
+             (fb.SURFACE_ANCHOR, "after",
+              ["#ifdef KDM6_G33_NUMBER_DUMP",
+               *[f"{fb.IND}write(*,'(A,1X,I0,1X,I0,2(1X,A),1X,Z8.8)') "
+                 f"'G33F NFLUX', loop, i, '{f}', 'f32', transfer({e}, 0)"
+                 for f, e in fb.SURFACE_NUMBER_FIELDS],
                "#endif"])]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))

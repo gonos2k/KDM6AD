@@ -142,9 +142,31 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   speeds — which merges this with the §6 smooth-cold-fixture requirement rather than
   being a separate need. Column 3's ρΔz **ice number** does converge throughout
   (`+1.121, +1.029, +1.052`), so that channel has an order where column water has
-  none. Only the **rain-chain** `mstep` is instrumented; ice runs on `mstep_i`
-  (`module_mp_kdm6.F:1284`), not emitted.
-  See [`../harness/evidence/FINDING_refinement_noise_floor_v1.md`](../harness/evidence/FINDING_refinement_noise_floor_v1.md). The analyzer now prints each flip's share of
+  none.
+  See [`../harness/evidence/FINDING_refinement_noise_floor_v1.md`](../harness/evidence/FINDING_refinement_noise_floor_v1.md).
+- **Column 3 DOES have a valid convergence domain — in the ice chain, and the
+  domain is per-CHAIN not per-column.** The kernel runs two sedimentation
+  sub-cycles with separate counts (F:1179-1180): `mstep` governs **qr, nr, qs, qg**
+  and `mstep_i` governs **qi, ni**. `mstep_i` was a kernel local nothing emitted;
+  reached through a new anchored overlay site, it reaches 1 at **h = 25 s** in
+  column 3 where the main chain needs **h = 6.25 s**. `ni` column number never
+  meets the noise floor (successive differences fall monotonically 1.76e8 → 9.72e5,
+  relative signal ~1e-2 against `th`'s ~5e-6), so inside that window it has **five
+  clean successive orders — `+1.461, +0.863, +1.121, +1.029, +1.052`** — first
+  order, tightening at the fine end. Column *water* still gets none, now for a
+  stated reason: it contains qr/qs/qg and so inherits the **main** chain's h ≤ 6.25
+  against a noise floor at h ≥ 3.125. This explains what the previous row recorded
+  as an unexplained positive result. **The surface number flux is now emitted too**
+  (`falln(i,kts,1:2)` + den/delz/dtcld as operands), validated at the same site
+  against `bottom_fall_qr`: mean rain-drop mass 5.4–8.6e-10 kg (0.10–0.12 mm),
+  consistent across columns. It measures that **every column loses all its rain
+  number while the surface accounts for only 1.4–5.8%** — so a transport-side `nr`
+  defect would sit under a sink 1–2 orders larger. **Still not a closure**: `R_N`
+  is defined, not checked; the microphysical number tendencies are per-cell locals.
+  Both emissions sit under their own `KDM6_G33_NUMBER_DUMP`, never defined by
+  `fortran_build.sh` — the decision-path stream is **bit-identical** to before, and
+  the instrumented run is **bit-identical** to the plain build.
+  See [`../harness/evidence/FINDING_two_sedimentation_chains_v1.md`](../harness/evidence/FINDING_two_sedimentation_chains_v1.md). The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **The refinement bundle is reproducible, and the reproduction was run.** Its
