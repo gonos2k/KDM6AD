@@ -130,6 +130,23 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   which `mstep` is constant would give column 3 a valid domain. The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
+- **The refinement bundle is reproducible, and the reproduction was run.** Its
+  provenance previously named the compiler as a string the caller typed and carried
+  an empty `compile_commands` list, which is indistinguishable from a build nobody
+  recorded; members were admitted on a BEGIN-line regex rather than the strict
+  parser. The **build** now writes what only it knows — compiler path/sha256/version,
+  the commands as it compiles them, build-script and source digests, commit and
+  `tree_dirty` — and `_member()` goes through `g33_refine_analyze.read()`. Rebuilt
+  from a clean tree at `29c5119`, all six members reproduce with an **insertion-only
+  diff (0 removed, 0 changed, 180 added)**: every committed record is bit-identical,
+  and the additions are 144 `INITIAL` + 36 `FORCING` records the driver gained later.
+  The bundle was refreshed to the rebuilt streams — not cosmetic, since without
+  `FORCING` there is no ρΔz and the old streams could not support the column water
+  budget, either ledger, or the diagnostic-trust table. **Limits**: one host and one
+  compiler, so cross-host reproduction is enabled but untested; and this producer
+  *records* `tree_dirty` where the decision-bundle producers *refuse* it — deliberate
+  for a `decision_eligible: false` artifact, but an owner call.
+  See [`../harness/evidence/FINDING_refinement_provenance_v1.md`](../harness/evidence/FINDING_refinement_provenance_v1.md).
 - **The conservative variant does not satisfy time-step composition, and the cause is
   localised.** `Φ_cons(300) ≠ Φ_cons(100)∘Φ_cons(100)∘Φ_cons(100)` (18 records,
   ΔT ≤ 2.67e-03 K) while the legacy composition holds **bitwise** (132/132). Both

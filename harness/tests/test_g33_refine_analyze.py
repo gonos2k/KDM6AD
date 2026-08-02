@@ -785,3 +785,28 @@ def test_build_provenance_absent_is_null_not_an_empty_list(tmp_path):
     fix = tmp_path / "f.f90"; fix.write_text("y")
     man = rm.build(d, module=mod, fixture=fix, compiler="c")
     assert man["build_provenance"] is None
+
+
+def test_findings_are_linked_by_digest(tmp_path):
+    """A finding citing a table nobody can tie to the run it came from is
+    unreviewable (owner §9)."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    doc = tmp_path / "FINDING_x.md"; doc.write_text("# a claim\n")
+    man = rm.build(d, module=mod, fixture=fix, compiler="c", findings=[doc])
+    assert man["findings"] == [{"path": str(doc), "sha256": rm.sha256(doc)}]
+    assert rm.build(d, module=mod, fixture=fix, compiler="c")["findings"] == []
+
+
+def test_a_finding_that_is_not_there_is_loud(tmp_path):
+    """Silently recording nothing would leave the manifest claiming a link it
+    does not have."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    with pytest.raises(FileNotFoundError):
+        rm.build(d, module=mod, fixture=fix, compiler="c",
+                 findings=[tmp_path / "absent.md"])
