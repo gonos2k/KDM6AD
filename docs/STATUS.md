@@ -137,13 +137,19 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   second defect; no closure claim is made from it. Synthetic fixture, microphysics
   only.
   See [`../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md`](../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md).
-- **Both §8 energy ledgers are built and they agree.** The conservative interface closes
-  the physical moist-enthalpy budget ~74× better than the reference and the
-  operator-consistency budget ~2200× better; the sub-cycle-refreshed coefficient policy
-  closes **both** ~1.5× worse than the reference's call-fixed policy. The trade-off §8
-  anticipated — better on one ledger, worse on the other — does not occur here. This
-  compares implementations, not policies: isolating the policy needs the
-  reference-faithful C++ counterfactual, which is inside frozen code.
+- **Both §8 energy ledgers are built, and they do NOT discriminate the thermodynamic
+  policy.** Corrected after adversarial review: the first construction took the
+  enthalpy flux from the fallout diagnostic, which P0-4b already records as
+  disagreeing with the column water loss by an O(1) amount. For legacy that flux term
+  was **4–7× the enthalpy change**, so the residual restated the diagnostic defect
+  rather than measuring thermodynamics. With the flux taken from the ρΔz water budget
+  instead: Fortran (call-fixed) and C++ legacy (sub-cycle-refreshed) agree to **2%**,
+  and to four figures in column 3 — **no measurable policy difference**. The
+  conservative interface is 1.35× better in column 2 and **worse** in column 3, not
+  the ~74×/~2200× first reported. All legs close to ~1e-3 in columns 2–3 (~1e-5 in
+  the ice-free column 1); that common residual is unattributed. With §9's convergence
+  route structurally blocked on this fixture, the ledgers were the remaining
+  discriminator and they do not discriminate either.
   See [`../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md`](../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md).
 
 Provenance for the closed hardening line: [`RELEASE_ABI_V2_HARDENED.md`](RELEASE_ABI_V2_HARDENED.md),

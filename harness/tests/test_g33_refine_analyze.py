@@ -576,12 +576,31 @@ def test_a_warmed_column_shows_a_positive_dH(tmp_path):
     assert L[1]["dH"] > 0 and L[1]["residual"] > 0
 
 
-def test_precipitation_carries_enthalpy_out(tmp_path):
-    """The flux term must have the sign that CLOSES a column losing condensate,
-    not one that doubles the loss."""
-    p = _stream_ledger(tmp_path, name="p.txt")
+def test_the_flux_follows_the_WATER_BUDGET_not_the_diagnostic(tmp_path):
+    """Changing the fallout diagnostic alone must NOT move the ledger.
+
+    This is the whole correction. The diagnostic and the column water loss disagree
+    by an O(1) amount (P0-4b), and a ledger whose flux term came from the diagnostic
+    inherited that defect: for legacy the flux was 4-7x the enthalpy change, so the
+    residual restated the diagnostic error rather than measuring thermodynamics, and
+    the conservative interface looked ~74x better when the two were in fact
+    comparable. The flux now follows the water that actually left.
+    """
+    p = _stream_ledger(tmp_path, name="p.txt")            # initial == final, so dW = 0
+    base = ra.enthalpy_ledger(ra.read(p))
     txt = p.read_text().replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F800000")
-    L = ra.enthalpy_ledger(ra.read(_write(tmp_path, txt, "p2.txt")))
+    moved = ra.enthalpy_ledger(ra.read(_write(tmp_path, txt, "p2.txt")))
+    assert base[1]["residual"] == pytest.approx(moved[1]["residual"], abs=1e-9)
+    assert moved[1]["H_precip_out"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_the_flux_is_nonzero_when_water_actually_leaves(tmp_path):
+    """The complement: a column that LOSES water must carry enthalpy out, or the
+    budget is closed by ignoring the outflow."""
+    p = _stream_ledger(tmp_path, name="w.txt")
+    txt = p.read_text().replace("G33R STATE qr 1 0 3F800000", "G33R STATE qr 1 0 00000000")
+    txt = txt.replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F800000")
+    L = ra.enthalpy_ledger(ra.read(_write(tmp_path, txt, "w2.txt")))
     assert L[1]["H_precip_out"] != 0.0
     assert L[1]["residual"] == pytest.approx(L[1]["dH"] + L[1]["H_precip_out"])
 

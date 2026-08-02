@@ -455,7 +455,7 @@ def _ledger(run: dict, h_cell, h_precip_out) -> dict:
             run[("forcing", "pii", c, ks[-1])] else ks[0]
         h_start = H("initial")
         d = {"dH": H("state") - h_start,
-             "H_precip_out": h_precip_out(run, c, kbot),
+             "H_precip_out": h_precip_out(run, c, kbot, ks),
              "H_start": h_start}
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
@@ -475,11 +475,36 @@ def _h_consistent(run, cls, c, k) -> float:
             + sum(run[(cls, f, c, k)] for f in ICE) * hi)
 
 
-def _precip_consistent(run, c, kbot) -> float:
-    """Rain leaves as liquid, snow and graupel as ice, at the bottom-level T.
-    Precipitation is mm == kg/m^2 reaching the surface."""
+def _water_out(run, c, ks) -> float:
+    """Water that actually LEFT the column, from the rho*dz budget.
+
+    NOT the fallout diagnostic. docs/STATUS.md records that the diagnostic and the
+    column water loss disagree by an O(1) amount (P0-4b, the inflow cap), and a
+    ledger built on the diagnostic inherits that defect instead of measuring
+    thermodynamics: for legacy the diagnostic flux term is 4-7x the enthalpy change,
+    so the residual becomes a restatement of the diagnostic error. Measured on this
+    fixture, switching to the budget moves legacy's column-2 residual from
+    -1.27e-02 to +9.8e-04 and removes essentially all of the apparent gap to the
+    conservative interface.
+    """
+    return -sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+                * sum(run[("state", f, c, k)] - run[("initial", f, c, k)] for f in MASS)
+                for k in ks)
+
+
+def _ice_fraction(run, c) -> float:
+    """Share of the departing water that is frozen. The diagnostic is used for the
+    RATIO only, which is far less sensitive than its magnitude."""
+    ice = run[("prec", 2, c)] + run[("prec", 3, c)]
+    tot = run[("prec", 1, c)] + ice
+    return ice / tot if tot else 0.0
+
+
+def _precip_consistent(run, c, kbot, ks) -> float:
+    """Departing water carries liquid or ice enthalpy at the bottom-level T."""
     _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
-    return run[("prec", 1, c)] * hl + (run[("prec", 2, c)] + run[("prec", 3, c)]) * hi
+    f = _ice_fraction(run, c)
+    return _water_out(run, c, ks) * ((1.0 - f) * hl + f * hi)
 
 
 def enthalpy_ledger(run: dict) -> dict:
@@ -519,13 +544,14 @@ def _h_code(run, cls, c, k) -> float:
     return cpm * (t - T0C) + xl * qv - xlf * sum(run[(cls, f, c, k)] for f in ICE)
 
 
-def _precip_code(run, c, kbot) -> float:
+def _precip_code(run, c, kbot, ks) -> float:
     """Sedimentation removes mass with no temperature change, so departing ice
     carries -xlf out and departing rain carries nothing -- the same convention the
-    code's own updates imply."""
+    code's own updates imply. Departing water from the budget, not the diagnostic
+    (see `_water_out`)."""
     _, _, xlf = _code_coeffs(_t(run, "state", c, kbot),
                              run[("state", "qv", c, kbot)])
-    return (run[("prec", 2, c)] + run[("prec", 3, c)]) * -xlf
+    return _water_out(run, c, ks) * _ice_fraction(run, c) * -xlf
 
 
 def operator_ledger(run: dict) -> dict:
