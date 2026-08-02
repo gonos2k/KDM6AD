@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-"""Provenance for a refinement experiment, under its own schema.
+"""Provenance for a refinement experiment, under its own schema (§9).
 
-Owner review §9. The refinement build deliberately wrote no provenance so a
-refinement run could not be mistaken for a decision artifact. That was the wrong
-correction: with no provenance the table is not independently reproducible either
--- which commit, which module, which compiler and flags, which fixture, which
-output files, which analyzer.
+Writing NO provenance -- the first attempt -- made the experiment irreproducible.
+The fix is a DIFFERENT schema, not the absence of one: `decision_eligible` is a
+constant False with no parameter that sets it, so the distinction from a decision
+artifact is structural, not a matter of where the file was written.
 
-The fix is a DIFFERENT schema, not the absence of one. `artifact_type` and
-`decision_eligible` are the first two fields and `decision_eligible` is a constant
-`False` with no parameter that sets it, so the distinction from a decision
-artifact is structural rather than a matter of where the file was written.
-
-Deliberately NOT reusing the decision provenance builder: sharing it would mean
-one edit could make an experiment look decision-grade, which is the confusion the
-separation exists to prevent.
+Deliberately not sharing the decision provenance builder: one edit there could
+make an experiment look decision-grade.
 """
 from __future__ import annotations
 
@@ -26,7 +19,6 @@ import sys
 from pathlib import Path
 
 SCHEMA = "refinement_experiment_v1"
-DTCLDCR = 120.0
 
 _BEGIN = re.compile(r"^G33R BEGIN nsplit\s+(\d+)\s+(carry|rezero)\s+(\S+)"
                     r"(?:\s+delt\s+(\S+)\s+loops\s+(\d+)\s+dtcld\s+(\S+))?")
@@ -42,13 +34,9 @@ def _git(*a) -> str:
 
 
 def _member(path: Path) -> dict:
-    """One member, described by what the run itself reported.
-
-    delt/loops/dtcld are read from the stream rather than recomputed from N: the
-    point of the §9 correction is that the kernel picks its own step, so a
-    manifest that derived it would restate the assumption the experiment exists to
-    check.
-    """
+    """One member, from what the run itself reported. delt/loops/dtcld are READ,
+    not recomputed from N -- deriving them would restate the assumption the
+    experiment exists to check."""
     first = next((ln for ln in path.read_text().splitlines()
                   if ln.startswith("G33R BEGIN")), "")
     m = _BEGIN.match(first.strip())

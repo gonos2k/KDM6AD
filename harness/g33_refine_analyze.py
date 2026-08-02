@@ -1,59 +1,22 @@
 #!/usr/bin/env python3
-"""Convergence of one operator under external timestep refinement (owner §9).
+"""Convergence and energy budgets of one operator under timestep refinement.
 
-The `cpm`/`xl` finding leaves a question parity cannot answer: the reference holds
-the thermodynamic coefficients fixed across a kernel call's internal subcycles and
-the port refreshes them each subcycle, and "refreshes more often" is not on its own
-an argument that the answer is better. What separates them is whether each
-operator's sequence converges as the step shrinks.
+Reads `G33R` streams from the refinement drivers and reports, per member:
+successive-difference orders, rho*dz column budgets, branch topology, and the two
+energy ledgers of owner review §8.
 
-THE SWEEP MUST BE DESIGNED ON dtcld, NOT ON delt. The kernel sets its own
-internal step at F:930-932:
+Two rules a reader must know, because breaking either silently produces a number
+that looks like a result:
 
-    loops = max(nint(delt/dtcldcr), 1)      dtcldcr = 120 s
-    dtcld = delt/loops   (or delt when delt <= dtcldcr)
+  * SWEEPS ARE DESIGNED ON dtcld, NOT delt. The kernel picks its own internal step
+    (F:930-932), so N = 1,2,3,6,12 gives dtcld = 100,150,100,50,25 -- not a
+    refinement sequence. N in {3,6,12,24,48,96} halves cleanly.
+  * ORDERS COME ONLY FROM SUCCESSIVE DIFFERENCES. Against the finest member the
+    exponent is biased upward: a first-order operator reads +1.222 then +1.585.
 
-so the N = 1,2,3,6,12 sweep of §9 gives dtcld = 100, 150, 100, 50, 25. That is not
-a refinement sequence: N=2 integrates at 150 s, COARSER than N=1 and past the
-kernel's own 120 s criterion, and N=3 duplicates N=1's internal step. Measured on
-it, the error to the finest is non-monotone, which reads as an operator that does
-not converge and is actually a sweep that does not refine. N in {3,6,12,24} gives
-dtcld = 100, 50, 25, 12.5 -- a clean halving chain.
-
-The discarded members are not waste. N=1 and N=3 share dtcld = 100 s and the same
-three subcycles of integration, and differ only in how many times the coefficients
-are refreshed (once, held across three subcycles, against three times). That pair
-is a controlled contrast of the thermodynamic-coefficient policy alone, which the
-refinement chain itself cannot isolate.
-
-Reports both standard readings, because they answer different questions:
-
-  successive differences  E_h = |X_h - X_{h/2}| over the doubling pairs present.
-                          Self-convergence, no reference solution assumed. THE
-                          ONLY PLACE AN ORDER IS COMPUTED.
-  error to the finest     E_N = |X_N - X_finest|. Magnitude and monotonicity only.
-                          NO ORDER (owner review §4).
-
-The finest member is not the exact solution, and treating it as one biases the
-exponent upward. With X_h = X* + C h^p,
-
-    E_h = |X_h - X_hf| = |C| |h^p - hf^p|     so     E_h / E_{h/2} != 2^p
-
-For a truly FIRST-order operator with hf = 12.5 s the ratio reads
-
-    p(100->50) = +1.222        p(50->25) = +1.585
-
-An earlier version of this module computed an order from that series and the
-result was read as "near or above first order". It was not: +1.221 and +1.413 for
-`th`, +1.205 and +1.614 for `number`, against a first-order prediction of +1.222
-and +1.585. The estimator produced the exponent, not the operator. Those numbers
-are withdrawn; the successive-difference series is the one that means anything.
-
-This computes nothing about which policy is more physical. Convergence order is
-one input to that; the moist-energy ledger of §8 is the other, and §3.1's
-Kirchhoff point -- the code's dxlf/dT = c_l - c_pv = 2343.6 against a consistent
-c_l - c_i = 2084 -- means a policy can refresh a formula more faithfully while
-tracking the thermodynamics less well.
+Both are derived, measured and argued in harness/evidence/
+FINDING_refinement_design_v1.md; the ledger results are in
+FINDING_moist_enthalpy_ledger_v1.md. This module does not restate them.
 """
 from __future__ import annotations
 
@@ -84,11 +47,7 @@ def f32(bits: int) -> float:
     return struct.unpack("<f", struct.pack("<I", bits))[0]
 
 
-#: The exact record universe one member must contain. A refinement member is a
-#: complete state, not "at least one record": a stream missing the cell that
-#: carries the largest difference produces a SMALLER error norm and reads as
-#: better convergence, so a permissive reader here fails in the direction that
-#: flatters the result (owner review §2).
+#: A member is a COMPLETE state, not "at least one record".
 STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                 "nccn", "nc", "ni", "nr", "bg")
 # `\s+`: the Fortran `merge` pads the mode to a fixed width, so the emitted
@@ -111,9 +70,9 @@ def _expect(cond, msg, path):
 def read(path: Path, *, nsplit=None) -> dict:
     """One member, or raise.
 
-    Every check here corresponds to a way a truncated, duplicated or mislabelled
-    stream would otherwise be analysed as a valid result. The parser this replaced
-    accepted any file containing one parseable record.
+    Every check corresponds to a way a truncated, duplicated or mislabelled stream
+    would otherwise read as a valid result -- always in the flattering direction,
+    since a member missing records shows a SMALLER error (§2).
     """
     lines = [ln.strip() for ln in path.read_text().splitlines() if ln.strip()]
     begins = [ln for ln in lines if ln.startswith("G33R BEGIN")]
@@ -200,11 +159,10 @@ def read(path: Path, *, nsplit=None) -> dict:
 
 
 def require_same_universe(runs: dict) -> None:
-    """Every member must carry the SAME identities before any norm is taken.
+    """Same identities in every member, checked once up front.
 
-    Comparing over the intersection lets a member that is missing records report a
-    smaller error than one that is complete, which is convergence measured on
-    absence. Checked once, up front, rather than per comparison.
+    Comparing over an intersection lets an incomplete member report a smaller
+    error -- convergence measured on absence.
     """
     keyed = {n: {k for k in r if k[0] != "meta"} for n, r in runs.items()}
     ref_n = min(keyed)
@@ -220,13 +178,8 @@ def require_same_universe(runs: dict) -> None:
 
 
 def _norm(a: dict, b: dict, keys) -> float:
-    """Max absolute difference over `keys`.
-
-    Max, not RMS: a per-cell operator difference that shows up in one cell is a
-    real difference, and an RMS over 144 cells dilutes it by the cells where
-    nothing is happening. The fixture is arithmetic-synthetic and most cells are
-    quiet, so RMS here would mostly measure how many cells are quiet.
-    """
+    """Max absolute difference over `keys` — not RMS, which on a mostly-quiet
+    synthetic fixture would measure how many cells are quiet."""
     # No `if k in a and k in b` guard: `require_same_universe` has already
     # established both carry every key, and a silent skip here is exactly how a
     # missing record turns into a smaller error norm.
@@ -244,14 +197,9 @@ def _keys(run, group):
 
 GROUPS = ("th", "mass", "number", "prec")
 
-#: Physical column budgets (owner review §7). The grouped max norms above are over
-#: MIXING RATIOS and are set by one field at one cell, which migrates with
-#: resolution. These are the quantities conservation is actually about:
-#:
-#:     W_col   = sum_k rho_k dz_k (qv+qc+qr+qi+qs+qg)   -- the MASS species
-#:     N_x,col = sum_k rho_k dz_k n_x
-#:
-#: Reported per column, so a budget error in one column is not diluted by the rest.
+#: Physical column budgets (§7): sum_k rho_k dz_k q, per column so one bad column
+#: is not diluted by the rest. The grouped max norms above are over MIXING RATIOS
+#: and are set by a single migrating cell; these are what conservation is about.
 
 
 def column_budgets(run: dict) -> dict:
@@ -387,12 +335,9 @@ def report(runs: dict, label: str) -> None:
 def per_field(runs: dict) -> None:
     """Order per FIELD, and which cell sets each group max.
 
-    Owner review §7. A grouped max norm is not a physical norm: it reports one
-    field at one cell, and if that cell moves between resolutions the apparent
-    order is partly a record of the move. On this fixture the mass group is set by
-    `qc` throughout but migrates col3 k3 -> k2 -> k1 at the fine end, and the group
-    order stalls at +0.018 while `qv` stays near 1 -- two different behaviours
-    averaged into one number.
+    A grouped max norm reports one field at one cell, so if that cell migrates the
+    group order is partly a record of the move (§7). Both are printed so the group
+    numbers can be read against the fields they actually came from.
     """
     first = runs[min(runs)]
     fields = sorted({k[1] for k in first if k[0] == "state"})
@@ -425,19 +370,12 @@ T0C = 273.15
 
 
 def topology(run: dict) -> dict:
-    """Discrete state recoverable from the emitted fields alone.
+    """Final branch state: the cold/warm mask and which species are present.
 
-    Owner review §5: a classical order is meaningful within one smooth branch, and
-    this kernel has phase branches, hydrometeor thresholds and caps. If the branch
-    topology moves with h the exponent is not an order.
-
-    The mstep vector and the cap-active masks live inside the kernel and are not
-    here. What IS recoverable without instrumentation is the FINAL branch state:
-    the cold/warm mask, from t = th * pii against t0c, and which species are
-    present. Those are the two that decide which arm of F:2638 and which
-    hydrometeor blocks ran at the end of the integration. A difference in them
-    between members is direct evidence of topology change; agreement is consistent
-    with stability but does not establish it, since an intermediate flip can heal.
+    A classical order is only meaningful within one smooth branch (§5). This is
+    ONE-SIDED: a difference between members proves the topology moved; agreement
+    does not prove it stayed, since an intermediate flip can heal. The per-subcycle
+    masks live inside the kernel and are not recoverable here.
     """
     if not any(k[0] == "forcing" and k[1] == "pii" for k in run):
         return {}
@@ -484,30 +422,21 @@ XLV, XLF, XLS = 2.5e6, 3.5e5, 2.85e6     # F:55, F:56, F:54
 # enthalpies below cannot disagree with the code's own latent heats at T0.
 
 def _enthalpies(t: float) -> tuple:
-    """Specific enthalpy of each phase at T, referenced to T0 = 273.15 K.
+    """h_d, h_v, h_l, h_i at T, referenced to T0, per-phase heat capacities.
 
-        h_d = cpd (T-T0)          h_v = cpv (T-T0) + XLV
-        h_l = cliq (T-T0)         h_i = cice (T-T0) - XLF
-
-    so h_v - h_l = XLV, h_l - h_i = XLF and h_v - h_i = XLS at T0, matching the
-    code's constants exactly. This is the CONSISTENT construction of §8.2 -- note
-    it is deliberately NOT the code's own xlcal/cpmcal approximation, which is the
-    point: §3.1 observes the code's dxlf/dT is c_l - c_pv = 2343.6 where a
-    Kirchhoff-consistent value is c_l - c_i = 2084.
+    Reproduces the code's latent heats at T0 (h_v-h_l = XLV, h_l-h_i = XLF) but
+    NOT its temperature dependence -- that gap is what §8.2 measures.
     """
     dt = t - T0C
     return CPD * dt, CPV * dt + XLV, CLIQ * dt, CICE * dt - XLF
 
 
 def _ledger(run: dict, h_cell, h_precip_out) -> dict:
-    """Per-column residual of a conserved potential:
+    """residual = (H_end - H_start) + H carried out by precipitation, per column.
 
-        residual = (H_end - H_start) + H carried out by precipitation
-
-    Zero with no external forcing. The two ledgers differ ONLY in `h_cell` (specific
-    enthalpy at a cell) and `h_precip_out` (what departing precipitation takes);
-    the guard, the rho*dz integral and the bookkeeping are shared, so the two
-    physics definitions sit side by side and can be compared by reading them.
+    Zero with no external forcing. The two ledgers differ ONLY in `h_cell` and
+    `h_precip_out`, so their physics sits side by side and can be compared by
+    reading it.
     """
     if not any(k[0] == "initial" for k in run) or \
        not any(k[0] == "forcing" and k[1] == "pii" for k in run):
@@ -554,37 +483,18 @@ def _precip_consistent(run, c, kbot) -> float:
 
 
 def enthalpy_ledger(run: dict) -> dict:
-    """Residual against CONSISTENT thermodynamics (owner review §8.2).
+    """Residual against CONSISTENT thermodynamics (§8.2).
 
-    Approximations, stated because they bound what the number means: mixing ratios
-    are treated as per unit dry air while rho is moist density, and the
-    precipitation flux is evaluated at the bottom-level temperature. Both are
-    common to every leg, so a COMPARISON of residuals between policies is
-    meaningful even where the absolute value is not.
+    Approximate — dry-air mixing ratios against moist rho, precipitation flux at
+    the bottom level — but identically so for every leg, so residuals COMPARE even
+    where an absolute value would not.
     """
     return _ledger(run, _h_consistent, _precip_consistent)
 
 
-# ── operator-consistency ledger (owner review §8.1) ──────────────────────────
-#
-# The same column integral, built from the code's OWN thermodynamics instead of the
-# consistent ones, so the two ledgers answer different questions on identical data:
-#
-#   §8.2  does the code agree with consistent thermodynamics?
-#   §8.1  does the code agree with ITS OWN equations?
-#
-# They can disagree, and §8 says a policy decision needs both — a policy that
-# evaluates the coded formula more faithfully can track the physics less well.
-#
-# The code's forms (module_mp_kdm6.F):
-#   cpmcal(x) = cpd(1-x) + x cpv          F:818   (x clamped at qmin)
-#   xlcal(x)  = xlv0 - xlv1 (x - t0c)     F:819
-#   xlv1      = cl - cpv = 2343.6         F:3406
-#   xlf(T)    = xls - xl(T) = XLF + 2343.6 (T - T0)
-#
-# ONE cpm for the whole parcel, not per-phase heat capacities: that is the code's
-# "neglect the changes during microphysical process calculation" approximation
-# (F:886-888), and reproducing it is the point.
+# The code's own thermodynamics (module_mp_kdm6.F): cpmcal F:818, xlcal F:819,
+# xlv1 = cl - cpv F:3406, and ONE cpm for the whole parcel rather than per-phase
+# heat capacities (F:886-888). Reproducing the approximation is the point.
 XLV1 = 4190.0 - 4 * 461.6      # cl - cpv = 2343.6, the slope §3.1 is about
 
 
@@ -619,13 +529,11 @@ def _precip_code(run, c, kbot) -> float:
 
 
 def operator_ledger(run: dict) -> dict:
-    """Residual against the code's OWN equations (owner review §8.1).
+    """Residual against the code's OWN equations (§8.1).
 
-    xl/xlf are evaluated at the LOCAL temperature for every leg. The reference
-    holds them at the kernel-entry value and the port refreshes them per sub-cycle;
-    using a single convention here means the ledger does not itself encode one
-    policy's choice, and the difference between conventions is the very thing under
-    test.
+    xl/xlf at the LOCAL temperature for every leg: the reference holds them at
+    kernel entry and the port refreshes per sub-cycle, so one convention here keeps
+    the ledger from encoding the answer to the question it is measuring.
     """
     return _ledger(run, _h_code, _precip_code)
 
