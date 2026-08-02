@@ -1,4 +1,4 @@
-# §7's mechanism is confirmed and is 3%; the large differences are not it
+# §7's mechanism is real and ~3%; the large differences are not it, and the headline number is not reproducible
 
 Owner review §7. The conservative interface moves **mass** with a ρΔz measure and
 **number** with the legacy Δz-only one (`sedimentation_conservative.cpp:91-92`
@@ -18,7 +18,7 @@ The baseline is the **legacy run at the same cell**: the interface is the only
 difference between the two runs. The **top level has no inflow from above**, so its
 ratio of exactly `1.0000` is the control, and it holds in every run below.
 
-## §7's prediction, confirmed quantitatively
+## §7's prediction: the mechanism is real, but "confirmed quantitatively" overstates it
 
 Column 3 densities give ρ_u/ρ_l = **1.0330, 1.0319, 1.0309** for the three
 transfers. Measured within a fine-step run (dtcld = 3.125 s), conservative/legacy
@@ -29,8 +29,20 @@ mean ice-particle mass at t = 25 s:
 | predicted | 1.0330 | 1.0319 | 1.0309 | — |
 | **measured** | **1.0331** | **1.0296** | **1.0126** | 1.0000 |
 
-k0 matches to four figures. **The mechanism is real and it is a 3% effect per
-transfer.**
+k0 matches to four figures — but only k0. Read as deviations from 1, which is the
+actual signal: k0 is 0.3% off the prediction, **k1 is 7% low and k2 is 59% low**.
+One of three points matching is not quantitative confirmation of all three.
+
+Two further limits on this number, both material:
+
+* **It is not reproducible from committed evidence.** The t = 25 s figures come from
+  an ad-hoc `--emit-each` boundary run, not from any committed stream — every
+  committed member is a single end-state. The measurement should be re-taken from a
+  reproducible artifact before it is relied on.
+* A null model of "ratio = 1 + noise" **is** refuted by the data (about 6× worse
+  fit), and the measured effect has the right sign and roughly the right size. So
+  **there is a real 1–3% effect and the mechanism is verifiable from source** — what
+  fails is the word "quantitatively", not the existence of the effect.
 
 ## But the 300 s outcome is not that number, and does not converge
 
@@ -54,9 +66,12 @@ settling to 0.9998 by 100 s and staying there.
 
 ## What this establishes
 
-1. **§7's ρΔz-vs-Δz mechanism is real and quantitatively confirmed** — measured
-   1.0331 against a predicted 1.0330.
-2. **It is a 3% effect per transfer**, not the 200–800% seen at coarse steps.
+1. **§7's ρΔz-vs-Δz mechanism is real** — the effect has the right sign and roughly
+   the right size, and a "ratio = 1 + noise" null is refuted by the data. But only
+   k0 matches the prediction closely (k1 7% low, k2 59% low), and the t = 25 s
+   figures are **not reproducible from a committed stream**, so "quantitatively
+   confirmed" is withdrawn.
+2. **It is a ~3% effect per transfer**, not the 200–800% seen at coarse steps.
 3. **The large differences are dominated by branch-topology divergence**, not by the
    transport arithmetic. Correcting the number measure to ρΔz would remove the 3%
    and leave the rest.

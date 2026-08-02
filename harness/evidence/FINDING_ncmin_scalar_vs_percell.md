@@ -206,3 +206,16 @@ vacuous fixture nor a lucky partition can be read as a pass.
 
 Remaining from §6's four gates: a **mixed coastal real case**, which needs a real
 fixture rather than a synthetic one.
+
+## Independently strengthened under adversarial review
+
+An independent check tried to break the `ncmin` attribution by constructing two
+**new** surface layouts specifically designed to make the last-column rule fail. It
+held. Keying every column-run by `(column index, its own xland, the ncmin selected
+by its tile's LAST column)`, **all 60 column-runs across 5 fixtures × 4 partitions
+are bitwise identical within each key** — a bit-level confirmation rather than the
+column-level one above, and stronger than the original measurement.
+
+The `(1,2)` partition agreeing (0/144) remains the control against a slicing or
+loop-bound artifact: if the difference came from how the array is sliced rather than
+from which threshold is selected, `(1,2)` would differ too.

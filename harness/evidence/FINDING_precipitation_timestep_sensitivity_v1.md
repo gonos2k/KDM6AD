@@ -56,10 +56,20 @@ and the conservative interface removes it entirely.
 
 Per column, diagnostic legacy/conservative at dtcld = 100 s: column 1 is
 **bit-identical** (288–290 K, no ice — the interface never acts, the control);
-columns 2 and 3 carry it. Column 2 is the clean case — the branch-topology
-instability measured elsewhere is confined to column 3 (`qg` presence flipping with
-resolution), and **column 2's topology is stable in all three legs**, verified
-directly.
+columns 2 and 3 carry it.
+
+An earlier version called column 2 "the clean case" because its final-state branch
+topology is identical across all six members while column 3's `qg` presence flips.
+**That support does not hold.** Column 2 starts with condensate and ends with every
+condensate species at exactly zero — it rains itself out. Its final topology is
+therefore stable *because it is empty*, and says nothing about which branches the
+members took during the integration. The topology record is final-state only and
+was already documented as one-sided; this is that limitation biting.
+
+So no column of this fixture is certified as a clean convergence domain: column 3's
+topology demonstrably moves, and column 2's cannot be checked by the available
+record. The ratios above stand as measurements; the claim that column 2's are
+*trustworthy in a way column 3's are not* does not.
 
 ## What this does NOT establish
 
