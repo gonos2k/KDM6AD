@@ -396,14 +396,30 @@ def topology_report(runs: dict) -> None:
         print("\n  topology: `pii` not present in this stream set")
         return
     ref = t[ns[0]]
+    # A flip's MATERIALITY, not just its existence. On the arithmetic fixture the
+    # qg flip that this record reports involves 3.9e-06 of the column water -- real
+    # as a presence change, far too small to explain an O(1) change in a
+    # convergence order. Printing the share stops the record being read as a
+    # sufficient explanation for erratic exponents, which is how it was misread.
+    def _share(n, fld, c):
+        r = runs[n]
+        ks = sorted({k[3] for k in r if k[0] == "state"})
+        tot = sum(r[("state", f, c, k)] for f in MASS for k in ks)
+        return (sum(r[("state", fld, c, k)] for k in ks) / tot) if tot else 0.0
+
     print(f"\n  final branch topology, against the coarsest member (N={ns[0]})")
     any_diff = False
     for n in ns[1:]:
         diff = sorted(k for k in ref if ref[k] != t[n][k])
         if diff:
             any_diff = True
+            # max over BOTH members: a flip means the species is absent in one of
+            # them, so measuring only the finer one always reports zero.
+            worst = max((max(_share(n, a, b), _share(ns[0], a, b))
+                         for a, b, _ in diff if a != "cold"), default=0.0)
             print(f"    N={n:3d} (h={300/n:g}s): {len(diff)} flips  " +
-                  ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]))
+                  ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]) +
+                  f"   [largest flipping species is {worst:.2e} of its column water]")
         else:
             print(f"    N={n:3d} (h={300/n:g}s): identical")
     if not any_diff:

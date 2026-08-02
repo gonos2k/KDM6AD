@@ -209,13 +209,27 @@ presence in column 3 switches on at 100 s, off for four members, and on again at
 3.125 s. The chain is **not integrating the same set of processes at different
 resolutions**.
 
-Three consequences, and they close the column-3 story:
+**The flip is real. It does not explain the erratic orders.** Corrected after
+checking its magnitude, which the first version did not:
 
-1. **Any order computed across members that straddle this flip is not a rate.**
-   That covers every column-3 exponent in this document.
-2. It explains why the column-3 water budget has no order: the species set changes.
-3. It explains why `qg` shows `n/a` in the per-field table — the norm hits exact
-   zeros, which the analyzer already declines to convert into an exponent.
+    sum(qg) / column water in column 3  =  3.88e-06
+
+Parts per million. A species carrying 1e-6 of the column cannot produce the O(1)
+swings seen in the column-3 water-budget exponents (−5.86, +3.88, −1.02, +0.41).
+The first version asserted the mechanism from the flip's existence and never
+checked whether it was big enough — it is not.
+
+What stands and what does not:
+
+1. **The topology does move.** Graupel presence genuinely changes with resolution.
+2. **`qg` shows `n/a` in the per-field table** because the norm hits exact zeros —
+   that much follows directly.
+3. **The erratic column-3 orders are NOT attributed.** The claim that they are "not
+   rates because the species set changes" is withdrawn: the species that changes is
+   immaterial to the norms in question. Their cause is now open.
+
+The analyzer prints each flip's share of column water alongside it, so the record
+cannot be read again as a sufficient explanation for an exponent.
 
 The cold/warm mask itself never flips, and no other species does. The instability is
 graupel presence alone, and it is in the same three cells as everything else.
