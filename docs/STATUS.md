@@ -121,21 +121,17 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   arithmetic fixtures and require `boundary_mapping_v1`. A mixed coastal **real** case
   remains untested. See [`../harness/evidence/FINDING_ncmin_scalar_vs_percell.md`](../harness/evidence/FINDING_ncmin_scalar_vs_percell.md).
 - **The P0-4b diagnostic/column-loss disagreement is a strong function of timestep,
-  and the conservative interface removes it.** Measuring each quantity against its own
-  fine-step limit: the **fallout diagnostic** under legacy is **6.46× its own limit at
-  dtcld = 100 s** (an operationally normal step, below the kernel's 120 s target),
-  converging only near 3 s, while under the conservative interface it is within
-  **2–9% at every step**. The **underlying column water loss is far less sensitive in
-  both** — 1.31 legacy against 1.15 conservative at the coarsest step. So the effect
-  is concentrated in the DIAGNOSTIC, not in how much water leaves the column; since
-  the diagnostic is what a forecast reports as precipitation that is still
-  consequential, but it is **not** a claim that the variants precipitate differently
-  by 6×. Largest in **column 2 (up to 19.9× in snow)**, the topologically stable
-  column; column 1 (warm, no ice) is bit-identical throughout. A stable ~2× offset
-  between the diagnostic and ΔW is present in **both** legs at every step and is
-  **unexplained** — likely a convention difference in that comparison rather than a
-  second defect; no closure claim is made from it. Synthetic fixture, microphysics
-  only.
+  and the conservative interface removes it entirely.** Under the conservative
+  interface the total fallout equals the column water loss **exactly at every
+  timestep** (total/−ΔW = 1.0000). Under legacy the diagnostic is **6.56× its own
+  fine-step limit at dtcld = 100 s** while the water loss is only 1.31×, with
+  total/−ΔW running 4.97 → 0.992 and converging only near 3 s. So STATUS's
+  "non-constant O(1) amount" is a strong function of the step. **Not** a claim that
+  the variants precipitate differently by 6× — the column water losses differ by
+  ~14%. Column 1 (warm, no ice) is bit-identical throughout; column 2 carries the
+  effect and is the topologically stable column. Synthetic fixture, microphysics
+  only. (Species note: WRF's `rain` is the TOTAL fallout and `snow`/`graupel` are
+  components of it, F:1462-1464 — summing the three double-counts.)
   See [`../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md`](../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md).
 - **Both §8 energy ledgers are built. Corrected twice after adversarial review**,
   which found two independent defects: the enthalpy flux was taken from the

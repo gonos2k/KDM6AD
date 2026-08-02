@@ -1,81 +1,73 @@
-# The precipitation DIAGNOSTIC is 6.5× its own limit under legacy; the water leaving is not
+# The fallout diagnostic is 6.6× its own limit under legacy; under the conservative interface it IS the water budget
 
-**Revised after a self-check that changed the conclusion.** The first version of this
-document reported the 6.5× as surface precipitation and called it the strongest
-meteorologically material result available. It is not that. The 6.5× is in the
-**fallout diagnostic**; the physical column water loss behaves quite differently, and
-the distinction is exactly the P0-4b defect already recorded in `docs/STATUS.md`.
+**Revised twice.** The first version read the 6.5× as surface precipitation. The
+second corrected that to "the diagnostic, not the water leaving" but still summed
+`rain + snow + graupel`, which double-counts. This version has the species
+accounting right.
 
-## Two quantities, and they are not the same quantity
+## The species convention
 
-`docs/STATUS.md` already records that the operator-implied column water loss and the
-WRF `rain_increment` fallout diagnostic **disagree by a non-constant O(1) amount**,
-100% attributed to the post-update-reservoir inflow cap. Measuring both against the
-internal step makes that disagreement a function of resolution:
+F:1462-1464, verbatim:
 
-| dtcld (s) | −ΔW legacy | −ΔW cons | diagnostic legacy | diagnostic cons |
+```
+fallsum     = fall(1)+fall(2)+fall(3)+fall(4)   -> rain    == the TOTAL
+fallsum_qsi = fall(2)+fall(4)                   -> snow    == a SUBSET
+fallsum_qg  = fall(3)                           -> graupel == a SUBSET
+```
+
+`rain` is the total surface fallout of all four species; `snow` and `graupel` are
+**components of it**. The total is `rain` alone.
+
+## Result
+
+Each column as a ratio to **its own** finest member, so no unit convention enters:
+
+| dtcld (s) | diagnostic legacy | diagnostic cons | −ΔW legacy | −ΔW cons |
 |---|---|---|---|---|
-| 100 | **1.307** | **1.146** | **6.461** | **1.023** |
-| 50 | 1.143 | 1.125 | 6.323 | 1.066 |
-| 25 | 1.022 | 1.116 | 4.384 | 1.089 |
-| 12.5 | 0.989 | 1.040 | 2.326 | 1.029 |
-| 6.25 | 0.994 | 1.002 | 1.399 | 0.999 |
+| 100 | **6.556** | **1.146** | **1.307** | **1.146** |
+| 50 | 6.355 | 1.125 | 1.143 | 1.125 |
+| 25 | 4.394 | 1.116 | 1.022 | 1.116 |
+| 12.5 | 2.330 | 1.040 | 0.989 | 1.040 |
+| 6.25 | 1.400 | 1.002 | 0.994 | 1.002 |
 | 3.125 | 1.000 | 1.000 | 1.000 | 1.000 |
 
-each column as a ratio to **its own** finest member, so the comparison is internal to
-one quantity and carries no unit convention.
+### 1. Under the conservative interface the diagnostic IS the water budget
 
-## What is actually established
+Its two columns are **identical at every step** — 1.146, 1.125, 1.116, 1.040,
+1.002, 1.000. That is not a coincidence of ratios: the absolute check gives
 
-1. **The fallout diagnostic under legacy is 6.5× its own fine-step limit at
-   dtcld = 100 s** — an operationally normal step, below the kernel's 120 s target —
-   and converges down only near 3 s. **Under the conservative interface it is within
-   2–9% at every step tested.**
-2. **The underlying column water loss is far less sensitive in both**: 1.31 for
-   legacy and 1.15 for conservative at the coarsest step, converging by ~12 s.
-3. So the conservative interface's effect here is concentrated in **the diagnostic**,
-   not in how much water leaves the column. Since the diagnostic is what a forecast
-   reports as precipitation, that is still consequential — but it is a different
-   claim from "the two variants precipitate differently", which the column water
-   loss does not support at anything like that size.
+    total fallout / (−ΔW_col) = 1.0000 at every timestep
 
-## An offset I have not explained
+so for the conservative interface the reported precipitation and the water that
+actually left the column are the same number.
 
-At every step and in **both** legs the diagnostic is about **2× the column water
-loss** (e.g. at 3.125 s: legacy 3.433e-02 against 1.740e-02, conservative 3.435e-02
-against 1.726e-02). That factor is suspiciously stable and is present in the leg
-whose diagnostic is otherwise well behaved, so it is more likely a convention
-difference in this comparison — vertical index or per-column normalisation — than a
-second defect. **It is not diagnosed, and no closure claim is made from it.** The
-ratios in the table above are unaffected, since each is internal to one quantity.
+### 2. Under legacy they are not
+
+The diagnostic is **6.56× its own fine-step limit at dtcld = 100 s** — an
+operationally normal step, below the kernel's 120 s target — while the column water
+loss is only **1.31×**. The absolute ratio total/(−ΔW) runs 4.97, 4.26 … 0.992,
+converging only near 3 s.
+
+**This is the P0-4b defect measured as a function of resolution.** `docs/STATUS.md`
+records it as "a non-constant O(1) amount"; it is a strong function of the timestep,
+and the conservative interface removes it entirely.
 
 ## Where it comes from
 
-Per column at dtcld = 100 s, diagnostic legacy/conservative:
-
-| | ratio |
-|---|---|
-| col 1 rain | 1.000 |
-| col 2 rain | **11.75** |
-| col 2 snow | **19.86** |
-| col 3 rain | 4.15 |
-| col 3 snow | 4.50 |
-
-- **Column 1 is bit-identical at every step** — 288–290 K, no ice, the interface
-  never acts. The control.
-- **Column 2 carries the largest effect** and is the clean case: the branch-topology
-  instability measured elsewhere is confined to column 3 (`qg` presence flipping
-  with resolution), and **column 2's topology is stable across the whole chain**.
-- Column 3 shows the same direction with the standing topology caveat.
+Per column, diagnostic legacy/conservative at dtcld = 100 s: column 1 is
+**bit-identical** (288–290 K, no ice — the interface never acts, the control);
+columns 2 and 3 carry it. Column 2 is the clean case — the branch-topology
+instability measured elsewhere is confined to column 3 (`qg` presence flipping with
+resolution), and **column 2's topology is stable in all three legs**, verified
+directly.
 
 ## What this does NOT establish
 
-- **Not "the conservative variant precipitates 6.5× less".** That was the first
-  version's error. The column water loss differs by ~15% at the coarsest step, not
-  by a factor of six.
+- **Not "the conservative variant precipitates 6.6× less".** The column water loss
+  differs by 1.307 against 1.146 at the coarsest step — about 14%, not a factor of
+  six.
 - **Not a claim that legacy is wrong.** The reference defines the reference. What is
-  shown is that its fallout diagnostic is far from its own fine-step limit at a
-  normal step, and that the conservative interface's is not.
+  shown is that its fallout diagnostic departs from its own water budget by ~5× at a
+  normal step, and that the conservative interface's does not depart at all.
 - Synthetic fixture, 300 s, microphysics only. Real-case precipitation,
   reflectivity, LWP/IWP, brightness temperature and DA cost remain unmeasured.
-- The ~2× diagnostic-to-ΔW offset above is unexplained.
