@@ -129,8 +129,22 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
   +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
   ordering by how well they converge.** Consequence: §9's obstacle is a
-  **sweep-design** problem, not an intrinsic property of the fixture — a chain over
-  which `mstep` is constant would give column 3 a valid domain. The analyzer now prints each flip's share of
+  **sweep-design** problem — but making `mstep` constant is **necessary and not
+  sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
+  valid domain" that stood here is **withdrawn**. Measured: `mstep` reaches 1 at
+  h = 12.5 s (col 2) and h = 6.25 s (col 3), while extending the chain to h = 0.39 s
+  shows the successive differences **stop falling and start growing** below
+  h = 3.125 s (`th` 1.46e-3 → 2.69e-3 → 6.41e-3; members bit-identical on re-run, so
+  accumulated f32 roundoff, not nondeterminism). Since an order needs three members,
+  the finest clean order is 12.5→6.25, leaving column 1 **four** clean orders
+  (`+1.969, +1.002, +1.000, +1.002`), column 2 **one** (`+0.066`) and column 3
+  **none**. A usable fixture needs `mstep` to reach 1 by h ≈ 25 s — ~4× slower fall
+  speeds — which merges this with the §6 smooth-cold-fixture requirement rather than
+  being a separate need. Column 3's ρΔz **ice number** does converge throughout
+  (`+1.121, +1.029, +1.052`), so that channel has an order where column water has
+  none. Only the **rain-chain** `mstep` is instrumented; ice runs on `mstep_i`
+  (`module_mp_kdm6.F:1284`), not emitted.
+  See [`../harness/evidence/FINDING_refinement_noise_floor_v1.md`](../harness/evidence/FINDING_refinement_noise_floor_v1.md). The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **The refinement bundle is reproducible, and the reproduction was run.** Its
