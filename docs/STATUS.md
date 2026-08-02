@@ -206,7 +206,31 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   so operational steps are not measured; the conservative variant is *predicted* to be
   unaffected (it fixes the mass measure, leaves number on the legacy one) and was not
   run; cap-dominated calls are excluded, not explained.
-  See [`../harness/evidence/FINDING_number_transport_creation_v1.md`](../harness/evidence/FINDING_number_transport_creation_v1.md). The analyzer now prints each flip's share of
+  See [`../harness/evidence/FINDING_number_transport_creation_v1.md`](../harness/evidence/FINDING_number_transport_creation_v1.md).
+- **The refinement evidence path is fail-closed and produced atomically** (owner
+  P0-1/P0-2/P0-3, priority 2). Convergence orders were computed from the FILENAME's
+  `N` on the assumption `dtcld = 300/N`; the driver disproves it — `N = 1,2,3` run
+  `dtcld = 100, 150, 100 s`, so N-ordering is not step-ordering, `N=2` is *coarser*
+  than `N=1`, and `N=1`/`N=3` ran the **same** step. Every `300/N` is gone: pairing,
+  labels, the error-series keys and the "finest" member all come from the `dtcld` the
+  stream reports, a member reporting none is refused, and a repeated step is refused
+  where an order is taken (the series is keyed by step and two members at one step
+  collide silently) while still being *readable*, since the N=1/N=3 policy control
+  runs one step twice deliberately. The manifest binds each **filename** to its
+  stream (`nsplit` and mode), runs the cross-member checks before claiming a bundle
+  is reproducible, orders `is_refinement_chain` by actual step, and refuses
+  provenance whose digests describe a different build. Provenance now binds **all
+  seven compiled sources, `f951`, the link command and the executable** — previously
+  only the module and fixture, so a change to `libmassv`/`module_model_constants`/
+  `module_mp_radar`/the stub/the driver was invisible (`host/**` is gitignored, so
+  `repo_commit` cannot see them) — and records the **pinned** module separately from
+  the **compiled** one, which differs under the instrumentation overlay. The parser
+  additionally refuses rho-without-delz, an INITIAL state over different cells (not
+  merely the same count), ragged level sets and a PREC set that is not exactly
+  species 1/2/3 over the state's columns. `g33_refine_experiment.py` now does
+  build → run → strict-parse → cross-check → manifest → **atomic publish** in one
+  command, so a failure leaves the previous bundle untouched instead of a
+  half-replaced one. The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **The refinement bundle is reproducible, and the reproduction was run.** Its

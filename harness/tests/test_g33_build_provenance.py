@@ -109,5 +109,33 @@ def test_the_refinement_build_calls_it(build):
     assert "g33_build_provenance.py" in script.read_text()
 
 
+def test_every_compiled_source_is_digested_not_just_the_module(tmp_path, build):
+    """libmassv, the model constants, the radar module, the stub and the driver
+    all change results, and host/** is gitignored so repo_commit cannot see them
+    (owner P0-3)."""
+    out, root = build
+    (out / "sources.txt").write_text(f"{root / 'm.F'}\n{root / 'f.f90'}\n")
+    got = _collect(out, root)["sources"]
+    assert [g["path"] for g in got] == [str(root / "m.F"), str(root / "f.f90")]
+    assert got[0]["sha256"] == bp.sha256(root / "m.F")
+
+
+def test_the_executable_that_ran_is_digested(build):
+    """The binary is the artifact that produced the numbers."""
+    out, root = build
+    exe = _stub(root / "exe", "exit 0")
+    p = bp.collect(out, str(root / "fc"), root / "m.F", root / "f.f90",
+                   root / "b.sh", exe)
+    assert p["executable_sha256"] == bp.sha256(exe)
+    assert _collect(out, root)["executable_sha256"] is None
+
+
+def test_the_build_logs_its_sources_and_its_link():
+    """A provenance field nothing populates records nothing."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "SRCLOG=" in script and 'printf \'%s\\n\' "${@: -1}" >>"$SRCLOG"' in script
+    assert 'printf \'%q \' "${LINK[@]}" >>"$CMDLOG"' in script
+
+
 def test_wrong_argument_count_is_usage_not_a_traceback():
     assert bp.main(["only-one"]) == 2

@@ -6,10 +6,23 @@ caller typed, not the binary that ran. Two hosts with that same string produce
 different numbers. The digest of the executable, the exact compile commands and
 the source digests are known only inside the build, so the build writes them.
 
-    python g33_build_provenance.py <outdir> <fc> <module> <fixture> <build-script>
+    python g33_build_provenance.py <outdir> <fc> <module> <fixture> <build-script> \
+        [exe] [compiled-module]
 
-Emits `<outdir>/build_provenance.json`, reading the compile commands from the
-`<outdir>/commands.txt` the build logged.
+`module` is the PINNED reference the experiment is about; `compiled-module` is
+what the compiler actually saw, which differs under `--dump`/`--nflux` where it is
+the macro-gated overlay. Recording only the compiled one would leave an
+instrumented bundle unlinkable to the reference it instruments.
+
+Emits `<outdir>/build_provenance.json`, reading the compile commands from
+`<outdir>/commands.txt` and the compiled sources from `<outdir>/sources.txt`,
+both of which the build logged as it ran.
+
+Digesting only the module and fixture left the rest of the link invisible
+(owner P0-3): `libmassv.F`, `module_model_constants.F`, `module_mp_radar.F`, the
+error stub and the driver all change results, and `host/**` is gitignored so
+`repo_commit`/`tree_dirty` cannot see them. The final executable is digested too,
+because that is the artifact that actually produced the numbers.
 """
 from __future__ import annotations
 
@@ -30,12 +43,16 @@ def _git(*args: str) -> str:
                           text=True).stdout.strip()
 
 
-def collect(out: Path, fc: str, module: Path, fixture: Path,
-            script: Path) -> dict:
+def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
+            exe: Path | None = None, compiled: Path | None = None) -> dict:
     """Provenance for one build. `fc` may be a name or a path; it is resolved,
     because the digest of whatever `gfortran` resolved to is the point."""
     binary = shutil.which(fc) or fc
-    cmds = out / "commands.txt"
+    cmds, srcs = out / "commands.txt", out / "sources.txt"
+    # The compiler DRIVER is a thin wrapper; the program that does the compiling
+    # is `f951`, and it is the one whose digest identifies the code generator.
+    f951 = subprocess.run([binary, "-print-prog-name=f951"], text=True,
+                          capture_output=True).stdout.strip()
     # A compiler that prints no version gets `null`, not "" -- and never an
     # exception, which would abort an otherwise successful build at its last
     # step. The digest above is the field that identifies the binary anyway.
@@ -49,8 +66,21 @@ def collect(out: Path, fc: str, module: Path, fixture: Path,
         # may pass nothing, which would be indistinguishable from a build that
         # ran no commands.
         "compile_commands": cmds.read_text().splitlines() if cmds.exists() else [],
+        "compiler_f951_path": f951 if Path(f951).is_file() else None,
+        "compiler_f951_sha256": (sha256(f951) if Path(f951).is_file() else None),
+        # Every source the build compiled, in build order, each by digest.
+        "sources": ([{"path": ln, "sha256": sha256(ln)}
+                     for ln in dict.fromkeys(srcs.read_text().split())]
+                    if srcs.exists() else []),
+        "executable_path": str(exe) if exe else None,
+        "executable_sha256": sha256(exe) if exe and Path(exe).exists() else None,
         "build_script_sha256": sha256(script),
         "module_path": str(module), "module_sha256": sha256(module),
+        # None when the pinned module IS what was compiled.
+        "compiled_module_path": (str(compiled) if compiled
+                                 and Path(compiled) != Path(module) else None),
+        "compiled_module_sha256": (sha256(compiled) if compiled
+                                   and Path(compiled) != Path(module) else None),
         "fixture_path": str(fixture), "fixture_sha256": sha256(fixture),
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
@@ -58,13 +88,16 @@ def collect(out: Path, fc: str, module: Path, fixture: Path,
 
 
 def main(argv) -> int:
-    if len(argv) != 5:
+    if not 5 <= len(argv) <= 7:
         print(__doc__)
         return 2
     out = Path(argv[0])
     (out / "build_provenance.json").write_text(
         json.dumps(collect(out, argv[1], Path(argv[2]), Path(argv[3]),
-                           Path(argv[4])), indent=2, sort_keys=True) + "\n")
+                           Path(argv[4]),
+                           Path(argv[5]) if len(argv) > 5 else None,
+                           Path(argv[6]) if len(argv) > 6 else None),
+                   indent=2, sort_keys=True) + "\n")
     return 0
 
 

@@ -52,7 +52,13 @@ DRIVER_FLAGS=("${COMMON_FLAGS[@]}" -ffp-contract=off -Wall)
 # indistinguishable from a build nobody recorded, so the build writes it rather
 # than leaving it to a caller that may not pass it (owner §9).
 CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
+# ...and every source. The manifest digested only the module and fixture, so a
+# change to libmassv, the model constants, the radar module, the stub or the
+# driver was invisible -- and host/** is gitignored, so repo_commit and
+# tree_dirty do not see them either (owner P0-3).
+SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
 fc() { local o="$1"; shift
+       printf '%s\n' "${@: -1}" >>"$SRCLOG"
        printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
@@ -76,12 +82,18 @@ fi
 fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
 fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
                                    "$HERE/g33_refine_driver.f90"
-"$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver" \
-    "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o" \
-    "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o" \
-    "$OUT/stub_wrf_error.o" "$OUT/libmassv.o" 2>"$OUT/link.err" \
+LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
+      "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"
+      "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o"
+      "$OUT/stub_wrf_error.o" "$OUT/libmassv.o")
+printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
+"${LINK[@]}" 2>"$OUT/link.err" \
     || { echo "LINK FAILED"; head -25 "$OUT/link.err"; exit 1; }
-# What built this -- compiler digest, commands, source digests (owner §9).
+# What built this -- compiler digest, every source, and the binary that ran.
+# The PINNED module is what the experiment is about; MODULE_SRC is what the
+# compiler saw, which is the macro-gated overlay under --dump/--nflux. Both are
+# recorded: binding only the compiled one would make an instrumented bundle
+# unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
-    "$OUT" "$FC" "$MODULE_SRC" "$FIXTURE_SRC" "$0"
+    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" "$MODULE_SRC"
 echo "$OUT"
