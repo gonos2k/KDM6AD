@@ -114,12 +114,17 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   **3.88e-06 of that column's water** — parts per million, far too small to produce
   the O(1) swings in its convergence exponents (−5.86, +3.88, −1.02, +0.41). The
   flip is real; the attribution was asserted from its existence without checking its
-  magnitude, and is **withdrawn**. Column 3's erratic orders are currently
-  **unattributed** — rounding noise is also ruled out (differences are 1,000–74,000×
-  the f32 floor), so the non-smoothness is real but unexplained. §9's conclusion
-  survives, since an erratic sequence yields no rate whatever causes it, but the
-  obstacle is now **unexplained rather than understood** — so the possibility that
-  column 3 could be made usable, and §9 answerable, is open rather than closed. The analyzer now prints each flip's share of
+  magnitude, and is **withdrawn**. Column 3's erratic orders are now
+  **attributed to the sedimentation sub-step count**, recovered from the kernel's own
+  records (instrumented run verified bit-identical to the plain build). `mstep` is a
+  rounded integer, so the quantity actually refined is `dtcld/mstep`, not `dtcld`:
+  column 1 has `mstep ≡ 1` and converges cleanly (+1.002), column 3 runs
+  `mstep` 10→5→3→2 so its effective step never halves and its range *widens*
+  (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
+  +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
+  ordering by how well they converge.** Consequence: §9's obstacle is a
+  **sweep-design** problem, not an intrinsic property of the fixture — a chain over
+  which `mstep` is constant would give column 3 a valid domain. The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **`ncmin` column non-locality now fails two independent acceptance gates**, both
