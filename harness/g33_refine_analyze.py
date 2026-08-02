@@ -140,14 +140,38 @@ def read(path: Path, *, nsplit=None) -> dict:
     # but if either is present BOTH must be complete -- a half-populated forcing
     # set would silently drop columns from a physical budget.
     if fo:
-        for nm in {k[1] for k in fo}:
+        names = {k[1] for k in fo}
+        # Checking only the names PRESENT let a stream carrying rho but no delz
+        # through, to fail later inside a column budget (owner §7.1). rho and delz
+        # are the rho*dz measure and are all-or-nothing; `pii` is not, because the
+        # enthalpy ledger already reports its own absence and some producers do
+        # not emit it.
+        _expect(("rho" in names) == ("delz" in names),
+                f"forcing carries {sorted(names)}: rho and delz are the rho*dz "
+                f"measure and must be present together", path)
+        for nm in names:
             got = {(k[2], k[3]) for k in fo if k[1] == nm}
             _expect(got == cells,
                     f"forcing `{nm}` covers {len(got)} cells, state covers "
                     f"{len(cells)}", path)
     if init:
-        _expect(len(init) == len(st),
-                f"initial state has {len(init)} records, final has {len(st)}", path)
+        # Counting records lets a member with the right NUMBER of wrong cells
+        # through, and the initial state is what every budget is measured from.
+        _expect({k[1:] for k in init} == {k[1:] for k in st},
+                "initial state covers different (field, col, k) than the final "
+                "state", path)
+    # Every column must carry the same levels: a ragged column silently shortens
+    # a column integral.
+    per_col = {c: {k for cc, k in cells if cc == c} for c, _ in cells}
+    _expect(len({tuple(sorted(v)) for v in per_col.values()}) == 1,
+            f"columns carry different level sets: "
+            f"{ {c: sorted(v) for c, v in per_col.items()} }", path)
+    # Precipitation is three species over exactly the state's columns.
+    if pr:
+        _expect({(k[1], k[2]) for k in pr}
+                == {(sp, c) for sp in (1, 2, 3) for c, _ in cells},
+                "prec is not exactly species 1/2/3 over the state's columns",
+                path)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo
@@ -156,6 +180,65 @@ def read(path: Path, *, nsplit=None) -> dict:
         out[("meta", "loops")] = int(loops)
         out[("meta", "dtcld")] = float(dtcld)
     return out
+
+
+def steps(runs: dict) -> dict:
+    """{member: the dtcld the kernel actually used}. Fail-closed (owner P0-1).
+
+    Orders used to be computed from the FILENAME's N, on the assumption
+    `dtcld = 300/N`. `loops = max(nint(delt/dtcldcr),1)` (F:930) breaks it:
+    N = 1,2,3 gives dtcld = 100,150,100 s, so an N-ordered chain need not be a
+    step-ordered one and "N doubled" need not mean "the step halved". The stream
+    reports what the kernel ran; that is what an order is against.
+    """
+    out = {}
+    for n, r in runs.items():
+        h = r.get(("meta", "dtcld"))
+        if h is None:
+            raise RefineError(
+                f"member N={n} reports no dtcld — this stream predates the field, "
+                f"and an order cannot be taken against a step nobody recorded")
+        if not (math.isfinite(h) and h > 0):
+            raise RefineError(f"member N={n} reports dtcld={h}")
+        out[n] = h
+    return out
+
+
+def require_orderable(runs: dict) -> None:
+    """Additionally required before an ORDER may be taken (owner P0-1).
+
+    Distinct steps are not a property of every useful bundle -- the N=1/N=3
+    policy control deliberately runs the same dtcld twice -- but they are
+    required here, because the error series are keyed BY step and two members at
+    one step collide silently, one overwriting the other.
+    """
+    H, seen = steps(runs), {}
+    for n, h in sorted(H.items()):
+        dup = next((m for m, g in seen.items() if math.isclose(h, g, rel_tol=1e-12)),
+                   None)
+        if dup is not None:
+            raise RefineError(
+                f"members N={dup} and N={n} both ran dtcld={h:g} s — an error "
+                f"series keyed by step cannot contain the same step twice")
+        seen[n] = h
+
+
+def require_comparable(runs: dict) -> None:
+    """One experiment, not several (owner P0-1/P0-2).
+
+    Everything here would otherwise surface as a plausible-looking table built
+    from members that never described the same integration. Step DISTINCTNESS is
+    not here: see `require_orderable`.
+    """
+    modes = {r[("meta", "mode")] for r in runs.values()}
+    if len(modes) > 1:
+        raise RefineError(f"members mix modes: {sorted(modes)}")
+    horizons = {round(r[("meta", "delt")] * r[("meta", "nsplit")], 6)
+                for r in runs.values() if ("meta", "delt") in r}
+    if len(horizons) > 1:
+        raise RefineError(
+            f"members integrate different total times: {sorted(horizons)} s — "
+            f"their difference is not a discretisation error")
 
 
 def require_same_universe(runs: dict) -> None:
@@ -175,6 +258,7 @@ def require_same_universe(runs: dict) -> None:
     algos = {r[("meta", "algorithm")] for r in runs.values()}
     if len(algos) > 1:
         raise RefineError(f"members mix algorithms: {sorted(algos)}")
+    require_comparable(runs)
 
 
 def _norm(a: dict, b: dict, keys) -> float:
@@ -220,9 +304,16 @@ def column_budgets(run: dict) -> dict:
     return out
 
 
+def _halved(a: float, b: float) -> bool:
+    return math.isclose(a, 2 * b, rel_tol=1e-9)
+
+
 def _halving_pairs(runs: dict) -> list:
-    """(coarse, fine) member pairs whose step actually halved."""
-    return [(n, 2 * n) for n in sorted(runs) if 2 * n in runs]
+    """(coarse, fine) member pairs whose ACTUAL step halved — adjacent in
+    decreasing step, and only where the step really is twice the next."""
+    H = steps(runs)
+    order = sorted(runs, key=lambda n: -H[n])
+    return [(a, b) for a, b in zip(order, order[1:]) if _halved(H[a], H[b])]
 
 
 def _order_table(runs: dict, title: str, head: str, rows) -> None:
@@ -236,8 +327,9 @@ def _order_table(runs: dict, title: str, head: str, rows) -> None:
     """
     pairs = _halving_pairs(runs)
     print(f"\n  {title}")
-    print(f"    {head}" + "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13)
-                                    for lo, _ in pairs[:-1]))
+    H = steps(runs)
+    print(f"    {head}" + "  ".join(f"{H[lo]:g}->{H[hi]:g}".rjust(13)
+                                    for lo, hi in pairs[:-1]))
     for label, err in rows:
         cells = []
         for i, (lo, hi) in enumerate(pairs[:-1]):
@@ -264,22 +356,22 @@ def budget_report(runs: dict) -> None:
 
 def successive(runs: dict) -> dict:
     """E_h = |X_h - X_{h/2}| for the doubling pairs this sweep contains."""
-    pairs = [(n, 2 * n) for n in sorted(runs) if 2 * n in runs]
+    H, pairs = steps(runs), _halving_pairs(runs)
     out = {}
     for g in GROUPS:
-        row = {}
-        for lo, hi in pairs:
-            if lo in runs and hi in runs:
-                row[300 / lo] = _norm(runs[lo], runs[hi], _keys(runs[lo], g))
-        out[g] = row
+        out[g] = {H[lo]: _norm(runs[lo], runs[hi], _keys(runs[lo], g))
+                  for lo, hi in pairs}
     return out
 
 
 def to_finest(runs: dict) -> dict:
-    finest = max(runs)
+    """The finest member is the one with the SMALLEST STEP, which is not always
+    the largest N (owner P0-1)."""
+    H = steps(runs)
+    finest = min(runs, key=lambda n: H[n])
     out = {}
     for g in GROUPS:
-        out[g] = {300 / n: _norm(runs[n], runs[finest], _keys(runs[n], g))
+        out[g] = {H[n]: _norm(runs[n], runs[finest], _keys(runs[n], g))
                   for n in sorted(runs) if n != finest}
     return out
 
@@ -294,7 +386,7 @@ def orders(series: dict) -> list:
     hs = sorted(series, reverse=True)
     out = []
     for h, hh in zip(hs, hs[1:]):
-        if abs(h - 2 * hh) > 1e-9:
+        if not _halved(h, hh):
             continue
         e, ee = series[h], series[hh]
         out.append((h, e, ee, None if e == 0 or ee == 0 else math.log2(e / ee)))
@@ -302,9 +394,10 @@ def orders(series: dict) -> list:
 
 
 def report(runs: dict, label: str) -> None:
+    H = steps(runs)
     print(f"\n=== {label} ===")
     print(f"    members: N = {sorted(runs)}  "
-          f"(delt = {[round(300 / n, 4) for n in sorted(runs)]} s)")
+          f"(dtcld = {[round(H[n], 4) for n in sorted(runs)]} s, as the kernel ran them)")
     # (label, series, may_report_order). The flag is the point of this table:
     # an order from the error-to-finest series is biased upward and was misread
     # once already, so which series may carry one is fixed here rather than left
@@ -312,7 +405,7 @@ def report(runs: dict, label: str) -> None:
     for name, series, ordered in (
             ("successive |X_h - X_h/2|   (order estimated HERE)",
              successive(runs), True),
-            (f"error to finest (N={max(runs)})   magnitude + monotonicity only",
+            (f"error to finest (dtcld={min(H.values()):g}s)   magnitude + monotonicity only",
              to_finest(runs), False)):
         print(f"\n  {name}")
         for g in GROUPS:
@@ -396,6 +489,7 @@ def topology(run: dict) -> dict:
 
 
 def topology_report(runs: dict) -> None:
+    H = steps(runs)
     ns = sorted(runs)
     t = {n: topology(runs[n]) for n in ns}
     if not t[ns[0]]:
@@ -433,11 +527,11 @@ def topology_report(runs: dict) -> None:
             # them, so measuring only the finer one always reports zero.
             worst = max((max(_share(n, a, b), _share(ns[0], a, b))
                          for a, b, _ in diff if a != "cold"), default=0.0)
-            print(f"    N={n:3d} (h={300/n:g}s): {len(diff)} flips  " +
+            print(f"    N={n:3d} (h={H[n]:g}s): {len(diff)} flips  " +
                   ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]) +
                   f"   [largest flipping species is {worst:.2e} of its column water]")
         else:
-            print(f"    N={n:3d} (h={300/n:g}s): identical")
+            print(f"    N={n:3d} (h={H[n]:g}s): identical")
     if not any_diff:
         print("    -> the FINAL topology is stable across the whole chain. That is "
               "consistent\n       with the exponents being rates, and does not "
@@ -643,6 +737,7 @@ def ledger_report(runs: dict) -> None:
     """Both ledgers, one table shape, different physics — the point of running two:
     §8.2 asks whether the code agrees with consistent thermodynamics, §8.1 whether
     it agrees with its own equations, and they can disagree."""
+    H = steps(runs)
     ns = sorted(runs)
     for title, ledger in (
             ("moist-enthalpy column residual   (dH + H_precip_out; zero if closed)",
@@ -659,7 +754,7 @@ def ledger_report(runs: dict) -> None:
             for c in sorted(L[n]):
                 d = L[n][c]
                 lo, hi = d["relative_band"]
-                print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} "
+                print(f"    {H[n]:7g} {c:3d} {d['residual']:18.6e} "
                       f"{d['relative']:12.3e}  [{lo:.2e},{hi:.2e}]")
 
 
@@ -680,6 +775,7 @@ def diagnostic_budget_consistency_report(runs: dict) -> None:
 
     1.0 means the diagnostic IS the budget for that column and may be used as one.
     """
+    H = steps(runs)
     ns = sorted(runs)
     if not any(k[0] == "initial" for k in runs[ns[0]]):
         print("\n  diagnostic trust: no INITIAL records, cannot compare")
@@ -695,7 +791,7 @@ def diagnostic_budget_consistency_report(runs: dict) -> None:
         for c in cols:
             w = _water_out(r, c, ks)
             row.append(f"{total_precip(r, c) / w:9.4f}" if w else "        -")
-        print(f"    {300/n:7g} " + " ".join(row))
+        print(f"    {H[n]:7g} " + " ".join(row))
 
 
 def main(argv) -> int:
@@ -710,9 +806,18 @@ def main(argv) -> int:
     if len(runs) < 2:
         raise SystemExit(f"need at least two members, found {sorted(runs)}")
     require_same_universe(runs)
-    report(runs, d.name)
-    per_field(runs)
-    budget_report(runs)
+    # A bundle that cannot carry an order is still worth reading: the N=1/N=3
+    # policy control deliberately runs one step twice. Refuse the ORDER tables,
+    # which are keyed by step and would silently collide, and print the rest.
+    try:
+        require_orderable(runs)
+    except RefineError as e:
+        print(f"\n=== {d.name} ===\n  NO ORDERS: {e}\n"
+              f"  Reporting only the sections that do not key on the step.")
+    else:
+        report(runs, d.name)
+        per_field(runs)
+        budget_report(runs)
     topology_report(runs)
     ledger_report(runs)
     diagnostic_budget_consistency_report(runs)

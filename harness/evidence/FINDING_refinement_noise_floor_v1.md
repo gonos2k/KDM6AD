@@ -7,6 +7,17 @@ give column 3 a valid domain."
 
 Such a chain exists. It is **two members long**, and a successive order needs three.
 
+**Scope of the `mstep` attribution (owner §6.2).** What is closed is that an
+external-`dtcld` dyadic test does **not** dyadically refine the sedimentation
+operator, because `dtcld/mstep` is what that operator integrates. What is **not**
+closed is that `mstep` is the *sole* cause of column 3's `−5.86, +3.88, −1.02,
++0.41`: no counterfactual holds the state fixed while pinning only the sub-step
+schedule, and caps, thresholds, cleanup and precipitation onset move with it.
+Grade: **confirmed** for the refinement-variable mismatch, **strong candidate** for
+the sole cause. `mstep ≡ 1` is likewise a sufficient simplification for analysis,
+not a mathematical necessity — a chain that tracked the effective step could take
+orders with `mstep > 1`.
+
 ## Measured: where `mstep` bottoms out
 
 Rain-chain `mstep`, from the SHA-pinned overlay (`--dump`):
@@ -30,12 +41,25 @@ differences stop falling and **start growing**:
 | `th` | 2.98e-2 | 1.50e-2 | 8.42e-3 | 5.55e-3 | 2.72e-3 | **1.46e-3** | 2.69e-3 | 6.41e-3 |
 | `mass` | 2.82e-5 | 1.90e-5 | 3.92e-6 | 2.21e-6 | 2.19e-6 | **6.46e-7** | 7.24e-7 | 2.37e-6 |
 
-A consistent discretization cannot produce **growing** differences under
-refinement. Re-running any member is bit-identical, so this is not
-nondeterminism — it is accumulated f32 roundoff over an increasing number of
-kernel calls, overtaking a discretization error that has become smaller than it.
-The minimum is at **h = 3.125 s**, so members finer than that are noise-dominated
-and the finest trustworthy member is h = 3.125.
+Re-running any member is bit-identical, so this is **not** nondeterminism. The
+minimum is at **h = 3.125 s**, and members finer than that do not reduce the
+difference, so the finest member the chain can rest an order on is h = 3.125.
+
+**The cause is OPEN (owner §6.1).** An earlier version wrote this up as
+"accumulated f32 roundoff", and as "a consistent discretization cannot produce
+growing differences". Both are withdrawn. Bit-identical re-runs exclude
+nondeterminism *only*; several deterministic mechanisms produce the same turnover —
+sign cancellation between leading truncation terms, a crossover between orders,
+active-set changes in the `min`/`max`/threshold/projection operators, repeated
+per-call entry clamps as the call count rises, state-dependent sub-cycle schedule
+changes, a pre-asymptotic stiff regime, or precipitation onset moving across a step
+boundary. And the "cannot increase" claim holds only for sufficiently small `h` on
+one smooth branch with a single dominant error term, none of which is established
+here. The supported statement is: **a resolution turnover is observed below
+h ≈ 3.125 s on this fixture at f32; the cause is open.** Deciding it needs a
+precision-scaling experiment (f32 state, f32 vs compensated/f64 column reduction,
+f64 shadow with the branch schedule pinned): if roundoff dominates, the turnover
+must move to smaller `h` and the minimum must fall with `ε`.
 
 ## Why that leaves no order
 

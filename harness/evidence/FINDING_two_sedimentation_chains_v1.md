@@ -38,18 +38,28 @@ the domain **per-chain, not per-column**.
 
 `ni` column number in column 3 — successive differences fall monotonically
 across the whole chain (1.76e8, 7.79e7, 4.48e7, 1.63e7, 8.94e6, 4.11e6, 2.02e6,
-9.72e5), so **`ni` never reaches the noise floor** that stops `th` and `mass` at
-h = 3.125 s. Its relative signal stays near 1e-2, far above f32 roundoff, where
-`th`'s falls to ~5e-6.
+9.72e5), so **`ni` shows no turnover** where `th` and `mass` stop improving at
+h = 3.125 s. Its relative difference stays near 1e-2 where `th`'s falls to ~5e-6;
+whether that is why is open with the turnover's own cause (see
+`FINDING_refinement_noise_floor_v1`).
 
-Inside the `mstep_i ≡ 1` window that leaves **five clean successive orders**:
+Inside the `mstep_i ≡ 1` window that leaves **five successive orders**:
 
 | order | 25→12.5 | 12.5→6.25 | 6.25→3.125 | 3.125→1.56 | 1.56→0.78 |
 |---|---|---|---|---|---|
 | `ni` col 3 | +1.461 | +0.863 | +1.121 | +1.029 | +1.052 |
 
 First order, tightening to `+1.029 / +1.052` at the fine end. **This is the first
-valid convergence domain established for column 3.**
+convergence domain established for column 3 in which the sub-step count is
+constant.**
+
+**Calibration (owner §6.3).** "Clean" overstates it, and is withdrawn. `mstep_i ≡ 1`
+and a falling difference series are what was checked; the process gates, number
+caps, complete-sublimation and cleanup branches, the nucleation/aggregation
+branches and the active-cell universe were **not** verified constant across these
+levels. The supported grade is **first-order-consistent and empirically stable over
+five successive estimates, not branch-certified.** A branch-mask hash per member
+would close it.
 
 Column *water* gets none, and now for a stated reason rather than an unexplained
 one: it contains qr, qs and qg, so it inherits the **main** chain's requirement
@@ -96,9 +106,23 @@ At h = 25 s, surface flux against the column number change:
 | ni | 3 | +9.42e7 | 3.26e8 | 3.460 |
 
 **Every column loses all of its rain number, and the surface accounts for 1.4–5.8%
-of it.** 94–99% goes to microphysical sinks. That is directly relevant to the
-`nr` number-moment release blocker: a transport-side number defect on this
-fixture would sit under a sink term one to two orders of magnitude larger.
+of it.**
+
+**Correction (owner §5.1).** An earlier version called the remaining 94–99%
+"microphysical sinks". That is withdrawn — it is not established. What
+`ΔN + F_surface` isolates is only *everything that is not surface outflow*, which
+here contains aggregation and self-collection, autoconversion, nucleation,
+freezing and melting, threshold cleanup, positivity projection and caps, the
+ρΔz-vs-Δz measure mismatch, and inter-phase number redistribution. The supported
+statement is: **94–99% of the rain-number loss happens in terms other than surface
+outflow.** The `ni` rows make the point sharply — the surface flux is 1.38× and
+3.46× the magnitude of `|ΔN|`, so a pure-sink decomposition does not even have the
+right sign structure there. Separating the terms needs process-resolved number
+tendencies, which are per-cell locals inside the rate blocks.
+
+It remains relevant to the `nr` number-moment release blocker in the weaker form:
+a transport-side defect sits under non-surface terms one to two orders larger,
+whatever those terms turn out to be.
 
 ## How the site stays out of the decision path
 
@@ -127,10 +151,15 @@ the decision parser *would* reject these records — the reason, kept mechanical
 ## Limits
 
 - **Still not a number closure.** `ΔN + F_surface = R_N` defines `R_N`; it does
-  not check it. The microphysical number tendencies are per-cell locals inside
-  the rate blocks and are not emitted. The 1.4–5.8% above says the sink is large,
-  not what it is — `threshold cleanup`, which zeroes sub-threshold mass **and
-  paired number**, is the obvious candidate and is untested here.
+  not check it. The correct closure needs process-resolved tendencies,
+  `ΔN + F_surface − Σ_p ∫ S_p dt = R_numerical`, and every `S_p` is a per-cell
+  local inside the rate blocks. The 1.4–5.8% says only that the non-surface terms
+  are large, **not that they are sinks** — `threshold cleanup` is a candidate, and
+  is untested.
+- **A sedimentation-only fixture would decide the transport part on its own.**
+  With the microphysical sources off, `ΔN + F_surface` must close to the
+  floating-point floor under a conserving measure; it is the cleanest available
+  test and has not been run.
 - The ice-chain domain is established for **`ni` column number on this fixture**.
   `qi` was not checked the same way, and neither channel was checked under the
   conservative interface.

@@ -128,14 +128,24 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   `mstep` 10→5→3→2 so its effective step never halves and its range *widens*
   (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
   +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
-  ordering by how well they converge.** Consequence: §9's obstacle is a
+  ordering by how well they converge.** Grade (owner §6.2): the
+  refinement-variable mismatch — an external-`dtcld` dyadic test does not dyadically
+  refine an operator that integrates `dtcld/mstep` — is **confirmed**; `mstep` as the
+  **sole** cause of the specific exponents is a **strong candidate only**, since no
+  counterfactual pins the schedule while holding the state and the other branches
+  fixed. Consequence: §9's obstacle is a
   **sweep-design** problem — but making `mstep` constant is **necessary and not
   sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
   valid domain" that stood here is **withdrawn**. Measured: `mstep` reaches 1 at
   h = 12.5 s (col 2) and h = 6.25 s (col 3), while extending the chain to h = 0.39 s
   shows the successive differences **stop falling and start growing** below
   h = 3.125 s (`th` 1.46e-3 → 2.69e-3 → 6.41e-3; members bit-identical on re-run, so
-  accumulated f32 roundoff, not nondeterminism). Since an order needs three members,
+  **not** nondeterminism — but the cause is **OPEN**: an earlier "accumulated f32
+  roundoff" is **withdrawn**, since bit-identity excludes nondeterminism only and
+  truncation-term cancellation, order crossover, active-set changes in the
+  min/max/threshold operators, repeated per-call clamps, schedule changes or a
+  pre-asymptotic stiff regime all produce the same turnover deterministically.
+  Deciding it needs precision scaling). Since an order needs three members,
   the finest clean order is 12.5→6.25, leaving column 1 **four** clean orders
   (`+1.969, +1.002, +1.000, +1.002`), column 2 **one** (`+0.066`) and column 3
   **none**. A usable fixture needs `mstep` to reach 1 by h ≈ 25 s — ~4× slower fall
@@ -149,20 +159,29 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   sub-cycles with separate counts (F:1179-1180): `mstep` governs **qr, nr, qs, qg**
   and `mstep_i` governs **qi, ni**. `mstep_i` was a kernel local nothing emitted;
   reached through a new anchored overlay site, it reaches 1 at **h = 25 s** in
-  column 3 where the main chain needs **h = 6.25 s**. `ni` column number never
-  meets the noise floor (successive differences fall monotonically 1.76e8 → 9.72e5,
-  relative signal ~1e-2 against `th`'s ~5e-6), so inside that window it has **five
-  clean successive orders — `+1.461, +0.863, +1.121, +1.029, +1.052`** — first
-  order, tightening at the fine end. Column *water* still gets none, now for a
+  column 3 where the main chain needs **h = 6.25 s**. `ni` column number shows no
+  turnover (successive differences fall monotonically 1.76e8 → 9.72e5, relative
+  difference ~1e-2 against `th`'s ~5e-6), so inside that window it has **five
+  successive orders — `+1.461, +0.863, +1.121, +1.029, +1.052`**. Grade (owner
+  §6.3): **first-order-consistent and empirically stable over five estimates, NOT
+  branch-certified** — "clean" is withdrawn, because the process gates, number caps,
+  cleanup and nucleation/aggregation branches and the active-cell universe were not
+  verified constant across these levels. Column *water* still gets none, now for a
   stated reason: it contains qr/qs/qg and so inherits the **main** chain's h ≤ 6.25
   against a noise floor at h ≥ 3.125. This explains what the previous row recorded
   as an unexplained positive result. **The surface number flux is now emitted too**
   (`falln(i,kts,1:2)` + den/delz/dtcld as operands), validated at the same site
   against `bottom_fall_qr`: mean rain-drop mass 5.4–8.6e-10 kg (0.10–0.12 mm),
   consistent across columns. It measures that **every column loses all its rain
-  number while the surface accounts for only 1.4–5.8%** — so a transport-side `nr`
-  defect would sit under a sink 1–2 orders larger. **Still not a closure**: `R_N`
-  is defined, not checked; the microphysical number tendencies are per-cell locals.
+  number while the surface accounts for only 1.4–5.8%**. Calling the remaining
+  94–99% "microphysical sinks" is **withdrawn** (owner §5.1): what is isolated is
+  everything that is *not* surface outflow, which mixes aggregation,
+  autoconversion, nucleation, freezing/melting, cleanup, projection, the measure
+  mismatch and inter-phase redistribution — and for `ni` the surface flux is 1.38×
+  and 3.46× `|ΔN|`, so a pure-sink decomposition has the wrong sign structure there.
+  **Still not a closure**: the correct form is `ΔN + F − Σ_p∫S_p dt = R_numerical`
+  and every `S_p` is a per-cell local. A **sedimentation-only fixture** would decide
+  the transport part alone and has not been run.
   Both emissions sit under their own `KDM6_G33_NUMBER_DUMP`, never defined by
   `fortran_build.sh` — the decision-path stream is **bit-identical** to before, and
   the instrumented run is **bit-identical** to the plain build.
