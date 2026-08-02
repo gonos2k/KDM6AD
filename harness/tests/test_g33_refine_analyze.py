@@ -680,3 +680,17 @@ def test_the_total_is_never_the_sum_of_the_three(tmp_path):
     assert ra.total_precip(r, 1) == pytest.approx(4.0)
     assert naive == pytest.approx(6.0), "precondition: the naive sum over-counts"
     assert ra.total_precip(r, 1) != pytest.approx(naive)
+
+
+def test_the_diagnostic_trust_ratio_is_total_over_water_out(tmp_path):
+    """The guard against this evidence set's recurring failure: reading the fallout
+    diagnostic as if it were the water that left. 1.0 means they agree and the
+    diagnostic may be used as a physical quantity; anything else means it may not."""
+    p = _stream_ledger(tmp_path, name="d.txt")
+    txt = p.read_text().replace("G33R STATE qr 1 0 3F800000", "G33R STATE qr 1 0 00000000")
+    txt = txt.replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F800000")
+    r = ra.read(_write(tmp_path, txt, "d2.txt"))
+    ks = sorted({k[3] for k in r if k[0] == "state"})
+    assert ra._water_out(r, 1, ks) == pytest.approx(1.0)     # qr 1.0 -> 0.0, rho*dz = 1
+    assert ra.total_precip(r, 1) == pytest.approx(1.0)
+    assert ra.total_precip(r, 1) / ra._water_out(r, 1, ks) == pytest.approx(1.0)
