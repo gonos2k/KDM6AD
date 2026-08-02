@@ -122,6 +122,7 @@ int main(int argc, char** argv) {
         // what an entry clamp sees on re-entry -- the final state cannot show
         // whether a cap bound at 100 s and 200 s.
         bool emit_each = false;
+        std::vector<double> segments;
         for (int i = 1; i < argc; ++i) {
             const std::string a = argv[i];
             if (a.rfind("--algo=", 0) == 0) {
@@ -132,13 +133,31 @@ int main(int argc, char** argv) {
                     throw std::runtime_error("--algo must be legacy or conservative");
             } else if (a == "--emit-each") {
                 emit_each = true;
+            } else if (a.rfind("--segments=", 0) == 0) {
+                // Explicit, possibly UNEQUAL sub-call lengths, e.g. 200,100.
+                // --nsplit only produces uniform splits, which cannot separate
+                // "a boundary costs something" from "a boundary costs something
+                // WHERE it falls". Every segment here still runs at the same
+                // dtcld when each length is a multiple of the sub-cycle the
+                // kernel picks, so refresh count is held constant too.
+                std::string rest = a.substr(11);
+                size_t pos = 0;
+                while (!rest.empty()) {
+                    pos = rest.find(',');
+                    segments.push_back(std::stod(rest.substr(0, pos)));
+                    if (pos == std::string::npos) break;
+                    rest = rest.substr(pos + 1);
+                }
             } else if (a.rfind("--nsplit=", 0) == 0) {
                 nsplit = std::stoi(a.substr(9));
             } else {
                 throw std::runtime_error("unknown argument: " + a);
             }
         }
-        if (nsplit < 1) throw std::runtime_error("--nsplit=N (N >= 1) is required");
+        if (segments.empty() && nsplit < 1)
+            throw std::runtime_error("--nsplit=N or --segments=a,b,... is required");
+        if (!segments.empty() && nsplit > 0)
+            throw std::runtime_error("--nsplit and --segments are mutually exclusive");
 
         namespace fx = g33_fixture_v1;
         State s;
@@ -170,14 +189,24 @@ int main(int argc, char** argv) {
         // Divided in f32 to match the Fortran leg exactly: 300/N is exact in f32
         // for every N in the sweep, but doing it in double and narrowing later
         // would be a different rounding on a member-by-member basis.
-        const double delt = static_cast<double>(
-            static_cast<float>(dt_total) / static_cast<float>(nsplit));
+        if (segments.empty())
+            for (int i = 0; i < nsplit; ++i)
+                segments.push_back(static_cast<double>(
+                    static_cast<float>(dt_total) / static_cast<float>(nsplit)));
+        // The total must be the fixture's, or the members are not the same
+        // experiment. Checked in f32 because that is the arithmetic the legs use.
+        float tot = 0.0f;
+        for (double g : segments) tot += static_cast<float>(g);
+        if (tot != static_cast<float>(dt_total))
+            throw std::runtime_error("segments must sum to the fixture dt");
+        const double delt = segments.front();
         const auto variant = algorithm == "conservative"
             ? PhysicsVariant::ConservativeInterface : PhysicsVariant::Legacy;
 
         torch::Tensor rain, snow, graupel;
-        for (int n = 0; n < nsplit; ++n) {
-            auto r = kdm6::kdm6_step(s, f, kdm6::make_parameters(0), delt,
+        const int ncalls = static_cast<int>(segments.size());
+        for (int n = 0; n < ncalls; ++n) {
+            auto r = kdm6::kdm6_step(s, f, kdm6::make_parameters(0), segments[n],
                                      /*value_only=*/true, xland,
                                      f32_from_bits(fx::ncmin_land_bits),
                                      f32_from_bits(fx::ncmin_sea_bits),
@@ -191,7 +220,7 @@ int main(int argc, char** argv) {
             snow = snow.defined() ? snow + r.snow_increment : r.snow_increment;
             graupel = graupel.defined() ? graupel + r.graupel_increment
                                         : r.graupel_increment;
-            if (emit_each && n + 1 < nsplit) {
+            if (emit_each && n + 1 < ncalls) {
                 // BOUNDARY records, a distinct class from STATE, so the strict
                 // parser rejects a diagnostic stream fed to the analyzer rather
                 // than averaging intermediate states into a member.
@@ -221,7 +250,7 @@ int main(int argc, char** argv) {
         const int loops = kdm6::compute_loops_max(delt, kdm6::constants::DTCLDCR);
         const double dtcld = static_cast<double>(
             static_cast<float>(delt / static_cast<double>(loops)));
-        std::cout << "G33R BEGIN nsplit " << nsplit << " rezero " << algorithm
+        std::cout << "G33R BEGIN nsplit " << ncalls << " rezero " << algorithm
                   << "-cpp delt " << std::fixed << std::setprecision(6) << delt
                   << " loops " << loops << " dtcld " << dtcld
                   << std::defaultfloat << "\n";

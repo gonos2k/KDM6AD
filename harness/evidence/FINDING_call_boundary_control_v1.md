@@ -145,6 +145,49 @@ interface touches the ice species. Which step inside the interface carries it is
 not established, and separating the candidates needs per-sub-cycle instrumentation
 of the conservative transfer, which is inside frozen C++.
 
+## One boundary carries all of it, and the design space is exhausted
+
+`--nsplit` only produces uniform splits, which cannot separate "a boundary costs
+something" from "a boundary costs something **where** it falls". With explicit
+segment lengths, every arm below runs the same 300 s at the same dtcld = 100 s with
+the same three sub-cycles and the same three coefficient refreshes; only the
+placement of the call boundaries differs.
+
+| boundaries at | legacy | conservative |
+|---|---|---|
+| t = 100 (`100,200`) | 0 records | **0 records** |
+| t = 200 (`200,100`) | 0 records | **18 records, max abs dni 3.942e+06** |
+| t = 100 and 200 (`100,100,100`) | 0 records | **18 records, identical to the above** |
+
+Three readings:
+
+1. **A boundary at t = 100 s is free.** Bitwise identical to the single 300 s call.
+2. **A boundary at t = 200 s carries the entire effect.**
+3. `[200,100]` and `[100,100,100]` agree **bitwise**, in state and precipitation.
+   The extra boundary at t = 100 adds exactly nothing on top.
+
+So the whole conservative call-boundary sensitivity on this fixture reduces to **one
+boundary, at t = 200 s**.
+
+This is exhaustive rather than a sample. Holding dtcld at 100 s forces every segment
+length to be a multiple of 100 (delt = 100/200/300 give loops = 1/2/3 and dtcld = 100
+in each case), so the only boundary positions available are t = 100 and t = 200, and
+both are measured.
+
+### What distinguishes t = 200 from t = 100
+
+The `ni` entry cap. From the boundary measurement above, `ni` in column 3 is
+**under** `1e6` at t = 100 (6.0e4 … 8.7e4) and **over** it at t = 200 (1.63e6 …
+3.40e6). The free boundary is the one where the cap does not bind; the expensive one
+is where it does.
+
+That reinstates the cap as a *correlate* — the timing matches exactly — while
+leaving the refutation above intact: legacy crosses the same cap at the same
+boundary by nearly the same amount and its final state does not move at all. So
+cap-binding is not sufficient, and something in the conservative interface is
+required for a clamped `ni` to propagate into the next 100 s. Which step that is
+remains unidentified.
+
 ## What this changes
 
 | claim | before | now |
@@ -184,8 +227,12 @@ top-first convention; a cross-backend read needs the normalizer's flip.
 
 - No per-call entry-clamp digest on either side, so the Fortran entry path is
   argued about rather than measured.
-- The mechanism behind the conservative call-boundary sensitivity is unidentified.
-  The entry-cap hypothesis above was tested and refuted; no replacement is offered.
+- The mechanism is unidentified. The cap is a confirmed correlate in TIME -- the
+  free boundary is exactly the one where it does not bind -- but not a sufficient
+  cause, since legacy crosses it identically and does not move.
+- Why a clamped `ni` propagates under the conservative interface and not under
+  legacy is the open question, and answering it needs per-sub-cycle instrumentation
+  of the conservative transfer, inside frozen C++.
 - Whether the `ni` mass/number measure mismatch is causal here is NOT established.
   It is the leading field and it uses the mismatched measure, but `nc` also carries
   a number measure, is interface-active in the same three cells, and is insensitive.
