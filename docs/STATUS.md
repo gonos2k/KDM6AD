@@ -120,16 +120,22 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   this is the rank-count dependence as well. Both gates are inert on the all-land
   arithmetic fixtures and require `boundary_mapping_v1`. A mixed coastal **real** case
   remains untested. See [`../harness/evidence/FINDING_ncmin_scalar_vs_percell.md`](../harness/evidence/FINDING_ncmin_scalar_vs_percell.md).
-- **Surface precipitation is far more timestep-sensitive under legacy than under the
-  conservative interface.** Total 300 s surface precipitation, legacy against its own
-  fine-step limit: **6.46× at dtcld = 100 s** (an operationally normal step, below the
-  kernel's 120 s target), converging monotonically and reaching the limit only near
-  3 s. The conservative interface is within **2–9% of the same limit at every step
-  tested**. The limit is not assumed: the two legs agree there to 0.05%. Largest in
-  **column 2 — up to 19.9× in snow** — which is the topologically stable column, so
-  this is a convergence result rather than an artifact of members integrating
-  different physics; column 1 (warm, no ice) is bit-identical throughout. Synthetic
-  fixture, microphysics only, no real-case measurement.
+- **The P0-4b diagnostic/column-loss disagreement is a strong function of timestep,
+  and the conservative interface removes it.** Measuring each quantity against its own
+  fine-step limit: the **fallout diagnostic** under legacy is **6.46× its own limit at
+  dtcld = 100 s** (an operationally normal step, below the kernel's 120 s target),
+  converging only near 3 s, while under the conservative interface it is within
+  **2–9% at every step**. The **underlying column water loss is far less sensitive in
+  both** — 1.31 legacy against 1.15 conservative at the coarsest step. So the effect
+  is concentrated in the DIAGNOSTIC, not in how much water leaves the column; since
+  the diagnostic is what a forecast reports as precipitation that is still
+  consequential, but it is **not** a claim that the variants precipitate differently
+  by 6×. Largest in **column 2 (up to 19.9× in snow)**, the topologically stable
+  column; column 1 (warm, no ice) is bit-identical throughout. A stable ~2× offset
+  between the diagnostic and ΔW is present in **both** legs at every step and is
+  **unexplained** — likely a convention difference in that comparison rather than a
+  second defect; no closure claim is made from it. Synthetic fixture, microphysics
+  only.
   See [`../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md`](../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md).
 - **Both §8 energy ledgers are built and they agree.** The conservative interface closes
   the physical moist-enthalpy budget ~74× better than the reference and the
