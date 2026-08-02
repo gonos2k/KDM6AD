@@ -1,4 +1,4 @@
-# The moist-enthalpy ledger: conservative closes it ~150× better, and refreshing coefficients closes it worse
+# Both ledgers: conservative closes them, refreshing coefficients loses on both
 
 Owner review §8.2. The convergence experiment cannot select a thermodynamic policy
 on this fixture — the domain where an order is well defined and the domain where the
@@ -113,6 +113,70 @@ meaningful even where an absolute residual is not. No claim is made that any leg
 Column 1 is near-identical across all three legs (−3e-6 … −5e-6) and does not
 discriminate — the same structural reason as the convergence experiment: 288–290 K,
 no ice, so the cold-phase terms the policy scales are inactive.
+
+## The operator-consistency ledger (§8.1), on the same data
+
+§8 asks for two ledgers because they answer different questions and can disagree:
+
+* **§8.2 physical** — does the code agree with *consistent* thermodynamics?
+* **§8.1 operator** — does the code agree with *its own equations*?
+
+The second is the same column integral built from the code's own forms
+(`cpmcal` F:818, `xlcal` F:819, `xlv1 = cl − cpv = 2343.6` F:3406):
+
+```
+h_op = cpm(qv) (T-T0) + xl(T) qv - xlf(T) q_ice
+```
+
+Every one of the code's heat updates has the form `cpm dT = L dq`, so a conversion
+leaves `h_op` flat: vapour→liquid gives `cpm dT + xl dqv = 0`, liquid→ice gives
+`cpm dT − xlf dq_ice = 0`. Liquid carries coefficient zero because the code applies
+no latent heat to it, and departing ice carries `−xlf` out because sedimentation
+moves mass with no temperature change. **One** `cpm` for the whole parcel, not
+per-phase heat capacities — that is the code's own "neglect the changes during
+microphysical process calculation" approximation (F:886-888), and reproducing it is
+the point.
+
+`xl`/`xlf` are evaluated at the **local** temperature for every leg. The reference
+holds them at the kernel-entry value and the port refreshes them per sub-cycle;
+using one convention here keeps the ledger from encoding either policy's answer.
+
+Relative residual at h = 25 s:
+
+| leg | | col 1 | col 2 | col 3 |
+|---|---|---|---|---|
+| Fortran (call-fixed) | §8.1 | +3.342e-05 | **−7.227e-03** | −1.296e-03 |
+| | §8.2 | −5.424e-06 | **−8.284e-03** | −3.690e-03 |
+| C++ legacy (refreshed) | §8.1 | +3.399e-05 | **−1.115e-02** | −2.024e-03 |
+| | §8.2 | −3.957e-06 | **−1.271e-02** | −5.076e-03 |
+| C++ conservative | §8.1 | +3.399e-05 | **+3.225e-06** | +5.117e-04 |
+| | §8.2 | −3.957e-06 | **−1.120e-04** | −3.541e-04 |
+
+### The feared trade-off does not appear
+
+§8 raised the possibility that a policy improves the operator ledger while making
+the physical one worse. **On this fixture the two ledgers agree**, in both
+directions:
+
+- **Conservative wins on both.** Column 2: `+3.2e-06` against the reference's
+  `−7.2e-03` on the operator ledger — about **2200×** — and `−1.12e-04` against
+  `−8.28e-03` on the physical one, about **74×**.
+- **Refreshing loses on both.** C++ legacy against the Fortran reference is
+  **~1.5× worse** on the operator ledger and **~1.5× worse** on the physical one,
+  at every h measured.
+
+So there is no compensation to weigh: on this fixture the refreshing leg is worse
+against consistent thermodynamics *and* against the code's own equations. That is a
+cleaner negative result than §8 anticipated, and it removes the "improves one,
+worsens the other" reading from the table.
+
+The same caveat governs it: the two legs differ in every part of the port, so
+"refreshing loses" is implementation against implementation until the
+reference-faithful C++ counterfactual exists.
+
+Column 1 shows a small residual on both ledgers (+3.3e-05, −4e-06) that is
+identical across all three legs and does not shrink with h. It is a floor of the
+construction, not a discriminator — consistent with column 1 having no ice.
 
 ## Not established
 

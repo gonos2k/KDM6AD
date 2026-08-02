@@ -584,3 +584,58 @@ def test_precipitation_carries_enthalpy_out(tmp_path):
     L = ra.enthalpy_ledger(ra.read(_write(tmp_path, txt, "p2.txt")))
     assert L[1]["H_precip_out"] != 0.0
     assert L[1]["residual"] == pytest.approx(L[1]["dH"] + L[1]["H_precip_out"])
+
+
+# ── operator-consistency ledger (owner review §8.1) ──────────────────────────
+
+def test_the_code_coefficients_are_the_codes_own():
+    """cpmcal/xlcal at F:818-819 with xlv1 = cl - cpv at F:3406. Getting xlv1
+    wrong would make the operator ledger measure a formula the kernel does not
+    use, which is the one thing it exists to avoid."""
+    assert ra.XLV1 == pytest.approx(4190.0 - 4 * 461.6)
+    assert ra.XLV1 == pytest.approx(2343.6)
+    cpm, xl, xlf = ra._code_coeffs(ra.T0C, 0.0)
+    assert cpm == pytest.approx(ra.CPD)          # qv -> 0, so cpm -> cpd
+    assert xl == pytest.approx(ra.XLV)           # xlcal(t0c) == xlv0
+    assert xlf == pytest.approx(ra.XLF)          # xls - xlv == xlf at T0
+
+
+def test_the_codes_xlf_slope_differs_from_the_consistent_one():
+    """§3.1: the code's d(xlf)/dT is +2343.6 where a Kirchhoff-consistent value is
+    cl - ci = 2084, a 12.5% gap. That gap is exactly what separates the two
+    ledgers -- if this assertion ever fails they measure the same thing and running
+    both is pointless."""
+    _, _, xlf0 = ra._code_coeffs(ra.T0C, 0.0)
+    _, _, xlf1 = ra._code_coeffs(ra.T0C + 1.0, 0.0)
+    assert xlf1 - xlf0 == pytest.approx(ra.XLV1)
+    assert ra.XLV1 != pytest.approx(ra.CLIQ - ra.CICE)
+    assert ra.CLIQ - ra.CICE == pytest.approx(2084.0)
+
+
+def test_a_pure_freeze_leaves_the_operator_potential_unchanged(tmp_path):
+    """The defining property: the code's update is cpm dT = xlf dq_ice, so
+    converting liquid to ice at the code's own coefficients must leave h_op flat.
+    If it does not, the potential is not the one the code conserves and every
+    residual below is measuring the potential rather than the code."""
+    t = 263.15
+    cpm, _, xlf = ra._code_coeffs(t, 1.0e-3)
+    dq = 1.0e-4
+    dt = xlf / cpm * dq                                 # the code's own update
+    cpm2, _, xlf2 = ra._code_coeffs(t + dt, 1.0e-3)
+    h0 = cpm * (t - ra.T0C) - xlf * 0.0
+    h1 = cpm2 * (t + dt - ra.T0C) - xlf2 * dq
+    # not exact: xlf is re-evaluated at the new T, which is the convention chosen
+    # so the ledger does not itself encode one policy's answer.
+    assert abs(h1 - h0) < abs(xlf * dq) * 0.02
+
+
+def test_the_two_ledgers_are_not_the_same_computation(tmp_path):
+    """They must differ on identical input, or running both proves nothing."""
+    r = ra.read(_stream_ledger(tmp_path, th_end="438C0000"))
+    a = ra.enthalpy_ledger(r)[1]["residual"]
+    b = ra.operator_ledger(r)[1]["residual"]
+    assert a != b
+
+
+def test_the_operator_ledger_needs_both_endpoints(tmp_path):
+    assert ra.operator_ledger(ra.read(_write(tmp_path, _stream_fc()))) == {}

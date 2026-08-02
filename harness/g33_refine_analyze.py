@@ -537,6 +537,89 @@ def enthalpy_ledger(run: dict) -> dict:
     return out
 
 
+# ── operator-consistency ledger (owner review §8.1) ──────────────────────────
+#
+# The same column integral, built from the code's OWN thermodynamics instead of the
+# consistent ones, so the two ledgers answer different questions on identical data:
+#
+#   §8.2  does the code agree with consistent thermodynamics?
+#   §8.1  does the code agree with ITS OWN equations?
+#
+# They can disagree, and §8 says a policy decision needs both — a policy that
+# evaluates the coded formula more faithfully can track the physics less well.
+#
+# The code's forms (module_mp_kdm6.F):
+#   cpmcal(x) = cpd(1-x) + x cpv          F:818   (x clamped at qmin)
+#   xlcal(x)  = xlv0 - xlv1 (x - t0c)     F:819
+#   xlv1      = cl - cpv = 2343.6         F:3406
+#   xlf(T)    = xls - xl(T) = XLF + 2343.6 (T - T0)
+#
+# ONE cpm for the whole parcel, not per-phase heat capacities: that is the code's
+# "neglect the changes during microphysical process calculation" approximation
+# (F:886-888), and reproducing it is the point.
+XLV1 = 4190.0 - 4 * 461.6      # cl - cpv = 2343.6, the slope §3.1 is about
+
+
+def _code_coeffs(t: float, qv: float, qmin: float = 1.0e-32) -> tuple:
+    q = max(qv, qmin)
+    cpm = CPD * (1.0 - q) + q * CPV
+    xl = XLV - XLV1 * (t - T0C)
+    return cpm, xl, XLS - xl
+
+
+def operator_ledger(run: dict) -> dict:
+    """Column residual of the potential the CODE's own heat updates conserve.
+
+        h_op = cpm(qv) (T-T0) + xl(T) qv - xlf(T) q_ice
+
+    Each of the code's updates has the form `t += (L/cpm) dq`, i.e.
+    `cpm dT = L dq`, so a conversion leaves h_op unchanged: vapour->liquid gives
+    `cpm dT + xl dqv = 0`, liquid->ice gives `cpm dT - xlf dq_ice = 0`. Liquid
+    carries coefficient zero because the code applies no latent heat to it.
+
+    Sedimentation removes mass without a temperature change, so departing ice
+    carries -xlf out and departing rain carries nothing — the same convention the
+    code's own updates imply.
+
+    xl/xlf are evaluated at the LOCAL temperature for every leg. The reference
+    holds them at the kernel-entry value and the port refreshes them per sub-cycle;
+    using a single convention here means the ledger does not itself encode one
+    policy's choice, and the difference between conventions is the very thing under
+    test.
+    """
+    if not any(k[0] == "initial" for k in run) or \
+       not any(k[0] == "forcing" and k[1] == "pii" for k in run):
+        return {}
+    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
+    out = {}
+    for c in sorted({x for x, _ in cells}):
+        ks = sorted(k for cc, k in cells if cc == c)
+
+        def H(cls):
+            tot = 0.0
+            for k in ks:
+                t = run[(cls, "th", c, k)] * run[("forcing", "pii", c, k)]
+                qv = run[(cls, "qv", c, k)]
+                cpm, xl, xlf = _code_coeffs(t, qv)
+                qi = sum(run[(cls, f, c, k)] for f in _ICE)
+                w = run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+                tot += w * (cpm * (t - T0C) + xl * qv - xlf * qi)
+            return tot
+
+        kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
+            run[("forcing", "pii", c, ks[-1])] else ks[0]
+        tbot = run[("state", "th", c, kbot)] * run[("forcing", "pii", c, kbot)]
+        _, _, xlf_b = _code_coeffs(tbot, run[("state", "qv", c, kbot)])
+        ice_out = run[("prec", 2, c)] + run[("prec", 3, c)]
+        d = {"dH": H("state") - H("initial"),
+             "H_precip_out": ice_out * (-xlf_b),
+             "H_start": H("initial")}
+        d["residual"] = d["dH"] + d["H_precip_out"]
+        d["relative"] = d["residual"] / abs(d["H_start"]) if d["H_start"] else float("nan")
+        out[c] = d
+    return out
+
+
 def ledger_report(runs: dict) -> None:
     ns = sorted(runs)
     L = {n: enthalpy_ledger(runs[n]) for n in ns}
@@ -549,6 +632,15 @@ def ledger_report(runs: dict) -> None:
         for c in sorted(L[n]):
             d = L[n][c]
             print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} {d['relative']:12.3e}")
+    O = {n: operator_ledger(runs[n]) for n in ns}
+    if O[ns[0]]:
+        print("\n  OPERATOR-consistency residual   (code's own cpm/xl; §8.1)")
+        print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} {'relative':>12}")
+        for n in ns:
+            for c in sorted(O[n]):
+                d = O[n][c]
+                print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} "
+                      f"{d['relative']:12.3e}")
 
 
 def main(argv) -> int:
