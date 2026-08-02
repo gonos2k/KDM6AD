@@ -153,8 +153,12 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   up to 21% of the state decided by where the tile boundary falls, with all twelve
   prognostics moving in the affected columns. A tile ending on the sea column gates *all*
   of its columns on `ncmin_sea`, which is why `(2,1)` is worse than isolating the sea
-  column, and why an even split misses it. **An MPI rank boundary is a tile boundary**, so
-  this is the rank-count dependence as well. Both gates are inert on the all-land
+  column, and why an even split misses it. **An MPI rank boundary is a tile boundary**, so there is a strong
+  mechanism for rank-count dependence — but that is a **prediction, not a
+  measurement**: a real host adds halo width, the `its:ite` against `ims:ime`
+  relationship, per-rank land/sea layout and exchange timing. A genuine gate needs
+  the same global mixed-coastal case at np = 1/2/4, reassembled in one ordering and
+  compared raw-bit. Both gates are inert on the all-land
   arithmetic fixtures and require `boundary_mapping_v1`. A mixed coastal **real** case
   remains untested. See [`../harness/evidence/FINDING_ncmin_scalar_vs_percell.md`](../harness/evidence/FINDING_ncmin_scalar_vs_percell.md).
 - **The P0-4b diagnostic/column-loss disagreement is a strong function of timestep,

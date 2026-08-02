@@ -83,10 +83,31 @@ Both fixes applied — flux from the water budget, species counted correctly:
 
 ### 1. The conservative interface closes better in column 2, and is neutral in column 3
 
-Column 2: **3.23e-06 against 1.32e-04 — about 10×** on the operator ledger, 11× on
-the physical one. Column 3: all three legs agree to three figures. So the advantage
-is real but **confined to the column where the topology is stable**, and absent
-where it is not.
+Column 2: **3.23e-06 against 1.32e-04**. Column 3: all three legs agree to three
+figures.
+
+**The factor is a range, not a point (owner P0-4).** The departing water is charged
+at the bottom-level temperature and nothing in the endpoint data says it left from
+there. Recomputing with each level in turn moves the conservative column-2 residual
+from 1.24e-05 to 2.86e-05 — a **131% band** — while legacy's moves only 15%. So the
+advantage is **5–11×**, not "about 10×", and the spread comes from a modelling
+choice rather than from measurement error. The analyzer now prints the band beside
+every residual.
+
+The outflow decomposition is also measured, and it does **not** match the shape P0-4
+anticipated:
+
+| leg | col | −ΔW_col | P_bottom | D_internal |
+|---|---|---|---|---|
+| legacy | 2 | 5.226e-03 | 3.076e-02 | **−2.553e-02** |
+| conservative | 2 | 3.877e-03 | 3.877e-03 | **−7.6e-09** |
+
+`D_internal = −ΔW_col − P_bottom` is ~0 for the conservative interface and
+**negative** for legacy — the diagnostic reports *more* outflow than the column
+lost, the **opposite sign** from the P0-4b real-case defect where column loss
+exceeded the diagnostic. So on this fixture there is no internally deleted mass to
+mis-locate, and because the ledger charges `−ΔW_col` rather than the diagnostic it
+never charges phantom mass. What remains open is the level, which the band bounds.
 
 ### 2. The policy contrast is weak and not uniform
 

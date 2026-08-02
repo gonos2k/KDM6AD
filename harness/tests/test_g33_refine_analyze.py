@@ -730,6 +730,32 @@ def test_the_topology_share_is_rho_dz_weighted(tmp_path):
     assert weighted != pytest.approx(unweighted), "fixture must separate the two"
 
     src = (ROOT / "g33_refine_analyze.py").read_text()
-    body = src[src.index("    def _share("):src.index("    print(f\"\\n  final branch topology")]
+    body = src[src.index("    def _share("):src.index("    print(f\"\\n  final-state presence proxy")]
     code = "\n".join(l.split("#", 1)[0] for l in body.splitlines())
     assert "forcing" in code and "rho" in code, "_share must weight by rho*dz"
+
+
+def test_the_ledger_reports_a_modelling_band(tmp_path):
+    """Owner P0-4: the departing water is charged at the bottom-level temperature
+    and nothing in the endpoint data says it left from there. The band recomputes
+    the residual with every level in turn. On the real fixture it is 131% of the
+    conservative column-2 residual, so a point value would overstate the ~10x
+    comparison."""
+    L = ra.enthalpy_ledger(ra.read(_stream_ledger(tmp_path, th_end="438C0000")))
+    lo, hi = L[1]["relative_band"]
+    assert lo <= L[1]["relative"] <= hi
+
+
+def test_the_outflow_split_separates_bottom_flux_from_the_unaccounted_part(tmp_path):
+    """-dW_col = P_bottom + D_internal. Conservative reads D_internal ~ 0; legacy
+    reads it NEGATIVE on this fixture, i.e. the diagnostic over-reports -- the
+    opposite sign from the P0-4b real-case defect."""
+    p = _stream_ledger(tmp_path, name="s.txt")
+    txt = p.read_text().replace("G33R STATE qr 1 0 3F800000", "G33R STATE qr 1 0 00000000")
+    txt = txt.replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F000000")   # 0.5
+    r = ra.read(_write(tmp_path, txt, "s2.txt"))
+    d = ra.outflow_split(r, 1, sorted({k[3] for k in r if k[0] == "state"}))
+    assert d["water_out"] == pytest.approx(1.0)
+    assert d["P_bottom"] == pytest.approx(0.5)
+    assert d["D_internal"] == pytest.approx(0.5)     # here the column lost MORE
+    assert d["D_share"] == pytest.approx(0.5)

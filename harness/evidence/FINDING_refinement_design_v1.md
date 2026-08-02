@@ -269,7 +269,7 @@ that refines the effective step directly — would give column 3 a valid converg
 domain, and §9 would become answerable there. That is a sweep-design change, not a
 new fixture.
 
-**Rounding noise is ruled out.** The successive column-water differences sit
+**A single-quantisation floor is ruled out; accumulated error is not.** The successive column-water differences sit
 **1,000–74,000× above the f32 noise floor** (`2^-23 · W_col`):
 
 | col | W_col | f32 eps·W | successive \|ΔW\| across the chain |
@@ -280,8 +280,13 @@ new fixture.
 
 Column 3's sequence is non-monotone *in magnitude* — the 100→50 difference is 58×
 **smaller** than the 50→25 one, which is what produces the −5.86 exponent. That is
-real signal, not noise: something genuinely non-smooth happens between those
-members. The remaining candidates — an `mstep` change, a cap or threshold firing —
+larger than any single f32 storage quantisation or one summation floor. That does
+**not** rule out roundoff in general: over thousands of operations the accumulated
+bound is `γ_n ≈ nε/(1−nε)` scaled by the condition number, and with cancellation and
+threshold amplification a 10³ε signal is not automatically outside it. Excluding it
+properly needs an f64 shadow on the same branch path, a compensated column sum, or
+the per-sub-cycle masks. The `mstep` measurement above is the positive attribution
+and does not depend on this exclusion. The remaining candidates — an `mstep` change, a cap or threshold firing —
 are per-sub-cycle quantities that live inside the kernel and are not recorded, so
 attribution needs instrumentation this experiment does not have.
 
