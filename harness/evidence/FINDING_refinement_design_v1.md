@@ -228,6 +228,22 @@ What stands and what does not:
    rates because the species set changes" is withdrawn: the species that changes is
    immaterial to the norms in question. Their cause is now open.
 
+**Rounding noise is ruled out.** The successive column-water differences sit
+**1,000–74,000× above the f32 noise floor** (`2^-23 · W_col`):
+
+| col | W_col | f32 eps·W | successive \|ΔW\| across the chain |
+|---|---|---|---|
+| 1 | 4.93e-01 | 5.88e-08 | 1.88e-03 … 5.98e-05 (32000× → 1000× eps) |
+| 2 | 2.38e-01 | 2.83e-08 | 8.67e-04 … 3.98e-05 (31000× → 1400× eps) |
+| 3 | 1.23e-01 | 1.47e-08 | **1.88e-05, 1.09e-03**, 7.39e-05, 1.50e-04, 1.13e-04 |
+
+Column 3's sequence is non-monotone *in magnitude* — the 100→50 difference is 58×
+**smaller** than the 50→25 one, which is what produces the −5.86 exponent. That is
+real signal, not noise: something genuinely non-smooth happens between those
+members. The remaining candidates — an `mstep` change, a cap or threshold firing —
+are per-sub-cycle quantities that live inside the kernel and are not recorded, so
+attribution needs instrumentation this experiment does not have.
+
 The analyzer prints each flip's share of column water alongside it, so the record
 cannot be read again as a sufficient explanation for an exponent.
 
