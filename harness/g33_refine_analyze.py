@@ -600,6 +600,37 @@ def ledger_report(runs: dict) -> None:
                       f"{d['relative']:12.3e}")
 
 
+def diagnostic_trust_report(runs: dict) -> None:
+    """Is the fallout diagnostic usable as a physical quantity in THIS run?
+
+    Three separate conclusions in this evidence set were wrong because the fallout
+    diagnostic was read as if it were the water that left the column. P0-4b records
+    that they disagree by an O(1) amount; measured here the disagreement is a strong
+    function of the timestep AND changes sign with the frozen fraction — the
+    pure-liquid column under-reports by 19% while 97%-frozen columns over-report by
+    9x. Printing the ratio makes that visible before anyone builds on it, instead of
+    after.
+
+    1.0 means the diagnostic IS the budget for that column and may be used as one.
+    """
+    ns = sorted(runs)
+    if not any(k[0] == "initial" for k in runs[ns[0]]):
+        print("\n  diagnostic trust: no INITIAL records, cannot compare")
+        return
+    cols = sorted({k[2] for k in runs[ns[0]] if k[0] == "state"})
+    print("\n  fallout diagnostic / column water loss   "
+          "(1.0 = the diagnostic IS the budget)")
+    print(f"    {'h (s)':>7} " + " ".join(f"{'col'+str(c):>9}" for c in cols))
+    for n in ns:
+        r = runs[n]
+        ks = sorted({k[3] for k in r if k[0] == "state"})
+        row = []
+        for c in cols:
+            w = _water_out(r, c, ks)
+            row.append(f"{total_precip(r, c) / w:9.4f}" if w else "        -")
+        print(f"    {300/n:7g} " + " ".join(row))
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
@@ -617,6 +648,7 @@ def main(argv) -> int:
     budget_report(runs)
     topology_report(runs)
     ledger_report(runs)
+    diagnostic_trust_report(runs)
     return 0
 
 
