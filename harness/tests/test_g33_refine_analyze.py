@@ -381,3 +381,42 @@ def test_the_policy_control_pair_is_not_claimed_to_be_a_chain(tmp_path):
     man = _build(d, tmp_path)
     assert not man["is_refinement_chain"]
     assert {m["dtcld"] for m in man["members"]} == {100.0}
+
+
+# ── the C++ call-boundary control (owner review §3) ──────────────────────────
+
+def test_the_cpp_leg_is_tagged_so_it_cannot_be_compared_against_fortran(tmp_path):
+    """The C++ driver emits host-K (bottom-first) while the Fortran driver emits
+    top-first, so a cross-backend read needs the normalizer's flip. Tagging the
+    algorithm `-cpp` makes an accidental mixed set fail the analyzer's algorithm
+    check instead of being silently compared with the k axis reversed -- which is
+    the exact defect that produced the withdrawn v10 conclusion."""
+    f = ra.read(_write(tmp_path, _stream(nsplit=3, algo="legacy"), "f.txt"))
+    c = ra.read(_write(tmp_path, _stream(nsplit=3, algo="legacy-cpp"), "c.txt"))
+    with pytest.raises(ra.RefineError, match="algorithms"):
+        ra.require_same_universe({1: f, 3: c})
+
+
+def test_the_control_pair_must_report_the_same_dtcld(tmp_path):
+    """What makes N=1/N=3 a control rather than two refinement members: the C++
+    picks loops=3 at delt=300 and loops=1 at delt=100, so both integrate at
+    dtcld=100 with three coefficient refreshes. A member reporting a different
+    dtcld is not part of this contrast."""
+    a = ra.read(_write(tmp_path,
+        "G33R BEGIN nsplit 1 rezero legacy-cpp delt 300.000000 loops 3 dtcld 100.000000\n"
+        + "\n".join(_stream(nsplit=3).splitlines()[1:]) + "\n", "a.txt"))
+    b = ra.read(_write(tmp_path, _stream(nsplit=3, algo="legacy-cpp"), "b.txt"))
+    assert a[("meta", "dtcld")] == b[("meta", "dtcld")] == 100.0
+    assert a[("meta", "loops")] == 3 and b[("meta", "loops")] == 1
+
+
+def test_compute_loops_max_matches_the_fortran_rule():
+    """The control depends on both backends choosing the same sub-cycle count.
+    coordinator.cpp:1297 is `(int)(delt/dtcldcr + 0.5)`, and F:930 is
+    `max(nint(delt/dtcldcr),1)` -- the same for positive delt."""
+    def cpp(delt, cr=120.0):
+        n = int(delt / cr + 0.5)
+        return n if n > 1 else 1
+    for delt in (12.5, 25.0, 50.0, 100.0, 150.0, 175.0, 300.0):
+        assert cpp(delt) == max(int(delt / 120.0 + 0.5), 1)
+    assert cpp(300.0) == 3 and cpp(100.0) == 1
