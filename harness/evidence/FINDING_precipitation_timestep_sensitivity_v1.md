@@ -34,29 +34,49 @@ Each column as a ratio to **its own** finest member, so no unit convention enter
 ### 1. Under the conservative interface the diagnostic IS the water budget
 
 Its two columns are **identical at every step** — 1.146, 1.125, 1.116, 1.040,
-1.002, 1.000. That is not a coincidence of ratios: the absolute check gives
+1.002, 1.000. The absolute check per column confirms why:
 
-    total fallout / (−ΔW_col) = 1.0000 at every timestep
+| leg | dtcld | col 1 | col 2 | col 3 |
+|---|---|---|---|---|
+| **conservative** | 100 | **1.0000** | **1.0000** | **1.0000** |
+| | 25 | 1.0000 | 1.0000 | 1.0000 |
+| | 3.125 | 0.9999 | 1.0000 | 1.0000 |
+| legacy | 100 | **0.8083** | **9.2172** | **3.8642** |
+| | 25 | 1.0000 | 5.8854 | 3.7398 |
+| | 3.125 | 0.9999 | 0.9920 | 0.9915 |
 
-so for the conservative interface the reported precipitation and the water that
-actually left the column are the same number.
+`total fallout / (−ΔW_col)`. For the conservative interface the reported
+precipitation and the water that actually left are the same number, **in every
+column at every step**.
 
-### 2. Under legacy they are not
+### 2. Under legacy they are not — and not in one direction
 
-The diagnostic is **6.56× its own fine-step limit at dtcld = 100 s** — an
-operationally normal step, below the kernel's 120 s target — while the column water
-loss is only **1.31×**. The absolute ratio total/(−ΔW) runs 4.97, 4.26 … 0.992,
-converging only near 3 s.
+The column-summed diagnostic is 6.56× its own fine-step limit at dtcld = 100 s
+while the water loss is only 1.31×. But per column the departure is **not a uniform
+over-report**:
 
-**This is the P0-4b defect measured as a function of resolution.** `docs/STATUS.md`
-records it as "a non-constant O(1) amount"; it is a strong function of the timestep,
-and the conservative interface removes it entirely.
+* **column 1 UNDER-reports by 19%** (0.8083) — the pure-liquid column, frozen share
+  exactly 0.000;
+* columns 2 and 3, which are 97–99% frozen, **over-report by 9.2× and 3.9×**.
+
+A column-summed figure hides that sign change. Both converge to 1 near 3 s.
+
+**This is the P0-4b defect measured as a function of resolution and of phase.**
+`docs/STATUS.md` records it as "a non-constant O(1) amount"; it is a strong function
+of the timestep, changes sign with the frozen fraction, and the conservative
+interface removes it entirely.
 
 ## Where it comes from
 
-Per column, diagnostic legacy/conservative at dtcld = 100 s: column 1 is
-**bit-identical** (288–290 K, no ice — the interface never acts, the control);
-columns 2 and 3 carry it.
+Per column, diagnostic legacy/conservative at dtcld = 100 s. Note the rows are
+**not independent**: `rain` is the total and contains `snow`, so col-2 rain 11.75
+and col-2 snow 19.86 are the same water counted two ways, not two channels.
+
+Column 1 is bit-identical at **five of the six steps** — but **not at the coarsest**,
+where 5 records differ (`nccn`, `qv`, `th`, never a condensate). So "the interface
+never acts in column 1" is too strong: it does not move condensate there, but it
+still perturbs vapour, temperature and CCN at dtcld = 100 s. Columns 2 and 3 carry
+the bulk.
 
 An earlier version called column 2 "the clean case" because its final-state branch
 topology is identical across all six members while column 3's `qg` presence flips.

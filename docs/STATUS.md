@@ -124,12 +124,14 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   and the conservative interface removes it entirely.** Under the conservative
   interface the total fallout equals the column water loss **exactly at every
   timestep** (total/−ΔW = 1.0000). Under legacy the diagnostic is **6.56× its own
-  fine-step limit at dtcld = 100 s** while the water loss is only 1.31×, with
-  total/−ΔW running 4.97 → 0.992 and converging only near 3 s. So STATUS's
+  fine-step limit at dtcld = 100 s** while the water loss is only 1.31×, converging
+  only near 3 s — and the departure **changes sign with phase**: the pure-liquid
+  column 1 UNDER-reports by 19% (0.808) while the 97–99% frozen columns 2 and 3
+  over-report by 9.2× and 3.9×, which a column-summed figure hides. So STATUS's
   "non-constant O(1) amount" is a strong function of the step. **Not** a claim that
   the variants precipitate differently by 6× — the column water losses differ by
-  ~14%. Column 1 (warm, no ice) is bit-identical throughout; column 2 carries the
-  effect and is the topologically stable column. Synthetic fixture, microphysics
+  ~14%. Column 1 (warm, no ice) is bit-identical at five of six steps but NOT at the
+  coarsest, where 5 records differ (`nccn`, `qv`, `th` — never a condensate). Synthetic fixture, microphysics
   only. (Species note: WRF's `rain` is the TOTAL fallout and `snow`/`graupel` are
   components of it, F:1462-1464 — summing the three double-counts.)
   See [`../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md`](../harness/evidence/FINDING_precipitation_timestep_sensitivity_v1.md).
