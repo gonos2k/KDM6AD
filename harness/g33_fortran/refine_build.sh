@@ -13,11 +13,17 @@ HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
-ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""
+ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0
 for a in "$@"; do
     case "$a" in
         --algo=*)    ALGO="${a#--algo=}" ;;
         --fixture=*) FIXTURE_NAME="${a#--fixture=}" ;;
+        # DIAGNOSTIC. Builds the instrumented overlay so the kernel emits its own
+        # per-sub-cycle records (mstep, gate) alongside the refinement stream. The
+        # refinement measures the OPERATOR, so this is not the default -- and any
+        # run using it must be checked to produce a bit-identical final state
+        # against the uninstrumented build before its records are believed.
+        --dump)      DUMP=1 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -47,10 +53,18 @@ fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/fr
 fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$HERE/stub_wrf_error.f90"
 fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/share/module_model_constants.F"
 fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/phys/module_mp_radar.F"
-# The PINNED module, never an overlay: this measures the reference operator, and
-# instrumentation would be a second difference between the sweep members.
-fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" "$MODULE"
-fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} \
+# The PINNED module by default: this measures the reference operator, and
+# instrumentation would otherwise be a second difference between sweep members.
+# --dump swaps in the generated overlay, whose macro-OFF form is textually
+# identical to the pinned source (the A/B/C non-invasiveness proof).
+MODULE_SRC="$MODULE"; DUMP_DEF=()
+if [ "$DUMP" = 1 ]; then
+    MODULE_SRC="$OUT/module_mp_ovl.F"
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$MODULE_SRC" --algo="$ALGO" >/dev/null
+    DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
+fi
+fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
+fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
                                    "$HERE/g33_refine_driver.f90"
 "$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver" \
     "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o" \

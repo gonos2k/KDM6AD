@@ -72,12 +72,19 @@ settling to 0.9998 by 100 s and staying there.
    figures are **not reproducible from a committed stream**, so "quantitatively
    confirmed" is withdrawn.
 2. **It is a ~3% effect per transfer**, not the 200–800% seen at coarse steps.
-3. **The large differences are dominated by branch-topology divergence**, not by the
-   transport arithmetic. Correcting the number measure to ρΔz would remove the 3%
-   and leave the rest.
-4. **At the finest step the interface makes no difference to mean particle mass**
-   (0.9998), so the effect is a discretisation artifact, not a structural defect of
-   the interface.
+3. **The large coarse-step differences are UNATTRIBUTED.** An earlier version said
+   they were "dominated by branch-topology divergence"; that is withdrawn — the
+   flipping species carries 3.99e-06 of the column (ρΔz-weighted) and cannot
+   dominate anything. The measured cause of the erratic convergence is the
+   **sedimentation sub-step count** (`mstep` 10 → 5 → 3 → 2 in column 3), but that
+   explains the *convergence sequence*, not the size of the mean-mass differences,
+   which remain unexplained.
+4. **The finest-step endpoint shows little difference (0.9998). That does NOT make
+   the mismatch non-structural.** What became small is this fixture's *final-state
+   manifestation* at a fine step. The transfer arithmetic still uses ρΔz for mass
+   and Δz-only for number — that asymmetry is in the source and does not depend on
+   the timestep. An earlier version drew the opposite conclusion and it is
+   withdrawn.
 
 Column number is reported as a **change**, not a residual: the surface number flux
 is not emitted — only mass precipitation is — so no closure can be formed here.
@@ -90,10 +97,15 @@ topology caveat.
   the surface number flux, which neither driver emits. Adding it is a driver change,
   not a kernel change, so it is reachable — it is simply not done.
 - **No operational size.** The one step where the mechanism is cleanly measurable
-  (3.125 s) is far finer than operational, and the operationally normal steps
-  (25–100 s) sit in the topology-unstable regime. This fixture cannot say what the
-  3% costs a forecast, for the same structural reason it could not answer §9:
-  the cold column is not a valid quantitative domain.
+  (3.125 s) is far finer than operational. The operationally normal steps
+  (25–100 s) sit where the sedimentation sub-step count changes most (`mstep`
+  10 → 5 → 3 → 2), so the chain there is not refining the quantity sedimentation
+  actually integrates. This fixture cannot say what the 3% costs a forecast.
+- **The endpoint mean-mass ratio is not the interface transfer ratio.** The
+  recipient cell already holds `(q, n)` and continues to condense, nucleate and
+  aggregate afterwards, so `(q/n)_cons / (q/n)_legacy` at 300 s is not
+  `Δq/Δn` across the interface. Measuring the mechanism directly needs the
+  per-interface increments, which are not emitted.
 - **Nothing about `nr`.** The interface never touches `nr` or `qr` on this fixture,
   so the rain-number channel the release blocker names is not exercised at all. The
   measurement above is the ICE channel.

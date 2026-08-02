@@ -102,9 +102,12 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   1.0319 / 1.0309 for the three column-3 transfers; **measured 1.0331 / 1.0296 / 1.0126**
   against the legacy run at the same cell, with the no-inflow top level at exactly
   1.0000 as the control. **The mechanism is real and it is ~3% per transfer.** The much
-  larger differences at coarse steps (up to 8.7×) are dominated by branch-topology
-  divergence, not by the transport arithmetic, and the effect vanishes at the finest
-  step. No column-number CLOSURE is possible from the current drivers — the surface
+  larger differences at coarse steps (up to 8.7×) are **unattributed** — an earlier
+  "dominated by branch-topology divergence" is withdrawn, since the flipping species
+  is 3.99e-06 of the column. The finest-step endpoint shows little difference, which
+  makes the *final-state manifestation* small at a fine step and does **not** make
+  the measure mismatch non-structural: the transfer still uses ρΔz for mass and
+  Δz-only for number, in the source, independent of timestep. No column-number CLOSURE is possible from the current drivers — the surface
   NUMBER flux is not emitted, only mass precipitation — and the measurement is the
   **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
   the rain-number channel this row names is still unexercised.
@@ -114,14 +117,35 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   **3.88e-06 of that column's water** — parts per million, far too small to produce
   the O(1) swings in its convergence exponents (−5.86, +3.88, −1.02, +0.41). The
   flip is real; the attribution was asserted from its existence without checking its
-  magnitude, and is **withdrawn**. Column 3's erratic orders are currently
-  **unattributed** — rounding noise is also ruled out (differences are 1,000–74,000×
-  the f32 floor), so the non-smoothness is real but unexplained. §9's conclusion
-  survives, since an erratic sequence yields no rate whatever causes it, but the
-  obstacle is now **unexplained rather than understood** — so the possibility that
-  column 3 could be made usable, and §9 answerable, is open rather than closed. The analyzer now prints each flip's share of
+  magnitude, and is **withdrawn**. Column 3's erratic orders are now
+  **attributed to the sedimentation sub-step count**, recovered from the kernel's own
+  records (instrumented run verified bit-identical to the plain build). `mstep` is a
+  rounded integer, so the quantity actually refined is `dtcld/mstep`, not `dtcld`:
+  column 1 has `mstep ≡ 1` and converges cleanly (+1.002), column 3 runs
+  `mstep` 10→5→3→2 so its effective step never halves and its range *widens*
+  (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
+  +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
+  ordering by how well they converge.** Consequence: §9's obstacle is a
+  **sweep-design** problem, not an intrinsic property of the fixture — a chain over
+  which `mstep` is constant would give column 3 a valid domain. The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
+- **The conservative variant does not satisfy time-step composition, and the cause is
+  localised.** `Φ_cons(300) ≠ Φ_cons(100)∘Φ_cons(100)∘Φ_cons(100)` (18 records,
+  ΔT ≤ 2.67e-03 K) while the legacy composition holds **bitwise** (132/132). Both
+  arms refresh `cpm`/`xl` three times, so it is not the thermodynamic policy.
+  Exhaustive over the partitions dtcld permits, the whole effect is **one boundary at
+  t = 200 s**. Of the ten per-call entry clamps (`runtime.cpp:424-436`) exactly one is
+  out of range there — **`ni ∈ [0,1e6]`, extreme 4.8151e+06 at 4 cells** — and it
+  fires identically under legacy, so it is necessary and not sufficient. The
+  diverging cells are **exactly the clamped cells that receive inflow**: clamped
+  {col3 k0,k1,k2,k3}, diverging {k0,k1,k2}, and the omitted k3 is the top level,
+  independently shown to have no inflow. Sufficiency is untested — suppressing the
+  clamp needs a change inside frozen C++. **Operationally**: a host that splits a
+  microphysics call (DA window, checkpoint/recompute adjoint, different tile or rank
+  decomposition) changes how often that clamp fires; free under legacy, not under the
+  conservative interface. **Open before C5.**
+  See [`../harness/evidence/FINDING_conservative_call_composition_v1.md`](../harness/evidence/FINDING_conservative_call_composition_v1.md).
 - **`ncmin` column non-locality now fails two independent acceptance gates**, both
   `xfail(strict=True)` in `harness/tests/test_g33_column_separability.py`. Column
   permutation moves 46 of 144 final-state cells. Tile decomposition, exhaustive over the
@@ -157,7 +181,8 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   timestep** (total/−ΔW = 1.0000), while legacy over-reports ~5× at coarse steps and
   converges only near 3 s — the P0-4b defect measured as a function of resolution.
   On the ledgers the conservative interface is **~10× better in column 2** (the
-  topologically stable one) and **neutral in column 3**. The coefficient-policy
+  the one whose sedimentation sub-step count is nearest constant) and **neutral in
+  column 3**. The coefficient-policy
   contrast is **1.6× in column 2 and nil in column 3** — a weak single-column signal
   that does not separate the policies, and which compares implementations rather than
   policies in any case. The earlier ~74×/~2200× figures are withdrawn.

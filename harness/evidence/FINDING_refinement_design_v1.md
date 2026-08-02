@@ -228,6 +228,47 @@ What stands and what does not:
    rates because the species set changes" is withdrawn: the species that changes is
    immaterial to the norms in question. Their cause is now open.
 
+### ATTRIBUTED: the sedimentation sub-step count, measured
+
+Recovered from the kernel's own `substep_pre` records via the macro-gated dump
+overlay, after checking the instrumented run reproduces the plain build's final
+state **bit-for-bit at every member**:
+
+| dtcld | col 1 | col 2 | col 3 |
+|---|---|---|---|
+| 100 | mstep [1] → 100 s | [1,2,5] → 20–100 s | **[7,9,10] → 10–14.3 s** |
+| 50 | [1] → 50 s | [1,2,3] → 16.7–50 s | **[2,3,4,5] → 10–25 s** |
+| 25 | [1] → 25 s | [1,2] → 12.5–25 s | [1,2,3] → 8.3–25 s |
+| 12.5 | [1] → 12.5 s | [1] → 12.5 s | [1,2] → 6.2–12.5 s |
+
+`mstep` is the sedimentation sub-step count, `max(nint(max(work1,workn)·dtcld+0.5),1)`
+— a **rounded integer**. The quantity actually being refined is `dtcld/mstep`, and
+it does not follow the chain:
+
+* **Column 1: `mstep ≡ 1` at every member**, so its effective step *is* `dtcld` and
+  halves exactly. Measured order **+1.969, +1.002, +1.000, +1.002** — clean first
+  order, as a cleanly refined operator should be.
+* **Column 3: `mstep` runs 10 → 5 → 3 → 2**, so halving `dtcld` does *not* halve the
+  sedimentation step, and its **range widens** across the chain (10–14.3 s at
+  h = 100 against 10–25 s at h = 50). Measured order **−5.86, +3.88, −1.02, +0.41**.
+* Column 2 sits between, and so does its behaviour.
+
+**The ordering of the columns by how well `mstep` tracks the chain is the ordering
+by how well they converge.** That is the attribution the topology flip could not
+supply: `mstep` is a large discrete change in the integration, not a
+parts-per-million species.
+
+It also explains the specific anomaly. Between h = 100 and h = 50 column 3's mstep
+falls 10 → 5, so the effective step barely moves (10–14.3 s → 10–25 s) — which is
+why that pair agrees 58× more closely than the next and produces the −5.86.
+
+**Consequence for §9.** The obstacle is not that column 3 is intrinsically
+unusable; it is that **the sweep refines `dtcld` while the sedimentation refines on
+`dtcld/mstep`**. A chain built so that `mstep` is constant across members — or one
+that refines the effective step directly — would give column 3 a valid convergence
+domain, and §9 would become answerable there. That is a sweep-design change, not a
+new fixture.
+
 **Rounding noise is ruled out.** The successive column-water differences sit
 **1,000–74,000× above the f32 noise floor** (`2^-23 · W_col`):
 

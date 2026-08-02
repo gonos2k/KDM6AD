@@ -402,10 +402,19 @@ def topology_report(runs: dict) -> None:
     # convergence order. Printing the share stops the record being read as a
     # sufficient explanation for erratic exponents, which is how it was misread.
     def _share(n, fld, c):
+        """rho*dz-WEIGHTED share of column water, which is this repo's declared
+        column-water measure (docs/STATUS.md retired the unweighted layer sum).
+        An unweighted version reads 3.884e-06 where the weighted one reads
+        3.990e-06 on this fixture -- the conclusion is unchanged, but the
+        withdrawal it supports depends on this magnitude, so it must be the
+        physical measure rather than one that happens to agree."""
         r = runs[n]
         ks = sorted({k[3] for k in r if k[0] == "state"})
-        tot = sum(r[("state", f, c, k)] for f in MASS for k in ks)
-        return (sum(r[("state", fld, c, k)] for k in ks) / tot) if tot else 0.0
+        if not all(("forcing", "rho", c, k) in r for k in ks):
+            return float("nan")          # cannot weight: say so, do not fall back
+        w = {k: r[("forcing", "rho", c, k)] * r[("forcing", "delz", c, k)] for k in ks}
+        tot = sum(w[k] * sum(r[("state", f, c, k)] for f in MASS) for k in ks)
+        return (sum(w[k] * r[("state", fld, c, k)] for k in ks) / tot) if tot else 0.0
 
     print(f"\n  final branch topology, against the coarsest member (N={ns[0]})")
     any_diff = False
