@@ -694,3 +694,42 @@ def test_the_diagnostic_trust_ratio_is_total_over_water_out(tmp_path):
     assert ra._water_out(r, 1, ks) == pytest.approx(1.0)     # qr 1.0 -> 0.0, rho*dz = 1
     assert ra.total_precip(r, 1) == pytest.approx(1.0)
     assert ra.total_precip(r, 1) / ra._water_out(r, 1, ks) == pytest.approx(1.0)
+
+
+def test_the_topology_share_is_rho_dz_weighted(tmp_path):
+    """Owner P0: the flip's materiality must use this repo's declared column-water
+    measure (rho*dz weighted), not an unweighted layer sum. With NON-UNIFORM rho
+    the two differ, so a fixture where they agree cannot prove the code is right.
+
+    Built so the weighted answer is exactly 2/3 and the unweighted one exactly 1/2:
+    two levels, qg = 1 in both, other water = 1 in level 0 only, and rho*dz = 1 at
+    level 0 against 2 at level 1.
+    """
+    B, K = 1, 2
+    rows = [f"G33R BEGIN nsplit 3 rezero legacy delt 100.000000 loops 1 dtcld 100.000000"]
+    for f in ra.STATE_FIELDS:
+        for k in range(K):
+            v = "3F800000" if (f == "qg" or (f == "qv" and k == 0)) else "00000000"
+            rows.append(f"G33R STATE {f} 1 {k} {v}")
+    for k in range(K):
+        rows.append(f"G33R FORCING rho 1 {k} " + ("3F800000" if k == 0 else "40000000"))
+        rows.append(f"G33R FORCING delz 1 {k} 3F800000")
+        rows.append(f"G33R FORCING pii 1 {k} 3F800000")
+    for f in (1, 2, 3):
+        rows.append(f"G33R PREC {f} 1 00000000")
+    r = ra.read(_write(tmp_path, "\n".join(rows + ["G33R END"]) + "\n", "w.txt"))
+
+    ks = [0, 1]
+    w = {k: r[("forcing", "rho", 1, k)] * r[("forcing", "delz", 1, k)] for k in ks}
+    weighted = (sum(w[k] * r[("state", "qg", 1, k)] for k in ks)
+                / sum(w[k] * sum(r[("state", f, 1, k)] for f in ra.MASS) for k in ks))
+    unweighted = (sum(r[("state", "qg", 1, k)] for k in ks)
+                  / sum(r[("state", f, 1, k)] for f in ra.MASS for k in ks))
+    assert weighted == pytest.approx(3.0 / 4.0)      # (1+2)/(1+1+2)
+    assert unweighted == pytest.approx(2.0 / 3.0)    # (1+1)/(1+1+1)
+    assert weighted != pytest.approx(unweighted), "fixture must separate the two"
+
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    body = src[src.index("    def _share("):src.index("    print(f\"\\n  final branch topology")]
+    code = "\n".join(l.split("#", 1)[0] for l in body.splitlines())
+    assert "forcing" in code and "rho" in code, "_share must weight by rho*dz"
