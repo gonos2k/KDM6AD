@@ -109,6 +109,16 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
   the rain-number channel this row names is still unexercised.
   See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
+- **A correction to the refinement work's own reasoning.** The graupel presence flip
+  used to argue that column 3 is "not a valid convergence domain" carries
+  **3.88e-06 of that column's water** — parts per million, far too small to produce
+  the O(1) swings in its convergence exponents (−5.86, +3.88, −1.02, +0.41). The
+  flip is real; the attribution was asserted from its existence without checking its
+  magnitude, and is **withdrawn**. Column 3's erratic orders are currently
+  **unattributed**, which also weakens the "§9 is structurally unanswerable"
+  argument that leaned partly on it. The analyzer now prints each flip's share of
+  column water beside it so the record cannot be re-read as a sufficient
+  explanation.
 - **`ncmin` column non-locality now fails two independent acceptance gates**, both
   `xfail(strict=True)` in `harness/tests/test_g33_column_separability.py`. Column
   permutation moves 46 of 144 final-state cells. Tile decomposition, exhaustive over the
