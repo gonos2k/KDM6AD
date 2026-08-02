@@ -38,10 +38,17 @@ def test_the_sweep_as_specified_is_not_a_refinement():
     assert steps != sorted(steps, reverse=True), "not monotonically refining"
 
 
-def test_N2_exceeds_the_kernels_own_stability_criterion():
-    """nint(150/120) = 1, and the delt <= dtcldcr guard does not apply, so the
-    member runs a 150 s step against the code's own 120 s limit."""
+def test_dtcldcr_is_a_target_interval_not_an_upper_bound():
+    """Because the divisor is rounded with `nint` rather than a ceiling, dtcld
+    EXCEEDS 120 s for any delt in (120, 180) -- 175 s at delt = 175, about 1.46x
+    nominal. An earlier version of this finding called N=2 'past the code's own
+    limit', which overstates what the code enforces. Whether that is intended is a
+    production-physics question (nint vs ceiling) and a separate owner item."""
     assert dtcld(150.0) == 150.0 > DTCLDCR
+    assert dtcld(175.0) == 175.0
+    assert dtcld(180.0) == 90.0, "at 180 the rounding tips and the step halves"
+    worst = max(dtcld(d) for d in [x / 10 for x in range(1200, 1800)])
+    assert worst > DTCLDCR * 1.45
 
 
 def test_the_corrected_chain_halves_cleanly():
@@ -128,3 +135,249 @@ def test_error_to_finest_uses_the_actual_finest_member(tmp_path):
     got = ra.to_finest(runs)["mass"]
     assert 12.5 not in got, "the finest member is the reference, not a data point"
     assert set(got) == {100.0, 50.0, 25.0}
+
+
+# ── the parser must fail closed (owner review §2) ─────────────────────────────
+#
+# A refinement member is a COMPLETE state, not "at least one record". The failure
+# direction is what makes this a P0 rather than tidiness: a stream missing the cell
+# that carries the largest difference produces a SMALLER error norm, so a
+# permissive reader reports better convergence than actually happened. That is the
+# same shape as the manifest-replayed-into-the-writer check that saw no missing
+# k/shape/field, and the rate comparator that could pass a truncated dump.
+
+def _stream(nsplit=3, mode="rezero", algo="legacy", B=2, K=2, end=True):
+    out = [f"G33R BEGIN nsplit {nsplit} {mode} {algo} "
+           f"delt {300/nsplit:.6f} loops 1 dtcld {300/nsplit:.6f}"]
+    for f in ra.STATE_FIELDS:
+        for i in range(1, B + 1):
+            for k in range(K):
+                out.append(f"G33R STATE {f} {i} {k} 3F800000")
+    for f in (1, 2, 3):
+        for i in range(1, B + 1):
+            out.append(f"G33R PREC {f} {i} 3F800000")
+    if end:
+        out.append("G33R END")
+    return "\n".join(out) + "\n"
+
+
+def _write(tmp_path, text, name="n3.rezero.txt"):
+    p = tmp_path / name
+    p.write_text(text)
+    return p
+
+
+def test_a_well_formed_member_parses(tmp_path):
+    r = ra.read(_write(tmp_path, _stream()), nsplit=3)
+    assert r[("meta", "nsplit")] == 3
+    assert r[("meta", "dtcld")] == 100.0
+
+
+def test_a_deleted_record_is_rejected(tmp_path):
+    """THE case. Deleting the record carrying the largest difference makes the
+    error norm smaller, so this fails in the flattering direction."""
+    lines = _stream().splitlines()
+    del lines[5]
+    with pytest.raises(ra.RefineError, match="ragged|field set"):
+        ra.read(_write(tmp_path, "\n".join(lines) + "\n"))
+
+
+def test_a_duplicate_record_with_a_different_value_is_rejected(tmp_path):
+    """Last-write-wins is silent: the analysed value would be the second one with
+    no indication the first existed."""
+    lines = _stream().splitlines()
+    lines.insert(6, "G33R STATE th 1 0 40000000")
+    with pytest.raises(ra.RefineError, match="duplicate"):
+        ra.read(_write(tmp_path, "\n".join(lines) + "\n"))
+
+
+def test_a_missing_END_is_rejected(tmp_path):
+    """A run killed partway through has every record it managed to write and no
+    END. Without this it reads as a shorter but valid member."""
+    with pytest.raises(ra.RefineError, match="END"):
+        ra.read(_write(tmp_path, _stream(end=False)))
+
+
+def test_a_second_BEGIN_is_rejected(tmp_path):
+    """Two runs appended to one file: the records interleave and the duplicate
+    check would fire, but the diagnosis should name the real cause."""
+    with pytest.raises(ra.RefineError, match="BEGIN"):
+        ra.read(_write(tmp_path, _stream() + _stream(nsplit=6)))
+
+
+def test_a_nsplit_disagreeing_with_the_filename_is_rejected(tmp_path):
+    """A member analysed under the wrong step lands at the wrong point in the
+    chain, which changes every order estimate downstream of it."""
+    with pytest.raises(ra.RefineError, match="nsplit"):
+        ra.read(_write(tmp_path, _stream(nsplit=6), name="n3.rezero.txt"), nsplit=3)
+
+
+def test_a_renamed_field_is_rejected(tmp_path):
+    with pytest.raises(ra.RefineError, match="field set"):
+        ra.read(_write(tmp_path, _stream().replace("G33R STATE th", "G33R STATE tt")))
+
+
+def test_a_NaN_is_rejected(tmp_path):
+    """NaN propagates through the subtraction and `max` silently: a NaN norm
+    compares False against everything, so monotonicity checks pass."""
+    with pytest.raises(ra.RefineError, match="non-finite"):
+        ra.read(_write(tmp_path, _stream().replace(
+            "G33R STATE th 1 0 3F800000", "G33R STATE th 1 0 7FC00000")))
+
+
+def test_an_infinity_is_rejected(tmp_path):
+    with pytest.raises(ra.RefineError, match="non-finite"):
+        ra.read(_write(tmp_path, _stream().replace(
+            "G33R STATE th 1 0 3F800000", "G33R STATE th 1 0 7F800000")))
+
+
+def test_half_a_file_is_rejected(tmp_path):
+    lines = _stream().splitlines()
+    with pytest.raises(ra.RefineError):
+        ra.read(_write(tmp_path, "\n".join(lines[:len(lines) // 2]) + "\n"))
+
+
+def test_an_unknown_G33R_record_is_rejected(tmp_path):
+    """A new record class from a future driver must stop the analysis, not be
+    skipped -- silently ignoring it is how a changed output format gets analysed
+    under the old assumptions."""
+    lines = _stream().splitlines()
+    lines.insert(2, "G33R FLUX 1 0 3F800000")
+    with pytest.raises(ra.RefineError, match="unrecognised"):
+        ra.read(_write(tmp_path, "\n".join(lines) + "\n"))
+
+
+def test_records_outside_the_block_are_rejected(tmp_path):
+    with pytest.raises(ra.RefineError, match="outside"):
+        ra.read(_write(tmp_path, _stream() + "G33R STATE th 1 0 3F800000\n"))
+
+
+# ── cross-member identity ────────────────────────────────────────────────────
+
+def test_members_with_different_universes_are_rejected(tmp_path):
+    """Comparing over the intersection lets an incomplete member report a smaller
+    error than a complete one -- convergence measured on absence."""
+    a = ra.read(_write(tmp_path, _stream(nsplit=3), "a.txt"))
+    b = ra.read(_write(tmp_path, _stream(nsplit=6, B=3), "b.txt"))
+    with pytest.raises(ra.RefineError, match="record universe"):
+        ra.require_same_universe({3: a, 6: b})
+
+
+def test_members_mixing_algorithms_are_rejected(tmp_path):
+    a = ra.read(_write(tmp_path, _stream(nsplit=3), "a.txt"))
+    b = ra.read(_write(tmp_path, _stream(nsplit=6, algo="conservative"), "b.txt"))
+    with pytest.raises(ra.RefineError, match="algorithms"):
+        ra.require_same_universe({3: a, 6: b})
+
+
+def test_matching_members_pass(tmp_path):
+    a = ra.read(_write(tmp_path, _stream(nsplit=3), "a.txt"))
+    b = ra.read(_write(tmp_path, _stream(nsplit=6), "b.txt"))
+    ra.require_same_universe({3: a, 6: b})
+
+
+def test_the_norm_does_not_skip_a_missing_key():
+    """`_norm` must not carry an `if k in a and k in b` guard: that is the silent
+    skip `require_same_universe` exists to make unnecessary, and leaving both is
+    how the guard stops being load-bearing."""
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    body = src[src.index("def _norm("):src.index("def _keys(")]
+    # Code only. The comment inside `_norm` names the guard in order to explain
+    # why it is absent, and a raw substring search over the whole body matches
+    # the explanation as readily as the thing it warns about.
+    code = "\n".join(ln.split("#", 1)[0] for ln in body.splitlines())
+    assert "if k in a and k in b" not in code
+
+
+# ── where the order may be computed (owner review §4) ────────────────────────
+
+def test_the_order_is_only_reported_for_the_successive_series(capsys, tmp_path):
+    """The finest member is not the exact solution. With X_h = X* + C h^p the
+    error to it is |C||h^p - hf^p|, whose ratio is NOT 2^p: a truly first-order
+    operator reads +1.222 then +1.585 at hf = 12.5. Testing the formula alone
+    passes whether or not it is applied to a series it is valid for, which is how
+    the earlier +1.221/+1.413 got read as 'near or above first order'."""
+    runs = {n: ra.read(_write(tmp_path, _stream(nsplit=n), f"n{n}.txt"))
+            for n in (3, 6, 12, 24)}
+    ra.report(runs, "t")
+    out = capsys.readouterr().out
+    head, _, tail = out.partition("error to finest")
+    assert "order" in head
+    assert "p = " not in tail, "an order was reported against the finest member"
+    assert "monotone" in tail
+
+
+def test_a_first_order_operator_reads_above_one_against_the_finest():
+    """The bias, as a number, so the withdrawn reading cannot quietly return."""
+    hf = 12.5
+    ratio = (100.0 - hf) / (50.0 - hf)
+    assert round(math.log2(ratio), 3) == 1.222
+    assert round(math.log2((50.0 - hf) / (25.0 - hf)), 3) == 1.585
+
+
+# ── experiment provenance (owner review §9) ──────────────────────────────────
+
+import g33_refine_manifest as rm   # noqa: E402
+
+
+def _outputs(tmp_path, ns):
+    d = tmp_path / "out"
+    d.mkdir(exist_ok=True)
+    for n in ns:
+        (d / f"n{n}.rezero.txt").write_text(_stream(nsplit=n))
+    return d
+
+
+def _build(d, tmp_path):
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    return rm.build(d, module=mod, fixture=fix, compiler="gfortran-test")
+
+
+def test_an_experiment_manifest_is_never_decision_eligible(tmp_path):
+    """A constant with no argument that sets it. Writing the experiment somewhere
+    else would be a convention; this is structural."""
+    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
+    assert man["decision_eligible"] is False
+    assert man["artifact_type"] == "refinement_experiment"
+    src = (ROOT / "g33_refine_manifest.py").read_text()
+    assert "decision_eligible=" not in src and '"decision_eligible": True' not in src
+
+
+def test_the_manifest_records_what_is_needed_to_reproduce(tmp_path):
+    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
+    for k in ("repo_commit", "tree_dirty", "module_sha256", "fixture_sha256",
+              "compiler", "analyzer_sha256", "members"):
+        assert k in man, k
+    assert all("output_sha256" in m for m in man["members"])
+
+
+def test_the_manifest_reads_dtcld_from_the_run_not_from_N(tmp_path):
+    """Recomputing it would restate the assumption the §9 correction exists to
+    check -- that the kernel, not the caller, picks the step."""
+    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
+    assert {m["nsplit"]: m["dtcld"] for m in man["members"]} == {3: 100.0, 6: 50.0}
+
+
+def test_the_specified_sweep_is_flagged_as_not_a_refinement_chain(tmp_path):
+    """The synthetic stream reports dtcld = 300/N, so this checks the flag's logic
+    on a halving vs a non-halving set of steps."""
+    assert _build(_outputs(tmp_path, (3, 6, 12, 24)), tmp_path)["is_refinement_chain"]
+    d = tmp_path / "o2"; d.mkdir()
+    for n, s in ((3, 100.0), (4, 75.0)):
+        (d / f"n{n}.rezero.txt").write_text(_stream(nsplit=n))
+    assert not _build(d, tmp_path)["is_refinement_chain"]
+
+
+def test_the_policy_control_pair_is_not_claimed_to_be_a_chain(tmp_path):
+    """N=1 and N=3 share dtcld = 100 s -- that is what makes them a controlled
+    contrast, and it is exactly what disqualifies them as a refinement sequence.
+    The manifest must not present the pair as one."""
+    d = tmp_path / "o3"; d.mkdir()
+    (d / "n1.rezero.txt").write_text(
+        "G33R BEGIN nsplit 1 rezero legacy delt 300.000000 loops 3 dtcld 100.000000\n"
+        + "\n".join(_stream(nsplit=3).splitlines()[1:]) + "\n")
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    man = _build(d, tmp_path)
+    assert not man["is_refinement_chain"]
+    assert {m["dtcld"] for m in man["members"]} == {100.0}

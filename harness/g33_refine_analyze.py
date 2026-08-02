@@ -29,12 +29,25 @@ refinement chain itself cannot isolate.
 Reports both standard readings, because they answer different questions:
 
   successive differences  E_h = |X_h - X_{h/2}| over the doubling pairs present.
-                          Self-convergence: no reference solution assumed.
-  error to the finest     E_N = |X_N - X_finest|. What "approaches the refined
-                          sequence" means, at the cost of treating the finest
-                          member as truth.
+                          Self-convergence, no reference solution assumed. THE
+                          ONLY PLACE AN ORDER IS COMPUTED.
+  error to the finest     E_N = |X_N - X_finest|. Magnitude and monotonicity only.
+                          NO ORDER (owner review §4).
 
-An operator that converges should look like it under both.
+The finest member is not the exact solution, and treating it as one biases the
+exponent upward. With X_h = X* + C h^p,
+
+    E_h = |X_h - X_hf| = |C| |h^p - hf^p|     so     E_h / E_{h/2} != 2^p
+
+For a truly FIRST-order operator with hf = 12.5 s the ratio reads
+
+    p(100->50) = +1.222        p(50->25) = +1.585
+
+An earlier version of this module computed an order from that series and the
+result was read as "near or above first order". It was not: +1.221 and +1.413 for
+`th`, +1.205 and +1.614 for `number`, against a first-order prediction of +1.222
+and +1.585. The estimator produced the exponent, not the operator. Those numbers
+are withdrawn; the successive-difference series is the one that means anything.
 
 This computes nothing about which policy is more physical. Convergence order is
 one input to that; the moist-energy ledger of §8 is the other, and §3.1's
@@ -64,18 +77,122 @@ def f32(bits: int) -> float:
     return struct.unpack("<f", struct.pack("<I", bits))[0]
 
 
-def read(path: Path) -> dict:
-    out = {}
-    for line in path.read_text().splitlines():
-        if m := _STATE.match(line.strip()):
+#: The exact record universe one member must contain. A refinement member is a
+#: complete state, not "at least one record": a stream missing the cell that
+#: carries the largest difference produces a SMALLER error norm and reads as
+#: better convergence, so a permissive reader here fails in the direction that
+#: flatters the result (owner review §2).
+STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
+                "nccn", "nc", "ni", "nr", "bg")
+# `\s+`: the Fortran `merge` pads the mode to a fixed width, so the emitted
+# separator is not always one space. A single-space pattern rejected every
+# real member -- which is the safe direction, but for the wrong reason.
+_BEGIN = re.compile(r"^G33R BEGIN nsplit\s+(\d+)\s+(carry|rezero)\s+(\S+)"
+                    r"(?:\s+delt\s+(\S+)\s+loops\s+(\d+)\s+dtcld\s+(\S+))?$")
+_END = re.compile(r"^G33R END$")
+
+
+class RefineError(Exception):
+    """A member that cannot be analysed. Never downgraded to a warning."""
+
+
+def _expect(cond, msg, path):
+    if not cond:
+        raise RefineError(f"{path}: {msg}")
+
+
+def read(path: Path, *, nsplit=None) -> dict:
+    """One member, or raise.
+
+    Every check here corresponds to a way a truncated, duplicated or mislabelled
+    stream would otherwise be analysed as a valid result. The parser this replaced
+    accepted any file containing one parseable record.
+    """
+    lines = [ln.strip() for ln in path.read_text().splitlines() if ln.strip()]
+    begins = [ln for ln in lines if ln.startswith("G33R BEGIN")]
+    ends = [ln for ln in lines if _END.match(ln)]
+    _expect(len(begins) == 1, f"expected exactly 1 BEGIN, found {len(begins)}", path)
+    _expect(len(ends) == 1, f"expected exactly 1 END, found {len(ends)} "
+                            "(a truncated run has none)", path)
+    m = _BEGIN.match(begins[0])
+    _expect(m, f"unparseable BEGIN: {begins[0]!r}", path)
+    got_n, mode, algo = int(m.group(1)), m.group(2), m.group(3)
+    # delt/loops/dtcld are what the KERNEL actually used. Recording them makes the
+    # dtcld design rule checkable from the output instead of recomputed from delt
+    # by whoever reads the table (owner review §2.3).
+    delt, loops, dtcld = m.group(4), m.group(5), m.group(6)
+    if nsplit is not None:
+        _expect(got_n == nsplit,
+                f"BEGIN says nsplit={got_n}, filename says {nsplit} "
+                "(a member analysed under the wrong step)", path)
+
+    bi, ei = lines.index(begins[0]), lines.index(ends[0])
+    _expect(bi < ei, "END precedes BEGIN", path)
+    _expect(not [ln for ln in lines[:bi] + lines[ei + 1:] if ln.startswith("G33R")],
+            "G33R records outside BEGIN..END", path)
+
+    out, seen = {}, set()
+    for ln in lines[bi + 1:ei]:
+        if not ln.startswith("G33R"):
+            continue                     # non-record chatter inside the block
+        if m := _STATE.match(ln):
             fld, i, k, b = m.groups()
-            out[("state", fld, int(i), int(k))] = f32(int(b, 16))
-        elif m := _PREC.match(line.strip()):
+            key = ("state", fld, int(i), int(k))
+        elif m := _PREC.match(ln):
             f, i, b = m.groups()
-            out[("prec", int(f), int(i))] = f32(int(b, 16))
-    if not out:
-        raise SystemExit(f"no G33R records in {path}")
+            key = ("prec", int(f), int(i))
+        else:
+            raise RefineError(f"{path}: unrecognised G33R record: {ln!r}")
+        _expect(key not in seen,
+                f"duplicate record {key} — a second value would silently "
+                "overwrite the first", path)
+        seen.add(key)
+        v = f32(int(b, 16))
+        _expect(v == v and abs(v) != float("inf"),
+                f"non-finite value at {key}", path)
+        out[key] = v
+
+    st = [k for k in out if k[0] == "state"]
+    pr = [k for k in out if k[0] == "prec"]
+    fields = {k[1] for k in st}
+    _expect(fields == set(STATE_FIELDS),
+            f"state field set is {sorted(fields)}, expected {sorted(STATE_FIELDS)}",
+            path)
+    cells = {(k[2], k[3]) for k in st}
+    _expect(len(st) == len(STATE_FIELDS) * len(cells),
+            f"state records {len(st)} != {len(STATE_FIELDS)} fields x "
+            f"{len(cells)} cells — the grid is ragged", path)
+    cols = {k[2] for k in pr}
+    _expect(len(pr) == 3 * len(cols),
+            f"prec records {len(pr)} != 3 species x {len(cols)} columns", path)
+    out[("meta", "nsplit")] = got_n
+    out[("meta", "mode")] = mode
+    out[("meta", "algorithm")] = algo
+    if loops is not None:
+        out[("meta", "delt")] = float(delt)
+        out[("meta", "loops")] = int(loops)
+        out[("meta", "dtcld")] = float(dtcld)
     return out
+
+
+def require_same_universe(runs: dict) -> None:
+    """Every member must carry the SAME identities before any norm is taken.
+
+    Comparing over the intersection lets a member that is missing records report a
+    smaller error than one that is complete, which is convergence measured on
+    absence. Checked once, up front, rather than per comparison.
+    """
+    keyed = {n: {k for k in r if k[0] != "meta"} for n, r in runs.items()}
+    ref_n = min(keyed)
+    for n, ks in keyed.items():
+        if ks != keyed[ref_n]:
+            miss, extra = keyed[ref_n] - ks, ks - keyed[ref_n]
+            raise RefineError(
+                f"member N={n} has a different record universe from N={ref_n}: "
+                f"{len(miss)} missing, {len(extra)} extra")
+    algos = {r[("meta", "algorithm")] for r in runs.values()}
+    if len(algos) > 1:
+        raise RefineError(f"members mix algorithms: {sorted(algos)}")
 
 
 def _norm(a: dict, b: dict, keys) -> float:
@@ -86,8 +203,10 @@ def _norm(a: dict, b: dict, keys) -> float:
     nothing is happening. The fixture is arithmetic-synthetic and most cells are
     quiet, so RMS here would mostly measure how many cells are quiet.
     """
-    d = [abs(a[k] - b[k]) for k in keys if k in a and k in b]
-    return max(d) if d else 0.0
+    # No `if k in a and k in b` guard: `require_same_universe` has already
+    # established both carry every key, and a silent skip here is exactly how a
+    # missing record turns into a smaller error norm.
+    return max((abs(a[k] - b[k]) for k in keys), default=0.0)
 
 
 def _keys(run, group):
@@ -145,8 +264,15 @@ def report(runs: dict, label: str) -> None:
     print(f"\n=== {label} ===")
     print(f"    members: N = {sorted(runs)}  "
           f"(delt = {[round(300 / n, 4) for n in sorted(runs)]} s)")
-    for name, series in (("successive |X_h - X_h/2|", successive(runs)),
-                         (f"error to finest (N={max(runs)})", to_finest(runs))):
+    # (label, series, may_report_order). The flag is the point of this table:
+    # an order from the error-to-finest series is biased upward and was misread
+    # once already, so which series may carry one is fixed here rather than left
+    # to the caller.
+    for name, series, ordered in (
+            ("successive |X_h - X_h/2|   (order estimated HERE)",
+             successive(runs), True),
+            (f"error to finest (N={max(runs)})   magnitude + monotonicity only",
+             to_finest(runs), False)):
         print(f"\n  {name}")
         for g in GROUPS:
             s = series[g]
@@ -154,9 +280,15 @@ def report(runs: dict, label: str) -> None:
                 continue
             cells = "  ".join(f"h={h:g}:{v:.6e}" for h, v in sorted(s.items(), reverse=True))
             print(f"    {g:7} {cells}")
-            for h, e, ee, p in orders(s):
-                pt = "n/a (a member is bit-identical)" if p is None else f"{p:+.3f}"
-                print(f"            order {h:g}->{h/2:g}: p = {pt}")
+            if ordered:
+                for h, e, ee, p in orders(s):
+                    pt = "n/a (a member is bit-identical)" if p is None else f"{p:+.3f}"
+                    print(f"            order {h:g}->{h/2:g}: p = {pt}")
+            else:
+                v = [s[h] for h in sorted(s, reverse=True)]
+                mono = all(a >= b for a, b in zip(v, v[1:]))
+                print(f"            monotone decreasing: {mono}"
+                      f"   (no order: the finest member is not the exact solution)")
 
 
 def main(argv) -> int:
@@ -167,9 +299,10 @@ def main(argv) -> int:
     runs = {}
     for p in sorted(d.glob("n*.rezero.txt")):
         n = int(re.match(r"n(\d+)\.", p.name).group(1))
-        runs[n] = read(p)
+        runs[n] = read(p, nsplit=n)
     if len(runs) < 2:
         raise SystemExit(f"need at least two members, found {sorted(runs)}")
+    require_same_universe(runs)
     report(runs, d.name)
     return 0
 

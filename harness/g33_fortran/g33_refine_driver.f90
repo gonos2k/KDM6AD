@@ -184,9 +184,10 @@ program g33_refine_driver
   integer, parameter :: IM = G33_B, KM = G33_K
   real :: outF(IM,KM,NFLD_ST), precF(3,IM)
   character(len=32) :: arg
-  integer :: nsplit, i, k, f, ios
+  integer :: nsplit, i, k, f, ios, loops_used
   integer(int32) :: b
   logical :: carry_aux
+  real :: delt_used, dtcld_used
 
   if (command_argument_count() < 1) error stop 'usage: g33_refine_driver NSPLIT [carry]'
   call get_command_argument(1, arg)
@@ -195,14 +196,29 @@ program g33_refine_driver
   carry_aux = .false.
   if (command_argument_count() >= 2) then
     call get_command_argument(2, arg)
-    carry_aux = (trim(arg) == 'carry')
+    ! Exact match or stop. `carry_aux = (arg == 'carry')` silently treats a typo
+    ! as 'rezero', so a run intended as the carry arm would be recorded, analysed
+    ! and reported as the control it was supposed to be compared against.
+    select case (trim(arg))
+    case ('carry');  carry_aux = .true.
+    case ('rezero'); carry_aux = .false.
+    case default;    error stop 'second argument must be exactly carry or rezero'
+    end select
   end if
 
+  delt_used = f32(DT_BITS) / real(nsplit)
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, carry_aux, outF, precF)
 
-  write(*,'(A,1X,I0,1X,A,1X,A)') 'G33R BEGIN nsplit', nsplit, &
-       merge('carry  ', 'rezero ', carry_aux), ALGOTAG
+  ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
+  ! intended: the sweep must refine dtcld, and a reader should be able to check
+  ! that from the stream rather than re-deriving it.
+  loops_used = max(nint(delt_used/120.0), 1)
+  dtcld_used = delt_used / real(loops_used)
+  if (delt_used <= 120.0) dtcld_used = delt_used
+  write(*,'(A,1X,I0,1X,A,1X,A,1X,A,1X,F0.6,1X,A,1X,I0,1X,A,1X,F0.6)') &
+       'G33R BEGIN nsplit', nsplit, trim(merge('carry ', 'rezero', carry_aux)), &
+       ALGOTAG, 'delt', delt_used, 'loops', loops_used, 'dtcld', dtcld_used
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM
