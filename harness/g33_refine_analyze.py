@@ -492,12 +492,25 @@ def _water_out(run, c, ks) -> float:
                 for k in ks)
 
 
+#: WRF convention, and it is NOT three disjoint species. F:1462-1464:
+#:
+#:     fallsum     = fall(1)+fall(2)+fall(3)+fall(4)   -> rain    == the TOTAL
+#:     fallsum_qsi = fall(2)+fall(4)                   -> snow    == a SUBSET
+#:     fallsum_qg  = fall(3)                           -> graupel == a SUBSET
+#:
+#: So `rain` is the total surface fallout of all four species and `snow`/`graupel`
+#: are components of it. Summing the three double-counts the frozen part -- which is
+#: what an earlier version of this module did, producing a spurious ~2x offset
+#: against the column water budget that was nearly explained away as a convention.
+def total_precip(run, c) -> float:
+    """Total surface fallout in column `c` — `rain` alone, never a sum."""
+    return run[("prec", 1, c)]
+
+
 def _ice_fraction(run, c) -> float:
-    """Share of the departing water that is frozen. The diagnostic is used for the
-    RATIO only, which is far less sensitive than its magnitude."""
-    ice = run[("prec", 2, c)] + run[("prec", 3, c)]
-    tot = run[("prec", 1, c)] + ice
-    return ice / tot if tot else 0.0
+    """Frozen share of the departing water: (snow + graupel) / total."""
+    tot = total_precip(run, c)
+    return (run[("prec", 2, c)] + run[("prec", 3, c)]) / tot if tot else 0.0
 
 
 def _precip_consistent(run, c, kbot, ks) -> float:

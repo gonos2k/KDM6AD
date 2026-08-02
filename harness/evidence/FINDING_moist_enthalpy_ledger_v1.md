@@ -1,10 +1,13 @@
-# Both ledgers, corrected: they do NOT discriminate the thermodynamic policy
+# Both ledgers, corrected twice: a ~10x conservative advantage in one column, and no clean policy signal
 
-**Revised after adversarial review, which refuted both of the first version's
-conclusions.** They were artifacts of building the ledgers on the fallout
-diagnostic. The corrected result is a negative one: on this fixture neither ledger
-separates the coefficient policies, and the conservative interface's advantage is
-marginal and not consistent across columns.
+**Revised twice after adversarial review, which found two independent defects in
+the construction.** The first version's ~74×/~2200× conservative advantage and its
+"refreshing loses 1.5× on both" were artifacts of (a) taking the enthalpy flux from
+the known-defective fallout diagnostic and (b) double-counting the frozen species.
+Both are fixed below. The corrected result: the conservative interface closes ~10×
+better in the topologically stable column and is neutral elsewhere, and the
+coefficient-policy contrast is a weak single-column signal that does not separate
+the policies.
 
 ## The defect in the first version
 
@@ -34,50 +37,67 @@ which is far less sensitive than its magnitude.
 A test now pins the contract: changing the fallout diagnostic alone must not move
 the ledger.
 
+## A second defect, found by the same review
+
+The species accounting was also wrong. WRF's convention, verbatim at F:1462-1464:
+
+```
+fallsum     = fall(1)+fall(2)+fall(3)+fall(4)   -> rain    == the TOTAL
+fallsum_qsi = fall(2)+fall(4)                   -> snow    == a SUBSET
+fallsum_qg  = fall(3)                           -> graupel == a SUBSET
+```
+
+`rain` is the total surface fallout of all four species; `snow` and `graupel` are
+**components of it**. Summing the three double-counts the frozen part. That was the
+source of the "~2× offset against the column water budget" that an earlier document
+nearly explained away as a convention difference — it was a double-count, and the
+factor tracked the frozen fraction rather than being a constant.
+
+With the total taken correctly:
+
+| leg | dtcld | total / (−ΔW) |
+|---|---|---|
+| **conservative** | 100 / 25 / 3.125 | **1.0000 / 1.0000 / 1.0000** |
+| legacy | 100 / 25 / 3.125 | 4.97 / 4.26 / 0.992 |
+
+**The conservative interface closes the column water budget exactly at every
+timestep.** Legacy over-reports its fallout relative to the water that actually left
+by ~5× at coarse steps, converging only near 3 s. That is the P0-4b defect measured
+as a function of resolution.
+
 ## Corrected result (dtcld = 25 s, relative residual)
+
+Both fixes applied — flux from the water budget, species counted correctly:
 
 | leg | col | §8.1 operator | §8.2 physical |
 |---|---|---|---|
 | Fortran (call-fixed) | 1 | 3.342e-05 | −5.425e-06 |
-| | 2 | 1.011e-03 | 9.990e-04 |
-| | 3 | 9.692e-04 | 6.209e-04 |
+| | 2 | −8.063e-05 | −9.031e-05 |
+| | 3 | 5.084e-04 | 1.494e-04 |
 | C++ legacy (sub-cycle-refreshed) | 1 | 3.399e-05 | −3.957e-06 |
-| | 2 | 9.893e-04 | 9.815e-04 |
-| | 3 | 9.698e-04 | 6.215e-04 |
+| | 2 | −1.316e-04 | −1.369e-04 |
+| | 3 | 5.082e-04 | 1.491e-04 |
 | C++ conservative | 1 | 3.399e-05 | −3.957e-06 |
-| | 2 | 7.316e-04 | 7.144e-04 |
-| | 3 | 1.080e-03 | 7.288e-04 |
+| | 2 | **3.228e-06** | **−1.237e-05** |
+| | 3 | 5.117e-04 | 1.469e-04 |
 
-### 1. The ledgers do not separate the coefficient policies
+### 1. The conservative interface closes better in column 2, and is neutral in column 3
 
-Fortran (call-fixed) against C++ legacy (sub-cycle-refreshed):
+Column 2: **3.23e-06 against 1.32e-04 — about 10×** on the operator ledger, 11× on
+the physical one. Column 3: all three legs agree to three figures. So the advantage
+is real but **confined to the column where the topology is stable**, and absent
+where it is not.
 
-| | col 2 | col 3 |
-|---|---|---|
-| §8.1 | 1.011e-03 vs 9.893e-04 | 9.692e-04 vs 9.698e-04 |
-| §8.2 | 9.990e-04 vs 9.815e-04 | 6.209e-04 vs 6.215e-04 |
+### 2. The policy contrast is weak and not uniform
 
-**Within 2%, and identical to four figures in column 3.** The first version's
-"refreshing closes both ledgers ~1.5× worse" was the diagnostic defect, which is
-larger under legacy at coarse steps. **On the corrected ledgers there is no
-measurable policy difference at all.**
+Fortran (call-fixed) against C++ legacy (refreshed): **1.6× in column 2** (−8.06e-05
+against −1.32e-04, refreshed worse) and **identical to three figures in column 3**.
 
-That is a negative result and it matters: with §9's convergence route
-structurally blocked on this fixture, the energy ledgers were the remaining
-discriminator, and they do not discriminate either.
-
-### 2. The conservative interface's advantage is marginal and inconsistent
-
-Better in column 2 (7.32e-04 against 9.89e-04, **1.35×**) and **worse in column 3**
-(1.080e-03 against 9.698e-04). Not the ~74×/~2200× first reported, and not a
-uniform improvement.
-
-### 3. All three legs close to ~1e-3, and column 1 to ~1e-5
-
-Column 1 is 288–290 K with no ice, so almost nothing happens and the residual is a
-floor of the construction. The ~1e-3 in columns 2 and 3 is common to every leg and
-is not attributed here — it may be the approximations below, the threshold-cleanup
-sink `docs/STATUS.md` records, or a real gap.
+Far from the "~1.5× worse on both ledgers" first claimed, which was the diagnostic
+defect, and not the "no measurable difference" of the first correction, which was
+the species double-count. The honest reading is a weak, single-column signal that
+**does not separate the policies with any confidence**, and which in any case
+compares two implementations rather than two policies.
 
 ## Construction
 
@@ -99,8 +119,13 @@ liquid/ice split from the diagnostic's ratio.
 
 ## What this does NOT establish
 
-- **No policy discrimination.** Both ledgers are silent on the `cpm`/`xl` question.
-- **The ~1e-3 common residual is unattributed.**
+- **No confident policy discrimination.** The 1.6× in column 2 is one column, one
+  contrast, and confounded by every other difference between the two ports.
+- **The ~1.5e-04 / 5e-04 column-3 residual is unattributed** and is common to all
+  three legs — it may be the stated approximations, the threshold-cleanup sink
+  `docs/STATUS.md` records, or a real gap.
+- **The conservative advantage is confined to column 2.** It is absent in column 3,
+  and column 1 has no ice so nothing acts there.
 - Comparing C++ against Fortran is implementation against implementation; the
   reference-faithful C++ counterfactual, which would isolate the policy, is inside
   frozen code.

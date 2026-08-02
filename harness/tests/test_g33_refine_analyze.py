@@ -658,3 +658,25 @@ def test_the_two_ledgers_are_not_the_same_computation(tmp_path):
 
 def test_the_operator_ledger_needs_both_endpoints(tmp_path):
     assert ra.operator_ledger(ra.read(_write(tmp_path, _stream_fc()))) == {}
+
+
+def test_rain_is_the_TOTAL_and_snow_graupel_are_SUBSETS(tmp_path):
+    """F:1462-1464: fallsum sums all four species into `rain`, while `snow` is
+    fall(2)+fall(4) and `graupel` is fall(3) — components of it, not siblings.
+    Summing the three double-counts the frozen part. An earlier version of this
+    module did exactly that, and the resulting ~2x offset against the column water
+    budget was nearly written off as a convention difference."""
+    txt = _stream_fc().replace("G33R PREC 1 1 3F800000", "G33R PREC 1 1 40800000")
+    r = ra.read(_write(tmp_path, txt, "p.txt"))
+    assert ra.total_precip(r, 1) == pytest.approx(4.0)          # rain alone
+    assert ra._ice_fraction(r, 1) == pytest.approx(2.0 / 4.0)   # (snow+graupel)/total
+
+
+def test_the_total_is_never_the_sum_of_the_three(tmp_path):
+    """The bug, as a value: with rain=4, snow=1, graupel=1 the total is 4, not 6."""
+    txt = _stream_fc().replace("G33R PREC 1 1 3F800000", "G33R PREC 1 1 40800000")
+    r = ra.read(_write(tmp_path, txt, "t.txt"))
+    naive = sum(r[k] for k in r if k[0] == "prec" and k[2] == 1)
+    assert ra.total_precip(r, 1) == pytest.approx(4.0)
+    assert naive == pytest.approx(6.0), "precondition: the naive sum over-counts"
+    assert ra.total_precip(r, 1) != pytest.approx(naive)
