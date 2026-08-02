@@ -59,8 +59,12 @@ contains
     value = transfer(bits, value)
   end function f32
 
-  subroutine run_refined(im, km, nsplit, carry_aux, outF, precF, denO, delzO, piiO, inF)
-    integer, intent(in)  :: im, km, nsplit
+  subroutine run_refined(im, km, nsplit, ntile, carry_aux, outF, precF, denO, delzO, piiO, inF)
+    ! ntile splits the COLUMN range across separate kdm62D calls, the way a tile or
+    ! MPI decomposition would. A column-local operator must give the same answer for
+    ! any ntile; the pinned reference is not column-local (`ncmin` is a scalar
+    ! overwritten inside the column loop), so this measures what that costs.
+    integer, intent(in)  :: im, km, nsplit, ntile
     logical, intent(in)  :: carry_aux
     real,    intent(out) :: outF(im, km, NFLD_ST), precF(3, im)
     ! The kernel does not modify den/delz, but a rho*dz column budget needs them
@@ -77,7 +81,7 @@ contains
     real, dimension(1:im,1:km,3) :: qcik, qrsk, ncik, nrsk
     real, dimension(1:im,1:km)   :: n0so2d, n0go2d
     real :: dt_total, delt, ccn0, ncmin_land, ncmin_sea, qmin
-    integer :: i, k, kt, s
+    integer :: i, k, kt, s, tl, i0, i1
 
     if (im /= G33_B .or. km /= G33_K) error stop 'shared fixture dimensions differ'
     dt_total = f32(DT_BITS)
@@ -137,23 +141,30 @@ contains
       if (.not. carry_aux) then
         rhoxk = 0.0; cmgk = 0.0; n0so2d = 0.0; n0go2d = 0.0
       end if
-      call kdm62D(tk, qk, qcik, qrsk, ncik, nrsk, brsk, rhoxk, cmgk            &
-                 ,den, p, delz                                                 &
-                 ,delt, g, cp, cpv, ccn0, r_d, r_v, svpt0                      &
-                 ,ep_1, ep_2, qmin                                             &
-                 ,xls, xlv, xlf, rhoair0, rhowater                             &
-                 ,cliq, cice, psat                                             &
-                 ,1                                                            &
-                 ,xland(:,1)                                                   &
-                 ,ncmin_land, ncmin_sea                                        &
-                 ,rainF(:,1), rainncv(:,1)                                     &
-                 ,srF(:,1)                                                     &
-                 ,1,im, 1,1, 1,km                                              &
-                 ,1,im, 1,1, 1,km                                              &
-                 ,1,im, 1,1, 1,km, n0so2d, n0go2d                              &
-                 ,snowF(:,1), snowncv(:,1)                                     &
-                 ,graupelF(:,1), graupelncv(:,1)                               &
-                  )
+      do tl = 1, ntile
+        i0 = (tl - 1) * im / ntile + 1
+        i1 = tl * im / ntile
+        if (i1 < i0) cycle
+        call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
+                   ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
+                   ,rhoxk(i0:i1,:), cmgk(i0:i1,:)                                   &
+                   ,den(i0:i1,:), p(i0:i1,:), delz(i0:i1,:)                         &
+                   ,delt, g, cp, cpv, ccn0, r_d, r_v, svpt0                          &
+                   ,ep_1, ep_2, qmin                                                 &
+                   ,xls, xlv, xlf, rhoair0, rhowater                                 &
+                   ,cliq, cice, psat                                                 &
+                   ,1                                                                &
+                   ,xland(i0:i1,1)                                                   &
+                   ,ncmin_land, ncmin_sea                                            &
+                   ,rainF(i0:i1,1), rainncv(i0:i1,1)                                 &
+                   ,srF(i0:i1,1)                                                     &
+                   ,i0,i1, 1,1, 1,km                                                 &
+                   ,i0,i1, 1,1, 1,km                                                 &
+                   ,i0,i1, 1,1, 1,km, n0so2d(i0:i1,:), n0go2d(i0:i1,:)              &
+                   ,snowF(i0:i1,1), snowncv(i0:i1,1)                                 &
+                   ,graupelF(i0:i1,1), graupelncv(i0:i1,1)                           &
+                    )
+      end do
     end do
 
     do i = 1, im
@@ -204,12 +215,13 @@ program g33_refine_driver
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
   real :: inF(IM,KM,NFLD_ST)
   character(len=32) :: arg
-  integer :: nsplit, i, k, f, ios, loops_used
+  integer :: nsplit, ntile, i, k, f, ios, loops_used
   integer(int32) :: b
   logical :: carry_aux
   real :: delt_used, dtcld_used
 
-  if (command_argument_count() < 1) error stop 'usage: g33_refine_driver NSPLIT [carry]'
+  if (command_argument_count() < 1) &
+      error stop 'usage: g33_refine_driver NSPLIT [carry|rezero] [NTILE]'
   call get_command_argument(1, arg)
   read(arg, *, iostat=ios) nsplit
   if (ios /= 0 .or. nsplit < 1) error stop 'NSPLIT must be a positive integer'
@@ -227,8 +239,16 @@ program g33_refine_driver
   end if
 
   delt_used = f32(DT_BITS) / real(nsplit)
+  ntile = 1
+  if (command_argument_count() >= 3) then
+    call get_command_argument(3, arg)
+    read(arg, *, iostat=ios) ntile
+    if (ios /= 0 .or. ntile < 1 .or. ntile > IM) &
+        error stop 'NTILE must be an integer in 1..B'
+  end if
+
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
-  call run_refined(IM, KM, nsplit, carry_aux, outF, precF, denO, delzO, piiO, inF)
+  call run_refined(IM, KM, nsplit, ntile, carry_aux, outF, precF, denO, delzO, piiO, inF)
 
   ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
   ! intended: the sweep must refine dtcld, and a reader should be able to check

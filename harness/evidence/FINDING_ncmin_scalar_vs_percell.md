@@ -152,3 +152,50 @@ touches this code.
 
 No production change. `host/**` is frozen, this is a physics-behaviour question, and
 which of the two implementations is correct is not the harness's call.
+
+
+---
+
+# Tile decomposition, measured (owner review §6 acceptance gate)
+
+Column permutation is one of the four gates §6 asks for. The second is now
+measured: splitting the SAME columns across separate `kdm62D` calls, the way a tile
+or MPI decomposition does. `its:ite` is a call argument, so this is driver-side
+only and needs no production change — and it reaches the mechanism from a
+completely different direction than permuting the input.
+
+`boundary_mapping_v1` (xland 1, 2, 1 — the middle column is sea;
+ncmin_land = 1e8, ncmin_sea = 2.5e7), legacy, 300 s:
+
+| tiling | tile ranges | tile-end surface | cells differing from 1 tile |
+|---|---|---|---|
+| 1 | [1..3] | land | — |
+| 2 | [1..1] [2..3] | land, land | **0 / 144** |
+| 3 | [1..1] [2..2] [3..3] | land, **SEA**, land | **16 / 144** |
+
+All 16 are in **column 2**, and all twelve prognostics differ there — a whole-state
+difference, not a rounding one.
+
+The pattern is predicted exactly by the scalar mechanism. `ncmin` survives the
+column loop holding the LAST column's threshold, so what matters is the surface
+type at each tile's `ite`:
+
+* **1 tile** ends on column 3 (land), so every column is gated on `ncmin_land`.
+* **2 tiles** both end on land, so the gating is identical to one call — 0 cells
+  differ, and that agreement is **not** evidence of correctness. A test run only at
+  ntile=2 would pass vacuously.
+* **3 tiles** put the sea column at its own tile end, so that column alone is gated
+  on `ncmin_sea` instead. Exactly column 2 differs.
+
+This is what makes the result depend on tile size and MPI rank count: the same
+atmosphere, decomposed differently, gives a different answer in the coastal column.
+
+An earlier run of this test on `arithmetic_multisubcycle_v1` gave 0/144 at every
+tiling. That fixture is all-land (xland 1, 1, 1), so `ncmin` is identical for every
+column and the mechanism cannot fire — the result was vacuous and is not evidence.
+The test now carries a guard asserting the tiling moves a surface type to a tile
+end, matching the guard the permutation test already had.
+
+Still not covered from §6's four gates: **MPI rank count** (needs a parallel
+driver) and a **mixed coastal real case** (needs a real fixture). Tile size and
+column permutation are both measured and both fail.
