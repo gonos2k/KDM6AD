@@ -67,10 +67,16 @@ _STATE = re.compile(r"^G33R (STATE|INITIAL)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-F
 _PREC = re.compile(r"^G33R PREC\s+(\d+)\s+(\d+)\s+([0-9A-Fa-f]{8})$")
 _FORCING = re.compile(r"^G33R FORCING\s+(rho|delz|pii)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 
-#: Reported separately. A mass field and a number moment can converge at
+#: The water species, split by the phase the code's latent heats treat them as.
+#: MASS is derived, not restated: two copies of one species list is how a species
+#: gets added to only one of them.
+LIQUID = ("qc", "qr")
+ICE = ("qi", "qs", "qg")
+MASS = ("qv",) + LIQUID + ICE
+
+#: Reported separately from MASS. A mass field and a number moment can converge at
 #: different rates, and averaging them hides exactly the number-moment behaviour
 #: the conservative-nr blocker is about.
-MASS = ("qv", "qc", "qr", "qi", "qs", "qg")
 NUMBER = ("nc", "ni", "nr", "nccn")
 
 
@@ -242,11 +248,10 @@ GROUPS = ("th", "mass", "number", "prec")
 #: MIXING RATIOS and are set by one field at one cell, which migrates with
 #: resolution. These are the quantities conservation is actually about:
 #:
-#:     W_col   = sum_k rho_k dz_k (qv+qc+qr+qi+qs+qg)
+#:     W_col   = sum_k rho_k dz_k (qv+qc+qr+qi+qs+qg)   -- the MASS species
 #:     N_x,col = sum_k rho_k dz_k n_x
 #:
 #: Reported per column, so a budget error in one column is not diluted by the rest.
-_WATER = ("qv", "qc", "qr", "qi", "qs", "qg")
 
 
 def column_budgets(run: dict) -> dict:
@@ -261,34 +266,52 @@ def column_budgets(run: dict) -> dict:
         w = {k: run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
              for k in ks}
         out[("water", c)] = sum(
-            w[k] * sum(run[("state", f, c, k)] for f in _WATER) for k in ks)
+            w[k] * sum(run[("state", f, c, k)] for f in MASS) for k in ks)
         for n in ("nr", "ni", "nc", "nccn"):
             out[(n, c)] = sum(w[k] * run[("state", n, c, k)] for k in ks)
     return out
 
 
+def _halving_pairs(runs: dict) -> list:
+    """(coarse, fine) member pairs whose step actually halved."""
+    return [(n, 2 * n) for n in sorted(runs) if 2 * n in runs]
+
+
+def _order_table(runs: dict, title: str, head: str, rows) -> None:
+    """Successive orders p = log2(E_h / E_{h/2}) for labelled series.
+
+    `rows` yields (label, err) with `err(lo, hi)` the difference between two
+    members — a max norm over cells for one caller, a column integral for the
+    other, which is why the error function is the interface. A dash where either
+    error is exactly zero: bit-identical members are the absence of a rate, not a
+    rate of zero. All-dash rows carry no signal and are not printed.
+    """
+    pairs = _halving_pairs(runs)
+    print(f"\n  {title}")
+    print(f"    {head}" + "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13)
+                                    for lo, _ in pairs[:-1]))
+    for label, err in rows:
+        cells = []
+        for i, (lo, hi) in enumerate(pairs[:-1]):
+            e, e2 = err(lo, hi), err(hi, pairs[i + 1][1])
+            cells.append("      -      " if e == 0 or e2 == 0
+                         else f"{math.log2(e / e2):+13.3f}")
+        if any(c.strip() != "-" for c in cells):
+            print(f"    {label} " + "  ".join(cells))
+
+
 def budget_report(runs: dict) -> None:
-    ns = sorted(runs)
-    b = {n: column_budgets(runs[n]) for n in ns}
-    if not b[ns[0]]:
+    b = {n: column_budgets(runs[n]) for n in sorted(runs)}
+    if not b[min(b)]:
         print("\n  column budgets: forcing not present in this stream set")
         return
-    pairs = [(n, 2 * n) for n in ns if 2 * n in runs]
-    quantities = sorted({q for q, _ in b[ns[0]]})
-    cols = sorted({c for _, c in b[ns[0]]})
-    print("\n  rho*dz column budgets — successive order per column")
-    hdr = "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13) for lo, _ in pairs[:-1])
-    print(f"    {'quantity':10} {'col':>3} {hdr}")
-    for q in quantities:
-        for c in cols:
-            row = []
-            for i, (lo, hi) in enumerate(pairs[:-1]):
-                e = abs(b[lo][(q, c)] - b[hi][(q, c)])
-                e2 = abs(b[hi][(q, c)] - b[pairs[i + 1][1]][(q, c)])
-                row.append("      -      " if e == 0 or e2 == 0
-                           else f"{math.log2(e / e2):+13.3f}")
-            if any(x.strip() != "-" for x in row):
-                print(f"    {q:10} {c:3d} " + "  ".join(row))
+    keys = sorted(b[min(b)])                       # (quantity, column)
+    _order_table(
+        runs, "rho*dz column budgets — successive order per column",
+        f"{'quantity':10} {'col':>3} ",
+        ((f"{q:10} {c:3d}",
+          lambda lo, hi, q=q, c=c: abs(b[lo][(q, c)] - b[hi][(q, c)]))
+         for q, c in keys))
 
 
 def successive(runs: dict) -> dict:
@@ -371,31 +394,25 @@ def per_field(runs: dict) -> None:
     order stalls at +0.018 while `qv` stays near 1 -- two different behaviours
     averaged into one number.
     """
-    ns = sorted(runs)
-    pairs = [(n, 2 * n) for n in ns if 2 * n in runs]
-    print("\n  per-field successive order")
-    fields = sorted({k[1] for k in runs[ns[0]] if k[0] == "state"})
-    hdr = "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13) for lo, _ in pairs[:-1])
-    print(f"    {'field':6} {hdr}")
-    for f in fields:
-        row = []
-        for i, (lo, hi) in enumerate(pairs[:-1]):
-            k = [x for x in runs[lo] if x[0] == "state" and x[1] == f]
-            e = _norm(runs[lo], runs[hi], k)
-            e2 = _norm(runs[hi], runs[pairs[i + 1][1]], k)
-            row.append("      -      " if e == 0 or e2 == 0
-                       else f"{math.log2(e / e2):+13.3f}")
-        if any(c.strip() != "-" for c in row):
-            print(f"    {f:6} " + "  ".join(row))
+    first = runs[min(runs)]
+    fields = sorted({k[1] for k in first if k[0] == "state"})
+    _order_table(
+        runs, "per-field successive order", f"{'field':6} ",
+        ((f"{f:6}",
+          lambda lo, hi, f=f: _norm(runs[lo], runs[hi],
+                                    [x for x in runs[lo]
+                                     if x[0] == "state" and x[1] == f]))
+         for f in fields))
+
     print("\n  cell setting each group max (a moving cell makes the group order "
           "partly a record of the move)")
     for g in GROUPS:
         if g == "prec":
             continue
         trail = []
-        for lo, hi in pairs:
-            k = _keys(runs[lo], g)
-            _, best = max((abs(runs[lo][x] - runs[hi][x]), x) for x in k)
+        for lo, hi in _halving_pairs(runs):
+            _, best = max((abs(runs[lo][x] - runs[hi][x]), x)
+                          for x in _keys(runs[lo], g))
             trail.append(f"{best[1]}/c{best[2]}k{best[3]}")
         print(f"    {g:7} " + " -> ".join(trail))
 
@@ -429,7 +446,7 @@ def topology(run: dict) -> dict:
     for c, k in cells:
         t = run[("state", "th", c, k)] * run[("forcing", "pii", c, k)]
         out[("cold", c, k)] = t <= T0C
-        for f in _WATER + ("nr", "ni", "nc"):
+        for f in MASS + ("nr", "ni", "nc"):
             out[(f, c, k)] = abs(run[("state", f, c, k)]) > _PRESENCE_EPS
     return out
 
@@ -466,10 +483,6 @@ XLV, XLF, XLS = 2.5e6, 3.5e5, 2.85e6     # F:55, F:56, F:54
 # XLS - XLV == XLF exactly, so the set is self-consistent at T0 and the reference
 # enthalpies below cannot disagree with the code's own latent heats at T0.
 
-_LIQUID = ("qc", "qr")
-_ICE = ("qi", "qs", "qg")
-
-
 def _enthalpies(t: float) -> tuple:
     """Specific enthalpy of each phase at T, referenced to T0 = 273.15 K.
 
@@ -486,19 +499,15 @@ def _enthalpies(t: float) -> tuple:
     return CPD * dt, CPV * dt + XLV, CLIQ * dt, CICE * dt - XLF
 
 
-def enthalpy_ledger(run: dict) -> dict:
-    """Column moist-enthalpy residual per column, or {} if endpoints are missing.
+def _ledger(run: dict, h_cell, h_precip_out) -> dict:
+    """Per-column residual of a conserved potential:
 
-        H_col = sum_k rho_k dz_k [ h_d + qv h_v + ql h_l + qi h_i ]
         residual = (H_end - H_start) + H carried out by precipitation
 
-    With no external forcing in this fixture the residual should be zero.
-
-    Approximations, stated because they bound what the number means: mixing ratios
-    are treated as per unit dry air while rho is moist density, and the
-    precipitation flux is evaluated at the bottom-level temperature. Both are
-    common to every leg, so a COMPARISON of residuals between policies is
-    meaningful even where the absolute value is not.
+    Zero with no external forcing. The two ledgers differ ONLY in `h_cell` (specific
+    enthalpy at a cell) and `h_precip_out` (what departing precipitation takes);
+    the guard, the rho*dz integral and the bookkeeping are shared, so the two
+    physics definitions sit side by side and can be compared by reading them.
     """
     if not any(k[0] == "initial" for k in run) or \
        not any(k[0] == "forcing" and k[1] == "pii" for k in run):
@@ -509,32 +518,51 @@ def enthalpy_ledger(run: dict) -> dict:
         ks = sorted(k for cc, k in cells if cc == c)
 
         def H(cls):
-            tot = 0.0
-            for k in ks:
-                pii = run[("forcing", "pii", c, k)]
-                t = run[(cls, "th", c, k)] * pii
-                hd, hv, hl, hi = _enthalpies(t)
-                w = run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
-                tot += w * (hd
-                            + run[(cls, "qv", c, k)] * hv
-                            + sum(run[(cls, f, c, k)] for f in _LIQUID) * hl
-                            + sum(run[(cls, f, c, k)] for f in _ICE) * hi)
-            return tot
+            return sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+                       * h_cell(run, cls, c, k) for k in ks)
 
+        # `pii` increases downward, so the larger one is the bottom level.
         kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
             run[("forcing", "pii", c, ks[-1])] else ks[0]
-        tbot = run[("state", "th", c, kbot)] * run[("forcing", "pii", c, kbot)]
-        _, _, hl, hi = _enthalpies(tbot)
-        # precipitation is mm == kg/m^2 of water reaching the surface
-        rain = run[("prec", 1, c)]
-        ice = run[("prec", 2, c)] + run[("prec", 3, c)]
-        out[c] = {"dH": H("state") - H("initial"),
-                  "H_precip_out": rain * hl + ice * hi,
-                  "H_start": H("initial")}
-        out[c]["residual"] = out[c]["dH"] + out[c]["H_precip_out"]
-        out[c]["relative"] = (out[c]["residual"] / abs(out[c]["H_start"])
-                              if out[c]["H_start"] else float("nan"))
+        h_start = H("initial")
+        d = {"dH": H("state") - h_start,
+             "H_precip_out": h_precip_out(run, c, kbot),
+             "H_start": h_start}
+        d["residual"] = d["dH"] + d["H_precip_out"]
+        d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
+        out[c] = d
     return out
+
+
+def _t(run: dict, cls: str, c: int, k: int) -> float:
+    return run[(cls, "th", c, k)] * run[("forcing", "pii", c, k)]
+
+
+def _h_consistent(run, cls, c, k) -> float:
+    """h = h_d + qv h_v + ql h_l + qi h_i, per-phase heat capacities (§8.2)."""
+    hd, hv, hl, hi = _enthalpies(_t(run, cls, c, k))
+    return (hd + run[(cls, "qv", c, k)] * hv
+            + sum(run[(cls, f, c, k)] for f in LIQUID) * hl
+            + sum(run[(cls, f, c, k)] for f in ICE) * hi)
+
+
+def _precip_consistent(run, c, kbot) -> float:
+    """Rain leaves as liquid, snow and graupel as ice, at the bottom-level T.
+    Precipitation is mm == kg/m^2 reaching the surface."""
+    _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
+    return run[("prec", 1, c)] * hl + (run[("prec", 2, c)] + run[("prec", 3, c)]) * hi
+
+
+def enthalpy_ledger(run: dict) -> dict:
+    """Residual against CONSISTENT thermodynamics (owner review §8.2).
+
+    Approximations, stated because they bound what the number means: mixing ratios
+    are treated as per unit dry air while rho is moist density, and the
+    precipitation flux is evaluated at the bottom-level temperature. Both are
+    common to every leg, so a COMPARISON of residuals between policies is
+    meaningful even where the absolute value is not.
+    """
+    return _ledger(run, _h_consistent, _precip_consistent)
 
 
 # ── operator-consistency ledger (owner review §8.1) ──────────────────────────
@@ -567,19 +595,31 @@ def _code_coeffs(t: float, qv: float, qmin: float = 1.0e-32) -> tuple:
     return cpm, xl, XLS - xl
 
 
+def _h_code(run, cls, c, k) -> float:
+    """h_op = cpm(qv)(T-T0) + xl(T) qv - xlf(T) q_ice — the code's own potential.
+
+    Its heat updates all have the form `cpm dT = L dq`, so a conversion leaves this
+    flat: vapour->liquid gives `cpm dT + xl dqv = 0`, liquid->ice gives
+    `cpm dT - xlf dq_ice = 0`. Liquid's coefficient is zero because the code applies
+    no latent heat to it.
+    """
+    t = _t(run, cls, c, k)
+    qv = run[(cls, "qv", c, k)]
+    cpm, xl, xlf = _code_coeffs(t, qv)
+    return cpm * (t - T0C) + xl * qv - xlf * sum(run[(cls, f, c, k)] for f in ICE)
+
+
+def _precip_code(run, c, kbot) -> float:
+    """Sedimentation removes mass with no temperature change, so departing ice
+    carries -xlf out and departing rain carries nothing -- the same convention the
+    code's own updates imply."""
+    _, _, xlf = _code_coeffs(_t(run, "state", c, kbot),
+                             run[("state", "qv", c, kbot)])
+    return (run[("prec", 2, c)] + run[("prec", 3, c)]) * -xlf
+
+
 def operator_ledger(run: dict) -> dict:
-    """Column residual of the potential the CODE's own heat updates conserve.
-
-        h_op = cpm(qv) (T-T0) + xl(T) qv - xlf(T) q_ice
-
-    Each of the code's updates has the form `t += (L/cpm) dq`, i.e.
-    `cpm dT = L dq`, so a conversion leaves h_op unchanged: vapour->liquid gives
-    `cpm dT + xl dqv = 0`, liquid->ice gives `cpm dT - xlf dq_ice = 0`. Liquid
-    carries coefficient zero because the code applies no latent heat to it.
-
-    Sedimentation removes mass without a temperature change, so departing ice
-    carries -xlf out and departing rain carries nothing — the same convention the
-    code's own updates imply.
+    """Residual against the code's OWN equations (owner review §8.1).
 
     xl/xlf are evaluated at the LOCAL temperature for every leg. The reference
     holds them at the kernel-entry value and the port refreshes them per sub-cycle;
@@ -587,58 +627,28 @@ def operator_ledger(run: dict) -> dict:
     policy's choice, and the difference between conventions is the very thing under
     test.
     """
-    if not any(k[0] == "initial" for k in run) or \
-       not any(k[0] == "forcing" and k[1] == "pii" for k in run):
-        return {}
-    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
-    out = {}
-    for c in sorted({x for x, _ in cells}):
-        ks = sorted(k for cc, k in cells if cc == c)
-
-        def H(cls):
-            tot = 0.0
-            for k in ks:
-                t = run[(cls, "th", c, k)] * run[("forcing", "pii", c, k)]
-                qv = run[(cls, "qv", c, k)]
-                cpm, xl, xlf = _code_coeffs(t, qv)
-                qi = sum(run[(cls, f, c, k)] for f in _ICE)
-                w = run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
-                tot += w * (cpm * (t - T0C) + xl * qv - xlf * qi)
-            return tot
-
-        kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
-            run[("forcing", "pii", c, ks[-1])] else ks[0]
-        tbot = run[("state", "th", c, kbot)] * run[("forcing", "pii", c, kbot)]
-        _, _, xlf_b = _code_coeffs(tbot, run[("state", "qv", c, kbot)])
-        ice_out = run[("prec", 2, c)] + run[("prec", 3, c)]
-        d = {"dH": H("state") - H("initial"),
-             "H_precip_out": ice_out * (-xlf_b),
-             "H_start": H("initial")}
-        d["residual"] = d["dH"] + d["H_precip_out"]
-        d["relative"] = d["residual"] / abs(d["H_start"]) if d["H_start"] else float("nan")
-        out[c] = d
-    return out
+    return _ledger(run, _h_code, _precip_code)
 
 
 def ledger_report(runs: dict) -> None:
+    """Both ledgers, one table shape, different physics — the point of running two:
+    §8.2 asks whether the code agrees with consistent thermodynamics, §8.1 whether
+    it agrees with its own equations, and they can disagree."""
     ns = sorted(runs)
-    L = {n: enthalpy_ledger(runs[n]) for n in ns}
-    if not L[ns[0]]:
-        print("\n  enthalpy ledger: initial state or `pii` missing")
-        return
-    print("\n  moist-enthalpy column residual   (dH + H_precip_out; zero if closed)")
-    print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} {'relative':>12}")
-    for n in ns:
-        for c in sorted(L[n]):
-            d = L[n][c]
-            print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} {d['relative']:12.3e}")
-    O = {n: operator_ledger(runs[n]) for n in ns}
-    if O[ns[0]]:
-        print("\n  OPERATOR-consistency residual   (code's own cpm/xl; §8.1)")
+    for title, ledger in (
+            ("moist-enthalpy column residual   (dH + H_precip_out; zero if closed)",
+             enthalpy_ledger),
+            ("OPERATOR-consistency residual   (code's own cpm/xl; §8.1)",
+             operator_ledger)):
+        L = {n: ledger(runs[n]) for n in ns}
+        if not L[ns[0]]:
+            print("\n  ledger: initial state or `pii` missing")
+            return
+        print(f"\n  {title}")
         print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} {'relative':>12}")
         for n in ns:
-            for c in sorted(O[n]):
-                d = O[n][c]
+            for c in sorted(L[n]):
+                d = L[n][c]
                 print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} "
                       f"{d['relative']:12.3e}")
 

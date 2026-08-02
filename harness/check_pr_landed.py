@@ -10,73 +10,46 @@ The state to trust is ancestry:
 
     git merge-base --is-ancestor <PR head sha> origin/main
 
-A stacked PR is a reasonable thing to open -- it keeps a review focused on one
+A stacked PR is a reasonable thing to open — it keeps a review focused on one
 change. What is not reasonable is leaving it stacked once its base lands, because
-at that point the parent branch stops moving and the child's commits are stranded
-on a branch nothing merges again.
+at that point the parent branch stops moving and the child's commits are stranded.
 
-Exit 0 only if every PR checked is an ancestor of main.
+    python harness/check_pr_landed.py 98 99 100      # exit 1 if any is stranded
 """
-from __future__ import annotations
-
 import json
 import subprocess
 import sys
 
-
-def _run(*a) -> str:
-    return subprocess.run(a, capture_output=True, text=True).stdout.strip()
-
-
-def landed(sha: str, ref: str = "origin/main") -> bool:
-    return subprocess.run(("git", "merge-base", "--is-ancestor", sha, ref),
-                          capture_output=True).returncode == 0
-
-
-def check(numbers, ref: str = "origin/main") -> list:
-    out = []
-    for n in numbers:
-        raw = _run("gh", "pr", "view", str(n), "--json",
-                   "number,state,baseRefName,headRefOid,title")
-        if not raw:
-            out.append({"pr": n, "error": "could not read PR"})
-            continue
-        d = json.loads(raw)
-        out.append({
-            "pr": d["number"], "state": d["state"], "base": d["baseRefName"],
-            "head": d["headRefOid"], "title": d["title"],
-            # A CLOSED-but-not-merged PR is not stranded, it was abandoned; only
-            # MERGED carries the false assurance this exists to catch.
-            "landed": landed(d["headRefOid"], ref) if d["state"] == "MERGED" else None,
-        })
-    return out
+REF = "origin/main"
 
 
 def main(argv) -> int:
     if not argv:
         print(__doc__)
         return 2
-    ref = "origin/main"
-    nums = [int(a) for a in argv if a.isdigit()]
-    rows = check(nums, ref)
-    bad = 0
-    for r in rows:
-        if "error" in r:
-            print(f"PR #{r['pr']}: {r['error']}")
-            bad += 1
+    stranded = 0
+    for n in (a for a in argv if a.isdigit()):
+        raw = subprocess.run(
+            ("gh", "pr", "view", n, "--json", "number,state,baseRefName,headRefOid"),
+            capture_output=True, text=True).stdout.strip()
+        if not raw:
+            print(f"PR #{n}: could not read PR")
+            stranded += 1
             continue
-        if r["state"] != "MERGED":
-            print(f"PR #{r['pr']}: {r['state']} (not merged; nothing to check)")
-            continue
-        if r["landed"]:
-            print(f"PR #{r['pr']}: LANDED on {ref}  (base was {r['base']})")
+        pr = json.loads(raw)
+        # A CLOSED-but-not-merged PR is not stranded, it was abandoned. Only MERGED
+        # carries the false assurance this exists to catch.
+        if pr["state"] != "MERGED":
+            print(f"PR #{n}: {pr['state']} (not merged; nothing to check)")
+        elif subprocess.run(("git", "merge-base", "--is-ancestor",
+                             pr["headRefOid"], REF), capture_output=True).returncode == 0:
+            print(f"PR #{n}: LANDED on {REF}  (base was {pr['baseRefName']})")
         else:
-            bad += 1
-            print(f"PR #{r['pr']}: *** MERGED BUT NOT LANDED *** "
-                  f"-- merged into {r['base']}, and {r['head'][:12]} is not an "
-                  f"ancestor of {ref}. Rebase onto {ref} and open a "
-                  f"{ref.split('/')[-1]}-target PR.")
-    return 1 if bad else 0
+            stranded += 1
+            print(f"PR #{n}: *** MERGED BUT NOT LANDED *** — merged into "
+                  f"{pr['baseRefName']}, and {pr['headRefOid'][:12]} is not an "
+                  f"ancestor of {REF}. Rebase onto {REF} and open a main-target PR.")
+    return 1 if stranded else 0
 
 
 if __name__ == "__main__":
