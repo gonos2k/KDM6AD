@@ -90,13 +90,14 @@ torch::Tensor tensor1(const std::vector<float>& v) {
                             torch::kFloat32).clone();
 }
 
-void emit(const char* name, const torch::Tensor& value, int64_t B, int64_t K) {
+void emit(const char* name, const torch::Tensor& value, int64_t B, int64_t K,
+          const char* cls = "STATE") {
     auto t = value.detach().to(torch::kFloat32).contiguous().cpu().view({B, K});
     const float* p = t.data_ptr<float>();
     std::cout << std::hex << std::setfill('0');
     for (int64_t b = 0; b < B; ++b)
         for (int64_t k = 0; k < K; ++k)
-            std::cout << "G33R STATE " << std::dec << name << " " << (b + 1) << " "
+            std::cout << "G33R " << cls << " " << std::dec << name << " " << (b + 1) << " "
                       << k << " " << std::hex << std::setw(8)
                       << bits_from_f32(p[b * K + k]) << "\n";
     std::cout << std::dec << std::setfill(' ');
@@ -258,6 +259,8 @@ int main(int argc, char** argv) {
                                         "nccn", "nc", "ni", "nr", "bg"};
         auto fields = s.fields();
         for (int i = 0; i < 12; ++i) emit(names[i], *fields[i], fx::B, fx::K);
+        emit("rho", f.rho, fx::B, fx::K, "FORCING");
+        emit("delz", f.delz, fx::B, fx::K, "FORCING");
         emit_prec(1, rain, fx::B);
         emit_prec(2, snow, fx::B);
         emit_prec(3, graupel, fx::B);

@@ -65,6 +65,7 @@ from pathlib import Path
 
 _STATE = re.compile(r"^G33R STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33R PREC\s+(\d+)\s+(\d+)\s+([0-9A-Fa-f]{8})$")
+_FORCING = re.compile(r"^G33R FORCING\s+(rho|delz)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 
 #: Reported separately. A mass field and a number moment can converge at
 #: different rates, and averaging them hides exactly the number-moment behaviour
@@ -141,6 +142,9 @@ def read(path: Path, *, nsplit=None) -> dict:
         elif m := _PREC.match(ln):
             f, i, b = m.groups()
             key = ("prec", int(f), int(i))
+        elif m := _FORCING.match(ln):
+            nm, i, k, b = m.groups()
+            key = ("forcing", nm, int(i), int(k))
         else:
             raise RefineError(f"{path}: unrecognised G33R record: {ln!r}")
         _expect(key not in seen,
@@ -152,6 +156,7 @@ def read(path: Path, *, nsplit=None) -> dict:
                 f"non-finite value at {key}", path)
         out[key] = v
 
+    fo = [k for k in out if k[0] == "forcing"]
     st = [k for k in out if k[0] == "state"]
     pr = [k for k in out if k[0] == "prec"]
     fields = {k[1] for k in st}
@@ -165,6 +170,15 @@ def read(path: Path, *, nsplit=None) -> dict:
     cols = {k[2] for k in pr}
     _expect(len(pr) == 3 * len(cols),
             f"prec records {len(pr)} != 3 species x {len(cols)} columns", path)
+    # rho/delz are optional so streams from before they were emitted still parse,
+    # but if either is present BOTH must be complete -- a half-populated forcing
+    # set would silently drop columns from a physical budget.
+    if fo:
+        for nm in ("rho", "delz"):
+            got = {(k[2], k[3]) for k in fo if k[1] == nm}
+            _expect(got == cells,
+                    f"forcing `{nm}` covers {len(got)} cells, state covers "
+                    f"{len(cells)}", path)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo
@@ -219,6 +233,58 @@ def _keys(run, group):
 
 
 GROUPS = ("th", "mass", "number", "prec")
+
+#: Physical column budgets (owner review §7). The grouped max norms above are over
+#: MIXING RATIOS and are set by one field at one cell, which migrates with
+#: resolution. These are the quantities conservation is actually about:
+#:
+#:     W_col   = sum_k rho_k dz_k (qv+qc+qr+qi+qs+qg)
+#:     N_x,col = sum_k rho_k dz_k n_x
+#:
+#: Reported per column, so a budget error in one column is not diluted by the rest.
+_WATER = ("qv", "qc", "qr", "qi", "qs", "qg")
+
+
+def column_budgets(run: dict) -> dict:
+    """{(quantity, col): rho*dz-weighted column integral}, or {} without forcing."""
+    if not any(k[0] == "forcing" for k in run):
+        return {}
+    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
+    cols = sorted({c for c, _ in cells})
+    out = {}
+    for c in cols:
+        ks = sorted(k for cc, k in cells if cc == c)
+        w = {k: run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+             for k in ks}
+        out[("water", c)] = sum(
+            w[k] * sum(run[("state", f, c, k)] for f in _WATER) for k in ks)
+        for n in ("nr", "ni", "nc", "nccn"):
+            out[(n, c)] = sum(w[k] * run[("state", n, c, k)] for k in ks)
+    return out
+
+
+def budget_report(runs: dict) -> None:
+    ns = sorted(runs)
+    b = {n: column_budgets(runs[n]) for n in ns}
+    if not b[ns[0]]:
+        print("\n  column budgets: forcing not present in this stream set")
+        return
+    pairs = [(n, 2 * n) for n in ns if 2 * n in runs]
+    quantities = sorted({q for q, _ in b[ns[0]]})
+    cols = sorted({c for _, c in b[ns[0]]})
+    print("\n  rho*dz column budgets — successive order per column")
+    hdr = "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13) for lo, _ in pairs[:-1])
+    print(f"    {'quantity':10} {'col':>3} {hdr}")
+    for q in quantities:
+        for c in cols:
+            row = []
+            for i, (lo, hi) in enumerate(pairs[:-1]):
+                e = abs(b[lo][(q, c)] - b[hi][(q, c)])
+                e2 = abs(b[hi][(q, c)] - b[pairs[i + 1][1]][(q, c)])
+                row.append("      -      " if e == 0 or e2 == 0
+                           else f"{math.log2(e / e2):+13.3f}")
+            if any(x.strip() != "-" for x in row):
+                print(f"    {q:10} {c:3d} " + "  ".join(row))
 
 
 def successive(runs: dict) -> dict:
@@ -344,6 +410,7 @@ def main(argv) -> int:
     require_same_universe(runs)
     report(runs, d.name)
     per_field(runs)
+    budget_report(runs)
     return 0
 
 

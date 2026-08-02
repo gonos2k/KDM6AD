@@ -420,3 +420,51 @@ def test_compute_loops_max_matches_the_fortran_rule():
     for delt in (12.5, 25.0, 50.0, 100.0, 150.0, 175.0, 300.0):
         assert cpp(delt) == max(int(delt / 120.0 + 0.5), 1)
     assert cpp(300.0) == 3 and cpp(100.0) == 1
+
+
+# ── physical column budgets (owner review §7) ────────────────────────────────
+
+def _stream_fc(nsplit=3, B=2, K=2, rho="3F800000", delz="3F800000"):
+    """A stream carrying forcing, so a rho*dz budget can be formed."""
+    body = _stream(nsplit=nsplit, B=B, K=K).splitlines()
+    extra = [f"G33R FORCING {n} {i} {k} {v}"
+             for n, v in (("rho", rho), ("delz", delz))
+             for i in range(1, B + 1) for k in range(K)]
+    return "\n".join(body[:-1] + extra + [body[-1]]) + "\n"
+
+
+def test_a_budget_needs_forcing_and_says_so_without_it(tmp_path):
+    """Optional so older streams still parse -- but silently reporting an empty
+    budget as if it were a converged one would be worse than saying nothing."""
+    assert ra.column_budgets(ra.read(_write(tmp_path, _stream()))) == {}
+
+
+def test_forcing_must_cover_the_same_cells_as_the_state(tmp_path):
+    """A half-populated forcing set drops columns from the budget, and a column
+    integral missing a level is smaller -- the flattering direction again."""
+    txt = _stream_fc().replace("G33R FORCING rho 1 0 3F800000\n", "")
+    with pytest.raises(ra.RefineError, match="forcing"):
+        ra.read(_write(tmp_path, txt))
+
+
+def test_the_budget_is_rho_dz_weighted(tmp_path):
+    """With rho = delz = 1 the weight is 1, so the column water budget is the plain
+    sum of the six species over levels -- 6 species x 2 levels x 1.0."""
+    r = ra.read(_write(tmp_path, _stream_fc()))
+    b = ra.column_budgets(r)
+    assert b[("water", 1)] == pytest.approx(12.0)
+    assert b[("nr", 1)] == pytest.approx(2.0)
+
+
+def test_the_weight_actually_multiplies(tmp_path):
+    """rho = 2, delz = 4 -> weight 8. Guards against the weight being dropped,
+    which would make the 'physical' budget the mixing-ratio sum again."""
+    r = ra.read(_write(tmp_path, _stream_fc(rho="40000000", delz="40800000")))
+    assert ra.column_budgets(r)[("water", 1)] == pytest.approx(96.0)
+
+
+def test_budgets_are_reported_per_column_not_summed(tmp_path):
+    """A budget error in one column must not be diluted by the others -- on this
+    fixture column 3 behaves quite differently from column 1."""
+    b = ra.column_budgets(ra.read(_write(tmp_path, _stream_fc(B=3))))
+    assert {c for q, c in b if q == "water"} == {1, 2, 3}

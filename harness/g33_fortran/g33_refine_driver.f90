@@ -59,10 +59,14 @@ contains
     value = transfer(bits, value)
   end function f32
 
-  subroutine run_refined(im, km, nsplit, carry_aux, outF, precF)
+  subroutine run_refined(im, km, nsplit, carry_aux, outF, precF, denO, delzO)
     integer, intent(in)  :: im, km, nsplit
     logical, intent(in)  :: carry_aux
     real,    intent(out) :: outF(im, km, NFLD_ST), precF(3, im)
+    ! The kernel does not modify den/delz, but a rho*dz column budget needs them
+    ! paired with the state in the SAME k convention, and re-deriving them in the
+    ! analyzer from the fixture would be a second source that could drift.
+    real,    intent(out) :: denO(im, km), delzO(im, km)
     real, dimension(1:im,1:km) :: den, pii, p, delz
     real, dimension(1:im,1:1)  :: xland, rainF, rainncv, snowF, snowncv
     real, dimension(1:im,1:1)  :: srF, graupelF, graupelncv
@@ -157,6 +161,7 @@ contains
     ! structure reported as a difference in the operator. The decision driver reads
     ! ncv correctly because it makes exactly one call.
     precF(1,:) = rainF(:,1); precF(2,:) = snowF(:,1); precF(3,:) = graupelF(:,1)
+    denO = den; delzO = delz
   end subroutine run_refined
 
   subroutine emit_fld(name, i, k, v)
@@ -182,7 +187,7 @@ program g33_refine_driver
   use, intrinsic :: iso_fortran_env, only: int32
   implicit none
   integer, parameter :: IM = G33_B, KM = G33_K
-  real :: outF(IM,KM,NFLD_ST), precF(3,IM)
+  real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM)
   character(len=32) :: arg
   integer :: nsplit, i, k, f, ios, loops_used
   integer(int32) :: b
@@ -208,7 +213,7 @@ program g33_refine_driver
 
   delt_used = f32(DT_BITS) / real(nsplit)
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
-  call run_refined(IM, KM, nsplit, carry_aux, outF, precF)
+  call run_refined(IM, KM, nsplit, carry_aux, outF, precF, denO, delzO)
 
   ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
   ! intended: the sweep must refine dtcld, and a reader should be able to check
@@ -224,6 +229,14 @@ program g33_refine_driver
       do i = 1, IM
         call emit_fld(FLDNAME(f), i, KM-k, outF(i,k,f))
       end do
+    end do
+  end do
+  do k = 1, KM
+    do i = 1, IM
+      b = transfer(denO(i,k), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'rho', i, KM-k, b
+      b = transfer(delzO(i,k), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'delz', i, KM-k, b
     end do
   end do
   do f = 1, 3

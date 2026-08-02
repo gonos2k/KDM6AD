@@ -132,6 +132,49 @@ and cloud water in the cold column, which is where discrete thresholds live. Tha
 is consistent with the branch-topology caution below and is not further diagnosed:
 no per-member topology record exists.
 
+## The physical column budgets say something different again
+
+Owner review §7: the grouped norms above are max norms over **mixing ratios**, with
+no ρΔz weighting and a max cell that migrates. The quantities conservation is
+actually about are the column integrals, and both drivers now emit `rho`/`delz` so
+they can be formed against the state in the same k convention rather than
+re-derived from the fixture by a second path that could drift.
+
+    W_col   = Σ_k ρ_k Δz_k (q_v+q_c+q_r+q_i+q_s+q_g)
+    N_x,col = Σ_k ρ_k Δz_k n_x
+
+Successive order, per column:
+
+| quantity | col | 100→50 | 50→25 | 25→12.5 | 12.5→6.25 |
+|---|---|---|---|---|---|
+| **water** | 1 | +1.969 | +1.002 | +1.000 | **+1.002** |
+| **water** | 2 | +1.376 | +0.582 | +2.420 | +0.066 |
+| **water** | 3 | −5.860 | +3.884 | −1.017 | +0.407 |
+| `nccn` | 1 | +0.638 | +0.956 | +0.981 | **+0.990** |
+| `nccn` | 2 | +0.539 | +0.843 | +0.943 | **+0.956** |
+| `ni` | 3 | +1.173 | +0.799 | +1.461 | +0.863 |
+| `nc` | 3 | +2.345 | +4.989 | +0.802 | **−5.184** |
+
+Reported per column rather than summed, so a budget error in one column is not
+diluted by the rest.
+
+**Column water converges cleanly at first order in column 1 and not at all in
+column 3.** Column 2 is in between and does not settle. `nccn` approaches first
+order from below in both columns that carry it. `nc` in column 3 has no order.
+
+`nr` does not appear: its column budget is bit-identical across every member, which
+is the same fact the call-boundary control found from the other side — the
+sedimentation interface never touches `nr` on this fixture.
+
+**Column 3 is where everything is ill-behaved** — the mixing-ratio orders for `qc`,
+`qi`, `qs` and `bg`, the column water budget, and `nc`. It is the cold column
+(242–244 K), it is where the G3.3 seed cell is, and it is where the conservative
+call-boundary sensitivity lives. Three separate experiments land on the same three
+cells. The common feature is that this is where the phase branches and hydrometeor
+thresholds are active, which is precisely the condition under which a classical
+order stops being meaningful — and the topology record that would confirm it is
+still not built.
+
 ## What may and may not be said about convergence
 
 Established: **selected max norms of a synthetic fixture decreased monotonically
