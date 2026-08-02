@@ -43,6 +43,26 @@ an in-order subsequence of the rebuilt one, so **every committed record
 reproduces bit-identically**. The 180 additions are 144 `INITIAL` and 36
 `FORCING` records that the driver gained after those streams were written.
 
+### The rebuild is byte-identical to a bundle built 7.5 hours earlier
+
+The refreshed streams were then compared against `kdm6ad-g33m-refine/budget/`,
+a separately-compiled bundle over the same six members:
+
+| | n3 | n6 | n12 | n24 | n48 | n96 |
+|---|---|---|---|---|---|---|
+| sha256 equal | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ |
+
+Two builds, 11:25 and 18:57, separate compilations — **all six outputs
+byte-identical**. `ledger-f/` (a 3-member bundle) agrees on its overlap. So the
+Fortran refinement leg is **bit-reproducible across builds**, and every ρΔz
+column-budget order STATUS cites for this experiment (col 1 `+1.002`; col 3
+`−5.860, +3.884, −1.017, +0.407`) reproduces exactly from the fresh build.
+
+Scope: same host, same compiler, same source. This is build determinism, not
+cross-host reproducibility.
+
+### Refreshing the bundle
+
 The bundle was refreshed to the rebuilt streams. That is not a cosmetic change:
 without `FORCING` there is no ρΔz, so the old streams could not support the
 column water budget, the moist-enthalpy and operator ledgers, or the fallout

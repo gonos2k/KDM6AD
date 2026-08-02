@@ -140,6 +140,11 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   from a clean tree at `29c5119`, all six members reproduce with an **insertion-only
   diff (0 removed, 0 changed, 180 added)**: every committed record is bit-identical,
   and the additions are 144 `INITIAL` + 36 `FORCING` records the driver gained later.
+  Compared against `budget/`, a separately-compiled bundle over the same six members,
+  **all six outputs are byte-identical across builds 7.5 hours apart** — so the
+  Fortran refinement leg is bit-reproducible on this host, and every ρΔz column-budget
+  order STATUS cites (col 1 `+1.002`; col 3 `−5.860, +3.884, −1.017, +0.407`)
+  reproduces exactly from the fresh build.
   The bundle was refreshed to the rebuilt streams — not cosmetic, since without
   `FORCING` there is no ρΔz and the old streams could not support the column water
   budget, either ledger, or the diagnostic-trust table. **Limits**: one host and one
