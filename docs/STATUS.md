@@ -166,7 +166,28 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   Both emissions sit under their own `KDM6_G33_NUMBER_DUMP`, never defined by
   `fortran_build.sh` — the decision-path stream is **bit-identical** to before, and
   the instrumented run is **bit-identical** to the plain build.
-  See [`../harness/evidence/FINDING_two_sedimentation_chains_v1.md`](../harness/evidence/FINDING_two_sedimentation_chains_v1.md). The analyzer now prints each flip's share of
+  See [`../harness/evidence/FINDING_two_sedimentation_chains_v1.md`](../harness/evidence/FINDING_two_sedimentation_chains_v1.md).
+- **The `nr` number-moment blocker is now MEASURED on the pinned legacy reference:
+  sedimentation CREATES column number.** Mass carries the density ratio (`falk` built
+  with `dend(k+1)`, inflow divided by `dend(k)`, F:1214-1219); number carries only the
+  thickness ratio (F:1221-1224). Since `nrs` IS the prognostic number **mixing** ratio
+  (F:388), the ρΔz-weighted number arriving below exceeds what left above by
+  `den(lower)/den(upper)`, and density increases downward. With `mstep == 1` the
+  per-interface transfers are recoverable from the state change, and the evidence is a
+  **hypothesis test against data the recursion never consumes**: recovered bottom
+  transfer against the independently emitted `falln`. The `dz`-only weight gives
+  **1.00000–1.00001** for `nr` in every column; the density-carrying alternative gives
+  **0.850–0.925**, excluded by 7–15%. **Magnitude: ~0.25% per call for ice number in
+  the ice-heavy column, compounding to ~20% of the column's final ice number over
+  300 s**, and step-robust (1.98e7 at h = 6.25 s vs 2.11e7 at h = 3.125 s — creation
+  scales with number transported, not with call count). **Two apparent proofs were
+  caught and discarded**: the interface decomposition is an algebraic identity that
+  telescopes for any transfers, and the mass channel returning ~0 is forced by its own
+  weight — both check arithmetic, neither is a control. **Limits**: `mstep == 1` only,
+  so operational steps are not measured; the conservative variant is *predicted* to be
+  unaffected (it fixes the mass measure, leaves number on the legacy one) and was not
+  run; cap-dominated calls are excluded, not explained.
+  See [`../harness/evidence/FINDING_number_transport_creation_v1.md`](../harness/evidence/FINDING_number_transport_creation_v1.md). The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
 - **The refinement bundle is reproducible, and the reproduction was run.** Its
