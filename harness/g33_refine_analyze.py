@@ -291,6 +291,45 @@ def report(runs: dict, label: str) -> None:
                       f"   (no order: the finest member is not the exact solution)")
 
 
+def per_field(runs: dict) -> None:
+    """Order per FIELD, and which cell sets each group max.
+
+    Owner review §7. A grouped max norm is not a physical norm: it reports one
+    field at one cell, and if that cell moves between resolutions the apparent
+    order is partly a record of the move. On this fixture the mass group is set by
+    `qc` throughout but migrates col3 k3 -> k2 -> k1 at the fine end, and the group
+    order stalls at +0.018 while `qv` stays near 1 -- two different behaviours
+    averaged into one number.
+    """
+    ns = sorted(runs)
+    pairs = [(n, 2 * n) for n in ns if 2 * n in runs]
+    print("\n  per-field successive order")
+    fields = sorted({k[1] for k in runs[ns[0]] if k[0] == "state"})
+    hdr = "  ".join(f"{300/lo:g}->{150/lo:g}".rjust(13) for lo, _ in pairs[:-1])
+    print(f"    {'field':6} {hdr}")
+    for f in fields:
+        row = []
+        for i, (lo, hi) in enumerate(pairs[:-1]):
+            k = [x for x in runs[lo] if x[0] == "state" and x[1] == f]
+            e = _norm(runs[lo], runs[hi], k)
+            e2 = _norm(runs[hi], runs[pairs[i + 1][1]], k)
+            row.append("      -      " if e == 0 or e2 == 0
+                       else f"{math.log2(e / e2):+13.3f}")
+        if any(c.strip() != "-" for c in row):
+            print(f"    {f:6} " + "  ".join(row))
+    print("\n  cell setting each group max (a moving cell makes the group order "
+          "partly a record of the move)")
+    for g in GROUPS:
+        if g == "prec":
+            continue
+        trail = []
+        for lo, hi in pairs:
+            k = _keys(runs[lo], g)
+            _, best = max((abs(runs[lo][x] - runs[hi][x]), x) for x in k)
+            trail.append(f"{best[1]}/c{best[2]}k{best[3]}")
+        print(f"    {g:7} " + " -> ".join(trail))
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
@@ -304,6 +343,7 @@ def main(argv) -> int:
         raise SystemExit(f"need at least two members, found {sorted(runs)}")
     require_same_universe(runs)
     report(runs, d.name)
+    per_field(runs)
     return 0
 
 

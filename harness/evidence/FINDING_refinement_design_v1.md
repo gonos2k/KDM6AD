@@ -76,14 +76,67 @@ computes an order from the error-to-finest series at all.
 **Error to the finest (N=24)** — magnitude and monotonicity only, no order:
 monotone decreasing in all four groups.
 
-`th` and `number` sit near p = 1 by the valid estimator. `mass` and `precip` do
-not, and the precipitation successive differences are not even monotone.
+On this four-member chain `th` and the `number` group sit near p = 1 by the valid
+estimator. Both readings are qualified by the six-member chain below: the `number`
+group figure is `nccn` alone, and precipitation's apparent failure was the chain
+stopping too early.
+
+## Extended to 3.125 s: precipitation converges, most fields do not hold an order
+
+Chain extended to N ∈ {3,6,12,24,48,96} → dtcld 100, 50, 25, 12.5, 6.25, 3.125 s.
+
+**Precipitation was pre-asymptotic, and that is all it was.** Successive orders run
+−2.244, +0.351, then **+1.399, +1.256** once h ≤ 25 s. Of the six candidates listed
+below for its near-zero order, the simplest — "the chain had not reached an
+asymptotic regime" — is confirmed by extending it, and the other five need not be
+invoked. The earlier +0.028 was measured on a chain that stopped too early.
+
+**Per field, most fields do not hold a stable exponent** (successive differences):
+
+| field | 100→50 | 50→25 | 25→12.5 | 12.5→6.25 |
+|---|---|---|---|---|
+| `nccn` | +1.018 | +1.043 | +1.023 | **+1.008** |
+| `ni` | +1.196 | +0.801 | +0.981 | +1.025 |
+| `qv` | +1.000 | +0.894 | +0.602 | +1.039 |
+| `th` | +0.997 | +0.828 | +0.601 | +1.032 |
+| `qc` | +0.568 | +2.278 | +0.825 | **+0.018** |
+| `qi` | +1.867 | +1.847 | +1.738 | **−0.405** |
+| `qs` | +1.598 | +2.201 | **−0.293** | +0.019 |
+| `nc` | +1.581 | +0.650 | +1.125 | **−1.021** |
+| `bg` | +3.915 | +2.962 | +1.551 | **−6.179** |
+
+Only `nccn` is clean across all four halvings. `ni` is close. Everything else either
+dips, stalls or goes negative — and a negative order is not a slow rate, it is the
+absence of one.
+
+**This corrects a reading of my own.** The grouped `number` series gave +1.018,
++1.043, +1.023, +0.978 and I reported the group as near first order. Those are
+`nccn`'s numbers: the group max is set by `nccn` at every level except the last.
+`nc` in the same group runs +1.581, +0.650, +1.125, **−1.021**. The group was
+reporting one well-behaved field and hiding one that is not.
+
+**The cell setting each group max migrates**, which is owner review §7 measured
+rather than argued:
+
+```
+th      th/c1k0 -> th/c1k0 -> th/c2k0 -> th/c2k0 -> th/c2k0
+mass    qc/c3k3 -> qc/c3k3 -> qc/c3k3 -> qc/c3k2 -> qc/c3k1
+number  nccn/c1k2 -> nccn/c1k1 -> nccn/c1k1 -> nccn/c1k1 -> nc/c3k0
+```
+
+So a grouped order is partly a record of the max moving. The analyzer now prints
+per-field orders and the migration trail alongside the groups.
+
+The fields that lose their order at the fine end — `qc`, `qi`, `qs`, `bg` — are ice
+and cloud water in the cold column, which is where discrete thresholds live. That
+is consistent with the branch-topology caution below and is not further diagnosed:
+no per-member topology record exists.
 
 ## What may and may not be said about convergence
 
 Established: **selected max norms of a synthetic fixture decreased monotonically
-along a 100 → 50 → 25 → 12.5 s chain, and `th` and `number` show p ≈ 1 by
-successive differences.**
+along a 100 → 50 → 25 → 12.5 → 6.25 → 3.125 s chain; `nccn` holds p ≈ 1 across every
+halving and `ni` is close; precipitation reaches p ≈ 1.3 once h ≤ 25 s.**
 
 Not established: that the reference operator converges at first order. A classical
 order is meaningful within one smooth branch, and this kernel has `floor(mstep)`,
@@ -99,23 +152,25 @@ cap-active mask             entry-clamp mask
 ncmin gate                  surface precipitation onset
 ```
 
-## Precipitation is not explained by "it is a flux"
+## Precipitation: RESOLVED by extending the chain
 
-`precip` is essentially flat from 100 s to 50 s and its successive differences are
-non-monotone. A smooth flux integrated with a consistent quadrature would normally
-inherit something close to the state's order, so the first version's "it is an
-accumulated flux, so it need not" is not an explanation. Live candidates:
+The first version reported `precip` flat from 100 s to 50 s and dismissed it as
+"an accumulated flux". The second withdrew that dismissal and listed six candidates.
+The six-member chain settles it: precipitation reaches **p = +1.399 then +1.256**
+once h ≤ 25 s, so it was simply **pre-asymptotic**, the last of the six. Kept here
+because the candidate list is what a reader would otherwise have to re-derive:
 
 - precipitation **onset time** moving between steps,
 - bottom-outflow cap or threshold firing at different steps,
 - `mstep` topology changing,
 - the column dominating the max norm changing with resolution,
 - the cumulative diagnostic being sensitive to call segmentation,
-- the chain not having reached an asymptotic regime by 12.5 s.
+- **the chain not having reached an asymptotic regime by 12.5 s** — this one.
 
-Distinguishing them needs per-species per-column cumulative precipitation, the
-increment at each call, the first nonzero time, and members at 6.25 s and 3.125 s.
-Not done.
+The 6.25 s and 3.125 s members were the test and they were run. Note that the
+segmentation candidate is separately TRUE — the call-boundary control finds
+precipitation differing in every arm, including one whose state is bitwise
+identical — but it is not what produced the low order here.
 
 ## The discarded members are a PARTIAL control
 
