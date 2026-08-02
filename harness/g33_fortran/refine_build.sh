@@ -45,7 +45,13 @@ REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)
 DRIVER_FLAGS=("${COMMON_FLAGS[@]}" -ffp-contract=off -Wall)
-fc() { local o="$1"; shift; "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
+# Every compile command is logged. An empty command list in a manifest is
+# indistinguishable from a build nobody recorded, so the build writes it rather
+# than leaving it to a caller that may not pass it (owner §9).
+CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
+fc() { local o="$1"; shift
+       printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
+       "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
 
 fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$FIXTURE_SRC"
@@ -71,4 +77,7 @@ fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVD
     "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o" \
     "$OUT/stub_wrf_error.o" "$OUT/libmassv.o" 2>"$OUT/link.err" \
     || { echo "LINK FAILED"; head -25 "$OUT/link.err"; exit 1; }
+# What built this -- compiler digest, commands, source digests (owner §9).
+python3 "$(dirname "$0")/../g33_build_provenance.py" \
+    "$OUT" "$FC" "$MODULE_SRC" "$FIXTURE_SRC" "$0"
 echo "$OUT"

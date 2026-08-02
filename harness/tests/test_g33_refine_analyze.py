@@ -759,3 +759,29 @@ def test_the_outflow_split_separates_bottom_flux_from_the_unaccounted_part(tmp_p
     assert d["P_bottom"] == pytest.approx(0.5)
     assert d["D_internal"] == pytest.approx(0.5)     # here the column lost MORE
     assert d["D_share"] == pytest.approx(0.5)
+
+
+def test_the_manifest_uses_the_STRICT_parser_for_members(tmp_path):
+    """Owner §9: reading only the BEGIN line would admit a truncated or ragged
+    member into the manifest — precisely what the strict reader rejects, and the
+    manifest is what claims the table is reproducible."""
+    d = tmp_path / "out"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    lines = _stream(nsplit=6).splitlines()
+    del lines[5]                                   # ragged: one state record short
+    (d / "n6.rezero.txt").write_text("\n".join(lines) + "\n")
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    with pytest.raises(ra.RefineError):
+        rm.build(d, module=mod, fixture=fix, compiler="gfortran-test")
+
+
+def test_build_provenance_absent_is_null_not_an_empty_list(tmp_path):
+    """An empty command list is indistinguishable from a build nobody recorded.
+    `null` says which one it is."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    man = rm.build(d, module=mod, fixture=fix, compiler="c")
+    assert man["build_provenance"] is None

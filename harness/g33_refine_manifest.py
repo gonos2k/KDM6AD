@@ -13,15 +13,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA = "refinement_experiment_v1"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_refine_analyze as ra   # noqa: E402
 
-_BEGIN = re.compile(r"^G33R BEGIN nsplit\s+(\d+)\s+(carry|rezero)\s+(\S+)"
-                    r"(?:\s+delt\s+(\S+)\s+loops\s+(\d+)\s+dtcld\s+(\S+))?")
+SCHEMA = "refinement_experiment_v1"
 
 
 def sha256(path: Path) -> str:
@@ -34,25 +33,27 @@ def _git(*a) -> str:
 
 
 def _member(path: Path) -> dict:
-    """One member, from what the run itself reported. delt/loops/dtcld are READ,
-    not recomputed from N -- deriving them would restate the assumption the
-    experiment exists to check."""
-    first = next((ln for ln in path.read_text().splitlines()
-                  if ln.startswith("G33R BEGIN")), "")
-    m = _BEGIN.match(first.strip())
-    if not m:
-        raise SystemExit(f"{path}: no parseable G33R BEGIN")
+    """One member, via the analyzer's STRICT parser (owner §9).
+
+    Reading only the BEGIN line would admit a truncated, duplicated or ragged
+    member into the manifest -- exactly what the strict reader exists to reject,
+    and the manifest is what says the table is reproducible. delt/loops/dtcld are
+    READ from the stream, not recomputed from N: deriving them would restate the
+    assumption the experiment exists to check.
+    """
+    r = ra.read(path)                       # raises RefineError on anything malformed
     out = {"file": path.name, "output_sha256": sha256(path),
-           "nsplit": int(m.group(1)), "mode": m.group(2),
-           "algorithm": m.group(3)}
-    if m.group(5) is not None:
-        out |= {"delt": float(m.group(4)), "loops": int(m.group(5)),
-                "dtcld": float(m.group(6))}
+           "nsplit": r[("meta", "nsplit")], "mode": r[("meta", "mode")],
+           "algorithm": r[("meta", "algorithm")]}
+    for k in ("delt", "loops", "dtcld"):
+        if ("meta", k) in r:
+            out[k] = r[("meta", k)]
     return out
 
 
 def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
-          compile_commands=(), analyzer: Path | None = None) -> dict:
+          analyzer: Path | None = None, build_provenance: Path | None = None,
+          findings=()) -> dict:
     members = [_member(p) for p in sorted(outputs.glob("n*.txt"))]
     steps = [m.get("dtcld") for m in members]
     man = {
@@ -67,9 +68,18 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
         "module_path": str(module),
         "fixture_sha256": sha256(fixture),
         "fixture_path": str(fixture),
+        # A human label. The compiler that actually ran is in build_provenance,
+        # by digest -- two hosts print this same string and produce different
+        # numbers. `null` there means the build recorded nothing, which is a
+        # different statement from an empty command list.
         "compiler": compiler,
-        "compile_commands": list(compile_commands),
+        "build_provenance": (json.loads(build_provenance.read_text())
+                             if build_provenance and build_provenance.exists()
+                             else None),
         "analyzer_sha256": sha256(analyzer) if analyzer else None,
+        # The documents that draw conclusions from these members. A finding that
+        # cites a table nobody can tie to the run it came from is unreviewable.
+        "findings": [{"path": str(f), "sha256": sha256(f)} for f in findings],
         "members": members,
     }
     # Recorded, not asserted. A sweep that does not halve dtcld is still a run
@@ -91,10 +101,15 @@ def main(argv) -> int:
     ap.add_argument("--fixture", type=Path, required=True)
     ap.add_argument("--compiler", required=True)
     ap.add_argument("--analyzer", type=Path, default=None)
+    ap.add_argument("--build-provenance", type=Path, default=None,
+                    help="build_provenance.json written by refine_build.sh")
+    ap.add_argument("--finding", type=Path, action="append", default=[],
+                    help="finding document drawing conclusions from these members")
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
     man = build(a.outputs, module=a.module, fixture=a.fixture,
-                compiler=a.compiler, analyzer=a.analyzer)
+                compiler=a.compiler, analyzer=a.analyzer,
+                build_provenance=a.build_provenance, findings=a.finding)
     text = json.dumps(man, indent=2, sort_keys=True) + "\n"
     if a.out:
         a.out.write_text(text)
