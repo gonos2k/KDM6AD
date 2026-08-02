@@ -209,13 +209,43 @@ presence in column 3 switches on at 100 s, off for four members, and on again at
 3.125 s. The chain is **not integrating the same set of processes at different
 resolutions**.
 
-Three consequences, and they close the column-3 story:
+**The flip is real. It does not explain the erratic orders.** Corrected after
+checking its magnitude, which the first version did not:
 
-1. **Any order computed across members that straddle this flip is not a rate.**
-   That covers every column-3 exponent in this document.
-2. It explains why the column-3 water budget has no order: the species set changes.
-3. It explains why `qg` shows `n/a` in the per-field table — the norm hits exact
-   zeros, which the analyzer already declines to convert into an exponent.
+    sum(qg) / column water in column 3  =  3.88e-06
+
+Parts per million. A species carrying 1e-6 of the column cannot produce the O(1)
+swings seen in the column-3 water-budget exponents (−5.86, +3.88, −1.02, +0.41).
+The first version asserted the mechanism from the flip's existence and never
+checked whether it was big enough — it is not.
+
+What stands and what does not:
+
+1. **The topology does move.** Graupel presence genuinely changes with resolution.
+2. **`qg` shows `n/a` in the per-field table** because the norm hits exact zeros —
+   that much follows directly.
+3. **The erratic column-3 orders are NOT attributed.** The claim that they are "not
+   rates because the species set changes" is withdrawn: the species that changes is
+   immaterial to the norms in question. Their cause is now open.
+
+**Rounding noise is ruled out.** The successive column-water differences sit
+**1,000–74,000× above the f32 noise floor** (`2^-23 · W_col`):
+
+| col | W_col | f32 eps·W | successive \|ΔW\| across the chain |
+|---|---|---|---|
+| 1 | 4.93e-01 | 5.88e-08 | 1.88e-03 … 5.98e-05 (32000× → 1000× eps) |
+| 2 | 2.38e-01 | 2.83e-08 | 8.67e-04 … 3.98e-05 (31000× → 1400× eps) |
+| 3 | 1.23e-01 | 1.47e-08 | **1.88e-05, 1.09e-03**, 7.39e-05, 1.50e-04, 1.13e-04 |
+
+Column 3's sequence is non-monotone *in magnitude* — the 100→50 difference is 58×
+**smaller** than the 50→25 one, which is what produces the −5.86 exponent. That is
+real signal, not noise: something genuinely non-smooth happens between those
+members. The remaining candidates — an `mstep` change, a cap or threshold firing —
+are per-sub-cycle quantities that live inside the kernel and are not recorded, so
+attribution needs instrumentation this experiment does not have.
+
+The analyzer prints each flip's share of column water alongside it, so the record
+cannot be read again as a sufficient explanation for an exponent.
 
 The cold/warm mask itself never flips, and no other species does. The instability is
 graupel presence alone, and it is in the same three cells as everything else.
@@ -251,8 +281,10 @@ ncmin gate                  not recorded, inside the kernel
 surface precipitation onset not recorded, needs per-call increments
 ```
 
-The two that are recorded are enough to settle the question for column 3: the
-topology **does** move there, so its exponents are not rates.
+The two that are recorded show the topology **does** move in column 3 — but see the
+correction above: the moving species carries 3.88e-06 of that column's water, far
+too little to explain its O(1) exponent swings. **The record establishes that the
+topology moves; it does not establish that this is why the exponents are erratic.**
 
 ## Precipitation: RESOLVED by extending the chain
 
@@ -401,7 +433,7 @@ is not evidence of that, because of what column 1 is:
 |---|---|---|---|---|
 | 1 | 288–290 | no | **valid** | **no** |
 | 2 | 266–268 | no | marginal | no |
-| 3 | 242–244 | **yes** | **invalid** (qg flips) | **yes** |
+| 3 | 242–244 | **yes** | **erratic** (cause open) | **yes** |
 
 The coefficient policy acts through `xlf`/`cpm` in the **melt and freeze heat
 terms**, which are cold-phase. Column 1 carries no ice at all, so the policy is
@@ -411,8 +443,16 @@ measurement is untrustworthy exactly where the policy acts.
 **The domain where a convergence order is well defined and the domain where the
 thermodynamic policy acts are disjoint on this fixture.** That is not a matter of
 the chain being too short: extending it from 12.5 s to 3.125 s did not move column
-3 into an asymptotic regime, because what breaks there is a species appearing and
-disappearing, not a step size being too large.
+3 into an asymptotic regime.
+
+**Why** column 3 is erratic is open. An earlier version said "because a species
+appears and disappears"; that is withdrawn — the species in question is 3.88e-06 of
+the column. Rounding noise is also ruled out (the differences are 1,000–74,000×
+the f32 floor). The conclusion above does **not** depend on the reason: an
+erratic, non-monotone sequence cannot yield a rate whatever produces it. What
+changes is that the obstacle is now unexplained rather than understood, so the
+possibility that column 3 could be made usable — and §9 answerable — is open
+rather than closed.
 
 So §9's experiment, run correctly and to six members on both legs, **cannot select
 between the coefficient policies here**, and no amount of further refinement on this

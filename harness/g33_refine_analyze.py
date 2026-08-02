@@ -396,14 +396,30 @@ def topology_report(runs: dict) -> None:
         print("\n  topology: `pii` not present in this stream set")
         return
     ref = t[ns[0]]
+    # A flip's MATERIALITY, not just its existence. On the arithmetic fixture the
+    # qg flip that this record reports involves 3.9e-06 of the column water -- real
+    # as a presence change, far too small to explain an O(1) change in a
+    # convergence order. Printing the share stops the record being read as a
+    # sufficient explanation for erratic exponents, which is how it was misread.
+    def _share(n, fld, c):
+        r = runs[n]
+        ks = sorted({k[3] for k in r if k[0] == "state"})
+        tot = sum(r[("state", f, c, k)] for f in MASS for k in ks)
+        return (sum(r[("state", fld, c, k)] for k in ks) / tot) if tot else 0.0
+
     print(f"\n  final branch topology, against the coarsest member (N={ns[0]})")
     any_diff = False
     for n in ns[1:]:
         diff = sorted(k for k in ref if ref[k] != t[n][k])
         if diff:
             any_diff = True
+            # max over BOTH members: a flip means the species is absent in one of
+            # them, so measuring only the finer one always reports zero.
+            worst = max((max(_share(n, a, b), _share(ns[0], a, b))
+                         for a, b, _ in diff if a != "cold"), default=0.0)
             print(f"    N={n:3d} (h={300/n:g}s): {len(diff)} flips  " +
-                  ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]))
+                  ", ".join(f"{a}@c{b}k{c}" for a, b, c in diff[:6]) +
+                  f"   [largest flipping species is {worst:.2e} of its column water]")
         else:
             print(f"    N={n:3d} (h={300/n:g}s): identical")
     if not any_diff:
@@ -600,6 +616,37 @@ def ledger_report(runs: dict) -> None:
                       f"{d['relative']:12.3e}")
 
 
+def diagnostic_trust_report(runs: dict) -> None:
+    """Is the fallout diagnostic usable as a physical quantity in THIS run?
+
+    Three separate conclusions in this evidence set were wrong because the fallout
+    diagnostic was read as if it were the water that left the column. P0-4b records
+    that they disagree by an O(1) amount; measured here the disagreement is a strong
+    function of the timestep AND changes sign with the frozen fraction — the
+    pure-liquid column under-reports by 19% while 97%-frozen columns over-report by
+    9x. Printing the ratio makes that visible before anyone builds on it, instead of
+    after.
+
+    1.0 means the diagnostic IS the budget for that column and may be used as one.
+    """
+    ns = sorted(runs)
+    if not any(k[0] == "initial" for k in runs[ns[0]]):
+        print("\n  diagnostic trust: no INITIAL records, cannot compare")
+        return
+    cols = sorted({k[2] for k in runs[ns[0]] if k[0] == "state"})
+    print("\n  fallout diagnostic / column water loss   "
+          "(1.0 = the diagnostic IS the budget)")
+    print(f"    {'h (s)':>7} " + " ".join(f"{'col'+str(c):>9}" for c in cols))
+    for n in ns:
+        r = runs[n]
+        ks = sorted({k[3] for k in r if k[0] == "state"})
+        row = []
+        for c in cols:
+            w = _water_out(r, c, ks)
+            row.append(f"{total_precip(r, c) / w:9.4f}" if w else "        -")
+        print(f"    {300/n:7g} " + " ".join(row))
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
@@ -617,6 +664,7 @@ def main(argv) -> int:
     budget_report(runs)
     topology_report(runs)
     ledger_report(runs)
+    diagnostic_trust_report(runs)
     return 0
 
 
