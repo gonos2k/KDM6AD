@@ -369,6 +369,76 @@ Its `artifact_type` is `refinement_experiment` and `decision_eligible` is a cons
 7. Precipitation dismissed as "an accumulated flux" — **withdrawn** as an
    explanation; candidates listed instead.
 
+## §9's question cannot be answered on this fixture, and the reason is structural
+
+Both existing operators were run over the full chain and compared on the ρΔz column
+water budget — orientation-independent, since a column integral sums over k, so the
+two legs' differing k conventions do not matter.
+
+| leg | col | 100→50 | 50→25 | 25→12.5 | 12.5→6.25 |
+|---|---|---|---|---|---|
+| Fortran (kernel-call-fixed) | 1 | +1.969 | +1.002 | +1.000 | **+1.002** |
+| C++ legacy (sub-cycle-refreshed) | 1 | +1.562 | +1.001 | +1.000 | **+1.001** |
+| C++ conservative | 1 | +1.002 | +1.001 | +1.000 | **+1.001** |
+| Fortran | 2 | +1.376 | +0.582 | +2.420 | +0.066 |
+| C++ legacy | 2 | +1.111 | +0.780 | +1.230 | +1.089 |
+| C++ conservative | 2 | +2.387 | −0.225 | +0.693 | +0.886 |
+| all three | 3 | — erratic — | | | |
+
+Final topology flips against the coarsest member (N = 6, 12, 24, 48, 96):
+
+```
+Fortran            [3, 3, 3, 3, 2]     persist
+C++ legacy         [1, 1, 1, 0, 0]     heal by N=48
+C++ conservative   [0, 1, 1, 0, 0]     heal by N=48
+```
+
+**In column 1 all three converge at exactly first order, and the three orders are
+the same to three decimals.** That looks like the policy making no difference. It
+is not evidence of that, because of what column 1 is:
+
+| column | t (K) | ice present | convergence domain | thermo policy active |
+|---|---|---|---|---|
+| 1 | 288–290 | no | **valid** | **no** |
+| 2 | 266–268 | no | marginal | no |
+| 3 | 242–244 | **yes** | **invalid** (qg flips) | **yes** |
+
+The coefficient policy acts through `xlf`/`cpm` in the **melt and freeze heat
+terms**, which are cold-phase. Column 1 carries no ice at all, so the policy is
+inactive exactly where the convergence measurement is trustworthy — and the
+measurement is untrustworthy exactly where the policy acts.
+
+**The domain where a convergence order is well defined and the domain where the
+thermodynamic policy acts are disjoint on this fixture.** That is not a matter of
+the chain being too short: extending it from 12.5 s to 3.125 s did not move column
+3 into an asymptotic regime, because what breaks there is a species appearing and
+disappearing, not a step size being too large.
+
+So §9's experiment, run correctly and to six members on both legs, **cannot select
+between the coefficient policies here**, and no amount of further refinement on this
+fixture will change that.
+
+The C++ column-2 result (+1.089 against Fortran's +0.066) is the one place the two
+legs genuinely differ in convergence. It should not be read as the policy either:
+column 2 is 266–268 K with no ice, so the freeze rates the policy scales are not
+active, and the two legs differ in every other respect as well — that difference is
+the port, not the policy.
+
+### What a fixture that CAN answer it must have
+
+Measured requirements, not preferences:
+
+1. **A cold column that stays on one branch across the whole chain** — no species
+   presence flip between the coarsest and finest member. `qg` presence is the one
+   that moves here; the cold/warm mask is stable and does not need attention.
+2. **Active freeze or melt in that column**, so `xlf`/`cpm` is load-bearing rather
+   than multiplied by a zero rate.
+3. Enough of both that the column budget, not one migrating cell, carries the signal.
+
+Designing that fixture is a change to the raw-bit authority and to what the
+four-leg bundles are generated from, so it is owner scope rather than a harness
+change.
+
 ## Still not established
 
 - The C++ leg has not been run, in either the refinement chain or the N=1/N=3
