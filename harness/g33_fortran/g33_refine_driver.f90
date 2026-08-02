@@ -59,12 +59,16 @@ contains
     value = transfer(bits, value)
   end function f32
 
-  subroutine run_refined(im, km, nsplit, ntile, carry_aux, outF, precF, denO, delzO, piiO, inF)
-    ! ntile splits the COLUMN range across separate kdm62D calls, the way a tile or
-    ! MPI decomposition would. A column-local operator must give the same answer for
-    ! any ntile; the pinned reference is not column-local (`ncmin` is a scalar
-    ! overwritten inside the column loop), so this measures what that costs.
+  subroutine run_refined(im, km, nsplit, tiles, ntile, carry_aux, outF, precF, &
+                         denO, delzO, piiO, inF)
+    ! `tiles(1:ntile)` are the COLUMN COUNTS of consecutive kdm62D calls, the way a
+    ! tile or MPI decomposition splits a domain. A column-local operator must give
+    ! the same answer for every partition; the pinned reference is not column-local
+    ! (`ncmin` is a scalar overwritten inside the column loop), so this measures
+    ! what that costs. Explicit counts rather than an even split, so every
+    ! composition of the domain can be tested, not just the even ones.
     integer, intent(in)  :: im, km, nsplit, ntile
+    integer, intent(in)  :: tiles(ntile)
     logical, intent(in)  :: carry_aux
     real,    intent(out) :: outF(im, km, NFLD_ST), precF(3, im)
     ! The kernel does not modify den/delz, but a rho*dz column budget needs them
@@ -141,10 +145,10 @@ contains
       if (.not. carry_aux) then
         rhoxk = 0.0; cmgk = 0.0; n0so2d = 0.0; n0go2d = 0.0
       end if
+      i1 = 0
       do tl = 1, ntile
-        i0 = (tl - 1) * im / ntile + 1
-        i1 = tl * im / ntile
-        if (i1 < i0) cycle
+        i0 = i1 + 1
+        i1 = i0 + tiles(tl) - 1
         call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
                    ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
                    ,rhoxk(i0:i1,:), cmgk(i0:i1,:)                                   &
@@ -215,13 +219,14 @@ program g33_refine_driver
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
   real :: inF(IM,KM,NFLD_ST)
   character(len=32) :: arg
-  integer :: nsplit, ntile, i, k, f, ios, loops_used
+  integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt
+  integer :: tiles(IM)
   integer(int32) :: b
   logical :: carry_aux
   real :: delt_used, dtcld_used
 
   if (command_argument_count() < 1) &
-      error stop 'usage: g33_refine_driver NSPLIT [carry|rezero] [NTILE]'
+      error stop 'usage: g33_refine_driver NSPLIT [carry|rezero] [TILE,SIZES]'
   call get_command_argument(1, arg)
   read(arg, *, iostat=ios) nsplit
   if (ios /= 0 .or. nsplit < 1) error stop 'NSPLIT must be a positive integer'
@@ -239,16 +244,29 @@ program g33_refine_driver
   end if
 
   delt_used = f32(DT_BITS) / real(nsplit)
+  ! Third argument: comma-separated tile column-counts, e.g. "2,1". Default: one
+  ! tile covering the domain.
   ntile = 1
+  tiles(1) = IM
   if (command_argument_count() >= 3) then
     call get_command_argument(3, arg)
-    read(arg, *, iostat=ios) ntile
-    if (ios /= 0 .or. ntile < 1 .or. ntile > IM) &
-        error stop 'NTILE must be an integer in 1..B'
+    ntile = 0
+    pos = 1
+    do while (pos <= len_trim(arg))
+      nxt = index(arg(pos:), ',')
+      if (nxt == 0) nxt = len_trim(arg) - pos + 2
+      ntile = ntile + 1
+      if (ntile > IM) error stop 'more tiles than columns'
+      read(arg(pos:pos+nxt-2), *, iostat=ios) tiles(ntile)
+      if (ios /= 0 .or. tiles(ntile) < 1) error stop 'tile sizes must be >= 1'
+      pos = pos + nxt
+    end do
+    if (sum(tiles(1:ntile)) /= IM) error stop 'tile sizes must sum to B'
   end if
 
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
-  call run_refined(IM, KM, nsplit, ntile, carry_aux, outF, precF, denO, delzO, piiO, inF)
+  call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &
+                   precF, denO, delzO, piiO, inF)
 
   ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
   ! intended: the sweep must refine dtcld, and a reader should be able to check

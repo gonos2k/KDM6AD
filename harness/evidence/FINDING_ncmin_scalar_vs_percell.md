@@ -156,46 +156,53 @@ which of the two implementations is correct is not the harness's call.
 
 ---
 
-# Tile decomposition, measured (owner review §6 acceptance gate)
+# Tile decomposition, measured (owner review §6 acceptance gates 2 and 3)
 
-Column permutation is one of the four gates §6 asks for. The second is now
-measured: splitting the SAME columns across separate `kdm62D` calls, the way a tile
-or MPI decomposition does. `its:ite` is a call argument, so this is driver-side
-only and needs no production change — and it reaches the mechanism from a
-completely different direction than permuting the input.
+Column permutation is §6's first gate and already measured. The second is now
+measured too: splitting the SAME columns across separate `kdm62D` calls, the way a
+tile or MPI decomposition does. `its:ite` is a call argument, so this is
+driver-side only and needs no production change — and it reaches the mechanism from
+a completely different direction than permuting the input.
 
-`boundary_mapping_v1` (xland 1, 2, 1 — the middle column is sea;
-ncmin_land = 1e8, ncmin_sea = 2.5e7), legacy, 300 s:
+**Exhaustive over the contiguous partitions of the domain**, not just even splits.
+`boundary_mapping_v1` (xland 1, 2, 1 — the middle column is sea; ncmin_land = 1e8,
+ncmin_sea = 2.5e7), legacy:
 
-| tiling | tile ranges | tile-end surface | cells differing from 1 tile |
+| partition | tile ends | cells differing | columns |
 |---|---|---|---|
-| 1 | [1..3] | land | — |
-| 2 | [1..1] [2..3] | land, land | **0 / 144** |
-| 3 | [1..1] [2..2] [3..3] | land, **SEA**, land | **16 / 144** |
+| (3,) | 3: land | — | baseline |
+| (1, 2) | 1: land, 3: land | **0 / 144** | — |
+| (1, 1, 1) | 1: land, **2: SEA**, 3: land | **16 / 144** | 2 |
+| (2, 1) | **2: SEA**, 3: land | **31 / 144** | 1, 2 |
 
-All 16 are in **column 2**, and all twelve prognostics differ there — a whole-state
-difference, not a rounding one.
+Up to **21% of the final state** is decided by where the tile boundary falls, and
+all twelve prognostics move in the affected columns — a whole-state difference, not
+a rounding one.
 
 The pattern is predicted exactly by the scalar mechanism. `ncmin` survives the
 column loop holding the LAST column's threshold, so what matters is the surface
 type at each tile's `ite`:
 
-* **1 tile** ends on column 3 (land), so every column is gated on `ncmin_land`.
-* **2 tiles** both end on land, so the gating is identical to one call — 0 cells
-  differ, and that agreement is **not** evidence of correctness. A test run only at
-  ntile=2 would pass vacuously.
-* **3 tiles** put the sea column at its own tile end, so that column alone is gated
-  on `ncmin_sea` instead. Exactly column 2 differs.
+* **(3,)** ends on land, so every column is gated on `ncmin_land`.
+* **(1,2)** — both tiles end on land, identical gating, 0 cells differ. That
+  agreement is **not** evidence of correctness, and an even-split test that only
+  reached this partition would pass while the operator was arbitrarily non-local.
+* **(1,1,1)** puts the sea column at its own tile end, so that column alone is
+  gated on `ncmin_sea`.
+* **(2,1)** ends its first tile on the sea column, so **both** columns 1 and 2 are
+  gated on `ncmin_sea` — the worst case, and the one an even split misses entirely.
 
-This is what makes the result depend on tile size and MPI rank count: the same
-atmosphere, decomposed differently, gives a different answer in the coastal column.
+**This is the MPI rank-count gate as well.** A rank boundary is a tile boundary;
+the mechanism cannot distinguish them, and the partition set above is exhaustive
+for this domain. What a real MPI driver would add is halo and reduction behaviour,
+which is not what `ncmin` depends on.
 
-An earlier run of this test on `arithmetic_multisubcycle_v1` gave 0/144 at every
-tiling. That fixture is all-land (xland 1, 1, 1), so `ncmin` is identical for every
-column and the mechanism cannot fire — the result was vacuous and is not evidence.
-The test now carries a guard asserting the tiling moves a surface type to a tile
-end, matching the guard the permutation test already had.
+An earlier run of this on `arithmetic_multisubcycle_v1` gave 0/144 at every
+partition. That fixture is all-land (xland 1, 1, 1), so `ncmin` is identical for
+every column and the mechanism cannot fire — the result was vacuous and is not
+evidence. The gate now asserts both that some partition can expose the mechanism
+and that some multi-tile partition is expected to agree trivially, so neither a
+vacuous fixture nor a lucky partition can be read as a pass.
 
-Still not covered from §6's four gates: **MPI rank count** (needs a parallel
-driver) and a **mixed coastal real case** (needs a real fixture). Tile size and
-column permutation are both measured and both fail.
+Remaining from §6's four gates: a **mixed coastal real case**, which needs a real
+fixture rather than a synthetic one.

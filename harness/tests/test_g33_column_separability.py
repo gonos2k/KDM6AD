@@ -183,59 +183,81 @@ def test_column_permutation_equivariance():
 REFINE_BUILD = ROOT / "harness" / "g33_fortran" / "refine_build.sh"
 
 
-def _tiled(tmp: Path, ntile: int) -> dict:
-    """Final state after 300 s, columns split across `ntile` kdm62D calls."""
+def _compositions(n):
+    """Every contiguous partition of `n` columns — (3,), (1,2), (2,1), (1,1,1)."""
+    if n == 0:
+        yield ()
+        return
+    for first in range(1, n + 1):
+        for rest in _compositions(n - first):
+            yield (first,) + rest
+
+
+def _tiled(tmp: Path, tiles) -> dict:
+    """Final state after the fixture's step, columns split as `tiles`."""
     out = tmp / "build"
     if not out.exists():
         b = subprocess.run(["bash", str(REFINE_BUILD), str(out),
                             "--fixture=g33_fixture_boundary_mapping_v1",
                             "--algo=legacy"], capture_output=True, text=True, cwd=ROOT)
         assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
-    p = subprocess.run([str(out / "g33_refine_driver"), "1", "rezero", str(ntile)],
+    p = subprocess.run([str(out / "g33_refine_driver"), "1", "rezero",
+                        ",".join(str(t) for t in tiles)],
                        capture_output=True, text=True)
     assert p.returncode == 0, f"driver crashed:\n{p.stderr}"
     return {tuple(ln.split()[2:5]): ln.split()[5]
             for ln in p.stdout.splitlines() if ln.startswith("G33R STATE")}
 
 
-def test_the_tiling_actually_moves_a_surface_type_to_a_tile_end():
-    """Without this the test is vacuous however wrong the code is: the scalar
-    `ncmin` keeps the LAST column's threshold, so a tiling whose tiles all end on
-    the same surface type gives the same gating as one call. With B=3, ntile=2
-    splits [1..1][2..3] -- both ending on land -- and ntile=3 puts the SEA column
-    at its own tile end. Only the latter can expose anything."""
+def test_the_partitions_include_one_that_can_expose_the_mechanism():
+    """Without this the gate is vacuous however wrong the code is: the scalar
+    `ncmin` keeps the LAST column's threshold, so a partition whose tiles all end on
+    the same surface type as the whole domain gives identical gating. (1,2) is such
+    a partition and is EXPECTED to agree -- testing only that would pass while the
+    operator was arbitrarily non-local."""
     _, a = gfx.load_fixture(FIXTURE)
     sea = [_f32(x) >= 1.5 for x in a["xland"]]
-    B = a["B"]
+    whole = sea[-1]
 
-    def tile_end_types(ntile):
-        return [sea[tl * B // ntile - 1] for tl in range(1, ntile + 1)]
+    def ends(tiles):
+        i, out = 0, []
+        for w in tiles:
+            i += w
+            out.append(sea[i - 1])
+        return out
 
-    whole = tile_end_types(1)[0]
-    # ntile=2 ends every tile on the same surface type as the single call, so it is
-    # EXPECTED to agree and is not evidence either way.
-    assert all(t == whole for t in tile_end_types(2))
-    # ntile=3 must not, or there is nothing to expose.
-    assert any(t != whole for t in tile_end_types(3)), (
-        f"no ntile=3 tile ends on a surface type different from {whole}")
+    parts = list(_compositions(a["B"]))
+    assert any(t != whole for p in parts for t in ends(p)), (
+        "no partition puts a different surface type at a tile end")
+    assert any(all(t == whole for t in ends(p)) for p in parts if len(p) > 1), (
+        "expected at least one multi-tile partition that agrees trivially")
 
 
 @pytest.mark.xfail(strict=True, reason=(
-    "MEASURED FAILURE, not a harness bug: splitting the same three columns across "
-    "three kdm62D calls changes 16 of 144 final-state cells, all in column 2 -- the "
-    "SEA column, and the only one whose tile ends on a different surface type than "
-    "the single call does. Same `ncmin` scalar mechanism as the permutation test, "
-    "reached from a different direction, and it is what makes the result depend on "
-    "tile size and MPI rank count. strict=True: if this starts passing the "
-    "behaviour changed and the test must be promoted to a requirement. Production "
-    "physics is frozen; the corrected variant is an owner decision."))
+    "MEASURED FAILURE, not a harness bug. Over ALL four contiguous partitions of the "
+    "3-column domain, two change the final state: (1,1,1) moves 16 of 144 cells and "
+    "(2,1) moves 31, up to 21% of the state, decided purely by where the tile "
+    "boundary falls. The `ncmin` scalar keeps the last column's threshold, so a tile "
+    "ending on the sea column gates ALL of its columns on ncmin_sea. An MPI rank "
+    "boundary IS a tile boundary, so this is the rank-count dependence too. "
+    "strict=True: if it starts passing the behaviour changed and it must be promoted "
+    "to a requirement. Production physics is frozen; the corrected variant is an "
+    "owner decision."))
 def test_tile_decomposition_invariance():
-    """M(X) must not depend on how the columns are split across kernel calls."""
+    """M(X) must not depend on how the columns are split across kernel calls.
+
+    Exhaustive over the compositions of the domain, not just even splits: the even
+    split misses (2,1), which is the worst case here.
+    """
+    _, authority = gfx.load_fixture(FIXTURE)
     with tempfile.TemporaryDirectory(prefix="g33-tile.") as td:
         tmp = Path(td)
-        one, three = _tiled(tmp, 1), _tiled(tmp, 3)
-    assert set(one) == set(three)
-    bad = sorted(k for k in one if one[k] != three[k])
-    assert not bad, (
-        f"{len(bad)} of {len(one)} final-state cells depend on the tiling, "
-        f"columns {sorted({k[1] for k in bad})} — the operator is not column-local")
+        whole = _tiled(tmp, (authority["B"],))
+        moved = {p: _tiled(tmp, p) for p in _compositions(authority["B"])
+                 if len(p) > 1}
+    bad = {p: sorted(k for k in whole if whole[k] != r[k]) for p, r in moved.items()}
+    offenders = {p: v for p, v in bad.items() if v}
+    assert not offenders, (
+        "the final state depends on the tiling: "
+        + "; ".join(f"{p} moves {len(v)}/{len(whole)} cells in columns "
+                    f"{sorted({k[1] for k in v})}" for p, v in offenders.items()))
