@@ -118,6 +118,10 @@ int main(int argc, char** argv) {
         torch::NoGradGuard no_grad;
         std::string algorithm = "legacy";
         int nsplit = 0;
+        // Diagnostic only. The state at each intermediate call boundary, which is
+        // what an entry clamp sees on re-entry -- the final state cannot show
+        // whether a cap bound at 100 s and 200 s.
+        bool emit_each = false;
         for (int i = 1; i < argc; ++i) {
             const std::string a = argv[i];
             if (a.rfind("--algo=", 0) == 0) {
@@ -126,6 +130,8 @@ int main(int argc, char** argv) {
                 // run under an algorithm it was not executed with.
                 if (algorithm != "legacy" && algorithm != "conservative")
                     throw std::runtime_error("--algo must be legacy or conservative");
+            } else if (a == "--emit-each") {
+                emit_each = true;
             } else if (a.rfind("--nsplit=", 0) == 0) {
                 nsplit = std::stoi(a.substr(9));
             } else {
@@ -185,6 +191,26 @@ int main(int argc, char** argv) {
             snow = snow.defined() ? snow + r.snow_increment : r.snow_increment;
             graupel = graupel.defined() ? graupel + r.graupel_increment
                                         : r.graupel_increment;
+            if (emit_each && n + 1 < nsplit) {
+                // BOUNDARY records, a distinct class from STATE, so the strict
+                // parser rejects a diagnostic stream fed to the analyzer rather
+                // than averaging intermediate states into a member.
+                auto fs = s.fields();
+                static const char* nm[12] = {"th","qv","qc","qr","qi","qs","qg",
+                                             "nccn","nc","ni","nr","bg"};
+                for (int j = 0; j < 12; ++j) {
+                    auto t = fs[j]->detach().to(torch::kFloat32).contiguous().cpu()
+                                 .view({fx::B, fx::K});
+                    const float* pv = t.data_ptr<float>();
+                    for (int64_t bb = 0; bb < fx::B; ++bb)
+                        for (int64_t kk = 0; kk < fx::K; ++kk)
+                            std::cout << "G33R BOUNDARY " << (n + 1) << " " << nm[j]
+                                      << " " << (bb + 1) << " " << kk << " "
+                                      << std::hex << std::setw(8) << std::setfill('0')
+                                      << bits_from_f32(pv[bb * fx::K + kk])
+                                      << std::dec << std::setfill(' ') << "\n";
+                }
+            }
         }
 
         // The loops/dtcld the KERNEL used, by its own rule (coordinator.cpp:1297,
