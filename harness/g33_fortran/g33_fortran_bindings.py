@@ -499,6 +499,19 @@ SURFACE_FIELDS = [
     ("surface_denr", "f32", "denr"),
 ]
 
+#: Surface NUMBER flux operands (owner §5). `falln` accumulates falkn = nrs*workn,
+#: and nrs IS the prognostic number MIXING ratio (`nrs(i,k,1) = nr(i,k,j)`, F:388),
+#: so falln is [# kg-1 s-1] and the per-area flux is falln*den*delz*dtcld [# m-2].
+#: Raw operands only -- forming the product here would bury that reasoning in a
+#: Fortran expression nobody reviews.
+SURFACE_NUMBER_FIELDS = [
+    ("bottom_falln_nr", "falln(i,kts,1)"),
+    ("bottom_falln_ni", "falln(i,kts,2)"),
+    ("nflux_den", "den(i,kts)"),
+    ("nflux_delz", "delz(i,kts)"),
+    ("nflux_dtcld", "dtcld"),
+]
+
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [

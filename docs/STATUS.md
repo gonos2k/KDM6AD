@@ -108,7 +108,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   makes the *final-state manifestation* small at a fine step and does **not** make
   the measure mismatch non-structural: the transfer still uses ρΔz for mass and
   Δz-only for number, in the source, independent of timestep. No column-number CLOSURE is possible from the current drivers — the surface
-  NUMBER flux is not emitted, only mass precipitation — and the measurement is the
+  NUMBER flux is not emitted, only mass precipitation; it is `falln(i,kts,1:2)`
+  (rain and ice number), a kernel **local** at `module_mp_kdm6.F:719` with no
+  `intent`, so it is reachable only through the SHA-pinned macro-gated overlay that
+  recovered `mstep`, **not** by a driver edit as an earlier note claimed — and the measurement is the
   **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
   the rain-number channel this row names is still unexercised.
   See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
@@ -126,10 +129,68 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
   +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
   ordering by how well they converge.** Consequence: §9's obstacle is a
-  **sweep-design** problem, not an intrinsic property of the fixture — a chain over
-  which `mstep` is constant would give column 3 a valid domain. The analyzer now prints each flip's share of
+  **sweep-design** problem — but making `mstep` constant is **necessary and not
+  sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
+  valid domain" that stood here is **withdrawn**. Measured: `mstep` reaches 1 at
+  h = 12.5 s (col 2) and h = 6.25 s (col 3), while extending the chain to h = 0.39 s
+  shows the successive differences **stop falling and start growing** below
+  h = 3.125 s (`th` 1.46e-3 → 2.69e-3 → 6.41e-3; members bit-identical on re-run, so
+  accumulated f32 roundoff, not nondeterminism). Since an order needs three members,
+  the finest clean order is 12.5→6.25, leaving column 1 **four** clean orders
+  (`+1.969, +1.002, +1.000, +1.002`), column 2 **one** (`+0.066`) and column 3
+  **none**. A usable fixture needs `mstep` to reach 1 by h ≈ 25 s — ~4× slower fall
+  speeds — which merges this with the §6 smooth-cold-fixture requirement rather than
+  being a separate need. Column 3's ρΔz **ice number** does converge throughout
+  (`+1.121, +1.029, +1.052`), so that channel has an order where column water has
+  none.
+  See [`../harness/evidence/FINDING_refinement_noise_floor_v1.md`](../harness/evidence/FINDING_refinement_noise_floor_v1.md).
+- **Column 3 DOES have a valid convergence domain — in the ice chain, and the
+  domain is per-CHAIN not per-column.** The kernel runs two sedimentation
+  sub-cycles with separate counts (F:1179-1180): `mstep` governs **qr, nr, qs, qg**
+  and `mstep_i` governs **qi, ni**. `mstep_i` was a kernel local nothing emitted;
+  reached through a new anchored overlay site, it reaches 1 at **h = 25 s** in
+  column 3 where the main chain needs **h = 6.25 s**. `ni` column number never
+  meets the noise floor (successive differences fall monotonically 1.76e8 → 9.72e5,
+  relative signal ~1e-2 against `th`'s ~5e-6), so inside that window it has **five
+  clean successive orders — `+1.461, +0.863, +1.121, +1.029, +1.052`** — first
+  order, tightening at the fine end. Column *water* still gets none, now for a
+  stated reason: it contains qr/qs/qg and so inherits the **main** chain's h ≤ 6.25
+  against a noise floor at h ≥ 3.125. This explains what the previous row recorded
+  as an unexplained positive result. **The surface number flux is now emitted too**
+  (`falln(i,kts,1:2)` + den/delz/dtcld as operands), validated at the same site
+  against `bottom_fall_qr`: mean rain-drop mass 5.4–8.6e-10 kg (0.10–0.12 mm),
+  consistent across columns. It measures that **every column loses all its rain
+  number while the surface accounts for only 1.4–5.8%** — so a transport-side `nr`
+  defect would sit under a sink 1–2 orders larger. **Still not a closure**: `R_N`
+  is defined, not checked; the microphysical number tendencies are per-cell locals.
+  Both emissions sit under their own `KDM6_G33_NUMBER_DUMP`, never defined by
+  `fortran_build.sh` — the decision-path stream is **bit-identical** to before, and
+  the instrumented run is **bit-identical** to the plain build.
+  See [`../harness/evidence/FINDING_two_sedimentation_chains_v1.md`](../harness/evidence/FINDING_two_sedimentation_chains_v1.md). The analyzer now prints each flip's share of
   column water beside it so the record cannot be re-read as a sufficient
   explanation.
+- **The refinement bundle is reproducible, and the reproduction was run.** Its
+  provenance previously named the compiler as a string the caller typed and carried
+  an empty `compile_commands` list, which is indistinguishable from a build nobody
+  recorded; members were admitted on a BEGIN-line regex rather than the strict
+  parser. The **build** now writes what only it knows — compiler path/sha256/version,
+  the commands as it compiles them, build-script and source digests, commit and
+  `tree_dirty` — and `_member()` goes through `g33_refine_analyze.read()`. Rebuilt
+  from a clean tree at `29c5119`, all six members reproduce with an **insertion-only
+  diff (0 removed, 0 changed, 180 added)**: every committed record is bit-identical,
+  and the additions are 144 `INITIAL` + 36 `FORCING` records the driver gained later.
+  Compared against `budget/`, a separately-compiled bundle over the same six members,
+  **all six outputs are byte-identical across builds 7.5 hours apart** — so the
+  Fortran refinement leg is bit-reproducible on this host, and every ρΔz column-budget
+  order STATUS cites (col 1 `+1.002`; col 3 `−5.860, +3.884, −1.017, +0.407`)
+  reproduces exactly from the fresh build.
+  The bundle was refreshed to the rebuilt streams — not cosmetic, since without
+  `FORCING` there is no ρΔz and the old streams could not support the column water
+  budget, either ledger, or the diagnostic-trust table. **Limits**: one host and one
+  compiler, so cross-host reproduction is enabled but untested; and this producer
+  *records* `tree_dirty` where the decision-bundle producers *refuse* it — deliberate
+  for a `decision_eligible: false` artifact, but an owner call.
+  See [`../harness/evidence/FINDING_refinement_provenance_v1.md`](../harness/evidence/FINDING_refinement_provenance_v1.md).
 - **The conservative variant does not satisfy time-step composition, and the cause is
   localised.** `Φ_cons(300) ≠ Φ_cons(100)∘Φ_cons(100)∘Φ_cons(100)` (18 records,
   ΔT ≤ 2.67e-03 K) while the legacy composition holds **bitwise** (132/132). Both
@@ -153,8 +214,12 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   up to 21% of the state decided by where the tile boundary falls, with all twelve
   prognostics moving in the affected columns. A tile ending on the sea column gates *all*
   of its columns on `ncmin_sea`, which is why `(2,1)` is worse than isolating the sea
-  column, and why an even split misses it. **An MPI rank boundary is a tile boundary**, so
-  this is the rank-count dependence as well. Both gates are inert on the all-land
+  column, and why an even split misses it. **An MPI rank boundary is a tile boundary**, so there is a strong
+  mechanism for rank-count dependence — but that is a **prediction, not a
+  measurement**: a real host adds halo width, the `its:ite` against `ims:ime`
+  relationship, per-rank land/sea layout and exchange timing. A genuine gate needs
+  the same global mixed-coastal case at np = 1/2/4, reassembled in one ordering and
+  compared raw-bit. Both gates are inert on the all-land
   arithmetic fixtures and require `boundary_mapping_v1`. A mixed coastal **real** case
   remains untested. See [`../harness/evidence/FINDING_ncmin_scalar_vs_percell.md`](../harness/evidence/FINDING_ncmin_scalar_vs_percell.md).
 - **The P0-4b diagnostic/column-loss disagreement is a strong function of timestep,

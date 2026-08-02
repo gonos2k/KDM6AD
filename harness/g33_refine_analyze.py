@@ -370,7 +370,13 @@ T0C = 273.15
 
 
 def topology(run: dict) -> dict:
-    """Final branch state: the cold/warm mask and which species are present.
+    """FINAL-STATE PRESENCE PROXY -- not the branch topology (owner §8).
+
+    A single |x| > 1e-12 across every field. The kernel's real gates are per field
+    and per process (`qcrmin`, `qmin`/EPS, the qi threshold, `nrmin`/`ncmin`,
+    complete evaporation, mstep/cap), and this sees only the FINAL state, so calling
+    it "branch topology" overstates its scope. It was already promoted to a causal
+    proof once and withdrawn; it must not be again.
 
     A classical order is only meaningful within one smooth branch (§5). This is
     ONE-SIDED: a difference between members proves the topology moved; agreement
@@ -416,7 +422,8 @@ def topology_report(runs: dict) -> None:
         tot = sum(w[k] * sum(r[("state", f, c, k)] for f in MASS) for k in ks)
         return (sum(w[k] * r[("state", fld, c, k)] for k in ks) / tot) if tot else 0.0
 
-    print(f"\n  final branch topology, against the coarsest member (N={ns[0]})")
+    print(f"\n  final-state presence proxy, against the coarsest member "
+          f"(N={ns[0]}) — NOT the branch topology")
     any_diff = False
     for n in ns[1:]:
         diff = sorted(k for k in ref if ref[k] != t[n][k])
@@ -456,6 +463,25 @@ def _enthalpies(t: float) -> tuple:
     return CPD * dt, CPV * dt + XLV, CLIQ * dt, CICE * dt - XLF
 
 
+def outflow_split(run: dict, c: int, ks) -> dict:
+    """-dW_col decomposed into what the diagnostic reports leaving at the bottom
+    and what is unaccounted (owner P0-4).
+
+        -dW_col = P_bottom + D_internal
+
+    On this fixture D_internal is ~0 for the conservative interface (roundoff) and
+    NEGATIVE for legacy -- the diagnostic reports MORE outflow than the column lost,
+    which is the opposite sign from the P0-4b real-case defect where column loss
+    EXCEEDED the diagnostic. Because the ledger charges `-dW_col` and not the
+    diagnostic, it never charges phantom mass; what remains open is the LEVEL the
+    departing water is charged at, which `_ledger` reports as a band.
+    """
+    w = _water_out(run, c, ks)
+    p = total_precip(run, c)
+    return {"water_out": w, "P_bottom": p, "D_internal": w - p,
+            "D_share": (w - p) / w if w else float("nan")}
+
+
 def _ledger(run: dict, h_cell, h_precip_out) -> dict:
     """residual = (H_end - H_start) + H carried out by precipitation, per column.
 
@@ -484,6 +510,17 @@ def _ledger(run: dict, h_cell, h_precip_out) -> dict:
              "H_start": h_start}
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
+        # MODELLING BAND, not an error bar. The departing water is charged at the
+        # bottom-level temperature; nothing in the endpoint data says it left from
+        # there. Recomputing the residual with every level in turn bounds how much
+        # that choice is worth. On this fixture it is 15% of the legacy column-2
+        # residual and 131% of the conservative one -- large enough that a point
+        # value would overstate the comparison (owner P0-4).
+        band = []
+        for k in ks:
+            alt = h_precip_out(run, c, k, ks)
+            band.append((d["dH"] + alt) / abs(h_start) if h_start else float("nan"))
+        d["relative_band"] = (min(band), max(band))
         out[c] = d
     return out
 
@@ -621,12 +658,17 @@ def ledger_report(runs: dict) -> None:
         for n in ns:
             for c in sorted(L[n]):
                 d = L[n][c]
+                lo, hi = d["relative_band"]
                 print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} "
-                      f"{d['relative']:12.3e}")
+                      f"{d['relative']:12.3e}  [{lo:.2e},{hi:.2e}]")
 
 
-def diagnostic_trust_report(runs: dict) -> None:
-    """Is the fallout diagnostic usable as a physical quantity in THIS run?
+def diagnostic_budget_consistency_report(runs: dict) -> None:
+    """Does the fallout diagnostic agree with the column-water budget in THIS run?
+
+    Named for what it measures (owner §10). A ratio of 1 means the diagnostic IS the
+    budget and may be used as a physical quantity -- it says nothing about whether
+    the precipitation is meteorologically right.
 
     Three separate conclusions in this evidence set were wrong because the fallout
     diagnostic was read as if it were the water that left the column. P0-4b records
@@ -673,7 +715,7 @@ def main(argv) -> int:
     budget_report(runs)
     topology_report(runs)
     ledger_report(runs)
-    diagnostic_trust_report(runs)
+    diagnostic_budget_consistency_report(runs)
     return 0
 
 

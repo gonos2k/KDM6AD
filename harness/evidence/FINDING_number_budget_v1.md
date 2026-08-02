@@ -94,8 +94,22 @@ topology caveat.
 ## What this does NOT establish
 
 - **No number closure.** `ΔN_col + F_N,surface = R_N` cannot be evaluated without
-  the surface number flux, which neither driver emits. Adding it is a driver change,
-  not a kernel change, so it is reachable — it is simply not done.
+  the surface number flux, which neither driver emits.
+
+  **Correction.** An earlier version of this line said "adding it is a driver
+  change, not a kernel change". That is wrong. The surface number flux is
+  `falln(i,kts,1)` (rain number, paired with `nrs`) and `falln(i,kts,2)` (ice
+  number, paired with `nci`), and `falln` is declared at `module_mp_kdm6.F:719`
+  **in the local block, with no `intent`** — it is never returned, so no driver
+  can see it. It is reachable, but by the SHA-pinned macro-gated **overlay** —
+  the same mechanism that recovered `mstep` from a local — which requires a new
+  anchored injection site and its A/B/C non-invasiveness proof, not a driver
+  edit. The conclusion "reachable, simply not done" stands; the cost does not.
+
+  Visible at that same site, in the pinned reference itself, is the measure
+  asymmetry this finding is about: `falk = dend*qrs*work1/mstep` against
+  `falkn = nrs*workn/mstep`, and `qrs -= falk*dtcld/dend` against
+  `nrs -= falkn*dtcld`.
 - **No operational size.** The one step where the mechanism is cleanly measurable
   (3.125 s) is far finer than operational. The operationally normal steps
   (25–100 s) sit where the sedimentation sub-step count changes most (`mstep`

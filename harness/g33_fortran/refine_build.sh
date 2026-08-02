@@ -13,7 +13,7 @@ HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
-ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0
+ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0; NFLUX=0
 for a in "$@"; do
     case "$a" in
         --algo=*)    ALGO="${a#--algo=}" ;;
@@ -24,6 +24,9 @@ for a in "$@"; do
         # run using it must be checked to produce a bit-identical final state
         # against the uninstrumented build before its records are believed.
         --dump)      DUMP=1 ;;
+        # The surface number flux and the ice sub-step count. Its own macro, so
+        # the decision-bundle build (fortran_build.sh) never emits them.
+        --nflux)     DUMP=1; NFLUX=1 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -45,7 +48,13 @@ REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)
 DRIVER_FLAGS=("${COMMON_FLAGS[@]}" -ffp-contract=off -Wall)
-fc() { local o="$1"; shift; "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
+# Every compile command is logged. An empty command list in a manifest is
+# indistinguishable from a build nobody recorded, so the build writes it rather
+# than leaving it to a caller that may not pass it (owner §9).
+CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
+fc() { local o="$1"; shift
+       printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
+       "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
 
 fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$FIXTURE_SRC"
@@ -62,6 +71,7 @@ if [ "$DUMP" = 1 ]; then
     MODULE_SRC="$OUT/module_mp_ovl.F"
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$MODULE_SRC" --algo="$ALGO" >/dev/null
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
+    [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi
 fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
 fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
@@ -71,4 +81,7 @@ fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVD
     "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o" \
     "$OUT/stub_wrf_error.o" "$OUT/libmassv.o" 2>"$OUT/link.err" \
     || { echo "LINK FAILED"; head -25 "$OUT/link.err"; exit 1; }
+# What built this -- compiler digest, commands, source digests (owner §9).
+python3 "$(dirname "$0")/../g33_build_provenance.py" \
+    "$OUT" "$FC" "$MODULE_SRC" "$FIXTURE_SRC" "$0"
 echo "$OUT"

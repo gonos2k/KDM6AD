@@ -730,6 +730,83 @@ def test_the_topology_share_is_rho_dz_weighted(tmp_path):
     assert weighted != pytest.approx(unweighted), "fixture must separate the two"
 
     src = (ROOT / "g33_refine_analyze.py").read_text()
-    body = src[src.index("    def _share("):src.index("    print(f\"\\n  final branch topology")]
+    body = src[src.index("    def _share("):src.index("    print(f\"\\n  final-state presence proxy")]
     code = "\n".join(l.split("#", 1)[0] for l in body.splitlines())
     assert "forcing" in code and "rho" in code, "_share must weight by rho*dz"
+
+
+def test_the_ledger_reports_a_modelling_band(tmp_path):
+    """Owner P0-4: the departing water is charged at the bottom-level temperature
+    and nothing in the endpoint data says it left from there. The band recomputes
+    the residual with every level in turn. On the real fixture it is 131% of the
+    conservative column-2 residual, so a point value would overstate the ~10x
+    comparison."""
+    L = ra.enthalpy_ledger(ra.read(_stream_ledger(tmp_path, th_end="438C0000")))
+    lo, hi = L[1]["relative_band"]
+    assert lo <= L[1]["relative"] <= hi
+
+
+def test_the_outflow_split_separates_bottom_flux_from_the_unaccounted_part(tmp_path):
+    """-dW_col = P_bottom + D_internal. Conservative reads D_internal ~ 0; legacy
+    reads it NEGATIVE on this fixture, i.e. the diagnostic over-reports -- the
+    opposite sign from the P0-4b real-case defect."""
+    p = _stream_ledger(tmp_path, name="s.txt")
+    txt = p.read_text().replace("G33R STATE qr 1 0 3F800000", "G33R STATE qr 1 0 00000000")
+    txt = txt.replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F000000")   # 0.5
+    r = ra.read(_write(tmp_path, txt, "s2.txt"))
+    d = ra.outflow_split(r, 1, sorted({k[3] for k in r if k[0] == "state"}))
+    assert d["water_out"] == pytest.approx(1.0)
+    assert d["P_bottom"] == pytest.approx(0.5)
+    assert d["D_internal"] == pytest.approx(0.5)     # here the column lost MORE
+    assert d["D_share"] == pytest.approx(0.5)
+
+
+def test_the_manifest_uses_the_STRICT_parser_for_members(tmp_path):
+    """Owner §9: reading only the BEGIN line would admit a truncated or ragged
+    member into the manifest — precisely what the strict reader rejects, and the
+    manifest is what claims the table is reproducible."""
+    d = tmp_path / "out"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    lines = _stream(nsplit=6).splitlines()
+    del lines[5]                                   # ragged: one state record short
+    (d / "n6.rezero.txt").write_text("\n".join(lines) + "\n")
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    with pytest.raises(ra.RefineError):
+        rm.build(d, module=mod, fixture=fix, compiler="gfortran-test")
+
+
+def test_build_provenance_absent_is_null_not_an_empty_list(tmp_path):
+    """An empty command list is indistinguishable from a build nobody recorded.
+    `null` says which one it is."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    man = rm.build(d, module=mod, fixture=fix, compiler="c")
+    assert man["build_provenance"] is None
+
+
+def test_findings_are_linked_by_digest(tmp_path):
+    """A finding citing a table nobody can tie to the run it came from is
+    unreviewable (owner §9)."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    doc = tmp_path / "FINDING_x.md"; doc.write_text("# a claim\n")
+    man = rm.build(d, module=mod, fixture=fix, compiler="c", findings=[doc])
+    assert man["findings"] == [{"path": str(doc), "sha256": rm.sha256(doc)}]
+    assert rm.build(d, module=mod, fixture=fix, compiler="c")["findings"] == []
+
+
+def test_a_finding_that_is_not_there_is_loud(tmp_path):
+    """Silently recording nothing would leave the manifest claiming a link it
+    does not have."""
+    d = tmp_path / "o"; d.mkdir()
+    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    with pytest.raises(FileNotFoundError):
+        rm.build(d, module=mod, fixture=fix, compiler="c",
+                 findings=[tmp_path / "absent.md"])
