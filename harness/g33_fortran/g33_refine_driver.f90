@@ -59,7 +59,7 @@ contains
     value = transfer(bits, value)
   end function f32
 
-  subroutine run_refined(im, km, nsplit, carry_aux, outF, precF, denO, delzO, piiO)
+  subroutine run_refined(im, km, nsplit, carry_aux, outF, precF, denO, delzO, piiO, inF)
     integer, intent(in)  :: im, km, nsplit
     logical, intent(in)  :: carry_aux
     real,    intent(out) :: outF(im, km, NFLD_ST), precF(3, im)
@@ -67,6 +67,9 @@ contains
     ! paired with the state in the SAME k convention, and re-deriving them in the
     ! analyzer from the fixture would be a second source that could drift.
     real,    intent(out) :: denO(im, km), delzO(im, km), piiO(im, km)
+    ! t=0 state, for the enthalpy ledger. Emitted rather than re-read from
+    ! the fixture so the ledger's endpoints come from ONE source.
+    real,    intent(out) :: inF(im, km, NFLD_ST)
     real, dimension(1:im,1:km) :: den, pii, p, delz
     real, dimension(1:im,1:1)  :: xland, rainF, rainncv, snowF, snowncv
     real, dimension(1:im,1:1)  :: srF, graupelF, graupelncv
@@ -112,6 +115,17 @@ contains
       srF(i,1) = 0.0; graupelF(i,1) = 0.0; graupelncv(i,1) = 0.0
     end do
     rhoxk = 0.0; cmgk = 0.0; n0so2d = 0.0; n0go2d = 0.0
+
+    do i = 1, im
+      do k = 1, km
+        inF(i,k,1)  = tk(i,k)/pii(i,k); inF(i,k,2)  = qk(i,k)
+        inF(i,k,3)  = qcik(i,k,1);      inF(i,k,5)  = qcik(i,k,2)
+        inF(i,k,4)  = qrsk(i,k,1);      inF(i,k,6)  = qrsk(i,k,2)
+        inF(i,k,7)  = qrsk(i,k,3);      inF(i,k,8)  = ncik(i,k,3)
+        inF(i,k,9)  = ncik(i,k,1);      inF(i,k,10) = ncik(i,k,2)
+        inF(i,k,11) = nrsk(i,k,1);      inF(i,k,12) = brsk(i,k)
+      end do
+    end do
 
     do s = 1, nsplit
       ! The four kdm62D auxiliaries carry no intent in -- established by the
@@ -188,6 +202,7 @@ program g33_refine_driver
   implicit none
   integer, parameter :: IM = G33_B, KM = G33_K
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
+  real :: inF(IM,KM,NFLD_ST)
   character(len=32) :: arg
   integer :: nsplit, i, k, f, ios, loops_used
   integer(int32) :: b
@@ -213,7 +228,7 @@ program g33_refine_driver
 
   delt_used = f32(DT_BITS) / real(nsplit)
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
-  call run_refined(IM, KM, nsplit, carry_aux, outF, precF, denO, delzO, piiO)
+  call run_refined(IM, KM, nsplit, carry_aux, outF, precF, denO, delzO, piiO, inF)
 
   ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
   ! intended: the sweep must refine dtcld, and a reader should be able to check
@@ -228,6 +243,14 @@ program g33_refine_driver
     do k = 1, KM
       do i = 1, IM
         call emit_fld(FLDNAME(f), i, KM-k, outF(i,k,f))
+      end do
+    end do
+  end do
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        b = transfer(inF(i,k,f), b)
+        write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R INITIAL', FLDNAME(f), i, KM-k, b
       end do
     end do
   end do

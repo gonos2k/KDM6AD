@@ -63,7 +63,7 @@ import struct
 import sys
 from pathlib import Path
 
-_STATE = re.compile(r"^G33R STATE\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
+_STATE = re.compile(r"^G33R (STATE|INITIAL)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33R PREC\s+(\d+)\s+(\d+)\s+([0-9A-Fa-f]{8})$")
 _FORCING = re.compile(r"^G33R FORCING\s+(rho|delz|pii)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 
@@ -137,8 +137,8 @@ def read(path: Path, *, nsplit=None) -> dict:
         if not ln.startswith("G33R"):
             continue                     # non-record chatter inside the block
         if m := _STATE.match(ln):
-            fld, i, k, b = m.groups()
-            key = ("state", fld, int(i), int(k))
+            cls, fld, i, k, b = m.groups()
+            key = (cls.lower(), fld, int(i), int(k))
         elif m := _PREC.match(ln):
             f, i, b = m.groups()
             key = ("prec", int(f), int(i))
@@ -157,6 +157,7 @@ def read(path: Path, *, nsplit=None) -> dict:
         out[key] = v
 
     fo = [k for k in out if k[0] == "forcing"]
+    init = [k for k in out if k[0] == "initial"]
     st = [k for k in out if k[0] == "state"]
     pr = [k for k in out if k[0] == "prec"]
     fields = {k[1] for k in st}
@@ -179,6 +180,9 @@ def read(path: Path, *, nsplit=None) -> dict:
             _expect(got == cells,
                     f"forcing `{nm}` covers {len(got)} cells, state covers "
                     f"{len(cells)}", path)
+    if init:
+        _expect(len(init) == len(st),
+                f"initial state has {len(init)} records, final has {len(st)}", path)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo
@@ -453,6 +457,100 @@ def topology_report(runs: dict) -> None:
               "establish it: an\n       intermediate flip can heal before the end.")
 
 
+# ── physical moist-enthalpy ledger (owner review §8.2) ───────────────────────
+#
+# All from module_model_constants.F, the authority both legs compile against:
+CPD, CPV = 7 * 287.0 / 2, 4 * 461.6      # 1004.5, 1846.4  (F:20, F:24)
+CLIQ, CICE = 4190.0, 2106.0              # F:27, F:28
+XLV, XLF, XLS = 2.5e6, 3.5e5, 2.85e6     # F:55, F:56, F:54
+# XLS - XLV == XLF exactly, so the set is self-consistent at T0 and the reference
+# enthalpies below cannot disagree with the code's own latent heats at T0.
+
+_LIQUID = ("qc", "qr")
+_ICE = ("qi", "qs", "qg")
+
+
+def _enthalpies(t: float) -> tuple:
+    """Specific enthalpy of each phase at T, referenced to T0 = 273.15 K.
+
+        h_d = cpd (T-T0)          h_v = cpv (T-T0) + XLV
+        h_l = cliq (T-T0)         h_i = cice (T-T0) - XLF
+
+    so h_v - h_l = XLV, h_l - h_i = XLF and h_v - h_i = XLS at T0, matching the
+    code's constants exactly. This is the CONSISTENT construction of §8.2 -- note
+    it is deliberately NOT the code's own xlcal/cpmcal approximation, which is the
+    point: §3.1 observes the code's dxlf/dT is c_l - c_pv = 2343.6 where a
+    Kirchhoff-consistent value is c_l - c_i = 2084.
+    """
+    dt = t - T0C
+    return CPD * dt, CPV * dt + XLV, CLIQ * dt, CICE * dt - XLF
+
+
+def enthalpy_ledger(run: dict) -> dict:
+    """Column moist-enthalpy residual per column, or {} if endpoints are missing.
+
+        H_col = sum_k rho_k dz_k [ h_d + qv h_v + ql h_l + qi h_i ]
+        residual = (H_end - H_start) + H carried out by precipitation
+
+    With no external forcing in this fixture the residual should be zero.
+
+    Approximations, stated because they bound what the number means: mixing ratios
+    are treated as per unit dry air while rho is moist density, and the
+    precipitation flux is evaluated at the bottom-level temperature. Both are
+    common to every leg, so a COMPARISON of residuals between policies is
+    meaningful even where the absolute value is not.
+    """
+    if not any(k[0] == "initial" for k in run) or \
+       not any(k[0] == "forcing" and k[1] == "pii" for k in run):
+        return {}
+    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
+    out = {}
+    for c in sorted({x for x, _ in cells}):
+        ks = sorted(k for cc, k in cells if cc == c)
+
+        def H(cls):
+            tot = 0.0
+            for k in ks:
+                pii = run[("forcing", "pii", c, k)]
+                t = run[(cls, "th", c, k)] * pii
+                hd, hv, hl, hi = _enthalpies(t)
+                w = run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+                tot += w * (hd
+                            + run[(cls, "qv", c, k)] * hv
+                            + sum(run[(cls, f, c, k)] for f in _LIQUID) * hl
+                            + sum(run[(cls, f, c, k)] for f in _ICE) * hi)
+            return tot
+
+        kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
+            run[("forcing", "pii", c, ks[-1])] else ks[0]
+        tbot = run[("state", "th", c, kbot)] * run[("forcing", "pii", c, kbot)]
+        _, _, hl, hi = _enthalpies(tbot)
+        # precipitation is mm == kg/m^2 of water reaching the surface
+        rain = run[("prec", 1, c)]
+        ice = run[("prec", 2, c)] + run[("prec", 3, c)]
+        out[c] = {"dH": H("state") - H("initial"),
+                  "H_precip_out": rain * hl + ice * hi,
+                  "H_start": H("initial")}
+        out[c]["residual"] = out[c]["dH"] + out[c]["H_precip_out"]
+        out[c]["relative"] = (out[c]["residual"] / abs(out[c]["H_start"])
+                              if out[c]["H_start"] else float("nan"))
+    return out
+
+
+def ledger_report(runs: dict) -> None:
+    ns = sorted(runs)
+    L = {n: enthalpy_ledger(runs[n]) for n in ns}
+    if not L[ns[0]]:
+        print("\n  enthalpy ledger: initial state or `pii` missing")
+        return
+    print("\n  moist-enthalpy column residual   (dH + H_precip_out; zero if closed)")
+    print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} {'relative':>12}")
+    for n in ns:
+        for c in sorted(L[n]):
+            d = L[n][c]
+            print(f"    {300/n:7g} {c:3d} {d['residual']:18.6e} {d['relative']:12.3e}")
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
@@ -469,6 +567,7 @@ def main(argv) -> int:
     per_field(runs)
     budget_report(runs)
     topology_report(runs)
+    ledger_report(runs)
     return 0
 
 

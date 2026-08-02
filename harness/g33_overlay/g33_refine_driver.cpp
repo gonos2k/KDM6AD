@@ -204,8 +204,29 @@ int main(int argc, char** argv) {
         const auto variant = algorithm == "conservative"
             ? PhysicsVariant::ConservativeInterface : PhysicsVariant::Legacy;
 
-        torch::Tensor rain, snow, graupel;
+        // The loops/dtcld the KERNEL used, by its own rule (coordinator.cpp:1297,
+        // runtime.cpp:415-420), not a hardcoded 1. At nsplit=1 this is 3 sub-cycles
+        // of 100 s, which is precisely what makes the N=1/N=3 pair a control: the
+        // C++ refreshes cpm/xl per SUB-CYCLE, so both arms refresh three times.
+        // Printing 1 here would have described the control as the thing it is not.
         const int ncalls = static_cast<int>(segments.size());
+        const int loops = kdm6::compute_loops_max(delt, kdm6::constants::DTCLDCR);
+        const double dtcld = static_cast<double>(
+            static_cast<float>(delt / static_cast<double>(loops)));
+        std::cout << "G33R BEGIN nsplit " << ncalls << " rezero " << algorithm
+                  << "-cpp delt " << std::fixed << std::setprecision(6) << delt
+                  << " loops " << loops << " dtcld " << dtcld
+                  << std::defaultfloat << "\n";
+        // t=0 state, for the enthalpy ledger. Emitted rather than re-derived from
+        // the fixture header so both endpoints of the ledger come from ONE source.
+        {
+            auto f0 = s.fields();
+            static const char* nm0[12] = {"th","qv","qc","qr","qi","qs","qg",
+                                          "nccn","nc","ni","nr","bg"};
+            for (int j = 0; j < 12; ++j)
+                emit(nm0[j], *f0[j], fx::B, fx::K, "INITIAL");
+        }
+        torch::Tensor rain, snow, graupel;
         for (int n = 0; n < ncalls; ++n) {
             auto r = kdm6::kdm6_step(s, f, kdm6::make_parameters(0), segments[n],
                                      /*value_only=*/true, xland,
@@ -243,18 +264,6 @@ int main(int argc, char** argv) {
             }
         }
 
-        // The loops/dtcld the KERNEL used, by its own rule (coordinator.cpp:1297,
-        // runtime.cpp:415-420), not a hardcoded 1. At nsplit=1 this is 3 sub-cycles
-        // of 100 s, which is precisely what makes the N=1/N=3 pair a control: the
-        // C++ refreshes cpm/xl per SUB-CYCLE, so both arms refresh three times.
-        // Printing 1 here would have described the control as the thing it is not.
-        const int loops = kdm6::compute_loops_max(delt, kdm6::constants::DTCLDCR);
-        const double dtcld = static_cast<double>(
-            static_cast<float>(delt / static_cast<double>(loops)));
-        std::cout << "G33R BEGIN nsplit " << ncalls << " rezero " << algorithm
-                  << "-cpp delt " << std::fixed << std::setprecision(6) << delt
-                  << " loops " << loops << " dtcld " << dtcld
-                  << std::defaultfloat << "\n";
         static const char* names[12] = {"th", "qv", "qc", "qr", "qi", "qs", "qg",
                                         "nccn", "nc", "ni", "nr", "bg"};
         auto fields = s.fields();

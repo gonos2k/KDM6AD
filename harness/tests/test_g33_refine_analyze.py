@@ -518,3 +518,69 @@ def test_a_value_below_qmin_does_not_count_as_present(tmp_path):
     tiny = struct.unpack("<I", struct.pack("<f", 1.0e-20))[0]
     r = ra.read(_write(tmp_path, _stream_top(qg=f"{tiny:08X}")))
     assert ra.topology(r)[("qg", 1, 0)] is False
+
+
+# ── moist-enthalpy ledger (owner review §8.2) ────────────────────────────────
+
+def test_the_reference_enthalpies_reproduce_the_codes_latent_heats_at_T0():
+    """h_v - h_l = XLV, h_l - h_i = XLF, h_v - h_i = XLS at T0. The code's own
+    constants satisfy XLS - XLV == XLF exactly, so a consistent construction must
+    agree with all three -- otherwise the ledger disagrees with the kernel about
+    latent heat before any physics happens."""
+    hd, hv, hl, hi = ra._enthalpies(ra.T0C)
+    assert hd == 0.0
+    assert hv - hl == pytest.approx(ra.XLV)
+    assert hl - hi == pytest.approx(ra.XLF)
+    assert hv - hi == pytest.approx(ra.XLS)
+    assert ra.XLS - ra.XLV == pytest.approx(ra.XLF)
+
+
+def test_the_constants_are_the_fortran_ones():
+    """cp = 7 r_d/2 and cpv = 4 r_v are DERIVED in module_model_constants.F, not
+    written as literals, so a hardcoded 1004.5 here could drift from the kernel."""
+    assert ra.CPD == pytest.approx(7 * 287.0 / 2)
+    assert ra.CPV == pytest.approx(4 * 461.6)
+    assert (ra.CLIQ, ra.CICE) == (4190.0, 2106.0)
+
+
+def test_the_ledger_needs_both_endpoints(tmp_path):
+    """Without the initial state there is no dH, and reporting a residual computed
+    against an assumed start would be worse than reporting nothing."""
+    assert ra.enthalpy_ledger(ra.read(_write(tmp_path, _stream_fc()))) == {}
+
+
+def _stream_ledger(tmp_path, th_end="43800000", name="l.txt"):
+    """Initial == final except th, so dH isolates the temperature change."""
+    body = _stream(nsplit=3, B=1, K=1).splitlines()
+    init = [f"G33R INITIAL {f} 1 0 " + ("43800000" if f == "th" else "3F800000")
+            for f in ra.STATE_FIELDS]
+    fin = [f"G33R STATE {f} 1 0 " + (th_end if f == "th" else "3F800000")
+           for f in ra.STATE_FIELDS]
+    forc = [f"G33R FORCING {n} 1 0 3F800000" for n in ("rho", "delz", "pii")]
+    prec = [f"G33R PREC {f} 1 00000000" for f in (1, 2, 3)]
+    return _write(tmp_path, "\n".join([body[0]] + init + fin + forc + prec
+                                      + ["G33R END"]) + "\n", name)
+
+
+def test_an_unchanged_column_with_no_precipitation_closes_exactly(tmp_path):
+    """The null case. If this is not zero the ledger has an offset and every
+    comparison built on it inherits the offset."""
+    L = ra.enthalpy_ledger(ra.read(_stream_ledger(tmp_path)))
+    assert L[1]["residual"] == pytest.approx(0.0, abs=1e-9)
+
+
+def test_a_warmed_column_shows_a_positive_dH(tmp_path):
+    """Direction check: heating with no precipitation out must raise H, so the
+    residual is positive. A sign error here would invert every reading."""
+    L = ra.enthalpy_ledger(ra.read(_stream_ledger(tmp_path, th_end="438C0000")))
+    assert L[1]["dH"] > 0 and L[1]["residual"] > 0
+
+
+def test_precipitation_carries_enthalpy_out(tmp_path):
+    """The flux term must have the sign that CLOSES a column losing condensate,
+    not one that doubles the loss."""
+    p = _stream_ledger(tmp_path, name="p.txt")
+    txt = p.read_text().replace("G33R PREC 1 1 00000000", "G33R PREC 1 1 3F800000")
+    L = ra.enthalpy_ledger(ra.read(_write(tmp_path, txt, "p2.txt")))
+    assert L[1]["H_precip_out"] != 0.0
+    assert L[1]["residual"] == pytest.approx(L[1]["dH"] + L[1]["H_precip_out"])
