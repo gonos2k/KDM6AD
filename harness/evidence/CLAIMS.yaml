@@ -150,6 +150,35 @@ claims:
     scope: g33_fixture_multisubcycle_v1, f32, column 2
     evidence: [FINDING_moist_enthalpy_ledger_v1.md]
 
+  - id: G33-ENTHALPY-001
+    text: >
+      The f64 moist-enthalpy non-closure is -42.09/-21.19/+443.74 J/m2 by column,
+      identical in legacy and conservative. eta ~ 100% there is algebraically
+      trivial (H_out ~ 0 makes eta = |dH|/|dH|), and eta is a norm, not an
+      acceptance criterion.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, f64 instrument arm
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-ENTHALPY-002
+    text: The f64 enthalpy non-closure is ~42 J/m2 per column.
+    status: withdrawn
+    superseded_by: G33-ENTHALPY-001
+    scope: g33_fixture_multisubcycle_v1 — generalised column 1 to all three
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-PRECIP-003
+    text: The f32 cap events on this fixture are created by f32 noise.
+    status: withdrawn
+    superseded_by: G33-PRECIP-001
+    scope: >
+      Causal phrasing ahead of the evidence: which gate diverges first, and
+      whether it is storage roundoff, accumulated arithmetic, a constant's
+      precision or post-branch amplification, is not established.
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition

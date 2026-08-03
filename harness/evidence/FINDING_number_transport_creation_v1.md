@@ -17,9 +17,17 @@ dnr  (i,k+1) = min(falkn(i,k+1,1)*delz(i,k+1)/delz(i,k)*dtcld,          ...)
 ```
 
 `nrs(i,k,1) = nr(i,k,j)` (F:388) makes `nrs` the prognostic number **mixing**
-ratio, so the physical column measure is `Σ den·delz·nr`. Weighted, `den(lower)·
-delz(upper)·a` arrives where `den(upper)·delz(upper)·a` left. Density increases
-downward, so **every interface creates number**.
+ratio, so the physical column measure is `Σ den·delz·nr`. Weighted,
+`den(lower)·delz(upper)·a` arrives where `den(upper)·delz(upper)·a` left, so the
+per-interface residual is
+
+    R_N = (den(lower) − den(upper)) · delz(upper) · a
+
+**The sign is the density gradient's** (owner §5.1). Where density increases
+downward — this fixture, and the troposphere generally — number is **created**.
+An inverted layer would destroy it. "Every interface creates number" is
+therefore scoped to a downward-increasing density profile, not a property of the
+transfer alone.
 
 ## Two things that look like proof and are not
 

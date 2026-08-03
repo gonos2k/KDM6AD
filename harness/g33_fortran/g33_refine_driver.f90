@@ -349,6 +349,17 @@ program g33_refine_driver
   write(*,'(A)') 'G33N STREAM_END'
 #endif
 #ifdef KDM6_G33_PRECISION_PROBE
+  ! The probe stream declares its own precision. Without it an f64 stream and an
+  ! f32 one are the same text with different numbers, and nothing structurally
+  ! stops a reader mixing them (owner P0-4 / priority 2). `source_precision` is
+  ! the precision of the REFERENCE this arm instruments, which is always f32.
+#ifdef KDM6_G33_F64
+  write(*,'(A,1X,I0,4(1X,A),2(1X,I0))') 'G33P BEGIN', 1, 'precision', 'f64', &
+        'source_precision', 'f32', IM, KM
+#else
+  write(*,'(A,1X,I0,4(1X,A),2(1X,I0))') 'G33P BEGIN', 1, 'precision', 'f32', &
+        'source_precision', 'f32', IM, KM
+#endif
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is
   ! f32 hex by contract; the question here is whether the fine-step turnover
   ! MOVES when the kernel is promoted to f64, and that cannot be asked through a
@@ -391,5 +402,6 @@ program g33_refine_driver
       write(*,'(A,2(1X,I0),1X,ES26.16E3)') 'G33P PREC', f, i, precF(f,i)
     end do
   end do
+  write(*,'(A)') 'G33P END'
 #endif
 end program g33_refine_driver

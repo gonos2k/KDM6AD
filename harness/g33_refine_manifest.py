@@ -67,9 +67,18 @@ def _member(path: Path) -> dict:
 
 def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
           analyzer: Path | None = None, build_provenance: Path | None = None,
-          findings=()) -> dict:
+          findings=(), member_reader=None) -> dict:
+    """`member_reader` describes one output file, defaulting to the G33R reader.
+
+    The f64 instrument arm emits no G33R at all, so it supplies the G33P reader
+    instead. The hook exists because an f64 member IS a different artifact -- not
+    because the contract is negotiable: both readers are strict, and the
+    G33R-shaped cross-member checks below are skipped only when the members are
+    not G33R (owner priority 2).
+    """
+    read_member = member_reader or _member
     paths = sorted(outputs.glob("n*.txt"))
-    members = [_member(p) for p in paths]
+    members = [read_member(p) for p in paths]
     # One experiment, not several (owner P0-2). Every cross-member check the
     # analyzer applies before it will produce a table is applied before the
     # manifest will claim one is reproducible: same record universe, one
@@ -78,12 +87,13 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
     # one entry and the cross-member checks -- including the mode check -- would
     # run on whichever survived (owner §7.3).
     ns = [int(_NAME.match(p.name).group(1)) for p in paths]
-    if len(ns) != len(set(ns)):
+    if member_reader is None and len(ns) != len(set(ns)):
         dup = sorted({n for n in ns if ns.count(n) > 1})
         raise ra.RefineError(
             f"bundle contains more than one member for nsplit {dup} — a chain has "
             f"one member per step, and keying by nsplit would hide the others")
-    runs = {n: ra.read(p, nsplit=n) for n, p in zip(ns, paths)}
+    runs = ({} if member_reader is not None
+            else {n: ra.read(p, nsplit=n) for n, p in zip(ns, paths)})
     if len(runs) > 1:
         ra.require_same_universe(runs)
     steps = [m.get("dtcld") for m in members]

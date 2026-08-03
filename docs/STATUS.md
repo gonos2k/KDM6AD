@@ -172,7 +172,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   are bit-identical at f64 — 0 of 333 records, against 39 at f32 with max relative
   difference 3.28**; and the moist-enthalpy **conservative advantage is 5.89× in
   column 2 at f32 and 1.00× at f64**, so it measures the two variants' response to a
-  cap event f32 noise creates, **not the interface's thermodynamics**. That reading
+  fixture where the two precisions enter **different precipitation active sets**,
+  **not the interface's thermodynamics** — and "a cap event f32 noise creates" is
+  itself withdrawn as ahead of the evidence (owner §6.2): which gate diverges first
+  is not established. That reading
   is withdrawn; the f32 numbers remain valid *as statements about the f32 reference*,
   which is the operator being certified, but cannot be extrapolated to any case where
   precipitation is not threshold-marginal. **Norm (owner §6.4)**: the ledger now also
@@ -180,7 +183,12 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   4.19%** under `eta` against `3.8e-06 / 4.2e-04 / 1.3e-04` under `/H_start`, four
   orders apart, because `/H_start` divides a process-scale error by the column's
   whole background energy. At f64 `eta` is ~100% in both variants: with `H_out ≈ 0`
-  the ledger reduces to `R = dH`, a ~42 J/m² non-closure with nothing leaving.
+  the ledger reduces to `R = dH` and `eta = 1` **algebraically** — it restates
+  "nothing left and the potential still moved" rather than adding information. The
+  non-closure is **−42.09 / −21.19 / +443.74 J/m²** by column, identical in both
+  variants; an earlier "~42 J/m² per column" generalised column 1 and is corrected.
+  `eta` is a better norm, **not an acceptance criterion**: the one carrying process
+  scale is `eta_phase = |R_H|/(Σ_p∫|L_p q̇_p|dt)`, whose terms are per-cell locals.
   See [`../harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md`](../harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md). Consequence: §9's obstacle is a
   **sweep-design** problem — but making `mstep` constant is **necessary and not
   sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
