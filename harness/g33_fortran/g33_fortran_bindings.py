@@ -512,6 +512,21 @@ SURFACE_NUMBER_FIELDS = [
     ("nflux_dtcld", "dtcld"),
 ]
 
+#: The ACTUAL capped interface transfers, at the bottom cell, per sub-step
+#: (owner §5.2). The closure previously used `fall`/`falln`, which accumulate the
+#: UNCAPPED rate, so a call where a cap bound had to be excluded -- and the cap
+#: was detected by an endpoint recursion that only works at `mstep == 1`. These
+#: are what the kernel actually moved, so `mstep > 1` becomes measurable, and the
+#: mass and number of ONE chain are emitted from ONE statement pair on ONE call:
+#: a matched control rather than qr-on-main against ni-on-ice.
+XFER_SITES = [
+    # (anchor, chain, mass expr, number expr)
+    ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+     "main", "dqr(i,k)", "dnr(i,k)"),
+    ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)",
+     "ice", "dqi(i,k)", "dni(i,k)"),
+]
+
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [

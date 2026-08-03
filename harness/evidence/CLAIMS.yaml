@@ -282,6 +282,30 @@ claims:
     evidence: [FINDING_number_mass_basis_v1.md]
     evidence_sha256: [FINDING_number_mass_basis_v1.md:390da49b1b708587]
 
+  - id: G33-NUMBER-005
+    text: >
+      MATCHED closure on the main chain: qr (control) closes to -0.0000/+0.0001/
+      -0.0000% while nr is +15.00/+13.34/+11.84% at h = 25 s, same calls, same cap
+      state, from one statement pair. At h = 100 s the defect persists where the
+      control holds: col 3 with mstep = 10 gives qr -0.0000% and nr +9.40%.
+    status: active
+    grade: confirmed
+    basis: measurement with a matched mass control
+    scope: g33_fixture_multisubcycle_v1, legacy, main chain
+    evidence: [FINDING_matched_number_closure_v1.md]
+    evidence_sha256: [FINDING_matched_number_closure_v1.md:a8e956a39d2109ea]
+
+  - id: G33-NUMBER-006
+    text: The ice-chain matched closure measures the ice number defect.
+    status: withdrawn
+    superseded_by: G33-NUMBER-005
+    scope: >
+      The qi mass CONTROL fails at -384%/-269%, so the ice accounting is missing a
+      term and neither ice row is evidence. Same for main col 1 at h = 100 s
+      (qr -47.7%).
+    evidence: [FINDING_matched_number_closure_v1.md]
+    evidence_sha256: [FINDING_matched_number_closure_v1.md:a8e956a39d2109ea]
+
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition
