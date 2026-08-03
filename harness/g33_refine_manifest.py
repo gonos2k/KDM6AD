@@ -74,8 +74,16 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
     # analyzer applies before it will produce a table is applied before the
     # manifest will claim one is reproducible: same record universe, one
     # algorithm and mode, one integration horizon, no repeated step.
-    runs = {int(_NAME.match(p.name).group(1)): ra.read(
-        p, nsplit=int(_NAME.match(p.name).group(1))) for p in paths}
+    # Keyed by nsplit, so `n3.rezero.txt` beside `n3.carry.txt` would collapse to
+    # one entry and the cross-member checks -- including the mode check -- would
+    # run on whichever survived (owner §7.3).
+    ns = [int(_NAME.match(p.name).group(1)) for p in paths]
+    if len(ns) != len(set(ns)):
+        dup = sorted({n for n in ns if ns.count(n) > 1})
+        raise ra.RefineError(
+            f"bundle contains more than one member for nsplit {dup} — a chain has "
+            f"one member per step, and keying by nsplit would hide the others")
+    runs = {n: ra.read(p, nsplit=n) for n, p in zip(ns, paths)}
     if len(runs) > 1:
         ra.require_same_universe(runs)
     steps = [m.get("dtcld") for m in members]

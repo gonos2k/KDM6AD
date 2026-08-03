@@ -66,8 +66,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) ([0-9A-F]{8})$")
-CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+)$")
+STREAM_BEGIN = re.compile(r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+)$")
+STREAM_END = re.compile(r"^G33N STREAM_END$")
+CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) "
+                        r"([0-9A-F]{8})$")
+CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+) (\d+)$")
+#: The protocol this parser implements. A stream declaring another is refused
+#: rather than read with the wrong field meanings.
+SCHEMA = 1
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
                    r"(\S+) (\d+) (-?\d+) f32 ([0-9A-F]{8})$")
 NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")
@@ -96,24 +102,52 @@ NFLUX_FIELDS = ("bottom_falln_nr", "bottom_falln_ni", "nflux_den", "nflux_delz",
                 "nflux_dtcld")
 
 
-def _blank(call_id=None, tile=None, delt=None):
-    return {"call_id": call_id, "tile": tile, "delt": delt,
+def _blank(call_id=None, split=None, tile=None, delt=None):
+    return {"call_id": call_id, "split": split, "tile": tile, "delt": delt,
             "outer_pre_sed": {}, "outer_post_sed": {}, "surface": {},
-            "flux": {}, "mstep": {}}
+            "flux": {}, "mstep": {}, "loops": set()}
+
+
+def single_loop(call) -> int:
+    """The one inner cloud-subcycle this call ran, or an error.
+
+    The budget arithmetic below differences the state ACROSS the sedimentation
+    segment of one loop. With loops > 1 the call contains several such segments
+    and a single pre/post pair does not describe it -- so the analysis refuses
+    the call instead of collapsing it (owner P0-3).
+    """
+    loops = call["loops"]
+    if len(loops) != 1:
+        raise StreamError(
+            f"call {call['call_id']} ran {sorted(loops)} inner loops; the segment "
+            f"budget is defined for one, so this call is not analysable")
+    return next(iter(loops))
 
 
 def _check(call):
-    """A call is complete or it is not evidence (owner P0-4)."""
-    cols = {c for c, _ in call["outer_pre_sed"]}
+    """A call is complete or it is not evidence (owner P0-4).
+
+    Completeness is checked PER INNER LOOP. Whether a call can carry a segment
+    budget is a separate question, asked by `single_loop` at analysis time: a
+    multi-loop call is a well-formed stream that this particular arithmetic does
+    not describe, and conflating the two would make the parser reject data it has
+    no complaint about.
+    """
+    for lp in sorted(call["loops"]):
+        _check_loop(call, lp)
+
+
+def _check_loop(call, lp):
+    cols = {c for l, c, _ in call["outer_pre_sed"] if l == lp}
     if not cols:
-        raise StreamError(f"call {call['call_id']}: no pre-sed state")
-    if {c for c, _ in call["outer_post_sed"]} != cols:
+        raise StreamError(f"call {call['call_id']} loop {lp}: no pre-sed state")
+    if {c for l, c, _ in call["outer_post_sed"] if l == lp} != cols:
         raise StreamError(f"call {call['call_id']}: post-sed covers different columns")
-    if set(call["flux"]) != cols:
+    if {c for _, c in call["flux"]} != cols:
         raise StreamError(
-            f"call {call['call_id']}: NFLUX covers {sorted(call['flux'])}, "
-            f"state covers {sorted(cols)}")
-    for c, f in call["flux"].items():
+            f"call {call['call_id']}: NFLUX covers "
+            f"{sorted({c for _, c in call['flux']})}, state covers {sorted(cols)}")
+    for (_, c), f in call["flux"].items():
         if set(f) != set(NFLUX_FIELDS):
             raise StreamError(f"call {call['call_id']} col {c}: NFLUX fields "
                               f"{sorted(f)} != {sorted(NFLUX_FIELDS)}")
@@ -124,7 +158,7 @@ def _check(call):
             if f[name] <= 0:
                 raise StreamError(f"call {call['call_id']} col {c}: {name}={f[name]}")
     for chain in ("main", "ice"):
-        got = {c for ch, c in call["mstep"] if ch == chain}
+        got = {c for _, ch, c in call["mstep"] if ch == chain}
         if got != cols:
             raise StreamError(f"call {call['call_id']}: {chain} sub-step counts "
                               f"cover {sorted(got)}, state covers {sorted(cols)}")
@@ -138,37 +172,104 @@ def calls(stream: str):
     it collapses every call onto the last, and a truncated stream or a changed
     call count is silently re-attributed instead of refused.
     """
-    cur, expect = None, 1
+    cur, expect, header, ended, seen = None, 1, None, False, 0
     for line in stream.splitlines():
+        if (m := STREAM_BEGIN.match(line)):
+            if header:
+                raise StreamError("two STREAM_BEGIN headers in one stream")
+            schema, nsplit, ntile, expected, algo, mode = m.groups()
+            if int(schema) != SCHEMA:
+                raise StreamError(f"stream declares schema {schema}, parser is {SCHEMA}")
+            header = {"nsplit": int(nsplit), "ntile": int(ntile),
+                      "expected_calls": int(expected), "algorithm": algo, "mode": mode}
+            if header["expected_calls"] != header["nsplit"] * header["ntile"]:
+                raise StreamError(
+                    f"header is inconsistent: {nsplit} splits x {ntile} tiles is not "
+                    f"{expected} calls")
+            continue
+        if STREAM_END.match(line):
+            if cur is not None:
+                raise StreamError(f"STREAM_END inside call {cur['call_id']}")
+            ended = True
+            continue
         if (m := CALL_BEGIN.match(line)):
             if cur is not None:
                 raise StreamError(f"call {cur['call_id']} never ended")
-            cid = int(m.group(1))
+            if ended:
+                raise StreamError("a call begins after STREAM_END")
+            cid, split, tile = int(m.group(1)), int(m.group(2)), int(m.group(3))
             if cid != expect:
                 raise StreamError(f"call ids jump: expected {expect}, got {cid}")
-            cur = _blank(cid, int(m.group(2)), _f32(m.group(4)))
+            if header and cid != (split - 1) * header["ntile"] + tile:
+                raise StreamError(
+                    f"call {cid} does not match split {split} tile {tile} under "
+                    f"ntile={header['ntile']}")
+            cur = _blank(cid, split, tile, _f32(m.group(7)))
             continue
         if (m := CALL_END.match(line)):
             if cur is None or int(m.group(1)) != cur["call_id"]:
                 raise StreamError(f"CALL_END {m.group(1)} without a matching begin")
+            if (int(m.group(2)), int(m.group(3))) != (cur["split"], cur["tile"]):
+                raise StreamError(
+                    f"CALL_END {m.group(1)} reports split/tile "
+                    f"{m.group(2)}/{m.group(3)}, begin said "
+                    f"{cur['split']}/{cur['tile']}")
             _check(cur)
             yield cur
-            cur, expect = None, expect + 1
+            cur, expect, seen = None, expect + 1, seen + 1
             continue
         if cur is None:
             continue                      # records outside any call: not ours
+        # The kernel's own `loop` is part of the identity (owner P0-3): a call
+        # with loops > 1 emits the same (stage, col, k) once per loop, and a key
+        # without it lets the last loop silently overwrite the first.
         if (m := STAGE.match(line)):
             stage, field, col, k, hexv = m.groups()
-            cur[stage].setdefault((int(col), int(k)), {})[field] = _f32(hexv)
+            loop = int(line.split()[2])
+            cur["loops"].add(loop)
+            _put(cur[stage], (loop, int(col), int(k)), field, _f32(hexv), cur)
         elif (m := MSTEP.match(line)):
-            cur["mstep"][("main", int(m.group(1)))] = int(m.group(2), 16)
+            loop = int(line.split()[2])
+            cur["loops"].add(loop)
+            _put(cur["mstep"], (loop, "main", int(m.group(1))), None,
+                 int(m.group(2), 16), cur)
         elif (m := MSTEPI.match(line)):
-            cur["mstep"][("ice", int(m.group(1)))] = int(m.group(2), 16)
+            loop = int(line.split()[2])
+            cur["loops"].add(loop)
+            _put(cur["mstep"], (loop, "ice", int(m.group(1))), None,
+                 int(m.group(2), 16), cur)
         elif (m := NFLUX.match(line)):
+            loop = int(line.split()[2])
+            cur["loops"].add(loop)
             col, field, hexv = m.groups()
-            cur["flux"].setdefault(int(col), {})[field] = _f32(hexv)
+            _put(cur["flux"], (loop, int(col)), field, _f32(hexv), cur)
+        elif line.startswith("G33N"):
+            raise StreamError(f"unknown G33N record inside a call: {line!r}")
     if cur is not None:
         raise StreamError(f"stream ends inside call {cur['call_id']}")
+    if header:
+        if not ended:
+            raise StreamError(
+                f"stream has no STREAM_END: it stopped after {seen} of "
+                f"{header['expected_calls']} calls")
+        if seen != header["expected_calls"]:
+            raise StreamError(
+                f"stream carries {seen} calls, header declared "
+                f"{header['expected_calls']}")
+
+
+def _put(store, key, field, value, call):
+    """One write per (key, field). A second is a defect, not an update."""
+    slot = store.setdefault(key, {}) if field is not None else store
+    k = field if field is not None else key
+    if field is None:
+        if key in store and store[key] != value:
+            raise StreamError(f"call {call['call_id']}: duplicate record {key}")
+        store[key] = value
+    else:
+        if k in slot:
+            raise StreamError(f"call {call['call_id']}: duplicate record {key}.{k}")
+        slot[k] = value
 
 
 def transfers(x, x_post, w):
@@ -187,14 +288,15 @@ def column(call, col, species):
     """One (call, column, species): measured residual and predicted creation, or
     None where the sub-step count makes the transfers unrecoverable."""
     chain, fkey, carries_density = SPECIES[species]
-    if call["mstep"].get((chain, col)) != 1:
+    lp = single_loop(call)
+    if call["mstep"].get((lp, chain, col)) != 1:
         return None
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
-    ks = sorted(k for c, k in pre if c == col)              # 0 = TOP
-    den = [pre[(col, k)]["rho"] for k in ks]
-    dz = [pre[(col, k)]["delz"] for k in ks]
-    x = [pre[(col, k)][species] for k in ks]
-    x1 = [post[(col, k)][species] for k in ks]
+    ks = sorted(k for l, c, k in pre if c == col and l == lp)   # 0 = TOP
+    den = [pre[(lp, col, k)]["rho"] for k in ks]
+    dz = [pre[(lp, col, k)]["delz"] for k in ks]
+    x = [pre[(lp, col, k)][species] for k in ks]
+    x1 = [post[(lp, col, k)][species] for k in ks]
     w = [0.0] + [dz[t - 1] / dz[t] * (den[t - 1] / den[t] if carries_density else 1.0)
                  for t in range(1, len(ks))]
     a = transfers(x, x1, w)
@@ -207,7 +309,7 @@ def column(call, col, species):
            "relative": residual / n0w if n0w else 0.0, "final": 0.0,
            "surface_uncapped": 0.0}
     if fkey:   # independent check of the recovery, where an accumulator exists
-        f = call["flux"][col]
+        f = call["flux"][(lp, col)]
         out["surface_uncapped"] = f[fkey] * den[-1] * dz[-1] * f["nflux_dtcld"]
     return out
 
@@ -233,14 +335,15 @@ def closure(call, col, species):
     forces it to vanish.
     """
     acc, is_number = EMITTED[species]
+    lp = single_loop(call)
     pre, post, srf = call["outer_pre_sed"], call["outer_post_sed"], call["surface"]
-    f = call["flux"].get(col, {})
-    ks = sorted(k for c, k in pre if c == col)
-    den = [pre[(col, k)]["rho"] for k in ks]
-    dz = [pre[(col, k)]["delz"] for k in ks]
-    x0 = sum(den[t] * dz[t] * pre[(col, ks[t])][species] for t in range(len(ks)))
-    x1 = sum(den[t] * dz[t] * post[(col, ks[t])][species] for t in range(len(ks)))
-    raw = f.get(acc, srf.get((col, -1), {}).get(acc))
+    f = call["flux"].get((lp, col), {})
+    ks = sorted(k for l, c, k in pre if c == col and l == lp)
+    den = [pre[(lp, col, k)]["rho"] for k in ks]
+    dz = [pre[(lp, col, k)]["delz"] for k in ks]
+    x0 = sum(den[t] * dz[t] * pre[(lp, col, ks[t])][species] for t in range(len(ks)))
+    x1 = sum(den[t] * dz[t] * post[(lp, col, ks[t])][species] for t in range(len(ks)))
+    raw = f.get(acc, srf.get((lp, col, -1), {}).get(acc))
     if raw is None:
         return None
     # falln is [# kg-1 s-1] so it needs den; fall is [kg m-3 s-1] so it does not.
@@ -252,7 +355,7 @@ def closure_report(stream: str) -> dict:
     """{species: {col: ...}} plus the printed table."""
     acc = {}
     for call in calls(stream):
-        for col in sorted({c for c, _ in call["outer_pre_sed"]}):
+        for col in sorted({c for _, c, _ in call["outer_pre_sed"]}):
             for sp in EMITTED:
                 # The caps are per SPECIES, so the check has to be too. Where the
                 # emitted accumulator and the recovered transfer disagree the
@@ -285,7 +388,7 @@ def closure_report(stream: str) -> dict:
 def report(stream: str) -> None:
     acc = {}
     for call in calls(stream):
-        for col in sorted({c for c, _ in call["outer_pre_sed"]}):
+        for col in sorted({c for _, c, _ in call["outer_pre_sed"]}):
             for sp in SPECIES:
                 r = column(call, col, sp)
                 if r is None or r["start"] == 0:
@@ -322,8 +425,12 @@ def main(argv) -> int:
         print("usage: g33_number_transport.py <driver-built-with---nflux> "
               "<nsplit> [analysis.json]")
         return 2
-    stream = subprocess.run([argv[0], argv[1], "rezero"], capture_output=True,
-                            text=True).stdout
+    r = subprocess.run([argv[0], argv[1], "rezero"], capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(
+            f"driver exited {r.returncode} — stdout is not evidence however "
+            f"complete it looks (owner P0-1)\n{r.stderr[-2000:]}")
+    stream = r.stdout
     report(stream)
     if len(argv) == 3:
         # The table a finding quotes and the JSON a manifest digests come from

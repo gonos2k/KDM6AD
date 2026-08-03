@@ -1001,7 +1001,7 @@ def test_a_ragged_column_is_refused(tmp_path):
 def test_prec_must_cover_exactly_the_state_columns(tmp_path):
     body = [ln for ln in _stream().splitlines()
             if not (ln.startswith("G33R PREC") and ln.split()[3] == "2")]
-    with pytest.raises(ra.RefineError, match="species 1/2/3"):
+    with pytest.raises(ra.RefineError, match="species, column"):
         ra.read(_write(tmp_path, "\n".join(body) + "\n"))
 
 
@@ -1019,9 +1019,20 @@ def test_a_varying_column_integral_is_not_flagged():
     assert ra.conservation_spread(b, ("water", 1)) > ra._CONSERVED_SPREAD
 
 
-def test_the_f32_water_caveat_names_the_measurement_behind_it():
-    """A caveat that just says 'be careful' gets ignored. This one carries the
-    f64 comparison that establishes it."""
+def test_the_water_caveat_is_generic_and_names_how_to_decide(tmp_path):
+    """It must state the PRECONDITION for reading these numbers, not one
+    fixture's answer — a future stream would otherwise be told its variation is
+    precision drift on evidence that never touched it (owner §7.1)."""
     src = (ROOT / "g33_refine_analyze.py").read_text()
-    assert "WATER ORDERS ARE NOT CONVERGENCE RATES" in src
-    assert "--f64" in src and "1e-6 relative" in src
+    assert "WATER ORDERS ARE A RATE ONLY IF THE VARIATION IS PHYSICAL" in src
+    assert "--f64" in src, "it must say how to decide"
+    assert "Do not carry that" in src, "it must scope the fixture's answer"
+
+
+def test_a_bundle_with_two_members_at_one_nsplit_is_refused(tmp_path):
+    """n3.rezero beside n3.carry collapsed to one entry, so the mode check ran on
+    whichever survived (owner §7.3)."""
+    d, mod, fix = _bundle(tmp_path, (3, 100.0))
+    _bundle(tmp_path, (3, 100.0), mode="carry")
+    with pytest.raises(ra.RefineError, match="more than one member for nsplit"):
+        rm.build(d, module=mod, fixture=fix, compiler="c")

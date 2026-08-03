@@ -86,15 +86,38 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         man["instrumented"] = nflux
         (tmp / "manifest.json").write_text(
             rm.json.dumps(man, indent=2, sort_keys=True) + "\n")
-        # Only now does anything become visible under `dest`. A previous bundle
-        # survives a failure above untouched.
-        if dest.exists():
-            shutil.rmtree(dest.with_suffix(".prev"), ignore_errors=True)
-            dest.rename(dest.with_suffix(".prev"))
-        os.rename(tmp, dest)
+        # Publish by moving ONE symlink (owner §7.4). The previous shape was
+        # `dest -> dest.prev` then `tmp -> dest`: two renames with a window in
+        # between where the canonical path does not exist, and if the second
+        # failed the bundle was gone from where readers look. Here the bundle
+        # lands in an immutable directory named by its own manifest digest and
+        # `dest` is a symlink swapped atomically over it, so there is no moment
+        # at which `dest` is absent or half-replaced.
+        store = dest.parent / f"{dest.name}.bundles"
+        store.mkdir(exist_ok=True)
+        final = store / rm.sha256(tmp / "manifest.json")[:16]
+        # Content-addressed: an identical manifest is the same bundle. Removing
+        # and rebuilding it would delete the directory `dest` currently points at
+        # -- the very window this design exists to close -- so an existing one is
+        # reused and the temp discarded.
+        if not final.exists():
+            os.rename(tmp, final)
+        link = dest.with_name(dest.name + ".new")
+        if link.is_symlink() or link.exists():
+            link.unlink()
+        link.symlink_to(final, target_is_directory=True)
+        os.replace(link, dest) if dest.is_symlink() or not dest.exists() \
+            else _replace_dir_with_link(dest, link)
         return dest
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _replace_dir_with_link(dest: Path, link: Path) -> None:
+    """One-time migration off a real directory. Unavoidable non-atomic step, and
+    it happens once per destination rather than on every publish."""
+    shutil.rmtree(dest)
+    os.replace(link, dest)
 
 
 def main(argv) -> int:

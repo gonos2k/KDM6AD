@@ -22,6 +22,13 @@ A green badge therefore means the **static** contracts hold. It does not mean th
 `mstep_i`, flux or closure numbers in this document were reproduced in CI — they were
 not, and cannot be until the reference tree is reachable from a runner.
 
+**Claim status lives in [`../harness/evidence/CLAIMS.yaml`](../harness/evidence/CLAIMS.yaml)**,
+not in the findings (owner §7.5). Findings accumulate corrections in place, so a
+reader cannot tell which sentence is current; the registry records `status`,
+`scope` and `superseded_by` per claim and is checked mechanically
+(`test_g33_claims.py`): evidence must exist, every `superseded_by` must resolve to
+an `active` claim, and every claim must declare a scope.
+
 ## Differentiation surface
 
 | Capability | Python oracle | C++ fp64 | C++ f32 | C ABI | Public CI | Host-validated |
@@ -187,10 +194,16 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   entirely**. Domain max-norm `th` orders over h = 25 → 0.39 s are
   `+0.601, +1.032, +0.891, −0.874, −1.255, −0.567` at f32 against
   `+0.796, +0.875, +0.978, +1.040, +1.017, +1.007` at f64, and the smallest
-  achievable difference falls **13.7× (th) / 114.7× (qv)**. Truncation cancellation
-  and order crossover would appear at both precisions at the same h; active-set
-  switching is state-dependent, not ε-dependent. **Grade: accumulated
-  floating-point roundoff.** Caveats: promotion changes the whole operator, so this
+  achievable difference falls **13.7× (th) / 114.7× (qv)**. **Grade corrected (owner P0-5)**: what is
+  confirmed is that the turnover is **precision-dependent**, not that accumulated
+  roundoff is the cause. The earlier argument — "active-set switching is
+  state-dependent, not ε-dependent" — is **wrong**: the active set is `1[g(x_ε)>0]`
+  and the state itself depends on ε, and the counterexample is in this same branch
+  (this fixture precipitates at f32 and not at f64). Grades: turnover not
+  nondeterminism **confirmed**; turnover precision-dependent **confirmed**;
+  accumulated arithmetic roundoff **strong candidate**; active-set change
+  **refuted as excluded** — it is live; cause **HOLD**. Separating
+  `E = E_trunc(h) + E_arith(ε) + E_branch(x_ε)` needs arms that move one at a time. Caveats: promotion changes the whole operator, so this
   discriminates against precision-independent explanations rather than isolating
   roundoff absolutely, and the f64 build is an instrument, not the reference —
   it produces no decision evidence. **Scope**: this is the `th`/`qv` domain max-norm.

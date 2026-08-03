@@ -55,7 +55,10 @@ if [ "$F64" = 1 ]; then
     # -fdefault-double-8 is required with -fdefault-real-8: without it `double
     # precision` promotes to REAL(16) and the radar hostmatrix call fails to
     # typecheck.
-    COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8)
+    # KDM6_G33_F64 suppresses the G33R stream: `transfer(real8, int32)` would
+    # write the first four bytes of an eight-byte value into a record the
+    # standard analyzer reads as an f32 bit pattern (owner P0-4).
+    COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8 -DKDM6_G33_F64)
 fi
 [ "$PROBE" = 1 ] && COMMON_FLAGS+=(-DKDM6_G33_PRECISION_PROBE)
 REF_FLAGS=("${COMMON_FLAGS[@]}" -w)

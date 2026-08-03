@@ -161,8 +161,12 @@ contains
         ! onto the last. The driver brackets each call, which also makes a
         ! truncated stream or a changed call count detectable instead of
         ! silently re-attributed (owner P0-4).
-        write(*,'(A,3(1X,I0),1X,Z8.8)') 'G33N CALL_BEGIN', s, tl, i0, &
-              transfer(delt, 0)
+        ! GLOBAL call id (owner P0-2): `s` alone repeats once per tile, so a
+        ! two-tile run emitted 1,1,2,2 and the parser -- which reads the first
+        ! field as a contiguous id -- refused a legitimate run. split and tile
+        ! are kept alongside, since a tile boundary is a physical input here.
+        write(*,'(A,6(1X,I0),1X,Z8.8)') 'G33N CALL_BEGIN', &
+              (s - 1) * ntile + tl, s, tl, i0, i1, KM, transfer(delt, 0)
 #endif
         call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
                    ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
@@ -184,7 +188,7 @@ contains
                    ,graupelF(i0:i1,1), graupelncv(i0:i1,1)                           &
                     )
 #ifdef KDM6_G33_NUMBER_DUMP
-        write(*,'(A,2(1X,I0))') 'G33N CALL_END', s, tl
+        write(*,'(A,3(1X,I0))') 'G33N CALL_END', (s - 1) * ntile + tl, s, tl
 #endif
       end do
     end do
@@ -211,13 +215,19 @@ contains
     denO = den; delzO = delz; piiO = pii
   end subroutine run_refined
 
+  ! An f64 build must NOT write the G33R stream. `transfer(real8, int32)` takes
+  ! the first FOUR BYTES of an eight-byte storage sequence, and the standard
+  ! analyzer would read that as a valid f32 bit pattern -- a wrong number that
+  ! parses (owner P0-4). Under promotion only G33P is emitted.
   subroutine emit_fld(name, i, k, v)
     character(len=*), intent(in) :: name
     integer, intent(in) :: i, k
     real,    intent(in) :: v
     integer(int32) :: b
+#ifndef KDM6_G33_F64
     b = transfer(v, b)
     write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R STATE', trim(name), i, k, b
+#endif
   end subroutine emit_fld
 
 end module g33_refine
@@ -282,6 +292,12 @@ program g33_refine_driver
     if (sum(tiles(1:ntile)) /= IM) error stop 'tile sizes must sum to B'
   end if
 
+#ifdef KDM6_G33_NUMBER_DUMP
+  ! What this stream INTENDS to be. Without it a run truncated at a closed call
+  ! boundary is indistinguishable from a shorter run that completed (owner P0-1).
+  write(*,'(A,4(1X,I0),1X,A,1X,A)') 'G33N STREAM_BEGIN', 1, nsplit, ntile, &
+        nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux))
+#endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &
                    precF, denO, delzO, piiO, inF)
@@ -292,6 +308,7 @@ program g33_refine_driver
   loops_used = max(nint(delt_used/120.0), 1)
   dtcld_used = delt_used / real(loops_used)
   if (delt_used <= 120.0) dtcld_used = delt_used
+#ifndef KDM6_G33_F64
   write(*,'(A,1X,I0,1X,A,1X,A,1X,A,1X,F0.6,1X,A,1X,I0,1X,A,1X,F0.6)') &
        'G33R BEGIN nsplit', nsplit, trim(merge('carry ', 'rezero', carry_aux)), &
        ALGOTAG, 'delt', delt_used, 'loops', loops_used, 'dtcld', dtcld_used
@@ -302,6 +319,35 @@ program g33_refine_driver
       end do
     end do
   end do
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        b = transfer(inF(i,k,f), b)
+        write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R INITIAL', FLDNAME(f), i, KM-k, b
+      end do
+    end do
+  end do
+  do k = 1, KM
+    do i = 1, IM
+      b = transfer(denO(i,k), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'rho', i, KM-k, b
+      b = transfer(delzO(i,k), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'delz', i, KM-k, b
+      b = transfer(piiO(i,k), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'pii', i, KM-k, b
+    end do
+  end do
+  do f = 1, 3
+    do i = 1, IM
+      b = transfer(precF(f,i), b)
+      write(*,'(A,1X,I0,1X,I0,1X,Z8.8)') 'G33R PREC', f, i, b
+    end do
+  end do
+  write(*,'(A)') 'G33R END'
+#endif
+#ifdef KDM6_G33_NUMBER_DUMP
+  write(*,'(A)') 'G33N STREAM_END'
+#endif
 #ifdef KDM6_G33_PRECISION_PROBE
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is
   ! f32 hex by contract; the question here is whether the fine-step turnover
@@ -346,29 +392,4 @@ program g33_refine_driver
     end do
   end do
 #endif
-  do f = 1, NFLD_ST
-    do k = 1, KM
-      do i = 1, IM
-        b = transfer(inF(i,k,f), b)
-        write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R INITIAL', FLDNAME(f), i, KM-k, b
-      end do
-    end do
-  end do
-  do k = 1, KM
-    do i = 1, IM
-      b = transfer(denO(i,k), b)
-      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'rho', i, KM-k, b
-      b = transfer(delzO(i,k), b)
-      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'delz', i, KM-k, b
-      b = transfer(piiO(i,k), b)
-      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'pii', i, KM-k, b
-    end do
-  end do
-  do f = 1, 3
-    do i = 1, IM
-      b = transfer(precF(f,i), b)
-      write(*,'(A,1X,I0,1X,I0,1X,Z8.8)') 'G33R PREC', f, i, b
-    end do
-  end do
-  write(*,'(A)') 'G33R END'
 end program g33_refine_driver
