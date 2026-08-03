@@ -1007,16 +1007,40 @@ def test_prec_must_cover_exactly_the_state_columns(tmp_path):
 
 # ---- the water orders are not convergence rates -----------------------------
 
-def test_a_conserved_column_integral_is_flagged_not_ordered(capsys, tmp_path):
-    """Successive differences on a conserved quantity are conservation residual.
-    Reporting an "order" on them reads as a convergence rate and is not one."""
+def test_a_step_insensitive_column_integral_is_flagged_not_ordered():
+    """Successive differences on a step-insensitive quantity describe the chain's
+    own scatter. Reporting an "order" on them reads as a convergence rate."""
     b = {n: {("water", 1): 0.135243 + 1e-9 * n} for n in (3, 6, 12)}
-    assert ra.conservation_spread(b, ("water", 1)) < ra._CONSERVED_SPREAD
+    assert ra.cross_member_endpoint_spread(b, ("water", 1)) < ra._FLAT_SPREAD
 
 
 def test_a_varying_column_integral_is_not_flagged():
     b = {n: {("water", 1): 0.12 + 0.001 * n} for n in (3, 6, 12)}
-    assert ra.conservation_spread(b, ("water", 1)) > ra._CONSERVED_SPREAD
+    assert ra.cross_member_endpoint_spread(b, ("water", 1)) > ra._FLAT_SPREAD
+
+
+def test_spread_is_NOT_conservation(tmp_path):
+    """Every member losing the SAME amount gives zero spread and a nonzero
+    conservation residual. The spread cannot see it; R_W can (owner §5)."""
+    b = {n: {("water", 1): 0.5} for n in (3, 6, 12)}
+    assert ra.cross_member_endpoint_spread(b, ("water", 1)) == 0.0
+    out = []
+    for ln in _stream().splitlines():
+        if ln == "G33R END":
+            continue                       # re-added last: nothing may follow it
+        out.append(ln)
+        if ln.startswith("G33R STATE"):
+            f, i, k = ln.split()[2:5]
+            out.append(f"G33R INITIAL {f} {i} {k} 40000000")   # initial = 2.0
+    for nm in ("rho", "delz"):
+        for i in (1, 2):
+            for k in range(2):
+                out.append(f"G33R FORCING {nm} {i} {k} 3F800000")
+    out.append("G33R END")
+    r = ra.read(_write(tmp_path, "\n".join(out) + "\n"))
+    d = ra.water_residual(r, 1)
+    assert d["W_final"] < d["W_initial"], "the column lost water"
+    assert d["residual"] != 0.0, "a real loss must show in R_W"
 
 
 def test_the_water_caveat_is_generic_and_names_how_to_decide(tmp_path):

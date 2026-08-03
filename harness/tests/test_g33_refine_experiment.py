@@ -30,7 +30,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "sources": [], "executable_sha256": "ab" * 32}))
         return workdir / "driver"
 
-    def members(exe, out, ns, mode):
+    def members(exe, out, ns, mode, *, arm="reference", nflux=False):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -110,7 +110,7 @@ def test_a_failure_leaves_the_PREVIOUS_bundle_intact(tmp_path, monkeypatch):
 def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypatch):
     _fake(monkeypatch)
 
-    def bad(exe, out, ns, mode):
+    def bad(exe, out, ns, mode, *, arm="reference", nflux=False):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -190,3 +190,28 @@ def _probe_stream():
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
     out.append("G33P END")
     return "\n".join(out) + "\n"
+
+
+def test_the_manifest_records_the_parser_that_APPROVED_the_members(
+        tmp_path, monkeypatch):
+    """It recorded g33_refine_analyze.py even for an f64 arm, whose members are
+    read by the probe parser (owner §10.2)."""
+    _fake(monkeypatch)
+    dest = _produce(tmp_path / "b")
+    got = [q["path"] for q in
+           json.loads((dest / "manifest.json").read_text())["member_parsers"]]
+    assert got == ["harness/g33_refine_analyze.py"]
+
+
+def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
+    """The two defects that got through before were a transposed index and a
+    format that dropped an exponent's `E`. Both show up as a value mismatch."""
+    g33r = {("state", "qv", 1, 0): 1.0, ("prec", 1, 1): 2.0, ("prec", 2, 1): 3.0}
+    xp._agree(g33r, dict(g33r), "n.txt")                    # identical: fine
+    swapped = dict(g33r)
+    swapped[("prec", 1, 1)], swapped[("prec", 2, 1)] = 3.0, 2.0
+    with pytest.raises(xp.pr.ProbeError, match="disagree at"):
+        xp._agree(g33r, swapped, "n.txt")
+    missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
+    with pytest.raises(xp.pr.ProbeError, match="is missing"):
+        xp._agree(g33r, missing, "n.txt")

@@ -179,6 +179,28 @@ claims:
       precision or post-branch amplification, is not established.
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
 
+  - id: G33-WATER-CONS-001
+    text: Column water is conserved at f64, shown by a small cross-member spread.
+    status: withdrawn
+    superseded_by: G33-WATER-CONS-002
+    scope: >
+      Spread measures step-insensitivity, not conservation: members that all lose
+      the same amount agree perfectly and conserve nothing (owner S5).
+    evidence: [FINDING_column_water_orders_v1.md]
+
+  - id: G33-WATER-CONS-002
+    text: >
+      R_W = (W_final - W_initial) + P_surface closes at f64 to -4.4e-17 / -1.6e-8
+      / 0.0 (relative -9e-17 / -6.6e-8 / 0). At f32 columns 2 and 3 do not close
+      (6.8% / 17.1%), but P there is the `rain` diagnostic which departs from the
+      rho*dz budget by up to 10x (P0-4b), so those rows are that defect plus any
+      true non-conservation.
+    status: active
+    grade: confirmed-with-scope
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
+    evidence: [FINDING_column_water_orders_v1.md]
+
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition

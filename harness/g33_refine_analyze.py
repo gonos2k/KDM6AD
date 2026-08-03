@@ -352,16 +352,66 @@ def _order_table(runs: dict, title: str, head: str, rows) -> None:
 
 #: Above this relative spread across members, a column integral is varying enough
 #: for its successive differences to plausibly be a discretisation signal. Below
-#: it the quantity is conserved to within the chain's own scatter and the
-#: differences are conservation residual, which an "order" silently misreports.
-_CONSERVED_SPREAD = 1e-4
+#: it the members agree to within the chain's own scatter and an "order" on them
+#: is describing that scatter. NOT a conservation criterion -- see the name.
+_FLAT_SPREAD = 1e-4
 
 
-def conservation_spread(b: dict, key) -> float:
-    """(max-min)/|mean| of one column integral across the members."""
+def cross_member_endpoint_spread(b: dict, key) -> float:
+    """(max-min)/|mean| of one column integral across the members.
+
+    Renamed from `conservation_spread` (owner priority 4): it measures
+    STEP-INSENSITIVITY, not conservation. Every member losing the same 1 kg/m2
+    gives a spread of zero and a conservation residual of 1. Conservation is
+    `water_residual` below, which needs the initial state and the outflow.
+    """
     v = [b[n][key] for n in b]
     m = sum(v) / len(v)
     return (max(v) - min(v)) / abs(m) if m else 0.0
+
+
+def water_residual(run: dict, c: int) -> dict:
+    """The actual column-water conservation residual for ONE member.
+
+        R_W = (W_final - W_initial) + P_surface
+
+    Zero if the column conserves water. This is what "conserved" means; the
+    cross-member spread above cannot say it, because members that all lose the
+    same amount agree with each other perfectly (owner §5).
+
+    `P` is the WRF `rain` diagnostic, which is known to depart from the ρΔz
+    budget (P0-4b), so a nonzero R_W here is the SUM of any genuine
+    non-conservation and that diagnostic defect. Reported, not attributed.
+    """
+    if not any(k[0] == "initial" for k in run) or \
+       not any(k[0] == "forcing" for k in run):
+        return {}
+    ks = sorted(k[3] for k in run if k[0] == "state" and k[1] == "qv" and k[2] == c)
+    w = lambda cls: sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+                        * run[(cls, f, c, k)] for f in MASS for k in ks)
+    wi, wf, p = w("initial"), w("state"), total_precip(run, c)
+    return {"W_initial": wi, "W_final": wf, "P": p,
+            "residual": (wf - wi) + p,
+            "relative": ((wf - wi) + p) / abs(wi) if wi else float("nan")}
+
+
+def water_residual_report(runs: dict) -> None:
+    H = steps(runs)
+    rows = [(n, c, water_residual(runs[n], c))
+            for n in sorted(runs)
+            for c in sorted({k[2] for k in runs[n] if k[0] == "state"})]
+    rows = [(n, c, d) for n, c, d in rows if d]
+    if not rows:
+        print("\n  water conservation: needs INITIAL and forcing")
+        return
+    print("\n  COLUMN WATER CONSERVATION   R_W = (W_final - W_initial) + P_surface")
+    print("  P is the `rain` diagnostic, which departs from the rho*dz budget"
+          " (P0-4b),")
+    print("  so a nonzero R_W is that defect PLUS any true non-conservation.")
+    print(f"    {'h (s)':>8} {'col':>3} {'W_initial':>13} {'R_W':>13} {'R_W/W_i':>11}")
+    for n, c, d in rows:
+        print(f"    {H[n]:8g} {c:3d} {d['W_initial']:13.6e} {d['residual']:13.5e} "
+              f"{d['relative']:11.3e}")
 
 
 def budget_report(runs: dict) -> None:
@@ -374,15 +424,17 @@ def budget_report(runs: dict) -> None:
     # column water varies 0.6-1.0% across the chain at f32 but only 1e-6 at f64:
     # the f32 variation is precision drift, so the exponents describe that drift,
     # not the solution. Flag it rather than print a number that reads like a rate.
-    flat = [k for k in keys if conservation_spread(b, k) < _CONSERVED_SPREAD]
+    flat = [k for k in keys if cross_member_endpoint_spread(b, k) < _FLAT_SPREAD]
     if flat:
-        print("\n  CONSERVED across the chain (spread < "
-              f"{_CONSERVED_SPREAD:g}) — successive differences here are")
-        print("  conservation residual, NOT discretisation error; any order below is not a rate:")
+        print(f"\n  STEP-INSENSITIVE across the chain (spread < {_FLAT_SPREAD:g}).")
+        print("  This is NOT a conservation statement: every member losing the same")
+        print("  amount gives zero spread and a nonzero residual. Successive")
+        print("  differences here describe the chain's own scatter, not a rate:")
         for k in flat:
-            print(f"    {k[0]:10} col {k[1]}   spread {conservation_spread(b, k):.3e}")
+            print(f"    {k[0]:10} col {k[1]}   spread "
+                  f"{cross_member_endpoint_spread(b, k):.3e}")
     water = [k for k in keys if k[0] == "water"]
-    if water and any(conservation_spread(b, k) >= _CONSERVED_SPREAD for k in water):
+    if water and any(cross_member_endpoint_spread(b, k) >= _FLAT_SPREAD for k in water):
         # A GENERIC statement about what this table can and cannot mean. The
         # earlier version asserted a specific fixture's f64 result here, so any
         # future stream -- another fixture, a real case -- would have been told
@@ -877,6 +929,7 @@ def main(argv) -> int:
         report(runs, d.name)
         per_field(runs)
         budget_report(runs)
+    water_residual_report(runs)
     topology_report(runs)
     ledger_report(runs)
     diagnostic_budget_consistency_report(runs)

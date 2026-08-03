@@ -104,6 +104,7 @@ NFLUX_FIELDS = ("bottom_falln_nr", "bottom_falln_ni", "nflux_den", "nflux_delz",
 
 def _blank(call_id=None, split=None, tile=None, delt=None):
     return {"call_id": call_id, "split": split, "tile": tile, "delt": delt,
+            "cols": None, "K": None,
             "outer_pre_sed": {}, "outer_post_sed": {}, "surface": {},
             "flux": {}, "mstep": {}, "loops": set()}
 
@@ -137,17 +138,35 @@ def _check(call):
         _check_loop(call, lp)
 
 
+#: Every NFLUX group is exactly these, once per column per loop.
 def _check_loop(call, lp):
     cols = {c for l, c, _ in call["outer_pre_sed"] if l == lp}
+    # The declared column range is a CONTRACT, not decoration: it was recorded
+    # and thrown away (owner P0-3).
+    if call["cols"]:
+        want = set(range(call["cols"][0], call["cols"][1] + 1))
+        if cols != want:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp}: state covers columns "
+                f"{sorted(cols)}, CALL_BEGIN declared {sorted(want)}")
+    if call["K"] is not None:
+        ks = {k for l, c, k in call["outer_pre_sed"] if l == lp}
+        if ks != set(range(call["K"])):
+            raise StreamError(
+                f"call {call['call_id']} loop {lp}: levels {sorted(ks)} do not "
+                f"match the declared K={call['K']}")
     if not cols:
         raise StreamError(f"call {call['call_id']} loop {lp}: no pre-sed state")
     if {c for l, c, _ in call["outer_post_sed"] if l == lp} != cols:
         raise StreamError(f"call {call['call_id']}: post-sed covers different columns")
-    if {c for _, c in call["flux"]} != cols:
+    # Filtered BY LOOP: unfiltered, a column missing its NFLUX in loop 1 passed
+    # because loop 2 supplied one (owner P0-2).
+    got = {c for l, c in call["flux"] if l == lp}
+    if got != cols:
         raise StreamError(
-            f"call {call['call_id']}: NFLUX covers "
-            f"{sorted({c for _, c in call['flux']})}, state covers {sorted(cols)}")
-    for (_, c), f in call["flux"].items():
+            f"call {call['call_id']} loop {lp}: NFLUX covers {sorted(got)}, "
+            f"state covers {sorted(cols)}")
+    for (l, c), f in ((k, v) for k, v in call["flux"].items() if k[0] == lp):
         if set(f) != set(NFLUX_FIELDS):
             raise StreamError(f"call {call['call_id']} col {c}: NFLUX fields "
                               f"{sorted(f)} != {sorted(NFLUX_FIELDS)}")
@@ -158,20 +177,36 @@ def _check_loop(call, lp):
             if f[name] <= 0:
                 raise StreamError(f"call {call['call_id']} col {c}: {name}={f[name]}")
     for chain in ("main", "ice"):
-        got = {c for _, ch, c in call["mstep"] if ch == chain}
+        got = {c for l, ch, c in call["mstep"] if ch == chain and l == lp}
         if got != cols:
-            raise StreamError(f"call {call['call_id']}: {chain} sub-step counts "
-                              f"cover {sorted(got)}, state covers {sorted(cols)}")
+            raise StreamError(
+                f"call {call['call_id']} loop {lp}: {chain} sub-step counts "
+                f"cover {sorted(got)}, state covers {sorted(cols)}")
 
 
-def calls(stream: str):
-    """One validated dict per EXTERNAL kernel call.
+def calls(stream: str) -> list:
+    """Every validated call, as a LIST (owner P0-1).
+
+    A generator let a caller take the first call with `next()` and never reach
+    the end-of-stream checks, so a truncated stream passed by not being read to
+    the end. The whole stream is validated before anything is returned.
 
     Bracketed by the driver's `G33N CALL_BEGIN/END`, not inferred from record
     order: the kernel's own `loop` resets to 1 every call, so a reader keying on
     it collapses every call onto the last, and a truncated stream or a changed
     call count is silently re-attributed instead of refused.
     """
+    g33n = [l for l in stream.splitlines() if l.startswith("G33N")]
+    _expect_stream(g33n, "stream carries no G33N records")
+    _expect_stream(STREAM_BEGIN.match(g33n[0]),
+                   f"first G33N record is not STREAM_BEGIN: {g33n[0]!r}")
+    _expect_stream(STREAM_END.match(g33n[-1]),
+                   "last G33N record is not STREAM_END — the stream is truncated")
+    _expect_stream(sum(1 for l in g33n if STREAM_BEGIN.match(l)) == 1,
+                   "more than one STREAM_BEGIN")
+    _expect_stream(sum(1 for l in g33n if STREAM_END.match(l)) == 1,
+                   "more than one STREAM_END")
+    out = []
     cur, expect, header, ended, seen = None, 1, None, False, 0
     for line in stream.splitlines():
         if (m := STREAM_BEGIN.match(line)):
@@ -205,6 +240,8 @@ def calls(stream: str):
                     f"call {cid} does not match split {split} tile {tile} under "
                     f"ntile={header['ntile']}")
             cur = _blank(cid, split, tile, _f32(m.group(7)))
+            cur["cols"] = (int(m.group(4)), int(m.group(5)))
+            cur["K"] = int(m.group(6))
             continue
         if (m := CALL_END.match(line)):
             if cur is None or int(m.group(1)) != cur["call_id"]:
@@ -215,7 +252,7 @@ def calls(stream: str):
                     f"{m.group(2)}/{m.group(3)}, begin said "
                     f"{cur['split']}/{cur['tile']}")
             _check(cur)
-            yield cur
+            out.append(cur)
             cur, expect, seen = None, expect + 1, seen + 1
             continue
         if cur is None:
@@ -247,6 +284,7 @@ def calls(stream: str):
             raise StreamError(f"unknown G33N record inside a call: {line!r}")
     if cur is not None:
         raise StreamError(f"stream ends inside call {cur['call_id']}")
+    # The header is mandatory (checked above), so these always run.
     if header:
         if not ended:
             raise StreamError(
@@ -256,6 +294,24 @@ def calls(stream: str):
             raise StreamError(
                 f"stream carries {seen} calls, header declared "
                 f"{header['expected_calls']}")
+        # Every split's tiles must cover the domain exactly once: a gap or an
+        # overlap between tiles is a decomposition that did not process the
+        # state it claims to (owner P0-3).
+        for sp in sorted({c["split"] for c in out}):
+            seg = sorted(c["cols"] for c in out if c["split"] == sp)
+            lo = seg[0][0]
+            for a, b in seg:
+                if a != lo:
+                    raise StreamError(
+                        f"split {sp}: tile columns {seg} leave a gap or overlap "
+                        f"at column {lo}")
+                lo = b + 1
+    return out
+
+
+def _expect_stream(cond, msg):
+    if not cond:
+        raise StreamError(msg)
 
 
 def _put(store, key, field, value, call):

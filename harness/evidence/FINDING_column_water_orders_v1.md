@@ -15,6 +15,27 @@ h = 100 → 0.39 s, at both precisions:
 
 At f64 column 3's total is **1.352435e-01 at every member** to seven figures while
 the species redistribute underneath it (qc 6.08e-2 → 6.81e-2, qi 1.52e-2 → 1.09e-2).
+
+**Correction (owner §5): spread is not conservation.** The table above measures
+STEP-INSENSITIVITY. Every member losing the same amount would give a spread of
+zero and a conservation residual of that amount, so "column water is conserved at
+f64" did not follow from it. The residual has since been computed properly,
+`R_W = (W_final − W_initial) + P_surface`, at h = 25 s:
+
+| arm | col | ΔW | P | **R_W** | R_W/W_i |
+|---|---|---|---|---|---|
+| f64 | 1 | −2.02e-07 | 2.02e-07 | **−4.4e-17** | −9e-17 |
+| f64 | 2 | −1.6e-08 | ~0 | **−1.6e-08** | −6.6e-08 |
+| f64 | 3 | 0 | 0 | **0** | 0 |
+| f32 | 2 | −5.09e-03 | 2.16e-02 | **+1.66e-02** | **6.8%** |
+| f32 | 3 | −1.18e-02 | 3.50e-02 | **+2.32e-02** | **17.1%** |
+
+The conclusion survives on the right evidence — at f64 the budget closes from
+1e-16 to 6.6e-8 relative. The f32 rows do **not** close, but `P` there is the WRF
+`rain` diagnostic, which is documented to depart from the ρΔz budget by up to 10×
+(P0-4b), so those are that defect plus any true non-conservation, not a clean
+statement. `conservation_spread` is renamed `cross_member_endpoint_spread` and the
+analyzer now prints `R_W` per member.
 At f32 the same total wanders through 1.2229e-1, 1.2231e-1, 1.2340e-1, 1.2348e-1,
 1.2333e-1, 1.2321e-1.
 
