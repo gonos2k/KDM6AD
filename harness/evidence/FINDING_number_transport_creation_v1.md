@@ -57,6 +57,35 @@ The source says (A); the run agrees to five decimals and **excludes (B) by
 7–15%**. `recovered/falln = 1.0000` is simultaneously the test that the caps did
 not bind, so those rows are exact.
 
+## The closure, on emitted data only — and here the mass control is real
+
+The recovered-transfer route above needs the `mstep == 1` restriction and a
+hypothesis test. There is a stronger form. The segment
+`outer_pre_sed .. outer_post_sed` is F:1189-1340 — **both sedimentation
+sub-cycles and nothing else** — so it isolates transport *temporally*, without
+needing a fixture with the microphysical sources switched off. Conservation under
+the ρΔz measure then means
+
+    [X(post_sed) − X(pre_sed)] + F_surface = 0
+
+with **every term read from the stream** — the column integrals from the stage
+records, `F` from the emitted `bottom_fall_qr` / `bottom_falln_*` accumulators.
+No recursion appears anywhere, so nothing forces the mass row to vanish:
+
+| species | col | calls | surface out | residual | residual/out |
+|---|---|---|---|---|---|
+| **qr** | 1 | 1 | 5.985e-05 | 1.405e-10 | **+0.0002%** |
+| **qr** | 2 | 3 | 8.538e-05 | −4.263e-12 | **−0.0000%** |
+| **qr** | 3 | 1 | 7.543e-06 | 3.070e-12 | **+0.0000%** |
+| `ni` | 3 | 95 | 3.345e+08 | 2.094e+07 | **+6.26%** |
+| `nr` | 2 | 1 | 3.769e+04 | 5.155e+03 | **+13.68%** |
+
+**Mass closes to f32 roundoff; number does not, by 6–14%.** Same segment, same
+cells, same kind of emitted accumulator — the transfer arithmetic is the only
+difference. Calls where a `min`/`max` cap bound are excluded per species, detected
+as a disagreement between the emitted accumulator and the recovered transfer;
+such a call measures the cap, not the transport.
+
 ## How much number is created
 
 ρΔz column number across the sedimentation segment, `mstep == 1`, h = 3.125 s:

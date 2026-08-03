@@ -149,6 +149,15 @@ contains
       do tl = 1, ntile
         i0 = i1 + 1
         i1 = i0 + tiles(tl) - 1
+#ifdef KDM6_G33_NUMBER_DUMP
+        ! The kernel cannot know which EXTERNAL call it is in: its own `loop`
+        ! resets to 1 every call, so a reader keying on it collapses every call
+        ! onto the last. The driver brackets each call, which also makes a
+        ! truncated stream or a changed call count detectable instead of
+        ! silently re-attributed (owner P0-4).
+        write(*,'(A,3(1X,I0),1X,Z8.8)') 'G33N CALL_BEGIN', s, tl, i0, &
+              transfer(delt, 0)
+#endif
         call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
                    ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
                    ,rhoxk(i0:i1,:), cmgk(i0:i1,:)                                   &
@@ -168,6 +177,9 @@ contains
                    ,snowF(i0:i1,1), snowncv(i0:i1,1)                                 &
                    ,graupelF(i0:i1,1), graupelncv(i0:i1,1)                           &
                     )
+#ifdef KDM6_G33_NUMBER_DUMP
+        write(*,'(A,2(1X,I0))') 'G33N CALL_END', s, tl
+#endif
       end do
     end do
 

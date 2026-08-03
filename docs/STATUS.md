@@ -206,6 +206,20 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   so operational steps are not measured; the conservative variant is *predicted* to be
   unaffected (it fixes the mass measure, leaves number on the legacy one) and was not
   run; cap-dominated calls are excluded, not explained.
+  **Closure, on emitted data only** (owner priority-3): the segment
+  `outer_pre_sed..outer_post_sed` is F:1189-1340 — both sedimentation sub-cycles and
+  nothing else — so it isolates transport temporally and **a sources-off fixture is
+  not needed**. With every term read from the stream and no recursion anywhere,
+  `[X(post)−X(pre)] + F_surface` gives **qr +0.0002% / −0.0000% / +0.0000%** against
+  **`ni` +6.26%** and **`nr` +13.68%** of the surface outflow: **mass closes to f32
+  roundoff, number does not.** Unlike the recovered-transfer form, nothing in this
+  arithmetic forces the mass row to vanish, so it is a real control. Cap-bound calls
+  are excluded per species (detected as emitted-vs-recovered disagreement).
+  The number stream is now a bracketed protocol — the driver emits
+  `G33N CALL_BEGIN/END` per external call, since the kernel's own `loop` resets to 1
+  every call — with a strict parser (bracket completeness, call-id contiguity, exact
+  per-column record universe, operand positivity/finiteness) and a JSON analysis
+  emitted from the same call that prints the table.
   See [`../harness/evidence/FINDING_number_transport_creation_v1.md`](../harness/evidence/FINDING_number_transport_creation_v1.md).
 - **The refinement evidence path is fail-closed and produced atomically** (owner
   P0-1/P0-2/P0-3, priority 2). Convergence orders were computed from the FILENAME's
