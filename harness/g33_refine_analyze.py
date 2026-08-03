@@ -340,12 +340,47 @@ def _order_table(runs: dict, title: str, head: str, rows) -> None:
             print(f"    {label} " + "  ".join(cells))
 
 
+#: Above this relative spread across members, a column integral is varying enough
+#: for its successive differences to plausibly be a discretisation signal. Below
+#: it the quantity is conserved to within the chain's own scatter and the
+#: differences are conservation residual, which an "order" silently misreports.
+_CONSERVED_SPREAD = 1e-4
+
+
+def conservation_spread(b: dict, key) -> float:
+    """(max-min)/|mean| of one column integral across the members."""
+    v = [b[n][key] for n in b]
+    m = sum(v) / len(v)
+    return (max(v) - min(v)) / abs(m) if m else 0.0
+
+
 def budget_report(runs: dict) -> None:
     b = {n: column_budgets(runs[n]) for n in sorted(runs)}
     if not b[min(b)]:
         print("\n  column budgets: forcing not present in this stream set")
         return
     keys = sorted(b[min(b)])                       # (quantity, column)
+    # An order on a CONSERVED quantity is not a convergence rate. On this fixture
+    # column water varies 0.6-1.0% across the chain at f32 but only 1e-6 at f64:
+    # the f32 variation is precision drift, so the exponents describe that drift,
+    # not the solution. Flag it rather than print a number that reads like a rate.
+    flat = [k for k in keys if conservation_spread(b, k) < _CONSERVED_SPREAD]
+    if flat:
+        print("\n  CONSERVED across the chain (spread < "
+              f"{_CONSERVED_SPREAD:g}) — successive differences here are")
+        print("  conservation residual, NOT discretisation error; any order below is not a rate:")
+        for k in flat:
+            print(f"    {k[0]:10} col {k[1]}   spread {conservation_spread(b, k):.3e}")
+    water = [k for k in keys if k[0] == "water"]
+    if water and any(conservation_spread(b, k) >= _CONSERVED_SPREAD for k in water):
+        # Measured, not inferred: rebuilding this fixture with the kernel promoted
+        # to f64 (`refine_build.sh --f64`) leaves the column-water total constant to
+        # ~1e-6 relative, against ~1e-2 here. The f32 variation these orders are
+        # taken on is therefore precision drift, and the exponents describe the
+        # drift rather than the solution.
+        print("\n  WATER ORDERS ARE NOT CONVERGENCE RATES on an f32 stream: the same")
+        print("  fixture at f64 holds column water to ~1e-6 relative against ~1e-2 here,")
+        print("  so this variation is precision drift. See FINDING_column_water_orders_v1.")
     _order_table(
         runs, "rho*dz column budgets — successive order per column",
         f"{'quantity':10} {'col':>3} ",

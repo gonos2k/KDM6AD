@@ -1003,3 +1003,25 @@ def test_prec_must_cover_exactly_the_state_columns(tmp_path):
             if not (ln.startswith("G33R PREC") and ln.split()[3] == "2")]
     with pytest.raises(ra.RefineError, match="species 1/2/3"):
         ra.read(_write(tmp_path, "\n".join(body) + "\n"))
+
+
+# ---- the water orders are not convergence rates -----------------------------
+
+def test_a_conserved_column_integral_is_flagged_not_ordered(capsys, tmp_path):
+    """Successive differences on a conserved quantity are conservation residual.
+    Reporting an "order" on them reads as a convergence rate and is not one."""
+    b = {n: {("water", 1): 0.135243 + 1e-9 * n} for n in (3, 6, 12)}
+    assert ra.conservation_spread(b, ("water", 1)) < ra._CONSERVED_SPREAD
+
+
+def test_a_varying_column_integral_is_not_flagged():
+    b = {n: {("water", 1): 0.12 + 0.001 * n} for n in (3, 6, 12)}
+    assert ra.conservation_spread(b, ("water", 1)) > ra._CONSERVED_SPREAD
+
+
+def test_the_f32_water_caveat_names_the_measurement_behind_it():
+    """A caveat that just says 'be careful' gets ignored. This one carries the
+    f64 comparison that establishes it."""
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    assert "WATER ORDERS ARE NOT CONVERGENCE RATES" in src
+    assert "--f64" in src and "1e-6 relative" in src

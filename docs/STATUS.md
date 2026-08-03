@@ -140,13 +140,22 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   column 1 has `mstep ≡ 1` and converges cleanly (+1.002), column 3 runs
   `mstep` 10→5→3→2 so its effective step never halves and its range *widens*
   (10–14.3 s at h=100 against 10–25 s at h=50) — measured order −5.86, +3.88, −1.02,
-  +0.41. **The ordering of columns by how well `mstep` tracks the chain is the
-  ordering by how well they converge.** Grade (owner §6.2): the
-  refinement-variable mismatch — an external-`dtcld` dyadic test does not dyadically
-  refine an operator that integrates `dtcld/mstep` — is **confirmed**; `mstep` as the
-  **sole** cause of the specific exponents is a **strong candidate only**, since no
-  counterfactual pins the schedule while holding the state and the other branches
-  fixed. Consequence: §9's obstacle is a
+  +0.41. **WITHDRAWN — the column-water orders this rested on are precision drift.**
+  Turning the f64 instrument on the column budgets: total ρΔz column water varies
+  **5.7e-3 / 7.0e-3 / 9.6e-3** relative across the chain at f32 but only
+  **1.6e-6 / 2.5e-7 / 8.8e-7** at f64, and at f64 column 3's total is
+  `1.352435e-01` at *every* member to seven figures while the species redistribute
+  underneath. The f32 variation is ~10⁴× larger and is removed by precision, so
+  `−5.860, +3.884, −1.017, +0.407` describe that drift, not a convergence rate.
+  What survives: the **refinement-variable mismatch is confirmed at source level**
+  (`dtcld/mstep` is what the sedimentation operator integrates, so an
+  external-`dtcld` dyadic chain does not dyadically refine it) — that was never an
+  inference from these orders. What is **refuted**: that a varying sub-step count
+  prevents convergence — at f64 column 3's `ni` converges at first order across the
+  *whole* chain (`+1.199, +0.980, +0.954, +0.967, +0.981, +0.990, +0.995`),
+  including h = 100 → 25 where `mstep_i` runs 4 → 2 → 1. The analyzer now prints
+  this caveat above the budget table on any f32 stream.
+  See [`../harness/evidence/FINDING_column_water_orders_v1.md`](../harness/evidence/FINDING_column_water_orders_v1.md). Consequence: §9's obstacle is a
   **sweep-design** problem — but making `mstep` constant is **necessary and not
   sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
   valid domain" that stood here is **withdrawn**. Measured: `mstep` reaches 1 at
@@ -165,9 +174,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   floating-point roundoff.** Caveats: promotion changes the whole operator, so this
   discriminates against precision-independent explanations rather than isolating
   roundoff absolutely, and the f64 build is an instrument, not the reference —
-  it produces no decision evidence. **Consequence**: two obstacles were conflated —
-  the sub-step schedule limits the coarse end and f32 roundoff the fine end; removing
-  both gives clean first order across the whole domain max-norm). Since an order needs three members,
+  it produces no decision evidence. **Scope**: this is the `th`/`qv` domain max-norm.
+  It does **not** generalise — column 1's water anomaly at h = 1.5625 s survives f64
+  with the same shape scaled ~2370×, so that one is precision-INdependent and remains
+  unexplained). Since an order needs three members,
   the finest clean order is 12.5→6.25, leaving column 1 **four** clean orders
   (`+1.969, +1.002, +1.000, +1.002`), column 2 **one** (`+0.066`) and column 3
   **none**. A usable fixture needs `mstep` to reach 1 by h ≈ 25 s — ~4× slower fall
