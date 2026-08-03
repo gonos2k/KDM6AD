@@ -7,6 +7,17 @@ give column 3 a valid domain."
 
 Such a chain exists. It is **two members long**, and a successive order needs three.
 
+**Scope of the `mstep` attribution (owner §6.2).** What is closed is that an
+external-`dtcld` dyadic test does **not** dyadically refine the sedimentation
+operator, because `dtcld/mstep` is what that operator integrates. What is **not**
+closed is that `mstep` is the *sole* cause of column 3's `−5.86, +3.88, −1.02,
++0.41`: no counterfactual holds the state fixed while pinning only the sub-step
+schedule, and caps, thresholds, cleanup and precipitation onset move with it.
+Grade: **confirmed** for the refinement-variable mismatch, **strong candidate** for
+the sole cause. `mstep ≡ 1` is likewise a sufficient simplification for analysis,
+not a mathematical necessity — a chain that tracked the effective step could take
+orders with `mstep > 1`.
+
 ## Measured: where `mstep` bottoms out
 
 Rain-chain `mstep`, from the SHA-pinned overlay (`--dump`):
@@ -30,12 +41,52 @@ differences stop falling and **start growing**:
 | `th` | 2.98e-2 | 1.50e-2 | 8.42e-3 | 5.55e-3 | 2.72e-3 | **1.46e-3** | 2.69e-3 | 6.41e-3 |
 | `mass` | 2.82e-5 | 1.90e-5 | 3.92e-6 | 2.21e-6 | 2.19e-6 | **6.46e-7** | 7.24e-7 | 2.37e-6 |
 
-A consistent discretization cannot produce **growing** differences under
-refinement. Re-running any member is bit-identical, so this is not
-nondeterminism — it is accumulated f32 roundoff over an increasing number of
-kernel calls, overtaking a discretization error that has become smaller than it.
-The minimum is at **h = 3.125 s**, so members finer than that are noise-dominated
-and the finest trustworthy member is h = 3.125.
+Re-running any member is bit-identical, so this is **not** nondeterminism. The
+minimum is at **h = 3.125 s**, and members finer than that do not reduce the
+difference, so the finest member the chain can rest an order on is h = 3.125.
+
+## The cause, decided by precision scaling
+
+An earlier version asserted "accumulated f32 roundoff" from bit-identical re-runs,
+which excludes nondeterminism *only* — several deterministic mechanisms produce the
+same turnover (truncation-term cancellation, an order crossover, active-set changes
+in the `min`/`max`/threshold operators, schedule changes, a pre-asymptotic stiff
+regime). It was withdrawn, and the discriminating experiment has now been run.
+
+The Fortran leg was rebuilt with the whole kernel promoted to f64
+(`refine_build.sh --f64`: `-fdefault-real-8 -fdefault-double-8`; the second is
+required, or `double precision` promotes to REAL(16) and the radar hostmatrix call
+fails to typecheck). The control arm `--probe` emits the same full-precision record
+family at the reference f32 precision and is **bit-identical to the reference build**
+on the G33R stream.
+
+Successive orders on the domain max-norm of `th`, h = 25 → 0.39 s:
+
+| | 25→12.5 | 12.5→6.25 | 6.25→3.125 | 3.125→1.56 | 1.56→0.78 | 0.78→0.39 |
+|---|---|---|---|---|---|---|
+| **f32** (reference) | +0.601 | +1.032 | +0.891 | **−0.874** | **−1.255** | **−0.567** |
+| **f64** (promoted) | +0.796 | +0.875 | +0.978 | **+1.040** | **+1.017** | **+1.007** |
+
+**The turnover disappears at f64.** Over the same steps the promoted kernel
+converges at clean first order, tightening to +1.007, and the smallest achievable
+difference falls by **13.7× for `th` and 114.7× for `qv`**.
+
+That is the signature the roundoff model predicts and the alternatives do not:
+truncation cancellation and order crossover would appear at both precisions at the
+same `h`, and active-set switching is state-dependent, not ε-dependent — it would
+have to reappear at f64 somewhere in this range, and instead the orders tighten.
+**Grade: the f32 turnover is accumulated floating-point roundoff.**
+
+Two caveats, both real. Promotion changes the entire operator, so this discriminates
+against precision-independent explanations rather than isolating roundoff from every
+conceivable alternative. And the f64 build is **not the reference**: it is a
+numerical-analysis instrument, produces no decision evidence, and the reference
+operator remains f32 — which is exactly why the f32 chain has a floor at all.
+
+**Consequence.** Two obstacles were being conflated. The sub-step schedule limits
+the *coarse* end (`mstep > 1`, where the f64 orders are also the loosest: +0.796,
++0.875) and f32 roundoff limits the *fine* end. Removing both — `mstep ≡ 1` and
+f64 — gives clean first order across the whole domain max-norm, columns included.
 
 ## Why that leaves no order
 

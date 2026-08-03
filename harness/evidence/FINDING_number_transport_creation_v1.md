@@ -57,6 +57,35 @@ The source says (A); the run agrees to five decimals and **excludes (B) by
 7–15%**. `recovered/falln = 1.0000` is simultaneously the test that the caps did
 not bind, so those rows are exact.
 
+## The closure, on emitted data only — and here the mass control is real
+
+The recovered-transfer route above needs the `mstep == 1` restriction and a
+hypothesis test. There is a stronger form. The segment
+`outer_pre_sed .. outer_post_sed` is F:1189-1340 — **both sedimentation
+sub-cycles and nothing else** — so it isolates transport *temporally*, without
+needing a fixture with the microphysical sources switched off. Conservation under
+the ρΔz measure then means
+
+    [X(post_sed) − X(pre_sed)] + F_surface = 0
+
+with **every term read from the stream** — the column integrals from the stage
+records, `F` from the emitted `bottom_fall_qr` / `bottom_falln_*` accumulators.
+No recursion appears anywhere, so nothing forces the mass row to vanish:
+
+| species | col | calls | surface out | residual | residual/out |
+|---|---|---|---|---|---|
+| **qr** | 1 | 1 | 5.985e-05 | 1.405e-10 | **+0.0002%** |
+| **qr** | 2 | 3 | 8.538e-05 | −4.263e-12 | **−0.0000%** |
+| **qr** | 3 | 1 | 7.543e-06 | 3.070e-12 | **+0.0000%** |
+| `ni` | 3 | 95 | 3.345e+08 | 2.094e+07 | **+6.26%** |
+| `nr` | 2 | 1 | 3.769e+04 | 5.155e+03 | **+13.68%** |
+
+**Mass closes to f32 roundoff; number does not, by 6–14%.** Same segment, same
+cells, same kind of emitted accumulator — the transfer arithmetic is the only
+difference. Calls where a `min`/`max` cap bound are excluded per species, detected
+as a disagreement between the emitted accumulator and the recovered transfer;
+such a call measures the cap, not the transport.
+
 ## How much number is created
 
 ρΔz column number across the sedimentation segment, `mstep == 1`, h = 3.125 s:
@@ -81,10 +110,13 @@ the ratio is meaningless there and the per-call figure (0.12%) is the usable one
 
 ## Limits
 
-- **`mstep == 1` only.** With more substeps the composition is not invertible from
-  endpoints, so operational steps (where `mstep` is 5–10) are not measured. The
-  step-robustness above is evidence against a strong step dependence, not a
-  measurement at operational steps.
+- **`mstep == 1` only, and for one reason.** The closure above needs no such
+  restriction — it reads endpoints and an emitted flux. What needs it is the
+  *cap-detection filter*, which compares the emitted accumulator against the
+  recovered transfer and so inherits the recursion's single-substep requirement.
+  Operational steps (`mstep` 5–10) are therefore unmeasured. Emitting the capped
+  `dnr`/`dqr` directly would lift the restriction; the step-robustness above is
+  evidence against a strong step dependence, not a measurement at those steps.
 - **Legacy reference.** The conservative variant was not run through this. It
   fixes the *mass* measure and leaves number on the legacy one
   (`sedimentation_conservative.cpp:91-92` against `:109`), so the defect should be

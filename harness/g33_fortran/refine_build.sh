@@ -13,7 +13,7 @@ HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
-ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0; NFLUX=0
+ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0; NFLUX=0; F64=0; PROBE=0
 for a in "$@"; do
     case "$a" in
         --algo=*)    ALGO="${a#--algo=}" ;;
@@ -27,6 +27,13 @@ for a in "$@"; do
         # The surface number flux and the ice sub-step count. Its own macro, so
         # the decision-bundle build (fortran_build.sh) never emits them.
         --nflux)     DUMP=1; NFLUX=1 ;;
+        # Promote the whole Fortran leg to f64 and print a full-precision probe
+        # stream. For the roundoff-attribution experiment ONLY: this is not the
+        # reference operator and produces no decision evidence.
+        --f64)       F64=1; PROBE=1 ;;
+        # The same full-precision probe stream at the REFERENCE f32 precision --
+        # the control arm of the roundoff experiment.
+        --probe)     PROBE=1 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -44,6 +51,13 @@ FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"
 COMMON_FLAGS=(-O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none
               -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch
               -fallow-invalid-boz)
+if [ "$F64" = 1 ]; then
+    # -fdefault-double-8 is required with -fdefault-real-8: without it `double
+    # precision` promotes to REAL(16) and the radar hostmatrix call fails to
+    # typecheck.
+    COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8)
+fi
+[ "$PROBE" = 1 ] && COMMON_FLAGS+=(-DKDM6_G33_PRECISION_PROBE)
 REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)
@@ -52,7 +66,13 @@ DRIVER_FLAGS=("${COMMON_FLAGS[@]}" -ffp-contract=off -Wall)
 # indistinguishable from a build nobody recorded, so the build writes it rather
 # than leaving it to a caller that may not pass it (owner §9).
 CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
+# ...and every source. The manifest digested only the module and fixture, so a
+# change to libmassv, the model constants, the radar module, the stub or the
+# driver was invisible -- and host/** is gitignored, so repo_commit and
+# tree_dirty do not see them either (owner P0-3).
+SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
 fc() { local o="$1"; shift
+       printf '%s\n' "${@: -1}" >>"$SRCLOG"
        printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
@@ -76,12 +96,18 @@ fi
 fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
 fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
                                    "$HERE/g33_refine_driver.f90"
-"$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver" \
-    "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o" \
-    "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o" \
-    "$OUT/stub_wrf_error.o" "$OUT/libmassv.o" 2>"$OUT/link.err" \
+LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
+      "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"
+      "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o"
+      "$OUT/stub_wrf_error.o" "$OUT/libmassv.o")
+printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
+"${LINK[@]}" 2>"$OUT/link.err" \
     || { echo "LINK FAILED"; head -25 "$OUT/link.err"; exit 1; }
-# What built this -- compiler digest, commands, source digests (owner §9).
+# What built this -- compiler digest, every source, and the binary that ran.
+# The PINNED module is what the experiment is about; MODULE_SRC is what the
+# compiler saw, which is the macro-gated overlay under --dump/--nflux. Both are
+# recorded: binding only the compiled one would make an instrumented bundle
+# unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
-    "$OUT" "$FC" "$MODULE_SRC" "$FIXTURE_SRC" "$0"
+    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" "$MODULE_SRC"
 echo "$OUT"

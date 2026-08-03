@@ -109,5 +109,64 @@ def test_the_refinement_build_calls_it(build):
     assert "g33_build_provenance.py" in script.read_text()
 
 
+def test_every_compiled_source_is_digested_not_just_the_module(tmp_path, build):
+    """libmassv, the model constants, the radar module, the stub and the driver
+    all change results, and host/** is gitignored so repo_commit cannot see them
+    (owner P0-3)."""
+    out, root = build
+    (out / "sources.txt").write_text(f"{root / 'm.F'}\n{root / 'f.f90'}\n")
+    got = _collect(out, root)["sources"]
+    assert [g["path"] for g in got] == [str(root / "m.F"), str(root / "f.f90")]
+    assert got[0]["sha256"] == bp.sha256(root / "m.F")
+
+
+def test_the_executable_that_ran_is_digested(build):
+    """The binary is the artifact that produced the numbers."""
+    out, root = build
+    exe = _stub(root / "exe", "exit 0")
+    p = bp.collect(out, str(root / "fc"), root / "m.F", root / "f.f90",
+                   root / "b.sh", exe)
+    assert p["executable_sha256"] == bp.sha256(exe)
+    assert _collect(out, root)["executable_sha256"] is None
+
+
+def test_the_build_logs_its_sources_and_its_link():
+    """A provenance field nothing populates records nothing."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "SRCLOG=" in script and 'printf \'%s\\n\' "${@: -1}" >>"$SRCLOG"' in script
+    assert 'printf \'%q \' "${LINK[@]}" >>"$CMDLOG"' in script
+
+
 def test_wrong_argument_count_is_usage_not_a_traceback():
     assert bp.main(["only-one"]) == 2
+
+
+# ---- owner priority-4: the precision-scaling arms ---------------------------
+
+def test_the_f64_arm_pins_double_precision_too():
+    """-fdefault-real-8 alone promotes `double precision` to REAL(16) and the
+    radar hostmatrix call stops typechecking. The pair is required."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "-fdefault-real-8 -fdefault-double-8" in script
+
+
+def test_the_probe_is_a_separate_record_family():
+    """The G33R stream is f32 hex by contract; a full-precision probe cannot ride
+    on it without changing what the strict parser and the decision protocol see."""
+    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    assert "KDM6_G33_PRECISION_PROBE" in drv and "'G33P STATE'" in drv
+    analyzer = (REPO / "harness/g33_refine_analyze.py").read_text()
+    assert "G33P" not in analyzer, "the probe must not enter the G33R parser"
+
+
+def test_the_f32_control_arm_exists_and_is_not_the_f64_one():
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "--probe)" in script and "--f64)" in script
+
+
+def test_the_bit_pattern_helper_is_kind_explicit():
+    """`transfer(bits, value)` reinterprets a 4-byte word as whatever the default
+    real is — under the f64 probe that made every fixture constant garbage and the
+    run produced NaN."""
+    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    assert "real(real32) :: word" in drv and "real(word, kind(value))" in drv

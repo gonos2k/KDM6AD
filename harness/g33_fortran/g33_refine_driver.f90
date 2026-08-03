@@ -28,7 +28,7 @@
 ! Emits one G33R STATE line per field/cell plus the three precipitation
 ! accumulators, in the same top-first convention as the decision driver.
 module g33_refine
-  use, intrinsic :: iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env, only: int32, real32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
                                     xls, xlv, xlf, rhoair0, rhowater,        &
                                     rhosnow, cliq, cice, psat
@@ -56,7 +56,13 @@ contains
 
   pure real function f32(bits) result(value)
     integer(int32), intent(in) :: bits
-    value = transfer(bits, value)
+    ! KIND-EXPLICIT. `transfer(bits, value)` reinterprets the 4-byte pattern as
+    ! whatever the default real is, which under the -fdefault-real-8 precision
+    ! probe is 8 bytes -- so every fixture constant became garbage and the run
+    ! produced NaN. The pattern is an f32 word by definition; widen afterwards.
+    real(real32) :: word
+    word = transfer(bits, word)
+    value = real(word, kind(value))
   end function f32
 
   subroutine run_refined(im, km, nsplit, tiles, ntile, carry_aux, outF, precF, &
@@ -149,6 +155,15 @@ contains
       do tl = 1, ntile
         i0 = i1 + 1
         i1 = i0 + tiles(tl) - 1
+#ifdef KDM6_G33_NUMBER_DUMP
+        ! The kernel cannot know which EXTERNAL call it is in: its own `loop`
+        ! resets to 1 every call, so a reader keying on it collapses every call
+        ! onto the last. The driver brackets each call, which also makes a
+        ! truncated stream or a changed call count detectable instead of
+        ! silently re-attributed (owner P0-4).
+        write(*,'(A,3(1X,I0),1X,Z8.8)') 'G33N CALL_BEGIN', s, tl, i0, &
+              transfer(delt, 0)
+#endif
         call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
                    ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
                    ,rhoxk(i0:i1,:), cmgk(i0:i1,:)                                   &
@@ -168,6 +183,9 @@ contains
                    ,snowF(i0:i1,1), snowncv(i0:i1,1)                                 &
                    ,graupelF(i0:i1,1), graupelncv(i0:i1,1)                           &
                     )
+#ifdef KDM6_G33_NUMBER_DUMP
+        write(*,'(A,2(1X,I0))') 'G33N CALL_END', s, tl
+#endif
       end do
     end do
 
@@ -213,7 +231,7 @@ program g33_refine_driver
   use module_mp_kdm6, only: kdm6init
 #endif
   use g33_refine
-  use, intrinsic :: iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env, only: int32, real32
   implicit none
   integer, parameter :: IM = G33_B, KM = G33_K
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
@@ -284,6 +302,50 @@ program g33_refine_driver
       end do
     end do
   end do
+#ifdef KDM6_G33_PRECISION_PROBE
+  ! A SEPARATE record family, in decimal at full precision. The G33R stream is
+  ! f32 hex by contract; the question here is whether the fine-step turnover
+  ! MOVES when the kernel is promoted to f64, and that cannot be asked through a
+  ! 4-byte word. Kept out of G33R so the strict parser and the decision protocol
+  ! see nothing new.
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P STATE', &
+              trim(FLDNAME(f)), i, KM-k, outF(i,k,f)
+      end do
+    end do
+  end do
+  ! Forcing too: without rho and delz the probe stream cannot form a rho*dz
+  ! column budget, and the per-column question is exactly what the f64 arm is
+  ! for -- it removes the roundoff confound so the sub-step schedule can be
+  ! looked at on its own. `pii` and the INITIAL state follow for the same reason:
+  ! the moist-enthalpy ledger needs both, and it is the next diagnostic whose
+  ! residual might be precision drift rather than physics.
+  do k = 1, KM
+    do i = 1, IM
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'rho', &
+            i, KM-k, denO(i,k)
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'delz', &
+            i, KM-k, delzO(i,k)
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'pii', &
+            i, KM-k, piiO(i,k)
+    end do
+  end do
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P INITIAL', &
+              trim(FLDNAME(f)), i, KM-k, inF(i,k,f)
+      end do
+    end do
+  end do
+  do f = 1, 3
+    do i = 1, IM
+      write(*,'(A,2(1X,I0),1X,ES26.16E3)') 'G33P PREC', f, i, precF(f,i)
+    end do
+  end do
+#endif
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM

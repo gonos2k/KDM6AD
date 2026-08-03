@@ -1,5 +1,16 @@
 # Both ledgers, corrected twice: a ~10x conservative advantage in one column, and no clean policy signal
 
+> **SCOPE CORRECTION (owner §6.4 follow-up).** The column-2 conservative advantage
+> reported below is **precision-scoped and is 1.00× at f64**. Rebuilding this
+> fixture with the kernel promoted to f64 shows it essentially does not
+> precipitate (rain 2.0e-07 / ~0 / 0.0 mm against 4.8e-04 / 2.2e-02 / 3.5e-02 at
+> f32), legacy and conservative go **bit-identical — 0 of 333 records differ**,
+> and the ledger residuals coincide exactly. The advantage below measures how the
+> two variants respond to a sedimentation cap event that f32 noise creates on a
+> threshold-marginal fixture, **not the interface's thermodynamics**. It remains a
+> valid statement about the f32 reference, which is the operator being certified.
+> See [`FINDING_fixture_precipitates_only_at_f32_v1.md`](FINDING_fixture_precipitates_only_at_f32_v1.md).
+
 **Revised twice after adversarial review, which found two independent defects in
 the construction.** The first version's ~74×/~2200× conservative advantage and its
 "refreshing loses 1.5× on both" were artifacts of (a) taking the enthalpy flux from

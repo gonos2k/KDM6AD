@@ -14,9 +14,12 @@ nucleation and aggregation, so a changed q/n within one run is ordinary physics.
 The interface is the only difference between the two runs, and the TOP level has no
 inflow from above, so its ratio of exactly 1 is the control.
 
-Column number is reported as a CHANGE, not a residual: the surface number flux is
-not emitted -- only mass precipitation is -- and calling it a residual would claim
-a balance whose outflow term does not exist here.
+Column number is reported as a CHANGE, not a residual. The G33R refinement stream
+these functions read carries only mass precipitation; the surface NUMBER flux is
+emitted, but on a different stream -- the `--nflux` diagnostic overlay
+(`g33_number_transport.py`) -- and even with it a residual would only DEFINE the
+process term, not check it. Calling this a balance would claim a closure whose
+source/sink terms are still per-cell locals.
 
 Reads the same G33R streams as g33_refine_analyze.
 """

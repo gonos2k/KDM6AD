@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,9 @@ def _git(*a) -> str:
                           text=True).stdout.strip()
 
 
+_NAME = re.compile(r"^n(\d+)\.(carry|rezero)\.txt$")
+
+
 def _member(path: Path) -> dict:
     """One member, via the analyzer's STRICT parser (owner §9).
 
@@ -41,7 +45,17 @@ def _member(path: Path) -> dict:
     READ from the stream, not recomputed from N: deriving them would restate the
     assumption the experiment exists to check.
     """
-    r = ra.read(path)                       # raises RefineError on anything malformed
+    # The FILENAME is bound to the stream: `read(nsplit=)` refuses a member whose
+    # BEGIN disagrees with what it is called, and the mode in the name must be the
+    # mode it ran. A mislabelled member is how two experiments become one table.
+    m = _NAME.match(path.name)
+    if not m:
+        raise ra.RefineError(f"{path.name}: not n<N>.<carry|rezero>.txt")
+    r = ra.read(path, nsplit=int(m.group(1)))   # raises on anything malformed
+    if r[("meta", "mode")] != m.group(2):
+        raise ra.RefineError(
+            f"{path.name}: filename says mode {m.group(2)}, stream says "
+            f"{r[('meta', 'mode')]}")
     out = {"file": path.name, "output_sha256": sha256(path),
            "nsplit": r[("meta", "nsplit")], "mode": r[("meta", "mode")],
            "algorithm": r[("meta", "algorithm")]}
@@ -54,7 +68,16 @@ def _member(path: Path) -> dict:
 def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
           analyzer: Path | None = None, build_provenance: Path | None = None,
           findings=()) -> dict:
-    members = [_member(p) for p in sorted(outputs.glob("n*.txt"))]
+    paths = sorted(outputs.glob("n*.txt"))
+    members = [_member(p) for p in paths]
+    # One experiment, not several (owner P0-2). Every cross-member check the
+    # analyzer applies before it will produce a table is applied before the
+    # manifest will claim one is reproducible: same record universe, one
+    # algorithm and mode, one integration horizon, no repeated step.
+    runs = {int(_NAME.match(p.name).group(1)): ra.read(
+        p, nsplit=int(_NAME.match(p.name).group(1))) for p in paths}
+    if len(runs) > 1:
+        ra.require_same_universe(runs)
     steps = [m.get("dtcld") for m in members]
     man = {
         "artifact_type": "refinement_experiment",
@@ -85,11 +108,24 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
     # Recorded, not asserted. A sweep that does not halve dtcld is still a run
     # worth keeping -- the N=1/N=3 policy control is exactly such a sweep -- but
     # whether it refines should be a property a reader can see rather than infer.
+    #
+    # Ordered by ACTUAL step, not by N: N = 1,2,3 run 100, 150, 100 s, so an
+    # N-ordered chain need not be step-ordered and sorting the VALUES alone would
+    # call an arbitrary bag of members a chain as long as the numbers happened to
+    # halve (owner P0-2).
+    by_step = [m["dtcld"] for m in sorted(members, key=lambda m: -m.get("dtcld", 0))
+               ] if all(s is not None for s in steps) else []
     man["is_refinement_chain"] = (
-        len(steps) > 1 and all(s is not None for s in steps)
-        and all(abs(a - 2 * b) < 1e-9
-                for a, b in zip(sorted(steps, reverse=True),
-                                sorted(steps, reverse=True)[1:])))
+        len(by_step) > 1
+        and all(abs(a - 2 * b) < 1e-9 for a, b in zip(by_step, by_step[1:])))
+    # The provenance must describe THESE sources, not some other build's.
+    bp = man["build_provenance"]
+    if bp:
+        for field in ("module_sha256", "fixture_sha256"):
+            if bp.get(field) != man[field]:
+                raise ra.RefineError(
+                    f"build_provenance.{field} does not match the {field} this "
+                    f"manifest records — the provenance is from a different build")
     return man
 
 

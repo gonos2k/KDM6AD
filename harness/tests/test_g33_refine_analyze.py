@@ -7,6 +7,7 @@ nothing, so the design rule is asserted here alongside it.
 """
 import math
 import struct
+import json
 import sys
 from pathlib import Path
 
@@ -77,8 +78,15 @@ def test_the_split_is_exact_in_f32_for_every_member():
 
 # ── the analyzer ─────────────────────────────────────────────────────────────
 
-def _run(**vals):
-    return {("state", f, 1, 0): v for f, v in vals.items()}
+def _run(dtcld=None, **vals):
+    """A minimal in-memory member. `dtcld` is REQUIRED by the analyzer's step
+    contract (owner P0-1) — a member that does not say what step it ran cannot
+    carry an order — so the helper supplies it rather than each caller."""
+    out = {("state", f, 1, 0): v for f, v in vals.items()}
+    if dtcld is not None:
+        out |= {("meta", "dtcld"): dtcld, ("meta", "mode"): "rezero",
+                ("meta", "algorithm"): "legacy"}
+    return out
 
 
 def test_order_is_log2_of_the_error_ratio():
@@ -125,13 +133,13 @@ def test_the_norm_is_a_max_not_a_mean():
 def test_successive_pairs_are_derived_not_hardcoded():
     """The doubling pairs must follow the members present — a hardcoded list built
     for 1/2/3/6/12 silently drops the 12->24 estimate the corrected chain adds."""
-    runs = {n: _run(qr=float(n)) for n in (3, 6, 12, 24)}
+    runs = {n: _run(dtcld=300 / n, qr=float(n)) for n in (3, 6, 12, 24)}
     got = ra.successive(runs)["mass"]
     assert set(got) == {100.0, 50.0, 25.0}
 
 
 def test_error_to_finest_uses_the_actual_finest_member(tmp_path):
-    runs = {n: _run(qr=float(n)) for n in (3, 6, 12, 24)}
+    runs = {n: _run(dtcld=300 / n, qr=float(n)) for n in (3, 6, 12, 24)}
     got = ra.to_finest(runs)["mass"]
     assert 12.5 not in got, "the finest member is the reference, not a data point"
     assert set(got) == {100.0, 50.0, 25.0}
@@ -810,3 +818,210 @@ def test_a_finding_that_is_not_there_is_loud(tmp_path):
     with pytest.raises(FileNotFoundError):
         rm.build(d, module=mod, fixture=fix, compiler="c",
                  findings=[tmp_path / "absent.md"])
+
+
+# ---- owner P0-1: the order is against the step the KERNEL ran ---------------
+
+def _member(tmp_path, nsplit, dtcld, *, delt=None, loops=1, mode="rezero",
+            algo="legacy", drop_step=False):
+    """One member whose BEGIN reports an explicit dtcld, read as the analyzer
+    reads it (filename bound to nsplit)."""
+    delt = 300.0 / nsplit if delt is None else delt
+    body = _stream(nsplit=nsplit, mode=mode, algo=algo).splitlines()
+    body[0] = (f"G33R BEGIN nsplit {nsplit} {mode} {algo}" if drop_step else
+               f"G33R BEGIN nsplit {nsplit} {mode} {algo} delt {delt:.6f} "
+               f"loops {loops} dtcld {dtcld:.6f}")
+    d = tmp_path / f"m{nsplit}"
+    d.mkdir(exist_ok=True)
+    return ra.read(_write(d, "\n".join(body) + "\n",
+                          name=f"n{nsplit}.{mode}.txt"), nsplit=nsplit)
+
+
+def _runs(tmp_path, *specs, **kw):
+    return {n: _member(tmp_path, n, h, **kw) for n, h in specs}
+
+
+def test_the_step_comes_from_the_stream_not_the_filename(tmp_path):
+    assert ra.steps(_runs(tmp_path, (3, 100.0), (6, 50.0))) == {3: 100.0, 6: 50.0}
+
+
+def test_a_member_with_no_dtcld_cannot_carry_an_order(tmp_path):
+    """Older streams predate the field. An order against a step nobody recorded
+    is exactly the defect this exists to stop."""
+    with pytest.raises(ra.RefineError, match="no dtcld"):
+        ra.steps({3: _member(tmp_path, 3, 0.0, drop_step=True)})
+
+
+def test_N_doubling_is_NOT_taken_as_the_step_halving(tmp_path):
+    """`loops = max(nint(delt/dtcldcr),1)` (F:930) makes N = 1,2,3 run
+    100, 150, 100 s. A pair whose N doubled but whose step did not halve must
+    yield no order at all."""
+    r = _runs(tmp_path, (2, 150.0), (4, 120.0))
+    assert ra._halving_pairs(r) == []
+    assert all(not v for v in ra.successive(r).values())
+
+
+def test_a_real_halving_still_pairs(tmp_path):
+    """The guard must not refuse the chains the sweep actually uses."""
+    r = _runs(tmp_path, (3, 100.0), (6, 50.0), (12, 25.0))
+    assert ra._halving_pairs(r) == [(3, 6), (6, 12)]
+
+
+def test_the_same_step_twice_is_refused(tmp_path):
+    """N = 1 and N = 3 both run dtcld = 100 s on the real driver."""
+    with pytest.raises(ra.RefineError, match="same step twice"):
+        ra.require_orderable(_runs(tmp_path, (1, 100.0), (3, 100.0)))
+
+
+def test_members_that_integrate_different_totals_are_refused(tmp_path):
+    r = _runs(tmp_path, (3, 100.0))
+    r[6] = _member(tmp_path, 6, 50.0, delt=99.0)
+    with pytest.raises(ra.RefineError, match="different total times"):
+        ra.require_comparable(r)
+
+
+def test_members_that_mix_modes_are_refused(tmp_path):
+    r = _runs(tmp_path, (3, 100.0))
+    r[6] = _member(tmp_path, 6, 50.0, mode="carry")
+    with pytest.raises(ra.RefineError, match="mix modes"):
+        ra.require_comparable(r)
+
+
+def test_the_finest_member_is_the_smallest_STEP_not_the_largest_N(tmp_path):
+    """N = 2 runs a COARSER step than N = 1, so `max(N)` is the wrong finest."""
+    r = _runs(tmp_path, (2, 150.0), (1, 100.0))
+    assert min(r, key=lambda n: ra.steps(r)[n]) == 1
+    assert set(ra.to_finest(r)["th"]) == {150.0}
+
+
+# ---- owner P0-2: the manifest must certify ONE experiment -------------------
+
+def _bundle(tmp_path, *specs, mode="rezero"):
+    d = tmp_path / "out"
+    d.mkdir(exist_ok=True)
+    for nsplit, dtcld in specs:
+        body = _stream(nsplit=nsplit, mode=mode).splitlines()
+        body[0] = (f"G33R BEGIN nsplit {nsplit} {mode} legacy "
+                   f"delt {300.0/nsplit:.6f} loops 1 dtcld {dtcld:.6f}")
+        (d / f"n{nsplit}.{mode}.txt").write_text("\n".join(body) + "\n")
+    mod = tmp_path / "m.F"; mod.write_text("x")
+    fix = tmp_path / "f.f90"; fix.write_text("y")
+    return d, mod, fix
+
+
+def test_the_filename_is_bound_to_the_stream(tmp_path):
+    """A member called n6 whose BEGIN says nsplit 3 is a mislabelled file, and
+    that is how two experiments become one table."""
+    d, mod, fix = _bundle(tmp_path, (3, 100.0))
+    (d / "n3.rezero.txt").rename(d / "n6.rezero.txt")
+    with pytest.raises(ra.RefineError):
+        rm.build(d, module=mod, fixture=fix, compiler="c")
+
+
+def test_the_filename_mode_is_bound_to_the_stream(tmp_path):
+    d, mod, fix = _bundle(tmp_path, (3, 100.0))
+    (d / "n3.rezero.txt").rename(d / "n3.carry.txt")
+    with pytest.raises(ra.RefineError, match="filename says mode"):
+        rm.build(d, module=mod, fixture=fix, compiler="c")
+
+
+def test_members_from_different_experiments_are_refused(tmp_path):
+    """Mixed modes reach the manifest only if nothing checks across members."""
+    d, mod, fix = _bundle(tmp_path, (3, 100.0))
+    _bundle(tmp_path, (6, 50.0), mode="carry")
+    with pytest.raises(ra.RefineError, match="mix modes"):
+        rm.build(d, module=mod, fixture=fix, compiler="c")
+
+
+def test_a_repeated_step_is_recorded_but_is_not_a_chain(tmp_path):
+    """The N=1/N=3 policy control runs the same dtcld twice on purpose. The
+    manifest must still describe it; only an ORDER over it is refused."""
+    d, mod, fix = _bundle(tmp_path, (1, 100.0), (3, 100.0))
+    man = rm.build(d, module=mod, fixture=fix, compiler="c")
+    assert len(man["members"]) == 2 and not man["is_refinement_chain"]
+
+
+def test_is_refinement_chain_orders_by_STEP_not_by_N(tmp_path):
+    """Sorting the dtcld VALUES alone calls any bag of members a chain as long as
+    the numbers happen to halve. N = 2 running the coarser step must not."""
+    d, mod, fix = _bundle(tmp_path, (2, 100.0), (4, 50.0), (8, 25.0))
+    assert rm.build(d, module=mod, fixture=fix, compiler="c")["is_refinement_chain"]
+    (tmp_path / "b").mkdir()
+    d2, mod2, fix2 = _bundle(tmp_path / "b", (2, 150.0), (4, 120.0))
+    assert not rm.build(d2, module=mod2, fixture=fix2,
+                        compiler="c")["is_refinement_chain"]
+
+
+def test_provenance_from_a_different_build_is_refused(tmp_path):
+    """A manifest whose provenance describes other sources documents a build
+    that did not produce these members."""
+    d, mod, fix = _bundle(tmp_path, (3, 100.0))
+    prov = tmp_path / "bp.json"
+    prov.write_text(json.dumps({"module_sha256": "deadbeef",
+                                "fixture_sha256": "deadbeef"}))
+    with pytest.raises(ra.RefineError, match="different build"):
+        rm.build(d, module=mod, fixture=fix, compiler="c", build_provenance=prov)
+
+
+# ---- owner §7.1: the parser must reject an incomplete record universe -------
+
+def test_rho_without_delz_is_refused_at_parse_time(tmp_path):
+    """It used to pass and fail later inside a column budget — by which point the
+    stream had already been counted as a member."""
+    lines = _stream().splitlines()
+    body = [ln for ln in lines if ln != "G33R END"]
+    for i in range(1, 3):
+        for k in range(2):
+            body.append(f"G33R FORCING rho {i} {k} 3F800000")
+    with pytest.raises(ra.RefineError, match="must be present together"):
+        ra.read(_write(tmp_path, "\n".join(body + ["G33R END"]) + "\n"))
+
+
+def test_an_initial_state_over_different_cells_is_refused(tmp_path):
+    """Counting records passes a member with the right NUMBER of wrong cells."""
+    body = []
+    for ln in _stream().splitlines():
+        body.append(ln)
+        if ln.startswith("G33R STATE"):
+            f, i, k = ln.split()[2:5]
+            body.append(f"G33R INITIAL {f} {int(i)+9} {k} 3F800000")
+    with pytest.raises(ra.RefineError, match="different \\(field, col, k\\)"):
+        ra.read(_write(tmp_path, "\n".join(body) + "\n"))
+
+
+def test_a_ragged_column_is_refused(tmp_path):
+    """A column short of a level silently shortens its column integral."""
+    body = [ln for ln in _stream().splitlines()
+            if not (ln.startswith("G33R STATE") and ln.split()[3] == "2"
+                    and ln.split()[4] == "1")]
+    with pytest.raises(ra.RefineError, match="different level sets"):
+        ra.read(_write(tmp_path, "\n".join(body) + "\n"))
+
+
+def test_prec_must_cover_exactly_the_state_columns(tmp_path):
+    body = [ln for ln in _stream().splitlines()
+            if not (ln.startswith("G33R PREC") and ln.split()[3] == "2")]
+    with pytest.raises(ra.RefineError, match="species 1/2/3"):
+        ra.read(_write(tmp_path, "\n".join(body) + "\n"))
+
+
+# ---- the water orders are not convergence rates -----------------------------
+
+def test_a_conserved_column_integral_is_flagged_not_ordered(capsys, tmp_path):
+    """Successive differences on a conserved quantity are conservation residual.
+    Reporting an "order" on them reads as a convergence rate and is not one."""
+    b = {n: {("water", 1): 0.135243 + 1e-9 * n} for n in (3, 6, 12)}
+    assert ra.conservation_spread(b, ("water", 1)) < ra._CONSERVED_SPREAD
+
+
+def test_a_varying_column_integral_is_not_flagged():
+    b = {n: {("water", 1): 0.12 + 0.001 * n} for n in (3, 6, 12)}
+    assert ra.conservation_spread(b, ("water", 1)) > ra._CONSERVED_SPREAD
+
+
+def test_the_f32_water_caveat_names_the_measurement_behind_it():
+    """A caveat that just says 'be careful' gets ignored. This one carries the
+    f64 comparison that establishes it."""
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    assert "WATER ORDERS ARE NOT CONVERGENCE RATES" in src
+    assert "--f64" in src and "1e-6 relative" in src
