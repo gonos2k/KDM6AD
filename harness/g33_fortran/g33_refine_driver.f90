@@ -354,11 +354,20 @@ program g33_refine_driver
   ! stops a reader mixing them (owner P0-4 / priority 2). `source_precision` is
   ! the precision of the REFERENCE this arm instruments, which is always f32.
 #ifdef KDM6_G33_F64
-  write(*,'(A,1X,I0,4(1X,A),2(1X,I0))') 'G33P BEGIN', 1, 'precision', 'f64', &
-        'source_precision', 'f32', IM, KM
+  ! 1 A + 1 I0 + 10 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
+  ! because a Fortran format/argument mismatch is a RUNTIME abort, not a compile
+  ! error: the build succeeds and the failure appears only as missing output.
+  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 2, 'precision', 'f64', 'source_precision', 'f32', &
+        'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
+        trim(merge('carry ', 'rezero', carry_aux)), &
+        nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #else
-  write(*,'(A,1X,I0,4(1X,A),2(1X,I0))') 'G33P BEGIN', 1, 'precision', 'f32', &
-        'source_precision', 'f32', IM, KM
+  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 2, 'precision', 'f32', 'source_precision', 'f32', &
+        'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
+        trim(merge('carry ', 'rezero', carry_aux)), &
+        nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #endif
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is
   ! f32 hex by contract; the question here is whether the fine-step turnover

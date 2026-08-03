@@ -6,7 +6,9 @@ declared, and no parser of its own. Two hazards followed. An f64 stream and an
 f32 one are the same text with different numbers, so nothing structurally stopped
 a reader mixing them; and an incomplete probe stream looked like a complete one.
 
-    G33P BEGIN <schema> precision <f32|f64> source_precision <f32> <B> <K>
+    G33P BEGIN <schema> precision <p> source_precision <sp> fixture <name>
+        algorithm <algo> mode <carry|rezero> <nsplit> <loops> <ntile>
+        <delt> <dtcld> <B> <K>
     G33P STATE|INITIAL <field> <col> <k_topfirst> <value>
     G33P FORCING rho|delz|pii <col> <k_topfirst> <value>
     G33P PREC <species> <col> <value>
@@ -28,14 +30,16 @@ import re
 import sys
 from pathlib import Path
 
-BEGIN = re.compile(r"^G33P BEGIN (\d+) precision (f32|f64) source_precision "
-                   r"(f32|f64) (\d+) (\d+)$")
+BEGIN = re.compile(
+    r"^G33P BEGIN (\d+) precision (f32|f64) source_precision (f32|f64) "
+    r"fixture (\S+) algorithm (\S+) mode (carry|rezero) "
+    r"(\d+) (\d+) (\d+) (\S+) (\S+) (\d+) (\d+)$")
 END = re.compile(r"^G33P END$")
 STATE = re.compile(r"^G33P (STATE|INITIAL) (\S+) (\d+) (-?\d+)\s+(\S+)$")
 FORCING = re.compile(r"^G33P FORCING (rho|delz|pii) (\d+) (-?\d+)\s+(\S+)$")
 PREC = re.compile(r"^G33P PREC (\d+) (\d+)\s+(\S+)$")
 
-SCHEMA = 1
+SCHEMA = 2
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as _ra   # noqa: E402
 
@@ -72,7 +76,8 @@ def read(text: str) -> dict:
     _expect(lines, "no G33P records")
     m = BEGIN.match(lines[0])
     _expect(m, f"stream does not begin with G33P BEGIN: {lines[0]!r}")
-    schema, precision, source, B, K = m.groups()
+    (schema, precision, source, fixture, algorithm, mode, nsplit, loops,
+     ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
@@ -121,20 +126,46 @@ def read(text: str) -> dict:
         _expect({(k[1], k[2]) for k in pr}
                 == {(sp, c) for sp in (1, 2, 3) for c, _ in cells},
                 "prec is not exactly species 1/2/3 over the state's columns")
-    out[("meta", "schema")] = int(schema)
-    out[("meta", "precision")] = precision
-    out[("meta", "source_precision")] = source
+    out |= {("meta", "schema"): int(schema), ("meta", "precision"): precision,
+            ("meta", "source_precision"): source, ("meta", "fixture"): fixture,
+            ("meta", "algorithm"): algorithm, ("meta", "mode"): mode,
+            ("meta", "nsplit"): int(nsplit), ("meta", "loops"): int(loops),
+            ("meta", "ntile"): int(ntile), ("meta", "delt"): _f(delt),
+            ("meta", "dtcld"): _f(dtcld)}
     return out
 
 
-def compare(a: dict, b: dict) -> None:
-    """Two probe streams may be compared only if they describe the same run."""
-    for field in ("source_precision",):
-        _expect(a[("meta", field)] == b[("meta", field)],
-                f"streams disagree on {field}")
-    _expect(a[("meta", "precision")] != b[("meta", "precision")],
-            "a precision pair needs two different precisions; these are both "
-            f"{a[('meta', 'precision')]}")
+#: What must be IDENTICAL for each kind of comparison, and what must DIFFER.
+#: A single `compare` could pair `legacy f32 N=3` with `conservative f64 N=96`
+#: purely because their record universes matched (owner P0-5).
+COMPARISONS = {
+    "precision_pair": (("fixture", "algorithm", "mode", "nsplit", "dtcld"),
+                       "precision"),
+    "variant":        (("fixture", "precision", "mode", "nsplit", "dtcld"),
+                       "algorithm"),
+    "refinement":     (("fixture", "algorithm", "mode", "precision"), "dtcld"),
+}
+
+
+def compare(a: dict, b: dict, kind: str) -> None:
+    """Two probe streams are comparable only under a NAMED contract.
+
+    `kind` says which one thing may differ; everything else identifying the
+    experiment must match. `refinement` additionally allows the record universes
+    to differ in nothing but their values, since two steps of one chain describe
+    the same grid.
+    """
+    _expect(kind in COMPARISONS,
+            f"unknown comparison {kind!r}; expected one of {sorted(COMPARISONS)}")
+    same, differs = COMPARISONS[kind]
+    for f in same:
+        _expect(a[("meta", f)] == b[("meta", f)],
+                f"{kind}: streams disagree on {f} "
+                f"({a[('meta', f)]} vs {b[('meta', f)]}) — they are not the same "
+                f"experiment")
+    _expect(a[("meta", differs)] != b[("meta", differs)],
+            f"{kind}: {differs} is the same in both ({a[('meta', differs)]}); "
+            f"there is nothing to compare")
     ka = {k for k in a if k[0] != "meta"}
     kb = {k for k in b if k[0] != "meta"}
     _expect(ka == kb, f"streams carry different records ({len(ka ^ kb)} differ)")
@@ -148,9 +179,10 @@ def main(argv) -> int:
         r = read(Path(path).read_text())
         print(f"  {path}: precision={r[('meta','precision')]} "
               f"records={sum(1 for k in r if k[0] != 'meta')}")
-    if len(argv) == 2:
-        compare(read(Path(argv[0]).read_text()), read(Path(argv[1]).read_text()))
-        print("  comparable: same grid, same source precision, two precisions")
+    if len(argv) == 3:
+        compare(read(Path(argv[0]).read_text()), read(Path(argv[1]).read_text()),
+                argv[2])
+        print(f"  comparable under the {argv[2]} contract")
     return 0
 
 

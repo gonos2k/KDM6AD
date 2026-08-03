@@ -89,8 +89,17 @@ No recursion appears anywhere, so nothing forces the mass row to vanish:
 | `nr` | 2 | 1 | 3.769e+04 | 5.155e+03 | **+13.68%** |
 
 **Mass closes to f32 roundoff; number does not, by 6–14%.** Same segment, same
-cells, same kind of emitted accumulator — the transfer arithmetic is the only
-difference. Calls where a `min`/`max` cap bound are excluded per species, detected
+cells, same kind of emitted accumulator.
+
+**Not a matched control (owner §5.2).** "The transfer arithmetic is the only
+difference" is **withdrawn**: the mass rows are `qr` on the MAIN chain over 1–3
+calls while the largest number row is `ni` on the ICE chain over 95, so the two
+are not the same calls, the same chain, or the same cap state. The supported
+statement is: *on selected cap-unbound `mstep == 1` legacy calls the ρΔz number
+closure residual is 6–14% of surface outflow, and on separately selected mass
+calls the residual is at the f32 floor.* A matched contrast needs `qr/nr` on one
+main-chain call set and `qi/ni` on one ice-chain set, with the capped transfers
+emitted directly so `mstep > 1` is admissible. Calls where a `min`/`max` cap bound are excluded per species, detected
 as a disagreement between the emitted accumulator and the recovered transfer;
 such a call measures the cap, not the transport.
 

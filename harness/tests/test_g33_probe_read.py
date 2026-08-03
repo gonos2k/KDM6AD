@@ -15,9 +15,12 @@ import g33_probe_read as pr  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 
 
-def _stream(precision="f32", *, B=2, K=2, end=True, schema=1, prec=True,
-            forcing=("rho", "delz"), initial=True):
-    out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 {B} {K}"]
+def _stream(precision="f32", *, B=2, K=2, end=True, schema=2, prec=True,
+            forcing=("rho", "delz"), initial=True, fixture="fx", algo="legacy",
+            mode="rezero", nsplit=12, dtcld=25.0):
+    out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
+           f"fixture {fixture} algorithm {algo} mode {mode} "
+           f"{nsplit} 1 1 {300.0/nsplit:.6f} {dtcld:.6f} {B} {K}"]
     for f in pr.FIELDS:
         for c in range(1, B + 1):
             for k in range(K):
@@ -65,6 +68,13 @@ def test_a_foreign_schema_is_refused():
         pr.read(_stream(schema=9))
 
 
+def test_the_old_schema_1_header_is_refused():
+    """Schema 1 could not identify the experiment, so it cannot be read as if it
+    could (owner P0-5)."""
+    with pytest.raises(pr.ProbeError):
+        pr.read("G33P BEGIN 1 precision f32 source_precision f32 2 2\nG33P END\n")
+
+
 def test_a_duplicate_record_is_refused():
     lines = _stream().splitlines()
     lines.insert(2, lines[1])
@@ -90,10 +100,10 @@ def test_an_initial_state_over_different_cells_is_refused():
 
 
 def test_a_grid_disagreeing_with_the_header_is_refused():
-    s = _stream(B=2, K=2).replace("G33P BEGIN 1 precision f32 source_precision f32 2 2",
-                                  "G33P BEGIN 1 precision f32 source_precision f32 3 2")
+    lines = _stream(B=2, K=2).splitlines()
+    lines[0] = lines[0][:-3] + "3 2"        # header now claims B=3
     with pytest.raises(pr.ProbeError, match="header declares"):
-        pr.read(s)
+        pr.read("\n".join(lines) + "\n")
 
 
 def test_a_three_digit_exponent_without_the_E_still_parses():
@@ -109,17 +119,66 @@ def test_a_non_finite_value_is_refused():
         pr.read(s)
 
 
-def test_two_streams_at_the_SAME_precision_are_not_a_pair():
-    """A precision comparison needs two precisions; comparing f32 with f32 would
-    report 'no difference' as if it meant something."""
-    with pytest.raises(pr.ProbeError, match="two different precisions"):
-        pr.compare(pr.read(_stream("f32")), pr.read(_stream("f32")))
+def test_the_header_identifies_the_experiment():
+    r = pr.read(_stream(fixture="fx7", algo="conservative", nsplit=6, dtcld=50.0))
+    assert r[("meta", "fixture")] == "fx7"
+    assert r[("meta", "algorithm")] == "conservative"
+    assert r[("meta", "nsplit")] == 6 and r[("meta", "dtcld")] == 50.0
 
 
 def test_a_valid_precision_pair_compares():
-    pr.compare(pr.read(_stream("f32")), pr.read(_stream("f64")))
+    pr.compare(pr.read(_stream("f32")), pr.read(_stream("f64")), "precision_pair")
+
+
+def test_a_valid_variant_pair_compares():
+    """This is what makes 'legacy == conservative at f64' reproducible: the
+    contract certifies both streams describe the same experiment first."""
+    pr.compare(pr.read(_stream("f64", algo="legacy")),
+               pr.read(_stream("f64", algo="conservative")), "variant")
+
+
+def test_a_valid_refinement_pair_compares():
+    pr.compare(pr.read(_stream(nsplit=12, dtcld=25.0)),
+               pr.read(_stream(nsplit=24, dtcld=12.5)), "refinement")
+
+
+def test_two_streams_at_the_SAME_precision_are_not_a_precision_pair():
+    with pytest.raises(pr.ProbeError, match="precision is the same in both"):
+        pr.compare(pr.read(_stream("f32")), pr.read(_stream("f32")),
+                   "precision_pair")
+
+
+def test_different_ALGORITHMS_are_not_a_precision_pair():
+    """The defect: a single compare() would pair legacy f32 with conservative f64
+    purely because their record universes matched (owner P0-5)."""
+    with pytest.raises(pr.ProbeError, match="disagree on algorithm"):
+        pr.compare(pr.read(_stream("f32", algo="legacy")),
+                   pr.read(_stream("f64", algo="conservative")), "precision_pair")
+
+
+def test_different_STEPS_are_not_a_precision_pair():
+    """`legacy f32 N=3` against `conservative f64 N=96` was pairable purely
+    because the record universes matched (owner P0-5)."""
+    with pytest.raises(pr.ProbeError, match="disagree on nsplit"):
+        pr.compare(pr.read(_stream("f32", nsplit=12, dtcld=25.0)),
+                   pr.read(_stream("f64", nsplit=96, dtcld=3.125)),
+                   "precision_pair")
+
+
+def test_the_same_nsplit_at_a_different_dtcld_is_not_a_precision_pair():
+    """N alone does not identify the step: N = 1,2,3 run 100, 150, 100 s."""
+    with pytest.raises(pr.ProbeError, match="disagree on dtcld"):
+        pr.compare(pr.read(_stream("f32", nsplit=12, dtcld=25.0)),
+                   pr.read(_stream("f64", nsplit=12, dtcld=50.0)),
+                   "precision_pair")
+
+
+def test_an_unknown_comparison_kind_is_refused():
+    with pytest.raises(pr.ProbeError, match="unknown comparison"):
+        pr.compare(pr.read(_stream("f32")), pr.read(_stream("f64")), "whatever")
 
 
 def test_streams_over_different_records_are_not_comparable():
     with pytest.raises(pr.ProbeError, match="different records"):
-        pr.compare(pr.read(_stream("f32", B=2)), pr.read(_stream("f64", B=3)))
+        pr.compare(pr.read(_stream("f32", B=2)), pr.read(_stream("f64", B=3)),
+                   "precision_pair")

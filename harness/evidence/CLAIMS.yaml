@@ -201,6 +201,39 @@ claims:
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
     evidence: [FINDING_column_water_orders_v1.md]
 
+  - id: G33-PROTOCOL-001
+    text: >
+      The G33P header identifies the experiment (schema 2: fixture, algorithm,
+      mode, nsplit, loops, ntile, delt, dtcld, B, K), and compare() is split into
+      precision_pair / variant / refinement contracts, each fixing what must
+      match and naming the one thing that may differ.
+    status: active
+    grade: confirmed
+    basis: implementation + regression tests
+    scope: G33P schema 2; schema 1 streams are refused
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-VARIANT-F64-001
+    text: >
+      legacy and conservative are bit-identical at f64 (0 of 333 records) and
+      differ in 39 at f32, now reproducible THROUGH the protocol: the variant
+      contract certifies both streams describe the same fixture, precision, mode,
+      nsplit and dtcld before any comparison is made.
+    status: active
+    grade: confirmed
+    basis: measurement under a named comparison contract
+    scope: g33_fixture_multisubcycle_v1, h = 25 s
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-NUMBER-004
+    text: The transfer arithmetic is the only difference between the mass and number rows.
+    status: withdrawn
+    superseded_by: G33-NUMBER-002
+    scope: >
+      Not a matched control: mass is qr on the main chain over 1-3 calls, the
+      largest number row is ni on the ice chain over 95 (owner S5.2).
+    evidence: [FINDING_number_transport_creation_v1.md]
+
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition
