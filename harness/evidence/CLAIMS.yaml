@@ -26,6 +26,7 @@ claims:
     basis: source
     scope: module_mp_kdm6.F:1179-1180, all fixtures
     evidence: [FINDING_two_sedimentation_chains_v1.md]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:c0aec6b997c15a9f]
 
   - id: G33-DTCLD-002
     text: >
@@ -36,6 +37,7 @@ claims:
     basis: measurement
     scope: all refinement bundles
     evidence: [FINDING_refinement_provenance_v1.md]
+    evidence_sha256: [FINDING_refinement_provenance_v1.md:b15f1392059cf4bf]
 
   - id: G33-MSTEPI-001
     text: >
@@ -46,6 +48,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
     evidence: [FINDING_two_sedimentation_chains_v1.md]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:c0aec6b997c15a9f]
 
   - id: G33-WATER-ORDER-001
     text: >
@@ -55,6 +58,7 @@ claims:
     superseded_by: G33-WATER-ORDER-002
     scope: g33_fixture_multisubcycle_v1, f32, legacy
     evidence: [FINDING_column_water_orders_v1.md]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:6750b1bd580fbb02]
 
   - id: G33-WATER-ORDER-002
     text: >
@@ -66,6 +70,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
     evidence: [FINDING_column_water_orders_v1.md]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:6750b1bd580fbb02]
 
   - id: G33-NI-ORDER-001
     text: >
@@ -77,6 +82,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, legacy
     evidence: [FINDING_two_sedimentation_chains_v1.md]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:c0aec6b997c15a9f]
 
   - id: G33-TURNOVER-001
     text: The f32 fine-step turnover is accumulated floating-point roundoff.
@@ -84,6 +90,7 @@ claims:
     superseded_by: G33-TURNOVER-002
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm
     evidence: [FINDING_refinement_noise_floor_v1.md]
+    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:33a64309d9672eaa]
 
   - id: G33-TURNOVER-002
     text: >
@@ -98,6 +105,7 @@ claims:
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
     evidence: [FINDING_refinement_noise_floor_v1.md,
                FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:33a64309d9672eaa, FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-NUMBER-001
     text: >
@@ -109,6 +117,7 @@ claims:
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
     evidence: [FINDING_number_transport_creation_v1.md]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:6ecf1f0c9d86f168]
 
   - id: G33-NUMBER-002
     text: >
@@ -122,6 +131,7 @@ claims:
       f32, legacy. The mass control is qr (main chain) while the largest number
       row is ni (ice chain), so this is not yet a matched-call contrast.
     evidence: [FINDING_number_transport_creation_v1.md]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:6ecf1f0c9d86f168]
 
   - id: G33-NUMBER-003
     text: The conservative variant carries the same number defect.
@@ -130,6 +140,7 @@ claims:
     basis: source reading only
     scope: not measured
     evidence: [FINDING_number_transport_creation_v1.md]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:6ecf1f0c9d86f168]
 
   - id: G33-PRECIP-001
     text: >
@@ -142,6 +153,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-PRECIP-002
     text: The conservative interface's enthalpy advantage is a property of the interface.
@@ -149,6 +161,7 @@ claims:
     superseded_by: G33-PRECIP-001
     scope: g33_fixture_multisubcycle_v1, f32, column 2
     evidence: [FINDING_moist_enthalpy_ledger_v1.md]
+    evidence_sha256: [FINDING_moist_enthalpy_ledger_v1.md:a3fa26dca915bc76]
 
   - id: G33-ENTHALPY-001
     text: >
@@ -161,6 +174,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-ENTHALPY-002
     text: The f64 enthalpy non-closure is ~42 J/m2 per column.
@@ -168,6 +182,7 @@ claims:
     superseded_by: G33-ENTHALPY-001
     scope: g33_fixture_multisubcycle_v1 — generalised column 1 to all three
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-PRECIP-003
     text: The f32 cap events on this fixture are created by f32 noise.
@@ -178,6 +193,7 @@ claims:
       whether it is storage roundoff, accumulated arithmetic, a constant's
       precision or post-branch amplification, is not established.
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-WATER-CONS-001
     text: Column water is conserved at f64, shown by a small cross-member spread.
@@ -187,6 +203,7 @@ claims:
       Spread measures step-insensitivity, not conservation: members that all lose
       the same amount agree perfectly and conserve nothing (owner S5).
     evidence: [FINDING_column_water_orders_v1.md]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:6750b1bd580fbb02]
 
   - id: G33-WATER-CONS-002
     text: >
@@ -200,6 +217,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
     evidence: [FINDING_column_water_orders_v1.md]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:6750b1bd580fbb02]
 
   - id: G33-PROTOCOL-001
     text: >
@@ -212,6 +230,7 @@ claims:
     basis: implementation + regression tests
     scope: G33P schema 2; schema 1 streams are refused
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-VARIANT-F64-001
     text: >
@@ -224,6 +243,7 @@ claims:
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:f74dabecb2bd7fe4]
 
   - id: G33-NUMBER-004
     text: The transfer arithmetic is the only difference between the mass and number rows.
@@ -233,6 +253,34 @@ claims:
       Not a matched control: mass is qr on the main chain over 1-3 calls, the
       largest number row is ni on the ice chain over 95 (owner S5.2).
     evidence: [FINDING_number_transport_creation_v1.md]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:6ecf1f0c9d86f168]
+
+  - id: G33-BASIS-001
+    text: >
+      `den` passed to the kernel is MOIST-air density (rho = 1/alt*(1+qv),
+      module_big_step_utilities_em.F:4856, alt = inverse dry density) while `nr`
+      is # per kg of DRY air (Registry.EM_COMMON:122). The rho*dz weight
+      therefore overstates by (1+qv): 0.10% on this fixture, ~2% in a moist
+      operational layer. It does NOT explain the 6-14% number residual, but it is
+      a systematic offset on the absolute # m-2 figures.
+    status: active
+    grade: confirmed
+    basis: source + measurement
+    scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
+    evidence: [FINDING_number_mass_basis_v1.md]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:390da49b1b708587]
+
+  - id: G33-BASIS-002
+    text: >
+      Whether the reference intends sum(rho_d*dz*nr) or sum(rho*dz*nr) as THE
+      conserved column measure. Changes what a corrected number transport should
+      conserve.
+    status: hold
+    grade: open-question
+    basis: none
+    scope: owner physics decision
+    evidence: [FINDING_number_mass_basis_v1.md]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:390da49b1b708587]
 
   - id: G33-NCMIN-001
     text: >
@@ -245,3 +293,4 @@ claims:
     basis: measurement
     scope: g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4b2280b895ca29ef]

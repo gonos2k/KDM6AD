@@ -168,7 +168,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
-            p.write_text(_probe_stream())
+            p.write_text(_probe_stream(n))
             runs[n] = xp.pr.read(p.read_text())
         return runs
 
@@ -184,9 +184,10 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     assert [m["precision"] for m in man["members"]] == ["f64", "f64"]
 
 
-def _probe_stream():
-    out = ["G33P BEGIN 2 precision f64 source_precision f32 fixture fx "
-           "algorithm legacy mode rezero 3 1 1 100.000000 100.000000 1 1"]
+def _probe_stream(nsplit=3):
+    out = [f"G33P BEGIN 2 precision f64 source_precision f32 fixture fx "
+           f"algorithm legacy mode rezero {nsplit} 1 1 {300.0/nsplit:.6f} "
+           f"{300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
     out.append("G33P END")

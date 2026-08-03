@@ -49,7 +49,8 @@ def test_the_compiler_is_digested_not_quoted(build, monkeypatch):
     monkeypatch.setenv("PATH", f"{root}{os.pathsep}{os.environ['PATH']}")
     named, absolute = _collect(out, root, "fc"), _collect(out, root)
     assert named["compiler_sha256"] == absolute["compiler_sha256"]
-    assert named["compiler_path"] == str(root / "fc")      # resolved, not "fc"
+    # the literal path is DIAGNOSTIC now; the digest is the identity (§10.3)
+    assert named["diagnostic"]["compiler_path"] == str(root / "fc")
     assert named["compiler_sha256"] == bp.sha256(root / "fc")
     assert named["compiler_version"] == "GNU Fortran (stub) 15.2.0"
 
@@ -127,7 +128,26 @@ def test_the_executable_that_ran_is_digested(build):
     p = bp.collect(out, str(root / "fc"), root / "m.F", root / "f.f90",
                    root / "b.sh", exe)
     assert p["executable_sha256"] == bp.sha256(exe)
+    assert p["diagnostic"]["executable_path"] == str(exe)
     assert _collect(out, root)["executable_sha256"] is None
+
+
+def test_identity_is_stable_across_output_directories(build, tmp_path):
+    """A content-addressed bundle got a new name every rerun because the compile
+    commands and paths carried the temp directory (owner §10.3)."""
+    out, root = build
+    (out / "commands.txt").write_text(f"gfortran -c a.f90 -J{out} -o {out}/a.o\n")
+    a = _collect(out, root)
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    (other / "commands.txt").write_text(
+        f"gfortran -c a.f90 -J{other} -o {other}/a.o\n")
+    b = bp.collect(other, str(root / "fc"), root / "m.F", root / "f.f90",
+                   root / "b.sh")
+    strip = lambda d: {k: v for k, v in d.items() if k != "diagnostic"}
+    assert strip(a) == strip(b), "identity must not carry the output directory"
+    assert a["diagnostic"] != b["diagnostic"], "diagnostics record where it ran"
+    assert a["compile_commands"] == ["gfortran -c a.f90 -J<OUT> -o <OUT>/a.o"]
 
 
 def test_the_build_logs_its_sources_and_its_link():

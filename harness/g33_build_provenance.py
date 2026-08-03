@@ -58,21 +58,27 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     # step. The digest above is the field that identifies the binary anyway.
     version = subprocess.run([binary, "--version"], text=True,
                              capture_output=True).stdout.splitlines()
-    return {
-        "compiler_path": binary,
+    # IDENTITY vs DIAGNOSTIC (owner §10.3). Everything that determines the result
+    # is stable across runs -- the executable digest is bit-identical between two
+    # builds of the same sources -- but the compile commands and paths carry the
+    # temporary output directory, so a content-addressed bundle got a different
+    # name every rerun. `<OUT>` stands in for that directory in the identity view;
+    # the literal paths stay under `diagnostic`, where they answer "where did this
+    # happen" rather than "what was built".
+    norm = lambda c: c.replace(str(out), "<OUT>")
+    ident = {
         "compiler_sha256": sha256(binary),
         "compiler_version": version[0] if version else None,
         # From the log the build wrote as it compiled -- not from a caller that
         # may pass nothing, which would be indistinguishable from a build that
         # ran no commands.
-        "compile_commands": cmds.read_text().splitlines() if cmds.exists() else [],
-        "compiler_f951_path": f951 if Path(f951).is_file() else None,
+        "compile_commands": [norm(c) for c in cmds.read_text().splitlines()]
+                            if cmds.exists() else [],
         "compiler_f951_sha256": (sha256(f951) if Path(f951).is_file() else None),
         # Every source the build compiled, in build order, each by digest.
         "sources": ([{"path": ln, "sha256": sha256(ln)}
                      for ln in dict.fromkeys(srcs.read_text().split())]
                     if srcs.exists() else []),
-        "executable_path": str(exe) if exe else None,
         "executable_sha256": sha256(exe) if exe and Path(exe).exists() else None,
         "build_script_sha256": sha256(script),
         "module_path": str(module), "module_sha256": sha256(module),
@@ -85,6 +91,14 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
+    return ident | {"diagnostic": {
+        "outdir": str(out),
+        "compiler_path": binary,
+        "compiler_f951_path": f951 if Path(f951).is_file() else None,
+        "executable_path": str(exe) if exe else None,
+        "compile_commands_literal": (cmds.read_text().splitlines()
+                                     if cmds.exists() else []),
+    }}
 
 
 def main(argv) -> int:

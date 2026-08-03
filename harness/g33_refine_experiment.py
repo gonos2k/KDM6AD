@@ -116,10 +116,23 @@ def _probe_member(path: Path) -> dict:
     m = re.match(r"^n(\d+)\.(carry|rezero)\.txt$", path.name)
     if not m:
         raise pr.ProbeError(f"{path.name}: not n<N>.<carry|rezero>.txt")
+    if r[("meta", "nsplit")] != int(m.group(1)):
+        raise pr.ProbeError(
+            f"{path.name}: header says nsplit={r[('meta', 'nsplit')]}")
+    if r[("meta", "mode")] != m.group(2):
+        raise pr.ProbeError(f"{path.name}: header says mode={r[('meta', 'mode')]}")
+    # dtcld/delt/loops are READ from the header (schema 2), so an f64 bundle can
+    # describe a refinement chain like any other -- before this the manifest had
+    # only nsplit from the filename and `is_refinement_chain` was meaningless on
+    # the f64 arm (owner §10.1).
     return {"file": path.name, "output_sha256": rm.sha256(path),
             "nsplit": int(m.group(1)), "mode": m.group(2),
             "precision": r[("meta", "precision")],
-            "source_precision": r[("meta", "source_precision")]}
+            "source_precision": r[("meta", "source_precision")],
+            "algorithm": r[("meta", "algorithm")],
+            "fixture": r[("meta", "fixture")],
+            "delt": r[("meta", "delt")], "loops": r[("meta", "loops")],
+            "dtcld": r[("meta", "dtcld")]}
 
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str) -> dict:
@@ -182,7 +195,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # at which `dest` is absent or half-replaced.
         store = dest.parent / f"{dest.name}.bundles"
         store.mkdir(exist_ok=True)
-        final = store / rm.sha256(tmp / "manifest.json")[:16]
+        # Addressed by the IDENTITY digest, not the file digest: the manifest
+        # carries diagnostic paths that differ every run, so hashing the whole
+        # file gave a new address each time and the "identical rerun reuses the
+        # bundle" property held only under fake provenance (owner §10.3).
+        final = store / rm.identity_digest(man)[:16]
         # Content-addressed: an identical manifest is the same bundle. Removing
         # and rebuilding it would delete the directory `dest` currently points at
         # -- the very window this design exists to close -- so an existing one is
@@ -224,7 +241,10 @@ def main(argv) -> int:
                     default=Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"))
     ap.add_argument("--finding", type=Path, action="append", default=[])
     a = ap.parse_args(argv)
-    dest = produce(a.outdir.resolve(), fixture=a.fixture, algo=a.algo,
+    # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
+    # resolve() follows it and the next publish writes its store INSIDE the
+    # previous bundle (owner §10.3 fallout, found by rerunning for real).
+    dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
                    nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm)
     print(dest)
