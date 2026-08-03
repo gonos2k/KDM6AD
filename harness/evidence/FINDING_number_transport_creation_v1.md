@@ -110,10 +110,13 @@ the ratio is meaningless there and the per-call figure (0.12%) is the usable one
 
 ## Limits
 
-- **`mstep == 1` only.** With more substeps the composition is not invertible from
-  endpoints, so operational steps (where `mstep` is 5–10) are not measured. The
-  step-robustness above is evidence against a strong step dependence, not a
-  measurement at operational steps.
+- **`mstep == 1` only, and for one reason.** The closure above needs no such
+  restriction — it reads endpoints and an emitted flux. What needs it is the
+  *cap-detection filter*, which compares the emitted accumulator against the
+  recovered transfer and so inherits the recursion's single-substep requirement.
+  Operational steps (`mstep` 5–10) are therefore unmeasured. Emitting the capped
+  `dnr`/`dqr` directly would lift the restriction; the step-robustness above is
+  evidence against a strong step dependence, not a measurement at those steps.
 - **Legacy reference.** The conservative variant was not run through this. It
   fixes the *mass* measure and leaves number on the legacy one
   (`sedimentation_conservative.cpp:91-92` against `:109`), so the defect should be

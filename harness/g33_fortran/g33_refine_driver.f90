@@ -28,7 +28,7 @@
 ! Emits one G33R STATE line per field/cell plus the three precipitation
 ! accumulators, in the same top-first convention as the decision driver.
 module g33_refine
-  use, intrinsic :: iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env, only: int32, real32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
                                     xls, xlv, xlf, rhoair0, rhowater,        &
                                     rhosnow, cliq, cice, psat
@@ -56,7 +56,13 @@ contains
 
   pure real function f32(bits) result(value)
     integer(int32), intent(in) :: bits
-    value = transfer(bits, value)
+    ! KIND-EXPLICIT. `transfer(bits, value)` reinterprets the 4-byte pattern as
+    ! whatever the default real is, which under the -fdefault-real-8 precision
+    ! probe is 8 bytes -- so every fixture constant became garbage and the run
+    ! produced NaN. The pattern is an f32 word by definition; widen afterwards.
+    real(real32) :: word
+    word = transfer(bits, word)
+    value = real(word, kind(value))
   end function f32
 
   subroutine run_refined(im, km, nsplit, tiles, ntile, carry_aux, outF, precF, &
@@ -225,7 +231,7 @@ program g33_refine_driver
   use module_mp_kdm6, only: kdm6init
 #endif
   use g33_refine
-  use, intrinsic :: iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env, only: int32, real32
   implicit none
   integer, parameter :: IM = G33_B, KM = G33_K
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
@@ -296,6 +302,21 @@ program g33_refine_driver
       end do
     end do
   end do
+#ifdef KDM6_G33_PRECISION_PROBE
+  ! A SEPARATE record family, in decimal at full precision. The G33R stream is
+  ! f32 hex by contract; the question here is whether the fine-step turnover
+  ! MOVES when the kernel is promoted to f64, and that cannot be asked through a
+  ! 4-byte word. Kept out of G33R so the strict parser and the decision protocol
+  ! see nothing new.
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        write(*,'(A,1X,A,2(1X,I0),1X,ES24.16)') 'G33P STATE', &
+              trim(FLDNAME(f)), i, KM-k, outF(i,k,f)
+      end do
+    end do
+  end do
+#endif
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM

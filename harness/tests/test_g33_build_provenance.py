@@ -139,3 +139,34 @@ def test_the_build_logs_its_sources_and_its_link():
 
 def test_wrong_argument_count_is_usage_not_a_traceback():
     assert bp.main(["only-one"]) == 2
+
+
+# ---- owner priority-4: the precision-scaling arms ---------------------------
+
+def test_the_f64_arm_pins_double_precision_too():
+    """-fdefault-real-8 alone promotes `double precision` to REAL(16) and the
+    radar hostmatrix call stops typechecking. The pair is required."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "-fdefault-real-8 -fdefault-double-8" in script
+
+
+def test_the_probe_is_a_separate_record_family():
+    """The G33R stream is f32 hex by contract; a full-precision probe cannot ride
+    on it without changing what the strict parser and the decision protocol see."""
+    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    assert "KDM6_G33_PRECISION_PROBE" in drv and "'G33P STATE'" in drv
+    analyzer = (REPO / "harness/g33_refine_analyze.py").read_text()
+    assert "G33P" not in analyzer, "the probe must not enter the G33R parser"
+
+
+def test_the_f32_control_arm_exists_and_is_not_the_f64_one():
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "--probe)" in script and "--f64)" in script
+
+
+def test_the_bit_pattern_helper_is_kind_explicit():
+    """`transfer(bits, value)` reinterprets a 4-byte word as whatever the default
+    real is — under the f64 probe that made every fixture constant garbage and the
+    run produced NaN."""
+    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    assert "real(real32) :: word" in drv and "real(word, kind(value))" in drv

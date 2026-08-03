@@ -13,7 +13,7 @@ HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
-ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0; NFLUX=0
+ALGO=legacy; FIXTURE_NAME=g33_fixture_v1; OUT=""; DUMP=0; NFLUX=0; F64=0; PROBE=0
 for a in "$@"; do
     case "$a" in
         --algo=*)    ALGO="${a#--algo=}" ;;
@@ -27,6 +27,13 @@ for a in "$@"; do
         # The surface number flux and the ice sub-step count. Its own macro, so
         # the decision-bundle build (fortran_build.sh) never emits them.
         --nflux)     DUMP=1; NFLUX=1 ;;
+        # Promote the whole Fortran leg to f64 and print a full-precision probe
+        # stream. For the roundoff-attribution experiment ONLY: this is not the
+        # reference operator and produces no decision evidence.
+        --f64)       F64=1; PROBE=1 ;;
+        # The same full-precision probe stream at the REFERENCE f32 precision --
+        # the control arm of the roundoff experiment.
+        --probe)     PROBE=1 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
@@ -44,6 +51,13 @@ FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"
 COMMON_FLAGS=(-O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none
               -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch
               -fallow-invalid-boz)
+if [ "$F64" = 1 ]; then
+    # -fdefault-double-8 is required with -fdefault-real-8: without it `double
+    # precision` promotes to REAL(16) and the radar hostmatrix call fails to
+    # typecheck.
+    COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8)
+fi
+[ "$PROBE" = 1 ] && COMMON_FLAGS+=(-DKDM6_G33_PRECISION_PROBE)
 REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)

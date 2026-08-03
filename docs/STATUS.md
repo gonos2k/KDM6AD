@@ -9,6 +9,19 @@ not a frozen historical tag).
 Legend: ✓ implemented & tested · partial · – not present · diag = diagnostic-only (not a
 seedable AD output) · host = validated only on the private WRF/KIM-meso host (not public CI).
 
+**Two green states, and they are not the same thing** (owner §7.2). `host/**` is
+gitignored, so every test that compiles the pinned Fortran, generates the overlay, or
+runs a driver **skips** in public CI:
+
+| state | what a green means | where |
+|---|---|---|
+| `public_static_ci` | Python parsers, schema, macro placement, manifest/provenance contracts, C++ overlay structure | GitHub Actions |
+| `private_host_execution` | pinned-Fortran compile, A/B/C non-invasiveness, and every raw numerical result quoted below | local host only, by committed evidence bundles |
+
+A green badge therefore means the **static** contracts hold. It does not mean the
+`mstep_i`, flux or closure numbers in this document were reproduced in CI — they were
+not, and cannot be until the reference tree is reachable from a runner.
+
 ## Differentiation surface
 
 | Capability | Python oracle | C++ fp64 | C++ f32 | C ABI | Public CI | Host-validated |
@@ -140,12 +153,21 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   h = 12.5 s (col 2) and h = 6.25 s (col 3), while extending the chain to h = 0.39 s
   shows the successive differences **stop falling and start growing** below
   h = 3.125 s (`th` 1.46e-3 → 2.69e-3 → 6.41e-3; members bit-identical on re-run, so
-  **not** nondeterminism — but the cause is **OPEN**: an earlier "accumulated f32
-  roundoff" is **withdrawn**, since bit-identity excludes nondeterminism only and
-  truncation-term cancellation, order crossover, active-set changes in the
-  min/max/threshold operators, repeated per-call clamps, schedule changes or a
-  pre-asymptotic stiff regime all produce the same turnover deterministically.
-  Deciding it needs precision scaling). Since an order needs three members,
+  **not** nondeterminism — and the cause is now **DECIDED by precision scaling**:
+  rebuilding the whole Fortran leg at f64 (`--f64`, with `--probe` as an f32 control
+  arm that is bit-identical to the reference build) **removes the turnover
+  entirely**. Domain max-norm `th` orders over h = 25 → 0.39 s are
+  `+0.601, +1.032, +0.891, −0.874, −1.255, −0.567` at f32 against
+  `+0.796, +0.875, +0.978, +1.040, +1.017, +1.007` at f64, and the smallest
+  achievable difference falls **13.7× (th) / 114.7× (qv)**. Truncation cancellation
+  and order crossover would appear at both precisions at the same h; active-set
+  switching is state-dependent, not ε-dependent. **Grade: accumulated
+  floating-point roundoff.** Caveats: promotion changes the whole operator, so this
+  discriminates against precision-independent explanations rather than isolating
+  roundoff absolutely, and the f64 build is an instrument, not the reference —
+  it produces no decision evidence. **Consequence**: two obstacles were conflated —
+  the sub-step schedule limits the coarse end and f32 roundoff the fine end; removing
+  both gives clean first order across the whole domain max-norm). Since an order needs three members,
   the finest clean order is 12.5→6.25, leaving column 1 **four** clean orders
   (`+1.969, +1.002, +1.000, +1.002`), column 2 **one** (`+0.066`) and column 3
   **none**. A usable fixture needs `mstep` to reach 1 by h ≈ 25 s — ~4× slower fall
