@@ -107,79 +107,176 @@ def test_calls_with_an_IDENTICAL_loop_index_are_still_separated():
     assert all(c["outer_pre_sed"] for c in got), "each call carries its own state"
 
 
-# ---- owner P0-4: the number stream is a protocol, not a byproduct ------------
+# ---- owner P0-4 / P0-1..P0-3: the number stream is a fail-closed protocol ----
 
-def _call(cid, cols=(1,), *, ks=2, end=True, drop=None):
+def _hdr(nsplit=1, ntile=1, schema=1):
+    return f"G33N STREAM_BEGIN {schema} {nsplit} {ntile} {nsplit*ntile} legacy rezero\n"
+
+
+def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
+          loop=1):
     """One bracketed kernel call, complete unless asked otherwise."""
-    out = [f"G33N CALL_BEGIN {cid} 1 1 42C80000"]
+    split = cid if split is None else split
+    out = [f"G33N CALL_BEGIN {cid} {split} {tile} 1 {len(cols)} {ks} 42C80000"]
     for stage in ("outer_pre_sed", "outer_post_sed"):
         for c in cols:
             for k in range(ks):
                 for f in ("nr", "ni", "qr", "qi", "rho", "delz"):
                     if stage == "outer_post_sed" and f in ("rho", "delz"):
                         continue
-                    out.append(f"G33F STAGE 1 - {stage} 0 {f} {c} {k} f32 3F800000")
+                    out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
     for c in cols:
-        out.append(f"G33F MSTEP 1 main {c} i32 00000001")
-        out.append(f"G33F MSTEPI 1 {c} i32 00000001")
+        out.append(f"G33F MSTEP {loop} main {c} i32 00000001")
+        out.append(f"G33F MSTEPI {loop} {c} i32 00000001")
     for c in cols:
         for f in nt.NFLUX_FIELDS:
             if drop == f:
                 continue
-            out.append(f"G33F NFLUX 1 {c} {f} f32 3F800000")
+            out.append(f"G33F NFLUX {loop} {c} {f} f32 3F800000")
     if end:
-        out.append(f"G33N CALL_END {cid} 1")
+        out.append(f"G33N CALL_END {cid} {split} {tile}")
     return "\n".join(out) + "\n"
 
 
+def _stream(*calls, nsplit=None, ntile=1, end=True, **kw):
+    n = len(calls) if nsplit is None else nsplit
+    return (_hdr(n, ntile, **kw) + "".join(calls)
+            + ("G33N STREAM_END\n" if end else ""))
+
+
 def test_a_complete_stream_parses_into_bracketed_calls():
-    got = list(nt.calls(_call(1) + _call(2)))
+    got = list(nt.calls(_stream(_call(1), _call(2))))
     assert [c["call_id"] for c in got] == [1, 2]
 
 
+def test_closed_prefix_truncation_is_rejected():
+    """The defect the header exists for: a run that stops at a CLOSED call
+    boundary used to be indistinguishable from a shorter run that finished."""
+    s = _hdr(96) + _call(1) + _call(2)          # 2 of a declared 96, no STREAM_END
+    with pytest.raises(nt.StreamError, match="no STREAM_END"):
+        list(nt.calls(s))
+
+
+def test_parsed_call_count_must_equal_the_declared_count():
+    s = _hdr(96) + _call(1) + "G33N STREAM_END\n"
+    with pytest.raises(nt.StreamError, match="carries 1 calls, header declared 96"):
+        list(nt.calls(s))
+
+
+def test_ntile2_has_unique_global_call_ids():
+    """`s` alone repeats once per tile; a two-tile run must still be contiguous."""
+    s = _stream(_call(1, split=1, tile=1), _call(2, split=1, tile=2),
+                _call(3, split=2, tile=1), _call(4, split=2, tile=2),
+                nsplit=2, ntile=2)
+    assert [c["call_id"] for c in nt.calls(s)] == [1, 2, 3, 4]
+    assert [(c["split"], c["tile"]) for c in nt.calls(s)] == [(1, 1), (1, 2),
+                                                              (2, 1), (2, 2)]
+
+
+def test_a_call_id_inconsistent_with_its_split_and_tile_is_rejected():
+    s = _stream(_call(1, split=1, tile=1), _call(2, split=2, tile=2),
+                nsplit=2, ntile=2)
+    with pytest.raises(nt.StreamError, match="does not match split"):
+        list(nt.calls(s))
+
+
+def test_call_end_split_and_tile_must_match_the_begin():
+    s = _stream(_call(1).replace("G33N CALL_END 1 1 1", "G33N CALL_END 1 2 1"))
+    with pytest.raises(nt.StreamError, match="reports split/tile"):
+        list(nt.calls(s))
+
+
+def test_internal_loop2_does_not_overwrite_loop1():
+    """A call with loops > 1 emits the same (stage, col, k) once per loop. The
+    key carries the loop, so nothing is overwritten -- and the segment budget,
+    which is defined for ONE loop, refuses the call rather than collapsing it."""
+    two = _call(1).rstrip().rsplit("G33N CALL_END", 1)[0] \
+        + _call(1, loop=2).split("42C80000\n", 1)[1]
+    calls = list(nt.calls(_stream(two)))          # well-formed: parses
+    assert calls[0]["loops"] == {1, 2}
+    assert calls[0]["mstep"][(1, "ice", 1)] == 1
+    assert calls[0]["mstep"][(2, "ice", 1)] == 1
+    with pytest.raises(nt.StreamError, match="inner loops"):
+        nt.single_loop(calls[0])
+
+
+def test_a_duplicate_record_is_rejected_not_overwritten():
+    s = _stream(_call(1) + "")
+    dup = s.replace("G33F MSTEPI 1 1 i32 00000001",
+                    "G33F MSTEPI 1 1 i32 00000001\nG33F MSTEPI 1 1 i32 00000009")
+    with pytest.raises(nt.StreamError, match="duplicate record"):
+        list(nt.calls(dup))
+
+
+def test_an_unknown_G33N_record_inside_a_call_is_rejected():
+    s = _stream(_call(1).replace("G33F MSTEP 1 main 1",
+                                 "G33N SOMETHING 1\nG33F MSTEP 1 main 1"))
+    with pytest.raises(nt.StreamError, match="unknown G33N record"):
+        list(nt.calls(s))
+
+
+def test_a_stream_declaring_another_schema_is_rejected():
+    with pytest.raises(nt.StreamError, match="declares schema"):
+        list(nt.calls(_stream(_call(1), schema=9)))
+
+
+def test_an_inconsistent_header_is_rejected():
+    s = "G33N STREAM_BEGIN 1 4 2 3 legacy rezero\n"
+    with pytest.raises(nt.StreamError, match="header is inconsistent"):
+        list(nt.calls(s))
+
+
 def test_a_truncated_call_is_refused():
-    """The failure this protocol exists to catch: a stream that stops mid-call
-    used to be re-attributed to the previous one by record order."""
     with pytest.raises(nt.StreamError, match="ends inside call"):
-        list(nt.calls(_call(1) + _call(2, end=False)))
+        list(nt.calls(_hdr(2) + _call(1) + _call(2, end=False)))
 
 
 def test_a_missing_call_is_refused():
     with pytest.raises(nt.StreamError, match="call ids jump"):
-        list(nt.calls(_call(1) + _call(3)))
+        list(nt.calls(_stream(_call(1), _call(3), nsplit=2)))
 
 
 def test_an_unclosed_call_before_the_next_is_refused():
     with pytest.raises(nt.StreamError, match="never ended"):
-        list(nt.calls(_call(1, end=False) + _call(2)))
+        list(nt.calls(_stream(_call(1, end=False), _call(2))))
 
 
 def test_an_incomplete_NFLUX_group_is_refused():
     with pytest.raises(nt.StreamError, match="NFLUX fields"):
-        list(nt.calls(_call(1, drop="nflux_den")))
+        list(nt.calls(_stream(_call(1, drop="nflux_den"))))
 
 
 def test_NFLUX_must_cover_the_state_columns():
-    s = _call(1, cols=(1, 2)).replace("G33F NFLUX 1 2", "G33F NOPE 1 2")
+    s = _stream(_call(1, cols=(1, 2)).replace("G33F NFLUX 1 2", "G33F NOPE 1 2"))
     with pytest.raises(nt.StreamError, match="NFLUX covers"):
         list(nt.calls(s))
 
 
 def test_a_substep_count_missing_for_a_column_is_refused():
-    s = _call(1, cols=(1, 2)).replace("G33F MSTEPI 1 2 i32 00000001\n", "")
+    s = _stream(_call(1, cols=(1, 2)).replace("G33F MSTEPI 1 2 i32 00000001\n", ""))
     with pytest.raises(nt.StreamError, match="ice sub-step counts"):
         list(nt.calls(s))
 
 
 def test_a_nonpositive_operand_is_refused():
-    s = _call(1).replace("NFLUX 1 1 nflux_delz f32 3F800000",
-                         "NFLUX 1 1 nflux_delz f32 00000000")
+    s = _stream(_call(1).replace("NFLUX 1 1 nflux_delz f32 3F800000",
+                                 "NFLUX 1 1 nflux_delz f32 00000000"))
     with pytest.raises(nt.StreamError, match="nflux_delz=0"):
         list(nt.calls(s))
 
 
 def test_records_outside_any_call_are_not_attributed_to_one():
-    """Stray records used to join whichever call was being accumulated."""
     stray = "G33F MSTEPI 1 1 i32 00000009\n"
-    assert [c["call_id"] for c in nt.calls(stray + _call(1))] == [1]
-    assert nt.calls(stray + _call(1)).__next__()["mstep"][("ice", 1)] == 1
+    s = _hdr(1) + stray + _call(1) + "G33N STREAM_END\n"
+    got = list(nt.calls(s))
+    assert [c["call_id"] for c in got] == [1]
+    assert got[0]["mstep"][(1, "ice", 1)] == 1
+
+
+def test_a_nonzero_driver_exit_is_rejected(tmp_path):
+    """stdout is not evidence when the process that wrote it failed."""
+    exe = tmp_path / "fail"
+    exe.write_text("#!/bin/sh\necho 'G33N STREAM_BEGIN 1 1 1 1 legacy rezero'\nexit 3\n")
+    exe.chmod(0o755)
+    with pytest.raises(SystemExit, match="exited 3"):
+        nt.main([str(exe), "1"])

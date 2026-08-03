@@ -71,11 +71,40 @@ Successive orders on the domain max-norm of `th`, h = 25 → 0.39 s:
 converges at clean first order, tightening to +1.007, and the smallest achievable
 difference falls by **13.7× for `th` and 114.7× for `qv`**.
 
-That is the signature the roundoff model predicts and the alternatives do not:
-truncation cancellation and order crossover would appear at both precisions at the
-same `h`, and active-set switching is state-dependent, not ε-dependent — it would
-have to reappear at f64 somewhere in this range, and instead the orders tighten.
-**Grade: the f32 turnover is accumulated floating-point roundoff.**
+### The grade, corrected (owner P0-5)
+
+An earlier version concluded **"accumulated floating-point roundoff"** from this.
+That step is **withdrawn**, and the argument it rested on was wrong:
+
+> "active-set switching is state-dependent, not ε-dependent — it would have to
+> reappear at f64 somewhere in this range"
+
+The active set is `1[g(x_ε) > 0]` and the **state** `x_ε` is itself a function of
+precision, so a fixed threshold still gives an ε-dependent active set. The
+counterexample is in the same branch: `FINDING_fixture_precipitates_only_at_f32_v1`
+measures this fixture precipitating at f32 and **not** at f64, because the
+condensate sits at an activation threshold. Precision changes which branches are
+taken here, demonstrably.
+
+So what the experiment establishes is:
+
+| claim | grade |
+|---|---|
+| the turnover is not nondeterminism | **confirmed** (bit-identical re-runs) |
+| the turnover is **precision-dependent** | **confirmed** (vanishes at f64) |
+| accumulated arithmetic roundoff is the main candidate | **strong candidate** |
+| active-set change is excluded | **refuted** — it is a live mechanism |
+| the cause is closed | **HOLD** |
+
+The error model has at least three terms and this experiment separates none of
+them:
+
+    E(h, ε) = E_truncation(h) + E_arithmetic(ε) + E_branch(x_ε)
+
+Separating them needs arms that move one at a time — f32 state and schedule with
+an f64 accumulator; an f64 shadow with the **f32 branch schedule forced**; a
+per-step active-mask hash; and the location of the first f32/f64 branch
+divergence.
 
 Two caveats, both real. Promotion changes the entire operator, so this discriminates
 against precision-independent explanations rather than isolating roundoff from every

@@ -51,7 +51,14 @@ The conservative interface's measured advantage on this fixture is **confined to
 column 2 and to f32**, and it is 1.00× once precision removes the threshold
 crossing. Earlier text presented the column-2 figure as a property of the
 interface; **that reading is withdrawn.** It is a measurement of how the two
-variants respond to a cap event that f32 noise creates.
+variants respond on a fixture where the two precisions enter **different
+precipitation active sets**.
+
+**Phrasing (owner §6.2).** An earlier version said the cap event was "created by
+f32 noise". That is ahead of the evidence: what is measured is that changing
+precision changes whether the threshold is crossed. Which gate diverges first —
+and whether it is local storage roundoff, accumulated arithmetic, a constant's
+precision, or post-branch amplification — is **not** established.
 
 Not withdrawn, and worth being clear about: **the reference operator IS f32.** A
 statement about f32 behaviour is a statement about the thing being certified. What
@@ -70,10 +77,24 @@ On the committed chain the same residuals read 7.85% / 7.98% / 4.19% at h = 100 
 under `eta` against 3.8e-06 / 4.2e-04 / 1.3e-04 under `/H_start` — four orders of
 magnitude apart, and `eta` is the one measured against what actually moved.
 
-At f64, `eta` is ~100% in every column: with `H_out ≈ 0` the ledger reduces to
-`R = dH`, so the column's enthalpy changes with nothing leaving it. That is a
-non-closure of ~42 J/m² per column over 300 s, and it is present in **both**
-variants identically.
+At f64, `eta` is ~100% in every column — but that is **algebraically trivial**
+(owner §6.3), not a new diagnostic: with `H_out ≈ 0` the ledger reduces to
+`R = dH` and `eta = |dH|/|dH| = 1`. It restates "nothing left the column and the
+ledger potential still moved".
+
+The non-closure itself is **−42.09, −21.19 and +443.74 J/m² for columns 1, 2 and
+3**, identical in both variants. An earlier version of this section wrote "~42
+J/m² per column", which generalised column 1 to all three; column 3 is an order
+of magnitude larger and the opposite sign. **Corrected.**
+
+`eta` is also not an acceptance criterion. The norm that would carry process
+scale is
+
+    eta_phase = |R_H| / (Σ_p ∫ |L_p q̇_p| dt + ε)
+
+whose denominator is the latent/sensible energy actually cycled. Every `L_p q̇_p`
+is a per-cell local inside the rate blocks — the same blocker as the
+process-resolved number closure — so it is named here, not computed.
 
 ## Limits
 

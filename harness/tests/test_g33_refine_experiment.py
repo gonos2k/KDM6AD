@@ -22,7 +22,7 @@ from test_g33_refine_analyze import _stream  # noqa: E402
 
 def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     """Stand in for the Fortran build: same call sequence, no compiler."""
-    def build(workdir, fixture, algo, nflux):
+    def build(workdir, fixture, algo, nflux, arm="reference"):
         if fail_at == "build":
             raise SystemExit("build failed")
         (workdir / "build_provenance.json").write_text(json.dumps({
@@ -117,3 +117,76 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
     with pytest.raises(xp.ra.RefineError):
         _produce(tmp_path / "bundle")
     assert not (tmp_path / "bundle").exists()
+
+
+def test_publish_swaps_ONE_symlink_over_an_immutable_bundle(tmp_path, monkeypatch):
+    """The previous shape renamed dest->dest.prev then tmp->dest: two steps with
+    a window where the canonical path did not exist (owner §7.4)."""
+    _fake(monkeypatch)
+    dest = _produce(tmp_path / "bundle")
+    assert dest.is_symlink(), "dest must be a symlink, not a real directory"
+    target = dest.resolve()
+    assert target.parent.name == "bundle.bundles"
+    assert len(target.name) == 16, "bundle directory is named by its manifest digest"
+
+
+def test_republishing_never_leaves_the_destination_absent(tmp_path, monkeypatch):
+    """Publish twice; the second must land on a NEW immutable directory and the
+    old one must survive, so no reader ever sees a missing or partial dest."""
+    _fake(monkeypatch)
+    dest = _produce(tmp_path / "bundle")
+    first = dest.resolve()
+    _fake(monkeypatch, nsplits=(3, 6, 12))
+    dest = _produce(tmp_path / "bundle", nsplits=(3, 6, 12))
+    second = dest.resolve()
+    assert first != second and first.exists(), "the previous bundle is immutable"
+    assert dest.is_symlink() and (dest / "manifest.json").exists()
+    assert len(json.loads((dest / "manifest.json").read_text())["members"]) == 3
+
+
+def test_an_identical_rerun_reuses_the_same_immutable_bundle(tmp_path, monkeypatch):
+    """Content-addressed: the same manifest is the same bundle. Rebuilding it
+    would delete the directory `dest` currently points at."""
+    _fake(monkeypatch)
+    first = _produce(tmp_path / "bundle").resolve()
+    second = _produce(tmp_path / "bundle").resolve()
+    assert first == second and first.exists()
+
+
+def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
+        tmp_path, monkeypatch):
+    """An f64 member is an INSTRUMENT. The artifact must say so, not only the
+    prose around it (owner priority 2)."""
+    def build(workdir, fixture, algo, nflux, arm="reference"):
+        assert arm == "f64"
+        (workdir / "build_provenance.json").write_text(json.dumps({
+            "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
+            "sources": [], "executable_sha256": "cd" * 32}))
+        return workdir / "driver"
+
+    def probe_members(exe, out, ns, mode):
+        runs = {}
+        for n in ns:
+            p = out / f"n{n}.{mode}.txt"
+            p.write_text(_probe_stream())
+            runs[n] = xp.pr.read(p.read_text())
+        return runs
+
+    monkeypatch.setattr(xp, "build", build)
+    monkeypatch.setattr(xp, "probe_members", probe_members)
+    monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
+    dest = xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                      algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False,
+                      module=MOD, arm="f64")
+    man = json.loads((dest / "manifest.json").read_text())
+    assert man["arm"] == "f64" and man["precision"] == "f64"
+    assert man["decision_eligible"] is False
+    assert [m["precision"] for m in man["members"]] == ["f64", "f64"]
+
+
+def _probe_stream():
+    out = ["G33P BEGIN 1 precision f64 source_precision f32 1 1"]
+    for f in xp.pr.FIELDS:
+        out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
+    out.append("G33P END")
+    return "\n".join(out) + "\n"

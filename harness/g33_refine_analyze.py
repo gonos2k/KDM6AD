@@ -166,12 +166,15 @@ def read(path: Path, *, nsplit=None) -> dict:
     _expect(len({tuple(sorted(v)) for v in per_col.values()}) == 1,
             f"columns carry different level sets: "
             f"{ {c: sorted(v) for c, v in per_col.items()} }", path)
-    # Precipitation is three species over exactly the state's columns.
-    if pr:
-        _expect({(k[1], k[2]) for k in pr}
-                == {(sp, c) for sp in (1, 2, 3) for c, _ in cells},
-                "prec is not exactly species 1/2/3 over the state's columns",
-                path)
+    # Precipitation is three species over exactly the state's columns -- and
+    # ABSENT is a state the stream must declare, not one it falls into. Guarding
+    # this on `if pr` let a stream with no PREC at all through, because the older
+    # count check then compared 0 against 3*0 (owner §7.2).
+    want = {(sp, c) for sp in (1, 2, 3) for c, _ in cells}
+    _expect({(k[1], k[2]) for k in pr} == want,
+            f"prec covers {len(pr)} of the {len(want)} (species, column) pairs the "
+            f"state requires; a stream without precipitation is not a refinement "
+            f"member", path)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo
@@ -333,6 +336,13 @@ def _order_table(runs: dict, title: str, head: str, rows) -> None:
     for label, err in rows:
         cells = []
         for i, (lo, hi) in enumerate(pairs[:-1]):
+            # The two pairs must SHARE their middle member. With actual steps
+            # 100,50,40,20 the halving pairs are (100,50) and (40,20): adjacent in
+            # the list, but E(100->50)/E(40->20) spans two different chains and is
+            # not a rate. Only a dyadic run of three members gives one (owner P0-6).
+            if hi != pairs[i + 1][0]:
+                cells.append("      -      ")
+                continue
             e, e2 = err(lo, hi), err(hi, pairs[i + 1][1])
             cells.append("      -      " if e == 0 or e2 == 0
                          else f"{math.log2(e / e2):+13.3f}")
@@ -373,14 +383,19 @@ def budget_report(runs: dict) -> None:
             print(f"    {k[0]:10} col {k[1]}   spread {conservation_spread(b, k):.3e}")
     water = [k for k in keys if k[0] == "water"]
     if water and any(conservation_spread(b, k) >= _CONSERVED_SPREAD for k in water):
-        # Measured, not inferred: rebuilding this fixture with the kernel promoted
-        # to f64 (`refine_build.sh --f64`) leaves the column-water total constant to
-        # ~1e-6 relative, against ~1e-2 here. The f32 variation these orders are
-        # taken on is therefore precision drift, and the exponents describe the
-        # drift rather than the solution.
-        print("\n  WATER ORDERS ARE NOT CONVERGENCE RATES on an f32 stream: the same")
-        print("  fixture at f64 holds column water to ~1e-6 relative against ~1e-2 here,")
-        print("  so this variation is precision drift. See FINDING_column_water_orders_v1.")
+        # A GENERIC statement about what this table can and cannot mean. The
+        # earlier version asserted a specific fixture's f64 result here, so any
+        # future stream -- another fixture, a real case -- would have been told
+        # its water variation is precision drift on evidence that says nothing
+        # about it (owner §7.1). The interpretation belongs to the evidence
+        # bundle; the analyzer states the precondition for reading these numbers.
+        print("\n  WATER ORDERS ARE A RATE ONLY IF THE VARIATION IS PHYSICAL. Column")
+        print("  water is conserved apart from precipitation, so a member-to-member")
+        print("  spread can be discretisation OR precision. Deciding needs the same")
+        print("  chain at another precision (`refine_build.sh --f64`); on")
+        print("  g33_fixture_multisubcycle_v1 that comparison attributed it to")
+        print("  precision (FINDING_column_water_orders_v1). Do not carry that")
+        print("  attribution to a stream it was not measured on.")
     _order_table(
         runs, "rho*dz column budgets — successive order per column",
         f"{'quantity':10} {'col':>3} ",

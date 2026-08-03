@@ -1,0 +1,192 @@
+# Claim registry (owner §7.5).
+#
+# Findings accumulate corrections in place, so a reader cannot tell which
+# sentence is current. `FINDING_refinement_noise_floor_v1` still says "only the
+# rain-chain mstep is instrumented" in its limits while MSTEPI has been emitted
+# since the two-chain work; the same document carries "clean order" beside the
+# calibration that withdrew it. This file is the authority on status; the
+# findings remain the narrative.
+#
+# status: active | superseded | withdrawn | hold
+# scope:  the fixture, precision and algorithm a claim is entitled to speak about
+#
+# Checked by harness/tests/test_g33_claims.py: every claim must name evidence
+# that exists, every superseded_by must resolve, and no claim may be `active`
+# while the finding it lives in has been withdrawn.
+
+schema: 1
+
+claims:
+  - id: G33-DTCLD-001
+    text: >
+      The refinement variable is dtcld/mstep, not dtcld: an external-dtcld dyadic
+      chain does not dyadically refine the sedimentation operator.
+    status: active
+    grade: confirmed
+    basis: source
+    scope: module_mp_kdm6.F:1179-1180, all fixtures
+    evidence: [FINDING_two_sedimentation_chains_v1.md]
+
+  - id: G33-DTCLD-002
+    text: >
+      Convergence orders must be taken against the dtcld the stream reports, not
+      300/N from the filename.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: all refinement bundles
+    evidence: [FINDING_refinement_provenance_v1.md]
+
+  - id: G33-MSTEPI-001
+    text: >
+      mstep governs qr/nr/qs/qg and mstep_i governs qi/ni; in column 3 the ice
+      chain reaches 1 at h = 25 s where the main chain needs h = 6.25 s.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, f32, legacy
+    evidence: [FINDING_two_sedimentation_chains_v1.md]
+
+  - id: G33-WATER-ORDER-001
+    text: >
+      Column 3's erratic column-water orders are explained by the sedimentation
+      sub-step count mstep.
+    status: withdrawn
+    superseded_by: G33-WATER-ORDER-002
+    scope: g33_fixture_multisubcycle_v1, f32, legacy
+    evidence: [FINDING_column_water_orders_v1.md]
+
+  - id: G33-WATER-ORDER-002
+    text: >
+      Column water is near-conserved on this fixture; its member-to-member spread
+      is 5.7e-3/7.0e-3/9.6e-3 at f32 against 1.6e-6/2.5e-7/8.8e-7 at f64, so
+      orders taken on it at f32 are not convergence rates.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
+    evidence: [FINDING_column_water_orders_v1.md]
+
+  - id: G33-NI-ORDER-001
+    text: >
+      Column 3's ni column number is first-order-consistent and empirically
+      stable over five successive estimates. NOT branch-certified: the process
+      gates, caps and active-cell universe were not verified constant.
+    status: active
+    grade: confirmed-with-scope
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, legacy
+    evidence: [FINDING_two_sedimentation_chains_v1.md]
+
+  - id: G33-TURNOVER-001
+    text: The f32 fine-step turnover is accumulated floating-point roundoff.
+    status: withdrawn
+    superseded_by: G33-TURNOVER-002
+    scope: g33_fixture_multisubcycle_v1, th/qv max-norm
+    evidence: [FINDING_refinement_noise_floor_v1.md]
+
+  - id: G33-TURNOVER-002
+    text: >
+      The f32 fine-step turnover is precision-dependent — it vanishes at f64 and
+      the error floor drops 13.7x (th) / 114.7x (qv). Accumulated arithmetic
+      roundoff is a strong candidate; active-set change is NOT excluded, because
+      the active set 1[g(x_e)>0] depends on the state and the state depends on
+      precision. Cause HOLD.
+    status: active
+    grade: strong-candidate
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
+    evidence: [FINDING_refinement_noise_floor_v1.md,
+               FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-NUMBER-001
+    text: >
+      Number sedimentation transfers a number MIXING ratio with the thickness
+      ratio only, so the rho*dz column measure is not conserved; where density
+      increases downward, number is created.
+    status: active
+    grade: confirmed
+    basis: source + hypothesis test against an independently emitted accumulator
+    scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
+    evidence: [FINDING_number_transport_creation_v1.md]
+
+  - id: G33-NUMBER-002
+    text: >
+      The rho*dz number closure residual is 6-14% of the surface outflow while
+      mass closes to f32 roundoff.
+    status: active
+    grade: conditional
+    basis: measurement
+    scope: >
+      SELECTED cap-unbound, mstep==1 calls on g33_fixture_multisubcycle_v1 at
+      f32, legacy. The mass control is qr (main chain) while the largest number
+      row is ni (ice chain), so this is not yet a matched-call contrast.
+    evidence: [FINDING_number_transport_creation_v1.md]
+
+  - id: G33-NUMBER-003
+    text: The conservative variant carries the same number defect.
+    status: hold
+    grade: predicted
+    basis: source reading only
+    scope: not measured
+    evidence: [FINDING_number_transport_creation_v1.md]
+
+  - id: G33-PRECIP-001
+    text: >
+      g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64
+      (4.8e-4/2.2e-2/3.5e-2 mm against 2.0e-7/~0/0.0), so legacy and conservative
+      are bit-identical at f64 (0 of 333 records) and the column-2 enthalpy
+      advantage is 5.89x at f32 and 1.00x at f64.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-PRECIP-002
+    text: The conservative interface's enthalpy advantage is a property of the interface.
+    status: withdrawn
+    superseded_by: G33-PRECIP-001
+    scope: g33_fixture_multisubcycle_v1, f32, column 2
+    evidence: [FINDING_moist_enthalpy_ledger_v1.md]
+
+  - id: G33-ENTHALPY-001
+    text: >
+      The f64 moist-enthalpy non-closure is -42.09/-21.19/+443.74 J/m2 by column,
+      identical in legacy and conservative. eta ~ 100% there is algebraically
+      trivial (H_out ~ 0 makes eta = |dH|/|dH|), and eta is a norm, not an
+      acceptance criterion.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_multisubcycle_v1, f64 instrument arm
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-ENTHALPY-002
+    text: The f64 enthalpy non-closure is ~42 J/m2 per column.
+    status: withdrawn
+    superseded_by: G33-ENTHALPY-001
+    scope: g33_fixture_multisubcycle_v1 — generalised column 1 to all three
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-PRECIP-003
+    text: The f32 cap events on this fixture are created by f32 noise.
+    status: withdrawn
+    superseded_by: G33-PRECIP-001
+    scope: >
+      Causal phrasing ahead of the evidence: which gate diverges first, and
+      whether it is storage roundoff, accumulated arithmetic, a constant's
+      precision or post-branch amplification, is not established.
+    evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
+
+  - id: G33-NCMIN-001
+    text: >
+      ncmin is a scalar overwritten in the column loop, so tile decomposition
+      changes up to 31/144 final-state cells. Unresolved; needs an owner decision
+      among per-column ncmin, accepting the partition dependence, or splitting
+      the variants.
+    status: active
+    grade: confirmed
+    basis: measurement
+    scope: g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured
+    evidence: [FINDING_ncmin_scalar_vs_percell.md]
