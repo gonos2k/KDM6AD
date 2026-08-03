@@ -311,7 +311,7 @@ program g33_refine_driver
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM
-        write(*,'(A,1X,A,2(1X,I0),1X,ES24.16)') 'G33P STATE', &
+        write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P STATE', &
               trim(FLDNAME(f)), i, KM-k, outF(i,k,f)
       end do
     end do
@@ -319,13 +319,30 @@ program g33_refine_driver
   ! Forcing too: without rho and delz the probe stream cannot form a rho*dz
   ! column budget, and the per-column question is exactly what the f64 arm is
   ! for -- it removes the roundoff confound so the sub-step schedule can be
-  ! looked at on its own.
+  ! looked at on its own. `pii` and the INITIAL state follow for the same reason:
+  ! the moist-enthalpy ledger needs both, and it is the next diagnostic whose
+  ! residual might be precision drift rather than physics.
   do k = 1, KM
     do i = 1, IM
-      write(*,'(A,1X,A,2(1X,I0),1X,ES24.16)') 'G33P FORCING', 'rho', &
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'rho', &
             i, KM-k, denO(i,k)
-      write(*,'(A,1X,A,2(1X,I0),1X,ES24.16)') 'G33P FORCING', 'delz', &
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'delz', &
             i, KM-k, delzO(i,k)
+      write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P FORCING', 'pii', &
+            i, KM-k, piiO(i,k)
+    end do
+  end do
+  do f = 1, NFLD_ST
+    do k = 1, KM
+      do i = 1, IM
+        write(*,'(A,1X,A,2(1X,I0),1X,ES26.16E3)') 'G33P INITIAL', &
+              trim(FLDNAME(f)), i, KM-k, inF(i,k,f)
+      end do
+    end do
+  end do
+  do f = 1, 3
+    do i = 1, IM
+      write(*,'(A,2(1X,I0),1X,ES26.16E3)') 'G33P PREC', f, i, precF(f,i)
     end do
   end do
 #endif

@@ -639,6 +639,12 @@ def _ledger(run: dict, h_cell, h_precip_out) -> dict:
              "H_start": h_start}
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
+        # THROUGHPUT norm (owner §6.4). `h_start` carries the column's whole
+        # background sensible energy and an enthalpy-reference offset, so
+        # dividing by it makes a process-scale error look small however large it
+        # is next to the process. The denominator here is what actually moved.
+        d["eta"] = abs(d["residual"]) / (abs(d["dH"]) + abs(d["H_precip_out"])
+                                         or float("inf"))
         # MODELLING BAND, not an error bar. The departing water is charged at the
         # bottom-level temperature; nothing in the endpoint data says it left from
         # there. Recomputing the residual with every level in turn bounds how much
@@ -784,13 +790,16 @@ def ledger_report(runs: dict) -> None:
             print("\n  ledger: initial state or `pii` missing")
             return
         print(f"\n  {title}")
-        print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} {'relative':>12}")
+        print(f"    {'h (s)':>7} {'col':>3} {'residual [J/m2]':>18} "
+              f"{'/H_start':>11} {'eta':>9}   modelling band")
         for n in ns:
             for c in sorted(L[n]):
                 d = L[n][c]
                 lo, hi = d["relative_band"]
                 print(f"    {H[n]:7g} {c:3d} {d['residual']:18.6e} "
-                      f"{d['relative']:12.3e}  [{lo:.2e},{hi:.2e}]")
+                      f"{d['relative']:11.3e} {d['eta']:8.2%}   [{lo:.2e},{hi:.2e}]")
+        print("    eta = |R| / (|dH| + |H_out|), the THROUGHPUT norm: /H_start divides")
+        print("    a process-scale error by the column's whole background energy.")
 
 
 def diagnostic_budget_consistency_report(runs: dict) -> None:

@@ -155,7 +155,26 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   *whole* chain (`+1.199, +0.980, +0.954, +0.967, +0.981, +0.990, +0.995`),
   including h = 100 → 25 where `mstep_i` runs 4 → 2 → 1. The analyzer now prints
   this caveat above the budget table on any f32 stream.
-  See [`../harness/evidence/FINDING_column_water_orders_v1.md`](../harness/evidence/FINDING_column_water_orders_v1.md). Consequence: §9's obstacle is a
+  See [`../harness/evidence/FINDING_column_water_orders_v1.md`](../harness/evidence/FINDING_column_water_orders_v1.md).
+- **This fixture precipitates only at f32, which scopes every legacy-vs-conservative
+  comparison built on it.** Total `rain` after 300 s is **4.8e-04 / 2.2e-02 /
+  3.5e-02 mm at f32** against **2.0e-07 / ~0 / 0.0 at f64** — the condensate sits at
+  the scheme's activation thresholds and single precision decides whether
+  sedimentation reaches the ground. Three earlier observations collapse into this
+  one: column water is conserved at f64 (nothing leaves); **legacy and conservative
+  are bit-identical at f64 — 0 of 333 records, against 39 at f32 with max relative
+  difference 3.28**; and the moist-enthalpy **conservative advantage is 5.89× in
+  column 2 at f32 and 1.00× at f64**, so it measures the two variants' response to a
+  cap event f32 noise creates, **not the interface's thermodynamics**. That reading
+  is withdrawn; the f32 numbers remain valid *as statements about the f32 reference*,
+  which is the operator being certified, but cannot be extrapolated to any case where
+  precipitation is not threshold-marginal. **Norm (owner §6.4)**: the ledger now also
+  reports `eta = |R|/(|dH|+|H_out|)` — the same residuals read **7.85% / 7.98% /
+  4.19%** under `eta` against `3.8e-06 / 4.2e-04 / 1.3e-04` under `/H_start`, four
+  orders apart, because `/H_start` divides a process-scale error by the column's
+  whole background energy. At f64 `eta` is ~100% in both variants: with `H_out ≈ 0`
+  the ledger reduces to `R = dH`, a ~42 J/m² non-closure with nothing leaving.
+  See [`../harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md`](../harness/evidence/FINDING_fixture_precipitates_only_at_f32_v1.md). Consequence: §9's obstacle is a
   **sweep-design** problem — but making `mstep` constant is **necessary and not
   sufficient**, and the "a chain over which `mstep` is constant would give column 3 a
   valid domain" that stood here is **withdrawn**. Measured: `mstep` reaches 1 at
