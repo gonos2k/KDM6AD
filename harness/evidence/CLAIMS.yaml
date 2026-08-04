@@ -163,8 +163,12 @@ claims:
 
   - id: G33-NUMBER-008
     text: >
-      The number creation is caused by the density gradient, not merely
-      correlated with it. Flattening the density profile removes 99.9999% of the
+      The Delta-z-only number-transfer metric, applied across a nonzero
+      layer-air-mass gradient, causes the measured column-number residual; the
+      sign follows the gradient. The density gradient is NOT the defect -- it is
+      ordinary stratification -- and this establishes the INTERACTION of the
+      gradient with the missing density ratio, not a fault in the gradient
+      (owner §4). Flattening the density profile removes 99.9999% of the
       residual (to below the gamma_n roundoff bound) while surface number outflow
       stays at 96% of the original; inverting the profile flips the sign
       (-0.9896/-0.9919/-1.0032 of the unperturbed residual); doubling the
@@ -177,13 +181,17 @@ claims:
       three-arm falsification test on the forcing, with the mass control holding
       in all four arms and surface outflow as the process-still-running control
     scope: >
-      MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice
-      chain's mass control fails in every arm (post-update inflow cap,
-      G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are
-      constructed probes, not physical atmospheres; this establishes the cause,
-      not the magnitude in a forecast.
+      OPERATOR-LEVEL: this is causality under the current den*dz ledger, where
+      den is MOIST density, and must NOT be promoted to physical dry-air
+      column-number causality -- the physical measure is sum m_d,k n_k
+      (owner §10, G33-BASIS-002/003). MAIN chain only on
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass
+      control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so
+      ice rows are excluded. The perturbed profiles are constructed probes, not
+      physical atmospheres; this establishes the cause, not the magnitude in a
+      forecast.
     evidence: [FINDING_density_falsification_v1.md]
-    evidence_sha256: [FINDING_density_falsification_v1.md:1def794b160c130d]
+    evidence_sha256: [FINDING_density_falsification_v1.md:494fb0763c35c022]
 
   - id: G33-CHAIN-001
     text: >

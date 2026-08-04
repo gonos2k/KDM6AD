@@ -34,13 +34,14 @@ from pathlib import Path
 BEGIN = re.compile(
     r"^G33P BEGIN (\d+) precision (f32|f64) source_precision (f32|f64) "
     r"fixture (\S+) algorithm (\S+) mode (carry|rezero) tiles (\S+) "
+    r"rho_profile (\S+) "
     r"(\d+) (\d+) (\d+) (\S+) (\S+) (\d+) (\d+)$")
 END = re.compile(r"^G33P END$")
 STATE = re.compile(r"^G33P (STATE|INITIAL) (\S+) (\d+) (-?\d+)\s+(\S+)$")
 FORCING = re.compile(r"^G33P FORCING (rho|delz|pii) (\d+) (-?\d+)\s+(\S+)$")
 PREC = re.compile(r"^G33P PREC (\d+) (\d+)\s+(\S+)$")
 
-SCHEMA = 3
+SCHEMA = 4
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as _ra   # noqa: E402
 
@@ -77,7 +78,8 @@ def read(text: str) -> dict:
     _expect(lines, "no G33P records")
     m = BEGIN.match(lines[0])
     _expect(m, f"stream does not begin with G33P BEGIN: {lines[0]!r}")
-    (schema, precision, source, fixture, algorithm, mode, tiles, nsplit, loops,
+    (schema, precision, source, fixture, algorithm, mode, tiles, rho_profile,
+     nsplit, loops,
      ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
@@ -135,7 +137,10 @@ def read(text: str) -> dict:
             # The tile VECTOR, not just its length: `ntile` alone cannot tell
             # (2,1) from (1,2), and `ncmin` is a scalar overwritten in the column
             # loop, so those two decompositions can disagree (owner §8.1).
-            ("meta", "tiles"): tuple(int(t) for t in tiles.split(","))}
+            ("meta", "tiles"): tuple(int(t) for t in tiles.split(",")),
+            # The forcing intervention, so two arms of the density experiment are
+            # distinguishable from the stream alone (owner §5).
+            ("meta", "rho_profile"): rho_profile}
     return out
 
 
@@ -160,7 +165,8 @@ COMPARISONS = {
 #: Header fields that identify the experiment. `schema` is included: two streams
 #: written under different protocol versions are not obviously the same fields.
 IDENTITY = ("schema", "precision", "source_precision", "fixture", "algorithm",
-            "mode", "nsplit", "loops", "ntile", "tiles", "delt", "dtcld")
+            "mode", "nsplit", "loops", "ntile", "tiles", "delt", "dtcld",
+            "rho_profile")
 
 
 def invariants(kind: str) -> tuple:

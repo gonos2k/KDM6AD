@@ -113,9 +113,10 @@ def test_calls_with_an_IDENTICAL_loop_index_are_still_separated():
 #: set: the extension records have their own completeness checks, so a helper
 #: that declared them without emitting them would fail for the right reason but
 #: obscure the test that wanted them.
-def _hdr(nsplit=1, ntile=1, schema=3, feats="mstep,mstepi,nflux"):
+def _hdr(nsplit=1, ntile=1, schema=4, feats="mstep,mstepi,nflux",
+         rho_profile="as-is"):
     return (f"G33N STREAM_BEGIN {schema} {nsplit} {ntile} {nsplit*ntile} "
-            f"legacy rezero {feats}\n")
+            f"legacy rezero {feats} {rho_profile}\n")
 
 
 def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
@@ -238,7 +239,7 @@ def test_a_stream_declaring_another_schema_is_rejected():
 
 
 def test_an_inconsistent_header_is_rejected():
-    s = "G33N STREAM_BEGIN 3 4 2 3 legacy rezero mstep\nG33N STREAM_END\n"
+    s = "G33N STREAM_BEGIN 4 4 2 3 legacy rezero mstep as-is\nG33N STREAM_END\n"
     with pytest.raises(nt.StreamError, match="header is inconsistent"):
         list(nt.calls(s))
 
@@ -518,5 +519,5 @@ def test_mstep_below_one_is_refused():
 
 
 def test_the_parser_refuses_the_schema_it_does_not_implement():
-    with pytest.raises(nt.StreamError, match="declares schema 2"):
-        nt.calls(_stream(_ext(), feats=_FEATS, schema=2))
+    with pytest.raises(nt.StreamError, match="declares schema 3"):
+        nt.calls(_stream(_ext(), feats=_FEATS, schema=3))

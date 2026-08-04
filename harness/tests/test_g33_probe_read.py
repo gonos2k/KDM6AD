@@ -15,14 +15,16 @@ import g33_probe_read as pr  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 
 
-def _stream(precision="f32", *, B=2, K=2, end=True, schema=3, prec=True,
+def _stream(precision="f32", *, B=2, K=2, end=True, schema=4, prec=True,
             forcing=("rho", "delz", "pii"), initial=True, fixture="fx", algo="legacy",
-            mode="rezero", nsplit=12, dtcld=25.0, tiles=None, ntile=1, loops=1):
+            mode="rezero", nsplit=12, dtcld=25.0, tiles=None, ntile=1, loops=1,
+            rho_profile="as-is"):
     # schema 3 carries the TILE VECTOR: `ntile` alone cannot tell (2,1) from
     # (1,2), and `ncmin` makes those two decompositions disagree (owner §8.1).
     tiles = tiles or ",".join(["1"] * ntile)
     out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
            f"fixture {fixture} algorithm {algo} mode {mode} tiles {tiles} "
+           f"rho_profile {rho_profile} "
            f"{nsplit} {loops} {ntile} {300.0/nsplit:.6f} {dtcld:.6f} {B} {K}"]
     for f in pr.FIELDS:
         for c in range(1, B + 1):

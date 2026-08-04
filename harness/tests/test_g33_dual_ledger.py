@@ -34,7 +34,7 @@ def _stream(qv, qr=0.0):
     """
     pre = [10.0, 20.0, 30.0, 40.0]
     post = [pre[t] - XFER[t] + (XFER[t - 1] if t else 0.0) for t in range(4)]
-    L = ["G33N STREAM_BEGIN 3 1 1 1 legacy rezero mstep,mstepi,nflux,xfer",
+    L = ["G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux,xfer as-is",
          f"G33N CALL_BEGIN 1 1 1 1 1 {len(RHO)} 42C80000"]
     for stage, vals in (("outer_pre_sed", pre), ("outer_post_sed", post)):
         for k in range(len(RHO)):

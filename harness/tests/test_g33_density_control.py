@@ -25,6 +25,7 @@ What this file guards is not the physics but the experiment's own validity:
     evidence of nothing),
   - and the published ratios must still come out.
 """
+import hashlib
 import shutil
 import subprocess
 import sys
@@ -77,11 +78,45 @@ def streams(driver):
     return {arm: _run(driver, arm) for arm in ARMS}
 
 
-def test_the_default_path_is_untouched(driver, streams):
-    """Every committed stream was produced with no fourth argument. If adding the
-    control moved the default, those artifacts would silently stop describing the
-    run that made them."""
+#: sha256 of the G33R stream from `n12 rezero`, as it stood BEFORE the density
+#: control existed — taken from the committed bundle
+#: kdm6ad-g33m-refine/full-legacy-dtcld/n12.rezero.txt. Pinned as a constant so
+#: the regression does not depend on that bundle being present on the host.
+BASELINE_G33R_SHA256 = \
+    "247cab0a9662d5df7d5960149ec1db435e38d946d251ebd6ab691297c52bde67"
+
+
+def _g33r_sha(text):
+    body = "".join(l + "\n" for l in text.splitlines() if l.startswith("G33R"))
+    return hashlib.sha256(body.encode()).hexdigest()
+
+
+def test_the_default_and_an_explicit_as_is_agree(driver, streams):
+    """Argument-handling consistency: passing the arm explicitly must not differ
+    from omitting it. This is NOT the non-invasiveness test -- both sides are the
+    same post-change binary (owner §6)."""
     assert _run(driver) == streams["as-is"]
+
+
+def test_the_default_path_still_matches_the_PRE_CHANGE_baseline(driver):
+    """Non-invasiveness, against a pinned baseline rather than against itself.
+
+    Comparing the new default to the new explicit `as-is` shows only that the
+    argument is handled consistently -- both are the same binary with
+    rho_mode = 0, so the comparison cannot detect a regression introduced by the
+    change itself. What answers that is the SHA of the stream as it stood before
+    the control existed."""
+    assert _g33r_sha(_run(driver)) == BASELINE_G33R_SHA256, (
+        "the no-argument G33R stream no longer matches the pre-change baseline")
+
+
+def test_a_density_arm_ACTUALLY_CHANGES_the_G33R_state(driver, streams):
+    """The other half of the same contract: if an arm left the state identical to
+    baseline, every prediction below would be trivially satisfied by an
+    intervention that never fired."""
+    for arm in ("uniform", "inverted", "x2"):
+        assert _g33r_sha(streams[arm]) != BASELINE_G33R_SHA256, \
+            f"{arm} did not change the state — the intervention did not fire"
 
 
 def test_a_mistyped_arm_is_refused_not_silently_run_as_is(driver):
@@ -200,3 +235,49 @@ def test_the_published_ratios_are_the_ones_this_run_produces(streams):
         assert published == pytest.approx(got, abs=5e-4), (
             f"{arm}: the finding publishes {published}, this build gives "
             f"{[round(g, 4) for g in got]}")
+
+
+# ---- owner §5: the arm must be identifiable FROM THE STREAM -------------------
+
+def test_the_stream_header_names_the_density_arm(streams):
+    """Handed two raw streams, a reader could not tell `as-is` from `uniform`:
+    the arm lived only in the finding, so experiment intent had to be INFERRED
+    from the forcing numbers rather than read off the record. Inferring intent is
+    exactly what an evidence protocol exists to stop."""
+    for arm, text in streams.items():
+        got = nt.calls(text)[0]["features"] is not None  # parsed at all
+        hdr = next(l for l in text.splitlines()
+                   if l.startswith("G33N STREAM_BEGIN"))
+        assert hdr.split()[-1] == arm, f"{arm} is not named in its own header"
+        assert got
+
+
+def test_an_unknown_arm_in_a_header_is_refused():
+    """A profile the parser does not know must not be read as `as-is`."""
+    text = _run_cached_asis()
+    bad = text.replace("topout as-is", "topout sideways")
+    with pytest.raises(nt.StreamError, match="unknown rho_profile"):
+        nt.calls(bad)
+
+
+_ASIS_CACHE = {}
+
+
+def _run_cached_asis():
+    return _ASIS_CACHE["t"]
+
+
+@pytest.fixture(autouse=True, scope="module")
+def _cache_asis(streams):
+    _ASIS_CACHE["t"] = streams["as-is"]
+
+
+def test_the_substep_schedule_is_IDENTICAL_across_arms(streams):
+    """The finding reports this as a control -- the arms differ in density values
+    and not in the operator's discrete schedule -- so it is pinned as full
+    dictionary equality rather than as a summary (owner §9)."""
+    base = {k: v for c in nt.calls(streams["as-is"]) for k, v in c["mstep"].items()}
+    assert base
+    for arm in ("uniform", "inverted", "x2"):
+        got = {k: v for c in nt.calls(streams[arm]) for k, v in c["mstep"].items()}
+        assert got == base, f"{arm} changed the mstep/mstep_i schedule"

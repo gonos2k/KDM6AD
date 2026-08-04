@@ -67,7 +67,7 @@ import sys
 from pathlib import Path
 
 STREAM_BEGIN = re.compile(
-    r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+)$")
+    r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+) (\S+)$")
 XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) f32 "
                   r"([0-9A-F]{8}) ([0-9A-F]{8})$")
 CAPIN = re.compile(r"^G33F CAPIN (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
@@ -77,6 +77,10 @@ TOPOUT = re.compile(r"^G33F TOPOUT (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
 #: Extension records this parser knows. A stream declaring a feature it does not
 #: emit, or emitting one it did not declare, is refused.
 FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout"}
+
+#: The density-control arms. `as-is` is the unperturbed forcing; the rest are
+#: interventions, and a stream must say which it is.
+RHO_PROFILES = {"as-is", "uniform", "inverted", "x2"}
 
 #: G33F record families this parser recognises. STAGE and the op ladder are
 #: consumed selectively; the rest are the number extension.
@@ -88,7 +92,7 @@ CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) "
 CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+) (\d+)$")
 #: The protocol this parser implements. A stream declaring another is refused
 #: rather than read with the wrong field meanings.
-SCHEMA = 3
+SCHEMA = 4
 
 #: G33F family -> the header feature that must declare it. A record whose feature
 #: the header did not declare is REFUSED rather than parsed anyway: the contract
@@ -318,16 +322,25 @@ def calls(stream: str) -> list:
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
-            schema, nsplit, ntile, expected, algo, mode, feats = m.groups()
+            (schema, nsplit, ntile, expected, algo, mode, feats,
+             rho_profile) = m.groups()
             if int(schema) != SCHEMA:
                 raise StreamError(f"stream declares schema {schema}, parser is {SCHEMA}")
             features = set(feats.split(","))
             unknown = features - FEATURES
             if unknown:
                 raise StreamError(f"stream declares unknown features {sorted(unknown)}")
+            if rho_profile not in RHO_PROFILES:
+                raise StreamError(
+                    f"stream declares unknown rho_profile {rho_profile!r}; "
+                    f"expected one of {sorted(RHO_PROFILES)}")
             header = {"nsplit": int(nsplit), "ntile": int(ntile),
                       "expected_calls": int(expected), "algorithm": algo,
-                      "mode": mode, "features": features}
+                      "mode": mode, "features": features,
+                      # The forcing intervention this run applied. An experiment
+                      # arm that lives only in a document has to be INFERRED from
+                      # the numbers; here it is part of the record (owner §5).
+                      "rho_profile": rho_profile}
             if header["expected_calls"] != header["nsplit"] * header["ntile"]:
                 raise StreamError(
                     f"header is inconsistent: {nsplit} splits x {ntile} tiles is not "

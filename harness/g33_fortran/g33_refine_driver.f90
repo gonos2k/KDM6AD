@@ -281,6 +281,11 @@ program g33_refine_driver
   character(len=32) :: arg
   character(len=128) :: tilestr
   character(len=16) :: tilebuf
+  ! The density-control arm, carried into EVERY protocol header. A reader
+  ! handed a raw stream could not tell as-is from uniform: the arm lived only
+  ! in the finding, so experiment intent had to be INFERRED from the forcing
+  ! numbers rather than read off the record (owner §5).
+  character(len=8) :: rho_name = 'as-is'
   integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt, tl
   integer :: tiles(IM)
   integer(int32) :: b
@@ -316,6 +321,7 @@ program g33_refine_driver
     case ('x2');       rho_mode = 3
     case default; error stop 'rho mode must be as-is|uniform|inverted|x2'
     end select
+    rho_name = trim(arg)
   end if
 
   delt_used = f32(DT_BITS) / real(nsplit)
@@ -349,9 +355,13 @@ program g33_refine_driver
   ! not declared is refused rather than parsed anyway. The extension families
   ! also carry an exact (sub-step, level) universe -- CAPIN over k=1..K-1 and
   ! TOPOUT at k=0 -- so an incomplete or displaced group cannot pass.
-  write(*,'(A,4(1X,I0),3(1X,A))') 'G33N STREAM_BEGIN', 3, nsplit, ntile, &
+  ! schema 4 adds the DENSITY-CONTROL ARM. Without it a reader handed two raw
+  ! streams could not tell `as-is` from `uniform`: the arm lived only in the
+  ! finding, so experiment intent had to be inferred from the forcing numbers
+  ! instead of read off the record (owner §5).
+  write(*,'(A,4(1X,I0),4(1X,A))') 'G33N STREAM_BEGIN', 4, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
-        'mstep,mstepi,nflux,xfer,capin,topout' 
+        'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name) 
 #endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &
@@ -421,19 +431,21 @@ program g33_refine_driver
   ! stops a reader mixing them (owner P0-4 / priority 2). `source_precision` is
   ! the precision of the REFERENCE this arm instruments, which is always f32.
 #ifdef KDM6_G33_F64
-  ! 1 A + 1 I0 + 12 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
+  ! 1 A + 1 I0 + 14 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
   ! because a Fortran format/argument mismatch is a RUNTIME abort, not a compile
   ! error: the build succeeds and the failure appears only as missing output.
-  write(*,'(A,1X,I0,12(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+  write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
         'G33P BEGIN', 3, 'precision', 'f64', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
         trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
+        'rho_profile', trim(rho_name), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #else
-  write(*,'(A,1X,I0,12(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+  write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
         'G33P BEGIN', 3, 'precision', 'f32', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
         trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
+        'rho_profile', trim(rho_name), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #endif
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is

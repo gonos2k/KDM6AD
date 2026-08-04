@@ -30,7 +30,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "sources": [], "executable_sha256": "ab" * 32}))
         return workdir / "driver"
 
-    def members(exe, out, ns, mode, *, arm="reference", nflux=False):
+    def members(exe, out, ns, mode, *, arm="reference", nflux=False,
+                rho_profile="as-is"):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -116,7 +117,8 @@ def test_a_failure_leaves_the_PREVIOUS_bundle_intact(tmp_path, monkeypatch):
 def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypatch):
     _fake(monkeypatch)
 
-    def bad(exe, out, ns, mode, *, arm="reference", nflux=False):
+    def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
+            rho_profile="as-is"):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -170,7 +172,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "sources": [], "executable_sha256": "cd" * 32}))
         return workdir / "driver"
 
-    def probe_members(exe, out, ns, mode):
+    def probe_members(exe, out, ns, mode, rho_profile="as-is"):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -194,9 +196,9 @@ def _probe_stream(nsplit=3):
     """A COMPLETE probe stream: the reader now requires the exact
     field x cell universe plus INITIAL, all three forcings and PREC, because
     'absent' silently disabled every check (owner §7.2)."""
-    out = [f"G33P BEGIN 3 precision f64 source_precision f32 fixture fx "
-           f"algorithm legacy mode rezero tiles 1 {nsplit} 1 1 "
-           f"{300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
+    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture fx "
+           f"algorithm legacy mode rezero tiles 1 rho_profile as-is "
+           f"{nsplit} 1 1 {300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
         out.append(f"G33P INITIAL {f} 1 0   1.0000000000000000E+000")
@@ -267,3 +269,23 @@ def test_the_evidence_chain_follows_the_manifest_to_the_ANALYSES():
     one step short of the numbers a claim actually quotes."""
     src = (ROOT.parent / "harness/g33_evidence_chain.py").read_text()
     assert 'man.get("analyses", [])' in src
+
+
+# ---- owner §5.2: the bundle must say which forcing arm it is ------------------
+
+def test_the_manifest_records_the_density_arm_and_the_exact_command_line():
+    """The density arms were run by hand, outside the producer, so a published
+    bundle recorded what was BUILT and RUN but not what experiment it was an arm
+    of. A reader could not tell an `as-is` bundle from a `uniform` one."""
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    assert 'man["rho_profile"] = rho_profile' in src
+    assert 'man["runtime_argv"]' in src
+    assert '"--rho-profile"' in src
+
+
+def test_the_argv_helper_omits_the_arm_for_the_default():
+    """`as-is` must produce the same command line the producer always used, or
+    every existing bundle's runtime_argv would stop describing how it was made."""
+    assert xp._argv(Path("drv"), 12, "rezero", "as-is") == ["drv", "12", "rezero"]
+    assert xp._argv(Path("drv"), 12, "rezero", "uniform") == \
+        ["drv", "12", "rezero", "3", "uniform"]
