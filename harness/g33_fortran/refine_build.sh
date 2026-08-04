@@ -64,6 +64,11 @@ fi
 # The probe header names the experiment, so the fixture identity has to reach the
 # driver rather than living only in the build script (owner P0-5).
 COMMON_FLAGS+=("-DKDM6_G33_FIXTURE='$FIXTURE_NAME'")
+# gfortran records each source's path in the binary (for backtraces), and under
+# --dump/--nflux the compiled overlay lives in $OUT, so the SAME instrumented
+# build produced a different executable digest in every output directory
+# (owner §9.1). Remap the prefix so the embedded name is stable.
+COMMON_FLAGS+=("-ffile-prefix-map=$OUT=<OUT>")
 REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)
@@ -94,8 +99,17 @@ fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/ph
 # identical to the pinned source (the A/B/C non-invasiveness proof).
 MODULE_SRC="$MODULE"; DUMP_DEF=()
 if [ "$DUMP" = 1 ]; then
-    MODULE_SRC="$OUT/module_mp_ovl.F"
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$MODULE_SRC" --algo="$ALGO" >/dev/null
+    # CONTENT-ADDRESSED overlay path (owner §9.1). gfortran embeds each source's
+    # filename in the binary for backtraces -- `-ffile-prefix-map` does not reach
+    # that string -- so an overlay written into $OUT gave the same instrumented
+    # build a different executable digest in every output directory. Naming it by
+    # its own digest makes the path a function of the content: identical overlays
+    # compile from an identical path, different ones cannot collide.
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
+        --algo="$ALGO" >/dev/null
+    OVLSHA=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -c1-16)
+    MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"
+    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC"
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi

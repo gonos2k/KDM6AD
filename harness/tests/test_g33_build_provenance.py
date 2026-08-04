@@ -190,3 +190,23 @@ def test_the_bit_pattern_helper_is_kind_explicit():
     run produced NaN."""
     drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
     assert "real(real32) :: word" in drv and "real(word, kind(value))" in drv
+
+
+def test_the_overlay_is_compiled_from_a_CONTENT_ADDRESSED_path():
+    """gfortran embeds each source's filename in the binary for backtraces, and
+    -ffile-prefix-map does not reach that string, so an overlay written into the
+    output directory gave the same instrumented build a different executable
+    digest in every run (owner §9.1)."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "OVLSHA=$(shasum -a 256" in script
+    assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"' in script
+
+
+def test_identity_paths_are_normalised(build):
+    """sources[].path, module_path, fixture_path and compiled_module_path are
+    identity-bearing; a literal temp path made them vary per run (§9.1)."""
+    out, root = build
+    (out / "sources.txt").write_text(f"{out}/generated.F\n")
+    (out / "generated.F").write_text("x\n")
+    got = _collect(out, root)
+    assert got["sources"][0]["path"].startswith("<OUT>")

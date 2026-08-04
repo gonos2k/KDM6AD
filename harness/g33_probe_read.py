@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import math
 import re
+import struct
 import sys
 from pathlib import Path
 
@@ -106,26 +107,25 @@ def read(text: str) -> dict:
     _expect({k[1] for k in st} == set(FIELDS),
             f"state field set is {sorted({k[1] for k in st})}, expected "
             f"{sorted(FIELDS)}")
-    cells = {(k[2], k[3]) for k in st}
-    _expect(len(cells) == int(B) * int(K),
-            f"state covers {len(cells)} cells, header declares {B}x{K}")
-    per_col = {c: {kk for cc, kk in cells if cc == c} for c, _ in cells}
-    _expect(len({tuple(sorted(v)) for v in per_col.values()}) == 1,
-            "columns carry different level sets")
-    if (init := [k for k in out if k[0] == "initial"]):
-        _expect({k[1:] for k in init} == {k[1:] for k in st},
-                "INITIAL covers different (field, col, k) than STATE")
-    if (fo := [k for k in out if k[0] == "forcing"]):
-        names = {k[1] for k in fo}
-        _expect(("rho" in names) == ("delz" in names),
-                f"forcing carries {sorted(names)}: rho and delz must be together")
-        for nm in names:
-            _expect({(k[2], k[3]) for k in fo if k[1] == nm} == cells,
-                    f"forcing `{nm}` does not cover the state's cells")
-    if (pr := [k for k in out if k[0] == "prec"]):
-        _expect({(k[1], k[2]) for k in pr}
-                == {(sp, c) for sp in (1, 2, 3) for c, _ in cells},
-                "prec is not exactly species 1/2/3 over the state's columns")
+    # EXACT rectangular universe (owner §7.2). Checking the field NAMES and the
+    # cell COUNT separately let one field skip a cell while another supplied it:
+    # both sets look complete, the product is not.
+    cells = {(c, k) for c in range(1, int(B) + 1) for k in range(int(K))}
+    want = {("state", f, c, k) for f in FIELDS for c, k in cells}
+    got = set(st)
+    _expect(got == want,
+            f"STATE is not the exact {len(FIELDS)}x{B}x{K} universe: "
+            f"{len(want - got)} missing, {len(got - want)} unexpected")
+    # The driver always emits these, so they are REQUIRED, not optional: a stream
+    # missing them is incomplete, and "absent" silently disabled every check.
+    _expect({k[1:] for k in out if k[0] == "initial"} == {k[1:] for k in st},
+            "INITIAL is not the exact STATE universe")
+    for nm in ("rho", "delz", "pii"):
+        _expect({(k[2], k[3]) for k in out if k[0] == "forcing" and k[1] == nm}
+                == cells, f"forcing `{nm}` is not the exact cell universe")
+    _expect({(k[1], k[2]) for k in out if k[0] == "prec"}
+            == {(sp, c) for sp in (1, 2, 3) for c in range(1, int(B) + 1)},
+            "prec is not exactly species 1/2/3 over every column")
     out |= {("meta", "schema"): int(schema), ("meta", "precision"): precision,
             ("meta", "source_precision"): source, ("meta", "fixture"): fixture,
             ("meta", "algorithm"): algorithm, ("meta", "mode"): mode,
@@ -171,18 +171,72 @@ def compare(a: dict, b: dict, kind: str) -> None:
     _expect(ka == kb, f"streams carry different records ({len(ka ^ kb)} differ)")
 
 
+def _bits(x: float, precision: str) -> int:
+    """Sign-magnitude bit pattern mapped to a monotone integer, so a subtraction
+    counts representable steps across zero as well as within a sign."""
+    fmt, width = (">f", 32) if precision == "f32" else (">d", 64)
+    n = int.from_bytes(struct.pack(fmt, x), "big")
+    sign = 1 << (width - 1)
+    # Positive patterns already increase with the value; negative ones increase
+    # with MAGNITUDE, so they are reflected. This maps -0.0 and +0.0 to the same
+    # point, which is what "zero representable steps apart" should mean.
+    return -(n & (sign - 1)) if n & sign else n
+
+
+def diff(a: dict, b: dict, kind: str) -> dict:
+    """Compare two probe streams under a named contract, and REPORT the numbers.
+
+    `compare` only certifies that two streams may be compared; producing
+    `0 / 333 records differ` still needed a separate uncommitted calculation
+    (owner P0-E3). This does both, and reports ULP distance rather than only a
+    relative difference, because a bitwise claim is a claim about representable
+    steps.
+    """
+    compare(a, b, kind)
+    precision = a[("meta", "precision")]
+    keys = sorted(k for k in a if k[0] != "meta")
+    worst_abs = worst_rel = 0.0
+    worst_ulp, first, ndiff = 0, None, 0
+    for k in keys:
+        x, y = a[k], b[k]
+        if x == y:
+            continue
+        ndiff += 1
+        if first is None:
+            first = {"key": list(k), "a": x, "b": y}
+        d = abs(x - y)
+        worst_abs = max(worst_abs, d)
+        worst_rel = max(worst_rel, d / max(abs(x), abs(y)))
+        worst_ulp = max(worst_ulp, abs(_bits(x, precision) - _bits(y, precision)))
+    return {"kind": kind, "precision": precision, "records": len(keys),
+            "equal": len(keys) - ndiff, "different": ndiff,
+            "max_abs": worst_abs, "max_rel": worst_rel, "max_ulp": worst_ulp,
+            "first_difference": first,
+            "bitwise_identical": ndiff == 0}
+
+
 def main(argv) -> int:
+    """    g33_probe_read.py <stream> [<stream> ...]           # read and validate
+    g33_probe_read.py <a> <b> <kind> [out.json]         # compare and report
+    """
     if not argv:
         print(__doc__)
         return 2
+    if len(argv) >= 3 and argv[2] in COMPARISONS:
+        a, b = (read(Path(q).read_text()) for q in argv[:2])
+        d = diff(a, b, argv[2])
+        print(f"  {argv[2]}: {d['different']} of {d['records']} records differ"
+              f"   max_rel={d['max_rel']:.3e}  max_ulp={d['max_ulp']}"
+              f"   bitwise_identical={d['bitwise_identical']}")
+        if len(argv) == 4:
+            import json
+            Path(argv[3]).write_text(json.dumps(d, indent=2, sort_keys=True) + "\n")
+        return 0
     for path in argv:
         r = read(Path(path).read_text())
         print(f"  {path}: precision={r[('meta','precision')]} "
+              f"algorithm={r[('meta','algorithm')]} dtcld={r[('meta','dtcld')]:g} "
               f"records={sum(1 for k in r if k[0] != 'meta')}")
-    if len(argv) == 3:
-        compare(read(Path(argv[0]).read_text()), read(Path(argv[1]).read_text()),
-                argv[2])
-        print(f"  comparable under the {argv[2]} contract")
     return 0
 
 

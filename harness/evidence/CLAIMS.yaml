@@ -105,7 +105,7 @@ claims:
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
     evidence: [FINDING_refinement_noise_floor_v1.md,
                FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:14391f5f23d2d941, FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:14391f5f23d2d941, FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-NUMBER-001
     text: >
@@ -153,7 +153,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-PRECIP-002
     text: The conservative interface's enthalpy advantage is a property of the interface.
@@ -174,7 +174,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-ENTHALPY-002
     text: The f64 enthalpy non-closure is ~42 J/m2 per column.
@@ -182,7 +182,7 @@ claims:
     superseded_by: G33-ENTHALPY-001
     scope: g33_fixture_multisubcycle_v1 — generalised column 1 to all three
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-PRECIP-003
     text: The f32 cap events on this fixture are created by f32 noise.
@@ -193,7 +193,7 @@ claims:
       whether it is storage roundoff, accumulated arithmetic, a constant's
       precision or post-branch amplification, is not established.
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-WATER-CONS-001
     text: Column water is conserved at f64, shown by a small cross-member spread.
@@ -230,7 +230,7 @@ claims:
     basis: implementation + regression tests
     scope: G33P schema 2; schema 1 streams are refused
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-VARIANT-F64-001
     text: >
@@ -243,7 +243,7 @@ claims:
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:e3d0201d52f82b0e]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
 
   - id: G33-NUMBER-004
     text: The transfer arithmetic is the only difference between the mass and number rows.

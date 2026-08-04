@@ -39,8 +39,11 @@ Three separate observations collapse into this one:
    to lose, which is why orders taken on it are conservation residual
    (`FINDING_column_water_orders_v1`).
 2. **Legacy and conservative are bit-identical at f64** — **0 of 333** G33P
-   records differ, against 39 at f32 (max relative difference **3.28**, in
-   `qi` at col 3 k3). The variant's single physics change is the sedimentation
+   records differ, against 39 at f32. Produced by `g33_probe_read.diff` under the
+   `variant` contract (owner P0-E3): f64 gives `max_ulp = 0,
+   bitwise_identical = true`; f32 gives `max_rel = 8.656e-01`, `max_ulp =
+   24325658`. An earlier "max relative difference 3.28" used the asymmetric
+   `|a−b|/|a|`; the comparator uses `|a−b|/max(|a|,|b|)`, which is bounded by 2. The variant's single physics change is the sedimentation
    interface transfer, and its header states the interior inflow is the source
    cell's *actual entry-capped* outflow. With no cap binding, that equals the
    legacy form exactly.

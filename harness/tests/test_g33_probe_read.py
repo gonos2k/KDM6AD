@@ -16,7 +16,7 @@ import g33_refine_analyze as ra  # noqa: E402
 
 
 def _stream(precision="f32", *, B=2, K=2, end=True, schema=2, prec=True,
-            forcing=("rho", "delz"), initial=True, fixture="fx", algo="legacy",
+            forcing=("rho", "delz", "pii"), initial=True, fixture="fx", algo="legacy",
             mode="rezero", nsplit=12, dtcld=25.0):
     out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
            f"fixture {fixture} algorithm {algo} mode {mode} "
@@ -82,9 +82,31 @@ def test_a_duplicate_record_is_refused():
         pr.read("\n".join(lines) + "\n")
 
 
-def test_rho_without_delz_is_refused():
-    with pytest.raises(pr.ProbeError, match="must be together"):
-        pr.read(_stream(forcing=("rho",)))
+def test_a_missing_forcing_name_is_refused():
+    """rho, delz and pii are all emitted by the driver, so all three are
+    required: "absent" silently disabled every forcing check (owner §7.2)."""
+    with pytest.raises(pr.ProbeError, match="`delz` is not the exact cell universe"):
+        pr.read(_stream(forcing=("rho", "pii")))
+    with pytest.raises(pr.ProbeError, match="`pii` is not the exact"):
+        pr.read(_stream(forcing=("rho", "delz")))
+
+
+def test_a_stream_without_INITIAL_is_refused():
+    with pytest.raises(pr.ProbeError, match="INITIAL is not the exact"):
+        pr.read(_stream(initial=False))
+
+
+def test_a_stream_without_PREC_is_refused():
+    with pytest.raises(pr.ProbeError, match="prec is not exactly"):
+        pr.read(_stream(prec=False))
+
+
+def test_a_skewed_field_cell_product_is_refused():
+    """One field skipping a cell while another supplies it: both the field set
+    and the cell count look complete, the product does not."""
+    s = _stream().replace("G33P STATE th 1 0 ", "G33P STATE th 9 0 ", 1)
+    with pytest.raises(pr.ProbeError, match="not the exact"):
+        pr.read(s)
 
 
 def test_prec_must_cover_species_1_2_3_over_the_columns():
@@ -95,14 +117,16 @@ def test_prec_must_cover_species_1_2_3_over_the_columns():
 
 def test_an_initial_state_over_different_cells_is_refused():
     s = _stream().replace("G33P INITIAL th 1 0", "G33P INITIAL th 9 0")
-    with pytest.raises(pr.ProbeError, match="INITIAL covers different"):
+    with pytest.raises(pr.ProbeError, match="INITIAL is not the exact"):
         pr.read(s)
 
 
 def test_a_grid_disagreeing_with_the_header_is_refused():
+    """The header claims a grid the records do not fill — now caught as the
+    exact-universe mismatch it is."""
     lines = _stream(B=2, K=2).splitlines()
     lines[0] = lines[0][:-3] + "3 2"        # header now claims B=3
-    with pytest.raises(pr.ProbeError, match="header declares"):
+    with pytest.raises(pr.ProbeError, match="not the exact"):
         pr.read("\n".join(lines) + "\n")
 
 
@@ -182,3 +206,46 @@ def test_streams_over_different_records_are_not_comparable():
     with pytest.raises(pr.ProbeError, match="different records"):
         pr.compare(pr.read(_stream("f32", B=2)), pr.read(_stream("f64", B=3)),
                    "precision_pair")
+
+
+# ---- owner P0-E3: the comparator must produce the numbers, not only certify --
+
+def test_diff_reports_bitwise_identity_not_only_comparability():
+    """compare() certified that two streams MAY be compared; `0 of 333 records
+    differ` still came from a separate uncommitted calculation."""
+    a, b = pr.read(_stream("f64")), pr.read(_stream("f64", algo="conservative"))
+    d = pr.diff(a, b, "variant")
+    assert d["different"] == 0 and d["max_ulp"] == 0
+    assert d["bitwise_identical"] is True
+    assert d["records"] == d["equal"]
+
+
+def test_diff_counts_records_and_locates_the_first_difference():
+    a = pr.read(_stream("f64"))
+    changed = _stream("f64", algo="conservative").replace(
+        "G33P STATE th 1 0   1.0000000000000000E+000",
+        "G33P STATE th 1 0   2.0000000000000000E+000")
+    d = pr.diff(a, pr.read(changed), "variant")
+    assert d["different"] == 1 and d["bitwise_identical"] is False
+    assert d["first_difference"]["key"] == ["state", "th", 1, 0]
+    assert d["max_rel"] == pytest.approx(0.5)
+
+
+def test_ulp_distance_counts_representable_steps():
+    """A bitwise claim is about representable steps, so the report carries ULP
+    rather than only a relative difference."""
+    import struct
+    one = 1.0
+    nxt = struct.unpack(">f", struct.pack(">I",
+          struct.unpack(">I", struct.pack(">f", one))[0] + 1))[0]
+    assert pr._bits(nxt, "f32") - pr._bits(one, "f32") == 1
+    # and it counts across zero, where a naive bit subtraction would not
+    assert pr._bits(0.0, "f32") - pr._bits(-0.0, "f32") == 0
+
+
+def test_diff_still_refuses_an_incomparable_pair():
+    """The contract check runs first: a diff between different experiments is
+    not a number worth reporting."""
+    with pytest.raises(pr.ProbeError, match="disagree on algorithm"):
+        pr.diff(pr.read(_stream("f32", algo="legacy")),
+                pr.read(_stream("f64", algo="conservative")), "precision_pair")

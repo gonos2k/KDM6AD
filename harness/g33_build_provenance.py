@@ -76,18 +76,23 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
                             if cmds.exists() else [],
         "compiler_f951_sha256": (sha256(f951) if Path(f951).is_file() else None),
         # Every source the build compiled, in build order, each by digest.
-        "sources": ([{"path": ln, "sha256": sha256(ln)}
+        # Paths normalised here too (owner §9.1): under --nflux the compiled
+        # module is a generated overlay INSIDE the temp output directory, so a
+        # literal path gave the same instrumented build a different identity in
+        # every run. The digest is what identifies a source; the literal path is
+        # diagnostic.
+        "sources": ([{"path": norm(ln), "sha256": sha256(ln)}
                      for ln in dict.fromkeys(srcs.read_text().split())]
                     if srcs.exists() else []),
         "executable_sha256": sha256(exe) if exe and Path(exe).exists() else None,
         "build_script_sha256": sha256(script),
-        "module_path": str(module), "module_sha256": sha256(module),
+        "module_path": norm(str(module)), "module_sha256": sha256(module),
         # None when the pinned module IS what was compiled.
-        "compiled_module_path": (str(compiled) if compiled
+        "compiled_module_path": (norm(str(compiled)) if compiled
                                  and Path(compiled) != Path(module) else None),
         "compiled_module_sha256": (sha256(compiled) if compiled
                                    and Path(compiled) != Path(module) else None),
-        "fixture_path": str(fixture), "fixture_sha256": sha256(fixture),
+        "fixture_path": norm(str(fixture)), "fixture_sha256": sha256(fixture),
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
