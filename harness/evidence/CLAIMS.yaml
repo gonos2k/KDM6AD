@@ -225,6 +225,28 @@ claims:
     evidence: [FINDING_schema3_fail_closed_v1.md]
     evidence_sha256: [FINDING_schema3_fail_closed_v1.md:4568713326597f07]
 
+  - id: G33-CHAIN-002
+    text: >
+      Every --nflux bundle now produces matched_closure, cap_interface and
+      extension_protocol analyses into itself, each pinned by BOTH its own digest
+      and its analyzer's, and g33_evidence_chain follows a pinned manifest through
+      to them. The cap_interface tool reproduces every published figure (100.00%
+      explained, ratios -28.58/-28.90 and 1.0000, 255 interfaces) except one: the
+      cap binds at 39 of 108 ICE interfaces, and also at 23 of 147 main
+      interfaces for a term of 2.70e-11 against ice's 8.63e-03, so "all of them
+      in the ice chain" is corrected.
+    status: active
+    grade: confirmed
+    basis: >
+      the tool is gated on reproducing the previously published figures, so a
+      wrong interface pairing would not return them
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s for the numbers. The bundle
+      change applies to future --nflux bundles and does not retrofit the ones
+      already published.
+    evidence: [FINDING_bundle_analyses_v1.md]
+    evidence_sha256: [FINDING_bundle_analyses_v1.md:d032090a9b72ebc4]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64
@@ -395,14 +417,17 @@ claims:
       inflow cap (P0-4b): dq(i,k+1) is written twice, capped against the cell
       above PRE-update as its outflow and POST-update as the inflow below, and
       the difference is destroyed. Pairing departure against arrival explains
-      100.00% of the ice mass residual. The cap binds at 39 of 255 interfaces,
-      all in the ice chain.
+      100.00% of the ice mass residual. Departure differs from arrival at 39 of
+      108 ice interfaces (total interface term 8.63e-03) and at 23 of 147 main
+      interfaces (2.70e-11). "39 of 255, all in the ice chain" is CORRECTED: the
+      ice count is right, but the main chain differs too and its term is simply
+      eight orders smaller, which is why its residual stays at 1e-10--1e-12.
     status: active
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
     evidence: [FINDING_ice_chain_missing_term_v1.md]
-    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:8b202c4f892b7aee]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd7]
 
   - id: G33-NUMBER-007
     text: >
@@ -416,7 +441,7 @@ claims:
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
     evidence: [FINDING_ice_chain_missing_term_v1.md]
-    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:8b202c4f892b7aee]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd7]
 
   - id: G33-NCMIN-001
     text: >

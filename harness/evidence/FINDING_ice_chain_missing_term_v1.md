@@ -49,9 +49,20 @@ Pairing departure against arrival under the ρΔz measure, h = 25 s:
 | ice | 2 | −2.942160e-03 | −2.942160e-03 | **100.00%** |
 | ice | 3 | −5.685992e-03 | −5.685992e-03 | **100.00%** |
 
-**The cap accounts for the entire ice mass residual.** It binds at **39 of 255**
-interfaces, all of them in the ice chain; the main chain's mass residual stays at
-1e-10–1e-12, i.e. nothing binds there.
+**The cap accounts for the entire ice mass residual.** Departure differs from
+arrival at **39 of 108** ice interfaces, carrying a total interface term of
+**8.63e-03**.
+
+**Correction (owner §14-4).** This read "39 of 255 interfaces, all of them in the
+ice chain; … nothing binds there [on the main chain]". Recomputed by
+`g33_cap_interface.py`, the ice count is exactly 39 — but the main chain's
+departure and arrival differ at **23 of 147** interfaces as well, for a total
+interface term of **2.70e-11**. "All of them in the ice chain" was wrong, and it
+was wrong because a bare count treats a roundoff-scale difference and a
+residual-dominating one as the same event. The conclusion is unchanged and better
+supported: the main chain's interface term is eight orders of magnitude below
+ice's, which is *why* its mass residual stays at 1e-10–1e-12 rather than because
+nothing happens there. The tool now reports the count beside the magnitude.
 
 ## What this does to the number result
 

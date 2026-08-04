@@ -39,6 +39,8 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
+import g33_matched_closure as mc      # noqa: E402
+import g33_cap_interface as ci        # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -151,6 +153,53 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str) -> dict:
     return runs
 
 
+#: analysis name -> (module, callable taking the stream) (owner §14-4). Only for
+#: `--nflux` bundles: these all read the extension records.
+ANALYSES = {
+    "matched_closure": ("g33_matched_closure", lambda s: mc.analysis(s)),
+    "cap_interface": ("g33_cap_interface", lambda s: ci.analysis(s)),
+    "extension_protocol": ("g33_number_transport", lambda s: _protocol(s)),
+}
+
+
+def _protocol(stream: str) -> dict:
+    """What the stream actually carried, as the strict parser saw it.
+
+    Not a restatement of the header: the header DECLARES features, this records
+    how many records of each family survived validation, so a reader can tell a
+    complete extension stream from a header that merely claimed one.
+    """
+    calls = nt.calls(stream)
+    fams = {f: sum(len(c[f]) for c in calls)
+            for f in ("xfer", "capin", "topout", "mstep", "flux")}
+    return {"schema": nt.SCHEMA, "calls": len(calls),
+            "features": sorted(calls[0].get("features", ())) if calls else [],
+            "record_counts": fams,
+            "K": calls[0]["K"] if calls else None,
+            "columns": list(calls[0]["cols"]) if calls else None}
+
+
+def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
+    """Run every analysis on every member, write it beside the member, digest it.
+
+    The digest of the ANALYZER is recorded next to the digest of its output: an
+    analysis JSON identifies what was concluded, and the module identifies the
+    code that concluded it. Neither alone lets a reader re-derive the table.
+    """
+    made = []
+    for n in nsplits:
+        stream = (out / f"n{n}.{mode}.txt").read_text()
+        for name, (mod, fn) in ANALYSES.items():
+            path = out / f"n{n}.{mode}.{name}.json"
+            path.write_text(rm.json.dumps(fn(stream), indent=2,
+                                          sort_keys=True) + "\n")
+            made.append({"file": path.name, "nsplit": n, "analysis": name,
+                         "sha256": rm.sha256(path),
+                         "analyzer": f"harness/{mod}.py",
+                         "analyzer_sha256": rm.sha256(HERE / f"{mod}.py")})
+    return made
+
+
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             nflux: bool, module: Path, findings=(), arm: str = "reference") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
@@ -187,6 +236,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                        build_provenance=tmp / "build_provenance.json",
                        findings=findings)
         man["instrumented"] = nflux
+        # The ANALYSES, produced by the bundle and digested into it (owner §14-4).
+        # A claim could pin a raw stream and a manifest, but the numbers it quotes
+        # come from an analysis that ran somewhere else and left nothing behind --
+        # so "the run is pinned" stopped one step short of the table.
+        man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.

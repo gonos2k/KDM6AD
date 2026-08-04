@@ -45,6 +45,12 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 
     monkeypatch.setattr(xp, "build", build)
     monkeypatch.setattr(xp, "members", members)
+    # The fake's members are G33R-only, so the extension analyses have no G33N to
+    # read. Their correctness is covered where they can actually run:
+    # test_g33_cap_interface.py against a real stream and
+    # test_g33_matched_closure.py against synthetic G33N. What these tests are
+    # about is the producer's atomicity and its manifest.
+    monkeypatch.setattr(xp, "_analyses", lambda *a, **k: [])
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 
@@ -225,3 +231,39 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
     with pytest.raises(xp.pr.ProbeError, match="is missing"):
         xp._agree(g33r, missing, "n.txt")
+
+
+# ---- owner §14-4: the analyses are produced BY the bundle and digested INTO it
+
+def test_the_analysis_registry_names_a_real_module_and_callable():
+    """A registry entry pointing at a module that does not exist would fail only
+    when a bundle is produced -- which needs gfortran, so never in CI."""
+    import importlib
+    for name, (mod, fn) in xp.ANALYSES.items():
+        m = importlib.import_module(mod)
+        assert m is not None, f"{name} names a missing module {mod}"
+        assert callable(fn)
+
+
+def test_the_analyses_are_only_produced_for_instrumented_bundles():
+    """All three read extension records, which a non-nflux stream does not carry;
+    running them anyway would put an empty analysis in the manifest and make an
+    uninstrumented bundle look analysed."""
+    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
+    assert 'man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []' \
+        in src
+
+
+def test_each_analysis_records_the_ANALYZER_digest_beside_its_own():
+    """An analysis JSON identifies what was concluded; the module identifies the
+    code that concluded it. With only the first, a reader can check the table has
+    not changed but cannot re-derive it (owner §14-4)."""
+    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
+    assert '"analyzer_sha256"' in src and '"sha256": rm.sha256(path)' in src
+
+
+def test_the_evidence_chain_follows_the_manifest_to_the_ANALYSES():
+    """Pinning a manifest that reaches the raw streams but not the analyses stops
+    one step short of the numbers a claim actually quotes."""
+    src = (ROOT.parent / "harness/g33_evidence_chain.py").read_text()
+    assert 'man.get("analyses", [])' in src

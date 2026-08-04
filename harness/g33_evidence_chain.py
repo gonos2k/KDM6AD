@@ -131,6 +131,15 @@ def members_of(manifest: Path) -> list[dict]:
                     "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == mem.get("output_sha256")
                               else "MISMATCH")})
+    # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
+    # from an analysis -- so a chain that stopped at the raw stream stopped one
+    # step short of the number being cited.
+    for an in man.get("analyses", []):
+        p = manifest.parent / an["file"]
+        out.append({"file": an["file"],
+                    "state": ("absent" if not p.is_file() else
+                              "matches" if sha256(p) == an.get("sha256")
+                              else "MISMATCH")})
     return out
 
 
