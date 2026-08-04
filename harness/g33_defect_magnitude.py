@@ -45,7 +45,12 @@ def _ratio(num, den):
 
 
 def _eps(d):
-    """Spurious fraction of the FINAL column number."""
+    """Spurious fraction of the post-sedimentation inventory, SEGMENT-LOCAL.
+
+    `d["final"]` sums each call's post-sed column, so on a fixture where one call
+    carries the inventory this is that call's segment endpoint -- not the window's
+    final state, which here is empty (owner P0-2).
+    """
     return _ratio(d["residual"], d["final"])
 
 
@@ -82,12 +87,29 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             rows[f"{ch}/{sp}/{col}"] = {"usable": False, "reason": why}
             continue
         mass = acc.get((ch, PAIRS[ch][0], col))
+        e = mc.endpoints(d)
+        active = [p for p in d["per_call"] if p["start"]]
+        fracs = sorted(p["residual"] / p["start"] for p in active)
         rows[f"{ch}/{sp}/{col}"] = {
             "usable": True,
             "residual": d["residual"],
             "of_surface_flux": _ratio(d["residual"], d["out"]),
-            "of_initial_column": _ratio(d["residual"], d["start"]),
-            "of_final_column": _ratio(d["residual"], d["final"]),
+            # NAMED for what each actually divides by (owner P0-2). `start` and
+            # `final` accumulate over calls, so R/start is an INVENTORY-WEIGHTED
+            # PER-CALL MEAN, not a fraction of the window's initial column, and
+            # R/final divided by a sum of per-call post-sed inventories rather
+            # than by what the column ended with.
+            "of_summed_call_starts": _ratio(d["residual"], d["start"]),
+            "of_initial_inventory": _ratio(d["residual"], e["first_start"]),
+            "window_final_inventory": e["last_final"],
+            # Undefined when the column ends empty -- which it does here: the
+            # rain is gone by the end of the window, so "0.22% of what it ended
+            # with" divides by zero and the previously published figure was
+            # actually R / N_1^post.
+            "of_final_inventory": _ratio(d["residual"], e["last_final"]),
+            "active_calls": len(active), "total_calls": e["calls"],
+            "per_call_fraction_median": fracs[len(fracs) // 2] if fracs else None,
+            "per_call_fraction_max": max(fracs, key=abs) if fracs else None,
             "of_interface_throughput": _ratio(
                 d["residual"], iface.get((ch, col), {}).get("number_transported")),
             # Mean particle mass, from the SAME rows: q/N is what a size-dependent
@@ -107,40 +129,66 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             # reflectivity or fall-speed argument may use. Number inflated by
             # eps = R/N_final deflates q/N by 1/(1+eps), and a characteristic
             # DIAMETER goes as (q/N)^(1/3).
-            "defect_mean_mass_bias": _defect_mass_bias(d),
-            "defect_diameter_bias": _defect_diameter_bias(d),
+            # FROZEN-TRAJECTORY bounds (owner §5). They answer: at this segment
+            # endpoint, with q held at what the run produced, how much is q/N
+            # depressed by the spurious number. They are NOT forecast biases:
+            # correcting the number changes fall speed and the size
+            # distribution, which feeds back into q on every later sub-step and
+            # call, and that feedback is unmeasured until a corrected-number
+            # variant is actually run.
+            # The eps the two frozen bounds are built from, exposed rather than
+            # left for a caller to reconstruct from a different denominator.
+            "spurious_fraction_of_segment_endpoint": _eps(d),
+            "defect_mean_mass_bias_frozen": _defect_mass_bias(d),
+            "defect_diameter_bias_frozen": _defect_diameter_bias(d),
+            "frozen_trajectory": True,
         }
     return {"rows": rows,
             "note": "R/F_surface is a CLOSURE statistic. It is not a column "
                     "increase, a diameter change, a reflectivity change or a "
-                    "precipitation change."}
+                    "precipitation change. The size figures are FROZEN-TRAJECTORY "
+                    "and segment-local: they hold q fixed and do not include the "
+                    "feedback of corrected number on later sub-steps."}
 
 
 def report(stream: str) -> None:
     a = analysis(stream)
     print("  The same residual against every denominator that means something.\n")
     f = lambda x: f"{100*x:10.4f}%" if x is not None else "          -"
-    print(f"  {'row':12} {'/F_surface':>11} {'/N_initial':>11} {'/N_final':>11} "
-          f"{'/throughput':>11}")
+    print(f"  {'row':12} {'/F_surface':>11} {'/N(t0)':>11} {'/sum N_i':>11} "
+          f"{'/throughput':>11} {'calls':>8}")
     for k, r in a["rows"].items():
         if not r["usable"]:
             print(f"  {k:12}  unusable — {r['reason'][:52]}")
             continue
         if r["of_surface_flux"] is None:
             continue
-        print(f"  {k:12} {f(r['of_surface_flux'])} {f(r['of_initial_column'])} "
-              f"{f(r['of_final_column'])} {f(r['of_interface_throughput'])}")
+        print(f"  {k:12} {f(r['of_surface_flux'])} {f(r['of_initial_inventory'])} "
+              f"{f(r['of_summed_call_starts'])} {f(r['of_interface_throughput'])} "
+              f"{r['active_calls']:4}/{r['total_calls']:<3}")
+    print("\n  Window-final inventory (what 'fraction of the final column' would")
+    print("  divide by). Where this is zero the fraction is UNDEFINED, and the")
+    print("  figure previously published under that name was R / N_1^post.")
+    for k, r in a["rows"].items():
+        if r.get("usable") and r.get("window_final_inventory") is not None:
+            print(f"    {k:12} {r['window_final_inventory']:.5e}"
+                  + ("   <-- column ends empty"
+                     if not r["window_final_inventory"] else ""))
     print("\n  What the defect does to PARTICLE SIZE — the only route by which a")
     print("  number error reaches reflectivity or fall speed. The total column is")
     print("  NOT the defect: sedimentation genuinely size-sorts.\n")
     print(f"  {'row':12} {'total d(q/N)':>13} {'defect d(q/N)':>14} "
-          f"{'defect d(diameter)':>19}")
+          f"{'defect d(diam)':>15}   (all FROZEN-TRAJECTORY, segment-local)")
     for k, r in a["rows"].items():
-        if not r["usable"] or r["defect_mean_mass_bias"] is None:
+        if not r["usable"] or r.get("defect_mean_mass_bias_frozen") is None:
             continue
         print(f"  {k:12} {f(r['mean_particle_mass_change_total'])[:-1]:>13} "
-              f"{f(r['defect_mean_mass_bias'])[:-1]:>14} "
-              f"{f(r['defect_diameter_bias'])[:-1]:>19}")
+              f"{f(r['defect_mean_mass_bias_frozen'])[:-1]:>14} "
+              f"{f(r['defect_diameter_bias_frozen'])[:-1]:>15}")
+    print("\n  Frozen-trajectory: q is held at what THIS run produced. Correcting")
+    print("  the number changes fall speed and the size distribution, which feeds")
+    print("  back into q on every later sub-step — unmeasured until a")
+    print("  corrected-number variant is run. These bound nothing about a forecast.")
     print("\n  " + a["note"])
 
 

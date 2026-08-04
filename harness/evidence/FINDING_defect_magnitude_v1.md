@@ -1,10 +1,30 @@
-# The 9–15% is 0.2–0.7% of the column, and 0.07–0.24% of the diameter
+# The 9–15% is 0.2–0.7% of the initial column — and the "final column" figure was undefined
+
+**Correction (owner P0-2).** The first version of this finding divided by
+`closures()`'s `start` and `final`, which **accumulate over calls**: they are
+`Σᵢ Nᵢ^pre` and `Σᵢ Nᵢ^post`, an inventory counted once per call, not the column's
+initial and final state. Two consequences, and they are not the same size:
+
+- **`of_final_column` = 0.2200 / 0.4507 / 0.7256% is withdrawn outright.** This
+  fixture's column ends **empty** — window-final inventory is `0.000e+00` — so
+  that fraction is undefined. What was published under that name is `R / N₁^post`.
+- **`of_initial_column` survives, and now says why.** Exactly **one of twelve**
+  calls carries any rain: the remaining microphysics empties the column between
+  call 1's post-sed and call 2's pre-sed, so calls 2–12 have `start = final =
+  R = 0`. Hence `Σᵢ Nᵢ^pre = N(t₀)` *on this fixture* and the number is unchanged
+  — but it was right by coincidence, and the coincidence is now reported
+  (`active_calls 1/12`) instead of being invisible.
+
+On a fixture where several calls carry inventory the two quantities differ, and
+the aggregate would be an inventory-weighted per-call mean rather than a fraction
+of the initial column. Both are now computed and named separately.
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-MAGNITUDE-001` | **active** | confirmed | g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain, PER CALL segment. Not a forecast bias and not cumulative: the ~20% ni figure over 300 s is a different statement. Diameter assumes D ~ (q/N)^(1/3) and is not a reflectivity calculation. |
+| `G33-MAGNITUDE-001` | **withdrawn → G33-MAGNITUDE-002** | — | The denominators were misnamed (owner P0-2). closures() accumulates x0 and x1 over calls, so `start`/`final` are sum_i N_i^pre and sum_i N_i^post -- an inventory counted once per call -- not the window's initial and final column. "Of the final column" is the worse error: this fixture's column ends EMPTY, so that fraction is undefined and the figure published under that name was R / N_1^post. |
+| `G33-MAGNITUDE-002` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain. R/N(t_0) coincides with the inventory-weighted per-call mean ONLY because one call is active; on a fixture where several calls carry inventory the two differ and must not be conflated. The frozen-trajectory size bounds require a corrected-number counterfactual run to become forecast statements, which needs a production physics change and is not done. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -23,8 +43,12 @@ Legacy, h = 25 s, main chain:
 |---|---|---|---|
 | **/ surface flux** (the headline) | **15.0036%** | **13.3377%** | **11.8402%** |
 | / interface throughput | 3.8606% | 3.4975% | 3.1963% |
-| / initial column number | **0.2173%** | **0.4379%** | **0.6884%** |
-| / final column number | 0.2200% | 0.4507% | 0.7256% |
+| **/ initial inventory `N(t₀)`** | **0.2173%** | **0.4379%** | **0.6884%** |
+| / summed call starts `Σ Nᵢ^pre` | 0.2173% | 0.4379% | 0.6884% |
+| / final inventory | — | — | — |
+
+The middle two coincide only because `active_calls = 1/12`. The last is
+**undefined**: the window-final inventory is `0.000e+00`.
 
 The same defect is a **large fraction of what left** and a **small fraction of
 what is there** — a factor of 20–50 between the two readings. Both are true; only
@@ -36,11 +60,19 @@ A number error reaches reflectivity, fall speed or a radar diagnostic **only**
 through the mean particle mass `q/N`. So that is where a meteorological argument
 has to start — and it has to start from the right part of it:
 
+All three rows below are **frozen-trajectory and segment-local**: `q` is held at
+what this run produced, and the feedback of a corrected number on fall speed, the
+size distribution and therefore `q` on every later sub-step is **not** included.
+They bound nothing about a forecast (owner §5).
+
 | | col 1 | col 2 | col 3 |
 |---|---|---|---|
 | total Δ(q/N) across the segment | −1.87% | −4.30% | −7.81% |
-| **defect's share** of Δ(q/N) | **−0.22%** | **−0.45%** | **−0.72%** |
-| **defect's implied Δ(diameter)** | **−0.073%** | **−0.150%** | **−0.241%** |
+| defect's share, frozen | −0.22% | −0.45% | −0.72% |
+| defect's implied Δ(diameter), frozen | −0.073% | −0.150% | −0.241% |
+
+Turning these into forecast statements needs a **corrected-number counterfactual
+run** — a production physics change, not done.
 
 **The total is not the defect.** Sedimentation genuinely size-sorts — large
 particles fall faster, so the mean particle mass of what remains really does drop.
@@ -53,8 +85,8 @@ this fixture:
 
 | tempting reading | actual |
 |---|---|
-| "column number rose 9–15%" | 0.22–0.73% |
-| "mean diameter fell 3–5%" | **0.07–0.24%** |
+| "column number rose 9–15%" | **0.22–0.69% of `N(t₀)`** |
+| "mean diameter fell 3–5%" | 0.07–0.24%, **frozen-trajectory only** |
 
 ## Why the mass control matters here
 

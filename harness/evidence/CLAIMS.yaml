@@ -318,26 +318,46 @@ claims:
   - id: G33-MAGNITUDE-001
     text: >
       The headline R/F_surface of 11.84-15.00% is 0.2173/0.4379/0.6884% of the
-      INITIAL column number and 3.20-3.86% of the interface throughput -- a factor
-      of 20-50 between the readings. The defect reaches a size-dependent
-      diagnostic only through q/N: the TOTAL change in mean particle mass across
-      the segment is -1.87/-4.30/-7.81% but that is mostly genuine size sorting;
-      the defect's share is -0.22/-0.45/-0.72%, and since D goes as (q/N)^(1/3)
-      the implied diameter bias is -0.073/-0.150/-0.241%. The readings "column
-      number rose 9-15%" and "mean diameter fell 3-5%" are quantitatively
-      excluded on this fixture.
-    status: active
-    grade: confirmed
-    basis: >
-      measurement, with the mass control closing -- which is what permits
-      attributing the mean-mass bias to number at all
+      INITIAL column number and 0.2200/0.4507/0.7256% of the FINAL column number.
+    status: withdrawn
+    superseded_by: G33-MAGNITUDE-002
     scope: >
-      g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain, PER CALL
-      segment. Not a forecast bias and not cumulative: the ~20% ni figure over
-      300 s is a different statement. Diameter assumes D ~ (q/N)^(1/3) and is not
-      a reflectivity calculation.
+      The denominators were misnamed (owner P0-2). closures() accumulates x0 and
+      x1 over calls, so `start`/`final` are sum_i N_i^pre and sum_i N_i^post --
+      an inventory counted once per call -- not the window's initial and final
+      column. "Of the final column" is the worse error: this fixture's column
+      ends EMPTY, so that fraction is undefined and the figure published under
+      that name was R / N_1^post.
     evidence: [FINDING_defect_magnitude_v1.md]
-    evidence_sha256: [FINDING_defect_magnitude_v1.md:d9a6cc91327e7c9c]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:b7ee5a46b05993c6]
+
+  - id: G33-MAGNITUDE-002
+    text: >
+      Recomputed with each denominator named for what it divides by. On this
+      fixture ONE of twelve calls carries any rain -- the remaining microphysics
+      empties the column between call 1's post-sed and call 2's pre-sed -- so
+      sum_i N_i^pre equals N(t_0) and R/N(t_0) is 0.2173/0.4379/0.6884%, the same
+      number the withdrawn claim quoted but now correctly named and with the
+      coincidence visible (active_calls 1/12). The window's FINAL inventory is
+      0.000e+00, so "fraction of the final column" is UNDEFINED and 0.2200/
+      0.4507/0.7256% is withdrawn outright. The size figures are relabelled
+      FROZEN-TRAJECTORY and segment-local: they hold q at what this run produced
+      and exclude the feedback of corrected number on later sub-steps, so they
+      bound nothing about a forecast.
+    status: active
+    grade: confirmed-with-scope
+    basis: >
+      measurement with per-call inventory preserved, so the aggregation is
+      visible rather than hidden in a sum
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain. R/N(t_0)
+      coincides with the inventory-weighted per-call mean ONLY because one call
+      is active; on a fixture where several calls carry inventory the two differ
+      and must not be conflated. The frozen-trajectory size bounds require a
+      corrected-number counterfactual run to become forecast statements, which
+      needs a production physics change and is not done.
+    evidence: [FINDING_defect_magnitude_v1.md]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:b7ee5a46b05993c6]
 
   - id: G33-BASIS-004
     text: >
@@ -346,9 +366,14 @@ claims:
       1 water closes at 4.5703e-09 relative under the operator measure and
       9.7626e-07 under the physical one, 213.6x worse, while columns 2 and 3
       (already 6.8e-2 and 1.7e-1, dominated by the precipitation-diagnostic
-      departure) change by 1.0x. Both enthalpy ledgers change by at most 3%,
-      because they are limited by their declared thermodynamic approximations
-      rather than by the column measure. rho_d is taken from the INITIAL qv and
+      departure) change by 1.0x. The enthalpy result "at most 3%" is CORRECTED
+      (owner P0-3): it was an artifact of a MIXED measure -- _ledger weighted its
+      endpoints by rho_d while _water_out was fixed at rho_m, so the "physical"
+      residual differenced a dry column change against a moist outflow. With the
+      basis threaded through the outflow too, the relative enthalpy residual is
+      basis-invariant to 3e-11 or better in all six rows, while the absolute
+      terms still shift by the column-mean qv. The previously reported 2.6-2.8%
+      was the dry/moist mismatch, not a basis sensitivity. rho_d is taken from the INITIAL qv and
       used at both endpoints, because rho_d*dz is invariant across a
       column-microphysics step and a budget whose weights move with the process
       is not a budget.
@@ -364,7 +389,38 @@ claims:
       own departure from the rho*dz budget is a separate known defect, and that
       defect dominates columns 2-3.
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
-    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:d654def2d63eba17]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:c41ceb2d8a557127]
+
+  - id: G33-PROTOCOL-003
+    text: >
+      Four defects a green suite did not see. (1) The Fortran G33P literal stayed
+      at 3 while the parser moved to 4, so every probe and f64 bundle was
+      unproducible; the parser's own tests build synthetic streams at its own
+      version and no test fed real driver output to pr.read(). Fixed, plus a
+      static driver-vs-parser version check that runs in public CI and an
+      end-to-end local test that builds both arms. (2) The magnitude denominators
+      were misnamed -- see G33-MAGNITUDE-002. (3) The "physical" enthalpy ledger
+      differenced a dry column change against a moist outflow because _water_out
+      was fixed at rho_m; the mixture MANUFACTURED the reported 2.6-2.8% basis
+      sensitivity, and with the basis threaded through the outflow the relative
+      residual is basis-invariant to 1e-11. (4) g33_evidence_chain --check failed
+      on MISMATCH but not on absent, so a bundle whose raw streams and analyses
+      had all been deleted still certified; child absence under a present,
+      matching manifest is now a failure while an absent manifest stays
+      unavailable.
+    status: active
+    grade: confirmed
+    basis: each defect reproduced, fixed, and pinned by a test at the level that missed it
+    scope: >
+      The G33P/G33N protocol contract, the matched-closure denominators, the
+      enthalpy ledger basis, and the evidence-chain check. The plain G33R stream
+      still does not carry the density arm and is NOT changed here: doing so
+      would invalidate 72 archived member files, the pinned non-invasiveness
+      baseline and the four-case comparator's decision inputs, which is an owner
+      decision. The gap is closed by construction instead -- the producer refuses
+      a non-default rho-profile on a path that would not record it.
+    evidence: [FINDING_schema_drift_and_denominators_v1.md]
+    evidence_sha256: [FINDING_schema_drift_and_denominators_v1.md:a1622c2e598ccad8]
 
   - id: G33-PRECIP-001
     text: >
