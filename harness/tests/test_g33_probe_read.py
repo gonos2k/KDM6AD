@@ -4,6 +4,7 @@ Two hazards it closes: an f64 stream and an f32 one were the same text with
 different numbers, so nothing structurally stopped a reader mixing them; and a
 truncated probe stream looked like a complete one.
 """
+import re
 import sys
 from pathlib import Path
 
@@ -21,7 +22,9 @@ def _stream(precision="f32", *, B=2, K=2, end=True, schema=4, prec=True,
             rho_profile="as-is"):
     # schema 3 carries the TILE VECTOR: `ntile` alone cannot tell (2,1) from
     # (1,2), and `ncmin` makes those two decompositions disagree (owner §8.1).
-    tiles = tiles or ",".join(["1"] * ntile)
+    # A default that actually COVERS the domain: the parser now requires
+    # sum(tiles) == B, and "1" for a 2-column domain describes no decomposition.
+    tiles = tiles or ",".join(["1"] * (ntile - 1) + [str(B - (ntile - 1))])
     out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
            f"fixture {fixture} algorithm {algo} mode {mode} tiles {tiles} "
            f"rho_profile {rho_profile} "
@@ -208,8 +211,11 @@ def test_an_unknown_comparison_kind_is_refused():
 
 
 def test_streams_over_different_records_are_not_comparable():
+    """Varying K rather than B: a different column count now also implies a
+    different tile vector, so it would be refused one check earlier and this
+    would stop testing the record-universe contract it is about."""
     with pytest.raises(pr.ProbeError, match="different records"):
-        pr.compare(pr.read(_stream("f32", B=2)), pr.read(_stream("f64", B=3)),
+        pr.compare(pr.read(_stream("f32", K=2)), pr.read(_stream("f64", K=3)),
                    "precision_pair")
 
 
@@ -276,10 +282,12 @@ def test_a_different_TILE_VECTOR_is_not_a_variant_difference():
     `variant` pair attributes a DECOMPOSITION effect to the algorithm -- and
     `ntile` alone cannot tell them apart, which is why the vector is in the
     header at all."""
-    a = pr.read(_stream("f64", ntile=2, tiles="1,1"))
-    b = pr.read(_stream("f64", algo="conservative", ntile=2, tiles="1,1"))
+    a = pr.read(_stream("f64", B=3, ntile=2, tiles="2,1"))
+    b = pr.read(_stream("f64", B=3, algo="conservative", ntile=2, tiles="2,1"))
     pr.compare(a, b, "variant")                       # same decomposition: fine
-    c = pr.read(_stream("f64", algo="conservative", ntile=2, tiles="2,0"))
+    # (1,2) is a DIFFERENT decomposition of the same domain, and `ncmin` makes
+    # the two disagree — which is why it must not read as a variant difference.
+    c = pr.read(_stream("f64", B=3, algo="conservative", ntile=2, tiles="1,2"))
     with pytest.raises(pr.ProbeError, match="disagree on tiles"):
         pr.compare(a, c, "variant")
 
@@ -325,3 +333,61 @@ def test_signed_zeros_are_numerically_equal_but_NOT_raw_bit_identical():
     d = pr.diff(pr.read(posz), pr.read(negz), "variant")
     assert d["numerically_identical"] is True, "+0.0 == -0.0 numerically"
     assert d["raw_bit_identical"] is False, "their stored patterns differ"
+
+
+# ---- owner P0-1: the driver's literal and the parser's SCHEMA must agree ------
+
+DRIVER = Path(__file__).resolve().parents[1] / "g33_fortran" / "g33_refine_driver.f90"
+SCHEMA_EXPECTED = pr.SCHEMA
+
+
+def test_the_driver_emits_the_schema_this_parser_ACCEPTS():
+    """A protocol version written in three independent places drifts, and this
+    one did: G33N went to 4 while the G33P literal stayed at 3, so the driver
+    produced streams its own strict parser refused. Every probe and f64 bundle
+    stopped being producible and nothing failed, because the parser tests build
+    SYNTHETIC streams at the parser's own version and the only tests that run the
+    real driver are local-only (owner P0-1).
+
+    This check is static, so it runs in public CI where the Fortran build cannot."""
+    src = DRIVER.read_text()
+    lits = re.findall(r"'G33P BEGIN', (\d+),", src)
+    assert lits, "no G33P BEGIN literal found in the driver"
+    assert set(lits) == {str(SCHEMA_EXPECTED)}, (
+        f"driver emits G33P schema {sorted(set(lits))} but the parser accepts "
+        f"{SCHEMA_EXPECTED}")
+
+
+def test_the_G33N_driver_literal_matches_its_parser_too():
+    """Same failure mode, other protocol."""
+    import g33_number_transport as nt
+    lits = re.findall(r"'G33N STREAM_BEGIN', (\d+),", DRIVER.read_text())
+    assert lits and set(lits) == {str(nt.SCHEMA)}, (
+        f"driver emits G33N schema {sorted(set(lits))}, parser is {nt.SCHEMA}")
+
+
+
+def test_an_impossible_tile_vector_is_refused():
+    """A zero-width tile, a vector of the wrong length, or one that does not cover
+    the domain cannot describe any real decomposition. The parser stored them
+    unchallenged, and a regression test had pinned `2,0` as acceptable input
+    (owner §8.1)."""
+    for tiles, ntile, B, msg in (("2,0", 2, 2, "non-positive"),
+                                 ("1", 2, 2, "entries but ntile"),
+                                 ("1,1", 2, 3, "sums to")):
+        with pytest.raises(pr.ProbeError, match=msg):
+            pr.read(_stream("f64", B=B, ntile=ntile, tiles=tiles))
+
+
+def test_an_unknown_rho_profile_is_refused_by_G33P_too():
+    """G33N refused it; G33P stored the string, so a malformed loose stream could
+    carry `rho_profile=sideways` and compare cleanly (owner §8.2)."""
+    with pytest.raises(pr.ProbeError, match="unknown rho_profile"):
+        pr.read(_stream("f64", rho_profile="sideways"))
+
+
+def test_the_two_parsers_agree_on_what_an_arm_IS():
+    """Two independent allow-lists would drift; the second would then accept an
+    arm the first rejects."""
+    import g33_number_transport as nt
+    assert pr.RHO_PROFILES is nt.RHO_PROFILES

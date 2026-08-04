@@ -726,7 +726,7 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
             run[("forcing", "pii", c, ks[-1])] else ks[0]
         h_start = H("initial")
         d = {"dH": H("state") - h_start,
-             "H_precip_out": h_precip_out(run, c, kbot, ks),
+             "H_precip_out": h_precip_out(run, c, kbot, ks, basis),
              "H_start": h_start}
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
@@ -763,7 +763,7 @@ def _h_consistent(run, cls, c, k) -> float:
             + sum(run[(cls, f, c, k)] for f in ICE) * hi)
 
 
-def _water_out(run, c, ks) -> float:
+def _water_out(run, c, ks, basis: str = "operator") -> float:
     """Water that actually LEFT the column, from the rho*dz budget.
 
     NOT the fallout diagnostic. docs/STATUS.md records that the diagnostic and the
@@ -775,7 +775,12 @@ def _water_out(run, c, ks) -> float:
     -1.27e-02 to +9.8e-04 and removes essentially all of the apparent gap to the
     conservative interface.
     """
-    return -sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+    # The BASIS must match the endpoints it is differenced against (owner P0-3).
+    # This was fixed at moist density while `_ledger` weighted its endpoints by
+    # rho_d under `physical`, so the "physical enthalpy residual" differenced a
+    # DRY column change against a MOIST outflow -- a mixed measure, not a dry
+    # closure.
+    return -sum(_column_density(run, c, k, basis) * run[("forcing", "delz", c, k)]
                 * sum(run[("state", f, c, k)] - run[("initial", f, c, k)] for f in MASS)
                 for k in ks)
 
@@ -801,11 +806,11 @@ def _ice_fraction(run, c) -> float:
     return (run[("prec", 2, c)] + run[("prec", 3, c)]) / tot if tot else 0.0
 
 
-def _precip_consistent(run, c, kbot, ks) -> float:
+def _precip_consistent(run, c, kbot, ks, basis="operator") -> float:
     """Departing water carries liquid or ice enthalpy at the bottom-level T."""
     _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
     f = _ice_fraction(run, c)
-    return _water_out(run, c, ks) * ((1.0 - f) * hl + f * hi)
+    return _water_out(run, c, ks, basis) * ((1.0 - f) * hl + f * hi)
 
 
 def enthalpy_ledger(run: dict, basis: str = "operator") -> dict:
@@ -845,14 +850,14 @@ def _h_code(run, cls, c, k) -> float:
     return cpm * (t - T0C) + xl * qv - xlf * sum(run[(cls, f, c, k)] for f in ICE)
 
 
-def _precip_code(run, c, kbot, ks) -> float:
+def _precip_code(run, c, kbot, ks, basis="operator") -> float:
     """Sedimentation removes mass with no temperature change, so departing ice
     carries -xlf out and departing rain carries nothing -- the same convention the
     code's own updates imply. Departing water from the budget, not the diagnostic
     (see `_water_out`)."""
     _, _, xlf = _code_coeffs(_t(run, "state", c, kbot),
                              run[("state", "qv", c, kbot)])
-    return _water_out(run, c, ks) * _ice_fraction(run, c) * -xlf
+    return _water_out(run, c, ks, basis) * _ice_fraction(run, c) * -xlf
 
 
 def operator_ledger(run: dict, basis: str = "operator") -> dict:

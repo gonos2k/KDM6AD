@@ -76,22 +76,36 @@ def build(workdir: Path, fixture: str, algo: str, nflux: bool,
     return exe
 
 
-def _argv(exe: Path, n: int, mode: str, rho_profile: str) -> list:
+def fixture_width(fixture: str) -> int:
+    """The fixture's column count, read from the fixture source.
+
+    The tile argument is positional and precedes the profile, so a non-default
+    profile must pass one -- and hardcoding `3` silently produced a tile-sum
+    error on any fixture that is not three columns wide (owner §9).
+    """
+    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
+    m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)", src)
+    if not m:
+        raise SystemExit(f"cannot read column count B from {fixture}.f90")
+    return int(m.group(1))
+
+
+def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> list:
     """The driver command line, recorded verbatim in the manifest (owner §5.2).
 
     The density arms were run by hand outside the producer, so a published bundle
-    could not say which forcing intervention made it. The tile argument is
-    positional and precedes the profile, so a non-default profile has to pass a
-    tile spec -- `3` is the whole domain as one tile, the producer's own default.
+    could not say which forcing intervention made it. `width` is the whole domain
+    as ONE tile -- the producer's own default decomposition -- taken from the
+    fixture rather than assumed.
     """
     argv = [str(exe), str(n), mode]
     if rho_profile != "as-is":
-        argv += ["3", rho_profile]
+        argv += [str(width), rho_profile]
     return argv
 
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
-            nflux=False, rho_profile="as-is") -> dict:
+            nflux=False, rho_profile="as-is", width=3) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
@@ -102,7 +116,7 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        text = _run(_argv(exe, n, mode, rho_profile))
+        text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = ra.read(p, nsplit=n)          # G33R
         if arm == "probe":
@@ -160,12 +174,12 @@ def _probe_member(path: Path) -> dict:
 
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
-                  rho_profile: str = "as-is") -> dict:
+                  rho_profile: str = "as-is", width: int = 3) -> dict:
     """Run every member and read it with the G33P strict parser."""
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        p.write_text(_run(_argv(exe, n, mode, rho_profile)))
+        p.write_text(_run(_argv(exe, n, mode, rho_profile, width)))
         runs[n] = pr.read(p.read_text())
     return runs
 
@@ -239,6 +253,18 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             "declared f32 and would carry four bytes of an eight-byte real. An "
             "f64 number stream needs its own record family (16-hex-digit), not "
             "the f32 one relabelled.")
+    # A density arm is a NUMBER-transport experiment, and only G33N and G33P
+    # carry the arm. Plain G33R does not, and changing that header would
+    # invalidate every archived decision artifact (72 committed members) and the
+    # pinned non-invasiveness baseline -- an owner decision, not this producer's.
+    # So the gap is closed by construction instead: a non-default profile cannot
+    # be published through a path that would not record it (owner §9).
+    if rho_profile != "as-is" and not (nflux or arm in ("probe", "f64")):
+        raise SystemExit(
+            f"--rho-profile {rho_profile} needs --nflux (or a probe/f64 arm): "
+            f"the plain G33R stream does not record the density arm, so the "
+            f"bundle would be unidentifiable from its raw members.")
+    width = fixture_width(fixture)
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)
@@ -246,10 +272,10 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
-            runs = probe_members(exe, tmp, nsplits, mode, rho_profile)
+            runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width)
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
-                           rho_profile=rho_profile)
+                           rho_profile=rho_profile, width=width)
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"
@@ -265,7 +291,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # not what experiment it is an arm of.
         man["rho_profile"] = rho_profile
         man["runtime_argv"] = [_argv(Path("g33_refine_driver"), n, mode,
-                                     rho_profile)[1:] for n in nsplits]
+                                     rho_profile, width)[1:] for n in nsplits]
         # The ANALYSES, produced by the bundle and digested into it (owner §14-4).
         # A claim could pin a raw stream and a manifest, but the numbers it quotes
         # come from an analysis that ran somewhere else and left nothing behind --

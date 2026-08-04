@@ -46,11 +46,24 @@ machine precision" is exactly the sentence people quote.
 | consistent thermodynamics | 1 / 2 / 3 | −5.42e−06 / −9.03e−05 / 1.49e−04 | −5.42e−06 / −9.27e−05 / 1.48e−04 | 0.999 / 1.026 / 0.991 |
 | the code's own equations | 1 / 2 / 3 | 3.34e−05 / −8.06e−05 / 5.08e−04 | 3.34e−05 / −8.29e−05 / 5.07e−04 | 1.000 / 1.028 / 0.998 |
 
-**At most 3%.** Both enthalpy residuals are dominated by the thermodynamic
-approximations the ledgers already declare — one `cpm` for the parcel, `xl` at the
-local temperature, precipitation flux at the bottom level — not by the column
-measure. So the basis is not what limits them, and converting them does not change
-a conclusion.
+**Corrected (owner P0-3): that table measured a MIXED basis, not a physical one.**
+`_ledger` weighted its endpoints by ρ_d under `physical` while `_water_out` was
+fixed at ρ_m, so the "physical enthalpy residual" differenced a **dry** column
+change against a **moist** outflow. The 2.6–2.8% on column 2 was that mismatch,
+not a basis sensitivity.
+
+With the basis threaded through the outflow as well, the relative residual is
+**basis-invariant to 3.3e−11 or better** in all six rows:
+
+| ledger | col 1 | col 2 | col 3 |
+|---|---|---|---|
+| consistent thermodynamics | 3.3e−11 | 1.5e−12 | 1.3e−12 |
+| the code's own equations | 3.4e−12 | 7.8e−13 | 3.2e−13 |
+
+The absolute terms still move by the column-mean `q_v` (`H_start` −0.0999 /
++0.1019 / +0.1039%), so the conversion is being applied — it is the *relative*
+residual that is invariant. The enthalpy ledgers are limited by the thermodynamic
+approximations they declare, and the basis is not among them.
 
 ## Why ρ_d is taken from the initial humidity
 

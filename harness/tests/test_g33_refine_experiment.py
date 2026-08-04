@@ -31,7 +31,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         return workdir / "driver"
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
-                rho_profile="as-is"):
+                rho_profile="as-is", width=3):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -118,7 +118,7 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
     _fake(monkeypatch)
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
-            rho_profile="as-is"):
+            rho_profile="as-is", width=3):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -172,7 +172,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "sources": [], "executable_sha256": "cd" * 32}))
         return workdir / "driver"
 
-    def probe_members(exe, out, ns, mode, rho_profile="as-is"):
+    def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -289,3 +289,23 @@ def test_the_argv_helper_omits_the_arm_for_the_default():
     assert xp._argv(Path("drv"), 12, "rezero", "as-is") == ["drv", "12", "rezero"]
     assert xp._argv(Path("drv"), 12, "rezero", "uniform") == \
         ["drv", "12", "rezero", "3", "uniform"]
+
+
+def test_a_density_arm_cannot_be_published_through_a_path_that_hides_it():
+    """Only G33N and G33P carry the arm. Plain G33R does not, and changing that
+    header would invalidate every archived decision artifact and the pinned
+    non-invasiveness baseline — an owner decision, not this producer's. So the
+    gap is closed by construction: the unidentifiable combination is refused
+    (owner §9)."""
+    with pytest.raises(SystemExit, match="needs --nflux"):
+        xp.produce(Path("/tmp/should-not-exist"),
+                   fixture="g33_fixture_multisubcycle_v1", algo="legacy",
+                   nsplits=(3,), mode="rezero", nflux=False, module=MOD,
+                   rho_profile="uniform")
+
+
+def test_the_tile_width_comes_from_the_FIXTURE_not_a_constant():
+    """`3` was hardcoded, so a non-default profile on any fixture that is not
+    three columns wide would fail the driver's tile-sum check."""
+    assert xp.fixture_width("g33_fixture_multisubcycle_v1") == 3
+    assert xp._argv(Path("d"), 3, "rezero", "uniform", 7)[-2:] == ["7", "uniform"]
