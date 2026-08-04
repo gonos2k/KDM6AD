@@ -102,7 +102,7 @@ def test_calls_with_an_IDENTICAL_loop_index_are_still_separated():
     collapses every call onto the last -- which, after the rain has fallen out,
     is all zeros. The driver's brackets are what separate them; this asserts the
     separation itself rather than the comment explaining it."""
-    got = list(nt.calls(_call(1) + _call(2) + _call(3)))
+    got = list(nt.calls(_stream(_call(1), _call(2), _call(3))))
     assert [c["call_id"] for c in got] == [1, 2, 3]
     assert all(c["outer_pre_sed"] for c in got), "each call carries its own state"
 
@@ -115,9 +115,15 @@ def _hdr(nsplit=1, ntile=1, schema=1):
 
 def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
           loop=1):
-    """One bracketed kernel call, complete unless asked otherwise."""
+    """One bracketed kernel call, complete unless asked otherwise.
+
+    CALL_BEGIN declares the column range it actually emits: the range is a
+    contract the parser checks, so a helper that lied about it would be testing
+    the wrong thing (owner P0-3).
+    """
     split = cid if split is None else split
-    out = [f"G33N CALL_BEGIN {cid} {split} {tile} 1 {len(cols)} {ks} 42C80000"]
+    out = [f"G33N CALL_BEGIN {cid} {split} {tile} {min(cols)} {max(cols)} "
+           f"{ks} 42C80000"]
     for stage in ("outer_pre_sed", "outer_post_sed"):
         for c in cols:
             for k in range(ks):
@@ -153,7 +159,7 @@ def test_closed_prefix_truncation_is_rejected():
     """The defect the header exists for: a run that stops at a CLOSED call
     boundary used to be indistinguishable from a shorter run that finished."""
     s = _hdr(96) + _call(1) + _call(2)          # 2 of a declared 96, no STREAM_END
-    with pytest.raises(nt.StreamError, match="no STREAM_END"):
+    with pytest.raises(nt.StreamError, match="last G33N record is not STREAM_END"):
         list(nt.calls(s))
 
 
@@ -164,9 +170,12 @@ def test_parsed_call_count_must_equal_the_declared_count():
 
 
 def test_ntile2_has_unique_global_call_ids():
-    """`s` alone repeats once per tile; a two-tile run must still be contiguous."""
-    s = _stream(_call(1, split=1, tile=1), _call(2, split=1, tile=2),
-                _call(3, split=2, tile=1), _call(4, split=2, tile=2),
+    """`s` alone repeats once per tile; a two-tile run must still be contiguous.
+    The tiles cover disjoint columns, as a real decomposition does."""
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(2,), split=1, tile=2),
+                _call(3, cols=(1,), split=2, tile=1),
+                _call(4, cols=(2,), split=2, tile=2),
                 nsplit=2, ntile=2)
     assert [c["call_id"] for c in nt.calls(s)] == [1, 2, 3, 4]
     assert [(c["split"], c["tile"]) for c in nt.calls(s)] == [(1, 1), (1, 2),
@@ -174,8 +183,8 @@ def test_ntile2_has_unique_global_call_ids():
 
 
 def test_a_call_id_inconsistent_with_its_split_and_tile_is_rejected():
-    s = _stream(_call(1, split=1, tile=1), _call(2, split=2, tile=2),
-                nsplit=2, ntile=2)
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(2,), split=2, tile=2), nsplit=2, ntile=2)
     with pytest.raises(nt.StreamError, match="does not match split"):
         list(nt.calls(s))
 
@@ -221,14 +230,61 @@ def test_a_stream_declaring_another_schema_is_rejected():
 
 
 def test_an_inconsistent_header_is_rejected():
-    s = "G33N STREAM_BEGIN 1 4 2 3 legacy rezero\n"
+    s = "G33N STREAM_BEGIN 1 4 2 3 legacy rezero\nG33N STREAM_END\n"
     with pytest.raises(nt.StreamError, match="header is inconsistent"):
         list(nt.calls(s))
 
 
 def test_a_truncated_call_is_refused():
-    with pytest.raises(nt.StreamError, match="ends inside call"):
-        list(nt.calls(_hdr(2) + _call(1) + _call(2, end=False)))
+    s = _hdr(2) + _call(1) + _call(2, end=False) + "G33N STREAM_END\n"
+    with pytest.raises(nt.StreamError, match="STREAM_END inside call"):
+        list(nt.calls(s))
+
+
+def test_a_headerless_stream_is_refused(tmp_path):
+    """The bypass: without the header the expected-count check never ran, so a
+    closed-prefix truncation passed as a shorter run that finished (owner P0-1)."""
+    with pytest.raises(nt.StreamError, match="first G33N record is not STREAM_BEGIN"):
+        list(nt.calls(_call(1) + _call(2)))
+
+
+def test_a_stream_not_ending_in_STREAM_END_is_refused():
+    with pytest.raises(nt.StreamError, match="last G33N record is not STREAM_END"):
+        list(nt.calls(_hdr(1) + _call(1)))
+
+
+def test_two_headers_are_refused():
+    with pytest.raises(nt.StreamError, match="more than one STREAM_BEGIN"):
+        list(nt.calls(_hdr(1) + _hdr(1) + _call(1) + "G33N STREAM_END\n"))
+
+
+def test_partial_consumption_cannot_skip_the_end_checks():
+    """`calls()` returned a generator, so taking the first call with next() and
+    stopping never reached the expected-count check (owner P0-1)."""
+    s = _hdr(96) + _call(1) + "G33N STREAM_END\n"
+    with pytest.raises(nt.StreamError, match="carries 1 calls"):
+        next(iter(nt.calls(s)))
+
+
+def test_tiles_with_a_gap_or_overlap_are_refused():
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(3,), split=1, tile=2), nsplit=1, ntile=2)
+    with pytest.raises(nt.StreamError, match="gap or overlap"):
+        list(nt.calls(s))
+
+
+def test_a_column_outside_the_declared_range_is_refused():
+    s = _stream(_call(1, cols=(1,)).replace("outer_pre_sed 0 nr 1 0",
+                                            "outer_pre_sed 0 nr 5 0"))
+    with pytest.raises(nt.StreamError, match="CALL_BEGIN declared"):
+        list(nt.calls(s))
+
+
+def test_levels_disagreeing_with_the_declared_K_are_refused():
+    s = _stream(_call(1, ks=2).replace(
+        "G33N CALL_BEGIN 1 1 1 1 1 2", "G33N CALL_BEGIN 1 1 1 1 1 3"))
+    with pytest.raises(nt.StreamError, match="declared K=3"):
+        list(nt.calls(s))
 
 
 def test_a_missing_call_is_refused():

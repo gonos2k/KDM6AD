@@ -37,6 +37,7 @@ sys.path.insert(0, str(HERE))
 import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
+import g33_number_transport as nt     # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -70,14 +71,43 @@ def build(workdir: Path, fixture: str, algo: str, nflux: bool,
     return exe
 
 
-def members(exe: Path, out: Path, nsplits, mode: str) -> dict:
-    """Run every member and STRICT-parse it before it is allowed to be one."""
+def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
+            nflux=False) -> dict:
+    """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
+
+    A bundle used to be published after validating only G33R, so a probe arm
+    could ship a G33P stream that was truncated, transposed or NaN, and an
+    --nflux arm could ship a G33N stream nothing had parsed. The arm declares
+    which protocols must be present; each is read by its own strict parser.
+    """
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        p.write_text(_run([str(exe), str(n), mode]))
-        runs[n] = ra.read(p, nsplit=n)      # refuses anything malformed
+        text = _run([str(exe), str(n), mode])
+        p.write_text(text)
+        runs[n] = ra.read(p, nsplit=n)          # G33R
+        if arm == "probe":
+            probe = pr.read(text)               # G33P
+            _agree(runs[n], probe, p.name)
+        if nflux:
+            nt.calls(text)                      # G33N, whole-stream validated
     return runs
+
+
+def _agree(g33r: dict, g33p: dict, name: str) -> None:
+    """At the probe arm the same f32 values are written twice — raw hex on G33R
+    and decimal on G33P. Requiring them to agree catches exactly the two defects
+    that got through before: a transposed index and a format that dropped an
+    exponent's `E`."""
+    for key, hexv in g33r.items():
+        if key[0] not in ("state", "initial", "forcing", "prec"):
+            continue
+        got = g33p.get(key)
+        if got is None:
+            raise pr.ProbeError(f"{name}: G33P is missing {key}, which G33R has")
+        if got != hexv and abs(got - hexv) > 1e-6 * max(abs(hexv), 1e-30):
+            raise pr.ProbeError(
+                f"{name}: G33R and G33P disagree at {key}: {hexv} vs {got}")
 
 
 def _probe_member(path: Path) -> dict:
@@ -86,10 +116,23 @@ def _probe_member(path: Path) -> dict:
     m = re.match(r"^n(\d+)\.(carry|rezero)\.txt$", path.name)
     if not m:
         raise pr.ProbeError(f"{path.name}: not n<N>.<carry|rezero>.txt")
+    if r[("meta", "nsplit")] != int(m.group(1)):
+        raise pr.ProbeError(
+            f"{path.name}: header says nsplit={r[('meta', 'nsplit')]}")
+    if r[("meta", "mode")] != m.group(2):
+        raise pr.ProbeError(f"{path.name}: header says mode={r[('meta', 'mode')]}")
+    # dtcld/delt/loops are READ from the header (schema 2), so an f64 bundle can
+    # describe a refinement chain like any other -- before this the manifest had
+    # only nsplit from the filename and `is_refinement_chain` was meaningless on
+    # the f64 arm (owner §10.1).
     return {"file": path.name, "output_sha256": rm.sha256(path),
             "nsplit": int(m.group(1)), "mode": m.group(2),
             "precision": r[("meta", "precision")],
-            "source_precision": r[("meta", "source_precision")]}
+            "source_precision": r[("meta", "source_precision")],
+            "algorithm": r[("meta", "algorithm")],
+            "fixture": r[("meta", "fixture")],
+            "delt": r[("meta", "delt")], "loops": r[("meta", "loops")],
+            "dtcld": r[("meta", "dtcld")]}
 
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str) -> dict:
@@ -114,7 +157,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode)
         else:
-            runs = members(exe, tmp, nsplits, mode)
+            runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux)
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"
@@ -125,6 +168,17 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                        build_provenance=tmp / "build_provenance.json",
                        findings=findings)
         man["instrumented"] = nflux
+        # The parser that ACTUALLY approved these members (owner §10.2): the
+        # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
+        # members are read by the probe parser.
+        parsers = [HERE / ("g33_probe_read.py" if arm == "f64"
+                           else "g33_refine_analyze.py")]
+        if arm == "probe":
+            parsers.append(HERE / "g33_probe_read.py")
+        if nflux:
+            parsers.append(HERE / "g33_number_transport.py")
+        man["member_parsers"] = [{"path": str(q.relative_to(HERE.parent)),
+                                  "sha256": rm.sha256(q)} for q in parsers]
         man["arm"] = arm
         man["precision"] = "f64" if arm == "f64" else "f32"
         # An instrument arm can never be decision evidence, and says so in the
@@ -141,7 +195,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # at which `dest` is absent or half-replaced.
         store = dest.parent / f"{dest.name}.bundles"
         store.mkdir(exist_ok=True)
-        final = store / rm.sha256(tmp / "manifest.json")[:16]
+        # Addressed by the IDENTITY digest, not the file digest: the manifest
+        # carries diagnostic paths that differ every run, so hashing the whole
+        # file gave a new address each time and the "identical rerun reuses the
+        # bundle" property held only under fake provenance (owner §10.3).
+        final = store / rm.identity_digest(man)[:16]
         # Content-addressed: an identical manifest is the same bundle. Removing
         # and rebuilding it would delete the directory `dest` currently points at
         # -- the very window this design exists to close -- so an existing one is
@@ -183,7 +241,10 @@ def main(argv) -> int:
                     default=Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"))
     ap.add_argument("--finding", type=Path, action="append", default=[])
     a = ap.parse_args(argv)
-    dest = produce(a.outdir.resolve(), fixture=a.fixture, algo=a.algo,
+    # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
+    # resolve() follows it and the next publish writes its store INSIDE the
+    # previous bundle (owner §10.3 fallout, found by rerunning for real).
+    dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
                    nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm)
     print(dest)

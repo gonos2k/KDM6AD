@@ -34,7 +34,11 @@ def _claims():
         elif cur is not None and (m := re.match(r"^    (\w+): (.*)$", line)):
             key, val = m.group(1), m.group(2).strip()
             pending = None
-            if key == "evidence":
+            if key == "evidence_sha256":
+                cur["evidence_sha256"] = dict(
+                    t.split(":") for t in
+                    re.findall(r"[\w.]+\.md:[0-9a-f]+", val))
+            elif key == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", val)
             elif val in (">", "|"):
                 cur[key], pending = "", key      # folded: body follows
@@ -91,6 +95,21 @@ def test_a_withdrawn_claim_must_say_what_replaced_it_or_stand_alone():
     for c in CLAIMS:
         if c.get("status") == "withdrawn":
             assert "superseded_by" in c, f"{c['id']} withdrawn with no successor"
+
+
+def test_every_claim_pins_the_DIGEST_of_its_evidence():
+    """A registry that names a file binds nothing: the file can change under it.
+    The digest is what makes a claim's evidence identifiable (owner §10.4)."""
+    import hashlib
+    for c in CLAIMS:
+        pinned = c.get("evidence_sha256")
+        assert pinned, f"{c['id']} pins no evidence digest"
+        for doc in c["evidence"]:
+            assert doc in pinned, f"{c['id']} cites {doc} without a digest"
+            got = hashlib.sha256((EVIDENCE / doc).read_bytes()).hexdigest()[:16]
+            assert pinned[doc] == got, (
+                f"{c['id']}: {doc} has changed since the claim was pinned "
+                f"({pinned[doc]} -> {got}). Re-read the claim, then re-pin.")
 
 
 def test_every_claim_declares_a_scope():

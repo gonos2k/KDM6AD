@@ -155,6 +155,45 @@ def _cap_lines(top):
     return lines
 
 
+def _xfer_lines(chain, mass, num):
+    """Emit the bottom cell's ACTUAL capped transfers, once per sub-step.
+
+    Guarded on `k == kts`: that cell's outflow leaves the domain, so it is the
+    surface transfer -- and unlike `falln` it is what the kernel really moved.
+    Pure emission: no kernel value is read that the next statement does not
+    already use, and nothing is written.
+    """
+    return ["#ifdef KDM6_G33_NUMBER_DUMP",
+            f"{fb.IND}if (k .eq. kts) write(*,'(A,3(1X,I0),2(1X,A),2(1X,Z8.8))') "
+            f"'G33F XFER', loop, n, i, '{chain}', 'f32', "
+            f"transfer({mass}, 0), transfer({num}, 0)",
+            "#endif"]
+
+
+def _cap_inflow_lines(chain, own, inflow, own_n, inflow_n):
+    """A cell's OWN outflow beside the inflow it grants the cell below.
+
+    Paired across an interface these give departure and arrival, and their
+    difference under the rho*dz measure is the mass the interface destroys.
+    """
+    return ["#ifdef KDM6_G33_NUMBER_DUMP",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),4(1X,Z8.8))') "
+            f"'G33F CAPIN', loop, n, i, kte-k, '{chain}', 'f32', "
+            f"transfer({own}, 0), transfer({inflow}, 0), "
+            f"transfer({own_n}, 0), transfer({inflow_n}, 0)",
+            "#endif"]
+
+
+def _top_lines(chain, removed, removed_n):
+    """The top cell's actual removal, emitted BEFORE its update so the pre-update
+    content is still there to cap against."""
+    return ["#ifdef KDM6_G33_NUMBER_DUMP",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),2(1X,Z8.8))') "
+            f"'G33F TOPOUT', loop, n, i, kte-k, '{chain}', 'f32', "
+            f"transfer({removed}, 0), transfer({removed_n}, 0)",
+            "#endif"]
+
+
 def build_overlay(algo, text):
     """Patched source for `algo`, or SystemExit if any anchor is not present
     EXACTLY once (a source change). Anchors are matched as WHOLE lines."""
@@ -245,6 +284,12 @@ def build_overlay(algo, text):
                  f"'G33F NFLUX', loop, i, '{f}', 'f32', transfer({e}, 0)"
                  for f, e in fb.SURFACE_NUMBER_FIELDS],
                "#endif"])]
+    edits += [(a, "after", _xfer_lines(ch, m, n))
+              for a, ch, m, n in fb.XFER_SITES]
+    edits += [(a, "after", _cap_inflow_lines(ch, c, u, cn, un))
+              for a, ch, c, u, cn, un in fb.CAP_SITES]
+    edits += [(a, "before", _top_lines(ch, r, rn))
+              for a, ch, r, rn in fb.TOP_SITES]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
     for (role, species), anchor in cfg["post"].items():

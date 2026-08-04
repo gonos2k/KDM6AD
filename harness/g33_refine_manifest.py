@@ -28,6 +28,25 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+#: Manifest keys that record WHERE a run happened, not WHAT was built. They are
+#: kept in the document and excluded from the content address, so two runs of the
+#: same experiment in different temp directories address the same bundle
+#: (owner §10.3).
+DIAGNOSTIC_KEYS = ("diagnostic",)
+
+
+def identity_digest(man: dict) -> str:
+    """The content address: a digest over everything except the diagnostics."""
+    def strip(x):
+        if isinstance(x, dict):
+            return {k: strip(v) for k, v in x.items() if k not in DIAGNOSTIC_KEYS}
+        if isinstance(x, list):
+            return [strip(v) for v in x]
+        return x
+    return hashlib.sha256(
+        json.dumps(strip(man), sort_keys=True).encode()).hexdigest()
+
+
 def _git(*a) -> str:
     return subprocess.run(("git",) + a, capture_output=True,
                           text=True).stdout.strip()

@@ -61,6 +61,9 @@ if [ "$F64" = 1 ]; then
     COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8 -DKDM6_G33_F64)
 fi
 [ "$PROBE" = 1 ] && COMMON_FLAGS+=(-DKDM6_G33_PRECISION_PROBE)
+# The probe header names the experiment, so the fixture identity has to reach the
+# driver rather than living only in the build script (owner P0-5).
+COMMON_FLAGS+=("-DKDM6_G33_FIXTURE='$FIXTURE_NAME'")
 REF_FLAGS=("${COMMON_FLAGS[@]}" -w)
 KDM6_FLAGS=("${COMMON_FLAGS[@]}" -w -ffp-contract=off)
 CPP_FLAGS=(-cpp -DRWORDSIZE=4 -DEM_CORE=1)

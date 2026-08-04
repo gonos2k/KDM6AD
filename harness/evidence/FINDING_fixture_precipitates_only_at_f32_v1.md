@@ -63,8 +63,20 @@ precision, or post-branch amplification — is **not** established.
 Not withdrawn, and worth being clear about: **the reference operator IS f32.** A
 statement about f32 behaviour is a statement about the thing being certified. What
 cannot be done is to read these numbers as the interface's thermodynamics, or to
-extrapolate them to a case where precipitation is not threshold-marginal — which
-is every operational case.
+extrapolate them to a case where precipitation is not threshold-marginal.
+
+**Correction (owner §8.1).** An earlier version added "— which is every
+operational case". That is **wrong**. Precipitation onset and cessation, cloud
+and precipitation edges, the ice-nucleation level, thin supercooled layers,
+sublimation and evaporation boundaries, and small hydrometeors just after a DA
+increment are all routinely threshold-marginal in an operational atmosphere. The
+open question is not whether such cells exist but **how often**, which needs a
+real-case margin diagnostic
+
+    M_j = |g_j(x)| / (ulp(g_j) + ε)
+
+and the fraction of cells with `M_j < 1, 2, 4, 8, 32` per gate over an LC05
+trajectory. Not measured.
 
 ## The normalisation (owner §6.4)
 
