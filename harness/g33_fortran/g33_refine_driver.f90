@@ -52,6 +52,10 @@ module g33_refine
   character(len=4), dimension(NFLD_ST), parameter :: FLDNAME = &
        [character(len=4) :: 'th  ','qv  ','qc  ','qr  ','qi  ','qs  ', &
                             'qg  ','nccn','nc  ','ni  ','nr  ','bg  ']
+  ! Density-profile control for the falsification matrix (owner priority-5).
+  ! 0 = the fixture's own profile, so every existing invocation is unchanged.
+  integer :: rho_mode = 0
+
 contains
 
   pure real function f32(bits) result(value)
@@ -92,6 +96,7 @@ contains
     real, dimension(1:im,1:km)   :: n0so2d, n0go2d
     real :: dt_total, delt, ccn0, ncmin_land, ncmin_sea, qmin
     integer :: i, k, kt, s, tl, i0, i1
+    real :: rho_mean
 
     if (im /= G33_B .or. km /= G33_K) error stop 'shared fixture dimensions differ'
     dt_total = f32(DT_BITS)
@@ -120,6 +125,23 @@ contains
         den(i,k)  = f32(RHO_BITS(i,kt))
         p(i,k)    = f32(P_BITS(i,kt)); delz(i,k) = f32(DELZ_BITS(i,kt))
       end do
+      ! DENSITY-PROFILE CONTROL (owner priority-5). The number-creation
+      ! prediction is (den_below - den_above)*delz_above*dn, so its density
+      ! dependence is the falsifiable part: uniform must give zero, inverted must
+      ! flip the sign, doubling the contrast must roughly double it. The forcing
+      ! is the controlled variable and the DRIVER builds it, so neither the
+      ! kernel nor the fixture is touched. Applied as a post-pass over the filled
+      ! column so the mean is the column's own.
+      if (rho_mode /= 0) then
+        rho_mean = sum(den(i,1:km)) / real(km)
+        do k = 1, km
+          select case (rho_mode)
+          case (1); den(i,k) = rho_mean
+          case (2); den(i,k) = 2.0*rho_mean - den(i,k)
+          case (3); den(i,k) = rho_mean + 2.0*(den(i,k) - rho_mean)
+          end select
+        end do
+      end if
       xland(i,1) = f32(XLAND_BITS(i))
       ! Zeroed ONCE. rainF and the ncv accumulators are cumulative across the
       ! 300 s; re-zeroing per call would make the reported precipitation that of
@@ -268,6 +290,19 @@ program g33_refine_driver
     case ('carry');  carry_aux = .true.
     case ('rezero'); carry_aux = .false.
     case default;    error stop 'second argument must be exactly carry or rezero'
+    end select
+  end if
+
+  ! Fourth argument: the density-profile control. Default 0 leaves the fixture's
+  ! own profile, so every existing invocation is unchanged.
+  if (command_argument_count() >= 4) then
+    call get_command_argument(4, arg)
+    select case (trim(arg))
+    case ('as-is');    rho_mode = 0
+    case ('uniform');  rho_mode = 1
+    case ('inverted'); rho_mode = 2
+    case ('x2');       rho_mode = 3
+    case default; error stop 'rho mode must be as-is|uniform|inverted|x2'
     end select
   end if
 
