@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+"""The density-profile control, and the falsification it exists to run.
+
+LOCAL ONLY (needs gfortran + the gitignored host reference tree).
+
+`G33-NUMBER-001` explains number creation by a measure mismatch whose residual is
+
+    R_N = (den(lower) - den(upper)) * delz(upper) * dn
+
+so the mechanism's density dependence is what can be WRONG, and the way to attack
+it is to perturb the density profile and check the forbidden outcomes: flat must
+give zero, inverted must flip the sign, doubled contrast must double it.
+
+The perturbation is applied in the DRIVER, to the forcing it builds, so the
+kernel and the fixture are both untouched -- the experiment stays inside the
+freeze.
+
+What this file guards is not the physics but the experiment's own validity:
+
+  - the control must not perturb the default path (or every committed stream
+    silently changes meaning),
+  - a mistyped arm must be REFUSED, not silently run as `as-is` (which would
+    report the unperturbed numbers and read as a FAILED falsification),
+  - `uniform` must actually flatten the density (otherwise the zero residual is
+    evidence of nothing),
+  - and the published ratios must still come out.
+"""
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+import g33_matched_closure as mc  # noqa: E402
+import g33_number_transport as nt  # noqa: E402
+
+REPO = ROOT.parent
+BUILD = ROOT / "g33_fortran" / "refine_build.sh"
+REF = REPO / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
+
+pytestmark = pytest.mark.skipif(
+    shutil.which("gfortran") is None or not REF.is_file(),
+    reason="local-only (needs gfortran + the gitignored host reference tree)",
+)
+
+ARMS = ("as-is", "uniform", "inverted", "x2")
+
+
+@pytest.fixture(scope="module")
+def driver():
+    """One --nflux build for the whole module: XFER is what the matched closure
+    reads, and building it four times over would cost four times as much for the
+    same binary."""
+    with tempfile.TemporaryDirectory(prefix="g33-rho.") as td:
+        out = Path(td) / "build"
+        b = subprocess.run(["bash", str(BUILD), str(out),
+                            "--fixture=g33_fixture_multisubcycle_v1",
+                            "--algo=legacy", "--nflux"],
+                           capture_output=True, text=True, cwd=REPO)
+        assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+        yield out / "g33_refine_driver"
+
+
+def _run(driver, arm=None):
+    argv = [str(driver), "12", "rezero", "3"] + ([arm] if arm else [])
+    p = subprocess.run(argv, capture_output=True, text=True)
+    assert p.returncode == 0, f"{arm}: driver crashed:\n{p.stderr}"
+    return p.stdout
+
+
+@pytest.fixture(scope="module")
+def streams(driver):
+    return {arm: _run(driver, arm) for arm in ARMS}
+
+
+def test_the_default_path_is_untouched(driver, streams):
+    """Every committed stream was produced with no fourth argument. If adding the
+    control moved the default, those artifacts would silently stop describing the
+    run that made them."""
+    assert _run(driver) == streams["as-is"]
+
+
+def test_a_mistyped_arm_is_refused_not_silently_run_as_is(driver):
+    """`case default` falling through to rho_mode = 0 would make `uniforn` emit
+    the UNPERTURBED numbers -- which in a falsification test reads as "the
+    prediction failed", the most expensive possible way to be wrong."""
+    for bad in ("uniforn", "UNIFORM", "invert", "x3", ""):
+        p = subprocess.run([str(driver), "12", "rezero", "3", bad],
+                           capture_output=True, text=True)
+        assert p.returncode != 0, f"{bad!r} was accepted"
+
+
+def _rho(stream):
+    """{(loop, col): [rho by level]} from the pre-sedimentation stage records."""
+    out = {}
+    for call in nt.calls(stream):
+        for (lp, col, k), rec in call["outer_pre_sed"].items():
+            out.setdefault((lp, col), {})[k] = rec["rho"]
+    return {key: [v[k] for k in sorted(v)] for key, v in out.items()}
+
+
+def test_uniform_actually_flattens_the_density(streams):
+    """Without this, `uniform` giving a zero residual is evidence of nothing --
+    an arm that did nothing at all would also give zero."""
+    base, flat = _rho(streams["as-is"]), _rho(streams["uniform"])
+    assert base and set(base) == set(flat)
+    for key, col in base.items():
+        assert max(col) - min(col) > 0, f"{key}: fixture density is already flat"
+        assert len(set(flat[key])) == 1, f"{key}: uniform arm is not uniform"
+
+
+def test_inverted_reverses_the_density_gradient(streams):
+    """The sign prediction is about the GRADIENT, so the arm has to actually
+    reverse it rather than merely rescale."""
+    for key, col in _rho(streams["as-is"]).items():
+        inv = _rho(streams["inverted"])[key]
+        assert (col[-1] - col[0]) * (inv[-1] - inv[0]) < 0, f"{key}: not inverted"
+
+
+def test_x2_doubles_the_contrast(streams):
+    for key, col in _rho(streams["as-is"]).items():
+        got = _rho(streams["x2"])[key]
+        assert (got[-1] - got[0]) == pytest.approx(2 * (col[-1] - col[0]), rel=1e-5)
+
+
+def _nr(stream):
+    a = mc.analysis(stream)
+    rows = {c: a[f"main/nr/{c}"] for c in (1, 2, 3)}
+    for c, r in rows.items():
+        assert r["usable"], f"col {c}: mass control failed -- {r['reason']}"
+    return rows
+
+
+def test_the_process_is_still_running_in_every_arm(streams):
+    """The control that makes `uniform` mean something: an arm that stopped the
+    sedimentation would also create no number."""
+    base = _nr(streams["as-is"])
+    for arm in ARMS:
+        for c, r in _nr(streams[arm]).items():
+            assert r["surface_out"] == pytest.approx(base[c]["surface_out"],
+                                                     rel=0.10), \
+                f"{arm} col {c}: surface outflow moved by more than 10%"
+
+
+def test_flattening_the_density_removes_the_number_creation(streams):
+    """The sharpest of the three: the prediction is an exact zero, not a
+    magnitude. What survives must be below the same gamma_n bound the mass
+    control is held to."""
+    base = _nr(streams["as-is"])
+    for c, r in _nr(streams["uniform"]).items():
+        assert abs(r["residual"]) < 1e-4 * abs(base[c]["residual"])
+        tol = mc.control_tolerance(r["calls"] * 8, abs(r["surface_out"]))
+        assert abs(r["residual"]) <= tol, f"col {c}: leftover is signal, not roundoff"
+
+
+def test_inverting_the_density_flips_the_sign_of_the_creation(streams):
+    """Predicted -1. Not exactly, because density also sets the fall speed, so
+    `dn` is not held fixed -- the tolerance is that second-order effect."""
+    base = _nr(streams["as-is"])
+    for c, r in _nr(streams["inverted"]).items():
+        assert r["residual"] / base[c]["residual"] == pytest.approx(-1, abs=0.05)
+
+
+def test_doubling_the_density_contrast_doubles_the_creation(streams):
+    for c, r in _nr(streams["x2"]).items():
+        assert r["residual"] / _nr(streams["as-is"])[c]["residual"] \
+            == pytest.approx(2, abs=0.10)
+
+
+FINDING = ROOT / "evidence" / "FINDING_density_falsification_v1.md"
+
+
+def test_the_published_ratios_are_the_ones_this_run_produces(streams):
+    """The finding quotes -0.9896/+2.0117/... to four decimals. A reader has no
+    way to tell a stale table from a current one, and this project's recurring
+    defect is exactly that -- a number surviving in prose after the run behind it
+    moved. So the PUBLISHED table is what gets checked, against a live build."""
+    text = FINDING.read_text().replace("−", "-")     # Unicode minus
+    base = _nr(streams["as-is"])
+    for arm in ("inverted", "x2"):
+        # The finding has TWO tables whose rows start with the arm name -- the
+        # predictions and the measurements. Select by shape: the one whose last
+        # three cells are numbers.
+        published = None
+        for ln in text.splitlines():
+            if not ln.startswith(f"| `{arm}` |"):
+                continue
+            cells = [c.strip().strip("*") for c in ln.strip("|").split("|")]
+            try:
+                published = [float(x) for x in cells[2:5]]
+            except ValueError:
+                continue
+        assert published, f"the finding has no ratio row for {arm}"
+        got = [_nr(streams[arm])[c]["residual"] / base[c]["residual"]
+               for c in (1, 2, 3)]
+        assert published == pytest.approx(got, abs=5e-4), (
+            f"{arm}: the finding publishes {published}, this build gives "
+            f"{[round(g, 4) for g in got]}")
