@@ -2,12 +2,11 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-NUMBER-001` | **active** |
-| `G33-NUMBER-002` | **active** |
-| `G33-NUMBER-003` | **active** |
-| `G33-NUMBER-004` | **withdrawn → G33-NUMBER-002** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-001` | **active** | confirmed | module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1 |
+| `G33-NUMBER-002` | **active** | conditional | SELECTED cap-unbound, mstep==1 calls on g33_fixture_multisubcycle_v1 at f32, legacy. The mass control is qr (main chain) while the largest number row is ni (ice chain), so this is not yet a matched-call contrast. |
+| `G33-NUMBER-004` | **withdrawn → G33-NUMBER-002** | — | Not a matched control: mass is qr on the main chain over 1-3 calls, the largest number row is ni on the ice chain over 95 (owner S5.2). |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -146,10 +145,12 @@ the ratio is meaningless there and the per-call figure (0.12%) is the usable one
   Operational steps (`mstep` 5–10) are therefore unmeasured. Emitting the capped
   `dnr`/`dqr` directly would lift the restriction; the step-robustness above is
   evidence against a strong step dependence, not a measurement at those steps.
-- **Legacy reference.** The conservative variant was not run through this. It
-  fixes the *mass* measure and leaves number on the legacy one
-  (`sedimentation_conservative.cpp:91-92` against `:109`), so the defect should be
-  unchanged — predicted, not measured.
+- **Legacy reference.** This experiment is legacy-only. The prediction it made
+  here — that the conservative variant fixes the *mass* measure and leaves number
+  on the legacy one (`sedimentation_conservative.cpp:91-92` against `:109`), so
+  the defect is unchanged — has since been **measured** and is no longer a
+  prediction: see `FINDING_conservative_number_defect_v1.md`, which is the
+  evidence for `G33-NUMBER-003`.
 - **Cap-dominated rows are excluded, not explained.** `ni` col 2's single call
   reads `recovered/falln = 3.60`: the caps bound hard and the single-variable
   recursion does not describe that call. The kernel recomputes the inflow cap

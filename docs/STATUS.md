@@ -127,13 +127,21 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   is 3.99e-06 of the column. The finest-step endpoint shows little difference, which
   makes the *final-state manifestation* small at a fine step and does **not** make
   the measure mismatch non-structural: the transfer still uses ρΔz for mass and
-  Δz-only for number, in the source, independent of timestep. No column-number CLOSURE is possible from the current drivers — the surface
-  NUMBER flux is not emitted, only mass precipitation; it is `falln(i,kts,1:2)`
-  (rain and ice number), a kernel **local** at `module_mp_kdm6.F:719` with no
-  `intent`, so it is reachable only through the SHA-pinned macro-gated overlay that
-  recovered `mstep`, **not** by a driver edit as an earlier note claimed — and the measurement is the
-  **ice** channel: the interface never touches `nr`/`qr` on the available fixtures, so
-  the rain-number channel this row names is still unexercised.
+  Δz-only for number, in the source, independent of timestep. ~~No column-number CLOSURE is possible from the current drivers — the surface
+  NUMBER flux is not emitted, only mass precipitation~~ — **both halves of that are
+  now WITHDRAWN** (owner §7.4). The flux is `falln(i,kts,1:2)` (rain and ice
+  number), a kernel **local** at `module_mp_kdm6.F:719` with no `intent`, so it is
+  reachable only through the SHA-pinned macro-gated overlay that recovered
+  `mstep`, **not** by a driver edit as an earlier note claimed — and that overlay
+  now emits it, alongside `G33F XFER`, the bottom cell's ACTUAL capped transfer
+  per sub-step. So the closure is not only possible, it has been performed: the
+  **matched** closure runs mass and number on the same chain, the same calls and
+  the same cap state, and `mstep > 1` is admissible because nothing is
+  reconstructed. ~~the rain-number channel this row names is still
+  unexercised~~ — also **WITHDRAWN**: `main/nr` is measured at +15.00 / +13.34 /
+  +11.84% (h = 25 s) with its `qr` mass control closing to f32 roundoff on the
+  same rows. See
+  [`../harness/evidence/FINDING_matched_number_closure_v1.md`](../harness/evidence/FINDING_matched_number_closure_v1.md).
   See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
 - **A correction to the refinement work's own reasoning.** The graupel presence flip
   used to argue that column 3 is "not a valid convergence domain" carries

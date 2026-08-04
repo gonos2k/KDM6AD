@@ -1,0 +1,78 @@
+# The basis only bites where the closure is otherwise clean
+
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-BASIS-004` | **active** | confirmed | n12.rezero of the legacy refinement chain on g33_fixture_multisubcycle_v1. Says nothing about which basis the reference INTENDS to close, which is G33-BASIS-002 and an owner decision. P_surface is the WRF rain diagnostic and is not reweighted -- it is already a physical mass per area -- so the physical budget mixes a dry-weighted column change with a diagnostic whose own departure from the rho*dz budget is a separate known defect, and that defect dominates columns 2-3. |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
+Owner §9.2. `qv, qc, qr, qi, qs, qg` are mixing ratios per **dry**-air kg while
+`rho` is **moist** density, so a physical kg m⁻² needs ρ_d. The water closure, the
+`qr/qi` mass control, the moist-enthalpy ledger and the operator-energy ledger are
+all real statements about the operator's own metric — and none of them is
+automatically a statement about physical dry-air conservation.
+
+Both ledgers now take a `basis`, exactly as the number closure does.
+
+## Water
+
+`R_W = (W_final − W_initial) + P_surface`, relative:
+
+| column | operator (ρ_m·Δz) | physical (ρ_d·Δz) | ratio |
+|---|---|---|---|
+| **1** | **4.5703e−09** | **9.7626e−07** | **213.6×** |
+| 2 | 6.8273e−02 | 6.8364e−02 | 1.0× |
+| 3 | 1.7131e−01 | 1.7158e−01 | 1.0× |
+
+**The basis matters precisely where the residual is otherwise at roundoff.**
+Column 1's closure looks exact — 4.6e−9 — and that is a statement about the
+operator's own metric. Under the dry metric the same column closes 214× worse, at
+1e−6. Columns 2 and 3 are dominated by the precipitation-diagnostic departure
+(`FINDING_fallout_diagnostic_is_not_the_water_budget`), so a 0.1% change of
+measure is invisible against a 7–17% residual.
+
+That is the shape of the whole §9.2 question: converting a budget that is already
+badly closed changes nothing worth reporting, and converting one that closes to
+machine precision changes it by two orders of magnitude — and "conserved to
+machine precision" is exactly the sentence people quote.
+
+## Enthalpy
+
+| ledger | column | operator | physical | ratio |
+|---|---|---|---|---|
+| consistent thermodynamics | 1 / 2 / 3 | −5.42e−06 / −9.03e−05 / 1.49e−04 | −5.42e−06 / −9.27e−05 / 1.48e−04 | 0.999 / 1.026 / 0.991 |
+| the code's own equations | 1 / 2 / 3 | 3.34e−05 / −8.06e−05 / 5.08e−04 | 3.34e−05 / −8.29e−05 / 5.07e−04 | 1.000 / 1.028 / 0.998 |
+
+**At most 3%.** Both enthalpy residuals are dominated by the thermodynamic
+approximations the ledgers already declare — one `cpm` for the parcel, `xl` at the
+local temperature, precipitation flux at the bottom level — not by the column
+measure. So the basis is not what limits them, and converting them does not change
+a conclusion.
+
+## Why ρ_d is taken from the initial humidity
+
+`ρ_d·Δz` for a layer is invariant across a column-microphysics step: no dry air is
+transported. So the dry density is computed once, from the initial `qv`, and used
+at **both** endpoints. Recomputing it from the final `qv` would make the measure
+move with the process being measured, and a budget whose weights change between
+its endpoints is not a budget. This is asserted in a test rather than left to the
+comment.
+
+## Limits
+
+- **This does not say which basis is right.** Under the operator metric the
+  column-1 water residual is 4.6e−9; under the dry metric 9.8e−7. Which one the
+  reference *intends* to close is `G33-BASIS-002` — an owner decision, and §9.1
+  frames it correctly as a compatibility-policy choice rather than a physics one.
+- **`P_surface` is not reweighted.** It is the WRF `rain` diagnostic, already a
+  physical mass per area, so it enters both budgets unchanged. That is consistent,
+  but it does mean the physical budget mixes a dry-weighted column change with a
+  diagnostic whose own departure from the ρΔz budget is a separate known defect.
+  On columns 2–3 that defect dominates everything here.
+- **One fixture, one member.** `n12.rezero` of the legacy refinement chain.
+- The `qr/qi` mass controls in the matched closure already carry both bases
+  (`G33-BASIS-003`); this extends the same treatment to the two column ledgers,
+  which completes §9.2's list.

@@ -38,6 +38,20 @@ for a in "$@"; do
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
 done
+# f64 + nflux is a WRONG-NUMBER path, not merely unsupported (owner priority-2).
+# The G33F number records write `'f32', transfer(<real>, 0)`; under
+# -fdefault-real-8 that takes FOUR bytes of an EIGHT-byte value into an int32
+# mold and labels the result f32, so a reader parses a valid-looking f32 bit
+# pattern that is not the number. The Python producer refused this, but the build
+# script it calls did not, so anyone invoking the script directly still got the
+# broken binary. Guarded here AND in the preprocessor AND in the producer,
+# because each is reachable without the others.
+if [ "$F64" = 1 ] && [ "$NFLUX" = 1 ]; then
+    echo "--f64 with --nflux is refused: the G33F number records are declared" >&2
+    echo "f32 and would carry four bytes of an eight-byte real. An f64 number" >&2
+    echo "stream needs its own record family, not the f32 one relabelled." >&2
+    exit 2
+fi
 case "$ALGO" in
     legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
     conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;

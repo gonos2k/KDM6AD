@@ -2,12 +2,12 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-WATER-CONS-001` | **withdrawn → G33-WATER-CONS-002** |
-| `G33-WATER-CONS-002` | **active** |
-| `G33-WATER-ORDER-001` | **withdrawn → G33-WATER-ORDER-002** |
-| `G33-WATER-ORDER-002` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-WATER-CONS-001` | **withdrawn → G33-WATER-CONS-002** | — | Spread measures step-insensitivity, not conservation: members that all lose the same amount agree perfectly and conserve nothing (owner S5). |
+| `G33-WATER-CONS-002` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64 |
+| `G33-WATER-ORDER-001` | **withdrawn → G33-WATER-ORDER-002** | — | g33_fixture_multisubcycle_v1, f32, legacy |
+| `G33-WATER-ORDER-002` | **active** | confirmed | g33_fixture_multisubcycle_v1, f32 vs f64, legacy |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

@@ -1,10 +1,32 @@
-# The number-creation mechanism was given three chances to fail, and did not take them
+# The Δz-only number metric, across a layer-air-mass gradient, creates column number
+
+**The density gradient is not the defect.** A density gradient is ordinary
+atmospheric stratification; it is what the air does. The defect is the **missing
+layer-air-mass ratio in the number inflow**, and what this experiment established
+is the **interaction term** between the two (owner §4).
+
+Writing `m_k` for the layer air mass per unit area that the number mixing ratio is
+referenced to, a conserving update would be
+
+    n_l ← n_l + d_u · m_u / m_l
+
+while the kernel does
+
+    n_l ← n_l + d_u · Δz_u / Δz_l
+
+so with `m_k = ρ_k Δz_k` the residual is `(ρ_l − ρ_u) Δz_u d_u`. The causal chain
+is therefore
+
+    ordinary density gradient  ×  missing density ratio in the number transfer
+        →  column number created (or destroyed)
+
+Fixing the second factor is the correction; the first is not a fault to fix.
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-NUMBER-008` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-008` | **active** | confirmed | OPERATOR-LEVEL: this is causality under the current den*dz ledger, where den is MOIST density, and must NOT be promoted to physical dry-air column-number causality -- the physical measure is sum m_d,k n_k (owner §10, G33-BASIS-002/003). MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -101,11 +123,22 @@ density also changes the fall speeds, the state and every subsequent step.
 `inverted` and `x2` have no such immunity: they predict a specific magnitude, and
 that magnitude assumes `dn` is roughly carried over from the unperturbed run.
 
-Density enters the fall speed as well as the transfer weight, so it is not: the
-1–4% departures from −1 and +2 are that second-order effect, not a defect in the
-first-order prediction. What the two weaker arms add is that a competing
-explanation would have to reproduce −0.99 and +2.01 across three columns by some
-other route.
+Density enters the fall speed as well as the transfer weight, so `dn` is not held
+fixed. **Attributing the 1–4% departure to fall speed alone is withdrawn**
+(owner §7): density also changes the pre-sedimentation state of the next external
+call, the cap state, and every density-dependent rate, so "second-order effect of
+density on the fall speed" names one candidate among several without separating
+them.
+
+What the departure IS, exactly, is the sum of a metric term and a trajectory
+response,
+
+    R(ρ′) = Σ_j Δρ′_j Δz_j d_j(ρ)          metric-only counterfactual
+          + Σ_j Δρ′_j Δz_j [d_j(ρ′) − d_j(ρ)]   trajectory response
+
+and until those are computed separately the split is unmeasured. What the two
+weaker arms still establish is that a competing explanation would have to
+reproduce −0.99 and +2.01 across three columns by some other route.
 
 ## Limits
 

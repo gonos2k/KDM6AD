@@ -2,9 +2,9 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-DTCLD-002` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-DTCLD-002` | **active** | confirmed | all refinement bundles |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

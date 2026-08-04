@@ -1060,3 +1060,36 @@ def test_a_bundle_with_two_members_at_one_nsplit_is_refused(tmp_path):
     _bundle(tmp_path, (3, 100.0), mode="carry")
     with pytest.raises(ra.RefineError, match="more than one member for nsplit"):
         rm.build(d, module=mod, fixture=fix, compiler="c")
+
+
+# ---- owner §9.2: water and enthalpy on BOTH bases -----------------------------
+#
+# The q fields are mixing ratios per DRY-air kg while `rho` is MOIST density, so a
+# physical kg m^-2 needs rho_d. A closure against the operator's own metric is a
+# real statement; it is not the same statement as physical conservation.
+
+def test_the_water_ledger_accepts_both_bases_and_refuses_others():
+    for b in ra.MEASURES:
+        assert b in ("operator", "physical")
+    assert ra.MEASURES == ("operator", "physical")
+
+
+def test_the_dry_density_is_taken_from_the_INITIAL_humidity():
+    """rho_d*dz for a layer is invariant across a column-microphysics step --
+    no dry air is transported -- so the measure must not move with the process
+    being measured. Recomputing it from the final qv would make the weights
+    change between the two endpoints of the same budget."""
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    assert 'run[("initial", "qv", c, k)]' in src
+    assert '"forcing", "rho"' in src
+
+
+def test_both_ledgers_thread_the_basis_rather_than_hardcoding_rho():
+    """A basis parameter that only reaches one of the two ledgers would let a
+    reader compare a dry water budget against a moist enthalpy one."""
+    src = (ROOT / "g33_refine_analyze.py").read_text()
+    for fn in ("def water_residual(", "def _ledger(", "def enthalpy_ledger(",
+               "def operator_ledger("):
+        i = src.index(fn)
+        assert "basis" in src[i:i + 200], f"{fn} does not take a basis"
+    assert src.count("_column_density(run, c, k, basis)") >= 2

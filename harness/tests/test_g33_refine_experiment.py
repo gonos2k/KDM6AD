@@ -30,7 +30,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "sources": [], "executable_sha256": "ab" * 32}))
         return workdir / "driver"
 
-    def members(exe, out, ns, mode, *, arm="reference", nflux=False):
+    def members(exe, out, ns, mode, *, arm="reference", nflux=False,
+                rho_profile="as-is"):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -45,6 +46,12 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 
     monkeypatch.setattr(xp, "build", build)
     monkeypatch.setattr(xp, "members", members)
+    # The fake's members are G33R-only, so the extension analyses have no G33N to
+    # read. Their correctness is covered where they can actually run:
+    # test_g33_cap_interface.py against a real stream and
+    # test_g33_matched_closure.py against synthetic G33N. What these tests are
+    # about is the producer's atomicity and its manifest.
+    monkeypatch.setattr(xp, "_analyses", lambda *a, **k: [])
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 
@@ -110,7 +117,8 @@ def test_a_failure_leaves_the_PREVIOUS_bundle_intact(tmp_path, monkeypatch):
 def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypatch):
     _fake(monkeypatch)
 
-    def bad(exe, out, ns, mode, *, arm="reference", nflux=False):
+    def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
+            rho_profile="as-is"):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -164,7 +172,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "sources": [], "executable_sha256": "cd" * 32}))
         return workdir / "driver"
 
-    def probe_members(exe, out, ns, mode):
+    def probe_members(exe, out, ns, mode, rho_profile="as-is"):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -188,9 +196,9 @@ def _probe_stream(nsplit=3):
     """A COMPLETE probe stream: the reader now requires the exact
     field x cell universe plus INITIAL, all three forcings and PREC, because
     'absent' silently disabled every check (owner §7.2)."""
-    out = [f"G33P BEGIN 2 precision f64 source_precision f32 fixture fx "
-           f"algorithm legacy mode rezero {nsplit} 1 1 {300.0/nsplit:.6f} "
-           f"{300.0/nsplit:.6f} 1 1"]
+    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture fx "
+           f"algorithm legacy mode rezero tiles 1 rho_profile as-is "
+           f"{nsplit} 1 1 {300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
         out.append(f"G33P INITIAL {f} 1 0   1.0000000000000000E+000")
@@ -225,3 +233,59 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
     with pytest.raises(xp.pr.ProbeError, match="is missing"):
         xp._agree(g33r, missing, "n.txt")
+
+
+# ---- owner §14-4: the analyses are produced BY the bundle and digested INTO it
+
+def test_the_analysis_registry_names_a_real_module_and_callable():
+    """A registry entry pointing at a module that does not exist would fail only
+    when a bundle is produced -- which needs gfortran, so never in CI."""
+    import importlib
+    for name, (mod, fn) in xp.ANALYSES.items():
+        m = importlib.import_module(mod)
+        assert m is not None, f"{name} names a missing module {mod}"
+        assert callable(fn)
+
+
+def test_the_analyses_are_only_produced_for_instrumented_bundles():
+    """All three read extension records, which a non-nflux stream does not carry;
+    running them anyway would put an empty analysis in the manifest and make an
+    uninstrumented bundle look analysed."""
+    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
+    assert 'man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []' \
+        in src
+
+
+def test_each_analysis_records_the_ANALYZER_digest_beside_its_own():
+    """An analysis JSON identifies what was concluded; the module identifies the
+    code that concluded it. With only the first, a reader can check the table has
+    not changed but cannot re-derive it (owner §14-4)."""
+    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
+    assert '"analyzer_sha256"' in src and '"sha256": rm.sha256(path)' in src
+
+
+def test_the_evidence_chain_follows_the_manifest_to_the_ANALYSES():
+    """Pinning a manifest that reaches the raw streams but not the analyses stops
+    one step short of the numbers a claim actually quotes."""
+    src = (ROOT.parent / "harness/g33_evidence_chain.py").read_text()
+    assert 'man.get("analyses", [])' in src
+
+
+# ---- owner §5.2: the bundle must say which forcing arm it is ------------------
+
+def test_the_manifest_records_the_density_arm_and_the_exact_command_line():
+    """The density arms were run by hand, outside the producer, so a published
+    bundle recorded what was BUILT and RUN but not what experiment it was an arm
+    of. A reader could not tell an `as-is` bundle from a `uniform` one."""
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    assert 'man["rho_profile"] = rho_profile' in src
+    assert 'man["runtime_argv"]' in src
+    assert '"--rho-profile"' in src
+
+
+def test_the_argv_helper_omits_the_arm_for_the_default():
+    """`as-is` must produce the same command line the producer always used, or
+    every existing bundle's runtime_argv would stop describing how it was made."""
+    assert xp._argv(Path("drv"), 12, "rezero", "as-is") == ["drv", "12", "rezero"]
+    assert xp._argv(Path("drv"), 12, "rezero", "uniform") == \
+        ["drv", "12", "rezero", "3", "uniform"]

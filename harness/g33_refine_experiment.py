@@ -39,6 +39,10 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
+import g33_matched_closure as mc      # noqa: E402
+import g33_cap_interface as ci        # noqa: E402
+import g33_dual_ledger as dl          # noqa: E402
+import g33_defect_magnitude as dm     # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -72,8 +76,22 @@ def build(workdir: Path, fixture: str, algo: str, nflux: bool,
     return exe
 
 
+def _argv(exe: Path, n: int, mode: str, rho_profile: str) -> list:
+    """The driver command line, recorded verbatim in the manifest (owner §5.2).
+
+    The density arms were run by hand outside the producer, so a published bundle
+    could not say which forcing intervention made it. The tile argument is
+    positional and precedes the profile, so a non-default profile has to pass a
+    tile spec -- `3` is the whole domain as one tile, the producer's own default.
+    """
+    argv = [str(exe), str(n), mode]
+    if rho_profile != "as-is":
+        argv += ["3", rho_profile]
+    return argv
+
+
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
-            nflux=False) -> dict:
+            nflux=False, rho_profile="as-is") -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
@@ -84,7 +102,7 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        text = _run([str(exe), str(n), mode])
+        text = _run(_argv(exe, n, mode, rho_profile))
         p.write_text(text)
         runs[n] = ra.read(p, nsplit=n)          # G33R
         if arm == "probe":
@@ -141,18 +159,72 @@ def _probe_member(path: Path) -> dict:
             "dtcld": r[("meta", "dtcld")]}
 
 
-def probe_members(exe: Path, out: Path, nsplits, mode: str) -> dict:
+def probe_members(exe: Path, out: Path, nsplits, mode: str,
+                  rho_profile: str = "as-is") -> dict:
     """Run every member and read it with the G33P strict parser."""
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        p.write_text(_run([str(exe), str(n), mode]))
+        p.write_text(_run(_argv(exe, n, mode, rho_profile)))
         runs[n] = pr.read(p.read_text())
     return runs
 
 
+#: analysis name -> (module, callable taking the stream) (owner §14-4). Only for
+#: `--nflux` bundles: these all read the extension records.
+ANALYSES = {
+    "matched_closure": ("g33_matched_closure", lambda s: mc.analysis(s)),
+    "cap_interface": ("g33_cap_interface", lambda s: ci.analysis(s)),
+    "extension_protocol": ("g33_number_transport", lambda s: _protocol(s)),
+    # Both column measures, always (owner §9): reporting one makes a statement
+    # about the OPERATOR read as a statement about the ATMOSPHERE.
+    "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
+    # What the headline percentage is a percentage OF (owner §11).
+    "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+}
+
+
+def _protocol(stream: str) -> dict:
+    """What the stream actually carried, as the strict parser saw it.
+
+    Not a restatement of the header: the header DECLARES features, this records
+    how many records of each family survived validation, so a reader can tell a
+    complete extension stream from a header that merely claimed one.
+    """
+    calls = nt.calls(stream)
+    fams = {f: sum(len(c[f]) for c in calls)
+            for f in ("xfer", "capin", "topout", "mstep", "flux")}
+    return {"schema": nt.SCHEMA, "calls": len(calls),
+            "features": sorted(calls[0].get("features", ())) if calls else [],
+            "record_counts": fams,
+            "K": calls[0]["K"] if calls else None,
+            "columns": list(calls[0]["cols"]) if calls else None}
+
+
+def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
+    """Run every analysis on every member, write it beside the member, digest it.
+
+    The digest of the ANALYZER is recorded next to the digest of its output: an
+    analysis JSON identifies what was concluded, and the module identifies the
+    code that concluded it. Neither alone lets a reader re-derive the table.
+    """
+    made = []
+    for n in nsplits:
+        stream = (out / f"n{n}.{mode}.txt").read_text()
+        for name, (mod, fn) in ANALYSES.items():
+            path = out / f"n{n}.{mode}.{name}.json"
+            path.write_text(rm.json.dumps(fn(stream), indent=2,
+                                          sort_keys=True) + "\n")
+            made.append({"file": path.name, "nsplit": n, "analysis": name,
+                         "sha256": rm.sha256(path),
+                         "analyzer": f"harness/{mod}.py",
+                         "analyzer_sha256": rm.sha256(HERE / f"{mod}.py")})
+    return made
+
+
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
-            nflux: bool, module: Path, findings=(), arm: str = "reference") -> Path:
+            nflux: bool, module: Path, findings=(), arm: str = "reference",
+            rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
@@ -174,9 +246,10 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
-            runs = probe_members(exe, tmp, nsplits, mode)
+            runs = probe_members(exe, tmp, nsplits, mode, rho_profile)
         else:
-            runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux)
+            runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
+                           rho_profile=rho_profile)
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"
@@ -187,6 +260,17 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                        build_provenance=tmp / "build_provenance.json",
                        findings=findings)
         man["instrumented"] = nflux
+        # The FORCING INTERVENTION, and the exact command line that applied it
+        # (owner §5.2). Without these a bundle records what was built and run but
+        # not what experiment it is an arm of.
+        man["rho_profile"] = rho_profile
+        man["runtime_argv"] = [_argv(Path("g33_refine_driver"), n, mode,
+                                     rho_profile)[1:] for n in nsplits]
+        # The ANALYSES, produced by the bundle and digested into it (owner §14-4).
+        # A claim could pin a raw stream and a manifest, but the numbers it quotes
+        # come from an analysis that ran somewhere else and left nothing behind --
+        # so "the run is pinned" stopped one step short of the table.
+        man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.
@@ -252,6 +336,11 @@ def main(argv) -> int:
     ap.add_argument("--nsplit", required=True,
                     help="comma-separated, e.g. 3,6,12,24")
     ap.add_argument("--nflux", action="store_true")
+    ap.add_argument("--rho-profile", default="as-is",
+                    choices=("as-is", "uniform", "inverted", "x2"),
+                    help="density-control arm; recorded in the stream header and "
+                         "the manifest, so an arm is identifiable from the "
+                         "artifact rather than from a document")
     ap.add_argument("--arm", default="reference",
                     choices=("reference", "probe", "f64"),
                     help="f64 is an INSTRUMENT: it emits no G33R and is never "
@@ -265,7 +354,8 @@ def main(argv) -> int:
     # previous bundle (owner §10.3 fallout, found by rerunning for real).
     dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
-                   nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm)
+                   nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm,
+                   rho_profile=a.rho_profile)
     print(dest)
     return 0
 

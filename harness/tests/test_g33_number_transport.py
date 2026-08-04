@@ -113,9 +113,10 @@ def test_calls_with_an_IDENTICAL_loop_index_are_still_separated():
 #: set: the extension records have their own completeness checks, so a helper
 #: that declared them without emitting them would fail for the right reason but
 #: obscure the test that wanted them.
-def _hdr(nsplit=1, ntile=1, schema=2, feats="mstep,mstepi,nflux"):
+def _hdr(nsplit=1, ntile=1, schema=4, feats="mstep,mstepi,nflux",
+         rho_profile="as-is"):
     return (f"G33N STREAM_BEGIN {schema} {nsplit} {ntile} {nsplit*ntile} "
-            f"legacy rezero {feats}\n")
+            f"legacy rezero {feats} {rho_profile}\n")
 
 
 def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
@@ -132,7 +133,10 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
     for stage in ("outer_pre_sed", "outer_post_sed"):
         for c in cols:
             for k in range(ks):
-                for f in ("nr", "ni", "qr", "qi", "rho", "delz"):
+                # qv at BOTH endpoints: the dry basis needs rho_d = rho_m/(1+qv)
+                # and carrying it at both makes "sedimentation does not touch qv"
+                # checkable rather than assumed.
+                for f in ("nr", "ni", "qr", "qi", "qv", "rho", "delz"):
                     if stage == "outer_post_sed" and f in ("rho", "delz"):
                         continue
                     out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
@@ -235,7 +239,7 @@ def test_a_stream_declaring_another_schema_is_rejected():
 
 
 def test_an_inconsistent_header_is_rejected():
-    s = "G33N STREAM_BEGIN 2 4 2 3 legacy rezero mstep\nG33N STREAM_END\n"
+    s = "G33N STREAM_BEGIN 4 4 2 3 legacy rezero mstep as-is\nG33N STREAM_END\n"
     with pytest.raises(nt.StreamError, match="header is inconsistent"):
         list(nt.calls(s))
 
@@ -346,12 +350,27 @@ def test_a_nonpositive_operand_is_refused():
         list(nt.calls(s))
 
 
-def test_records_outside_any_call_are_not_attributed_to_one():
+def test_an_extension_record_outside_any_call_is_REFUSED():
+    """This asserted the opposite until schema 3: a stray extension record was
+    silently DROPPED, so a stream whose records had drifted out of their brackets
+    looked complete. CAPIN had no completeness check to notice the loss, so the
+    cap analysis would have been computed over whatever survived (owner P0-4).
+
+    Not attributing it to a call was never enough -- discarding evidence quietly
+    is the same failure as misfiling it."""
     stray = "G33F MSTEPI 1 1 i32 00000009\n"
     s = _hdr(1) + stray + _call(1) + "G33N STREAM_END\n"
-    got = list(nt.calls(s))
-    assert [c["call_id"] for c in got] == [1]
-    assert got[0]["mstep"][(1, "ice", 1)] == 1
+    with pytest.raises(nt.StreamError, match="MSTEPI record outside any call"):
+        nt.calls(s)
+
+
+def test_a_NON_extension_record_outside_a_call_is_still_tolerated():
+    """The stream legitimately carries STAGE records for stages this parser does
+    not read. Refusing those would reject valid decision streams; only the
+    number-extension families are bracket-bound."""
+    stray = "G33F STAGE 1 - kernel_init 0 rhoair0 1 0 f32 3F800000\n"
+    s = _hdr(1) + stray + _call(1) + "G33N STREAM_END\n"
+    assert [c["call_id"] for c in nt.calls(s)] == [1]
 
 
 def test_a_nonzero_driver_exit_is_rejected(tmp_path):
@@ -361,3 +380,144 @@ def test_a_nonzero_driver_exit_is_rejected(tmp_path):
     exe.chmod(0o755)
     with pytest.raises(SystemExit, match="exited 3"):
         nt.main([str(exe), "1"])
+
+
+# ---- schema 3: the extension protocol becomes fail-closed (owner §4) --------
+#
+# Each of these asserted nothing before schema 3, and every one of them is a way
+# a malformed or incomplete stream reached an analysis that reported a number.
+
+def _ext(cid=1, cols=(1,), ks=2, mstep=1, *, drop_capin=False, drop_topout=False,
+         dup=None, bad_topout_k=None, nan_xfer=False, extra=""):
+    """A call carrying the full extension universe, complete unless asked."""
+    body = _call(cid, cols=cols, ks=ks, end=False).replace(
+        "G33F MSTEP 1 main 1 i32 00000001",
+        f"G33F MSTEP 1 main 1 i32 {mstep:08X}")
+    out = [body.rstrip("\n")]
+    for c in cols:
+        for chain, ms in (("main", mstep), ("ice", 1)):
+            for n in range(1, ms + 1):
+                v = "7FC00000" if nan_xfer else "3F800000"
+                out.append(f"G33F XFER 1 {n} {c} {chain} f32 {v} 40000000")
+                if not drop_topout:
+                    k = 0 if bad_topout_k is None else bad_topout_k
+                    out.append(f"G33F TOPOUT 1 {n} {c} {k} {chain} f32 "
+                               f"3F800000 40000000")
+                if not drop_capin:
+                    for k in range(1, ks):
+                        out.append(f"G33F CAPIN 1 {n} {c} {k} {chain} f32 "
+                                   f"3F800000 3F800000 40000000 40000000")
+    if dup:
+        out.append(dup)
+    out.append(extra.rstrip("\n") if extra else "")
+    out.append(f"G33N CALL_END {cid} {cid} 1")
+    return "\n".join(x for x in out if x) + "\n"
+
+
+_FEATS = "mstep,mstepi,nflux,xfer,capin,topout"
+
+
+def test_the_full_extension_universe_parses(mstep=1):
+    """The control: everything below must fail for its own reason, not because
+    the helper builds an invalid stream."""
+    assert len(nt.calls(_stream(_ext(), feats=_FEATS))) == 1
+
+
+def test_a_declared_feature_with_ZERO_records_is_refused():
+    """P0-1, and the most dangerous of the six: `capin` in the header with no
+    CAPIN records passed, so the cap analysis it backs -- 39/255 interfaces,
+    100.00% of the ice residual -- would have been computed over nothing."""
+    with pytest.raises(nt.StreamError, match="capin.*covers"):
+        nt.calls(_stream(_ext(drop_capin=True), feats=_FEATS))
+
+
+def test_an_incomplete_capin_universe_is_refused():
+    """A cap group missing one interface: the residual attribution silently loses
+    that interface's contribution."""
+    s = _stream(_ext(ks=3), feats=_FEATS)
+    kept = [l for l in s.splitlines()
+            # CAPIN is `G33F CAPIN loop n col k chain ...`, so k is field 5.
+            if not (l.startswith("G33F CAPIN") and l.split()[5] == "2")]
+    with pytest.raises(nt.StreamError, match="capin covers"):
+        nt.calls("\n".join(kept) + "\n")
+
+
+def test_a_TOPOUT_at_the_wrong_level_is_refused():
+    """P0-6: completeness checked the sub-step set only, so a record at k=2 --
+    or two at one sub-step and different levels -- passed. TOPOUT is the TOP
+    cell's removal; its level is part of its identity, not decoration."""
+    with pytest.raises(nt.StreamError, match="topout covers"):
+        nt.calls(_stream(_ext(bad_topout_k=1), feats=_FEATS))
+
+
+def test_a_duplicate_with_the_SAME_value_is_refused():
+    """P0-2: `_put` raised only when the values DIFFERED, so a duplicated stream
+    overwrote silently -- while its own docstring said a second write is a defect.
+    The duplication is the defect; that the values agree is not a defence."""
+    dup = "G33F XFER 1 1 1 main f32 3F800000 40000000"
+    with pytest.raises(nt.StreamError, match="duplicate record"):
+        nt.calls(_stream(_ext(dup=dup), feats=_FEATS))
+
+
+def test_an_UNDECLARED_extension_record_is_refused():
+    """P0-3: the contract said an undeclared feature is rejected; the parser read
+    it anyway and merely skipped its universe check -- so the record entered the
+    analysis with nothing verifying it was complete."""
+    with pytest.raises(nt.StreamError, match="does not declare|declares features"):
+        nt.calls(_stream(_ext(), feats="mstep,mstepi,nflux"))
+
+
+def test_a_NaN_in_an_extension_record_is_refused():
+    """P0-5: finite checks covered NFLUX and CAPIN only. A NaN XFER parsed, made
+    the residual NaN, and reached a JSON writer that emits a bare `NaN` token --
+    not even valid JSON, and it had passed every gate."""
+    with pytest.raises(nt.StreamError, match="non-finite"):
+        nt.calls(_stream(_ext(nan_xfer=True), feats=_FEATS))
+
+
+def test_one_column_short_a_LEVEL_is_refused():
+    """The level universe pooled all columns, so a short column passed whenever
+    another supplied the level. The matched closure integrates exactly these
+    per-column level sets, so this silently integrated over fewer cells and took
+    the wrong cell as the bottom one."""
+    s = _stream(_ext(cols=(1, 2), ks=2), feats=_FEATS)
+    kept = [l for l in s.splitlines()
+            if not (l.startswith("G33F STAGE") and l.split()[7] == "2"
+                    and l.split()[8] == "1")]
+    with pytest.raises(nt.StreamError, match="levels .* do not match"):
+        nt.calls("\n".join(kept) + "\n")
+
+
+def test_one_cell_short_a_FIELD_is_refused():
+    """The rectangular universe: one field's gap must not be filled by another
+    field's presence in the same cell set."""
+    s = _stream(_ext(), feats=_FEATS)
+    kept = [l for l in s.splitlines()
+            if not (l.startswith("G33F STAGE") and "outer_pre_sed" in l
+                    and l.split()[6] == "qr" and l.split()[8] == "1")]
+    with pytest.raises(nt.StreamError, match="carries fields"):
+        nt.calls("\n".join(kept) + "\n")
+
+
+def test_a_stage_missing_a_field_the_closure_READS_is_refused():
+    """Rectangularity alone would accept a stream with no `rho` at all, because
+    every cell would agree about not having it."""
+    s = _stream(_ext(), feats=_FEATS)
+    kept = [l for l in s.splitlines()
+            if not (l.startswith("G33F STAGE") and l.split()[6] == "rho")]
+    with pytest.raises(nt.StreamError, match="carries no.*rho"):
+        nt.calls("\n".join(kept) + "\n")
+
+
+def test_mstep_below_one_is_refused():
+    """`range(1, 0+1)` is empty, so mstep=0 made every extension universe
+    vacuously satisfied."""
+    s = _stream(_ext(), feats=_FEATS).replace(
+        "G33F MSTEP 1 main 1 i32 00000001", "G33F MSTEP 1 main 1 i32 00000000")
+    with pytest.raises(nt.StreamError, match="is not a sub-step count"):
+        nt.calls(s)
+
+
+def test_the_parser_refuses_the_schema_it_does_not_implement():
+    with pytest.raises(nt.StreamError, match="declares schema 3"):
+        nt.calls(_stream(_ext(), feats=_FEATS, schema=3))

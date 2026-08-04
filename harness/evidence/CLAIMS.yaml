@@ -26,7 +26,7 @@ claims:
     basis: source
     scope: module_mp_kdm6.F:1179-1180, all fixtures
     evidence: [FINDING_two_sedimentation_chains_v1.md]
-    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:d222716d3186a7da]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:127a84877d647429]
 
   - id: G33-DTCLD-002
     text: >
@@ -37,7 +37,7 @@ claims:
     basis: measurement
     scope: all refinement bundles
     evidence: [FINDING_refinement_provenance_v1.md]
-    evidence_sha256: [FINDING_refinement_provenance_v1.md:dab336eb4af2e0b8]
+    evidence_sha256: [FINDING_refinement_provenance_v1.md:e00f6d3add24d5af]
 
   - id: G33-MSTEPI-001
     text: >
@@ -48,7 +48,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
     evidence: [FINDING_two_sedimentation_chains_v1.md]
-    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:d222716d3186a7da]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:127a84877d647429]
 
   - id: G33-WATER-ORDER-001
     text: >
@@ -58,7 +58,7 @@ claims:
     superseded_by: G33-WATER-ORDER-002
     scope: g33_fixture_multisubcycle_v1, f32, legacy
     evidence: [FINDING_column_water_orders_v1.md]
-    evidence_sha256: [FINDING_column_water_orders_v1.md:01bd869b1bb6b0ec]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d513]
 
   - id: G33-WATER-ORDER-002
     text: >
@@ -70,7 +70,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
     evidence: [FINDING_column_water_orders_v1.md]
-    evidence_sha256: [FINDING_column_water_orders_v1.md:01bd869b1bb6b0ec]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d513]
 
   - id: G33-NI-ORDER-001
     text: >
@@ -82,7 +82,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, legacy
     evidence: [FINDING_two_sedimentation_chains_v1.md]
-    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:d222716d3186a7da]
+    evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:127a84877d647429]
 
   - id: G33-TURNOVER-001
     text: The f32 fine-step turnover is accumulated floating-point roundoff.
@@ -90,7 +90,7 @@ claims:
     superseded_by: G33-TURNOVER-002
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm
     evidence: [FINDING_refinement_noise_floor_v1.md]
-    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:14391f5f23d2d941]
+    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:9668ccb5870bc1cf]
 
   - id: G33-TURNOVER-002
     text: >
@@ -103,9 +103,17 @@ claims:
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
+    # The RUNS behind the numbers, not only the document quoting them (owner
+    # §9.2). A manifest carries every member's output_sha256, so pinning it
+    # reaches each raw stream transitively; g33_evidence_chain.py follows that
+    # link and verifies the members too. Bundles live outside the repo, so an
+    # absent one is `unavailable`, never a failure.
+    artifacts:
+      - kdm6ad-g33m-refine/full-legacy-dtcld/manifest.json: 86131a0749522295
+      - kdm6ad-g33m-refine/fine-legacy-dtcld/manifest.json: 7d7da60204361267
     evidence: [FINDING_refinement_noise_floor_v1.md,
                FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:14391f5f23d2d941, FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_refinement_noise_floor_v1.md:9668ccb5870bc1cf, FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-NUMBER-001
     text: >
@@ -117,7 +125,7 @@ claims:
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
 
   - id: G33-NUMBER-002
     text: >
@@ -131,27 +139,36 @@ claims:
       f32, legacy. The mass control is qr (main chain) while the largest number
       row is ni (ice chain), so this is not yet a matched-call contrast.
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
 
   - id: G33-NUMBER-003
     text: >
       The conservative variant carries the same number defect: main/nr is
       15.0036/13.3377/11.8402% in BOTH variants, identical to the last digit
-      (0.150035513206531). It fixes the mass measure and leaves number on the dz
-      ratio. Fixing the cap additionally makes the ice chain measurable --
+      (0.150035513206531). "Bit-for-bit" is now SCOPED and backed by a raw-hex
+      comparison rather than inferred from equal ratios (owner §2): the MAIN
+      chain is raw-bit identical -- nr 108/108, qr 108/108 STATE records and 6/6
+      main XFER dq and dn -- which is why the normalised residual matches to the
+      last digit. The ICE chain is NOT (ni 74/96, qi 72/96, ice XFER 2/3), nor
+      are qv/t (48/96), because that is the cap fix taking effect and propagating.
+      It fixes the mass measure and leaves number on the dz ratio. Fixing the cap additionally makes the ice chain measurable --
       ice/qi's control now closes where legacy's failed at -384%/-269% -- giving
       ice/ni +6.2789% and +7.0584%.
     status: active
     grade: confirmed
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
-    evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
+    evidence: [FINDING_conservative_number_defect_v1.md]
+    evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7]
 
   - id: G33-NUMBER-008
     text: >
-      The number creation is caused by the density gradient, not merely
-      correlated with it. Flattening the density profile removes 99.9999% of the
+      The Delta-z-only number-transfer metric, applied across a nonzero
+      layer-air-mass gradient, causes the measured column-number residual; the
+      sign follows the gradient. The density gradient is NOT the defect -- it is
+      ordinary stratification -- and this establishes the INTERACTION of the
+      gradient with the missing density ratio, not a fault in the gradient
+      (owner §4). Flattening the density profile removes 99.9999% of the
       residual (to below the gamma_n roundoff bound) while surface number outflow
       stays at 96% of the original; inverting the profile flips the sign
       (-0.9896/-0.9919/-1.0032 of the unperturbed residual); doubling the
@@ -164,13 +181,190 @@ claims:
       three-arm falsification test on the forcing, with the mass control holding
       in all four arms and surface outflow as the process-still-running control
     scope: >
-      MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice
-      chain's mass control fails in every arm (post-update inflow cap,
-      G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are
-      constructed probes, not physical atmospheres; this establishes the cause,
-      not the magnitude in a forecast.
+      OPERATOR-LEVEL: this is causality under the current den*dz ledger, where
+      den is MOIST density, and must NOT be promoted to physical dry-air
+      column-number causality -- the physical measure is sum m_d,k n_k
+      (owner §10, G33-BASIS-002/003). MAIN chain only on
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass
+      control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so
+      ice rows are excluded. The perturbed profiles are constructed probes, not
+      physical atmospheres; this establishes the cause, not the magnitude in a
+      forecast.
     evidence: [FINDING_density_falsification_v1.md]
-    evidence_sha256: [FINDING_density_falsification_v1.md:0dd2d6c05e766bbb]
+    evidence_sha256: [FINDING_density_falsification_v1.md:494fb0763c35c022]
+
+  - id: G33-CHAIN-001
+    text: >
+      The evidence chain reaches the finding and stops: 0 of 29 claims pinned the
+      RUN behind their numbers and only 2 cite a finding any published bundle
+      names. `artifacts:` closes the claim->run link and is followed transitively
+      through the manifest to the raw streams (13 reached from 2 pinned digests).
+      The bundle->finding pin is a SNAPSHOT and 3 of 5 are divergent, which is
+      history rather than rot -- a published bundle is immutable, so its pin can
+      never be updated -- and the tool reports it without failing on it.
+    status: active
+    grade: confirmed
+    basis: measurement by g33_evidence_chain.py over the registry and this host
+    scope: >
+      The registry as of this commit and the bundles present on the owner's host.
+      Bundles are outside the repo and absent in CI, so the artifact check is
+      local-only; the counts are of the registry, which is committed.
+    evidence: [FINDING_evidence_chain_v1.md]
+    evidence_sha256: [FINDING_evidence_chain_v1.md:6ea8d04644dd8fa2]
+
+  - id: G33-PROTOCOL-002
+    text: >
+      The G33N extension protocol was not fail-closed in six ways: a declared
+      feature with zero records passed, a same-value duplicate overwrote silently,
+      an undeclared record was parsed anyway, an extension record outside a call
+      was dropped, NaN/Inf in XFER/TOPOUT was accepted, and TOPOUT was checked on
+      its sub-step only so a wrong-level record passed. The stage level universe
+      was also pooled across columns, so a column short a level passed whenever
+      another supplied it -- which the matched closure would have integrated over
+      fewer cells with the wrong bottom cell. Schema 3 requires the exact
+      (sub-step, level) universe per (call, loop, column, chain), an exact
+      rectangular stage universe, and binding feature declaration in both
+      directions.
+    status: active
+    grade: confirmed
+    basis: >
+      each hole reproduced as a constructed malformed stream that the old parser
+      accepted and the new one refuses; the real stream is accepted unchanged and
+      reproduces the same closure numbers
+    scope: >
+      The G33N stream contract. It makes the protocol fail-closed; it does not
+      re-verify physics already measured under schema 2, and the cap-attribution
+      run has not been re-published under the new contract.
+    evidence: [FINDING_schema3_fail_closed_v1.md]
+    evidence_sha256: [FINDING_schema3_fail_closed_v1.md:4568713326597f07]
+
+  - id: G33-CHAIN-002
+    text: >
+      Every --nflux bundle now produces matched_closure, cap_interface and
+      extension_protocol analyses into itself, each pinned by BOTH its own digest
+      and its analyzer's, and g33_evidence_chain follows a pinned manifest through
+      to them. The cap_interface tool reproduces every published figure (100.00%
+      explained, ratios -28.58/-28.90 and 1.0000, 255 interfaces) except one: the
+      cap binds at 39 of 108 ICE interfaces, and also at 23 of 147 main
+      interfaces for a term of 2.70e-11 against ice's 8.63e-03, so "all of them
+      in the ice chain" is corrected.
+    status: active
+    grade: confirmed
+    basis: >
+      the tool is gated on reproducing the previously published figures, so a
+      wrong interface pairing would not return them
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s for the numbers. The bundle
+      change applies to future --nflux bundles and does not retrofit the ones
+      already published.
+    evidence: [FINDING_bundle_analyses_v1.md]
+    evidence_sha256: [FINDING_bundle_analyses_v1.md:d032090a9b72ebc4]
+
+  - id: G33-COMPARE-001
+    text: >
+      The G33P comparison identity was a hand-written list that pinned five
+      fields and left source_precision, loops, ntile, delt and the tile vector
+      free -- so two runs differing in DECOMPOSITION could be compared as an
+      algorithm variant, which ncmin makes a real hazard. The invariant set is
+      now COMPUTED as IDENTITY minus the axis under test minus what covaries
+      with it, so a new header field is an invariant by default. Schema 3 carries
+      the tile VECTOR because ntile cannot tell (2,1) from (1,2). The
+      cross-precision ULP no longer depends on argument order -- the lattice is
+      named in the field (max_ulp_f32) and `precision` is absent on a
+      cross-precision diff -- and bitwise_identical is split into
+      numerically_identical and raw_bit_identical, because +0.0 and -0.0 compare
+      equal while their stored patterns differ.
+    status: active
+    grade: confirmed
+    basis: >
+      each hole reproduced as a pair the old comparator accepted; all previously
+      published comparator figures reproduce unchanged
+    scope: >
+      The G33P stream contract and comparator. Fixture SHA and executable
+      identity are still NOT in the stream -- they live in the bundle's
+      build_provenance -- so identity is enforced at two levels and a comparison
+      of loose streams outside a bundle cannot check them.
+    evidence: [FINDING_comparison_identity_v1.md]
+    evidence_sha256: [FINDING_comparison_identity_v1.md:2c358ce1d042ec35]
+
+  - id: G33-BASIS-003
+    text: >
+      Every closure row now reports BOTH column measures: operator = rho_m*dz
+      (what the kernel budgets) and physical = rho_d*dz (what is conserved), with
+      rho_d = rho_m/(1+qv). Absolute values shift by the column-mean qv (~0.10%),
+      and on THIS fixture the ratios agree to 1e-14 -- but only because 1+qv is
+      nearly vertically constant (spread 2.6e-5 to 7.2e-4). Holding everything
+      else fixed and varying only the humidity profile: uniform qv gives 2.2e-15,
+      this fixture's column-3 spread gives 3.7e-4, and an ordinary troposphere
+      (qv 2e-5 to 1.8e-2) gives 1.4e-2. "Ratios are unaffected by the basis" is
+      therefore a property of a NEAR-DRY FIXTURE, not of the quantity. Separately
+      measured: sedimentation leaves qv exactly unchanged (max |dqv| = 0), so
+      using the pre-sed density at both endpoints is verified rather than assumed.
+    status: active
+    grade: confirmed
+    basis: >
+      measurement on the fixture plus a constructed humidity sweep holding all
+      other inputs fixed
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s for the fixture numbers; the
+      humidity sweep is CONSTRUCTED and shows the cancellation is contingent, not
+      what the divergence is in any particular forecast. Number and mass rows
+      only -- water and enthalpy are not yet on both bases. Says nothing about
+      which basis the reference INTENDS, which is G33-BASIS-002 and an owner
+      decision.
+    evidence: [FINDING_dual_ledger_v1.md]
+    evidence_sha256: [FINDING_dual_ledger_v1.md:d18c9e4d3502a6e7]
+
+  - id: G33-MAGNITUDE-001
+    text: >
+      The headline R/F_surface of 11.84-15.00% is 0.2173/0.4379/0.6884% of the
+      INITIAL column number and 3.20-3.86% of the interface throughput -- a factor
+      of 20-50 between the readings. The defect reaches a size-dependent
+      diagnostic only through q/N: the TOTAL change in mean particle mass across
+      the segment is -1.87/-4.30/-7.81% but that is mostly genuine size sorting;
+      the defect's share is -0.22/-0.45/-0.72%, and since D goes as (q/N)^(1/3)
+      the implied diameter bias is -0.073/-0.150/-0.241%. The readings "column
+      number rose 9-15%" and "mean diameter fell 3-5%" are quantitatively
+      excluded on this fixture.
+    status: active
+    grade: confirmed
+    basis: >
+      measurement, with the mass control closing -- which is what permits
+      attributing the mean-mass bias to number at all
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain, PER CALL
+      segment. Not a forecast bias and not cumulative: the ~20% ni figure over
+      300 s is a different statement. Diameter assumes D ~ (q/N)^(1/3) and is not
+      a reflectivity calculation.
+    evidence: [FINDING_defect_magnitude_v1.md]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:d9a6cc91327e7c9c]
+
+  - id: G33-BASIS-004
+    text: >
+      The water and enthalpy column ledgers now take a basis, completing §9.2.
+      The basis matters ONLY where the residual is otherwise at roundoff: column
+      1 water closes at 4.5703e-09 relative under the operator measure and
+      9.7626e-07 under the physical one, 213.6x worse, while columns 2 and 3
+      (already 6.8e-2 and 1.7e-1, dominated by the precipitation-diagnostic
+      departure) change by 1.0x. Both enthalpy ledgers change by at most 3%,
+      because they are limited by their declared thermodynamic approximations
+      rather than by the column measure. rho_d is taken from the INITIAL qv and
+      used at both endpoints, because rho_d*dz is invariant across a
+      column-microphysics step and a budget whose weights move with the process
+      is not a budget.
+    status: active
+    grade: confirmed
+    basis: measurement on both bases over the same member
+    scope: >
+      n12.rezero of the legacy refinement chain on g33_fixture_multisubcycle_v1.
+      Says nothing about which basis the reference INTENDS to close, which is
+      G33-BASIS-002 and an owner decision. P_surface is the WRF rain diagnostic
+      and is not reweighted -- it is already a physical mass per area -- so the
+      physical budget mixes a dry-weighted column change with a diagnostic whose
+      own departure from the rho*dz budget is a separate known defect, and that
+      defect dominates columns 2-3.
+    evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:d654def2d63eba17]
 
   - id: G33-PRECIP-001
     text: >
@@ -183,7 +377,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-PRECIP-002
     text: The conservative interface's enthalpy advantage is a property of the interface.
@@ -191,7 +385,7 @@ claims:
     superseded_by: G33-PRECIP-001
     scope: g33_fixture_multisubcycle_v1, f32, column 2
     evidence: [FINDING_moist_enthalpy_ledger_v1.md]
-    evidence_sha256: [FINDING_moist_enthalpy_ledger_v1.md:68d6a3ff81a89906]
+    evidence_sha256: [FINDING_moist_enthalpy_ledger_v1.md:5be7d5fa468a452d]
 
   - id: G33-ENTHALPY-001
     text: >
@@ -204,7 +398,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-ENTHALPY-002
     text: The f64 enthalpy non-closure is ~42 J/m2 per column.
@@ -212,7 +406,7 @@ claims:
     superseded_by: G33-ENTHALPY-001
     scope: g33_fixture_multisubcycle_v1 — generalised column 1 to all three
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-PRECIP-003
     text: The f32 cap events on this fixture are created by f32 noise.
@@ -223,7 +417,7 @@ claims:
       whether it is storage roundoff, accumulated arithmetic, a constant's
       precision or post-branch amplification, is not established.
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-WATER-CONS-001
     text: Column water is conserved at f64, shown by a small cross-member spread.
@@ -233,7 +427,7 @@ claims:
       Spread measures step-insensitivity, not conservation: members that all lose
       the same amount agree perfectly and conserve nothing (owner S5).
     evidence: [FINDING_column_water_orders_v1.md]
-    evidence_sha256: [FINDING_column_water_orders_v1.md:01bd869b1bb6b0ec]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d513]
 
   - id: G33-WATER-CONS-002
     text: >
@@ -247,7 +441,7 @@ claims:
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
     evidence: [FINDING_column_water_orders_v1.md]
-    evidence_sha256: [FINDING_column_water_orders_v1.md:01bd869b1bb6b0ec]
+    evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d513]
 
   - id: G33-PROTOCOL-001
     text: >
@@ -260,7 +454,7 @@ claims:
     basis: implementation + regression tests
     scope: G33P schema 2; schema 1 streams are refused
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-VARIANT-F64-001
     text: >
@@ -273,7 +467,7 @@ claims:
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
-    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
+    evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206d]
 
   - id: G33-NUMBER-004
     text: The transfer arithmetic is the only difference between the mass and number rows.
@@ -283,7 +477,7 @@ claims:
       Not a matched control: mass is qr on the main chain over 1-3 calls, the
       largest number row is ni on the ice chain over 95 (owner S5.2).
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
 
   - id: G33-BASIS-001
     text: >
@@ -298,7 +492,7 @@ claims:
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:801c651d038074e3]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6]
 
   - id: G33-BASIS-002
     text: >
@@ -310,7 +504,7 @@ claims:
     basis: none
     scope: owner physics decision
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:801c651d038074e3]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6]
 
   - id: G33-NUMBER-005
     text: >
@@ -323,7 +517,7 @@ claims:
     basis: measurement with a matched mass control
     scope: g33_fixture_multisubcycle_v1, legacy, main chain
     evidence: [FINDING_matched_number_closure_v1.md]
-    evidence_sha256: [FINDING_matched_number_closure_v1.md:0f45d529cd191f83]
+    evidence_sha256: [FINDING_matched_number_closure_v1.md:2c7c47563013c8c4]
 
   - id: G33-NUMBER-006
     text: The ice-chain matched closure measures the ice number defect.
@@ -334,7 +528,7 @@ claims:
       term and neither ice row is evidence. Same for main col 1 at h = 100 s
       (qr -47.7%).
     evidence: [FINDING_matched_number_closure_v1.md]
-    evidence_sha256: [FINDING_matched_number_closure_v1.md:0f45d529cd191f83]
+    evidence_sha256: [FINDING_matched_number_closure_v1.md:2c7c47563013c8c4]
 
   - id: G33-ICE-CAP-001
     text: >
@@ -342,14 +536,17 @@ claims:
       inflow cap (P0-4b): dq(i,k+1) is written twice, capped against the cell
       above PRE-update as its outflow and POST-update as the inflow below, and
       the difference is destroyed. Pairing departure against arrival explains
-      100.00% of the ice mass residual. The cap binds at 39 of 255 interfaces,
-      all in the ice chain.
+      100.00% of the ice mass residual. Departure differs from arrival at 39 of
+      108 ice interfaces (total interface term 8.63e-03) and at 23 of 147 main
+      interfaces (2.70e-11). "39 of 255, all in the ice chain" is CORRECTED: the
+      ice count is right, but the main chain differs too and its term is simply
+      eight orders smaller, which is why its residual stays at 1e-10--1e-12.
     status: active
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
     evidence: [FINDING_ice_chain_missing_term_v1.md]
-    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:cbfb5a033f2b7310]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd7]
 
   - id: G33-NUMBER-007
     text: >
@@ -363,7 +560,7 @@ claims:
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
     evidence: [FINDING_ice_chain_missing_term_v1.md]
-    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:cbfb5a033f2b7310]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd7]
 
   - id: G33-NCMIN-001
     text: >
@@ -376,4 +573,4 @@ claims:
     basis: measurement
     scope: g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:daa84f49ac1fb10f]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:a50fb1c80aafff88]

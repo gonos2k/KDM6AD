@@ -50,11 +50,17 @@ def claims() -> list[dict]:
             if key == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", val)
             elif val in (">", "|"):
-                pending = key
+                # Folded values were DROPPED here, which is why the header could
+                # not show `scope` -- the claims whose scope needs the most words
+                # are exactly the ones that fold.
+                cur[key], pending = "", key
             else:
                 cur[key] = val
-        elif cur is not None and re.match(r"^      \S", line) and not pending:
-            cur["evidence"] += re.findall(r"[\w.]+\.md", line)
+        elif cur is not None and re.match(r"^      \S", line):
+            if pending:
+                cur[pending] = (cur[pending] + " " + line.strip()).strip()
+            else:
+                cur["evidence"] += re.findall(r"[\w.]+\.md", line)
     return out
 
 
@@ -62,12 +68,17 @@ def block_for(doc: str, cs: list[dict]) -> str:
     rows = [c for c in cs if doc in c["evidence"]]
     if not rows:
         return ""
-    lines = [OPEN, "", "| claim | status |", "|---|---|"]
+    # grade and scope too (owner §7.5): `active` alone read identically for
+    # `confirmed`, `conditional` and `strong-candidate`, and a fixture-scoped
+    # result quoted as a general one is the recurring defect the registry exists
+    # for -- so the scope travels with the status instead of living one file away.
+    lines = [OPEN, "", "| claim | status | grade | scope |", "|---|---|---|---|"]
     for c in sorted(rows, key=lambda c: c["id"]):
         st = c.get("status", "?")
         if c.get("superseded_by"):
             st += f" → {c['superseded_by']}"
-        lines += [f"| `{c['id']}` | **{st}** |"]
+        scope = " ".join(c.get("scope", "—").split()).replace("|", "\\|")
+        lines += [f"| `{c['id']}` | **{st}** | {c.get('grade', '—')} | {scope} |"]
     lines += ["",
               "Statuses above are the authority; prose below may predate them.",
               CLOSE]

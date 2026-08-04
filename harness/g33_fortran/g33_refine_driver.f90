@@ -27,6 +27,16 @@
 !
 ! Emits one G33R STATE line per field/cell plus the three precipitation
 ! accumulators, in the same top-first convention as the decision driver.
+#if defined(KDM6_G33_F64) && defined(KDM6_G33_NUMBER_DUMP)
+! The LAST of three guards on the same wrong-number path (owner priority-2). The
+! G33F number records write `'f32', transfer(<real>, 0)`; under -fdefault-real-8
+! that takes four bytes of an eight-byte value into an int32 mold and labels the
+! result f32, so a reader parses a valid-looking f32 bit pattern that is not the
+! number. The Python producer and the build script both refuse the combination;
+! this one catches a hand-rolled compile that reaches neither, and it fails at
+! COMPILE time rather than producing a binary whose output is quietly wrong.
+#error "KDM6_G33_F64 with KDM6_G33_NUMBER_DUMP: no f64 number record family exists"
+#endif
 module g33_refine
   use, intrinsic :: iso_fortran_env, only: int32, real32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
@@ -269,7 +279,14 @@ program g33_refine_driver
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
   real :: inF(IM,KM,NFLD_ST)
   character(len=32) :: arg
-  integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt
+  character(len=128) :: tilestr
+  character(len=16) :: tilebuf
+  ! The density-control arm, carried into EVERY protocol header. A reader
+  ! handed a raw stream could not tell as-is from uniform: the arm lived only
+  ! in the finding, so experiment intent had to be INFERRED from the forcing
+  ! numbers rather than read off the record (owner §5).
+  character(len=8) :: rho_name = 'as-is'
+  integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt, tl
   integer :: tiles(IM)
   integer(int32) :: b
   logical :: carry_aux
@@ -304,6 +321,7 @@ program g33_refine_driver
     case ('x2');       rho_mode = 3
     case default; error stop 'rho mode must be as-is|uniform|inverted|x2'
     end select
+    rho_name = trim(arg)
   end if
 
   delt_used = f32(DT_BITS) / real(nsplit)
@@ -330,13 +348,20 @@ program g33_refine_driver
 #ifdef KDM6_G33_NUMBER_DUMP
   ! What this stream INTENDS to be. Without it a run truncated at a closed call
   ! boundary is indistinguishable from a shorter run that completed (owner P0-1).
-  ! schema 2 declares the FEATURES this stream carries, so a reader knows which
-  ! extension records to require rather than ignoring the ones it does not know
-  ! (owner P0-E1). Unknown G33F records were silently dropped; a declared feature
-  ! whose records are missing is now an error.
-  write(*,'(A,4(1X,I0),3(1X,A))') 'G33N STREAM_BEGIN', 2, nsplit, ntile, &
+  ! The header declares the FEATURES this stream carries, so a reader knows which
+  ! extension records to require rather than ignoring the ones it does not know.
+  ! schema 3 makes that declaration BINDING in both directions: a declared
+  ! feature whose records are missing is an error, and a record whose feature was
+  ! not declared is refused rather than parsed anyway. The extension families
+  ! also carry an exact (sub-step, level) universe -- CAPIN over k=1..K-1 and
+  ! TOPOUT at k=0 -- so an incomplete or displaced group cannot pass.
+  ! schema 4 adds the DENSITY-CONTROL ARM. Without it a reader handed two raw
+  ! streams could not tell `as-is` from `uniform`: the arm lived only in the
+  ! finding, so experiment intent had to be inferred from the forcing numbers
+  ! instead of read off the record (owner §5).
+  write(*,'(A,4(1X,I0),4(1X,A))') 'G33N STREAM_BEGIN', 4, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
-        'mstep,mstepi,nflux,xfer,capin,topout' 
+        'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name) 
 #endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &
@@ -389,24 +414,38 @@ program g33_refine_driver
   write(*,'(A)') 'G33N STREAM_END'
 #endif
 #ifdef KDM6_G33_PRECISION_PROBE
+  ! The TILE VECTOR, not just its length (owner §8.1). `ntile` alone cannot tell
+  ! (2,1) from (1,2), and `ncmin` is a scalar overwritten in the column loop, so
+  ! two decompositions of the same domain can give different answers. Comparing
+  ! them as a `variant` difference would attribute a DECOMPOSITION effect to the
+  ! algorithm.
+  tilestr = ''
+  do tl = 1, ntile
+    write(tilebuf, '(I0)') tiles(tl)
+    tilestr = trim(tilestr) // trim(tilebuf)
+    if (tl < ntile) tilestr = trim(tilestr) // ','
+  end do
+
   ! The probe stream declares its own precision. Without it an f64 stream and an
   ! f32 one are the same text with different numbers, and nothing structurally
   ! stops a reader mixing them (owner P0-4 / priority 2). `source_precision` is
   ! the precision of the REFERENCE this arm instruments, which is always f32.
 #ifdef KDM6_G33_F64
-  ! 1 A + 1 I0 + 10 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
+  ! 1 A + 1 I0 + 14 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
   ! because a Fortran format/argument mismatch is a RUNTIME abort, not a compile
   ! error: the build succeeds and the failure appears only as missing output.
-  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 2, 'precision', 'f64', 'source_precision', 'f32', &
+  write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 3, 'precision', 'f64', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
-        trim(merge('carry ', 'rezero', carry_aux)), &
+        trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
+        'rho_profile', trim(rho_name), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #else
-  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 2, 'precision', 'f32', 'source_precision', 'f32', &
+  write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 3, 'precision', 'f32', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
-        trim(merge('carry ', 'rezero', carry_aux)), &
+        trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
+        'rho_profile', trim(rho_name), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #endif
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is

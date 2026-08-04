@@ -6,6 +6,8 @@ it asserts the platform rather than the code.
 """
 import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -210,3 +212,45 @@ def test_identity_paths_are_normalised(build):
     (out / "generated.F").write_text("x\n")
     got = _collect(out, root)
     assert got["sources"][0]["path"].startswith("<OUT>")
+
+
+# ---- owner priority-2: f64 + nflux is guarded at all THREE layers ------------
+#
+# The Python producer refused the combination; the build script it calls did not,
+# so anyone invoking the script directly still got a binary whose G33F number
+# records carry four bytes of an eight-byte real labelled `f32` -- a
+# valid-looking bit pattern that is not the number.
+
+def test_the_build_script_refuses_f64_with_nflux():
+    """The layer that was missing: `refine_build.sh OUT --f64 --nflux` set both
+    and carried on."""
+    script = REPO / "harness/g33_fortran/refine_build.sh"
+    r = subprocess.run(["bash", str(script), "/tmp/should-not-exist",
+                        "--f64", "--nflux"], capture_output=True, text=True,
+                       cwd=REPO)
+    assert r.returncode != 0, "the build script accepted --f64 --nflux"
+    assert "refused" in r.stderr
+
+
+def test_the_preprocessor_refuses_it_too():
+    """Catches a hand-rolled compile that reaches neither the producer nor the
+    script, and fails at COMPILE time rather than emitting a binary whose output
+    is quietly wrong."""
+    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    assert "#if defined(KDM6_G33_F64) && defined(KDM6_G33_NUMBER_DUMP)" in drv
+    assert "#error" in drv
+
+
+@pytest.mark.skipif(shutil.which("gfortran") is None, reason="needs gfortran")
+def test_the_preprocessor_guard_actually_fires():
+    """A guard nothing triggers is worse than none: it reads as protection."""
+    drv = REPO / "harness/g33_fortran/g33_refine_driver.f90"
+    bad = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
+                          "-DKDM6_G33_F64", "-DKDM6_G33_NUMBER_DUMP", str(drv)],
+                         capture_output=True, text=True)
+    assert "no f64 number record family" in bad.stderr
+    # ...and stays silent for the combination that IS supported.
+    ok = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
+                         "-DKDM6_G33_NUMBER_DUMP", str(drv)],
+                        capture_output=True, text=True)
+    assert "no f64 number record family" not in ok.stderr

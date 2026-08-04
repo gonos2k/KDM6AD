@@ -2,10 +2,10 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-BASIS-001` | **active** |
-| `G33-BASIS-002` | **hold** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-BASIS-001` | **active** | confirmed | g33_fixture_multisubcycle_v1 for the magnitude; source for the bases |
+| `G33-BASIS-002` | **hold** | open-question | owner physics decision |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
