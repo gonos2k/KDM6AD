@@ -1,5 +1,16 @@
 # Column 3 does have a valid convergence domain — in the ice chain, which refines two levels earlier
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-DTCLD-001` | **active** |
+| `G33-MSTEPI-001` | **active** |
+| `G33-NI-ORDER-001` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner §5, and a correction to this branch's own reasoning twice over.
 
 The kernel runs **two independent sedimentation sub-cycles with separate

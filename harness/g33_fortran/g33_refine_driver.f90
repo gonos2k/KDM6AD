@@ -295,8 +295,13 @@ program g33_refine_driver
 #ifdef KDM6_G33_NUMBER_DUMP
   ! What this stream INTENDS to be. Without it a run truncated at a closed call
   ! boundary is indistinguishable from a shorter run that completed (owner P0-1).
-  write(*,'(A,4(1X,I0),1X,A,1X,A)') 'G33N STREAM_BEGIN', 1, nsplit, ntile, &
-        nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux))
+  ! schema 2 declares the FEATURES this stream carries, so a reader knows which
+  ! extension records to require rather than ignoring the ones it does not know
+  ! (owner P0-E1). Unknown G33F records were silently dropped; a declared feature
+  ! whose records are missing is now an error.
+  write(*,'(A,4(1X,I0),3(1X,A))') 'G33N STREAM_BEGIN', 2, nsplit, ntile, &
+        nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
+        'mstep,mstepi,nflux,xfer,capin,topout' 
 #endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &

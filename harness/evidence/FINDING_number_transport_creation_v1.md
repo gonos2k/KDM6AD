@@ -1,5 +1,17 @@
 # Sedimentation creates column number: measured, and the alternative hypothesis excluded
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-NUMBER-001` | **active** |
+| `G33-NUMBER-002` | **active** |
+| `G33-NUMBER-003` | **active** |
+| `G33-NUMBER-004` | **withdrawn → G33-NUMBER-002** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 The `nr` number-moment release blocker, quantified on the pinned legacy reference.
 
 ## The arithmetic, from the source

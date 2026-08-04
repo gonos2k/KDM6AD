@@ -1,5 +1,14 @@
 # Both ledgers, corrected twice: a ~10x conservative advantage in one column, and no clean policy signal
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-PRECIP-002` | **withdrawn → G33-PRECIP-001** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 > **SCOPE CORRECTION (owner §6.4 follow-up).** The column-2 conservative advantage
 > reported below is **precision-scoped and is 1.00× at f64**. Rebuilding this
 > fixture with the kernel promoted to f64 shows it essentially does not

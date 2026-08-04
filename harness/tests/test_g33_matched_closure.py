@@ -8,27 +8,34 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 import g33_matched_closure as mc  # noqa: E402
+from test_g33_number_transport import _call, _stream  # noqa: E402
 
 
-def _xfer(call=1, loop=1, n=1, col=1, chain="main", dq="3F800000", dn="40000000"):
-    return f"G33F XFER {loop} {n} {col} {chain} f32 {dq} {dn}\n"
+def _with_xfer(cid, mstep=1, dq="3F800000", dn="40000000"):
+    """A complete call whose XFER universe matches the declared mstep — the
+    strict parser now requires exactly sub-steps 1..mstep."""
+    body = _call(cid).replace(
+        "G33F MSTEP 1 main 1 i32 00000001",
+        f"G33F MSTEP 1 main 1 i32 {mstep:08X}")
+    xf = "".join(f"G33F XFER 1 {n} 1 main f32 {dq} {dn}\n"
+                 for n in range(1, mstep + 1))
+    xf += "G33F XFER 1 1 1 ice f32 00000000 00000000\n"
+    return body.replace("G33N CALL_END", xf + "G33N CALL_END")
 
 
 def test_transfers_are_summed_over_substeps_within_one_call():
     """The bottom cell exports once per sub-step; the segment budget spans them
     all, so a single-sub-step read would understate the outflow."""
-    s = ("G33N CALL_BEGIN 1 1 1 1 1 2 42C80000\n"
-         + _xfer(n=1) + _xfer(n=2) + "G33N CALL_END 1 1 1\n")
-    got = mc.transfers(s)
+    got = mc.transfers(_stream(_with_xfer(1, mstep=2),
+                               feats="mstep,mstepi,nflux,xfer"))
     assert got[(1, 1, 1, "main")] == (2.0, 4.0)
 
 
 def test_transfers_are_not_pooled_across_calls():
     """Keyed by the call's ordinal: pooling would attribute one call's outflow to
     another, which is the defect the G33N framing exists to stop."""
-    s = ("G33N CALL_BEGIN 1 1 1 1 1 2 42C80000\n" + _xfer() + "G33N CALL_END 1 1 1\n"
-         "G33N CALL_BEGIN 2 2 1 1 1 2 42C80000\n" + _xfer() + "G33N CALL_END 2 2 1\n")
-    got = mc.transfers(s)
+    got = mc.transfers(_stream(_with_xfer(1), _with_xfer(2),
+                               feats="mstep,mstepi,nflux,xfer"))
     assert got[(1, 1, 1, "main")] == (1.0, 2.0)
     assert got[(2, 1, 1, "main")] == (1.0, 2.0)
 
@@ -57,8 +64,38 @@ def test_a_failing_mass_control_is_flagged_not_reported_as_a_result(capsys):
     finally:
         mc.closures = orig
     out = capsys.readouterr().out
-    assert "!! ice/qi col 2: mass control fails" in out
+    assert "!! ice/qi col 2: matched_mass_control_failed" in out
     assert "!! main/qr" not in out, "a control that closes must not be flagged"
+
+
+def test_an_unusable_row_carries_a_null_number_result_in_the_JSON(monkeypatch):
+    """A warning printed under a table is separated from it the moment someone
+    copies the table. In the JSON the exclusion is structural (owner §6.2)."""
+    def fake(_stream):
+        return {("ice", "qi", 2): {"out": 1.0, "residual": -3.8, "start": 1.0,
+                                   "calls": 1},
+                ("ice", "ni", 2): {"out": 1.0, "residual": -1.6, "start": 1.0,
+                                   "calls": 1},
+                ("main", "qr", 1): {"out": 1.0, "residual": 1e-12, "start": 1.0,
+                                    "calls": 1},
+                ("main", "nr", 1): {"out": 1.0, "residual": 0.15, "start": 1.0,
+                                    "calls": 1}}
+    monkeypatch.setattr(mc, "closures", fake)
+    a = mc.analysis("")
+    assert a["ice/ni/2"]["usable"] is False
+    assert a["ice/ni/2"]["number_result"] is None
+    assert "matched_mass_control_failed" in a["ice/ni/2"]["reason"]
+    assert a["main/nr/1"]["usable"] is True
+    assert a["main/nr/1"]["number_result"] == pytest.approx(0.15)
+
+
+def test_the_control_tolerance_is_derived_not_a_round_number():
+    """1e-3 accepted a residual thousands of f32 eps as 'roundoff' (owner §6.1).
+    gamma_n = n*eps/(1-n*eps) scales with the operation count."""
+    small = mc.control_tolerance(8, 1.0)
+    large = mc.control_tolerance(8000, 1.0)
+    assert small < large < 1e-3
+    assert small == pytest.approx(8 * 2.0 ** -24, rel=1e-6)
 
 
 def test_the_interface_term_is_departure_minus_arrival():
@@ -82,3 +119,19 @@ def test_the_new_sites_stay_under_the_number_macro():
         body = ovl.split(f"def {fn}(")[1].split("\ndef ")[0]
         assert "KDM6_G33_NUMBER_DUMP" in body
         assert "KDM6_G33_FORTRAN_DUMP" not in body
+
+
+def test_instrumentation_sites_are_keyed_by_ALGORITHM():
+    """The conservative variant rewrote the sedimentation update, so the legacy
+    anchors do not exist in it. Keying the sites by algorithm is what let the
+    overlay fail loudly on a missing anchor instead of instrumenting the wrong
+    statement (owner §11)."""
+    import sys
+    sys.path.insert(0, str(ROOT / "g33_fortran"))
+    import g33_fortran_bindings as fb
+    for sites in (fb.XFER_SITES, fb.CAP_SITES, fb.TOP_SITES):
+        assert set(sites) == {"legacy", "conservative"}
+        assert sites["legacy"] != sites["conservative"]
+    # conservative's number inflow keeps the dz-only ratio: that is the anchor
+    assert any("delz(i,k+1)/delz(i,k)" in a
+               for a, *_ in fb.XFER_SITES["conservative"])

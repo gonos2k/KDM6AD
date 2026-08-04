@@ -1,5 +1,14 @@
 # Finding: `ncmin` is a scalar in Fortran and per-cell in C++
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-NCMIN-001` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Status: **CONFIRMED by measurement.** A column permutation changes **46 of 144**
 final-state cells, so the pinned Fortran operator is not column-local. Reported, not
 acted on — production physics is frozen and which implementation is correct is owner

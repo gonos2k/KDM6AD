@@ -170,7 +170,10 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   sedimentation reaches the ground. Three earlier observations collapse into this
   one: column water is conserved at f64 (nothing leaves); **legacy and conservative
   are bit-identical at f64 — 0 of 333 records, against 39 at f32 with max relative
-  difference 3.28**; and the moist-enthalpy **conservative advantage is 5.89× in
+  difference 8.656e-01, max_ulp 24325658** — produced by `g33_probe_read.diff`
+  under the `variant` contract, which reports `bitwise_identical: true` at f64
+  (an earlier "3.28" used the asymmetric `|a−b|/|a|`); and the moist-enthalpy
+  **conservative advantage is 5.89× in
   column 2 at f32 and 1.00× at f64**, so it measures the two variants' response to a
   fixture where the two precisions enter **different precipitation active sets**,
   **not the interface's thermodynamics** — and "a cap event f32 noise creates" is

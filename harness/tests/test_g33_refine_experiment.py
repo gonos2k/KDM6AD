@@ -185,11 +185,19 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
 
 
 def _probe_stream(nsplit=3):
+    """A COMPLETE probe stream: the reader now requires the exact
+    field x cell universe plus INITIAL, all three forcings and PREC, because
+    'absent' silently disabled every check (owner §7.2)."""
     out = [f"G33P BEGIN 2 precision f64 source_precision f32 fixture fx "
            f"algorithm legacy mode rezero {nsplit} 1 1 {300.0/nsplit:.6f} "
            f"{300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
+        out.append(f"G33P INITIAL {f} 1 0   1.0000000000000000E+000")
+    for nm in ("rho", "delz", "pii"):
+        out.append(f"G33P FORCING {nm} 1 0   1.0000000000000000E+000")
+    for sp in (1, 2, 3):
+        out.append(f"G33P PREC {sp} 1   0.0000000000000000E+000")
     out.append("G33P END")
     return "\n".join(out) + "\n"
 
@@ -212,7 +220,7 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     xp._agree(g33r, dict(g33r), "n.txt")                    # identical: fine
     swapped = dict(g33r)
     swapped[("prec", 1, 1)], swapped[("prec", 2, 1)] = 3.0, 2.0
-    with pytest.raises(xp.pr.ProbeError, match="disagree at"):
+    with pytest.raises(xp.pr.ProbeError, match="different f32 words at"):
         xp._agree(g33r, swapped, "n.txt")
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
     with pytest.raises(xp.pr.ProbeError, match="is missing"):

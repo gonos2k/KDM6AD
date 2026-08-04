@@ -285,11 +285,11 @@ def build_overlay(algo, text):
                  for f, e in fb.SURFACE_NUMBER_FIELDS],
                "#endif"])]
     edits += [(a, "after", _xfer_lines(ch, m, n))
-              for a, ch, m, n in fb.XFER_SITES]
+              for a, ch, m, n in fb.XFER_SITES[algo]]
     edits += [(a, "after", _cap_inflow_lines(ch, c, u, cn, un))
-              for a, ch, c, u, cn, un in fb.CAP_SITES]
+              for a, ch, c, u, cn, un in fb.CAP_SITES[algo]]
     edits += [(a, "before", _top_lines(ch, r, rn))
-              for a, ch, r, rn in fb.TOP_SITES]
+              for a, ch, r, rn in fb.TOP_SITES[algo]]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
     for (role, species), anchor in cfg["post"].items():

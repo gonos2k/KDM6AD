@@ -512,46 +512,77 @@ SURFACE_NUMBER_FIELDS = [
     ("nflux_dtcld", "dtcld"),
 ]
 
-#: The ACTUAL capped interface transfers, at the bottom cell, per sub-step
-#: (owner §5.2). The closure previously used `fall`/`falln`, which accumulate the
-#: UNCAPPED rate, so a call where a cap bound had to be excluded -- and the cap
-#: was detected by an endpoint recursion that only works at `mstep == 1`. These
-#: are what the kernel actually moved, so `mstep > 1` becomes measurable, and the
-#: mass and number of ONE chain are emitted from ONE statement pair on ONE call:
-#: a matched control rather than qr-on-main against ni-on-ice.
-XFER_SITES = [
-    # (anchor, chain, mass expr, number expr)
-    ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
-     "main", "dqr(i,k)", "dnr(i,k)"),
-    ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)",
-     "ice", "dqi(i,k)", "dni(i,k)"),
-]
-
 #: `dq?(i,k+1)` is written TWICE with different caps: at iteration k+1 as that
 #: cell's own outflow, capped against its PRE-update content, and again at
 #: iteration k as the inflow below, capped against its POST-update content. The
 #: second is what arrives; the first is what left. Emitting both of a cell's
 #: transfers at each iteration lets the two be paired across the interface, which
 #: is where the mass goes missing.
-#: The TOP cell is updated OUTSIDE the interior loop, so its departure has no
-#: `dq?(i,k)` record and the topmost interface was invisible. Emitted BEFORE the
-#: update, where the pre-update content is still available, as the actual removal
-#: `min(uncapped, content)`.
-TOP_SITES = [
-    ("           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
-     "main", "min(falk(i,k,1)*dtcld/dend(i,k),qrs(i,k,1))",
-     "min(falkn(i,k,1)*dtcld,nrs(i,k,1))"),
-    ("           qci(i,k,2) = max(qci(i,k,2)-falk(i,k,4)*dtcld/dend(i,k),0.)",
-     "ice", "min(falk(i,k,4)*dtcld/dend(i,k),qci(i,k,2))",
-     "min(falkn(i,k,2)*dtcld,nci(i,k,2))"),
-]
+#: Sites are PER ALGORITHM (owner §11). The conservative variant rewrote the
+#: sedimentation update -- its interior inflow is the source cell's ACTUAL capped
+#: outflow converted by `src_metric/dst_metric` for mass, while number keeps the
+#: dz-only ratio -- so the legacy anchors do not exist in it and the overlay
+#: failed loudly rather than instrumenting the wrong statement.
+#:
+#: TOP: the top cell is updated outside the interior loop, so its departure has
+#: no `dq?(i,k)` record and the topmost interface would be invisible. Emitted
+#: BEFORE the update, where the pre-update content is still available.
+TOP_SITES = {
+    "legacy": [
+        ("           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+         "main", "min(falk(i,k,1)*dtcld/dend(i,k),qrs(i,k,1))",
+         "min(falkn(i,k,1)*dtcld,nrs(i,k,1))"),
+        ("           qci(i,k,2) = max(qci(i,k,2)-falk(i,k,4)*dtcld/dend(i,k),0.)",
+         "ice", "min(falk(i,k,4)*dtcld/dend(i,k),qci(i,k,2))",
+         "min(falkn(i,k,2)*dtcld,nci(i,k,2))"),
+    ],
+    "conservative": [
+        # already the ACTUAL capped outflow in this variant
+        ("           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)", "main",
+         "dqr(i,k)", "dnr(i,k)"),
+        ("           nci(i,k,2) = nci(i,k,2)-dni(i,k)", "ice",
+         "dqi(i,k)", "dni(i,k)"),
+    ],
+}
 
-CAP_SITES = [
-    ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)", "main",
-     "dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"),
-    ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)", "ice",
-     "dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"),
-]
+#: `dq?(i,k+1)` in LEGACY is written twice with different caps: at iteration k+1
+#: as that cell's own outflow (PRE-update cap) and again at iteration k as the
+#: inflow below (POST-update cap). The second is what arrives, the first is what
+#: left, and the difference is destroyed. The conservative variant computes the
+#: inflow ONCE, from the source cell's actual outflow, so this pairing measures a
+#: defect that variant does not have -- which is exactly what makes it a control.
+CAP_SITES = {
+    "legacy": [
+        ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+         "main", "dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"),
+        ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)",
+         "ice", "dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"),
+    ],
+    "conservative": [
+        ("                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
+         "main", "dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"),
+        ("                          +dni(i,k+1)*delz(i,k+1)/delz(i,k)",
+         "ice", "dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"),
+    ],
+}
+
+#: The bottom cell's ACTUAL capped transfer, per sub-step: what the kernel really
+#: moved, so nothing is reconstructed from endpoints and `mstep > 1` is
+#: measurable.
+XFER_SITES = {
+    "legacy": [
+        ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+         "main", "dqr(i,k)", "dnr(i,k)"),
+        ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)",
+         "ice", "dqi(i,k)", "dni(i,k)"),
+    ],
+    "conservative": [
+        ("                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
+         "main", "dqr(i,k)", "dnr(i,k)"),
+        ("                          +dni(i,k+1)*delz(i,k+1)/delz(i,k)",
+         "ice", "dqi(i,k)", "dni(i,k)"),
+    ],
+}
 
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"

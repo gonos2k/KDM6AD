@@ -1,5 +1,14 @@
 # The refinement bundle is now reproducible, and the reproduction was run
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-DTCLD-002` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner review §9. The refinement experiment recorded provenance that could not
 support a reproduction attempt, and no attempt had been made.
 

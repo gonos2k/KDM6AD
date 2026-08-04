@@ -125,9 +125,40 @@ def test_every_claim_declares_a_scope():
     ("G33-WATER-ORDER-001", "withdrawn"),   # mstep explains column-3 water
     ("G33-PRECIP-002", "withdrawn"),        # conservative enthalpy advantage
     ("G33-NUMBER-002", "active"),           # 6-14%, conditional
-    ("G33-NUMBER-003", "hold"),             # conservative same defect: predicted
+    # was hold/predicted; now measured on both arms, identical to the last digit
+    ("G33-NUMBER-003", "active"),
 ])
 def test_the_corrections_this_review_required_are_recorded(cid, expect):
     got = next((c for c in CLAIMS if c["id"] == cid), None)
     assert got is not None, f"{cid} missing from the registry"
     assert got["status"] == expect
+
+
+# ---- owner §10: the narrative may not drift from the registry ---------------
+
+def test_every_finding_carries_the_registry_verdict_and_it_is_current():
+    """Declaring the registry authoritative did not stop a grade table in
+    FINDING_column_water_orders_v1 saying "turnover is roundoff — confirmed" for
+    two commits after the registry had withdrawn exactly that. The verdict is now
+    stamped into each finding, and this fails when it goes stale."""
+    import sys
+    sys.path.insert(0, str(EVIDENCE.parent))
+    import g33_claim_header as ch
+    assert ch.stamp(check=True) == 0, "run harness/g33_claim_header.py"
+
+
+def test_the_conservative_arm_is_measured_not_predicted():
+    """It stood as predicted/unmeasured until the overlay gained per-algorithm
+    anchors; the conservative update statements differ, so the legacy anchors did
+    not exist in it (owner §11)."""
+    c = next(c for c in CLAIMS if c["id"] == "G33-NUMBER-003")
+    assert c["status"] == "active" and c["grade"] == "confirmed"
+    assert "measurement" in c["basis"]
+
+
+def test_a_withdrawn_claim_is_superseded_by_the_answer_to_ITS_question():
+    """G33-NUMBER-006 (ice closure measures the ice defect) pointed at the
+    MAIN-chain result. The claim that actually answers it is the ice cap
+    explanation (owner §9.3)."""
+    by_id = {c["id"]: c for c in CLAIMS}
+    assert by_id["G33-NUMBER-006"]["superseded_by"] == "G33-ICE-CAP-001"
