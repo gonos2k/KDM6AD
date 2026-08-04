@@ -96,12 +96,18 @@ def closures(stream: str, basis: str = "operator") -> dict:
                                  for t in range(len(ks)))
                         d = acc.setdefault((chain, species, col),
                                            {"out": 0.0, "residual": 0.0,
-                                            "start": 0.0, "calls": 0,
+                                            "start": 0.0, "final": 0.0,
+                                            "transported": 0.0, "calls": 0,
                                             "per_call": []})
                         r = (x1 - x0) + w * transfer
                         d["out"] += w * transfer
                         d["residual"] += r
                         d["start"] += x0
+                        # The endpoints and the throughput, so the residual can be
+                        # normalised by something other than the surface flux
+                        # (owner §11): R/F is NOT "the column gained 9-15%".
+                        d["final"] += x1
+                        d["transported"] += abs(w * transfer)
                         d["calls"] += 1
                         # PER CALL, because the aggregate hides cancellation:
                         # +1e-3 on one call and -1e-3 on the next summed to a

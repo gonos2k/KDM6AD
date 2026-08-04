@@ -91,3 +91,63 @@ def test_the_topmost_interface_is_included(stream):
     # K = 4 gives 3 interfaces per (column, chain, sub-step); dropping the top one
     # would give 2, so the count itself detects the omission.
     assert a["total_interfaces"] == 255
+
+
+# ---- owner §2: "bit-for-bit" must be a raw-bit comparison, and it is SCOPED ---
+
+@pytest.fixture(scope="module")
+def variants(tmp_path_factory):
+    """Both algorithms, same fixture, --nflux. Raw text, not parsed floats: the
+    claim is about the stored patterns, so a float round-trip would be the wrong
+    instrument."""
+    out = {}
+    for algo in ("legacy", "conservative"):
+        d = tmp_path_factory.mktemp(algo) / "build"
+        b = subprocess.run(["bash", str(BUILD), str(d),
+                            "--fixture=g33_fixture_multisubcycle_v1",
+                            f"--algo={algo}", "--nflux"],
+                           capture_output=True, text=True, cwd=REPO)
+        assert b.returncode == 0, f"{algo} build failed:\n{b.stdout}\n{b.stderr}"
+        r = subprocess.run([str(d / "g33_refine_driver"), "12", "rezero", "3"],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        out[algo] = r.stdout
+    return out
+
+
+def _state(stream, field):
+    return {(t[4], t[7], t[8]): t[10]
+            for t in (l.split() for l in stream.splitlines())
+            if len(t) > 10 and t[1] == "STAGE" and t[6] == field}
+
+
+def _xfer(stream, idx):
+    return {tuple(t[2:6]): t[7 + idx]
+            for t in (l.split() for l in stream.splitlines())
+            if len(t) > 8 and t[1] == "XFER"}
+
+
+def test_the_MAIN_chain_is_raw_bit_identical_across_the_two_variants(variants):
+    """The claim originally rested on two normalised residuals being equal, which
+    is not a raw-bit comparison (owner §2). It is one now -- and it holds, which
+    is WHY main/nr matches to the last digit rather than that being luck."""
+    L, C = variants["legacy"], variants["conservative"]
+    for field in ("nr", "qr"):
+        a, b = _state(L, field), _state(C, field)
+        assert a and a == b, f"main-chain {field} is not raw-bit identical"
+    for idx in (0, 1):                      # dq then dn
+        a, b = _xfer(L, idx), _xfer(C, idx)
+        main = {k: v for k, v in a.items() if k[3] == "main"}
+        assert main and all(b[k] == v for k, v in main.items())
+
+
+def test_the_ICE_chain_is_NOT_identical_and_must_not_be(variants):
+    """The conservative variant exists to fix the ice cap. If ice matched
+    bit-for-bit the variant would not be doing anything, so this asserts the
+    scope of the claim above rather than merely tolerating a difference."""
+    L, C = variants["legacy"], variants["conservative"]
+    for field in ("ni", "qi"):
+        assert _state(L, field) != _state(C, field), \
+            f"ice {field} is identical — the cap fix did nothing"
+    ice = {k: v for k, v in _xfer(L, 1).items() if k[3] == "ice"}
+    assert any(_xfer(C, 1)[k] != v for k, v in ice.items())

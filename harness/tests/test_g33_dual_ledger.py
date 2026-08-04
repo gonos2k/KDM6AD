@@ -26,15 +26,19 @@ def _hex(x):
     return struct.pack(">f", x).hex().upper()
 
 
-def _stream(qv):
-    """One call whose only free variable is the humidity profile."""
+def _stream(qv, qr=0.0):
+    """One call whose only free variable is the humidity profile.
+
+    `qr` is optional mass, so a caller needing a mean particle mass (q/N)
+    can have one; the humidity tests do not care and leave it zero.
+    """
     pre = [10.0, 20.0, 30.0, 40.0]
     post = [pre[t] - XFER[t] + (XFER[t - 1] if t else 0.0) for t in range(4)]
     L = ["G33N STREAM_BEGIN 3 1 1 1 legacy rezero mstep,mstepi,nflux,xfer",
          f"G33N CALL_BEGIN 1 1 1 1 1 {len(RHO)} 42C80000"]
     for stage, vals in (("outer_pre_sed", pre), ("outer_post_sed", post)):
         for k in range(len(RHO)):
-            for f, v in (("nr", vals[k]), ("ni", 0.0), ("qr", 0.0), ("qi", 0.0),
+            for f, v in (("nr", vals[k]), ("ni", 0.0), ("qr", qr), ("qi", 0.0),
                          ("qv", qv[k]), ("rho", RHO[k]), ("delz", DZ)):
                 if stage == "outer_post_sed" and f in ("rho", "delz"):
                     continue

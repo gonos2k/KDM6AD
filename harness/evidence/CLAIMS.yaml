@@ -145,8 +145,13 @@ claims:
     text: >
       The conservative variant carries the same number defect: main/nr is
       15.0036/13.3377/11.8402% in BOTH variants, identical to the last digit
-      (0.150035513206531). It fixes the mass measure and leaves number on the dz
-      ratio. Fixing the cap additionally makes the ice chain measurable --
+      (0.150035513206531). "Bit-for-bit" is now SCOPED and backed by a raw-hex
+      comparison rather than inferred from equal ratios (owner §2): the MAIN
+      chain is raw-bit identical -- nr 108/108, qr 108/108 STATE records and 6/6
+      main XFER dq and dn -- which is why the normalised residual matches to the
+      last digit. The ICE chain is NOT (ni 74/96, qi 72/96, ice XFER 2/3), nor
+      are qv/t (48/96), because that is the cap fix taking effect and propagating.
+      It fixes the mass measure and leaves number on the dz ratio. Fixing the cap additionally makes the ice chain measurable --
       ice/qi's control now closes where legacy's failed at -384%/-269% -- giving
       ice/ni +6.2789% and +7.0584%.
     status: active
@@ -154,7 +159,7 @@ claims:
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
     evidence: [FINDING_conservative_number_defect_v1.md]
-    evidence_sha256: [FINDING_conservative_number_defect_v1.md:72a0902804389b12]
+    evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7]
 
   - id: G33-NUMBER-008
     text: >
@@ -301,6 +306,30 @@ claims:
       decision.
     evidence: [FINDING_dual_ledger_v1.md]
     evidence_sha256: [FINDING_dual_ledger_v1.md:d18c9e4d3502a6e7]
+
+  - id: G33-MAGNITUDE-001
+    text: >
+      The headline R/F_surface of 11.84-15.00% is 0.2173/0.4379/0.6884% of the
+      INITIAL column number and 3.20-3.86% of the interface throughput -- a factor
+      of 20-50 between the readings. The defect reaches a size-dependent
+      diagnostic only through q/N: the TOTAL change in mean particle mass across
+      the segment is -1.87/-4.30/-7.81% but that is mostly genuine size sorting;
+      the defect's share is -0.22/-0.45/-0.72%, and since D goes as (q/N)^(1/3)
+      the implied diameter bias is -0.073/-0.150/-0.241%. The readings "column
+      number rose 9-15%" and "mean diameter fell 3-5%" are quantitatively
+      excluded on this fixture.
+    status: active
+    grade: confirmed
+    basis: >
+      measurement, with the mass control closing -- which is what permits
+      attributing the mean-mass bias to number at all
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain, PER CALL
+      segment. Not a forecast bias and not cumulative: the ~20% ni figure over
+      300 s is a different statement. Diameter assumes D ~ (q/N)^(1/3) and is not
+      a reflectivity calculation.
+    evidence: [FINDING_defect_magnitude_v1.md]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:d9a6cc91327e7c9c]
 
   - id: G33-PRECIP-001
     text: >

@@ -43,10 +43,33 @@ bit-identical to their plain builds at N = 12 and 96.
 
 Two things follow.
 
-**1. The number defect is unchanged — bit-for-bit.** `main/nr/1` is
-`0.150035513206531` in both variants, not merely close. The conservative
-interface fixes the *mass* measure and leaves number on `Δz`, so the created
-number is identical. `G33-NUMBER-003` moves from **predicted** to **measured**.
+**1. The number defect is unchanged — and on the MAIN CHAIN that is bit-for-bit.**
+`main/nr/1` is `0.150035513206531` in both variants, not merely close.
+
+That equality of a *normalised residual* was originally the whole basis for
+saying "bit-for-bit", which the owner correctly called overstated (§2): identical
+ratios are not a raw-bit comparison. So the raw-bit comparison was run — hex
+straight from the stream, no float round-trip:
+
+| records | legacy vs conservative |
+|---|---|
+| `nr` STATE (every stage) | **108 / 108 identical** |
+| `qr` STATE (every stage) | **108 / 108 identical** |
+| main XFER `dq` and `dn` | **6 / 6 identical** |
+| `ni` STATE | 74 / 96 — differ |
+| `qi` STATE | 72 / 96 — differ |
+| ice XFER `dq` and `dn` | 2 / 3 — differ |
+| `qv`, `t` STATE | 48 / 96 — differ |
+
+So the statement is now **scoped and stronger**: the entire main chain is
+raw-bit identical between the two variants, which is *why* its normalised
+residual matches to the last digit rather than that being a coincidence. The
+**ice chain is not** identical, and must not be — that is the cap fix taking
+effect, and `qv`/`t` differing shows it propagating into the thermodynamic state.
+
+The conservative interface fixes the *mass* measure and leaves number on `Δz`, so
+the created number is identical. `G33-NUMBER-003` moves from **predicted** to
+**measured**.
 
 **2. The ice-cap diagnosis is corroborated by a variant that fixes the cap.**
 In legacy, `ice/qi` failed its mass control at −384%/−269% and both ice rows were

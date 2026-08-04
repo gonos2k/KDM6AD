@@ -70,7 +70,8 @@ def interfaces(stream: str) -> dict:
                         continue
                     d = acc.setdefault((chain, col), {
                         "mass_interface_term": 0.0, "number_created": 0.0,
-                        "number_predicted": 0.0, "interfaces": 0, "cap_bound": 0})
+                        "number_predicted": 0.0, "interfaces": 0, "cap_bound": 0,
+                        "number_transported": 0.0})
                     for n in range(1, ms + 1):
                         # own(j) and inflow(j), assembled from the two families
                         top = call["topout"].get((lp, n, col, chain, 0))
@@ -96,6 +97,11 @@ def interfaces(stream: str) -> dict:
                             # same interface and the same emitted transfer
                             d["number_predicted"] += ((rho[j] - rho[j - 1])
                                                       * dz[j - 1] * dn_out)
+                            # Total number crossing ANY interface, in column
+                            # measure -- the throughput the residual should be
+                            # compared against (owner §11). The surface transfer
+                            # alone is what R/F already uses.
+                            d["number_transported"] += abs(wb * dn_out)
                             d["interfaces"] += 1
                             d["cap_bound"] += int(dq_out != dq_in)
     return acc
