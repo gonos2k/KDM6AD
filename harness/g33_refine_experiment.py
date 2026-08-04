@@ -43,6 +43,7 @@ import g33_matched_closure as mc      # noqa: E402
 import g33_cap_interface as ci        # noqa: E402
 import g33_dual_ledger as dl          # noqa: E402
 import g33_defect_magnitude as dm     # noqa: E402
+import g33_metric_trajectory as mtj   # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -215,6 +216,21 @@ def _protocol(stream: str) -> dict:
             "columns": list(calls[0]["cols"]) if calls else None}
 
 
+def _driver_analyses(out: Path, exe: Path, nsplits) -> list:
+    """Analyses that re-run the driver under several arms, not one stream."""
+    made = []
+    for n in nsplits:
+        path = out / f"n{n}.metric_trajectory.json"
+        path.write_text(rm.json.dumps(mtj.analysis(str(exe), n), indent=2,
+                                      sort_keys=True) + "\n")
+        made.append({"file": path.name, "nsplit": n,
+                     "analysis": "metric_trajectory",
+                     "sha256": rm.sha256(path),
+                     "analyzer": "harness/g33_metric_trajectory.py",
+                     "analyzer_sha256": rm.sha256(HERE / "g33_metric_trajectory.py")})
+    return made
+
+
 def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
     """Run every analysis on every member, write it beside the member, digest it.
 
@@ -297,6 +313,12 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # come from an analysis that ran somewhere else and left nothing behind --
         # so "the run is pinned" stopped one step short of the table.
         man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []
+        # The metric/trajectory split needs FOUR runs of the same driver, so it
+        # is a bundle-level analysis rather than a per-member one. Only for the
+        # unperturbed arm: running it from a perturbed bundle would take that
+        # arm as its own baseline.
+        if nflux and rho_profile == "as-is":
+            man["analyses"] += _driver_analyses(tmp, exe, nsplits)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.
@@ -363,7 +385,7 @@ def main(argv) -> int:
                     help="comma-separated, e.g. 3,6,12,24")
     ap.add_argument("--nflux", action="store_true")
     ap.add_argument("--rho-profile", default="as-is",
-                    choices=("as-is", "uniform", "inverted", "x2"),
+                    choices=("as-is", "uniform", "inverted", "x2", "offset+", "offset-"),
                     help="density-control arm; recorded in the stream header and "
                          "the manifest, so an arm is identifiable from the "
                          "artifact rather than from a document")

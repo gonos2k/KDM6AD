@@ -80,7 +80,7 @@ FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout"}
 
 #: The density-control arms. `as-is` is the unperturbed forcing; the rest are
 #: interventions, and a stream must say which it is.
-RHO_PROFILES = {"as-is", "uniform", "inverted", "x2"}
+RHO_PROFILES = {"as-is", "uniform", "inverted", "x2", "offset+", "offset-"}
 
 #: G33F record families this parser recognises. STAGE and the op ladder are
 #: consumed selectively; the rest are the number extension.

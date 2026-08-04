@@ -272,12 +272,40 @@ def _cache_asis(streams):
     _ASIS_CACHE["t"] = streams["as-is"]
 
 
-def test_the_substep_schedule_is_IDENTICAL_across_arms(streams):
-    """The finding reports this as a control -- the arms differ in density values
-    and not in the operator's discrete schedule -- so it is pinned as full
-    dictionary equality rather than as a summary (owner §9)."""
-    base = {k: v for c in nt.calls(streams["as-is"]) for k, v in c["mstep"].items()}
+def _mstep_by_call(text):
+    """{(call, loop, chain, col): mstep}.
+
+    Keyed by the CALL as well. The first version of this control merged every
+    call into one dict whose keys are (loop, chain, col) -- identical across
+    calls -- so later calls silently overwrote earlier ones and the "control"
+    compared only the last call. It passed while `inverted` was in fact changing
+    a sub-step count in call 1.
+    """
+    return {(i, *k): v for i, c in enumerate(nt.calls(text), 1)
+            for k, v in c["mstep"].items()}
+
+
+def test_uniform_and_x2_leave_the_substep_schedule_UNCHANGED(streams):
+    """For these two arms the control holds per call, so they compare over the
+    same accumulation count and the same interface universe."""
+    base = _mstep_by_call(streams["as-is"])
     assert base
-    for arm in ("uniform", "inverted", "x2"):
-        got = {k: v for c in nt.calls(streams[arm]) for k, v in c["mstep"].items()}
-        assert got == base, f"{arm} changed the mstep/mstep_i schedule"
+    for arm in ("uniform", "x2"):
+        assert _mstep_by_call(streams[arm]) == base, \
+            f"{arm} changed the mstep/mstep_i schedule"
+
+
+def test_inverted_DOES_change_one_substep_count_and_that_is_recorded(streams):
+    """Density sets the fall speed and `mstep` is derived from it, so a large
+    enough density change can move the schedule -- and inverting the profile
+    does, in exactly one place. Asserting the difference rather than tolerating
+    it: if a future change made every arm schedule-identical, the finding's scope
+    would need to widen, and if it made MORE arms differ, the decomposition's
+    matched-interface assumption would break silently."""
+    base = _mstep_by_call(streams["as-is"])
+    got = _mstep_by_call(streams["inverted"])
+    diff = {k: (base[k], got[k]) for k in base if base[k] != got.get(k)}
+    assert diff, "inverted no longer changes the schedule — re-scope the finding"
+    assert len(diff) == 1, f"more schedule changes than recorded: {diff}"
+    (call, loop, chain, col), (was, now) = next(iter(diff.items()))
+    assert (chain, col, was, now) == ("main", 3, 3, 2)

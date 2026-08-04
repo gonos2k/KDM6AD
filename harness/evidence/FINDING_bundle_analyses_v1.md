@@ -50,10 +50,20 @@ the one the finding describes. It disagreed on exactly one:
 
 > ~~It binds at 39 of 255 interfaces, all of them in the ice chain~~
 
-| chain | departure ≠ arrival | total \|interface term\| |
-|---|---|---|
-| ice | **39 of 108** | 8.63e−03 |
-| main | **23 of 147** | **2.70e−11** |
+| chain | mass departure ≠ arrival | **number** departure ≠ arrival | total \|interface term\| |
+|---|---|---|---|
+| ice | **39 of 108** | **39 of 108** | 8.63e−03 |
+| main | **23 of 147** | **0 of 147** | **2.70e−11** |
+
+**A second correction (owner §10):** `cap_bound` compared only `dq`, so a figure
+quoted as "cap-bound interfaces" silently meant the **mass** cap. The two are not
+the same set, and the difference matters: on the main chain the **number**
+departure and arrival never differ, which is exactly why its number result is a
+clean measure-mismatch measurement rather than a cap measurement. A single count
+could not say that. The fields are now `mass_departure_arrival_differ`,
+`number_departure_arrival_differ` and `either_differ` — named for what is
+compared, since "cap-bound" also overstates an exact inequality that a
+roundoff-scale difference satisfies.
 
 The ice count of 39 is right. **"All of them in the ice chain" is not** — the
 main chain's departure and arrival differ at 23 interfaces too. The error came

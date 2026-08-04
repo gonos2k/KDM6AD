@@ -191,7 +191,7 @@ claims:
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
     evidence: [FINDING_density_falsification_v1.md]
-    evidence_sha256: [FINDING_density_falsification_v1.md:494fb0763c35c022]
+    evidence_sha256: [FINDING_density_falsification_v1.md:9946c41bce94d71f]
 
   - id: G33-CHAIN-001
     text: >
@@ -258,7 +258,7 @@ claims:
       change applies to future --nflux bundles and does not retrofit the ones
       already published.
     evidence: [FINDING_bundle_analyses_v1.md]
-    evidence_sha256: [FINDING_bundle_analyses_v1.md:d032090a9b72ebc4]
+    evidence_sha256: [FINDING_bundle_analyses_v1.md:7f6fcc73c9e64d4e]
 
   - id: G33-COMPARE-001
     text: >
@@ -421,6 +421,39 @@ claims:
       a non-default rho-profile on a path that would not record it.
     evidence: [FINDING_schema_drift_and_denominators_v1.md]
     evidence_sha256: [FINDING_schema_drift_and_denominators_v1.md:a1622c2e598ccad8]
+
+  - id: G33-TRAJECTORY-001
+    text: >
+      The density arms' departure from exactly -1 and +2 is decomposed rather
+      than attributed: R(rho') = sum drho'*dz*d(rho) [metric] + sum
+      drho'*dz*[d(rho')-d(rho)] [trajectory], an identity. The metric term is
+      EXACTLY 0/-1/+2 by construction, so the entire departure is the trajectory
+      response, measured at 1.04%/0.81% (inverted) and 0.58%/0.45%/2.04% (x2) of
+      the metric term. The OFFSET arms separate gradient from magnitude
+      directly: adding a constant to every level cancels out of
+      (rho_below - rho_above), so a +/-10% absolute density shift leaves the
+      metric term at exactly 1.0 (11 of 12 metric ratios bit-exact, the twelfth
+      5.8e-7 from f32 roundoff on the offset addition) while a doubled gradient
+      puts it at exactly 2.0. The residual follows the GRADIENT; the 2.25-6.68%
+      it moves under an offset is trajectory by construction. The earlier attribution to fall speed alone stays
+      withdrawn -- this measures the term's SIZE, not its composition.
+      Separately, the control "mstep identical in all four arms" is CORRECTED:
+      the test merged calls under keys identical across calls, so it compared
+      only the last call. Per call, inverted drops column 3's mstep from 3 to 2
+      in call 1, so that column has no interface correspondence and is reported
+      not-comparable rather than zipped.
+    status: active
+    grade: confirmed
+    basis: >
+      an algebraic identity evaluated on four real runs, with the metric term
+      verified exact against the profiles' construction
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s. The trajectory
+      term is not further decomposed -- it is everything the perturbation did to
+      the run, and its size is measured, not apportioned. The metric
+      counterfactual is defined only where the sub-step schedule holds.
+    evidence: [FINDING_metric_trajectory_split_v1.md]
+    evidence_sha256: [FINDING_metric_trajectory_split_v1.md:ac12ca577135379b]
 
   - id: G33-PRECIP-001
     text: >
