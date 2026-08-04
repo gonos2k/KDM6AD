@@ -135,3 +135,52 @@ def test_instrumentation_sites_are_keyed_by_ALGORITHM():
     # conservative's number inflow keeps the dz-only ratio: that is the anchor
     assert any("delz(i,k+1)/delz(i,k)" in a
                for a, *_ in fb.XFER_SITES["conservative"])
+
+
+# ---- owner §6.3: the control is per call, not on the aggregate ---------------
+
+def test_two_calls_whose_residuals_CANCEL_do_not_pass():
+    """The aggregate control summed every call's residual and judged the total,
+    so +1e-3 on one call and -1e-3 on the next gave a residual of zero and the
+    row was admitted -- while BOTH calls' accounting had failed. This is the
+    single most dangerous shape the old control accepted, because a defect that
+    alternates sign is exactly what a cap or a threshold produces."""
+    d = {"out": 1.0, "residual": 0.0, "start": 1.0, "calls": 2,
+         "per_call": [{"residual": +1e-3, "out": 1.0, "scale": 1.0, "ops": 8},
+                      {"residual": -1e-3, "out": 1.0, "scale": 1.0, "ops": 8}]}
+    c = mc.control(d)
+    assert c["net"] == pytest.approx(0.0), "the aggregate view sees nothing"
+    assert c["gross"] == pytest.approx(2e-3), "the accounting error is real"
+    ok, why = mc.usable(d)
+    assert not ok and "worst call" in why
+
+
+def test_a_row_whose_every_call_closes_is_admitted():
+    d = {"out": 1.0, "residual": 0.0, "start": 1.0, "calls": 2,
+         "per_call": [{"residual": +1e-9, "out": 1.0, "scale": 1.0, "ops": 8},
+                      {"residual": -1e-9, "out": 1.0, "scale": 1.0, "ops": 8}]}
+    assert mc.usable(d)[0]
+
+
+def test_the_tolerance_scale_is_not_the_surface_flux_alone():
+    """A near-cancelling budget can have |F| far smaller than the terms that
+    produced it, so scaling by |F| alone made the threshold arbitrarily tight
+    exactly where the arithmetic was worst (owner §6.2)."""
+    tiny_flux = {"residual": 1e-6, "scale": 1e-6, "ops": 8}
+    real_scale = {"residual": 1e-6, "scale": 1e3, "ops": 8}
+    assert mc.control_tolerance(8, tiny_flux["scale"]) < abs(tiny_flux["residual"])
+    assert mc.control_tolerance(8, real_scale["scale"]) > abs(real_scale["residual"])
+
+
+def test_the_operation_count_grows_with_mstep_and_K():
+    """It was a flat `calls * 8`, so a 10-sub-step column got the same threshold
+    as a 1-sub-step one (owner §6.1)."""
+    assert mc.control_tolerance(4 * (10 + 2), 1.0) > mc.control_tolerance(4 * (1 + 2), 1.0)
+
+
+def test_the_threshold_does_not_claim_to_be_a_proof():
+    """Owner §6: gamma_n here is a screening threshold. The operation count is a
+    floor and the kernel is not a straight-line summation, so calling a pass a
+    roundoff certificate would be overclaiming -- and the artifact says so."""
+    d = {"out": 1.0, "residual": 0.0, "start": 1.0, "calls": 1, "per_call": []}
+    assert "not a proven bound" in mc.control(d)["tolerance_basis"]

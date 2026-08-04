@@ -80,19 +80,45 @@ def closures(stream: str) -> dict:
                                  for t in range(len(ks)))
                         d = acc.setdefault((chain, species, col),
                                            {"out": 0.0, "residual": 0.0,
-                                            "start": 0.0, "calls": 0})
+                                            "start": 0.0, "calls": 0,
+                                            "per_call": []})
+                        r = (x1 - x0) + w * transfer
                         d["out"] += w * transfer
-                        d["residual"] += (x1 - x0) + w * transfer
+                        d["residual"] += r
                         d["start"] += x0
                         d["calls"] += 1
+                        # PER CALL, because the aggregate hides cancellation:
+                        # +1e-3 on one call and -1e-3 on the next summed to a
+                        # residual of zero and the control passed while BOTH
+                        # calls' accounting had failed (owner §6.3).
+                        #
+                        # Each call carries its own scale and operation count.
+                        # The scale is |X0|+|X1|+|F| rather than |F| alone: a
+                        # forward-error bound depends on the magnitudes that
+                        # entered the sum, and a near-cancelling budget can have
+                        # |F| far smaller than the terms that produced it
+                        # (owner §6.2). The count is cells x (sub-steps + the two
+                        # column sums) rather than a flat 8, so `mstep` and `K`
+                        # actually appear in it (owner §6.1).
+                        ms = call["mstep"][(lp, chain, col)]
+                        d["per_call"].append({
+                            "residual": r, "out": w * transfer,
+                            "scale": abs(x0) + abs(x1) + abs(w * transfer),
+                            "ops": len(ks) * (ms + 2)})
     return acc
 
 
 #: A mass control closes when its residual is within the floating-point error a
 #: chain of this length can accumulate, not within a round number. gamma_n is the
-#: standard bound for n sequential f32 operations (owner §6.1); `n` here is the
-#: number of accumulations the column budget performs, which is one per cell per
-#: sub-step per call.
+#: textbook form for n sequential f32 operations.
+#:
+#: NOT A CERTIFICATE (owner §6). This is a SCREENING threshold, and calling it a
+#: proof of roundoff would be overclaiming. The operation count is a floor -- it
+#: counts the cells, the sub-steps and the two column sums, but not each update's
+#: individual multiply/divide/add, the cap re-evaluations, or state accumulated
+#: across calls -- and gamma_n itself assumes a straight-line summation that the
+#: capped, branching kernel is not. What it is good for is exactly what it is
+#: used for: refusing rows whose accounting is visibly missing a term.
 _F32_EPS = 2.0 ** -24
 
 
@@ -101,14 +127,40 @@ def control_tolerance(n_ops: int, scale: float) -> float:
     return g * scale
 
 
+def control(d: dict) -> dict:
+    """Net, gross and worst-per-call residual, each against its own threshold.
+
+    The aggregate alone allowed cancellation, so `max_ratio` -- the worst single
+    call measured against that call's own threshold -- is the binding one. Net
+    and gross are reported because they say different things: net is what a
+    reader who only saw the total would have seen, and gross is how much
+    accounting error was present regardless of sign.
+    """
+    # A row assembled by hand (a test, or a caller building one row) has no
+    # per-call breakdown; it is then its own single call.
+    pcs = d.get("per_call") or [{"residual": d["residual"],
+                                 "scale": abs(d["out"]),
+                                 "ops": max(d["calls"], 1) * 8}]
+    worst = max((abs(p["residual"]) / t if (t := control_tolerance(
+        p["ops"], p["scale"])) else float("inf") if p["residual"] else 0.0)
+        for p in pcs)
+    return {"net": sum(p["residual"] for p in pcs),
+            "gross": sum(abs(p["residual"]) for p in pcs),
+            "max_abs": max(abs(p["residual"]) for p in pcs),
+            "max_ratio": worst,
+            "tolerance_basis": "gamma_n screening threshold, not a proven bound"}
+
+
 def usable(d: dict) -> tuple[bool, str]:
-    """Is this chain's row evidence? The mass control decides, against a
-    tolerance derived from the operation count rather than a fixed 1e-3."""
-    tol = control_tolerance(max(d["calls"], 1) * 8, abs(d["out"]))
-    if abs(d["residual"]) <= tol:
+    """Is this chain's row evidence? EVERY call's mass residual must be within
+    that call's own threshold -- one bad call disqualifies the row even if the
+    others cancel it out."""
+    c = control(d)
+    if c["max_ratio"] <= 1.0:
         return True, ""
-    return False, (f"matched_mass_control_failed: |R|={abs(d['residual']):.3e} "
-                   f"exceeds gamma_n bound {tol:.3e}")
+    return False, (f"matched_mass_control_failed: worst call is "
+                   f"{c['max_ratio']:.3g}x its gamma_n screening threshold "
+                   f"(net={c['net']:.3e}, gross={c['gross']:.3e})")
 
 
 def report(stream: str) -> None:
@@ -151,6 +203,9 @@ def analysis(stream: str) -> dict:
             "calls": d["calls"], "surface_out": d["out"],
             "residual": d["residual"], "usable": ok,
             "reason": why or None,
+            # Recorded so a reader can see cancellation rather than infer it
+            # from a total that hides it (owner §14 priority-3).
+            "control": control(d),
             "number_result": (d["residual"] / d["out"]
                               if ok and d["out"] and not sp.startswith("q")
                               else None),

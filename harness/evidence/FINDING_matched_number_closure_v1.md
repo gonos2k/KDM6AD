@@ -2,10 +2,10 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-NUMBER-005` | **active** |
-| `G33-NUMBER-006` | **withdrawn → G33-ICE-CAP-001** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-005` | **active** | confirmed | g33_fixture_multisubcycle_v1, legacy, main chain |
+| `G33-NUMBER-006` | **withdrawn → G33-ICE-CAP-001** | — | The qi mass CONTROL fails at -384%/-269%, so the ice accounting is missing a term and neither ice row is evidence. Same for main col 1 at h = 100 s (qr -47.7%). |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -43,11 +43,18 @@ All 12 calls, all three columns, no exclusions.
 | chain | species | col 2 (mstep 5) | col 3 (**mstep 10**) |
 |---|---|---|---|
 | main | **qr** (control) | −0.0576% | **−0.0000%** |
-| main | **nr** | **+11.57%** | **+9.40%** |
+| main | **nr** | **UNUSABLE** — its control failed | **+9.40%** |
+
+**Column 2 is not a result.** Its mass control reads −0.0576%, which the γₙ
+screening threshold rejects, so `analysis()` returns `number_result: null` for it
+and the number beside it (+11.57%) is not evidence. It was printed as a result
+here for two commits after the control already excluded it — exactly the drift
+the claim registry exists for — and is struck rather than quietly deleted so the
+number cannot be re-quoted from an older copy of this table (owner §7.1).
 
 **The defect persists at `mstep = 10` with the mass control closing to f32
-roundoff.** §5.3 recorded operational magnitude as unmeasured; this measures it on
-this fixture.
+roundoff**, and that rests on **column 3 alone**. §5.3 recorded operational
+magnitude as unmeasured; this measures it on this fixture, in one column.
 
 ## The control earned its keep
 
@@ -57,6 +64,7 @@ Two rows are **not** evidence, and the mass control is what says so:
 |---|---|---|
 | ice, cols 2–3, h = 25 s | qi −384% / −269% | **unusable** |
 | main, col 1, h = 100 s | qr −47.7% | **unusable** |
+| main, col 2, h = 100 s | qr −0.0576% | **unusable** |
 
 A mass control that fails means the accounting for that chain and call set is
 missing a term, so **neither** row of the pair is evidence — not that ice number

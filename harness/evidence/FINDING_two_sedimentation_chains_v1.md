@@ -2,11 +2,11 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-DTCLD-001` | **active** |
-| `G33-MSTEPI-001` | **active** |
-| `G33-NI-ORDER-001` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-DTCLD-001` | **active** | confirmed | module_mp_kdm6.F:1179-1180, all fixtures |
+| `G33-MSTEPI-001` | **active** | confirmed | g33_fixture_multisubcycle_v1, f32, legacy |
+| `G33-NI-ORDER-001` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

@@ -2,9 +2,9 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-NUMBER-008` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-008` | **active** | confirmed | MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

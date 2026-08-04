@@ -27,6 +27,16 @@
 !
 ! Emits one G33R STATE line per field/cell plus the three precipitation
 ! accumulators, in the same top-first convention as the decision driver.
+#if defined(KDM6_G33_F64) && defined(KDM6_G33_NUMBER_DUMP)
+! The LAST of three guards on the same wrong-number path (owner priority-2). The
+! G33F number records write `'f32', transfer(<real>, 0)`; under -fdefault-real-8
+! that takes four bytes of an eight-byte value into an int32 mold and labels the
+! result f32, so a reader parses a valid-looking f32 bit pattern that is not the
+! number. The Python producer and the build script both refuse the combination;
+! this one catches a hand-rolled compile that reaches neither, and it fails at
+! COMPILE time rather than producing a binary whose output is quietly wrong.
+#error "KDM6_G33_F64 with KDM6_G33_NUMBER_DUMP: no f64 number record family exists"
+#endif
 module g33_refine
   use, intrinsic :: iso_fortran_env, only: int32, real32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
@@ -330,11 +340,14 @@ program g33_refine_driver
 #ifdef KDM6_G33_NUMBER_DUMP
   ! What this stream INTENDS to be. Without it a run truncated at a closed call
   ! boundary is indistinguishable from a shorter run that completed (owner P0-1).
-  ! schema 2 declares the FEATURES this stream carries, so a reader knows which
-  ! extension records to require rather than ignoring the ones it does not know
-  ! (owner P0-E1). Unknown G33F records were silently dropped; a declared feature
-  ! whose records are missing is now an error.
-  write(*,'(A,4(1X,I0),3(1X,A))') 'G33N STREAM_BEGIN', 2, nsplit, ntile, &
+  ! The header declares the FEATURES this stream carries, so a reader knows which
+  ! extension records to require rather than ignoring the ones it does not know.
+  ! schema 3 makes that declaration BINDING in both directions: a declared
+  ! feature whose records are missing is an error, and a record whose feature was
+  ! not declared is refused rather than parsed anyway. The extension families
+  ! also carry an exact (sub-step, level) universe -- CAPIN over k=1..K-1 and
+  ! TOPOUT at k=0 -- so an incomplete or displaced group cannot pass.
+  write(*,'(A,4(1X,I0),3(1X,A))') 'G33N STREAM_BEGIN', 3, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
         'mstep,mstepi,nflux,xfer,capin,topout' 
 #endif

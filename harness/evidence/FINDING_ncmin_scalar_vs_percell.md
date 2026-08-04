@@ -2,9 +2,9 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-NCMIN-001` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

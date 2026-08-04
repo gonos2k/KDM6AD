@@ -2,14 +2,14 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-ENTHALPY-001` | **active** |
-| `G33-ENTHALPY-002` | **withdrawn → G33-ENTHALPY-001** |
-| `G33-PRECIP-001` | **active** |
-| `G33-PRECIP-003` | **withdrawn → G33-PRECIP-001** |
-| `G33-PROTOCOL-001` | **active** |
-| `G33-VARIANT-F64-001` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-ENTHALPY-001` | **active** | confirmed | g33_fixture_multisubcycle_v1, f64 instrument arm |
+| `G33-ENTHALPY-002` | **withdrawn → G33-ENTHALPY-001** | — | g33_fixture_multisubcycle_v1 — generalised column 1 to all three |
+| `G33-PRECIP-001` | **active** | confirmed | g33_fixture_multisubcycle_v1 |
+| `G33-PRECIP-003` | **withdrawn → G33-PRECIP-001** | — | Causal phrasing ahead of the evidence: which gate diverges first, and whether it is storage roundoff, accumulated arithmetic, a constant's precision or post-branch amplification, is not established. |
+| `G33-PROTOCOL-001` | **active** | confirmed | G33P schema 2; schema 1 streams are refused |
+| `G33-VARIANT-F64-001` | **active** | confirmed | g33_fixture_multisubcycle_v1, h = 25 s |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -34,10 +34,20 @@ sedimentation reaches the ground at all.
 
 Three separate observations collapse into this one:
 
-1. **Column water is conserved at f64** — spread 1.6e-06 / 2.5e-07 / 8.8e-07
-   against ~1e-02 at f32. With no outflow there is nothing for the column budget
-   to lose, which is why orders taken on it are conservation residual
-   (`FINDING_column_water_orders_v1`).
+1. **Column water barely MOVES at f64** — member-to-member spread 1.6e-06 /
+   2.5e-07 / 8.8e-07 against ~1e-02 at f32. With no outflow there is nothing for
+   the column budget to lose, which is why orders taken on it are conservation
+   residual (`FINDING_column_water_orders_v1`).
+
+   **Spread is not conservation** (owner §5, restated here because this sentence
+   said "column water is conserved at f64 — spread …" and survived the
+   correction: this finding is not any claim's evidence target, so the
+   claim-status stamper never reached it). Agreement between refinement members
+   says the answer stopped changing with the step; it says nothing about whether
+   the budget closes. The actual residual `R_W = (W_final − W_initial) + P_surface`
+   is what settles that, and it is reported in
+   `FINDING_column_water_orders_v1` — 1e-16…6.6e-8 at f64. The conclusion
+   survives; the reasoning quoted here did not.
 2. **Legacy and conservative are bit-identical at f64** — **0 of 333** G33P
    records differ, against 39 at f32. Produced by `g33_probe_read.diff` under the
    `variant` contract (owner P0-E3): f64 gives `max_ulp = 0,

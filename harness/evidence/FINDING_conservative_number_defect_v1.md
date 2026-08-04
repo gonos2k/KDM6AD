@@ -1,5 +1,14 @@
 # The conservative variant carries the number defect unchanged — and fixing the cap makes the ice chain measurable
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-003` | **active** | confirmed | g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 `G33-NUMBER-003` stood as **predicted, unmeasured**: the conservative variant was
 expected to keep the number path while fixing the mass measure. It is now
 measured, and the same run corroborates the ice-cap diagnosis independently.

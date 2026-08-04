@@ -2,9 +2,9 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-CHAIN-001` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-CHAIN-001` | **active** | confirmed | The registry as of this commit and the bundles present on the owner's host. Bundles are outside the repo and absent in CI, so the artifact check is local-only; the counts are of the registry, which is committed. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

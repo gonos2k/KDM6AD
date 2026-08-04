@@ -2,10 +2,10 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-TURNOVER-001` | **withdrawn → G33-TURNOVER-002** |
-| `G33-TURNOVER-002` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-TURNOVER-001` | **withdrawn → G33-TURNOVER-002** | — | g33_fixture_multisubcycle_v1, th/qv max-norm |
+| `G33-TURNOVER-002` | **active** | strong-candidate | g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64 |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

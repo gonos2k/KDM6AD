@@ -2,10 +2,10 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-ICE-CAP-001` | **active** |
-| `G33-NUMBER-007` | **active** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-ICE-CAP-001` | **active** | confirmed | g33_fixture_multisubcycle_v1, legacy, h = 25 s |
+| `G33-NUMBER-007` | **active** | confirmed | g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

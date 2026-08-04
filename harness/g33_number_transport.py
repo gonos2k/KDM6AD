@@ -88,7 +88,26 @@ CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) "
 CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+) (\d+)$")
 #: The protocol this parser implements. A stream declaring another is refused
 #: rather than read with the wrong field meanings.
-SCHEMA = 2
+SCHEMA = 3
+
+#: G33F family -> the header feature that must declare it. A record whose feature
+#: the header did not declare is REFUSED rather than parsed anyway: the contract
+#: said "emitting an undeclared feature is rejected" while the parser read them
+#: regardless and merely skipped the universe check (owner P0-3).
+FAMILY_FEATURE = {"MSTEP": "mstep", "MSTEPI": "mstepi", "NFLUX": "nflux",
+                  "XFER": "xfer", "CAPIN": "capin", "TOPOUT": "topout"}
+
+#: These describe one bracketed call and are meaningless outside it. `cur is
+#: None: continue` silently DROPPED them, so a stream whose CAPIN records had
+#: drifted out of their brackets looked complete (owner P0-4).
+EXTENSION_FAMILIES = frozenset(FAMILY_FEATURE)
+
+#: What the closure reads out of each stage. Rectangularity below is checked
+#: against the stream's own field set, so a field the driver adds needs no change
+#: here; these are the ones whose ABSENCE would make the analysis wrong rather
+#: than merely different.
+STAGE_REQUIRED = {"outer_pre_sed": ("rho", "delz", "nr", "ni", "qr", "qi"),
+                  "outer_post_sed": ("nr", "ni", "qr", "qi")}
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
                    r"(\S+) (\d+) (-?\d+) f32 ([0-9A-F]{8})$")
 NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")
@@ -165,16 +184,46 @@ def _check_loop(call, lp, feats=frozenset()):
             raise StreamError(
                 f"call {call['call_id']} loop {lp}: state covers columns "
                 f"{sorted(cols)}, CALL_BEGIN declared {sorted(want)}")
-    if call["K"] is not None:
-        ks = {k for l, c, k in call["outer_pre_sed"] if l == lp}
-        if ks != set(range(call["K"])):
-            raise StreamError(
-                f"call {call['call_id']} loop {lp}: levels {sorted(ks)} do not "
-                f"match the declared K={call['K']}")
     if not cols:
         raise StreamError(f"call {call['call_id']} loop {lp}: no pre-sed state")
     if {c for l, c, _ in call["outer_post_sed"] if l == lp} != cols:
         raise StreamError(f"call {call['call_id']}: post-sed covers different columns")
+    # EXACT rectangular universe: fields x columns x levels, PER COLUMN.
+    #
+    # The level check pooled every column into one set, so a column short a level
+    # passed whenever another column supplied it. That is not cosmetic: the
+    # matched closure builds each column's integral from exactly these per-column
+    # level sets, so a short column silently integrates over fewer cells AND
+    # takes the wrong cell as the bottom one (owner §14).
+    #
+    # The field set is taken from the stream rather than hardcoded -- a field the
+    # driver adds needs no change here -- but every cell must carry the same one,
+    # which is what stops one field's gap being filled by another's presence.
+    for stage, required in STAGE_REQUIRED.items():
+        cells = {(c, k) for l, c, k in call[stage] if l == lp}
+        if not cells:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp}: no {stage} records")
+        fields = {f for (l, c, k), rec in call[stage].items() if l == lp
+                  for f in rec}
+        if missing := set(required) - fields:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp}: {stage} carries no "
+                f"{sorted(missing)}, which the closure reads")
+        for c in sorted(cols):
+            ks = {k for cc, k in cells if cc == c}
+            want = set(range(call["K"])) if call["K"] is not None else ks
+            if ks != want:
+                raise StreamError(
+                    f"call {call['call_id']} loop {lp} col {c}: {stage} levels "
+                    f"{sorted(ks)} do not match the declared K={call['K']}")
+            for k in sorted(ks):
+                got = set(call[stage][(lp, c, k)])
+                if got != fields:
+                    raise StreamError(
+                        f"call {call['call_id']} loop {lp} col {c} level {k}: "
+                        f"{stage} carries fields {sorted(got)}, the rest of the "
+                        f"stage carries {sorted(fields)}")
     # Filtered BY LOOP: unfiltered, a column missing its NFLUX in loop 1 passed
     # because loop 2 supplied one (owner P0-2).
     got = {c for l, c in call["flux"] if l == lp}
@@ -198,31 +247,43 @@ def _check_loop(call, lp, feats=frozenset()):
             raise StreamError(
                 f"call {call['call_id']} loop {lp}: {chain} sub-step counts "
                 f"cover {sorted(got)}, state covers {sorted(cols)}")
-        # The extension records have an EXACT universe: the bottom-cell transfer
-        # and the top-cell removal fire once per active sub-step per column, and
-        # `mstep` says how many that is. A missing one silently shrinks a flux;
-        # a duplicate doubles it (owner P0-E1). _put already refuses duplicates.
-        for fam, store in (("xfer", call["xfer"]), ("topout", call["topout"])):
-            if fam not in feats:
-                continue
-            for c in sorted(cols):
-                want = set(range(1, call["mstep"][(lp, chain, c)] + 1))
-                got_n = {n for k, n in ((k, k[1]) for k in store)
-                         if k[0] == lp and k[2] == c and k[3] == chain}
-                if got_n != want:
+        # The extension records have an EXACT universe, and it is a universe over
+        # (sub-step, LEVEL) -- not sub-step alone. Each fires unconditionally at
+        # its site, so `mstep` and `K` determine exactly how many there must be:
+        #
+        #   XFER    the bottom-cell transfer, once per sub-step
+        #   TOPOUT  the top-cell removal, once per sub-step, always at k == 0
+        #   CAPIN   one per interface, k = 1..K-1, per sub-step
+        #
+        # TOPOUT previously checked the sub-step set only, so a record at the
+        # wrong level -- or two at the same sub-step and different levels -- was
+        # accepted (owner P0-6). CAPIN had no completeness check at all, so a
+        # feature declared with ZERO records passed and the cap analysis it backs
+        # would have been computed over nothing (owner P0-1).
+        for c in sorted(cols):
+            ms = call["mstep"][(lp, chain, c)]
+            if ms < 1:
+                raise StreamError(
+                    f"call {call['call_id']} loop {lp} col {c} {chain}: "
+                    f"mstep={ms} is not a sub-step count")
+            subs = set(range(1, ms + 1))
+            exact = {"xfer": ({(n,) for n in subs},
+                              {(n,) for l, n, cc, ch in call["xfer"]
+                               if (l, cc, ch) == (lp, c, chain)}),
+                     "topout": ({(n, 0) for n in subs},
+                                {(n, k) for l, n, cc, ch, k in call["topout"]
+                                 if (l, cc, ch) == (lp, c, chain)})}
+            if call["K"] is not None:
+                exact["capin"] = (
+                    {(n, k) for n in subs for k in range(1, call["K"])},
+                    {(n, k) for l, n, cc, ch, k in call["capin"]
+                     if (l, cc, ch) == (lp, c, chain)})
+            for fam, (want, got) in exact.items():
+                if fam in feats and got != want:
                     raise StreamError(
                         f"call {call['call_id']} loop {lp} col {c} {chain}: "
-                        f"{fam} covers sub-steps {sorted(got_n)}, mstep declares "
-                        f"{sorted(want)}")
-    if "capin" in feats:
-        for (l, n, c, chain, k), v in call["capin"].items():
-            if l != lp:
-                continue
-            for x in v:
-                if x != x or abs(x) == float("inf"):
-                    raise StreamError(
-                        f"call {call['call_id']}: non-finite capin at "
-                        f"{(l, n, c, chain, k)}")
+                        f"{fam} covers {sorted(got)}, the exact universe under "
+                        f"mstep={ms}, K={call['K']} is {sorted(want)}")
 
 
 def calls(stream: str) -> list:
@@ -249,6 +310,7 @@ def calls(stream: str) -> list:
                    "more than one STREAM_END")
     out = []
     cur, expect, header, ended, seen = None, 1, None, False, 0
+    emitted = set()
     for line in stream.splitlines():
         if (m := STREAM_BEGIN.match(line)):
             if header:
@@ -302,8 +364,22 @@ def calls(stream: str) -> list:
             out.append(cur)
             cur, expect, seen = None, expect + 1, seen + 1
             continue
+        fam = _family(line) if line.startswith("G33F") else None
+        # An extension record describes one bracketed call and is meaningless
+        # outside it. Falling through to `continue` DROPPED it silently, so a
+        # stream whose records had drifted out of their brackets looked complete
+        # -- and CAPIN had no completeness check to notice the loss (owner P0-4).
+        if fam in EXTENSION_FAMILIES and cur is None:
+            raise StreamError(f"{fam} record outside any call: {line!r}")
         if cur is None:
             continue                      # records outside any call: not ours
+        if fam in FAMILY_FEATURE:
+            feat = FAMILY_FEATURE[fam]
+            if header and feat not in header["features"]:
+                raise StreamError(
+                    f"call {cur['call_id']}: {fam} record but the header declares "
+                    f"features {sorted(header['features'])}, not {feat!r}")
+            emitted.add(feat)
         # The kernel's own `loop` is part of the identity (owner P0-3): a call
         # with loops > 1 emits the same (stage, col, k) once per loop, and a key
         # without it lets the last loop silently overwrite the first.
@@ -351,8 +427,6 @@ def calls(stream: str) -> list:
             # has never heard of is a protocol mismatch (owner P0-E1).
             # `G33FOP` is its own family with no space after G33F, so the family
             # is the first token when it is not exactly "G33F".
-            tok = line.split()
-            fam = tok[0] if tok[0] != "G33F" else (tok[1] if len(tok) > 1 else "")
             if fam not in KNOWN_G33F:
                 raise StreamError(f"unknown G33F record family {fam!r}: {line!r}")
     if cur is not None:
@@ -367,6 +441,15 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"stream carries {seen} calls, header declared "
                 f"{header['expected_calls']}")
+        # A feature declared and never emitted is the failure mode that looks
+        # like success: `capin` in the header with zero CAPIN records passed,
+        # and the cap analysis it backs would have been computed over nothing
+        # (owner P0-1).
+        missing = header["features"] - emitted
+        if missing:
+            raise StreamError(
+                f"header declares features {sorted(missing)} that no record "
+                f"in the stream emits")
         # Every split's tiles must cover the domain exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
@@ -387,18 +470,47 @@ def _expect_stream(cond, msg):
         raise StreamError(msg)
 
 
+def _finite(value, where, call):
+    """No NaN or Inf may enter a store (owner P0-5).
+
+    The finite check lived in `_check_loop` and covered NFLUX and CAPIN only, so
+    a NaN XFER parsed cleanly, made the matched residual NaN, and reached a JSON
+    writer that emits a bare `NaN` token -- malformed evidence that had passed
+    every gate. Checking at the write makes it uniform over every float record
+    instead of a list someone has to remember to extend.
+    """
+    for v in (value if isinstance(value, tuple) else (value,)):
+        if isinstance(v, float) and (v != v or abs(v) == float("inf")):
+            raise StreamError(f"call {call['call_id']}: non-finite value {v} "
+                              f"at {where}")
+
+
+def _family(line: str) -> str:
+    """The G33F record family. `G33FOP` has no space after G33F, so the family is
+    the first token whenever that token is not exactly `G33F`."""
+    tok = line.split()
+    return tok[0] if tok[0] != "G33F" else (tok[1] if len(tok) > 1 else "")
+
+
 def _put(store, key, field, value, call):
-    """One write per (key, field). A second is a defect, not an update."""
-    slot = store.setdefault(key, {}) if field is not None else store
-    k = field if field is not None else key
+    """One write per (key, field). A second is a defect, not an update.
+
+    A repeat carrying the SAME value used to overwrite silently (owner P0-2).
+    That contradicted this docstring, and a duplicated stream is not a valid
+    record of a run whatever the values agree on -- the duplication itself is the
+    defect, not the disagreement.
+    """
+    _finite(value, key if field is None else f"{key}.{field}", call)
     if field is None:
-        if key in store and store[key] != value:
+        if key in store:
             raise StreamError(f"call {call['call_id']}: duplicate record {key}")
         store[key] = value
     else:
-        if k in slot:
-            raise StreamError(f"call {call['call_id']}: duplicate record {key}.{k}")
-        slot[k] = value
+        slot = store.setdefault(key, {})
+        if field in slot:
+            raise StreamError(
+                f"call {call['call_id']}: duplicate record {key}.{field}")
+        slot[field] = value
 
 
 def transfers(x, x_post, w):

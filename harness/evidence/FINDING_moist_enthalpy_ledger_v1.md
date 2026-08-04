@@ -2,9 +2,9 @@
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
-| claim | status |
-|---|---|
-| `G33-PRECIP-002` | **withdrawn → G33-PRECIP-001** |
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-PRECIP-002` | **withdrawn → G33-PRECIP-001** | — | g33_fixture_multisubcycle_v1, f32, column 2 |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
