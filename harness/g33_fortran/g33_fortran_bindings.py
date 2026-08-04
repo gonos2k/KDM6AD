@@ -527,6 +527,32 @@ XFER_SITES = [
      "ice", "dqi(i,k)", "dni(i,k)"),
 ]
 
+#: `dq?(i,k+1)` is written TWICE with different caps: at iteration k+1 as that
+#: cell's own outflow, capped against its PRE-update content, and again at
+#: iteration k as the inflow below, capped against its POST-update content. The
+#: second is what arrives; the first is what left. Emitting both of a cell's
+#: transfers at each iteration lets the two be paired across the interface, which
+#: is where the mass goes missing.
+#: The TOP cell is updated OUTSIDE the interior loop, so its departure has no
+#: `dq?(i,k)` record and the topmost interface was invisible. Emitted BEFORE the
+#: update, where the pre-update content is still available, as the actual removal
+#: `min(uncapped, content)`.
+TOP_SITES = [
+    ("           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+     "main", "min(falk(i,k,1)*dtcld/dend(i,k),qrs(i,k,1))",
+     "min(falkn(i,k,1)*dtcld,nrs(i,k,1))"),
+    ("           qci(i,k,2) = max(qci(i,k,2)-falk(i,k,4)*dtcld/dend(i,k),0.)",
+     "ice", "min(falk(i,k,4)*dtcld/dend(i,k),qci(i,k,2))",
+     "min(falkn(i,k,2)*dtcld,nci(i,k,2))"),
+]
+
+CAP_SITES = [
+    ("             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)", "main",
+     "dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"),
+    ("             qci(i,k,2) = max(qci(i,k,2)-dqi(i,k)+dqi(i,k+1),0.)", "ice",
+     "dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"),
+]
+
 # Scratch temps declared once (fall/falln captured at cell entry) + the capture.
 DECL_ANCHOR = "   real, dimension(its:ite,kts:kte,4) :: falk, fall"
 DECL_BLOCK = [

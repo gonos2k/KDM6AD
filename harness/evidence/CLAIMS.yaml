@@ -306,6 +306,35 @@ claims:
     evidence: [FINDING_matched_number_closure_v1.md]
     evidence_sha256: [FINDING_matched_number_closure_v1.md:a8e956a39d2109ea]
 
+  - id: G33-ICE-CAP-001
+    text: >
+      The ice-chain matched closure's missing term is the post-update-reservoir
+      inflow cap (P0-4b): dq(i,k+1) is written twice, capped against the cell
+      above PRE-update as its outflow and POST-update as the inflow below, and
+      the difference is destroyed. Pairing departure against arrival explains
+      100.00% of the ice mass residual. The cap binds at 39 of 255 interfaces,
+      all in the ice chain.
+    status: active
+    grade: confirmed
+    basis: measurement per interface
+    scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
+    evidence: [FINDING_ice_chain_missing_term_v1.md]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:ea93b1c8fac20813]
+
+  - id: G33-NUMBER-007
+    text: >
+      On the MAIN chain the number created at interfaces equals the rho*dz-vs-dz
+      prediction sum (den_below - den_above)*delz_above*dn to a ratio of 1.0000
+      in all three columns, with the mass control on the SAME interfaces closing
+      to roundoff. The ice rows are cap-dominated (ratio -28.6/-28.9) and measure
+      the cap, not the measure mismatch.
+    status: active
+    grade: confirmed
+    basis: measurement with a matched mass control on the same interfaces
+    scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
+    evidence: [FINDING_ice_chain_missing_term_v1.md]
+    evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:ea93b1c8fac20813]
+
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition

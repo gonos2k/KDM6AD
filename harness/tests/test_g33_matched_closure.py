@@ -59,3 +59,26 @@ def test_a_failing_mass_control_is_flagged_not_reported_as_a_result(capsys):
     out = capsys.readouterr().out
     assert "!! ice/qi col 2: mass control fails" in out
     assert "!! main/qr" not in out, "a control that closes must not be flagged"
+
+
+def test_the_interface_term_is_departure_minus_arrival():
+    """dq(i,k+1) is written twice with different caps: as the cell's own outflow
+    (pre-update) and as the inflow below (post-update). Pairing the two across an
+    interface is what exposes the destroyed mass (P0-4b)."""
+    ROOTB = ROOT / "g33_fortran"
+    b = (ROOTB / "g33_fortran_bindings.py").read_text()
+    assert "CAP_SITES" in b and "TOP_SITES" in b
+    # each cap site emits BOTH of a cell's transfers, mass and number
+    assert '"dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"' in b
+    assert '"dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"' in b
+    # the TOP cell is updated outside the interior loop, so it needs its own site
+    assert "min(falk(i,k,4)*dtcld/dend(i,k),qci(i,k,2))" in b
+
+
+def test_the_new_sites_stay_under_the_number_macro():
+    """They must not reach the decision stream, like every emission before them."""
+    ovl = (ROOT / "g33_fortran" / "make_fortran_overlay.py").read_text()
+    for fn in ("_cap_inflow_lines", "_top_lines"):
+        body = ovl.split(f"def {fn}(")[1].split("\ndef ")[0]
+        assert "KDM6_G33_NUMBER_DUMP" in body
+        assert "KDM6_G33_FORTRAN_DUMP" not in body

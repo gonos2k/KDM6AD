@@ -170,6 +170,30 @@ def _xfer_lines(chain, mass, num):
             "#endif"]
 
 
+def _cap_inflow_lines(chain, own, inflow, own_n, inflow_n):
+    """A cell's OWN outflow beside the inflow it grants the cell below.
+
+    Paired across an interface these give departure and arrival, and their
+    difference under the rho*dz measure is the mass the interface destroys.
+    """
+    return ["#ifdef KDM6_G33_NUMBER_DUMP",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),4(1X,Z8.8))') "
+            f"'G33F CAPIN', loop, n, i, kte-k, '{chain}', 'f32', "
+            f"transfer({own}, 0), transfer({inflow}, 0), "
+            f"transfer({own_n}, 0), transfer({inflow_n}, 0)",
+            "#endif"]
+
+
+def _top_lines(chain, removed, removed_n):
+    """The top cell's actual removal, emitted BEFORE its update so the pre-update
+    content is still there to cap against."""
+    return ["#ifdef KDM6_G33_NUMBER_DUMP",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),2(1X,Z8.8))') "
+            f"'G33F TOPOUT', loop, n, i, kte-k, '{chain}', 'f32', "
+            f"transfer({removed}, 0), transfer({removed_n}, 0)",
+            "#endif"]
+
+
 def build_overlay(algo, text):
     """Patched source for `algo`, or SystemExit if any anchor is not present
     EXACTLY once (a source change). Anchors are matched as WHOLE lines."""
@@ -262,6 +286,10 @@ def build_overlay(algo, text):
                "#endif"])]
     edits += [(a, "after", _xfer_lines(ch, m, n))
               for a, ch, m, n in fb.XFER_SITES]
+    edits += [(a, "after", _cap_inflow_lines(ch, c, u, cn, un))
+              for a, ch, c, u, cn, un in fb.CAP_SITES]
+    edits += [(a, "before", _top_lines(ch, r, rn))
+              for a, ch, r, rn in fb.TOP_SITES]
     for (role, species), anchor in cfg["emit"].items():
         edits.append((anchor, "before", _emit_lines(algo, role, species, "pre")))
     for (role, species), anchor in cfg["post"].items():
