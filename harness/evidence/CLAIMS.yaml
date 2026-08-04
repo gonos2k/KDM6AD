@@ -331,6 +331,33 @@ claims:
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:d9a6cc91327e7c9c]
 
+  - id: G33-BASIS-004
+    text: >
+      The water and enthalpy column ledgers now take a basis, completing §9.2.
+      The basis matters ONLY where the residual is otherwise at roundoff: column
+      1 water closes at 4.5703e-09 relative under the operator measure and
+      9.7626e-07 under the physical one, 213.6x worse, while columns 2 and 3
+      (already 6.8e-2 and 1.7e-1, dominated by the precipitation-diagnostic
+      departure) change by 1.0x. Both enthalpy ledgers change by at most 3%,
+      because they are limited by their declared thermodynamic approximations
+      rather than by the column measure. rho_d is taken from the INITIAL qv and
+      used at both endpoints, because rho_d*dz is invariant across a
+      column-microphysics step and a budget whose weights move with the process
+      is not a budget.
+    status: active
+    grade: confirmed
+    basis: measurement on both bases over the same member
+    scope: >
+      n12.rezero of the legacy refinement chain on g33_fixture_multisubcycle_v1.
+      Says nothing about which basis the reference INTENDS to close, which is
+      G33-BASIS-002 and an owner decision. P_surface is the WRF rain diagnostic
+      and is not reweighted -- it is already a physical mass per area -- so the
+      physical budget mixes a dry-weighted column change with a diagnostic whose
+      own departure from the rho*dz budget is a separate known defect, and that
+      defect dominates columns 2-3.
+    evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:d654def2d63eba17]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64

@@ -370,7 +370,27 @@ def cross_member_endpoint_spread(b: dict, key) -> float:
     return (max(v) - min(v)) / abs(m) if m else 0.0
 
 
-def water_residual(run: dict, c: int) -> dict:
+#: The two column measures (owner §9.2). The `q` fields are mixing ratios per
+#: DRY-air kg while `rho` is MOIST density, so a physical kg m^-2 needs rho_d.
+MEASURES = ("operator", "physical")
+
+
+def _column_density(run: dict, c: int, k: int, basis: str) -> float:
+    """rho_m as emitted, or rho_d = rho_m/(1+qv).
+
+    The dry density is taken from the INITIAL qv and used at BOTH endpoints.
+    That is the physical convention, not a shortcut: column microphysics
+    transports no dry air, so rho_d*dz for a layer is invariant across the step.
+    Recomputing it from the final qv would make the measure itself move with the
+    process being measured, and a budget whose weights change is not a budget.
+    """
+    rho = run[("forcing", "rho", c, k)]
+    if basis == "operator":
+        return rho
+    return rho / (1.0 + run[("initial", "qv", c, k)])
+
+
+def water_residual(run: dict, c: int, basis: str = "operator") -> dict:
     """The actual column-water conservation residual for ONE member.
 
         R_W = (W_final - W_initial) + P_surface
@@ -386,8 +406,11 @@ def water_residual(run: dict, c: int) -> dict:
     if not any(k[0] == "initial" for k in run) or \
        not any(k[0] == "forcing" for k in run):
         return {}
+    if basis not in MEASURES:
+        raise ValueError(f"basis must be one of {MEASURES}, got {basis!r}")
     ks = sorted(k[3] for k in run if k[0] == "state" and k[1] == "qv" and k[2] == c)
-    w = lambda cls: sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+    w = lambda cls: sum(_column_density(run, c, k, basis)
+                        * run[("forcing", "delz", c, k)]
                         * run[(cls, f, c, k)] for f in MASS for k in ks)
     wi, wf, p = w("initial"), w("state"), total_precip(run, c)
     return {"W_initial": wi, "W_final": wf, "P": p,
@@ -678,7 +701,7 @@ def outflow_split(run: dict, c: int, ks) -> dict:
             "D_share": (w - p) / w if w else float("nan")}
 
 
-def _ledger(run: dict, h_cell, h_precip_out) -> dict:
+def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
     """residual = (H_end - H_start) + H carried out by precipitation, per column.
 
     Zero with no external forcing. The two ledgers differ ONLY in `h_cell` and
@@ -694,7 +717,8 @@ def _ledger(run: dict, h_cell, h_precip_out) -> dict:
         ks = sorted(k for cc, k in cells if cc == c)
 
         def H(cls):
-            return sum(run[("forcing", "rho", c, k)] * run[("forcing", "delz", c, k)]
+            return sum(_column_density(run, c, k, basis)
+                       * run[("forcing", "delz", c, k)]
                        * h_cell(run, cls, c, k) for k in ks)
 
         # `pii` increases downward, so the larger one is the bottom level.
@@ -784,14 +808,14 @@ def _precip_consistent(run, c, kbot, ks) -> float:
     return _water_out(run, c, ks) * ((1.0 - f) * hl + f * hi)
 
 
-def enthalpy_ledger(run: dict) -> dict:
+def enthalpy_ledger(run: dict, basis: str = "operator") -> dict:
     """Residual against CONSISTENT thermodynamics (§8.2).
 
     Approximate — dry-air mixing ratios against moist rho, precipitation flux at
     the bottom level — but identically so for every leg, so residuals COMPARE even
     where an absolute value would not.
     """
-    return _ledger(run, _h_consistent, _precip_consistent)
+    return _ledger(run, _h_consistent, _precip_consistent, basis)
 
 
 # The code's own thermodynamics (module_mp_kdm6.F): cpmcal F:818, xlcal F:819,
@@ -831,14 +855,14 @@ def _precip_code(run, c, kbot, ks) -> float:
     return _water_out(run, c, ks) * _ice_fraction(run, c) * -xlf
 
 
-def operator_ledger(run: dict) -> dict:
+def operator_ledger(run: dict, basis: str = "operator") -> dict:
     """Residual against the code's OWN equations (§8.1).
 
     xl/xlf at the LOCAL temperature for every leg: the reference holds them at
     kernel entry and the port refreshes per sub-cycle, so one convention here keeps
     the ledger from encoding the answer to the question it is measuring.
     """
-    return _ledger(run, _h_code, _precip_code)
+    return _ledger(run, _h_code, _precip_code, basis)
 
 
 def ledger_report(runs: dict) -> None:
