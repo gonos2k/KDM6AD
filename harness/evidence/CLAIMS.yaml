@@ -148,6 +148,30 @@ claims:
     evidence: [FINDING_number_transport_creation_v1.md]
     evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
 
+  - id: G33-NUMBER-008
+    text: >
+      The number creation is caused by the density gradient, not merely
+      correlated with it. Flattening the density profile removes 99.9999% of the
+      residual (to below the gamma_n roundoff bound) while surface number outflow
+      stays at 96% of the original; inverting the profile flips the sign
+      (-0.9896/-0.9919/-1.0032 of the unperturbed residual); doubling the
+      contrast doubles it (+2.0117/+2.0091/+2.0407). The 1-4% departures from
+      exactly -1 and +2 are the second-order effect of density on the fall speed,
+      which the perturbation does not hold fixed.
+    status: active
+    grade: confirmed
+    basis: >
+      three-arm falsification test on the forcing, with the mass control holding
+      in all four arms and surface outflow as the process-still-running control
+    scope: >
+      MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice
+      chain's mass control fails in every arm (post-update inflow cap,
+      G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are
+      constructed probes, not physical atmospheres; this establishes the cause,
+      not the magnitude in a forecast.
+    evidence: [FINDING_density_falsification_v1.md]
+    evidence_sha256: [FINDING_density_falsification_v1.md:0dd2d6c05e766bbb]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64
