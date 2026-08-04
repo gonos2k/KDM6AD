@@ -33,14 +33,14 @@ from pathlib import Path
 
 BEGIN = re.compile(
     r"^G33P BEGIN (\d+) precision (f32|f64) source_precision (f32|f64) "
-    r"fixture (\S+) algorithm (\S+) mode (carry|rezero) "
+    r"fixture (\S+) algorithm (\S+) mode (carry|rezero) tiles (\S+) "
     r"(\d+) (\d+) (\d+) (\S+) (\S+) (\d+) (\d+)$")
 END = re.compile(r"^G33P END$")
 STATE = re.compile(r"^G33P (STATE|INITIAL) (\S+) (\d+) (-?\d+)\s+(\S+)$")
 FORCING = re.compile(r"^G33P FORCING (rho|delz|pii) (\d+) (-?\d+)\s+(\S+)$")
 PREC = re.compile(r"^G33P PREC (\d+) (\d+)\s+(\S+)$")
 
-SCHEMA = 2
+SCHEMA = 3
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as _ra   # noqa: E402
 
@@ -77,7 +77,7 @@ def read(text: str) -> dict:
     _expect(lines, "no G33P records")
     m = BEGIN.match(lines[0])
     _expect(m, f"stream does not begin with G33P BEGIN: {lines[0]!r}")
-    (schema, precision, source, fixture, algorithm, mode, nsplit, loops,
+    (schema, precision, source, fixture, algorithm, mode, tiles, nsplit, loops,
      ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
@@ -131,20 +131,43 @@ def read(text: str) -> dict:
             ("meta", "algorithm"): algorithm, ("meta", "mode"): mode,
             ("meta", "nsplit"): int(nsplit), ("meta", "loops"): int(loops),
             ("meta", "ntile"): int(ntile), ("meta", "delt"): _f(delt),
-            ("meta", "dtcld"): _f(dtcld)}
+            ("meta", "dtcld"): _f(dtcld),
+            # The tile VECTOR, not just its length: `ntile` alone cannot tell
+            # (2,1) from (1,2), and `ncmin` is a scalar overwritten in the column
+            # loop, so those two decompositions can disagree (owner §8.1).
+            ("meta", "tiles"): tuple(int(t) for t in tiles.split(","))}
     return out
 
 
 #: What must be IDENTICAL for each kind of comparison, and what must DIFFER.
 #: A single `compare` could pair `legacy f32 N=3` with `conservative f64 N=96`
 #: purely because their record universes matched (owner P0-5).
+#: kind -> (the axis that must DIFFER, the axes allowed to covary with it).
+#: Everything else the header carries must be IDENTICAL, and that set is COMPUTED
+#: rather than listed (owner §8.1): the listed form silently omitted
+#: `source_precision`, `loops`, `ntile`, `delt` and the tile vector, so two runs
+#: differing in any of them compared clean. Computing it means a field added to
+#: the header becomes an invariant by default -- fail-closed rather than
+#: fail-open on the next schema change.
 COMPARISONS = {
-    "precision_pair": (("fixture", "algorithm", "mode", "nsplit", "dtcld"),
-                       "precision"),
-    "variant":        (("fixture", "precision", "mode", "nsplit", "dtcld"),
-                       "algorithm"),
-    "refinement":     (("fixture", "algorithm", "mode", "precision"), "dtcld"),
+    "precision_pair": ("precision", frozenset()),
+    "variant":        ("algorithm", frozenset()),
+    # dtcld is the refinement axis; nsplit and delt are the same knob expressed
+    # differently, so they must move with it rather than being invariants.
+    "refinement":     ("dtcld", frozenset({"nsplit", "delt"})),
 }
+
+#: Header fields that identify the experiment. `schema` is included: two streams
+#: written under different protocol versions are not obviously the same fields.
+IDENTITY = ("schema", "precision", "source_precision", "fixture", "algorithm",
+            "mode", "nsplit", "loops", "ntile", "tiles", "delt", "dtcld")
+
+
+def invariants(kind: str) -> tuple:
+    """What must match for `kind`: everything identifying, less the axis under
+    test and whatever necessarily moves with it."""
+    differs, covaries = COMPARISONS[kind]
+    return tuple(f for f in IDENTITY if f != differs and f not in covaries)
 
 
 def compare(a: dict, b: dict, kind: str) -> None:
@@ -157,8 +180,8 @@ def compare(a: dict, b: dict, kind: str) -> None:
     """
     _expect(kind in COMPARISONS,
             f"unknown comparison {kind!r}; expected one of {sorted(COMPARISONS)}")
-    same, differs = COMPARISONS[kind]
-    for f in same:
+    differs, _ = COMPARISONS[kind]
+    for f in invariants(kind):
         _expect(a[("meta", f)] == b[("meta", f)],
                 f"{kind}: streams disagree on {f} "
                 f"({a[('meta', f)]} vs {b[('meta', f)]}) — they are not the same "
@@ -193,12 +216,27 @@ def diff(a: dict, b: dict, kind: str) -> dict:
     steps.
     """
     compare(a, b, kind)
-    precision = a[("meta", "precision")]
+    # The ULP LATTICE is named, not inherited from whichever stream was passed
+    # first (owner §8.2). `precision = a[("meta","precision")]` made
+    # diff(f32, f64) and diff(f64, f32) count steps on different lattices, so the
+    # statistic depended on argument order. Across precisions there is no single
+    # "max ULP" at all, so the f32 lattice is used and SAID SO in the field name:
+    # both values are rounded to f32 first, which is the comparison a
+    # precision_pair is actually asking about -- does promoting the arithmetic
+    # change the answer at the reference's own resolution.
+    same_precision = a[("meta", "precision")] == b[("meta", "precision")]
+    lattice = a[("meta", "precision")] if same_precision else "f32"
     keys = sorted(k for k in a if k[0] != "meta")
     worst_abs = worst_rel = 0.0
-    worst_ulp, first, ndiff = 0, None, 0
+    worst_ulp, first, ndiff, nbits = 0, None, 0, 0
     for k in keys:
         x, y = a[k], b[k]
+        # RAW BITS, separately from numeric equality (owner §8.3). `x == y` is
+        # True for +0.0 and -0.0, and `_bits` maps both to the same point, so a
+        # pair whose stored patterns differ was reported `bitwise_identical`.
+        # "Bitwise" is a certification word; it has to mean the bits.
+        if struct.pack(">d", x) != struct.pack(">d", y):
+            nbits += 1
         if x == y:
             continue
         ndiff += 1
@@ -207,12 +245,19 @@ def diff(a: dict, b: dict, kind: str) -> dict:
         d = abs(x - y)
         worst_abs = max(worst_abs, d)
         worst_rel = max(worst_rel, d / max(abs(x), abs(y)))
-        worst_ulp = max(worst_ulp, abs(_bits(x, precision) - _bits(y, precision)))
-    return {"kind": kind, "precision": precision, "records": len(keys),
-            "equal": len(keys) - ndiff, "different": ndiff,
-            "max_abs": worst_abs, "max_rel": worst_rel, "max_ulp": worst_ulp,
-            "first_difference": first,
-            "bitwise_identical": ndiff == 0}
+        worst_ulp = max(worst_ulp, abs(_bits(x, lattice) - _bits(y, lattice)))
+    out = {"kind": kind, "records": len(keys),
+           "equal": len(keys) - ndiff, "different": ndiff,
+           "max_abs": worst_abs, "max_rel": worst_rel,
+           "ulp_lattice": lattice, f"max_ulp_{lattice}": worst_ulp,
+           "first_difference": first,
+           # Two different questions, previously one field: are the numbers the
+           # same, and are the stored patterns the same.
+           "numerically_identical": ndiff == 0,
+           "raw_bit_identical": nbits == 0}
+    if same_precision:
+        out["precision"] = lattice
+    return out
 
 
 def main(argv) -> int:

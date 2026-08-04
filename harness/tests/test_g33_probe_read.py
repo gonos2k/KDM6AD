@@ -15,12 +15,15 @@ import g33_probe_read as pr  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 
 
-def _stream(precision="f32", *, B=2, K=2, end=True, schema=2, prec=True,
+def _stream(precision="f32", *, B=2, K=2, end=True, schema=3, prec=True,
             forcing=("rho", "delz", "pii"), initial=True, fixture="fx", algo="legacy",
-            mode="rezero", nsplit=12, dtcld=25.0):
+            mode="rezero", nsplit=12, dtcld=25.0, tiles=None, ntile=1, loops=1):
+    # schema 3 carries the TILE VECTOR: `ntile` alone cannot tell (2,1) from
+    # (1,2), and `ncmin` makes those two decompositions disagree (owner §8.1).
+    tiles = tiles or ",".join(["1"] * ntile)
     out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
-           f"fixture {fixture} algorithm {algo} mode {mode} "
-           f"{nsplit} 1 1 {300.0/nsplit:.6f} {dtcld:.6f} {B} {K}"]
+           f"fixture {fixture} algorithm {algo} mode {mode} tiles {tiles} "
+           f"{nsplit} {loops} {ntile} {300.0/nsplit:.6f} {dtcld:.6f} {B} {K}"]
     for f in pr.FIELDS:
         for c in range(1, B + 1):
             for k in range(K):
@@ -215,8 +218,8 @@ def test_diff_reports_bitwise_identity_not_only_comparability():
     differ` still came from a separate uncommitted calculation."""
     a, b = pr.read(_stream("f64")), pr.read(_stream("f64", algo="conservative"))
     d = pr.diff(a, b, "variant")
-    assert d["different"] == 0 and d["max_ulp"] == 0
-    assert d["bitwise_identical"] is True
+    assert d["different"] == 0 and d["max_ulp_f64"] == 0
+    assert d["numerically_identical"] and d["raw_bit_identical"]
     assert d["records"] == d["equal"]
 
 
@@ -226,7 +229,7 @@ def test_diff_counts_records_and_locates_the_first_difference():
         "G33P STATE th 1 0   1.0000000000000000E+000",
         "G33P STATE th 1 0   2.0000000000000000E+000")
     d = pr.diff(a, pr.read(changed), "variant")
-    assert d["different"] == 1 and d["bitwise_identical"] is False
+    assert d["different"] == 1 and d["numerically_identical"] is False
     assert d["first_difference"]["key"] == ["state", "th", 1, 0]
     assert d["max_rel"] == pytest.approx(0.5)
 
@@ -249,3 +252,74 @@ def test_diff_still_refuses_an_incomparable_pair():
     with pytest.raises(pr.ProbeError, match="disagree on algorithm"):
         pr.diff(pr.read(_stream("f32", algo="legacy")),
                 pr.read(_stream("f64", algo="conservative")), "precision_pair")
+
+
+# ---- owner §8: the comparison identity, the ULP lattice, the signed zero ------
+
+def test_the_invariant_set_is_COMPUTED_not_listed():
+    """The listed form silently omitted source_precision, loops, ntile, delt and
+    the tile vector, so two runs differing in any of them compared clean. A field
+    added to the header must become an invariant by DEFAULT -- fail-closed on the
+    next schema change rather than fail-open (owner §8.1)."""
+    for kind in pr.COMPARISONS:
+        inv = set(pr.invariants(kind))
+        differs, covaries = pr.COMPARISONS[kind]
+        assert inv == set(pr.IDENTITY) - {differs} - set(covaries)
+        assert {"source_precision", "loops", "ntile", "tiles"} <= inv
+
+
+def test_a_different_TILE_VECTOR_is_not_a_variant_difference():
+    """`ncmin` is a scalar overwritten in the column loop, so (2,1) and (1,2)
+    can give different answers for the same atmosphere. Comparing them as a
+    `variant` pair attributes a DECOMPOSITION effect to the algorithm -- and
+    `ntile` alone cannot tell them apart, which is why the vector is in the
+    header at all."""
+    a = pr.read(_stream("f64", ntile=2, tiles="1,1"))
+    b = pr.read(_stream("f64", algo="conservative", ntile=2, tiles="1,1"))
+    pr.compare(a, b, "variant")                       # same decomposition: fine
+    c = pr.read(_stream("f64", algo="conservative", ntile=2, tiles="2,0"))
+    with pytest.raises(pr.ProbeError, match="disagree on tiles"):
+        pr.compare(a, c, "variant")
+
+
+def test_a_different_LOOPS_count_is_not_a_variant_difference():
+    a = pr.read(_stream("f64", loops=1))
+    b = pr.read(_stream("f64", algo="conservative", loops=2))
+    with pytest.raises(pr.ProbeError, match="disagree on loops"):
+        pr.compare(a, b, "variant")
+
+
+def test_the_cross_precision_ULP_does_not_depend_on_argument_order():
+    """`precision = a[("meta","precision")]` counted steps on whichever lattice
+    was passed FIRST, so diff(f32,f64) and diff(f64,f32) reported different
+    statistics for the same pair (owner §8.2)."""
+    a, b = pr.read(_stream("f32")), pr.read(_stream("f64"))
+    x, y = pr.diff(a, b, "precision_pair"), pr.diff(b, a, "precision_pair")
+    assert x["ulp_lattice"] == y["ulp_lattice"] == "f32"
+    assert x["max_ulp_f32"] == y["max_ulp_f32"]
+
+
+def test_a_cross_precision_diff_does_not_claim_a_single_precision():
+    """There is no one precision for a pair spanning two, so the field is absent
+    rather than carrying whichever came first."""
+    a, b = pr.read(_stream("f32")), pr.read(_stream("f64"))
+    assert "precision" not in pr.diff(a, b, "precision_pair")
+    assert "precision" in pr.diff(pr.read(_stream("f64")),
+                                  pr.read(_stream("f64", algo="conservative")),
+                                  "variant")
+
+
+def test_signed_zeros_are_numerically_equal_but_NOT_raw_bit_identical():
+    """`x == y` is True for +0.0 and -0.0 and `_bits` maps both to one point, so
+    a pair whose stored patterns differ was certified `bitwise_identical`.
+    "Bitwise" is a certification word and has to mean the bits (owner §8.3)."""
+    a = pr.read(_stream("f64"))
+    negz = _stream("f64", algo="conservative").replace(
+        "G33P STATE th 1 0   1.0000000000000000E+000",
+        "G33P STATE th 1 0   0.0000000000000000E+000")
+    posz = _stream("f64").replace(
+        "G33P STATE th 1 0   1.0000000000000000E+000",
+        "G33P STATE th 1 0  -0.0000000000000000E+000")
+    d = pr.diff(pr.read(posz), pr.read(negz), "variant")
+    assert d["numerically_identical"] is True, "+0.0 == -0.0 numerically"
+    assert d["raw_bit_identical"] is False, "their stored patterns differ"

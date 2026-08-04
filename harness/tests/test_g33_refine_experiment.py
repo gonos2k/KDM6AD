@@ -194,9 +194,9 @@ def _probe_stream(nsplit=3):
     """A COMPLETE probe stream: the reader now requires the exact
     field x cell universe plus INITIAL, all three forcings and PREC, because
     'absent' silently disabled every check (owner §7.2)."""
-    out = [f"G33P BEGIN 2 precision f64 source_precision f32 fixture fx "
-           f"algorithm legacy mode rezero {nsplit} 1 1 {300.0/nsplit:.6f} "
-           f"{300.0/nsplit:.6f} 1 1"]
+    out = [f"G33P BEGIN 3 precision f64 source_precision f32 fixture fx "
+           f"algorithm legacy mode rezero tiles 1 {nsplit} 1 1 "
+           f"{300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
         out.append(f"G33P STATE {f} 1 0   1.0000000000000000E+000")
         out.append(f"G33P INITIAL {f} 1 0   1.0000000000000000E+000")

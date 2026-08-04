@@ -247,6 +247,33 @@ claims:
     evidence: [FINDING_bundle_analyses_v1.md]
     evidence_sha256: [FINDING_bundle_analyses_v1.md:d032090a9b72ebc4]
 
+  - id: G33-COMPARE-001
+    text: >
+      The G33P comparison identity was a hand-written list that pinned five
+      fields and left source_precision, loops, ntile, delt and the tile vector
+      free -- so two runs differing in DECOMPOSITION could be compared as an
+      algorithm variant, which ncmin makes a real hazard. The invariant set is
+      now COMPUTED as IDENTITY minus the axis under test minus what covaries
+      with it, so a new header field is an invariant by default. Schema 3 carries
+      the tile VECTOR because ntile cannot tell (2,1) from (1,2). The
+      cross-precision ULP no longer depends on argument order -- the lattice is
+      named in the field (max_ulp_f32) and `precision` is absent on a
+      cross-precision diff -- and bitwise_identical is split into
+      numerically_identical and raw_bit_identical, because +0.0 and -0.0 compare
+      equal while their stored patterns differ.
+    status: active
+    grade: confirmed
+    basis: >
+      each hole reproduced as a pair the old comparator accepted; all previously
+      published comparator figures reproduce unchanged
+    scope: >
+      The G33P stream contract and comparator. Fixture SHA and executable
+      identity are still NOT in the stream -- they live in the bundle's
+      build_provenance -- so identity is enforced at two levels and a comparison
+      of loose streams outside a bundle cannot check them.
+    evidence: [FINDING_comparison_identity_v1.md]
+    evidence_sha256: [FINDING_comparison_identity_v1.md:2c358ce1d042ec35]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64

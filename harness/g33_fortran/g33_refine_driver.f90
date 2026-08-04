@@ -279,7 +279,9 @@ program g33_refine_driver
   real :: outF(IM,KM,NFLD_ST), precF(3,IM), denO(IM,KM), delzO(IM,KM), piiO(IM,KM)
   real :: inF(IM,KM,NFLD_ST)
   character(len=32) :: arg
-  integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt
+  character(len=128) :: tilestr
+  character(len=16) :: tilebuf
+  integer :: nsplit, ntile, i, k, f, ios, loops_used, pos, nxt, tl
   integer :: tiles(IM)
   integer(int32) :: b
   logical :: carry_aux
@@ -402,24 +404,36 @@ program g33_refine_driver
   write(*,'(A)') 'G33N STREAM_END'
 #endif
 #ifdef KDM6_G33_PRECISION_PROBE
+  ! The TILE VECTOR, not just its length (owner §8.1). `ntile` alone cannot tell
+  ! (2,1) from (1,2), and `ncmin` is a scalar overwritten in the column loop, so
+  ! two decompositions of the same domain can give different answers. Comparing
+  ! them as a `variant` difference would attribute a DECOMPOSITION effect to the
+  ! algorithm.
+  tilestr = ''
+  do tl = 1, ntile
+    write(tilebuf, '(I0)') tiles(tl)
+    tilestr = trim(tilestr) // trim(tilebuf)
+    if (tl < ntile) tilestr = trim(tilestr) // ','
+  end do
+
   ! The probe stream declares its own precision. Without it an f64 stream and an
   ! f32 one are the same text with different numbers, and nothing structurally
   ! stops a reader mixing them (owner P0-4 / priority 2). `source_precision` is
   ! the precision of the REFERENCE this arm instruments, which is always f32.
 #ifdef KDM6_G33_F64
-  ! 1 A + 1 I0 + 10 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
+  ! 1 A + 1 I0 + 12 A + 3 I0 + 2 F + 2 I0 -- counted against the argument list,
   ! because a Fortran format/argument mismatch is a RUNTIME abort, not a compile
   ! error: the build succeeds and the failure appears only as missing output.
-  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 2, 'precision', 'f64', 'source_precision', 'f32', &
+  write(*,'(A,1X,I0,12(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 3, 'precision', 'f64', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
-        trim(merge('carry ', 'rezero', carry_aux)), &
+        trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #else
-  write(*,'(A,1X,I0,10(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 2, 'precision', 'f32', 'source_precision', 'f32', &
+  write(*,'(A,1X,I0,12(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
+        'G33P BEGIN', 3, 'precision', 'f32', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
-        trim(merge('carry ', 'rezero', carry_aux)), &
+        trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #endif
   ! A SEPARATE record family, in decimal at full precision. The G33R stream is
