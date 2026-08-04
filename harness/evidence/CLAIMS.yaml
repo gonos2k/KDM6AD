@@ -117,7 +117,7 @@ claims:
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8f76b4c36037022d]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
 
   - id: G33-NUMBER-002
     text: >
@@ -131,16 +131,22 @@ claims:
       f32, legacy. The mass control is qr (main chain) while the largest number
       row is ni (ice chain), so this is not yet a matched-call contrast.
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8f76b4c36037022d]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
 
   - id: G33-NUMBER-003
-    text: The conservative variant carries the same number defect.
-    status: hold
-    grade: predicted
-    basis: source reading only
-    scope: not measured
+    text: >
+      The conservative variant carries the same number defect: main/nr is
+      15.0036/13.3377/11.8402% in BOTH variants, identical to the last digit
+      (0.150035513206531). It fixes the mass measure and leaves number on the dz
+      ratio. Fixing the cap additionally makes the ice chain measurable --
+      ice/qi's control now closes where legacy's failed at -384%/-269% -- giving
+      ice/ni +6.2789% and +7.0584%.
+    status: active
+    grade: confirmed
+    basis: measurement with a matched mass control on both arms
+    scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8f76b4c36037022d]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
 
   - id: G33-PRECIP-001
     text: >
@@ -253,7 +259,7 @@ claims:
       Not a matched control: mass is qr on the main chain over 1-3 calls, the
       largest number row is ni on the ice chain over 95 (owner S5.2).
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8f76b4c36037022d]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:b686bb72a3ce9c2b]
 
   - id: G33-BASIS-001
     text: >

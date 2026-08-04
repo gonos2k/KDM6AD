@@ -119,3 +119,19 @@ def test_the_new_sites_stay_under_the_number_macro():
         body = ovl.split(f"def {fn}(")[1].split("\ndef ")[0]
         assert "KDM6_G33_NUMBER_DUMP" in body
         assert "KDM6_G33_FORTRAN_DUMP" not in body
+
+
+def test_instrumentation_sites_are_keyed_by_ALGORITHM():
+    """The conservative variant rewrote the sedimentation update, so the legacy
+    anchors do not exist in it. Keying the sites by algorithm is what let the
+    overlay fail loudly on a missing anchor instead of instrumenting the wrong
+    statement (owner §11)."""
+    import sys
+    sys.path.insert(0, str(ROOT / "g33_fortran"))
+    import g33_fortran_bindings as fb
+    for sites in (fb.XFER_SITES, fb.CAP_SITES, fb.TOP_SITES):
+        assert set(sites) == {"legacy", "conservative"}
+        assert sites["legacy"] != sites["conservative"]
+    # conservative's number inflow keeps the dz-only ratio: that is the anchor
+    assert any("delz(i,k+1)/delz(i,k)" in a
+               for a, *_ in fb.XFER_SITES["conservative"])

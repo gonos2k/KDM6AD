@@ -6,7 +6,7 @@
 |---|---|
 | `G33-NUMBER-001` | **active** |
 | `G33-NUMBER-002` | **active** |
-| `G33-NUMBER-003` | **hold** |
+| `G33-NUMBER-003` | **active** |
 | `G33-NUMBER-004` | **withdrawn → G33-NUMBER-002** |
 
 Statuses above are the authority; prose below may predate them.
