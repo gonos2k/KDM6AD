@@ -32,6 +32,22 @@ from pathlib import Path
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_number_transport as nt  # noqa: E402
 
+def endpoints(d: dict) -> dict:
+    """The window's true first and last inventory, distinguished from the sums.
+
+    `start`/`final` accumulate x0 and x1 over every call, so they are
+    sum_i N_i^pre and sum_i N_i^post -- an inventory counted once per call, not
+    the inventory the column began and ended with. Dividing a cumulative residual
+    by them yields an inventory-weighted per-call mean, which is a real
+    statistic and is not what "of the initial column" means (owner P0-2).
+    """
+    pcs = sorted(d.get("per_call") or [], key=lambda p: p.get("call", 0))
+    return {"first_start": pcs[0]["start"] if pcs else None,
+            "last_final": pcs[-1]["final"] if pcs else None,
+            "sum_start": d.get("start"), "sum_final": d.get("final"),
+            "calls": len(pcs)}
+
+
 #: chain -> (mass field, number field) as the kernel's two sub-cycles carry them.
 CHAIN = {"main": ("qr", "nr"), "ice": ("qi", "ni")}
 
@@ -124,7 +140,13 @@ def closures(stream: str, basis: str = "operator") -> dict:
                         # actually appear in it (owner §6.1).
                         ms = call["mstep"][(lp, chain, col)]
                         d["per_call"].append({
-                            "residual": r, "out": w * transfer,
+                            "call": i, "residual": r, "out": w * transfer,
+                            # The endpoints of THIS call. Summing them across
+                            # calls gives sum_i N_i, which is NOT the window's
+                            # initial or final inventory -- calls run in
+                            # sequence, so N_2^pre is roughly N_1^post, and the
+                            # sum counts the column once per call (owner P0-2).
+                            "start": x0, "final": x1,
                             "scale": abs(x0) + abs(x1) + abs(w * transfer),
                             "ops": len(ks) * (ms + 2)})
     return acc

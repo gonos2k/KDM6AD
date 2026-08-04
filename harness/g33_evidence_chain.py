@@ -212,9 +212,19 @@ def check() -> int:
             if a["state"] == "MISMATCH":
                 bad.append(f"{r['id']}: {a['path']} does not match its pinned "
                            f"digest {a['pinned']}")
-            bad += [f"{r['id']}: {a['path']} -> {m['file']} does not match the "
-                    f"digest the manifest recorded" for m in a["members"]
-                    if m["state"] == "MISMATCH"]
+            # ABSENT is a failure HERE, unlike an absent top-level manifest
+            # (owner P0-4). Once the parent manifest is present and matches, the
+            # bundle has declared these files exist; one of them missing is a
+            # corrupt or incomplete bundle, not an unavailable one. Treating the
+            # two the same made a bundle whose raw streams and analyses had all
+            # been deleted pass `--check` cleanly.
+            for m in a["members"]:
+                if m["state"] == "MISMATCH":
+                    bad.append(f"{r['id']}: {a['path']} -> {m['file']} does not "
+                               f"match the digest the manifest recorded")
+                elif m["state"] == "absent":
+                    bad.append(f"{r['id']}: {a['path']} declares {m['file']} "
+                               f"but it is missing — the bundle is incomplete")
     print("\n".join(bad))
     return 1 if bad else 0
 

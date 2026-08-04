@@ -92,11 +92,27 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
                             "manifest still matches its own pin"
 
 
-def test_a_missing_member_is_reported_and_does_not_read_as_matching(world):
+def test_a_missing_member_inside_a_PRESENT_bundle_FAILS(world):
+    """An absent top-level manifest is `unavailable` and must not fail -- bundles
+    live outside the repo. But once the manifest is present AND matches, the
+    bundle has declared these files exist, so one of them missing is a corrupt or
+    incomplete bundle. Treating both cases as "absent, not a failure" let a
+    bundle whose raw streams had all been deleted pass --check cleanly
+    (owner P0-4)."""
     bundle, write = world
     write()
     (bundle / "n3.rezero.txt").unlink()
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "absent"
+    assert ec.check() == 1, "a declared-but-missing member must fail"
+
+
+def test_the_two_kinds_of_absence_are_distinguished(world):
+    """Parent absent -> unavailable, no failure. Child absent -> failure."""
+    bundle, write = world
+    write()
+    assert ec.check() == 0
+    (bundle / "manifest.json").unlink()          # parent gone
+    assert ec.check() == 0, "an absent bundle is unavailable, not a failure"
 
 
 def test_a_finding_revised_after_its_run_is_history_not_failure(world):

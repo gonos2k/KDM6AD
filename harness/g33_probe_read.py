@@ -42,6 +42,11 @@ FORCING = re.compile(r"^G33P FORCING (rho|delz|pii) (\d+) (-?\d+)\s+(\S+)$")
 PREC = re.compile(r"^G33P PREC (\d+) (\d+)\s+(\S+)$")
 
 SCHEMA = 4
+
+#: Density-control arms, taken from the G33N parser so the two protocols cannot
+#: disagree about what an arm is.
+import g33_number_transport as _nt   # noqa: E402
+RHO_PROFILES = _nt.RHO_PROFILES
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as _ra   # noqa: E402
 
@@ -128,6 +133,20 @@ def read(text: str) -> dict:
     _expect({(k[1], k[2]) for k in out if k[0] == "prec"}
             == {(sp, c) for sp in (1, 2, 3) for c in range(1, int(B) + 1)},
             "prec is not exactly species 1/2/3 over every column")
+    # The decomposition metadata is a SCIENTIFIC input contract here, not a
+    # label: `ncmin` is a scalar overwritten in the column loop, so which columns
+    # share a tile changes the answer. A vector that cannot describe any real
+    # decomposition -- wrong length, a zero-width tile, not covering the domain --
+    # must not be stored as though it did (owner §8.1).
+    tv = tuple(int(t) for t in tiles.split(","))
+    _expect(len(tv) == int(ntile),
+            f"tile vector {tv} has {len(tv)} entries but ntile is {ntile}")
+    _expect(all(t > 0 for t in tv), f"tile vector {tv} has a non-positive tile")
+    _expect(sum(tv) == int(B),
+            f"tile vector {tv} sums to {sum(tv)}, not the domain width {B}")
+    _expect(rho_profile in RHO_PROFILES,
+            f"unknown rho_profile {rho_profile!r}; expected one of "
+            f"{sorted(RHO_PROFILES)}")
     out |= {("meta", "schema"): int(schema), ("meta", "precision"): precision,
             ("meta", "source_precision"): source, ("meta", "fixture"): fixture,
             ("meta", "algorithm"): algorithm, ("meta", "mode"): mode,
@@ -137,7 +156,7 @@ def read(text: str) -> dict:
             # The tile VECTOR, not just its length: `ntile` alone cannot tell
             # (2,1) from (1,2), and `ncmin` is a scalar overwritten in the column
             # loop, so those two decompositions can disagree (owner §8.1).
-            ("meta", "tiles"): tuple(int(t) for t in tiles.split(",")),
+            ("meta", "tiles"): tv,
             # The forcing intervention, so two arms of the density experiment are
             # distinguishable from the stream alone (owner §5).
             ("meta", "rho_profile"): rho_profile}

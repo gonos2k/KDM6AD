@@ -435,14 +435,14 @@ program g33_refine_driver
   ! because a Fortran format/argument mismatch is a RUNTIME abort, not a compile
   ! error: the build succeeds and the failure appears only as missing output.
   write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 3, 'precision', 'f64', 'source_precision', 'f32', &
+        'G33P BEGIN', 4, 'precision', 'f64', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
         trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
         'rho_profile', trim(rho_name), &
         nsplit, loops_used, ntile, delt_used, dtcld_used, IM, KM
 #else
   write(*,'(A,1X,I0,14(1X,A),3(1X,I0),2(1X,F0.6),2(1X,I0))') &
-        'G33P BEGIN', 3, 'precision', 'f32', 'source_precision', 'f32', &
+        'G33P BEGIN', 4, 'precision', 'f32', 'source_precision', 'f32', &
         'fixture', KDM6_G33_FIXTURE, 'algorithm', ALGOTAG, 'mode', &
         trim(merge('carry ', 'rezero', carry_aux)), 'tiles', trim(tilestr), &
         'rho_profile', trim(rho_name), &
