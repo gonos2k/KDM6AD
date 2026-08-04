@@ -103,6 +103,14 @@ claims:
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
+    # The RUNS behind the numbers, not only the document quoting them (owner
+    # §9.2). A manifest carries every member's output_sha256, so pinning it
+    # reaches each raw stream transitively; g33_evidence_chain.py follows that
+    # link and verifies the members too. Bundles live outside the repo, so an
+    # absent one is `unavailable`, never a failure.
+    artifacts:
+      - kdm6ad-g33m-refine/full-legacy-dtcld/manifest.json: 86131a0749522295
+      - kdm6ad-g33m-refine/fine-legacy-dtcld/manifest.json: 7d7da60204361267
     evidence: [FINDING_refinement_noise_floor_v1.md,
                FINDING_fixture_precipitates_only_at_f32_v1.md]
     evidence_sha256: [FINDING_refinement_noise_floor_v1.md:14391f5f23d2d941, FINDING_fixture_precipitates_only_at_f32_v1.md:81405a97d98327e6]
@@ -171,6 +179,25 @@ claims:
       not the magnitude in a forecast.
     evidence: [FINDING_density_falsification_v1.md]
     evidence_sha256: [FINDING_density_falsification_v1.md:0dd2d6c05e766bbb]
+
+  - id: G33-CHAIN-001
+    text: >
+      The evidence chain reaches the finding and stops: 0 of 29 claims pinned the
+      RUN behind their numbers and only 2 cite a finding any published bundle
+      names. `artifacts:` closes the claim->run link and is followed transitively
+      through the manifest to the raw streams (13 reached from 2 pinned digests).
+      The bundle->finding pin is a SNAPSHOT and 3 of 5 are divergent, which is
+      history rather than rot -- a published bundle is immutable, so its pin can
+      never be updated -- and the tool reports it without failing on it.
+    status: active
+    grade: confirmed
+    basis: measurement by g33_evidence_chain.py over the registry and this host
+    scope: >
+      The registry as of this commit and the bundles present on the owner's host.
+      Bundles are outside the repo and absent in CI, so the artifact check is
+      local-only; the counts are of the registry, which is committed.
+    evidence: [FINDING_evidence_chain_v1.md]
+    evidence_sha256: [FINDING_evidence_chain_v1.md:84af681a796b9a2b]
 
   - id: G33-PRECIP-001
     text: >
