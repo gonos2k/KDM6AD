@@ -109,8 +109,13 @@ def test_calls_with_an_IDENTICAL_loop_index_are_still_separated():
 
 # ---- owner P0-4 / P0-1..P0-3: the number stream is a fail-closed protocol ----
 
-def _hdr(nsplit=1, ntile=1, schema=1):
-    return f"G33N STREAM_BEGIN {schema} {nsplit} {ntile} {nsplit*ntile} legacy rezero\n"
+#: schema 2 declares the features the stream carries. The default is the core
+#: set: the extension records have their own completeness checks, so a helper
+#: that declared them without emitting them would fail for the right reason but
+#: obscure the test that wanted them.
+def _hdr(nsplit=1, ntile=1, schema=2, feats="mstep,mstepi,nflux"):
+    return (f"G33N STREAM_BEGIN {schema} {nsplit} {ntile} {nsplit*ntile} "
+            f"legacy rezero {feats}\n")
 
 
 def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
@@ -230,7 +235,7 @@ def test_a_stream_declaring_another_schema_is_rejected():
 
 
 def test_an_inconsistent_header_is_rejected():
-    s = "G33N STREAM_BEGIN 1 4 2 3 legacy rezero\nG33N STREAM_END\n"
+    s = "G33N STREAM_BEGIN 2 4 2 3 legacy rezero mstep\nG33N STREAM_END\n"
     with pytest.raises(nt.StreamError, match="header is inconsistent"):
         list(nt.calls(s))
 
@@ -303,9 +308,29 @@ def test_an_incomplete_NFLUX_group_is_refused():
 
 
 def test_NFLUX_must_cover_the_state_columns():
-    s = _stream(_call(1, cols=(1, 2)).replace("G33F NFLUX 1 2", "G33F NOPE 1 2"))
+    """Drop column 2's NFLUX rather than renaming it: an unrecognised family is
+    now refused earlier, which would test a different guard."""
+    body = "\n".join(l for l in _call(1, cols=(1, 2)).splitlines()
+                     if not l.startswith("G33F NFLUX 1 2 ")) + "\n"
     with pytest.raises(nt.StreamError, match="NFLUX covers"):
-        list(nt.calls(s))
+        list(nt.calls(_stream(body)))
+
+
+def test_an_unknown_G33F_FAMILY_is_refused():
+    """A family this parser has never heard of is a protocol mismatch; an
+    unconsumed STAGE is not (the stream legitimately carries stages this parser
+    does not read)."""
+    inside = _call(1).replace("G33F MSTEP 1 main 1",
+                              "G33F NOPE 1 1 1 f32 3F800000\nG33F MSTEP 1 main 1")
+    with pytest.raises(nt.StreamError, match="unknown G33F record family"):
+        list(nt.calls(_stream(inside)))
+    # an unconsumed STAGE inside a call is fine: the stream legitimately carries
+    # stages this parser does not read
+    ok = _call(1).replace(
+        "G33F MSTEP 1 main 1",
+        "G33F STAGE 0 - kernel_init_constants 0 pi 1 3 f32 40490FDB\n"
+        "G33F MSTEP 1 main 1")
+    assert len(nt.calls(_stream(ok))) == 1
 
 
 def test_a_substep_count_missing_for_a_column_is_refused():

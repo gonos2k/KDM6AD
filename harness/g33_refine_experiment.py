@@ -27,6 +27,7 @@ import argparse
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -105,9 +106,14 @@ def _agree(g33r: dict, g33p: dict, name: str) -> None:
         got = g33p.get(key)
         if got is None:
             raise pr.ProbeError(f"{name}: G33P is missing {key}, which G33R has")
-        if got != hexv and abs(got - hexv) > 1e-6 * max(abs(hexv), 1e-30):
+        # EXACT (owner §7.3). Both sides are the same f32 value written twice --
+        # raw hex and decimal -- so they must round-trip to the same f32 word. A
+        # 1e-6 relative tolerance admits several f32 ULP near 1 and would pass a
+        # genuinely different number.
+        if struct.pack(">f", got) != struct.pack(">f", hexv):
             raise pr.ProbeError(
-                f"{name}: G33R and G33P disagree at {key}: {hexv} vs {got}")
+                f"{name}: G33R and G33P are different f32 words at {key}: "
+                f"{hexv!r} vs {got!r}")
 
 
 def _probe_member(path: Path) -> dict:
@@ -148,6 +154,19 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str) -> dict:
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             nflux: bool, module: Path, findings=(), arm: str = "reference") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
+    # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
+    # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
+    # int32 mold and labels the result f32, so the parser reads a valid-looking
+    # f32 bit pattern that is not the number. The f64 branch also runs only
+    # probe_members(), so nothing would parse G33N even though the manifest would
+    # record an nflux parser. Refused until an f64 number protocol exists.
+    if arm == "f64" and nflux:
+        raise SystemExit(
+            "--arm f64 with --nflux is refused: the G33F number records are "
+            "declared f32 and would carry four bytes of an eight-byte real. An "
+            "f64 number stream needs its own record family (16-hex-digit), not "
+            "the f32 one relabelled.")
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)

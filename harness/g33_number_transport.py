@@ -66,14 +66,29 @@ import subprocess
 import sys
 from pathlib import Path
 
-STREAM_BEGIN = re.compile(r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+)$")
+STREAM_BEGIN = re.compile(
+    r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+)$")
+XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) f32 "
+                  r"([0-9A-F]{8}) ([0-9A-F]{8})$")
+CAPIN = re.compile(r"^G33F CAPIN (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
+                   r"([0-9A-F]{8}) ([0-9A-F]{8}) ([0-9A-F]{8}) ([0-9A-F]{8})$")
+TOPOUT = re.compile(r"^G33F TOPOUT (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
+                    r"([0-9A-F]{8}) ([0-9A-F]{8})$")
+#: Extension records this parser knows. A stream declaring a feature it does not
+#: emit, or emitting one it did not declare, is refused.
+FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout"}
+
+#: G33F record families this parser recognises. STAGE and the op ladder are
+#: consumed selectively; the rest are the number extension.
+KNOWN_G33F = {"STAGE", "MSTEP", "MSTEPI", "NFLUX", "XFER", "CAPIN", "TOPOUT",
+              "G33FOP"}
 STREAM_END = re.compile(r"^G33N STREAM_END$")
 CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) "
                         r"([0-9A-F]{8})$")
 CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+) (\d+)$")
 #: The protocol this parser implements. A stream declaring another is refused
 #: rather than read with the wrong field meanings.
-SCHEMA = 1
+SCHEMA = 2
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
                    r"(\S+) (\d+) (-?\d+) f32 ([0-9A-F]{8})$")
 NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")
@@ -106,7 +121,8 @@ def _blank(call_id=None, split=None, tile=None, delt=None):
     return {"call_id": call_id, "split": split, "tile": tile, "delt": delt,
             "cols": None, "K": None,
             "outer_pre_sed": {}, "outer_post_sed": {}, "surface": {},
-            "flux": {}, "mstep": {}, "loops": set()}
+            "flux": {}, "mstep": {}, "loops": set(),
+            "xfer": {}, "capin": {}, "topout": {}}
 
 
 def single_loop(call) -> int:
@@ -135,11 +151,11 @@ def _check(call):
     no complaint about.
     """
     for lp in sorted(call["loops"]):
-        _check_loop(call, lp)
+        _check_loop(call, lp, call.get("features", frozenset()))
 
 
 #: Every NFLUX group is exactly these, once per column per loop.
-def _check_loop(call, lp):
+def _check_loop(call, lp, feats=frozenset()):
     cols = {c for l, c, _ in call["outer_pre_sed"] if l == lp}
     # The declared column range is a CONTRACT, not decoration: it was recorded
     # and thrown away (owner P0-3).
@@ -182,6 +198,31 @@ def _check_loop(call, lp):
             raise StreamError(
                 f"call {call['call_id']} loop {lp}: {chain} sub-step counts "
                 f"cover {sorted(got)}, state covers {sorted(cols)}")
+        # The extension records have an EXACT universe: the bottom-cell transfer
+        # and the top-cell removal fire once per active sub-step per column, and
+        # `mstep` says how many that is. A missing one silently shrinks a flux;
+        # a duplicate doubles it (owner P0-E1). _put already refuses duplicates.
+        for fam, store in (("xfer", call["xfer"]), ("topout", call["topout"])):
+            if fam not in feats:
+                continue
+            for c in sorted(cols):
+                want = set(range(1, call["mstep"][(lp, chain, c)] + 1))
+                got_n = {n for k, n in ((k, k[1]) for k in store)
+                         if k[0] == lp and k[2] == c and k[3] == chain}
+                if got_n != want:
+                    raise StreamError(
+                        f"call {call['call_id']} loop {lp} col {c} {chain}: "
+                        f"{fam} covers sub-steps {sorted(got_n)}, mstep declares "
+                        f"{sorted(want)}")
+    if "capin" in feats:
+        for (l, n, c, chain, k), v in call["capin"].items():
+            if l != lp:
+                continue
+            for x in v:
+                if x != x or abs(x) == float("inf"):
+                    raise StreamError(
+                        f"call {call['call_id']}: non-finite capin at "
+                        f"{(l, n, c, chain, k)}")
 
 
 def calls(stream: str) -> list:
@@ -212,11 +253,16 @@ def calls(stream: str) -> list:
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
-            schema, nsplit, ntile, expected, algo, mode = m.groups()
+            schema, nsplit, ntile, expected, algo, mode, feats = m.groups()
             if int(schema) != SCHEMA:
                 raise StreamError(f"stream declares schema {schema}, parser is {SCHEMA}")
+            features = set(feats.split(","))
+            unknown = features - FEATURES
+            if unknown:
+                raise StreamError(f"stream declares unknown features {sorted(unknown)}")
             header = {"nsplit": int(nsplit), "ntile": int(ntile),
-                      "expected_calls": int(expected), "algorithm": algo, "mode": mode}
+                      "expected_calls": int(expected), "algorithm": algo,
+                      "mode": mode, "features": features}
             if header["expected_calls"] != header["nsplit"] * header["ntile"]:
                 raise StreamError(
                     f"header is inconsistent: {nsplit} splits x {ntile} tiles is not "
@@ -251,6 +297,7 @@ def calls(stream: str) -> list:
                     f"CALL_END {m.group(1)} reports split/tile "
                     f"{m.group(2)}/{m.group(3)}, begin said "
                     f"{cur['split']}/{cur['tile']}")
+            cur["features"] = header["features"] if header else frozenset()
             _check(cur)
             out.append(cur)
             cur, expect, seen = None, expect + 1, seen + 1
@@ -280,8 +327,34 @@ def calls(stream: str) -> list:
             cur["loops"].add(loop)
             col, field, hexv = m.groups()
             _put(cur["flux"], (loop, int(col)), field, _f32(hexv), cur)
+        elif (m := XFER.match(line)):
+            loop, n, col, chain, dq, dn = m.groups()
+            cur["loops"].add(int(loop))
+            _put(cur["xfer"], (int(loop), int(n), int(col), chain), None,
+                 (_f32(dq), _f32(dn)), cur)
+        elif (m := CAPIN.match(line)):
+            loop, n, col, k, chain, oq, iq, on, ino = m.groups()
+            cur["loops"].add(int(loop))
+            _put(cur["capin"], (int(loop), int(n), int(col), chain, int(k)), None,
+                 (_f32(oq), _f32(iq), _f32(on), _f32(ino)), cur)
+        elif (m := TOPOUT.match(line)):
+            loop, n, col, k, chain, oq, on = m.groups()
+            cur["loops"].add(int(loop))
+            _put(cur["topout"], (int(loop), int(n), int(col), chain, int(k)), None,
+                 (_f32(oq), _f32(on)), cur)
         elif line.startswith("G33N"):
             raise StreamError(f"unknown G33N record inside a call: {line!r}")
+        elif line.startswith("G33F"):
+            # Reject an unknown record FAMILY, not an unconsumed stage: the
+            # stream legitimately carries STAGE records for stages this parser
+            # does not read (kernel_init_constants, the op ladder). A family it
+            # has never heard of is a protocol mismatch (owner P0-E1).
+            # `G33FOP` is its own family with no space after G33F, so the family
+            # is the first token when it is not exactly "G33F".
+            tok = line.split()
+            fam = tok[0] if tok[0] != "G33F" else (tok[1] if len(tok) > 1 else "")
+            if fam not in KNOWN_G33F:
+                raise StreamError(f"unknown G33F record family {fam!r}: {line!r}")
     if cur is not None:
         raise StreamError(f"stream ends inside call {cur['call_id']}")
     # The header is mandatory (checked above), so these always run.

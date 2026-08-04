@@ -1,5 +1,15 @@
 # The ρΔz weight is moist-air density; `nr` is per kg of dry air
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-BASIS-001` | **active** |
+| `G33-BASIS-002` | **hold** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner §7. The number-transport result is stated against the column measure
 `Σ den·Δz·nr`. That is only the physical column number if `den`'s kilogram and
 `nr`'s kilogram are the same kilogram. They are not exactly.

@@ -1,5 +1,17 @@
 # The column-water orders are precision drift, and the `mstep` attribution rested on them
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-WATER-CONS-001` | **withdrawn → G33-WATER-CONS-002** |
+| `G33-WATER-CONS-002` | **active** |
+| `G33-WATER-ORDER-001` | **withdrawn → G33-WATER-ORDER-002** |
+| `G33-WATER-ORDER-002` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 A correction to this branch's headline result, found by turning the f64 instrument
 (built for the roundoff question) on the column budgets.
 
@@ -74,7 +86,7 @@ Two further things follow, and they cut in opposite directions:
 | `mstep_i` reaches 1 two levels before `mstep` in column 3 | **confirmed** (measured) |
 | `mstep` explains column 3's erratic *water* orders | **withdrawn** |
 | a varying `mstep_i` prevents `ni` from converging | **refuted** at f64 |
-| `th`/`qv` max-norm fine-step turnover is roundoff | **confirmed** (precision scaling) |
+| `th`/`qv` max-norm fine-step turnover is roundoff | **withdrawn** — precision-dependent is confirmed, the CAUSE is HOLD (`G33-TURNOVER-002`) |
 
 ## Why it was not visible before
 

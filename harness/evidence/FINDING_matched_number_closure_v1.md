@@ -1,5 +1,15 @@
 # Matched mass/number closure: same chain, same calls, and it holds at mstep = 10
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-NUMBER-005` | **active** |
+| `G33-NUMBER-006` | **withdrawn → G33-ICE-CAP-001** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner §5.2 and §5.3. The earlier closure compared `qr` on the MAIN chain over 1–3
 calls against `ni` on the ICE chain over 95, using the UNCAPPED `fall`/`falln`
 accumulators, and excluded any call where a cap bound — detected by an endpoint

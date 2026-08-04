@@ -1,5 +1,15 @@
 # The `mstep ≡ 1` window and the resolvable window do not overlap enough to give an order
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-TURNOVER-001` | **withdrawn → G33-TURNOVER-002** |
+| `G33-TURNOVER-002` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Correcting a claim this branch made. `FINDING_refinement_design_v1` / STATUS said
 column 3's erratic orders make §9's obstacle a **sweep-design** problem, "not an
 intrinsic property of the fixture — a chain over which `mstep` is constant would

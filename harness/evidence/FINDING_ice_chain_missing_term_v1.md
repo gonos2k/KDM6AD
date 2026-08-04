@@ -1,5 +1,15 @@
 # The ice chain's missing term is the post-update-reservoir inflow cap — and it lifts the main-chain result to an exact match
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-ICE-CAP-001` | **active** |
+| `G33-NUMBER-007` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 The matched closure's `qi` mass control failed at −384%/−269%, which said the ice
 accounting was missing a term. This identifies it, and the instrumentation added
 to find it turned the main-chain number result from a residual into an exact

@@ -212,7 +212,7 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     xp._agree(g33r, dict(g33r), "n.txt")                    # identical: fine
     swapped = dict(g33r)
     swapped[("prec", 1, 1)], swapped[("prec", 2, 1)] = 3.0, 2.0
-    with pytest.raises(xp.pr.ProbeError, match="disagree at"):
+    with pytest.raises(xp.pr.ProbeError, match="different f32 words at"):
         xp._agree(g33r, swapped, "n.txt")
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
     with pytest.raises(xp.pr.ProbeError, match="is missing"):

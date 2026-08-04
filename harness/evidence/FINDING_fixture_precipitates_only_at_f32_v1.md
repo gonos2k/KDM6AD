@@ -1,5 +1,19 @@
 # This fixture precipitates only at f32, and that scopes every comparison built on it
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status |
+|---|---|
+| `G33-ENTHALPY-001` | **active** |
+| `G33-ENTHALPY-002` | **withdrawn → G33-ENTHALPY-001** |
+| `G33-PRECIP-001` | **active** |
+| `G33-PRECIP-003` | **withdrawn → G33-PRECIP-001** |
+| `G33-PROTOCOL-001` | **active** |
+| `G33-VARIANT-F64-001` | **active** |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner §6.4 sent me to the enthalpy ledger's normalisation. Applying the f64
 instrument on the way found something larger.
 
