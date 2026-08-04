@@ -49,7 +49,7 @@ def test_the_chain_map_matches_the_kernel_sub_cycles():
 def test_a_failing_mass_control_is_flagged_not_reported_as_a_result(capsys):
     """A mass row that does not close means the accounting for that chain is
     missing a term, so NEITHER row of the pair is evidence."""
-    def fake(_stream):
+    def fake(_stream, basis="operator"):
         return {("ice", "qi", 2): {"out": 1.0, "residual": -3.8, "start": 1.0,
                                    "calls": 12},
                 ("ice", "ni", 2): {"out": 1.0, "residual": -1.6, "start": 1.0,
@@ -71,7 +71,7 @@ def test_a_failing_mass_control_is_flagged_not_reported_as_a_result(capsys):
 def test_an_unusable_row_carries_a_null_number_result_in_the_JSON(monkeypatch):
     """A warning printed under a table is separated from it the moment someone
     copies the table. In the JSON the exclusion is structural (owner §6.2)."""
-    def fake(_stream):
+    def fake(_stream, basis="operator"):
         return {("ice", "qi", 2): {"out": 1.0, "residual": -3.8, "start": 1.0,
                                    "calls": 1},
                 ("ice", "ni", 2): {"out": 1.0, "residual": -1.6, "start": 1.0,

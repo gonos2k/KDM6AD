@@ -106,8 +106,11 @@ EXTENSION_FAMILIES = frozenset(FAMILY_FEATURE)
 #: against the stream's own field set, so a field the driver adds needs no change
 #: here; these are the ones whose ABSENCE would make the analysis wrong rather
 #: than merely different.
-STAGE_REQUIRED = {"outer_pre_sed": ("rho", "delz", "nr", "ni", "qr", "qi"),
-                  "outer_post_sed": ("nr", "ni", "qr", "qi")}
+#: `qv` is required at BOTH endpoints because the DRY basis needs
+#: rho_d = rho_m/(1+qv), and because carrying it at both turns "sedimentation does
+#: not touch qv" from an assumption into something the ledger checks.
+STAGE_REQUIRED = {"outer_pre_sed": ("rho", "delz", "qv", "nr", "ni", "qr", "qi"),
+                  "outer_post_sed": ("qv", "nr", "ni", "qr", "qi")}
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
                    r"(\S+) (\d+) (-?\d+) f32 ([0-9A-F]{8})$")
 NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")

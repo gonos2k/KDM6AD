@@ -57,8 +57,24 @@ def transfers(stream: str) -> dict:
     return out
 
 
-def closures(stream: str) -> dict:
+#: The two column measures (owner §9). `den` passed to the kernel is MOIST-air
+#: density (rho_m = rho_d(1+qv)), while `nr` and the `q` fields are mixing ratios
+#: per DRY-air kg -- so the physically conserved column integral uses rho_d and
+#: the operator's own integral uses rho_m. Reporting only one of them makes a
+#: statement about the operator read as a statement about the atmosphere.
+MEASURES = ("operator", "physical")
+
+
+def _density(rec: dict, basis: str) -> float:
+    if basis == "operator":
+        return rec["rho"]
+    return rec["rho"] / (1.0 + rec["qv"])
+
+
+def closures(stream: str, basis: str = "operator") -> dict:
     """{(chain, species, col): {'out':…, 'residual':…, 'calls':…}}."""
+    if basis not in MEASURES:
+        raise ValueError(f"basis must be one of {MEASURES}, got {basis!r}")
     xf = transfers(stream)
     acc = {}
     for i, call in enumerate(nt.calls(stream), start=1):
@@ -66,7 +82,7 @@ def closures(stream: str) -> dict:
             pre, post = call["outer_pre_sed"], call["outer_post_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                den = [pre[(lp, col, k)]["rho"] for k in ks]
+                den = [_density(pre[(lp, col, k)], basis) for k in ks]
                 dz = [pre[(lp, col, k)]["delz"] for k in ks]
                 w = den[-1] * dz[-1]            # bottom-cell rho*dz
                 for chain, (mass, num) in CHAIN.items():
@@ -187,13 +203,13 @@ def report(stream: str) -> None:
                   f"rows are NOT usable")
 
 
-def analysis(stream: str) -> dict:
+def analysis(stream: str, basis: str = "operator") -> dict:
     """The table as JSON, with unusable rows carrying `number_result: null`.
 
     A warning printed under a table gets separated from it the moment someone
     copies the table (owner §6.2). Here the exclusion is structural.
     """
-    acc = closures(stream)
+    acc = closures(stream, basis)
     ctrl = {(ch, col): usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     out = {}

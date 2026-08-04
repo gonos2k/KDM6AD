@@ -274,6 +274,34 @@ claims:
     evidence: [FINDING_comparison_identity_v1.md]
     evidence_sha256: [FINDING_comparison_identity_v1.md:2c358ce1d042ec35]
 
+  - id: G33-BASIS-003
+    text: >
+      Every closure row now reports BOTH column measures: operator = rho_m*dz
+      (what the kernel budgets) and physical = rho_d*dz (what is conserved), with
+      rho_d = rho_m/(1+qv). Absolute values shift by the column-mean qv (~0.10%),
+      and on THIS fixture the ratios agree to 1e-14 -- but only because 1+qv is
+      nearly vertically constant (spread 2.6e-5 to 7.2e-4). Holding everything
+      else fixed and varying only the humidity profile: uniform qv gives 2.2e-15,
+      this fixture's column-3 spread gives 3.7e-4, and an ordinary troposphere
+      (qv 2e-5 to 1.8e-2) gives 1.4e-2. "Ratios are unaffected by the basis" is
+      therefore a property of a NEAR-DRY FIXTURE, not of the quantity. Separately
+      measured: sedimentation leaves qv exactly unchanged (max |dqv| = 0), so
+      using the pre-sed density at both endpoints is verified rather than assumed.
+    status: active
+    grade: confirmed
+    basis: >
+      measurement on the fixture plus a constructed humidity sweep holding all
+      other inputs fixed
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s for the fixture numbers; the
+      humidity sweep is CONSTRUCTED and shows the cancellation is contingent, not
+      what the divergence is in any particular forecast. Number and mass rows
+      only -- water and enthalpy are not yet on both bases. Says nothing about
+      which basis the reference INTENDS, which is G33-BASIS-002 and an owner
+      decision.
+    evidence: [FINDING_dual_ledger_v1.md]
+    evidence_sha256: [FINDING_dual_ledger_v1.md:d18c9e4d3502a6e7]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64

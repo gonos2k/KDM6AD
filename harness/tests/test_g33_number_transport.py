@@ -132,7 +132,10 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
     for stage in ("outer_pre_sed", "outer_post_sed"):
         for c in cols:
             for k in range(ks):
-                for f in ("nr", "ni", "qr", "qi", "rho", "delz"):
+                # qv at BOTH endpoints: the dry basis needs rho_d = rho_m/(1+qv)
+                # and carrying it at both makes "sedimentation does not touch qv"
+                # checkable rather than assumed.
+                for f in ("nr", "ni", "qr", "qi", "qv", "rho", "delz"):
                     if stage == "outer_post_sed" and f in ("rho", "delz"):
                         continue
                     out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
