@@ -124,7 +124,11 @@ def test_every_claim_declares_a_scope():
     ("G33-TURNOVER-002", "active"),
     ("G33-WATER-ORDER-001", "withdrawn"),   # mstep explains column-3 water
     ("G33-PRECIP-002", "withdrawn"),        # conservative enthalpy advantage
-    ("G33-NUMBER-002", "active"),           # 6-14%, conditional
+    # 6-14% came from an UNMATCHED contrast (qr main-chain control against an
+    # ni ice-chain row) -- the weakness its own scope named. -003 runs the
+    # matched contrast per row, so -002 and -004 both point there now.
+    ("G33-NUMBER-002", "superseded"),
+    ("G33-NUMBER-004", "withdrawn"),
     # was hold/predicted; now measured on both arms, identical to the last digit
     ("G33-NUMBER-003", "active"),
 ])

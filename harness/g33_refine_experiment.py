@@ -287,6 +287,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             nflux: bool, module: Path, findings=(), arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # MATERIALISE FIRST (owner §13 P1). `nsplits` is walked six times below --
+    # the duplicate check, the member loop, the analyses, the arm streams. A
+    # generator is exhausted by the first walk, and every later one sees an
+    # empty sequence: the bundle publishes with zero members, no error, and a
+    # manifest that looks complete. Nothing downstream can tell that apart from
+    # a bundle that was asked for nothing.
+    nsplits = tuple(nsplits)
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
     # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
@@ -315,8 +322,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # duplicate check: both members write the same filename, the second
     # overwrites the first, and the published directory holds one (owner
     # P1-11.5). Refused where it is still visible.
-    if len(list(nsplits)) != len(set(nsplits)):
-        dup = sorted({n for n in nsplits if list(nsplits).count(n) > 1})
+    if len(nsplits) != len(set(nsplits)):
+        dup = sorted({n for n in nsplits if nsplits.count(n) > 1})
         raise SystemExit(
             f"--nsplit repeats {dup}: both members would write one filename and "
             f"the second would overwrite the first, so the bundle would silently "

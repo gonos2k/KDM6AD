@@ -125,21 +125,28 @@ claims:
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:67018d7e86def722]
 
   - id: G33-NUMBER-002
     text: >
       The rho*dz number closure residual is 6-14% of the surface outflow while
       mass closes to f32 roundoff.
-    status: active
-    grade: conditional
-    basis: measurement
+    status: superseded
+    superseded_by: G33-NUMBER-003
     scope: >
-      SELECTED cap-unbound, mstep==1 calls on g33_fixture_multisubcycle_v1 at
-      f32, legacy. The mass control is qr (main chain) while the largest number
-      row is ni (ice chain), so this is not yet a matched-call contrast.
+      The 6-14% range came from an UNMATCHED contrast, which this claim's own
+      scope already named: the mass control was qr (main chain) while the
+      largest number row was ni (ice chain), so the number and the control it
+      was read against came from different sedimentation sub-cycles. It was also
+      restricted to SELECTED cap-unbound, mstep==1 calls. G33-NUMBER-003 runs the
+      matched contrast on both arms and reports it per row -- main/nr
+      15.0036/13.3377/11.8402%, and ice/ni +6.2789/+7.0584% once the cap fix
+      makes the ice chain measurable at all -- so the aggregate range is
+      replaced by figures whose control is on the same chain as the row. What
+      the fraction is a fraction OF is separately addressed by
+      G33-MAGNITUDE-002.
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:67018d7e86def722]
 
   - id: G33-NUMBER-003
     text: >
@@ -666,12 +673,16 @@ claims:
   - id: G33-NUMBER-004
     text: The transfer arithmetic is the only difference between the mass and number rows.
     status: withdrawn
-    superseded_by: G33-NUMBER-002
+    superseded_by: G33-NUMBER-003
     scope: >
       Not a matched control: mass is qr on the main chain over 1-3 calls, the
       largest number row is ni on the ice chain over 95 (owner S5.2).
+      REPOINTED. This pointed at G33-NUMBER-002, which carries the IDENTICAL
+      weakness by its own scope -- so a claim withdrawn for lacking a matched
+      control was superseded by another claim lacking one. G33-NUMBER-003 is the
+      one that actually supplies it, on both arms and per row.
     evidence: [FINDING_number_transport_creation_v1.md]
-    evidence_sha256: [FINDING_number_transport_creation_v1.md:8d8799190c097c6b]
+    evidence_sha256: [FINDING_number_transport_creation_v1.md:67018d7e86def722]
 
   - id: G33-BASIS-001
     text: >

@@ -121,9 +121,32 @@ if [ "$DUMP" = 1 ]; then
     # compile from an identical path, different ones cannot collide.
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" >/dev/null
-    OVLSHA=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -c1-16)
+    OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
+    OVLSHA=${OVLFULL:0:16}
     MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"
-    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC"
+    # VERIFY BEFORE REUSING (owner §13 P1). The path is a 16-hex TRUNCATION of a
+    # 256-bit digest, and it lives in a shared temp directory that survives
+    # between builds. A pre-existing file there is reused as the compiler's input
+    # -- so a truncation collision, a stale file from an interrupted build, or a
+    # concurrent build writing the same name would silently compile a source
+    # other than the overlay just generated, under provenance claiming otherwise.
+    # Compare the FULL digest and refuse rather than overwrite.
+    if [ -e "$MODULE_SRC" ]; then
+        HAVE=$(shasum -a 256 "$MODULE_SRC" | cut -d' ' -f1)
+        if [ "$HAVE" != "$OVLFULL" ]; then
+            echo "BUILD REFUSED: $MODULE_SRC already exists with a different"
+            echo "  content than the overlay just generated."
+            echo "    on disk:  $HAVE"
+            echo "    overlay:  $OVLFULL"
+            echo "  The path is a 16-hex truncation, so this is a collision or a"
+            echo "  stale file. Remove it deliberately; do not overwrite blindly."
+            exit 1
+        fi
+    else
+        # Atomic: a concurrent build must never see a half-written source.
+        cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"
+        mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"
+    fi
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi

@@ -421,3 +421,39 @@ def test_the_bundle_level_analysis_is_named_as_such():
                       FINDING.read_text(), re.S).group(1)
     row = next(l for l in block.splitlines() if "`metric_trajectory`" in l)
     assert "bundle" in row and "per member" not in row
+
+
+def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
+                                                                 monkeypatch):
+    """`nsplits` is walked six times -- the duplicate check, the member loop, the
+    analyses, the arm streams. A generator is exhausted by the first walk and
+    every later one sees nothing, so the bundle publishes with zero members, no
+    error, and a manifest that looks complete. It is materialised on entry."""
+    seen = {}
+
+    def fake_build(workdir, *a, **k):
+        workdir.mkdir(parents=True, exist_ok=True)
+        exe = workdir / "g33_refine_driver"
+        exe.touch()
+        return exe
+
+    def fake_members(exe, out, nsplits, mode, **k):
+        seen["n"] = list(nsplits)
+        raise SystemExit("stop after the member loop")
+
+    monkeypatch.setattr(xp, "build", fake_build)
+    monkeypatch.setattr(xp, "members", fake_members)
+    with pytest.raises(SystemExit):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(n for n in (3, 6, 12)),
+                   mode="rezero", nflux=False, module=tmp_path / "m.F")
+    assert seen["n"] == [3, 6, 12], \
+        "the member loop saw an exhausted generator"
+
+
+def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
+    """Materialising must not cost the duplicate check its input."""
+    with pytest.raises(SystemExit, match="repeats"):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(n for n in (3, 6, 6)),
+                   mode="rezero", nflux=False, module=tmp_path / "m.F")

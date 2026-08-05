@@ -200,7 +200,12 @@ def test_the_overlay_is_compiled_from_a_CONTENT_ADDRESSED_path():
     output directory gave the same instrumented build a different executable
     digest in every run (owner §9.1)."""
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    assert "OVLSHA=$(shasum -a 256" in script
+    # The digest is taken in FULL and the path uses a truncation of it, so the
+    # build can verify a reused path against the whole thing (owner §13 P1) --
+    # see test_a_STALE_overlay_at_the_content_addressed_path_is_REFUSED, which
+    # exercises this end to end rather than by reading the script.
+    assert "OVLFULL=$(shasum -a 256" in script
+    assert "OVLSHA=${OVLFULL:0:16}" in script
     assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"' in script
 
 
@@ -254,3 +259,34 @@ def test_the_preprocessor_guard_actually_fires():
                          "-DKDM6_G33_NUMBER_DUMP", str(drv)],
                         capture_output=True, text=True)
     assert "no f64 number record family" not in ok.stderr
+
+
+def test_a_STALE_overlay_at_the_content_addressed_path_is_REFUSED(tmp_path):
+    """The overlay path is a 16-hex TRUNCATION of a 256-bit digest, in a shared
+    temp directory that survives between builds. A pre-existing file there
+    becomes the compiler's input, so a truncation collision, a stale file from an
+    interrupted build, or a concurrent build writing the same name would compile
+    a source other than the overlay just generated -- under provenance claiming
+    otherwise. The build compares the FULL digest and refuses."""
+    ref = REPO / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
+    if shutil.which("gfortran") is None or not ref.is_file():
+        pytest.skip("local-only (needs gfortran + the gitignored host tree)")
+    env = dict(os.environ, TMPDIR=str(tmp_path))
+    args = ["bash", str(REPO / "harness/g33_fortran/refine_build.sh"),
+            str(tmp_path / "b1"), "--fixture=g33_fixture_multisubcycle_v1",
+            "--algo=legacy", "--nflux"]
+    first = subprocess.run(args, capture_output=True, text=True, cwd=REPO, env=env)
+    assert first.returncode == 0, first.stdout[-1500:]
+
+    overlays = list(tmp_path.glob("g33-ovl-*.F"))
+    assert len(overlays) == 1, f"expected one content-addressed overlay, {overlays}"
+    # Reusing an INTACT one is fine -- that is the point of the content address.
+    args[2] = str(tmp_path / "b2")
+    assert subprocess.run(args, capture_output=True, text=True, cwd=REPO,
+                          env=env).returncode == 0
+
+    overlays[0].write_text(overlays[0].read_text() + "! tampered\n")
+    args[2] = str(tmp_path / "b3")
+    bad = subprocess.run(args, capture_output=True, text=True, cwd=REPO, env=env)
+    assert bad.returncode != 0, "a colliding overlay path was silently overwritten"
+    assert "BUILD REFUSED" in bad.stdout
