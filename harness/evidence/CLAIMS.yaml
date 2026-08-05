@@ -485,6 +485,35 @@ claims:
     evidence: [FINDING_ice_density_matrix_v1.md]
     evidence_sha256: [FINDING_ice_density_matrix_v1.md:1b396158e755f68a]
 
+  - id: G33-PROTOCOL-004
+    text: >
+      An f64 bundle supplies its own member_reader, and the manifest builder left
+      `runs` empty on that path, so BOTH cross-member checks were skipped: the
+      duplicate-nsplit guard and require_same_universe. Every member was
+      strict-parsed alone; nothing checked them against each other, so a
+      published f64 refinement chain could mix fixtures, algorithms, modes, tile
+      maps, density arms, horizons, a duplicate nsplit, or different record
+      universes. require_probe_chain applies the pairwise `refinement` contract
+      across the bundle and adds two the pairwise form does not need -- one
+      integration horizon (nsplit*delt, since neither factor alone pins it) and
+      that the chain actually refines (>1 distinct dtcld). The duplicate check no
+      longer depends on the reader. Verified by producing a real three-member
+      f64 chain, which also confirms P0-1 is closed in the producer and not only
+      in the driver.
+    status: active
+    grade: confirmed
+    basis: >
+      each admitted mixture reproduced as a chain the old path accepted, plus a
+      real f64 bundle produced end to end
+    scope: >
+      Cross-member within one bundle. Two separately published f64 bundles can
+      still disagree -- that identity lives in a claim's artifacts pins.
+      CHAIN_INVARIANT is enumerated rather than computed, because a chain has no
+      single axis to subtract the way a pairwise comparison does; that is a real
+      difference in strictness from the G33P comparison identity.
+    evidence: [FINDING_probe_chain_contract_v1.md]
+    evidence_sha256: [FINDING_probe_chain_contract_v1.md:f7493de89da784e2]
+
   - id: G33-PRECIP-001
     text: >
       g33_fixture_multisubcycle_v1 precipitates at f32 and essentially not at f64

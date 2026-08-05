@@ -106,7 +106,9 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
     # one entry and the cross-member checks -- including the mode check -- would
     # run on whichever survived (owner §7.3).
     ns = [int(_NAME.match(p.name).group(1)) for p in paths]
-    if member_reader is None and len(ns) != len(set(ns)):
+    # Regardless of the reader: two members for one nsplit collapse to one
+    # entry whichever parser read them (owner §8.4).
+    if len(ns) != len(set(ns)):
         dup = sorted({n for n in ns if ns.count(n) > 1})
         raise ra.RefineError(
             f"bundle contains more than one member for nsplit {dup} — a chain has "

@@ -289,6 +289,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width)
+            # The cross-member contract the manifest builder cannot apply on this
+            # path: it leaves `runs` empty for a supplied member_reader, so an
+            # f64 bundle got every per-member check and none of the between-member
+            # ones (owner §8.4).
+            pr.require_probe_chain(runs)
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
                            rho_profile=rho_profile, width=width)
