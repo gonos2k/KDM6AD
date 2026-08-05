@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import re
 import sys
 from pathlib import Path
@@ -148,14 +149,47 @@ def members_of(manifest: Path) -> list[dict]:
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
-        if an.get("analyzer") and an.get("analyzer_sha256"):
-            src = REPO / an["analyzer"]
-            out.append({
-                "file": an["analyzer"],
-                "state": ("analyzer-absent" if not src.is_file() else
-                          "matches" if sha256(src) == an["analyzer_sha256"]
-                          else "ANALYZER-CHANGED")})
+        out.append(_analyzer_state(an))
     return out
+
+
+def _blob_at(commit: str, path: str) -> str | None:
+    """The git blob SHA of `path` as of `commit`, or None if it does not resolve."""
+    r = subprocess.run(["git", "rev-parse", f"{commit}:{path}"], cwd=REPO,
+                       capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def _analyzer_state(an: dict) -> dict:
+    """Whether the analyzer this analysis ran can still be RECOVERED.
+
+    Resolved from the pinned commit, NOT compared against the working tree
+    (owner §16-6). Comparing against today's file could only ever say "still the
+    same", so an analyzer that legitimately moved on made the bundle
+    unverifiable -- which is why the old check reported and never failed.
+
+    A pin that does not resolve is a FAILURE: the commit was rewritten, the file
+    was deleted from history, or the pin was wrong. Bundles published before
+    this pin existed keep the old report-only behaviour, named as legacy.
+    """
+    path = an.get("analyzer")
+    if not path:
+        return {"file": "<no analyzer recorded>", "state": "analyzer-unpinned"}
+    commit, blob = an.get("analyzer_commit"), an.get("analyzer_blob_sha")
+    if not (commit and blob):
+        src = REPO / path
+        return {"file": path, "state": (
+            "legacy-analyzer-absent" if not src.is_file()
+            else "matches" if sha256(src) == an.get("analyzer_sha256")
+            else "legacy-analyzer-changed")}
+    got = _blob_at(commit, path)
+    if got is None:
+        return {"file": path, "state": "ANALYZER-UNRESOLVABLE",
+                "detail": f"{commit[:12]}:{path} does not resolve in this repo"}
+    if got != blob:
+        return {"file": path, "state": "ANALYZER-BLOB-MISMATCH",
+                "detail": f"pinned {blob[:12]}, {commit[:12]} holds {got[:12]}"}
+    return {"file": path, "state": "matches"}
 
 
 def chain() -> list[dict]:
@@ -238,7 +272,16 @@ def check() -> int:
                 # REPORTED, not failed: the analysis JSON is still the artifact
                 # the claim cites, and the source moving on is ordinary. What it
                 # means is that re-running would not necessarily reproduce it.
-                if m["state"] in ("ANALYZER-CHANGED", "analyzer-absent"):
+                # A legacy bundle pinned only the analyzer's CONTENT digest,
+                # so a moved-on analyzer is unverifiable rather than corrupt --
+                # reported, not failed. A bundle that pinned a commit and blob
+                # has no such excuse.
+                if m["state"].startswith("legacy-") or \
+                        m["state"] == "analyzer-unpinned":
+                    continue
+                if m["state"] in ("ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH"):
+                    bad.append(f"{r['id']}: {a['path']} -> {m['file']}: "
+                               f"{m['state']} ({m.get('detail', '')})")
                     continue
                 if m["state"] == "MISMATCH":
                     bad.append(f"{r['id']}: {a['path']} -> {m['file']} does not "

@@ -99,17 +99,25 @@ def test_a_withdrawn_claim_must_say_what_replaced_it_or_stand_alone():
 
 def test_every_claim_pins_the_DIGEST_of_its_evidence():
     """A registry that names a file binds nothing: the file can change under it.
-    The digest is what makes a claim's evidence identifiable (owner §10.4)."""
+    The digest is what makes a claim's evidence identifiable (owner §10.4).
+
+    FULL sha256, not a 16-hex prefix (owner §16-6): a truncation is for display.
+    An authoritative pin is the whole digest."""
     import hashlib
     for c in CLAIMS:
         pinned = c.get("evidence_sha256")
         assert pinned, f"{c['id']} pins no evidence digest"
         for doc in c["evidence"]:
             assert doc in pinned, f"{c['id']} cites {doc} without a digest"
-            got = hashlib.sha256((EVIDENCE / doc).read_bytes()).hexdigest()[:16]
+            got = hashlib.sha256((EVIDENCE / doc).read_bytes()).hexdigest()
+            assert len(pinned[doc]) == 64, (
+                f"{c['id']}: {doc} is pinned by a {len(pinned[doc])}-hex "
+                f"prefix. A truncation is for display; an authoritative pin is "
+                f"the whole digest (owner §16-6).")
             assert pinned[doc] == got, (
                 f"{c['id']}: {doc} has changed since the claim was pinned "
-                f"({pinned[doc]} -> {got}). Re-read the claim, then re-pin.")
+                f"({pinned[doc][:16]} -> {got[:16]}). Re-read the claim, "
+                f"then re-pin.")
 
 
 def test_every_claim_declares_a_scope():
