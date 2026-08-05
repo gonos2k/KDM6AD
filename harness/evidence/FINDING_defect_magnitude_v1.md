@@ -19,12 +19,38 @@ On a fixture where several calls carry inventory the two quantities differ, and
 the aggregate would be an inventory-weighted per-call mean rather than a fraction
 of the initial column. Both are now computed and named separately.
 
+**Second correction (owner §16-3).** The paragraph above argued that
+`Σᵢ Nᵢ^pre = N(t₀)`; it did not *measure* it, and neither did anything else. The
+denominator called `N(t₀)` was the first sedimentation call's **pre-sed column** —
+a sedimentation-segment endpoint. Other microphysics runs before that call and
+after the last one, so the segment endpoints and the **window** endpoints are
+different quantities in general, and only the window one deserves the name.
+
+The window endpoints are now read from the same stream's `G33R INITIAL`/`STATE`
+records and reported alongside the segment endpoints, with their agreement
+computed:
+
+| col | window `N(t₀)` | segment pre | window final | segment post | agree |
+|---|---|---|---|---|---|
+| 1 | 3.88440e+07 | 3.88440e+07 | 0.00000e+00 | 0.00000e+00 | yes |
+| 2 | 9.26900e+06 | 9.26900e+06 | 0.00000e+00 | 0.00000e+00 | yes |
+| 3 | 1.99322e+06 | 1.99322e+06 | 0.00000e+00 | 0.00000e+00 | yes |
+
+So the published 0.2173 / 0.4379 / 0.6884% are unchanged, and are now divided by
+the window inventory rather than by a segment endpoint wearing its name. **This
+agreement is a measurement on this fixture, not a property of the kernel.** A
+fixture with pre-sedimentation number sources would separate the two; the
+analysis reports `segment_endpoints_are_window_endpoints: false` in that case,
+and the two denominators then differ. Where the window endpoints cannot be read
+at all the field is `null` — never `true` by default, because "we could not
+check" and "they agree" are different statements.
+
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
 | claim | status | grade | scope |
 |---|---|---|---|
 | `G33-MAGNITUDE-001` | **withdrawn → G33-MAGNITUDE-002** | — | The denominators were misnamed (owner P0-2). closures() accumulates x0 and x1 over calls, so `start`/`final` are sum_i N_i^pre and sum_i N_i^post -- an inventory counted once per call -- not the window's initial and final column. "Of the final column" is the worse error: this fixture's column ends EMPTY, so that fraction is undefined and the figure published under that name was R / N_1^post. |
-| `G33-MAGNITUDE-002` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain. R/N(t_0) coincides with the inventory-weighted per-call mean ONLY because one call is active; on a fixture where several calls carry inventory the two differ and must not be conflated. The frozen-trajectory size bounds require a corrected-number counterfactual run to become forecast statements, which needs a production physics change and is not done. |
+| `G33-MAGNITUDE-002` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy, h = 25 s, main chain. R/N(t_0) coincides with the inventory-weighted per-call mean ONLY because one call is active; on a fixture where several calls carry inventory the two differ and must not be conflated. The frozen-trajectory size bounds require a corrected-number counterfactual run to become forecast statements, which needs a production physics change and is not done. The segment/window endpoint agreement is MEASURED ON THIS FIXTURE, not a kernel property: a fixture with pre-sedimentation number sources would separate them. R is an integrated spurious SOURCE; the retained final bias N_legacy(t_f) - N_corrected(t_f) is a different quantity, identically zero here only because this window ends empty, and unmeasured in general. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -100,6 +126,16 @@ percentages with a warning — so an unusable row cannot be copied as a result.
 
 ## Limits
 
+- **`R` is an integrated spurious *source*, not a retained *bias*.** `R` sums the
+  number the operator invents across the segment. What survives to the end of the
+  window is a different quantity — `N_legacy(t_f) − N_corrected(t_f)` — and it is
+  **not measured here**, for two reasons. First, this fixture's window ends empty
+  (`window final = 0.000e+00` in all three columns), so every invented particle
+  has already fallen out and the retained bias is identically zero *here*; that
+  is a property of the fixture, not a result. Second, the general quantity needs
+  a corrected-number counterfactual run, which is a production physics change and
+  is not done. Reading `R/N(t₀)` as "the column ends 0.2–0.7% too numerous" is
+  therefore unsupported in both directions.
 - **This is a per-call segment magnitude on one fixture, not a forecast bias.**
   It says what fraction of the column the sedimentation operator invents per
   call. It does not say what a 12-hour forecast's reflectivity or precipitation

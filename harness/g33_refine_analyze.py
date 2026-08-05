@@ -67,6 +67,22 @@ def _expect(cond, msg, path):
         raise RefineError(f"{path}: {msg}")
 
 
+def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
+    """`read()` for a stream already in memory.
+
+    The G33R and G33N records live in ONE driver stream, so an analysis holding
+    that stream should be able to read both without round-tripping a temporary
+    file (owner §16-3). `read()` is this with a file attached.
+    """
+    class _Mem:
+        name = label
+        def read_text(self):
+            return text
+        def __str__(self):
+            return label
+    return read(_Mem(), nsplit=nsplit)
+
+
 def read(path: Path, *, nsplit=None) -> dict:
     """One member, or raise.
 

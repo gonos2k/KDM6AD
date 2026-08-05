@@ -38,7 +38,9 @@ def test_the_column_fraction_is_far_smaller_than_the_flux_fraction():
     small fraction of what is THERE. Quoting the first as the second is the
     misreading this module exists to prevent."""
     r = _row()
-    assert abs(r["of_initial_inventory"]) < abs(r["of_surface_flux"])
+    # Segment, not window: this fixture carries no G33R records, so the window
+    # endpoint is legitimately unavailable here (see the §16-3 tests below).
+    assert abs(r["of_first_segment_pre"]) < abs(r["of_surface_flux"])
 
 
 def test_the_defect_size_effect_is_separated_from_real_size_sorting():
@@ -75,3 +77,42 @@ def test_an_unusable_row_carries_no_magnitudes_at_all():
     for r in rows.values():
         if not r["usable"]:
             assert "of_surface_flux" not in r
+
+
+# ---- owner §16-3: window endpoints, bound rather than assumed ----------------
+
+def test_the_segment_and_window_endpoints_are_NAMED_apart():
+    """`first_start`/`last_final` were the first call's PRE-SED column and the
+    last call's POST-SED column, published as the window's initial and final
+    inventory. Other microphysics runs before the first sedimentation and after
+    the last, so they are not the same quantity in general."""
+    r = _row()
+    for f in ("first_segment_pre_inventory", "last_segment_post_inventory",
+              "window_initial_inventory", "window_final_inventory",
+              "segment_endpoints_are_window_endpoints"):
+        assert f in r
+
+
+def test_unavailable_window_endpoints_report_None_not_True(monkeypatch):
+    """"We could not check" and "they agree" are different statements, and the
+    flattering one must not be the default."""
+    monkeypatch.setattr(dm.mc, "window_inventories",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError()))
+    r = dm.analysis(_stream(QV, QR))["rows"]["main/nr/1"]
+    assert r["segment_endpoints_are_window_endpoints"] is None
+    assert r["window_initial_inventory"] is None
+    assert r["of_initial_inventory"] is None
+
+
+def test_the_agreement_check_can_report_FALSE(monkeypatch):
+    """A check that only ever says True is not a check. Forcing a window
+    inventory that differs from the segment endpoint must flip it."""
+    base = _row()
+    seg = base["first_segment_pre_inventory"]
+    post = base["last_segment_post_inventory"]
+    for factor, expect in ((1.0, True), (2.0, False)):
+        monkeypatch.setattr(dm.mc, "window_inventories",
+                            lambda s, n=None, f=factor: {("nr", 1): (seg * f, post)})
+        r = dm.analysis(_stream(QV, QR))["rows"]["main/nr/1"]
+        assert r["segment_endpoints_are_window_endpoints"] is expect, factor
+        assert r["window_initial_inventory"] == seg * factor

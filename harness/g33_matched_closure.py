@@ -31,6 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_number_transport as nt  # noqa: E402
+import g33_refine_analyze as ra  # noqa: E402
 
 def endpoints(d: dict) -> dict:
     """The window's true first and last inventory, distinguished from the sums.
@@ -42,10 +43,40 @@ def endpoints(d: dict) -> dict:
     statistic and is not what "of the initial column" means (owner P0-2).
     """
     pcs = sorted(d.get("per_call") or [], key=lambda p: p.get("call", 0))
-    return {"first_start": pcs[0]["start"] if pcs else None,
-            "last_final": pcs[-1]["final"] if pcs else None,
-            "sum_start": d.get("start"), "sum_final": d.get("final"),
-            "calls": len(pcs)}
+    return {
+        # NAMED for what they are (owner §16-3). These are SEDIMENTATION SEGMENT
+        # endpoints -- the first call's pre-sed column and the last call's
+        # post-sed column -- not the window's. Other microphysics runs before the
+        # first sedimentation and after the last, so they are not equal in
+        # general. `window_inventories()` reads the actual window endpoints from
+        # the G33R INITIAL/STATE records in the same stream.
+        "first_segment_pre_inventory": pcs[0]["start"] if pcs else None,
+        "last_segment_post_inventory": pcs[-1]["final"] if pcs else None,
+        "sum_start": d.get("start"), "sum_final": d.get("final"),
+        "calls": len(pcs)}
+
+
+def window_inventories(stream: str, nsplit: int | None = None) -> dict:
+    """{(field, col): (window_initial, window_final)} from G33R INITIAL/STATE.
+
+    The true endpoints of the microphysics window, read from the SAME stream the
+    segment endpoints come from -- so "is the segment endpoint the window
+    endpoint" is a measurement rather than an assumption (owner §16-3).
+    """
+    run = ra.read_text(stream, nsplit=nsplit)
+    cols = sorted({k[2] for k in run if k[0] == "state"})
+    out = {}
+    for field in ("nr", "ni", "qr", "qi"):
+        for col in cols:
+            ks = sorted(k[3] for k in run
+                        if k[0] == "state" and k[1] == field and k[2] == col)
+            if not ks:
+                continue
+            w = lambda cls: sum(run[("forcing", "rho", col, k)]
+                                * run[("forcing", "delz", col, k)]
+                                * run[(cls, field, col, k)] for k in ks)
+            out[(field, col)] = (w("initial"), w("state"))
+    return out
 
 
 #: chain -> (mass field, number field) as the kernel's two sub-cycles carry them.

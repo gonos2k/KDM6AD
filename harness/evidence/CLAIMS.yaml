@@ -340,7 +340,7 @@ claims:
       ends EMPTY, so that fraction is undefined and the figure published under
       that name was R / N_1^post.
     evidence: [FINDING_defect_magnitude_v1.md]
-    evidence_sha256: [FINDING_defect_magnitude_v1.md:b7ee5a46b05993c6]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee]
 
   - id: G33-MAGNITUDE-002
     text: >
@@ -354,7 +354,11 @@ claims:
       0.4507/0.7256% is withdrawn outright. The size figures are relabelled
       FROZEN-TRAJECTORY and segment-local: they hold q at what this run produced
       and exclude the feedback of corrected number on later sub-steps, so they
-      bound nothing about a forecast.
+      bound nothing about a forecast. N(t_0) is now the WINDOW initial inventory,
+      read from this stream's own G33R INITIAL records, rather than the first
+      sedimentation call's pre-sed column wearing that name; the two are measured
+      to agree here (3.88440e+07 / 9.26900e+06 / 1.99322e+06, exactly) and the
+      analysis reports that agreement per row instead of assuming it.
     status: active
     grade: confirmed-with-scope
     basis: >
@@ -366,9 +370,14 @@ claims:
       is active; on a fixture where several calls carry inventory the two differ
       and must not be conflated. The frozen-trajectory size bounds require a
       corrected-number counterfactual run to become forecast statements, which
-      needs a production physics change and is not done.
+      needs a production physics change and is not done. The segment/window
+      endpoint agreement is MEASURED ON THIS FIXTURE, not a kernel property: a
+      fixture with pre-sedimentation number sources would separate them. R is an
+      integrated spurious SOURCE; the retained final bias N_legacy(t_f) -
+      N_corrected(t_f) is a different quantity, identically zero here only
+      because this window ends empty, and unmeasured in general.
     evidence: [FINDING_defect_magnitude_v1.md]
-    evidence_sha256: [FINDING_defect_magnitude_v1.md:b7ee5a46b05993c6]
+    evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee]
 
   - id: G33-BASIS-004
     text: >

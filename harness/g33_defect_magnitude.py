@@ -44,6 +44,20 @@ def _ratio(num, den):
     return num / den if den else None
 
 
+def _endpoints_agree(seg: dict, win) -> bool | None:
+    """Do the sedimentation-segment endpoints equal the window's?
+
+    `None` when the window endpoints are unavailable -- never silently True,
+    because "we could not check" and "they agree" are different statements.
+    """
+    if win is None:
+        return None
+    close = lambda a, b: (a is not None and b is not None
+                          and abs(a - b) <= 1e-6 * max(abs(a), abs(b), 1.0))
+    return (close(seg["first_segment_pre_inventory"], win[0])
+            and close(seg["last_segment_post_inventory"], win[1]))
+
+
 def _eps(d):
     """Spurious fraction of the post-sedimentation inventory, SEGMENT-LOCAL.
 
@@ -79,6 +93,15 @@ def analysis(stream: str, basis: str = "operator") -> dict:
     # divided into, or `physical` mode reports R(rho_d)/throughput(rho_m) -- a
     # mixed-basis ratio (owner P1-11.1).
     iface = ci.interfaces(stream, basis)
+    # The WINDOW endpoints, from the G33R records in this same stream. The
+    # segment endpoints below are the first call's pre-sed and the last call's
+    # post-sed column; other microphysics runs outside those, so they are not
+    # the window's endpoints in general and were named as if they were
+    # (owner §16-3). Both are now reported, with their agreement measured.
+    try:
+        window = mc.window_inventories(stream)
+    except Exception:
+        window = {}
     ctrl = {(ch, col): mc.usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     rows = {}
@@ -103,13 +126,27 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             # R/final divided by a sum of per-call post-sed inventories rather
             # than by what the column ended with.
             "of_summed_call_starts": _ratio(d["residual"], d["start"]),
-            "of_initial_inventory": _ratio(d["residual"], e["first_start"]),
-            "window_final_inventory": e["last_final"],
+            # SEGMENT endpoints, named as such.
+            "first_segment_pre_inventory": e["first_segment_pre_inventory"],
+            "last_segment_post_inventory": e["last_segment_post_inventory"],
+            "of_first_segment_pre": _ratio(d["residual"],
+                                           e["first_segment_pre_inventory"]),
+            # WINDOW endpoints, read from G33R INITIAL/STATE.
+            "window_initial_inventory": window.get((sp, col), (None, None))[0],
+            "window_final_inventory": window.get((sp, col), (None, None))[1],
+            "of_initial_inventory": _ratio(
+                d["residual"], window.get((sp, col), (None, None))[0]),
+            # Whether the two coincide -- a MEASUREMENT. Where they do, the
+            # segment fraction is also the window fraction; where they do not,
+            # only the segment reading is supported.
+            "segment_endpoints_are_window_endpoints": _endpoints_agree(
+                e, window.get((sp, col))),
             # Undefined when the column ends empty -- which it does here: the
             # rain is gone by the end of the window, so "0.22% of what it ended
             # with" divides by zero and the previously published figure was
             # actually R / N_1^post.
-            "of_final_inventory": _ratio(d["residual"], e["last_final"]),
+            "of_final_inventory": _ratio(
+                d["residual"], window.get((sp, col), (None, None))[1]),
             "active_calls": len(active), "total_calls": e["calls"],
             "per_call_fraction_median": fracs[len(fracs) // 2] if fracs else None,
             "per_call_fraction_max": max(fracs, key=abs) if fracs else None,

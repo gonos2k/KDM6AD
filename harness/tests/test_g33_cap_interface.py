@@ -201,3 +201,35 @@ def test_the_throughput_follows_the_BASIS_it_is_divided_into(stream):
     # and the magnitude analysis threads it
     src = (ROOT / "g33_defect_magnitude.py").read_text()
     assert "ci.interfaces(stream, basis)" in src
+
+
+# ---- owner §16-3: the window endpoint, on a real stream ---------------------
+
+def test_the_window_endpoints_parse_from_a_REAL_stream_and_bound_the_headline(
+        variants):
+    """`G33-MAGNITUDE-002` quotes R as a fraction of N(t_0). The denominator used
+    to be the first sedimentation call's PRE-SED column, published as if it were
+    the window's initial inventory -- other microphysics runs before that call,
+    so the two are not the same quantity in general (owner §16-3).
+
+    The window endpoints are read from this stream's own G33R INITIAL/STATE. On
+    this fixture they coincide with the segment endpoints, which is a
+    MEASUREMENT reported here, not a property of the kernel: a fixture with
+    pre-sedimentation sources would separate them, and the analysis would then
+    report `False` and the two denominators would differ.
+    """
+    import g33_defect_magnitude as dm
+
+    rows = dm.analysis(variants["legacy"])["rows"]
+    checked = 0
+    for key, r in rows.items():
+        if not r.get("usable"):
+            continue
+        assert r["window_initial_inventory"] is not None, \
+            f"{key}: G33R INITIAL did not parse out of a real driver stream"
+        assert r["segment_endpoints_are_window_endpoints"] is True, key
+        # Hence, and only hence, the two denominators agree here.
+        assert r["of_initial_inventory"] == pytest.approx(
+            r["of_first_segment_pre"], rel=1e-6)
+        checked += 1
+    assert checked >= 3, f"only {checked} usable rows -- the fixture changed"
