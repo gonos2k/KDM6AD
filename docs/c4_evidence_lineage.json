@@ -1,0 +1,20 @@
+{
+  "schema": "c4_evidence_lineage_v1",
+  "_comment": "The C4 closeout package is a HISTORICAL SNAPSHOT. Its producer_commit ran the private-host executions behind it and generated its raw evidence; repointing that field at a later commit would be false provenance, because no later producer generated those artifacts. This sidecar records the lineage instead of mutating the snapshot.",
+  "historical_snapshot": {
+    "manifest": "docs/c4_evidence_manifest.json",
+    "manifest_sha256": "1038024e14a57fd80b792d921d37b78deaf58666531937f8f1ebdfbfe2744cfc",
+    "producer_commit": "a8cd83cda19632f45f6aeb437ffddcb41ea81124",
+    "main_commit": "abb470f1288aa24fdcbcf76ff756680ade0c2ad3",
+    "status": "immutable_historical_snapshot"
+  },
+  "current_harness": {
+    "main_commit": "04811a741351bd123c92423c14ad1f542edd9484",
+    "authority": [
+      "harness/evidence/CLAIMS.yaml",
+      "claim-pinned experiment manifests"
+    ]
+  },
+  "closeout_status": "HOLD",
+  "note": "The historical C4 package is not a current-main harness certification. A successor is published as a SEPARATE addendum carrying this snapshot's full digest as its parent -- never by editing the snapshot. The addendum is gated on owner S16-6 and on the two correctness items it named: event-local temperature for the internal-cap enthalpy, and a basis-consistent window inventory."
+}

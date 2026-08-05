@@ -820,30 +820,49 @@ def _ice_fraction(run, c) -> float:
     return (run[("prec", 2, c)] + run[("prec", 3, c)]) / tot if tot else 0.0
 
 
+def _sink_enthalpy(sink, *, arrival: bool = False) -> float:
+    """Enthalpy carried by the internal mass defect, charged AT the interface.
+
+    `sink` is a sequence of `g33_cap_interface.Sink` -- read by attribute
+    (`signed`, `phase`, `t_up`, `t_lo`) rather than imported, so the dependency
+    stays one-way.
+
+    SIGNED, not gross: an interface that created mass is charged negatively, or
+    the ledger does not close. `arrival` charges at the lower cell instead of
+    the upper; the two BOUND the attribution, because a numerical annihilation
+    has no single true location (owner §16-4 P0-1).
+
+    The temperature is THIS CALL's pre-sedimentation value, not the window's
+    initial one -- on column 3 those are 1.77 K apart by call 12.
+    """
+    total = 0.0
+    for s in sink or ():
+        t = s.t_lo if arrival else s.t_up
+        if t is None:
+            raise RefineError(
+                "the internal-cap enthalpy needs the interface temperature, "
+                "and this stream's stage records carry no `t`. The MASS sink is "
+                "still measurable; the enthalpy charge is not.")
+        _, _, hl, hi = _enthalpies(t)
+        total += s.signed * (hi if s.phase == "ice" else hl)
+    return total
+
+
 def _precip_consistent(run, c, kbot, ks, basis="operator", sink=None) -> float:
     """Water leaving the column carries liquid or ice enthalpy out with it.
 
-    With `sink` -- the interfaces where the cap DESTROYED water, from
-    `g33_cap_interface.cap_sink()` -- the charge is split (owner §16-4). Water
-    destroyed at an internal interface never reached the surface, so charging it
-    at the bottom-level temperature and the surface phase fraction is wrong on
-    both counts. Each destroyed parcel is charged at ITS OWN level and in the
-    phase of the kernel array whose cap destroyed it.
-
-    An EMPTY sink is exactly the previous behaviour -- the whole column loss
-    charged at the bottom -- so the two are comparable rather than swapped.
+    With `sink` the charge is SPLIT (owner §16-4): water destroyed at an
+    internal interface never reached the surface, so charging it at the
+    bottom-level temperature and the surface phase fraction is wrong on both
+    counts. An EMPTY sink is exactly the previous behaviour -- the whole column
+    loss charged at the bottom -- so the two are comparable rather than swapped.
     """
     w = _water_out(run, c, ks, basis)
     _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
     f = _ice_fraction(run, c)
-    h_surface = (1.0 - f) * hl + f * hi
-    destroyed = internal = 0.0
-    for k_dep, _k_arr, mass, phase in sink or ():
-        _, _, hl_k, hi_k = _enthalpies(_t(run, "initial", c, k_dep))
-        internal += mass * (hi_k if phase == "ice" else hl_k)
-        destroyed += mass
+    internal_mass = sum(s.signed for s in sink or ())
     # What crossed the surface is the column loss MINUS what never got there.
-    return (w - destroyed) * h_surface + internal
+    return (w - internal_mass) * ((1.0 - f) * hl + f * hi) + _sink_enthalpy(sink)
 
 
 def enthalpy_ledger(run: dict, basis: str = "operator", sink=None) -> dict:

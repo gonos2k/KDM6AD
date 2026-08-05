@@ -56,19 +56,35 @@ def endpoints(d: dict) -> dict:
         "calls": len(pcs)}
 
 
-def window_inventories(stream: str, nsplit: int | None = None) -> dict:
+def window_inventories(stream: str, basis: str = "operator",
+                       nsplit: int | None = None) -> dict:
     """{(field, col): (window_initial, window_final)} from G33R INITIAL/STATE.
 
     The true endpoints of the microphysics window, read from the SAME stream the
     segment endpoints come from -- so "is the segment endpoint the window
     endpoint" is a measurement rather than an assumption (owner §16-3).
+
+    BASIS-CONSISTENT (owner P1-2). This used raw `rho_m*dz` whatever basis the
+    caller was working in, so `physical` mode divided a dry-air residual by a
+    MOIST-air inventory. Under `physical` the dry-air layer mass is held at its
+    WINDOW-INITIAL value for both endpoints: dry air does not leave the column
+    during microphysics, so recomputing it from each endpoint's own qv would
+    make a conserved quantity move.
+
+    Returns `{}` ONLY when the stream carries no G33R records at all. A stream
+    that HAS them and fails to parse RAISES -- that is evidence corruption, and
+    swallowing it would report a corrupt member as one that merely lacked
+    endpoints (owner P1-3).
     """
+    if "G33R BEGIN" not in stream:
+        return {}
     run = ra.read_text(stream, nsplit=nsplit)
 
-    def inventory(cls, field, col, ks):
-        return sum(run[("forcing", "rho", col, k)]
-                   * run[("forcing", "delz", col, k)]
-                   * run[(cls, field, col, k)] for k in ks)
+    def layer_mass(col, k):
+        rho = run[("forcing", "rho", col, k)] * run[("forcing", "delz", col, k)]
+        if basis == "physical":
+            return rho / (1.0 + run[("initial", "qv", col, k)])
+        return rho
 
     cols = sorted({k[2] for k in run if k[0] == "state"})
     out = {}
@@ -77,8 +93,9 @@ def window_inventories(stream: str, nsplit: int | None = None) -> dict:
             ks = sorted(k[3] for k in run
                         if k[0] == "state" and k[1] == field and k[2] == col)
             if ks:
-                out[(field, col)] = (inventory("initial", field, col, ks),
-                                     inventory("state", field, col, ks))
+                out[(field, col)] = tuple(
+                    sum(layer_mass(col, k) * run[(cls, field, col, k)] for k in ks)
+                    for cls in ("initial", "state"))
     return out
 
 

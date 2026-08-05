@@ -101,10 +101,7 @@ def analysis(stream: str, basis: str = "operator") -> dict:
     # post-sed column; other microphysics runs outside those, so they are not
     # the window's endpoints in general and were named as if they were
     # (owner §16-3). Both are now reported, with their agreement measured.
-    try:
-        window = mc.window_inventories(stream)
-    except Exception:
-        window = {}
+    window = mc.window_inventories(stream, basis)
     ctrl = {(ch, col): mc.usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     rows = {}

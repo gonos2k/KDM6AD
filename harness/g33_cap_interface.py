@@ -61,8 +61,13 @@ class Interface(NamedTuple):
     """
     chain: str
     col: int
+    call: int              # 1-based external kernel call
+    loop: int
+    substep: int
     k_up: int              # departure level
     k_lo: int              # arrival level
+    t_up: float            # THIS call's pre-sed temperature at k_up ...
+    t_lo: float            # ... and at k_lo
     mass_term: float       # w_lo*dq_in - w_up*dq_out
     number_created: float  # the same, for number
     number_predicted: float  # what the measure mismatch alone predicts
@@ -80,13 +85,21 @@ def _walk(stream: str, basis: str):
     Requires `capin` and `topout`; the strict parser has already checked their
     exact universes, so a level or sub-step missing here is not possible.
     """
-    for call in nt.calls(stream):
+    for ci, call in enumerate(nt.calls(stream), start=1):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
                 rho = {k: mc._density(pre[(lp, col, k)], basis) for k in ks}
                 dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
+                # THIS call's own pre-sed temperature. The window-initial one is
+                # a different quantity: on column 3 it is 1.77 K away by call 12,
+                # worth ~21 J/m2 against a 28 J/m2 correction (owner §16-4 P0-1).
+                # `.get`: the MASS analysis does not need a temperature, and
+                # `t` is not in STAGE_REQUIRED, so a stream without it still
+                # yields interfaces. The enthalpy path refuses on `None`
+                # instead -- failing where the value is actually required.
+                t = {k: pre[(lp, col, k)].get("t") for k in ks}
                 for chain in ("main", "ice"):
                     ms = call["mstep"].get((lp, chain, col))
                     if ms is None:
@@ -111,7 +124,8 @@ def _walk(stream: str, basis: str):
                             dq_in, dn_in = inflow[j]
                             w_up, w_lo = rho[j - 1] * dz[j - 1], rho[j] * dz[j]
                             yield Interface(
-                                chain, col, j - 1, j,
+                                chain, col, ci, lp, n, j - 1, j,
+                                t[j - 1], t[j],
                                 w_lo * dq_in - w_up * dq_out,
                                 w_lo * dn_in - w_up * dn_out,
                                 (rho[j] - rho[j - 1]) * dz[j - 1] * dn_out,
@@ -174,11 +188,34 @@ INSTRUMENTED_SPECIES = ("qr", "qi")
 UNINSTRUMENTED_SPECIES = ("qs", "qg")
 
 
-def cap_sink(stream: str, basis: str = "operator") -> dict:
-    """{col: [(k_departure, k_arrival, destroyed_mass, phase), ...]}
+class Sink(NamedTuple):
+    """One interface's internal mass defect, at the call where it happened.
 
-    Destroyed mass is the interface term negated: what left the upper cell and
-    did not arrive below.
+    `signed` is the interface term negated. It is a SIGNED DEFECT, not a sink:
+    an interface with `mass_term > 0` yields a negative value here. Energy
+    accounting takes the signed number -- both directions have to be charged for
+    the ledger to close -- while the physical sentence "the cap destroyed X"
+    takes `destroyed` only (owner §16-4 P1-1).
+    """
+    col: int
+    k_up: int
+    k_lo: int
+    signed: float
+    phase: str
+    t_up: float
+    t_lo: float
+
+    @property
+    def destroyed(self) -> float:
+        return max(self.signed, 0.0)
+
+    @property
+    def created(self) -> float:
+        return max(-self.signed, 0.0)
+
+
+def cap_sink(stream: str, basis: str = "operator") -> dict:
+    """{col: [Sink, ...]} -- the internal mass defect, interface by interface.
 
     This is the direct measurement of what `outflow_split()` can only infer.
     That computes `D_internal = water_out - P_bottom` from the fallout
@@ -189,7 +226,8 @@ def cap_sink(stream: str, basis: str = "operator") -> dict:
     for f in _walk(stream, basis):
         if f.mass_term:
             out.setdefault(f.col, []).append(
-                (f.k_up, f.k_lo, -f.mass_term, CHAIN_PHASE[f.chain]))
+                Sink(f.col, f.k_up, f.k_lo, -f.mass_term,
+                     CHAIN_PHASE[f.chain], f.t_up, f.t_lo))
     return out
 
 
@@ -206,10 +244,20 @@ def enthalpy_with_cap_sink(stream: str, basis: str = "operator") -> dict:
     sink = cap_sink(stream, basis)
     split, surface = ra.enthalpy_ledger(run, basis, sink), ra.enthalpy_ledger(run, basis)
     for col, d in split.items():
-        destroyed = sum(m for _, _, m, _ in sink.get(col, []))
-        d["cap_sink_mass"] = destroyed
-        d["cap_sink_share_of_column_loss"] = (destroyed / d["water_out"]
-                                              if d["water_out"] else None)
+        rows = sink.get(col, [])
+        # SIGNED for accounting, GROSS for the physical sentence (owner P1-1).
+        d["net_signed_internal_defect"] = sum(s.signed for s in rows)
+        d["gross_destroyed_mass"] = sum(s.destroyed for s in rows)
+        d["gross_created_mass"] = sum(s.created for s in rows)
+        d["cap_sink_share_of_column_loss"] = (
+            d["gross_destroyed_mass"] / d["water_out"] if d["water_out"] else None)
+        # A numerical annihilation has no single true location, so the level it
+        # is charged at is a BAND, not a point (owner P0-1).
+        dep = ra._sink_enthalpy(rows)
+        arr = ra._sink_enthalpy(rows, arrival=True)
+        d["H_sink_at_departure_temperature"] = dep
+        d["H_sink_at_arrival_temperature"] = arr
+        d["H_sink_temperature_band"] = abs(dep - arr)
         # How much of what the ledger called "precipitation out" never
         # precipitated -- the difference between the two charges.
         d["H_internal_cap_correction"] = (d["H_precip_out"]

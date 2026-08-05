@@ -791,9 +791,24 @@ claims:
       against a column loss of 5.0895e-03 and 1.1842e-02 -- and charged at the
       level it died at, in the phase of the kernel array whose cap destroyed it
       (main <- dqr, rain, liquid, F:1225; ice <- dqi, cloud ice, F:1289). The
-      correction is 20.74% of column 2's enthalpy residual and -5.19% of column
+      correction is 20.74% of column 2's enthalpy residual and -4.05% of column
       3's. It does NOT close the residual and makes column 2's WORSE; it is a
       correctness fix to the charge, not an explanation of the residual.
+      CORRECTED (owner P0-1): the first version charged at the WINDOW-INITIAL
+      temperature, but the sink happens inside a particular external call and
+      this stream has twelve. Column 3's levels are 1.77 K from their start by
+      call 12, worth ~21 J/m2 -- the size of the correction itself -- so the
+      column-3 figure moved from -28.008 to -21.848 J/m2, a 22% change. The
+      charge now uses THIS CALL's pre-sedimentation temperature, which every
+      outer_pre_sed record already carried. Departure- and arrival-level charges
+      are both reported: the band is 3.098 and 5.685 J/m2 (21% and 26% of the
+      term), because a numerical annihilation has no single true location.
+      SIGNED vs GROSS (owner P1-1): `-mass_term` goes negative where an
+      interface creates, so column 1's reported sink of -1.7428e-11 was
+      impossible for a sink. It is 1.69e-11 destroyed against 3.43e-11 created,
+      cancelling at roundoff. Energy accounting takes the signed sum; the
+      "cap destroyed X" sentence takes gross destroyed. Columns 2 and 3 are
+      effectively single-signed, so the headline share is unchanged.
       The inferred alternative is unusable: outflow_split's D_internal = w -
       P_bottom is NEGATIVE in all three columns, which a cap cannot be, and
       disagrees with the measurement in sign and by 4-6x in magnitude.
@@ -810,6 +825,9 @@ claims:
       and no upper bound is established. Instrumenting dqs/dqg is an overlay
       extension that widens the emitted main|ice chain vocabulary and is
       deferred as a protocol change. enthalpy_ledger() without a sink is
-      unchanged, so the previous figures remain reproducible.
+      unchanged, so the previous figures remain reproducible. The enthalpy
+      correction is CONDITIONAL on the departure-level convention: the
+      attribution band is reported beside it and physical enthalpy closure
+      remains HOLD.
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
-    evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:1bb81c49417669fe]
+    evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b0086]

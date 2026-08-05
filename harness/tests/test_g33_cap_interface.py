@@ -243,7 +243,7 @@ def test_the_phase_comes_from_the_ANCHORED_ARRAY_not_a_diagnostic(stream):
     the phase of a destroyed parcel is known from where the record was emitted,
     not guessed from the surface fallout fraction."""
     assert ci.CHAIN_PHASE == {"main": "liquid", "ice": "ice"}
-    phases = {p for lst in ci.cap_sink(stream).values() for *_, p in lst}
+    phases = {s.phase for lst in ci.cap_sink(stream).values() for s in lst}
     assert phases <= {"liquid", "ice"}
 
 
@@ -264,7 +264,7 @@ def test_the_INFERRED_internal_destruction_is_NEGATIVE_which_a_cap_cannot_be(
         ks = sorted(k for cc, k in cells if cc == c)
         if ra.outflow_split(run, c, ks)["D_internal"] < 0:
             inferred_negative += 1
-        if sum(m for _, _, m, _ in sink.get(c, [])) > 1e-9:
+        if sum(s.destroyed for s in sink.get(c, [])) > 1e-9:
             measured_positive += 1
     assert inferred_negative == 3, "all three columns infer a negative sink"
     assert measured_positive == 2, "two columns measure a real one"
@@ -324,3 +324,124 @@ def test_BOTH_ledgers_reach_the_bundle_not_just_the_corrected_one(stream):
     for c in (2, 3):
         assert a["with_internal_cap_sink"][c]["residual"] != \
             a["all_charged_at_surface"][c]["residual"]
+
+
+# ---- owner §16-4 P0-1 / P1-1: event-time temperature, and signed vs gross ----
+
+def test_the_sink_carries_THIS_CALLS_temperature_not_the_windows(stream):
+    """The window-initial temperature is a different quantity: on column 3 it is
+    1.77 K away by call 12, worth ~21 J/m2 against a ~28 J/m2 correction. The
+    first version charged at window-initial and the column-3 figure was wrong by
+    22% (owner P0-1)."""
+    import g33_refine_analyze as ra
+
+    run = ra.read_text(stream)
+    off = [abs(s.t_up - ra._t(run, "initial", col, s.k_up))
+           for col, rows in ci.cap_sink(stream).items() for s in rows]
+    assert max(off) > 0.5, \
+        "no sink sits more than 0.5 K from window-initial -- this fixture can " \
+        "no longer tell the two temperatures apart, so the test is vacuous"
+
+
+def test_the_attribution_is_a_BAND_because_annihilation_has_no_location(stream):
+    """Mass destroyed between two levels did not die at either one. Charging at
+    the departure level is a stated convention, so the arrival-level charge is
+    reported beside it rather than the choice being invisible."""
+    a = ci.enthalpy_with_cap_sink(stream)["with_internal_cap_sink"]
+    for c in (2, 3):
+        d = a[c]
+        assert d["H_sink_at_departure_temperature"] != \
+            d["H_sink_at_arrival_temperature"]
+        assert d["H_sink_temperature_band"] == pytest.approx(
+            abs(d["H_sink_at_departure_temperature"]
+                - d["H_sink_at_arrival_temperature"]))
+        # Big enough to matter: the band is a fifth to a quarter of the term.
+        assert d["H_sink_temperature_band"] > 0.1 * abs(
+            d["H_internal_cap_correction"])
+
+
+def test_a_SIGNED_defect_is_not_a_SINK(stream):
+    """`-mass_term` goes negative where an interface creates, so reporting it as
+    "destroyed mass" produced column 1's impossible -1.7e-11 kg/m2 sink. It was
+    in fact 1.7e-11 destroyed against 3.4e-11 created -- roundoff both ways,
+    cancelling. Energy accounting takes the signed sum; the physical sentence
+    takes the gross (owner P1-1)."""
+    rows = ci.cap_sink(stream)[1]
+    assert sum(s.signed for s in rows) < 0, "column 1's NET defect is negative"
+    assert sum(s.destroyed for s in rows) > 0
+    assert sum(s.created for s in rows) > 0, \
+        "if nothing is created the net could not have gone negative"
+    a = ci.enthalpy_with_cap_sink(stream)["with_internal_cap_sink"]
+    assert a[1]["cap_sink_share_of_column_loss"] >= 0.0, \
+        "a share of column loss computed from a signed defect can go negative"
+
+
+def test_the_headline_share_is_unchanged_by_the_signed_gross_split(stream):
+    """Columns 2 and 3 are effectively single-signed -- created is 6.8e-9 and
+    5.4e-10 of destroyed -- so 57.81/48.02% stands. The API distinction is still
+    required; it just does not move these two."""
+    a = ci.enthalpy_with_cap_sink(stream)["with_internal_cap_sink"]
+    for c, want in ((2, 0.5781), (3, 0.4802)):
+        d = a[c]
+        assert d["cap_sink_share_of_column_loss"] == pytest.approx(want, abs=5e-4)
+        assert d["gross_created_mass"] / d["gross_destroyed_mass"] < 1e-7
+
+
+# ---- owner P1-2 / P1-3: basis-consistent endpoints, fail-closed parsing ------
+
+def test_the_window_inventory_follows_the_BASIS_it_is_asked_for(stream):
+    """It used raw rho_m*dz whatever basis the caller worked in, so `physical`
+    divided a DRY-air residual by a MOIST-air inventory -- the same mixed-basis
+    defect g33_defect_magnitude warns about two lines above the call that had
+    it, reintroduced (owner P1-2)."""
+    import g33_matched_closure as mc
+
+    op = mc.window_inventories(stream, "operator")
+    ph = mc.window_inventories(stream, "physical")
+    assert set(op) == set(ph) and op
+    for k in op:
+        if op[k][0]:
+            assert ph[k][0] < op[k][0], \
+                "dry-air mass is rho_m/(1+qv), so it must be strictly smaller"
+
+
+def test_the_dry_air_layer_mass_is_HELD_over_the_window(stream):
+    """Dry air does not leave the column during microphysics, so weighting each
+    endpoint by its OWN qv would make a conserved quantity move. Both endpoints
+    take the window-initial qv -- checked by giving the two endpoints different
+    humidity and requiring the weight not to follow."""
+    import g33_matched_closure as mc
+    import g33_refine_analyze as ra
+
+    real = mc.window_inventories(stream, "physical")
+    run = ra.read_text(stream)
+    patched = dict(run)
+    for key in [k for k in run if k[0] == "state" and k[1] == "qv"]:
+        patched[key] = run[key] * 2.0
+    orig, ra.read_text = ra.read_text, lambda *a, **k: patched
+    try:
+        assert mc.window_inventories(stream, "physical") == real, \
+            "the layer mass followed the FINAL qv, so dry mass is not held"
+    finally:
+        ra.read_text = orig
+
+
+def test_a_stream_with_no_G33R_is_unavailable(stream):
+    """Older G33N-only members legitimately have no endpoints."""
+    import g33_matched_closure as mc
+
+    assert mc.window_inventories(
+        "\n".join(l for l in stream.splitlines()
+                   if not l.startswith("G33R"))) == {}
+
+
+def test_a_CORRUPT_G33R_raises_instead_of_reporting_no_endpoints(stream):
+    """`except Exception: window = {}` could not tell "this member has no
+    endpoints" from "this member is truncated, duplicated or NaN". The second is
+    evidence corruption and reporting it as the first is the flattering
+    direction (owner P1-3)."""
+    import g33_matched_closure as mc
+    import g33_refine_analyze as ra
+
+    with pytest.raises(ra.RefineError):
+        mc.window_inventories(stream.replace("G33R END", "", 1))

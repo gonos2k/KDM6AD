@@ -4,7 +4,7 @@
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-ENTHALPY-003` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy, h = 25 s, operator basis. The sink is a LOWER BOUND: the kernel caps dqr/dqs/dqg/dqi and only dqr and dqi carry a CAPIN anchor, while snow and graupel ARE present on this fixture at column losses of the same order as the measured sink -- so the shortfall is real and no upper bound is established. Instrumenting dqs/dqg is an overlay extension that widens the emitted main\|ice chain vocabulary and is deferred as a protocol change. enthalpy_ledger() without a sink is unchanged, so the previous figures remain reproducible. |
+| `G33-ENTHALPY-003` | **active** | confirmed-with-scope | g33_fixture_multisubcycle_v1, legacy, h = 25 s, operator basis. The sink is a LOWER BOUND: the kernel caps dqr/dqs/dqg/dqi and only dqr and dqi carry a CAPIN anchor, while snow and graupel ARE present on this fixture at column losses of the same order as the measured sink -- so the shortfall is real and no upper bound is established. Instrumenting dqs/dqg is an overlay extension that widens the emitted main\|ice chain vocabulary and is deferred as a protocol change. enthalpy_ledger() without a sink is unchanged, so the previous figures remain reproducible. The enthalpy correction is CONDITIONAL on the departure-level convention: the attribution band is reported beside it and physical enthalpy closure remains HOLD. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -25,11 +25,21 @@ diagnostic that never saw it.
 
 Legacy, `g33_fixture_multisubcycle_v1`, h = 25 s, operator basis:
 
-| col | column loss `−ΔW_col` | cap sink | sink share | interfaces |
-|---|---|---|---|---|
-| 1 | 4.7913e-04 | −1.7428e-11 | −0.00% | 6 |
-| 2 | 5.0895e-03 | **2.9422e-03** | **57.81%** | 11 |
-| 3 | 1.1842e-02 | **5.6860e-03** | **48.02%** | 45 |
+| col | column loss `−ΔW_col` | destroyed | created | net signed | share | ifaces |
+|---|---|---|---|---|---|---|
+| 1 | 4.7913e-04 | 1.6856e-11 | 3.4284e-11 | −1.7428e-11 | 0.00% | 6 |
+| 2 | 5.0895e-03 | **2.9422e-03** | 2.0013e-11 | 2.9422e-03 | **57.81%** | 11 |
+| 3 | 1.1842e-02 | **5.6860e-03** | 3.0423e-12 | 5.6860e-03 | **48.02%** | 45 |
+
+**A signed defect is not a sink (owner P1-1).** The first version reported
+`−mass_term` as "destroyed mass", which goes negative wherever an interface
+*creates* — producing column 1's impossible **negative sink** of −1.7428e-11.
+It was in fact 1.69e-11 destroyed against 3.43e-11 created: roundoff in both
+directions, cancelling. Energy accounting takes the **signed** sum, because both
+directions must be charged for the ledger to close; the physical sentence "the
+cap destroyed X" takes the **gross destroyed** only. Columns 2 and 3 are
+effectively single-signed (created is 6.8e-9 and 5.4e-10 of destroyed), so the
+57.81 / 48.02% headline stands.
 
 In columns 2 and 3, **roughly half** of what the ledger called precipitation was
 destroyed inside the column. Column 1 is at roundoff, which is the control: the
@@ -76,11 +86,25 @@ destroyed parcel is known from where the record was emitted:
 Recharging the sink at its own level and phase, against the previous
 charge-everything-at-the-bottom:
 
-| col | residual, all at surface | residual, split | correction | of residual |
-|---|---|---|---|---|
-| 1 | −4.833601e+01 | −4.833601e+01 | −3.38e-08 | 0.00% |
-| 2 | −7.026636e+01 | −8.484304e+01 | −1.4577e+01 | **20.74%** |
-| 3 | +5.397817e+02 | +5.117740e+02 | −2.8008e+01 | **−5.19%** |
+| col | residual, all at surface | residual, split | correction | of residual | band |
+|---|---|---|---|---|---|
+| 1 | −4.833601e+01 | −4.833601e+01 | −3.38e-08 | 0.00% | 3.65e-08 |
+| 2 | −7.026636e+01 | −8.484304e+01 | −1.4577e+01 | **20.74%** | 3.098 |
+| 3 | +5.397817e+02 | +5.179336e+02 | −2.1848e+01 | **−4.05%** | 5.685 |
+
+**Correction (owner P0-1).** The first version charged the sink at the
+**window-initial** temperature. The sink happens inside a particular external
+call, and this stream has twelve: by call 12 column 3's levels are **1.77 K**
+from where they started, worth `CICE·ΔT·m ≈ 21 J/m²` against a correction of the
+same size. Charging at **this call's own pre-sedimentation temperature** moves
+column 3 from −28.008 to **−21.848 J/m²**, a 22% change; column 2 is unmoved
+(0.07 K spread). The `t` was already in every `outer_pre_sed` record — nothing
+new had to be emitted, it was simply not read.
+
+The last column is the **attribution band**: a numerical annihilation did not
+happen at either level, so the departure-level charge is a stated convention and
+the arrival-level charge is reported beside it. The band is 21% (col 2) and 26%
+(col 3) of the correction, so the term is not a point value.
 
 **The correction does not close the residual, and in column 2 it makes it
 worse.** That is reported rather than buried: charging water where it was
@@ -88,10 +112,11 @@ actually destroyed is correct independently of which direction it moves the
 number, and a correction that only ever improved things would be the suspicious
 one. Something else remains in the enthalpy residual; this is not it.
 
-The **level** is what does the work, not the phase relabelling. Charging at the
-departure level versus the arrival level differs by 3.2 J/m² (col 2) and
-6.0 J/m² (col 3) — a fifth of the correction — so the surface-vs-interface
-choice dominates the up-vs-down one.
+Two attributions therefore matter, and they are not the same size. Moving the
+charge from the **surface to the interface** is the whole correction (14.6 and
+21.8 J/m²). Moving it **within** the interface, departure level versus arrival,
+is the band (3.1 and 5.7 J/m²). The first is a correction; the second is an
+irreducible uncertainty in where a numerical annihilation is said to occur.
 
 ## Limits
 
