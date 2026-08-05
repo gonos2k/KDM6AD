@@ -511,13 +511,34 @@ def test_a_stage_missing_a_field_the_closure_READS_is_refused():
 
 def test_mstep_below_one_is_refused():
     """`range(1, 0+1)` is empty, so mstep=0 made every extension universe
-    vacuously satisfied."""
+    vacuously satisfied. Now caught at PARSE, by the same bound that stops an
+    absurd count allocating (owner P1-11.6) — earlier than the universe check,
+    which is where it used to be found."""
     s = _stream(_ext(), feats=_FEATS).replace(
         "G33F MSTEP 1 main 1 i32 00000001", "G33F MSTEP 1 main 1 i32 00000000")
-    with pytest.raises(nt.StreamError, match="is not a sub-step count"):
+    with pytest.raises(nt.StreamError, match="outside 1\\.\\."):
         nt.calls(s)
 
 
 def test_the_parser_refuses_the_schema_it_does_not_implement():
     with pytest.raises(nt.StreamError, match="declares schema 3"):
         nt.calls(_stream(_ext(), feats=_FEATS, schema=3))
+
+
+def test_an_absurd_mstep_is_refused_before_it_allocates():
+    """`FFFFFFFF` read as unsigned is 4.29e9, and the exact-universe check
+    materialises set(range(1, mstep+1)) — memory exhaustion before any clean
+    error. Decoded signed and bounded instead (owner P1-11.6)."""
+    for bad in ("FFFFFFFF", "7FFFFFFF", "00000000"):
+        s = _stream(_ext(), feats=_FEATS).replace(
+            "G33F MSTEP 1 main 1 i32 00000001",
+            f"G33F MSTEP 1 main 1 i32 {bad}")
+        with pytest.raises(nt.StreamError, match="outside 1\\.\\.|not a sub-step"):
+            nt.calls(s)
+
+
+def test_a_legitimate_mstep_still_parses():
+    """The bound must be generous enough that no real schedule reaches it."""
+    s = _stream(_ext(mstep=3), feats=_FEATS)
+    assert nt.calls(s)[0]["mstep"][(1, "main", 1)] == 3
+    assert nt.MSTEP_MAX >= 1024

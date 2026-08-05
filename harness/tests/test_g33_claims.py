@@ -162,3 +162,151 @@ def test_a_withdrawn_claim_is_superseded_by_the_answer_to_ITS_question():
     explanation (owner §9.3)."""
     by_id = {c["id"]: c for c in CLAIMS}
     assert by_id["G33-NUMBER-006"]["superseded_by"] == "G33-ICE-CAP-001"
+
+
+# ---- owner P0-3: withdrawn phrasing must not survive in an ACTIVE claim ------
+#
+# g33_claim_header stamps status/grade/scope into each finding but never compares
+# the claim's TEXT against the narrative, so authority and finding can say
+# opposite things while the check stays green. That is exactly what happened:
+# FINDING_metric_trajectory_split_v1 withdrew the fall-speed attribution while
+# G33-NUMBER-008 still asserted it, and the registry is the authority.
+#
+# A general text-vs-narrative comparison is not automatable. This is narrower and
+# catches the observed failure: a phrase a finding has WITHDRAWN must not appear
+# in the text of any claim that is still active.
+
+WITHDRAWN_PHRASES = {
+    # withdrawn by FINDING_metric_trajectory_split_v1 (owner §7)
+    "effect of density on the fall speed":
+        "the departure is the measured trajectory term, not a fall-speed effect",
+    # downgraded by the control's own tolerance_basis field (owner §6)
+    "gamma_n roundoff bound":
+        "gamma_n is a screening threshold, not a roundoff certificate",
+    "roundoff certificate":
+        "the tolerance is explicitly NOT a certificate",
+    # withdrawn by FINDING_metric_trajectory_split_v1 (owner §8): only the DIRECT
+    # metric term is magnitude-independent; the total residual is
+    # magnitude-sensitive through the trajectory, by up to 6.68%
+    "magnitude is not what matters":
+        "only the direct metric term is magnitude-independent; the total "
+        "residual is magnitude-sensitive through the trajectory",
+    # withdrawn by FINDING_ice_density_matrix_v1 (owner §9): fixture, driver,
+    # parser, analyzer and metric definition are shared across the two chains
+    "independent replication":
+        "it is cross-chain/cross-species/cross-variant; the apparatus is shared",
+}
+
+
+def _norm_prose(text: str) -> str:
+    """The one normalisation every phrase comparison in this file uses.
+
+    Three separate axes have each defeated a literal substring test here, one
+    after another, and each was found by review rather than by the check:
+
+      whitespace   every prose field is a YAML folded block wrapped at ~76
+                   chars, so a phrase straddling a break is "...fall\n  speed"
+      case         the same phrase was carried as `INDEPENDENT REPLICATION` in
+                   one place and `independent replication` in another
+      (both)       a rewrite can change either without changing the meaning
+
+    Defining it once, and driving the mutation test below over the cross-product
+    of those axes, is the fix for the pattern rather than for one instance.
+    """
+    return " ".join(text.split()).casefold()
+
+
+def withdrawn_phrase_violations(registry_text: str) -> list:
+    """[(claim id, phrase)] for every ACTIVE claim repeating a withdrawn phrase.
+
+    Scans the WHOLE claim block. An earlier version split at `status:` and so
+    checked `text` while skipping `basis` and `scope` — claim prose a reader
+    treats as authority just as much. It was false-green on real active claim
+    text, which is why `test_the_gate_actually_FIRES` exists below.
+
+    Matching is done on WHITESPACE-NORMALISED text. Every prose field here is a
+    YAML folded block wrapped at about 76 characters, so a phrase that happens to
+    straddle a line break becomes "... on the fall\n      speed ..." and a
+    literal substring test misses it. That is not an edge case -- it is how the
+    whole registry is written, and it is the second time this exact wrapping has
+    defeated a check in this file.
+
+    A withdrawn claim MAY keep the phrase: that is its historical record, and the
+    status filter is the only exemption.
+    """
+    out = []
+    for blk in re.split(r"^  - id: ", registry_text, flags=re.M)[1:]:
+        cid = blk.split("\n", 1)[0].strip()
+        status = re.search(r"^    status: (\S+)", blk, re.M)
+        if not status or status.group(1) != "active":
+            continue
+        body = _norm_prose(blk)
+        out += [(cid, ph) for ph in WITHDRAWN_PHRASES
+                if _norm_prose(ph) in body]
+    return out
+
+
+def test_no_ACTIVE_claim_repeats_a_phrase_its_finding_withdrew():
+    bad = withdrawn_phrase_violations(REGISTRY.read_text())
+    assert not bad, "\n".join(
+        f"{cid} is active and says {ph!r} — {WITHDRAWN_PHRASES[ph]}"
+        for cid, ph in bad)
+
+
+@pytest.mark.parametrize("cased", [False, True], ids=["asis", "recased"])
+@pytest.mark.parametrize("wrapped", [False, True], ids=["inline", "wrapped"])
+@pytest.mark.parametrize("field", ["text", "basis", "scope"])
+def test_the_gate_actually_FIRES_on_every_prose_field(field, wrapped, cased):
+    """A gate nobody has seen fail is not evidence it works — this one WAS
+    false-green on `basis` and `scope` and nothing said so. Injects a withdrawn
+    phrase into each prose field of an ACTIVE claim and requires a violation."""
+    phrase = next(iter(WITHDRAWN_PHRASES))
+    # `wrapped` splits the phrase across a YAML folded-block line break, which is
+    # how every prose field in the real registry is written.
+    phrase_written = phrase.title() if cased else phrase
+    if wrapped:
+        head, _, tail = phrase_written.rpartition(" ")
+        phrase_written = f"{head}\n      {tail}"
+    reg = ("schema: 1\n\nclaims:\n"
+           "  - id: G33-FAKE-001\n"
+           "    text: >\n      a claim\n"
+           "    status: active\n"
+           "    grade: confirmed\n"
+           "    basis: a basis\n"
+           "    scope: a scope\n"
+           "    evidence: [FINDING_x.md]\n")
+    injected = reg.replace(
+        {"text": "      a claim", "basis": "    basis: a basis",
+         "scope": "    scope: a scope"}[field],
+        {"text": f"      a claim with the {phrase_written}",
+         "basis": f"    basis: a basis with the {phrase_written}",
+         "scope": f"    scope: a scope with the {phrase_written}"}[field])
+    assert not withdrawn_phrase_violations(reg), "the clean control must pass"
+    assert withdrawn_phrase_violations(injected) == [("G33-FAKE-001", phrase)], \
+        f"a withdrawn phrase in `{field}` of an active claim was not caught"
+
+
+def test_a_WITHDRAWN_claim_may_keep_the_phrase():
+    """Its text is the historical record of what was said; scrubbing it would
+    destroy the thing the registry exists to preserve."""
+    phrase = next(iter(WITHDRAWN_PHRASES))
+    reg = ("schema: 1\n\nclaims:\n"
+           "  - id: G33-OLD-001\n"
+           f"    text: >\n      a claim with the {phrase}\n"
+           "    status: withdrawn\n"
+           "    superseded_by: G33-NEW-001\n"
+           "    scope: a scope\n"
+           "    evidence: [FINDING_x.md]\n")
+    assert not withdrawn_phrase_violations(reg)
+
+
+def test_the_withdrawn_lexicon_is_not_vacuous():
+    """A lexicon that matches nothing anywhere would pass forever. Each entry has
+    to be a phrase that WAS used, so it must still appear somewhere in the
+    evidence — in a finding's correction, or in a withdrawn claim."""
+    corpus = _norm_prose(REGISTRY.read_text() + "".join(
+        p.read_text() for p in EVIDENCE.glob("FINDING_*.md")))
+    for phrase in WITHDRAWN_PHRASES:
+        assert _norm_prose(phrase) in corpus, (
+            f"{phrase!r} appears nowhere — the entry is dead and the test is "
+            f"asserting nothing")

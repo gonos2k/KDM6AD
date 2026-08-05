@@ -18,9 +18,16 @@ The conservative interface computes the inflow **once**, from the source cell's
 actual outflow, so there is no post-update recapture. `ice/qi` closes — and the
 ice chain becomes measurable under exactly the same arms.
 
-That makes this an **independent replication**, not a repetition: a different
-sub-cycle (`mstep_i`, not `mstep`), a different species pair (`qi`/`ni`), and a
-different algorithm.
+That makes this a **cross-chain, cross-species, cross-variant replication**: a
+different sub-cycle (`mstep_i`, not `mstep`), a different species pair
+(`qi`/`ni`), and a different algorithm.
+
+**Not an independent replication** (owner §9). It shares the same synthetic
+fixture, the same density-intervention driver, the same strict parser, the same
+matched-closure analyzer and the same layer-metric definition. An independent
+replication would vary those; this varies the chain, the species and the
+algorithm, which is a real strengthening and a smaller one than the earlier
+wording claimed.
 
 ## The matrix, ice chain, conservative
 
@@ -63,6 +70,9 @@ chain-specific accident — has to do.
 
 - **Ice column 1 has no rain-equivalent inventory**, so it produces no usable row
   in any arm. Two columns, not three.
+- **Shared apparatus.** Fixture, driver, parser, analyzer and metric definition
+  are common to both chains, so a defect in any of them would reproduce here too.
+  That is what "not independent" means, concretely.
 - **This is the conservative variant.** It is the variant whose cap fix makes the
   measurement possible, and it is not the reference. Legacy's ice chain remains
   unmeasurable for the reason it always was.

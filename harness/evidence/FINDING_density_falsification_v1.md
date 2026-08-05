@@ -80,9 +80,14 @@ beside it:
 | `x2` | +2 | **+2.0117** | **+2.0091** | **+2.0407** |
 
 Flattening the density profile removes **99.9999%** of the number creation
-(1.4e−6, 0, 3.8e−6 of the original), and what remains is below the same γₙ bound
-the mass control is held to — 0.116 against 3.09, 0 against 1.68, 0.052 against
-0.641. It is accumulation roundoff, not a residual signal.
+(1.4e−6, 0, 3.8e−6 of the original), and what remains passes the same **per-call
+screening threshold** the mass control is held to.
+
+That threshold is **not a roundoff certificate** — the operation count is a floor
+and the capped, branching kernel is not a straight-line summation, which the
+control states in its own `tolerance_basis` field. So the supported statement is
+that the leftover is *below the screening scale*, not that it is proven to be
+accumulation roundoff.
 
 ### The control that makes `uniform` mean something
 

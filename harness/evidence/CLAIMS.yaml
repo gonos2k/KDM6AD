@@ -169,12 +169,16 @@ claims:
       ordinary stratification -- and this establishes the INTERACTION of the
       gradient with the missing density ratio, not a fault in the gradient
       (owner §4). Flattening the density profile removes 99.9999% of the
-      residual (to below the gamma_n roundoff bound) while surface number outflow
+      residual (to below the gamma_n screening scale the mass control uses; see
+      the control's own tolerance_basis field for what that scale does and does
+      not establish) while surface number outflow
       stays at 96% of the original; inverting the profile flips the sign
       (-0.9896/-0.9919/-1.0032 of the unperturbed residual); doubling the
-      contrast doubles it (+2.0117/+2.0091/+2.0407). The 1-4% departures from
-      exactly -1 and +2 are the second-order effect of density on the fall speed,
-      which the perturbation does not hold fixed.
+      contrast doubles it (+2.0117/+2.0091/+2.0407). The departure from exact
+      profile scaling is the MEASURED TRAJECTORY TERM (G33-TRAJECTORY-001) and is
+      NOT attributed to fall speed or to any single process: density also changes
+      the next call's pre-sed state, the cap state, and every density-dependent
+      rate. The earlier fall-speed attribution is withdrawn.
     status: active
     grade: confirmed
     basis: >
@@ -193,13 +197,15 @@ claims:
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
     evidence: [FINDING_density_falsification_v1.md]
-    evidence_sha256: [FINDING_density_falsification_v1.md:c809ba9c0d44d819]
+    evidence_sha256: [FINDING_density_falsification_v1.md:15b9c15dfa68b3d5]
 
   - id: G33-CHAIN-001
     text: >
-      The evidence chain reaches the finding and stops: 0 of 29 claims pinned the
-      RUN behind their numbers and only 2 cite a finding any published bundle
-      names. `artifacts:` closes the claim->run link and is followed transitively
+      The evidence chain reaches the finding and stops. AS MEASURED WHEN WRITTEN
+      (registry of 29 claims): 0 pinned the RUN behind their numbers and only 2
+      cited a finding any published bundle names. Those counts are HISTORICAL --
+      the registry has grown since -- and the current state is what
+      g33_evidence_chain.py reports on each run, not this text. `artifacts:` closes the claim->run link and is followed transitively
       through the manifest to the raw streams (13 reached from 2 pinned digests).
       The bundle->finding pin is a SNAPSHOT and 3 of 5 are divergent, which is
       history rather than rot -- a published bundle is immutable, so its pin can
@@ -269,7 +275,10 @@ claims:
       free -- so two runs differing in DECOMPOSITION could be compared as an
       algorithm variant, which ncmin makes a real hazard. The invariant set is
       now COMPUTED as IDENTITY minus the axis under test minus what covaries
-      with it, so a new header field is an invariant by default. Schema 3 carries
+      with it, so a field added to IDENTITY is an invariant by default. That
+      removes the PER-COMPARISON omission, not the per-field one: IDENTITY is
+      itself hand-written, so a header field never added to it stays invisible.
+      Schema 3 carries
       the tile VECTOR because ntile cannot tell (2,1) from (1,2). The
       cross-precision ULP no longer depends on argument order -- the lattice is
       named in the field (max_ulp_f32) and `precision` is absent on a
@@ -287,7 +296,7 @@ claims:
       build_provenance -- so identity is enforced at two levels and a comparison
       of loose streams outside a bundle cannot check them.
     evidence: [FINDING_comparison_identity_v1.md]
-    evidence_sha256: [FINDING_comparison_identity_v1.md:2c358ce1d042ec35]
+    evidence_sha256: [FINDING_comparison_identity_v1.md:d57fd9f621270e30]
 
   - id: G33-BASIS-003
     text: >
@@ -437,7 +446,16 @@ claims:
       metric term at exactly 1.0 (11 of 12 metric ratios bit-exact, the twelfth
       5.8e-7 from f32 roundoff on the offset addition) while a doubled gradient
       puts it at exactly 2.0. The residual follows the GRADIENT; the 2.25-6.68%
-      it moves under an offset is trajectory by construction. The earlier attribution to fall speed alone stays
+      it moves under an offset is trajectory by construction. Stated precisely
+      (owner §8): the DIRECT metric source term depends on the gradient only --
+      a uniform offset leaves it at exactly 1.0 -- while the TOTAL residual is
+      gradient-dominant but measurably magnitude-sensitive THROUGH the
+      trajectory, by up to 6.68% here. The stronger form -- that absolute
+      density is irrelevant -- is NOT claimed; see the finding, which quotes and
+      withdraws it. Interfaces are paired by EXACT KEY
+      (call, loop, sub-step, upper, lower), not by count, so a same-count
+      different-universe pair is refused rather than mis-paired (owner P0-1).
+      The earlier attribution to fall speed alone stays
       withdrawn -- this measures the term's SIZE, not its composition.
       Separately, the control "mstep identical in all four arms" is CORRECTED:
       the test merged calls under keys identical across calls, so it compared
@@ -447,15 +465,18 @@ claims:
     status: active
     grade: confirmed
     basis: >
-      an algebraic identity evaluated on four real runs, with the metric term
-      verified exact against the profiles' construction
+      an algebraic identity evaluated on six real runs, over an interface
+      universe matched by EXACT KEY rather than by count, with the metric term
+      verified exact against the profiles' construction. The owner's
+      CONDITIONAL grade pending exact interface identity is satisfied by that
+      keying; a same-count different-universe pair is now refused.
     scope: >
       g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s. The trajectory
       term is not further decomposed -- it is everything the perturbation did to
       the run, and its size is measured, not apportioned. The metric
       counterfactual is defined only where the sub-step schedule holds.
     evidence: [FINDING_metric_trajectory_split_v1.md]
-    evidence_sha256: [FINDING_metric_trajectory_split_v1.md:ac12ca577135379b]
+    evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353d]
 
   - id: G33-NUMBER-009
     text: >
@@ -467,8 +488,11 @@ claims:
       offset (+0.9878/+1.0292, +1.0123/+0.9405). The metric/trajectory
       decomposition is exact on ice too -- metric/base 0/-1/+2/+1 -- leaving a
       trajectory term of 0.59-5.95%, and no ice column changes its sub-step
-      schedule so every row is comparable. This is an INDEPENDENT REPLICATION:
-      different sub-cycle (mstep_i), different species pair, different algorithm.
+      schedule so every row is comparable. This is a CROSS-CHAIN /
+      CROSS-SPECIES / CROSS-VARIANT replication -- different sub-cycle (mstep_i),
+      different species pair, different algorithm -- and NOT an independent one:
+      fixture, intervention driver, parser, analyzer and layer-metric definition
+      are shared, so a defect in any of them would reproduce here too (owner §9).
       The earlier "MAIN chain only" scope was a limitation of the LEGACY CAP, not
       of the mechanism.
     status: active
@@ -483,7 +507,7 @@ claims:
       chain remains unmeasurable for the post-update cap reason. Constructed
       probes, and the trajectory term is measured but not apportioned.
     evidence: [FINDING_ice_density_matrix_v1.md]
-    evidence_sha256: [FINDING_ice_density_matrix_v1.md:1b396158e755f68a]
+    evidence_sha256: [FINDING_ice_density_matrix_v1.md:92757ce8d82142f2]
 
   - id: G33-PROTOCOL-004
     text: >
@@ -494,9 +518,24 @@ claims:
       published f64 refinement chain could mix fixtures, algorithms, modes, tile
       maps, density arms, horizons, a duplicate nsplit, or different record
       universes. require_probe_chain applies the pairwise `refinement` contract
-      across the bundle and adds two the pairwise form does not need -- one
-      integration horizon (nsplit*delt, since neither factor alone pins it) and
-      that the chain actually refines (>1 distinct dtcld). The duplicate check no
+      across the bundle and adds two checks the pairwise form does not carry --
+      one integration horizon (nsplit*delt, since for `refinement` neither factor
+      alone is pinned) and that the chain actually refines (>1 distinct dtcld).
+      FOUR of require_probe_chain's checks are a parity port and TWO are not.
+      G33R's bundle path already enforced the record universe and algorithm
+      (require_same_universe) and mode and the delt*nsplit horizon
+      (require_comparable). It does NOT enforce step distinctness:
+      require_orderable is unreachable from build() and runs only in the report
+      path, wrapped so a repeated step is ACCEPTED (the N=1/N=3 policy control
+      deliberately runs one step twice). The G33P-only identity fields -- schema,
+      precision, source_precision, fixture, loops, ntile, tiles, rho_profile --
+      have no G33R equivalent either. The gap closed was real and total (G33P had
+      NO cross-member checks). Two of my characterisations were wrong in opposite
+      directions: "a new contract" oversold it, "mostly a parity port" undersold
+      it. Consequence recorded rather than argued away: require_probe_chain is
+      STRICTER than G33R on step distinctness, so a G33P analogue of the N=1/N=3
+      policy control would be refused where its G33R equivalent is accepted --
+      unintended, and open. The duplicate check no
       longer depends on the reader. Verified by producing a real three-member
       f64 chain, which also confirms P0-1 is closed in the producer and not only
       in the driver.
@@ -508,11 +547,17 @@ claims:
     scope: >
       Cross-member within one bundle. Two separately published f64 bundles can
       still disagree -- that identity lives in a claim's artifacts pins.
-      CHAIN_INVARIANT is enumerated rather than computed, because a chain has no
-      single axis to subtract the way a pairwise comparison does; that is a real
-      difference in strictness from the G33P comparison identity.
+      CHAIN_INVARIANT is COMPUTED as IDENTITY minus {dtcld, nsplit, delt}, so a
+      field already in IDENTITY is a chain invariant by default. It does NOT
+      make the contract fail-closed against a new header field: IDENTITY is
+      hand-written, so a field added to the G33P header and not to IDENTITY is
+      invisible to this check and to the pairwise one alike. What the change
+      removes is the per-chain omission, not the per-field one. It was first
+      enumerated, on the argument that a chain has no axis to subtract; that
+      argument was wrong -- dtcld IS the axis and nsplit/delt covary with it,
+      exactly as the pairwise contract declares.
     evidence: [FINDING_probe_chain_contract_v1.md]
-    evidence_sha256: [FINDING_probe_chain_contract_v1.md:f7493de89da784e2]
+    evidence_sha256: [FINDING_probe_chain_contract_v1.md:55905e476c49bfd1]
 
   - id: G33-PRECIP-001
     text: >

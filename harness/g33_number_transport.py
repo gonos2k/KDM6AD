@@ -121,6 +121,13 @@ NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")
 MSTEP = re.compile(r"^G33F MSTEP \d+ \S+ (\d+) i32 ([0-9A-F]{8})$")
 MSTEPI = re.compile(r"^G33F MSTEPI \d+ (\d+) i32 ([0-9A-F]{8})$")
 
+#: A sub-step count is bounded by the kernel's own law: mstep = ceil(dtcld/dt_sed)
+#: over a column of K cells. `FFFFFFFF` read as unsigned is 4.29e9, and the
+#: universe check materialises `set(range(1, mstep+1))` -- so a malformed record
+#: exhausts memory before any error is raised (owner P1-11.6). The bound is
+#: generous: no fixture or kernel law reaches it.
+MSTEP_MAX = 1 << 16
+
 #: species -> (sub-step record governing it, uncapped surface accumulator or None,
 #: whether its inflow carries the density ratio). `mstep` covers qr/nr/qs/qg,
 #: `mstep_i` covers qi/ni (F:1179-1180). The mass rows are the CONTROL.
@@ -132,6 +139,20 @@ SPECIES = {"nr": ("main", "bottom_falln_nr", False),
 
 def _f32(h: str) -> float:
     return struct.unpack(">f", bytes.fromhex(h))[0]
+
+
+def _mstep(hexv: str, call) -> int:
+    """A sub-step count, decoded SIGNED and bounded before it is used.
+
+    Read unsigned and unbounded, `FFFFFFFF` becomes 4.29e9 and the exact-universe
+    check tries to materialise a set that large -- memory exhaustion before any
+    clean error (owner P1-11.6).
+    """
+    v = struct.unpack(">i", bytes.fromhex(hexv))[0]
+    if not 1 <= v <= MSTEP_MAX:
+        raise StreamError(
+            f"call {call['call_id']}: mstep {v} is outside 1..{MSTEP_MAX}")
+    return v
 
 
 class StreamError(Exception):
@@ -408,12 +429,12 @@ def calls(stream: str) -> list:
             loop = int(line.split()[2])
             cur["loops"].add(loop)
             _put(cur["mstep"], (loop, "main", int(m.group(1))), None,
-                 int(m.group(2), 16), cur)
+                 _mstep(m.group(2), cur), cur)
         elif (m := MSTEPI.match(line)):
             loop = int(line.split()[2])
             cur["loops"].add(loop)
             _put(cur["mstep"], (loop, "ice", int(m.group(1))), None,
-                 int(m.group(2), 16), cur)
+                 _mstep(m.group(2), cur), cur)
         elif (m := NFLUX.match(line)):
             loop = int(line.split()[2])
             cur["loops"].add(loop)

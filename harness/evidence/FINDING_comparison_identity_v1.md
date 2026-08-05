@@ -30,8 +30,13 @@ The fix is not a longer list. The invariant set is now **computed**:
 
     invariants(kind) = IDENTITY − {the axis under test} − {what covaries with it}
 
-so a field added to the header becomes an invariant **by default**. The failure
-mode of a list is that the next schema change fails *open*; this one fails closed.
+so a field already in `IDENTITY` becomes an invariant **by default** — which
+removes the per-comparison omission and not the per-field one, since `IDENTITY`
+is itself hand-written (see Limits; the body of this finding first claimed the
+stronger property, contradicting its own limits section). A per-comparison list
+fails *open* on the next schema change for any kind whose list was not updated;
+the computed form fails closed **for that omission**. It does not fail closed on
+a field that never reaches `IDENTITY` at all.
 
 `refinement` names `nsplit` and `delt` as covarying with `dtcld`, because they are
 the same knob written three ways — pinning them would make the comparison
@@ -90,10 +95,36 @@ compared and what a field is allowed to claim; it does not move a number.
   records them in `build_provenance`. So identity is enforced at two levels, and
   a comparison of two loose streams outside a bundle cannot check them. Named
   here rather than quietly dropped.
-- **Total horizon is not separately pinned.** `nsplit`, `delt` and `dtcld` are
-  pinned or covarying, which fixes it on this driver because the horizon is
-  `DT_BITS`, a fixture constant. A driver that took the horizon as an argument
-  would need it in the header.
+- **The total horizon is pinned for two kinds and NOT for the third.** Measured
+  from `invariants(kind)`:
+
+  | kind | `nsplit` | `delt` | horizon |
+  |---|---|---|---|
+  | `precision_pair` | pinned | pinned | **pinned** |
+  | `variant` | pinned | pinned | **pinned** |
+  | `refinement` | free | free | **not pinned** |
+
+  For `refinement` both covary with `dtcld`, so the identity cannot constrain
+  `nsplit × delt` at all. It holds on this driver only because the horizon is
+  `DT_BITS`, a fixture constant — a property of the driver, not of the contract.
+
+  An earlier version of this bullet said the three being "pinned or covarying …
+  fixes it", which is wrong for exactly the kind where it matters.
+
+  Where the horizon IS checked, stated completely:
+
+  | path | horizon |
+  |---|---|
+  | `compare()` — `precision_pair`, `variant` | pinned, both factors invariant |
+  | `compare()` — `refinement` | **not** checked |
+  | G33R bundle — `require_comparable` | checked explicitly (`delt × nsplit`) |
+  | G33P bundle — `require_probe_chain` | checked explicitly (`nsplit × delt`) |
+
+  So the pairwise contract covers two of its three kinds, and both bundle paths
+  check it outright. A first correction of this bullet said "only
+  `require_probe_chain` does" — also wrong: the G33R path has checked it since
+  `require_comparable` existed, and `require_probe_chain` brought the **G33P path
+  to parity** rather than introducing the check.
 - The computed invariant set is only as good as `IDENTITY`. A header field that
   is never added to that tuple is still invisible — the mechanism removes the
   per-comparison omission, not the per-field one.

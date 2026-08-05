@@ -10,10 +10,19 @@ Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
 
 Owner §7. The density arms land at −0.99 and +2.01 rather than exactly −1 and +2.
-That was once attributed to "density also changes the fall speed", and the
+That was once attributed to a second-order
+`effect of density on the fall speed`.
+The withdrawn wording is quoted verbatim so a reader can recognise it, and so a
+test can refuse to let it reappear in an active claim. The attribution was
 attribution was **withdrawn**: density also changes the next call's
 pre-sedimentation state, the cap state, and every density-dependent rate, so
 naming fall speed picked one candidate out of several without separating them.
+
+The same applies to the wording `gamma_n roundoff bound`, used of the γₙ
+threshold. It is not a bound and not a **roundoff certificate**: the operation
+count is a floor and the capped, branching kernel is not a straight-line
+summation. The control's own `tolerance_basis` field says exactly this, and the
+withdrawn phrasing is quoted here for the same reason as the one above.
 
 The departure is now **decomposed** instead:
 
@@ -71,9 +80,19 @@ addition itself. So the residual follows the **gradient**, and the 2.25–6.68% 
 moves under an offset is trajectory response by construction — the measure did
 not change at all.
 
-That is the cleanest statement of the mechanism available from this fixture:
-a density *gradient* is what the defective metric interacts with; the density
-*magnitude* is not.
+The precise statement has two halves, and collapsing them overstates the result
+(owner §8):
+
+| quantity | depends on |
+|---|---|
+| **direct metric source term** | the density **gradient** only — a uniform offset leaves it at exactly 1.0 |
+| **total residual** | gradient-**dominant**, but measurably sensitive to magnitude through the trajectory |
+
+"The density magnitude is not what matters" is **too strong**. Absolute density
+sets fall speeds, the sub-cycle count, the state each later call starts from and
+the cap state, so it reaches the total residual *indirectly* — by up to 6.68%
+here. What is exactly magnitude-independent is the **direct measure-mismatch
+source term**, and that is the claim.
 
 ## A control of mine was defective, and it hid a real effect
 
@@ -95,11 +114,18 @@ density change moves the schedule. The claim "identically in all four arms" is
 
 Two consequences, both handled rather than tolerated:
 
-- Column 3 of `inverted` has 69 interfaces against the baseline's 72, so there is
-  no one-to-one correspondence and the metric counterfactual is undefined. It is
-  reported `comparable: false`. `offset+` column 3 does the same — column 3 is
-  the schedule-sensitive one. Zipping the two lists would have paired unrelated
-  interfaces and produced a confident wrong number.
+- Column 3 of `inverted` has a different interface **universe** from the
+  baseline's — 69 keys against 72 — so there is no one-to-one correspondence and
+  the metric counterfactual is undefined. It is reported `comparable: false`.
+  `offset+` column 3 does the same; column 3 is the schedule-sensitive one.
+
+  The differing count is a *symptom*, not the test. Interfaces are matched by
+  **identity** — `(call, loop, sub-step, upper level, lower level)` — and
+  decomposition requires the two key sets to be equal. Matching on count alone
+  was the original form and it was unsound: a baseline with `mstep` 2-then-1 and
+  an arm with 1-then-2 have the same total and describe different interfaces, so
+  a positional pairing would have compared element 2 of one call against element
+  1 of another and produced a confident wrong number.
 - The test now **asserts the difference** — one schedule change, at that exact
   location. If a future change made every arm schedule-identical the finding's
   scope would need widening; if it made more arms differ, the decomposition's
