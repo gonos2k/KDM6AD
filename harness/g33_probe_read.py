@@ -219,6 +219,58 @@ def compare(a: dict, b: dict, kind: str) -> None:
     _expect(ka == kb, f"streams carry different records ({len(ka ^ kb)} differ)")
 
 
+#: What every member of one probe chain must agree on. `dtcld` is the axis and
+#: `nsplit`/`delt` move with it, exactly as the pairwise `refinement` contract
+#: says -- this is that contract applied across a whole bundle rather than to two
+#: streams (owner §8.4).
+CHAIN_INVARIANT = ("schema", "precision", "source_precision", "fixture",
+                   "algorithm", "mode", "loops", "ntile", "tiles", "rho_profile")
+
+
+def require_probe_chain(runs: dict) -> None:
+    """Every cross-member check a G33R bundle gets, for a G33P one.
+
+    An f64 bundle supplies its own `member_reader`, and the manifest builder then
+    skipped BOTH the duplicate-nsplit check and `require_same_universe` --
+    `runs` was left empty on that path. Each member was strict-parsed on its own,
+    so a truncated or NaN stream could not get in; nothing checked the members
+    against EACH OTHER. A bundle mixing two fixtures, two algorithms, two
+    decompositions or two integration horizons was publishable.
+    """
+    if len(runs) < 2:
+        return
+    ref = min(runs)
+    for f in CHAIN_INVARIANT:
+        vals = {n: r[("meta", f)] for n, r in runs.items()}
+        if len(set(vals.values())) > 1:
+            raise ProbeError(
+                f"probe chain members disagree on {f}: "
+                f"{ {n: vals[n] for n in sorted(vals)} } — not one experiment")
+    # The record universe, for the same reason G33R checks it: comparing over an
+    # intersection lets an incomplete member report a smaller error.
+    keyed = {n: {k for k in r if k[0] != "meta"} for n, r in runs.items()}
+    for n, ks in keyed.items():
+        if ks != keyed[ref]:
+            miss, extra = keyed[ref] - ks, ks - keyed[ref]
+            raise ProbeError(
+                f"probe member N={n} has a different record universe from "
+                f"N={ref}: {len(miss)} missing, {len(extra)} extra")
+    # One integration horizon. nsplit and delt both move with dtcld, so neither
+    # alone pins it -- their product does, and a chain whose members integrate
+    # different total times is not a refinement of one experiment.
+    horizons = {n: r[("meta", "nsplit")] * r[("meta", "delt")]
+                for n, r in runs.items()}
+    lo, hi = min(horizons.values()), max(horizons.values())
+    if hi - lo > 1e-6 * max(abs(hi), 1.0):
+        raise ProbeError(
+            f"probe chain members integrate different horizons: "
+            f"{ {n: round(horizons[n], 6) for n in sorted(horizons)} }")
+    # A chain refines: if dtcld never changes there is nothing to refine over.
+    if len({r[("meta", "dtcld")] for r in runs.values()}) < 2:
+        raise ProbeError("probe chain members all share one dtcld — "
+                         "that is a repetition, not a refinement chain")
+
+
 def _bits(x: float, precision: str) -> int:
     """Sign-magnitude bit pattern mapped to a monotone integer, so a subtraction
     counts representable steps across zero as well as within a sign."""
