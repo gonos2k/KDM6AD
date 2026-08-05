@@ -71,3 +71,23 @@ def test_a_real_precision_pair_compares_under_the_current_contract(tmp_path):
     b = pr.read(_run(tmp_path / "b", "--f64"))
     d = pr.diff(a, b, "precision_pair")
     assert d["records"] > 0 and d["ulp_lattice"] == "f32"
+
+
+def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
+    """The whole point of P0-1: with the schema literal drifted, this path raised
+    ProbeError and no f64 bundle could be made at all. It also exercises the
+    cross-member contract (owner §8.4) on real streams rather than synthetic
+    ones — a three-member chain must satisfy every invariant at once."""
+    import json
+    import g33_refine_experiment as xp
+
+    dest = xp.produce(tmp_path / "chain",
+                      fixture="g33_fixture_multisubcycle_v1", algo="legacy",
+                      nsplits=(3, 6, 12), mode="rezero", nflux=False,
+                      module=REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+                      arm="f64")
+    man = json.loads((dest / "manifest.json").read_text())
+    assert man["arm"] == "f64" and man["precision"] == "f64"
+    assert man["decision_eligible"] is False
+    assert sorted(m["nsplit"] for m in man["members"]) == [3, 6, 12]
+    assert all(m["precision"] == "f64" for m in man["members"])

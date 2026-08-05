@@ -19,7 +19,7 @@ import g33_refine_analyze as ra  # noqa: E402
 def _stream(precision="f32", *, B=2, K=2, end=True, schema=4, prec=True,
             forcing=("rho", "delz", "pii"), initial=True, fixture="fx", algo="legacy",
             mode="rezero", nsplit=12, dtcld=25.0, tiles=None, ntile=1, loops=1,
-            rho_profile="as-is"):
+            rho_profile="as-is", delt=None):
     # schema 3 carries the TILE VECTOR: `ntile` alone cannot tell (2,1) from
     # (1,2), and `ncmin` makes those two decompositions disagree (owner §8.1).
     # A default that actually COVERS the domain: the parser now requires
@@ -28,7 +28,8 @@ def _stream(precision="f32", *, B=2, K=2, end=True, schema=4, prec=True,
     out = [f"G33P BEGIN {schema} precision {precision} source_precision f32 "
            f"fixture {fixture} algorithm {algo} mode {mode} tiles {tiles} "
            f"rho_profile {rho_profile} "
-           f"{nsplit} {loops} {ntile} {300.0/nsplit:.6f} {dtcld:.6f} {B} {K}"]
+           f"{nsplit} {loops} {ntile} {(300.0/nsplit if delt is None else delt):.6f} "
+           f"{dtcld:.6f} {B} {K}"]
     for f in pr.FIELDS:
         for c in range(1, B + 1):
             for k in range(K):
@@ -391,3 +392,99 @@ def test_the_two_parsers_agree_on_what_an_arm_IS():
     arm the first rejects."""
     import g33_number_transport as nt
     assert pr.RHO_PROFILES is nt.RHO_PROFILES
+
+
+# ---- owner §8.4: the f64 bundle's CROSS-MEMBER contract ----------------------
+#
+# An f64 bundle supplies its own member_reader, and the manifest builder then
+# left `runs` empty — so it skipped both the duplicate-nsplit check and
+# require_same_universe. Each member was strict-parsed alone; nothing checked
+# them against each other.
+
+def _chain(**overrides):
+    """A two-member probe chain: n3 and n6 of one experiment."""
+    base = dict(precision="f64", B=2, K=2)
+    a = pr.read(_stream(nsplit=3, dtcld=100.0, **base))
+    b = pr.read(_stream(nsplit=6, dtcld=50.0, **{**base, **overrides}))
+    return {3: a, 6: b}
+
+
+def test_a_valid_probe_chain_passes():
+    """The control: everything below must fail for its own reason."""
+    pr.require_probe_chain(_chain())
+
+
+@pytest.mark.parametrize("field,override", [
+    ("fixture", {"fixture": "other"}),
+    ("algorithm", {"algo": "conservative"}),
+    ("mode", {"mode": "carry"}),
+    ("rho_profile", {"rho_profile": "uniform"}),
+    ("loops", {"loops": 2}),
+])
+def test_a_probe_chain_mixing_experiments_is_refused(field, override):
+    """Each of these makes the two members different experiments. Mixing
+    decompositions is the sharpest: `ncmin` makes (2,1) and (1,2) disagree, so a
+    'refinement chain' spanning two tile maps measures decomposition, not step."""
+    with pytest.raises(pr.ProbeError, match=f"disagree on {field}"):
+        pr.require_probe_chain(_chain(**override))
+
+
+def test_a_probe_chain_over_different_TILE_MAPS_is_refused():
+    """Same ntile, different vector — the case `ntile` alone cannot see. `ncmin`
+    makes (2,1) and (1,2) disagree, so a chain spanning two tile maps measures
+    decomposition rather than step."""
+    a = pr.read(_stream(precision="f64", B=3, ntile=2, tiles="2,1",
+                        nsplit=3, dtcld=100.0))
+    b = pr.read(_stream(precision="f64", B=3, ntile=2, tiles="1,2",
+                        nsplit=6, dtcld=50.0))
+    with pytest.raises(pr.ProbeError, match="disagree on tiles"):
+        pr.require_probe_chain({3: a, 6: b})
+
+
+def test_a_probe_chain_over_different_HORIZONS_is_refused():
+    """nsplit and delt both move with dtcld, so neither alone pins the total
+    integration time — their product does. A chain whose members integrate
+    different totals is not a refinement of one experiment."""
+    a = pr.read(_stream(precision="f64", nsplit=3, delt=100.0, dtcld=100.0))
+    b = pr.read(_stream(precision="f64", nsplit=6, delt=100.0, dtcld=50.0))
+    with pytest.raises(pr.ProbeError, match="different horizons"):
+        pr.require_probe_chain({3: a, 6: b})
+
+
+def test_a_probe_chain_that_does_not_REFINE_is_refused():
+    """Two members at the same dtcld are a repetition. Nothing to take an order
+    over, and a manifest calling it a refinement chain would be wrong."""
+    a = pr.read(_stream(precision="f64", nsplit=3, dtcld=100.0))
+    b = pr.read(_stream(precision="f64", nsplit=3, dtcld=100.0))
+    with pytest.raises(pr.ProbeError, match="repetition, not a refinement"):
+        pr.require_probe_chain({3: a, 6: b})
+
+
+def test_a_probe_member_with_a_DIFFERENT_RECORD_UNIVERSE_is_refused():
+    """Comparing over an intersection lets an incomplete member report a smaller
+    error — convergence measured on absence. G33R has checked this since the
+    beginning; the f64 path never did."""
+    a = pr.read(_stream(precision="f64", nsplit=3, dtcld=100.0, K=2))
+    b = pr.read(_stream(precision="f64", nsplit=6, dtcld=50.0, K=3))
+    with pytest.raises(pr.ProbeError, match="different record universe"):
+        pr.require_probe_chain({3: a, 6: b})
+
+
+def test_a_single_member_chain_is_not_an_error():
+    """One member has nothing to disagree with."""
+    pr.require_probe_chain({3: pr.read(_stream(precision="f64"))})
+
+
+def test_the_producer_actually_calls_it():
+    """A contract nothing invokes checks nothing."""
+    src = (Path(__file__).resolve().parents[1] / "g33_refine_experiment.py").read_text()
+    assert "pr.require_probe_chain(runs)" in src
+
+
+def test_the_duplicate_nsplit_check_no_longer_depends_on_the_reader():
+    """Two members for one nsplit collapse to one entry whichever parser read
+    them, so guarding the check on `member_reader is None` exempted exactly the
+    bundle that had no other cross-member check at all."""
+    src = (Path(__file__).resolve().parents[1] / "g33_refine_manifest.py").read_text()
+    assert "if member_reader is None and len(ns) != len(set(ns)):" not in src
+    assert "if len(ns) != len(set(ns)):" in src
