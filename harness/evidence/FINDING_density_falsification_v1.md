@@ -26,7 +26,7 @@ Fixing the second factor is the correction; the first is not a fault to fix.
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-NUMBER-008` | **active** | confirmed | OPERATOR-LEVEL: this is causality under the current den*dz ledger, where den is MOIST density, and must NOT be promoted to physical dry-air column-number causality -- the physical measure is sum m_d,k n_k (owner §10, G33-BASIS-002/003). MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
+| `G33-NUMBER-008` | **active** | confirmed | OPERATOR-LEVEL: this is causality under the current den*dz ledger, where den is MOIST density, and must NOT be promoted to physical dry-air column-number causality -- the physical measure is sum m_d,k n_k (owner §10, G33-BASIS-002/003). MAIN chain on g33_fixture_multisubcycle_v1, legacy, h = 25 s. LEGACY's ice chain is excluded because its mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001) -- a limitation of that cap, not of the mechanism: G33-NUMBER-009 replicates the whole matrix on the ice chain using the conservative variant, where the control closes. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -108,11 +108,17 @@ under `g33_matched_closure.usable()`.
 
 ### The sub-step schedule does not move
 
-`mstep` is 1 / 1–2 / 1–3 by column and `mstep_i` is 1, **identically in all four
-arms**. The perturbation changed the density values without changing the
-operator's discrete schedule, so the arms are compared over the same number of
-accumulations — the same γₙ basis, and the same number of interfaces at which the
-residual can be generated.
+**Corrected.** This claimed the schedule was identical in all four arms. The
+test behind it merged every call into one dict keyed by `(loop, chain, col)` —
+identical across calls — so later calls overwrote earlier ones and it compared
+only the last call. Keyed per call, `inverted` drops **column 3's `mstep` from 3
+to 2 in call 1**: density sets the fall speed and `mstep` is derived from it.
+
+The control holds for `uniform` and `x2`, which are therefore compared over the
+same accumulation count, the same γₙ basis and the same interface set. It does
+**not** hold for `inverted` column 3, and
+`FINDING_metric_trajectory_split_v1.md` reports that column as not comparable
+rather than computing a number for it.
 
 ## Why not exactly −1 and +2
 
@@ -136,9 +142,11 @@ response,
     R(ρ′) = Σ_j Δρ′_j Δz_j d_j(ρ)          metric-only counterfactual
           + Σ_j Δρ′_j Δz_j [d_j(ρ′) − d_j(ρ)]   trajectory response
 
-and until those are computed separately the split is unmeasured. What the two
-weaker arms still establish is that a competing explanation would have to
-reproduce −0.99 and +2.01 across three columns by some other route.
+**Now measured** (`FINDING_metric_trajectory_split_v1.md`): the metric term is
+exactly 0 / −1 / +2, so the whole departure is the trajectory response, and it is
+**0.45–2.04%** of the metric term. What the two weaker arms still establish is
+that a competing explanation would have to reproduce −0.99 and +2.01 across
+three columns by some other route.
 
 ## Limits
 

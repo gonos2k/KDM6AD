@@ -76,8 +76,8 @@ def test_the_binding_count_is_reported_PER_CHAIN_with_its_magnitude(stream):
     beside the magnitude so they cannot be confused again."""
     a = ci.analysis(stream)
     assert a["total_interfaces"] == 255
-    assert a["by_chain"]["ice"]["cap_bound"] == 39
-    assert a["by_chain"]["main"]["cap_bound"] > 0, \
+    assert a["by_chain"]["ice"]["mass_departure_arrival_differ"] == 39
+    assert a["by_chain"]["main"]["mass_departure_arrival_differ"] > 0, \
         "'all of them in the ice chain' would make this zero"
     assert a["by_chain"]["main"]["abs_interface_term"] < \
         1e-6 * a["by_chain"]["ice"]["abs_interface_term"]
@@ -151,3 +151,23 @@ def test_the_ICE_chain_is_NOT_identical_and_must_not_be(variants):
             f"ice {field} is identical — the cap fix did nothing"
     ice = {k: v for k, v in _xfer(L, 1).items() if k[3] == "ice"}
     assert any(_xfer(C, 1)[k] != v for k, v in ice.items())
+
+
+def test_the_MASS_and_NUMBER_caps_are_counted_separately(stream):
+    """`cap_bound` compared only `dq`, so a figure quoted as "cap-bound
+    interfaces" silently meant the MASS cap. They are not the same set, and the
+    difference is the point (owner §10):
+
+        ice   mass 39 / number 39 of 108
+        main  mass 23 / number  0 of 147
+
+    On the main chain the NUMBER departure and arrival never differ, which is
+    exactly why its number result is a clean measure-mismatch measurement rather
+    than a cap measurement. A single count could not say that."""
+    a = ci.analysis(stream)
+    ice, main = a["by_chain"]["ice"], a["by_chain"]["main"]
+    assert ice["number_departure_arrival_differ"] == 39
+    assert main["number_departure_arrival_differ"] == 0, \
+        "the main chain's number cap must not bind — that is why its result is clean"
+    assert main["mass_departure_arrival_differ"] > 0
+    assert a["either_differ"] >= a["mass_departure_arrival_differ"]

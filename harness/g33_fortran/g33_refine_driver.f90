@@ -149,6 +149,14 @@ contains
           case (1); den(i,k) = rho_mean
           case (2); den(i,k) = 2.0*rho_mean - den(i,k)
           case (3); den(i,k) = rho_mean + 2.0*(den(i,k) - rho_mean)
+          ! OFFSET: every level shifted by the same constant, so the GRADIENT is
+          ! untouched and only the absolute density moves. The residual formula
+          ! contains (rho_below - rho_above), which a constant cancels out of
+          ! exactly -- so this separates "the gradient matters" from "the
+          ! magnitude matters" more directly than scaling the contrast does
+          ! (owner §7). +10% of the column mean.
+          case (4); den(i,k) = den(i,k) + 0.10*rho_mean
+          case (5); den(i,k) = den(i,k) - 0.10*rho_mean
           end select
         end do
       end if
@@ -319,7 +327,10 @@ program g33_refine_driver
     case ('uniform');  rho_mode = 1
     case ('inverted'); rho_mode = 2
     case ('x2');       rho_mode = 3
-    case default; error stop 'rho mode must be as-is|uniform|inverted|x2'
+    case ('offset+');  rho_mode = 4
+    case ('offset-');  rho_mode = 5
+    case default
+      error stop 'rho mode must be as-is|uniform|inverted|x2|offset+|offset-'
     end select
     rho_name = trim(arg)
   end if

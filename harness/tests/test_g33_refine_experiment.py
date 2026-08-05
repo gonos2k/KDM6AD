@@ -52,6 +52,9 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     # test_g33_matched_closure.py against synthetic G33N. What these tests are
     # about is the producer's atomicity and its manifest.
     monkeypatch.setattr(xp, "_analyses", lambda *a, **k: [])
+    # _driver_analyses RUNS the driver four times; the fake build returns a
+    # path with no binary behind it, so it must be stubbed alongside.
+    monkeypatch.setattr(xp, "_driver_analyses", lambda *a, **k: [])
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 

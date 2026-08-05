@@ -70,7 +70,17 @@ def interfaces(stream: str) -> dict:
                         continue
                     d = acc.setdefault((chain, col), {
                         "mass_interface_term": 0.0, "number_created": 0.0,
-                        "number_predicted": 0.0, "interfaces": 0, "cap_bound": 0,
+                        "number_predicted": 0.0, "interfaces": 0,
+                        # NAMED for what is compared (owner §10). `cap_bound`
+                        # counted only the MASS departure/arrival mismatch, so a
+                        # figure quoted as "cap-bound interfaces" silently meant
+                        # the mass cap and not the number one. And exact
+                        # inequality counts a roundoff-scale difference as a
+                        # binding cap, which is why every count is reported
+                        # beside its magnitude.
+                        "mass_departure_arrival_differ": 0,
+                        "number_departure_arrival_differ": 0,
+                        "either_differ": 0,
                         "number_transported": 0.0})
                     for n in range(1, ms + 1):
                         # own(j) and inflow(j), assembled from the two families
@@ -103,7 +113,10 @@ def interfaces(stream: str) -> dict:
                             # alone is what R/F already uses.
                             d["number_transported"] += abs(wb * dn_out)
                             d["interfaces"] += 1
-                            d["cap_bound"] += int(dq_out != dq_in)
+                            md, nd = dq_out != dq_in, dn_out != dn_in
+                            d["mass_departure_arrival_differ"] += int(md)
+                            d["number_departure_arrival_differ"] += int(nd)
+                            d["either_differ"] += int(md or nd)
     return acc
 
 
@@ -131,13 +144,21 @@ def analysis(stream: str) -> dict:
     # residual-dominating one the same event.
     by_chain = {}
     for (chain, col), d in iface.items():
-        c = by_chain.setdefault(chain, {"cap_bound": 0, "interfaces": 0,
-                                        "abs_interface_term": 0.0})
-        c["cap_bound"] += d["cap_bound"]
-        c["interfaces"] += d["interfaces"]
+        c = by_chain.setdefault(chain, {
+            "mass_departure_arrival_differ": 0,
+            "number_departure_arrival_differ": 0, "either_differ": 0,
+            "interfaces": 0, "abs_interface_term": 0.0})
+        for k in ("mass_departure_arrival_differ",
+                  "number_departure_arrival_differ", "either_differ",
+                  "interfaces"):
+            c[k] += d[k]
         c["abs_interface_term"] += abs(d["mass_interface_term"])
     return {"rows": rows, "by_chain": by_chain,
-            "cap_bound_interfaces": sum(d["cap_bound"] for d in iface.values()),
+            "mass_departure_arrival_differ":
+                sum(d["mass_departure_arrival_differ"] for d in iface.values()),
+            "number_departure_arrival_differ":
+                sum(d["number_departure_arrival_differ"] for d in iface.values()),
+            "either_differ": sum(d["either_differ"] for d in iface.values()),
             "total_interfaces": sum(d["interfaces"] for d in iface.values())}
 
 
@@ -151,13 +172,21 @@ def report(stream: str) -> None:
         cp = f"{r['created_over_predicted']:.4f}" \
             if r["created_over_predicted"] is not None else "-"
         print(f"  {k:10} {r['mass_residual']:14.6e} {r['mass_interface_term']:15.6e} "
-              f"{ex:>10} {cp:>18} {r['cap_bound']:4}/{r['interfaces']:<4}")
-    print(f"\n  departure differs from arrival at {a['cap_bound_interfaces']} of "
-          f"{a['total_interfaces']} interfaces — but a count alone conflates a")
-    print("  roundoff-scale difference with a residual-dominating one:")
+              f"{ex:>10} {cp:>18} "
+              f"{r['mass_departure_arrival_differ']:3}m/"
+              f"{r['number_departure_arrival_differ']:<3}n")
+    print(f"\n  Departure differs from arrival, of {a['total_interfaces']} "
+          f"interfaces: mass at {a['mass_departure_arrival_differ']}, number at "
+          f"{a['number_departure_arrival_differ']},")
+    print(f"  either at {a['either_differ']}. A single 'cap-bound' count "
+          f"conflated the mass cap")
+    print("  with the number one, and a count alone conflates a roundoff-scale")
+    print("  difference with a residual-dominating one:")
     for ch, c in sorted(a["by_chain"].items()):
-        print(f"    {ch:5} {c['cap_bound']:3}/{c['interfaces']:<4} "
-              f"total |interface term| {c['abs_interface_term']:.4e}")
+        print(f"    {ch:5} mass {c['mass_departure_arrival_differ']:3} / number "
+              f"{c['number_departure_arrival_differ']:3} of "
+              f"{c['interfaces']:<4} total |interface term| "
+              f"{c['abs_interface_term']:.4e}")
 
 
 def main(argv) -> int:
