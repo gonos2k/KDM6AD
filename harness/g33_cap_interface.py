@@ -50,7 +50,7 @@ import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
 
 
-def interfaces(stream: str) -> dict:
+def interfaces(stream: str, basis: str = "operator") -> dict:
     """{(chain, col): {...}} -- the interface terms, and how often the cap bound.
 
     Requires `capin` and `topout`; the strict parser has already checked their
@@ -62,14 +62,21 @@ def interfaces(stream: str) -> dict:
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                rho = {k: pre[(lp, col, k)]["rho"] for k in ks}
+                rho = {k: mc._density(pre[(lp, col, k)], basis) for k in ks}
                 dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
                 for chain in ("main", "ice"):
                     ms = call["mstep"].get((lp, chain, col))
                     if ms is None:
                         continue
                     d = acc.setdefault((chain, col), {
-                        "mass_interface_term": 0.0, "number_created": 0.0,
+                        "mass_interface_term": 0.0,
+                        # NET is what the closure residual compares to; GROSS and
+                        # MAX say how much interface activity produced it. A
+                        # column whose positive and negative terms cancel has a
+                        # small net and is not quiet (owner P1-11.2).
+                        "sum_abs_interface_term": 0.0,
+                        "max_abs_interface_term": 0.0,
+                        "number_created": 0.0,
                         "number_predicted": 0.0, "interfaces": 0,
                         # NAMED for what is compared (owner §10). `cap_bound`
                         # counted only the MASS departure/arrival mismatch, so a
@@ -101,7 +108,11 @@ def interfaces(stream: str) -> dict:
                             dq_out, dn_out = own[j - 1]
                             dq_in, dn_in = inflow[j]
                             wa, wb = rho[j] * dz[j], rho[j - 1] * dz[j - 1]
-                            d["mass_interface_term"] += wa * dq_in - wb * dq_out
+                            term = wa * dq_in - wb * dq_out
+                            d["mass_interface_term"] += term
+                            d["sum_abs_interface_term"] += abs(term)
+                            d["max_abs_interface_term"] = max(
+                                d["max_abs_interface_term"], abs(term))
                             d["number_created"] += wa * dn_in - wb * dn_out
                             # what the measure mismatch alone predicts, on this
                             # same interface and the same emitted transfer
@@ -147,12 +158,18 @@ def analysis(stream: str) -> dict:
         c = by_chain.setdefault(chain, {
             "mass_departure_arrival_differ": 0,
             "number_departure_arrival_differ": 0, "either_differ": 0,
-            "interfaces": 0, "abs_interface_term": 0.0})
+            "interfaces": 0, "net_interface_term": 0.0,
+            "sum_abs_interface_term": 0.0, "max_abs_interface_term": 0.0})
         for k in ("mass_departure_arrival_differ",
                   "number_departure_arrival_differ", "either_differ",
                   "interfaces"):
             c[k] += d[k]
-        c["abs_interface_term"] += abs(d["mass_interface_term"])
+        # abs(net-per-column) UNDERSTATES activity when terms cancel inside a
+        # column; the gross sum is accumulated per interface instead.
+        c["net_interface_term"] += d["mass_interface_term"]
+        c["sum_abs_interface_term"] += d["sum_abs_interface_term"]
+        c["max_abs_interface_term"] = max(c["max_abs_interface_term"],
+                                          d["max_abs_interface_term"])
     return {"rows": rows, "by_chain": by_chain,
             "mass_departure_arrival_differ":
                 sum(d["mass_departure_arrival_differ"] for d in iface.values()),
@@ -185,8 +202,9 @@ def report(stream: str) -> None:
     for ch, c in sorted(a["by_chain"].items()):
         print(f"    {ch:5} mass {c['mass_departure_arrival_differ']:3} / number "
               f"{c['number_departure_arrival_differ']:3} of "
-              f"{c['interfaces']:<4} total |interface term| "
-              f"{c['abs_interface_term']:.4e}")
+              f"{c['interfaces']:<4} net {c['net_interface_term']:+.3e} "
+              f"gross {c['sum_abs_interface_term']:.3e} "
+              f"max {c['max_abs_interface_term']:.3e}")
 
 
 def main(argv) -> int:

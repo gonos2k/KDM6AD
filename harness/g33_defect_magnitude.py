@@ -75,7 +75,10 @@ def analysis(stream: str, basis: str = "operator") -> dict:
     # Interface throughput: how much number CROSSED an interface,
     # which is what the creation is a fraction of. The surface
     # transfer alone is already R/F_surface.
-    iface = ci.interfaces(stream)
+    # The throughput must be measured on the SAME basis as the residual it is
+    # divided into, or `physical` mode reports R(rho_d)/throughput(rho_m) -- a
+    # mixed-basis ratio (owner P1-11.1).
+    iface = ci.interfaces(stream, basis)
     ctrl = {(ch, col): mc.usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     rows = {}

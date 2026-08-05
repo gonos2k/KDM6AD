@@ -30,8 +30,13 @@ The fix is not a longer list. The invariant set is now **computed**:
 
     invariants(kind) = IDENTITY − {the axis under test} − {what covaries with it}
 
-so a field added to the header becomes an invariant **by default**. The failure
-mode of a list is that the next schema change fails *open*; this one fails closed.
+so a field already in `IDENTITY` becomes an invariant **by default** — which
+removes the per-comparison omission and not the per-field one, since `IDENTITY`
+is itself hand-written (see Limits; the body of this finding first claimed the
+stronger property, contradicting its own limits section). A per-comparison list
+fails *open* on the next schema change for any kind whose list was not updated;
+the computed form fails closed **for that omission**. It does not fail closed on
+a field that never reaches `IDENTITY` at all.
 
 `refinement` names `nsplit` and `delt` as covarying with `dtcld`, because they are
 the same knob written three ways — pinning them would make the comparison

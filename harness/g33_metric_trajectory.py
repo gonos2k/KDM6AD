@@ -50,14 +50,24 @@ ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
 
 
 def interface_terms(stream: str, chain: str = "main") -> dict:
-    """{col: [(drho, dz_above, dn_departure), ...]} in a deterministic order.
+    """{col: {key: (drho, dz_above, dn_departure)}} keyed by INTERFACE IDENTITY.
+
+    The key is (call, loop, sub-step, upper level, lower level) -- everything
+    that names the interface. It used to be a LIST, and `decompose` paired the
+    two arms by position whenever the lengths matched (owner P0-1). Length is not
+    identity: a baseline with mstep 2 then 1 and an arm with 1 then 2 have the
+    same total and pair element 2 of one call against element 1 of another.
+
+    That is not hypothetical. The immediately preceding density control merged
+    every call under a key identical across calls, compared only the last one,
+    and missed a real mstep 3->2 change. The same class of mistake, one layer up.
 
     `dn_departure` is the number that actually LEFT the cell above, taken from
     TOPOUT at the top interface and CAPIN's own-outflow below it -- the same
     pairing the cap-interface analysis uses.
     """
     rows = {}
-    for call in nt.calls(stream):
+    for i, call in enumerate(nt.calls(stream), start=1):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
@@ -79,8 +89,8 @@ def interface_terms(stream: str, chain: str = "main") -> dict:
                     for j in ks[1:]:
                         if (j - 1) not in own:
                             continue
-                        rows.setdefault(col, []).append(
-                            (rho[j] - rho[j - 1], dz[j - 1], own[j - 1]))
+                        rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = (
+                            rho[j] - rho[j - 1], dz[j - 1], own[j - 1])
     return rows
 
 
@@ -93,22 +103,20 @@ def decompose(base: dict, arm: dict) -> dict:
     """
     out = {}
     for col, rows in sorted(arm.items()):
-        b = base.get(col)
-        if b is None or len(b) != len(rows):
-            # A different interface count means the arm changed the SUB-STEP
-            # SCHEDULE, so there is no one-to-one interface correspondence and
-            # the metric counterfactual is undefined -- `inverted` does this in
-            # column 3. Reported rather than forced onto a zip that would pair
-            # unrelated interfaces.
+        b = base.get(col) or {}
+        # EXACT KEY UNIVERSE, not equal counts (owner P0-1). Two arms with the
+        # same number of interfaces can still be describing different ones.
+        if set(b) != set(rows):
+            miss, extra = len(set(b) - set(rows)), len(set(rows) - set(b))
             out[col] = {"comparable": False,
-                        "reason": f"interface count {len(rows)} vs "
-                                  f"{len(b) if b else 0} — the arm changed the "
-                                  f"sub-step schedule, so interfaces do not "
-                                  f"correspond"}
+                        "reason": f"interface universes differ: {miss} missing, "
+                                  f"{extra} extra (counts {len(rows)} vs "
+                                  f"{len(b)}) — the arm changed the sub-step "
+                                  f"schedule, so interfaces do not correspond"}
             continue
-        metric = sum(dr * dz * bd for (dr, dz, _), (_, _, bd) in zip(rows, b))
-        actual = sum(dr * dz * dn for dr, dz, dn in rows)
-        baseline = sum(dr * dz * dn for dr, dz, dn in b)
+        metric = sum(rows[k][0] * rows[k][1] * b[k][2] for k in rows)
+        actual = sum(dr * dz * dn for dr, dz, dn in rows.values())
+        baseline = sum(dr * dz * dn for dr, dz, dn in b.values())
         out[col] = {
             "comparable": True, "interfaces": len(rows),
             "baseline": baseline, "metric": metric, "actual": actual,
@@ -127,17 +135,43 @@ def decompose(base: dict, arm: dict) -> dict:
     return out
 
 
-def analysis(driver: str, nsplit: int, chain: str = "main") -> dict:
+def analysis(driver: str, nsplit: int, chain: str = "main", *,
+             mode: str = "rezero", width: int = 3) -> dict:
+    """Re-run the driver under every arm and decompose each against `as-is`.
+
+    `mode` and `width` are arguments, not constants (owner P0-2). Hardcoded, a
+    bundle produced with `--mode carry` carried a `metric_trajectory.json`
+    silently generated under `rezero`, and a fixture that is not three columns
+    wide failed the driver's tile-sum check. The values a bundle actually used
+    are recorded beside the result so a reader can see which run this describes.
+    """
+    argv_of = lambda arm: [driver, str(nsplit), mode, str(width), arm]
+
     def run(arm):
-        r = subprocess.run([driver, str(nsplit), "rezero", "3", arm],
-                           capture_output=True, text=True)
+        r = subprocess.run(argv_of(arm), capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit(f"{arm}: driver exited {r.returncode}\n{r.stderr[-2000:]}")
-        return interface_terms(r.stdout, chain)
+        return r.stdout
 
-    base = run("as-is")
-    return {"chain": chain,
-            "arms": {a: decompose(base, run(a)) for a in ARMS if a != "as-is"}}
+    raw = {a: run(a) for a in ARMS}
+    base = interface_terms(raw["as-is"], chain)
+    return {"chain": chain, "mode": mode, "nsplit": nsplit, "tile_width": width,
+            # The exact command line for each arm, and the arm the STREAM
+            # declares -- so a reader can check the analysis describes the run it
+            # claims to, without the raw bytes.
+            "arms_runtime": {a: {"argv": argv_of(a)[1:],
+                                 "declared_rho_profile": _declared_arm(raw[a])}
+                             for a in ARMS},
+            "arms": {a: decompose(base, interface_terms(raw[a], chain))
+                     for a in ARMS if a != "as-is"}}
+
+
+def _declared_arm(stream: str) -> str:
+    """The arm the STREAM says it is, read back from its own header."""
+    for ln in stream.splitlines():
+        if ln.startswith("G33N STREAM_BEGIN"):
+            return ln.split()[-1]
+    return "?"
 
 
 def report(driver: str, nsplit: int) -> None:

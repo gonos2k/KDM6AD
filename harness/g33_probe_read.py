@@ -219,12 +219,14 @@ def compare(a: dict, b: dict, kind: str) -> None:
     _expect(ka == kb, f"streams carry different records ({len(ka ^ kb)} differ)")
 
 
-#: What every member of one probe chain must agree on. `dtcld` is the axis and
-#: `nsplit`/`delt` move with it, exactly as the pairwise `refinement` contract
-#: says -- this is that contract applied across a whole bundle rather than to two
-#: streams (owner §8.4).
-CHAIN_INVARIANT = ("schema", "precision", "source_precision", "fixture",
-                   "algorithm", "mode", "loops", "ntile", "tiles", "rho_profile")
+#: What VARIES along a refinement chain: the axis and the two ways of writing it.
+CHAIN_VARY = frozenset({"dtcld", "nsplit", "delt"})
+
+#: Everything else must be identical -- COMPUTED from IDENTITY, not listed (owner
+#: P1-11.4). The listed form was the same shape that let the pairwise comparison
+#: fail open: a field added to the header did not join it. Deriving it means a new
+#: field is an invariant by default here too.
+CHAIN_INVARIANT = tuple(f for f in IDENTITY if f not in CHAIN_VARY)
 
 
 def require_probe_chain(runs: dict) -> None:

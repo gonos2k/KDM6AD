@@ -312,3 +312,34 @@ def test_the_tile_width_comes_from_the_FIXTURE_not_a_constant():
     three columns wide would fail the driver's tile-sum check."""
     assert xp.fixture_width("g33_fixture_multisubcycle_v1") == 3
     assert xp._argv(Path("d"), 3, "rezero", "uniform", 7)[-2:] == ["7", "uniform"]
+
+
+# ---- owner P0-2 / P1-11.5: the bundle analysis inherits the bundle's run ------
+
+def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE():
+    """Hardcoded `rezero` and tile `3` meant a --mode carry bundle shipped a
+    metric_trajectory.json silently generated under rezero, inside a manifest
+    whose members were carry; and a fixture that is not three columns wide failed
+    the driver's tile-sum check (owner P0-2)."""
+    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
+    assert "_driver_analyses(tmp, exe, nsplits, mode, width)" in src
+    assert "mtj.analysis(str(exe), n, mode=mode, width=width)" in src
+
+
+def test_the_metric_analysis_records_the_run_it_describes():
+    """argv per arm, and the arm each STREAM declares back — so a reader can
+    check the analysis describes the run it claims to."""
+    src = (ROOT.parent / "harness/g33_metric_trajectory.py").read_text()
+    for f in ('"mode": mode', '"tile_width": width', '"arms_runtime"',
+              '"declared_rho_profile"'):
+        assert f in src
+
+
+def test_a_repeated_nsplit_is_refused_at_the_COMMAND_LINE():
+    """Both members write one filename, the second overwrites the first, and the
+    published directory holds one — so the manifest's duplicate check never sees
+    it (owner P1-11.5)."""
+    with pytest.raises(SystemExit, match="repeats"):
+        xp.produce(Path("/tmp/should-not-exist"),
+                   fixture="g33_fixture_multisubcycle_v1", algo="legacy",
+                   nsplits=(3, 3, 6), mode="rezero", nflux=False, module=MOD)
