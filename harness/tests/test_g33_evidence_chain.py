@@ -157,3 +157,49 @@ def test_the_real_registry_parses_and_its_pins_hold():
     artifact is `unavailable` and this asserts the parse alone."""
     assert len(ec.claims()) >= 10
     assert ec.check() == 0
+
+
+# ---- owner §4 / §8.2: arm streams and the analyzer digest -------------------
+
+def test_an_arm_stream_the_manifest_declares_is_followed(world):
+    """The multi-arm decomposition is computed from six raw runs. Previously
+    they existed only inside the analysis function, so the chain stopped at a
+    derived JSON and nothing downstream could re-derive the table (owner §4)."""
+    bundle, write = world
+    arm = b"G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep uniform\n"
+    (bundle / "n3.rezero.uniform.txt").write_bytes(arm)
+    write({"members": [], "findings": [],
+           "analyses": [{"file": "n3.rezero.uniform.txt", "analysis": "arm_stream",
+                         "arm": "uniform", "sha256": _sha(arm)}]})
+    assert ec.check() == 0
+    (bundle / "n3.rezero.uniform.txt").write_bytes(b"tampered\n")
+    assert ec.check() == 1, "a tampered arm stream must fail"
+
+
+def test_a_missing_arm_stream_fails(world):
+    bundle, write = world
+    arm = b"G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep x2\n"
+    (bundle / "n3.rezero.x2.txt").write_bytes(arm)
+    write({"members": [], "findings": [],
+           "analyses": [{"file": "n3.rezero.x2.txt", "analysis": "arm_stream",
+                         "arm": "x2", "sha256": _sha(arm)}]})
+    (bundle / "n3.rezero.x2.txt").unlink()
+    assert ec.check() == 1
+
+
+def test_a_CHANGED_analyzer_is_reported_but_does_not_fail(world):
+    """The analyzer digest was recorded and never checked (owner §8.2). It is
+    followed now — but reported rather than failed: the analysis JSON is still
+    the artifact the claim cites, and the source moving on is ordinary. What the
+    report means is that re-running would not necessarily reproduce it."""
+    bundle, write = world
+    body = b'{"x": 1}\n'
+    (bundle / "a.json").write_bytes(body)
+    write({"members": [], "findings": [],
+           "analyses": [{"file": "a.json", "analysis": "matched_closure",
+                         "sha256": _sha(body),
+                         "analyzer": "harness/g33_matched_closure.py",
+                         "analyzer_sha256": "0" * 64}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-CHANGED" in states
+    assert ec.check() == 0, "a moved-on analyzer is information, not corruption"

@@ -121,9 +121,23 @@ if [ "$DUMP" = 1 ]; then
     # compile from an identical path, different ones cannot collide.
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" >/dev/null
-    OVLSHA=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -c1-16)
-    MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"
-    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC"
+    OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
+    MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL:0:16}.F"
+    # VERIFY BEFORE REUSING (owner §13 P1). The path is a 16-hex TRUNCATION of a
+    # 256-bit digest, in a shared temp dir that survives between builds, and a
+    # file already there becomes the compiler's input -- so a collision, a stale
+    # file from an interrupted build, or a concurrent build would compile a
+    # source other than the overlay just generated, under provenance claiming
+    # otherwise.
+    if [ -e "$MODULE_SRC" ] &&
+       [ "$(shasum -a 256 "$MODULE_SRC" | cut -d' ' -f1)" != "$OVLFULL" ]; then
+        echo "BUILD REFUSED: $MODULE_SRC holds content other than the overlay"
+        echo "  just generated ($OVLFULL). The path is a 16-hex truncation, so"
+        echo "  this is a collision or a stale file. Remove it deliberately."
+        exit 1
+    fi
+    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"  # atomic: a concurrent build
+    mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"        # never sees a partial file
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi

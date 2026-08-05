@@ -133,13 +133,28 @@ def members_of(manifest: Path) -> list[dict]:
                               else "MISMATCH")})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
     # from an analysis -- so a chain that stopped at the raw stream stopped one
-    # step short of the number being cited.
+    # step short of the number being cited. This includes the ARM STREAMS, which
+    # the manifest records with analysis == "arm_stream": those are the raw runs
+    # the multi-arm decomposition was computed from, and without them the chain
+    # stopped at a derived JSON (owner §4).
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
                     "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
+        # The ANALYZER the manifest names, by digest. It was recorded and never
+        # checked, so an analyzer could change under a published analysis with
+        # nothing reporting it (owner §8.2). Absent is reported, not failed: the
+        # analyzer lives in the repo, and an OLD bundle legitimately names a
+        # path that a later refactor moved.
+        if an.get("analyzer") and an.get("analyzer_sha256"):
+            src = REPO / an["analyzer"]
+            out.append({
+                "file": an["analyzer"],
+                "state": ("analyzer-absent" if not src.is_file() else
+                          "matches" if sha256(src) == an["analyzer_sha256"]
+                          else "ANALYZER-CHANGED")})
     return out
 
 
@@ -219,6 +234,12 @@ def check() -> int:
             # two the same made a bundle whose raw streams and analyses had all
             # been deleted pass `--check` cleanly.
             for m in a["members"]:
+                # An analyzer that has changed since the bundle was published is
+                # REPORTED, not failed: the analysis JSON is still the artifact
+                # the claim cites, and the source moving on is ordinary. What it
+                # means is that re-running would not necessarily reproduce it.
+                if m["state"] in ("ANALYZER-CHANGED", "analyzer-absent"):
+                    continue
                 if m["state"] == "MISMATCH":
                     bad.append(f"{r['id']}: {a['path']} -> {m['file']} does not "
                                f"match the digest the manifest recorded")

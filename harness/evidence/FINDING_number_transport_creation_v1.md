@@ -5,8 +5,8 @@
 | claim | status | grade | scope |
 |---|---|---|---|
 | `G33-NUMBER-001` | **active** | confirmed | module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1 |
-| `G33-NUMBER-002` | **active** | conditional | SELECTED cap-unbound, mstep==1 calls on g33_fixture_multisubcycle_v1 at f32, legacy. The mass control is qr (main chain) while the largest number row is ni (ice chain), so this is not yet a matched-call contrast. |
-| `G33-NUMBER-004` | **withdrawn → G33-NUMBER-002** | — | Not a matched control: mass is qr on the main chain over 1-3 calls, the largest number row is ni on the ice chain over 95 (owner S5.2). |
+| `G33-NUMBER-002` | **superseded → G33-NUMBER-003** | — | The 6-14% range came from an UNMATCHED contrast, which this claim's own scope already named: the mass control was qr (main chain) while the largest number row was ni (ice chain), so the number and the control it was read against came from different sedimentation sub-cycles. It was also restricted to SELECTED cap-unbound, mstep==1 calls. G33-NUMBER-003 runs the matched contrast on both arms and reports it per row -- main/nr 15.0036/13.3377/11.8402%, and ice/ni +6.2789/+7.0584% once the cap fix makes the ice chain measurable at all -- so the aggregate range is replaced by figures whose control is on the same chain as the row. What the fraction is a fraction OF is separately addressed by G33-MAGNITUDE-002. |
+| `G33-NUMBER-004` | **withdrawn → G33-NUMBER-003** | — | Not a matched control: mass is qr on the main chain over 1-3 calls, the largest number row is ni on the ice chain over 95 (owner S5.2). REPOINTED. This pointed at G33-NUMBER-002, which carries the IDENTICAL weakness by its own scope -- so a claim withdrawn for lacking a matched control was superseded by another claim lacking one. G33-NUMBER-003 is the one that actually supplies it, on both arms and per row. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

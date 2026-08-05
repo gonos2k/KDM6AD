@@ -7,6 +7,7 @@ These tests hold the replacement to that: fail-closed at every stage, and visibl
 under the destination only after everything succeeded.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -316,14 +317,58 @@ def test_the_tile_width_comes_from_the_FIXTURE_not_a_constant():
 
 # ---- owner P0-2 / P1-11.5: the bundle analysis inherits the bundle's run ------
 
-def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE():
+def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
+                                                                  monkeypatch):
     """Hardcoded `rezero` and tile `3` meant a --mode carry bundle shipped a
     metric_trajectory.json silently generated under rezero, inside a manifest
     whose members were carry; and a fixture that is not three columns wide failed
-    the driver's tile-sum check (owner P0-2)."""
-    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
-    assert "_driver_analyses(tmp, exe, nsplits, mode, width)" in src
-    assert "mtj.analysis(str(exe), n, mode=mode, width=width)" in src
+    the driver's tile-sum check (owner P0-2).
+
+    Asserted BEHAVIOURALLY: the first version grepped for a literal call string
+    and broke the moment two keyword arguments were added — the same brittleness
+    as matching prose by substring. What matters is what `_driver_analyses`
+    PASSES, so that is what is captured."""
+    seen = {}
+
+    def fake(exe, n, chain="main", *, mode, width, baseline_stream=None,
+             keep=None):
+        seen.update(exe=exe, n=n, mode=mode, width=width,
+                    baseline=baseline_stream)
+        if keep is not None:
+            keep["as-is"] = "x"
+        return {"arms": {}}
+
+    monkeypatch.setattr(xp.mtj, "analysis", fake)
+    (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
+    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5)
+    assert seen["mode"] == "carry", "the bundle's mode must be inherited"
+    assert seen["width"] == 5, "the fixture width must be inherited"
+    assert seen["baseline"] == "member-bytes\n", \
+        "the baseline must be the bundle's stored member, not a re-run"
+
+
+def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
+        tmp_path, monkeypatch):
+    """The other half, and the half where the defect actually lived.
+
+    The test above calls `_driver_analyses` directly, so it proves that function
+    forwards what it is given — and would still pass if `produce()` went back to
+    calling it with a hardcoded `"rezero", 3`. That producer boundary is exactly
+    where P0-2 was: a --mode carry bundle shipped a rezero analysis. Replacing
+    the original source-grep with the isolated test alone DROPPED this coverage.
+    """
+    _fake(monkeypatch)
+    seen = {}
+    monkeypatch.setattr(xp, "_driver_analyses",
+                        lambda out, exe, ns, mode, width: seen.update(
+                            mode=mode, width=width) or [])
+    monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
+    xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
+               algo="legacy", nsplits=(3, 6), mode="carry", nflux=True,
+               module=MOD)
+    assert seen == {"mode": "carry", "width": 5}, (
+        "produce() must hand the analysis the bundle's OWN mode and fixture "
+        f"width, got {seen}")
 
 
 def test_the_metric_analysis_records_the_run_it_describes():
@@ -343,3 +388,72 @@ def test_a_repeated_nsplit_is_refused_at_the_COMMAND_LINE():
         xp.produce(Path("/tmp/should-not-exist"),
                    fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                    nsplits=(3, 3, 6), mode="rezero", nflux=False, module=MOD)
+
+
+# ---- owner §8.1 / §16-6: the finding's analysis list is CHECKED against code --
+
+FINDING = ROOT / "evidence" / "FINDING_bundle_analyses_v1.md"
+
+
+def test_the_finding_lists_every_analysis_the_code_registers():
+    """The finding said "three analyses" and named three while the registry had
+    grown to five plus a bundle-level one — a document describing a superseded
+    implementation, which the digest pin and the status stamp both pass.
+
+    This is the cheapest useful prose-to-code check: the names in the finding's
+    generated block must be exactly the names the producer registers. It does not
+    verify the prose is *right*, only that it is not describing code that no
+    longer exists — which is the failure that actually keeps happening.
+    """
+    block = re.search(r"<!-- analyses:.*?-->(.*?)<!-- /analyses -->",
+                      FINDING.read_text(), re.S)
+    assert block, "the generated analyses block is missing"
+    listed = set(re.findall(r"^\| `([a-z_]+)` \|", block.group(1), re.M))
+    registered = set(xp.ANALYSES) | {"metric_trajectory"}
+    assert listed == registered, (
+        f"finding lists {sorted(listed)}, code registers {sorted(registered)}")
+
+
+def test_the_bundle_level_analysis_is_named_as_such():
+    """`metric_trajectory` re-runs the driver under six arms; it is not a
+    per-member stream analysis and the finding must not imply it is."""
+    block = re.search(r"<!-- analyses:.*?-->(.*?)<!-- /analyses -->",
+                      FINDING.read_text(), re.S).group(1)
+    row = next(l for l in block.splitlines() if "`metric_trajectory`" in l)
+    assert "bundle" in row and "per member" not in row
+
+
+def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
+                                                                 monkeypatch):
+    """`nsplits` is walked six times -- the duplicate check, the member loop, the
+    analyses, the arm streams. A generator is exhausted by the first walk and
+    every later one sees nothing, so the bundle publishes with zero members, no
+    error, and a manifest that looks complete. It is materialised on entry."""
+    seen = {}
+
+    def fake_build(workdir, *a, **k):
+        workdir.mkdir(parents=True, exist_ok=True)
+        exe = workdir / "g33_refine_driver"
+        exe.touch()
+        return exe
+
+    def fake_members(exe, out, nsplits, mode, **k):
+        seen["n"] = list(nsplits)
+        raise SystemExit("stop after the member loop")
+
+    monkeypatch.setattr(xp, "build", fake_build)
+    monkeypatch.setattr(xp, "members", fake_members)
+    with pytest.raises(SystemExit):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(n for n in (3, 6, 12)),
+                   mode="rezero", nflux=False, module=tmp_path / "m.F")
+    assert seen["n"] == [3, 6, 12], \
+        "the member loop saw an exhausted generator"
+
+
+def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
+    """Materialising must not cost the duplicate check its input."""
+    with pytest.raises(SystemExit, match="repeats"):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(n for n in (3, 6, 6)),
+                   mode="rezero", nflux=False, module=tmp_path / "m.F")

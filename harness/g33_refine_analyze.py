@@ -68,20 +68,29 @@ def _expect(cond, msg, path):
 
 
 def read(path: Path, *, nsplit=None) -> dict:
+    """One member from a file."""
+    return read_text(path.read_text(), nsplit=nsplit, label=str(path))
+
+
+def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
     """One member, or raise.
 
     Every check corresponds to a way a truncated, duplicated or mislabelled stream
     would otherwise read as a valid result -- always in the flattering direction,
     since a member missing records shows a SMALLER error (§2).
+
+    Takes text rather than a path because the G33R and G33N records live in ONE
+    driver stream, so an analysis holding that stream reads both without
+    round-tripping a temporary file (owner §16-3).
     """
-    lines = [ln.strip() for ln in path.read_text().splitlines() if ln.strip()]
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     begins = [ln for ln in lines if ln.startswith("G33R BEGIN")]
     ends = [ln for ln in lines if _END.match(ln)]
-    _expect(len(begins) == 1, f"expected exactly 1 BEGIN, found {len(begins)}", path)
+    _expect(len(begins) == 1, f"expected exactly 1 BEGIN, found {len(begins)}", label)
     _expect(len(ends) == 1, f"expected exactly 1 END, found {len(ends)} "
-                            "(a truncated run has none)", path)
+                            "(a truncated run has none)", label)
     m = _BEGIN.match(begins[0])
-    _expect(m, f"unparseable BEGIN: {begins[0]!r}", path)
+    _expect(m, f"unparseable BEGIN: {begins[0]!r}", label)
     got_n, mode, algo = int(m.group(1)), m.group(2), m.group(3)
     # delt/loops/dtcld are what the KERNEL actually used. Recording them makes the
     # dtcld design rule checkable from the output instead of recomputed from delt
@@ -90,12 +99,12 @@ def read(path: Path, *, nsplit=None) -> dict:
     if nsplit is not None:
         _expect(got_n == nsplit,
                 f"BEGIN says nsplit={got_n}, filename says {nsplit} "
-                "(a member analysed under the wrong step)", path)
+                "(a member analysed under the wrong step)", label)
 
     bi, ei = lines.index(begins[0]), lines.index(ends[0])
-    _expect(bi < ei, "END precedes BEGIN", path)
+    _expect(bi < ei, "END precedes BEGIN", label)
     _expect(not [ln for ln in lines[:bi] + lines[ei + 1:] if ln.startswith("G33R")],
-            "G33R records outside BEGIN..END", path)
+            "G33R records outside BEGIN..END", label)
 
     out, seen = {}, set()
     for ln in lines[bi + 1:ei]:
@@ -111,14 +120,14 @@ def read(path: Path, *, nsplit=None) -> dict:
             nm, i, k, b = m.groups()
             key = ("forcing", nm, int(i), int(k))
         else:
-            raise RefineError(f"{path}: unrecognised G33R record: {ln!r}")
+            raise RefineError(f"{label}: unrecognised G33R record: {ln!r}")
         _expect(key not in seen,
                 f"duplicate record {key} — a second value would silently "
-                "overwrite the first", path)
+                "overwrite the first", label)
         seen.add(key)
         v = f32(int(b, 16))
         _expect(v == v and abs(v) != float("inf"),
-                f"non-finite value at {key}", path)
+                f"non-finite value at {key}", label)
         out[key] = v
 
     fo = [k for k in out if k[0] == "forcing"]
@@ -128,14 +137,14 @@ def read(path: Path, *, nsplit=None) -> dict:
     fields = {k[1] for k in st}
     _expect(fields == set(STATE_FIELDS),
             f"state field set is {sorted(fields)}, expected {sorted(STATE_FIELDS)}",
-            path)
+            label)
     cells = {(k[2], k[3]) for k in st}
     _expect(len(st) == len(STATE_FIELDS) * len(cells),
             f"state records {len(st)} != {len(STATE_FIELDS)} fields x "
-            f"{len(cells)} cells — the grid is ragged", path)
+            f"{len(cells)} cells — the grid is ragged", label)
     cols = {k[2] for k in pr}
     _expect(len(pr) == 3 * len(cols),
-            f"prec records {len(pr)} != 3 species x {len(cols)} columns", path)
+            f"prec records {len(pr)} != 3 species x {len(cols)} columns", label)
     # rho/delz are optional so streams from before they were emitted still parse,
     # but if either is present BOTH must be complete -- a half-populated forcing
     # set would silently drop columns from a physical budget.
@@ -148,24 +157,24 @@ def read(path: Path, *, nsplit=None) -> dict:
         # not emit it.
         _expect(("rho" in names) == ("delz" in names),
                 f"forcing carries {sorted(names)}: rho and delz are the rho*dz "
-                f"measure and must be present together", path)
+                f"measure and must be present together", label)
         for nm in names:
             got = {(k[2], k[3]) for k in fo if k[1] == nm}
             _expect(got == cells,
                     f"forcing `{nm}` covers {len(got)} cells, state covers "
-                    f"{len(cells)}", path)
+                    f"{len(cells)}", label)
     if init:
         # Counting records lets a member with the right NUMBER of wrong cells
         # through, and the initial state is what every budget is measured from.
         _expect({k[1:] for k in init} == {k[1:] for k in st},
                 "initial state covers different (field, col, k) than the final "
-                "state", path)
+                "state", label)
     # Every column must carry the same levels: a ragged column silently shortens
     # a column integral.
     per_col = {c: {k for cc, k in cells if cc == c} for c, _ in cells}
     _expect(len({tuple(sorted(v)) for v in per_col.values()}) == 1,
             f"columns carry different level sets: "
-            f"{ {c: sorted(v) for c, v in per_col.items()} }", path)
+            f"{ {c: sorted(v) for c, v in per_col.items()} }", label)
     # Precipitation is three species over exactly the state's columns -- and
     # ABSENT is a state the stream must declare, not one it falls into. Guarding
     # this on `if pr` let a stream with no PREC at all through, because the older
@@ -174,7 +183,7 @@ def read(path: Path, *, nsplit=None) -> dict:
     _expect({(k[1], k[2]) for k in pr} == want,
             f"prec covers {len(pr)} of the {len(want)} (species, column) pairs the "
             f"state requires; a stream without precipitation is not a refinement "
-            f"member", path)
+            f"member", label)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo
@@ -701,7 +710,8 @@ def outflow_split(run: dict, c: int, ks) -> dict:
             "D_share": (w - p) / w if w else float("nan")}
 
 
-def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
+def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator",
+            sink=None) -> dict:
     """residual = (H_end - H_start) + H carried out by precipitation, per column.
 
     Zero with no external forcing. The two ledgers differ ONLY in `h_cell` and
@@ -725,8 +735,12 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
         kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
             run[("forcing", "pii", c, ks[-1])] else ks[0]
         h_start = H("initial")
+        col_sink = (sink or {}).get(c)
         d = {"dH": H("state") - h_start,
-             "H_precip_out": h_precip_out(run, c, kbot, ks, basis),
+             "H_precip_out": h_precip_out(run, c, kbot, ks, basis, col_sink),
+             # What the charge was applied TO, so a reader can see the mass
+             # behind the energy without re-deriving the budget.
+             "water_out": _water_out(run, c, ks, basis),
              "H_start": h_start}
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
@@ -744,7 +758,7 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
         # value would overstate the comparison (owner P0-4).
         band = []
         for k in ks:
-            alt = h_precip_out(run, c, k, ks)
+            alt = h_precip_out(run, c, k, ks, basis, col_sink)
             band.append((d["dH"] + alt) / abs(h_start) if h_start else float("nan"))
         d["relative_band"] = (min(band), max(band))
         out[c] = d
@@ -806,21 +820,40 @@ def _ice_fraction(run, c) -> float:
     return (run[("prec", 2, c)] + run[("prec", 3, c)]) / tot if tot else 0.0
 
 
-def _precip_consistent(run, c, kbot, ks, basis="operator") -> float:
-    """Departing water carries liquid or ice enthalpy at the bottom-level T."""
+def _precip_consistent(run, c, kbot, ks, basis="operator", sink=None) -> float:
+    """Water leaving the column carries liquid or ice enthalpy out with it.
+
+    With `sink` -- the interfaces where the cap DESTROYED water, from
+    `g33_cap_interface.cap_sink()` -- the charge is split (owner §16-4). Water
+    destroyed at an internal interface never reached the surface, so charging it
+    at the bottom-level temperature and the surface phase fraction is wrong on
+    both counts. Each destroyed parcel is charged at ITS OWN level and in the
+    phase of the kernel array whose cap destroyed it.
+
+    An EMPTY sink is exactly the previous behaviour -- the whole column loss
+    charged at the bottom -- so the two are comparable rather than swapped.
+    """
+    w = _water_out(run, c, ks, basis)
     _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
     f = _ice_fraction(run, c)
-    return _water_out(run, c, ks, basis) * ((1.0 - f) * hl + f * hi)
+    h_surface = (1.0 - f) * hl + f * hi
+    destroyed = internal = 0.0
+    for k_dep, _k_arr, mass, phase in sink or ():
+        _, _, hl_k, hi_k = _enthalpies(_t(run, "initial", c, k_dep))
+        internal += mass * (hi_k if phase == "ice" else hl_k)
+        destroyed += mass
+    # What crossed the surface is the column loss MINUS what never got there.
+    return (w - destroyed) * h_surface + internal
 
 
-def enthalpy_ledger(run: dict, basis: str = "operator") -> dict:
+def enthalpy_ledger(run: dict, basis: str = "operator", sink=None) -> dict:
     """Residual against CONSISTENT thermodynamics (§8.2).
 
     Approximate — dry-air mixing ratios against moist rho, precipitation flux at
     the bottom level — but identically so for every leg, so residuals COMPARE even
     where an absolute value would not.
     """
-    return _ledger(run, _h_consistent, _precip_consistent, basis)
+    return _ledger(run, _h_consistent, _precip_consistent, basis, sink)
 
 
 # The code's own thermodynamics (module_mp_kdm6.F): cpmcal F:818, xlcal F:819,
@@ -850,13 +883,15 @@ def _h_code(run, cls, c, k) -> float:
     return cpm * (t - T0C) + xl * qv - xlf * sum(run[(cls, f, c, k)] for f in ICE)
 
 
-def _precip_code(run, c, kbot, ks, basis="operator") -> float:
+def _precip_code(run, c, kbot, ks, basis="operator", sink=None) -> float:
     """Sedimentation removes mass with no temperature change, so departing ice
     carries -xlf out and departing rain carries nothing -- the same convention the
     code's own updates imply. Departing water from the budget, not the diagnostic
     (see `_water_out`)."""
     _, _, xlf = _code_coeffs(_t(run, "state", c, kbot),
                              run[("state", "qv", c, kbot)])
+    # `sink` is accepted and ignored: this ledger charges departing ice -xlf
+    # whatever level it left from, so the split has nothing to move.
     return _water_out(run, c, ks, basis) * _ice_fraction(run, c) * -xlf
 
 

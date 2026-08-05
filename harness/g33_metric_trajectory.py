@@ -81,16 +81,21 @@ def interface_terms(stream: str, chain: str = "main") -> dict:
                     top = call["topout"].get((lp, n, col, chain, 0))
                     if top is None:
                         continue
-                    own = {0: top[1]}
+                    own, inflow = {0: top[1]}, {}
                     for j in ks[1:]:
                         cap = call["capin"].get((lp, n, col, chain, j))
                         if cap:
-                            own[j] = cap[2]
+                            own[j], inflow[j] = cap[2], cap[3]
                     for j in ks[1:]:
                         if (j - 1) not in own:
                             continue
-                        rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = (
-                            rho[j] - rho[j - 1], dz[j - 1], own[j - 1])
+                        rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = {
+                            "drho": rho[j] - rho[j - 1],
+                            "dz_up": dz[j - 1], "dn_out": own[j - 1],
+                            # the ARRIVAL side, so the number-cap term can be
+                            # computed rather than assumed zero (owner §5)
+                            "rho_lo": rho[j], "dz_lo": dz[j],
+                            "dn_in": inflow.get(j)}
     return rows
 
 
@@ -114,9 +119,34 @@ def decompose(base: dict, arm: dict) -> dict:
                                   f"{len(b)}) — the arm changed the sub-step "
                                   f"schedule, so interfaces do not correspond"}
             continue
-        metric = sum(rows[k][0] * rows[k][1] * b[k][2] for k in rows)
-        actual = sum(dr * dz * dn for dr, dz, dn in rows.values())
-        baseline = sum(dr * dz * dn for dr, dz, dn in b.values())
+        metric = sum(rows[k]["drho"] * rows[k]["dz_up"] * b[k]["dn_out"]
+                     for k in rows)
+        actual = sum(r["drho"] * r["dz_up"] * r["dn_out"] for r in rows.values())
+        baseline = sum(r["drho"] * r["dz_up"] * r["dn_out"] for r in b.values())
+        # THE THIRD TERM (owner §5). The complete interface residual is
+        #     R_full = rho_lo*dz_lo*dn_in - rho_up*dz_up*dn_out
+        # which splits EXACTLY as
+        #     R_measure = (rho_lo - rho_up)*dz_up*dn_out      measure mismatch
+        #     R_ncap    = rho_lo*(dz_lo*dn_in - dz_up*dn_out) arrival mismatch
+        #
+        # NOTE which "metric" is which. `metric` above is the COUNTERFACTUAL --
+        # this arm's density gap against the BASELINE's transfers -- and belongs
+        # to the metric/trajectory split. R_measure uses this arm's OWN
+        # transfers, and that is `actual`. So the interface identity is
+        #     actual + numcap == full
+        # and NOT metric + numcap; conflating the two mixes a counterfactual with
+        # a measurement.
+        #
+        # The measure form alone equals the full residual only when the number
+        # cap never binds. That was ASSUMED for the conservative ice arms and is
+        # now computed: a nonzero term means the split is incomplete and the row
+        # must not be read as measure-only.
+        numcap = sum(r["rho_lo"] * (r["dz_lo"] * r["dn_in"]
+                                    - r["dz_up"] * r["dn_out"])
+                     for r in rows.values() if r["dn_in"] is not None)
+        full = sum(r["rho_lo"] * r["dz_lo"] * r["dn_in"]
+                   - (r["rho_lo"] - r["drho"]) * r["dz_up"] * r["dn_out"]
+                   for r in rows.values() if r["dn_in"] is not None)
         out[col] = {
             "comparable": True, "interfaces": len(rows),
             "baseline": baseline, "metric": metric, "actual": actual,
@@ -131,12 +161,19 @@ def decompose(base: dict, arm: dict) -> dict:
             # `inverted` -- and make a 1% departure read as 0.5%.
             "trajectory_over_metric": (abs((actual - metric) / metric)
                                        if metric else None),
+            "number_cap_term": numcap,
+            "full_interface_residual": full,
+            # metric-only is a CONCLUSION, not an assumption: it holds when the
+            # number cap contributes nothing at this arm's interfaces.
+            "measure_only": abs(numcap) <= 1e-9 * max(abs(actual), 1e-300),
         }
     return out
 
 
 def analysis(driver: str, nsplit: int, chain: str = "main", *,
-             mode: str = "rezero", width: int = 3) -> dict:
+             mode: str = "rezero", width: int = 3,
+             baseline_stream: str | None = None,
+             keep: dict | None = None) -> dict:
     """Re-run the driver under every arm and decompose each against `as-is`.
 
     `mode` and `width` are arguments, not constants (owner P0-2). Hardcoded, a
@@ -145,17 +182,47 @@ def analysis(driver: str, nsplit: int, chain: str = "main", *,
     wide failed the driver's tile-sum check. The values a bundle actually used
     are recorded beside the result so a reader can see which run this describes.
     """
+    # Validate the supplied baseline FIRST: it costs nothing and a wrong one
+    # would otherwise be discovered after five driver runs.
+    if baseline_stream is not None:
+        got = _declared_arm(baseline_stream)
+        if got != "as-is":
+            raise SystemExit(
+                f"the supplied baseline stream declares arm {got!r}, not 'as-is'")
+
     argv_of = lambda arm: [driver, str(nsplit), mode, str(width), arm]
 
     def run(arm):
         r = subprocess.run(argv_of(arm), capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit(f"{arm}: driver exited {r.returncode}\n{r.stderr[-2000:]}")
+        got = _declared_arm(r.stdout)
+        # REQUESTED must equal DECLARED (owner §13.1). Recording both and leaving
+        # a reviewer to notice the mismatch in the JSON is not a check: a stream
+        # that ran the wrong forcing would still be published, and every number
+        # derived from it would be attributed to an arm it is not.
+        if got != arm:
+            raise SystemExit(
+                f"asked the driver for arm {arm!r} and its stream declares "
+                f"{got!r} — refusing to attribute this run to {arm!r}")
         return r.stdout
 
-    raw = {a: run(a) for a in ARMS}
+    # `baseline_stream` lets the caller supply the bundle's OWN stored as-is
+    # member instead of a fresh run of it (owner §4). Re-running the baseline
+    # meant the decomposition compared against a stream nobody kept, so the
+    # published members and the analysis baseline were only *probably* the same.
+    raw = {a: run(a) for a in ARMS if a != "as-is" or baseline_stream is None}
+    if baseline_stream is not None:
+        raw["as-is"] = baseline_stream
     base = interface_terms(raw["as-is"], chain)
+    # Hand the raw streams back so the caller can PRESERVE them beside the
+    # analysis. Without this the six runs existed only inside this function and
+    # the evidence chain stopped at a derived JSON (owner §4).
+    if keep is not None:
+        keep.update(raw)
     return {"chain": chain, "mode": mode, "nsplit": nsplit, "tile_width": width,
+            "baseline": ("bundle member" if baseline_stream is not None
+                         else "re-run"),
             # The exact command line for each arm, and the arm the STREAM
             # declares -- so a reader can check the analysis describes the run it
             # claims to, without the raw bytes.

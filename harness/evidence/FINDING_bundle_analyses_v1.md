@@ -15,14 +15,23 @@ So "the run is pinned" stopped one step short of the number being cited.
 
 ## What the bundle carries now
 
-Every `--nflux` member gets three analyses, written into the bundle and digested
-into its manifest:
+Every `--nflux` member gets these analyses, written into the bundle and digested
+into its manifest. **The list is machine-checked against the code** — an earlier
+version of this finding said "three analyses" and named three, while the registry
+had grown to five plus a bundle-level one, so the document described a
+superseded implementation (owner §8.1):
 
-| analysis | what it records |
-|---|---|
-| `matched_closure` | the mass/number closure, per row, with the per-call control |
-| `cap_interface` | departure vs arrival per interface, and the cap's share |
-| `extension_protocol` | what the stream actually carried, as the strict parser saw it |
+<!-- analyses: generated list, checked by test_the_finding_lists_every_analysis -->
+| analysis | scope | what it records |
+|---|---|---|
+| `matched_closure` | per member | the mass/number closure, per row, with the per-call control |
+| `cap_interface` | per member | departure vs arrival per interface, and the cap's share |
+| `extension_protocol` | per member | what the stream carried, as the strict parser saw it |
+| `dual_ledger` | per member | both column measures, operator and physical |
+| `defect_magnitude` | per member | the residual against every denominator that means something |
+| `internal_cap_enthalpy` | per member | both enthalpy ledgers: the internal cap sink charged where it died, beside the previous all-at-the-surface charge |
+| `metric_trajectory` | bundle | the metric/trajectory split across the density arms |
+<!-- /analyses -->
 
 Each entry pins **two** digests — the output and its **analyzer**:
 
@@ -76,11 +85,37 @@ sits at 1e-10–1e-12 — not because nothing happens there. The tool now report
 count beside the magnitude, and a test requires the main-chain count to be
 non-zero, so the withdrawn phrasing cannot come back.
 
+## The multi-arm chain reaches the raw runs
+
+`metric_trajectory` re-runs the driver under six density arms. Those runs used to
+exist only inside the analysis function, so the chain stopped at a derived JSON
+and nothing downstream could re-derive the table or check which forcing produced
+it (owner §4). Three changes:
+
+- **the baseline is the bundle's own stored `as-is` member**, not a fresh run of
+  it. Re-running meant the decomposition compared against a stream nobody kept,
+  so the published member and the analysis baseline were only *probably*
+  identical — an evidence contract has to check, not assume. The analysis records
+  which it used (`"baseline": "bundle member"`).
+- **every perturbation arm's raw stream is written into the bundle and digested**,
+  with its exact `runtime_argv`, as `analysis: "arm_stream"`.
+- **requested arm must equal declared arm.** The stream's own header is read back
+  and compared; a mismatch refuses the run rather than recording both and leaving
+  a reviewer to notice. A stream that ran the wrong forcing would otherwise be
+  published with every number attributed to an arm it is not.
+
+`g33_evidence_chain.py` follows the arm streams, and now also the **analyzer**
+digest the manifest records — which was written and never checked. An analyzer
+that has moved on is *reported*, not failed: the analysis JSON is still the
+artifact the claim cites, and what the report means is that re-running would not
+necessarily reproduce it.
+
 ## Limits
 
-- **Three analyses, not all of them.** The water budget, the enthalpy ledger and
-  the refinement orders still run outside any bundle. These three were chosen
-  because they read the extension records the `--nflux` arm exists to produce.
+- **Not every analysis is in the bundle.** The refinement orders still run
+  outside one. The list above is machine-checked against the producer's registry,
+  so it cannot silently fall behind again — but it says nothing about which
+  analyses *ought* to be there.
 - **Only `--nflux` bundles.** The analyses all read extension records, so running
   them on a plain bundle would put empty tables in the manifest and make an
   uninstrumented bundle look analysed.

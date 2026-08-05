@@ -59,6 +59,35 @@ doubles it, and a ±10% **magnitude** shift barely moves it.
 the trajectory term — here 0.59–5.95%. Unlike `inverted` on main column 3, **no
 ice column changes its sub-step schedule**, so every row is comparable.
 
+## The number-cap term, computed rather than assumed
+
+This finding originally rested on `ice/qi`'s mass control closing plus the arm
+ratios. A passing **mass** control does not establish that the **number** cap is
+inactive, and if it were active the metric-only reading would be incomplete
+(owner §5). The complete interface residual splits exactly as
+
+    R_full    = ρ_lo·Δz_lo·dn_in − ρ_up·Δz_up·dn_out
+    R_measure = (ρ_lo − ρ_up)·Δz_up·dn_out          measure mismatch
+    R_ncap    = ρ_lo·(Δz_lo·dn_in − Δz_up·dn_out)   arrival mismatch
+
+Computed for every conservative ice arm: **`R_ncap` is exactly zero** at every
+interface, so `R_full = R_measure` and the metric reading is complete. That is
+now a conclusion the analysis reports (`measure_only: true`), not an assumption
+the prose made.
+
+**The gate is not vacuous.** On the *legacy* ice chain the number cap binds at 39
+of 108 interfaces, and there `R_ncap` does not merely appear — it **dominates**:
+
+| arm | `R_measure` | `R_ncap` |
+|---|---|---|
+| `uniform` col 3 | 0.00e+00 | **−5.33e+08** |
+| `inverted` col 3 | −1.81e+07 | **−5.25e+08** |
+| `x2` col 3 | +3.63e+07 | **−5.51e+08** |
+
+`measure_only` reports `false` on all ten legacy-ice rows. That is the
+quantitative reason legacy ice is excluded, where before the finding could only
+say its mass control failed.
+
 ## What this changes
 
 The scope line "MAIN chain only … so ice rows are excluded" was a limitation of

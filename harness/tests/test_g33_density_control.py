@@ -316,3 +316,60 @@ def test_inverted_DOES_change_one_substep_count_and_that_is_recorded(streams):
     assert len(diff) == 1, f"more schedule changes than recorded: {diff}"
     (call, loop, chain, col), (was, now) = next(iter(diff.items()))
     assert (chain, col, was, now) == ("main", 3, 3, 2)
+
+
+# ---- owner §13 P1: the perturbation must stay physical, and change ONE thing --
+
+RHO_MODES = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
+
+
+def test_every_arm_leaves_the_density_POSITIVE(driver):
+    """`inverted` is `2*mean - den` and `offset-` is `den - 0.10*mean`, so a
+    sufficiently stratified column can be driven to zero or below. The kernel
+    divides by density throughout, so a non-positive value does not fail -- it
+    produces Inf/NaN that would be read as an arm's result.
+
+    Margin is REPORTED, not just asserted: `g33_fixture_boundary_mapping_v1`'s
+    `x2` arm reaches 0.12 against an as-is minimum of 0.45, so the guard is
+    within a factor of ~4 of firing on a fixture that already exists.
+    """
+    for mode in RHO_MODES:
+        r = subprocess.run([str(driver), "12", "rezero", "3", mode],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, f"{mode}: {r.stderr[-400:]}"
+        pre = nt.calls(r.stdout)[0]["outer_pre_sed"]
+        lo = min(v["rho"] for v in pre.values())
+        assert lo > 0.0, f"{mode} produced a non-positive density: {lo}"
+
+
+def test_the_driver_REFUSES_rather_than_emitting_a_non_positive_density(driver):
+    """The guard is fail-closed. No current fixture trips it -- max/mean is at
+    most 1.057 against `inverted`'s threshold of 2.0 -- so this pins the
+    CONTRACT: an arm that cannot be built physically must not produce a stream
+    at all. Without the guard the run continues and the NaNs look like data."""
+    src = (ROOT / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    guard = src[src.index("case (5); den(i,k)"):]
+    assert "error stop 3" in guard, "the arm builder has no positivity refusal"
+    assert ".not. (den(i,k) > 0.0)" in guard, \
+        "a `< 0` test would pass NaN through, which is the case that matters"
+
+
+def test_the_arms_change_the_DENSITY_AND_NOTHING_ELSE(driver):
+    """A single-variable intervention is only single-variable if it is measured
+    to be. The claim rests on density being the one thing that moved, so every
+    other forcing the stream carries is compared bit-for-bit against `as-is`."""
+    base = subprocess.run([str(driver), "12", "rezero", "3", "as-is"],
+                          capture_output=True, text=True).stdout
+
+    def forcing(stream, name):
+        return [l for l in stream.splitlines()
+                if l.startswith(f"G33R FORCING {name} ")]
+
+    for mode in RHO_MODES[1:]:
+        arm = subprocess.run([str(driver), "12", "rezero", "3", mode],
+                             capture_output=True, text=True).stdout
+        for name in ("delz", "pii"):
+            assert forcing(arm, name) == forcing(base, name), \
+                f"{mode} moved {name}, so it is not a density-only intervention"
+        assert forcing(arm, "rho") != forcing(base, "rho"), \
+            f"{mode} left the density unchanged, so it intervened on nothing"

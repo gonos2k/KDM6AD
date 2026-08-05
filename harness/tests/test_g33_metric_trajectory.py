@@ -26,14 +26,19 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture(scope="module")
-def result(tmp_path_factory):
+def driver(tmp_path_factory):
     out = tmp_path_factory.mktemp("mt") / "build"
     b = subprocess.run(["bash", str(BUILD), str(out),
                         "--fixture=g33_fixture_multisubcycle_v1",
                         "--algo=legacy", "--nflux"],
                        capture_output=True, text=True, cwd=REPO)
     assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
-    return mt.analysis(str(out / "g33_refine_driver"), 12)
+    return str(out / "g33_refine_driver")
+
+
+@pytest.fixture(scope="module")
+def result(driver):
+    return mt.analysis(driver, 12)
 
 
 def test_the_metric_term_is_EXACTLY_the_profile_scaling(result):
@@ -131,12 +136,12 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
     under a key identical across them, compared only the last, and missed a real
     mstep 3->2 change. Same class of mistake, one layer up."""
     # (call, loop, substep, upper, lower) -> (drho, dz, dn)
-    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0),
-                (2, 1, 1, 0, 1): (0.2, 150.0, 3.0)}}
-    arm = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-               (2, 1, 1, 0, 1): (0.2, 150.0, 2.0),
-               (2, 1, 2, 0, 1): (0.2, 150.0, 3.0)}}
+    cell = lambda dn: {"drho": 0.2, "dz_up": 150.0, "dn_out": dn,
+                       "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
+    base = {1: {(1, 1, 1, 0, 1): cell(1.0), (1, 1, 2, 0, 1): cell(2.0),
+                (2, 1, 1, 0, 1): cell(3.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): cell(1.0), (2, 1, 1, 0, 1): cell(2.0),
+               (2, 1, 2, 0, 1): cell(3.0)}}
     assert len(base[1]) == len(arm[1]), "the counts must match for this to bite"
     got = mt.decompose(base, arm)[1]
     assert got["comparable"] is False
@@ -145,10 +150,10 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
 
 def test_an_identical_universe_decomposes():
     """The control for the test above."""
-    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0)}}
-    arm = {1: {(1, 1, 1, 0, 1): (0.4, 150.0, 1.5),
-               (1, 1, 2, 0, 1): (0.4, 150.0, 2.5)}}
+    mk = lambda drho, dn: {"drho": drho, "dz_up": 150.0, "dn_out": dn,
+                           "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
+    base = {1: {(1, 1, 1, 0, 1): mk(0.2, 1.0), (1, 1, 2, 0, 1): mk(0.2, 2.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): mk(0.4, 1.5), (1, 1, 2, 0, 1): mk(0.4, 2.5)}}
     got = mt.decompose(base, arm)[1]
     assert got["comparable"] is True
     # metric uses the ARM's drho with the BASELINE's dn
@@ -160,3 +165,82 @@ def test_interface_terms_are_keyed_by_identity(result):
     src = (ROOT / "g33_metric_trajectory.py").read_text()
     assert "rows.setdefault(col, {})[(i, lp, n, j - 1, j)]" in src
     assert "zip(rows, b)" not in src
+
+
+# ---- owner §4 / §13.1: the chain reaches the raw runs, and the arm is enforced
+
+def test_a_stream_declaring_the_WRONG_arm_is_refused(tmp_path):
+    """Recording requested-vs-declared in the JSON and leaving a reviewer to
+    notice the mismatch is not a check: a stream that ran the wrong forcing
+    would still be published, and every number derived from it attributed to an
+    arm it is not (owner §13.1)."""
+    fake = tmp_path / "drv"
+    fake.write_text(
+        "#!/bin/sh\n"
+        "echo 'G33N STREAM_BEGIN 4 1 1 1 legacy rezero "
+        "mstep,mstepi,nflux,xfer,capin,topout as-is'\n"
+        "echo 'G33N STREAM_END'\n")
+    fake.chmod(0o755)
+    with pytest.raises(SystemExit, match="declares 'as-is'|refusing to attribute"):
+        mt.analysis(str(fake), 1)
+
+
+def test_a_supplied_baseline_declaring_the_wrong_arm_is_refused(tmp_path):
+    with pytest.raises(SystemExit, match="baseline stream declares"):
+        mt.analysis("unused", 1, baseline_stream=(
+            "G33N STREAM_BEGIN 4 1 1 1 legacy rezero "
+            "mstep,mstepi,nflux,xfer,capin,topout uniform\nG33N STREAM_END\n"))
+
+
+def test_the_baseline_can_be_the_BUNDLE_MEMBER_rather_than_a_re_run(result):
+    """Re-running the baseline meant the decomposition compared against a stream
+    nobody kept — the published member and the analysis baseline were only
+    *probably* identical. The producer now passes the stored member."""
+    assert result["baseline"] == "re-run", "this fixture calls analysis() directly"
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    assert "baseline_stream=member.read_text()" in src
+
+
+def test_the_raw_arm_streams_are_handed_back_for_preservation(driver):
+    """Without `keep`, the six runs existed only inside the function and the
+    evidence chain stopped at a derived JSON."""
+    keep = {}
+    mt.analysis(driver, 12, keep=keep)
+    assert set(keep) == set(mt.ARMS)
+    assert all(t.startswith("G33N STREAM_BEGIN") for t in keep.values())
+
+
+# ---- owner §5: the THIRD term, computed rather than assumed zero -------------
+
+def test_the_three_terms_are_an_exact_identity(result):
+    """R_full = R_metric + R_number_cap, per interface, by construction:
+
+        R_full    = rho_lo*dz_lo*dn_in - rho_up*dz_up*dn_out
+        R_measure = (rho_lo - rho_up)*dz_up*dn_out
+        R_ncap    = rho_lo*(dz_lo*dn_in - dz_up*dn_out)
+
+    The measure term here uses THIS ARM's transfers, which is `actual`. `metric`
+    is the counterfactual — this arm's density gap against the BASELINE's
+    transfers — and belongs to the metric/trajectory split. Asserting
+    `metric + numcap == full` mixes a counterfactual with a measurement, which is
+    the error the first version of this test made.
+
+    If this is not an identity the split is a model, not a decomposition."""
+    for cols in result["arms"].values():
+        for r in cols.values():
+            if not r["comparable"]:
+                continue
+            assert r["actual"] + r["number_cap_term"] == pytest.approx(
+                r["full_interface_residual"], rel=1e-9, abs=1e-6)
+
+
+def test_metric_only_is_a_CONCLUSION_not_an_assumption(result):
+    """The metric form equals the full residual only where the number cap
+    contributes nothing. That was assumed; it is now computed and reported as
+    `measure_only`, so a row where the cap binds cannot be read as
+    measure-only."""
+    for cols in result["arms"].values():
+        for r in cols.values():
+            if not r["comparable"]:
+                continue
+            assert "measure_only" in r and "number_cap_term" in r

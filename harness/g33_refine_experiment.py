@@ -196,6 +196,10 @@ ANALYSES = {
     "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
     "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    # Water destroyed INSIDE the column is not precipitation (owner §16-4).
+    # Both ledgers, so the correction is visible rather than a silent swap.
+    "internal_cap_enthalpy": ("g33_cap_interface",
+                              lambda s: ci.enthalpy_with_cap_sink(s)),
 }
 
 
@@ -220,22 +224,41 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                      width: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
-    `mode` and `width` come from the bundle being produced (owner P0-2). With
-    them hardcoded, a `--mode carry` bundle shipped a `rezero` analysis inside a
-    manifest whose members were `carry`, and a fixture that is not three columns
-    wide failed the driver's tile-sum check.
+    `mode` and `width` come from the bundle being produced (owner P0-2).
+
+    Two further contracts (owner §4):
+
+      * the BASELINE is the bundle's own stored `as-is` member, not a fresh run
+        of it. Re-running meant the decomposition compared against a stream
+        nobody kept, so the published member and the analysis baseline were only
+        *probably* identical -- an evidence contract has to check, not assume;
+      * every perturbation arm's RAW STREAM is written into the bundle and
+        digested. Previously the six runs existed only inside the analysis
+        function and the chain stopped at a derived JSON, so nothing downstream
+        could re-derive the table or check which forcing produced it.
     """
     made = []
     for n in nsplits:
+        member = out / f"n{n}.{mode}.txt"
+        keep: dict = {}
         path = out / f"n{n}.{mode}.metric_trajectory.json"
         path.write_text(rm.json.dumps(
-            mtj.analysis(str(exe), n, mode=mode, width=width),
+            mtj.analysis(str(exe), n, mode=mode, width=width,
+                         baseline_stream=member.read_text(), keep=keep),
             indent=2, sort_keys=True) + "\n")
         made.append({"file": path.name, "nsplit": n,
                      "analysis": "metric_trajectory",
                      "sha256": rm.sha256(path),
                      "analyzer": "harness/g33_metric_trajectory.py",
                      "analyzer_sha256": rm.sha256(HERE / "g33_metric_trajectory.py")})
+        for arm, text in sorted(keep.items()):
+            if arm == "as-is":
+                continue                      # already published as the member
+            ap = out / f"n{n}.{mode}.{arm.replace('+', 'plus').replace('-', 'minus')}.txt"
+            ap.write_text(text)
+            made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
+                         "arm": arm, "sha256": rm.sha256(ap),
+                         "runtime_argv": [str(n), mode, str(width), arm]})
     return made
 
 
@@ -264,6 +287,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             nflux: bool, module: Path, findings=(), arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # MATERIALISE FIRST (owner §13 P1). `nsplits` is walked six times below --
+    # the duplicate check, the member loop, the analyses, the arm streams. A
+    # generator is exhausted by the first walk, and every later one sees an
+    # empty sequence: the bundle publishes with zero members, no error, and a
+    # manifest that looks complete. Nothing downstream can tell that apart from
+    # a bundle that was asked for nothing.
+    nsplits = tuple(nsplits)
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
     # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
@@ -292,8 +322,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # duplicate check: both members write the same filename, the second
     # overwrites the first, and the published directory holds one (owner
     # P1-11.5). Refused where it is still visible.
-    if len(list(nsplits)) != len(set(nsplits)):
-        dup = sorted({n for n in nsplits if list(nsplits).count(n) > 1})
+    if len(nsplits) != len(set(nsplits)):
+        dup = sorted({n for n in nsplits if nsplits.count(n) > 1})
         raise SystemExit(
             f"--nsplit repeats {dup}: both members would write one filename and "
             f"the second would overwrite the first, so the bundle would silently "
