@@ -44,6 +44,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_matched_closure as mc  # noqa: E402
@@ -51,13 +52,34 @@ import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 
 
-def interfaces(stream: str, basis: str = "operator") -> dict:
-    """{(chain, col): {...}} -- the interface terms, and how often the cap bound.
+class Interface(NamedTuple):
+    """One interface, one chain, one sub-step, with the column measure applied.
+
+    `mass_term` is signed the way the closure residual is: NEGATIVE where the
+    interface destroys. The cap BINDS where departure differs from arrival --
+    the P0-4b post-update-reservoir gap, `dq(i,k+1)` written twice.
+    """
+    chain: str
+    col: int
+    k_up: int              # departure level
+    k_lo: int              # arrival level
+    mass_term: float       # w_lo*dq_in - w_up*dq_out
+    number_created: float  # the same, for number
+    number_predicted: float  # what the measure mismatch alone predicts
+    number_out: float      # number leaving the upper cell, column measure
+    mass_differs: bool
+    number_differs: bool
+
+
+def _walk(stream: str, basis: str):
+    """Every interface in the stream, once.
+
+    `interfaces()` sums these and `cap_sink()` keeps them apart; both used to
+    carry their own copy of this nested loop.
 
     Requires `capin` and `topout`; the strict parser has already checked their
     exact universes, so a level or sub-step missing here is not possible.
     """
-    acc = {}
     for call in nt.calls(stream):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
@@ -69,34 +91,13 @@ def interfaces(stream: str, basis: str = "operator") -> dict:
                     ms = call["mstep"].get((lp, chain, col))
                     if ms is None:
                         continue
-                    d = acc.setdefault((chain, col), {
-                        "mass_interface_term": 0.0,
-                        # NET is what the closure residual compares to; GROSS and
-                        # MAX say how much interface activity produced it. A
-                        # column whose positive and negative terms cancel has a
-                        # small net and is not quiet (owner P1-11.2).
-                        "sum_abs_interface_term": 0.0,
-                        "max_abs_interface_term": 0.0,
-                        "number_created": 0.0,
-                        "number_predicted": 0.0, "interfaces": 0,
-                        # NAMED for what is compared (owner §10). `cap_bound`
-                        # counted only the MASS departure/arrival mismatch, so a
-                        # figure quoted as "cap-bound interfaces" silently meant
-                        # the mass cap and not the number one. And exact
-                        # inequality counts a roundoff-scale difference as a
-                        # binding cap, which is why every count is reported
-                        # beside its magnitude.
-                        "mass_departure_arrival_differ": 0,
-                        "number_departure_arrival_differ": 0,
-                        "either_differ": 0,
-                        "number_transported": 0.0})
                     for n in range(1, ms + 1):
-                        # own(j) and inflow(j), assembled from the two families
+                        # TOPOUT gives the top cell's removal, which CAPIN cannot:
+                        # that cell is updated outside the interior loop.
                         top = call["topout"].get((lp, n, col, chain, 0))
                         if top is None:
                             continue
-                        own = {0: top}
-                        inflow = {}
+                        own, inflow = {0: top}, {}
                         for j in ks[1:]:
                             cap = call["capin"].get((lp, n, col, chain, j))
                             if cap is None:
@@ -108,27 +109,54 @@ def interfaces(stream: str, basis: str = "operator") -> dict:
                                 continue
                             dq_out, dn_out = own[j - 1]
                             dq_in, dn_in = inflow[j]
-                            wa, wb = rho[j] * dz[j], rho[j - 1] * dz[j - 1]
-                            term = wa * dq_in - wb * dq_out
-                            d["mass_interface_term"] += term
-                            d["sum_abs_interface_term"] += abs(term)
-                            d["max_abs_interface_term"] = max(
-                                d["max_abs_interface_term"], abs(term))
-                            d["number_created"] += wa * dn_in - wb * dn_out
-                            # what the measure mismatch alone predicts, on this
-                            # same interface and the same emitted transfer
-                            d["number_predicted"] += ((rho[j] - rho[j - 1])
-                                                      * dz[j - 1] * dn_out)
-                            # Total number crossing ANY interface, in column
-                            # measure -- the throughput the residual should be
-                            # compared against (owner §11). The surface transfer
-                            # alone is what R/F already uses.
-                            d["number_transported"] += abs(wb * dn_out)
-                            d["interfaces"] += 1
-                            md, nd = dq_out != dq_in, dn_out != dn_in
-                            d["mass_departure_arrival_differ"] += int(md)
-                            d["number_departure_arrival_differ"] += int(nd)
-                            d["either_differ"] += int(md or nd)
+                            w_up, w_lo = rho[j - 1] * dz[j - 1], rho[j] * dz[j]
+                            yield Interface(
+                                chain, col, j - 1, j,
+                                w_lo * dq_in - w_up * dq_out,
+                                w_lo * dn_in - w_up * dn_out,
+                                (rho[j] - rho[j - 1]) * dz[j - 1] * dn_out,
+                                w_up * dn_out,
+                                dq_out != dq_in, dn_out != dn_in)
+
+
+def _totals() -> dict:
+    """A column's running interface totals.
+
+    NET is what the closure residual compares to; GROSS and MAX say how much
+    interface activity produced it, because a column whose positive and negative
+    terms cancel has a small net and is not quiet (owner P1-11.2).
+
+    The two `differ` counts are NAMED for what they compare (owner §10). One
+    `cap_bound` count silently meant the MASS cap only. Every count is reported
+    beside its magnitude, because exact inequality makes a roundoff-scale
+    difference and a residual-dominating one the same event.
+
+    `number_transported` is the throughput the residual should be compared
+    against (owner §11); R/F uses the surface transfer alone.
+    """
+    return {"mass_interface_term": 0.0, "sum_abs_interface_term": 0.0,
+            "max_abs_interface_term": 0.0, "number_created": 0.0,
+            "number_predicted": 0.0, "number_transported": 0.0,
+            "interfaces": 0, "mass_departure_arrival_differ": 0,
+            "number_departure_arrival_differ": 0, "either_differ": 0}
+
+
+def interfaces(stream: str, basis: str = "operator") -> dict:
+    """{(chain, col): totals} -- the interface terms, and how often the cap bound."""
+    acc = {}
+    for f in _walk(stream, basis):
+        d = acc.setdefault((f.chain, f.col), _totals())
+        d["mass_interface_term"] += f.mass_term
+        d["sum_abs_interface_term"] += abs(f.mass_term)
+        d["max_abs_interface_term"] = max(d["max_abs_interface_term"],
+                                          abs(f.mass_term))
+        d["number_created"] += f.number_created
+        d["number_predicted"] += f.number_predicted
+        d["number_transported"] += abs(f.number_out)
+        d["interfaces"] += 1
+        d["mass_departure_arrival_differ"] += int(f.mass_differs)
+        d["number_departure_arrival_differ"] += int(f.number_differs)
+        d["either_differ"] += int(f.mass_differs or f.number_differs)
     return acc
 
 
@@ -149,47 +177,19 @@ UNINSTRUMENTED_SPECIES = ("qs", "qg")
 def cap_sink(stream: str, basis: str = "operator") -> dict:
     """{col: [(k_departure, k_arrival, destroyed_mass, phase), ...]}
 
-    The mass each interface DESTROYS, with the levels it was destroyed between
-    and the phase it was in. Positive = destroyed.
+    Destroyed mass is the interface term negated: what left the upper cell and
+    did not arrive below.
 
     This is the direct measurement of what `outflow_split()` can only infer.
-    That function computes `D_internal = water_out - P_bottom` from the fallout
-    DIAGNOSTIC, and on this fixture returns a NEGATIVE internal destruction in
-    all three columns -- impossible for a cap, which can only destroy, and a
-    restatement of the diagnostic's own departure from the budget rather than a
-    measurement of the sink (owner §16-4).
+    That computes `D_internal = water_out - P_bottom` from the fallout
+    DIAGNOSTIC and returns a NEGATIVE internal destruction in all three columns
+    -- impossible for a cap, which only destroys (owner §16-4).
     """
     out = {}
-    for call in nt.calls(stream):
-        for lp in sorted(call["loops"]):
-            pre = call["outer_pre_sed"]
-            for col in sorted({c for l, c, _ in pre if l == lp}):
-                ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                rho = {k: mc._density(pre[(lp, col, k)], basis) for k in ks}
-                dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
-                for chain in ("main", "ice"):
-                    ms = call["mstep"].get((lp, chain, col))
-                    if ms is None:
-                        continue
-                    for n in range(1, ms + 1):
-                        top = call["topout"].get((lp, n, col, chain, 0))
-                        if top is None:
-                            continue
-                        own, inflow = {0: top}, {}
-                        for j in ks[1:]:
-                            cap = call["capin"].get((lp, n, col, chain, j))
-                            if cap is None:
-                                continue
-                            oq, iq, on, ino = cap
-                            own[j], inflow[j] = (oq, on), (iq, ino)
-                        for j in ks[1:]:
-                            if j not in inflow or (j - 1) not in own:
-                                continue
-                            d = (rho[j - 1] * dz[j - 1] * own[j - 1][0]
-                                 - rho[j] * dz[j] * inflow[j][0])
-                            if d:
-                                out.setdefault(col, []).append(
-                                    (j - 1, j, d, CHAIN_PHASE[chain]))
+    for f in _walk(stream, basis):
+        if f.mass_term:
+            out.setdefault(f.col, []).append(
+                (f.k_up, f.k_lo, -f.mass_term, CHAIN_PHASE[f.chain]))
     return out
 
 
@@ -203,9 +203,21 @@ def enthalpy_with_cap_sink(stream: str, basis: str = "operator") -> dict:
     run = ra.read_text(stream)
     if not run:
         return {}
-    return {"with_internal_cap_sink": ra.enthalpy_ledger(run, basis,
-                                                         cap_sink(stream, basis)),
-            "all_charged_at_surface": ra.enthalpy_ledger(run, basis),
+    sink = cap_sink(stream, basis)
+    split, surface = ra.enthalpy_ledger(run, basis, sink), ra.enthalpy_ledger(run, basis)
+    for col, d in split.items():
+        destroyed = sum(m for _, _, m, _ in sink.get(col, []))
+        d["cap_sink_mass"] = destroyed
+        d["cap_sink_share_of_column_loss"] = (destroyed / d["water_out"]
+                                              if d["water_out"] else None)
+        # How much of what the ledger called "precipitation out" never
+        # precipitated -- the difference between the two charges.
+        d["H_internal_cap_correction"] = (d["H_precip_out"]
+                                          - surface[col]["H_precip_out"])
+        # Only dqr and dqi carry a CAPIN anchor (see UNINSTRUMENTED_SPECIES).
+        d["cap_sink_is_lower_bound"] = True
+    return {"with_internal_cap_sink": split,
+            "all_charged_at_surface": surface,
             "instrumented_species": list(INSTRUMENTED_SPECIES),
             "uninstrumented_species": list(UNINSTRUMENTED_SPECIES),
             "note": "The sink is a LOWER BOUND: the kernel caps dqr/dqs/dqg/dqi "

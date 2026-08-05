@@ -64,18 +64,21 @@ def window_inventories(stream: str, nsplit: int | None = None) -> dict:
     endpoint" is a measurement rather than an assumption (owner §16-3).
     """
     run = ra.read_text(stream, nsplit=nsplit)
+
+    def inventory(cls, field, col, ks):
+        return sum(run[("forcing", "rho", col, k)]
+                   * run[("forcing", "delz", col, k)]
+                   * run[(cls, field, col, k)] for k in ks)
+
     cols = sorted({k[2] for k in run if k[0] == "state"})
     out = {}
     for field in ("nr", "ni", "qr", "qi"):
         for col in cols:
             ks = sorted(k[3] for k in run
                         if k[0] == "state" and k[1] == field and k[2] == col)
-            if not ks:
-                continue
-            w = lambda cls: sum(run[("forcing", "rho", col, k)]
-                                * run[("forcing", "delz", col, k)]
-                                * run[(cls, field, col, k)] for k in ks)
-            out[(field, col)] = (w("initial"), w("state"))
+            if ks:
+                out[(field, col)] = (inventory("initial", field, col, ks),
+                                     inventory("state", field, col, ks))
     return out
 
 

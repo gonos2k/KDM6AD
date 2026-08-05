@@ -44,6 +44,11 @@ def _ratio(num, den):
     return num / den if den else None
 
 
+def _close(a, b) -> bool:
+    return a is not None and b is not None and \
+        abs(a - b) <= 1e-6 * max(abs(a), abs(b), 1.0)
+
+
 def _endpoints_agree(seg: dict, win) -> bool | None:
     """Do the sedimentation-segment endpoints equal the window's?
 
@@ -52,10 +57,8 @@ def _endpoints_agree(seg: dict, win) -> bool | None:
     """
     if win is None:
         return None
-    close = lambda a, b: (a is not None and b is not None
-                          and abs(a - b) <= 1e-6 * max(abs(a), abs(b), 1.0))
-    return (close(seg["first_segment_pre_inventory"], win[0])
-            and close(seg["last_segment_post_inventory"], win[1]))
+    return (_close(seg["first_segment_pre_inventory"], win[0])
+            and _close(seg["last_segment_post_inventory"], win[1]))
 
 
 def _eps(d):

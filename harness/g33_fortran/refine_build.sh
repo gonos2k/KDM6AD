@@ -122,31 +122,22 @@ if [ "$DUMP" = 1 ]; then
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" >/dev/null
     OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
-    OVLSHA=${OVLFULL:0:16}
-    MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"
+    MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL:0:16}.F"
     # VERIFY BEFORE REUSING (owner §13 P1). The path is a 16-hex TRUNCATION of a
-    # 256-bit digest, and it lives in a shared temp directory that survives
-    # between builds. A pre-existing file there is reused as the compiler's input
-    # -- so a truncation collision, a stale file from an interrupted build, or a
-    # concurrent build writing the same name would silently compile a source
-    # other than the overlay just generated, under provenance claiming otherwise.
-    # Compare the FULL digest and refuse rather than overwrite.
-    if [ -e "$MODULE_SRC" ]; then
-        HAVE=$(shasum -a 256 "$MODULE_SRC" | cut -d' ' -f1)
-        if [ "$HAVE" != "$OVLFULL" ]; then
-            echo "BUILD REFUSED: $MODULE_SRC already exists with a different"
-            echo "  content than the overlay just generated."
-            echo "    on disk:  $HAVE"
-            echo "    overlay:  $OVLFULL"
-            echo "  The path is a 16-hex truncation, so this is a collision or a"
-            echo "  stale file. Remove it deliberately; do not overwrite blindly."
-            exit 1
-        fi
-    else
-        # Atomic: a concurrent build must never see a half-written source.
-        cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"
-        mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"
+    # 256-bit digest, in a shared temp dir that survives between builds, and a
+    # file already there becomes the compiler's input -- so a collision, a stale
+    # file from an interrupted build, or a concurrent build would compile a
+    # source other than the overlay just generated, under provenance claiming
+    # otherwise.
+    if [ -e "$MODULE_SRC" ] &&
+       [ "$(shasum -a 256 "$MODULE_SRC" | cut -d' ' -f1)" != "$OVLFULL" ]; then
+        echo "BUILD REFUSED: $MODULE_SRC holds content other than the overlay"
+        echo "  just generated ($OVLFULL). The path is a 16-hex truncation, so"
+        echo "  this is a collision or a stale file. Remove it deliberately."
+        exit 1
     fi
+    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"  # atomic: a concurrent build
+    mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"        # never sees a partial file
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi

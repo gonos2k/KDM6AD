@@ -297,9 +297,8 @@ def test_charging_the_sink_where_it_died_MOVES_the_enthalpy_residual(stream):
     real term, and it does NOT close the residual (it makes column 2 worse)."""
     import g33_refine_analyze as ra
 
-    run = ra.read_text(stream)
-    before = ra.enthalpy_ledger(run)
-    after = ra.enthalpy_ledger(run, sink=ci.cap_sink(stream))
+    a = ci.enthalpy_with_cap_sink(stream)
+    before, after = a["all_charged_at_surface"], a["with_internal_cap_sink"]
     assert after[1]["residual"] == pytest.approx(before[1]["residual"], rel=1e-6)
     for c, lo, hi in ((2, 0.45, 0.60), (3, 0.40, 0.55)):
         assert lo < after[c]["cap_sink_share_of_column_loss"] < hi

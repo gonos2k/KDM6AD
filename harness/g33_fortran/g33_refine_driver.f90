@@ -158,14 +158,11 @@ contains
           case (4); den(i,k) = den(i,k) + 0.10*rho_mean
           case (5); den(i,k) = den(i,k) - 0.10*rho_mean
           end select
-        end do
-        ! POSITIVITY (owner §13 P1). `inverted` is 2*mean - den and `offset-` is
-        ! den - 0.10*mean, so a sufficiently stratified column can be driven to
-        ! zero or below. The kernel divides by density throughout, so a
-        ! non-positive value does not fail -- it produces Inf/NaN that would be
-        ! read as an arm's result. Refuse instead: an arm that cannot be built is
-        ! not an arm whose numbers mean anything.
-        do k = 1, km
+          ! POSITIVITY (owner §13 P1). `inverted` is 2*mean - den and `offset-`
+          ! is den - 0.10*mean, so a sufficiently stratified column can be driven
+          ! to zero or below. The kernel divides by density throughout, so a
+          ! non-positive value does not fail -- it produces Inf/NaN that would be
+          ! read as an arm's result. Negated so NaN is refused too.
           if (.not. (den(i,k) > 0.0)) then
             write(*,'(A,I0,A,I0,A,I0,A,ES13.6)') &
               'G33 FATAL: rho_mode ', rho_mode, ' drove density non-positive '// &

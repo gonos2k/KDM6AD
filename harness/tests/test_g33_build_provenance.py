@@ -198,15 +198,15 @@ def test_the_overlay_is_compiled_from_a_CONTENT_ADDRESSED_path():
     """gfortran embeds each source's filename in the binary for backtraces, and
     -ffile-prefix-map does not reach that string, so an overlay written into the
     output directory gave the same instrumented build a different executable
-    digest in every run (owner §9.1)."""
+    digest in every run (owner §9.1).
+
+    The digest is taken in FULL and the path uses a truncation of it, so the
+    build can verify a reused path against the whole thing (owner §13 P1) --
+    see test_a_STALE_overlay_at_the_content_addressed_path_is_REFUSED, which
+    exercises the reuse end to end rather than by reading the script.
+    """
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    # The digest is taken in FULL and the path uses a truncation of it, so the
-    # build can verify a reused path against the whole thing (owner §13 P1) --
-    # see test_a_STALE_overlay_at_the_content_addressed_path_is_REFUSED, which
-    # exercises this end to end rather than by reading the script.
-    assert "OVLFULL=$(shasum -a 256" in script
-    assert "OVLSHA=${OVLFULL:0:16}" in script
-    assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-$OVLSHA.F"' in script
+    assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL:0:16}.F"' in script
 
 
 def test_identity_paths_are_normalised(build):
