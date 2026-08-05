@@ -184,14 +184,16 @@ claims:
       OPERATOR-LEVEL: this is causality under the current den*dz ledger, where
       den is MOIST density, and must NOT be promoted to physical dry-air
       column-number causality -- the physical measure is sum m_d,k n_k
-      (owner §10, G33-BASIS-002/003). MAIN chain only on
-      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass
-      control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so
-      ice rows are excluded. The perturbed profiles are constructed probes, not
+      (owner §10, G33-BASIS-002/003). MAIN chain on
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. LEGACY's ice chain is
+      excluded because its mass control fails in every arm (post-update inflow
+      cap, G33-ICE-CAP-001) -- a limitation of that cap, not of the mechanism:
+      G33-NUMBER-009 replicates the whole matrix on the ice chain using the
+      conservative variant, where the control closes. The perturbed profiles are constructed probes, not
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
     evidence: [FINDING_density_falsification_v1.md]
-    evidence_sha256: [FINDING_density_falsification_v1.md:9946c41bce94d71f]
+    evidence_sha256: [FINDING_density_falsification_v1.md:c809ba9c0d44d819]
 
   - id: G33-CHAIN-001
     text: >
@@ -454,6 +456,34 @@ claims:
       counterfactual is defined only where the sub-step schedule holds.
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:ac12ca577135379b]
+
+  - id: G33-NUMBER-009
+    text: >
+      The density matrix reproduces on the ICE chain, via the conservative
+      variant whose cap fix makes ice/qi's mass control close in all six arms.
+      ice/ni goes from +6.2789%/+7.0584% (as-is) to +0.0000% (uniform),
+      -7.0312%/-7.9297% (inverted, ratio -0.9882/-1.0223), +11.9123%/+13.2653%
+      (x2, ratio +2.0118/+1.9639), and barely moves under a +/-10% magnitude
+      offset (+0.9878/+1.0292, +1.0123/+0.9405). The metric/trajectory
+      decomposition is exact on ice too -- metric/base 0/-1/+2/+1 -- leaving a
+      trajectory term of 0.59-5.95%, and no ice column changes its sub-step
+      schedule so every row is comparable. This is an INDEPENDENT REPLICATION:
+      different sub-cycle (mstep_i), different species pair, different algorithm.
+      The earlier "MAIN chain only" scope was a limitation of the LEGACY CAP, not
+      of the mechanism.
+    status: active
+    grade: confirmed
+    basis: >
+      the same six arms with the ice mass control closing throughout, plus the
+      exact metric counterfactual
+    scope: >
+      g33_fixture_multisubcycle_v1, CONSERVATIVE variant, h = 25 s, ice columns 2
+      and 3 (column 1 carries no usable inventory). The conservative variant is
+      what makes the measurement possible and is NOT the reference; legacy's ice
+      chain remains unmeasurable for the post-update cap reason. Constructed
+      probes, and the trajectory term is measured but not apportioned.
+    evidence: [FINDING_ice_density_matrix_v1.md]
+    evidence_sha256: [FINDING_ice_density_matrix_v1.md:1b396158e755f68a]
 
   - id: G33-PRECIP-001
     text: >

@@ -26,7 +26,7 @@ Fixing the second factor is the correction; the first is not a fault to fix.
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-NUMBER-008` | **active** | confirmed | OPERATOR-LEVEL: this is causality under the current den*dz ledger, where den is MOIST density, and must NOT be promoted to physical dry-air column-number causality -- the physical measure is sum m_d,k n_k (owner §10, G33-BASIS-002/003). MAIN chain only on g33_fixture_multisubcycle_v1, legacy, h = 25 s. The ice chain's mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001), so ice rows are excluded. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
+| `G33-NUMBER-008` | **active** | confirmed | OPERATOR-LEVEL: this is causality under the current den*dz ledger, where den is MOIST density, and must NOT be promoted to physical dry-air column-number causality -- the physical measure is sum m_d,k n_k (owner §10, G33-BASIS-002/003). MAIN chain on g33_fixture_multisubcycle_v1, legacy, h = 25 s. LEGACY's ice chain is excluded because its mass control fails in every arm (post-update inflow cap, G33-ICE-CAP-001) -- a limitation of that cap, not of the mechanism: G33-NUMBER-009 replicates the whole matrix on the ice chain using the conservative variant, where the control closes. The perturbed profiles are constructed probes, not physical atmospheres; this establishes the cause, not the magnitude in a forecast. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
