@@ -488,3 +488,11 @@ def test_the_duplicate_nsplit_check_no_longer_depends_on_the_reader():
     src = (Path(__file__).resolve().parents[1] / "g33_refine_manifest.py").read_text()
     assert "if member_reader is None and len(ns) != len(set(ns)):" not in src
     assert "if len(ns) != len(set(ns)):" in src
+
+
+def test_the_chain_invariant_is_COMPUTED_from_IDENTITY():
+    """Listed, it fails open on the next schema change — the same shape the
+    pairwise comparison identity had before it was computed (owner P1-11.4)."""
+    assert set(pr.CHAIN_INVARIANT) == set(pr.IDENTITY) - set(pr.CHAIN_VARY)
+    assert pr.CHAIN_VARY == frozenset({"dtcld", "nsplit", "delt"})
+    assert "rho_profile" in pr.CHAIN_INVARIANT

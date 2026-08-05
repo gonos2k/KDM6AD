@@ -117,3 +117,46 @@ def test_magnitude_moves_the_residual_far_less_than_gradient_does(result):
     x2 = [abs(r["actual_over_baseline"] - 1.0)
           for r in result["arms"]["x2"].values() if r["comparable"]]
     assert max(offs) < 0.10 and min(x2) > 0.9
+
+
+# ---- owner P0-1: interfaces correspond by IDENTITY, not by count -------------
+
+def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
+    """The hole: `decompose` paired the two arms by list position whenever the
+    lengths matched. A baseline with mstep 2 then 1 and an arm with 1 then 2 have
+    the same total and describe different interfaces — element 2 of one call
+    would be paired against element 1 of another.
+
+    Not hypothetical: the immediately preceding density control merged calls
+    under a key identical across them, compared only the last, and missed a real
+    mstep 3->2 change. Same class of mistake, one layer up."""
+    # (call, loop, substep, upper, lower) -> (drho, dz, dn)
+    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
+                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0),
+                (2, 1, 1, 0, 1): (0.2, 150.0, 3.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
+               (2, 1, 1, 0, 1): (0.2, 150.0, 2.0),
+               (2, 1, 2, 0, 1): (0.2, 150.0, 3.0)}}
+    assert len(base[1]) == len(arm[1]), "the counts must match for this to bite"
+    got = mt.decompose(base, arm)[1]
+    assert got["comparable"] is False
+    assert "interface universes differ" in got["reason"]
+
+
+def test_an_identical_universe_decomposes():
+    """The control for the test above."""
+    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
+                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): (0.4, 150.0, 1.5),
+               (1, 1, 2, 0, 1): (0.4, 150.0, 2.5)}}
+    got = mt.decompose(base, arm)[1]
+    assert got["comparable"] is True
+    # metric uses the ARM's drho with the BASELINE's dn
+    assert got["metric"] == pytest.approx(0.4 * 150.0 * (1.0 + 2.0))
+
+
+def test_interface_terms_are_keyed_by_identity(result):
+    """A list cannot say which interface an entry is."""
+    src = (ROOT / "g33_metric_trajectory.py").read_text()
+    assert "rows.setdefault(col, {})[(i, lp, n, j - 1, j)]" in src
+    assert "zip(rows, b)" not in src

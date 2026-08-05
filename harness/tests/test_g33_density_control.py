@@ -183,13 +183,20 @@ def test_the_process_is_still_running_in_every_arm(streams):
 
 def test_flattening_the_density_removes_the_number_creation(streams):
     """The sharpest of the three: the prediction is an exact zero, not a
-    magnitude. What survives must be below the same gamma_n bound the mass
-    control is held to."""
+    magnitude.
+
+    What survives is compared against the CURRENT per-call control, via
+    `mc.control()`, rather than recomputing the superseded aggregate form
+    `control_tolerance(calls * 8, |surface_out|)` -- which is the pre-§6 shape:
+    a flat operation count that ignores mstep and K, and a scale of |F| alone
+    (owner P0-3). And the verdict is a SCREENING result, not a roundoff
+    certificate: the operation count is a floor and the capped, branching kernel
+    is not a straight-line summation."""
     base = _nr(streams["as-is"])
     for c, r in _nr(streams["uniform"]).items():
         assert abs(r["residual"]) < 1e-4 * abs(base[c]["residual"])
-        tol = mc.control_tolerance(r["calls"] * 8, abs(r["surface_out"]))
-        assert abs(r["residual"]) <= tol, f"col {c}: leftover is signal, not roundoff"
+        assert r["control"]["max_ratio"] <= 1.0, \
+            f"col {c}: leftover exceeds the per-call screening threshold"
 
 
 def test_inverting_the_density_flips_the_sign_of_the_creation(streams):

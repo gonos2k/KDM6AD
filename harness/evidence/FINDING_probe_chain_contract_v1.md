@@ -4,7 +4,7 @@
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-PROTOCOL-004` | **active** | confirmed | Cross-member within one bundle. Two separately published f64 bundles can still disagree -- that identity lives in a claim's artifacts pins. CHAIN_INVARIANT is enumerated rather than computed, because a chain has no single axis to subtract the way a pairwise comparison does; that is a real difference in strictness from the G33P comparison identity. |
+| `G33-PROTOCOL-004` | **active** | confirmed | Cross-member within one bundle. Two separately published f64 bundles can still disagree -- that identity lives in a claim's artifacts pins. CHAIN_INVARIANT is COMPUTED as IDENTITY minus {dtcld, nsplit, delt}, so a field already in IDENTITY is a chain invariant by default. It does NOT make the contract fail-closed against a new header field: IDENTITY is hand-written, so a field added to the G33P header and not to IDENTITY is invisible to this check and to the pairwise one alike. What the change removes is the per-chain omission, not the per-field one. It was first enumerated, on the argument that a chain has no axis to subtract; that argument was wrong -- dtcld IS the axis and nsplit/delt covary with it, exactly as the pairwise contract declares. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -68,8 +68,18 @@ not only in the driver.
 - **Cross-member, not cross-bundle.** Two separately published f64 bundles can
   still disagree about anything; the identity that would catch that lives in the
   claim's `artifacts` pins, not here.
-- The invariants are `CHAIN_INVARIANT`, a list. It is the same failure mode the
-  G33P comparison identity had before it was computed — a field added to the
-  header does not join it automatically. The comparison identity is computed
-  because it has an axis to subtract; a chain has no single axis to subtract, so
-  this one is enumerated and that is a real difference in strictness.
+- **`CHAIN_INVARIANT` is now COMPUTED**, `IDENTITY − {dtcld, nsplit, delt}`, so a
+  field already in `IDENTITY` is a chain invariant by default. This finding
+  originally recorded it as an enumerated list and argued that a chain "has no
+  single axis to subtract the way a pairwise comparison does". That argument was
+  wrong: a refinement chain does have an axis — `dtcld` — and `nsplit` and `delt`
+  are the same knob written differently, which is exactly the covariance the
+  pairwise contract already declares.
+- **This is not fail-closed against a NEW header field.** `IDENTITY` is itself a
+  hand-written tuple, so a field added to the G33P header and not to `IDENTITY`
+  is invisible to this check *and* to the pairwise comparison alike. Computing
+  the set removes the **per-chain** omission — forgetting to list a field that
+  `IDENTITY` already knows — and not the **per-field** one.
+  `FINDING_comparison_identity_v1.md` already stated exactly this limit for the
+  pairwise identity; the first version of this finding claimed the stronger
+  property for the same mechanism, which was an overstatement.

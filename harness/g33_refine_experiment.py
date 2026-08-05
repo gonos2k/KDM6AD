@@ -216,13 +216,21 @@ def _protocol(stream: str) -> dict:
             "columns": list(calls[0]["cols"]) if calls else None}
 
 
-def _driver_analyses(out: Path, exe: Path, nsplits) -> list:
-    """Analyses that re-run the driver under several arms, not one stream."""
+def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
+                     width: int) -> list:
+    """Analyses that re-run the driver under several arms, not one stream.
+
+    `mode` and `width` come from the bundle being produced (owner P0-2). With
+    them hardcoded, a `--mode carry` bundle shipped a `rezero` analysis inside a
+    manifest whose members were `carry`, and a fixture that is not three columns
+    wide failed the driver's tile-sum check.
+    """
     made = []
     for n in nsplits:
-        path = out / f"n{n}.metric_trajectory.json"
-        path.write_text(rm.json.dumps(mtj.analysis(str(exe), n), indent=2,
-                                      sort_keys=True) + "\n")
+        path = out / f"n{n}.{mode}.metric_trajectory.json"
+        path.write_text(rm.json.dumps(
+            mtj.analysis(str(exe), n, mode=mode, width=width),
+            indent=2, sort_keys=True) + "\n")
         made.append({"file": path.name, "nsplit": n,
                      "analysis": "metric_trajectory",
                      "sha256": rm.sha256(path),
@@ -280,6 +288,16 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             f"--rho-profile {rho_profile} needs --nflux (or a probe/f64 arm): "
             f"the plain G33R stream does not record the density arm, so the "
             f"bundle would be unidentifiable from its raw members.")
+    # A repeated nsplit on the COMMAND LINE never reaches the manifest's
+    # duplicate check: both members write the same filename, the second
+    # overwrites the first, and the published directory holds one (owner
+    # P1-11.5). Refused where it is still visible.
+    if len(list(nsplits)) != len(set(nsplits)):
+        dup = sorted({n for n in nsplits if list(nsplits).count(n) > 1})
+        raise SystemExit(
+            f"--nsplit repeats {dup}: both members would write one filename and "
+            f"the second would overwrite the first, so the bundle would silently "
+            f"contain fewer members than requested.")
     width = fixture_width(fixture)
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
@@ -323,7 +341,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # unperturbed arm: running it from a perturbed bundle would take that
         # arm as its own baseline.
         if nflux and rho_profile == "as-is":
-            man["analyses"] += _driver_analyses(tmp, exe, nsplits)
+            man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode, width)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.

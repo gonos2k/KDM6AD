@@ -79,8 +79,8 @@ def test_the_binding_count_is_reported_PER_CHAIN_with_its_magnitude(stream):
     assert a["by_chain"]["ice"]["mass_departure_arrival_differ"] == 39
     assert a["by_chain"]["main"]["mass_departure_arrival_differ"] > 0, \
         "'all of them in the ice chain' would make this zero"
-    assert a["by_chain"]["main"]["abs_interface_term"] < \
-        1e-6 * a["by_chain"]["ice"]["abs_interface_term"]
+    assert a["by_chain"]["main"]["sum_abs_interface_term"] < \
+        1e-6 * a["by_chain"]["ice"]["sum_abs_interface_term"]
 
 
 def test_the_topmost_interface_is_included(stream):
@@ -171,3 +171,33 @@ def test_the_MASS_and_NUMBER_caps_are_counted_separately(stream):
         "the main chain's number cap must not bind — that is why its result is clean"
     assert main["mass_departure_arrival_differ"] > 0
     assert a["either_differ"] >= a["mass_departure_arrival_differ"]
+
+
+def test_the_interface_term_is_reported_NET_and_GROSS(stream):
+    """abs(net-per-column) understates activity when positive and negative
+    interface terms cancel inside a column. On the main chain gross is ~3x net,
+    so the single figure was hiding real cancellation; on ice the two agree,
+    which says every term there has the same sign (owner P1-11.2)."""
+    c = ci.analysis(stream)["by_chain"]
+    for ch in ("main", "ice"):
+        assert c[ch]["sum_abs_interface_term"] >= abs(c[ch]["net_interface_term"])
+        assert c[ch]["max_abs_interface_term"] <= c[ch]["sum_abs_interface_term"]
+    assert c["main"]["sum_abs_interface_term"] > \
+        2 * abs(c["main"]["net_interface_term"]), "main should show cancellation"
+    assert c["ice"]["sum_abs_interface_term"] == \
+        pytest.approx(abs(c["ice"]["net_interface_term"]), rel=1e-9), \
+        "ice terms are single-signed"
+
+
+def test_the_throughput_follows_the_BASIS_it_is_divided_into(stream):
+    """`physical` mode computed R(rho_d) but divided by throughput(rho_m) — a
+    mixed-basis ratio (owner P1-11.1)."""
+    import g33_defect_magnitude as dm
+    op = ci.interfaces(stream, "operator")
+    ph = ci.interfaces(stream, "physical")
+    key = next(iter(op))
+    assert ph[key]["number_transported"] < op[key]["number_transported"], \
+        "rho_d < rho_m, so the dry throughput must be smaller"
+    # and the magnitude analysis threads it
+    src = (ROOT / "g33_defect_magnitude.py").read_text()
+    assert "ci.interfaces(stream, basis)" in src
