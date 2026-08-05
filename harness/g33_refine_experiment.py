@@ -220,22 +220,41 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                      width: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
-    `mode` and `width` come from the bundle being produced (owner P0-2). With
-    them hardcoded, a `--mode carry` bundle shipped a `rezero` analysis inside a
-    manifest whose members were `carry`, and a fixture that is not three columns
-    wide failed the driver's tile-sum check.
+    `mode` and `width` come from the bundle being produced (owner P0-2).
+
+    Two further contracts (owner §4):
+
+      * the BASELINE is the bundle's own stored `as-is` member, not a fresh run
+        of it. Re-running meant the decomposition compared against a stream
+        nobody kept, so the published member and the analysis baseline were only
+        *probably* identical -- an evidence contract has to check, not assume;
+      * every perturbation arm's RAW STREAM is written into the bundle and
+        digested. Previously the six runs existed only inside the analysis
+        function and the chain stopped at a derived JSON, so nothing downstream
+        could re-derive the table or check which forcing produced it.
     """
     made = []
     for n in nsplits:
+        member = out / f"n{n}.{mode}.txt"
+        keep: dict = {}
         path = out / f"n{n}.{mode}.metric_trajectory.json"
         path.write_text(rm.json.dumps(
-            mtj.analysis(str(exe), n, mode=mode, width=width),
+            mtj.analysis(str(exe), n, mode=mode, width=width,
+                         baseline_stream=member.read_text(), keep=keep),
             indent=2, sort_keys=True) + "\n")
         made.append({"file": path.name, "nsplit": n,
                      "analysis": "metric_trajectory",
                      "sha256": rm.sha256(path),
                      "analyzer": "harness/g33_metric_trajectory.py",
                      "analyzer_sha256": rm.sha256(HERE / "g33_metric_trajectory.py")})
+        for arm, text in sorted(keep.items()):
+            if arm == "as-is":
+                continue                      # already published as the member
+            ap = out / f"n{n}.{mode}.{arm.replace('+', 'plus').replace('-', 'minus')}.txt"
+            ap.write_text(text)
+            made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
+                         "arm": arm, "sha256": rm.sha256(ap),
+                         "runtime_argv": [str(n), mode, str(width), arm]})
     return made
 
 

@@ -26,14 +26,19 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture(scope="module")
-def result(tmp_path_factory):
+def driver(tmp_path_factory):
     out = tmp_path_factory.mktemp("mt") / "build"
     b = subprocess.run(["bash", str(BUILD), str(out),
                         "--fixture=g33_fixture_multisubcycle_v1",
                         "--algo=legacy", "--nflux"],
                        capture_output=True, text=True, cwd=REPO)
     assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
-    return mt.analysis(str(out / "g33_refine_driver"), 12)
+    return str(out / "g33_refine_driver")
+
+
+@pytest.fixture(scope="module")
+def result(driver):
+    return mt.analysis(driver, 12)
 
 
 def test_the_metric_term_is_EXACTLY_the_profile_scaling(result):
@@ -160,3 +165,46 @@ def test_interface_terms_are_keyed_by_identity(result):
     src = (ROOT / "g33_metric_trajectory.py").read_text()
     assert "rows.setdefault(col, {})[(i, lp, n, j - 1, j)]" in src
     assert "zip(rows, b)" not in src
+
+
+# ---- owner §4 / §13.1: the chain reaches the raw runs, and the arm is enforced
+
+def test_a_stream_declaring_the_WRONG_arm_is_refused(tmp_path):
+    """Recording requested-vs-declared in the JSON and leaving a reviewer to
+    notice the mismatch is not a check: a stream that ran the wrong forcing
+    would still be published, and every number derived from it attributed to an
+    arm it is not (owner §13.1)."""
+    fake = tmp_path / "drv"
+    fake.write_text(
+        "#!/bin/sh\n"
+        "echo 'G33N STREAM_BEGIN 4 1 1 1 legacy rezero "
+        "mstep,mstepi,nflux,xfer,capin,topout as-is'\n"
+        "echo 'G33N STREAM_END'\n")
+    fake.chmod(0o755)
+    with pytest.raises(SystemExit, match="declares 'as-is'|refusing to attribute"):
+        mt.analysis(str(fake), 1)
+
+
+def test_a_supplied_baseline_declaring_the_wrong_arm_is_refused(tmp_path):
+    with pytest.raises(SystemExit, match="baseline stream declares"):
+        mt.analysis("unused", 1, baseline_stream=(
+            "G33N STREAM_BEGIN 4 1 1 1 legacy rezero "
+            "mstep,mstepi,nflux,xfer,capin,topout uniform\nG33N STREAM_END\n"))
+
+
+def test_the_baseline_can_be_the_BUNDLE_MEMBER_rather_than_a_re_run(result):
+    """Re-running the baseline meant the decomposition compared against a stream
+    nobody kept — the published member and the analysis baseline were only
+    *probably* identical. The producer now passes the stored member."""
+    assert result["baseline"] == "re-run", "this fixture calls analysis() directly"
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    assert "baseline_stream=member.read_text()" in src
+
+
+def test_the_raw_arm_streams_are_handed_back_for_preservation(driver):
+    """Without `keep`, the six runs existed only inside the function and the
+    evidence chain stopped at a derived JSON."""
+    keep = {}
+    mt.analysis(driver, 12, keep=keep)
+    assert set(keep) == set(mt.ARMS)
+    assert all(t.startswith("G33N STREAM_BEGIN") for t in keep.values())

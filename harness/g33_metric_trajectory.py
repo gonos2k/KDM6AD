@@ -136,7 +136,9 @@ def decompose(base: dict, arm: dict) -> dict:
 
 
 def analysis(driver: str, nsplit: int, chain: str = "main", *,
-             mode: str = "rezero", width: int = 3) -> dict:
+             mode: str = "rezero", width: int = 3,
+             baseline_stream: str | None = None,
+             keep: dict | None = None) -> dict:
     """Re-run the driver under every arm and decompose each against `as-is`.
 
     `mode` and `width` are arguments, not constants (owner P0-2). Hardcoded, a
@@ -145,17 +147,47 @@ def analysis(driver: str, nsplit: int, chain: str = "main", *,
     wide failed the driver's tile-sum check. The values a bundle actually used
     are recorded beside the result so a reader can see which run this describes.
     """
+    # Validate the supplied baseline FIRST: it costs nothing and a wrong one
+    # would otherwise be discovered after five driver runs.
+    if baseline_stream is not None:
+        got = _declared_arm(baseline_stream)
+        if got != "as-is":
+            raise SystemExit(
+                f"the supplied baseline stream declares arm {got!r}, not 'as-is'")
+
     argv_of = lambda arm: [driver, str(nsplit), mode, str(width), arm]
 
     def run(arm):
         r = subprocess.run(argv_of(arm), capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit(f"{arm}: driver exited {r.returncode}\n{r.stderr[-2000:]}")
+        got = _declared_arm(r.stdout)
+        # REQUESTED must equal DECLARED (owner §13.1). Recording both and leaving
+        # a reviewer to notice the mismatch in the JSON is not a check: a stream
+        # that ran the wrong forcing would still be published, and every number
+        # derived from it would be attributed to an arm it is not.
+        if got != arm:
+            raise SystemExit(
+                f"asked the driver for arm {arm!r} and its stream declares "
+                f"{got!r} — refusing to attribute this run to {arm!r}")
         return r.stdout
 
-    raw = {a: run(a) for a in ARMS}
+    # `baseline_stream` lets the caller supply the bundle's OWN stored as-is
+    # member instead of a fresh run of it (owner §4). Re-running the baseline
+    # meant the decomposition compared against a stream nobody kept, so the
+    # published members and the analysis baseline were only *probably* the same.
+    raw = {a: run(a) for a in ARMS if a != "as-is" or baseline_stream is None}
+    if baseline_stream is not None:
+        raw["as-is"] = baseline_stream
     base = interface_terms(raw["as-is"], chain)
+    # Hand the raw streams back so the caller can PRESERVE them beside the
+    # analysis. Without this the six runs existed only inside this function and
+    # the evidence chain stopped at a derived JSON (owner §4).
+    if keep is not None:
+        keep.update(raw)
     return {"chain": chain, "mode": mode, "nsplit": nsplit, "tile_width": width,
+            "baseline": ("bundle member" if baseline_stream is not None
+                         else "re-run"),
             # The exact command line for each arm, and the arm the STREAM
             # declares -- so a reader can check the analysis describes the run it
             # claims to, without the raw bytes.
