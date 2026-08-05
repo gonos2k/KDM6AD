@@ -81,16 +81,21 @@ def interface_terms(stream: str, chain: str = "main") -> dict:
                     top = call["topout"].get((lp, n, col, chain, 0))
                     if top is None:
                         continue
-                    own = {0: top[1]}
+                    own, inflow = {0: top[1]}, {}
                     for j in ks[1:]:
                         cap = call["capin"].get((lp, n, col, chain, j))
                         if cap:
-                            own[j] = cap[2]
+                            own[j], inflow[j] = cap[2], cap[3]
                     for j in ks[1:]:
                         if (j - 1) not in own:
                             continue
-                        rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = (
-                            rho[j] - rho[j - 1], dz[j - 1], own[j - 1])
+                        rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = {
+                            "drho": rho[j] - rho[j - 1],
+                            "dz_up": dz[j - 1], "dn_out": own[j - 1],
+                            # the ARRIVAL side, so the number-cap term can be
+                            # computed rather than assumed zero (owner §5)
+                            "rho_lo": rho[j], "dz_lo": dz[j],
+                            "dn_in": inflow.get(j)}
     return rows
 
 
@@ -114,9 +119,34 @@ def decompose(base: dict, arm: dict) -> dict:
                                   f"{len(b)}) — the arm changed the sub-step "
                                   f"schedule, so interfaces do not correspond"}
             continue
-        metric = sum(rows[k][0] * rows[k][1] * b[k][2] for k in rows)
-        actual = sum(dr * dz * dn for dr, dz, dn in rows.values())
-        baseline = sum(dr * dz * dn for dr, dz, dn in b.values())
+        metric = sum(rows[k]["drho"] * rows[k]["dz_up"] * b[k]["dn_out"]
+                     for k in rows)
+        actual = sum(r["drho"] * r["dz_up"] * r["dn_out"] for r in rows.values())
+        baseline = sum(r["drho"] * r["dz_up"] * r["dn_out"] for r in b.values())
+        # THE THIRD TERM (owner §5). The complete interface residual is
+        #     R_full = rho_lo*dz_lo*dn_in - rho_up*dz_up*dn_out
+        # which splits EXACTLY as
+        #     R_measure = (rho_lo - rho_up)*dz_up*dn_out      measure mismatch
+        #     R_ncap    = rho_lo*(dz_lo*dn_in - dz_up*dn_out) arrival mismatch
+        #
+        # NOTE which "metric" is which. `metric` above is the COUNTERFACTUAL --
+        # this arm's density gap against the BASELINE's transfers -- and belongs
+        # to the metric/trajectory split. R_measure uses this arm's OWN
+        # transfers, and that is `actual`. So the interface identity is
+        #     actual + numcap == full
+        # and NOT metric + numcap; conflating the two mixes a counterfactual with
+        # a measurement.
+        #
+        # The measure form alone equals the full residual only when the number
+        # cap never binds. That was ASSUMED for the conservative ice arms and is
+        # now computed: a nonzero term means the split is incomplete and the row
+        # must not be read as measure-only.
+        numcap = sum(r["rho_lo"] * (r["dz_lo"] * r["dn_in"]
+                                    - r["dz_up"] * r["dn_out"])
+                     for r in rows.values() if r["dn_in"] is not None)
+        full = sum(r["rho_lo"] * r["dz_lo"] * r["dn_in"]
+                   - (r["rho_lo"] - r["drho"]) * r["dz_up"] * r["dn_out"]
+                   for r in rows.values() if r["dn_in"] is not None)
         out[col] = {
             "comparable": True, "interfaces": len(rows),
             "baseline": baseline, "metric": metric, "actual": actual,
@@ -131,6 +161,11 @@ def decompose(base: dict, arm: dict) -> dict:
             # `inverted` -- and make a 1% departure read as 0.5%.
             "trajectory_over_metric": (abs((actual - metric) / metric)
                                        if metric else None),
+            "number_cap_term": numcap,
+            "full_interface_residual": full,
+            # metric-only is a CONCLUSION, not an assumption: it holds when the
+            # number cap contributes nothing at this arm's interfaces.
+            "measure_only": abs(numcap) <= 1e-9 * max(abs(actual), 1e-300),
         }
     return out
 

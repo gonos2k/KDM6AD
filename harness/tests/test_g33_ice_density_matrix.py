@@ -112,3 +112,49 @@ def test_the_ICE_metric_term_is_exact_too(driver):
             assert r["metric_over_baseline"] == pytest.approx(want[arm], abs=1e-6)
             seen += 1
     assert seen >= 8, f"only {seen} comparable ice rows"
+
+
+# ---- owner §5: the number-cap gate, and proof that it can fail ---------------
+
+def test_the_conservative_ice_number_cap_term_is_ZERO_in_every_arm(driver):
+    """G33-NUMBER-009 rested on the ice MASS control plus the arm ratios. A
+    passing mass control does not establish that the NUMBER cap is inactive, and
+    if it were active the metric-only reading would be incomplete. Computed
+    directly: the term is exactly zero at every interface in every arm, so the
+    metric decomposition is complete here — a conclusion, not an assumption."""
+    a = mt.analysis(driver, 12, chain="ice")
+    seen = 0
+    for cols in a["arms"].values():
+        for r in cols.values():
+            if not r["comparable"]:
+                continue
+            assert r["number_cap_term"] == pytest.approx(0.0, abs=1e-6)
+            assert r["measure_only"] is True
+            seen += 1
+    assert seen >= 8, f"only {seen} comparable ice rows"
+
+
+@pytest.fixture(scope="module")
+def legacy_driver(tmp_path_factory):
+    out = tmp_path_factory.mktemp("legacy") / "build"
+    b = subprocess.run(["bash", str(BUILD), str(out),
+                        "--fixture=g33_fixture_multisubcycle_v1",
+                        "--algo=legacy", "--nflux"],
+                       capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+    return str(out / "g33_refine_driver")
+
+
+def test_the_gate_FIRES_on_legacy_ice_where_the_cap_binds(legacy_driver):
+    """A gate that never reports False proves nothing. On LEGACY ice the number
+    cap binds at 39 of 108 interfaces, and there the cap term does not merely
+    appear — it DOMINATES the metric term by an order of magnitude or more.
+    That is the quantitative reason legacy ice is excluded, where before there
+    was only "its mass control fails"."""
+    a = mt.analysis(legacy_driver, 12, chain="ice")
+    fired = [r for cols in a["arms"].values() for r in cols.values()
+             if r.get("comparable") and not r["measure_only"]]
+    assert fired, "measure_only never went False — the gate is vacuous"
+    dominated = [r for r in fired
+                 if abs(r["number_cap_term"]) > 5 * abs(r["metric"])]
+    assert dominated, "expected the cap term to dominate the metric term"

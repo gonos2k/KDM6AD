@@ -498,8 +498,15 @@ claims:
     status: active
     grade: confirmed
     basis: >
-      the same six arms with the ice mass control closing throughout, plus the
-      exact metric counterfactual
+      the same six arms with the ice mass control closing throughout, the exact
+      metric counterfactual, AND the number-cap term computed per arm rather than
+      assumed. R_full splits exactly as R_measure + R_ncap; R_ncap is exactly
+      zero at every conservative-ice interface in every arm, so the metric
+      reading is complete there. The gate is not vacuous: on LEGACY ice the cap
+      binds at 39/108 interfaces and R_ncap DOMINATES R_measure (e.g. -5.33e+08
+      against 0 for uniform col 3), and measure_only reports false on all ten
+      legacy rows. The owner's CONDITIONAL grade, pending exactly this term, is
+      satisfied by measurement.
     scope: >
       g33_fixture_multisubcycle_v1, CONSERVATIVE variant, h = 25 s, ice columns 2
       and 3 (column 1 carries no usable inventory). The conservative variant is
@@ -507,7 +514,7 @@ claims:
       chain remains unmeasurable for the post-update cap reason. Constructed
       probes, and the trajectory term is measured but not apportioned.
     evidence: [FINDING_ice_density_matrix_v1.md]
-    evidence_sha256: [FINDING_ice_density_matrix_v1.md:92757ce8d82142f2]
+    evidence_sha256: [FINDING_ice_density_matrix_v1.md:3d94fd004e3bff54]
 
   - id: G33-PROTOCOL-004
     text: >

@@ -136,12 +136,12 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
     under a key identical across them, compared only the last, and missed a real
     mstep 3->2 change. Same class of mistake, one layer up."""
     # (call, loop, substep, upper, lower) -> (drho, dz, dn)
-    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0),
-                (2, 1, 1, 0, 1): (0.2, 150.0, 3.0)}}
-    arm = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-               (2, 1, 1, 0, 1): (0.2, 150.0, 2.0),
-               (2, 1, 2, 0, 1): (0.2, 150.0, 3.0)}}
+    cell = lambda dn: {"drho": 0.2, "dz_up": 150.0, "dn_out": dn,
+                       "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
+    base = {1: {(1, 1, 1, 0, 1): cell(1.0), (1, 1, 2, 0, 1): cell(2.0),
+                (2, 1, 1, 0, 1): cell(3.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): cell(1.0), (2, 1, 1, 0, 1): cell(2.0),
+               (2, 1, 2, 0, 1): cell(3.0)}}
     assert len(base[1]) == len(arm[1]), "the counts must match for this to bite"
     got = mt.decompose(base, arm)[1]
     assert got["comparable"] is False
@@ -150,10 +150,10 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
 
 def test_an_identical_universe_decomposes():
     """The control for the test above."""
-    base = {1: {(1, 1, 1, 0, 1): (0.2, 150.0, 1.0),
-                (1, 1, 2, 0, 1): (0.2, 150.0, 2.0)}}
-    arm = {1: {(1, 1, 1, 0, 1): (0.4, 150.0, 1.5),
-               (1, 1, 2, 0, 1): (0.4, 150.0, 2.5)}}
+    mk = lambda drho, dn: {"drho": drho, "dz_up": 150.0, "dn_out": dn,
+                           "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
+    base = {1: {(1, 1, 1, 0, 1): mk(0.2, 1.0), (1, 1, 2, 0, 1): mk(0.2, 2.0)}}
+    arm = {1: {(1, 1, 1, 0, 1): mk(0.4, 1.5), (1, 1, 2, 0, 1): mk(0.4, 2.5)}}
     got = mt.decompose(base, arm)[1]
     assert got["comparable"] is True
     # metric uses the ARM's drho with the BASELINE's dn
@@ -208,3 +208,39 @@ def test_the_raw_arm_streams_are_handed_back_for_preservation(driver):
     mt.analysis(driver, 12, keep=keep)
     assert set(keep) == set(mt.ARMS)
     assert all(t.startswith("G33N STREAM_BEGIN") for t in keep.values())
+
+
+# ---- owner §5: the THIRD term, computed rather than assumed zero -------------
+
+def test_the_three_terms_are_an_exact_identity(result):
+    """R_full = R_metric + R_number_cap, per interface, by construction:
+
+        R_full    = rho_lo*dz_lo*dn_in - rho_up*dz_up*dn_out
+        R_measure = (rho_lo - rho_up)*dz_up*dn_out
+        R_ncap    = rho_lo*(dz_lo*dn_in - dz_up*dn_out)
+
+    The measure term here uses THIS ARM's transfers, which is `actual`. `metric`
+    is the counterfactual — this arm's density gap against the BASELINE's
+    transfers — and belongs to the metric/trajectory split. Asserting
+    `metric + numcap == full` mixes a counterfactual with a measurement, which is
+    the error the first version of this test made.
+
+    If this is not an identity the split is a model, not a decomposition."""
+    for cols in result["arms"].values():
+        for r in cols.values():
+            if not r["comparable"]:
+                continue
+            assert r["actual"] + r["number_cap_term"] == pytest.approx(
+                r["full_interface_residual"], rel=1e-9, abs=1e-6)
+
+
+def test_metric_only_is_a_CONCLUSION_not_an_assumption(result):
+    """The metric form equals the full residual only where the number cap
+    contributes nothing. That was assumed; it is now computed and reported as
+    `measure_only`, so a row where the cap binds cannot be read as
+    measure-only."""
+    for cols in result["arms"].values():
+        for r in cols.values():
+            if not r["comparable"]:
+                continue
+            assert "measure_only" in r and "number_cap_term" in r
