@@ -233,3 +233,95 @@ def test_the_window_endpoints_parse_from_a_REAL_stream_and_bound_the_headline(
             r["of_first_segment_pre"], rel=1e-6)
         checked += 1
     assert checked >= 3, f"only {checked} usable rows -- the fixture changed"
+
+
+# ---- owner §16-4: the internal cap sink, measured rather than inferred ------
+
+def test_the_phase_comes_from_the_ANCHORED_ARRAY_not_a_diagnostic(stream):
+    """`main`'s CAPIN site is anchored on `qrs(i,k,1) = ... dqr ...` (F:1225),
+    which is rain; `ice`'s on `qci(i,k,2) = ... dqi ...` (F:1289), cloud ice. So
+    the phase of a destroyed parcel is known from where the record was emitted,
+    not guessed from the surface fallout fraction."""
+    assert ci.CHAIN_PHASE == {"main": "liquid", "ice": "ice"}
+    phases = {p for lst in ci.cap_sink(stream).values() for *_, p in lst}
+    assert phases <= {"liquid", "ice"}
+
+
+def test_the_INFERRED_internal_destruction_is_NEGATIVE_which_a_cap_cannot_be(
+        stream):
+    """Why the direct measurement was needed. `outflow_split` computes
+    `D_internal = water_out - P_bottom` from the fallout DIAGNOSTIC. A cap only
+    destroys, so a negative D_internal is not a sink -- it is the diagnostic's
+    own departure from the budget. On this fixture it is negative in every
+    column, while the interface measurement is positive where the cap bites."""
+    import g33_refine_analyze as ra
+
+    run = ra.read_text(stream)
+    sink = ci.cap_sink(stream)
+    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
+    inferred_negative = measured_positive = 0
+    for c in sorted({x for x, _ in cells}):
+        ks = sorted(k for cc, k in cells if cc == c)
+        if ra.outflow_split(run, c, ks)["D_internal"] < 0:
+            inferred_negative += 1
+        if sum(m for _, _, m, _ in sink.get(c, [])) > 1e-9:
+            measured_positive += 1
+    assert inferred_negative == 3, "all three columns infer a negative sink"
+    assert measured_positive == 2, "two columns measure a real one"
+
+
+def test_the_sink_is_a_LOWER_BOUND_and_the_shortfall_is_not_hypothetical(stream):
+    """Only dqr (F:1225) and dqi (F:1289) carry a CAPIN anchor; dqs (F:1237) and
+    dqg (F:1243) do not. If this fixture had no snow or graupel the gap would be
+    academic -- it has both, so the measured sink is genuinely incomplete and
+    must not be reported as the column's total internal destruction."""
+    import g33_refine_analyze as ra
+
+    run = ra.read_text(stream)
+    cells = {(k[2], k[3]) for k in run if k[0] == "state"}
+    present = set()
+    for c in sorted({x for x, _ in cells}):
+        ks = sorted(k for cc, k in cells if cc == c)
+        for f in ci.UNINSTRUMENTED_SPECIES:
+            if any(run[("initial", f, c, k)] or run[("state", f, c, k)]
+                   for k in ks):
+                present.add(f)
+    assert present == set(ci.UNINSTRUMENTED_SPECIES), \
+        "the caveat is vacuous unless the uninstrumented species are here"
+
+
+def test_charging_the_sink_where_it_died_MOVES_the_enthalpy_residual(stream):
+    """The point of §16-4. 48-58% of what the ledger called `H_precip_out` in
+    columns 2 and 3 never precipitated. Recharging it at its own level and phase
+    is worth 20.7% of column 2's residual and -5.2% of column 3's -- so it is a
+    real term, and it does NOT close the residual (it makes column 2 worse)."""
+    import g33_refine_analyze as ra
+
+    run = ra.read_text(stream)
+    before = ra.enthalpy_ledger(run)
+    after = ra.enthalpy_ledger(run, sink=ci.cap_sink(stream))
+    assert after[1]["residual"] == pytest.approx(before[1]["residual"], rel=1e-6)
+    for c, lo, hi in ((2, 0.45, 0.60), (3, 0.40, 0.55)):
+        assert lo < after[c]["cap_sink_share_of_column_loss"] < hi
+        assert after[c]["residual"] != before[c]["residual"]
+        assert after[c]["cap_sink_is_lower_bound"] is True
+    # Direction, stated rather than left for a reader to assume favourable:
+    assert abs(after[2]["residual"]) > abs(before[2]["residual"])
+    assert abs(after[3]["residual"]) < abs(before[3]["residual"])
+
+
+def test_BOTH_ledgers_reach_the_bundle_not_just_the_corrected_one(stream):
+    """A correction nothing publishes is not a correction. It is registered as a
+    bundle analysis -- and it carries the previous all-at-the-surface ledger
+    beside it, so a reader can see what moved instead of finding every
+    previously-quoted residual silently replaced."""
+    import g33_refine_experiment as xp
+
+    assert "internal_cap_enthalpy" in xp.ANALYSES
+    a = xp.ANALYSES["internal_cap_enthalpy"][1](stream)
+    assert set(a) >= {"with_internal_cap_sink", "all_charged_at_surface",
+                      "instrumented_species", "uninstrumented_species"}
+    assert a["uninstrumented_species"] == ["qs", "qg"]
+    for c in (2, 3):
+        assert a["with_internal_cap_sink"][c]["residual"] != \
+            a["all_charged_at_surface"][c]["residual"]

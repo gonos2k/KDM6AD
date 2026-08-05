@@ -29,6 +29,7 @@ superseded implementation (owner §8.1):
 | `extension_protocol` | per member | what the stream carried, as the strict parser saw it |
 | `dual_ledger` | per member | both column measures, operator and physical |
 | `defect_magnitude` | per member | the residual against every denominator that means something |
+| `internal_cap_enthalpy` | per member | both enthalpy ledgers: the internal cap sink charged where it died, beside the previous all-at-the-surface charge |
 | `metric_trajectory` | bundle | the metric/trajectory split across the density arms |
 <!-- /analyses -->
 

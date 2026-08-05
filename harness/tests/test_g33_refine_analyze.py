@@ -1093,3 +1093,76 @@ def test_both_ledgers_thread_the_basis_rather_than_hardcoding_rho():
         i = src.index(fn)
         assert "basis" in src[i:i + 200], f"{fn} does not take a basis"
     assert src.count("_column_density(run, c, k, basis)") >= 2
+
+
+# ---- owner §16-4: water destroyed inside the column is not precipitation -----
+
+def _run_two_level(t_top=250.0, t_bot=290.0, dq=0.001):
+    """Two levels, unit rho/delz, all the water loss in qr at the bottom."""
+    r = {}
+    for k, t in ((0, t_top), (1, t_bot)):
+        for n in ("rho", "delz"):
+            r[("forcing", n, 1, k)] = 1.0
+        r[("forcing", "pii", 1, k)] = 1.0 if k == 0 else 2.0   # bottom = larger
+        r[("initial", "th", 1, k)] = t / r[("forcing", "pii", 1, k)]
+        r[("state", "th", 1, k)] = t / r[("forcing", "pii", 1, k)]
+        for f in ra.MASS:
+            r[("initial", f, 1, k)] = dq if f == "qr" else 0.0
+            r[("state", f, 1, k)] = 0.0
+    for i in (1, 2, 3):
+        r[("prec", i, 1)] = 0.0
+    return r
+
+
+def test_without_a_sink_the_charge_is_unchanged():
+    """The split is opt-in. A caller that passes nothing must get exactly the
+    previous number, or every prior ledger figure silently moves."""
+    r = _run_two_level()
+    assert ra._precip_consistent(r, 1, 1, [0, 1], "operator", None) == \
+        ra._precip_consistent(r, 1, 1, [0, 1])
+
+
+def test_destroyed_water_is_charged_at_ITS_level_not_the_surface():
+    """Water the cap destroys at the top interface never reached the bottom, so
+    charging it at the bottom-level temperature is wrong by the enthalpy
+    difference across the column."""
+    r = _run_two_level(t_top=250.0, t_bot=290.0)
+    ks, kbot = [0, 1], 1
+    whole = ra._precip_consistent(r, 1, kbot, ks)
+    # ALL the loss destroyed at the top level, as liquid.
+    w = ra._water_out(r, 1, ks)
+    split = ra._precip_consistent(r, 1, kbot, ks, "operator",
+                                  [(0, 1, w, "liquid")])
+    _, _, hl_top, _ = ra._enthalpies(250.0)
+    _, _, hl_bot, _ = ra._enthalpies(290.0)
+    assert split == pytest.approx(w * hl_top)
+    assert whole == pytest.approx(w * hl_bot)
+    assert split != whole, "a 40 K difference must not vanish"
+
+
+def test_the_split_conserves_the_mass_it_charges():
+    """(column loss - destroyed) + destroyed = column loss. If the surface part
+    were computed independently the two could drift and the ledger would charge
+    a different amount of water than the budget says left."""
+    r = _run_two_level(t_top=280.0, t_bot=280.0)   # isothermal: level cannot matter
+    ks = [0, 1]
+    w = ra._water_out(r, 1, ks)
+    for frac in (0.0, 0.25, 1.0):
+        got = ra._precip_consistent(r, 1, 1, ks, "operator",
+                                    [(0, 1, w * frac, "liquid")])
+        assert got == pytest.approx(ra._precip_consistent(r, 1, 1, ks)), frac
+
+
+def test_the_phase_of_the_sink_is_used_not_the_surface_fraction():
+    """The surface ice fraction comes from the fallout diagnostic and describes
+    what reached the ground. Water destroyed by the ICE chain's cap was ice
+    wherever it died, whatever the surface says."""
+    r = _run_two_level(t_top=260.0, t_bot=260.0)
+    ks = [0, 1]
+    w = ra._water_out(r, 1, ks)
+    liq = ra._precip_consistent(r, 1, 1, ks, "operator", [(0, 1, w, "liquid")])
+    ice = ra._precip_consistent(r, 1, 1, ks, "operator", [(0, 1, w, "ice")])
+    _, _, hl, hi = ra._enthalpies(260.0)
+    assert liq == pytest.approx(w * hl)
+    assert ice == pytest.approx(w * hi)
+    assert liq - ice == pytest.approx(w * (hl - hi))   # the latent heat of fusion

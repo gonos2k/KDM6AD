@@ -48,6 +48,7 @@ from pathlib import Path
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
+import g33_refine_analyze as ra  # noqa: E402
 
 
 def interfaces(stream: str, basis: str = "operator") -> dict:
@@ -129,6 +130,88 @@ def interfaces(stream: str, basis: str = "operator") -> dict:
                             d["number_departure_arrival_differ"] += int(nd)
                             d["either_differ"] += int(md or nd)
     return acc
+
+
+#: chain -> the phase of the water it moves, from the kernel array each CAPIN
+#: site reads. `main` is anchored on `qrs(i,k,1) = ... dqr ...` (F:1225), which is
+#: RAIN; `ice` on `qci(i,k,2) = ... dqi ...` (F:1289), which is CLOUD ICE. So the
+#: phase of a cap sink is not inferred from a surface diagnostic -- it is the site.
+CHAIN_PHASE = {"main": "liquid", "ice": "ice"}
+
+#: The kernel caps FOUR species: dqr (F:1225), dqs (F:1237), dqg (F:1243) and dqi
+#: (F:1289). Only the first and last carry a CAPIN anchor, so a sink measured here
+#: is a LOWER BOUND on the column's internal destruction. Snow and graupel are
+#: present on this fixture, so the shortfall is real rather than hypothetical.
+INSTRUMENTED_SPECIES = ("qr", "qi")
+UNINSTRUMENTED_SPECIES = ("qs", "qg")
+
+
+def cap_sink(stream: str, basis: str = "operator") -> dict:
+    """{col: [(k_departure, k_arrival, destroyed_mass, phase), ...]}
+
+    The mass each interface DESTROYS, with the levels it was destroyed between
+    and the phase it was in. Positive = destroyed.
+
+    This is the direct measurement of what `outflow_split()` can only infer.
+    That function computes `D_internal = water_out - P_bottom` from the fallout
+    DIAGNOSTIC, and on this fixture returns a NEGATIVE internal destruction in
+    all three columns -- impossible for a cap, which can only destroy, and a
+    restatement of the diagnostic's own departure from the budget rather than a
+    measurement of the sink (owner §16-4).
+    """
+    out = {}
+    for call in nt.calls(stream):
+        for lp in sorted(call["loops"]):
+            pre = call["outer_pre_sed"]
+            for col in sorted({c for l, c, _ in pre if l == lp}):
+                ks = sorted(k for l, c, k in pre if c == col and l == lp)
+                rho = {k: mc._density(pre[(lp, col, k)], basis) for k in ks}
+                dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
+                for chain in ("main", "ice"):
+                    ms = call["mstep"].get((lp, chain, col))
+                    if ms is None:
+                        continue
+                    for n in range(1, ms + 1):
+                        top = call["topout"].get((lp, n, col, chain, 0))
+                        if top is None:
+                            continue
+                        own, inflow = {0: top}, {}
+                        for j in ks[1:]:
+                            cap = call["capin"].get((lp, n, col, chain, j))
+                            if cap is None:
+                                continue
+                            oq, iq, on, ino = cap
+                            own[j], inflow[j] = (oq, on), (iq, ino)
+                        for j in ks[1:]:
+                            if j not in inflow or (j - 1) not in own:
+                                continue
+                            d = (rho[j - 1] * dz[j - 1] * own[j - 1][0]
+                                 - rho[j] * dz[j] * inflow[j][0])
+                            if d:
+                                out.setdefault(col, []).append(
+                                    (j - 1, j, d, CHAIN_PHASE[chain]))
+    return out
+
+
+def enthalpy_with_cap_sink(stream: str, basis: str = "operator") -> dict:
+    """The moist-enthalpy ledger with the internal cap sink charged where it died.
+
+    BOTH ledgers, side by side. Publishing only the corrected one would replace
+    every previously-quoted residual with no way to see what moved; publishing
+    only the old one would leave the correction opt-in and never exercised.
+    """
+    run = ra.read_text(stream)
+    if not run:
+        return {}
+    return {"with_internal_cap_sink": ra.enthalpy_ledger(run, basis,
+                                                         cap_sink(stream, basis)),
+            "all_charged_at_surface": ra.enthalpy_ledger(run, basis),
+            "instrumented_species": list(INSTRUMENTED_SPECIES),
+            "uninstrumented_species": list(UNINSTRUMENTED_SPECIES),
+            "note": "The sink is a LOWER BOUND: the kernel caps dqr/dqs/dqg/dqi "
+                    "and only dqr (F:1225) and dqi (F:1289) carry a CAPIN "
+                    "anchor. Snow and graupel sedimentation caps (F:1237, "
+                    "F:1243) are not instrumented."}
 
 
 def analysis(stream: str) -> dict:

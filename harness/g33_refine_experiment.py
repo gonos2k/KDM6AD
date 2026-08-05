@@ -196,6 +196,10 @@ ANALYSES = {
     "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
     "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    # Water destroyed INSIDE the column is not precipitation (owner §16-4).
+    # Both ledgers, so the correction is visible rather than a silent swap.
+    "internal_cap_enthalpy": ("g33_cap_interface",
+                              lambda s: ci.enthalpy_with_cap_sink(s)),
 }
 
 

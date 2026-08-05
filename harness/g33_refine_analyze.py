@@ -717,7 +717,8 @@ def outflow_split(run: dict, c: int, ks) -> dict:
             "D_share": (w - p) / w if w else float("nan")}
 
 
-def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
+def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator",
+            sink=None) -> dict:
     """residual = (H_end - H_start) + H carried out by precipitation, per column.
 
     Zero with no external forcing. The two ledgers differ ONLY in `h_cell` and
@@ -741,9 +742,25 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
         kbot = ks[-1] if run[("forcing", "pii", c, ks[0])] < \
             run[("forcing", "pii", c, ks[-1])] else ks[0]
         h_start = H("initial")
+        col_sink = (sink or {}).get(c)
         d = {"dH": H("state") - h_start,
-             "H_precip_out": h_precip_out(run, c, kbot, ks, basis),
+             "H_precip_out": h_precip_out(run, c, kbot, ks, basis, col_sink)
+             if col_sink is not None else h_precip_out(run, c, kbot, ks, basis),
              "H_start": h_start}
+        if col_sink is not None:
+            # Named apart so a reader can see how much of what the ledger calls
+            # "precipitation out" never precipitated (owner §16-4).
+            destroyed = sum(m for _, _, m, _ in col_sink)
+            w = _water_out(run, c, ks, basis)
+            d["cap_sink_mass"] = destroyed
+            d["cap_sink_share_of_column_loss"] = destroyed / w if w else None
+            d["H_precip_out_charged_at_surface"] = h_precip_out(
+                run, c, kbot, ks, basis)
+            d["H_internal_cap_correction"] = (
+                d["H_precip_out"] - d["H_precip_out_charged_at_surface"])
+            # LOWER BOUND: only dqr and dqi carry a CAPIN anchor. See
+            # g33_cap_interface.UNINSTRUMENTED_SPECIES.
+            d["cap_sink_is_lower_bound"] = True
         d["residual"] = d["dH"] + d["H_precip_out"]
         d["relative"] = d["residual"] / abs(h_start) if h_start else float("nan")
         # THROUGHPUT norm (owner §6.4). `h_start` carries the column's whole
@@ -760,7 +777,8 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator") -> dict:
         # value would overstate the comparison (owner P0-4).
         band = []
         for k in ks:
-            alt = h_precip_out(run, c, k, ks)
+            alt = (h_precip_out(run, c, k, ks, "operator", col_sink)
+                   if col_sink is not None else h_precip_out(run, c, k, ks))
             band.append((d["dH"] + alt) / abs(h_start) if h_start else float("nan"))
         d["relative_band"] = (min(band), max(band))
         out[c] = d
@@ -822,21 +840,45 @@ def _ice_fraction(run, c) -> float:
     return (run[("prec", 2, c)] + run[("prec", 3, c)]) / tot if tot else 0.0
 
 
-def _precip_consistent(run, c, kbot, ks, basis="operator") -> float:
-    """Departing water carries liquid or ice enthalpy at the bottom-level T."""
+def _precip_consistent(run, c, kbot, ks, basis="operator", sink=None) -> float:
+    """Water leaving the column carries liquid or ice enthalpy out with it.
+
+    With `sink` -- the interfaces where the cap DESTROYED water, from
+    `g33_cap_interface.cap_sink()` -- the charge is split (owner §16-4). Water
+    destroyed at an internal interface never reached the surface, so charging it
+    at the bottom-level temperature and the surface phase fraction is wrong on
+    both counts. Each destroyed parcel is charged at ITS OWN level and in the
+    phase of the kernel array whose cap destroyed it.
+
+    Without `sink` the whole column loss is charged at the bottom, which is the
+    previous behaviour and is kept so the two can be compared rather than
+    swapped silently.
+    """
+    w = _water_out(run, c, ks, basis)
     _, _, hl, hi = _enthalpies(_t(run, "state", c, kbot))
     f = _ice_fraction(run, c)
-    return _water_out(run, c, ks, basis) * ((1.0 - f) * hl + f * hi)
+    h_surface = (1.0 - f) * hl + f * hi
+    if not sink:
+        return w * h_surface
+    internal = 0.0
+    destroyed = 0.0
+    for k_dep, _k_arr, mass, phase in sink:
+        _, _, hl_k, hi_k = _enthalpies(_t(run, "initial", c, k_dep))
+        internal += mass * (hi_k if phase == "ice" else hl_k)
+        destroyed += mass
+    # What actually crossed the surface is the column loss MINUS what never got
+    # there. Charged at the bottom as before; only the internal part moves.
+    return (w - destroyed) * h_surface + internal
 
 
-def enthalpy_ledger(run: dict, basis: str = "operator") -> dict:
+def enthalpy_ledger(run: dict, basis: str = "operator", sink=None) -> dict:
     """Residual against CONSISTENT thermodynamics (§8.2).
 
     Approximate — dry-air mixing ratios against moist rho, precipitation flux at
     the bottom level — but identically so for every leg, so residuals COMPARE even
     where an absolute value would not.
     """
-    return _ledger(run, _h_consistent, _precip_consistent, basis)
+    return _ledger(run, _h_consistent, _precip_consistent, basis, sink)
 
 
 # The code's own thermodynamics (module_mp_kdm6.F): cpmcal F:818, xlcal F:819,

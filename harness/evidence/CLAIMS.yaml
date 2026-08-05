@@ -266,7 +266,7 @@ claims:
       change applies to future --nflux bundles and does not retrofit the ones
       already published.
     evidence: [FINDING_bundle_analyses_v1.md]
-    evidence_sha256: [FINDING_bundle_analyses_v1.md:656222223725f353]
+    evidence_sha256: [FINDING_bundle_analyses_v1.md:81210e5f2cc45183]
 
   - id: G33-COMPARE-001
     text: >
@@ -768,3 +768,37 @@ claims:
     scope: g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:a50fb1c80aafff88]
+
+  - id: G33-ENTHALPY-003
+    text: >
+      The moist-enthalpy ledger charged the column's WHOLE rho*dz water loss as
+      precipitation, at the bottom-level temperature and the fallout
+      diagnostic's frozen fraction. On this fixture 57.81% (col 2) and 48.02%
+      (col 3) of that loss was destroyed at INTERNAL interfaces by the
+      post-update-reservoir cap and never reached the surface. Measured directly
+      from the CAPIN/TOPOUT interface pairing -- 2.9422e-03 and 5.6860e-03 kg/m2
+      against a column loss of 5.0895e-03 and 1.1842e-02 -- and charged at the
+      level it died at, in the phase of the kernel array whose cap destroyed it
+      (main <- dqr, rain, liquid, F:1225; ice <- dqi, cloud ice, F:1289). The
+      correction is 20.74% of column 2's enthalpy residual and -5.19% of column
+      3's. It does NOT close the residual and makes column 2's WORSE; it is a
+      correctness fix to the charge, not an explanation of the residual.
+      The inferred alternative is unusable: outflow_split's D_internal = w -
+      P_bottom is NEGATIVE in all three columns, which a cap cannot be, and
+      disagrees with the measurement in sign and by 4-6x in magnitude.
+    status: active
+    grade: confirmed-with-scope
+    basis: >
+      direct interface measurement, with the diagnostic-inferred alternative
+      shown to be sign-impossible rather than merely noisier
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s, operator basis. The sink is
+      a LOWER BOUND: the kernel caps dqr/dqs/dqg/dqi and only dqr and dqi carry a
+      CAPIN anchor, while snow and graupel ARE present on this fixture at column
+      losses of the same order as the measured sink -- so the shortfall is real
+      and no upper bound is established. Instrumenting dqs/dqg is an overlay
+      extension that widens the emitted main|ice chain vocabulary and is
+      deferred as a protocol change. enthalpy_ledger() without a sink is
+      unchanged, so the previous figures remain reproducible.
+    evidence: [FINDING_internal_cap_enthalpy_v1.md]
+    evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:1bb81c49417669fe]
