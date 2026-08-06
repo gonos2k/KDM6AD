@@ -232,7 +232,8 @@ def _analyzer_state(an: dict) -> dict:
 
 #: manifest key -> the field naming the module, since the analyzer entries call
 #: it `analyzer` and the parser/producer entries call it `path`.
-_PIN_BLOCKS = (("member_parsers", "path"), ("producer_modules", "path"))
+_PIN_BLOCKS = (("member_parsers", "path"), ("producer_modules", "path"),
+               ("tracked_build_inputs", "path"))
 
 
 def _module_states(man: dict) -> list:

@@ -155,7 +155,10 @@ def test_publish_swaps_ONE_symlink_over_an_immutable_bundle(tmp_path, monkeypatc
     assert dest.is_symlink(), "dest must be a symlink, not a real directory"
     target = dest.resolve()
     assert target.parent.name == "bundle.bundles"
-    assert len(target.name) == 16, "bundle directory is named by its manifest digest"
+    assert len(target.name) == 64, (
+        "bundle directory is named by the FULL manifest identity digest. A "
+        "16-hex prefix is 64 bits, and the directory it names was REUSED "
+        "without re-checking (owner §9.1).")
 
 
 def test_republishing_never_leaves_the_destination_absent(tmp_path, monkeypatch):
@@ -533,7 +536,10 @@ def test_the_PARSERS_are_pinned_by_commit_and_blob_like_the_analyzers():
     assert len(pin["blob_sha"]) == 40 and len(pin["content_sha256"]) == 64
     # The strict parsers must be in the pinned set, not only the analyzers.
     assert {"g33_refine_analyze", "g33_number_transport", "g33_probe_read"} \
-        <= set(xp.PRODUCER_MODULES)
+        <= set(xp.producer_modules())
+    # DERIVED, not hand-listed: an analyzer added to ANALYSES and forgotten in a
+    # tuple escaped the byte binding entirely (owner §9.2).
+    assert all(mod in xp.producer_modules() for mod, _fn in xp.ANALYSES.values())
 
 
 def test_an_EMPTY_nsplit_list_is_refused(tmp_path):
@@ -558,3 +564,59 @@ def test_the_producer_writes_the_STRICT_schema():
     """A bundle made today must declare the contract it satisfies, or the
     checker cannot tell it from one that predates the pin blocks."""
     assert xp.rm.SCHEMA == "refinement_experiment_v2"
+
+
+# ---- owner §9.1: an existing bundle directory is verified, not adopted -------
+
+def test_an_identical_rerun_REUSES_the_bundle(tmp_path, monkeypatch):
+    """Content-addressed: the same manifest is the same bundle, and rebuilding
+    it would delete the directory `dest` points at."""
+    _fake(monkeypatch)
+    a = _produce(tmp_path / "b").resolve()
+    b = _produce(tmp_path / "b").resolve()
+    assert a == b
+    assert len(list((tmp_path / "b.bundles").iterdir())) == 1
+
+
+@pytest.mark.parametrize("damage", ["manifest-gone", "manifest-corrupt",
+                                    "member-gone", "member-edited",
+                                    "identity-mismatch"])
+def test_a_DAMAGED_existing_bundle_is_refused_not_republished(tmp_path,
+                                                              monkeypatch,
+                                                              damage):
+    """The address alone was the whole check, so a directory left by an
+    interrupted run -- or edited by hand -- was republished under a digest it no
+    longer matched (owner §9.1)."""
+    _fake(monkeypatch)
+    final = _produce(tmp_path / "b").resolve()
+    mf = final / "manifest.json"
+    if damage == "manifest-gone":
+        mf.unlink()
+    elif damage == "manifest-corrupt":
+        mf.write_text("{not json")
+    elif damage == "identity-mismatch":
+        man = json.loads(mf.read_text())
+        man["arm"] = "probe"                      # changes the identity
+        mf.write_text(json.dumps(man))
+    else:
+        member = next(p for p in final.glob("n*.rezero.txt"))
+        member.unlink() if damage == "member-gone" else \
+            member.write_text("tampered\n")
+
+    with pytest.raises(SystemExit, match="REFUSED"):
+        _produce(tmp_path / "b")
+
+
+def test_the_TRACKED_BUILD_INPUTS_are_pinned_by_commit_and_blob():
+    """They decide the raw streams as surely as the analyzers decide the
+    numbers, and build_provenance recorded only content digests -- checkable
+    against today's working tree and nothing else (owner §9.2)."""
+    for q in xp.TRACKED_BUILD_INPUTS:
+        pin = xp._pin_path(q)
+        assert set(pin) == {"path", "content_sha256", "commit", "blob_sha"}
+        assert len(pin["blob_sha"]) == 40 and len(pin["commit"]) == 40
+    names = {str(q) for q in xp.TRACKED_BUILD_INPUTS}
+    assert "harness/g33_fortran/refine_build.sh" in names
+    assert "harness/g33_fortran/g33_refine_driver.f90" in names
+    assert not any("host/" in n for n in names), \
+        "host/** is gitignored, so no commit holds it -- it stays content-only"

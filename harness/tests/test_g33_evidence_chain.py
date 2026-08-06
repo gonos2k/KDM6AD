@@ -95,7 +95,7 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     write()
     # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches", "modules-unpinned", "modules-unpinned"]
+        ["matches"] + ["modules-unpinned"] * 3
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -317,7 +317,7 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
     p.write_text("{" + head + ', "members": [], "analyses": []}')
     assert [m["state"] for m in ec.members_of(p)] == \
-        ["modules-unpinned", "modules-unpinned"]   # one per pin block
+        ["modules-unpinned"] * 3   # one per pin block
 
 
 def test_a_manifest_that_declares_NO_schema_is_unidentifiable(world):
@@ -408,20 +408,20 @@ def test_EACH_pin_block_is_checked_SEPARATELY(world):
     from the report entirely (Codex). Every combination is exercised, because
     the hole was in exactly the two mixed ones."""
     _, write = world
-    assert ("<member_parsers>", "modules-unpinned") in _module_rows(write)
-    assert ("<producer_modules>", "modules-unpinned") in _module_rows(write)
+    for block in ("member_parsers", "producer_modules", "tracked_build_inputs"):
+        assert (f"<{block}>", "modules-unpinned") in _module_rows(write)
 
-    only_parsers = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")])
-    assert ("<producer_modules>", "modules-unpinned") in only_parsers
-    assert ("<member_parsers>", "modules-unpinned") not in only_parsers
+    # Each block, alone: the others must still be reported missing.
+    blocks = ("member_parsers", "producer_modules", "tracked_build_inputs")
+    for one in blocks:
+        rows = _module_rows(write, **{one: [_pin("g33_matched_closure")]})
+        assert (f"<{one}>", "modules-unpinned") not in rows
+        for other in blocks:
+            if other != one:
+                assert (f"<{other}>", "modules-unpinned") in rows
 
-    only_prod = _module_rows(write, producer_modules=[_pin("g33_matched_closure")])
-    assert ("<member_parsers>", "modules-unpinned") in only_prod
-    assert ("<producer_modules>", "modules-unpinned") not in only_prod
-
-    both = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")],
-                        producer_modules=[_pin("g33_matched_closure")])
-    assert not [f for f, st in both if st == "modules-unpinned"]
+    every = _module_rows(write, **{b: [_pin("g33_matched_closure")] for b in blocks})
+    assert not [f for f, st in every if st == "modules-unpinned"]
 
 
 def test_an_unpinned_block_is_REPORTED_not_failed(world):
@@ -450,6 +450,7 @@ def _man(**kw):
             "schema": "refinement_experiment_v2",
             "members": [{"file": "n3.rezero.txt", "output_sha256": "0" * 64}],
             "member_parsers": [pin], "producer_modules": [pin],
+            "tracked_build_inputs": [pin],
             "build_provenance": {"repo_commit": "x"}, "arm": "reference",
             "precision": "f32", "analyses": [], "instrumented": False,
             "decision_eligible": False}

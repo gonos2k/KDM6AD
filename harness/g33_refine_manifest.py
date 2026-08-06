@@ -260,7 +260,7 @@ def validate(man: dict) -> list:
                 bad.append(f"members[{i}] needs `file` and a 64-hex "
                            f"`output_sha256`")
 
-    for key in ("member_parsers", "producer_modules"):
+    for key in ("member_parsers", "producer_modules", "tracked_build_inputs"):
         block = man.get(key)
         if not isinstance(block, list) or not block:
             bad.append(f"{key} must be a non-empty list")
