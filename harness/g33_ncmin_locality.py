@@ -103,11 +103,13 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
     # admitted an axis shifted off its origin -- `{10,11,12,13}` has four
     # entries too (owner/Codex).
     #
-    # What this does NOT catch is a REVERSED axis: `{0,1,2,3}` reversed is the
-    # same set. Reversal is an ordering property, not a universe one. It would
-    # not pass silently either -- a reversal in one run and not the other makes
-    # nearly every cell differ, so it shows up as an implausibly large result
-    # rather than a clean one.
+    # What a universe check CANNOT see, enumerated so the boundary is stated
+    # once rather than discovered one axis at a time: a REVERSED level axis and
+    # a TRANSPOSED column mapping are both the same SET. They are ordering
+    # properties, not universe ones. Neither passes silently -- either applied
+    # to one run and not the other makes most cells differ, so they surface as
+    # an implausibly large result rather than a clean one, which is the
+    # opposite of the failure mode this gate exists for.
     want_cols, want_k = set(range(1, cols + 1)), set(range(levels))
     have_cols = {k[1] for k in got}
     have_k = {k[2] for k in got}
@@ -124,6 +126,31 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
 
 
+def _expect_tiles_are_live(driver: str, cols: int) -> None:
+    """The tile argument must actually reach the partitioning.
+
+    A driver that PARSED the argument and ignored it would run the whole domain
+    every time, every partition would equal the baseline, and the tool would
+    report zero differences everywhere -- "the operator is column-local", the
+    strongest possible pass and the claim it exists to refute. Nothing in the
+    stream says which decomposition produced it: `G33R BEGIN` carries nsplit,
+    mode, algorithm and dtcld, not the tiles.
+
+    So this asks the one question the stream can answer: a spec that does not
+    sum to the domain must be REFUSED. A driver that ignored the argument would
+    accept it.
+    """
+    bad = [1] * (cols - 1)          # sums to cols-1, never the domain
+    r = subprocess.run([driver, "1", "rezero", ",".join(map(str, bad))],
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        raise ra.RefineError(
+            f"driver accepted tiles={bad}, which does not sum to {cols}: the "
+            f"tile argument is not reaching the partitioning, so every "
+            f"partition would be the whole domain and the result would be "
+            f"'column-local' whatever the operator does")
+
+
 def analysis(driver: str, fixture: str) -> dict:
     """Every contiguous partition against the whole domain as one tile.
 
@@ -131,6 +158,7 @@ def analysis(driver: str, fixture: str) -> dict:
     produced the same bits, and a float round-trip is the wrong instrument.
     """
     width, levels = fixture_dims(fixture)
+    _expect_tiles_are_live(driver, width)
     base = state(driver, (width,))
     _expect_universe(base, width, levels, "baseline")
     rows = {}

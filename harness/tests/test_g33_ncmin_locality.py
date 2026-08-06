@@ -237,3 +237,32 @@ def test_a_REVERSED_axis_is_NOT_a_universe_property(drivers):
 def test_the_intact_universe_is_accepted(drivers):
     """A gate that refused everything would also pass the tests above."""
     nl._expect_universe(nl.state(drivers["legacy"], (3,)), 3, 4, "intact")
+
+
+def test_a_driver_that_IGNORES_the_tile_argument_is_refused(drivers,
+                                                            monkeypatch):
+    """The last way this tool could report the strongest possible pass by
+    accident. A driver that parsed the tile argument and ignored it would run
+    the whole domain every time, every partition would equal the baseline, and
+    the result would be "column-local" whatever the operator does. Nothing in
+    the stream says which decomposition produced it -- `G33R BEGIN` carries
+    nsplit, mode, algorithm and dtcld, not the tiles -- so the control is that a
+    spec which does not sum to the domain must be REFUSED."""
+    nl._expect_tiles_are_live(drivers["legacy"], 3)      # the real one is live
+
+    class Accepts:
+        returncode, stdout, stderr = 0, "", ""
+
+    monkeypatch.setattr(nl.subprocess, "run", lambda *a, **k: Accepts())
+    with pytest.raises(ra.RefineError, match="not reaching the partitioning"):
+        nl._expect_tiles_are_live(drivers["legacy"], 3)
+
+
+def test_the_driver_validates_the_tile_spec_it_is_given(drivers):
+    """What makes the control above meaningful: the refusals are real."""
+    for bad, why in ((["1", "1"], "sum"), (["4"], "sum"), (["0", "3"], ">= 1"),
+                     (["1", "1", "1", "1"], "more tiles")):
+        r = subprocess.run([drivers["legacy"], "1", "rezero", ",".join(bad)],
+                           capture_output=True, text=True)
+        assert r.returncode != 0, f"{bad} was accepted"
+        assert why in r.stderr or why in r.stdout, f"{bad}: {r.stderr[:80]}"

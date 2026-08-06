@@ -205,6 +205,28 @@ Cloud ice in an affected column is decided **to O(1)** by where the tile boundar
 falls — the smallest of the twelve fields (`qg`, 1.7e-05) is still 142× f32 eps.
 So the phrase was right, and far weaker than the fact.
 
+**What the analyzer refuses, and what it cannot see.** Three successive
+fail-open holes were found in this tool's completeness gate — it parsed the
+stream itself instead of using the strict parser; it then compared each
+partition only against the baseline, which a commonly-dropped column satisfies
+exactly; and it checked columns as a set but levels as a count, admitting a
+shifted axis. Each fix moved the weakest point rather than closing the class, so
+the axes are enumerated here rather than discovered one at a time:
+
+| what | how it is caught |
+|---|---|
+| truncated / empty / duplicated / non-finite stream | the strict `G33R` parser |
+| a column or level missing from **every** run | `B`, `K` read from the fixture source |
+| a level axis shifted off `0..K-1` | set equality, not a count |
+| record count ≠ `12 × B × K` | explicit |
+| a driver that parses the tile argument and **ignores** it | it must refuse a spec that does not sum to `B` |
+| a **reversed** level axis, a **transposed** column mapping | **not caught** — these are the same set. Ordering is not a universe property. Neither passes silently: applied to one run and not the other they make most cells differ, surfacing as an implausibly large result rather than a clean one. |
+
+The common failure mode in all of them is the same and is worth naming: a broken
+measurement reports **zero differences**, which reads as "the operator is
+column-local" — the strongest possible pass, and the exact claim this tool
+exists to refute.
+
 **The conservative interface does not fix it.** The document argued this from
 source; it is now measured — both variants differ in exactly the same 0 / 16 / 31
 cells, in the same columns. The P0-4b work does not touch this, so it stays open
