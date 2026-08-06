@@ -87,7 +87,7 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     write()
     # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches", "modules-unpinned"]
+        ["matches", "modules-unpinned", "modules-unpinned"]
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -306,7 +306,8 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     p.write_bytes(b'{"analyses": []}')
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
     p.write_bytes(b'{"members": [], "analyses": []}')
-    assert [m["state"] for m in ec.members_of(p)] == ["modules-unpinned"]
+    assert [m["state"] for m in ec.members_of(p)] == \
+        ["modules-unpinned", "modules-unpinned"]   # one per pin block
 
 
 def test_a_corrupt_manifest_FAILS_the_check_not_merely_reports(world):
@@ -369,11 +370,42 @@ def test_EVERY_state_the_module_can_emit_is_classified():
     assert emitted, "the scan found no states -- it has stopped checking anything"
 
 
-def test_a_bundle_that_pins_NO_producer_modules_says_so(world):
-    """It yielded no rows at all, so a bundle that pinned nothing looked exactly
-    like one that checked out."""
-    bundle, write = world
-    write({"members": [], "analyses": []})
-    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    assert "modules-unpinned" in states
-    assert ec.check() == 0, "reported, not failed -- old bundles predate the pins"
+def _pin(mod):
+    path = f"harness/{mod}.py"
+    return {"path": path, "content_sha256": "0" * 64, "commit": "HEAD",
+            "blob_sha": ec._blob_at("HEAD", path)}
+
+
+def _module_rows(world_write, **blocks):
+    world_write({"members": [], "analyses": [], **blocks})
+    return {(m["file"], m["state"])
+            for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+
+
+def test_EACH_pin_block_is_checked_SEPARATELY(world):
+    """An `any()` across both blocks let a bundle carrying parsers but no
+    producer_modules satisfy the combined check, and the missing block vanished
+    from the report entirely (Codex). Every combination is exercised, because
+    the hole was in exactly the two mixed ones."""
+    _, write = world
+    assert ("<member_parsers>", "modules-unpinned") in _module_rows(write)
+    assert ("<producer_modules>", "modules-unpinned") in _module_rows(write)
+
+    only_parsers = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")])
+    assert ("<producer_modules>", "modules-unpinned") in only_parsers
+    assert ("<member_parsers>", "modules-unpinned") not in only_parsers
+
+    only_prod = _module_rows(write, producer_modules=[_pin("g33_matched_closure")])
+    assert ("<member_parsers>", "modules-unpinned") in only_prod
+    assert ("<producer_modules>", "modules-unpinned") not in only_prod
+
+    both = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")],
+                        producer_modules=[_pin("g33_matched_closure")])
+    assert not [f for f, st in both if st == "modules-unpinned"]
+
+
+def test_an_unpinned_block_is_REPORTED_not_failed(world):
+    """Old bundles legitimately predate these pins."""
+    _, write = world
+    _module_rows(write)
+    assert ec.check() == 0

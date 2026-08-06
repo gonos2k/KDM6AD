@@ -223,12 +223,17 @@ def _module_states(man: dict) -> list:
     and nothing else -- the defect §16-6 fixed one layer up (owner P0-2).
     """
     out = []
-    if not any(man.get(k) for k, _ in _PIN_BLOCKS):
-        # No rows at all read as "nothing to check", which is how a bundle that
-        # pinned nothing looked exactly like one that checked out.
-        return [{"file": "<producer modules>", "state": "modules-unpinned"}]
     for key, field in _PIN_BLOCKS:
-        for e in man.get(key) or []:
+        entries = man.get(key) or []
+        if not entries:
+            # PER BLOCK. An `any()` across both let a bundle carrying parsers
+            # but no producer_modules satisfy the combined check, and the
+            # missing block vanished from the report -- no rows at all reads as
+            # "nothing to check", which is how a bundle that pinned nothing
+            # looked exactly like one that checked out (Codex).
+            out.append({"file": f"<{key}>", "state": "modules-unpinned"})
+            continue
+        for e in entries:
             out.append(_analyzer_state({"analyzer": e.get(field),
                                         "analyzer_sha256": e.get("content_sha256")
                                         or e.get("sha256"),
