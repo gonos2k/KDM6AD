@@ -77,18 +77,30 @@ def build(workdir: Path, fixture: str, algo: str, nflux: bool,
     return exe
 
 
+def fixture_dims(fixture: str) -> tuple:
+    """(columns, levels) DECLARED by the fixture source.
+
+    An INDEPENDENT source of truth: nothing the driver prints can influence it.
+    That is the point wherever completeness is being judged -- a run that
+    silently drops a column agrees with itself perfectly, so only a figure from
+    outside the run can catch it.
+    """
+    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
+    m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)\s*,\s*"
+                  r"K\s*=\s*(\d+)", src)
+    if not m:
+        raise SystemExit(f"cannot read dimensions B, K from {fixture}.f90")
+    return int(m.group(1)), int(m.group(2))
+
+
 def fixture_width(fixture: str) -> int:
-    """The fixture's column count, read from the fixture source.
+    """The fixture's column count.
 
     The tile argument is positional and precedes the profile, so a non-default
     profile must pass one -- and hardcoding `3` silently produced a tile-sum
     error on any fixture that is not three columns wide (owner §9).
     """
-    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
-    m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)", src)
-    if not m:
-        raise SystemExit(f"cannot read column count B from {fixture}.f90")
-    return int(m.group(1))
+    return fixture_dims(fixture)[0]
 
 
 def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> list:

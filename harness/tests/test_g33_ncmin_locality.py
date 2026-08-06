@@ -14,6 +14,8 @@ sys.path.insert(0, str(ROOT))
 import g33_ncmin_locality as nl  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 
+FIXTURE = "g33_fixture_boundary_mapping_v1"
+
 REPO = ROOT.parent
 BUILD = ROOT / "g33_fortran" / "refine_build.sh"
 REF = REPO / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
@@ -50,7 +52,7 @@ def test_the_difference_is_reported_as_a_SIZE_not_only_a_COUNT(drivers):
     """The finding said "31 / 144 cells" and called it "a whole-state
     difference, not a rounding one". That was a count and an assertion: a count
     cannot separate a roundoff-scale difference from a dominating one."""
-    a = nl.analysis(drivers["legacy"])
+    a = nl.analysis(drivers["legacy"], FIXTURE)
     for tiles, r in a["partitions"].items():
         assert {"cells_differing", "max_rel", "is_roundoff_scale", "by_field"} \
             <= set(r), tiles
@@ -63,7 +65,7 @@ def test_the_partition_dependence_is_SIX_ORDERS_above_roundoff(drivers):
     dependence means accepting that cloud ice in an affected column is decided
     to O(1) by where the tile boundary falls -- not that it wobbles in the last
     bits."""
-    a = nl.analysis(drivers["legacy"])
+    a = nl.analysis(drivers["legacy"], FIXTURE)
     worst = a["partitions"]["2,1"]
     assert worst["cells_differing"] == 31
     assert worst["by_field"]["qi"]["max_rel"] > 0.9, \
@@ -76,17 +78,17 @@ def test_the_roundoff_verdict_can_come_out_TRUE(drivers, monkeypatch):
     """A verdict that is only ever False is not a verdict. Widening the
     threshold past the observed difference must flip it, or the check is
     reporting a constant."""
-    a = nl.analysis(drivers["legacy"])
+    a = nl.analysis(drivers["legacy"], FIXTURE)
     assert a["partitions"]["2,1"]["is_roundoff_scale"] is False
     monkeypatch.setattr(nl, "F32_EPS", 1.0)
-    assert nl.analysis(drivers["legacy"])["partitions"]["2,1"][
+    assert nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
         "is_roundoff_scale"] is True
 
 
 def test_ALL_TWELVE_prognostics_move_not_a_single_diagnostic(drivers):
     """A defect confined to one field could be argued as a diagnostic quirk.
     Every prognostic the stream carries moves in the affected columns."""
-    fields = set(nl.analysis(drivers["legacy"])["partitions"]["2,1"]["by_field"])
+    fields = set(nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"]["by_field"])
     assert len(fields) == 12, sorted(fields)
 
 
@@ -94,8 +96,8 @@ def test_the_CONSERVATIVE_interface_does_not_fix_it(drivers):
     """The finding argues from source that the two variants share this code.
     Measured rather than trusted -- and it means the P0-4b work does not touch
     this, so it stays open on its own terms."""
-    leg = nl.analysis(drivers["legacy"])["partitions"]
-    con = nl.analysis(drivers["conservative"])["partitions"]
+    leg = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
+    con = nl.analysis(drivers["conservative"], FIXTURE)["partitions"]
     assert {t: r["cells_differing"] for t, r in leg.items()} == \
         {t: r["cells_differing"] for t, r in con.items()}
     assert {t: r["columns"] for t, r in leg.items()} == \
@@ -106,7 +108,7 @@ def test_a_partition_whose_tiles_END_alike_shows_nothing(drivers):
     """The mechanism, as a prediction rather than a description: `ncmin` keeps
     the LAST column's threshold, so what matters is the surface type at each
     tile's `ite`. `(1, 2)` ends land/land like the whole domain."""
-    assert nl.analysis(drivers["legacy"])["partitions"]["1,2"][
+    assert nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["1,2"][
         "cells_differing"] == 0
 
 
@@ -154,8 +156,8 @@ def test_a_partition_whose_CELL_UNIVERSE_differs_is_refused(drivers,
     short = {k: v for k, v in list(full.items())[:-1]}
     monkeypatch.setattr(nl, "state",
                         lambda d, t: full if tuple(t) == (3,) else short)
-    with pytest.raises(ra.RefineError, match="not in"):
-        nl.analysis(drivers["legacy"])
+    with pytest.raises(ra.RefineError):
+        nl.analysis(drivers["legacy"], FIXTURE)
 
 
 def test_the_strict_parser_is_REUSED_not_reimplemented():
@@ -163,3 +165,44 @@ def test_the_strict_parser_is_REUSED_not_reimplemented():
     of checks beside the strict parser that already has them."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
     assert "ra.read_text(text, nsplit=1, label=label)" in src
+
+
+def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
+    """Comparing a partition against the baseline only asks whether they agree
+    with EACH OTHER, and a run that drops a column agrees with itself perfectly.
+    With column 3 gone everywhere the tool reported `31/96` and a shrunken
+    denominator as a normal result. Only a figure from OUTSIDE the run catches
+    that, so it comes from the fixture source."""
+    real = nl.state
+    for drop in (3, 2):
+        monkeypatch.setattr(nl, "state", lambda d, t, c=drop: {
+            k: v for k, v in real(d, t).items() if k[1] != c})
+        with pytest.raises(ra.RefineError, match="fixture declares"):
+            nl.analysis(drivers["legacy"], FIXTURE)
+
+
+def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
+                                                               monkeypatch):
+    """Why this is not merely a tidiness check. Column 2 is the sea column, and
+    `(1,1,1)` differs ONLY there -- so a run silently missing it reports that
+    partition as clean. `(2,1)` survives because it also differs in column 1,
+    which is exactly the trap: the tool would still look like it was working."""
+    real = nl.state
+    monkeypatch.setattr(nl, "state", lambda d, t: {
+        k: v for k, v in real(d, t).items() if k[1] != 2})
+    monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
+    p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
+    assert p["1,1,1"]["cells_differing"] == 0, \
+        "(1,1,1) differs only in the sea column"
+    assert p["2,1"]["cells_differing"] > 0, \
+        "(2,1) still differs in column 1 -- the tool would look fine"
+
+
+def test_the_expected_universe_comes_from_the_FIXTURE_not_the_run():
+    """`fixture_dims` reads B and K from the fixture source, which the driver's
+    output cannot influence. Shared with the bundle producer rather than
+    re-derived beside it."""
+    from g33_refine_experiment import fixture_dims, fixture_width
+
+    assert fixture_dims(FIXTURE) == (3, 4)
+    assert fixture_width(FIXTURE) == fixture_dims(FIXTURE)[0]
