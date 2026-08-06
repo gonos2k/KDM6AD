@@ -12,6 +12,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_ncmin_locality as nl  # noqa: E402
+import g33_refine_analyze as ra  # noqa: E402
 
 REPO = ROOT.parent
 BUILD = ROOT / "g33_fortran" / "refine_build.sh"
@@ -107,3 +108,58 @@ def test_a_partition_whose_tiles_END_alike_shows_nothing(drivers):
     tile's `ite`. `(1, 2)` ends land/land like the whole domain."""
     assert nl.analysis(drivers["legacy"])["partitions"]["1,2"][
         "cells_differing"] == 0
+
+
+# ---- the analyzer must not accept an incomplete run as a clean one ----------
+
+def _stream(drivers, tiles=(3,)):
+    return subprocess.run([drivers["legacy"], "1", "rezero",
+                           ",".join(map(str, tiles))],
+                          capture_output=True, text=True).stdout
+
+
+def test_an_EMPTY_run_is_refused_not_read_as_column_local(drivers):
+    """The defect this section exists for. The first version parsed the lines
+    itself, so a driver emitting nothing gave an empty dict, every partition
+    then showed zero cells differing, and the report printed "identical
+    gating" -- a completely broken run reading as the strongest possible pass."""
+    with pytest.raises(ra.RefineError):
+        nl.read_state("", label="empty")
+
+
+def test_a_TRUNCATED_run_is_refused(drivers):
+    """A run killed part way has no END. It would otherwise contribute whatever
+    cells it managed to emit, and a short BASELINE reports FEWER differences --
+    the flattering direction."""
+    with pytest.raises(ra.RefineError):
+        nl.read_state(_stream(drivers).replace("G33R END", "", 1),
+                      label="truncated")
+
+
+def test_a_DUPLICATE_record_is_refused(drivers):
+    """A dict comprehension keeps the last write silently. The strict parser
+    rejects the second record instead."""
+    text = _stream(drivers)
+    line = next(l for l in text.splitlines() if l.startswith("G33R STATE"))
+    with pytest.raises(ra.RefineError):
+        nl.read_state(text.replace(line, line + "\n" + line, 1), label="dup")
+
+
+def test_a_partition_whose_CELL_UNIVERSE_differs_is_refused(drivers,
+                                                            monkeypatch):
+    """"How many cells differ" counted over whatever both happened to carry
+    would silently compare a subset."""
+    real = nl.state
+    full = real(drivers["legacy"], (3,))
+    short = {k: v for k, v in list(full.items())[:-1]}
+    monkeypatch.setattr(nl, "state",
+                        lambda d, t: full if tuple(t) == (3,) else short)
+    with pytest.raises(ra.RefineError, match="not in"):
+        nl.analysis(drivers["legacy"])
+
+
+def test_the_strict_parser_is_REUSED_not_reimplemented():
+    """The repeated defect in this repo is a new tool re-deriving a weaker set
+    of checks beside the strict parser that already has them."""
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    assert "ra.read_text(text, nsplit=1, label=label)" in src

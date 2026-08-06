@@ -20,11 +20,13 @@ only tried even splits would pass while the operator was arbitrarily non-local.
 """
 from __future__ import annotations
 
-import json
 import struct
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_refine_analyze as ra  # noqa: E402
 
 #: f32 machine epsilon. The scale a "rounding difference" would live at.
 F32_EPS = 2.0 ** -23
@@ -39,15 +41,38 @@ def compositions(n: int) -> list[tuple]:
             for rest in compositions(n - first)]
 
 
+def read_state(text: str, *, label: str) -> dict:
+    """{(field, col, k): raw hex}, and ONLY from a stream the strict parser took.
+
+    The first version parsed the lines itself. That accepted anything: a driver
+    emitting NOTHING gave an empty dict, every partition then showed zero cells,
+    and
+    the report printed "identical gating" -- a completely broken run reading as
+    the strongest possible pass. Validating through `ra.read_text` first brings
+    the checks that already exist (exactly one BEGIN and END, the full field
+    set, a non-ragged grid, no duplicate records, no non-finite value) instead
+    of re-deriving a weaker set beside them.
+
+    The hex is then taken raw, because the comparison is about the BITS the
+    operator produced and 0.0 == -0.0 would hide a sign flip.
+    """
+    ra.read_text(text, nsplit=1, label=label)
+    out = {}
+    for p in (ln.split() for ln in text.splitlines()):
+        if p[:2] == ["G33R", "STATE"]:
+            out[(p[2], int(p[3]), int(p[4]))] = p[5]
+    if not out:
+        raise ra.RefineError(f"{label}: no G33R STATE records")
+    return out
+
+
 def state(driver: str, tiles) -> dict:
-    """{(field, col, k): value} after one call under this decomposition."""
+    """{(field, col, k): raw hex} after one call under this decomposition."""
     r = subprocess.run([driver, "1", "rezero", ",".join(map(str, tiles))],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"driver exited {r.returncode}\n{r.stderr[-2000:]}")
-    return {(p[2], int(p[3]), int(p[4])): p[5]
-            for p in (ln.split() for ln in r.stdout.splitlines())
-            if p[:2] == ["G33R", "STATE"]}
+    return read_state(r.stdout, label=f"tiles={','.join(map(str, tiles))}")
 
 
 def _f32(h: str) -> float:
@@ -72,6 +97,13 @@ def analysis(driver: str, width: int = 3) -> dict:
         if tiles == (width,):
             continue
         got = state(driver, tiles)
+        # The universes must be the SAME cells, or "how many differ" is counted
+        # over whatever both happened to carry -- and a short baseline reports
+        # FEWER differences, which is the flattering direction.
+        if set(got) != set(base):
+            raise ra.RefineError(
+                f"tiles={tiles}: {len(set(got) ^ set(base))} cells are not in "
+                f"both this partition and the whole-domain baseline")
         diff = {k: (base[k], got[k]) for k in base if base[k] != got[k]}
         fields = {}
         for (f, _c, _k), (a, b) in diff.items():
