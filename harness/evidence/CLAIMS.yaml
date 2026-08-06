@@ -938,7 +938,18 @@ claims:
       rho*dz measure, which is the only physical form, the result is COLUMN RAIN
       MASS differing by 20.67% (col 1) and 26.13% (col 2), cloud ice by 8.78%
       (col 1), and TOTAL CONDENSATE by 3.25% and 2.68%. The earlier "cloud ice
-      is decided to O(1)" headline is withdrawn as a physical statement. Both variants differ in
+      is decided to O(1)" headline is withdrawn as a physical statement. Both
+      bases are now computed (owner §7.1): the RELATIVE figures are identical
+      under operator rho_m*dz and physical rho_d*dz -- necessarily, since both
+      runs share the window-initial qv and the 1+qv weight cancels in the ratio
+      -- while the absolute masses differ by 0.10-0.17%. So the headline does
+      not depend on the basis, but it is measured under both rather than
+      asserted under one. The affected-column PREDICTION now includes the
+      threshold-activation predicate (owner §7.2): ncmin is both a gate and a
+      floor (max(ncmin,nci), F:2736/2750/2888), and the two candidates agree
+      where the number exceeds BOTH. Here nc runs 4.00e+07..5.04e+07 against
+      2.5e+07 and 1.0e+08, so the gate is active in every cell -- which is WHY
+      the prediction is exact on this fixture rather than a general property. Both variants differ in
       exactly the same 0/16/31 cells and columns, so the conservative interface
       does NOT fix it. Unresolved; needs an owner decision among per-column
       ncmin, accepting the partition dependence, or splitting the variants --
@@ -968,7 +979,7 @@ claims:
       sequential multi-call tile experiment that PREDICTS rank sensitivity
       rather than demonstrating it.
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:cab4a8ed996c543d9b1ce6212084528805e1ef60d53780e09a3300e11736b52c]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:ff07aa54b46b09537da2d74421a3afe1ec544abdd4714a8995974b763a3a435d]
 
   - id: G33-ENTHALPY-003
     text: >

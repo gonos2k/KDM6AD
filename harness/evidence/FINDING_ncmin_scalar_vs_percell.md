@@ -224,6 +224,39 @@ tile boundary, and total condensate by 2.7–3.3% — not that cloud ice changes
 100%. The per-component ratios stay in the table above because they show the
 mechanism bites hard where it bites; they are not the physical magnitude.
 
+**Both bases, because one of them was called "the only physical form" and was
+not (owner §7.1).** The table above is the OPERATOR integral, `ρ_m·Δz` — what the
+kernel budgets. The mixing ratios are per dry-air kg, so the physical column mass
+is `ρ_d·Δz`. Computed:
+
+| row | operator abs | physical abs | ratio | relative |
+|---|---|---|---|---|
+| 2/rain | 4.279502e-02 | 4.272239e-02 | 1.00170 | **26.13%** |
+| 1/rain | 3.453653e-02 | 3.450203e-02 | 1.00100 | **20.67%** |
+| 1/total condensate | 3.435973e-02 | 3.432540e-02 | 1.00100 | 3.25% |
+
+The **relative** figures are identical under both bases, and necessarily so: both
+runs share the same window-initial `qv`, so the `1+qv` weight cancels in the
+ratio. The absolute masses differ by that factor, 0.10–0.17% here. So the
+21–26% headline does **not** depend on the basis — but it is now measured under
+both rather than asserted under one.
+
+**The prediction needs the gate to be ACTIVE (owner §7.2).** "A differing
+tile-end surface type makes every column in that tile differ" holds only where
+the two candidate thresholds can actually behave differently. `ncmin` is used
+both as a gate (`nci .le./.gt./.ge. ncmin`, many sites) and as a floor
+(`max(ncmin, nci)`, F:2736/2750/2888), and the two candidates agree exactly where
+the number exceeds **both**. On this fixture `nc` runs 4.00e+07…5.04e+07 against
+thresholds 2.5e+07 and 1.0e+08, so the gate is active in **every** cell — which
+is *why* the column prediction is exact here, not a general property. The
+predicate is computed now, so a fixture whose `nc` sat outside that band would
+not be over-predicted.
+
+**`causal_attribution_valid` is separate from `measurement_valid`.** A partition
+whose observed columns miss the prediction used to be recorded as an ordinary
+row; the two verdicts are distinguished now, so a causal claim cannot rest on a
+run where the attribution failed.
+
 **What the analyzer refuses, and what it cannot see.** Three successive
 fail-open holes were found in this tool's completeness gate — it parsed the
 stream itself instead of using the strict parser; it then compared each

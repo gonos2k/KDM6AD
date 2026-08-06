@@ -327,14 +327,57 @@ def test_the_ABSOLUTE_difference_is_reported_beside_the_relative(drivers):
 
 
 def test_the_COLUMN_INTEGRAL_is_what_makes_it_a_physical_statement(drivers):
-    """Integrated under rho*dz, the defensible headline is column RAIN mass at
-    21-26%, not cloud ice at 100%."""
-    ci = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
+    """Integrated over the column, the defensible headline is RAIN mass at
+    21-26%, not cloud ice at 100%. Reported under BOTH bases, because the first
+    version called the operator integral "the only physical form" -- and the
+    mixing ratios are per DRY-air kg (owner §7.1)."""
+    both = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
         "column_integrated"]
-    assert 0.20 < ci["1/qr"]["rel"] < 0.22
-    assert 0.25 < ci["2/qr"]["rel"] < 0.27
-    for c in (1, 2):
-        assert 0.02 < ci[f"{c}/total_condensate"]["rel"] < 0.04
+    assert set(both) == {"operator", "physical"}
+    for basis, ci in both.items():
+        assert 0.20 < ci["1/qr"]["rel"] < 0.22, basis
+        assert 0.25 < ci["2/qr"]["rel"] < 0.27, basis
+        for c in (1, 2):
+            assert 0.02 < ci[f"{c}/total_condensate"]["rel"] < 0.04, basis
+
+
+def test_the_two_bases_agree_on_ratio_and_differ_on_mass(drivers):
+    """Necessarily so: both runs share the window-initial qv, so the 1+qv weight
+    cancels in the ratio, while the absolute masses differ by that factor. This
+    is what turns "the headline does not depend on the basis" from a hope into a
+    measurement."""
+    both = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
+        "column_integrated"]
+    for row in ("1/qr", "2/qr", "1/total_condensate"):
+        o, p = both["operator"][row], both["physical"][row]
+        assert o["rel"] == pytest.approx(p["rel"], rel=1e-9), row
+        assert p["abs"] < o["abs"], f"{row}: rho_d < rho_m, so the mass is smaller"
+        assert 1.0 < o["abs"] / p["abs"] < 1.01, row
+
+
+def test_the_prediction_requires_the_GATE_TO_BE_ACTIVE(drivers):
+    """"A differing tile-end surface type makes every column in that tile
+    differ" holds only where the two candidate thresholds can behave
+    differently. `ncmin` is a gate AND a floor (`max(ncmin, nci)`,
+    F:2736/2750/2888), and they agree where the number exceeds BOTH."""
+    import g33_refine_analyze as ra_
+
+    land, sea = nl.fixture_ncmin(FIXTURE)
+    assert (land, sea) == (1.0e8, 2.5e7)
+    run = ra_.read_text(nl.run(drivers["legacy"], (3,)), nsplit=1)
+    # nc runs 4.0e7..5.04e7, between the thresholds, so the gate is active
+    # everywhere -- which is WHY the prediction is exact on this fixture.
+    assert all(nl.threshold_can_matter(run, c, (land, sea)) for c in (1, 2, 3))
+    # And a column whose numbers exceeded both would be excluded.
+    assert not nl.threshold_can_matter(run, 1, (1.0, 1.0))
+
+
+def test_causal_attribution_is_a_SEPARATE_verdict(drivers):
+    """A partition whose observed columns miss the prediction used to be
+    recorded as an ordinary row (owner §7.3)."""
+    for r in nl.analysis(drivers["legacy"], FIXTURE)["partitions"].values():
+        assert r["measurement_valid"] is True
+        assert r["causal_attribution_valid"] is True
 
 
 def test_the_ULP_metric_is_ORDER_PRESERVING_across_zero(drivers):
