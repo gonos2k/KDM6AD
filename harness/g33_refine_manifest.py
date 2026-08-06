@@ -21,7 +21,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as ra   # noqa: E402
 
-SCHEMA = "refinement_experiment_v1"
+#: v2 REQUIRES the commit+blob pin blocks and a non-empty member list. Under v1
+#: those were optional metadata, so deleting them downgraded a new bundle to the
+#: legacy contract and the checker reported rather than failed -- a contract you
+#: can opt out of by omission is not a contract (owner P0-E2).
+SCHEMA = "refinement_experiment_v2"
 
 
 def sha256(path: Path) -> str:

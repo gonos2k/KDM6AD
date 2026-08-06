@@ -334,26 +334,48 @@ def _has_artifacts(cid: str) -> bool:
     return False
 
 
-def test_every_active_measurement_claim_DECLARES_its_run_artifact_status():
-    """The claim->commit machinery exists; the coverage does not. 20 of 22
-    active measurement claims still stop at a finding digest, with no experiment
-    manifest pinned (owner P0-4). Requiring the status to be DECLARED means a
-    new claim cannot quietly omit it, and the gap is visible in the registry
-    rather than only in a review."""
-    allowed = {"pinned", "historical_unavailable", "source_only"}
+#: What each kind of evidence may say about its run artifacts.
+_ALLOWED = {
+    "source":      {"not_applicable"},
+    "measurement": {"pinned", "historical_unavailable"},
+    "mixed":       {"pinned", "historical_unavailable"},
+    "inference":   {"pinned", "historical_unavailable"},
+}
+
+
+def test_every_active_claim_declares_a_STRUCTURED_evidence_kind():
+    """The previous gate found measurement claims by testing whether the word
+    "measurement" appeared in the `basis` PROSE. `G33-NUMBER-008` ("three-arm
+    falsification test on the forcing") and `G33-TRAJECTORY-001` ("an algebraic
+    identity evaluated on six real runs") are empirical and escaped it, so they
+    carried no artifact status at all and the gate passed (owner P0-E4).
+
+    Whether a claim rests on runs is now a declared field, not a substring."""
     for c in CLAIMS:
-        if c.get("status") != "active" or "measurement" not in str(c.get("basis", "")):
+        if c.get("status") != "active":
             continue
+        kind = c.get("evidence_kind")
+        assert kind in _ALLOWED, f"{c['id']}: evidence_kind is {kind!r}"
         got = c.get("artifact_status")
-        assert got in allowed, (
-            f"{c['id']}: artifact_status is {got!r}, expected one of "
-            f"{sorted(allowed)}. An active measurement claim must say whether "
-            f"the run behind it is reachable.")
-        # `artifacts` is a nested block the flat parser above does not keep, so
-        # this reads the claim's own text rather than the parsed dict.
+        assert got in _ALLOWED[kind], (
+            f"{c['id']}: evidence_kind {kind} allows "
+            f"{sorted(_ALLOWED[kind])}, got {got!r}")
         assert _has_artifacts(c["id"]) == (got == "pinned"), (
             f"{c['id']}: artifact_status is {got!r} but "
             f"{'pins' if _has_artifacts(c['id']) else 'pins no'} artifacts")
+
+
+def test_a_claim_resting_on_RUNS_cannot_call_itself_source_only():
+    """The escape the vocabulary must not leave open: `source` is the one kind
+    that needs no run artifact, so mislabelling an empirical claim as `source`
+    would exempt it from the coverage requirement entirely."""
+    for c in CLAIMS:
+        if c.get("evidence_kind") != "source":
+            continue
+        basis = str(c.get("basis", "")).lower()
+        for word in ("measurement", "measured", "real runs", "on both arms"):
+            assert word not in basis, (
+                f"{c['id']} is declared `source` but its basis says {word!r}")
 
 
 def test_the_artifact_coverage_gap_is_NOT_silently_closed():

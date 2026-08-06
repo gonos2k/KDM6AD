@@ -518,3 +518,27 @@ def test_the_PARSERS_are_pinned_by_commit_and_blob_like_the_analyzers():
     # The strict parsers must be in the pinned set, not only the analyzers.
     assert {"g33_refine_analyze", "g33_number_transport", "g33_probe_read"} \
         <= set(xp.PRODUCER_MODULES)
+
+
+def test_an_EMPTY_nsplit_list_is_refused(tmp_path):
+    """The generator fix stopped `nsplits` being exhausted; it did not stop a
+    caller passing an empty one, and every loop then runs zero times and
+    publishes a manifest that looks complete (owner P0-E3)."""
+    with pytest.raises(SystemExit, match="at least one member"):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(), mode="rezero", nflux=False,
+                   module=tmp_path / "m.F")
+
+
+def test_a_NON_POSITIVE_nsplit_is_refused(tmp_path):
+    for bad in ((0, 3), (-1,)):
+        with pytest.raises(SystemExit, match="must be positive"):
+            xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                       algo="legacy", nsplits=bad, mode="rezero", nflux=False,
+                       module=tmp_path / "m.F")
+
+
+def test_the_producer_writes_the_STRICT_schema():
+    """A bundle made today must declare the contract it satisfies, or the
+    checker cannot tell it from one that predates the pin blocks."""
+    assert xp.rm.SCHEMA == "refinement_experiment_v2"

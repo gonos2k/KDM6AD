@@ -31,10 +31,18 @@ def world(tmp_path, monkeypatch):
     bundle.mkdir(parents=True)
     stream = b"G33R STATE 1 1 1 th 3F800000\n"
     (bundle / "n3.rezero.txt").write_bytes(stream)
-    man = {"members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
+    # A realistic LEGACY manifest: every archived bundle declares its schema and
+    # artifact_type, so a fixture without them was testing a shape that does not
+    # exist -- and one the checker now rejects as unidentifiable.
+    man = {"schema": "refinement_experiment_v1",
+           "artifact_type": "refinement_experiment",
+           "members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
            "findings": []}
 
-    def write(manifest=man, pin=None, claim_extra=""):
+    def write(manifest=None, pin=None, claim_extra=""):
+        manifest = {"schema": "refinement_experiment_v1",
+                    "artifact_type": "refinement_experiment",
+                    **(man if manifest is None else manifest)}
         mb = json.dumps(manifest, indent=2, sort_keys=True).encode()
         (bundle / "manifest.json").write_bytes(mb)
         digest = pin if pin is not None else _sha(mb)[:16]
@@ -303,11 +311,23 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     bundle, write = world
     write()
     p = bundle / "manifest.json"
-    p.write_bytes(b'{"analyses": []}')
+    head = '"schema": "refinement_experiment_v1", ' \
+           '"artifact_type": "refinement_experiment"'
+    p.write_text("{" + head + ', "analyses": []}')
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
-    p.write_bytes(b'{"members": [], "analyses": []}')
+    p.write_text("{" + head + ', "members": [], "analyses": []}')
     assert [m["state"] for m in ec.members_of(p)] == \
         ["modules-unpinned", "modules-unpinned"]   # one per pin block
+
+
+def test_a_manifest_that_declares_NO_schema_is_unidentifiable(world):
+    """Every archived bundle declares one, so a manifest without it cannot be
+    matched to a contract and must not be validated against a guessed one."""
+    bundle, write = world
+    write()
+    p = bundle / "manifest.json"
+    p.write_bytes(b'{"members": []}')
+    assert ec.members_of(p)[0]["state"] == "MANIFEST-SCHEMA-MISMATCH"
 
 
 def test_a_corrupt_manifest_FAILS_the_check_not_merely_reports(world):
@@ -409,3 +429,67 @@ def test_an_unpinned_block_is_REPORTED_not_failed(world):
     _, write = world
     _module_rows(write)
     assert ec.check() == 0
+
+
+# ---- owner P0-E2: a new bundle cannot downgrade to the legacy contract -------
+
+def _man(**kw):
+    pin = {"path": "harness/g33_matched_closure.py", "content_sha256": "0" * 64,
+           "commit": "HEAD",
+           "blob_sha": ec._blob_at("HEAD", "harness/g33_matched_closure.py")}
+    base = {"artifact_type": "refinement_experiment",
+            "schema": "refinement_experiment_v2",
+            "members": [{"file": "n3.rezero.txt", "output_sha256": "0" * 64}],
+            "member_parsers": [pin], "producer_modules": [pin],
+            "build_provenance": {"repo_commit": "x"}, "arm": "reference",
+            "precision": "f32", "analyses": []}
+    return {**base, **kw}
+
+
+def _first_state(tmp_path, man):
+    p = tmp_path / "manifest.json"
+    p.write_text(json.dumps(man))
+    return ec.members_of(p)[0]["state"]
+
+
+def test_a_v2_bundle_that_DELETES_its_pin_blocks_FAILS(tmp_path):
+    """Under v1 the blocks were optional metadata, so a new bundle could shed
+    them and be read as an old one -- a contract you can opt out of by omission
+    is not a contract (owner P0-E2)."""
+    assert _first_state(tmp_path, _man(member_parsers=[], producer_modules=[])) \
+        == "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_a_v1_bundle_WITHOUT_the_pin_blocks_is_only_reported(tmp_path):
+    """They did not exist then. Failing would make every archived bundle red."""
+    st = _first_state(tmp_path, _man(schema="refinement_experiment_v1",
+                                     member_parsers=[], producer_modules=[]))
+    assert st != "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_a_ZERO_MEMBER_experiment_is_refused(tmp_path):
+    """`members: []` still passes the generic reader -- a bundle may publish
+    none -- but a refinement experiment with no members is not a small
+    experiment (owner P0-E3)."""
+    assert _first_state(tmp_path, _man(members=[])) == "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_an_UNKNOWN_schema_is_refused(tmp_path):
+    """The old check only rejected a top-level that was not an object, so
+    `"schema": "completely-unknown"` went straight through."""
+    assert _first_state(tmp_path, _man(schema="made-up-v9")) == \
+        "MANIFEST-SCHEMA-MISMATCH"
+    assert _first_state(tmp_path, _man(artifact_type="something-else")) == \
+        "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_an_instrumented_v2_bundle_must_carry_analyses(tmp_path):
+    assert _first_state(tmp_path, _man(instrumented=True, analyses=[])) == \
+        "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_GARBAGE_in_a_pin_block_fails_rather_than_crashing(tmp_path):
+    """It raised AttributeError out of `--check`. A crash is not a verdict."""
+    p = tmp_path / "manifest.json"
+    p.write_text(json.dumps(_man(member_parsers=[42])))
+    assert "MANIFEST-SCHEMA-MISMATCH" in [m["state"] for m in ec.members_of(p)]

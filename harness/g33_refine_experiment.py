@@ -370,6 +370,15 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # manifest that looks complete. Nothing downstream can tell that apart from
     # a bundle that was asked for nothing.
     nsplits = tuple(nsplits)
+    # A refinement experiment with no members is not a small experiment (owner
+    # P0-E3). The generator fix stopped `nsplits` being exhausted; it did not
+    # stop a caller passing an empty one, and every loop below then runs zero
+    # times and publishes a manifest that looks complete.
+    if not nsplits:
+        raise SystemExit("--nsplit must name at least one member: a bundle with "
+                         "no members is not a refinement experiment")
+    if any(n < 1 for n in nsplits):
+        raise SystemExit(f"--nsplit must be positive, got {sorted(nsplits)}")
     require_pinned_producer()
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;

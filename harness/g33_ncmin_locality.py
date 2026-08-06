@@ -20,12 +20,14 @@ only tried even splits would pass while the operator was arbitrarily non-local.
 """
 from __future__ import annotations
 
+import re
 import struct
 import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 from g33_refine_experiment import fixture_dims  # noqa: E402
 
@@ -45,29 +47,67 @@ def compositions(n: int) -> list[tuple]:
             for rest in compositions(n - first)]
 
 
-def read_state(text: str, *, label: str) -> dict:
-    """{(field, col, k): raw hex}, and ONLY from a stream the strict parser took.
+def read_records(text: str, *, label: str) -> dict:
+    """{(cls, name, col, k): raw hex} for every G33R record.
 
-    The first version parsed the lines itself. That accepted anything: a driver
-    emitting NOTHING gave an empty dict, every partition then showed zero cells,
-    and
-    the report printed "identical gating" -- a completely broken run reading as
-    the strongest possible pass. Validating through `ra.read_text` first brings
-    the checks that already exist (exactly one BEGIN and END, the full field
-    set, a non-ragged grid, no duplicate records, no non-finite value) instead
-    of re-deriving a weaker set beside them.
+    ONLY from a stream the strict parser took. The first version parsed the
+    lines itself and accepted anything: a driver emitting NOTHING gave an empty
+    dict, every partition then showed zero differing components, and the report
+    printed "identical gating" -- a completely broken run reading as the
+    strongest possible pass. Validating through `ra.read_text` brings the checks
+    that already exist (exactly one BEGIN and END, the full field set, a
+    non-ragged grid, no duplicate records, no non-finite value).
 
-    The hex is then taken raw, because the comparison is about the BITS the
-    operator produced and 0.0 == -0.0 would hide a sign flip.
+    The hex is taken raw afterwards, because the comparison is about the BITS
+    the operator produced and 0.0 == -0.0 would hide a sign flip.
     """
     ra.read_text(text, nsplit=1, label=label)
     out = {}
     for p in (ln.split() for ln in text.splitlines()):
-        if p[:2] == ["G33R", "STATE"]:
-            out[(p[2], int(p[3]), int(p[4]))] = p[5]
+        if p[:1] != ["G33R"]:
+            continue
+        if p[1] in ("STATE", "INITIAL", "FORCING"):
+            out[(p[1].lower(), p[2], int(p[3]), int(p[4]))] = p[5]
+        elif p[1] == "PREC":
+            out[("prec", p[2], int(p[3]), None)] = p[4]
     if not out:
-        raise ra.RefineError(f"{label}: no G33R STATE records")
+        raise ra.RefineError(f"{label}: no G33R records")
     return out
+
+
+def read_state(text: str, *, label: str) -> dict:
+    """{(field, col, k): raw hex} -- the final state only."""
+    return {k[1:]: v for k, v in read_records(text, label=label).items()
+            if k[0] == "state"}
+
+
+def _expect_same_inputs(base: dict, got: dict, label: str) -> None:
+    """Baseline and partition must have run the SAME atmosphere.
+
+    Without this the analysis attributes every difference to `ncmin` while
+    having checked only that the two runs cover the same cell universe. A
+    partition driver that transposed the column mapping would satisfy the
+    universe check, produce large differences, and be read as a strong `ncmin`
+    effect -- and "a large difference is suspicious" cannot separate the two,
+    because a large difference is exactly what this tool reports (owner P0-S1).
+
+    Compared RAW-BIT: the twelve INITIAL prognostics and the rho/delz/pii
+    forcing, every cell. Not the final STATE -- that is the measurement.
+    """
+    for cls in ("initial", "forcing"):
+        a = {k: v for k, v in base.items() if k[0] == cls}
+        b = {k: v for k, v in got.items() if k[0] == cls}
+        if set(a) != set(b):
+            raise ra.RefineError(
+                f"{label}: the {cls} universe differs from the baseline by "
+                f"{len(set(a) ^ set(b))} records")
+        bad = [k for k in a if a[k] != b[k]]
+        if bad:
+            raise ra.RefineError(
+                f"{label}: {len(bad)} {cls} records differ from the baseline "
+                f"(e.g. {bad[0]}: {a[bad[0]]} vs {b[bad[0]]}) -- the two runs "
+                f"did not receive the same atmosphere, so a difference in the "
+                f"final state cannot be attributed to ncmin")
 
 
 def run(driver: str, tiles) -> str:
@@ -85,10 +125,15 @@ def tile_brackets(text: str) -> list:
     `G33N CALL_BEGIN` is written from INSIDE the tile loop, carrying the very
     bounds handed to `kdm62D` on the next statement. Needs an `--nflux` build,
     whose STATE records are byte-identical to the plain one on this fixture.
+
+    Read through the STRICT G33N parser, not by scanning for the token. The
+    scan trusted a substring: a valid G33R block plus two forged CALL_BEGIN
+    lines -- no STREAM_BEGIN, no STREAM_END, no CALL_END, no records at all --
+    produced exactly the brackets asked for and passed the liveness gate, while
+    `nt.calls()` rejects that stream on its first record (owner P0-E1). A
+    load-bearing gate must not be the one place a weaker reader is used.
     """
-    return [(int(p[5]), int(p[6]))
-            for p in (ln.split() for ln in text.splitlines())
-            if p[:2] == ["G33N", "CALL_BEGIN"]]
+    return [c["cols"] for c in nt.calls(text)]
 
 
 def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
@@ -139,6 +184,45 @@ def _ordered(h: str) -> int:
 def _ulps(a: str, b: str) -> int:
     """Distance in representable f32 steps -- the unit a rounding claim is in."""
     return abs(_ordered(a) - _ordered(b))
+
+
+def fixture_xland(fixture: str) -> dict:
+    """{column: 1.0 land | 2.0 sea} declared by the fixture source.
+
+    The mechanism depends on the surface type at each tile's LAST column, and
+    the stream carries no `xland`. Reading it from the fixture keeps the
+    prediction checkable without widening the protocol (owner P0-S1).
+    """
+    src = (Path(__file__).resolve().parent / "g33_fortran"
+           / f"{fixture}.f90").read_text()
+    m = re.search(r"XLAND_BITS\(B\)\s*=\s*\[(.*?)\]", src, re.S)
+    if not m:
+        raise SystemExit(f"cannot read XLAND_BITS from {fixture}.f90")
+    bits = re.findall(r"z'([0-9A-Fa-f]{8})'", m.group(1))
+    return {i: struct.unpack(">f", bytes.fromhex(b))[0]
+            for i, b in enumerate(bits, start=1)}
+
+
+def predicted_columns(tiles, xland: dict, width: int) -> set:
+    """Which columns the MECHANISM says must differ from the whole-domain run.
+
+    `ncmin` survives the column loop holding the LAST column's threshold, so
+    every column in a tile is gated on that tile's final `xland`. The baseline
+    is one tile ending at `width`. A column differs exactly when its tile's
+    ending surface type differs from the baseline's.
+
+    This is a far stronger causal statement than magnitude: it names the
+    columns in advance. "A large difference is suspicious" cannot attribute
+    anything, because a large difference is what the tool reports (owner P0-S1).
+    """
+    baseline_gate = xland[width]
+    out, first = set(), 1
+    for t in tiles:
+        last = first + t - 1
+        if xland[last] != baseline_gate:
+            out |= set(range(first, last + 1))
+        first = last + 1
+    return out
 
 
 def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
@@ -217,10 +301,11 @@ def analysis(driver: str, fixture: str) -> dict:
     produced the same bits, and a float round-trip is the wrong instrument.
     """
     width, levels = fixture_dims(fixture)
-
+    xland = fixture_xland(fixture)
     base_text = run(driver, (width,))
     _expect_tiles_are_live(base_text, (width,), "baseline")
-    base = read_state(base_text, label="baseline")
+    base_rec = read_records(base_text, label="baseline")
+    base = {k[1:]: v for k, v in base_rec.items() if k[0] == "state"}
     _expect_universe(base, width, levels, "baseline")
     rows = {}
     for tiles in compositions(width):
@@ -229,7 +314,9 @@ def analysis(driver: str, fixture: str) -> dict:
         got_text = run(driver, tiles)
         label = f"tiles={','.join(map(str, tiles))}"
         _expect_tiles_are_live(got_text, tiles, label)
-        got = read_state(got_text, label=label)
+        got_rec = read_records(got_text, label=label)
+        _expect_same_inputs(base_rec, got_rec, label)
+        got = {k[1:]: v for k, v in got_rec.items() if k[0] == "state"}
         _expect_universe(got, width, levels, label)
         # The universes must be the SAME cells, or "how many differ" is counted
         # over whatever both happened to carry -- and a short baseline reports
@@ -238,6 +325,7 @@ def analysis(driver: str, fixture: str) -> dict:
             raise ra.RefineError(
                 f"tiles={tiles}: {len(set(got) ^ set(base))} cells are not in "
                 f"both this partition and the whole-domain baseline")
+        predicted = predicted_columns(tiles, xland, width)
         diff = {k: (base[k], got[k]) for k in base if base[k] != got[k]}
         fields = {}
         for (f, _c, _k), (a, b) in diff.items():
@@ -271,6 +359,8 @@ def analysis(driver: str, fixture: str) -> dict:
             "max_rel": max((d["max_rel"] for d in fields.values()), default=0.0),
             "is_roundoff_scale": all(d["max_rel"] <= 16 * F32_EPS
                                      for d in fields.values()),
+            "predicted_columns": sorted(predicted),
+            "prediction_holds": sorted({k[1] for k in diff}) == sorted(predicted),
             "by_field": fields,
             # What the disagreement is worth once integrated over the column --
             # the only form in which "cloud ice differs" is a physical
