@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import re
 import struct
+from typing import NamedTuple
 import subprocess
 import sys
 from pathlib import Path
@@ -138,35 +139,83 @@ def _density(rec: dict, basis: str) -> float:
     return rec["rho"] / (1.0 + rec["qv"])
 
 
-def cell_measure(stream: str, basis: str) -> dict:
-    """{(loop, col, k): density} -- an IMMUTABLE measure for the whole window.
+class CellMeasure(NamedTuple):
+    """One layer's IMMUTABLE measure for the whole microphysics window.
 
-    The operator measure is rho_m, which carries no qv and cannot move. The
-    physical measure is dry-air density rho_m/(1+qv), taken from the
-    WINDOW-INITIAL qv for EVERY call: column microphysics transports no dry air,
-    so rho_d for a layer is invariant across the window.
-
-    It was recomputed from each call's own pre-sed qv, so the same layer's "dry
-    mass" moved between calls -- up to 0.0717% on this fixture -- and a budget
-    whose weights change with the process being measured is not a budget. The
-    G33R ledger (`g33_refine_analyze._column_density`) already held it at the
-    initial qv and documented why; the two halves of the codebase disagreed
-    (owner §11).
+    `mass` is the conserved quantity. `density` and `delz` are kept beside it
+    because the interface analysis needs a density DIFFERENCE,
+    `(rho_lo - rho_up) * dz_up`, which a mass alone cannot express.
     """
-    first = nt.calls(stream)[0]["outer_pre_sed"]
-    return {k: _density(rec, basis) for k, rec in first.items()}
+    density: float
+    delz: float
+    mass: float
 
 
-def measure_at(measure: dict, key, label: str) -> float:
+def window_cell_mass(stream: str, basis: str) -> dict:
+    """{(col, k): CellMeasure} -- one measure, fixed for the whole window.
+
+    Three corrections over the first version, all owner P0-1:
+
+    * `rho` and `delz` come from the UNION of every call's pre-sed records, not
+      from the FIRST call. Under a multi-tile decomposition the first call
+      covers only the first tile, so keying on it made a legitimate `(2,1)` run
+      raise "no window measure for cell 3". They are FORCING -- verified here to
+      be identical in every call that carries them, rather than assumed.
+    * `qv` for the physical basis comes from `G33R INITIAL`, the window's true
+      start. The first sedimentation call's pre-sed `qv` is a SEGMENT quantity:
+      other microphysics runs before it. This repository established exactly
+      that distinction for the number inventory (§16-3), and the first version
+      of this function regressed it.
+    * The measure is a LAYER MASS, `rho * dz`, frozen together. Freezing only
+      the density and multiplying by each call's own `delz` would let the
+      measure move with `delz`.
+
+    Keyed `(col, k)`: a layer mass is not a property of a loop or a tile.
+    """
+    forcing = {}
+    for call in nt.calls(stream):
+        for (_lp, col, k), rec in call["outer_pre_sed"].items():
+            prev = forcing.get((col, k))
+            if prev is not None and prev != (rec["rho"], rec["delz"]):
+                raise ValueError(
+                    f"cell ({col},{k}): rho/delz differ between calls -- {prev} "
+                    f"then {(rec['rho'], rec['delz'])}. They are forcing; a "
+                    f"measure built on them cannot be fixed for the window.")
+            forcing[(col, k)] = (rec["rho"], rec["delz"])
+
+    qv0 = {}
+    if basis != "operator":
+        if "G33R BEGIN" not in stream:
+            raise ValueError(
+                "the physical measure needs the WINDOW-INITIAL qv, which lives "
+                "in G33R INITIAL, and this stream carries no G33R block")
+        run = ra.read_text(stream)
+        # `run` also holds 3-tuple `prec` and `meta` keys, so the shape is
+        # checked before unpacking rather than after it raises.
+        qv0 = {(key[2], key[3]): v for key, v in run.items()
+               if len(key) == 4 and key[0] == "initial" and key[1] == "qv"}
+
+    out = {}
+    for (col, k), (rho, dz) in forcing.items():
+        if basis == "operator":
+            den = rho
+        elif (col, k) in qv0:
+            den = rho / (1.0 + qv0[(col, k)])
+        else:
+            raise ValueError(f"cell ({col},{k}): no G33R INITIAL qv, so its "
+                             f"window-initial dry-air mass is unknown")
+        out[(col, k)] = CellMeasure(den, dz, den * dz)
+    return out
+
+
+def measure_at(measure: dict, key, label: str) -> CellMeasure:
     """The window measure for one cell, or a refusal.
 
     Falling back to the call's own density would silently restore the moving
-    weight for exactly the cells the first call did not carry.
+    weight for exactly the cells the window measure does not cover.
     """
     if key not in measure:
-        raise ValueError(f"{label}: no window measure for cell {key} -- it is "
-                         f"absent from the first call, so the window-initial "
-                         f"dry-air mass for it is unknown")
+        raise ValueError(f"{label}: no window measure for cell {key}")
     return measure[key]
 
 
@@ -175,24 +224,23 @@ def closures(stream: str, basis: str = "operator") -> dict:
     if basis not in MEASURES:
         raise ValueError(f"basis must be one of {MEASURES}, got {basis!r}")
     xf = transfers(stream)
-    measure = cell_measure(stream, basis)
+    measure = window_cell_mass(stream, basis)
     acc = {}
     for i, call in enumerate(nt.calls(stream), start=1):
         for lp in sorted(call["loops"]):
             pre, post = call["outer_pre_sed"], call["outer_post_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                den = [measure_at(measure, (lp, col, k), "closures") for k in ks]
-                dz = [pre[(lp, col, k)]["delz"] for k in ks]
-                w = den[-1] * dz[-1]            # bottom-cell rho*dz
+                cm = [measure_at(measure, (col, k), "closures") for k in ks]
+                w = cm[-1].mass                 # bottom-cell layer mass
                 for chain, (mass, num) in CHAIN.items():
                     if (i, lp, col, chain) not in xf:
                         continue
                     dq, dn = xf[(i, lp, col, chain)]
                     for species, transfer in ((mass, dq), (num, dn)):
-                        x0 = sum(den[t] * dz[t] * pre[(lp, col, ks[t])][species]
+                        x0 = sum(cm[t].mass * pre[(lp, col, ks[t])][species]
                                  for t in range(len(ks)))
-                        x1 = sum(den[t] * dz[t] * post[(lp, col, ks[t])][species]
+                        x1 = sum(cm[t].mass * post[(lp, col, ks[t])][species]
                                  for t in range(len(ks)))
                         d = acc.setdefault((chain, species, col),
                                            {"out": 0.0, "residual": 0.0,

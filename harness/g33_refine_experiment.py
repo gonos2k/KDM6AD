@@ -483,6 +483,14 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False
+        # ONE validator, called here and by the evidence checker, so a bundle
+        # cannot be valid to the producer and invalid to the reader (owner
+        # P0-2). Before publish, so a malformed bundle is never renamed into
+        # place rather than being caught by whoever reads it later.
+        violations = rm.validate(man)
+        if violations:
+            raise SystemExit("REFUSED: the manifest does not satisfy "
+                             f"{man['schema']}:\n  " + "\n  ".join(violations))
         (tmp / "manifest.json").write_text(
             rm.json.dumps(man, indent=2, sort_keys=True) + "\n")
         # Publish by moving ONE symlink (owner §7.4). The previous shape was

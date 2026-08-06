@@ -203,7 +203,44 @@ def fixture_xland(fixture: str) -> dict:
             for i, b in enumerate(bits, start=1)}
 
 
-def predicted_columns(tiles, xland: dict, width: int) -> set:
+def fixture_ncmin(fixture: str) -> tuple:
+    """(ncmin_land, ncmin_sea) declared by the fixture source."""
+    src = (Path(__file__).resolve().parent / "g33_fortran"
+           / f"{fixture}.f90").read_text()
+    out = []
+    for name in ("NCMIN_LAND_BITS", "NCMIN_SEA_BITS"):
+        m = re.search(name + r"\s*=\s*int\(z'([0-9A-Fa-f]{8})'", src)
+        if not m:
+            raise SystemExit(f"cannot read {name} from {fixture}.f90")
+        out.append(struct.unpack(">f", bytes.fromhex(m.group(1)))[0])
+    return tuple(out)
+
+
+def threshold_can_matter(run: dict, col: int, ncmin: tuple) -> bool:
+    """Can the two candidate `ncmin` values produce different behaviour here?
+
+    `ncmin` is used BOTH as a gate -- `nci(i,k,1) .le./.gt./.ge. ncmin` at many
+    sites -- and as a FLOOR, `value = max(ncmin, nci(i,k,*))` (F:2736, 2750,
+    2888). The two candidates agree only where the number exceeds BOTH: then
+    every comparison lands the same way and neither floor binds. So the choice
+    can matter iff `n <= max(ncmin_land, ncmin_sea)` for either number moment.
+
+    Without this the prediction says a differing tile-end surface type forces
+    every column in the tile to differ, which is only true where the gate is
+    ACTIVE (owner §7.2). On `boundary_mapping_v1` nc runs 4.0e+07..5.0e+07
+    against thresholds 2.5e+07 and 1.0e+08, so it is active in every cell -- and
+    that is WHY the column prediction is exact here, not a general property.
+    """
+    # `run` carries 3-tuple `prec` and `meta` keys alongside the 4-tuple state
+    # ones, so the shape is checked before unpacking rather than after it raises.
+    hi = max(ncmin)
+    ks = {key[3] for key in run
+          if len(key) == 4 and key[0] == "initial" and key[2] == col}
+    return any(run[("initial", f, col, k)] <= hi
+               for k in ks for f in ("nc", "ni"))
+
+
+def predicted_columns(tiles, xland: dict, width: int, active=None) -> set:
     """Which columns the MECHANISM says must differ from the whole-domain run.
 
     `ncmin` survives the column loop holding the LAST column's threshold, so
@@ -220,7 +257,12 @@ def predicted_columns(tiles, xland: dict, width: int) -> set:
     for t in tiles:
         last = first + t - 1
         if xland[last] != baseline_gate:
-            out |= set(range(first, last + 1))
+            # A differing threshold only changes the answer where the gate is
+            # ACTIVE. `active` names the columns where it can be; None means
+            # "not evaluated", which keeps the older callers honest by leaving
+            # the prediction as the upper bound it always was.
+            block = set(range(first, last + 1))
+            out |= block if active is None else block & active
         first = last + 1
     return out
 
@@ -265,7 +307,7 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
 
 
-def column_integrated(base_text: str, got_text: str) -> dict:
+def column_integrated(base_text: str, got_text: str, basis: str = "operator") -> dict:
     """{(col, field): (baseline, partition, abs, rel)} under the rho*dz measure.
 
     A per-component RELATIVE difference near 1 says the two runs disagree about
@@ -280,9 +322,17 @@ def column_integrated(base_text: str, got_text: str) -> dict:
         ks = sorted(k for c, k in cells if c == col)
 
         def col_mass(run, fields):
-            return sum(run[("forcing", "rho", col, k)]
-                       * run[("forcing", "delz", col, k)]
-                       * sum(run[("state", f, col, k)] for f in fields)
+            # DUAL BASIS (owner §7.1). rho_m*dz is the OPERATOR integral -- what
+            # the kernel budgets. The mixing ratios are per DRY-air kg, so the
+            # physical column mass is rho_d*dz with rho_d from the WINDOW-INITIAL
+            # qv. Calling the operator result "the only physical form", as the
+            # first version did, contradicts this repository's own basis
+            # findings.
+            def w(k):
+                m = run[("forcing", "rho", col, k)] * run[("forcing", "delz", col, k)]
+                return m / (1.0 + run[("initial", "qv", col, k)]) \
+                    if basis == "physical" else m
+            return sum(w(k) * sum(run[("state", f, col, k)] for f in fields)
                        for k in ks)
 
         for name, fields in ([(f, (f,)) for f in CONDENSATE]
@@ -302,11 +352,15 @@ def analysis(driver: str, fixture: str) -> dict:
     """
     width, levels = fixture_dims(fixture)
     xland = fixture_xland(fixture)
+    ncmin = fixture_ncmin(fixture)
     base_text = run(driver, (width,))
     _expect_tiles_are_live(base_text, (width,), "baseline")
     base_rec = read_records(base_text, label="baseline")
     base = {k[1:]: v for k, v in base_rec.items() if k[0] == "state"}
     _expect_universe(base, width, levels, "baseline")
+    base_run = ra.read_text(base_text, nsplit=1)
+    active = {c for c in range(1, width + 1)
+              if threshold_can_matter(base_run, c, ncmin)}
     rows = {}
     for tiles in compositions(width):
         if tiles == (width,):
@@ -325,7 +379,7 @@ def analysis(driver: str, fixture: str) -> dict:
             raise ra.RefineError(
                 f"tiles={tiles}: {len(set(got) ^ set(base))} cells are not in "
                 f"both this partition and the whole-domain baseline")
-        predicted = predicted_columns(tiles, xland, width)
+        predicted = predicted_columns(tiles, xland, width, active)
         diff = {k: (base[k], got[k]) for k in base if base[k] != got[k]}
         fields = {}
         for (f, _c, _k), (a, b) in diff.items():
@@ -365,12 +419,73 @@ def analysis(driver: str, fixture: str) -> dict:
             # What the disagreement is worth once integrated over the column --
             # the only form in which "cloud ice differs" is a physical
             # statement rather than a per-component ratio (owner §11.3).
-            "column_integrated": {f"{c}/{f}": {"baseline": x, "partition": y,
-                                               "abs": ad, "rel": rd}
-                                  for (c, f), (x, y, ad, rd)
-                                  in column_integrated(base_text, got_text).items()},
+            "column_integrated": {
+                b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
+                                 "rel": rd}
+                    for (c, f), (x, y, ad, rd)
+                    in column_integrated(base_text, got_text, b).items()}
+                for b in ("operator", "physical")},
+            # The measurement stands on its own; the CAUSAL attribution is a
+            # separate verdict. `prediction_holds: false` used to be recorded
+            # and returned as an ordinary result (owner §7.3).
+            "measurement_valid": True,
+            "causal_attribution_valid": bool(
+                sorted({k[1] for k in diff}) == sorted(predicted)),
         }
     return {"f32_eps": F32_EPS, "partitions": rows}
+
+
+def local_oracle(driver: str, fixture: str) -> dict:
+    """Every decomposition against the PER-COLUMN answer, not against each other.
+
+    Running each column as its own tile makes `ncmin` that column's own
+    threshold, so `(1,)*B` IS the direct sum the corrected operator would have
+    to reproduce:
+
+        M_local(X) = (+)_i M_i(X_i; xland_i)
+
+    and it needs no change to the kernel -- the oracle is a decomposition, not a
+    variant. That matters for what the numbers mean: the whole-domain run is
+    what production does, and measuring it against the local answer says how far
+    the shipped configuration is from column-locality, where measuring
+    partitions against each other only says they disagree.
+
+    The identification rests on the operator being otherwise column-local, which
+    the `(1,2)` row shows: it differs from the whole domain in ZERO components
+    even though the decomposition changed, so nothing but the `ncmin` gate
+    responds to tiling here.
+    """
+    width, levels = fixture_dims(fixture)
+    ones = (1,) * width
+    ref_text = run(driver, ones)
+    _expect_tiles_are_live(ref_text, ones, "local-oracle")
+    ref_rec = read_records(ref_text, label="local-oracle")
+    ref = {k[1:]: v for k, v in ref_rec.items() if k[0] == "state"}
+    _expect_universe(ref, width, levels, "local-oracle")
+
+    rows = {}
+    for tiles in compositions(width):
+        label = ",".join(map(str, tiles))
+        text = run(driver, tiles)
+        _expect_tiles_are_live(text, tiles, label)
+        rec = read_records(text, label=label)
+        _expect_same_inputs(ref_rec, rec, label)
+        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+        _expect_universe(got, width, levels, label)
+        diff = [k for k in ref if ref[k] != got[k]]
+        rows[label] = {
+            "is_the_oracle": tiles == ones,
+            "components_differing": len(diff),
+            "components_total": len(ref),
+            "columns": sorted({k[1] for k in diff}),
+            "column_integrated": {
+                b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
+                                 "rel": rd}
+                    for (c, f), (x, y, ad, rd)
+                    in column_integrated(ref_text, text, b).items()}
+                for b in ("operator", "physical")},
+        }
+    return {"oracle": ",".join(map(str, ones)), "partitions": rows}
 
 
 def report(driver: str, fixture: str) -> None:
@@ -392,6 +507,20 @@ def report(driver: str, fixture: str) -> None:
                   f"{d['max_abs']:12.4e} {d['max_abs_baseline']:12.4e}")
             first = ""
     print(f"\n  f32 eps = {a['f32_eps']:.3e}. A rounding difference lives there.")
+    o = local_oracle(driver, fixture)
+    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
+          f"corrected\n  operator must reproduce. The whole domain is what "
+          f"production runs.\n")
+    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
+          f"{'worst column-integrated departure':>36}")
+    for tiles, r in o["partitions"].items():
+        ci = r["column_integrated"]["operator"]
+        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
+        w = f"{worst[0]} {100*worst[1]['rel']:.2f}%" if worst[0] else "-"
+        print(f"  {tiles:>10} {r['components_differing']:>5}/"
+              f"{r['components_total']:<6} "
+              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>36}"
+              + ("   <- the oracle" if r["is_the_oracle"] else ""))
     for tiles, r in a["partitions"].items():
         if r["components_differing"] and not r["is_roundoff_scale"]:
             print(f"  {tiles}: max relative difference {r['max_rel']:.4e} is "

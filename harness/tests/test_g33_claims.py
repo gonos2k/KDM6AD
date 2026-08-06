@@ -34,7 +34,10 @@ def _claims():
         elif cur is not None and (m := re.match(r"^    (\w+): (.*)$", line)):
             key, val = m.group(1), m.group(2).strip()
             pending = None
-            if key == "evidence_sha256":
+            if key == "run_support":
+                cur["run_support"] = [t.strip() for t in
+                                      val.strip("[]").split(",") if t.strip()]
+            elif key == "evidence_sha256":
                 cur["evidence_sha256"] = dict(
                     t.split(":") for t in
                     re.findall(r"[\w.]+\.md:[0-9a-f]+", val))
@@ -365,17 +368,39 @@ def test_every_active_claim_declares_a_STRUCTURED_evidence_kind():
             f"{'pins' if _has_artifacts(c['id']) else 'pins no'} artifacts")
 
 
-def test_a_claim_resting_on_RUNS_cannot_call_itself_source_only():
+def test_every_active_claim_declares_STRUCTURED_run_support():
     """The escape the vocabulary must not leave open: `source` is the one kind
     that needs no run artifact, so mislabelling an empirical claim as `source`
-    would exempt it from the coverage requirement entirely."""
+    exempts it from the coverage requirement entirely.
+
+    Checked STRUCTURALLY, not by scanning prose. A keyword gate flagged
+    `G33-PROTOCOL-002` because its scope says it "does not re-verify physics
+    already measured under schema 2" -- a NEGATIVE clause. A scan cannot read
+    that, which is why the support a claim rests on is a declared field.
+    """
     for c in CLAIMS:
-        if c.get("evidence_kind") != "source":
+        if c.get("status") != "active":
             continue
-        basis = str(c.get("basis", "")).lower()
-        for word in ("measurement", "measured", "real runs", "on both arms"):
-            assert word not in basis, (
-                f"{c['id']} is declared `source` but its basis says {word!r}")
+        kind, support = c.get("evidence_kind"), c.get("run_support")
+        assert support, f"{c['id']} declares no run_support"
+        if kind == "source":
+            assert support == ["none"], (
+                f"{c['id']} is `source` but names run support {support}. A "
+                f"claim resting on runs cannot be exempt from the artifact "
+                f"requirement.")
+        else:
+            assert support != ["none"], \
+                f"{c['id']} is `{kind}` but names no run support"
+
+
+def test_the_claims_that_do_not_NAME_their_runs_are_visible():
+    """`unspecified` is honest and must stay countable: it marks a measurement
+    claim whose scope never says which fixture produced it, so the migration
+    cannot pin it without re-reading the original work."""
+    unspecified = [c["id"] for c in CLAIMS if c.get("run_support") == ["unspecified"]]
+    assert len(unspecified) == 4, (
+        f"the unspecified set moved to {sorted(unspecified)} -- update this "
+        f"deliberately, so a silent relabel is not mistaken for a migration")
 
 
 def test_the_artifact_coverage_gap_is_NOT_silently_closed():

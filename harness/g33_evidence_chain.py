@@ -40,6 +40,9 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import g33_refine_manifest as rm  # noqa: E402
+
 EVIDENCE = HERE / "evidence"
 REGISTRY = EVIDENCE / "CLAIMS.yaml"
 REPO = HERE.parent
@@ -114,35 +117,17 @@ def snapshots() -> list[dict]:
     return out
 
 
-#: Schemas this checker understands, and what each demands. A schema outside
-#: this table is a VIOLATION, not a pass: the previous check only rejected a
-#: top-level that was not an object, so `"schema": "completely-unknown"` went
-#: straight through (owner P0-E2).
-#:
-#: v1 is legacy -- the pin blocks did not exist, so their absence is reported.
-#: v2 REQUIRES them, because a contract you can opt out of by deleting a field
-#: is not a contract: a new bundle could shed `member_parsers` and
-#: `producer_modules` and be read as an old one.
-SCHEMA_REQUIREMENTS = {
-    "refinement_experiment_v1": (),
-    "refinement_experiment_v2": ("members", "member_parsers", "producer_modules",
-                                 "build_provenance", "arm", "precision"),
-}
-
-
 def _schema_violations(man: dict) -> list:
-    """What this manifest fails to satisfy for the schema it declares."""
-    schema = man.get("schema")
-    if schema not in SCHEMA_REQUIREMENTS:
-        return [f"unknown schema {schema!r}"]
-    if man.get("artifact_type") != "refinement_experiment":
-        return [f"unknown artifact_type {man.get('artifact_type')!r}"]
-    out = [f"{schema} requires a non-empty `{k}`"
-           for k in SCHEMA_REQUIREMENTS[schema] if not man.get(k)]
-    if SCHEMA_REQUIREMENTS[schema] and man.get("instrumented") \
-            and not man.get("analyses"):
-        out.append("instrumented=true requires `analyses`")
-    return out
+    """What this manifest fails to satisfy, from the SCHEMA'S OWN validator.
+
+    The checker had its own copy, which tested only truthiness -- so `[{}]`
+    counted as a pin block and a v2 bundle carrying two empty dicts checked out
+    clean via the legacy-compatible `analyzer-unpinned` state. One validator,
+    called by the producer before publishing and by this checker before
+    believing anything, is what stops a bundle being valid to one and invalid to
+    the other (owner P0-2).
+    """
+    return rm.validate(man)
 
 
 def members_of(manifest: Path) -> list[dict]:

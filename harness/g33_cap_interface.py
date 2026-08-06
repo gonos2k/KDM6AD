@@ -85,15 +85,15 @@ def _walk(stream: str, basis: str):
     Requires `capin` and `topout`; the strict parser has already checked their
     exact universes, so a level or sub-step missing here is not possible.
     """
-    measure = mc.cell_measure(stream, basis)
+    measure = mc.window_cell_mass(stream, basis)
     for ci, call in enumerate(nt.calls(stream), start=1):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                rho = {k: mc.measure_at(measure, (lp, col, k), "_walk")
-                       for k in ks}
-                dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
+                cm = {k: mc.measure_at(measure, (col, k), "_walk") for k in ks}
+                rho = {k: c.density for k, c in cm.items()}
+                dz = {k: c.delz for k, c in cm.items()}
                 # THIS call's own pre-sed temperature. The window-initial one is
                 # a different quantity: on column 3 it is 1.77 K away by call 12,
                 # worth ~21 J/m2 against a 28 J/m2 correction (owner §16-4 P0-1).

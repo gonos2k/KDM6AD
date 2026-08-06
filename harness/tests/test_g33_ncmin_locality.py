@@ -327,14 +327,57 @@ def test_the_ABSOLUTE_difference_is_reported_beside_the_relative(drivers):
 
 
 def test_the_COLUMN_INTEGRAL_is_what_makes_it_a_physical_statement(drivers):
-    """Integrated under rho*dz, the defensible headline is column RAIN mass at
-    21-26%, not cloud ice at 100%."""
-    ci = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
+    """Integrated over the column, the defensible headline is RAIN mass at
+    21-26%, not cloud ice at 100%. Reported under BOTH bases, because the first
+    version called the operator integral "the only physical form" -- and the
+    mixing ratios are per DRY-air kg (owner §7.1)."""
+    both = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
         "column_integrated"]
-    assert 0.20 < ci["1/qr"]["rel"] < 0.22
-    assert 0.25 < ci["2/qr"]["rel"] < 0.27
-    for c in (1, 2):
-        assert 0.02 < ci[f"{c}/total_condensate"]["rel"] < 0.04
+    assert set(both) == {"operator", "physical"}
+    for basis, ci in both.items():
+        assert 0.20 < ci["1/qr"]["rel"] < 0.22, basis
+        assert 0.25 < ci["2/qr"]["rel"] < 0.27, basis
+        for c in (1, 2):
+            assert 0.02 < ci[f"{c}/total_condensate"]["rel"] < 0.04, basis
+
+
+def test_the_two_bases_agree_on_ratio_and_differ_on_mass(drivers):
+    """Necessarily so: both runs share the window-initial qv, so the 1+qv weight
+    cancels in the ratio, while the absolute masses differ by that factor. This
+    is what turns "the headline does not depend on the basis" from a hope into a
+    measurement."""
+    both = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
+        "column_integrated"]
+    for row in ("1/qr", "2/qr", "1/total_condensate"):
+        o, p = both["operator"][row], both["physical"][row]
+        assert o["rel"] == pytest.approx(p["rel"], rel=1e-9), row
+        assert p["abs"] < o["abs"], f"{row}: rho_d < rho_m, so the mass is smaller"
+        assert 1.0 < o["abs"] / p["abs"] < 1.01, row
+
+
+def test_the_prediction_requires_the_GATE_TO_BE_ACTIVE(drivers):
+    """"A differing tile-end surface type makes every column in that tile
+    differ" holds only where the two candidate thresholds can behave
+    differently. `ncmin` is a gate AND a floor (`max(ncmin, nci)`,
+    F:2736/2750/2888), and they agree where the number exceeds BOTH."""
+    import g33_refine_analyze as ra_
+
+    land, sea = nl.fixture_ncmin(FIXTURE)
+    assert (land, sea) == (1.0e8, 2.5e7)
+    run = ra_.read_text(nl.run(drivers["legacy"], (3,)), nsplit=1)
+    # nc runs 4.0e7..5.04e7, between the thresholds, so the gate is active
+    # everywhere -- which is WHY the prediction is exact on this fixture.
+    assert all(nl.threshold_can_matter(run, c, (land, sea)) for c in (1, 2, 3))
+    # And a column whose numbers exceeded both would be excluded.
+    assert not nl.threshold_can_matter(run, 1, (1.0, 1.0))
+
+
+def test_causal_attribution_is_a_SEPARATE_verdict(drivers):
+    """A partition whose observed columns miss the prediction used to be
+    recorded as an ordinary row (owner §7.3)."""
+    for r in nl.analysis(drivers["legacy"], FIXTURE)["partitions"].values():
+        assert r["measurement_valid"] is True
+        assert r["causal_attribution_valid"] is True
 
 
 def test_the_ULP_metric_is_ORDER_PRESERVING_across_zero(drivers):
@@ -424,3 +467,50 @@ def test_the_prediction_can_come_out_WRONG():
     all_land = {1: 1.0, 2: 1.0, 3: 1.0}
     assert nl.predicted_columns((2, 1), all_land, 3) == set()
     assert nl.predicted_columns((2, 1), {1: 1.0, 2: 2.0, 3: 1.0}, 3) == {1, 2}
+
+
+# ---- owner §12-5: the direct-sum oracle, without touching the kernel --------
+
+def test_the_PER_COLUMN_run_IS_the_direct_sum_oracle(drivers):
+    """Running each column as its own tile makes `ncmin` that column's own
+    threshold, so `(1,)*B` is `M_local(X) = (+)_i M_i(X_i; xland_i)` -- the
+    answer a corrected operator would have to reproduce. It needs no change to
+    the kernel: the oracle is a DECOMPOSITION, not a variant."""
+    o = nl.local_oracle(drivers["legacy"], FIXTURE)
+    assert o["oracle"] == "1,1,1"
+    assert o["partitions"]["1,1,1"]["is_the_oracle"] is True
+    assert o["partitions"]["1,1,1"]["components_differing"] == 0
+
+
+def test_the_WHOLE_DOMAIN_run_departs_from_the_local_answer(drivers):
+    """The number that matters operationally: production runs whole tiles, not
+    one column each. Measuring partitions against EACH OTHER only says they
+    disagree; measuring them against the local answer says how far the shipped
+    configuration is from column-locality."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    whole = p["3"]
+    assert whole["components_differing"] == 16
+    assert whole["columns"] == [2], "the sea column is the one gated wrongly"
+    for basis in ("operator", "physical"):
+        rain = whole["column_integrated"][basis]["2/qr"]["rel"]
+        assert 0.20 < rain < 0.22, f"{basis}: {rain}"
+
+
+def test_WHICH_column_is_wrong_depends_on_the_decomposition(drivers):
+    """`(2,1)` ends its first tile on sea, so column 1 takes the sea threshold;
+    `(3,)` and `(1,2)` end on land, so column 2 takes the land one. Every
+    decomposition except per-column is wrong SOMEWHERE."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    assert p["3"]["columns"] == [2]
+    assert p["1,2"]["columns"] == [2]
+    assert p["2,1"]["columns"] == [1]
+    assert all(r["components_differing"] > 0
+               for k, r in p.items() if not r["is_the_oracle"])
+
+
+def test_the_operator_is_otherwise_COLUMN_LOCAL(drivers):
+    """What licenses attributing the departure to `ncmin` alone: `(1,2)` differs
+    from the whole domain in ZERO components even though the decomposition
+    changed, so nothing but the `ncmin` gate responds to tiling here."""
+    a = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
+    assert a["1,2"]["components_differing"] == 0

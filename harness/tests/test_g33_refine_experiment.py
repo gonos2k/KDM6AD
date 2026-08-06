@@ -31,6 +31,20 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "sources": [], "executable_sha256": "ab" * 32}))
         return workdir / "driver"
 
+    def analyses(out, exe, ns, mode):
+        """One well-formed analysis entry.
+
+        The real `_analyses` runs the analyzers on a driver stream, which this
+        fake has none of. Returning nothing made the producer publish an
+        `instrumented` bundle with no analyses -- which the v2 validator
+        correctly refuses, so the stub must produce a valid one rather than the
+        test asserting a shape the contract forbids.
+        """
+        p = out / f"n{ns[0]}.{mode}.matched_closure.json"
+        p.write_text("{}\n")
+        return [{"file": p.name, "nsplit": ns[0], "analysis": "matched_closure",
+                 "sha256": xp.rm.sha256(p), **xp._pin("g33_matched_closure")}]
+
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3):
         if fail_at == "run":
@@ -51,8 +65,10 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     # read. Their correctness is covered where they can actually run:
     # test_g33_cap_interface.py against a real stream and
     # test_g33_matched_closure.py against synthetic G33N. What these tests are
-    # about is the producer's atomicity and its manifest.
-    monkeypatch.setattr(xp, "_analyses", lambda *a, **k: [])
+    # about is the producer's atomicity and its manifest -- but an instrumented
+    # bundle with NO analyses is one the v2 validator refuses, so the stub
+    # returns a well-formed entry rather than nothing.
+    monkeypatch.setattr(xp, "_analyses", analyses)
     # _driver_analyses RUNS the driver four times; the fake build returns a
     # path with no binary behind it, so it must be stubbed alongside.
     monkeypatch.setattr(xp, "_driver_analyses", lambda *a, **k: [])

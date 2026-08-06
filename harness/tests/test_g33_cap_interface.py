@@ -112,6 +112,10 @@ def variants(tmp_path_factory):
                            capture_output=True, text=True)
         assert r.returncode == 0, r.stderr
         out[algo] = r.stdout
+        if algo == "legacy":
+            # Kept so a test can re-run this same build under other tile
+            # decompositions without paying for a second compile.
+            out["_exe"] = str(d / "g33_refine_driver")
     return out
 
 
@@ -445,3 +449,18 @@ def test_a_CORRUPT_G33R_raises_instead_of_reporting_no_endpoints(stream):
 
     with pytest.raises(ra.RefineError):
         mc.window_inventories(stream.replace("G33R END", "", 1))
+
+
+def test_the_MULTI_TILE_physical_analysis_works(variants):
+    """The regression the window measure introduced: keying it on the FIRST
+    call meant a `(2,1)` run raised "no window measure for cell 3", because that
+    call covers only the first tile (owner P0-1). Both bases, every contiguous
+    partition."""
+    import g33_matched_closure as mc
+
+    for tiles in ("3", "2,1", "1,1,1"):
+        out = subprocess.run([variants["_exe"], "12", "rezero", tiles],
+                             capture_output=True, text=True).stdout
+        for basis in mc.MEASURES:
+            assert mc.analysis(out, basis), f"{tiles}/{basis} produced no rows"
+            assert ci.interfaces(out, basis), f"{tiles}/{basis} no interfaces"
