@@ -81,11 +81,20 @@ def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
     import json
     import g33_refine_experiment as xp
 
-    dest = xp.produce(tmp_path / "chain",
-                      fixture="g33_fixture_multisubcycle_v1", algo="legacy",
-                      nsplits=(3, 6, 12), mode="rezero", nflux=False,
-                      module=REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
-                      arm="f64")
+    # `produce()` refuses unless every producing module's working bytes hash to
+    # its HEAD blob (owner P0-1) -- correct for a bundle, wrong for a test suite
+    # that runs while those modules are being edited. The check itself is
+    # exercised in test_g33_refine_experiment.py, against the real function.
+    monkeypatch_pin = pytest.MonkeyPatch()
+    monkeypatch_pin.setattr(xp, "require_pinned_producer", lambda: None)
+    try:
+            dest = xp.produce(tmp_path / "chain",
+                          fixture="g33_fixture_multisubcycle_v1", algo="legacy",
+                          nsplits=(3, 6, 12), mode="rezero", nflux=False,
+                          module=REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+                          arm="f64")
+    finally:
+        monkeypatch_pin.undo()
     man = json.loads((dest / "manifest.json").read_text())
     assert man["arm"] == "f64" and man["precision"] == "f64"
     assert man["decision_eligible"] is False

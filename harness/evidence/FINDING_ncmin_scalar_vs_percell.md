@@ -4,7 +4,7 @@
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1, one call, legacy and conservative. The real mixed-coastal case is still UNMEASURED, so the operational magnitude is not established -- only that the mechanism is O(1) where it bites. The (1,2) partition differs in ZERO cells because both tiles end on land: an even-split-only gate would pass while the operator was arbitrarily non-local, which is why the partition set is exhaustive. |
+| `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1, one call, legacy and conservative. The real mixed-coastal case is still UNMEASURED, so the operational magnitude is not established -- only that the mechanism is O(1) where it bites. The (1,2) partition differs in ZERO cells because both tiles end on land: an even-split-only gate would pass while the operator was arbitrarily non-local, which is why the partition set is exhaustive. "31/144" counts prognostic state COMPONENTS (12 fields x 3 columns x 4 levels); the grid has 12 cells, so calling them cells overstated the spatial extent twelvefold (owner §11.1). The derived quantities that would decide operational significance -- q/N, characteristic diameter, reflectivity, surface precipitation -- are NOT measured, and neither is a real MPI rank decomposition with haloes and per-rank surface patterns: this is a sequential multi-call tile experiment that PREDICTS rank sensitivity rather than demonstrating it. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -201,9 +201,28 @@ measures it:
 | (2, 1) | qv | 3.6666e-02 | 468 889 | 3.1 × 10⁵ |
 | (1,1,1) | qi | 9.8346e-01 | 49 659 291 | 8.2 × 10⁶ |
 
-Cloud ice in an affected column is decided **to O(1)** by where the tile boundary
-falls — the smallest of the twelve fields (`qg`, 1.7e-05) is still 142× f32 eps.
-So the phrase was right, and far weaker than the fact.
+**CORRECTION — relative O(1) is not meteorological O(1) (owner §11.3).** The
+line above previously read "cloud ice in an affected column is decided to O(1)
+by where the tile boundary falls". That is true of the *ratio* and misleading as
+physics: `qi`'s 0.9966 sits on a baseline of **6.56e-08 kg/kg**, an absolute
+difference of **1.93e-05**. A near-100% disagreement about a near-zero value.
+
+Integrated over the column under the ρΔz measure — the only form in which this
+is a physical statement — the picture is different and, for precipitation,
+stronger:
+
+| column | quantity | baseline | partitioned | relative |
+|---|---|---|---|---|
+| 2 | **rain** | 1.6376e-01 | 2.0655e-01 | **26.1%** |
+| 1 | **rain** | 1.6710e-01 | 2.0164e-01 | **20.7%** |
+| 1 | cloud ice | 9.3998e-02 | 1.0225e-01 | 8.8% |
+| 1 | **total condensate** | 1.0556e+00 | 1.0900e+00 | **3.3%** |
+| 2 | **total condensate** | 1.5938e+00 | 1.6366e+00 | **2.7%** |
+
+So the defensible headline is **column rain mass differs by 21–26%** with the
+tile boundary, and total condensate by 2.7–3.3% — not that cloud ice changes by
+100%. The per-component ratios stay in the table above because they show the
+mechanism bites hard where it bites; they are not the physical magnitude.
 
 **What the analyzer refuses, and what it cannot see.** Three successive
 fail-open holes were found in this tool's completeness gate — it parsed the

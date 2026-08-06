@@ -4,7 +4,7 @@
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-CHAIN-003` | **active** | confirmed | Bundles published BEFORE this pin existed carry only analyzer_sha256 and keep the report-only treatment, now NAMED `legacy-*` so a weak verdict cannot be read as a strong one; they cannot be retrofitted without re-publishing the artifacts the claims cite. The blob must be reachable in the checking clone -- a shallow clone reports UNRESOLVABLE, which fails by design, so the checker needs the history and not only the worktree. The pin is taken from HEAD at publish time and is only as good as the producer's dirty-tree refusal. The executable digest, the build script, the compiled overlay and a 7-file private reference source set ARE recorded in build_provenance -- verified on a fresh build -- but cannot be RE-DERIVED by the chain, because the driver binary is a build artifact and is not published in the bundle. Bundles published before these fields existed stop at the members, which the report shows rather than hides. |
+| `G33-CHAIN-003` | **active** | conditional-confirmed | Bundles published BEFORE this pin existed carry only analyzer_sha256 and keep the report-only treatment, now NAMED `legacy-*` so a weak verdict cannot be read as a strong one; they cannot be retrofitted without re-publishing the artifacts the claims cite. The blob must be reachable in the checking clone -- a shallow clone reports UNRESOLVABLE, which fails by design, so the checker needs the history and not only the worktree. The pin is taken from HEAD at publish time and is only as good as the producer's dirty-tree refusal. The executable digest, the build script, the compiled overlay and a 7-file private reference source set ARE recorded in build_provenance -- verified on a fresh build -- but cannot be RE-DERIVED by the chain, because the driver binary is a build artifact and is not published in the bundle. Bundles published before these fields existed stop at the members, which the report shows rather than hides. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -19,6 +19,8 @@ claim
   → raw density-arm stream sha256     (manifest analyses[], analysis="arm_stream")
   → analysis JSON sha256              (manifest analyses[])
   → analyzer commit + git blob sha    (manifest analyses[])
+  → PARSER commit + git blob sha      (manifest member_parsers[])
+  → every producer module, likewise   (manifest producer_modules[])
   → executable + build provenance     (manifest build_provenance)
   → private reference source sha set  (manifest module_sha256 / fixture_sha256)
 ```
@@ -59,6 +61,32 @@ Proved by construction rather than by inspection: the test that a resolvable pin
 passes deliberately sets `analyzer_sha256` to `0`×64. It still passes — because
 the working-tree digest is no longer what is being asked.
 
+## The parser is not a lesser link
+
+`member_parsers[]` recorded a path and a content digest — checkable against
+today's working tree and nothing else, the same defect §16-6 fixed one layer up
+(owner P0-2). An analysis is only as good as the stream its parser admitted: a
+wrong parser lets a truncated, duplicated or mis-schema'd member through before
+any analyzer sees it. Parsers now carry `commit` and `blob_sha`, and so does
+every module in `PRODUCER_MODULES` — so the chain does not stop at the links a
+reader happens to ask about.
+
+## A manifest that will not parse is corruption, not absence
+
+`members_of()` returned an empty child list when the manifest could not be
+read, which reads as an artifact with nothing to check — indistinguishable from
+a clean one, even though its own digest matched (owner P0-5). Four states are
+distinguished now:
+
+| manifest | state |
+|---|---|
+| not JSON, or unreadable | `MANIFEST-UNREADABLE` |
+| top level is not an object | `MANIFEST-SCHEMA-MISMATCH` |
+| no `members` key at all | `MANIFEST-MISSING-MEMBERS` |
+| `members: []` | passes — a bundle may legitimately publish none |
+
+All three failures fail `--check`.
+
 ## An entry that pinned nothing used to vanish
 
 `if an.get("analyzer") and an.get("analyzer_sha256"):` — an analysis with
@@ -81,11 +109,20 @@ digest's own width and matched nothing the moment the pins widened.
 
 ## Limits
 
-- **`analyzer_commit`/`analyzer_blob_sha` are recorded from `HEAD` at publish
-  time.** The producer refuses a dirty tree, so `HEAD:path` is the bytes that
-  ran. A bundle published from a dirty tree would pin a commit whose blob is not
-  what executed — which is why that refusal is load-bearing here and not merely
-  hygiene.
+- **The pin is now BOUND to the bytes that ran — it was not.** The first
+  version of this finding said "the producer refuses a dirty tree, so
+  `HEAD:path` is the bytes that ran". **That refusal did not exist.** The
+  producer only *recorded* `tree_dirty`; an uncommitted edit to an analyzer
+  therefore RAN, the manifest pinned the committed blob, and the checker — which
+  resolves that blob — passed (owner P0-1). The chain verified a file nobody had
+  executed.
+
+  `require_pinned_producer()` closes it before a bundle is built: for every
+  module whose bytes decide what the bundle contains,
+  `git hash-object <working file>` must equal `git rev-parse HEAD:<path>`. It
+  compares the EXECUTED BYTES rather than overall tree cleanliness, so an
+  unrelated dirty file does not block a run while an edited analyzer does. It
+  fired on its own uncommitted edit the first time it ran.
 - **The blob must be reachable in the checking clone.** A shallow clone, or one
   that has not fetched the pinned commit, reports `ANALYZER-UNRESOLVABLE` — a
   failure. That is deliberate: "I cannot check this" must not read as "checked".

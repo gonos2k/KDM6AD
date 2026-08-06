@@ -8,13 +8,16 @@
     "main_commit": "abb470f1288aa24fdcbcf76ff756680ade0c2ad3",
     "status": "immutable_historical_snapshot"
   },
-  "current_harness": {
-    "main_commit": "04811a741351bd123c92423c14ad1f542edd9484",
+  "closeout_status": "HOLD",
+  "note": "The historical C4 package is not a current-main harness certification. A successor is published as a SEPARATE addendum carrying this snapshot's full digest as its parent -- never by editing the snapshot. The addendum is NOT gated on owner S16-6 and the two correctness items any more: this PR implemented them. What remains is a current-producer RE-RUN on the private host, artifact pins on the numerical claims that would go into it, and an independent closeout of that new package.",
+  "current_authority": {
+    "_comment": "A static file cannot name the CURRENT head: the commit that edits it cannot know its own hash, and every later commit makes the value stale the moment it lands. The first version recorded the PR's own base and was already wrong when merged (owner P0-3). What is stable is where the authority was introduced and integrated; the head is resolved by the checker at check time.",
     "authority": [
       "harness/evidence/CLAIMS.yaml",
       "claim-pinned experiment manifests"
-    ]
-  },
-  "closeout_status": "HOLD",
-  "note": "The historical C4 package is not a current-main harness certification. A successor is published as a SEPARATE addendum carrying this snapshot's full digest as its parent -- never by editing the snapshot. The addendum is gated on owner S16-6 and on the two correctness items it named: event-local temperature for the internal-cap enthalpy, and a basis-consistent window inventory."
+    ],
+    "authority_introduced_at": "3b53a394a62555c2fc01d2562948ce9bb46f8840",
+    "authority_integrated_by": "4e964bb0e015d81a3f105d569fac84ad36b221aa",
+    "current_head": "resolved dynamically at check time"
+  }
 }

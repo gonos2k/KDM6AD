@@ -272,6 +272,58 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     return made
 
 
+#: Every module whose BYTES decide what a bundle contains -- the analyzers that
+#: compute the numbers AND the strict parsers that admit the raw members. A
+#: parser is not a lesser link: an analysis is only as good as the stream it was
+#: allowed to read, and a wrong parser lets a truncated, duplicated or
+#: mis-schema'd member through before any analyzer sees it (owner P0-2).
+PRODUCER_MODULES = (
+    "g33_refine_experiment", "g33_refine_manifest", "g33_build_provenance",
+    # strict parsers -- these decide which raw members are admissible
+    "g33_refine_analyze", "g33_number_transport", "g33_probe_read",
+    # analyzers -- these decide what the numbers are
+    "g33_matched_closure", "g33_cap_interface", "g33_dual_ledger",
+    "g33_defect_magnitude", "g33_metric_trajectory",
+)
+
+
+def _pin(module: str) -> dict:
+    """Where this module's bytes can be recovered from later."""
+    path = f"harness/{module}.py"
+    return {"path": path,
+            "content_sha256": rm.sha256(HERE / f"{module}.py"),
+            "commit": rm._git("rev-parse", "HEAD"),
+            "blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
+
+
+def require_pinned_producer() -> None:
+    """Every module that will RUN must be byte-identical to its HEAD blob.
+
+    The manifest pins `git rev-parse HEAD:path`, but the analysis executes the
+    WORKING-TREE module. An uncommitted edit therefore RAN while the manifest
+    recorded the committed bytes, and the checker -- which resolves the blob --
+    passed. `G33-CHAIN-003` asserted a dirty-tree refusal to rule this out; no
+    such refusal existed, the producer merely RECORDED `tree_dirty` (owner
+    P0-1). This is that refusal, and it compares the executed bytes rather than
+    the tree's overall cleanliness, so an unrelated dirty file does not block a
+    run while an edited analyzer does.
+    """
+    bad = []
+    for module in PRODUCER_MODULES:
+        path = f"harness/{module}.py"
+        head = rm._git("rev-parse", f"HEAD:{path}")
+        work = rm._git("hash-object", str(HERE / f"{module}.py"))
+        if not head:
+            bad.append(f"{path}: not in HEAD")
+        elif head != work:
+            bad.append(f"{path}: ran {work[:12]}, HEAD holds {head[:12]}")
+    if bad:
+        raise SystemExit(
+            "REFUSED: the code that would run is not the code the manifest "
+            "would pin.\n  " + "\n  ".join(bad) +
+            "\nCommit the change, or the bundle records bytes that did not run.")
+
+
 def _analyzer_pin(module: str) -> dict:
     """How to find the analyzer's bytes LATER: its commit and its git blob.
 
@@ -318,6 +370,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # manifest that looks complete. Nothing downstream can tell that apart from
     # a bundle that was asked for nothing.
     nsplits = tuple(nsplits)
+    require_pinned_producer()
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
     # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
@@ -405,8 +458,17 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             parsers.append(HERE / "g33_probe_read.py")
         if nflux:
             parsers.append(HERE / "g33_number_transport.py")
-        man["member_parsers"] = [{"path": str(q.relative_to(HERE.parent)),
-                                  "sha256": rm.sha256(q)} for q in parsers]
+        # COMMIT + BLOB, like the analyzers (owner P0-2). A parser is not a
+        # lesser link: an analysis is only as good as the stream it was allowed
+        # to read, and a wrong parser admits a truncated, duplicated or
+        # mis-schema'd member before any analyzer sees it. Recording only a
+        # content digest left these checkable against today's working tree and
+        # nothing else -- the same defect §16-6 fixed for the analyzers.
+        man["member_parsers"] = [_pin(q.stem) for q in parsers]
+        # Every module whose bytes decided what this bundle contains, pinned the
+        # same way, so the chain does not stop at the ones a reader thinks to ask
+        # about.
+        man["producer_modules"] = [_pin(m) for m in PRODUCER_MODULES]
         man["arm"] = arm
         man["precision"] = "f64" if arm == "f64" else "f32"
         # An instrument arm can never be decision evidence, and says so in the

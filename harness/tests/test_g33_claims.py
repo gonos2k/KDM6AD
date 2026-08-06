@@ -322,3 +322,45 @@ def test_the_withdrawn_lexicon_is_not_vacuous():
         assert _norm_prose(phrase) in corpus, (
             f"{phrase!r} appears nowhere — the entry is dead and the test is "
             f"asserting nothing")
+
+
+def _has_artifacts(cid: str) -> bool:
+    """Whether this claim's block carries an `artifacts:` list."""
+    block = re.split(r"(?=\n  - id: )", REGISTRY.read_text())
+    for b in block:
+        if re.match(r"\n?  - id: " + re.escape(cid) + r"\s*$", b.split("\n")[0]
+                    if not b.startswith("\n") else b.split("\n")[1]):
+            return "\n    artifacts:" in b
+    return False
+
+
+def test_every_active_measurement_claim_DECLARES_its_run_artifact_status():
+    """The claim->commit machinery exists; the coverage does not. 20 of 22
+    active measurement claims still stop at a finding digest, with no experiment
+    manifest pinned (owner P0-4). Requiring the status to be DECLARED means a
+    new claim cannot quietly omit it, and the gap is visible in the registry
+    rather than only in a review."""
+    allowed = {"pinned", "historical_unavailable", "source_only"}
+    for c in CLAIMS:
+        if c.get("status") != "active" or "measurement" not in str(c.get("basis", "")):
+            continue
+        got = c.get("artifact_status")
+        assert got in allowed, (
+            f"{c['id']}: artifact_status is {got!r}, expected one of "
+            f"{sorted(allowed)}. An active measurement claim must say whether "
+            f"the run behind it is reachable.")
+        # `artifacts` is a nested block the flat parser above does not keep, so
+        # this reads the claim's own text rather than the parsed dict.
+        assert _has_artifacts(c["id"]) == (got == "pinned"), (
+            f"{c['id']}: artifact_status is {got!r} but "
+            f"{'pins' if _has_artifacts(c['id']) else 'pins no'} artifacts")
+
+
+def test_the_artifact_coverage_gap_is_NOT_silently_closed():
+    """A guard on the guard. If this count ever reaches zero because someone
+    relabelled rather than pinned, that is a different event from the migration
+    actually happening, and it should be noticed."""
+    unpinned = [c["id"] for c in CLAIMS
+                if c.get("artifact_status") == "historical_unavailable"]
+    assert unpinned, "no claims left unpinned -- was the migration done, or the " \
+                     "label changed? Update this test deliberately."

@@ -270,3 +270,70 @@ def test_an_analysis_naming_NO_analyzer_is_flagged_not_silently_skipped(world):
                          "sha256": _sha(body)}]})
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
     assert "analyzer-unpinned" in states
+
+
+# ---- owner P0-5: a manifest that will not parse is corruption ---------------
+
+def test_an_unreadable_manifest_is_not_an_artifact_with_no_children(world):
+    """It returned an empty child list, which reads as an artifact with nothing
+    to check -- indistinguishable from a clean one, even though its own digest
+    matched."""
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"{not json")
+    assert [m["state"] for m in ec.members_of(bundle / "manifest.json")] == \
+        ["MANIFEST-UNREADABLE"]
+
+
+def test_a_manifest_that_is_not_an_object_is_refused(world):
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"[]")
+    assert ec.members_of(bundle / "manifest.json")[0]["state"] == \
+        "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
+        world):
+    """Absence of the key and an empty list are different statements: only the
+    second is a bundle that legitimately published no members."""
+    bundle, write = world
+    write()
+    p = bundle / "manifest.json"
+    p.write_bytes(b'{"analyses": []}')
+    assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
+    p.write_bytes(b'{"members": [], "analyses": []}')
+    assert ec.members_of(p) == []
+
+
+def test_a_corrupt_manifest_FAILS_the_check_not_merely_reports(world):
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"{not json")
+    assert ec.check() == 1
+
+
+# ---- owner P0-2: parsers and producer modules ride the same chain -----------
+
+def test_member_parsers_are_followed_by_commit_and_blob(world):
+    """Recorded by content digest alone, they were checkable against today's
+    working tree and nothing else -- the defect §16-6 fixed for analyzers."""
+    bundle, write = world
+    write({"members": [], "analyses": [],
+           "member_parsers": [{"path": "harness/g33_refine_analyze.py",
+                               "content_sha256": "0" * 64,
+                               "commit": "0" * 40, "blob_sha": "0" * 40}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-UNRESOLVABLE" in states
+    assert ec.check() == 1
+
+
+def test_producer_modules_are_followed_too(world):
+    bundle, write = world
+    write({"members": [], "analyses": [],
+           "producer_modules": [{"path": "harness/g33_matched_closure.py",
+                                 "content_sha256": "0" * 64,
+                                 "commit": "HEAD", "blob_sha": "0" * 40}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-BLOB-MISMATCH" in states
+    assert ec.check() == 1

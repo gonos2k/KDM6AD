@@ -6,6 +6,7 @@ well-meant "just refresh producer_commit" -- fails here.
 """
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -38,11 +39,46 @@ def test_the_pinned_commits_are_the_snapshot_s_OWN(lineage):
     assert snap["main_commit"] == repo["main_commit"]
 
 
-def test_the_snapshot_producer_is_NOT_the_current_main(lineage):
-    """If these ever coincide the distinction has quietly collapsed -- which is
-    exactly the in-place update this structure exists to prevent."""
-    assert lineage["historical_snapshot"]["producer_commit"] != \
-        lineage["current_harness"]["main_commit"]
+def test_the_lineage_does_not_try_to_NAME_the_current_head(lineage):
+    """A static file cannot: the commit that edits it cannot know its own hash,
+    and every later commit makes the value stale the moment it lands. The first
+    version recorded the PR's own base and was already wrong when merged (owner
+    P0-3). It also made the test vacuous -- `historical != current` passes for
+    any old commit at all."""
+    assert "current_harness" not in lineage
+    assert lineage["current_authority"]["current_head"] == \
+        "resolved dynamically at check time"
+
+
+def test_the_authority_anchor_is_an_ANCESTOR_of_the_current_head(lineage):
+    """What IS stable: where the authority was introduced. If HEAD does not
+    descend from it, this lineage describes a different history."""
+    anchor = lineage["current_authority"]["authority_introduced_at"]
+    r = subprocess.run(["git", "merge-base", "--is-ancestor", anchor, "HEAD"],
+                       cwd=REPO, capture_output=True)
+    if r.returncode == 128:
+        pytest.skip("the anchor commit is not present in this clone")
+    assert r.returncode == 0, f"HEAD does not descend from {anchor[:12]}"
+
+
+def test_the_authority_files_EXIST_at_the_anchor(lineage):
+    """An anchor naming a commit that never carried these files would pin
+    nothing."""
+    anchor = lineage["current_authority"]["authority_introduced_at"]
+    for path in ("docs/c4_evidence_lineage.json", "harness/evidence/CLAIMS.yaml"):
+        r = subprocess.run(["git", "rev-parse", f"{anchor}:{path}"],
+                           cwd=REPO, capture_output=True, text=True)
+        if r.returncode == 128:
+            pytest.skip("the anchor commit is not present in this clone")
+        assert r.returncode == 0, f"{path} absent at {anchor[:12]}"
+
+
+def test_the_addendum_gate_names_what_is_ACTUALLY_outstanding(lineage):
+    """It said the addendum was gated on §16-6 and two correctness items -- all
+    implemented here. A gate that names finished work reads as blocked when it
+    is not (owner P0-3)."""
+    note = lineage["note"]
+    assert "RE-RUN" in note and "independent closeout" in note
 
 
 def test_authoritative_pins_are_FULL_digests(lineage):
