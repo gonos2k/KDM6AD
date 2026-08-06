@@ -770,15 +770,30 @@ claims:
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition
-      changes up to 31/144 final-state cells. Unresolved; needs an owner decision
-      among per-column ncmin, accepting the partition dependence, or splitting
-      the variants.
+      changes up to 31/144 final-state cells. The SIZE is now measured, not
+      asserted: cloud ice differs by 9.9661e-01 relative (68.5M ulps, 8.4e+06 x
+      f32 eps) and ni by 8.8394e-01, with all twelve prognostics moving and the
+      smallest of them still 142x f32 eps. So an affected column's ice is
+      decided to O(1) by where the tile boundary falls. Both variants differ in
+      exactly the same 0/16/31 cells and columns, so the conservative interface
+      does NOT fix it. Unresolved; needs an owner decision among per-column
+      ncmin, accepting the partition dependence, or splitting the variants --
+      and "accept" now means accepting an O(1) dependence on the decomposition,
+      not a last-bit wobble.
     status: active
     grade: confirmed
-    basis: measurement
-    scope: g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured
+    basis: >
+      exhaustive measurement over the contiguous partitions, with the
+      roundoff verdict shown able to come out either way
+    scope: >
+      g33_fixture_boundary_mapping_v1, one call, legacy and conservative. The
+      real mixed-coastal case is still UNMEASURED, so the operational magnitude
+      is not established -- only that the mechanism is O(1) where it bites. The
+      (1,2) partition differs in ZERO cells because both tiles end on land: an
+      even-split-only gate would pass while the operator was arbitrarily
+      non-local, which is why the partition set is exhaustive.
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:a50fb1c80aafff88b0c238e74e215034490fca2dcc1066bb35f5cc94e738bf61]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:7409488a6b14e7372363c08d1f9b08f029b90104a1fbfd4cd990b97af7d148a5]
 
   - id: G33-ENTHALPY-003
     text: >

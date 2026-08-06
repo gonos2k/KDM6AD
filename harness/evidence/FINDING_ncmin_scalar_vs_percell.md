@@ -4,7 +4,7 @@
 
 | claim | status | grade | scope |
 |---|---|---|---|
-| `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1; real mixed-coastal case unmeasured |
+| `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1, one call, legacy and conservative. The real mixed-coastal case is still UNMEASURED, so the operational magnitude is not established -- only that the mechanism is O(1) where it bites. The (1,2) partition differs in ZERO cells because both tiles end on land: an even-split-only gate would pass while the operator was arbitrarily non-local, which is why the partition set is exhaustive. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -185,8 +185,30 @@ ncmin_sea = 2.5e7), legacy:
 | (2, 1) | **2: SEA**, 3: land | **31 / 144** | 1, 2 |
 
 Up to **21% of the final state** is decided by where the tile boundary falls, and
-all twelve prognostics move in the affected columns — a whole-state difference, not
-a rounding one.
+all twelve prognostics move in the affected columns.
+
+**How large, not only how many.** The line above used to end "— a whole-state
+difference, not a rounding one". That was an assertion attached to a *count*, and
+a count cannot separate a roundoff-scale difference from a dominating one — the
+same conflation owner §10 named for the cap-bound interfaces. `g33_ncmin_locality`
+measures it:
+
+| partition | field | max relative | max ulps | vs f32 eps |
+|---|---|---|---|---|
+| (2, 1) | **qi** | **9.9661e-01** | 68 525 882 | **8.4 × 10⁶** |
+| (2, 1) | ni | 8.8394e-01 | 26 265 291 | 7.4 × 10⁶ |
+| (2, 1) | qr | 2.0719e-01 | 2 237 951 | 1.7 × 10⁶ |
+| (2, 1) | qv | 3.6666e-02 | 468 889 | 3.1 × 10⁵ |
+| (1,1,1) | qi | 9.8346e-01 | 49 659 291 | 8.2 × 10⁶ |
+
+Cloud ice in an affected column is decided **to O(1)** by where the tile boundary
+falls — the smallest of the twelve fields (`qg`, 1.7e-05) is still 142× f32 eps.
+So the phrase was right, and far weaker than the fact.
+
+**The conservative interface does not fix it.** The document argued this from
+source; it is now measured — both variants differ in exactly the same 0 / 16 / 31
+cells, in the same columns. The P0-4b work does not touch this, so it stays open
+on its own terms.
 
 The pattern is predicted exactly by the scalar mechanism. `ncmin` survives the
 column loop holding the LAST column's threshold, so what matters is the surface
