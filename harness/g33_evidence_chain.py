@@ -223,6 +223,10 @@ def _module_states(man: dict) -> list:
     and nothing else -- the defect §16-6 fixed one layer up (owner P0-2).
     """
     out = []
+    if not any(man.get(k) for k, _ in _PIN_BLOCKS):
+        # No rows at all read as "nothing to check", which is how a bundle that
+        # pinned nothing looked exactly like one that checked out.
+        return [{"file": "<producer modules>", "state": "modules-unpinned"}]
     for key, field in _PIN_BLOCKS:
         for e in man.get(key) or []:
             out.append(_analyzer_state({"analyzer": e.get(field),
@@ -293,47 +297,58 @@ def report() -> None:
               "not failing.")
 
 
+#: Every state the chain can produce, classified. An UNLISTED state FAILS.
+#:
+#: Both fail-open holes found here were the same shape: a state was added to a
+#: producer and never wired into the verdict, so it fell through an if/elif
+#: chain and passed. Enumerating the vocabulary and failing anything outside it
+#: closes the CLASS rather than the two instances -- "nobody classified this"
+#: must not read as "this is fine".
+PASSING_STATES = frozenset({
+    "matches",
+    "unavailable",             # the bundle lives outside the repo, by design
+    "divergent",               # a finding revised after its immutable bundle
+    "absent-finding",          # the finding a snapshot names is gone from the repo
+    "analyzer-unpinned",       # reported: the entry names no analyzer at all
+    "modules-unpinned",        # reported: the bundle predates the module pins
+    "legacy-analyzer-changed",
+    "legacy-analyzer-absent",
+})
+FAILING_STATES = frozenset({
+    "MISMATCH", "absent",
+    "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
+    "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+})
+
+
+def verdict(state: str) -> bool:
+    """True if `state` fails the check. An unclassified state fails."""
+    if state in PASSING_STATES:
+        return False
+    return True
+
+
 def check() -> int:
     """Fail only on the live direction: a pinned artifact that is present and
     differs. Absent artifacts and divergent snapshots are not failures."""
     bad = []
     for r in chain():
         for a in r["artifacts"]:
-            if a["state"] == "MISMATCH":
-                bad.append(f"{r['id']}: {a['path']} does not match its pinned "
-                           f"digest {a['pinned']}")
+            if verdict(a["state"]):
+                bad.append(f"{r['id']}: {a['path']} -> {a['state']}"
+                           + ("" if a["state"] in FAILING_STATES
+                              else "  [UNCLASSIFIED state -- failing by default]"))
             # ABSENT is a failure HERE, unlike an absent top-level manifest
             # (owner P0-4). Once the parent manifest is present and matches, the
             # bundle has declared these files exist; one of them missing is a
-            # corrupt or incomplete bundle, not an unavailable one. Treating the
-            # two the same made a bundle whose raw streams and analyses had all
-            # been deleted pass `--check` cleanly.
+            # corrupt or incomplete bundle, not an unavailable one.
             for m in a["members"]:
-                # An analyzer that has changed since the bundle was published is
-                # REPORTED, not failed: the analysis JSON is still the artifact
-                # the claim cites, and the source moving on is ordinary. What it
-                # means is that re-running would not necessarily reproduce it.
-                # A legacy bundle pinned only the analyzer's CONTENT digest,
-                # so a moved-on analyzer is unverifiable rather than corrupt --
-                # reported, not failed. A bundle that pinned a commit and blob
-                # has no such excuse.
-                if m["state"].startswith("legacy-") or \
-                        m["state"] == "analyzer-unpinned":
+                if not verdict(m["state"]):
                     continue
-                if m["state"].startswith("MANIFEST-"):
-                    bad.append(f"{r['id']}: {a['path']}: {m['state']} "
-                               f"({m.get('detail', '')})")
-                    continue
-                if m["state"] in ("ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH"):
-                    bad.append(f"{r['id']}: {a['path']} -> {m['file']}: "
-                               f"{m['state']} ({m.get('detail', '')})")
-                    continue
-                if m["state"] == "MISMATCH":
-                    bad.append(f"{r['id']}: {a['path']} -> {m['file']} does not "
-                               f"match the digest the manifest recorded")
-                elif m["state"] == "absent":
-                    bad.append(f"{r['id']}: {a['path']} declares {m['file']} "
-                               f"but it is missing — the bundle is incomplete")
+                extra = "" if m["state"] in FAILING_STATES else \
+                    "  [UNCLASSIFIED state -- failing by default]"
+                bad.append(f"{r['id']}: {a['path']} -> {m.get('file', '?')}: "
+                           f"{m['state']} {m.get('detail', '')}{extra}".rstrip())
     print("\n".join(bad))
     return 1 if bad else 0
 

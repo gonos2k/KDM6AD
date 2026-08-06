@@ -5,6 +5,7 @@ repo and are absent in CI, so a test written against them would assert the host.
 """
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -84,8 +85,9 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     outputs it describes could be anything."""
     bundle, write = world
     write()
+    # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches"]
+        ["matches", "modules-unpinned"]
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -233,7 +235,8 @@ def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
     path = "harness/g33_matched_closure.py"
     _pinned(bundle, write, "HEAD", _head_blob(path), path)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    assert states == {"matches"}
+    # `modules-unpinned` rides along: this fixture pins no producer modules.
+    assert "matches" in states and not (states - {"matches", "modules-unpinned"})
     assert ec.check() == 0
 
 
@@ -303,7 +306,7 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     p.write_bytes(b'{"analyses": []}')
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
     p.write_bytes(b'{"members": [], "analyses": []}')
-    assert ec.members_of(p) == []
+    assert [m["state"] for m in ec.members_of(p)] == ["modules-unpinned"]
 
 
 def test_a_corrupt_manifest_FAILS_the_check_not_merely_reports(world):
@@ -337,3 +340,40 @@ def test_producer_modules_are_followed_too(world):
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
     assert "ANALYZER-BLOB-MISMATCH" in states
     assert ec.check() == 1
+
+
+# ---- the verdict must classify every state it can be handed ------------------
+
+def test_an_UNCLASSIFIED_state_fails_rather_than_passing():
+    """Both fail-open holes here were the same shape: a state was added to a
+    producer and never wired into the `if/elif` verdict, so it fell through and
+    passed. `unavailable` and `divergent` were reachable and unclassified."""
+    assert ec.verdict("SOME-STATE-NOBODY-CLASSIFIED") is True
+    assert ec.verdict("") is True
+    assert ec.verdict("matches") is False
+
+
+def test_the_two_classifications_do_not_overlap():
+    assert not (ec.PASSING_STATES & ec.FAILING_STATES)
+
+
+def test_EVERY_state_the_module_can_emit_is_classified():
+    """The completeness check that closes the class. A state literal added to
+    the producer without a verdict entry fails here rather than silently
+    passing `--check` -- which is exactly how the last two got in."""
+    src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
+    emitted = set(re.findall(r'"state": "([A-Za-z-]+)"', src))
+    emitted |= set(re.findall(r'else "([A-Za-z-]+)"[,\)\n]', src))
+    known = ec.PASSING_STATES | ec.FAILING_STATES
+    assert emitted <= known, f"unclassified: {sorted(emitted - known)}"
+    assert emitted, "the scan found no states -- it has stopped checking anything"
+
+
+def test_a_bundle_that_pins_NO_producer_modules_says_so(world):
+    """It yielded no rows at all, so a bundle that pinned nothing looked exactly
+    like one that checked out."""
+    bundle, write = world
+    write({"members": [], "analyses": []})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "modules-unpinned" in states
+    assert ec.check() == 0, "reported, not failed -- old bundles predate the pins"
