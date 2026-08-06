@@ -8,6 +8,15 @@
 # findings remain the narrative.
 #
 # status: active | superseded | withdrawn | hold
+# evidence_kind: source | measurement | mixed
+#   what the claim RESTS on. Classification by prose substring was itself
+#   fail-open: `G33-NUMBER-008` ("three-arm falsification test") and
+#   `G33-TRAJECTORY-001` ("an algebraic identity evaluated on six real runs")
+#   are empirical and escaped a scan for the word "measurement" (owner P0-E4).
+# run_support: [none] | [<fixture>, ...] | [unspecified]
+#   the runs behind it, DECLARED. A keyword gate flagged G33-PROTOCOL-002
+#   because its scope says it "does not re-verify physics already measured" --
+#   a negative clause a scan cannot read (owner P0-3).
 # artifact_status (active measurement claims only):
 #   pinned                 -- an experiment manifest is pinned under `artifacts`
 #   historical_unavailable -- the run happened but no bundle was published, so
@@ -31,6 +40,7 @@ claims:
       chain does not dyadically refine the sedimentation operator.
     status: active
     evidence_kind: source
+    run_support: [none]
     artifact_status: not_applicable
     grade: confirmed
     basis: source
@@ -44,6 +54,7 @@ claims:
       300/N from the filename.
     status: active
     evidence_kind: measurement
+    run_support: [unspecified]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -57,6 +68,7 @@ claims:
       chain reaches 1 at h = 25 s where the main chain needs h = 6.25 s.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -86,6 +98,7 @@ claims:
       quantity. The conservation residual is G33-WATER-CONS-001/002.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -100,6 +113,7 @@ claims:
       gates, caps and active-cell universe were not verified constant.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
@@ -124,6 +138,7 @@ claims:
       precision. Cause HOLD.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
     grade: strong-candidate
     basis: measurement
@@ -146,8 +161,9 @@ claims:
       ratio only, so the rho*dz column measure is not conserved; where density
       increases downward, number is created.
     status: active
-    evidence_kind: source
-    artifact_status: not_applicable
+    evidence_kind: mixed
+    run_support: [g33_fixture_multisubcycle_v1]
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
@@ -190,6 +206,7 @@ claims:
       ice/ni +6.2789% and +7.0584%.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on both arms
@@ -217,6 +234,7 @@ claims:
       rate. The earlier fall-speed attribution is withdrawn.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -250,6 +268,7 @@ claims:
       never be updated -- and the tool reports it without failing on it.
     status: active
     evidence_kind: measurement
+    run_support: [unspecified]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
@@ -275,6 +294,7 @@ claims:
       directions.
     status: active
     evidence_kind: source
+    run_support: [none]
     artifact_status: not_applicable
     grade: confirmed
     basis: >
@@ -300,6 +320,7 @@ claims:
       in the ice chain" is corrected.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -331,6 +352,7 @@ claims:
       equal while their stored patterns differ.
     status: active
     evidence_kind: source
+    run_support: [none]
     artifact_status: not_applicable
     grade: confirmed
     basis: >
@@ -359,6 +381,7 @@ claims:
       using the pre-sed density at both endpoints is verified rather than assumed.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -409,6 +432,7 @@ claims:
       analysis reports that agreement per row instead of assuming it.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
@@ -431,9 +455,20 @@ claims:
 
   - id: G33-BASIS-005
     text: >
-      The PHYSICAL column measure is now taken once from the window-initial qv
-      and shared by every analyzer, instead of being recomputed from each
-      external call's own pre-sed qv. Column microphysics transports no dry air,
+      The PHYSICAL column measure is now one immutable LAYER MASS per (col, k),
+      shared by every analyzer, instead of a density recomputed from each
+      external call's own pre-sed qv. CORRECTED (owner P0-1): the first version
+      took qv from the FIRST CALL's pre-sed record and called that the window
+      start -- but other microphysics runs before it, so that is a sedimentation
+      SEGMENT quantity and the distinction is the one S16-3 established for the
+      number inventory. It also froze only the DENSITY while each call
+      re-supplied its own delz, and keyed the measure on (loop, col, k), so a
+      multi-tile run RAISED for every column outside the first tile. Now: rho
+      and delz from the union of all calls, verified identical in each (they are
+      forcing); qv from G33R INITIAL; mass = rho*dz frozen together; keyed
+      (col, k). On this fixture the first pre-sed qv equals INITIAL qv in all 12
+      cells and delz never moves, so no published figure changes -- the contract
+      is what was wrong, not the numbers. Column microphysics transports no dry air,
       so rho_d for a layer is invariant across the window; recomputing it made
       the same layer's dry mass move by up to 0.0717% between calls, and a
       budget whose weights change with the process being measured is not a
@@ -447,6 +482,7 @@ claims:
       15.0036/13.3377/11.8402% and the ice cap share stays 100.00/100.00%.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -483,6 +519,7 @@ claims:
       is not a budget.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement on both bases over the same member
@@ -516,6 +553,7 @@ claims:
       unavailable.
     status: active
     evidence_kind: source
+    run_support: [none]
     artifact_status: not_applicable
     grade: confirmed
     basis: each defect reproduced, fixed, and pinned by a test at the level that missed it
@@ -561,6 +599,7 @@ claims:
       not-comparable rather than zipped.
     status: active
     evidence_kind: mixed
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -596,6 +635,7 @@ claims:
       of the mechanism.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -633,8 +673,9 @@ claims:
       f64 chain, which also confirms P0-1 is closed in the producer and not only
       in the driver.
     status: active
-    evidence_kind: source
-    artifact_status: not_applicable
+    evidence_kind: mixed
+    run_support: [unspecified]
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       each admitted mixture reproduced as a chain the old path accepted, plus a
@@ -662,6 +703,7 @@ claims:
       advantage is 5.89x at f32 and 1.00x at f64.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -685,6 +727,7 @@ claims:
       acceptance criterion.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -730,6 +773,7 @@ claims:
       true non-conservation.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
@@ -745,6 +789,7 @@ claims:
       match and naming the one thing that may differ.
     status: active
     evidence_kind: source
+    run_support: [none]
     artifact_status: not_applicable
     grade: confirmed
     basis: implementation + regression tests
@@ -760,6 +805,7 @@ claims:
       nsplit and dtcld before any comparison is made.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement under a named comparison contract
@@ -791,6 +837,7 @@ claims:
       a systematic offset on the absolute # m-2 figures.
     status: active
     evidence_kind: mixed
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: source + measurement
@@ -818,6 +865,7 @@ claims:
       control holds: col 3 with mstep = 10 gives qr -0.0000% and nr +9.40%.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control
@@ -849,6 +897,7 @@ claims:
       eight orders smaller, which is why its residual stays at 1e-10--1e-12.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement per interface
@@ -865,6 +914,7 @@ claims:
       the cap, not the measure mismatch.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
@@ -896,6 +946,7 @@ claims:
       not a last-bit wobble.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -953,6 +1004,7 @@ claims:
       disagrees with the measurement in sign and by 4-6x in magnitude.
     status: active
     evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
@@ -993,6 +1045,7 @@ claims:
       display.
     status: active
     evidence_kind: mixed
+    run_support: [unspecified]
     artifact_status: historical_unavailable
     grade: conditional-confirmed
     basis: >

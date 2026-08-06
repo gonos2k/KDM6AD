@@ -81,6 +81,14 @@ def test_an_unusable_row_carries_no_magnitudes_at_all():
 
 # ---- owner §16-3: window endpoints, bound rather than assumed ----------------
 
+def test_the_window_endpoints_are_FOUND_when_the_stream_carries_them():
+    """The other half: a gate that only ever reported `None` would also pass the
+    test above."""
+    r = _row()
+    assert r["window_initial_inventory"] is not None
+    assert r["segment_endpoints_are_window_endpoints"] is True
+
+
 def test_the_segment_and_window_endpoints_are_NAMED_apart():
     """`first_start`/`last_final` were the first call's PRE-SED column and the
     last call's POST-SED column, published as the window's initial and final
@@ -95,9 +103,13 @@ def test_the_segment_and_window_endpoints_are_NAMED_apart():
 
 def test_unavailable_window_endpoints_report_None_not_True():
     """"We could not check" and "they agree" are different statements, and the
-    flattering one must not be the default. This fixture is G33N-only, so the
-    window endpoints are genuinely absent -- no monkeypatch needed."""
-    r = _row()
+    flattering one must not be the default.
+
+    The fixture now carries a G33R block, as a real driver stream does, so the
+    absent case is built by STRIPPING it rather than by relying on the fixture
+    being incomplete."""
+    g33n_only = _stream(QV, QR).split("G33R BEGIN")[0]
+    r = dm.analysis(g33n_only)["rows"]["main/nr/1"]
     assert r["segment_endpoints_are_window_endpoints"] is None
     assert r["window_initial_inventory"] is None
     assert r["of_initial_inventory"] is None

@@ -197,18 +197,86 @@ def test_the_OPERATOR_measure_carries_no_qv_so_it_cannot_move():
     assert 'if basis == "operator":\n        return rec["rho"]' in src
 
 
-def test_the_PHYSICAL_measure_is_taken_ONCE_from_the_window_start():
-    """It was recomputed from each call's own pre-sed qv, so the same layer's
-    dry mass moved between calls -- and a budget whose weights change with the
-    process being measured is not a budget. The G33R ledger already held it at
-    the initial qv and said why; the two halves of the codebase disagreed."""
-    import inspect
-    src = inspect.getsource(mc.cell_measure)
-    assert 'nt.calls(stream)[0]["outer_pre_sed"]' in src
+def test_the_measure_takes_qv_from_the_WINDOW_START_not_the_first_call():
+    """`G33R INITIAL` is the window's true start. The first sedimentation call's
+    pre-sed `qv` is a SEGMENT quantity -- other microphysics runs before it --
+    and the first version used that, regressing the very distinction §16-3
+    established for the number inventory (owner P0-1).
+
+    Behavioural, not a source grep: the two are given DIFFERENT humidities and
+    the measure must follow the window start."""
+    from test_g33_dual_ledger import RHO, DZ, _stream, _g33r
+
+    call_qv = [0.02] * 4                 # what the calls carry
+    window_qv = [0.00] * 4               # what the window began with
+    g33n = _stream(call_qv).split("G33R BEGIN")[0]
+    pre = [10.0, 20.0, 30.0, 40.0]
+    post = list(pre)
+    stream = g33n + _g33r(call_qv, 0.0, pre, post, initial_qv=window_qv)
+
+    m = mc.window_cell_mass(stream, "physical")
+    # window qv is zero, so rho_d == rho_m; the call's 0.02 would divide it down
+    for k in range(len(RHO)):
+        assert m[(1, k)].density == pytest.approx(RHO[k]), \
+            "the measure followed the CALL's qv, not the window's"
+        assert m[(1, k)].mass == pytest.approx(RHO[k] * DZ)
 
 
-def test_a_cell_absent_from_the_first_call_is_REFUSED_not_recomputed():
+def test_the_measure_is_a_LAYER_MASS_not_a_density():
+    """`rho*dz` is what is conserved. Freezing only the density and multiplying
+    by each call's own `delz` would let the measure move with `delz`."""
+    from test_g33_dual_ledger import RHO, DZ, _stream
+
+    m = mc.window_cell_mass(_stream([0.0] * 4), "operator")
+    for k in range(len(RHO)):
+        assert m[(1, k)].mass == pytest.approx(m[(1, k)].density * m[(1, k)].delz)
+        assert m[(1, k)].delz == pytest.approx(DZ)
+
+
+def test_the_measure_is_keyed_by_CELL_not_by_loop_or_tile():
+    """A layer mass is not a property of a loop or a tile. Keying it on the
+    first call made a legitimate multi-tile run raise for the columns that call
+    did not cover."""
+    from test_g33_dual_ledger import _stream
+
+    for key in mc.window_cell_mass(_stream([0.0] * 4), "operator"):
+        assert len(key) == 2, f"{key} carries more than (col, k)"
+
+
+def test_forcing_that_MOVES_between_calls_is_refused(monkeypatch):
+    """`rho` and `delz` are forcing -- verified identical in every call that
+    carries them, not assumed. A measure built on a moving forcing cannot be
+    fixed for the window."""
+    from test_g33_dual_ledger import _stream
+
+    stream = _stream([0.0] * 4)
+    real = mc.nt.calls
+
+    def drifting(text):
+        cs = real(text)
+        moved = dict(cs[0])
+        moved["outer_pre_sed"] = {
+            k: {**v, "rho": v["rho"] * 2} for k, v in cs[0]["outer_pre_sed"].items()}
+        return cs + [moved]
+
+    monkeypatch.setattr(mc.nt, "calls", drifting)
+    with pytest.raises(ValueError, match="differ between calls"):
+        mc.window_cell_mass(stream, "operator")
+
+
+def test_a_stream_with_no_G33R_cannot_produce_a_PHYSICAL_measure():
+    """It needs the window-initial qv, which lives in G33R INITIAL. Falling back
+    to a call's own qv is what this replaced."""
+    from test_g33_dual_ledger import _stream
+
+    g33n_only = _stream([0.01] * 4).split("G33R BEGIN")[0]
+    mc.window_cell_mass(g33n_only, "operator")          # operator needs no qv
+    with pytest.raises(ValueError, match="no G33R block"):
+        mc.window_cell_mass(g33n_only, "physical")
+
+
+def test_a_cell_absent_from_the_measure_is_REFUSED_not_recomputed():
     """Falling back to the call's own density would silently restore the moving
     weight for exactly the cells the window measure does not cover."""
     with pytest.raises(ValueError, match="no window measure"):
-        mc.measure_at({(1, 1, 0): 1.0}, (1, 2, 0), "test")
+        mc.measure_at({(1, 0): None}, (2, 0), "test")

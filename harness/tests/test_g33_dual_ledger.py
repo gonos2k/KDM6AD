@@ -48,6 +48,30 @@ def _stream(qv, qr=0.0):
     L += [f"G33F XFER 1 1 1 main f32 {_hex(0.0)} {_hex(XFER[-1])}",
           "G33F XFER 1 1 1 ice f32 00000000 00000000",
           "G33N CALL_END 1 1 1", "G33N STREAM_END"]
+    return "\n".join(L) + "\n" + _g33r(qv, qr, pre, post)
+
+
+def _g33r(qv, qr, pre, post, initial_qv=None):
+    """The G33R block a real driver emits beside the G33N one.
+
+    The physical measure takes its `qv` from `G33R INITIAL` -- the window's true
+    start -- so a G33N-only fixture cannot express it at all. `initial_qv`
+    defaults to the same profile the calls carry, which is what this fixture
+    means; a test that needs the window start to DIFFER from the first call's
+    pre-sed value passes its own.
+    """
+    iq = qv if initial_qv is None else initial_qv
+    L = ["G33R BEGIN nsplit 1 rezero legacy delt 60.000000 loops 1 "
+         "dtcld 60.000000"]
+    for cls, vals, hum in (("INITIAL", pre, iq), ("STATE", post, qv)):
+        for k in range(len(RHO)):
+            for f in mc.ra.STATE_FIELDS:
+                v = {"nr": vals[k], "qr": qr, "qv": hum[k]}.get(f, 0.0)
+                L.append(f"G33R {cls} {f} 1 {k} {_hex(v)}")
+    for k in range(len(RHO)):
+        for name, v in (("rho", RHO[k]), ("delz", DZ), ("pii", 1.0)):
+            L.append(f"G33R FORCING {name} 1 {k} {_hex(v)}")
+    L += [f"G33R PREC {i} 1 00000000" for i in (1, 2, 3)] + ["G33R END"]
     return "\n".join(L) + "\n"
 
 
