@@ -112,5 +112,33 @@ def stamp(check: bool = False) -> int:
     return 0
 
 
+def repin() -> int:
+    """Recompute every `evidence_sha256` from the file it names.
+
+    Stamping a finding changes its bytes, so the two run together: stamp, then
+    repin. Doing it by hand was a regex over the digest's own width, which
+    silently matched nothing the moment pins widened from 16 hex to 64
+    (owner §16-6).
+    """
+    import hashlib
+    import re
+    text = REGISTRY.read_text()
+    n = 0
+
+    def sub(m):
+        nonlocal n
+        got = hashlib.sha256((EVIDENCE / m.group(1)).read_bytes()).hexdigest()
+        n += got != m.group(2)
+        return f"{m.group(1)}:{got}"
+
+    out = re.sub(r"(FINDING_\S+?\.md):([0-9a-f]{16,64})", sub, text)
+    if out != text:
+        REGISTRY.write_text(out)
+    print(f"  repinned {n} evidence digest(s)")
+    return 0
+
+
 if __name__ == "__main__":
-    raise SystemExit(stamp(check="--check" in sys.argv[1:]))
+    args = sys.argv[1:]
+    raise SystemExit(repin() if "--repin" in args
+                     else stamp(check="--check" in args))

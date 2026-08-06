@@ -1,10 +1,19 @@
 # KDM6AD — capability status
 
 Single source of truth for **what is implemented and validated today**, separate from the
-chronological audit trail in the wiki/parity logs. Baseline: current `main` at the C4
-evidence closeout — the authoritative commit is pinned in
-`docs/c4_evidence_manifest.json` → `public_repo.producer_commit` (updated per closeout,
-not a frozen historical tag).
+chronological audit trail in the wiki/parity logs.
+
+**`docs/c4_evidence_manifest.json` is an IMMUTABLE HISTORICAL SNAPSHOT** (owner §16-5).
+It pins the producer and private-host executions **as they were at that closeout** —
+`producer_commit a8cd83cd`, `main_commit abb470f1` — and is never updated in place.
+Repointing its producer at a later commit would be false provenance: no later producer
+generated those artifacts. Its lineage, and the digest that freezes it, are recorded in
+`docs/c4_evidence_lineage.json`.
+
+The authority for the **current** G3.3 research harness is `harness/evidence/CLAIMS.yaml`
+together with the experiment manifest each claim pins. A successor C4 package will be
+published as a separate addendum carrying the snapshot's full digest as its parent, after
+§16-6 and the two correctness items the owner named; C4 remains **HOLD** until then.
 
 Legend: ✓ implemented & tested · partial · – not present · diag = diagnostic-only (not a
 seedable AD output) · host = validated only on the private WRF/KIM-meso host (not public CI).

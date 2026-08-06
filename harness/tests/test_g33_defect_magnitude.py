@@ -93,12 +93,11 @@ def test_the_segment_and_window_endpoints_are_NAMED_apart():
         assert f in r
 
 
-def test_unavailable_window_endpoints_report_None_not_True(monkeypatch):
+def test_unavailable_window_endpoints_report_None_not_True():
     """"We could not check" and "they agree" are different statements, and the
-    flattering one must not be the default."""
-    monkeypatch.setattr(dm.mc, "window_inventories",
-                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError()))
-    r = dm.analysis(_stream(QV, QR))["rows"]["main/nr/1"]
+    flattering one must not be the default. This fixture is G33N-only, so the
+    window endpoints are genuinely absent -- no monkeypatch needed."""
+    r = _row()
     assert r["segment_endpoints_are_window_endpoints"] is None
     assert r["window_initial_inventory"] is None
     assert r["of_initial_inventory"] is None
@@ -116,3 +115,14 @@ def test_the_agreement_check_can_report_FALSE(monkeypatch):
         r = dm.analysis(_stream(QV, QR))["rows"]["main/nr/1"]
         assert r["segment_endpoints_are_window_endpoints"] is expect, factor
         assert r["window_initial_inventory"] == seg * factor
+
+
+def test_a_CORRUPT_window_stream_is_not_downgraded_to_unavailable(monkeypatch):
+    """`except Exception: window = {}` treated a truncated or NaN G33R exactly
+    like a member that simply had no endpoints -- the flattering direction
+    (owner P1-3). Corruption must reach the caller."""
+    monkeypatch.setattr(dm.mc, "window_inventories",
+                        lambda *a, **k: (_ for _ in ()).throw(
+                            dm.mc.ra.RefineError("truncated")))
+    with pytest.raises(dm.mc.ra.RefineError):
+        dm.analysis(_stream(QV, QR))

@@ -187,11 +187,10 @@ def test_a_missing_arm_stream_fails(world):
     assert ec.check() == 1
 
 
-def test_a_CHANGED_analyzer_is_reported_but_does_not_fail(world):
-    """The analyzer digest was recorded and never checked (owner §8.2). It is
-    followed now — but reported rather than failed: the analysis JSON is still
-    the artifact the claim cites, and the source moving on is ordinary. What the
-    report means is that re-running would not necessarily reproduce it."""
+def test_a_LEGACY_bundle_with_only_a_content_digest_is_REPORTED_not_failed(world):
+    """Bundles published before the commit+blob pin existed recorded only the
+    analyzer's content digest, checkable solely against the working tree. A
+    moved-on analyzer makes those unverifiable rather than corrupt."""
     bundle, write = world
     body = b'{"x": 1}\n'
     (bundle / "a.json").write_bytes(body)
@@ -201,5 +200,73 @@ def test_a_CHANGED_analyzer_is_reported_but_does_not_fail(world):
                          "analyzer": "harness/g33_matched_closure.py",
                          "analyzer_sha256": "0" * 64}]})
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    assert "ANALYZER-CHANGED" in states
+    assert "legacy-analyzer-changed" in states
     assert ec.check() == 0, "a moved-on analyzer is information, not corruption"
+
+
+# ---- owner §16-6: the analyzer is RECOVERED, not compared ---------------------
+
+def _pinned(bundle, write, commit, blob, path="harness/g33_matched_closure.py"):
+    body = b'{"x": 1}\n'
+    (bundle / "a.json").write_bytes(body)
+    write({"members": [], "findings": [],
+           "analyses": [{"file": "a.json", "analysis": "matched_closure",
+                         "sha256": _sha(body), "analyzer": path,
+                         "analyzer_sha256": "0" * 64,
+                         "analyzer_commit": commit, "analyzer_blob_sha": blob}]})
+
+
+def _head_blob(path):
+    import subprocess
+    r = subprocess.run(["git", "rev-parse", f"HEAD:{path}"], cwd=ec.REPO,
+                       capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
+        world):
+    """The point of the change. `analyzer_sha256` here is deliberately wrong --
+    it is `0`*64 -- and the check still passes, because the question is no longer
+    "does today's file match" but "can the bytes this bundle ran be recovered"
+    (owner §16-6)."""
+    bundle, write = world
+    path = "harness/g33_matched_closure.py"
+    _pinned(bundle, write, "HEAD", _head_blob(path), path)
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert states == {"matches"}
+    assert ec.check() == 0
+
+
+def test_a_blob_that_does_not_match_the_pinned_commit_FAILS(world):
+    """Pin and commit must agree, or the manifest names bytes that commit never
+    held."""
+    bundle, write = world
+    _pinned(bundle, write, "HEAD", "0" * 40)
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-BLOB-MISMATCH" in states
+    assert ec.check() == 1
+
+
+def test_a_pin_that_cannot_be_RESOLVED_fails_rather_than_being_reported(world):
+    """A rewritten commit, a path deleted from history, or a wrong pin. The old
+    check could only say "the file on disk differs", which is a different and
+    much weaker statement."""
+    bundle, write = world
+    _pinned(bundle, write, "0" * 40, "0" * 40)
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-UNRESOLVABLE" in states
+    assert ec.check() == 1
+
+
+def test_an_analysis_naming_NO_analyzer_is_flagged_not_silently_skipped(world):
+    """An entry with no analyzer at all used to fall through the `if` and vanish
+    from the report, so a bundle that pinned nothing looked like one that
+    checked out."""
+    bundle, write = world
+    body = b'{"x": 1}\n'
+    (bundle / "a.json").write_bytes(body)
+    write({"members": [], "findings": [],
+           "analyses": [{"file": "a.json", "analysis": "matched_closure",
+                         "sha256": _sha(body)}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "analyzer-unpinned" in states

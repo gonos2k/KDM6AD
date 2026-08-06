@@ -4,6 +4,7 @@ Uses stub compilers rather than a real one: `/bin/sh` is bash on macOS and dash
 on Ubuntu, and only one of those answers `--version`, so a test written against
 it asserts the platform rather than the code.
 """
+import hashlib
 import json
 import os
 import shutil
@@ -206,7 +207,7 @@ def test_the_overlay_is_compiled_from_a_CONTENT_ADDRESSED_path():
     exercises the reuse end to end rather than by reading the script.
     """
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL:0:16}.F"' in script
+    assert 'MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL}.F"' in script
 
 
 def test_identity_paths_are_normalised(build):
@@ -261,32 +262,29 @@ def test_the_preprocessor_guard_actually_fires():
     assert "no f64 number record family" not in ok.stderr
 
 
-def test_a_STALE_overlay_at_the_content_addressed_path_is_REFUSED(tmp_path):
-    """The overlay path is a 16-hex TRUNCATION of a 256-bit digest, in a shared
-    temp directory that survives between builds. A pre-existing file there
-    becomes the compiler's input, so a truncation collision, a stale file from an
-    interrupted build, or a concurrent build writing the same name would compile
-    a source other than the overlay just generated -- under provenance claiming
-    otherwise. The build compares the FULL digest and refuses."""
-    ref = REPO / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
-    if shutil.which("gfortran") is None or not ref.is_file():
+def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path):
+    """A 16-hex truncation left a real race (owner §13 P1-4): two builds whose
+    overlays share a 64-bit prefix but differ in content both see "no file",
+    both write, and the loser's compile can read the winner's source. The full
+    digest removes the class -- same digest means same content, different
+    content means a different path -- so this asserts the NAME, and that a
+    rebuild reuses it rather than multiplying files."""
+    if shutil.which("gfortran") is None or not (
+            REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F").is_file():
         pytest.skip("local-only (needs gfortran + the gitignored host tree)")
     env = dict(os.environ, TMPDIR=str(tmp_path))
     args = ["bash", str(REPO / "harness/g33_fortran/refine_build.sh"),
             str(tmp_path / "b1"), "--fixture=g33_fixture_multisubcycle_v1",
             "--algo=legacy", "--nflux"]
-    first = subprocess.run(args, capture_output=True, text=True, cwd=REPO, env=env)
-    assert first.returncode == 0, first.stdout[-1500:]
-
-    overlays = list(tmp_path.glob("g33-ovl-*.F"))
-    assert len(overlays) == 1, f"expected one content-addressed overlay, {overlays}"
-    # Reusing an INTACT one is fine -- that is the point of the content address.
+    assert subprocess.run(args, capture_output=True, text=True, cwd=REPO,
+                          env=env).returncode == 0
     args[2] = str(tmp_path / "b2")
     assert subprocess.run(args, capture_output=True, text=True, cwd=REPO,
                           env=env).returncode == 0
 
-    overlays[0].write_text(overlays[0].read_text() + "! tampered\n")
-    args[2] = str(tmp_path / "b3")
-    bad = subprocess.run(args, capture_output=True, text=True, cwd=REPO, env=env)
-    assert bad.returncode != 0, "a colliding overlay path was silently overwritten"
-    assert "BUILD REFUSED" in bad.stdout
+    overlays = list(tmp_path.glob("g33-ovl-*.F"))
+    assert len(overlays) == 1, f"two builds, {len(overlays)} overlay files"
+    digest = overlays[0].name[len("g33-ovl-"):-len(".F")]
+    assert len(digest) == 64, f"path carries {len(digest)} hex, not the full digest"
+    assert hashlib.sha256(overlays[0].read_bytes()).hexdigest() == digest
+    assert not list(tmp_path.glob("*.tmp")), "a temp file survived the rename"

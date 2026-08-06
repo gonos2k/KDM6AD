@@ -77,18 +77,30 @@ def build(workdir: Path, fixture: str, algo: str, nflux: bool,
     return exe
 
 
+def fixture_dims(fixture: str) -> tuple:
+    """(columns, levels) DECLARED by the fixture source.
+
+    An INDEPENDENT source of truth: nothing the driver prints can influence it.
+    That is the point wherever completeness is being judged -- a run that
+    silently drops a column agrees with itself perfectly, so only a figure from
+    outside the run can catch it.
+    """
+    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
+    m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)\s*,\s*"
+                  r"K\s*=\s*(\d+)", src)
+    if not m:
+        raise SystemExit(f"cannot read dimensions B, K from {fixture}.f90")
+    return int(m.group(1)), int(m.group(2))
+
+
 def fixture_width(fixture: str) -> int:
-    """The fixture's column count, read from the fixture source.
+    """The fixture's column count.
 
     The tile argument is positional and precedes the profile, so a non-default
     profile must pass one -- and hardcoding `3` silently produced a tile-sum
     error on any fixture that is not three columns wide (owner §9).
     """
-    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
-    m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)", src)
-    if not m:
-        raise SystemExit(f"cannot read column count B from {fixture}.f90")
-    return int(m.group(1))
+    return fixture_dims(fixture)[0]
 
 
 def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> list:
@@ -247,10 +259,8 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                          baseline_stream=member.read_text(), keep=keep),
             indent=2, sort_keys=True) + "\n")
         made.append({"file": path.name, "nsplit": n,
-                     "analysis": "metric_trajectory",
-                     "sha256": rm.sha256(path),
-                     "analyzer": "harness/g33_metric_trajectory.py",
-                     "analyzer_sha256": rm.sha256(HERE / "g33_metric_trajectory.py")})
+                     "analysis": "metric_trajectory", "sha256": rm.sha256(path),
+                     **_analyzer_pin("g33_metric_trajectory")})
         for arm, text in sorted(keep.items()):
             if arm == "as-is":
                 continue                      # already published as the member
@@ -260,6 +270,22 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                          "arm": arm, "sha256": rm.sha256(ap),
                          "runtime_argv": [str(n), mode, str(width), arm]})
     return made
+
+
+def _analyzer_pin(module: str) -> dict:
+    """How to find the analyzer's bytes LATER: its commit and its git blob.
+
+    `analyzer_sha256` alone can only answer "is today's file still the same",
+    never "what did this bundle run" -- so an analyzer that legitimately moves
+    on takes the answer with it. A blob SHA at a pinned commit is RESOLVABLE:
+    `git rev-parse <commit>:<path>` returns those exact bytes whatever the
+    working tree now holds (owner §16-6).
+    """
+    path = f"harness/{module}.py"
+    return {"analyzer": path,
+            "analyzer_sha256": rm.sha256(HERE / f"{module}.py"),
+            "analyzer_commit": rm._git("rev-parse", "HEAD"),
+            "analyzer_blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
 
 
 def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
@@ -277,9 +303,7 @@ def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
             path.write_text(rm.json.dumps(fn(stream), indent=2,
                                           sort_keys=True) + "\n")
             made.append({"file": path.name, "nsplit": n, "analysis": name,
-                         "sha256": rm.sha256(path),
-                         "analyzer": f"harness/{mod}.py",
-                         "analyzer_sha256": rm.sha256(HERE / f"{mod}.py")})
+                         "sha256": rm.sha256(path), **_analyzer_pin(mod)})
     return made
 
 

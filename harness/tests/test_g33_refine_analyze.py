@@ -1097,6 +1097,13 @@ def test_both_ledgers_thread_the_basis_rather_than_hardcoding_rho():
 
 # ---- owner §16-4: water destroyed inside the column is not precipitation -----
 
+def _sink(*a):
+    """One hand-built sink row. `ci.Sink` rather than a look-alike, so the test
+    binds the contract `_sink_enthalpy` actually reads."""
+    import g33_cap_interface as ci
+    return [ci.Sink(*a)]
+
+
 def _run_two_level(t_top=250.0, t_bot=290.0, dq=0.001):
     """Two levels, unit rho/delz, all the water loss in qr at the bottom."""
     r = {}
@@ -1132,7 +1139,7 @@ def test_destroyed_water_is_charged_at_ITS_level_not_the_surface():
     # ALL the loss destroyed at the top level, as liquid.
     w = ra._water_out(r, 1, ks)
     split = ra._precip_consistent(r, 1, kbot, ks, "operator",
-                                  [(0, 1, w, "liquid")])
+                                  _sink(1, 0, 1, w, "liquid", 250.0, 290.0))
     _, _, hl_top, _ = ra._enthalpies(250.0)
     _, _, hl_bot, _ = ra._enthalpies(290.0)
     assert split == pytest.approx(w * hl_top)
@@ -1149,7 +1156,7 @@ def test_the_split_conserves_the_mass_it_charges():
     w = ra._water_out(r, 1, ks)
     for frac in (0.0, 0.25, 1.0):
         got = ra._precip_consistent(r, 1, 1, ks, "operator",
-                                    [(0, 1, w * frac, "liquid")])
+                                    _sink(1, 0, 1, w * frac, "liquid", 280.0, 280.0))
         assert got == pytest.approx(ra._precip_consistent(r, 1, 1, ks)), frac
 
 
@@ -1160,8 +1167,11 @@ def test_the_phase_of_the_sink_is_used_not_the_surface_fraction():
     r = _run_two_level(t_top=260.0, t_bot=260.0)
     ks = [0, 1]
     w = ra._water_out(r, 1, ks)
-    liq = ra._precip_consistent(r, 1, 1, ks, "operator", [(0, 1, w, "liquid")])
-    ice = ra._precip_consistent(r, 1, 1, ks, "operator", [(0, 1, w, "ice")])
+    # Same temperature on both rows, so PHASE is the only thing that differs.
+    liq = ra._precip_consistent(r, 1, 1, ks, "operator",
+                                _sink(1, 0, 1, w, "liquid", 260.0, 260.0))
+    ice = ra._precip_consistent(r, 1, 1, ks, "operator",
+                                _sink(1, 0, 1, w, "ice", 260.0, 260.0))
     _, _, hl, hi = ra._enthalpies(260.0)
     assert liq == pytest.approx(w * hl)
     assert ice == pytest.approx(w * hi)
