@@ -67,13 +67,54 @@ def read_state(text: str, *, label: str) -> dict:
     return out
 
 
-def state(driver: str, tiles) -> dict:
-    """{(field, col, k): raw hex} after one call under this decomposition."""
+def run(driver: str, tiles) -> str:
+    """The driver's stdout for one decomposition."""
     r = subprocess.run([driver, "1", "rezero", ",".join(map(str, tiles))],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"driver exited {r.returncode}\n{r.stderr[-2000:]}")
-    return read_state(r.stdout, label=f"tiles={','.join(map(str, tiles))}")
+    return r.stdout
+
+
+def tile_brackets(text: str) -> list:
+    """The (i0, i1) column bounds each kernel call ACTUALLY received.
+
+    `G33N CALL_BEGIN` is written from INSIDE the tile loop, carrying the very
+    bounds handed to `kdm62D` on the next statement. Needs an `--nflux` build,
+    whose STATE records are byte-identical to the plain one on this fixture.
+    """
+    return [(int(p[5]), int(p[6]))
+            for p in (ln.split() for ln in text.splitlines())
+            if p[:2] == ["G33N", "CALL_BEGIN"]]
+
+
+def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
+    """The kernel must have been called over the decomposition we ASKED for.
+
+    The previous version ran an INVALID spec and required a refusal. That only
+    proves the argument is parsed and validated -- and validation lives in the
+    argument parser while use lives in the tile loop, so a driver that validated
+    the spec and then called the kernel over the whole domain passed it
+    (Codex). Every partition would then equal the baseline and the tool would
+    report zero differences everywhere: "the operator is column-local", the
+    strongest possible pass and the exact claim it exists to refute.
+
+    This reads the bounds the kernel was given, so validating-and-ignoring is
+    caught where being-refused never was.
+    """
+    want, i = [], 0
+    for t in tiles:
+        want.append((i + 1, i + t))
+        i += t
+    got = tile_brackets(text)
+    if not got:
+        raise ra.RefineError(
+            f"{label}: no G33N CALL_BEGIN records -- this needs an --nflux "
+            f"build, without which nothing says which decomposition ran")
+    if got != want:
+        raise ra.RefineError(
+            f"{label}: the kernel was called over {got}, not the requested "
+            f"{want} -- the tile argument is not reaching the partitioning")
 
 
 def _f32(h: str) -> float:
@@ -126,31 +167,6 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
 
 
-def _expect_tiles_are_live(driver: str, cols: int) -> None:
-    """The tile argument must actually reach the partitioning.
-
-    A driver that PARSED the argument and ignored it would run the whole domain
-    every time, every partition would equal the baseline, and the tool would
-    report zero differences everywhere -- "the operator is column-local", the
-    strongest possible pass and the claim it exists to refute. Nothing in the
-    stream says which decomposition produced it: `G33R BEGIN` carries nsplit,
-    mode, algorithm and dtcld, not the tiles.
-
-    So this asks the one question the stream can answer: a spec that does not
-    sum to the domain must be REFUSED. A driver that ignored the argument would
-    accept it.
-    """
-    bad = [1] * (cols - 1)          # sums to cols-1, never the domain
-    r = subprocess.run([driver, "1", "rezero", ",".join(map(str, bad))],
-                       capture_output=True, text=True)
-    if r.returncode == 0:
-        raise ra.RefineError(
-            f"driver accepted tiles={bad}, which does not sum to {cols}: the "
-            f"tile argument is not reaching the partitioning, so every "
-            f"partition would be the whole domain and the result would be "
-            f"'column-local' whatever the operator does")
-
-
 def analysis(driver: str, fixture: str) -> dict:
     """Every contiguous partition against the whole domain as one tile.
 
@@ -158,15 +174,21 @@ def analysis(driver: str, fixture: str) -> dict:
     produced the same bits, and a float round-trip is the wrong instrument.
     """
     width, levels = fixture_dims(fixture)
-    _expect_tiles_are_live(driver, width)
-    base = state(driver, (width,))
-    _expect_universe(base, width, levels, "baseline")
+
+    def snapshot(tiles):
+        label = f"tiles={','.join(map(str, tiles))}"
+        text = run(driver, tiles)
+        _expect_tiles_are_live(text, tiles, label)
+        got = read_state(text, label=label)
+        _expect_universe(got, width, levels, label)
+        return got
+
+    base = snapshot((width,))
     rows = {}
     for tiles in compositions(width):
         if tiles == (width,):
             continue
-        got = state(driver, tiles)
-        _expect_universe(got, width, levels, f"tiles={tiles}")
+        got = snapshot(tiles)
         # The universes must be the SAME cells, or "how many differ" is counted
         # over whatever both happened to carry -- and a short baseline reports
         # FEWER differences, which is the flattering direction.

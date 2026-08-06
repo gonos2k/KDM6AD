@@ -219,8 +219,19 @@ the axes are enumerated here rather than discovered one at a time:
 | a column or level missing from **every** run | `B`, `K` read from the fixture source |
 | a level axis shifted off `0..K-1` | set equality, not a count |
 | record count ≠ `12 × B × K` | explicit |
-| a driver that parses the tile argument and **ignores** it | it must refuse a spec that does not sum to `B` |
+| a driver that validates the tile spec and then **ignores** it | `G33N CALL_BEGIN`, written from inside the tile loop, must carry the bounds actually handed to `kdm62D` |
 | a **reversed** level axis, a **transposed** column mapping | **not caught** — these are the same set. Ordering is not a universe property. Neither passes silently: applied to one run and not the other they make most cells differ, surfacing as an implausibly large result rather than a clean one. |
+
+The tile-liveness row went through the same cycle in miniature and is worth
+recording. Its first version ran an *invalid* spec and required a refusal —
+which proves only that the argument is parsed and **validated**. Validation
+lives in the argument parser and use lives in the tile loop, so a driver that
+validated the spec and then called the kernel over the whole domain passed that
+check. It now reads `G33N CALL_BEGIN`, which the driver writes from inside the
+tile loop carrying the very bounds it hands to `kdm62D`. That requires an
+`--nflux` build; a build without one is **refused**, not skipped, and the
+overlay is measured non-invasive on this fixture (STATE records byte-identical
+across all four partitions) rather than assumed from the A/B/C proof.
 
 The common failure mode in all of them is the same and is worth naming: a broken
 measurement reports **zero differences**, which reads as "the operator is

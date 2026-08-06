@@ -33,7 +33,8 @@ def drivers(tmp_path_factory):
         d = tmp_path_factory.mktemp(f"ncmin-{algo}") / "build"
         b = subprocess.run(["bash", str(BUILD), str(d),
                             "--fixture=g33_fixture_boundary_mapping_v1",
-                            f"--algo={algo}"], capture_output=True, text=True,
+                            f"--algo={algo}", "--nflux"],
+                           capture_output=True, text=True,
                            cwd=REPO)
         assert b.returncode == 0, f"{algo} build failed:\n{b.stdout}\n{b.stderr}"
         out[algo] = str(d / "g33_refine_driver")
@@ -151,11 +152,10 @@ def test_a_partition_whose_CELL_UNIVERSE_differs_is_refused(drivers,
                                                             monkeypatch):
     """"How many cells differ" counted over whatever both happened to carry
     would silently compare a subset."""
-    real = nl.state
-    full = real(drivers["legacy"], (3,))
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
     short = {k: v for k, v in list(full.items())[:-1]}
-    monkeypatch.setattr(nl, "state",
-                        lambda d, t: full if tuple(t) == (3,) else short)
+    monkeypatch.setattr(nl, "read_state",
+                        lambda t, label: full if "3" == label[-1] else short)
     with pytest.raises(ra.RefineError):
         nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -173,10 +173,10 @@ def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
     With column 3 gone everywhere the tool reported `31/96` and a shrunken
     denominator as a normal result. Only a figure from OUTSIDE the run catches
     that, so it comes from the fixture source."""
-    real = nl.state
+    real = nl.read_state
     for drop in (3, 2):
-        monkeypatch.setattr(nl, "state", lambda d, t, c=drop: {
-            k: v for k, v in real(d, t).items() if k[1] != c})
+        monkeypatch.setattr(nl, "read_state", lambda t, label, c=drop: {
+            k: v for k, v in real(t, label=label).items() if k[1] != c})
         with pytest.raises(ra.RefineError, match="fixture declares"):
             nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -187,9 +187,9 @@ def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
     `(1,1,1)` differs ONLY there -- so a run silently missing it reports that
     partition as clean. `(2,1)` survives because it also differs in column 1,
     which is exactly the trap: the tool would still look like it was working."""
-    real = nl.state
-    monkeypatch.setattr(nl, "state", lambda d, t: {
-        k: v for k, v in real(d, t).items() if k[1] != 2})
+    real = nl.read_state
+    monkeypatch.setattr(nl, "read_state", lambda t, label: {
+        k: v for k, v in real(t, label=label).items() if k[1] != 2})
     monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
     p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert p["1,1,1"]["cells_differing"] == 0, \
@@ -213,7 +213,7 @@ def test_a_SHIFTED_level_axis_is_refused(drivers):
     passed -- `{10,11,12,13}` has four entries too. The emitter writes
     `emit_fld(name, i, KM-k, ...)` over `k = 1..KM`, so the protocol's levels
     are `0..K-1` and that is checked as a SET, like the columns beside it."""
-    full = nl.state(drivers["legacy"], (3,))
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
     for shift in (1, 10):
         moved = {(f, c, k + shift): v for (f, c, k), v in full.items()}
         with pytest.raises(ra.RefineError, match="levels"):
@@ -225,7 +225,7 @@ def test_a_REVERSED_axis_is_NOT_a_universe_property(drivers):
     universe check can see it. It does not pass silently either: a reversal in
     one run and not the other makes nearly every cell differ, so it surfaces as
     an implausibly large result rather than a clean one."""
-    full = nl.state(drivers["legacy"], (3,))
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
     flipped = {(f, c, 3 - k): v for (f, c, k), v in full.items()}
     nl._expect_universe(flipped, 3, 4, "reversed")       # accepted, by design
     differ = sum(full[k] != flipped[k] for k in full)
@@ -236,33 +236,62 @@ def test_a_REVERSED_axis_is_NOT_a_universe_property(drivers):
 
 def test_the_intact_universe_is_accepted(drivers):
     """A gate that refused everything would also pass the tests above."""
-    nl._expect_universe(nl.state(drivers["legacy"], (3,)), 3, 4, "intact")
+    nl._expect_universe(nl.read_state(nl.run(drivers["legacy"], (3,)), label="base"), 3, 4, "intact")
 
 
-def test_a_driver_that_IGNORES_the_tile_argument_is_refused(drivers,
-                                                            monkeypatch):
-    """The last way this tool could report the strongest possible pass by
-    accident. A driver that parsed the tile argument and ignored it would run
-    the whole domain every time, every partition would equal the baseline, and
-    the result would be "column-local" whatever the operator does. Nothing in
-    the stream says which decomposition produced it -- `G33R BEGIN` carries
-    nsplit, mode, algorithm and dtcld, not the tiles -- so the control is that a
-    spec which does not sum to the domain must be REFUSED."""
-    nl._expect_tiles_are_live(drivers["legacy"], 3)      # the real one is live
+def test_a_driver_that_VALIDATES_and_then_IGNORES_the_tiles_is_refused(drivers):
+    """The control this replaced ran an INVALID spec and required a refusal --
+    which only proves the argument is parsed and validated. Validation lives in
+    the argument parser and use lives in the tile loop, so a driver that
+    validated the spec and then called the kernel over the whole domain passed
+    it. Every partition would equal the baseline, the tool would report zero
+    differences everywhere, and that reads as "the operator is column-local".
 
-    class Accepts:
-        returncode, stdout, stderr = 0, "", ""
-
-    monkeypatch.setattr(nl.subprocess, "run", lambda *a, **k: Accepts())
-    with pytest.raises(ra.RefineError, match="not reaching the partitioning"):
-        nl._expect_tiles_are_live(drivers["legacy"], 3)
+    `G33N CALL_BEGIN` is written from INSIDE the tile loop with the very bounds
+    handed to `kdm62D`, so the question is answered rather than approximated."""
+    whole = nl.run(drivers["legacy"], (3,))          # always the whole domain
+    for tiles in ((1, 1, 1), (2, 1)):
+        with pytest.raises(ra.RefineError, match="not reaching the partitioning"):
+            nl._expect_tiles_are_live(whole, tiles, f"tiles={tiles}")
 
 
-def test_the_driver_validates_the_tile_spec_it_is_given(drivers):
-    """What makes the control above meaningful: the refusals are real."""
-    for bad, why in ((["1", "1"], "sum"), (["4"], "sum"), (["0", "3"], ">= 1"),
-                     (["1", "1", "1", "1"], "more tiles")):
-        r = subprocess.run([drivers["legacy"], "1", "rezero", ",".join(bad)],
-                           capture_output=True, text=True)
-        assert r.returncode != 0, f"{bad} was accepted"
-        assert why in r.stderr or why in r.stdout, f"{bad}: {r.stderr[:80]}"
+def test_the_real_driver_calls_the_kernel_over_what_was_ASKED(drivers):
+    """A gate that refused everything would also pass the test above."""
+    for tiles in ((3,), (1, 2), (2, 1), (1, 1, 1)):
+        text = nl.run(drivers["legacy"], tiles)
+        nl._expect_tiles_are_live(text, tiles, f"tiles={tiles}")
+        want, i = [], 0
+        for t in tiles:
+            want.append((i + 1, i + t))
+            i += t
+        assert nl.tile_brackets(text) == want
+
+
+def test_a_build_that_cannot_answer_the_question_is_REFUSED(tmp_path):
+    """Without `--nflux` nothing in the stream says which decomposition ran --
+    `G33R BEGIN` carries nsplit, mode, algorithm and dtcld, not the tiles. The
+    tool refuses rather than skipping the check, because "I could not verify
+    this" must not read as "verified"."""
+    d = tmp_path / "plain"
+    b = subprocess.run(["bash", str(BUILD), str(d),
+                        "--fixture=g33_fixture_boundary_mapping_v1",
+                        "--algo=legacy"], capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, b.stderr[-400:]
+    with pytest.raises(ra.RefineError, match="--nflux"):
+        nl.analysis(str(d / "g33_refine_driver"), FIXTURE)
+
+
+def test_the_nflux_overlay_does_not_move_the_numbers(drivers, tmp_path):
+    """The measurement now needs an instrumented build, so the instrumentation
+    must be shown non-invasive ON THIS FIXTURE rather than assumed from the
+    A/B/C proof elsewhere."""
+    d = tmp_path / "plain"
+    if not d.exists():
+        subprocess.run(["bash", str(BUILD), str(d),
+                        "--fixture=g33_fixture_boundary_mapping_v1",
+                        "--algo=legacy"], capture_output=True, text=True, cwd=REPO)
+    plain = str(d / "g33_refine_driver")
+    for tiles in ((3,), (1, 1, 1), (2, 1)):
+        a = nl.read_state(nl.run(plain, tiles), label="plain")
+        b = nl.read_state(nl.run(drivers["legacy"], tiles), label="nflux")
+        assert a == b, f"{tiles}: --nflux moved the STATE records"
