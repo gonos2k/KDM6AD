@@ -290,6 +290,42 @@ measurement reports **zero differences**, which reads as "the operator is
 column-local" — the strongest possible pass, and the exact claim this tool
 exists to refute.
 
+## The oracle already exists, and the whole-domain run fails it
+
+A corrected per-column `ncmin` would have to reproduce
+
+    M_local(X) = ⊕ᵢ Mᵢ(Xᵢ; xlandᵢ)
+
+and that answer is computable **with the unmodified kernel**: run each column as
+its own tile. In a one-column tile `ncmin` survives the loop holding that
+column's own threshold, so `(1,1,1)` **is** the direct sum. The oracle is a
+decomposition, not a variant — no freeze-lift, no diagnostic overlay.
+
+That reframes what the earlier tables measured. Comparing partitions with each
+other says only that they disagree. Comparing them with the local answer says
+how far each is from column-locality — and the **whole-domain run is what
+production does**:
+
+| decomposition | components differing | column | worst column-integrated |
+|---|---|---|---|
+| `1,1,1` | 0 / 144 | — | the oracle |
+| **`3` (production)** | **16 / 144** | **2 (sea)** | **rain +20.72%** |
+| `1,2` | 16 / 144 | 2 (sea) | rain +20.72% |
+| `2,1` | 15 / 144 | 1 (land) | rain +20.67% |
+
+So the shipped configuration is not merely *decomposition-sensitive*: on this
+fixture it carries **~21% too much column rain in the coastal sea column**
+against the per-column-correct answer. Which column is wrong depends on where
+the tile ends — `(2,1)` ends its first tile on sea, so it is column 1 that takes
+the wrong threshold.
+
+Identical under both bases, for the reason above: the `1+qv` weight cancels in a
+ratio between two runs that share the window-initial humidity.
+
+**What licenses attributing this to `ncmin` alone** is the `(1,2)` row of the
+earlier table: it differs from the whole domain in **zero** components although
+the decomposition changed. Nothing but the `ncmin` gate responds to tiling here.
+
 **The conservative interface does not fix it.** The document argued this from
 source; it is now measured — both variants differ in exactly the same 0 / 16 / 31
 cells, in the same columns. The P0-4b work does not touch this, so it stays open

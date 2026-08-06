@@ -949,7 +949,18 @@ claims:
       floor (max(ncmin,nci), F:2736/2750/2888), and the two candidates agree
       where the number exceeds BOTH. Here nc runs 4.00e+07..5.04e+07 against
       2.5e+07 and 1.0e+08, so the gate is active in every cell -- which is WHY
-      the prediction is exact on this fixture rather than a general property. Both variants differ in
+      the prediction is exact on this fixture rather than a general property.
+      DIRECT-SUM ORACLE (owner §12-5), computed with the UNMODIFIED kernel: a
+      one-column tile leaves ncmin holding that column's own threshold, so
+      (1,1,1) IS M_local(X) = (+)_i M_i(X_i; xland_i). Measured against it, the
+      WHOLE-DOMAIN run -- what production does -- differs in 16/144 components,
+      all in the sea column, carrying +20.72% column rain; (1,2) the same; (2,1)
+      differs in column 1 at +20.67% because its first tile ends on sea.
+      Identical under both bases. So the shipped configuration is not merely
+      decomposition-SENSITIVE, it departs from the column-local answer by ~21%
+      column rain in a coastal column on this fixture. Attribution to ncmin
+      alone rests on (1,2) differing from the whole domain in ZERO components
+      despite a changed decomposition -- nothing else here responds to tiling. Both variants differ in
       exactly the same 0/16/31 cells and columns, so the conservative interface
       does NOT fix it. Unresolved; needs an owner decision among per-column
       ncmin, accepting the partition dependence, or splitting the variants --
@@ -979,7 +990,7 @@ claims:
       sequential multi-call tile experiment that PREDICTS rank sensitivity
       rather than demonstrating it.
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:ff07aa54b46b09537da2d74421a3afe1ec544abdd4714a8995974b763a3a435d]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:29836562c6cf4ecac794cc2282ddffb328679d6c5e8b47ea2c1fcb27cfea649b]
 
   - id: G33-ENTHALPY-003
     text: >

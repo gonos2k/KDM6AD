@@ -467,3 +467,50 @@ def test_the_prediction_can_come_out_WRONG():
     all_land = {1: 1.0, 2: 1.0, 3: 1.0}
     assert nl.predicted_columns((2, 1), all_land, 3) == set()
     assert nl.predicted_columns((2, 1), {1: 1.0, 2: 2.0, 3: 1.0}, 3) == {1, 2}
+
+
+# ---- owner §12-5: the direct-sum oracle, without touching the kernel --------
+
+def test_the_PER_COLUMN_run_IS_the_direct_sum_oracle(drivers):
+    """Running each column as its own tile makes `ncmin` that column's own
+    threshold, so `(1,)*B` is `M_local(X) = (+)_i M_i(X_i; xland_i)` -- the
+    answer a corrected operator would have to reproduce. It needs no change to
+    the kernel: the oracle is a DECOMPOSITION, not a variant."""
+    o = nl.local_oracle(drivers["legacy"], FIXTURE)
+    assert o["oracle"] == "1,1,1"
+    assert o["partitions"]["1,1,1"]["is_the_oracle"] is True
+    assert o["partitions"]["1,1,1"]["components_differing"] == 0
+
+
+def test_the_WHOLE_DOMAIN_run_departs_from_the_local_answer(drivers):
+    """The number that matters operationally: production runs whole tiles, not
+    one column each. Measuring partitions against EACH OTHER only says they
+    disagree; measuring them against the local answer says how far the shipped
+    configuration is from column-locality."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    whole = p["3"]
+    assert whole["components_differing"] == 16
+    assert whole["columns"] == [2], "the sea column is the one gated wrongly"
+    for basis in ("operator", "physical"):
+        rain = whole["column_integrated"][basis]["2/qr"]["rel"]
+        assert 0.20 < rain < 0.22, f"{basis}: {rain}"
+
+
+def test_WHICH_column_is_wrong_depends_on_the_decomposition(drivers):
+    """`(2,1)` ends its first tile on sea, so column 1 takes the sea threshold;
+    `(3,)` and `(1,2)` end on land, so column 2 takes the land one. Every
+    decomposition except per-column is wrong SOMEWHERE."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    assert p["3"]["columns"] == [2]
+    assert p["1,2"]["columns"] == [2]
+    assert p["2,1"]["columns"] == [1]
+    assert all(r["components_differing"] > 0
+               for k, r in p.items() if not r["is_the_oracle"])
+
+
+def test_the_operator_is_otherwise_COLUMN_LOCAL(drivers):
+    """What licenses attributing the departure to `ncmin` alone: `(1,2)` differs
+    from the whole domain in ZERO components even though the decomposition
+    changed, so nothing but the `ncmin` gate responds to tiling here."""
+    a = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
+    assert a["1,2"]["components_differing"] == 0

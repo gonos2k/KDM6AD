@@ -435,6 +435,59 @@ def analysis(driver: str, fixture: str) -> dict:
     return {"f32_eps": F32_EPS, "partitions": rows}
 
 
+def local_oracle(driver: str, fixture: str) -> dict:
+    """Every decomposition against the PER-COLUMN answer, not against each other.
+
+    Running each column as its own tile makes `ncmin` that column's own
+    threshold, so `(1,)*B` IS the direct sum the corrected operator would have
+    to reproduce:
+
+        M_local(X) = (+)_i M_i(X_i; xland_i)
+
+    and it needs no change to the kernel -- the oracle is a decomposition, not a
+    variant. That matters for what the numbers mean: the whole-domain run is
+    what production does, and measuring it against the local answer says how far
+    the shipped configuration is from column-locality, where measuring
+    partitions against each other only says they disagree.
+
+    The identification rests on the operator being otherwise column-local, which
+    the `(1,2)` row shows: it differs from the whole domain in ZERO components
+    even though the decomposition changed, so nothing but the `ncmin` gate
+    responds to tiling here.
+    """
+    width, levels = fixture_dims(fixture)
+    ones = (1,) * width
+    ref_text = run(driver, ones)
+    _expect_tiles_are_live(ref_text, ones, "local-oracle")
+    ref_rec = read_records(ref_text, label="local-oracle")
+    ref = {k[1:]: v for k, v in ref_rec.items() if k[0] == "state"}
+    _expect_universe(ref, width, levels, "local-oracle")
+
+    rows = {}
+    for tiles in compositions(width):
+        label = ",".join(map(str, tiles))
+        text = run(driver, tiles)
+        _expect_tiles_are_live(text, tiles, label)
+        rec = read_records(text, label=label)
+        _expect_same_inputs(ref_rec, rec, label)
+        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+        _expect_universe(got, width, levels, label)
+        diff = [k for k in ref if ref[k] != got[k]]
+        rows[label] = {
+            "is_the_oracle": tiles == ones,
+            "components_differing": len(diff),
+            "components_total": len(ref),
+            "columns": sorted({k[1] for k in diff}),
+            "column_integrated": {
+                b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
+                                 "rel": rd}
+                    for (c, f), (x, y, ad, rd)
+                    in column_integrated(ref_text, text, b).items()}
+                for b in ("operator", "physical")},
+        }
+    return {"oracle": ",".join(map(str, ones)), "partitions": rows}
+
+
 def report(driver: str, fixture: str) -> None:
     a = analysis(driver, fixture)
     print("  Tile decomposition changes the answer. Size, not only count.\n")
@@ -454,6 +507,20 @@ def report(driver: str, fixture: str) -> None:
                   f"{d['max_abs']:12.4e} {d['max_abs_baseline']:12.4e}")
             first = ""
     print(f"\n  f32 eps = {a['f32_eps']:.3e}. A rounding difference lives there.")
+    o = local_oracle(driver, fixture)
+    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
+          f"corrected\n  operator must reproduce. The whole domain is what "
+          f"production runs.\n")
+    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
+          f"{'worst column-integrated departure':>36}")
+    for tiles, r in o["partitions"].items():
+        ci = r["column_integrated"]["operator"]
+        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
+        w = f"{worst[0]} {100*worst[1]['rel']:.2f}%" if worst[0] else "-"
+        print(f"  {tiles:>10} {r['components_differing']:>5}/"
+              f"{r['components_total']:<6} "
+              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>36}"
+              + ("   <- the oracle" if r["is_the_oracle"] else ""))
     for tiles, r in a["partitions"].items():
         if r["components_differing"] and not r["is_roundoff_scale"]:
             print(f"  {tiles}: max relative difference {r['max_rel']:.4e} is "
