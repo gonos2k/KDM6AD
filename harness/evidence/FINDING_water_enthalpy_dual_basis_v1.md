@@ -5,6 +5,7 @@
 | claim | status | grade | scope |
 |---|---|---|---|
 | `G33-BASIS-004` | **active** | confirmed | n12.rezero of the legacy refinement chain on g33_fixture_multisubcycle_v1. Says nothing about which basis the reference INTENDS to close, which is G33-BASIS-002 and an owner decision. P_surface is the WRF rain diagnostic and is not reweighted -- it is already a physical mass per area -- so the physical budget mixes a dry-weighted column change with a diagnostic whose own departure from the rho*dz budget is a separate known defect, and that defect dominates columns 2-3. |
+| `G33-BASIS-005` | **active** | confirmed | g33_fixture_multisubcycle_v1, legacy, h = 25 s. The window-initial qv is read from the FIRST call's pre-sed record; a cell absent from that call is REFUSED rather than falling back to a per-call density, which would silently restore the moving weight. This does not settle whether the physical measure should be the canonical dry-air layer mass the host dynamics carries -- that is a separate binding, and G33-BASIS-002 remains the open compatibility question. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -89,3 +90,39 @@ comment.
 - The `qr/qi` mass controls in the matched closure already carry both bases
   (`G33-BASIS-003`); this extends the same treatment to the two column ledgers,
   which completes §9.2's list.
+
+
+## The physical measure was itself moving (owner §11)
+
+`rho_d = rho_m/(1+qv)` was recomputed from **each external call's own pre-sed
+`qv`** on the G33N side, so the same layer's dry-air mass moved between calls —
+up to **0.0717%** across the twelve calls on this fixture, worst in column 3
+where the microphysics is most active. Column microphysics transports no dry
+air, so `rho_d·Δz` for a layer is invariant across the window: a budget whose
+weights change with the process being measured is not a budget.
+
+The G33R ledger (`_column_density`) had **already** held it at the initial `qv`
+and said why in its docstring. The two halves of the codebase disagreed, and the
+half with the argument written down was the one that was right.
+
+`cell_measure()` now takes the measure once from the window's first call and
+every analyzer shares it — window inventory, per-call closure, interface
+residual, throughput, defect magnitude, dual ledger.
+
+| row | per-call qv | window-fixed | change |
+|---|---|---|---|
+| `ice/ni/3` | −5.239382e+08 | −5.233938e+08 | 0.065% |
+| `ice/qi/3` | −5.685992e-03 | −5.680085e-03 | 0.020% |
+| `main/qr/1` | −1.506815e-10 | −1.505309e-10 | 1.9% (roundoff-scale value) |
+
+The **operator** basis is byte-unchanged, because `rho_m` carries no `qv`:
+`main/nr` stays 15.0036 / 13.3377 / 11.8402% and the ice cap share stays
+100.00 / 100.00%. So no operator-basis headline moves.
+
+A cell absent from the first call is **refused**, not recomputed — falling back
+to that call's own density would silently restore the moving weight for exactly
+the cells the window measure does not cover.
+
+This does not settle what the physical measure *should be bound to*. Binding it
+to the canonical dry-air layer mass the host dynamics carries is a separate
+step; `G33-BASIS-002` remains the open compatibility question.

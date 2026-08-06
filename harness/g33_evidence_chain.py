@@ -114,6 +114,37 @@ def snapshots() -> list[dict]:
     return out
 
 
+#: Schemas this checker understands, and what each demands. A schema outside
+#: this table is a VIOLATION, not a pass: the previous check only rejected a
+#: top-level that was not an object, so `"schema": "completely-unknown"` went
+#: straight through (owner P0-E2).
+#:
+#: v1 is legacy -- the pin blocks did not exist, so their absence is reported.
+#: v2 REQUIRES them, because a contract you can opt out of by deleting a field
+#: is not a contract: a new bundle could shed `member_parsers` and
+#: `producer_modules` and be read as an old one.
+SCHEMA_REQUIREMENTS = {
+    "refinement_experiment_v1": (),
+    "refinement_experiment_v2": ("members", "member_parsers", "producer_modules",
+                                 "build_provenance", "arm", "precision"),
+}
+
+
+def _schema_violations(man: dict) -> list:
+    """What this manifest fails to satisfy for the schema it declares."""
+    schema = man.get("schema")
+    if schema not in SCHEMA_REQUIREMENTS:
+        return [f"unknown schema {schema!r}"]
+    if man.get("artifact_type") != "refinement_experiment":
+        return [f"unknown artifact_type {man.get('artifact_type')!r}"]
+    out = [f"{schema} requires a non-empty `{k}`"
+           for k in SCHEMA_REQUIREMENTS[schema] if not man.get(k)]
+    if SCHEMA_REQUIREMENTS[schema] and man.get("instrumented") \
+            and not man.get("analyses"):
+        out.append("instrumented=true requires `analyses`")
+    return out
+
+
 def members_of(manifest: Path) -> list[dict]:
     """Each member beside `manifest`, checked against the digest it recorded.
 
@@ -143,6 +174,10 @@ def members_of(manifest: Path) -> list[dict]:
     if "members" not in man:
         return [{"file": manifest.name, "state": "MANIFEST-MISSING-MEMBERS",
                  "detail": f"keys: {sorted(man)[:8]}"}]
+    bad = _schema_violations(man)
+    if bad:
+        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+                 "detail": "; ".join(bad)}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
@@ -234,6 +269,12 @@ def _module_states(man: dict) -> list:
             out.append({"file": f"<{key}>", "state": "modules-unpinned"})
             continue
         for e in entries:
+            if not isinstance(e, dict):
+                # A crash is not a verdict: garbage in a pin block used to raise
+                # AttributeError out of `--check` rather than failing the bundle.
+                out.append({"file": f"<{key}>", "state": "MANIFEST-SCHEMA-MISMATCH",
+                            "detail": f"entry is {type(e).__name__}, not an object"})
+                continue
             out.append(_analyzer_state({"analyzer": e.get(field),
                                         "analyzer_sha256": e.get("content_sha256")
                                         or e.get("sha256"),

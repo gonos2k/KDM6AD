@@ -152,10 +152,12 @@ def test_a_partition_whose_CELL_UNIVERSE_differs_is_refused(drivers,
                                                             monkeypatch):
     """"How many cells differ" counted over whatever both happened to carry
     would silently compare a subset."""
-    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
-    short = {k: v for k, v in list(full.items())[:-1]}
-    monkeypatch.setattr(nl, "read_state",
-                        lambda t, label: full if "3" == label[-1] else short)
+    full = nl.read_records(nl.run(drivers["legacy"], (3,)), label="base")
+    short = {k: v for k, v in full.items()
+             if not (k[0] == "state" and k[1:] == list(
+                 kk[1:] for kk in full if kk[0] == "state")[-1])}
+    monkeypatch.setattr(nl, "read_records",
+                        lambda t, label: full if label.endswith("3") else short)
     with pytest.raises(ra.RefineError):
         nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -173,10 +175,10 @@ def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
     With column 3 gone everywhere the tool reported `31/96` and a shrunken
     denominator as a normal result. Only a figure from OUTSIDE the run catches
     that, so it comes from the fixture source."""
-    real = nl.read_state
+    real = nl.read_records
     for drop in (3, 2):
-        monkeypatch.setattr(nl, "read_state", lambda t, label, c=drop: {
-            k: v for k, v in real(t, label=label).items() if k[1] != c})
+        monkeypatch.setattr(nl, "read_records", lambda t, label, c=drop: {
+            k: v for k, v in real(t, label=label).items() if k[2] != c})
         with pytest.raises(ra.RefineError, match="fixture declares"):
             nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -187,9 +189,9 @@ def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
     `(1,1,1)` differs ONLY there -- so a run silently missing it reports that
     partition as clean. `(2,1)` survives because it also differs in column 1,
     which is exactly the trap: the tool would still look like it was working."""
-    real = nl.read_state
-    monkeypatch.setattr(nl, "read_state", lambda t, label: {
-        k: v for k, v in real(t, label=label).items() if k[1] != 2})
+    real = nl.read_records
+    monkeypatch.setattr(nl, "read_records", lambda t, label: {
+        k: v for k, v in real(t, label=label).items() if k[2] != 2})
     monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
     p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert p["1,1,1"]["components_differing"] == 0, \
@@ -277,7 +279,7 @@ def test_a_build_that_cannot_answer_the_question_is_REFUSED(tmp_path):
                         "--fixture=g33_fixture_boundary_mapping_v1",
                         "--algo=legacy"], capture_output=True, text=True, cwd=REPO)
     assert b.returncode == 0, b.stderr[-400:]
-    with pytest.raises(ra.RefineError, match="--nflux"):
+    with pytest.raises(Exception, match="no G33N records"):
         nl.analysis(str(d / "g33_refine_driver"), FIXTURE)
 
 
@@ -351,3 +353,74 @@ def test_the_ULP_metric_is_ORDER_PRESERVING_across_zero(drivers):
     # Monotonic: the ordering must be strictly increasing in the value.
     keys = [nl._ordered(hx(v)) for v in (-2.0, -1.0, -0.0, 0.0, 1.0, 2.0)]
     assert keys == sorted(keys)
+
+
+# ---- owner P0-E1 / P0-S1: the gate reads the strict protocol, and the two ----
+# ---- runs are proved to be the same atmosphere ------------------------------
+
+def test_the_tile_gate_uses_the_STRICT_G33N_parser(drivers):
+    """It scanned for the `G33N CALL_BEGIN` token. A valid G33R block plus two
+    FORGED CALL_BEGIN lines -- no STREAM_BEGIN, no STREAM_END, no CALL_END, no
+    records of any kind -- produced exactly the brackets asked for and passed
+    the liveness gate, while `nt.calls()` rejects that stream on its first
+    record (owner P0-E1)."""
+    real = nl.run(drivers["legacy"], (3,))
+    g33r = "\n".join(l for l in real.splitlines() if l.startswith("G33R"))
+    forged = (g33r + "\nG33N CALL_BEGIN 1 1 1 1 2 4 42700000"
+                     "\nG33N CALL_BEGIN 2 1 2 3 3 4 42700000\n")
+    with pytest.raises(Exception):
+        nl._expect_tiles_are_live(forged, (2, 1), "forged")
+    # and the real streams still pass, so the gate is not simply refusing all
+    for tiles in ((3,), (2, 1), (1, 1, 1)):
+        nl._expect_tiles_are_live(nl.run(drivers["legacy"], tiles), tiles, "real")
+
+
+def test_a_TRUNCATED_G33N_stream_is_refused(drivers):
+    """The strict parser brings framing checks the token scan had none of."""
+    text = nl.run(drivers["legacy"], (2, 1))
+    for cut in ("G33N STREAM_END", "G33N CALL_END"):
+        broken = text.replace(cut, "", 1)
+        with pytest.raises(Exception):
+            nl._expect_tiles_are_live(broken, (2, 1), cut)
+
+
+def test_the_two_runs_are_proved_to_be_the_SAME_ATMOSPHERE(drivers):
+    """Without this the analysis attributes every difference to `ncmin` having
+    checked only the cell universe. A driver that transposed the column mapping
+    would satisfy that, produce large differences, and read as a strong effect
+    -- and "a large difference is suspicious" cannot separate the two, because a
+    large difference is what this tool reports (owner P0-S1)."""
+    base = nl.read_records(nl.run(drivers["legacy"], (3,)), label="base")
+    got = nl.read_records(nl.run(drivers["legacy"], (2, 1)), label="got")
+    nl._expect_same_inputs(base, got, "real")           # holds on real runs
+
+    for cls, name in (("initial", "qr"), ("forcing", "rho")):
+        key = next(k for k in base if k[0] == cls and k[1] == name)
+        tampered = dict(got)
+        tampered[key] = "DEADBEEF"
+        with pytest.raises(ra.RefineError, match="same atmosphere"):
+            nl._expect_same_inputs(base, tampered, "tampered")
+
+
+def test_the_MECHANISM_predicts_which_columns_differ_and_it_holds(drivers):
+    """The causal statement, in the form that can actually attribute. `ncmin`
+    keeps the LAST column's threshold, so a column differs exactly when its
+    tile ends on a surface type other than the whole domain's. Derived from the
+    fixture's own XLAND_BITS -- land, sea, land -- and matched against
+    observation for every partition."""
+    assert nl.fixture_xland(FIXTURE) == {1: 1.0, 2: 2.0, 3: 1.0}
+    a = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
+    assert a["1,2"]["predicted_columns"] == []          # both tiles end on land
+    assert a["1,1,1"]["predicted_columns"] == [2]       # the sea column alone
+    assert a["2,1"]["predicted_columns"] == [1, 2]      # tile 1 ends on sea
+    for tiles, r in a.items():
+        assert r["prediction_holds"], \
+            f"{tiles}: predicted {r['predicted_columns']}, saw {r['columns']}"
+
+
+def test_the_prediction_can_come_out_WRONG():
+    """A prediction that always matches is not a prediction. Feeding a surface
+    map the fixture does not have must change the predicted set."""
+    all_land = {1: 1.0, 2: 1.0, 3: 1.0}
+    assert nl.predicted_columns((2, 1), all_land, 3) == set()
+    assert nl.predicted_columns((2, 1), {1: 1.0, 2: 2.0, 3: 1.0}, 3) == {1, 2}

@@ -30,6 +30,8 @@ claims:
       The refinement variable is dtcld/mstep, not dtcld: an external-dtcld dyadic
       chain does not dyadically refine the sedimentation operator.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: source
     scope: module_mp_kdm6.F:1179-1180, all fixtures
@@ -41,6 +43,7 @@ claims:
       Convergence orders must be taken against the dtcld the stream reports, not
       300/N from the filename.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -53,6 +56,7 @@ claims:
       mstep governs qr/nr/qs/qg and mstep_i governs qi/ni; in column 3 the ice
       chain reaches 1 at h = 25 s where the main chain needs h = 6.25 s.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -72,10 +76,16 @@ claims:
 
   - id: G33-WATER-ORDER-002
     text: >
-      Column water is near-conserved on this fixture; its member-to-member spread
-      is 5.7e-3/7.0e-3/9.6e-3 at f32 against 1.6e-6/2.5e-7/8.8e-7 at f64, so
-      orders taken on it at f32 are not convergence rates.
+      The f64 members' final column-water endpoints agree with each other far
+      more closely than the f32 members' do -- spread 1.6e-6/2.5e-7/8.8e-7
+      against 5.7e-3/7.0e-3/9.6e-3 -- so orders taken on column water at f32 are
+      not convergence rates. CORRECTED (owner §12.2): this said "column water is
+      near-conserved", which a member-to-member SPREAD cannot establish.
+      max_h W_h - min_h W_h ~ 0 means step-INSENSITIVE; conservation is
+      W_f - W_i + P_surface ~ 0, a different proposition measured by a different
+      quantity. The conservation residual is G33-WATER-CONS-001/002.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -89,6 +99,7 @@ claims:
       stable over five successive estimates. NOT branch-certified: the process
       gates, caps and active-cell universe were not verified constant.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
@@ -112,6 +123,7 @@ claims:
       the active set 1[g(x_e)>0] depends on the state and the state depends on
       precision. Cause HOLD.
     status: active
+    evidence_kind: measurement
     artifact_status: pinned
     grade: strong-candidate
     basis: measurement
@@ -134,6 +146,8 @@ claims:
       ratio only, so the rho*dz column measure is not conserved; where density
       increases downward, number is created.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
@@ -175,6 +189,7 @@ claims:
       ice/qi's control now closes where legacy's failed at -384%/-269% -- giving
       ice/ni +6.2789% and +7.0584%.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on both arms
@@ -201,6 +216,8 @@ claims:
       the next call's pre-sed state, the cap state, and every density-dependent
       rate. The earlier fall-speed attribution is withdrawn.
     status: active
+    evidence_kind: measurement
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -232,6 +249,7 @@ claims:
       history rather than rot -- a published bundle is immutable, so its pin can
       never be updated -- and the tool reports it without failing on it.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
@@ -256,6 +274,8 @@ claims:
       rectangular stage universe, and binding feature declaration in both
       directions.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: >
       each hole reproduced as a constructed malformed stream that the old parser
@@ -279,6 +299,8 @@ claims:
       interfaces for a term of 2.70e-11 against ice's 8.63e-03, so "all of them
       in the ice chain" is corrected.
     status: active
+    evidence_kind: measurement
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -308,6 +330,8 @@ claims:
       numerically_identical and raw_bit_identical, because +0.0 and -0.0 compare
       equal while their stored patterns differ.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: >
       each hole reproduced as a pair the old comparator accepted; all previously
@@ -334,6 +358,7 @@ claims:
       measured: sedimentation leaves qv exactly unchanged (max |dqv| = 0), so
       using the pre-sed density at both endpoints is verified rather than assumed.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -383,6 +408,7 @@ claims:
       to agree here (3.88440e+07 / 9.26900e+06 / 1.99322e+06, exactly) and the
       analysis reports that agreement per row instead of assuming it.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
@@ -403,6 +429,40 @@ claims:
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
+  - id: G33-BASIS-005
+    text: >
+      The PHYSICAL column measure is now taken once from the window-initial qv
+      and shared by every analyzer, instead of being recomputed from each
+      external call's own pre-sed qv. Column microphysics transports no dry air,
+      so rho_d for a layer is invariant across the window; recomputing it made
+      the same layer's dry mass move by up to 0.0717% between calls, and a
+      budget whose weights change with the process being measured is not a
+      budget. The G33R ledger (_column_density) already held it at the initial
+      qv and documented why -- the two halves of the codebase disagreed. Moving
+      the G33N side to match shifts physical-basis residuals by at most 0.065%
+      on rows above roundoff (ice/ni/3 -5.239382e+08 -> -5.233938e+08,
+      ice/qi/3 -5.685992e-03 -> -5.680085e-03) and by 1.9% on main/qr/1, whose
+      value is itself at f32 roundoff (-1.5068e-10 -> -1.5053e-10). The OPERATOR
+      basis is byte-unchanged, because rho_m carries no qv: main/nr stays
+      15.0036/13.3377/11.8402% and the ice cap share stays 100.00/100.00%.
+    status: active
+    evidence_kind: measurement
+    artifact_status: historical_unavailable
+    grade: confirmed
+    basis: >
+      measurement of both measures on the same stream, with the operator
+      headlines shown unmoved
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The window-initial qv is
+      read from the FIRST call's pre-sed record; a cell absent from that call is
+      REFUSED rather than falling back to a per-call density, which would
+      silently restore the moving weight. This does not settle whether the
+      physical measure should be the canonical dry-air layer mass the host
+      dynamics carries -- that is a separate binding, and G33-BASIS-002 remains
+      the open compatibility question.
+    evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
+
   - id: G33-BASIS-004
     text: >
       The water and enthalpy column ledgers now take a basis, completing §9.2.
@@ -422,6 +482,7 @@ claims:
       column-microphysics step and a budget whose weights move with the process
       is not a budget.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement on both bases over the same member
@@ -434,7 +495,7 @@ claims:
       own departure from the rho*dz budget is a separate known defect, and that
       defect dominates columns 2-3.
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
-    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:c41ceb2d8a557127587822f3e8d843fb742814ac4455cd252bf59e64c38a046c]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 
   - id: G33-PROTOCOL-003
     text: >
@@ -454,6 +515,8 @@ claims:
       matching manifest is now a failure while an absent manifest stays
       unavailable.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: each defect reproduced, fixed, and pinned by a test at the level that missed it
     scope: >
@@ -497,6 +560,8 @@ claims:
       in call 1, so that column has no interface correspondence and is reported
       not-comparable rather than zipped.
     status: active
+    evidence_kind: mixed
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -530,6 +595,7 @@ claims:
       The earlier "MAIN chain only" scope was a limitation of the LEGACY CAP, not
       of the mechanism.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -567,6 +633,8 @@ claims:
       f64 chain, which also confirms P0-1 is closed in the producer and not only
       in the driver.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: >
       each admitted mixture reproduced as a chain the old path accepted, plus a
@@ -593,6 +661,7 @@ claims:
       are bit-identical at f64 (0 of 333 records) and the column-2 enthalpy
       advantage is 5.89x at f32 and 1.00x at f64.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -615,6 +684,7 @@ claims:
       trivial (H_out ~ 0 makes eta = |dH|/|dH|), and eta is a norm, not an
       acceptance criterion.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
@@ -659,6 +729,7 @@ claims:
       rho*dz budget by up to 10x (P0-4b), so those rows are that defect plus any
       true non-conservation.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
@@ -673,6 +744,8 @@ claims:
       precision_pair / variant / refinement contracts, each fixing what must
       match and naming the one thing that may differ.
     status: active
+    evidence_kind: source
+    artifact_status: not_applicable
     grade: confirmed
     basis: implementation + regression tests
     scope: G33P schema 2; schema 1 streams are refused
@@ -686,6 +759,7 @@ claims:
       contract certifies both streams describe the same fixture, precision, mode,
       nsplit and dtcld before any comparison is made.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement under a named comparison contract
@@ -716,6 +790,7 @@ claims:
       operational layer. It does NOT explain the 6-14% number residual, but it is
       a systematic offset on the absolute # m-2 figures.
     status: active
+    evidence_kind: mixed
     artifact_status: historical_unavailable
     grade: confirmed
     basis: source + measurement
@@ -742,6 +817,7 @@ claims:
       state, from one statement pair. At h = 100 s the defect persists where the
       control holds: col 3 with mstep = 10 gives qr -0.0000% and nr +9.40%.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control
@@ -772,6 +848,7 @@ claims:
       ice count is right, but the main chain differs too and its term is simply
       eight orders smaller, which is why its residual stays at 1e-10--1e-12.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement per interface
@@ -787,6 +864,7 @@ claims:
       to roundoff. The ice rows are cap-dominated (ratio -28.6/-28.9) and measure
       the cap, not the measure mismatch.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
@@ -797,7 +875,10 @@ claims:
   - id: G33-NCMIN-001
     text: >
       ncmin is a scalar overwritten in the column loop, so tile decomposition
-      changes up to 31/144 final-state cells. The SIZE is now measured, not
+      changes up to 31/144 prognostic state COMPONENTS -- 12 fields x 3 columns
+      x 4 levels -- across 2 of the 12 physical grid cells. (The claim text said
+      "cells", which the finding had already corrected but the authority had
+      not; owner §12.1.) The SIZE is now measured, not
       asserted: cloud ice differs by 9.9661e-01 relative (68.5M ulps, 8.4e+06 x
       f32 eps) and ni by 8.8394e-01, with all twelve prognostics moving and the
       smallest of them still 142x f32 eps. CORRECTED (owner §11.3): those are
@@ -814,6 +895,7 @@ claims:
       and "accept" now means accepting an O(1) dependence on the decomposition,
       not a last-bit wobble.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed
     basis: >
@@ -870,6 +952,7 @@ claims:
       P_bottom is NEGATIVE in all three columns, which a cap cannot be, and
       disagrees with the measurement in sign and by 4-6x in magnitude.
     status: active
+    evidence_kind: measurement
     artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
@@ -909,6 +992,7 @@ claims:
       manifests) are full 64-hex sha256; truncation survives only where it is
       display.
     status: active
+    evidence_kind: mixed
     artifact_status: historical_unavailable
     grade: conditional-confirmed
     basis: >
