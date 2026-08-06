@@ -138,18 +138,51 @@ def _density(rec: dict, basis: str) -> float:
     return rec["rho"] / (1.0 + rec["qv"])
 
 
+def cell_measure(stream: str, basis: str) -> dict:
+    """{(loop, col, k): density} -- an IMMUTABLE measure for the whole window.
+
+    The operator measure is rho_m, which carries no qv and cannot move. The
+    physical measure is dry-air density rho_m/(1+qv), taken from the
+    WINDOW-INITIAL qv for EVERY call: column microphysics transports no dry air,
+    so rho_d for a layer is invariant across the window.
+
+    It was recomputed from each call's own pre-sed qv, so the same layer's "dry
+    mass" moved between calls -- up to 0.0717% on this fixture -- and a budget
+    whose weights change with the process being measured is not a budget. The
+    G33R ledger (`g33_refine_analyze._column_density`) already held it at the
+    initial qv and documented why; the two halves of the codebase disagreed
+    (owner §11).
+    """
+    first = nt.calls(stream)[0]["outer_pre_sed"]
+    return {k: _density(rec, basis) for k, rec in first.items()}
+
+
+def measure_at(measure: dict, key, label: str) -> float:
+    """The window measure for one cell, or a refusal.
+
+    Falling back to the call's own density would silently restore the moving
+    weight for exactly the cells the first call did not carry.
+    """
+    if key not in measure:
+        raise ValueError(f"{label}: no window measure for cell {key} -- it is "
+                         f"absent from the first call, so the window-initial "
+                         f"dry-air mass for it is unknown")
+    return measure[key]
+
+
 def closures(stream: str, basis: str = "operator") -> dict:
     """{(chain, species, col): {'out':…, 'residual':…, 'calls':…}}."""
     if basis not in MEASURES:
         raise ValueError(f"basis must be one of {MEASURES}, got {basis!r}")
     xf = transfers(stream)
+    measure = cell_measure(stream, basis)
     acc = {}
     for i, call in enumerate(nt.calls(stream), start=1):
         for lp in sorted(call["loops"]):
             pre, post = call["outer_pre_sed"], call["outer_post_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                den = [_density(pre[(lp, col, k)], basis) for k in ks]
+                den = [measure_at(measure, (lp, col, k), "closures") for k in ks]
                 dz = [pre[(lp, col, k)]["delz"] for k in ks]
                 w = den[-1] * dz[-1]            # bottom-cell rho*dz
                 for chain, (mass, num) in CHAIN.items():

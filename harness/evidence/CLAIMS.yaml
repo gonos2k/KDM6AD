@@ -429,6 +429,40 @@ claims:
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
+  - id: G33-BASIS-005
+    text: >
+      The PHYSICAL column measure is now taken once from the window-initial qv
+      and shared by every analyzer, instead of being recomputed from each
+      external call's own pre-sed qv. Column microphysics transports no dry air,
+      so rho_d for a layer is invariant across the window; recomputing it made
+      the same layer's dry mass move by up to 0.0717% between calls, and a
+      budget whose weights change with the process being measured is not a
+      budget. The G33R ledger (_column_density) already held it at the initial
+      qv and documented why -- the two halves of the codebase disagreed. Moving
+      the G33N side to match shifts physical-basis residuals by at most 0.065%
+      on rows above roundoff (ice/ni/3 -5.239382e+08 -> -5.233938e+08,
+      ice/qi/3 -5.685992e-03 -> -5.680085e-03) and by 1.9% on main/qr/1, whose
+      value is itself at f32 roundoff (-1.5068e-10 -> -1.5053e-10). The OPERATOR
+      basis is byte-unchanged, because rho_m carries no qv: main/nr stays
+      15.0036/13.3377/11.8402% and the ice cap share stays 100.00/100.00%.
+    status: active
+    evidence_kind: measurement
+    artifact_status: historical_unavailable
+    grade: confirmed
+    basis: >
+      measurement of both measures on the same stream, with the operator
+      headlines shown unmoved
+    scope: >
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The window-initial qv is
+      read from the FIRST call's pre-sed record; a cell absent from that call is
+      REFUSED rather than falling back to a per-call density, which would
+      silently restore the moving weight. This does not settle whether the
+      physical measure should be the canonical dry-air layer mass the host
+      dynamics carries -- that is a separate binding, and G33-BASIS-002 remains
+      the open compatibility question.
+    evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
+
   - id: G33-BASIS-004
     text: >
       The water and enthalpy column ledgers now take a basis, completing §9.2.
@@ -461,7 +495,7 @@ claims:
       own departure from the rho*dz budget is a separate known defect, and that
       defect dominates columns 2-3.
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
-    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:c41ceb2d8a557127587822f3e8d843fb742814ac4455cd252bf59e64c38a046c]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 
   - id: G33-PROTOCOL-003
     text: >

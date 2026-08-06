@@ -185,3 +185,30 @@ def test_the_threshold_does_not_claim_to_be_a_proof():
     d = {"out": 1.0, "residual": 0.0, "start": 1.0, "calls": 1, "per_call": []}
     assert "not a proven bound" in mc.control(d)["tolerance_basis"]
 
+
+
+# ---- owner §11: the physical measure may not move with the process ----------
+
+def test_the_OPERATOR_measure_carries_no_qv_so_it_cannot_move():
+    """rho_m is what the kernel budgets. The window-fixing below must leave it
+    untouched, which is why the published operator headlines are unaffected."""
+    import inspect
+    src = inspect.getsource(mc._density)
+    assert 'if basis == "operator":\n        return rec["rho"]' in src
+
+
+def test_the_PHYSICAL_measure_is_taken_ONCE_from_the_window_start():
+    """It was recomputed from each call's own pre-sed qv, so the same layer's
+    dry mass moved between calls -- and a budget whose weights change with the
+    process being measured is not a budget. The G33R ledger already held it at
+    the initial qv and said why; the two halves of the codebase disagreed."""
+    import inspect
+    src = inspect.getsource(mc.cell_measure)
+    assert 'nt.calls(stream)[0]["outer_pre_sed"]' in src
+
+
+def test_a_cell_absent_from_the_first_call_is_REFUSED_not_recomputed():
+    """Falling back to the call's own density would silently restore the moving
+    weight for exactly the cells the window measure does not cover."""
+    with pytest.raises(ValueError, match="no window measure"):
+        mc.measure_at({(1, 1, 0): 1.0}, (1, 2, 0), "test")
