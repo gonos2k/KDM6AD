@@ -206,3 +206,34 @@ def test_the_expected_universe_comes_from_the_FIXTURE_not_the_run():
 
     assert fixture_dims(FIXTURE) == (3, 4)
     assert fixture_width(FIXTURE) == fixture_dims(FIXTURE)[0]
+
+
+def test_a_SHIFTED_level_axis_is_refused(drivers):
+    """Levels were checked by COUNT alone, so an axis shifted off its origin
+    passed -- `{10,11,12,13}` has four entries too. The emitter writes
+    `emit_fld(name, i, KM-k, ...)` over `k = 1..KM`, so the protocol's levels
+    are `0..K-1` and that is checked as a SET, like the columns beside it."""
+    full = nl.state(drivers["legacy"], (3,))
+    for shift in (1, 10):
+        moved = {(f, c, k + shift): v for (f, c, k), v in full.items()}
+        with pytest.raises(ra.RefineError, match="levels"):
+            nl._expect_universe(moved, 3, 4, f"shift+{shift}")
+
+
+def test_a_REVERSED_axis_is_NOT_a_universe_property(drivers):
+    """Stated rather than implied. `{0,1,2,3}` reversed is the same set, so no
+    universe check can see it. It does not pass silently either: a reversal in
+    one run and not the other makes nearly every cell differ, so it surfaces as
+    an implausibly large result rather than a clean one."""
+    full = nl.state(drivers["legacy"], (3,))
+    flipped = {(f, c, 3 - k): v for (f, c, k), v in full.items()}
+    nl._expect_universe(flipped, 3, 4, "reversed")       # accepted, by design
+    differ = sum(full[k] != flipped[k] for k in full)
+    assert differ > 0.8 * len(full), \
+        "a reversal must be conspicuous in the comparison even though the " \
+        "universe check cannot see it"
+
+
+def test_the_intact_universe_is_accepted(drivers):
+    """A gate that refused everything would also pass the tests above."""
+    nl._expect_universe(nl.state(drivers["legacy"], (3,)), 3, 4, "intact")

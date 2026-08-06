@@ -97,16 +97,28 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
     the claim it exists to refute. Only a figure from outside the run can catch
     that, so this one comes from the fixture source.
     """
-    want_cols, want_k = set(range(1, cols + 1)), levels
+    # The emitter writes `emit_fld(name, i, KM-k, ...)` over `i = 1..IM`,
+    # `k = 1..KM`, so the protocol's indices are columns 1..B and levels 0..K-1.
+    # Both are checked as SETS. Levels were checked by COUNT alone, which
+    # admitted an axis shifted off its origin -- `{10,11,12,13}` has four
+    # entries too (owner/Codex).
+    #
+    # What this does NOT catch is a REVERSED axis: `{0,1,2,3}` reversed is the
+    # same set. Reversal is an ordering property, not a universe one. It would
+    # not pass silently either -- a reversal in one run and not the other makes
+    # nearly every cell differ, so it shows up as an implausibly large result
+    # rather than a clean one.
+    want_cols, want_k = set(range(1, cols + 1)), set(range(levels))
     have_cols = {k[1] for k in got}
     have_k = {k[2] for k in got}
     if have_cols != want_cols:
         raise ra.RefineError(
             f"{label}: columns {sorted(have_cols)}, fixture declares "
             f"{sorted(want_cols)}")
-    if len(have_k) != want_k:
+    if have_k != want_k:
         raise ra.RefineError(
-            f"{label}: {len(have_k)} levels, fixture declares {want_k}")
+            f"{label}: levels {sorted(have_k)}, fixture declares "
+            f"{sorted(want_k)}")
     want = len(ra.STATE_FIELDS) * cols * levels
     if len(got) != want:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
