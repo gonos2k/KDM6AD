@@ -392,7 +392,7 @@ def test_EVERY_state_the_module_can_emit_is_classified():
 
 def _pin(mod):
     path = f"harness/{mod}.py"
-    return {"path": path, "content_sha256": "0" * 64, "commit": "HEAD",
+    return {"path": path, "content_sha256": "0" * 64, "commit": _head(),
             "blob_sha": ec._blob_at("HEAD", path)}
 
 
@@ -433,16 +433,26 @@ def test_an_unpinned_block_is_REPORTED_not_failed(world):
 
 # ---- owner P0-E2: a new bundle cannot downgrade to the legacy contract -------
 
+def _head() -> str:
+    """The resolved HEAD sha. `"HEAD"` is a MOVING reference, so it cannot be a
+    pin -- the validator rejects it, correctly, and the fixture used it for
+    convenience."""
+    import subprocess
+    return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ec.REPO,
+                          capture_output=True, text=True).stdout.strip()
+
+
 def _man(**kw):
     pin = {"path": "harness/g33_matched_closure.py", "content_sha256": "0" * 64,
-           "commit": "HEAD",
+           "commit": _head(),
            "blob_sha": ec._blob_at("HEAD", "harness/g33_matched_closure.py")}
     base = {"artifact_type": "refinement_experiment",
             "schema": "refinement_experiment_v2",
             "members": [{"file": "n3.rezero.txt", "output_sha256": "0" * 64}],
             "member_parsers": [pin], "producer_modules": [pin],
             "build_provenance": {"repo_commit": "x"}, "arm": "reference",
-            "precision": "f32", "analyses": []}
+            "precision": "f32", "analyses": [], "instrumented": False,
+            "decision_eligible": False}
     return {**base, **kw}
 
 
@@ -493,3 +503,46 @@ def test_GARBAGE_in_a_pin_block_fails_rather_than_crashing(tmp_path):
     p = tmp_path / "manifest.json"
     p.write_text(json.dumps(_man(member_parsers=[42])))
     assert "MANIFEST-SCHEMA-MISMATCH" in [m["state"] for m in ec.members_of(p)]
+
+
+# ---- owner P0-2: one typed validator, not truthiness ------------------------
+
+def test_the_checker_uses_the_SCHEMAS_OWN_validator():
+    """It carried its own copy, which tested only truthiness. One validator,
+    called by the producer before publishing and by this checker before
+    believing anything, is what stops a bundle being valid to one and invalid to
+    the other."""
+    import g33_refine_manifest as rm
+
+    assert ec._schema_violations({"x": 1}) == rm.validate({"x": 1})
+
+
+@pytest.mark.parametrize("name,patch", [
+    # `[{}]` is a non-empty list, so truthiness accepted it; the entries then
+    # became `analyzer-unpinned`, a PASSING state kept for legacy bundles.
+    ("empty-dict pins", {"member_parsers": [{}], "producer_modules": [{}]}),
+    # Deleting the key deleted the `analyses` requirement with it.
+    ("no instrumented", {"instrumented": None}),
+    ("decision_eligible true", {"decision_eligible": True}),
+    ("bogus arm", {"arm": "made-up"}),
+    ("bogus precision", {"precision": "f128"}),
+    # This raised KeyError out of `--check`. A crash is not a verdict.
+    ("malformed member", {"members": [{}]}),
+    ("short blob sha", {"member_parsers": [{"path": "x", "content_sha256": "0" * 64,
+                                            "commit": "0" * 40, "blob_sha": "0" * 12}]}),
+])
+def test_a_v2_manifest_that_LOOKS_complete_but_is_not_FAILS(tmp_path, name, patch):
+    man = _man()
+    for k, v in patch.items():
+        if v is None:
+            man.pop(k, None)
+        else:
+            man[k] = v
+    assert _first_state(tmp_path, man) == "MANIFEST-SCHEMA-MISMATCH", name
+
+
+def test_a_COMPLETE_v2_manifest_passes(tmp_path):
+    """A validator that refused everything would also pass the tests above."""
+    import g33_refine_manifest as rm
+
+    assert rm.validate(_man()) == []
