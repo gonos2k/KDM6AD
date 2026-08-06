@@ -33,7 +33,8 @@ def drivers(tmp_path_factory):
         d = tmp_path_factory.mktemp(f"ncmin-{algo}") / "build"
         b = subprocess.run(["bash", str(BUILD), str(d),
                             "--fixture=g33_fixture_boundary_mapping_v1",
-                            f"--algo={algo}"], capture_output=True, text=True,
+                            f"--algo={algo}", "--nflux"],
+                           capture_output=True, text=True,
                            cwd=REPO)
         assert b.returncode == 0, f"{algo} build failed:\n{b.stdout}\n{b.stderr}"
         out[algo] = str(d / "g33_refine_driver")
@@ -54,10 +55,10 @@ def test_the_difference_is_reported_as_a_SIZE_not_only_a_COUNT(drivers):
     cannot separate a roundoff-scale difference from a dominating one."""
     a = nl.analysis(drivers["legacy"], FIXTURE)
     for tiles, r in a["partitions"].items():
-        assert {"cells_differing", "max_rel", "is_roundoff_scale", "by_field"} \
+        assert {"components_differing", "max_rel", "is_roundoff_scale", "by_field"} \
             <= set(r), tiles
         for f, d in r["by_field"].items():
-            assert {"cells", "max_rel", "max_ulps"} <= set(d), f
+            assert {"components", "max_rel", "max_ulps", "max_abs"} <= set(d), f
 
 
 def test_the_partition_dependence_is_SIX_ORDERS_above_roundoff(drivers):
@@ -67,7 +68,7 @@ def test_the_partition_dependence_is_SIX_ORDERS_above_roundoff(drivers):
     bits."""
     a = nl.analysis(drivers["legacy"], FIXTURE)
     worst = a["partitions"]["2,1"]
-    assert worst["cells_differing"] == 31
+    assert worst["components_differing"] == 31
     assert worst["by_field"]["qi"]["max_rel"] > 0.9, \
         "cloud ice differs by ~100%, not by rounding"
     assert worst["max_rel"] / a["f32_eps"] > 1e6
@@ -98,8 +99,8 @@ def test_the_CONSERVATIVE_interface_does_not_fix_it(drivers):
     this, so it stays open on its own terms."""
     leg = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     con = nl.analysis(drivers["conservative"], FIXTURE)["partitions"]
-    assert {t: r["cells_differing"] for t, r in leg.items()} == \
-        {t: r["cells_differing"] for t, r in con.items()}
+    assert {t: r["components_differing"] for t, r in leg.items()} == \
+        {t: r["components_differing"] for t, r in con.items()}
     assert {t: r["columns"] for t, r in leg.items()} == \
         {t: r["columns"] for t, r in con.items()}
 
@@ -109,7 +110,7 @@ def test_a_partition_whose_tiles_END_alike_shows_nothing(drivers):
     the LAST column's threshold, so what matters is the surface type at each
     tile's `ite`. `(1, 2)` ends land/land like the whole domain."""
     assert nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["1,2"][
-        "cells_differing"] == 0
+        "components_differing"] == 0
 
 
 # ---- the analyzer must not accept an incomplete run as a clean one ----------
@@ -151,11 +152,10 @@ def test_a_partition_whose_CELL_UNIVERSE_differs_is_refused(drivers,
                                                             monkeypatch):
     """"How many cells differ" counted over whatever both happened to carry
     would silently compare a subset."""
-    real = nl.state
-    full = real(drivers["legacy"], (3,))
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
     short = {k: v for k, v in list(full.items())[:-1]}
-    monkeypatch.setattr(nl, "state",
-                        lambda d, t: full if tuple(t) == (3,) else short)
+    monkeypatch.setattr(nl, "read_state",
+                        lambda t, label: full if "3" == label[-1] else short)
     with pytest.raises(ra.RefineError):
         nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -173,10 +173,10 @@ def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
     With column 3 gone everywhere the tool reported `31/96` and a shrunken
     denominator as a normal result. Only a figure from OUTSIDE the run catches
     that, so it comes from the fixture source."""
-    real = nl.state
+    real = nl.read_state
     for drop in (3, 2):
-        monkeypatch.setattr(nl, "state", lambda d, t, c=drop: {
-            k: v for k, v in real(d, t).items() if k[1] != c})
+        monkeypatch.setattr(nl, "read_state", lambda t, label, c=drop: {
+            k: v for k, v in real(t, label=label).items() if k[1] != c})
         with pytest.raises(ra.RefineError, match="fixture declares"):
             nl.analysis(drivers["legacy"], FIXTURE)
 
@@ -187,14 +187,14 @@ def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
     `(1,1,1)` differs ONLY there -- so a run silently missing it reports that
     partition as clean. `(2,1)` survives because it also differs in column 1,
     which is exactly the trap: the tool would still look like it was working."""
-    real = nl.state
-    monkeypatch.setattr(nl, "state", lambda d, t: {
-        k: v for k, v in real(d, t).items() if k[1] != 2})
+    real = nl.read_state
+    monkeypatch.setattr(nl, "read_state", lambda t, label: {
+        k: v for k, v in real(t, label=label).items() if k[1] != 2})
     monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
     p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
-    assert p["1,1,1"]["cells_differing"] == 0, \
+    assert p["1,1,1"]["components_differing"] == 0, \
         "(1,1,1) differs only in the sea column"
-    assert p["2,1"]["cells_differing"] > 0, \
+    assert p["2,1"]["components_differing"] > 0, \
         "(2,1) still differs in column 1 -- the tool would look fine"
 
 
@@ -206,3 +206,148 @@ def test_the_expected_universe_comes_from_the_FIXTURE_not_the_run():
 
     assert fixture_dims(FIXTURE) == (3, 4)
     assert fixture_width(FIXTURE) == fixture_dims(FIXTURE)[0]
+
+
+def test_a_SHIFTED_level_axis_is_refused(drivers):
+    """Levels were checked by COUNT alone, so an axis shifted off its origin
+    passed -- `{10,11,12,13}` has four entries too. The emitter writes
+    `emit_fld(name, i, KM-k, ...)` over `k = 1..KM`, so the protocol's levels
+    are `0..K-1` and that is checked as a SET, like the columns beside it."""
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
+    for shift in (1, 10):
+        moved = {(f, c, k + shift): v for (f, c, k), v in full.items()}
+        with pytest.raises(ra.RefineError, match="levels"):
+            nl._expect_universe(moved, 3, 4, f"shift+{shift}")
+
+
+def test_a_REVERSED_axis_is_NOT_a_universe_property(drivers):
+    """Stated rather than implied. `{0,1,2,3}` reversed is the same set, so no
+    universe check can see it. It does not pass silently either: a reversal in
+    one run and not the other makes nearly every cell differ, so it surfaces as
+    an implausibly large result rather than a clean one."""
+    full = nl.read_state(nl.run(drivers["legacy"], (3,)), label="base")
+    flipped = {(f, c, 3 - k): v for (f, c, k), v in full.items()}
+    nl._expect_universe(flipped, 3, 4, "reversed")       # accepted, by design
+    differ = sum(full[k] != flipped[k] for k in full)
+    assert differ > 0.8 * len(full), \
+        "a reversal must be conspicuous in the comparison even though the " \
+        "universe check cannot see it"
+
+
+def test_the_intact_universe_is_accepted(drivers):
+    """A gate that refused everything would also pass the tests above."""
+    nl._expect_universe(nl.read_state(nl.run(drivers["legacy"], (3,)), label="base"), 3, 4, "intact")
+
+
+def test_a_driver_that_VALIDATES_and_then_IGNORES_the_tiles_is_refused(drivers):
+    """The control this replaced ran an INVALID spec and required a refusal --
+    which only proves the argument is parsed and validated. Validation lives in
+    the argument parser and use lives in the tile loop, so a driver that
+    validated the spec and then called the kernel over the whole domain passed
+    it. Every partition would equal the baseline, the tool would report zero
+    differences everywhere, and that reads as "the operator is column-local".
+
+    `G33N CALL_BEGIN` is written from INSIDE the tile loop with the very bounds
+    handed to `kdm62D`, so the question is answered rather than approximated."""
+    whole = nl.run(drivers["legacy"], (3,))          # always the whole domain
+    for tiles in ((1, 1, 1), (2, 1)):
+        with pytest.raises(ra.RefineError, match="not reaching the partitioning"):
+            nl._expect_tiles_are_live(whole, tiles, f"tiles={tiles}")
+
+
+def test_the_real_driver_calls_the_kernel_over_what_was_ASKED(drivers):
+    """A gate that refused everything would also pass the test above."""
+    for tiles in ((3,), (1, 2), (2, 1), (1, 1, 1)):
+        text = nl.run(drivers["legacy"], tiles)
+        nl._expect_tiles_are_live(text, tiles, f"tiles={tiles}")
+        want, i = [], 0
+        for t in tiles:
+            want.append((i + 1, i + t))
+            i += t
+        assert nl.tile_brackets(text) == want
+
+
+def test_a_build_that_cannot_answer_the_question_is_REFUSED(tmp_path):
+    """Without `--nflux` nothing in the stream says which decomposition ran --
+    `G33R BEGIN` carries nsplit, mode, algorithm and dtcld, not the tiles. The
+    tool refuses rather than skipping the check, because "I could not verify
+    this" must not read as "verified"."""
+    d = tmp_path / "plain"
+    b = subprocess.run(["bash", str(BUILD), str(d),
+                        "--fixture=g33_fixture_boundary_mapping_v1",
+                        "--algo=legacy"], capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, b.stderr[-400:]
+    with pytest.raises(ra.RefineError, match="--nflux"):
+        nl.analysis(str(d / "g33_refine_driver"), FIXTURE)
+
+
+def test_the_nflux_overlay_does_not_move_the_numbers(drivers, tmp_path):
+    """The measurement now needs an instrumented build, so the instrumentation
+    must be shown non-invasive ON THIS FIXTURE rather than assumed from the
+    A/B/C proof elsewhere.
+
+    Over the PUBLISHED SCOPE, which is both algorithms and all four partitions
+    -- the first version checked legacy and three partitions while the finding
+    said "all four", claiming coverage it had not measured."""
+    for algo in ("legacy", "conservative"):
+        d = tmp_path / f"plain-{algo}"
+        if not d.exists():
+            b = subprocess.run(["bash", str(BUILD), str(d),
+                                "--fixture=g33_fixture_boundary_mapping_v1",
+                                f"--algo={algo}"], capture_output=True,
+                               text=True, cwd=REPO)
+            assert b.returncode == 0, b.stderr[-400:]
+        plain = str(d / "g33_refine_driver")
+        for tiles in ((3,), (1, 2), (2, 1), (1, 1, 1)):
+            a = nl.read_state(nl.run(plain, tiles), label="plain")
+            b = nl.read_state(nl.run(drivers[algo], tiles), label="nflux")
+            assert a == b, f"{algo} {tiles}: --nflux moved the STATE records"
+
+
+# ---- owner §11.1 / §11.3 / §11.4: what the numbers actually mean ------------
+
+def test_144_is_state_COMPONENTS_not_grid_cells(drivers):
+    """12 fields x 3 columns x 4 levels. The grid has TWELVE cells, so calling
+    the 144 "cells" overstated the spatial extent twelvefold (owner §11.1)."""
+    r = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"]
+    assert r["components_total"] == 144
+    assert r["grid_cells"] == 12
+    assert r["components_total"] == len(ra.STATE_FIELDS) * r["grid_cells"]
+
+
+def test_the_ABSOLUTE_difference_is_reported_beside_the_relative(drivers):
+    """A ratio near 1 says the two runs disagree about a value, not that the
+    value is large: `qi` reaches 0.9966 on a 6.6e-08 baseline (owner §11.3)."""
+    d = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"]["by_field"]
+    assert d["qi"]["max_rel"] > 0.99
+    assert d["qi"]["max_abs"] < 1e-4, "the absolute qi difference is small"
+    assert d["qi"]["max_abs_baseline"] < 1e-6, "on a near-zero baseline"
+
+
+def test_the_COLUMN_INTEGRAL_is_what_makes_it_a_physical_statement(drivers):
+    """Integrated under rho*dz, the defensible headline is column RAIN mass at
+    21-26%, not cloud ice at 100%."""
+    ci = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]["2,1"][
+        "column_integrated"]
+    assert 0.20 < ci["1/qr"]["rel"] < 0.22
+    assert 0.25 < ci["2/qr"]["rel"] < 0.27
+    for c in (1, 2):
+        assert 0.02 < ci[f"{c}/total_condensate"]["rel"] < 0.04
+
+
+def test_the_ULP_metric_is_ORDER_PRESERVING_across_zero(drivers):
+    """A raw signed-int32 difference is the representable-step distance only for
+    same-sign positives -- it made +0.0 and -0.0 look 2^31 apart (owner
+    §11.4)."""
+    import struct
+
+    def hx(v):
+        return struct.pack(">f", v).hex().upper()
+
+    assert nl._ulps(hx(0.0), hx(-0.0)) == 1
+    assert nl._ulps(hx(1.0), hx(1.0)) == 0
+    assert nl._ulps(hx(1.0), hx(struct.unpack(">f", struct.pack(">I", 0x3F800001))[0])) == 1
+    assert nl._ulps(hx(-1.0), hx(struct.unpack(">f", struct.pack(">I", 0xBF800001))[0])) == 1
+    # Monotonic: the ordering must be strictly increasing in the value.
+    keys = [nl._ordered(hx(v)) for v in (-2.0, -1.0, -0.0, 0.0, 1.0, 2.0)]
+    assert keys == sorted(keys)

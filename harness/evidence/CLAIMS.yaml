@@ -8,6 +8,14 @@
 # findings remain the narrative.
 #
 # status: active | superseded | withdrawn | hold
+# artifact_status (active measurement claims only):
+#   pinned                 -- an experiment manifest is pinned under `artifacts`
+#   historical_unavailable -- the run happened but no bundle was published, so
+#                             the chain stops at the finding
+#   source_only            -- read from source, no run behind it
+# Required so a missing run-artifact is DECLARED rather than invisible: the
+# claim->commit machinery exists, but 14 of 16 active measurement claims still
+# stop at a finding digest (owner P0-4).
 # scope:  the fixture, precision and algorithm a claim is entitled to speak about
 #
 # Checked by harness/tests/test_g33_claims.py: every claim must name evidence
@@ -33,6 +41,7 @@ claims:
       Convergence orders must be taken against the dtcld the stream reports, not
       300/N from the filename.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
     scope: all refinement bundles
@@ -44,6 +53,7 @@ claims:
       mstep governs qr/nr/qs/qg and mstep_i governs qi/ni; in column 3 the ice
       chain reaches 1 at h = 25 s where the main chain needs h = 6.25 s.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -66,6 +76,7 @@ claims:
       is 5.7e-3/7.0e-3/9.6e-3 at f32 against 1.6e-6/2.5e-7/8.8e-7 at f64, so
       orders taken on it at f32 are not convergence rates.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -78,6 +89,7 @@ claims:
       stable over five successive estimates. NOT branch-certified: the process
       gates, caps and active-cell universe were not verified constant.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, legacy
@@ -100,6 +112,7 @@ claims:
       the active set 1[g(x_e)>0] depends on the state and the state depends on
       precision. Cause HOLD.
     status: active
+    artifact_status: pinned
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
@@ -162,6 +175,7 @@ claims:
       ice/qi's control now closes where legacy's failed at -384%/-269% -- giving
       ice/ni +6.2789% and +7.0584%.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
@@ -218,6 +232,7 @@ claims:
       history rather than rot -- a published bundle is immutable, so its pin can
       never be updated -- and the tool reports it without failing on it.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
     scope: >
@@ -319,6 +334,7 @@ claims:
       measured: sedimentation leaves qv exactly unchanged (max |dqv| = 0), so
       using the pre-sed density at both endpoints is verified rather than assumed.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -367,6 +383,7 @@ claims:
       to agree here (3.88440e+07 / 9.26900e+06 / 1.99322e+06, exactly) and the
       analysis reports that agreement per row instead of assuming it.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
       measurement with per-call inventory preserved, so the aggregation is
@@ -405,6 +422,7 @@ claims:
       column-microphysics step and a budget whose weights move with the process
       is not a budget.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -512,6 +530,7 @@ claims:
       The earlier "MAIN chain only" scope was a limitation of the LEGACY CAP, not
       of the mechanism.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -574,6 +593,7 @@ claims:
       are bit-identical at f64 (0 of 333 records) and the column-2 enthalpy
       advantage is 5.89x at f32 and 1.00x at f64.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -595,6 +615,7 @@ claims:
       trivial (H_out ~ 0 makes eta = |dH|/|dH|), and eta is a norm, not an
       acceptance criterion.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -638,6 +659,7 @@ claims:
       rho*dz budget by up to 10x (P0-4b), so those rows are that defect plus any
       true non-conservation.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -664,6 +686,7 @@ claims:
       contract certifies both streams describe the same fixture, precision, mode,
       nsplit and dtcld before any comparison is made.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
@@ -693,6 +716,7 @@ claims:
       operational layer. It does NOT explain the 6-14% number residual, but it is
       a systematic offset on the absolute # m-2 figures.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
@@ -718,6 +742,7 @@ claims:
       state, from one statement pair. At h = 100 s the defect persists where the
       control holds: col 3 with mstep = 10 gives qr -0.0000% and nr +9.40%.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control
     scope: g33_fixture_multisubcycle_v1, legacy, main chain
@@ -747,6 +772,7 @@ claims:
       ice count is right, but the main chain differs too and its term is simply
       eight orders smaller, which is why its residual stays at 1e-10--1e-12.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
@@ -761,6 +787,7 @@ claims:
       to roundoff. The ice rows are cap-dominated (ratio -28.6/-28.9) and measure
       the cap, not the measure mismatch.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
@@ -773,14 +800,21 @@ claims:
       changes up to 31/144 final-state cells. The SIZE is now measured, not
       asserted: cloud ice differs by 9.9661e-01 relative (68.5M ulps, 8.4e+06 x
       f32 eps) and ni by 8.8394e-01, with all twelve prognostics moving and the
-      smallest of them still 142x f32 eps. So an affected column's ice is
-      decided to O(1) by where the tile boundary falls. Both variants differ in
+      smallest of them still 142x f32 eps. CORRECTED (owner §11.3): those are
+      RATIOS, and a ratio near 1 says the runs disagree about a value, not that
+      the value is large -- qi's 0.9966 sits on a 6.56e-08 kg/kg baseline, an
+      absolute difference of 1.93e-05. Integrated over the column under the
+      rho*dz measure, which is the only physical form, the result is COLUMN RAIN
+      MASS differing by 20.67% (col 1) and 26.13% (col 2), cloud ice by 8.78%
+      (col 1), and TOTAL CONDENSATE by 3.25% and 2.68%. The earlier "cloud ice
+      is decided to O(1)" headline is withdrawn as a physical statement. Both variants differ in
       exactly the same 0/16/31 cells and columns, so the conservative interface
       does NOT fix it. Unresolved; needs an owner decision among per-column
       ncmin, accepting the partition dependence, or splitting the variants --
       and "accept" now means accepting an O(1) dependence on the decomposition,
       not a last-bit wobble.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -791,9 +825,17 @@ claims:
       is not established -- only that the mechanism is O(1) where it bites. The
       (1,2) partition differs in ZERO cells because both tiles end on land: an
       even-split-only gate would pass while the operator was arbitrarily
-      non-local, which is why the partition set is exhaustive.
+      non-local, which is why the partition set is exhaustive. "31/144" counts
+      prognostic state COMPONENTS (12 fields x 3 columns x 4 levels); the grid
+      has 12 cells, so calling them cells overstated the spatial extent twelvefold
+      (owner §11.1). The derived quantities that would decide operational
+      significance -- q/N, characteristic diameter, reflectivity, surface
+      precipitation -- are NOT measured, and neither is a real MPI rank
+      decomposition with haloes and per-rank surface patterns: this is a
+      sequential multi-call tile experiment that PREDICTS rank sensitivity
+      rather than demonstrating it.
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:7409488a6b14e7372363c08d1f9b08f029b90104a1fbfd4cd990b97af7d148a5]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:cab4a8ed996c543d9b1ce6212084528805e1ef60d53780e09a3300e11736b52c]
 
   - id: G33-ENTHALPY-003
     text: >
@@ -828,6 +870,7 @@ claims:
       P_bottom is NEGATIVE in all three columns, which a cap cannot be, and
       disagrees with the measurement in sign and by 4-6x in magnitude.
     status: active
+    artifact_status: historical_unavailable
     grade: confirmed-with-scope
     basis: >
       direct interface measurement, with the diagnostic-inferred alternative
@@ -866,10 +909,14 @@ claims:
       manifests) are full 64-hex sha256; truncation survives only where it is
       display.
     status: active
-    grade: confirmed
+    artifact_status: historical_unavailable
+    grade: conditional-confirmed
     basis: >
       construction, with the resolvable-pin case proved by falsifying the
-      working-tree digest it no longer depends on
+      working-tree digest it no longer depends on. CONDITIONAL because the
+      registry-wide migration is not done: most active measurement claims still
+      pin only a finding, not an experiment manifest, so the chain exists as
+      machinery before it exists as coverage (owner P0-4).
     scope: >
       Bundles published BEFORE this pin existed carry only analyzer_sha256 and
       keep the report-only treatment, now NAMED `legacy-*` so a weak verdict
@@ -885,4 +932,4 @@ claims:
       is not published in the bundle. Bundles published before these fields
       existed stop at the members, which the report shows rather than hides.
     evidence: [FINDING_claim_to_commit_chain_v1.md]
-    evidence_sha256: [FINDING_claim_to_commit_chain_v1.md:32d3042bc6210afb02a82a6418e62d89de2b73d4f9148c3603d119f647e45a32]
+    evidence_sha256: [FINDING_claim_to_commit_chain_v1.md:24dff1c83961a4f89f11fa79bdd9d43fc1d2bc370955a0f557e6e2b596086174]

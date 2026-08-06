@@ -5,6 +5,7 @@ repo and are absent in CI, so a test written against them would assert the host.
 """
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -84,8 +85,9 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     outputs it describes could be anything."""
     bundle, write = world
     write()
+    # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches"]
+        ["matches", "modules-unpinned", "modules-unpinned"]
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -233,7 +235,8 @@ def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
     path = "harness/g33_matched_closure.py"
     _pinned(bundle, write, "HEAD", _head_blob(path), path)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    assert states == {"matches"}
+    # `modules-unpinned` rides along: this fixture pins no producer modules.
+    assert "matches" in states and not (states - {"matches", "modules-unpinned"})
     assert ec.check() == 0
 
 
@@ -270,3 +273,139 @@ def test_an_analysis_naming_NO_analyzer_is_flagged_not_silently_skipped(world):
                          "sha256": _sha(body)}]})
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
     assert "analyzer-unpinned" in states
+
+
+# ---- owner P0-5: a manifest that will not parse is corruption ---------------
+
+def test_an_unreadable_manifest_is_not_an_artifact_with_no_children(world):
+    """It returned an empty child list, which reads as an artifact with nothing
+    to check -- indistinguishable from a clean one, even though its own digest
+    matched."""
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"{not json")
+    assert [m["state"] for m in ec.members_of(bundle / "manifest.json")] == \
+        ["MANIFEST-UNREADABLE"]
+
+
+def test_a_manifest_that_is_not_an_object_is_refused(world):
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"[]")
+    assert ec.members_of(bundle / "manifest.json")[0]["state"] == \
+        "MANIFEST-SCHEMA-MISMATCH"
+
+
+def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
+        world):
+    """Absence of the key and an empty list are different statements: only the
+    second is a bundle that legitimately published no members."""
+    bundle, write = world
+    write()
+    p = bundle / "manifest.json"
+    p.write_bytes(b'{"analyses": []}')
+    assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
+    p.write_bytes(b'{"members": [], "analyses": []}')
+    assert [m["state"] for m in ec.members_of(p)] == \
+        ["modules-unpinned", "modules-unpinned"]   # one per pin block
+
+
+def test_a_corrupt_manifest_FAILS_the_check_not_merely_reports(world):
+    bundle, write = world
+    write()
+    (bundle / "manifest.json").write_bytes(b"{not json")
+    assert ec.check() == 1
+
+
+# ---- owner P0-2: parsers and producer modules ride the same chain -----------
+
+def test_member_parsers_are_followed_by_commit_and_blob(world):
+    """Recorded by content digest alone, they were checkable against today's
+    working tree and nothing else -- the defect §16-6 fixed for analyzers."""
+    bundle, write = world
+    write({"members": [], "analyses": [],
+           "member_parsers": [{"path": "harness/g33_refine_analyze.py",
+                               "content_sha256": "0" * 64,
+                               "commit": "0" * 40, "blob_sha": "0" * 40}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-UNRESOLVABLE" in states
+    assert ec.check() == 1
+
+
+def test_producer_modules_are_followed_too(world):
+    bundle, write = world
+    write({"members": [], "analyses": [],
+           "producer_modules": [{"path": "harness/g33_matched_closure.py",
+                                 "content_sha256": "0" * 64,
+                                 "commit": "HEAD", "blob_sha": "0" * 40}]})
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "ANALYZER-BLOB-MISMATCH" in states
+    assert ec.check() == 1
+
+
+# ---- the verdict must classify every state it can be handed ------------------
+
+def test_an_UNCLASSIFIED_state_fails_rather_than_passing():
+    """Both fail-open holes here were the same shape: a state was added to a
+    producer and never wired into the `if/elif` verdict, so it fell through and
+    passed. `unavailable` and `divergent` were reachable and unclassified."""
+    assert ec.verdict("SOME-STATE-NOBODY-CLASSIFIED") is True
+    assert ec.verdict("") is True
+    assert ec.verdict("matches") is False
+
+
+def test_the_two_classifications_do_not_overlap():
+    assert not (ec.PASSING_STATES & ec.FAILING_STATES)
+
+
+def test_EVERY_state_the_module_can_emit_is_classified():
+    """The completeness check that closes the class. A state literal added to
+    the producer without a verdict entry fails here rather than silently
+    passing `--check` -- which is exactly how the last two got in."""
+    src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
+    emitted = set(re.findall(r'"state": "([A-Za-z-]+)"', src))
+    emitted |= set(re.findall(r'else "([A-Za-z-]+)"[,\)\n]', src))
+    known = ec.PASSING_STATES | ec.FAILING_STATES
+    assert emitted <= known, f"unclassified: {sorted(emitted - known)}"
+    assert emitted, "the scan found no states -- it has stopped checking anything"
+
+
+def _pin(mod):
+    path = f"harness/{mod}.py"
+    return {"path": path, "content_sha256": "0" * 64, "commit": "HEAD",
+            "blob_sha": ec._blob_at("HEAD", path)}
+
+
+def _module_rows(world_write, **blocks):
+    world_write({"members": [], "analyses": [], **blocks})
+    return {(m["file"], m["state"])
+            for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+
+
+def test_EACH_pin_block_is_checked_SEPARATELY(world):
+    """An `any()` across both blocks let a bundle carrying parsers but no
+    producer_modules satisfy the combined check, and the missing block vanished
+    from the report entirely (Codex). Every combination is exercised, because
+    the hole was in exactly the two mixed ones."""
+    _, write = world
+    assert ("<member_parsers>", "modules-unpinned") in _module_rows(write)
+    assert ("<producer_modules>", "modules-unpinned") in _module_rows(write)
+
+    only_parsers = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")])
+    assert ("<producer_modules>", "modules-unpinned") in only_parsers
+    assert ("<member_parsers>", "modules-unpinned") not in only_parsers
+
+    only_prod = _module_rows(write, producer_modules=[_pin("g33_matched_closure")])
+    assert ("<member_parsers>", "modules-unpinned") in only_prod
+    assert ("<producer_modules>", "modules-unpinned") not in only_prod
+
+    both = _module_rows(write, member_parsers=[_pin("g33_refine_analyze")],
+                        producer_modules=[_pin("g33_matched_closure")])
+    assert not [f for f, st in both if st == "modules-unpinned"]
+
+
+def test_an_unpinned_block_is_REPORTED_not_failed(world):
+    """Old bundles legitimately predate these pins."""
+    _, write = world
+    _module_rows(write)
+    assert ec.check() == 0

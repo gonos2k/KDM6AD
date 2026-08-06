@@ -122,10 +122,27 @@ def members_of(manifest: Path) -> list[dict]:
     "this claim names a run" into "this claim names these exact raw streams".
     """
     out = []
+    # A manifest whose own digest MATCHES but whose content is unreadable used
+    # to return an empty child list, which reads as an artifact with nothing to
+    # check -- indistinguishable from a clean one (owner P0-5). Parsing failure
+    # is corruption, not absence of work.
     try:
         man = json.loads(manifest.read_text())
-    except (OSError, json.JSONDecodeError):
-        return out
+    except OSError as e:
+        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+                 "detail": str(e)}]
+    except json.JSONDecodeError as e:
+        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+                 "detail": f"not JSON: {e}"}]
+    if not isinstance(man, dict):
+        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+                 "detail": f"top level is {type(man).__name__}, not an object"}]
+    # `members` is the one block every schema has carried. Its ABSENCE is a
+    # different statement from an empty list, and only the second is a bundle
+    # that legitimately published none.
+    if "members" not in man:
+        return [{"file": manifest.name, "state": "MANIFEST-MISSING-MEMBERS",
+                 "detail": f"keys: {sorted(man)[:8]}"}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
@@ -150,6 +167,7 @@ def members_of(manifest: Path) -> list[dict]:
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
         out.append(_analyzer_state(an))
+    out.extend(_module_states(man))
     return out
 
 
@@ -190,6 +208,38 @@ def _analyzer_state(an: dict) -> dict:
         return {"file": path, "state": "ANALYZER-BLOB-MISMATCH",
                 "detail": f"pinned {blob[:12]}, {commit[:12]} holds {got[:12]}"}
     return {"file": path, "state": "matches"}
+
+
+#: manifest key -> the field naming the module, since the analyzer entries call
+#: it `analyzer` and the parser/producer entries call it `path`.
+_PIN_BLOCKS = (("member_parsers", "path"), ("producer_modules", "path"))
+
+
+def _module_states(man: dict) -> list:
+    """The parsers and producer modules, pinned exactly like the analyzers.
+
+    An analysis is only as good as the stream its parser admitted, so a parser
+    recorded by content digest alone was checkable against today's working tree
+    and nothing else -- the defect §16-6 fixed one layer up (owner P0-2).
+    """
+    out = []
+    for key, field in _PIN_BLOCKS:
+        entries = man.get(key) or []
+        if not entries:
+            # PER BLOCK. An `any()` across both let a bundle carrying parsers
+            # but no producer_modules satisfy the combined check, and the
+            # missing block vanished from the report -- no rows at all reads as
+            # "nothing to check", which is how a bundle that pinned nothing
+            # looked exactly like one that checked out (Codex).
+            out.append({"file": f"<{key}>", "state": "modules-unpinned"})
+            continue
+        for e in entries:
+            out.append(_analyzer_state({"analyzer": e.get(field),
+                                        "analyzer_sha256": e.get("content_sha256")
+                                        or e.get("sha256"),
+                                        "analyzer_commit": e.get("commit"),
+                                        "analyzer_blob_sha": e.get("blob_sha")}))
+    return out
 
 
 def chain() -> list[dict]:
@@ -252,43 +302,58 @@ def report() -> None:
               "not failing.")
 
 
+#: Every state the chain can produce, classified. An UNLISTED state FAILS.
+#:
+#: Both fail-open holes found here were the same shape: a state was added to a
+#: producer and never wired into the verdict, so it fell through an if/elif
+#: chain and passed. Enumerating the vocabulary and failing anything outside it
+#: closes the CLASS rather than the two instances -- "nobody classified this"
+#: must not read as "this is fine".
+PASSING_STATES = frozenset({
+    "matches",
+    "unavailable",             # the bundle lives outside the repo, by design
+    "divergent",               # a finding revised after its immutable bundle
+    "absent-finding",          # the finding a snapshot names is gone from the repo
+    "analyzer-unpinned",       # reported: the entry names no analyzer at all
+    "modules-unpinned",        # reported: the bundle predates the module pins
+    "legacy-analyzer-changed",
+    "legacy-analyzer-absent",
+})
+FAILING_STATES = frozenset({
+    "MISMATCH", "absent",
+    "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
+    "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+})
+
+
+def verdict(state: str) -> bool:
+    """True if `state` fails the check. An unclassified state fails."""
+    if state in PASSING_STATES:
+        return False
+    return True
+
+
 def check() -> int:
     """Fail only on the live direction: a pinned artifact that is present and
     differs. Absent artifacts and divergent snapshots are not failures."""
     bad = []
     for r in chain():
         for a in r["artifacts"]:
-            if a["state"] == "MISMATCH":
-                bad.append(f"{r['id']}: {a['path']} does not match its pinned "
-                           f"digest {a['pinned']}")
+            if verdict(a["state"]):
+                bad.append(f"{r['id']}: {a['path']} -> {a['state']}"
+                           + ("" if a["state"] in FAILING_STATES
+                              else "  [UNCLASSIFIED state -- failing by default]"))
             # ABSENT is a failure HERE, unlike an absent top-level manifest
             # (owner P0-4). Once the parent manifest is present and matches, the
             # bundle has declared these files exist; one of them missing is a
-            # corrupt or incomplete bundle, not an unavailable one. Treating the
-            # two the same made a bundle whose raw streams and analyses had all
-            # been deleted pass `--check` cleanly.
+            # corrupt or incomplete bundle, not an unavailable one.
             for m in a["members"]:
-                # An analyzer that has changed since the bundle was published is
-                # REPORTED, not failed: the analysis JSON is still the artifact
-                # the claim cites, and the source moving on is ordinary. What it
-                # means is that re-running would not necessarily reproduce it.
-                # A legacy bundle pinned only the analyzer's CONTENT digest,
-                # so a moved-on analyzer is unverifiable rather than corrupt --
-                # reported, not failed. A bundle that pinned a commit and blob
-                # has no such excuse.
-                if m["state"].startswith("legacy-") or \
-                        m["state"] == "analyzer-unpinned":
+                if not verdict(m["state"]):
                     continue
-                if m["state"] in ("ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH"):
-                    bad.append(f"{r['id']}: {a['path']} -> {m['file']}: "
-                               f"{m['state']} ({m.get('detail', '')})")
-                    continue
-                if m["state"] == "MISMATCH":
-                    bad.append(f"{r['id']}: {a['path']} -> {m['file']} does not "
-                               f"match the digest the manifest recorded")
-                elif m["state"] == "absent":
-                    bad.append(f"{r['id']}: {a['path']} declares {m['file']} "
-                               f"but it is missing — the bundle is incomplete")
+                extra = "" if m["state"] in FAILING_STATES else \
+                    "  [UNCLASSIFIED state -- failing by default]"
+                bad.append(f"{r['id']}: {a['path']} -> {m.get('file', '?')}: "
+                           f"{m['state']} {m.get('detail', '')}{extra}".rstrip())
     print("\n".join(bad))
     return 1 if bad else 0
 

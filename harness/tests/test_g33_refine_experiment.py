@@ -457,3 +457,64 @@ def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
         xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
                    algo="legacy", nsplits=(n for n in (3, 6, 6)),
                    mode="rezero", nflux=False, module=tmp_path / "m.F")
+
+
+# ---- owner P0-1 / P0-2: the bytes that RAN, bound to the pin -----------------
+
+#: `produce()` refuses unless every producing module's working bytes hash to its
+#: HEAD blob -- correct for a bundle, wrong for a test suite, which has to run
+#: while those very modules are being edited. The tests that exercise the check
+#: hold the real function and call it directly.
+_REAL_PIN_CHECK = xp.require_pinned_producer
+
+
+@pytest.fixture(autouse=True)
+def _allow_a_dirty_tree_in_tests(monkeypatch):
+    monkeypatch.setattr(xp, "require_pinned_producer", lambda: None)
+
+
+def test_the_producer_refuses_when_a_running_module_is_UNCOMMITTED(monkeypatch):
+    """The claim said "the producer refuses a dirty tree, so HEAD:path is the
+    bytes that ran". No such refusal existed -- `tree_dirty` was RECORDED. An
+    uncommitted analyzer edit therefore ran while the manifest pinned the
+    committed blob, and the checker, which resolves that blob, passed."""
+    real = xp.rm._git
+
+    def edited(*a):
+        if a[:1] == ("hash-object",) and "g33_cap_interface" in str(a[-1]):
+            return "0" * 40
+        return real(*a)
+
+    monkeypatch.setattr(xp.rm, "_git", edited)
+    with pytest.raises(SystemExit, match="did not run"):
+        _REAL_PIN_CHECK()
+
+
+def test_a_producer_whose_bytes_MATCH_is_accepted(monkeypatch):
+    """A refusal that fired unconditionally would also pass the test above.
+    Forced to match rather than read off the tree, so the result does not depend
+    on whether this checkout happens to be clean."""
+    monkeypatch.setattr(xp.rm, "_git", lambda *a: "b" * 40)
+    _REAL_PIN_CHECK()
+
+
+def test_a_module_missing_from_HEAD_is_refused(monkeypatch):
+    """A new analyzer that was never committed pins nothing at all."""
+    real = xp.rm._git
+    monkeypatch.setattr(xp.rm, "_git", lambda *a: (
+        "" if a[:1] == ("rev-parse",) and "g33_dual_ledger" in str(a[-1])
+        else real(*a)))
+    with pytest.raises(SystemExit, match="not in HEAD"):
+        _REAL_PIN_CHECK()
+
+
+def test_the_PARSERS_are_pinned_by_commit_and_blob_like_the_analyzers():
+    """An analysis is only as good as the stream its parser admitted, so a
+    parser recorded by content digest alone was checkable against today's
+    working tree and nothing else (owner P0-2)."""
+    pin = xp._pin("g33_number_transport")
+    assert set(pin) == {"path", "content_sha256", "commit", "blob_sha"}
+    assert len(pin["blob_sha"]) == 40 and len(pin["content_sha256"]) == 64
+    # The strict parsers must be in the pinned set, not only the analyzers.
+    assert {"g33_refine_analyze", "g33_number_transport", "g33_probe_read"} \
+        <= set(xp.PRODUCER_MODULES)
