@@ -31,8 +31,13 @@ def _claims():
             cur = {"id": line.split("id:", 1)[1].strip(), "evidence": []}
             out.append(cur)
             pending = None
-        elif cur is not None and (m := re.match(r"^    (\w+): (.*)$", line)):
-            key, val = m.group(1), m.group(2).strip()
+        elif cur is not None and (m := re.match(r"^    (\w+):(?: (.*))?$", line)):
+            # A key with NO value -- `artifacts:` heading a list -- must still
+            # END the preceding folded block. The old pattern required ": ",
+            # so it did not match, `pending` stayed on `scope`, and every
+            # artifact line was appended to the scope prose. It surfaced the
+            # moment a claim carried both a folded scope and a pin block.
+            key, val = m.group(1), (m.group(2) or "").strip()
             pending = None
             if key == "run_support":
                 cur["run_support"] = [t.strip() for t in
@@ -411,3 +416,25 @@ def test_the_artifact_coverage_gap_is_NOT_silently_closed():
                 if c.get("artifact_status") == "historical_unavailable"]
     assert unpinned, "no claims left unpinned -- was the migration done, or the " \
                      "label changed? Update this test deliberately."
+
+
+def test_a_pin_block_does_not_leak_into_the_FOLDED_scope():
+    """`    artifacts:` has no value after the colon, so the key pattern that
+    required ": " never matched it -- the preceding folded `scope:` stayed open
+    and swallowed every artifact line into the prose. It surfaced the moment a
+    claim carried both a folded scope and a pin block, and it reached the
+    generated finding tables."""
+    for c in CLAIMS:
+        scope = str(c.get("scope", ""))
+        assert "manifest.json" not in scope, \
+            f"{c['id']}: an artifact line leaked into the scope prose"
+        assert "kdm6ad-g33m" not in scope, f"{c['id']}: same"
+
+
+def test_the_claims_pinned_to_a_RERUN_are_the_ones_that_reproduced():
+    """Migration is only safe where the figure survives. Each of these was
+    re-run under the current producer and its published numbers reproduced
+    EXACTLY, so pinning corrects nothing -- it makes the run reachable."""
+    pinned = {c["id"] for c in CLAIMS if c.get("artifact_status") == "pinned"}
+    assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ENTHALPY-003",
+            "G33-ICE-CAP-001"} <= pinned

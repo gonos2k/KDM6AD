@@ -272,28 +272,86 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     return made
 
 
-#: Every module whose BYTES decide what a bundle contains -- the analyzers that
-#: compute the numbers AND the strict parsers that admit the raw members. A
-#: parser is not a lesser link: an analysis is only as good as the stream it was
-#: allowed to read, and a wrong parser lets a truncated, duplicated or
+#: The modules a bundle's contents do NOT depend on the caller remembering.
+#:
+#: `PRODUCER_MODULES` was a hand-written tuple, so an analyzer added to
+#: `ANALYSES` and not to the tuple escaped the working-byte binding entirely --
+#: the one list whose completeness the binding depends on was the one nobody
+#: checked (owner §9.2). It is DERIVED now: the core producer, plus every module
+#: `ANALYSES` names, plus the strict parsers that admit raw members.
+#:
+#: A parser is not a lesser link: an analysis is only as good as the stream it
+#: was allowed to read, and a wrong parser lets a truncated, duplicated or
 #: mis-schema'd member through before any analyzer sees it (owner P0-2).
-PRODUCER_MODULES = (
-    "g33_refine_experiment", "g33_refine_manifest", "g33_build_provenance",
-    # strict parsers -- these decide which raw members are admissible
-    "g33_refine_analyze", "g33_number_transport", "g33_probe_read",
-    # analyzers -- these decide what the numbers are
-    "g33_matched_closure", "g33_cap_interface", "g33_dual_ledger",
-    "g33_defect_magnitude", "g33_metric_trajectory",
+_CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
+                 "g33_build_provenance")
+_PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
+
+
+#: Tracked files the BUILD reads. `host/**` is gitignored and cannot be pinned
+#: to a commit, so build_provenance keeps its content digests; these can be.
+TRACKED_BUILD_INPUTS = (
+    Path("harness/g33_fortran/refine_build.sh"),
+    Path("harness/g33_fortran/make_fortran_overlay.py"),
+    Path("harness/g33_fortran/g33_fortran_bindings.py"),
+    Path("harness/g33_fortran/g33_refine_driver.f90"),
+    Path("harness/g33_fortran/stub_wrf_error.f90"),
 )
+
+
+def _pin_path(rel: Path) -> dict:
+    """Where a tracked file's bytes can be recovered from later."""
+    return {"path": str(rel),
+            "content_sha256": rm.sha256(HERE.parent / rel),
+            "commit": rm._git("rev-parse", "HEAD"),
+            "blob_sha": rm._git("rev-parse", f"HEAD:{rel}")}
+
+
+def producer_modules() -> tuple:
+    """Every module whose bytes decide what a bundle contains."""
+    return tuple(sorted(set(_CORE_MODULES) | set(_PARSER_MODULES)
+                        | {mod for mod, _fn in ANALYSES.values()}
+                        | {"g33_metric_trajectory"}))
 
 
 def _pin(module: str) -> dict:
     """Where this module's bytes can be recovered from later."""
-    path = f"harness/{module}.py"
-    return {"path": path,
-            "content_sha256": rm.sha256(HERE / f"{module}.py"),
-            "commit": rm._git("rev-parse", "HEAD"),
-            "blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
+    return _pin_path(Path("harness") / f"{module}.py")
+
+
+def _expect_reusable(final: Path, identity: str, man: dict) -> None:
+    """An existing bundle directory may be adopted only if it IS this bundle.
+
+    The address alone was the whole check, so a directory left by an interrupted
+    run -- or edited by hand -- was republished under a digest it no longer
+    matched. Verified: the manifest parses, satisfies its own schema, carries
+    the same identity, and every file it declares is present with the digest it
+    recorded (owner §9.1).
+    """
+    mf = final / "manifest.json"
+    if not mf.is_file():
+        raise SystemExit(f"REFUSED: {final} exists but has no manifest.json")
+    try:
+        have = rm.json.loads(mf.read_text())
+    except ValueError as e:
+        raise SystemExit(f"REFUSED: {final}/manifest.json will not parse: {e}")
+    bad = rm.validate(have)
+    if bad:
+        raise SystemExit(f"REFUSED: {final} holds an invalid manifest:\n  "
+                         + "\n  ".join(bad))
+    if rm.identity_digest(have) != identity:
+        raise SystemExit(
+            f"REFUSED: {final} is addressed {identity[:16]} but its manifest "
+            f"identifies as {rm.identity_digest(have)[:16]}")
+    for entry in (have.get("members") or []) + (have.get("analyses") or []):
+        f = final / entry["file"]
+        want = entry.get("output_sha256") or entry.get("sha256")
+        if not f.is_file():
+            raise SystemExit(f"REFUSED: {final} declares {entry['file']} but it "
+                             f"is missing -- the directory is incomplete")
+        if rm.sha256(f) != want:
+            raise SystemExit(f"REFUSED: {final}/{entry['file']} does not match "
+                             f"the digest its manifest recorded")
 
 
 def require_pinned_producer() -> None:
@@ -309,10 +367,11 @@ def require_pinned_producer() -> None:
     run while an edited analyzer does.
     """
     bad = []
-    for module in PRODUCER_MODULES:
-        path = f"harness/{module}.py"
+    paths = [f"harness/{m}.py" for m in producer_modules()]
+    paths += [str(q) for q in TRACKED_BUILD_INPUTS]
+    for path in paths:
         head = rm._git("rev-parse", f"HEAD:{path}")
-        work = rm._git("hash-object", str(HERE / f"{module}.py"))
+        work = rm._git("hash-object", str(HERE.parent / path))
         if not head:
             bad.append(f"{path}: not in HEAD")
         elif head != work:
@@ -477,7 +536,15 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # Every module whose bytes decided what this bundle contains, pinned the
         # same way, so the chain does not stop at the ones a reader thinks to ask
         # about.
-        man["producer_modules"] = [_pin(m) for m in PRODUCER_MODULES]
+        man["producer_modules"] = [_pin(m) for m in producer_modules()]
+        # The TRACKED build inputs decide the raw streams as surely as the
+        # analyzers decide the numbers, and build_provenance recorded only their
+        # content digests -- checkable against today's working tree and nothing
+        # else (owner §9.2). The private `host/**` sources stay content-only:
+        # they are gitignored, so no commit holds them.
+        man["tracked_build_inputs"] = [
+            _pin_path(q) for q in TRACKED_BUILD_INPUTS
+            + (Path("harness/g33_fortran") / f"{fixture}.f90",)]
         man["arm"] = arm
         man["precision"] = "f64" if arm == "f64" else "f32"
         # An instrument arm can never be decision evidence, and says so in the
@@ -506,12 +573,22 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # carries diagnostic paths that differ every run, so hashing the whole
         # file gave a new address each time and the "identical rerun reuses the
         # bundle" property held only under fake provenance (owner §10.3).
-        final = store / rm.identity_digest(man)[:16]
+        # FULL digest (owner §9.1). A 16-hex prefix is 64 bits, and the
+        # directory it names is REUSED without re-checking: a stale directory
+        # from an interrupted run, a hand-edited one, or a different full digest
+        # sharing the prefix would all be adopted as this bundle. The overlay
+        # cache was widened to the whole digest for the same reason; the bundle
+        # store had not been.
+        identity = rm.identity_digest(man)
+        final = store / identity
         # Content-addressed: an identical manifest is the same bundle. Removing
         # and rebuilding it would delete the directory `dest` currently points at
         # -- the very window this design exists to close -- so an existing one is
-        # reused and the temp discarded.
-        if not final.exists():
+        # reused and the temp discarded. But only after it is VERIFIED: reuse
+        # without checking is how a corrupt directory becomes a published one.
+        if final.exists():
+            _expect_reusable(final, identity, man)
+        else:
             os.rename(tmp, final)
         link = dest.with_name(dest.name + ".new")
         if link.is_symlink() or link.exists():
