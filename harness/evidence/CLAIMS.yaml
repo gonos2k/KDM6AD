@@ -207,10 +207,16 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
+    # Re-run under the CURRENT producer and pinned. Every published
+    # figure reproduced EXACTLY, so migrating corrects nothing -- it
+    # only makes the run reachable (owner §12-6).
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/d266698098d524bde72447349e89c185adadd9644f81478e450770cf84f7f41c/manifest.json: e35cc37062bafc6e56bc5d4936e8adf850b1e812bbf22dc10422ad5832c21fa7
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 
@@ -433,7 +439,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed-with-scope
     basis: >
       measurement with per-call inventory preserved, so the aggregation is
@@ -450,6 +456,11 @@ claims:
       integrated spurious SOURCE; the retained final bias N_legacy(t_f) -
       N_corrected(t_f) is a different quantity, identically zero here only
       because this window ends empty, and unmeasured in general.
+    # Re-run under the CURRENT producer and pinned. Every published
+    # figure reproduced EXACTLY, so migrating corrects nothing -- it
+    # only makes the run reachable (owner §12-6).
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -898,10 +909,15 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
+    # Re-run under the CURRENT producer and pinned. Every published
+    # figure reproduced EXACTLY, so migrating corrects nothing -- it
+    # only makes the run reachable (owner §12-6).
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1027,7 +1043,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed-with-scope
     basis: >
       direct interface measurement, with the diagnostic-inferred alternative
@@ -1044,6 +1060,11 @@ claims:
       correction is CONDITIONAL on the departure-level convention: the
       attribution band is reported beside it and physical enthalpy closure
       remains HOLD.
+    # Re-run under the CURRENT producer and pinned. Every published
+    # figure reproduced EXACTLY, so migrating corrects nothing -- it
+    # only makes the run reachable (owner §12-6).
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 

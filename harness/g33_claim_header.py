@@ -44,8 +44,13 @@ def claims() -> list[dict]:
             cur = {"id": line.split("id:", 1)[1].strip(), "evidence": []}
             out.append(cur)
             pending = None
-        elif cur is not None and (m := re.match(r"^    (\w+): (.*)$", line)):
-            key, val = m.group(1), m.group(2).strip()
+        elif cur is not None and (m := re.match(r"^    (\w+):(?: (.*))?$", line)):
+            # A key with NO value -- `artifacts:` heading a list -- must still
+            # END the preceding folded block. The old pattern required ": ",
+            # so it did not match, `pending` stayed on `scope`, and every
+            # artifact line was appended to the scope prose. It surfaced the
+            # moment a claim carried both a folded scope and a pin block.
+            key, val = m.group(1), (m.group(2) or "").strip()
             pending = None
             if key == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", val)
