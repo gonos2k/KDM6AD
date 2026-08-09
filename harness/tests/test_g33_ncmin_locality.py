@@ -552,37 +552,67 @@ def test_the_REPORT_carries_the_direction_and_the_caveats(drivers, capsys):
     out = capsys.readouterr().out
     assert "-20.72%" in out, "the whole-domain departure must print its SIGN"
     assert "+20.67%" in out, "and the opposite-signed one must too"
-    assert "LESS than the per-column answer" in out
-    assert "HIGHER droplet-number floor" in out and "suppresses" in out
     assert "does NOT stand for a production run" in out
     assert "property of the fixture, not a law" in out
     assert "0.000e+00" in out, "the humidity-weight spread that explains it"
 
 
-def test_the_MECHANISM_sentence_is_derived_not_hardcoded(monkeypatch):
+def test_BOTH_SIGNS_get_their_OWN_mechanism_not_one_global_sentence(drivers,
+                                                                    capsys):
+    """The report derived the mechanism correctly and then printed it ONCE, from
+    the WHOLE-DOMAIN gating, under a table carrying both signs. A reader applying
+    it to the `+20.67%` row got the physics backwards, because there the affected
+    column is gated at the LOWER threshold, not the higher one (Codex). Deriving
+    the sentence is not enough if it is attached to the wrong row."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "col 2: gated at 1e+08, not its own 2.5e+07" in out
+    assert "HIGHER droplet floor" in out and "LESS rain" in out
+    assert "col 1: gated at 2.5e+07, not its own 1e+08" in out
+    assert "LOWER droplet floor" in out and "MORE rain" in out
+
+
+def test_the_MECHANISM_is_derived_from_the_thresholds_not_hardcoded(monkeypatch):
     """It read "a tile ending on land gates a sea column at the HIGHER floor,
     which suppresses autoconversion" -- true only while ncmin_land > ncmin_sea.
     On a fixture with the reverse ordering the report printed the physics
     backwards: the same class of error as the sign this session corrected, one
     level up (Codex)."""
     monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (1.0e8, 2.5e7))
-    hi = nl.mechanism_sentence(FIXTURE)
-    assert "HIGHER" in hi and "suppresses" in hi and "less rain" in hi
+    assert "HIGHER" in nl.mechanism_for((3,), FIXTURE, 2)
 
     monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (2.5e7, 1.0e8))
-    lo = nl.mechanism_sentence(FIXTURE)
-    assert "LOWER" in lo and "permits" in lo and "more rain" in lo
+    lo = nl.mechanism_for((3,), FIXTURE, 2)
+    assert "LOWER" in lo and "freer" in lo and "MORE rain" in lo
 
 
-def test_an_UNMEASURABLE_humidity_weight_does_not_crash_the_report(drivers,
-                                                                   capsys):
-    """`max(spread.values())` raised ValueError on an empty mapping, so a stream
-    without INITIAL qv took the report down instead of saying what it could not
-    measure."""
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setattr(nl, "humidity_weight_spread", lambda t: {})
-    try:
-        nl.report(drivers["legacy"], FIXTURE)
-    finally:
-        monkeypatch.undo()
-    assert "NOT MEASURABLE" in capsys.readouterr().out
+def test_a_column_gated_at_its_OWN_threshold_is_reported_UNAFFECTED():
+    """Column 3 ends its own tile, so no mechanism applies to it."""
+    assert "unaffected" in nl.mechanism_for((1, 1, 1), FIXTURE, 3)
+
+
+def test_a_stream_with_no_INITIAL_qv_is_REFUSED_not_silently_accepted(drivers):
+    """Two defects met here. The report had a "NOT MEASURABLE" branch for a
+    stream carrying no INITIAL qv -- unreachable, because the physical column
+    integral above it died on a raw KeyError first (Codex). And the
+    same-atmosphere contract compared two EMPTY sets of initial records and
+    passed, so the guarantee evaporated exactly where it could not be checked.
+    Both now refuse, by name."""
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                      if not l.startswith("G33R INITIAL")) + "\n"
+    records = nl.read_records(text, label="a")
+
+    with pytest.raises(ra.RefineError, match="vacuous"):
+        nl._expect_same_inputs(records, records, "x")
+
+    with pytest.raises(ra.RefineError, match="WINDOW-INITIAL qv"):
+        nl.column_integrated(text, text, "physical")
+
+
+def test_the_operator_basis_still_works_without_INITIAL_qv(drivers):
+    """The refusal is scoped to the basis that needs it: rho_m*dz does not."""
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                      if not l.startswith("G33R INITIAL")) + "\n"
+    # Same stream twice: the operator basis completes and finds no difference,
+    # where the physical basis refuses for want of qv.
+    assert nl.column_integrated(text, text, "operator") == {}

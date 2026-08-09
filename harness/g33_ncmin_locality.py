@@ -97,6 +97,14 @@ def _expect_same_inputs(base: dict, got: dict, label: str) -> None:
     for cls in ("initial", "forcing"):
         a = {k: v for k, v in base.items() if k[0] == cls}
         b = {k: v for k, v in got.items() if k[0] == cls}
+        if not a or not b:
+            # `G33R INITIAL` is OPTIONAL to the strict parser, so two streams
+            # that both lack it made this comparison pass with nothing compared
+            # -- the same-atmosphere guarantee evaporating exactly where it
+            # could not be checked (Codex).
+            raise ra.RefineError(
+                f"{label}: no `{cls}` records, so the same-atmosphere contract "
+                f"would be vacuous. This analysis needs them.")
         if set(a) != set(b):
             raise ra.RefineError(
                 f"{label}: the {cls} universe differs from the baseline by "
@@ -352,8 +360,14 @@ def column_integrated(base_text: str, got_text: str, basis: str = "operator") ->
             # findings.
             def w(k):
                 m = run[("forcing", "rho", col, k)] * run[("forcing", "delz", col, k)]
-                return m / (1.0 + run[("initial", "qv", col, k)]) \
-                    if basis == "physical" else m
+                if basis != "physical":
+                    return m
+                key = ("initial", "qv", col, k)
+                if key not in run:
+                    raise ra.RefineError(
+                        "the physical basis needs the WINDOW-INITIAL qv from "
+                        "G33R INITIAL, which this stream does not carry")
+                return m / (1.0 + run[key])
             return sum(w(k) * sum(run[("state", f, col, k)] for f in fields)
                        for k in ks)
 
@@ -516,29 +530,39 @@ def local_oracle(driver: str, fixture: str) -> dict:
     return {"oracle": ",".join(map(str, ones)), "partitions": rows}
 
 
-def mechanism_sentence(fixture: str) -> str:
-    """What a NEGATIVE departure means, DERIVED from this fixture's thresholds.
-
-    The first version hardcoded "a tile ending on land gates a sea column at the
-    HIGHER droplet floor, which suppresses autoconversion". That is true only
-    while `ncmin_land > ncmin_sea`; on a fixture with the reverse ordering the
-    report would print the physics backwards -- the same class of error as the
-    sign this session corrected, one level up (Codex).
-    """
+def imposed_threshold(tiles, fixture: str, col: int):
+    """(imposed ncmin, the column's OWN ncmin) under this decomposition."""
     land, sea = fixture_ncmin(fixture)
     xland = fixture_xland(fixture)
-    width = fixture_dims(fixture)[0]
-    ends_on_land = xland[width] == 1.0
-    imposed, own = ((land, sea) if ends_on_land else (sea, land))
+    by_type = {1.0: land, 2.0: sea}
+    first = 1
+    for size in tiles:
+        last = first + size - 1
+        if first <= col <= last:
+            return by_type[xland[last]], by_type[xland[col]]
+        first = last + 1
+    raise ValueError(f"column {col} is outside {tiles}")
+
+
+def mechanism_for(tiles, fixture: str, col: int) -> str:
+    """Why THIS partition moves THIS column, derived from the thresholds.
+
+    Two versions were wrong before this one. The first hardcoded "a tile ending
+    on land gates a sea column at the HIGHER floor, which suppresses
+    autoconversion" -- true only while `ncmin_land > ncmin_sea`. The second
+    derived that, but printed it ONCE, under a table carrying both signs: a
+    reader applying the whole-domain explanation to the `+20.67%` row got the
+    opposite mechanism, because there the affected column is gated at the LOWER
+    threshold instead (Codex). The explanation belongs to the row.
+    """
+    imposed, own = imposed_threshold(tiles, fixture, col)
+    if imposed == own:
+        return f"col {col}: gated at its own {own:.3g} -- unaffected"
     higher = imposed > own
-    return (
-        "NEGATIVE means the decomposition produces LESS than the per-column "
-        f"answer.\n  The whole domain ends on {'land' if ends_on_land else 'sea'}"
-        f", so a {'sea' if ends_on_land else 'land'} column is gated at "
-        f"{imposed:.3g} rather than its own\n  {own:.3g} -- a "
-        f"{'HIGHER' if higher else 'LOWER'} droplet-number floor, which "
-        f"{'suppresses' if higher else 'permits'} autoconversion\n  and so "
-        f"gives {'less' if higher else 'more'} rain.")
+    return (f"col {col}: gated at {imposed:.3g}, not its own {own:.3g} -- a "
+            f"{'HIGHER' if higher else 'LOWER'} droplet floor, so "
+            f"{'suppressed' if higher else 'freer'} autoconversion and "
+            f"{'LESS' if higher else 'MORE'} rain")
 
 
 def report(driver: str, fixture: str) -> None:
@@ -583,14 +607,20 @@ def report(driver: str, fixture: str) -> None:
               f"{r['components_total']:<6} "
               f"{str(r['columns']) if r['columns'] else '-':>9} {w:>38}"
               + ("   <- the oracle" if r["is_the_oracle"] else ""))
-    print("\n  " + mechanism_sentence(fixture))
+    print("\n  Why each row moves, per column -- the sign follows the "
+          "threshold it was\n  given, and the two directions have opposite "
+          "mechanisms:")
+    for tiles, r in o["partitions"].items():
+        for col in r["columns"]:
+            print("    " + mechanism_for(tuple(int(x) for x in tiles.split(",")),
+                                         fixture, col))
+    # No "not measurable" branch: reaching this line means the physical column
+    # integral above already succeeded, and that needs the same INITIAL qv. A
+    # stream without it fails earlier, with a message that names the reason. A
+    # recovery path that cannot execute is not a safety net (Codex).
     spread = humidity_weight_spread(base_text)
-    if spread:
-        print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
-              f"column: max {max(spread.values()):.3e}.")
-    else:
-        print("\n  Humidity weight a_k: NOT MEASURABLE -- this stream carries no "
-              "INITIAL qv.")
+    print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
+          f"column: max {max(spread.values()):.3e}.")
     print("  The operator and physical bases give the same RELATIVE figures only "
           "where this\n  is uniform -- a_k sits INSIDE the column sum, so a "
           "constant cancels and a\n  level-dependent weight does not. It is a "
