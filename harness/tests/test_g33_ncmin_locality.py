@@ -586,11 +586,6 @@ def test_the_MECHANISM_is_derived_from_the_thresholds_not_hardcoded(monkeypatch)
     assert "LOWER" in lo and "freer" in lo and "MORE rain" in lo
 
 
-def test_a_column_gated_at_its_OWN_threshold_is_reported_UNAFFECTED():
-    """Column 3 ends its own tile, so no mechanism applies to it."""
-    assert "unaffected" in nl.mechanism_for((1, 1, 1), FIXTURE, 3)
-
-
 def test_a_stream_with_no_INITIAL_qv_is_REFUSED_not_silently_accepted(drivers):
     """Two defects met here. The report had a "NOT MEASURABLE" branch for a
     stream carrying no INITIAL qv -- unreachable, because the physical column
@@ -616,3 +611,43 @@ def test_the_operator_basis_still_works_without_INITIAL_qv(drivers):
     # Same stream twice: the operator basis completes and finds no difference,
     # where the physical basis refuses for want of qv.
     assert nl.column_integrated(text, text, "operator") == {}
+
+
+def test_basis_AGREEMENT_is_MEASURED_not_asserted(drivers):
+    """The report printed the operator basis and then claimed the physical basis
+    gives the same relative figures -- an unverified claim standing next to the
+    numbers that would settle it (Codex). `local_oracle` computes BOTH, so the
+    comparison costs nothing. Measuring it immediately showed the claim was true
+    for a subtler reason than stated: the gap floors at f64 roundoff, not zero,
+    because a_k cancels algebraically while the two sums reorder."""
+    gap = nl.basis_gap(nl.local_oracle(drivers["legacy"], FIXTURE))
+    assert 0.0 < gap <= nl.F64_EPS, (
+        "expected agreement AT the roundoff floor -- exactly 0.0 would mean the "
+        "two bases are not really being computed differently")
+
+
+def test_a_ZERO_TEST_on_the_basis_gap_would_MISFIRE(drivers, capsys):
+    """The first version of the check asked `gap == 0.0` and duly reported that
+    the bases DISAGREE at 1.977e-16. A threshold has to be grounded in the
+    precision of the arithmetic, not in hope."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "at or under one f64 eps" in out
+    assert "the bases DISAGREE" not in out
+
+
+def test_the_MECHANISM_REFUSES_to_contradict_the_measurement(monkeypatch):
+    """`mechanism_for` is called only for columns the run measured as MOVING. If
+    the thresholds say the column is gated at its own value, `ncmin` does not
+    explain it, and printing "unaffected" would put the derived explanation in
+    direct contradiction with the table above it. Refuse instead."""
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (1.0e8, 1.0e8))
+    with pytest.raises(ra.RefineError, match="does not explain this column"):
+        nl.mechanism_for((3,), FIXTURE, 2)
+
+
+def test_an_UNKNOWN_surface_type_has_no_known_threshold(monkeypatch):
+    """`by_type[xland[...]]` would have raised a bare KeyError."""
+    monkeypatch.setattr(nl, "fixture_xland", lambda f: {1: 1.0, 2: 3.0, 3: 1.0})
+    with pytest.raises(ra.RefineError, match="only land=1.0 / sea=2.0"):
+        nl.imposed_threshold((3,), FIXTURE, 2)

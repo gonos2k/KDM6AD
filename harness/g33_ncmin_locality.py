@@ -535,6 +535,10 @@ def imposed_threshold(tiles, fixture: str, col: int):
     land, sea = fixture_ncmin(fixture)
     xland = fixture_xland(fixture)
     by_type = {1.0: land, 2.0: sea}
+    if set(xland.values()) - set(by_type):
+        raise ra.RefineError(
+            f"fixture carries xland values {sorted(set(xland.values()))}, and "
+            f"only land=1.0 / sea=2.0 have a known ncmin")
     first = 1
     for size in tiles:
         last = first + size - 1
@@ -557,12 +561,49 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
     """
     imposed, own = imposed_threshold(tiles, fixture, col)
     if imposed == own:
-        return f"col {col}: gated at its own {own:.3g} -- unaffected"
+        # This function is called ONLY for columns the run measured as moving.
+        # Printing "unaffected" there would put a derived explanation in direct
+        # contradiction with the table above it -- the same failure as the two
+        # rounds before: an explanation that cannot be checked against what was
+        # measured. `ncmin` is not the only way a column could move, so the
+        # honest output is a refusal to explain, not a wrong explanation.
+        raise ra.RefineError(
+            f"col {col} moved under {tiles}, but it is gated at its own "
+            f"{own:.3g} -- the `ncmin` mechanism does not explain this column")
     higher = imposed > own
     return (f"col {col}: gated at {imposed:.3g}, not its own {own:.3g} -- a "
             f"{'HIGHER' if higher else 'LOWER'} droplet floor, so "
             f"{'suppressed' if higher else 'freer'} autoconversion and "
             f"{'LESS' if higher else 'MORE'} rain")
+
+
+# The resolution floor of the basis comparison. Where a_k is vertically
+# constant it cancels from a RELATIVE figure mathematically, but the two bases
+# still sum different products, so the difference bottoms out at double-
+# precision roundoff rather than at exactly zero. Measured 1.977e-16 on the
+# boundary-mapping fixture -- under eps, hence agreement, and a `== 0.0` test
+# would have called that a disagreement.
+F64_EPS = sys.float_info.epsilon
+
+
+def basis_gap(oracle: dict) -> float:
+    """Max |rel(operator) - rel(physical)| over every departure both computed.
+
+    Measures what the report used to assert. A key present in one basis and not
+    the other is itself a disagreement (the departure was large enough to record
+    on one measure and not the other), so it counts as a full mismatch rather
+    than being skipped.
+    """
+    worst = 0.0
+    for r in oracle["partitions"].values():
+        op, ph = r["column_integrated"]["operator"], \
+            r["column_integrated"]["physical"]
+        for key in set(op) | set(ph):
+            a = op.get(key, {}).get("rel")
+            b = ph.get(key, {}).get("rel")
+            worst = max(worst, abs(a - b) if a is not None and b is not None
+                        else max(a or 0.0, b or 0.0))
+    return worst
 
 
 def report(driver: str, fixture: str) -> None:
@@ -614,17 +655,25 @@ def report(driver: str, fixture: str) -> None:
         for col in r["columns"]:
             print("    " + mechanism_for(tuple(int(x) for x in tiles.split(",")),
                                          fixture, col))
-    # No "not measurable" branch: reaching this line means the physical column
-    # integral above already succeeded, and that needs the same INITIAL qv. A
-    # stream without it fails earlier, with a message that names the reason. A
-    # recovery path that cannot execute is not a safety net (Codex).
+    # Both bases are computed, so AGREEMENT IS MEASURED, not asserted. The
+    # table above prints the operator basis; claiming the physical basis gives
+    # the same relative figures while never comparing the two is an unverified
+    # claim standing next to the numbers that would settle it (Codex).
+    gap = basis_gap(o)
     spread = humidity_weight_spread(base_text)
     print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
           f"column: max {max(spread.values()):.3e}.")
-    print("  The operator and physical bases give the same RELATIVE figures only "
-          "where this\n  is uniform -- a_k sits INSIDE the column sum, so a "
-          "constant cancels and a\n  level-dependent weight does not. It is a "
-          "property of the fixture, not a law.")
+    print(f"  Operator vs physical basis, max difference in the RELATIVE "
+          f"departures\n  actually computed: {gap:.3e}, at or under one f64 eps "
+          f"({F64_EPS:.3e}).\n  The two agree here "
+          f"because a_k is uniform --\n  it sits INSIDE the column sum, so a "
+          f"constant cancels and a level-dependent\n  weight does not. It is a "
+          f"property of the fixture, not a law."
+          if gap <= F64_EPS else
+          f"  Operator vs physical basis, max difference in the RELATIVE "
+          f"departures\n  actually computed: {gap:.3e} -- the bases DISAGREE, "
+          f"so the table above is\n  basis-specific and the figures must not "
+          f"be quoted without naming it.")
 
 
 def main(argv) -> int:
