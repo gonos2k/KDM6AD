@@ -307,6 +307,28 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
 
 
+def humidity_weight_spread(text: str) -> dict:
+    """{col: max a_k - min a_k} where a_k = 1/(1+qv(t0)) -- the physical weight.
+
+    The two bases give the same RELATIVE difference only when this weight is
+    vertically uniform, because `a_k` sits INSIDE the column sum:
+
+        r_d = |sum_k a_k w_k dq_k| / |sum_k a_k w_k q_k|
+
+    A common factor cancels; a level-dependent one does not. The finding claimed
+    the equality followed necessarily from both runs sharing `qv(t0)`, which is
+    false in general (owner §9.2). On `boundary_mapping_v1` the spread is
+    EXACTLY zero -- qv is vertically constant per column -- so the agreement is
+    a property of this fixture, measured here rather than assumed.
+    """
+    run = ra.read_text(text, nsplit=1)
+    out = {}
+    for key in run:
+        if len(key) == 4 and key[0] == "initial" and key[1] == "qv":
+            out.setdefault(key[2], []).append(1.0 / (1.0 + run[key]))
+    return {c: max(v) - min(v) for c, v in out.items()}
+
+
 def column_integrated(base_text: str, got_text: str, basis: str = "operator") -> dict:
     """{(col, field): (baseline, partition, abs, rel)} under the rho*dz measure.
 
@@ -339,8 +361,14 @@ def column_integrated(base_text: str, got_text: str, basis: str = "operator") ->
                              + [("total_condensate", CONDENSATE)]):
             x, y = col_mass(a, fields), col_mass(b, fields)
             if x != y:
+                # SIGNED as well as absolute (owner §9.4). The finding says the
+                # single-tile run has "+20.72% more" rain than the oracle, but a
+                # test on |rel| passes just as well if a future change makes it
+                # 20.72% LESS. Direction has to be in the artifact to be
+                # protected by one.
                 out[(col, name)] = (x, y, abs(y - x),
-                                    abs(y - x) / max(abs(x), 1e-30))
+                                    abs(y - x) / max(abs(x), 1e-30),
+                                    y - x, (y - x) / x if x else None)
     return out
 
 
@@ -421,8 +449,8 @@ def analysis(driver: str, fixture: str) -> dict:
             # statement rather than a per-component ratio (owner §11.3).
             "column_integrated": {
                 b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
-                                 "rel": rd}
-                    for (c, f), (x, y, ad, rd)
+                                 "rel": rd, "signed_abs": sa, "signed_rel": sr}
+                    for (c, f), (x, y, ad, rd, sa, sr)
                     in column_integrated(base_text, got_text, b).items()}
                 for b in ("operator", "physical")},
             # The measurement stands on its own; the CAUSAL attribution is a
@@ -480,8 +508,8 @@ def local_oracle(driver: str, fixture: str) -> dict:
             "columns": sorted({k[1] for k in diff}),
             "column_integrated": {
                 b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
-                                 "rel": rd}
-                    for (c, f), (x, y, ad, rd)
+                                 "rel": rd, "signed_abs": sa, "signed_rel": sr}
+                    for (c, f), (x, y, ad, rd, sa, sr)
                     in column_integrated(ref_text, text, b).items()}
                 for b in ("operator", "physical")},
         }

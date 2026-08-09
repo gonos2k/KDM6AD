@@ -303,24 +303,41 @@ decomposition, not a variant — no freeze-lift, no diagnostic overlay.
 
 That reframes what the earlier tables measured. Comparing partitions with each
 other says only that they disagree. Comparing them with the local answer says
-how far each is from column-locality — and the **whole-domain run is what
-production does**:
+how far each is from column-locality. The whole-domain run is the closest thing
+here to an operational configuration — **but it is a three-column synthetic
+fixture called as one tile by a sequential driver, not a production run**
+(owner §9.3). Real MPI adds rank-local `its/ite`, haloes, physics-tile sizing,
+the actual coastal layout and multi-step feedback, none of which are here:
 
 | decomposition | components differing | column | worst column-integrated |
 |---|---|---|---|
 | `1,1,1` | 0 / 144 | — | the oracle |
-| **`3` (production)** | **16 / 144** | **2 (sea)** | **rain +20.72%** |
-| `1,2` | 16 / 144 | 2 (sea) | rain +20.72% |
-| `2,1` | 15 / 144 | 1 (land) | rain +20.67% |
+| **`3` (whole domain, one tile)** | **16 / 144** | **2 (sea)** | **rain −20.72%** |
+| `1,2` | 16 / 144 | 2 (sea) | rain −20.72% |
+| `2,1` | 15 / 144 | 1 (land) | rain **+**20.67% |
 
-So the shipped configuration is not merely *decomposition-sensitive*: on this
-fixture it carries **~21% too much column rain in the coastal sea column**
-against the per-column-correct answer. Which column is wrong depends on where
-the tile ends — `(2,1)` ends its first tile on sea, so it is column 1 that takes
-the wrong threshold.
+**Sign corrected (owner §9.4).** This table previously read `+20.72%` and the
+sentence below it said the run "carries ~21% too much column rain". **The sign
+was backwards.** The whole-domain run gates the sea column on `ncmin_land`
+(1.0e+08) instead of its own `ncmin_sea` (2.5e+07); a *higher* droplet-number
+floor suppresses autoconversion, so it produces **~21% LESS** rain than the
+per-column answer, not more. `(2,1)` goes the other way for column 1, which ends
+up on the *lower* sea threshold and rains more. The direction is now in the
+artifact as `signed_rel` and asserted, rather than being an `abs()` that reads
+the same either way.
 
-Identical under both bases, for the reason above: the `1+qv` weight cancels in a
-ratio between two runs that share the window-initial humidity.
+**Both bases agree here — but not by an identity (owner §9.2).** The finding
+said the `1+qv` weight "cancels in a ratio between two runs that share the
+window-initial humidity". That is false in general: `a_k = 1/(1+q_{v,k}(t₀))`
+sits *inside* the column sum,
+
+    r_d = |Σₖ aₖ wₖ Δqₖ| / |Σₖ aₖ wₖ qₖ|
+
+so a *common* factor cancels and a *level-dependent* one does not. On
+`boundary_mapping_v1` the vertical spread of `aₖ` is **exactly zero** in every
+column — `qv(t₀)` is vertically constant there — which is why the two bases
+agree to the last digit. `humidity_weight_spread()` measures it, so the
+agreement is a fixture property rather than an assumed law.
 
 **What licenses attributing this to `ncmin` alone** is the `(1,2)` row of the
 earlier table: it differs from the whole domain in **zero** components although

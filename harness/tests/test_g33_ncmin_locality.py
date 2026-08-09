@@ -492,8 +492,34 @@ def test_the_WHOLE_DOMAIN_run_departs_from_the_local_answer(drivers):
     assert whole["components_differing"] == 16
     assert whole["columns"] == [2], "the sea column is the one gated wrongly"
     for basis in ("operator", "physical"):
-        rain = whole["column_integrated"][basis]["2/qr"]["rel"]
-        assert 0.20 < rain < 0.22, f"{basis}: {rain}"
+        d = whole["column_integrated"][basis]["2/qr"]
+        assert 0.20 < d["rel"] < 0.22, f"{basis}: {d['rel']}"
+        # DIRECTION, not just size (owner §9.4). A test on |rel| passes just as
+        # well if a future change flips the sign, and the published sentence WAS
+        # backwards: gating the sea column on ncmin_land raises the droplet
+        # floor, suppresses autoconversion, and rains LESS.
+        assert d["signed_rel"] < 0, (
+            f"{basis}: the whole-domain run must rain LESS than the per-column "
+            f"answer, not more")
+
+
+def test_the_two_directions_are_OPPOSITE_and_both_asserted(drivers):
+    """`(3,)` puts the sea column on the land threshold and rains less; `(2,1)`
+    puts the land column on the sea threshold and rains more. A single |rel|
+    assertion cannot tell those apart."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    assert p["3"]["column_integrated"]["operator"]["2/qr"]["signed_rel"] < 0
+    assert p["2,1"]["column_integrated"]["operator"]["1/qr"]["signed_rel"] > 0
+
+
+def test_the_bases_agree_because_the_humidity_weight_is_UNIFORM(drivers):
+    """Not by an identity: `a_k = 1/(1+qv(t0))` sits INSIDE the column sum, so a
+    common factor cancels and a level-dependent one does not (owner §9.2). On
+    this fixture the vertical spread is exactly zero, which is why the two bases
+    agree -- a property of the fixture, measured."""
+    spread = nl.humidity_weight_spread(nl.run(drivers["legacy"], (3,)))
+    assert set(spread) == {1, 2, 3}
+    assert all(v == 0.0 for v in spread.values()), spread
 
 
 def test_WHICH_column_is_wrong_depends_on_the_decomposition(drivers):
