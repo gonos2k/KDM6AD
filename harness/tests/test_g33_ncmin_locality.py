@@ -613,17 +613,50 @@ def test_the_operator_basis_still_works_without_INITIAL_qv(drivers):
     assert nl.column_integrated(text, text, "operator") == {}
 
 
-def test_basis_AGREEMENT_is_MEASURED_not_asserted(drivers):
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_basis_AGREEMENT_is_MEASURED_not_asserted(drivers, arm):
     """The report printed the operator basis and then claimed the physical basis
     gives the same relative figures -- an unverified claim standing next to the
     numbers that would settle it (Codex). `local_oracle` computes BOTH, so the
     comparison costs nothing. Measuring it immediately showed the claim was true
-    for a subtler reason than stated: the gap floors at f64 roundoff, not zero,
-    because a_k cancels algebraically while the two sums reorder."""
-    gap = nl.basis_gap(nl.local_oracle(drivers["legacy"], FIXTURE))
-    assert 0.0 < gap <= nl.F64_EPS, (
+    for a subtler reason than stated: the gap floors at summation roundoff, not
+    zero, because a_k cancels algebraically while the two sums reorder.
+
+    BOTH ARMS. The first version tested only legacy, so a tolerance fitted to
+    legacy's 0.89 eps shipped while conservative sat at 1.03 eps and was
+    misclassified (Codex)."""
+    gap = nl.basis_gap(nl.local_oracle(drivers[arm], FIXTURE))
+    assert 0.0 < gap <= nl.basis_tolerance(FIXTURE), (
         "expected agreement AT the roundoff floor -- exactly 0.0 would mean the "
         "two bases are not really being computed differently")
+
+
+def test_the_TOLERANCE_is_DERIVED_from_the_summation_not_fitted(monkeypatch):
+    """A bare f64 eps was fitted to one arm's one measurement. The bound has to
+    come from the arithmetic: a k-term sum carries ~k*eps of relative error, so
+    it scales with the levels being summed."""
+    monkeypatch.setattr(nl, "fixture_dims", lambda f: (3, 40))
+    assert nl.basis_tolerance(FIXTURE) == 40 * nl.F64_EPS
+    monkeypatch.setattr(nl, "fixture_dims", lambda f: (3, 4))
+    assert nl.basis_tolerance(FIXTURE) == 4 * nl.F64_EPS
+
+
+def test_the_LOOSER_bound_still_CATCHES_a_real_disagreement():
+    """Widening eps -> k*eps must not blunt the check. A genuine divergence --
+    what a vertically NON-uniform a_k produces -- is orders above k*eps, so the
+    verdict still separates the two cases."""
+    diverged = {"partitions": {"3": {"column_integrated": {
+        "operator": {"2/qr": {"rel": 0.2072}},
+        "physical": {"2/qr": {"rel": 0.2085}}}}}}
+    assert nl.basis_gap(diverged) > nl.basis_tolerance(FIXTURE) * 1e9
+
+
+def test_a_departure_present_in_ONE_basis_only_counts_as_DISAGREEMENT():
+    """It was recorded on one measure and not the other, which is precisely a
+    disagreement -- skipping the unmatched key would hide it."""
+    lopsided = {"partitions": {"3": {"column_integrated": {
+        "operator": {"2/qr": {"rel": 0.2072}}, "physical": {}}}}}
+    assert nl.basis_gap(lopsided) == 0.2072
 
 
 def test_a_ZERO_TEST_on_the_basis_gap_would_MISFIRE(drivers, capsys):
@@ -632,7 +665,10 @@ def test_a_ZERO_TEST_on_the_basis_gap_would_MISFIRE(drivers, capsys):
     precision of the arithmetic, not in hope."""
     nl.report(drivers["legacy"], FIXTURE)
     out = capsys.readouterr().out
-    assert "at or under one f64 eps" in out
+    assert "at or under the summation-roundoff" in out
+    assert "levels x f64 eps" in out, (
+        "the bound must show HOW it was derived, or the next reader\n"
+        "cannot tell a principled tolerance from a fitted one")
     assert "the bases DISAGREE" not in out
 
 

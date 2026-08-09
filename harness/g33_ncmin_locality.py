@@ -577,13 +577,28 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
             f"{'LESS' if higher else 'MORE'} rain")
 
 
-# The resolution floor of the basis comparison. Where a_k is vertically
-# constant it cancels from a RELATIVE figure mathematically, but the two bases
-# still sum different products, so the difference bottoms out at double-
-# precision roundoff rather than at exactly zero. Measured 1.977e-16 on the
-# boundary-mapping fixture -- under eps, hence agreement, and a `== 0.0` test
-# would have called that a disagreement.
 F64_EPS = sys.float_info.epsilon
+
+
+def basis_tolerance(fixture: str) -> float:
+    """How far apart the two bases can land while still agreeing.
+
+    Where a_k is vertically constant it cancels from a RELATIVE figure
+    mathematically, but the bases sum DIFFERENT PRODUCTS over the column, so the
+    difference bottoms out at summation roundoff rather than at exactly zero.
+    The scale of that is set by how many terms are summed: a k-term sum carries
+    a relative error bounded by ~k*eps.
+
+    The first version used a bare `F64_EPS`, fitted to the one number the legacy
+    arm happened to produce (1.977e-16, 0.89 eps). The conservative arm -- a
+    supported configuration, same fixture, same uniform weight -- lands at
+    2.290e-16, 1.03 eps, and was branded DISAGREE by a threshold calibrated on
+    its sibling (Codex). A tolerance derived from one sample is not a tolerance.
+
+    This stays sharp: when a_k is NOT vertically uniform the bases part company
+    at the scale of the weight's spread, orders above k*eps.
+    """
+    return fixture_dims(fixture)[1] * F64_EPS
 
 
 def basis_gap(oracle: dict) -> float:
@@ -659,17 +674,17 @@ def report(driver: str, fixture: str) -> None:
     # table above prints the operator basis; claiming the physical basis gives
     # the same relative figures while never comparing the two is an unverified
     # claim standing next to the numbers that would settle it (Codex).
-    gap = basis_gap(o)
+    gap, tol = basis_gap(o), basis_tolerance(fixture)
     spread = humidity_weight_spread(base_text)
     print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
           f"column: max {max(spread.values()):.3e}.")
     print(f"  Operator vs physical basis, max difference in the RELATIVE "
-          f"departures\n  actually computed: {gap:.3e}, at or under one f64 eps "
-          f"({F64_EPS:.3e}).\n  The two agree here "
+          f"departures\n  actually computed: {gap:.3e}, at or under the summation-roundoff\n  bound "
+          f"({tol:.3e} = {fixture_dims(fixture)[1]} levels x f64 eps).\n  The two agree here "
           f"because a_k is uniform --\n  it sits INSIDE the column sum, so a "
           f"constant cancels and a level-dependent\n  weight does not. It is a "
           f"property of the fixture, not a law."
-          if gap <= F64_EPS else
+          if gap <= tol else
           f"  Operator vs physical basis, max difference in the RELATIVE "
           f"departures\n  actually computed: {gap:.3e} -- the bases DISAGREE, "
           f"so the table above is\n  basis-specific and the figures must not "
