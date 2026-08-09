@@ -20,6 +20,7 @@ only tried even splits would pass while the operator was arbitrarily non-local.
 """
 from __future__ import annotations
 
+import math
 import re
 import struct
 import subprocess
@@ -580,25 +581,30 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
 F64_EPS = sys.float_info.epsilon
 
 
-def basis_tolerance(fixture: str) -> float:
-    """How far apart the two bases can land while still agreeing.
+def weight_is_uniform(base_text: str) -> bool:
+    """Is a_k = 1/(1+qv(t0)) vertically CONSTANT in every column? Exactly.
 
-    Where a_k is vertically constant it cancels from a RELATIVE figure
-    mathematically, but the bases sum DIFFERENT PRODUCTS over the column, so the
-    difference bottoms out at summation roundoff rather than at exactly zero.
-    The scale of that is set by how many terms are summed: a k-term sum carries
-    a relative error bounded by ~k*eps.
-
-    The first version used a bare `F64_EPS`, fitted to the one number the legacy
-    arm happened to produce (1.977e-16, 0.89 eps). The conservative arm -- a
-    supported configuration, same fixture, same uniform weight -- lands at
-    2.290e-16, 1.03 eps, and was branded DISAGREE by a threshold calibrated on
-    its sibling (Codex). A tolerance derived from one sample is not a tolerance.
-
-    This stays sharp: when a_k is NOT vertically uniform the bases part company
-    at the scale of the weight's spread, orders above k*eps.
+    This is the whole question, and it is exact -- no tolerance enters. a_k sits
+    INSIDE the column sum, so a per-column constant cancels from a per-column
+    RELATIVE figure algebraically, and a level-dependent one does not.
     """
-    return fixture_dims(fixture)[1] * F64_EPS
+    return all(v == 0.0 for v in humidity_weight_spread(base_text).values())
+
+
+#: Agreement demanded of two figures that are algebraically EQUAL, in
+#: significant digits. Deliberately far below what f64 delivers (~16) and far
+#: above any real divergence: a level-dependent a_k parts the bases at the scale
+#: of its own spread, which is O(1e-3) or larger here.
+#:
+#: This is a HEURISTIC SANITY BOUND, not an error bound, and it decides nothing
+#: -- the verdict comes from `weight_is_uniform`, which is exact. Two previous
+#: versions of this check did claim a bound: first a bare f64 eps fitted to one
+#: arm's one measurement, then `levels * eps`, which sounds derived but is not
+#: valid for this quantity -- `rel = |y-x|/|x|` contains a SUBTRACTION, and
+#: k*eps bounds a summation's error against sum|x_i|, saying nothing about the
+#: cancellation in y-x (Codex). The honest structure is an exact precondition
+#: plus an observed residual, not a fabricated tolerance.
+SANITY_DIGITS = 8
 
 
 def basis_gap(oracle: dict) -> float:
@@ -674,21 +680,41 @@ def report(driver: str, fixture: str) -> None:
     # table above prints the operator basis; claiming the physical basis gives
     # the same relative figures while never comparing the two is an unverified
     # claim standing next to the numbers that would settle it (Codex).
-    gap, tol = basis_gap(o), basis_tolerance(fixture)
+    gap = basis_gap(o)
     spread = humidity_weight_spread(base_text)
+    uniform = weight_is_uniform(base_text)
+    scale = max((v["rel"] for r in o["partitions"].values()
+                 for v in r["column_integrated"]["operator"].values()),
+                default=0.0)
+    digits = -math.log10(gap / scale) if gap and scale else float("inf")
+
+    # Checked BEFORE the text below, which tells the reader the bases agree
+    # by construction: printing that and then raising leaves the reassuring
+    # paragraph in the log above the failure.
+    if uniform and digits < SANITY_DIGITS:
+        raise ra.RefineError(
+            f"a_k is exactly uniform, so the two bases are algebraically equal, "
+            f"yet they agree to only {digits:.1f} significant digits "
+            f"(residual {gap:.3e} against figures of size {scale:.3e}). That is "
+            f"far beyond floating-point summation -- something in the two "
+            f"column integrals is not computing the same quantity")
+
     print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
           f"column: max {max(spread.values()):.3e}.")
-    print(f"  Operator vs physical basis, max difference in the RELATIVE "
-          f"departures\n  actually computed: {gap:.3e}, at or under the summation-roundoff\n  bound "
-          f"({tol:.3e} = {fixture_dims(fixture)[1]} levels x f64 eps).\n  The two agree here "
-          f"because a_k is uniform --\n  it sits INSIDE the column sum, so a "
-          f"constant cancels and a level-dependent\n  weight does not. It is a "
-          f"property of the fixture, not a law."
-          if gap <= tol else
-          f"  Operator vs physical basis, max difference in the RELATIVE "
-          f"departures\n  actually computed: {gap:.3e} -- the bases DISAGREE, "
-          f"so the table above is\n  basis-specific and the figures must not "
-          f"be quoted without naming it.")
+    if uniform:
+        print(f"  It is EXACTLY uniform in every column, so it cancels from a "
+              f"per-column\n  RELATIVE figure algebraically and the two bases "
+              f"agree by construction. That\n  is a property of the fixture, "
+              f"not a law: a_k sits INSIDE the column sum.")
+        print(f"  Observed residual between the bases: {gap:.3e} "
+              f"({digits:.1f} significant digits\n  of agreement) -- floating-"
+              f"point summation, reported as an OBSERVATION. No\n  error bound "
+              f"is claimed: `rel` contains a subtraction, and the usual k*eps\n"
+              f"  summation bound says nothing about cancellation in it.")
+    else:
+        print(f"  It is NOT uniform, so it does not cancel: the bases differ by "
+              f"{gap:.3e}\n  and every figure above is basis-specific and must "
+              f"not be quoted without\n  naming its basis.")
 
 
 def main(argv) -> int:

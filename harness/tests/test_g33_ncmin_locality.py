@@ -2,6 +2,8 @@
 
 LOCAL ONLY (needs gfortran + the gitignored host reference tree).
 """
+import contextlib
+import io
 import shutil
 import subprocess
 import sys
@@ -625,30 +627,46 @@ def test_basis_AGREEMENT_is_MEASURED_not_asserted(drivers, arm):
     BOTH ARMS. The first version tested only legacy, so a tolerance fitted to
     legacy's 0.89 eps shipped while conservative sat at 1.03 eps and was
     misclassified (Codex)."""
-    gap = nl.basis_gap(nl.local_oracle(drivers[arm], FIXTURE))
-    assert 0.0 < gap <= nl.basis_tolerance(FIXTURE), (
-        "expected agreement AT the roundoff floor -- exactly 0.0 would mean the "
-        "two bases are not really being computed differently")
+    o = nl.local_oracle(drivers[arm], FIXTURE)
+    gap = nl.basis_gap(o)
+    scale = max(v["rel"] for r in o["partitions"].values()
+                for v in r["column_integrated"]["operator"].values())
+    assert gap > 0.0, ("exactly 0.0 would mean the two bases are not really "
+                       "being computed differently")
+    assert -__import__("math").log10(gap / scale) >= nl.SANITY_DIGITS
 
 
-def test_the_TOLERANCE_is_DERIVED_from_the_summation_not_fitted(monkeypatch):
-    """A bare f64 eps was fitted to one arm's one measurement. The bound has to
-    come from the arithmetic: a k-term sum carries ~k*eps of relative error, so
-    it scales with the levels being summed."""
-    monkeypatch.setattr(nl, "fixture_dims", lambda f: (3, 40))
-    assert nl.basis_tolerance(FIXTURE) == 40 * nl.F64_EPS
-    monkeypatch.setattr(nl, "fixture_dims", lambda f: (3, 4))
-    assert nl.basis_tolerance(FIXTURE) == 4 * nl.F64_EPS
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_VERDICT_rests_on_an_EXACT_property_not_a_TOLERANCE(drivers, arm):
+    """Three versions of this check tried to CLASSIFY with a threshold. First a
+    bare f64 eps, fitted to legacy's one measurement, which then misclassified
+    the conservative arm. Then `levels * eps`, which sounds derived but is not a
+    valid bound for this quantity: `rel = |y-x|/|x|` contains a SUBTRACTION, and
+    the k*eps summation bound is against sum|x_i| -- it says nothing about
+    cancellation in y-x (Codex).
+
+    The question has an EXACT answer, so no tolerance is needed at all: a_k is
+    vertically constant or it is not. Both arms give exactly 0.0, which is why
+    no threshold could sit safely between them."""
+    base = nl.run(drivers[arm], (nl.fixture_dims(FIXTURE)[0],))
+    assert nl.weight_is_uniform(base) is True
+    assert set(nl.humidity_weight_spread(base).values()) == {0.0}, \
+        "exactly zero, not merely small -- the verdict rests on this"
+    assert not hasattr(nl, "basis_tolerance"), \
+        "the invalid error bound must not come back"
 
 
-def test_the_LOOSER_bound_still_CATCHES_a_real_disagreement():
-    """Widening eps -> k*eps must not blunt the check. A genuine divergence --
-    what a vertically NON-uniform a_k produces -- is orders above k*eps, so the
-    verdict still separates the two cases."""
-    diverged = {"partitions": {"3": {"column_integrated": {
-        "operator": {"2/qr": {"rel": 0.2072}},
-        "physical": {"2/qr": {"rel": 0.2085}}}}}}
-    assert nl.basis_gap(diverged) > nl.basis_tolerance(FIXTURE) * 1e9
+def test_a_NON_UNIFORM_weight_is_reported_as_a_REAL_disagreement(drivers,
+                                                                 monkeypatch,
+                                                                 capsys):
+    """The branch that says the figures are basis-specific must be reachable,
+    and it must not be the roundoff residual that decides it."""
+    monkeypatch.setattr(nl, "humidity_weight_spread",
+                        lambda text: {1: 0.0, 2: 4.2e-3, 3: 0.0})
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "It is NOT uniform" in out
+    assert "must not be quoted without" in out
 
 
 def test_a_departure_present_in_ONE_basis_only_counts_as_DISAGREEMENT():
@@ -659,17 +677,23 @@ def test_a_departure_present_in_ONE_basis_only_counts_as_DISAGREEMENT():
     assert nl.basis_gap(lopsided) == 0.2072
 
 
-def test_a_ZERO_TEST_on_the_basis_gap_would_MISFIRE(drivers, capsys):
-    """The first version of the check asked `gap == 0.0` and duly reported that
-    the bases DISAGREE at 1.977e-16. A threshold has to be grounded in the
-    precision of the arithmetic, not in hope."""
-    nl.report(drivers["legacy"], FIXTURE)
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_RESIDUAL_is_labelled_an_OBSERVATION_not_a_BOUND(drivers, capsys,
+                                                             arm):
+    """Every earlier version of this section made a claim it could not support:
+    that the bases agree (never compared), then that a fitted eps bounded the
+    gap, then that `levels * eps` did. What the report may honestly say is the
+    exact precondition plus the observed residual.
+
+    Both arms, because testing only legacy is what shipped the fitted bound."""
+    nl.report(drivers[arm], FIXTURE)
     out = capsys.readouterr().out
-    assert "at or under the summation-roundoff" in out
-    assert "levels x f64 eps" in out, (
-        "the bound must show HOW it was derived, or the next reader\n"
-        "cannot tell a principled tolerance from a fitted one")
-    assert "the bases DISAGREE" not in out
+    assert "EXACTLY uniform in every column" in out
+    assert "significant digits" in out
+    assert "No\n  error bound is claimed" in out, (
+        "the residual must be labelled an OBSERVATION -- two earlier versions "
+        "presented a fabricated tolerance as a derived bound")
+    assert "It is NOT uniform" not in out
 
 
 def test_the_MECHANISM_REFUSES_to_contradict_the_measurement(monkeypatch):
@@ -687,3 +711,19 @@ def test_an_UNKNOWN_surface_type_has_no_known_threshold(monkeypatch):
     monkeypatch.setattr(nl, "fixture_xland", lambda f: {1: 1.0, 2: 3.0, 3: 1.0})
     with pytest.raises(ra.RefineError, match="only land=1.0 / sea=2.0"):
         nl.imposed_threshold((3,), FIXTURE, 2)
+
+
+def test_the_SANITY_GUARD_fires_and_before_the_reassurance(drivers,
+                                                            monkeypatch):
+    """The guard decides nothing about the verdict, but it must not be
+    decorative: a_k exactly uniform means the two bases are ALGEBRAICALLY EQUAL,
+    so a residual far above roundoff means the integrals are not computing the
+    same quantity. And it is checked BEFORE the paragraph telling the reader the
+    bases agree by construction -- printing that and then raising would leave
+    the reassurance in the log above the failure."""
+    monkeypatch.setattr(nl, "basis_gap", lambda o: 1.0e-3)
+    buf = io.StringIO()
+    with pytest.raises(ra.RefineError, match="not computing the same quantity"):
+        with contextlib.redirect_stdout(buf):
+            nl.report(drivers["legacy"], FIXTURE)
+    assert "agree by construction" not in buf.getvalue()
