@@ -172,33 +172,18 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
     return man
 
 
-def main(argv) -> int:
-    import argparse
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("outputs", type=Path)
-    ap.add_argument("--module", type=Path, required=True)
-    ap.add_argument("--fixture", type=Path, required=True)
-    ap.add_argument("--compiler", required=True)
-    ap.add_argument("--analyzer", type=Path, default=None)
-    ap.add_argument("--build-provenance", type=Path, default=None,
-                    help="build_provenance.json written by refine_build.sh")
-    ap.add_argument("--finding", type=Path, action="append", default=[],
-                    help="finding document drawing conclusions from these members")
-    ap.add_argument("--out", type=Path, default=None)
-    a = ap.parse_args(argv)
-    man = build(a.outputs, module=a.module, fixture=a.fixture,
-                compiler=a.compiler, analyzer=a.analyzer,
-                build_provenance=a.build_provenance, findings=a.finding)
-    text = json.dumps(man, indent=2, sort_keys=True) + "\n"
-    if a.out:
-        a.out.write_text(text)
-    else:
-        print(text, end="")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main(sys.argv[1:]))
+#: NO standalone CLI (owner P0-3). `build()` produces the CORE of a manifest;
+#: the v2-required blocks -- `instrumented`, `arm`, `precision`,
+#: `member_parsers`, `producer_modules`, `tracked_build_inputs`, `analyses` --
+#: are added by `g33_refine_experiment.produce()`, which then validates and
+#: publishes atomically.
+#:
+#: A CLI here emitted that core, stamped it `refinement_experiment_v2`, and
+#: exited. Worse, `validate()` was defined BELOW the `__main__` block, so the
+#: entry point could not have called it even if it wanted to: the one path that
+#: skipped validation was the one a person could run by hand.
+#:
+#: The producer is the only way to make a bundle. Anything else is a draft.
 
 
 #: What a v2 manifest must satisfy, in one place. The producer calls it before
@@ -260,6 +245,20 @@ def validate(man: dict) -> list:
                 bad.append(f"members[{i}] needs `file` and a 64-hex "
                            f"`output_sha256`")
 
+    arts = man.get("build_artifacts")
+    if not isinstance(arts, list) or not arts:
+        bad.append("build_artifacts must be a non-empty list: the driver binary "
+                   "and its provenance ARE published in the bundle")
+    else:
+        for i, a in enumerate(arts):
+            if not isinstance(a, dict) or not isinstance(a.get("file"), str) \
+                    or not _hexlen(a.get("sha256"), 64):
+                bad.append(f"build_artifacts[{i}] needs `file` and a 64-hex "
+                           f"`sha256`")
+        if not any(isinstance(a, dict) and a.get("file") == "g33_refine_driver"
+                   for a in arts):
+            bad.append("build_artifacts must include g33_refine_driver -- the "
+                       "binary that produced these numbers")
     for key in ("member_parsers", "producer_modules", "tracked_build_inputs"):
         block = man.get(key)
         if not isinstance(block, list) or not block:
@@ -276,11 +275,73 @@ def validate(man: dict) -> list:
                            f"a 64-hex `content_sha256`, and 40-hex `commit` and "
                            f"`blob_sha`")
 
+    # arm and precision are not independent: an f64 arm at f32 precision, or the
+    # reverse, describes a run that cannot exist.
+    if man.get("arm") == "f64" and man.get("precision") != "f64":
+        bad.append("arm=f64 requires precision=f64")
+    if man.get("arm") in ("reference", "probe") and man.get("precision") != "f32":
+        bad.append(f"arm={man.get('arm')} requires precision=f32")
+
     analyses = man.get("analyses")
     if man.get("instrumented") is True and not analyses:
         bad.append("instrumented=true requires a non-empty `analyses`")
-    for i, a in enumerate(analyses or []):
+    nsplits = {m.get("nsplit") for m in (members if isinstance(members, list) else [])
+               if isinstance(m, dict)}
+    bad += _analysis_violations(analyses or [], nsplits)
+
+    # Every published file must live INSIDE the bundle. The producer generates
+    # safe basenames, but this validator claims to judge an arbitrary v2
+    # manifest, so a `../outside.txt` must not be one it accepts.
+    seen = set()
+    for label, block in (("members", members), ("analyses", analyses),
+                        ("build_artifacts", arts)):
+        for i, e in enumerate(block if isinstance(block, list) else []):
+            f = e.get("file") if isinstance(e, dict) else None
+            if not isinstance(f, str):
+                continue
+            if f != Path(f).name or f in ("", ".", ".."):
+                bad.append(f"{label}[{i}].file {f!r} is not a plain basename")
+            elif f in seen:
+                bad.append(f"{label}[{i}].file {f!r} is declared twice")
+            else:
+                seen.add(f)
+    return bad
+
+
+#: `analyses[]` holds two different artifacts. A derived table is only as good
+#: as the analyzer that produced it; a raw arm stream is only as good as the
+#: command that produced it. Requiring `{file, sha256}` of both let a derived
+#: JSON ship with NO analyzer, which the checker then reported as
+#: `analyzer-unpinned` -- a passing state kept for legacy bundles (owner P0-4).
+_DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
+                   "analyzer_commit", "analyzer_blob_sha")
+_ARM_FIELDS = ("analysis", "nsplit", "arm", "runtime_argv")
+
+
+def _analysis_violations(analyses, member_nsplits) -> list:
+    bad = []
+    for i, a in enumerate(analyses):
         if not isinstance(a, dict) or not isinstance(a.get("file"), str) \
                 or not _hexlen(a.get("sha256"), 64):
             bad.append(f"analyses[{i}] needs `file` and a 64-hex `sha256`")
+            continue
+        kind = a.get("analysis")
+        if not isinstance(kind, str):
+            bad.append(f"analyses[{i}] declares no `analysis` kind")
+            continue
+        want = _ARM_FIELDS if kind == "arm_stream" else _DERIVED_FIELDS
+        missing = [k for k in want if not a.get(k)]
+        if missing:
+            bad.append(f"analyses[{i}] ({kind}) is missing {missing}")
+        if kind != "arm_stream":
+            if a.get("analyzer_commit") and not _hexlen(a["analyzer_commit"], 40):
+                bad.append(f"analyses[{i}] analyzer_commit is not a 40-hex sha")
+            if a.get("analyzer_blob_sha") and not _hexlen(a["analyzer_blob_sha"], 40):
+                bad.append(f"analyses[{i}] analyzer_blob_sha is not a 40-hex sha")
+            if a.get("analyzer_sha256") and not _hexlen(a["analyzer_sha256"], 64):
+                bad.append(f"analyses[{i}] analyzer_sha256 is not a 64-hex sha")
+        # An analysis of a member the bundle does not carry describes nothing.
+        if member_nsplits and a.get("nsplit") not in member_nsplits:
+            bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not among "
+                       f"the members {sorted(member_nsplits)}")
     return bad

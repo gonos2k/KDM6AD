@@ -24,6 +24,7 @@ artifact from a plain one even when the two agree bit for bit.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
 import shutil
@@ -300,11 +301,29 @@ TRACKED_BUILD_INPUTS = (
 
 
 def _pin_path(rel: Path) -> dict:
-    """Where a tracked file's bytes can be recovered from later."""
-    return {"path": str(rel),
-            "content_sha256": rm.sha256(HERE.parent / rel),
-            "commit": rm._git("rev-parse", "HEAD"),
-            "blob_sha": rm._git("rev-parse", f"HEAD:{rel}")}
+    """Where a tracked file's bytes can be recovered from later.
+
+    REFUSES an inconsistent triple. `content_sha256` records what RAN and
+    `blob_sha` names what is RECOVERABLE; when they disagree the pin describes
+    two different files, and the checker -- which only resolves the blob --
+    passes it (owner P0-1/P0-2). Verified here rather than in a list of paths
+    someone has to remember to extend: a pin that cannot be honest refuses to
+    exist.
+    """
+    commit = rm._git("rev-parse", "HEAD")
+    blob = rm._git("rev-parse", f"HEAD:{rel}")
+    content = rm.sha256(HERE.parent / rel)
+    if not blob:
+        raise SystemExit(f"REFUSED: {rel} is not in HEAD, so nothing can pin it")
+    recovered = hashlib.sha256(
+        subprocess.run(["git", "cat-file", "blob", blob], cwd=HERE.parent,
+                       capture_output=True).stdout).hexdigest()
+    if recovered != content:
+        raise SystemExit(
+            f"REFUSED: {rel} ran as {content[:12]} but HEAD holds {recovered[:12]}"
+            f" -- the pin would name a file that did not run. Commit the change.")
+    return {"path": str(rel), "content_sha256": content,
+            "commit": commit, "blob_sha": blob}
 
 
 def producer_modules() -> tuple:
@@ -343,7 +362,8 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
         raise SystemExit(
             f"REFUSED: {final} is addressed {identity[:16]} but its manifest "
             f"identifies as {rm.identity_digest(have)[:16]}")
-    for entry in (have.get("members") or []) + (have.get("analyses") or []):
+    for entry in ((have.get("members") or []) + (have.get("analyses") or [])
+                  + (have.get("build_artifacts") or [])):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
         if not f.is_file():
@@ -354,7 +374,7 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
                              f"the digest its manifest recorded")
 
 
-def require_pinned_producer() -> None:
+def require_pinned_producer(fixture: str | None = None) -> None:
     """Every module that will RUN must be byte-identical to its HEAD blob.
 
     The manifest pins `git rev-parse HEAD:path`, but the analysis executes the
@@ -369,6 +389,11 @@ def require_pinned_producer() -> None:
     bad = []
     paths = [f"harness/{m}.py" for m in producer_modules()]
     paths += [str(q) for q in TRACKED_BUILD_INPUTS]
+    # The SELECTED fixture is compiled from the working tree but was absent from
+    # the fixed tuple, so an uncommitted fixture published a bundle whose
+    # `content_sha256` and `blob_sha` named different files (owner P0-1).
+    if fixture:
+        paths.append(f"harness/g33_fortran/{fixture}.f90")
     for path in paths:
         head = rm._git("rev-parse", f"HEAD:{path}")
         work = rm._git("hash-object", str(HERE.parent / path))
@@ -438,7 +463,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                          "no members is not a refinement experiment")
     if any(n < 1 for n in nsplits):
         raise SystemExit(f"--nsplit must be positive, got {sorted(nsplits)}")
-    require_pinned_producer()
+    require_pinned_producer(fixture)
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
     # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
@@ -545,6 +570,16 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         man["tracked_build_inputs"] = [
             _pin_path(q) for q in TRACKED_BUILD_INPUTS
             + (Path("harness/g33_fortran") / f"{fixture}.f90",)]
+        # The BINARY and its provenance are in the bundle -- the finding said
+        # they were not, which was simply false: `os.rename(tmp, final)` moves
+        # the whole build directory. Nothing verified them, so deleting or
+        # editing the driver in an existing bundle left it reusable (owner §7).
+        man["build_artifacts"] = [
+            {"file": q.name, "sha256": rm.sha256(q)}
+            for q in (tmp / n for n in ("g33_refine_driver",
+                                        "build_provenance.json",
+                                        "commands.txt", "sources.txt"))
+            if q.is_file()]
         man["arm"] = arm
         man["precision"] = "f64" if arm == "f64" else "f32"
         # An instrument arm can never be decision evidence, and says so in the

@@ -216,13 +216,14 @@ def test_a_LEGACY_bundle_with_only_a_content_digest_is_REPORTED_not_failed(world
 
 # ---- owner §16-6: the analyzer is RECOVERED, not compared ---------------------
 
-def _pinned(bundle, write, commit, blob, path="harness/g33_matched_closure.py"):
+def _pinned(bundle, write, commit, blob, path="harness/g33_matched_closure.py",
+            content="0" * 64):
     body = b'{"x": 1}\n'
     (bundle / "a.json").write_bytes(body)
     write({"members": [], "findings": [],
            "analyses": [{"file": "a.json", "analysis": "matched_closure",
                          "sha256": _sha(body), "analyzer": path,
-                         "analyzer_sha256": "0" * 64,
+                         "analyzer_sha256": content,
                          "analyzer_commit": commit, "analyzer_blob_sha": blob}]})
 
 
@@ -235,17 +236,34 @@ def _head_blob(path):
 
 def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
         world):
-    """The point of the change. `analyzer_sha256` here is deliberately wrong --
-    it is `0`*64 -- and the check still passes, because the question is no longer
-    "does today's file match" but "can the bytes this bundle ran be recovered"
-    (owner §16-6)."""
+    """The point of the change: the question is no longer "does today's file
+    match" but "can the bytes this bundle ran be recovered" (owner §16-6). What
+    proves the working tree is irrelevant is that the check reads the BLOB and
+    never the file on disk.
+
+    The pin must still be CONSISTENT -- `content_sha256` is the digest of the
+    pinned blob (owner P0-2). An inconsistent one is the next test."""
     bundle, write = world
     path = "harness/g33_matched_closure.py"
-    _pinned(bundle, write, "HEAD", _head_blob(path), path)
+    content = hashlib.sha256((ec.REPO / path).read_bytes()).hexdigest()
+    _pinned(bundle, write, _head(), _head_blob(path), path, content)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
     # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert "matches" in states and not (states - {"matches", "modules-unpinned"})
     assert ec.check() == 0
+
+
+def test_a_pin_whose_CONTENT_and_BLOB_disagree_FAILS(world):
+    """`content_sha256` records what RAN and `blob_sha` names what is
+    RECOVERABLE. Resolving the blob alone cannot tell them apart, so a bundle
+    built from an uncommitted file passed while its own manifest recorded the
+    disagreement (owner P0-2)."""
+    bundle, write = world
+    path = "harness/g33_matched_closure.py"
+    _pinned(bundle, write, _head(), _head_blob(path), path, "0" * 64)
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "PIN-INCONSISTENT" in states
+    assert ec.check() == 1
 
 
 def test_a_blob_that_does_not_match_the_pinned_commit_FAILS(world):
@@ -391,9 +409,13 @@ def test_EVERY_state_the_module_can_emit_is_classified():
 
 
 def _pin(mod):
+    """A CONSISTENT pin: content_sha256 must be the digest of the pinned blob.
+    `0`*64 was fine while the checker only resolved the blob; it is now the
+    inconsistency the checker exists to catch (owner P0-2)."""
     path = f"harness/{mod}.py"
-    return {"path": path, "content_sha256": "0" * 64, "commit": _head(),
-            "blob_sha": ec._blob_at("HEAD", path)}
+    return {"path": path, "content_sha256": hashlib.sha256(
+                (ec.REPO / path).read_bytes()).hexdigest(),
+            "commit": _head(), "blob_sha": ec._blob_at("HEAD", path)}
 
 
 def _module_rows(world_write, **blocks):
@@ -443,9 +465,7 @@ def _head() -> str:
 
 
 def _man(**kw):
-    pin = {"path": "harness/g33_matched_closure.py", "content_sha256": "0" * 64,
-           "commit": _head(),
-           "blob_sha": ec._blob_at("HEAD", "harness/g33_matched_closure.py")}
+    pin = _pin("g33_matched_closure")
     base = {"artifact_type": "refinement_experiment",
             "schema": "refinement_experiment_v2",
             "members": [{"file": "n3.rezero.txt", "output_sha256": "0" * 64}],
@@ -453,7 +473,9 @@ def _man(**kw):
             "tracked_build_inputs": [pin],
             "build_provenance": {"repo_commit": "x"}, "arm": "reference",
             "precision": "f32", "analyses": [], "instrumented": False,
-            "decision_eligible": False}
+            "decision_eligible": False,
+            "build_artifacts": [{"file": "g33_refine_driver",
+                                 "sha256": "0" * 64}]}
     return {**base, **kw}
 
 

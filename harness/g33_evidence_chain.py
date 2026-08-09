@@ -175,6 +175,14 @@ def members_of(manifest: Path) -> list[dict]:
     # the manifest records with analysis == "arm_stream": those are the raw runs
     # the multi-arm decomposition was computed from, and without them the chain
     # stopped at a derived JSON (owner §4).
+    # The BINARY that produced the numbers, and its provenance. Both are in the
+    # bundle; nothing followed them (owner §7).
+    for a in man.get("build_artifacts", []):
+        p = manifest.parent / a["file"]
+        out.append({"file": a["file"],
+                    "state": ("absent" if not p.is_file() else
+                              "matches" if sha256(p) == a.get("sha256")
+                              else "MISMATCH")})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
@@ -227,6 +235,23 @@ def _analyzer_state(an: dict) -> dict:
     if got != blob:
         return {"file": path, "state": "ANALYZER-BLOB-MISMATCH",
                 "detail": f"pinned {blob[:12]}, {commit[:12]} holds {got[:12]}"}
+    # The TRIPLE must agree. `content_sha256` records what RAN and `blob_sha`
+    # names what is RECOVERABLE; resolving the blob alone cannot tell the two
+    # apart, so a bundle built from an uncommitted file passed while its own
+    # manifest recorded the disagreement (owner P0-2).
+    content = an.get("analyzer_sha256")
+    if content:
+        raw = subprocess.run(["git", "cat-file", "blob", blob], cwd=REPO,
+                             capture_output=True)
+        if raw.returncode != 0:
+            return {"file": path, "state": "ANALYZER-UNRESOLVABLE",
+                    "detail": f"blob {blob[:12]} is not readable in this clone"}
+        recovered = hashlib.sha256(raw.stdout).hexdigest()
+        if recovered != content:
+            return {"file": path, "state": "PIN-INCONSISTENT",
+                    "detail": f"ran {content[:12]}, the pinned blob is "
+                              f"{recovered[:12]} -- the pin names a file that "
+                              f"did not run"}
     return {"file": path, "state": "matches"}
 
 
@@ -347,7 +372,7 @@ PASSING_STATES = frozenset({
     "legacy-analyzer-absent",
 })
 FAILING_STATES = frozenset({
-    "MISMATCH", "absent",
+    "MISMATCH", "absent", "PIN-INCONSISTENT",
     "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
 })
