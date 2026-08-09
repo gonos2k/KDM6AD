@@ -540,3 +540,19 @@ def test_the_operator_is_otherwise_COLUMN_LOCAL(drivers):
     changed, so nothing but the `ncmin` gate responds to tiling here."""
     a = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert a["1,2"]["components_differing"] == 0
+
+
+def test_the_REPORT_carries_the_direction_and_the_caveats(drivers, capsys):
+    """A correction that lives only in a finding is not in the artifact. The
+    report printed an unsigned `20.72%`, so anyone running the tool saw a
+    magnitude with no direction -- which is how the published sentence came to
+    say "too much" when the run makes LESS (owner §9.4). The two withdrawn
+    framings must appear where the numbers do."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "-20.72%" in out, "the whole-domain departure must print its SIGN"
+    assert "+20.67%" in out, "and the opposite-signed one must too"
+    assert "LESS than the per-column answer" in out
+    assert "does NOT stand for a production run" in out
+    assert "property of the fixture, not a law" in out
+    assert "0.000e+00" in out, "the humidity-weight spread that explains it"

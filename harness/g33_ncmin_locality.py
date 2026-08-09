@@ -535,24 +535,39 @@ def report(driver: str, fixture: str) -> None:
                   f"{d['max_abs']:12.4e} {d['max_abs_baseline']:12.4e}")
             first = ""
     print(f"\n  f32 eps = {a['f32_eps']:.3e}. A rounding difference lives there.")
-    o = local_oracle(driver, fixture)
-    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
-          f"corrected\n  operator must reproduce. The whole domain is what "
-          f"production runs.\n")
-    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
-          f"{'worst column-integrated departure':>36}")
-    for tiles, r in o["partitions"].items():
-        ci = r["column_integrated"]["operator"]
-        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
-        w = f"{worst[0]} {100*worst[1]['rel']:.2f}%" if worst[0] else "-"
-        print(f"  {tiles:>10} {r['components_differing']:>5}/"
-              f"{r['components_total']:<6} "
-              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>36}"
-              + ("   <- the oracle" if r["is_the_oracle"] else ""))
     for tiles, r in a["partitions"].items():
         if r["components_differing"] and not r["is_roundoff_scale"]:
             print(f"  {tiles}: max relative difference {r['max_rel']:.4e} is "
                   f"{r['max_rel'] / a['f32_eps']:.3g}x f32 eps.")
+    o = local_oracle(driver, fixture)
+    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
+          f"corrected operator\n  must reproduce. This is a synthetic fixture "
+          f"driven sequentially: no MPI ranks,\n  no haloes, no real coastal "
+          f"layout. It does NOT stand for a production run.\n")
+    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
+          f"{'worst column-integrated departure':>38}")
+    for tiles, r in o["partitions"].items():
+        ci = r["column_integrated"]["operator"]
+        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
+        # SIGNED. An unsigned figure reads the same whether the run makes more
+        # or less of the quantity, and the published sentence was backwards
+        # because of exactly that (owner §9.4).
+        w = (f"{worst[0]} {100*worst[1]['signed_rel']:+.2f}%" if worst[0] else "-")
+        print(f"  {tiles:>10} {r['components_differing']:>5}/"
+              f"{r['components_total']:<6} "
+              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>38}"
+              + ("   <- the oracle" if r["is_the_oracle"] else ""))
+    print("\n  NEGATIVE means the decomposition produces LESS than the "
+          "per-column answer:\n  a tile ending on land gates a sea column at the "
+          "HIGHER droplet floor,\n  which suppresses autoconversion.")
+    spread = humidity_weight_spread(run(driver, (fixture_dims(fixture)[0],)))
+    worst_a = max(spread.values())
+    print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per column: "
+          f"max {worst_a:.3e}.")
+    print("  The operator and physical bases give the same RELATIVE figures only "
+          "where this\n  is uniform -- a_k sits INSIDE the column sum, so a "
+          "constant cancels and a\n  level-dependent weight does not. It is a "
+          "property of the fixture, not a law.")
 
 
 def main(argv) -> int:
