@@ -727,3 +727,41 @@ def test_the_SANITY_GUARD_fires_and_before_the_reassurance(drivers,
         with contextlib.redirect_stdout(buf):
             nl.report(drivers["legacy"], FIXTURE)
     assert "agree by construction" not in buf.getvalue()
+
+
+def _oracle(operator, physical):
+    return {"partitions": {"3": {"column_integrated": {
+        "operator": operator, "physical": physical}}}}
+
+
+@pytest.mark.parametrize("operator,physical", [
+    ({}, {"2/qr": {"rel": 0.2072}}),
+    ({"2/qr": {"rel": 0.2072}}, {}),
+])
+def test_a_ONE_SIDED_departure_cannot_certify_as_INFINITE_agreement(operator,
+                                                                     physical):
+    """The worst disagreement available -- one basis records a 20.7% departure
+    and the other records none -- certified as perfect agreement. `scale` was
+    taken from the OPERATOR basis alone, so it was 0.0 in exactly the case where
+    the operator saw nothing, and the division was then skipped for `inf`
+    (Codex). The guard has to fire hardest precisely here."""
+    o = _oracle(operator, physical)
+    gap = nl.basis_gap(o)
+    assert gap == 0.2072
+    assert nl.agreement_digits(o, gap) == 0.0 < nl.SANITY_DIGITS
+
+
+def test_INFINITY_means_EXACTLY_equal_and_nothing_else():
+    """`gap and scale` treated a zero SCALE the same as a zero GAP."""
+    agreed = _oracle({"2/qr": {"rel": 0.2072}}, {"2/qr": {"rel": 0.2072}})
+    assert nl.basis_gap(agreed) == 0.0
+    assert nl.agreement_digits(agreed, 0.0) == float("inf")
+    assert nl.agreement_digits(_oracle({}, {}), 0.0) == float("inf")
+
+
+def test_a_RESIDUAL_with_NO_departure_anywhere_is_a_CONTRADICTION():
+    """If the bases differ by something while neither recorded any departure,
+    the residual and the figures it is measured against disagree about whether
+    anything happened. Refuse rather than divide by zero or call it infinite."""
+    with pytest.raises(ra.RefineError, match="whether anything happened"):
+        nl.agreement_digits(_oracle({}, {}), 1.0e-3)

@@ -581,6 +581,27 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
 F64_EPS = sys.float_info.epsilon
 
 
+def agreement_digits(oracle: dict, gap: float) -> float:
+    """Significant digits to which the two bases agree.
+
+    `scale` is over BOTH bases. Taking it from the operator basis alone let the
+    worst disagreement available certify as perfect agreement: where the
+    operator recorded no departure and the physical basis recorded 20.7%, `gap`
+    was 0.2072, `scale` was 0.0, and the division was skipped for `inf` -- the
+    guard reporting INFINITE-digit agreement on a total mismatch (Codex).
+    """
+    scale = max((v["rel"] for r in oracle["partitions"].values()
+                 for b in r["column_integrated"].values() for v in b.values()),
+                default=0.0)
+    if gap and not scale:
+        raise ra.RefineError(
+            f"the bases differ by {gap:.3e} while no departure was recorded in "
+            f"either -- the residual and the figures it is measured against "
+            f"disagree about whether anything happened")
+    # `inf` means EXACTLY equal, and nothing else.
+    return float("inf") if gap == 0.0 else -math.log10(gap / scale)
+
+
 def weight_is_uniform(base_text: str) -> bool:
     """Is a_k = 1/(1+qv(t0)) vertically CONSTANT in every column? Exactly.
 
@@ -683,10 +704,7 @@ def report(driver: str, fixture: str) -> None:
     gap = basis_gap(o)
     spread = humidity_weight_spread(base_text)
     uniform = weight_is_uniform(base_text)
-    scale = max((v["rel"] for r in o["partitions"].values()
-                 for v in r["column_integrated"]["operator"].values()),
-                default=0.0)
-    digits = -math.log10(gap / scale) if gap and scale else float("inf")
+    digits = agreement_digits(o, gap)
 
     # Checked BEFORE the text below, which tells the reader the bases agree
     # by construction: printing that and then raising leaves the reassuring
@@ -695,7 +713,7 @@ def report(driver: str, fixture: str) -> None:
         raise ra.RefineError(
             f"a_k is exactly uniform, so the two bases are algebraically equal, "
             f"yet they agree to only {digits:.1f} significant digits "
-            f"(residual {gap:.3e} against figures of size {scale:.3e}). That is "
+            f"(residual {gap:.3e}). That is "
             f"far beyond floating-point summation -- something in the two "
             f"column integrals is not computing the same quantity")
 
