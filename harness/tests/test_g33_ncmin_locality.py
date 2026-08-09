@@ -553,6 +553,36 @@ def test_the_REPORT_carries_the_direction_and_the_caveats(drivers, capsys):
     assert "-20.72%" in out, "the whole-domain departure must print its SIGN"
     assert "+20.67%" in out, "and the opposite-signed one must too"
     assert "LESS than the per-column answer" in out
+    assert "HIGHER droplet-number floor" in out and "suppresses" in out
     assert "does NOT stand for a production run" in out
     assert "property of the fixture, not a law" in out
     assert "0.000e+00" in out, "the humidity-weight spread that explains it"
+
+
+def test_the_MECHANISM_sentence_is_derived_not_hardcoded(monkeypatch):
+    """It read "a tile ending on land gates a sea column at the HIGHER floor,
+    which suppresses autoconversion" -- true only while ncmin_land > ncmin_sea.
+    On a fixture with the reverse ordering the report printed the physics
+    backwards: the same class of error as the sign this session corrected, one
+    level up (Codex)."""
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (1.0e8, 2.5e7))
+    hi = nl.mechanism_sentence(FIXTURE)
+    assert "HIGHER" in hi and "suppresses" in hi and "less rain" in hi
+
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (2.5e7, 1.0e8))
+    lo = nl.mechanism_sentence(FIXTURE)
+    assert "LOWER" in lo and "permits" in lo and "more rain" in lo
+
+
+def test_an_UNMEASURABLE_humidity_weight_does_not_crash_the_report(drivers,
+                                                                   capsys):
+    """`max(spread.values())` raised ValueError on an empty mapping, so a stream
+    without INITIAL qv took the report down instead of saying what it could not
+    measure."""
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(nl, "humidity_weight_spread", lambda t: {})
+    try:
+        nl.report(drivers["legacy"], FIXTURE)
+    finally:
+        monkeypatch.undo()
+    assert "NOT MEASURABLE" in capsys.readouterr().out

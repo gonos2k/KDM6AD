@@ -516,6 +516,31 @@ def local_oracle(driver: str, fixture: str) -> dict:
     return {"oracle": ",".join(map(str, ones)), "partitions": rows}
 
 
+def mechanism_sentence(fixture: str) -> str:
+    """What a NEGATIVE departure means, DERIVED from this fixture's thresholds.
+
+    The first version hardcoded "a tile ending on land gates a sea column at the
+    HIGHER droplet floor, which suppresses autoconversion". That is true only
+    while `ncmin_land > ncmin_sea`; on a fixture with the reverse ordering the
+    report would print the physics backwards -- the same class of error as the
+    sign this session corrected, one level up (Codex).
+    """
+    land, sea = fixture_ncmin(fixture)
+    xland = fixture_xland(fixture)
+    width = fixture_dims(fixture)[0]
+    ends_on_land = xland[width] == 1.0
+    imposed, own = ((land, sea) if ends_on_land else (sea, land))
+    higher = imposed > own
+    return (
+        "NEGATIVE means the decomposition produces LESS than the per-column "
+        f"answer.\n  The whole domain ends on {'land' if ends_on_land else 'sea'}"
+        f", so a {'sea' if ends_on_land else 'land'} column is gated at "
+        f"{imposed:.3g} rather than its own\n  {own:.3g} -- a "
+        f"{'HIGHER' if higher else 'LOWER'} droplet-number floor, which "
+        f"{'suppresses' if higher else 'permits'} autoconversion\n  and so "
+        f"gives {'less' if higher else 'more'} rain.")
+
+
 def report(driver: str, fixture: str) -> None:
     a = analysis(driver, fixture)
     print("  Tile decomposition changes the answer. Size, not only count.\n")
@@ -540,6 +565,7 @@ def report(driver: str, fixture: str) -> None:
             print(f"  {tiles}: max relative difference {r['max_rel']:.4e} is "
                   f"{r['max_rel'] / a['f32_eps']:.3g}x f32 eps.")
     o = local_oracle(driver, fixture)
+    base_text = run(driver, (fixture_dims(fixture)[0],))
     print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
           f"corrected operator\n  must reproduce. This is a synthetic fixture "
           f"driven sequentially: no MPI ranks,\n  no haloes, no real coastal "
@@ -557,13 +583,14 @@ def report(driver: str, fixture: str) -> None:
               f"{r['components_total']:<6} "
               f"{str(r['columns']) if r['columns'] else '-':>9} {w:>38}"
               + ("   <- the oracle" if r["is_the_oracle"] else ""))
-    print("\n  NEGATIVE means the decomposition produces LESS than the "
-          "per-column answer:\n  a tile ending on land gates a sea column at the "
-          "HIGHER droplet floor,\n  which suppresses autoconversion.")
-    spread = humidity_weight_spread(run(driver, (fixture_dims(fixture)[0],)))
-    worst_a = max(spread.values())
-    print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per column: "
-          f"max {worst_a:.3e}.")
+    print("\n  " + mechanism_sentence(fixture))
+    spread = humidity_weight_spread(base_text)
+    if spread:
+        print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
+              f"column: max {max(spread.values()):.3e}.")
+    else:
+        print("\n  Humidity weight a_k: NOT MEASURABLE -- this stream carries no "
+              "INITIAL qv.")
     print("  The operator and physical bases give the same RELATIVE figures only "
           "where this\n  is uniform -- a_k sits INSIDE the column sum, so a "
           "constant cancels and a\n  level-dependent weight does not. It is a "
