@@ -703,24 +703,40 @@ def agreement_digits(oracle: dict, gap: float) -> float:
     return float("inf") if gap == 0.0 else -math.log10(gap / scale)
 
 
-def gate_activity(text: str, fixture: str) -> dict:
+def gate_activity(text: str, fixture: str, tiles=None) -> dict:
     """How often the `ncmin` gate can BIND, per column, on this atmosphere.
 
-    Without this a null result reads as evidence when it may only be evidence
-    of an inert gate. `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so
-    `nci .le. ncmin` binds in 0 of 12 cells: showing no tiling dependence there
-    says little about whether some OTHER mechanism would respond under the
-    boundary fixture's regime, where it binds 12 of 12 (Codex).
+    Without it a null result reads as evidence when it may only be evidence of
+    an inert gate: `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so the
+    gate binds in 0 of 12 cells, and showing no tiling dependence there says
+    little about the boundary fixture's regime (Codex).
+
+    TWO thresholds, because they are different questions and the first version
+    reported only one under a name that read as the other (owner §6):
+
+      local    each column's OWN threshold -- the per-column oracle's gate,
+               what a corrected operator would apply
+      imposed  the scalar the run ACTUALLY used, from its tile's last column
+
+    On the whole-domain run of `boundary_mapping_v1` these differ: local binds
+    8/12, imposed 12/12, because the sea column is gated at the land threshold.
+    Reporting 8/12 alone described the oracle, not the run.
     """
     rec = read_records(text, label="gate-activity")
+    land, sea = fixture_ncmin(fixture)
+    xland = fixture_xland(fixture)
+    width = fixture_dims(fixture)[0]
+    tiles = tiles or (width,)
     out = {}
-    for col in range(1, fixture_dims(fixture)[0] + 1):
-        thr = fixture_ncmin(fixture)[0 if fixture_xland(fixture)[col] == 1.0
-                                     else 1]
+    for col in range(1, width + 1):
+        local = land if xland[col] == 1.0 else sea
+        imposed = imposed_threshold(tiles, fixture, col)[0]
         vals = [_f32(v) for k, v in rec.items()
                 if k[0] == "initial" and k[1] == "nc" and k[2] == col]
-        out[col] = {"threshold": thr, "cells": len(vals),
-                    "binding": sum(1 for v in vals if v <= thr)}
+        out[col] = {"cells": len(vals),
+                    "local_threshold": local, "imposed_threshold": imposed,
+                    "local_binding": sum(1 for v in vals if v <= local),
+                    "imposed_binding": sum(1 for v in vals if v <= imposed)}
     return out
 
 
@@ -916,13 +932,17 @@ def report(driver: str, fixture: str) -> None:
             + " -- `ncmin` is not the only thing the decomposition changes here, "
               "so the synthetic result cannot be read as a statement about real "
               "decompositions")
-    act = gate_activity(base_text, fixture)
-    binding = sum(v["binding"] for v in act.values())
+    act = gate_activity(base_text, fixture, (fixture_dims(fixture)[0],))
     cells = sum(v["cells"] for v in act.values())
-    print(f"  The `nc <= ncmin` gate BINDS in {binding}/{cells} cells on this "
-          f"atmosphere. A null\n  result under an INERT gate is evidence of the "
-          f"gate being inert, not of the\n  operator being local, so this "
-          f"number has to sit beside the verdict (Codex).")
+    loc = sum(v["local_binding"] for v in act.values())
+    imp = sum(v["imposed_binding"] for v in act.values())
+    print(f"  The `nc <= ncmin` gate binds in {imp}/{cells} cells under the "
+          f"threshold this run\n  ACTUALLY imposed, and {loc}/{cells} under "
+          f"each column's own -- the per-column oracle's\n  gate. They differ "
+          f"because the sea column is gated at the land threshold, which is\n"
+          f"  the defect itself (owner §6). A null result under an INERT gate "
+          f"is evidence\n  of the gate being inert, not of the operator being "
+          f"local, so this sits beside\n  the verdict.")
     rep = control_replication(driver, fixture)
     if not rep["holds"]:
         raise ra.RefineError(

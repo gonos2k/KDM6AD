@@ -825,7 +825,9 @@ def test_a_driver_that_IGNORES_the_tile_spec_is_REFUSED(drivers, monkeypatch):
     completely broken run. `class_law` read the streams directly and applied
     none of the gates `local_oracle` does (Codex)."""
     whole = nl.run(drivers["legacy"], (3,))
-    monkeypatch.setattr(nl, "run", lambda driver, tiles: whole)
+    monkeypatch.setattr(nl, "run",
+                        lambda d, tiles, nsplit=1, carry="rezero", rho="as-is":
+                        whole)
     with pytest.raises(ra.RefineError, match="the kernel was called over"):
         nl.class_law(drivers["legacy"], FIXTURE)
 
@@ -835,9 +837,12 @@ def test_the_law_check_APPLIES_THE_SAME_GATES_as_the_oracle():
     this repo, and the reason the check above was possible."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
     body = src[src.index("def class_law("):src.index("def weight_is_uniform(")]
+    assert "gated_state(" in body, "class_law must use the shared runner"
+    runner = src[src.index("def gated_state("):
+                 src.index("def control_replication(")]
     for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
                  "_expect_universe"):
-        assert gate in body, f"class_law skips {gate}"
+        assert gate in runner, f"the shared runner skips {gate}"
 
 
 def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
@@ -905,18 +910,17 @@ def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
                                                               monkeypatch):
     """If the operator had another tiling-dependent path, the control fails --
     which is what makes it a control and not a formality."""
-    real = nl.read_records
-    seen = {"n": 0}
+    real, seen = nl.gated_state, {"n": 0}
 
-    def perturbed(text, *, label):
-        got = dict(real(text, label=label))
+    def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
+                  carry="rezero", rho="as-is"):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
         seen["n"] += 1
-        if seen["n"] == 3:                      # one partition answers differently
-            k = next(k for k in sorted(got) if k[0] == "state")
-            got[k] = "DEADBEEF"
-        return got
+        if seen["n"] == 3:               # one partition answers differently
+            state = {**state, sorted(state)[0]: "DEADBEEF"}
+        return state, rec
 
-    monkeypatch.setattr(nl, "read_records", perturbed)
+    monkeypatch.setattr(nl, "gated_state", perturbed)
     law = nl.class_law(uniform_driver, UNIFORM)
     assert not law["holds"]
 
@@ -926,12 +930,12 @@ def test_the_control_fixture_gate_is_INERT_so_it_cannot_carry_attribution(
     """Measured, because the previous commit asserted the opposite. `ncmin = 10`
     against nc ~ 1e8 means the gate never binds on the control fixture, so its
     null result cannot rule out a second tiling-dependent mechanism (Codex)."""
-    inert = nl.gate_activity(nl.run(uniform_driver, (3,)), UNIFORM)
-    assert sum(v["binding"] for v in inert.values()) == 0, \
+    inert = nl.gate_activity(nl.run(uniform_driver, (3,)), UNIFORM, (3,))
+    assert sum(v["imposed_binding"] for v in inert.values()) == 0, \
         "if this ever binds, the control gets stronger -- update the claim"
 
-    active = nl.gate_activity(nl.run(drivers["legacy"], (3,)), FIXTURE)
-    assert sum(v["binding"] for v in active.values()) > 0, \
+    active = nl.gate_activity(nl.run(drivers["legacy"], (3,)), FIXTURE, (3,))
+    assert sum(v["imposed_binding"] for v in active.values()) > 0, \
         "the boundary fixture must actually exercise the gate"
 
 
@@ -949,7 +953,8 @@ def test_the_ATTRIBUTION_rests_on_a_SAME_ATMOSPHERE_control(drivers):
     assert nl.tile_brackets(a_t) == [(1, 1), (2, 3)]
     assert nl.tile_brackets(b_t) == [(1, 3)]
     assert nl.threshold_vector((1, 2), FIXTURE) == nl.threshold_vector((3,), FIXTURE)
-    assert sum(v["binding"] for v in nl.gate_activity(b_t, FIXTURE).values()) > 0
+    assert sum(v["imposed_binding"]
+               for v in nl.gate_activity(b_t, FIXTURE, (3,)).values()) > 0
     assert nl.read_state(a_t, label="a") == nl.read_state(b_t, label="b")
 
 
@@ -958,8 +963,10 @@ def test_the_report_PRINTS_the_gate_activity(drivers, capsys):
     is inert."""
     nl.report(drivers["legacy"], FIXTURE)
     out = capsys.readouterr().out
-    assert "gate BINDS in 8/12 cells" in out
-    assert "under an INERT gate is evidence of the gate being inert" in out
+    assert "binds in 12/12 cells under the threshold this run" in out
+    assert "and 8/12 under each column's own" in out
+    assert "the sea column is gated at the land threshold" in out
+    assert "under an INERT gate is evidence" in out
 
 
 # ---- the attribution control, replicated across trajectories ---------------
@@ -988,16 +995,17 @@ def test_BOTH_directions_are_required(drivers):
 
 def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
     """Perturb one trajectory's state and the control must fail."""
-    real, seen = nl.read_state, {"n": 0}
+    real, seen = nl.gated_state, {"n": 0}
 
-    def perturbed(text, *, label, nsplit=1):
-        got = dict(real(text, label=label, nsplit=nsplit))
+    def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
+                  carry="rezero", rho="as-is"):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
         seen["n"] += 1
         if seen["n"] == 2:
-            got[sorted(got)[0]] = "DEADBEEF"
-        return got
+            state = {**state, sorted(state)[0]: "DEADBEEF"}
+        return state, rec
 
-    monkeypatch.setattr(nl, "read_state", perturbed)
+    monkeypatch.setattr(nl, "gated_state", perturbed)
     assert nl.control_replication(drivers["legacy"], FIXTURE)["holds"] is False
 
 
@@ -1109,3 +1117,31 @@ def test_the_SAME_ATMOSPHERE_contract_is_per_TRAJECTORY(drivers):
     with pytest.raises(ra.RefineError, match="did not receive the same"):
         nl.gated_state(drivers["legacy"], FIXTURE, (3,), rec_b, 1, "rezero",
                        "as-is")
+
+
+def test_LOCAL_and_IMPOSED_gate_activity_are_reported_SEPARATELY(drivers):
+    """`8/12` was the per-column ORACLE's gate activity reported under a name
+    that read as the run's. The whole-domain run actually imposes the land
+    threshold on the sea column, so ITS gate binds 12/12 (owner §6). The two
+    coincide only on the oracle decomposition, which is what makes the
+    difference the defect."""
+    F, D = FIXTURE, drivers["legacy"]
+
+    def act(tiles):
+        a = nl.gate_activity(nl.run(D, tiles), F, tiles)
+        return (sum(v["local_binding"] for v in a.values()),
+                sum(v["imposed_binding"] for v in a.values()))
+
+    assert act((3,)) == (8, 12), "the whole domain gates the sea column high"
+    assert act((1, 1, 1)) == (8, 8), "on the oracle the two must coincide"
+    assert act((2, 1)) == (8, 4), "here land columns are gated at the sea floor"
+
+
+def test_the_LOCAL_figure_is_decomposition_INVARIANT(drivers):
+    """It describes the fixture, not the run -- which is exactly why quoting it
+    as the run's activity was wrong."""
+    D = drivers["legacy"]
+    seen = {sum(v["local_binding"]
+                for v in nl.gate_activity(nl.run(D, t), FIXTURE, t).values())
+            for t in nl.compositions(3)}
+    assert seen == {8}
