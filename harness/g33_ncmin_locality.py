@@ -638,8 +638,29 @@ def class_law(driver: str, fixture: str) -> dict:
     question about the decomposition rather than a physics campaign.
     """
     cls = equivalence_classes(fixture)
-    state = {t: read_state(run(driver, t), label=str(t))
-             for t in compositions(fixture_dims(fixture)[0])}
+    width, levels = fixture_dims(fixture)
+    ones = (1,) * width
+
+    # THE SAME GATES `local_oracle` applies. Reading the streams directly
+    # skipped every one of them, so a driver that validated the tile spec and
+    # then ran the whole domain would make every partition identical -- and
+    # this check reads identity as the law HOLDING. The strongest possible
+    # confirmation, produced by a completely broken run (Codex).
+    ref_text = run(driver, ones)
+    _expect_tiles_are_live(ref_text, ones, "class-law")
+    ref_rec = read_records(ref_text, label="class-law")
+
+    state = {}
+    for tiles in compositions(width):
+        label = ",".join(map(str, tiles))
+        text = run(driver, tiles)
+        _expect_tiles_are_live(text, tiles, label)
+        rec = read_records(text, label=label)
+        _expect_same_inputs(ref_rec, rec, label)
+        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+        _expect_universe(got, width, levels, label)
+        state[tiles] = got
+
     within = [{"a": a, "b": b, "identical": state[a] == state[b]}
               for members in cls.values() for a in members[:1]
               for b in members[1:]]
@@ -652,7 +673,12 @@ def class_law(driver: str, fixture: str) -> dict:
     return {"classes": {",".join(f"{v:.3g}" for v in vec): [list(m) for m in ms]
                         for vec, ms in cls.items()},
             "within": within, "across": across,
-            "within_pairs": len(within)}
+            "within_pairs": len(within),
+            # COMPUTED, so the report cannot announce a verdict the data does
+            # not support. It printed "Held on every pair" unconditionally,
+            # directly under rows reading `byte-identical = False` (Codex).
+            "holds": (all(w["identical"] for w in within)
+                      and all(x["differing"] > 0 for x in across))}
 
 
 def weight_is_uniform(base_text: str) -> bool:
@@ -759,6 +785,21 @@ def report(driver: str, fixture: str) -> None:
     for x in law["across"]:
         print(f"    ACROSS classes {tuple(x['a'])} vs {tuple(x['b'])}: "
               f"{x['differing']} components differ")
+    if not law["holds"]:
+        # Checked BEFORE the sentence below claims it held, for the same reason
+        # the basis guard is: a failure must not be preceded by its own
+        # reassurance.
+        raise ra.RefineError(
+            "the imposed-threshold law is FALSIFIED on this run: "
+            + "; ".join(
+                [f"{tuple(w['a'])} and {tuple(w['b'])} share a threshold vector "
+                 f"but differ" for w in law["within"] if not w["identical"]]
+                + [f"{tuple(x['a'])} and {tuple(x['b'])} have different vectors "
+                   f"but are identical" for x in law["across"]
+                   if not x["differing"]])
+            + " -- `ncmin` is not the only thing the decomposition changes here, "
+              "so the synthetic result cannot be read as a statement about real "
+              "decompositions")
     print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
           f"columns wide, which yields\n  exactly {law['within_pairs']} "
           f"within-class pair, so the data is CONSISTENT with the law rather\n"

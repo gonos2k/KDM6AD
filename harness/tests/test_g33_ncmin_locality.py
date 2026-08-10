@@ -782,6 +782,7 @@ def test_the_answer_is_a_FUNCTION_of_the_imposed_threshold_vector(drivers, arm):
     assert law["within"], "no within-class pair -- the law would be untested"
     assert all(w["identical"] for w in law["within"])
     assert all(x["differing"] > 0 for x in law["across"])
+    assert law["holds"] is True
 
 
 def test_the_CLASSES_are_what_the_thresholds_say_they_are():
@@ -801,6 +802,42 @@ def test_the_LAW_can_come_out_FALSE(drivers, monkeypatch):
     law = nl.class_law(drivers["legacy"], FIXTURE)
     assert len(law["classes"]) == 1
     assert not all(w["identical"] for w in law["within"])
+    assert law["holds"] is False
+
+
+def test_a_FALSIFIED_law_is_REFUSED_not_reported_as_held(drivers, monkeypatch):
+    """The report printed "Held on every pair" UNCONDITIONALLY, directly under
+    rows reading `byte-identical = False` (Codex). Refused now, and refused
+    BEFORE the sentence claiming it held -- a failure must not be preceded by
+    its own reassurance."""
+    monkeypatch.setattr(nl, "threshold_vector", lambda tiles, fixture: (1.0,))
+    buf = io.StringIO()
+    with pytest.raises(ra.RefineError, match="FALSIFIED"):
+        with contextlib.redirect_stdout(buf):
+            nl.report(drivers["legacy"], FIXTURE)
+    assert "Held on every pair" not in buf.getvalue()
+
+
+def test_a_driver_that_IGNORES_the_tile_spec_is_REFUSED(drivers, monkeypatch):
+    """The severe one. This law's CONFIRMING outcome is identity, so a driver
+    that validated the tile spec and then ran the whole domain would make every
+    partition identical -- the strongest possible confirmation, produced by a
+    completely broken run. `class_law` read the streams directly and applied
+    none of the gates `local_oracle` does (Codex)."""
+    whole = nl.run(drivers["legacy"], (3,))
+    monkeypatch.setattr(nl, "run", lambda driver, tiles: whole)
+    with pytest.raises(ra.RefineError, match="the kernel was called over"):
+        nl.class_law(drivers["legacy"], FIXTURE)
+
+
+def test_the_law_check_APPLIES_THE_SAME_GATES_as_the_oracle():
+    """Not a new weaker reader beside the strict one -- the repeated defect in
+    this repo, and the reason the check above was possible."""
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    body = src[src.index("def class_law("):src.index("def weight_is_uniform(")]
+    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
+                 "_expect_universe"):
+        assert gate in body, f"class_law skips {gate}"
 
 
 def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
