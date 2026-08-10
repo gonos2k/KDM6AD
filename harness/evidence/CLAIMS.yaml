@@ -269,9 +269,18 @@ claims:
       conservative variant, where the control closes. The perturbed profiles are constructed probes, not
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
-    # Migrated to the run that is actually reachable: the same
-    # fixture, mode and sub-step count this claim was measured on,
-    # and the bundle already pinned by G33-NUMBER-003.
+    # Migrated to the run that is actually reachable, with each
+    # point of agreement stated on its own basis:
+    #   fixture   RECORDED -- run_support names it, and the bundle
+    #             was built from it
+    #   sub-step  DERIVED -- scope says h = 25 s and the fixture's
+    #             DT is 300 s, so n12 is the run that gives it
+    #   mode      NOT RECORDED by this claim; the bundle is rezero
+    #   figures   MEASURED -- the five bound below reproduce EXACTLY,
+    #             which is the direct evidence that this run is the
+    #             one behind them
+    # An earlier version of this note asserted agreement on the mode,
+    # which the registry never recorded (Codex).
     #
     # NOT every figure the text publishes is bound. `arms.inverted.3`
     # does not exist in this bundle, and the 99.9999% flattening

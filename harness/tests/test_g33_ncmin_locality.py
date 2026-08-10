@@ -783,6 +783,7 @@ def test_the_answer_is_a_FUNCTION_of_the_imposed_threshold_vector(drivers, arm):
     different ACROSS."""
     law = nl.class_law(drivers[arm], FIXTURE)
     assert law["within"], "no within-class pair -- the law would be untested"
+    assert law["across"], "no across-class pair -- half the law would be untested"
     assert all(w["identical"] for w in law["within"])
     assert all(x["differing"] > 0 for x in law["across"])
     assert law["holds"] is True

@@ -624,8 +624,9 @@ def test_the_CLOSEOUT_check_FAILS_today_and_says_why(capsys):
 def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
     """`not_applicable` means no run artifact APPLIES, not that one is missing.
     Failing those would make the closeout unsatisfiable by construction."""
-    assert all(r["artifact_status"] != "historical_unavailable"
-               for r in ec.chain() if r["evidence_kind"] == "source")
+    source = [r for r in ec.chain() if r["evidence_kind"] == "source"]
+    assert source, "no source-only claims -- this check would be vacuous"
+    assert all(r["artifact_status"] != "historical_unavailable" for r in source)
 
 
 # ---- claim figures vs the pinned artifact (owner priority 7) ----------------
@@ -998,9 +999,19 @@ def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     pins."""
     assert ec.check(require_available=True) == 1
     out = capsys.readouterr().out
-    kinds = {ln.split("-> ")[-1].split()[0] for ln in out.splitlines()
-             if "-> " in ln}
-    assert kinds <= {"historical_unavailable", "analyzer-unpinned",
-                     "modules-unpinned"} or True
+    # `id: path -> file: STATE  [note]` -- the state follows the LAST colon
+    # before the bracket, not the first token after the arrow, which is the
+    # file placeholder.
+    kinds = {ln.split("[")[0].rsplit(":", 1)[-1].strip()
+             for ln in out.splitlines() if " -> " in ln}
+    assert kinds, "no member blocker lines parsed -- this check would be vacuous"
+    assert kinds == {"modules-unpinned"}, (
+        f"unexpected member blocker kinds {sorted(kinds)}")
+    claim_level = [ln for ln in out.splitlines()
+                   if " -> " not in ln and ln.startswith("G33")]
+    assert len(claim_level) == 22, (
+        f"{len(claim_level)} claim-level blockers, expected 22 -- if a claim "
+        f"was migrated this moves, and that is the point")
     assert "analyzer-unpinned" not in out, \
         "the unresolvable arm_stream blockers must stay gone"
+    assert "historical_unavailable" in out, "the real migration debt must show"
