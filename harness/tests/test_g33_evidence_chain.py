@@ -1010,11 +1010,20 @@ def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     assert kinds, "no member blocker lines parsed -- this check would be vacuous"
     assert kinds == {"modules-unpinned"}, (
         f"unexpected member blocker kinds {sorted(kinds)}")
+    # DERIVED from the registry, not a constant. The closeout must report
+    # exactly the claims that still declare their run unreachable -- no more
+    # (noise) and no fewer (a silent gap). A hardcoded count would break on
+    # every migration and get bumped without anyone checking the relationship
+    # still holds.
     claim_level = [ln for ln in out.splitlines()
                    if " -> " not in ln and ln.startswith("G33")]
-    assert len(claim_level) == 22, (
-        f"{len(claim_level)} claim-level blockers, expected 22 -- if a claim "
-        f"was migrated this moves, and that is the point")
+    unreachable = [c for c in ec.claims()
+                   if c.get("artifact_status") == "historical_unavailable"]
+    assert unreachable, "nothing left unmigrated -- update this deliberately"
+    assert len(claim_level) == len(unreachable), (
+        f"{len(claim_level)} claim-level blockers for {len(unreachable)} "
+        f"claims declaring their run unreachable")
+    assert {ln.split(":")[0] for ln in claim_level} == {c["id"] for c in unreachable}
     assert "analyzer-unpinned" not in out, \
         "the unresolvable arm_stream blockers must stay gone"
     assert "historical_unavailable" in out, "the real migration debt must show"
