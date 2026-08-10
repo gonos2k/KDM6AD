@@ -634,7 +634,8 @@ _LEG = ("kdm6ad-g33m-migrate/number-003.bundles/"
 _TRUTH = {"file": f"{_LEG}/n12.rezero.defect_magnitude.json",
           "path": "rows.main/nr/1.of_surface_flux",
           "value": 0.150035513206531, "tolerance": 0.0}
-_PINNED = {_LEG}
+_COVERED = {_TRUTH["file"]}
+_HERE = {_LEG: "matches"}
 
 
 def _bundles_present():
@@ -661,11 +662,11 @@ def test_the_PUBLISHED_figures_are_IN_the_pinned_artifact():
 def test_a_LAST_DIGIT_change_is_caught():
     """Exact by default. The claim asserts these reproduced EXACTLY, so an
     approximate check would not be testing what the claim says."""
-    assert ec.resolve_value(_TRUTH, _PINNED)["state"] == "value-matches"
+    assert ec.resolve_value(_TRUTH, _COVERED, _HERE)["state"] == "value-matches"
     off = {**_TRUTH, "value": 0.150035513206532}
-    assert ec.resolve_value(off, _PINNED)["state"] == "VALUE-MISMATCH"
+    assert ec.resolve_value(off, _COVERED, _HERE)["state"] == "VALUE-MISMATCH"
     assert ec.resolve_value({**off, "tolerance": 1e-15},
-                            _PINNED)["state"] == "value-matches"
+                            _COVERED, _HERE)["state"] == "value-matches"
 
 
 @needs_bundle
@@ -677,18 +678,72 @@ def test_a_LAST_DIGIT_change_is_caught():
 def test_every_way_a_BINDING_can_be_WRONG_is_a_FAILURE(mutation, expected):
     """A typo in the path must not read as agreement, and a missing file must
     not read as one either."""
-    r = ec.resolve_value({**_TRUTH, **mutation}, _PINNED)
+    w = {**_TRUTH, **mutation}
+    r = ec.resolve_value(w, _COVERED | {w["file"]}, _HERE)
     assert r["state"] == expected
     assert ec.verdict(r["state"]) is True
 
 
-def test_a_figure_may_only_be_bound_to_a_bundle_the_CLAIM_PINS():
-    """The check that makes the others mean anything. Without it a claim could
-    bind a figure to any JSON on the host: the comparison would succeed while
-    guaranteeing nothing, because no digest covers that file."""
+def test_a_figure_may_only_be_bound_to_a_DIGEST_VERIFIED_file():
+    """The check that makes the others mean anything, and the seam that was
+    still open: requiring the file to sit in a pinned bundle DIRECTORY is not
+    the same as requiring a digest to cover it. A JSON planted beside the
+    manifest resolved and reported `value-matches` (Codex). Beside the evidence
+    is not the evidence."""
     loose = {**_TRUTH, "file": "kdm6ad-g33m-migrate/elsewhere/x.json"}
-    assert ec.resolve_value(loose, _PINNED)["state"] == "VALUE-UNPINNED-FILE"
+    assert ec.resolve_value(loose, _COVERED, _HERE)["state"] == \
+        "VALUE-UNPINNED-FILE"
     assert ec.verdict("VALUE-UNPINNED-FILE") is True
+
+
+@needs_bundle
+def test_a_file_PLANTED_in_a_pinned_bundle_is_not_covered_by_it():
+    """The attack, run for real: write a JSON into the pinned bundle directory
+    carrying the number a claim wants, and bind to it."""
+    rogue = ec.HOME / _LEG / "rogue_test_only.json"
+    rogue.write_text(json.dumps({"rows": {"main/nr/1":
+                                          {"of_surface_flux": 0.999}}}))
+    try:
+        covered = {f"{Path(a['path']).parent}/{m['file']}"
+                   for r in ec.chain() for a in r["artifacts"]
+                   if a["state"] == "matches"
+                   for m in a["members"] if m["state"] == "matches"}
+        assert str(rogue.relative_to(ec.HOME)) not in covered
+        r = ec.resolve_value({"file": str(rogue.relative_to(ec.HOME)),
+                              "path": "rows.main/nr/1.of_surface_flux",
+                              "value": 0.999, "tolerance": 0.0},
+                             covered, _HERE)
+        assert r["state"] == "VALUE-UNPINNED-FILE"
+    finally:
+        rogue.unlink()
+
+
+@pytest.mark.parametrize("manifest_state,member_state", [
+    ("MISMATCH", "matches"),      # the manifest itself was tampered with
+    ("matches", "MISMATCH"),      # the analysis file was
+])
+def test_a_BROKEN_digest_anywhere_on_the_link_breaks_the_binding(
+        manifest_state, member_state):
+    """`covered` is built only from a manifest that MATCHED and members that
+    MATCHED, so the figure cannot outlive a break anywhere on that chain."""
+    arts = [{"path": f"{_LEG}/manifest.json", "state": manifest_state,
+             "members": [{"file": "n12.rezero.defect_magnitude.json",
+                          "state": member_state}]}]
+    covered = {f"{Path(a['path']).parent}/{m['file']}"
+               for a in arts if a["state"] == "matches"
+               for m in a["members"] if m["state"] == "matches"}
+    r = ec.resolve_value(_TRUTH, covered, {_LEG: manifest_state})
+    assert r["state"] == "VALUE-UNPINNED-FILE"
+
+
+def test_a_bundle_ABSENT_from_this_host_stays_EXCUSED_routinely():
+    """On a host without the private bundles NOTHING is covered. Failing there
+    would fail the routine check everywhere the evidence legitimately is not --
+    the very thing --require-available exists to keep separate."""
+    r = ec.resolve_value(_TRUTH, set(), {_LEG: "unavailable"})
+    assert r["state"] == "value-unavailable"
+    assert ec.verdict(r["state"]) is False
+    assert ec.verdict(r["state"], require_available=True) is True
 
 
 def test_the_binding_is_DECLARED_not_DISCOVERED():

@@ -317,7 +317,7 @@ def flatten(obj, prefix="") -> dict:
     return out
 
 
-def resolve_value(want: dict, pinned_bundles: set) -> dict:
+def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
     """Look up ONE declared figure in the artifact it is declared against.
 
     Declared, never discovered. Searching the JSONs for a number equal to the
@@ -325,21 +325,28 @@ def resolve_value(want: dict, pinned_bundles: set) -> dict:
     -- on this fixture five unrelated fields across two files carry 1.0, so
     "100.00%" would have matched all of them.
 
-    The file is named by its FULL path, the same namespace `artifacts` uses. A
-    basename cannot say which arm a figure came from, and G33-NUMBER-003 pins
-    two bundles and publishes figures from both: 15.0036% is the legacy run and
-    +6.2789% is the conservative one, in files of the same name.
+    `covered` is the set of files whose DIGEST was verified: members, analyses
+    and build artifacts of a pinned manifest that itself matched. Requiring only
+    that the file sit in a pinned bundle DIRECTORY was not the same thing at
+    all -- a JSON dropped beside the manifest, covered by no digest, resolved
+    and reported `value-matches` (Codex). Beside the evidence is not the
+    evidence.
     """
-    f = HOME / want["file"]
-    if str(Path(want["file"]).parent) not in pinned_bundles:
+    if want["file"] not in covered:
+        # Not covered has two causes, and only one is a defect. On a host
+        # without the private bundles NOTHING is covered, so failing here would
+        # fail the routine check everywhere the evidence legitimately is not --
+        # the very thing --require-available exists to keep separate.
+        if bundles.get(str(Path(want["file"]).parent)) == "unavailable":
+            return {**want, "state": "value-unavailable", "got": None}
         return {**want, "state": "VALUE-UNPINNED-FILE", "got": None}
+    f = HOME / want["file"]
     if not f.is_file():
-        # A missing bundle is unavailable; a missing file inside a bundle that
-        # IS here is a broken declaration.
-        return {**want, "got": None,
-                "state": "VALUE-FILE-ABSENT" if f.parent.is_dir()
-                else "value-unavailable"}
-    doc = json.loads(f.read_text())
+        return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
+    try:
+        doc = json.loads(f.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
     if any("." in str(k) for k in _keys_of(doc)):
         return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
     flat = flatten(doc)
@@ -382,12 +389,14 @@ def chain() -> list[dict]:
             if state == "matches" and p.name == "manifest.json":
                 a["members"] = members_of(p)
             arts.append(a)
-        # A figure may only be declared against a bundle THIS claim pins.
-        # Otherwise it would be read from a file no digest covers, and the
-        # binding would guarantee nothing.
-        pinned_bundles = {str(Path(rel).parent) for rel in c["artifacts"]
-                          if Path(rel).name == "manifest.json"}
-        values = [resolve_value(w, pinned_bundles)
+        # A figure may only be bound to a file whose DIGEST this claim's
+        # pinned manifest verified. `members_of` already did that work; the
+        # binding follows the same link rather than re-deriving a weaker one.
+        covered = {f"{Path(a['path']).parent}/{m['file']}"
+                   for a in arts if a["state"] == "matches"
+                   for m in a["members"] if m["state"] == "matches"}
+        bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
+        values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
@@ -458,6 +467,7 @@ FAILING_STATES = frozenset({
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
     "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
+    "VALUE-FILE-UNREADABLE",
 })
 
 
