@@ -38,17 +38,49 @@ def sha256(path: Path) -> str:
 #: (owner §10.3).
 DIAGNOSTIC_KEYS = ("diagnostic",)
 
+#: Build artifacts whose RAW digest is PAYLOAD, not identity.
+#:
+#: Both files embed the output directory, which is a fresh temporary path every
+#: run. Stripping `diagnostic` KEYS inside the manifest did nothing for them,
+#: because a file digest is just a string field -- so two identical experiments
+#: produced different addresses and "an identical rerun reuses the bundle" held
+#: only under fake provenance, which is exactly the property the content address
+#: exists to provide (owner P0-1). Measured: two real builds of the same
+#: experiment in different tmpdirs differed in these two entries and NOTHING
+#: else, `g33_refine_driver` included.
+#:
+#: Their science content still reaches identity -- `build_provenance` is carried
+#: as an object with its diagnostic keys stripped -- and their integrity is
+#: still checked, because the evidence chain verifies every build_artifacts
+#: digest. Payload, not identity.
+LOCATION_DEPENDENT_ARTIFACTS = frozenset({"build_provenance.json",
+                                          "commands.txt"})
+
+#: Also not identity: the producer REFUSES to run when any byte that will run
+#: differs from HEAD, so a dirty tree here can only mean unrelated files were
+#: modified. Letting an edited README change the experiment's address
+#: contradicts the producer's own rule for what makes a run the same run.
+NON_IDENTITY_KEYS = ("tree_dirty",)
+
 
 def identity_digest(man: dict) -> str:
     """The content address: a digest over everything except the diagnostics."""
     def strip(x):
         if isinstance(x, dict):
-            return {k: strip(v) for k, v in x.items() if k not in DIAGNOSTIC_KEYS}
+            return {k: strip(v) for k, v in x.items()
+                    if k not in DIAGNOSTIC_KEYS and k not in NON_IDENTITY_KEYS}
         if isinstance(x, list):
             return [strip(v) for v in x]
         return x
+    m = strip(man)
+    if "build_artifacts" in m:
+        m["build_artifacts"] = [
+            {k: v for k, v in a.items()
+             if not (k == "sha256"
+                     and a.get("file") in LOCATION_DEPENDENT_ARTIFACTS)}
+            for a in m["build_artifacts"]]
     return hashlib.sha256(
-        json.dumps(strip(man), sort_keys=True).encode()).hexdigest()
+        json.dumps(m, sort_keys=True).encode()).hexdigest()
 
 
 def _git(*a) -> str:
