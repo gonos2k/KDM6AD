@@ -849,3 +849,69 @@ def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
     assert "CONSISTENT with the law rather" in out
     assert "than a strong test of it" in out
     assert "geometry of the decomposition, not more physics" in out
+
+
+# ---- the CONTROL: no threshold variation must mean no tiling dependence -----
+
+@pytest.fixture(scope="module")
+def uniform_driver(tmp_path_factory):
+    """`multisubcycle_v1` is all-land AND has ncmin_land == ncmin_sea == 10."""
+    d = tmp_path_factory.mktemp("ncmin-uniform") / "build"
+    b = subprocess.run(["bash", str(BUILD), str(d),
+                        "--fixture=g33_fixture_multisubcycle_v1",
+                        "--algo=legacy", "--nflux"],
+                       capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+    return str(d / "g33_refine_driver")
+
+
+UNIFORM = "g33_fixture_multisubcycle_v1"
+
+
+def test_the_control_fixture_really_IS_degenerate():
+    """Both degeneracies at once, so the control cannot separate them: the
+    domain is all-land AND the two thresholds are equal. Stated rather than
+    glossed -- it means this fixture shows what happens when the threshold
+    VECTOR is constant, not specifically what `xland` does."""
+    land, sea = nl.fixture_ncmin(UNIFORM)
+    assert land == sea == 10
+    assert set(nl.fixture_xland(UNIFORM).values()) == {1.0}
+    land_b, sea_b = nl.fixture_ncmin(FIXTURE)
+    assert land_b != sea_b, "the boundary fixture must still vary"
+
+
+def test_a_CONSTANT_threshold_vector_means_NO_tiling_dependence(uniform_driver):
+    """The control the attribution rests on. Every decomposition of an all-land
+    domain lands in ONE class, so the law predicts byte-identity across all of
+    them -- and if anything OTHER than `ncmin` responded to tiling, this is
+    where it would show, with the gate held fixed.
+
+    Three within-class pairs here against one on the boundary fixture, on a
+    different atmosphere: the within-class evidence goes from a single pair to
+    four."""
+    law = nl.class_law(uniform_driver, UNIFORM)
+    assert len(law["classes"]) == 1, "an all-land domain has one threshold class"
+    assert law["within_pairs"] == 3
+    assert all(w["identical"] for w in law["within"])
+    assert not law["across"], "nothing to compare across -- that is the point"
+    assert law["holds"] is True
+
+
+def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
+                                                              monkeypatch):
+    """If the operator had another tiling-dependent path, the control fails --
+    which is what makes it a control and not a formality."""
+    real = nl.read_records
+    seen = {"n": 0}
+
+    def perturbed(text, *, label):
+        got = dict(real(text, label=label))
+        seen["n"] += 1
+        if seen["n"] == 3:                      # one partition answers differently
+            k = next(k for k in sorted(got) if k[0] == "state")
+            got[k] = "DEADBEEF"
+        return got
+
+    monkeypatch.setattr(nl, "read_records", perturbed)
+    law = nl.class_law(uniform_driver, UNIFORM)
+    assert not law["holds"]
