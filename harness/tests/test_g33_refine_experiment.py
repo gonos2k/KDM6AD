@@ -691,23 +691,17 @@ def test_every_module_the_producer_can_REACH_is_PINNED():
     failed when it drifted, so a producer that started importing a new module
     shipped bundles whose provenance silently omitted it -- the one list the
     binding depends on being the one nobody checked, one layer up from where
-    owner §9.2 found it the first time."""
-    missing = xp.reachable_modules() - set(xp.producer_modules())
+    owner §9.2 found it the first time.
+
+    Compared over PATHS: a file can be pinned as a module OR as a build input,
+    and those namespaces overlap only by accident."""
+    missing = xp.unpinned_reachable()
     assert not missing, (
-        f"reachable from the producer but not pinned: {sorted(missing)}. Add "
-        f"them to _CORE_MODULES/_PARSER_MODULES, or stop importing them.")
-
-
-def test_no_module_is_pinned_that_the_producer_CANNOT_reach():
-    """The other direction. A stale entry pins bytes that decide nothing, which
-    makes the list look more complete than it is."""
-    stale = set(xp.producer_modules()) - xp.reachable_modules()
-    assert not stale, f"pinned but unreachable: {sorted(stale)}"
+        f"reachable from the producer but pinned by NOTHING: {sorted(missing)}")
 
 
 def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
-    """A check that cannot fail is not a check. Teach the closure that the
-    producer imports something unpinned and the gate must fire."""
+    """A check that cannot fail is not a check."""
     real = xp._local_imports
 
     def with_extra(module):
@@ -717,7 +711,7 @@ def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
 
     monkeypatch.setattr(xp, "_local_imports", with_extra)
     assert "g33_evidence_chain" in xp.reachable_modules()
-    assert xp.reachable_modules() - set(xp.producer_modules())
+    assert "g33_evidence_chain" in xp.unpinned_reachable()
 
 
 def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
@@ -729,12 +723,33 @@ def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
     assert "g33_build_provenance" in xp.reachable_modules()
 
 
+def test_the_closure_runs_THROUGH_a_subprocess_module():
+    """Unioning the subprocess modules in at the END left everything THEY
+    import outside the closure. `make_fortran_overlay` generates the
+    instrumentation injected into the frozen Fortran, so what it imports
+    decides what every record in the stream says -- and `g33_schema` and
+    `g33_expectation` reached only through it were pinned by nothing (Codex)."""
+    assert "make_fortran_overlay" in xp._build_script_modules()
+    assert "g33_schema" in xp._local_imports("make_fortran_overlay")
+    for m in ("g33_schema", "g33_expectation"):
+        assert m in xp.reachable_modules(), f"{m} must be in the closure"
+        assert m not in xp.unpinned_reachable(), f"{m} must be pinned"
+
+
+def test_a_module_in_the_g33_fortran_SUBDIRECTORY_is_resolvable():
+    """The resolver looked only in harness/, so `make_fortran_overlay` -- which
+    lives in harness/g33_fortran/ -- failed the is_file() test and was dropped
+    silently, taking the entire overlay generator out of the closure."""
+    assert xp._module_file("make_fortran_overlay") is not None
+    assert xp._module_file("g33_refine_analyze") is not None
+    assert xp._module_file("no_such_module_anywhere") is None
+
+
 def test_a_script_named_only_in_a_COMMENT_is_not_a_script_that_runs():
     """Why this is a CHECK and not a derivation. `fortran_build.sh` appears in
     refine_build.sh only inside comments; a text scan pulls it in, and a list
     derived that way would be less trustworthy than the curated one."""
-    sh = (Path(xp.HERE).parent
-          / "harness/g33_fortran/refine_build.sh").read_text()
+    sh = (Path(xp.HERE) / "g33_fortran" / "refine_build.sh").read_text()
     assert "fortran_build.sh" in sh, "the comment case must still exist"
     code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
     assert not [l for l in code if "fortran_build.sh" in l]

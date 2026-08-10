@@ -286,7 +286,13 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
 #: was allowed to read, and a wrong parser lets a truncated, duplicated or
 #: mis-schema'd member through before any analyzer sees it (owner P0-2).
 _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
-                 "g33_build_provenance")
+                 "g33_build_provenance",
+                 # The OVERLAY generator's dependencies. `make_fortran_overlay`
+                 # is pinned as a tracked build input, but what it imports was
+                 # pinned by nothing -- and that code decides which
+                 # instrumentation is injected into the frozen Fortran, so it
+                 # decides what every record in the stream says (Codex).
+                 "g33_schema", "g33_expectation")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
@@ -334,11 +340,40 @@ def producer_modules() -> tuple:
                         | {"g33_metric_trajectory"}))
 
 
+#: Where a harness module can live. `make_fortran_overlay` and
+#: `g33_fortran_bindings` are in the g33_fortran/ subdirectory, and a resolver
+#: that only looked in harness/ dropped them silently -- taking the whole
+#: overlay generator, and everything IT imports, out of the closure (Codex).
+_MODULE_DIRS = (HERE, HERE / "g33_fortran")
+
+
+def _module_file(module: str):
+    """The file backing `module`, or None."""
+    return next((d / f"{module}.py" for d in _MODULE_DIRS
+                 if (d / f"{module}.py").is_file()), None)
+
+
+def pinned_paths() -> set:
+    """Every file the bundle records a pin for, in either form: a producer
+    module pinned by name, or a build input pinned by path. The comparison is
+    over PATHS because those two namespaces overlap only by accident --
+    `make_fortran_overlay` is pinned, but not as a module."""
+    return {Path("harness") / f"{m}.py" for m in producer_modules()} \
+        | set(TRACKED_BUILD_INPUTS)
+
+
+def unpinned_reachable() -> set:
+    """Reachable code that NOTHING pins. Empty, or the bundle's provenance is
+    incomplete."""
+    return {m for m in reachable_modules()
+            if _module_file(m).relative_to(HERE.parent) not in pinned_paths()}
+
+
 def _local_imports(module: str) -> set:
     """The harness modules `module` imports. By AST, not by text: a name in a
     comment or a docstring is not an import."""
-    f = HERE / f"{module}.py"
-    if not f.is_file():
+    f = _module_file(module)
+    if f is None:
         return set()
     names = set()
     for n in ast.walk(ast.parse(f.read_text())):
@@ -346,7 +381,7 @@ def _local_imports(module: str) -> set:
             names |= {a.name.split(".")[0] for a in n.names}
         elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
             names.add(n.module.split(".")[0])
-    return {m for m in names if (HERE / f"{m}.py").is_file()}
+    return {m for m in names if _module_file(m) is not None}
 
 
 def reachable_modules() -> set:
@@ -366,7 +401,8 @@ def reachable_modules() -> set:
     in. What was missing is that nothing FAILED when the curated list drifted,
     so this is the check, not the source.
     """
-    seeds = {"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
+    seeds = ({"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
+             | _build_script_modules())
     seen = set()
     todo = list(seeds)
     while todo:
@@ -374,8 +410,12 @@ def reachable_modules() -> set:
         if m in seen:
             continue
         seen.add(m)
+        # THROUGH the subprocess modules too. Unioning them in at the end left
+        # everything the overlay generator imports outside the closure, and
+        # that code decides what instrumentation is injected into the frozen
+        # Fortran -- so it decides what every record in the stream says (Codex).
         todo += list(_local_imports(m) - seen)
-    return seen | _build_script_modules()
+    return seen
 
 
 def _build_script_modules() -> set:
@@ -390,7 +430,7 @@ def _build_script_modules() -> set:
             if line.lstrip().startswith("#") or not re.search(r"\bpython3?\b", line):
                 continue
             out |= {m for m in re.findall(r"([a-z0-9_]+)\.py", line)
-                    if (HERE / f"{m}.py").is_file()}
+                    if _module_file(m) is not None}
     return out
 
 
