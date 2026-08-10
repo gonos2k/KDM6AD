@@ -86,7 +86,7 @@ def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
     # that runs while those modules are being edited. The check itself is
     # exercised in test_g33_refine_experiment.py, against the real function.
     monkeypatch_pin = pytest.MonkeyPatch()
-    monkeypatch_pin.setattr(xp, "require_pinned_producer", lambda: None)
+    monkeypatch_pin.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
     try:
             dest = xp.produce(tmp_path / "chain",
                           fixture="g33_fixture_multisubcycle_v1", algo="legacy",

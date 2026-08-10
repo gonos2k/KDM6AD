@@ -215,8 +215,19 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/d266698098d524bde72447349e89c185adadd9644f81478e450770cf84f7f41c/manifest.json: e35cc37062bafc6e56bc5d4936e8adf850b1e812bbf22dc10422ad5832c21fa7
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/manifest.json: 97587a90ebabe7a551074f27db9e6b4d40f1b57530643c9845fc83009865bd99
+    # The figures the text above publishes, bound to the exact path in
+    # the exact bundle that produced them. Legacy and conservative
+    # nr/1 are the SAME value, which is what "identical to the last
+    # digit" asserts -- so the two arms are declared separately.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 
@@ -460,7 +471,7 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -917,7 +928,7 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -969,12 +980,20 @@ claims:
       DIRECT-SUM ORACLE (owner §12-5), computed with the UNMODIFIED kernel: a
       one-column tile leaves ncmin holding that column's own threshold, so
       (1,1,1) IS M_local(X) = (+)_i M_i(X_i; xland_i). Measured against it, the
-      WHOLE-DOMAIN run -- what production does -- differs in 16/144 components,
-      all in the sea column, carrying +20.72% column rain; (1,2) the same; (2,1)
-      differs in column 1 at +20.67% because its first tile ends on sea.
-      Identical under both bases. So the shipped configuration is not merely
-      decomposition-SENSITIVE, it departs from the column-local answer by ~21%
-      column rain in a coastal column on this fixture. Attribution to ncmin
+      WHOLE-DOMAIN single-tile run differs in 16/144 components, all in the sea
+      column, at -20.72% column rain; (1,2) the same; (2,1) differs in column 1
+      at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
+      §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
+      sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
+      (2.5e+07), and a higher droplet-number floor suppresses autoconversion, so
+      it rains ~21% LESS than the per-column answer. The direction is now a
+      signed field in the artifact and asserted. Both bases agree, but NOT by an
+      identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
+      only a vertically CONSTANT weight cancels -- on this fixture its spread is
+      exactly zero, which is measured rather than assumed. "Production" is
+      withdrawn as a description (owner §9.3): this is a three-column synthetic
+      fixture called as one tile by a sequential driver, with no MPI ranks,
+      haloes, real coastal layout or multi-step feedback. Attribution to ncmin
       alone rests on (1,2) differing from the whole domain in ZERO components
       despite a changed decomposition -- nothing else here responds to tiling. Both variants differ in
       exactly the same 0/16/31 cells and columns, so the conservative interface
@@ -1006,7 +1025,7 @@ claims:
       sequential multi-call tile experiment that PREDICTS rank sensitivity
       rather than demonstrating it.
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:29836562c6cf4ecac794cc2282ddffb328679d6c5e8b47ea2c1fcb27cfea649b]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
 
   - id: G33-ENTHALPY-003
     text: >
@@ -1064,7 +1083,7 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/63aa1ba2b1aaa5af8e7da1ab4dc2a1a921038a39a76ee0103ece340b59251a0b/manifest.json: 21ab76af68b7ac47070a3733ed8856c04d6b282f5064bc6e1ce54dda2fbe13d3
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 

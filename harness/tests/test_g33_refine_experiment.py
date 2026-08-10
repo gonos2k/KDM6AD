@@ -26,6 +26,11 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     def build(workdir, fixture, algo, nflux, arm="reference"):
         if fail_at == "build":
             raise SystemExit("build failed")
+        # The BINARY is published in the bundle and v2 pins it, so the fake
+        # build must leave one where a real build would.
+        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        (workdir / "commands.txt").write_text("fake\n")
+        (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
             "sources": [], "executable_sha256": "ab" * 32}))
@@ -43,7 +48,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         p = out / f"n{ns[0]}.{mode}.matched_closure.json"
         p.write_text("{}\n")
         return [{"file": p.name, "nsplit": ns[0], "analysis": "matched_closure",
-                 "sha256": xp.rm.sha256(p), **xp._pin("g33_matched_closure")}]
+                 "sha256": xp.rm.sha256(p),
+                 **xp._analyzer_pin("g33_matched_closure")}]
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3):
@@ -190,6 +196,11 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     prose around it (owner priority 2)."""
     def build(workdir, fixture, algo, nflux, arm="reference"):
         assert arm == "f64"
+        # The BINARY is published in the bundle and v2 pins it, so the fake
+        # build must leave one where a real build would.
+        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        (workdir / "commands.txt").write_text("fake\n")
+        (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
             "sources": [], "executable_sha256": "cd" * 32}))
@@ -489,7 +500,7 @@ _REAL_PIN_CHECK = xp.require_pinned_producer
 
 @pytest.fixture(autouse=True)
 def _allow_a_dirty_tree_in_tests(monkeypatch):
-    monkeypatch.setattr(xp, "require_pinned_producer", lambda: None)
+    monkeypatch.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
 
 
 def test_the_producer_refuses_when_a_running_module_is_UNCOMMITTED(monkeypatch):
@@ -620,3 +631,126 @@ def test_the_TRACKED_BUILD_INPUTS_are_pinned_by_commit_and_blob():
     assert "harness/g33_fortran/g33_refine_driver.f90" in names
     assert not any("host/" in n for n in names), \
         "host/** is gitignored, so no commit holds it -- it stays content-only"
+
+
+# ---- owner P0-1 / P0-2: the fixture, and pins that cannot lie ---------------
+
+def test_an_UNCOMMITTED_selected_fixture_is_refused(monkeypatch):
+    """The selected fixture is compiled from the working tree but was absent
+    from the fixed `TRACKED_BUILD_INPUTS` tuple, so an uncommitted fixture
+    published a bundle whose `content_sha256` (what ran) and `blob_sha` (what is
+    recoverable) named different files -- and nothing failed (owner P0-1)."""
+    real = xp.rm._git
+    fx = "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90"
+
+    def edited(*a):
+        if a[:1] == ("hash-object",) and "multisubcycle" in str(a[-1]):
+            return "0" * 40
+        return real(*a)
+
+    monkeypatch.setattr(xp.rm, "_git", edited)
+    with pytest.raises(SystemExit, match="did not run"):
+        _REAL_PIN_CHECK("g33_fixture_multisubcycle_v1")
+    # ...and the same tree passes when the fixture is not named.
+    _REAL_PIN_CHECK()
+
+
+def test_a_pin_REFUSES_to_be_built_when_content_and_blob_disagree(monkeypatch):
+    """`content_sha256` records what RAN and `blob_sha` names what is
+    RECOVERABLE. A pin whose two halves describe different files is a lie the
+    checker cannot see, because resolving the blob succeeds either way. It is
+    refused at construction rather than listed somewhere to remember."""
+    real = xp.rm.sha256
+    monkeypatch.setattr(xp.rm, "sha256", lambda p: "0" * 64)
+    with pytest.raises(SystemExit, match="did not run"):
+        xp._pin_path(Path("harness/g33_matched_closure.py"))
+    monkeypatch.setattr(xp.rm, "sha256", real)
+    xp._pin_path(Path("harness/g33_matched_closure.py"))     # consistent again
+
+
+def test_the_BINARY_that_produced_the_numbers_is_pinned():
+    """The finding said the driver "is not published in the bundle". It is:
+    `os.rename(tmp, final)` moves the whole build directory, and the 320 kB
+    executable sits there. Nothing verified it, so deleting or editing it left
+    the bundle reusable (owner §7)."""
+    import json
+    b = Path.home() / "kdm6ad-g33m-migrate" / "number-003"
+    if not (b / "manifest.json").is_file():
+        pytest.skip("the migration bundle is not on this host")
+    man = json.loads((b / "manifest.json").read_text())
+    files = {a["file"] for a in man["build_artifacts"]}
+    assert "g33_refine_driver" in files
+    assert {"build_provenance.json", "commands.txt", "sources.txt"} <= files
+    assert (b / "g33_refine_driver").is_file()
+
+
+# ---- the pinned module list must be COMPLETE, not remembered ---------------
+
+def test_every_module_the_producer_can_REACH_is_PINNED():
+    """`producer_modules()` was a union of three hand-written tuples. Nothing
+    failed when it drifted, so a producer that started importing a new module
+    shipped bundles whose provenance silently omitted it -- the one list the
+    binding depends on being the one nobody checked, one layer up from where
+    owner §9.2 found it the first time.
+
+    Compared over PATHS: a file can be pinned as a module OR as a build input,
+    and those namespaces overlap only by accident."""
+    missing = xp.unpinned_reachable()
+    assert not missing, (
+        f"reachable from the producer but pinned by NOTHING: {sorted(missing)}")
+
+
+def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
+    """A check that cannot fail is not a check."""
+    real = xp._local_imports
+
+    def with_extra(module):
+        got = real(module)
+        return got | {"g33_evidence_chain"} if module == "g33_refine_experiment" \
+            else got
+
+    monkeypatch.setattr(xp, "_local_imports", with_extra)
+    assert "g33_evidence_chain" in xp.reachable_modules()
+    assert "g33_evidence_chain" in xp.unpinned_reachable()
+
+
+def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
+    """`g33_build_provenance` is executed by the build script and imported by
+    no one, so an import closure alone would miss it entirely -- and it writes
+    the provenance the whole chain rests on."""
+    assert "g33_build_provenance" in xp._build_script_modules()
+    assert "g33_build_provenance" not in xp._local_imports("g33_refine_experiment")
+    assert "g33_build_provenance" in xp.reachable_modules()
+
+
+def test_the_closure_runs_THROUGH_a_subprocess_module():
+    """Unioning the subprocess modules in at the END left everything THEY
+    import outside the closure. `make_fortran_overlay` generates the
+    instrumentation injected into the frozen Fortran, so what it imports
+    decides what every record in the stream says -- and `g33_schema` and
+    `g33_expectation` reached only through it were pinned by nothing (Codex)."""
+    assert "make_fortran_overlay" in xp._build_script_modules()
+    assert "g33_schema" in xp._local_imports("make_fortran_overlay")
+    for m in ("g33_schema", "g33_expectation"):
+        assert m in xp.reachable_modules(), f"{m} must be in the closure"
+        assert m not in xp.unpinned_reachable(), f"{m} must be pinned"
+
+
+def test_a_module_in_the_g33_fortran_SUBDIRECTORY_is_resolvable():
+    """The resolver looked only in harness/, so `make_fortran_overlay` -- which
+    lives in harness/g33_fortran/ -- failed the is_file() test and was dropped
+    silently, taking the entire overlay generator out of the closure."""
+    assert xp._module_file("make_fortran_overlay") is not None
+    assert xp._module_file("g33_refine_analyze") is not None
+    assert xp._module_file("no_such_module_anywhere") is None
+
+
+def test_a_script_named_only_in_a_COMMENT_is_not_a_script_that_runs():
+    """Why this is a CHECK and not a derivation. `fortran_build.sh` appears in
+    refine_build.sh only inside comments; a text scan pulls it in, and a list
+    derived that way would be less trustworthy than the curated one."""
+    sh = (Path(xp.HERE) / "g33_fortran" / "refine_build.sh").read_text()
+    assert "fortran_build.sh" in sh, "the comment case must still exist"
+    code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+    assert not [l for l in code if "fortran_build.sh" in l]
+    assert "fortran_build" not in xp._build_script_modules()

@@ -24,6 +24,8 @@ artifact from a plain one even when the two agree bit for bit.
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
 import os
 import re
 import shutil
@@ -284,7 +286,13 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
 #: was allowed to read, and a wrong parser lets a truncated, duplicated or
 #: mis-schema'd member through before any analyzer sees it (owner P0-2).
 _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
-                 "g33_build_provenance")
+                 "g33_build_provenance",
+                 # The OVERLAY generator's dependencies. `make_fortran_overlay`
+                 # is pinned as a tracked build input, but what it imports was
+                 # pinned by nothing -- and that code decides which
+                 # instrumentation is injected into the frozen Fortran, so it
+                 # decides what every record in the stream says (Codex).
+                 "g33_schema", "g33_expectation")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
@@ -300,11 +308,29 @@ TRACKED_BUILD_INPUTS = (
 
 
 def _pin_path(rel: Path) -> dict:
-    """Where a tracked file's bytes can be recovered from later."""
-    return {"path": str(rel),
-            "content_sha256": rm.sha256(HERE.parent / rel),
-            "commit": rm._git("rev-parse", "HEAD"),
-            "blob_sha": rm._git("rev-parse", f"HEAD:{rel}")}
+    """Where a tracked file's bytes can be recovered from later.
+
+    REFUSES an inconsistent triple. `content_sha256` records what RAN and
+    `blob_sha` names what is RECOVERABLE; when they disagree the pin describes
+    two different files, and the checker -- which only resolves the blob --
+    passes it (owner P0-1/P0-2). Verified here rather than in a list of paths
+    someone has to remember to extend: a pin that cannot be honest refuses to
+    exist.
+    """
+    commit = rm._git("rev-parse", "HEAD")
+    blob = rm._git("rev-parse", f"HEAD:{rel}")
+    content = rm.sha256(HERE.parent / rel)
+    if not blob:
+        raise SystemExit(f"REFUSED: {rel} is not in HEAD, so nothing can pin it")
+    recovered = hashlib.sha256(
+        subprocess.run(["git", "cat-file", "blob", blob], cwd=HERE.parent,
+                       capture_output=True).stdout).hexdigest()
+    if recovered != content:
+        raise SystemExit(
+            f"REFUSED: {rel} ran as {content[:12]} but HEAD holds {recovered[:12]}"
+            f" -- the pin would name a file that did not run. Commit the change.")
+    return {"path": str(rel), "content_sha256": content,
+            "commit": commit, "blob_sha": blob}
 
 
 def producer_modules() -> tuple:
@@ -312,6 +338,100 @@ def producer_modules() -> tuple:
     return tuple(sorted(set(_CORE_MODULES) | set(_PARSER_MODULES)
                         | {mod for mod, _fn in ANALYSES.values()}
                         | {"g33_metric_trajectory"}))
+
+
+#: Where a harness module can live. `make_fortran_overlay` and
+#: `g33_fortran_bindings` are in the g33_fortran/ subdirectory, and a resolver
+#: that only looked in harness/ dropped them silently -- taking the whole
+#: overlay generator, and everything IT imports, out of the closure (Codex).
+_MODULE_DIRS = (HERE, HERE / "g33_fortran")
+
+
+def _module_file(module: str):
+    """The file backing `module`, or None."""
+    return next((d / f"{module}.py" for d in _MODULE_DIRS
+                 if (d / f"{module}.py").is_file()), None)
+
+
+def pinned_paths() -> set:
+    """Every file the bundle records a pin for, in either form: a producer
+    module pinned by name, or a build input pinned by path. The comparison is
+    over PATHS because those two namespaces overlap only by accident --
+    `make_fortran_overlay` is pinned, but not as a module."""
+    return {Path("harness") / f"{m}.py" for m in producer_modules()} \
+        | set(TRACKED_BUILD_INPUTS)
+
+
+def unpinned_reachable() -> set:
+    """Reachable code that NOTHING pins. Empty, or the bundle's provenance is
+    incomplete."""
+    return {m for m in reachable_modules()
+            if _module_file(m).relative_to(HERE.parent) not in pinned_paths()}
+
+
+def _local_imports(module: str) -> set:
+    """The harness modules `module` imports. By AST, not by text: a name in a
+    comment or a docstring is not an import."""
+    f = _module_file(module)
+    if f is None:
+        return set()
+    names = set()
+    for n in ast.walk(ast.parse(f.read_text())):
+        if isinstance(n, ast.Import):
+            names |= {a.name.split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+            names.add(n.module.split(".")[0])
+    return {m for m in names if _module_file(m) is not None}
+
+
+def reachable_modules() -> set:
+    """Every harness module the producer can actually reach, COMPUTED.
+
+    Two ways a module gets to decide what a bundle contains, and only one is an
+    import:
+
+      - imported, transitively, from the producer or any analysis module
+      - EXECUTED by the build script -- `g33_build_provenance` is run as a
+        subprocess and imported by nothing, so an import closure alone would
+        miss it entirely
+
+    This does not REPLACE `producer_modules()`. Deriving that list textually
+    from a shell script would be worse than curating it: `fortran_build.sh`
+    appears in refine_build.sh only inside comments, and a text scan pulls it
+    in. What was missing is that nothing FAILED when the curated list drifted,
+    so this is the check, not the source.
+    """
+    seeds = ({"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
+             | _build_script_modules())
+    seen = set()
+    todo = list(seeds)
+    while todo:
+        m = todo.pop()
+        if m in seen:
+            continue
+        seen.add(m)
+        # THROUGH the subprocess modules too. Unioning them in at the end left
+        # everything the overlay generator imports outside the closure, and
+        # that code decides what instrumentation is injected into the frozen
+        # Fortran -- so it decides what every record in the stream says (Codex).
+        todo += list(_local_imports(m) - seen)
+    return seen
+
+
+def _build_script_modules() -> set:
+    """Harness modules the build EXECUTES. Comment lines are stripped first --
+    a script named in a comment is not a script that runs."""
+    out = set()
+    for sh in TRACKED_BUILD_INPUTS:
+        p = HERE.parent / sh
+        if p.suffix != ".sh" or not p.is_file():
+            continue
+        for line in p.read_text().splitlines():
+            if line.lstrip().startswith("#") or not re.search(r"\bpython3?\b", line):
+                continue
+            out |= {m for m in re.findall(r"([a-z0-9_]+)\.py", line)
+                    if _module_file(m) is not None}
+    return out
 
 
 def _pin(module: str) -> dict:
@@ -343,7 +463,8 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
         raise SystemExit(
             f"REFUSED: {final} is addressed {identity[:16]} but its manifest "
             f"identifies as {rm.identity_digest(have)[:16]}")
-    for entry in (have.get("members") or []) + (have.get("analyses") or []):
+    for entry in ((have.get("members") or []) + (have.get("analyses") or [])
+                  + (have.get("build_artifacts") or [])):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
         if not f.is_file():
@@ -354,7 +475,7 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
                              f"the digest its manifest recorded")
 
 
-def require_pinned_producer() -> None:
+def require_pinned_producer(fixture: str | None = None) -> None:
     """Every module that will RUN must be byte-identical to its HEAD blob.
 
     The manifest pins `git rev-parse HEAD:path`, but the analysis executes the
@@ -369,6 +490,11 @@ def require_pinned_producer() -> None:
     bad = []
     paths = [f"harness/{m}.py" for m in producer_modules()]
     paths += [str(q) for q in TRACKED_BUILD_INPUTS]
+    # The SELECTED fixture is compiled from the working tree but was absent from
+    # the fixed tuple, so an uncommitted fixture published a bundle whose
+    # `content_sha256` and `blob_sha` named different files (owner P0-1).
+    if fixture:
+        paths.append(f"harness/g33_fortran/{fixture}.f90")
     for path in paths:
         head = rm._git("rev-parse", f"HEAD:{path}")
         work = rm._git("hash-object", str(HERE.parent / path))
@@ -438,7 +564,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                          "no members is not a refinement experiment")
     if any(n < 1 for n in nsplits):
         raise SystemExit(f"--nsplit must be positive, got {sorted(nsplits)}")
-    require_pinned_producer()
+    require_pinned_producer(fixture)
     # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
     # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
     # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
@@ -545,6 +671,16 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         man["tracked_build_inputs"] = [
             _pin_path(q) for q in TRACKED_BUILD_INPUTS
             + (Path("harness/g33_fortran") / f"{fixture}.f90",)]
+        # The BINARY and its provenance are in the bundle -- the finding said
+        # they were not, which was simply false: `os.rename(tmp, final)` moves
+        # the whole build directory. Nothing verified them, so deleting or
+        # editing the driver in an existing bundle left it reusable (owner §7).
+        man["build_artifacts"] = [
+            {"file": q.name, "sha256": rm.sha256(q)}
+            for q in (tmp / n for n in ("g33_refine_driver",
+                                        "build_provenance.json",
+                                        "commands.txt", "sources.txt"))
+            if q.is_file()]
         man["arm"] = arm
         man["precision"] = "f64" if arm == "f64" else "f32"
         # An instrument arm can never be decision evidence, and says so in the

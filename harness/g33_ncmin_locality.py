@@ -20,6 +20,7 @@ only tried even splits would pass while the operator was arbitrarily non-local.
 """
 from __future__ import annotations
 
+import math
 import re
 import struct
 import subprocess
@@ -47,7 +48,7 @@ def compositions(n: int) -> list[tuple]:
             for rest in compositions(n - first)]
 
 
-def read_records(text: str, *, label: str) -> dict:
+def read_records(text: str, *, label: str, nsplit: int = 1) -> dict:
     """{(cls, name, col, k): raw hex} for every G33R record.
 
     ONLY from a stream the strict parser took. The first version parsed the
@@ -61,7 +62,7 @@ def read_records(text: str, *, label: str) -> dict:
     The hex is taken raw afterwards, because the comparison is about the BITS
     the operator produced and 0.0 == -0.0 would hide a sign flip.
     """
-    ra.read_text(text, nsplit=1, label=label)
+    ra.read_text(text, nsplit=nsplit, label=label)
     out = {}
     for p in (ln.split() for ln in text.splitlines()):
         if p[:1] != ["G33R"]:
@@ -75,9 +76,10 @@ def read_records(text: str, *, label: str) -> dict:
     return out
 
 
-def read_state(text: str, *, label: str) -> dict:
+def read_state(text: str, *, label: str, nsplit: int = 1) -> dict:
     """{(field, col, k): raw hex} -- the final state only."""
-    return {k[1:]: v for k, v in read_records(text, label=label).items()
+    return {k[1:]: v
+            for k, v in read_records(text, label=label, nsplit=nsplit).items()
             if k[0] == "state"}
 
 
@@ -97,6 +99,14 @@ def _expect_same_inputs(base: dict, got: dict, label: str) -> None:
     for cls in ("initial", "forcing"):
         a = {k: v for k, v in base.items() if k[0] == cls}
         b = {k: v for k, v in got.items() if k[0] == cls}
+        if not a or not b:
+            # `G33R INITIAL` is OPTIONAL to the strict parser, so two streams
+            # that both lack it made this comparison pass with nothing compared
+            # -- the same-atmosphere guarantee evaporating exactly where it
+            # could not be checked (Codex).
+            raise ra.RefineError(
+                f"{label}: no `{cls}` records, so the same-atmosphere contract "
+                f"would be vacuous. This analysis needs them.")
         if set(a) != set(b):
             raise ra.RefineError(
                 f"{label}: the {cls} universe differs from the baseline by "
@@ -110,13 +120,75 @@ def _expect_same_inputs(base: dict, got: dict, label: str) -> None:
                 f"final state cannot be attributed to ncmin")
 
 
-def run(driver: str, tiles) -> str:
-    """The driver's stdout for one decomposition."""
-    r = subprocess.run([driver, "1", "rezero", ",".join(map(str, tiles))],
+#: Independent trajectories the same-atmosphere control is replicated over:
+#: every density profile the driver offers, both aux-carry arms, three
+#: sub-step counts. One confirming pair is an anecdote; the attribution rests
+#: on this holding wherever the operator is exercised.
+RHO_MODES = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
+TRAJECTORIES = tuple((nsplit, carry, rho)
+                     for rho in RHO_MODES
+                     for carry in ("rezero", "carry")
+                     for nsplit in (1, 3, 12))
+
+
+def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
+        rho: str = "as-is") -> str:
+    """The driver's stdout for one decomposition on one trajectory."""
+    r = subprocess.run([driver, str(nsplit), carry,
+                        ",".join(map(str, tiles)), rho],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"driver exited {r.returncode}\n{r.stderr[-2000:]}")
     return r.stdout
+
+
+def control_replication(driver: str, fixture: str) -> dict:
+    """The attribution control, run on every trajectory rather than one.
+
+    WITHIN a threshold class the decomposition genuinely changes -- `(1,2)` is
+    two kernel calls over (1,1) and (2,3), `(3,)` is one over (1,3) -- and the
+    answer must not. ACROSS classes it must. Both directions are needed: 36
+    identical results would otherwise be consistent with trajectories that are
+    insensitive to everything, which would make the control vacuous rather than
+    strong.
+    """
+    cls = equivalence_classes(fixture)
+    within = next((ms for ms in cls.values() if len(ms) > 1), None)
+    if within is None:
+        raise ra.RefineError(
+            f"{fixture}: no two decompositions share a threshold vector, so the "
+            f"same-atmosphere control cannot be formed on this fixture")
+    keys = list(cls)
+    if len(keys) < 2:
+        # BOTH halves are required. Treating a missing across-class pair as
+        # satisfied made `holds` True with ZERO across-class checks, and the
+        # report then printed "differs in 0/36 -- both directions" (Codex): a
+        # guarantee evaporating exactly where it could not be checked, the same
+        # shape as the vacuous same-atmosphere contract.
+        raise ra.RefineError(
+            f"{fixture}: every decomposition shares one threshold vector, so "
+            f"there is no across-class pair and the control has only one "
+            f"direction. A one-directional result cannot separate `the gate is "
+            f"what matters` from `these trajectories are insensitive to "
+            f"everything`")
+    across = (cls[keys[0]][0], cls[keys[1]][0])
+
+    same, differ = [], []
+    for nsplit, carry, rho in TRAJECTORIES:
+        def state(tiles):
+            return read_state(run(driver, tiles, nsplit, carry, rho),
+                              label=f"{tiles}/{nsplit}/{carry}/{rho}",
+                              nsplit=nsplit)
+        leg = (nsplit, carry, rho)
+        if state(within[0]) == state(within[1]):
+            same.append(leg)
+        if state(across[0]) != state(across[1]):
+            differ.append(leg)
+    return {"within_pair": within[:2], "across_pair": across,
+            "trajectories": len(TRAJECTORIES),
+            "within_identical": len(same), "across_differing": len(differ),
+            "holds": (len(same) == len(TRAJECTORIES)
+                      and len(differ) == len(TRAJECTORIES))}
 
 
 def tile_brackets(text: str) -> list:
@@ -307,6 +379,28 @@ def _expect_universe(got: dict, cols: int, levels: int, label: str) -> None:
         raise ra.RefineError(f"{label}: {len(got)} STATE records, expected {want}")
 
 
+def humidity_weight_spread(text: str) -> dict:
+    """{col: max a_k - min a_k} where a_k = 1/(1+qv(t0)) -- the physical weight.
+
+    The two bases give the same RELATIVE difference only when this weight is
+    vertically uniform, because `a_k` sits INSIDE the column sum:
+
+        r_d = |sum_k a_k w_k dq_k| / |sum_k a_k w_k q_k|
+
+    A common factor cancels; a level-dependent one does not. The finding claimed
+    the equality followed necessarily from both runs sharing `qv(t0)`, which is
+    false in general (owner §9.2). On `boundary_mapping_v1` the spread is
+    EXACTLY zero -- qv is vertically constant per column -- so the agreement is
+    a property of this fixture, measured here rather than assumed.
+    """
+    run = ra.read_text(text, nsplit=1)
+    out = {}
+    for key in run:
+        if len(key) == 4 and key[0] == "initial" and key[1] == "qv":
+            out.setdefault(key[2], []).append(1.0 / (1.0 + run[key]))
+    return {c: max(v) - min(v) for c, v in out.items()}
+
+
 def column_integrated(base_text: str, got_text: str, basis: str = "operator") -> dict:
     """{(col, field): (baseline, partition, abs, rel)} under the rho*dz measure.
 
@@ -330,8 +424,14 @@ def column_integrated(base_text: str, got_text: str, basis: str = "operator") ->
             # findings.
             def w(k):
                 m = run[("forcing", "rho", col, k)] * run[("forcing", "delz", col, k)]
-                return m / (1.0 + run[("initial", "qv", col, k)]) \
-                    if basis == "physical" else m
+                if basis != "physical":
+                    return m
+                key = ("initial", "qv", col, k)
+                if key not in run:
+                    raise ra.RefineError(
+                        "the physical basis needs the WINDOW-INITIAL qv from "
+                        "G33R INITIAL, which this stream does not carry")
+                return m / (1.0 + run[key])
             return sum(w(k) * sum(run[("state", f, col, k)] for f in fields)
                        for k in ks)
 
@@ -339,8 +439,14 @@ def column_integrated(base_text: str, got_text: str, basis: str = "operator") ->
                              + [("total_condensate", CONDENSATE)]):
             x, y = col_mass(a, fields), col_mass(b, fields)
             if x != y:
+                # SIGNED as well as absolute (owner §9.4). The finding says the
+                # single-tile run has "+20.72% more" rain than the oracle, but a
+                # test on |rel| passes just as well if a future change makes it
+                # 20.72% LESS. Direction has to be in the artifact to be
+                # protected by one.
                 out[(col, name)] = (x, y, abs(y - x),
-                                    abs(y - x) / max(abs(x), 1e-30))
+                                    abs(y - x) / max(abs(x), 1e-30),
+                                    y - x, (y - x) / x if x else None)
     return out
 
 
@@ -421,8 +527,8 @@ def analysis(driver: str, fixture: str) -> dict:
             # statement rather than a per-component ratio (owner §11.3).
             "column_integrated": {
                 b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
-                                 "rel": rd}
-                    for (c, f), (x, y, ad, rd)
+                                 "rel": rd, "signed_abs": sa, "signed_rel": sr}
+                    for (c, f), (x, y, ad, rd, sa, sr)
                     in column_integrated(base_text, got_text, b).items()}
                 for b in ("operator", "physical")},
             # The measurement stands on its own; the CAUSAL attribution is a
@@ -480,12 +586,233 @@ def local_oracle(driver: str, fixture: str) -> dict:
             "columns": sorted({k[1] for k in diff}),
             "column_integrated": {
                 b: {f"{c}/{f}": {"baseline": x, "partition": y, "abs": ad,
-                                 "rel": rd}
-                    for (c, f), (x, y, ad, rd)
+                                 "rel": rd, "signed_abs": sa, "signed_rel": sr}
+                    for (c, f), (x, y, ad, rd, sa, sr)
                     in column_integrated(ref_text, text, b).items()}
                 for b in ("operator", "physical")},
         }
     return {"oracle": ",".join(map(str, ones)), "partitions": rows}
+
+
+def imposed_threshold(tiles, fixture: str, col: int):
+    """(imposed ncmin, the column's OWN ncmin) under this decomposition."""
+    land, sea = fixture_ncmin(fixture)
+    xland = fixture_xland(fixture)
+    by_type = {1.0: land, 2.0: sea}
+    if set(xland.values()) - set(by_type):
+        raise ra.RefineError(
+            f"fixture carries xland values {sorted(set(xland.values()))}, and "
+            f"only land=1.0 / sea=2.0 have a known ncmin")
+    first = 1
+    for size in tiles:
+        last = first + size - 1
+        if first <= col <= last:
+            return by_type[xland[last]], by_type[xland[col]]
+        first = last + 1
+    raise ValueError(f"column {col} is outside {tiles}")
+
+
+def mechanism_for(tiles, fixture: str, col: int) -> str:
+    """Why THIS partition moves THIS column, derived from the thresholds.
+
+    Two versions were wrong before this one. The first hardcoded "a tile ending
+    on land gates a sea column at the HIGHER floor, which suppresses
+    autoconversion" -- true only while `ncmin_land > ncmin_sea`. The second
+    derived that, but printed it ONCE, under a table carrying both signs: a
+    reader applying the whole-domain explanation to the `+20.67%` row got the
+    opposite mechanism, because there the affected column is gated at the LOWER
+    threshold instead (Codex). The explanation belongs to the row.
+    """
+    imposed, own = imposed_threshold(tiles, fixture, col)
+    if imposed == own:
+        # This function is called ONLY for columns the run measured as moving.
+        # Printing "unaffected" there would put a derived explanation in direct
+        # contradiction with the table above it -- the same failure as the two
+        # rounds before: an explanation that cannot be checked against what was
+        # measured. `ncmin` is not the only way a column could move, so the
+        # honest output is a refusal to explain, not a wrong explanation.
+        raise ra.RefineError(
+            f"col {col} moved under {tiles}, but it is gated at its own "
+            f"{own:.3g} -- the `ncmin` mechanism does not explain this column")
+    higher = imposed > own
+    return (f"col {col}: gated at {imposed:.3g}, not its own {own:.3g} -- a "
+            f"{'HIGHER' if higher else 'LOWER'} droplet floor, so "
+            f"{'suppressed' if higher else 'freer'} autoconversion and "
+            f"{'LESS' if higher else 'MORE'} rain")
+
+
+F64_EPS = sys.float_info.epsilon
+
+
+def agreement_digits(oracle: dict, gap: float) -> float:
+    """Significant digits to which the two bases agree.
+
+    `scale` is over BOTH bases. Taking it from the operator basis alone let the
+    worst disagreement available certify as perfect agreement: where the
+    operator recorded no departure and the physical basis recorded 20.7%, `gap`
+    was 0.2072, `scale` was 0.0, and the division was skipped for `inf` -- the
+    guard reporting INFINITE-digit agreement on a total mismatch (Codex).
+    """
+    scale = max((v["rel"] for r in oracle["partitions"].values()
+                 for b in r["column_integrated"].values() for v in b.values()),
+                default=0.0)
+    if gap and not scale:
+        raise ra.RefineError(
+            f"the bases differ by {gap:.3e} while no departure was recorded in "
+            f"either -- the residual and the figures it is measured against "
+            f"disagree about whether anything happened")
+    # `inf` means EXACTLY equal, and nothing else.
+    return float("inf") if gap == 0.0 else -math.log10(gap / scale)
+
+
+def gate_activity(text: str, fixture: str) -> dict:
+    """How often the `ncmin` gate can BIND, per column, on this atmosphere.
+
+    Without this a null result reads as evidence when it may only be evidence
+    of an inert gate. `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so
+    `nci .le. ncmin` binds in 0 of 12 cells: showing no tiling dependence there
+    says little about whether some OTHER mechanism would respond under the
+    boundary fixture's regime, where it binds 12 of 12 (Codex).
+    """
+    rec = read_records(text, label="gate-activity")
+    out = {}
+    for col in range(1, fixture_dims(fixture)[0] + 1):
+        thr = fixture_ncmin(fixture)[0 if fixture_xland(fixture)[col] == 1.0
+                                     else 1]
+        vals = [_f32(v) for k, v in rec.items()
+                if k[0] == "initial" and k[1] == "nc" and k[2] == col]
+        out[col] = {"threshold": thr, "cells": len(vals),
+                    "binding": sum(1 for v in vals if v <= thr)}
+    return out
+
+
+def _f32(hexword: str) -> float:
+    return struct.unpack(">f", bytes.fromhex(hexword))[0]
+
+
+def threshold_vector(tiles, fixture: str) -> tuple:
+    """The ncmin each column is GATED AT under this decomposition.
+
+    From the reference source, not inferred. `ncmin` is declared a plain local
+    (`real :: ncmin`, F:812) -- not SAVE, not module-level -- so it cannot
+    outlive one `kdm62D` call, and the loop that sets it (F:876-883) has no body
+    but the assignment, so its only effect is that `slmsk(ite)` wins. The
+    non-locality is therefore scoped to ONE call and determined solely by the
+    surface type at that call's LAST column.
+    """
+    return tuple(imposed_threshold(tiles, fixture, c)[0]
+                 for c in range(1, fixture_dims(fixture)[0] + 1))
+
+
+def equivalence_classes(fixture: str) -> dict:
+    """{threshold vector: [decompositions that produce it]}.
+
+    If the mechanism really is `slmsk(ite)`-only, this partitions the whole
+    decomposition space: same vector => same answer, bit for bit.
+    """
+    out = {}
+    for tiles in compositions(fixture_dims(fixture)[0]):
+        out.setdefault(threshold_vector(tiles, fixture), []).append(tiles)
+    return out
+
+
+def class_law(driver: str, fixture: str) -> dict:
+    """Test that prediction: byte-identity WITHIN a class, difference ACROSS.
+
+    This is what licenses reading a synthetic result as a statement about real
+    decompositions. It turns "tiling changes the answer" into "the answer is a
+    function of the imposed-threshold vector" -- so what a real MPI run would
+    show reduces to WHICH vectors its patch layout produces, a geometric
+    question about the decomposition rather than a physics campaign.
+    """
+    cls = equivalence_classes(fixture)
+    width, levels = fixture_dims(fixture)
+    ones = (1,) * width
+
+    # THE SAME GATES `local_oracle` applies. Reading the streams directly
+    # skipped every one of them, so a driver that validated the tile spec and
+    # then ran the whole domain would make every partition identical -- and
+    # this check reads identity as the law HOLDING. The strongest possible
+    # confirmation, produced by a completely broken run (Codex).
+    ref_text = run(driver, ones)
+    _expect_tiles_are_live(ref_text, ones, "class-law")
+    ref_rec = read_records(ref_text, label="class-law")
+
+    state = {}
+    for tiles in compositions(width):
+        label = ",".join(map(str, tiles))
+        text = run(driver, tiles)
+        _expect_tiles_are_live(text, tiles, label)
+        rec = read_records(text, label=label)
+        _expect_same_inputs(ref_rec, rec, label)
+        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+        _expect_universe(got, width, levels, label)
+        state[tiles] = got
+
+    within = [{"a": a, "b": b, "identical": state[a] == state[b]}
+              for members in cls.values() for a in members[:1]
+              for b in members[1:]]
+    keys = list(cls)
+    across = [{"a": cls[keys[i]][0], "b": cls[keys[j]][0],
+               "differing": sum(1 for k in state[cls[keys[i]][0]]
+                                if state[cls[keys[i]][0]][k]
+                                != state[cls[keys[j]][0]][k])}
+              for i in range(len(keys)) for j in range(i + 1, len(keys))]
+    return {"classes": {",".join(f"{v:.3g}" for v in vec): [list(m) for m in ms]
+                        for vec, ms in cls.items()},
+            "within": within, "across": across,
+            "within_pairs": len(within),
+            # COMPUTED, so the report cannot announce a verdict the data does
+            # not support. It printed "Held on every pair" unconditionally,
+            # directly under rows reading `byte-identical = False` (Codex).
+            "holds": (all(w["identical"] for w in within)
+                      and all(x["differing"] > 0 for x in across))}
+
+
+def weight_is_uniform(base_text: str) -> bool:
+    """Is a_k = 1/(1+qv(t0)) vertically CONSTANT in every column? Exactly.
+
+    This is the whole question, and it is exact -- no tolerance enters. a_k sits
+    INSIDE the column sum, so a per-column constant cancels from a per-column
+    RELATIVE figure algebraically, and a level-dependent one does not.
+    """
+    return all(v == 0.0 for v in humidity_weight_spread(base_text).values())
+
+
+#: Agreement demanded of two figures that are algebraically EQUAL, in
+#: significant digits. Deliberately far below what f64 delivers (~16) and far
+#: above any real divergence: a level-dependent a_k parts the bases at the scale
+#: of its own spread, which is O(1e-3) or larger here.
+#:
+#: This is a HEURISTIC SANITY BOUND, not an error bound, and it decides nothing
+#: -- the verdict comes from `weight_is_uniform`, which is exact. Two previous
+#: versions of this check did claim a bound: first a bare f64 eps fitted to one
+#: arm's one measurement, then `levels * eps`, which sounds derived but is not
+#: valid for this quantity -- `rel = |y-x|/|x|` contains a SUBTRACTION, and
+#: k*eps bounds a summation's error against sum|x_i|, saying nothing about the
+#: cancellation in y-x (Codex). The honest structure is an exact precondition
+#: plus an observed residual, not a fabricated tolerance.
+SANITY_DIGITS = 8
+
+
+def basis_gap(oracle: dict) -> float:
+    """Max |rel(operator) - rel(physical)| over every departure both computed.
+
+    Measures what the report used to assert. A key present in one basis and not
+    the other is itself a disagreement (the departure was large enough to record
+    on one measure and not the other), so it counts as a full mismatch rather
+    than being skipped.
+    """
+    worst = 0.0
+    for r in oracle["partitions"].values():
+        op, ph = r["column_integrated"]["operator"], \
+            r["column_integrated"]["physical"]
+        for key in set(op) | set(ph):
+            a = op.get(key, {}).get("rel")
+            b = ph.get(key, {}).get("rel")
+            worst = max(worst, abs(a - b) if a is not None and b is not None
+                        else max(a or 0.0, b or 0.0))
+    return worst
 
 
 def report(driver: str, fixture: str) -> None:
@@ -507,24 +834,136 @@ def report(driver: str, fixture: str) -> None:
                   f"{d['max_abs']:12.4e} {d['max_abs_baseline']:12.4e}")
             first = ""
     print(f"\n  f32 eps = {a['f32_eps']:.3e}. A rounding difference lives there.")
-    o = local_oracle(driver, fixture)
-    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
-          f"corrected\n  operator must reproduce. The whole domain is what "
-          f"production runs.\n")
-    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
-          f"{'worst column-integrated departure':>36}")
-    for tiles, r in o["partitions"].items():
-        ci = r["column_integrated"]["operator"]
-        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
-        w = f"{worst[0]} {100*worst[1]['rel']:.2f}%" if worst[0] else "-"
-        print(f"  {tiles:>10} {r['components_differing']:>5}/"
-              f"{r['components_total']:<6} "
-              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>36}"
-              + ("   <- the oracle" if r["is_the_oracle"] else ""))
     for tiles, r in a["partitions"].items():
         if r["components_differing"] and not r["is_roundoff_scale"]:
             print(f"  {tiles}: max relative difference {r['max_rel']:.4e} is "
                   f"{r['max_rel'] / a['f32_eps']:.3g}x f32 eps.")
+    o = local_oracle(driver, fixture)
+    base_text = run(driver, (fixture_dims(fixture)[0],))
+    print(f"\n  Against the PER-COLUMN answer `{o['oracle']}` -- the direct sum a "
+          f"corrected operator\n  must reproduce. This is a synthetic fixture "
+          f"driven sequentially: no MPI ranks,\n  no haloes, no real coastal "
+          f"layout. It does NOT stand for a production run.\n")
+    print(f"  {'partition':>10} {'components':>12} {'columns':>9} "
+          f"{'worst column-integrated departure':>38}")
+    for tiles, r in o["partitions"].items():
+        ci = r["column_integrated"]["operator"]
+        worst = max(ci.items(), key=lambda kv: kv[1]["rel"], default=(None, None))
+        # SIGNED. An unsigned figure reads the same whether the run makes more
+        # or less of the quantity, and the published sentence was backwards
+        # because of exactly that (owner §9.4).
+        w = (f"{worst[0]} {100*worst[1]['signed_rel']:+.2f}%" if worst[0] else "-")
+        print(f"  {tiles:>10} {r['components_differing']:>5}/"
+              f"{r['components_total']:<6} "
+              f"{str(r['columns']) if r['columns'] else '-':>9} {w:>38}"
+              + ("   <- the oracle" if r["is_the_oracle"] else ""))
+    law = class_law(driver, fixture)
+    print(f"\n  The mechanism as a LAW over the whole decomposition space. "
+          f"`ncmin` is a plain\n  local (F:812, not SAVE, not module-level), so "
+          f"it cannot outlive one kdm62D\n  call, and the loop that sets it "
+          f"(F:876-883) has no body but the assignment --\n  so `slmsk(ite)` "
+          f"wins and the answer should be a function of the imposed\n  "
+          f"threshold vector alone:")
+    for vec, members in law["classes"].items():
+        print(f"    [{vec}]  <- "
+              + ", ".join("(" + ",".join(map(str, m)) + ")" for m in members))
+    for w in law["within"]:
+        print(f"    WITHIN a class {tuple(w['a'])} vs {tuple(w['b'])}: "
+              f"byte-identical = {w['identical']}")
+    for x in law["across"]:
+        print(f"    ACROSS classes {tuple(x['a'])} vs {tuple(x['b'])}: "
+              f"{x['differing']} components differ")
+    if not law["holds"]:
+        # Checked BEFORE the sentence below claims it held, for the same reason
+        # the basis guard is: a failure must not be preceded by its own
+        # reassurance.
+        raise ra.RefineError(
+            "the imposed-threshold law is FALSIFIED on this run: "
+            + "; ".join(
+                [f"{tuple(w['a'])} and {tuple(w['b'])} share a threshold vector "
+                 f"but differ" for w in law["within"] if not w["identical"]]
+                + [f"{tuple(x['a'])} and {tuple(x['b'])} have different vectors "
+                   f"but are identical" for x in law["across"]
+                   if not x["differing"]])
+            + " -- `ncmin` is not the only thing the decomposition changes here, "
+              "so the synthetic result cannot be read as a statement about real "
+              "decompositions")
+    act = gate_activity(base_text, fixture)
+    binding = sum(v["binding"] for v in act.values())
+    cells = sum(v["cells"] for v in act.values())
+    print(f"  The `nc <= ncmin` gate BINDS in {binding}/{cells} cells on this "
+          f"atmosphere. A null\n  result under an INERT gate is evidence of the "
+          f"gate being inert, not of the\n  operator being local, so this "
+          f"number has to sit beside the verdict (Codex).")
+    rep = control_replication(driver, fixture)
+    if not rep["holds"]:
+        raise ra.RefineError(
+            f"the same-atmosphere control FAILS: "
+            f"{rep['within_identical']}/{rep['trajectories']} trajectories keep "
+            f"{rep['within_pair'][0]} == {rep['within_pair'][1]} and "
+            f"{rep['across_differing']}/{rep['trajectories']} keep the "
+            f"across-class pair distinct -- the decomposition moves something "
+            f"other than the ncmin gate")
+    print(f"  Same-atmosphere control, replicated over {rep['trajectories']} "
+          f"trajectories (6 density\n  profiles x 2 aux arms x 3 sub-step "
+          f"counts): {rep['within_pair'][0]} and {rep['within_pair'][1]} share a "
+          f"threshold vector\n  but are genuinely different decompositions, and "
+          f"agree bit-for-bit in "
+          f"{rep['within_identical']}/{rep['trajectories']}.\n  The "
+          f"across-class pair differs in {rep['across_differing']}/"
+          f"{rep['trajectories']} -- both directions, so the null result is\n"
+          f"  not just trajectories insensitive to everything.")
+    print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
+          f"columns wide, which yields\n  exactly {law['within_pairs']} "
+          f"within-class pair, so the data is CONSISTENT with the law rather\n"
+          f"  than a strong test of it. What it does establish is what a real "
+          f"MPI run would\n  have to show: the question becomes WHICH threshold "
+          f"vectors a real coastal patch\n  layout produces -- geometry of the "
+          f"decomposition, not more physics.")
+
+    print("\n  Why each row moves, per column -- the sign follows the "
+          "threshold it was\n  given, and the two directions have opposite "
+          "mechanisms:")
+    for tiles, r in o["partitions"].items():
+        for col in r["columns"]:
+            print("    " + mechanism_for(tuple(int(x) for x in tiles.split(",")),
+                                         fixture, col))
+    # Both bases are computed, so AGREEMENT IS MEASURED, not asserted. The
+    # table above prints the operator basis; claiming the physical basis gives
+    # the same relative figures while never comparing the two is an unverified
+    # claim standing next to the numbers that would settle it (Codex).
+    gap = basis_gap(o)
+    spread = humidity_weight_spread(base_text)
+    uniform = weight_is_uniform(base_text)
+    digits = agreement_digits(o, gap)
+
+    # Checked BEFORE the text below, which tells the reader the bases agree
+    # by construction: printing that and then raising leaves the reassuring
+    # paragraph in the log above the failure.
+    if uniform and digits < SANITY_DIGITS:
+        raise ra.RefineError(
+            f"a_k is exactly uniform, so the two bases are algebraically equal, "
+            f"yet they agree to only {digits:.1f} significant digits "
+            f"(residual {gap:.3e}). That is "
+            f"far beyond floating-point summation -- something in the two "
+            f"column integrals is not computing the same quantity")
+
+    print(f"\n  Humidity weight a_k = 1/(1+qv(t0)), vertical spread per "
+          f"column: max {max(spread.values()):.3e}.")
+    if uniform:
+        print(f"  It is EXACTLY uniform in every column, so it cancels from a "
+              f"per-column\n  RELATIVE figure algebraically and the two bases "
+              f"agree by construction. That\n  is a property of the fixture, "
+              f"not a law: a_k sits INSIDE the column sum.")
+        print(f"  Observed residual between the bases: {gap:.3e} "
+              f"({digits:.1f} significant digits\n  of agreement) -- floating-"
+              f"point summation, reported as an OBSERVATION. No\n  error bound "
+              f"is claimed: `rel` contains a subtraction, and the usual k*eps\n"
+              f"  summation bound says nothing about cancellation in it.")
+    else:
+        print(f"  It is NOT uniform, so it does not cancel: the bases differ by "
+              f"{gap:.3e}\n  and every figure above is basis-specific and must "
+              f"not be quoted without\n  naming its basis.")
 
 
 def main(argv) -> int:

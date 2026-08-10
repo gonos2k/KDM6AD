@@ -2,6 +2,8 @@
 
 LOCAL ONLY (needs gfortran + the gitignored host reference tree).
 """
+import contextlib
+import io
 import shutil
 import subprocess
 import sys
@@ -166,7 +168,7 @@ def test_the_strict_parser_is_REUSED_not_reimplemented():
     """The repeated defect in this repo is a new tool re-deriving a weaker set
     of checks beside the strict parser that already has them."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
-    assert "ra.read_text(text, nsplit=1, label=label)" in src
+    assert "ra.read_text(text, nsplit=nsplit, label=label)" in src
 
 
 def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
@@ -492,8 +494,34 @@ def test_the_WHOLE_DOMAIN_run_departs_from_the_local_answer(drivers):
     assert whole["components_differing"] == 16
     assert whole["columns"] == [2], "the sea column is the one gated wrongly"
     for basis in ("operator", "physical"):
-        rain = whole["column_integrated"][basis]["2/qr"]["rel"]
-        assert 0.20 < rain < 0.22, f"{basis}: {rain}"
+        d = whole["column_integrated"][basis]["2/qr"]
+        assert 0.20 < d["rel"] < 0.22, f"{basis}: {d['rel']}"
+        # DIRECTION, not just size (owner §9.4). A test on |rel| passes just as
+        # well if a future change flips the sign, and the published sentence WAS
+        # backwards: gating the sea column on ncmin_land raises the droplet
+        # floor, suppresses autoconversion, and rains LESS.
+        assert d["signed_rel"] < 0, (
+            f"{basis}: the whole-domain run must rain LESS than the per-column "
+            f"answer, not more")
+
+
+def test_the_two_directions_are_OPPOSITE_and_both_asserted(drivers):
+    """`(3,)` puts the sea column on the land threshold and rains less; `(2,1)`
+    puts the land column on the sea threshold and rains more. A single |rel|
+    assertion cannot tell those apart."""
+    p = nl.local_oracle(drivers["legacy"], FIXTURE)["partitions"]
+    assert p["3"]["column_integrated"]["operator"]["2/qr"]["signed_rel"] < 0
+    assert p["2,1"]["column_integrated"]["operator"]["1/qr"]["signed_rel"] > 0
+
+
+def test_the_bases_agree_because_the_humidity_weight_is_UNIFORM(drivers):
+    """Not by an identity: `a_k = 1/(1+qv(t0))` sits INSIDE the column sum, so a
+    common factor cancels and a level-dependent one does not (owner §9.2). On
+    this fixture the vertical spread is exactly zero, which is why the two bases
+    agree -- a property of the fixture, measured."""
+    spread = nl.humidity_weight_spread(nl.run(drivers["legacy"], (3,)))
+    assert set(spread) == {1, 2, 3}
+    assert all(v == 0.0 for v in spread.values()), spread
 
 
 def test_WHICH_column_is_wrong_depends_on_the_decomposition(drivers):
@@ -514,3 +542,504 @@ def test_the_operator_is_otherwise_COLUMN_LOCAL(drivers):
     changed, so nothing but the `ncmin` gate responds to tiling here."""
     a = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert a["1,2"]["components_differing"] == 0
+
+
+def test_the_REPORT_carries_the_direction_and_the_caveats(drivers, capsys):
+    """A correction that lives only in a finding is not in the artifact. The
+    report printed an unsigned `20.72%`, so anyone running the tool saw a
+    magnitude with no direction -- which is how the published sentence came to
+    say "too much" when the run makes LESS (owner §9.4). The two withdrawn
+    framings must appear where the numbers do."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "-20.72%" in out, "the whole-domain departure must print its SIGN"
+    assert "+20.67%" in out, "and the opposite-signed one must too"
+    assert "does NOT stand for a production run" in out
+    assert "property of the fixture, not a law" in out
+    assert "0.000e+00" in out, "the humidity-weight spread that explains it"
+
+
+def test_BOTH_SIGNS_get_their_OWN_mechanism_not_one_global_sentence(drivers,
+                                                                    capsys):
+    """The report derived the mechanism correctly and then printed it ONCE, from
+    the WHOLE-DOMAIN gating, under a table carrying both signs. A reader applying
+    it to the `+20.67%` row got the physics backwards, because there the affected
+    column is gated at the LOWER threshold, not the higher one (Codex). Deriving
+    the sentence is not enough if it is attached to the wrong row."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "col 2: gated at 1e+08, not its own 2.5e+07" in out
+    assert "HIGHER droplet floor" in out and "LESS rain" in out
+    assert "col 1: gated at 2.5e+07, not its own 1e+08" in out
+    assert "LOWER droplet floor" in out and "MORE rain" in out
+
+
+def test_the_MECHANISM_is_derived_from_the_thresholds_not_hardcoded(monkeypatch):
+    """It read "a tile ending on land gates a sea column at the HIGHER floor,
+    which suppresses autoconversion" -- true only while ncmin_land > ncmin_sea.
+    On a fixture with the reverse ordering the report printed the physics
+    backwards: the same class of error as the sign this session corrected, one
+    level up (Codex)."""
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (1.0e8, 2.5e7))
+    assert "HIGHER" in nl.mechanism_for((3,), FIXTURE, 2)
+
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (2.5e7, 1.0e8))
+    lo = nl.mechanism_for((3,), FIXTURE, 2)
+    assert "LOWER" in lo and "freer" in lo and "MORE rain" in lo
+
+
+def test_a_stream_with_no_INITIAL_qv_is_REFUSED_not_silently_accepted(drivers):
+    """Two defects met here. The report had a "NOT MEASURABLE" branch for a
+    stream carrying no INITIAL qv -- unreachable, because the physical column
+    integral above it died on a raw KeyError first (Codex). And the
+    same-atmosphere contract compared two EMPTY sets of initial records and
+    passed, so the guarantee evaporated exactly where it could not be checked.
+    Both now refuse, by name."""
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                      if not l.startswith("G33R INITIAL")) + "\n"
+    records = nl.read_records(text, label="a")
+
+    with pytest.raises(ra.RefineError, match="vacuous"):
+        nl._expect_same_inputs(records, records, "x")
+
+    with pytest.raises(ra.RefineError, match="WINDOW-INITIAL qv"):
+        nl.column_integrated(text, text, "physical")
+
+
+def test_the_operator_basis_still_works_without_INITIAL_qv(drivers):
+    """The refusal is scoped to the basis that needs it: rho_m*dz does not."""
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                      if not l.startswith("G33R INITIAL")) + "\n"
+    # Same stream twice: the operator basis completes and finds no difference,
+    # where the physical basis refuses for want of qv.
+    assert nl.column_integrated(text, text, "operator") == {}
+
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_basis_AGREEMENT_is_MEASURED_not_asserted(drivers, arm):
+    """The report printed the operator basis and then claimed the physical basis
+    gives the same relative figures -- an unverified claim standing next to the
+    numbers that would settle it (Codex). `local_oracle` computes BOTH, so the
+    comparison costs nothing. Measuring it immediately showed the claim was true
+    for a subtler reason than stated: the gap floors at summation roundoff, not
+    zero, because a_k cancels algebraically while the two sums reorder.
+
+    BOTH ARMS. The first version tested only legacy, so a tolerance fitted to
+    legacy's 0.89 eps shipped while conservative sat at 1.03 eps and was
+    misclassified (Codex)."""
+    o = nl.local_oracle(drivers[arm], FIXTURE)
+    gap = nl.basis_gap(o)
+    scale = max(v["rel"] for r in o["partitions"].values()
+                for v in r["column_integrated"]["operator"].values())
+    assert gap > 0.0, ("exactly 0.0 would mean the two bases are not really "
+                       "being computed differently")
+    assert -__import__("math").log10(gap / scale) >= nl.SANITY_DIGITS
+
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_VERDICT_rests_on_an_EXACT_property_not_a_TOLERANCE(drivers, arm):
+    """Three versions of this check tried to CLASSIFY with a threshold. First a
+    bare f64 eps, fitted to legacy's one measurement, which then misclassified
+    the conservative arm. Then `levels * eps`, which sounds derived but is not a
+    valid bound for this quantity: `rel = |y-x|/|x|` contains a SUBTRACTION, and
+    the k*eps summation bound is against sum|x_i| -- it says nothing about
+    cancellation in y-x (Codex).
+
+    The question has an EXACT answer, so no tolerance is needed at all: a_k is
+    vertically constant or it is not. Both arms give exactly 0.0, which is why
+    no threshold could sit safely between them."""
+    base = nl.run(drivers[arm], (nl.fixture_dims(FIXTURE)[0],))
+    assert nl.weight_is_uniform(base) is True
+    assert set(nl.humidity_weight_spread(base).values()) == {0.0}, \
+        "exactly zero, not merely small -- the verdict rests on this"
+    assert not hasattr(nl, "basis_tolerance"), \
+        "the invalid error bound must not come back"
+
+
+def test_a_NON_UNIFORM_weight_is_reported_as_a_REAL_disagreement(drivers,
+                                                                 monkeypatch,
+                                                                 capsys):
+    """The branch that says the figures are basis-specific must be reachable,
+    and it must not be the roundoff residual that decides it."""
+    monkeypatch.setattr(nl, "humidity_weight_spread",
+                        lambda text: {1: 0.0, 2: 4.2e-3, 3: 0.0})
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "It is NOT uniform" in out
+    assert "must not be quoted without" in out
+
+
+def test_a_departure_present_in_ONE_basis_only_counts_as_DISAGREEMENT():
+    """It was recorded on one measure and not the other, which is precisely a
+    disagreement -- skipping the unmatched key would hide it."""
+    lopsided = {"partitions": {"3": {"column_integrated": {
+        "operator": {"2/qr": {"rel": 0.2072}}, "physical": {}}}}}
+    assert nl.basis_gap(lopsided) == 0.2072
+
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_RESIDUAL_is_labelled_an_OBSERVATION_not_a_BOUND(drivers, capsys,
+                                                             arm):
+    """Every earlier version of this section made a claim it could not support:
+    that the bases agree (never compared), then that a fitted eps bounded the
+    gap, then that `levels * eps` did. What the report may honestly say is the
+    exact precondition plus the observed residual.
+
+    Both arms, because testing only legacy is what shipped the fitted bound."""
+    nl.report(drivers[arm], FIXTURE)
+    out = capsys.readouterr().out
+    assert "EXACTLY uniform in every column" in out
+    assert "significant digits" in out
+    assert "No\n  error bound is claimed" in out, (
+        "the residual must be labelled an OBSERVATION -- two earlier versions "
+        "presented a fabricated tolerance as a derived bound")
+    assert "It is NOT uniform" not in out
+
+
+def test_the_MECHANISM_REFUSES_to_contradict_the_measurement(monkeypatch):
+    """`mechanism_for` is called only for columns the run measured as MOVING. If
+    the thresholds say the column is gated at its own value, `ncmin` does not
+    explain it, and printing "unaffected" would put the derived explanation in
+    direct contradiction with the table above it. Refuse instead."""
+    monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (1.0e8, 1.0e8))
+    with pytest.raises(ra.RefineError, match="does not explain this column"):
+        nl.mechanism_for((3,), FIXTURE, 2)
+
+
+def test_an_UNKNOWN_surface_type_has_no_known_threshold(monkeypatch):
+    """`by_type[xland[...]]` would have raised a bare KeyError."""
+    monkeypatch.setattr(nl, "fixture_xland", lambda f: {1: 1.0, 2: 3.0, 3: 1.0})
+    with pytest.raises(ra.RefineError, match="only land=1.0 / sea=2.0"):
+        nl.imposed_threshold((3,), FIXTURE, 2)
+
+
+def test_the_SANITY_GUARD_fires_and_before_the_reassurance(drivers,
+                                                            monkeypatch):
+    """The guard decides nothing about the verdict, but it must not be
+    decorative: a_k exactly uniform means the two bases are ALGEBRAICALLY EQUAL,
+    so a residual far above roundoff means the integrals are not computing the
+    same quantity. And it is checked BEFORE the paragraph telling the reader the
+    bases agree by construction -- printing that and then raising would leave
+    the reassurance in the log above the failure."""
+    monkeypatch.setattr(nl, "basis_gap", lambda o: 1.0e-3)
+    buf = io.StringIO()
+    with pytest.raises(ra.RefineError, match="not computing the same quantity"):
+        with contextlib.redirect_stdout(buf):
+            nl.report(drivers["legacy"], FIXTURE)
+    assert "agree by construction" not in buf.getvalue()
+
+
+def _oracle(operator, physical):
+    return {"partitions": {"3": {"column_integrated": {
+        "operator": operator, "physical": physical}}}}
+
+
+@pytest.mark.parametrize("operator,physical", [
+    ({}, {"2/qr": {"rel": 0.2072}}),
+    ({"2/qr": {"rel": 0.2072}}, {}),
+])
+def test_a_ONE_SIDED_departure_cannot_certify_as_INFINITE_agreement(operator,
+                                                                     physical):
+    """The worst disagreement available -- one basis records a 20.7% departure
+    and the other records none -- certified as perfect agreement. `scale` was
+    taken from the OPERATOR basis alone, so it was 0.0 in exactly the case where
+    the operator saw nothing, and the division was then skipped for `inf`
+    (Codex). The guard has to fire hardest precisely here."""
+    o = _oracle(operator, physical)
+    gap = nl.basis_gap(o)
+    assert gap == 0.2072
+    assert nl.agreement_digits(o, gap) == 0.0 < nl.SANITY_DIGITS
+
+
+def test_INFINITY_means_EXACTLY_equal_and_nothing_else():
+    """`gap and scale` treated a zero SCALE the same as a zero GAP."""
+    agreed = _oracle({"2/qr": {"rel": 0.2072}}, {"2/qr": {"rel": 0.2072}})
+    assert nl.basis_gap(agreed) == 0.0
+    assert nl.agreement_digits(agreed, 0.0) == float("inf")
+    assert nl.agreement_digits(_oracle({}, {}), 0.0) == float("inf")
+
+
+def test_a_RESIDUAL_with_NO_departure_anywhere_is_a_CONTRADICTION():
+    """If the bases differ by something while neither recorded any departure,
+    the residual and the figures it is measured against disagree about whether
+    anything happened. Refuse rather than divide by zero or call it infinite."""
+    with pytest.raises(ra.RefineError, match="whether anything happened"):
+        nl.agreement_digits(_oracle({}, {}), 1.0e-3)
+
+
+# ---- the mechanism as a LAW over the decomposition space (owner priority 10) -
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_answer_is_a_FUNCTION_of_the_imposed_threshold_vector(drivers, arm):
+    """What licenses reading a synthetic result as a statement about real
+    decompositions. From the reference source: `ncmin` is a plain local (F:812,
+    not SAVE, not module-level) so it cannot outlive one kdm62D call, and the
+    loop that sets it (F:876-883) has no body but the assignment, so
+    `slmsk(ite)` wins. The answer should therefore depend on the imposed
+    threshold vector and nothing else -- byte-identical WITHIN a class,
+    different ACROSS."""
+    law = nl.class_law(drivers[arm], FIXTURE)
+    assert law["within"], "no within-class pair -- the law would be untested"
+    assert all(w["identical"] for w in law["within"])
+    assert all(x["differing"] > 0 for x in law["across"])
+    assert law["holds"] is True
+
+
+def test_the_CLASSES_are_what_the_thresholds_say_they_are():
+    """(1,2) and (3,) both end every tile on land, so they must share a class --
+    which is why the `(1,2)` row differs from the whole domain in ZERO
+    components, a prediction the measurement already confirmed."""
+    cls = nl.equivalence_classes(FIXTURE)
+    members = {tuple(sorted(v)) for v in cls.values()}
+    assert ((1, 2), (3,)) in members or ((3,), (1, 2)) in members
+    assert len(cls) == 3, cls
+
+
+def test_the_LAW_can_come_out_FALSE(drivers, monkeypatch):
+    """A law that cannot be violated is not being tested. Merge two classes that
+    genuinely differ and the within-class identity must fail."""
+    monkeypatch.setattr(nl, "threshold_vector", lambda tiles, fixture: (1.0,))
+    law = nl.class_law(drivers["legacy"], FIXTURE)
+    assert len(law["classes"]) == 1
+    assert not all(w["identical"] for w in law["within"])
+    assert law["holds"] is False
+
+
+def test_a_FALSIFIED_law_is_REFUSED_not_reported_as_held(drivers, monkeypatch):
+    """The report printed "Held on every pair" UNCONDITIONALLY, directly under
+    rows reading `byte-identical = False` (Codex). Refused now, and refused
+    BEFORE the sentence claiming it held -- a failure must not be preceded by
+    its own reassurance."""
+    monkeypatch.setattr(nl, "threshold_vector", lambda tiles, fixture: (1.0,))
+    buf = io.StringIO()
+    with pytest.raises(ra.RefineError, match="FALSIFIED"):
+        with contextlib.redirect_stdout(buf):
+            nl.report(drivers["legacy"], FIXTURE)
+    assert "Held on every pair" not in buf.getvalue()
+
+
+def test_a_driver_that_IGNORES_the_tile_spec_is_REFUSED(drivers, monkeypatch):
+    """The severe one. This law's CONFIRMING outcome is identity, so a driver
+    that validated the tile spec and then ran the whole domain would make every
+    partition identical -- the strongest possible confirmation, produced by a
+    completely broken run. `class_law` read the streams directly and applied
+    none of the gates `local_oracle` does (Codex)."""
+    whole = nl.run(drivers["legacy"], (3,))
+    monkeypatch.setattr(nl, "run", lambda driver, tiles: whole)
+    with pytest.raises(ra.RefineError, match="the kernel was called over"):
+        nl.class_law(drivers["legacy"], FIXTURE)
+
+
+def test_the_law_check_APPLIES_THE_SAME_GATES_as_the_oracle():
+    """Not a new weaker reader beside the strict one -- the repeated defect in
+    this repo, and the reason the check above was possible."""
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    body = src[src.index("def class_law("):src.index("def weight_is_uniform(")]
+    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
+                 "_expect_universe"):
+        assert gate in body, f"class_law skips {gate}"
+
+
+def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
+    """Width 3 yields exactly ONE within-class pair. The report must say the
+    data is consistent with the law rather than a strong test of it, or a
+    reader takes a one-pair confirmation for a proven law."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "CONSISTENT with the law rather" in out
+    assert "than a strong test of it" in out
+    assert "geometry of the decomposition, not more physics" in out
+
+
+# ---- the CONTROL: no threshold variation must mean no tiling dependence -----
+
+@pytest.fixture(scope="module")
+def uniform_driver(tmp_path_factory):
+    """`multisubcycle_v1` is all-land AND has ncmin_land == ncmin_sea == 10."""
+    d = tmp_path_factory.mktemp("ncmin-uniform") / "build"
+    b = subprocess.run(["bash", str(BUILD), str(d),
+                        "--fixture=g33_fixture_multisubcycle_v1",
+                        "--algo=legacy", "--nflux"],
+                       capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+    return str(d / "g33_refine_driver")
+
+
+UNIFORM = "g33_fixture_multisubcycle_v1"
+
+
+def test_the_control_fixture_really_IS_degenerate():
+    """Both degeneracies at once, so the control cannot separate them: the
+    domain is all-land AND the two thresholds are equal. Stated rather than
+    glossed -- it means this fixture shows what happens when the threshold
+    VECTOR is constant, not specifically what `xland` does."""
+    land, sea = nl.fixture_ncmin(UNIFORM)
+    assert land == sea == 10
+    assert set(nl.fixture_xland(UNIFORM).values()) == {1.0}
+    land_b, sea_b = nl.fixture_ncmin(FIXTURE)
+    assert land_b != sea_b, "the boundary fixture must still vary"
+
+
+def test_a_CONSTANT_threshold_vector_means_NO_tiling_dependence(uniform_driver):
+    """SUPPORTING evidence, NOT the attribution.
+
+    The commit that added this claimed it licensed reading the 20.72% as an
+    `ncmin` cost rather than a tiling cost. It does not, and the reason is
+    measurable: on this fixture ncmin = 10 against nc ~ 1e8, so the gate binds
+    in 0 of 12 cells. A null result under an INERT gate is evidence that the
+    gate is inert (Codex). A second tiling-dependent mechanism exercised only
+    by the boundary fixture's regime would not show here.
+
+    What it does establish is narrower and still worth having: on THIS
+    atmosphere, with the threshold vector constant, the operator is
+    column-local across every decomposition."""
+    law = nl.class_law(uniform_driver, UNIFORM)
+    assert len(law["classes"]) == 1, "an all-land domain has one threshold class"
+    assert law["within_pairs"] == 3
+    assert all(w["identical"] for w in law["within"])
+    assert not law["across"], "nothing to compare across -- that is the point"
+    assert law["holds"] is True
+
+
+def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
+                                                              monkeypatch):
+    """If the operator had another tiling-dependent path, the control fails --
+    which is what makes it a control and not a formality."""
+    real = nl.read_records
+    seen = {"n": 0}
+
+    def perturbed(text, *, label):
+        got = dict(real(text, label=label))
+        seen["n"] += 1
+        if seen["n"] == 3:                      # one partition answers differently
+            k = next(k for k in sorted(got) if k[0] == "state")
+            got[k] = "DEADBEEF"
+        return got
+
+    monkeypatch.setattr(nl, "read_records", perturbed)
+    law = nl.class_law(uniform_driver, UNIFORM)
+    assert not law["holds"]
+
+
+def test_the_control_fixture_gate_is_INERT_so_it_cannot_carry_attribution(
+        uniform_driver, drivers):
+    """Measured, because the previous commit asserted the opposite. `ncmin = 10`
+    against nc ~ 1e8 means the gate never binds on the control fixture, so its
+    null result cannot rule out a second tiling-dependent mechanism (Codex)."""
+    inert = nl.gate_activity(nl.run(uniform_driver, (3,)), UNIFORM)
+    assert sum(v["binding"] for v in inert.values()) == 0, \
+        "if this ever binds, the control gets stronger -- update the claim"
+
+    active = nl.gate_activity(nl.run(drivers["legacy"], (3,)), FIXTURE)
+    assert sum(v["binding"] for v in active.values()) > 0, \
+        "the boundary fixture must actually exercise the gate"
+
+
+def test_the_ATTRIBUTION_rests_on_a_SAME_ATMOSPHERE_control(drivers):
+    """The control that does carry it, on the atmosphere the figures come from.
+
+    `(1,2)` and `(3,)` share a threshold vector but are genuinely different
+    decompositions -- two kernel calls over (1,1) and (2,3) versus one over
+    (1,3), verified live. Same atmosphere, gate ACTIVE, decomposition changed,
+    output byte-identical in all 144 components. That is what licenses reading
+    the departure as an `ncmin` cost rather than a tiling cost."""
+    a_t, b_t = nl.run(drivers["legacy"], (1, 2)), nl.run(drivers["legacy"], (3,))
+    nl._expect_tiles_are_live(a_t, (1, 2), "a")
+    nl._expect_tiles_are_live(b_t, (3,), "b")
+    assert nl.tile_brackets(a_t) == [(1, 1), (2, 3)]
+    assert nl.tile_brackets(b_t) == [(1, 3)]
+    assert nl.threshold_vector((1, 2), FIXTURE) == nl.threshold_vector((3,), FIXTURE)
+    assert sum(v["binding"] for v in nl.gate_activity(b_t, FIXTURE).values()) > 0
+    assert nl.read_state(a_t, label="a") == nl.read_state(b_t, label="b")
+
+
+def test_the_report_PRINTS_the_gate_activity(drivers, capsys):
+    """So a future reader cannot repeat this error on a fixture where the gate
+    is inert."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "gate BINDS in 8/12 cells" in out
+    assert "under an INERT gate is evidence of the gate being inert" in out
+
+
+# ---- the attribution control, replicated across trajectories ---------------
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_control_HOLDS_on_every_trajectory(drivers, arm):
+    """One confirming pair is an anecdote. Replicated over every density
+    profile the driver offers, both aux-carry arms and three sub-step counts:
+    36 independent trajectories, all on the atmosphere the published figures
+    come from, with the gate active."""
+    rep = nl.control_replication(drivers[arm], FIXTURE)
+    assert rep["trajectories"] == 36
+    assert rep["within_identical"] == 36
+    assert rep["across_differing"] == 36
+    assert rep["holds"] is True
+
+
+def test_BOTH_directions_are_required(drivers):
+    """36 identical results are also what trajectories insensitive to
+    EVERYTHING would produce. The across-class direction is what separates a
+    strong control from a vacuous one, so it is part of the verdict."""
+    rep = nl.control_replication(drivers["legacy"], FIXTURE)
+    assert rep["across_pair"] is not None
+    assert rep["across_differing"] == rep["trajectories"]
+
+
+def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
+    """Perturb one trajectory's state and the control must fail."""
+    real, seen = nl.read_state, {"n": 0}
+
+    def perturbed(text, *, label, nsplit=1):
+        got = dict(real(text, label=label, nsplit=nsplit))
+        seen["n"] += 1
+        if seen["n"] == 2:
+            got[sorted(got)[0]] = "DEADBEEF"
+        return got
+
+    monkeypatch.setattr(nl, "read_state", perturbed)
+    assert nl.control_replication(drivers["legacy"], FIXTURE)["holds"] is False
+
+
+def test_a_fixture_with_NO_within_class_pair_is_REFUSED(drivers, monkeypatch):
+    """The control cannot be formed there, and reporting one anyway would be a
+    verdict with nothing behind it."""
+    monkeypatch.setattr(nl, "threshold_vector",
+                        lambda tiles, fixture: tuple(tiles))
+    with pytest.raises(ra.RefineError, match="cannot be formed"):
+        nl.control_replication(drivers["legacy"], FIXTURE)
+
+
+def test_the_report_states_the_REPLICATION(drivers, capsys):
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "replicated over 36 trajectories" in out
+    assert "agree bit-for-bit in 36/36" in out
+    assert "not just trajectories insensitive to everything" in out
+
+
+def test_a_ONE_CLASS_fixture_cannot_form_a_TWO_DIRECTIONAL_control(
+        uniform_driver):
+    """`holds` was True with ZERO across-class checks, and the report printed
+    "The across-class pair differs in 0/36 -- both directions" (Codex).
+    Self-contradictory on its face, and the same shape as the vacuous
+    same-atmosphere contract: a guarantee evaporating exactly where it could
+    not be checked.
+
+    An all-land fixture has one threshold class, so there IS no across-class
+    pair. That is a control that cannot be formed, not a control that passed."""
+    with pytest.raises(ra.RefineError, match="only one\n *direction|one "
+                                             "direction"):
+        nl.control_replication(uniform_driver, UNIFORM)
+
+
+def test_NEITHER_half_of_the_verdict_can_be_excused(drivers, monkeypatch):
+    """Both counts must reach the full trajectory set. Neither may be waived
+    for being unavailable -- unavailable is what made the first version pass."""
+    rep = nl.control_replication(drivers["legacy"], FIXTURE)
+    assert rep["within_identical"] == rep["trajectories"]
+    assert rep["across_differing"] == rep["trajectories"]
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    body = src[src.index("def control_replication("):src.index("def tile_brackets(")]
+    assert "across is None" not in body, \
+        "a missing across-class pair must be refused, never treated as satisfied"

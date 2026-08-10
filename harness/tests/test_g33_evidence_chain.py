@@ -4,6 +4,7 @@ Fixture bundles rather than the real ones: the published bundles live outside th
 repo and are absent in CI, so a test written against them would assert the host.
 """
 import hashlib
+import inspect
 import json
 import re
 import sys
@@ -216,13 +217,14 @@ def test_a_LEGACY_bundle_with_only_a_content_digest_is_REPORTED_not_failed(world
 
 # ---- owner §16-6: the analyzer is RECOVERED, not compared ---------------------
 
-def _pinned(bundle, write, commit, blob, path="harness/g33_matched_closure.py"):
+def _pinned(bundle, write, commit, blob, path="harness/g33_matched_closure.py",
+            content="0" * 64):
     body = b'{"x": 1}\n'
     (bundle / "a.json").write_bytes(body)
     write({"members": [], "findings": [],
            "analyses": [{"file": "a.json", "analysis": "matched_closure",
                          "sha256": _sha(body), "analyzer": path,
-                         "analyzer_sha256": "0" * 64,
+                         "analyzer_sha256": content,
                          "analyzer_commit": commit, "analyzer_blob_sha": blob}]})
 
 
@@ -235,17 +237,34 @@ def _head_blob(path):
 
 def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
         world):
-    """The point of the change. `analyzer_sha256` here is deliberately wrong --
-    it is `0`*64 -- and the check still passes, because the question is no longer
-    "does today's file match" but "can the bytes this bundle ran be recovered"
-    (owner §16-6)."""
+    """The point of the change: the question is no longer "does today's file
+    match" but "can the bytes this bundle ran be recovered" (owner §16-6). What
+    proves the working tree is irrelevant is that the check reads the BLOB and
+    never the file on disk.
+
+    The pin must still be CONSISTENT -- `content_sha256` is the digest of the
+    pinned blob (owner P0-2). An inconsistent one is the next test."""
     bundle, write = world
     path = "harness/g33_matched_closure.py"
-    _pinned(bundle, write, "HEAD", _head_blob(path), path)
+    content = hashlib.sha256((ec.REPO / path).read_bytes()).hexdigest()
+    _pinned(bundle, write, _head(), _head_blob(path), path, content)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
     # `modules-unpinned` rides along: this fixture pins no producer modules.
     assert "matches" in states and not (states - {"matches", "modules-unpinned"})
     assert ec.check() == 0
+
+
+def test_a_pin_whose_CONTENT_and_BLOB_disagree_FAILS(world):
+    """`content_sha256` records what RAN and `blob_sha` names what is
+    RECOVERABLE. Resolving the blob alone cannot tell them apart, so a bundle
+    built from an uncommitted file passed while its own manifest recorded the
+    disagreement (owner P0-2)."""
+    bundle, write = world
+    path = "harness/g33_matched_closure.py"
+    _pinned(bundle, write, _head(), _head_blob(path), path, "0" * 64)
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "PIN-INCONSISTENT" in states
+    assert ec.check() == 1
 
 
 def test_a_blob_that_does_not_match_the_pinned_commit_FAILS(world):
@@ -391,9 +410,13 @@ def test_EVERY_state_the_module_can_emit_is_classified():
 
 
 def _pin(mod):
+    """A CONSISTENT pin: content_sha256 must be the digest of the pinned blob.
+    `0`*64 was fine while the checker only resolved the blob; it is now the
+    inconsistency the checker exists to catch (owner P0-2)."""
     path = f"harness/{mod}.py"
-    return {"path": path, "content_sha256": "0" * 64, "commit": _head(),
-            "blob_sha": ec._blob_at("HEAD", path)}
+    return {"path": path, "content_sha256": hashlib.sha256(
+                (ec.REPO / path).read_bytes()).hexdigest(),
+            "commit": _head(), "blob_sha": ec._blob_at("HEAD", path)}
 
 
 def _module_rows(world_write, **blocks):
@@ -443,9 +466,7 @@ def _head() -> str:
 
 
 def _man(**kw):
-    pin = {"path": "harness/g33_matched_closure.py", "content_sha256": "0" * 64,
-           "commit": _head(),
-           "blob_sha": ec._blob_at("HEAD", "harness/g33_matched_closure.py")}
+    pin = _pin("g33_matched_closure")
     base = {"artifact_type": "refinement_experiment",
             "schema": "refinement_experiment_v2",
             "members": [{"file": "n3.rezero.txt", "output_sha256": "0" * 64}],
@@ -453,7 +474,9 @@ def _man(**kw):
             "tracked_build_inputs": [pin],
             "build_provenance": {"repo_commit": "x"}, "arm": "reference",
             "precision": "f32", "analyses": [], "instrumented": False,
-            "decision_eligible": False}
+            "decision_eligible": False,
+            "build_artifacts": [{"file": "g33_refine_driver",
+                                 "sha256": "0" * 64}]}
     return {**base, **kw}
 
 
@@ -547,3 +570,375 @@ def test_a_COMPLETE_v2_manifest_passes(tmp_path):
     import g33_refine_manifest as rm
 
     assert rm.validate(_man()) == []
+
+
+# ---- closeout mode: absence must not read as a pass (owner priority 6) ------
+
+def test_ABSENCE_passes_a_routine_check_and_FAILS_a_closeout():
+    """The two questions are different. CI cannot demand bundles that live
+    outside the repo by design; a closeout cannot record "we could not check
+    this" as "we checked and it is fine"."""
+    for state in ec.EXCUSED_BY_ABSENCE:
+        assert ec.verdict(state) is False, f"{state} must pass a routine check"
+        assert ec.verdict(state, require_available=True) is True, \
+            f"{state} must fail a closeout"
+
+
+def test_the_STRICT_mode_does_not_weaken_anything():
+    """It only ever adds failures: every state that fails routinely must still
+    fail, or a closeout could pass something CI rejects."""
+    for state in ec.FAILING_STATES | {"not-a-real-state"}:
+        assert ec.verdict(state) is True
+        assert ec.verdict(state, require_available=True) is True
+
+
+def test_a_claim_with_NO_artifacts_is_INVISIBLE_to_the_artifact_walk():
+    """The largest absence there is -- a measurement whose run was never pinned
+    -- yields NO rows to walk, so the artifact loop alone could never see it.
+    The claim declares it, and in a closeout the declaration is the finding."""
+    rows = ec.chain()
+    unpinned = [r for r in rows
+                if r["artifact_status"] == "historical_unavailable"]
+    assert unpinned, "expected claims still declaring their run unreachable"
+    assert all(not r["artifacts"] for r in unpinned), (
+        "these carry no artifacts, which is exactly why the walk cannot fail "
+        "them and the claim-level check is needed")
+
+
+def test_the_ROUTINE_check_still_PASSES(capsys):
+    """The strict mode is opt-in. Turning absence into a failure by default
+    would break every CI run on evidence that is unavailable by design."""
+    assert ec.check() == 0
+
+
+def test_the_CLOSEOUT_check_FAILS_today_and_says_why(capsys):
+    """C4 is on hold for exactly this reason, so the tool must say so rather
+    than reporting a clean closeout."""
+    assert ec.check(require_available=True) == 1
+    out = capsys.readouterr().out
+    assert "historical_unavailable" in out
+    assert "blocker(s) under --require-available" in out
+    assert "the right answer for CI and the wrong one" in out
+
+
+def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
+    """`not_applicable` means no run artifact APPLIES, not that one is missing.
+    Failing those would make the closeout unsatisfiable by construction."""
+    assert all(r["artifact_status"] != "historical_unavailable"
+               for r in ec.chain() if r["evidence_kind"] == "source")
+
+
+# ---- claim figures vs the pinned artifact (owner priority 7) ----------------
+
+_LEG = ("kdm6ad-g33m-migrate/number-003.bundles/"
+        "ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e")
+_TRUTH = {"file": f"{_LEG}/n12.rezero.defect_magnitude.json",
+          "path": "rows.main/nr/1.of_surface_flux",
+          "value": 0.150035513206531, "tolerance": 0.0}
+_COVERED = {_TRUTH["file"]}
+_HERE = {_LEG: "matches"}
+
+
+def _bundles_present():
+    return (ec.HOME / _TRUTH["file"]).is_file()
+
+
+needs_bundle = pytest.mark.skipif(not _bundles_present(),
+                                  reason="decision-grade bundle not on this host")
+
+
+@needs_bundle
+def test_the_PUBLISHED_figures_are_IN_the_pinned_artifact():
+    """The claim's prose said 15.0036/13.3377/11.8402% and nothing checked that
+    the pinned run actually produced them. A figure quoted in a claim and a
+    figure a run emitted were two unrelated facts."""
+    states = [v["state"] for r in ec.chain() for v in r["values"]]
+    assert states, "no claim declares a figure -- the check would be vacuous"
+    assert set(states) == {"value-matches"}, [
+        (r["id"], v["path"], v["state"]) for r in ec.chain() for v in r["values"]
+        if v["state"] != "value-matches"]
+
+
+@needs_bundle
+def test_a_LAST_DIGIT_change_is_caught():
+    """Exact by default. The claim asserts these reproduced EXACTLY, so an
+    approximate check would not be testing what the claim says."""
+    assert ec.resolve_value(_TRUTH, _COVERED, _HERE)["state"] == "value-matches"
+    off = {**_TRUTH, "value": 0.150035513206532}
+    assert ec.resolve_value(off, _COVERED, _HERE)["state"] == "VALUE-MISMATCH"
+    assert ec.resolve_value({**off, "tolerance": 1e-15},
+                            _COVERED, _HERE)["state"] == "value-matches"
+
+
+@needs_bundle
+@pytest.mark.parametrize("mutation,expected", [
+    ({"path": "rows.main/nr/1.of_surface_fluxx"}, "VALUE-PATH-ABSENT"),
+    ({"file": f"{_LEG}/nope.json"}, "VALUE-FILE-ABSENT"),
+    ({"path": "note"}, "VALUE-NOT-NUMERIC"),
+])
+def test_every_way_a_BINDING_can_be_WRONG_is_a_FAILURE(mutation, expected):
+    """A typo in the path must not read as agreement, and a missing file must
+    not read as one either."""
+    w = {**_TRUTH, **mutation}
+    r = ec.resolve_value(w, _COVERED | {w["file"]}, _HERE)
+    assert r["state"] == expected
+    assert ec.verdict(r["state"]) is True
+
+
+def test_a_figure_may_only_be_bound_to_a_DIGEST_VERIFIED_file():
+    """The check that makes the others mean anything, and the seam that was
+    still open: requiring the file to sit in a pinned bundle DIRECTORY is not
+    the same as requiring a digest to cover it. A JSON planted beside the
+    manifest resolved and reported `value-matches` (Codex). Beside the evidence
+    is not the evidence."""
+    loose = {**_TRUTH, "file": "kdm6ad-g33m-migrate/elsewhere/x.json"}
+    assert ec.resolve_value(loose, _COVERED, _HERE)["state"] == \
+        "VALUE-UNPINNED-FILE"
+    assert ec.verdict("VALUE-UNPINNED-FILE") is True
+
+
+@needs_bundle
+def test_a_file_PLANTED_in_a_pinned_bundle_is_not_covered_by_it():
+    """The attack, run for real: write a JSON into the pinned bundle directory
+    carrying the number a claim wants, and bind to it."""
+    rogue = ec.HOME / _LEG / "rogue_test_only.json"
+    rogue.write_text(json.dumps({"rows": {"main/nr/1":
+                                          {"of_surface_flux": 0.999}}}))
+    try:
+        covered = {f"{Path(a['path']).parent}/{m['file']}"
+                   for r in ec.chain() for a in r["artifacts"]
+                   if a["state"] == "matches"
+                   for m in a["members"] if m["state"] == "matches"}
+        assert str(rogue.relative_to(ec.HOME)) not in covered
+        r = ec.resolve_value({"file": str(rogue.relative_to(ec.HOME)),
+                              "path": "rows.main/nr/1.of_surface_flux",
+                              "value": 0.999, "tolerance": 0.0},
+                             covered, _HERE)
+        assert r["state"] == "VALUE-UNPINNED-FILE"
+    finally:
+        rogue.unlink()
+
+
+@pytest.mark.parametrize("manifest_state,member_state", [
+    ("MISMATCH", "matches"),      # the manifest itself was tampered with
+    ("matches", "MISMATCH"),      # the analysis file was
+])
+def test_a_BROKEN_digest_anywhere_on_the_link_breaks_the_binding(
+        manifest_state, member_state):
+    """`covered` is built only from a manifest that MATCHED and members that
+    MATCHED, so the figure cannot outlive a break anywhere on that chain."""
+    arts = [{"path": f"{_LEG}/manifest.json", "state": manifest_state,
+             "members": [{"file": "n12.rezero.defect_magnitude.json",
+                          "state": member_state}]}]
+    covered = {f"{Path(a['path']).parent}/{m['file']}"
+               for a in arts if a["state"] == "matches"
+               for m in a["members"] if m["state"] == "matches"}
+    r = ec.resolve_value(_TRUTH, covered, {_LEG: manifest_state})
+    assert r["state"] == "VALUE-UNPINNED-FILE"
+
+
+def test_a_bundle_ABSENT_from_this_host_stays_EXCUSED_routinely():
+    """On a host without the private bundles NOTHING is covered. Failing there
+    would fail the routine check everywhere the evidence legitimately is not --
+    the very thing --require-available exists to keep separate."""
+    r = ec.resolve_value(_TRUTH, set(), {_LEG: "unavailable"})
+    assert r["state"] == "value-unavailable"
+    assert ec.verdict(r["state"]) is False
+    assert ec.verdict(r["state"], require_available=True) is True
+
+
+def test_the_binding_is_DECLARED_not_DISCOVERED():
+    """Searching the artifacts for a number equal to the published one would
+    bind to whatever sat near it. On this fixture 1.0 appears at five unrelated
+    paths across two files, so "100.00%" would have matched all five."""
+    src = (ec.__file__ and open(ec.__file__).read())
+    assert "Declared, never discovered" in src
+    for c in ec.claims():
+        for w in c["expected_values"]:
+            assert w["file"] and w["path"], "both must be named explicitly"
+
+
+def test_a_key_containing_a_DOT_makes_the_path_AMBIGUOUS():
+    """The flattened path joins keys with ".", so a key that contains one could
+    resolve two different structures to the same string. Refuse rather than
+    pick."""
+    assert ec.flatten({"a": {"b": 1}}) == {"a.b": 1}
+    assert "." in str(list({"a.b": {"c": 1}})[0])
+    assert ec._keys_of({"a.b": {"c": 1}}) == ["a.b", "c"]
+
+
+def test_TOLERANCE_defaults_to_EXACT_when_unstated():
+    for c in ec.claims():
+        for w in c["expected_values"]:
+            assert w["tolerance"] == 0.0, \
+                f"{c['id']}: a tolerance was introduced -- state why in the claim"
+
+
+def test_every_member_row_says_WHERE_its_digest_was_verified():
+    """Two namespaces meet in this list: files hashed at <bundle>/<file>, and
+    provenance resolved from a pinned commit in the SOURCE TREE. Without
+    `scope` they are indistinguishable, and any consumer joining a path under
+    the bundle silently mixes them."""
+    for r in ec.chain():
+        for a in r["artifacts"]:
+            for m in a["members"]:
+                assert m.get("scope") in ("bundle", "repo"), \
+                    f"{a['path']} -> {m.get('file')}: unscoped row"
+
+
+@needs_bundle
+def test_covered_contains_NO_repo_paths():
+    """A repo path joined under the bundle names a location NOTHING hashed.
+    Through `covered_files`, so this checks the shipped filter."""
+    covered = {c for r in ec.chain() for c in ec.covered_files(r["artifacts"])}
+    assert covered
+    assert not [c for c in covered if "/harness/" in c]
+
+
+def _artifact_rows():
+    """One pinned manifest carrying both kinds of row, as `members_of` returns
+    them: an analysis hashed IN the bundle, and provenance resolved from the
+    source tree. No private bundle needed, so this runs in public CI -- where
+    the first version of this regression was skipped entirely (Codex)."""
+    return [{"path": f"{_LEG}/manifest.json", "state": "matches", "members": [
+        {"file": "n12.rezero.defect_magnitude.json", "state": "matches",
+         "scope": "bundle"},
+        {"file": "harness/g33_defect_magnitude.py", "state": "matches",
+         "scope": "repo"},
+    ]}]
+
+
+def test_a_PROVENANCE_PATH_COLLISION_cannot_cover_a_file():
+    """The exploit, against the PRODUCTION filter.
+
+    Provenance rows verify `harness/*.py` in the repo. Joining those under the
+    bundle produced entries like <bundle>/harness/g33_defect_magnitude.py, and a
+    JSON written at exactly that path made a claim's figure resolve against a
+    file whose digest was never taken there -- the guarantee belonged to the
+    repo file of the same name (Codex).
+
+    Asserts the collision is still DEMONSTRABLE on the unscoped join before
+    checking the real filter rejects it, so this cannot pass by the exploit
+    quietly ceasing to exist.
+    """
+    arts = _artifact_rows()
+    rogue = f"{_LEG}/harness/g33_defect_magnitude.py"
+
+    unscoped = {f"{Path(a['path']).parent}/{m['file']}"
+                for a in arts if a["state"] == "matches"
+                for m in a["members"] if m["state"] == "matches"}
+    assert rogue in unscoped, "the collision must still be demonstrable"
+
+    covered = ec.covered_files(arts)          # the PRODUCTION filter
+    assert rogue not in covered
+    assert f"{_LEG}/n12.rezero.defect_magnitude.json" in covered, \
+        "the legitimate member must survive the filter"
+
+    r = ec.resolve_value({"file": rogue, "path": "rows.main/nr/1.of_surface_flux",
+                          "value": 0.999, "tolerance": 0.0},
+                         covered, {_LEG: "matches"})
+    assert r["state"] == "VALUE-UNPINNED-FILE"
+    assert ec.verdict(r["state"]) is True
+
+
+def test_the_collision_test_uses_the_PRODUCTION_filter():
+    """A guard on the guard. The first version re-derived its own filter, on
+    the repo-path prefix, and would have passed with `covered_files` deleted --
+    testing a rule that existed only in the test."""
+    assert "def covered_files(" in Path(ec.__file__).read_text()
+    # Every OTHER test's source -- excluding this one by construction, since a
+    # guard that greps the whole file matches the literal it is grepping for.
+    me = "test_the_collision_test_uses_the_PRODUCTION_filter"
+    others = "\n".join(
+        inspect.getsource(f) for n, f in list(globals().items())
+        if n.startswith("test_") and n != me and callable(f))
+    assert "ec.covered_files(arts)" in others, \
+        "the collision regression must exercise the production filter"
+    # No test may BUILD a covered set by hand; they must call the real one.
+    assert 'scope") == "bundle"' not in others, \
+        "a hand-rolled stand-in for the production filter came back"
+
+
+@needs_bundle
+def test_the_REAL_bundle_agrees_with_the_synthetic_rows():
+    """The synthetic rows above must describe the real thing, or the CI test
+    guards a shape that does not occur."""
+    scopes = {m.get("scope") for r in ec.chain() for a in r["artifacts"]
+              for m in a["members"]}
+    assert scopes == {"bundle", "repo"}, scopes
+    assert any("/harness/" in f"{Path(a['path']).parent}/{m['file']}"
+               for r in ec.chain() for a in r["artifacts"]
+               if a["state"] == "matches"
+               for m in a["members"]
+               if m["state"] == "matches" and m.get("scope") == "repo"), \
+        "no repo-scoped row would collide -- the exploit shape is gone"
+
+
+def test_every_member_row_says_WHERE_its_digest_was_verified():
+    """Two namespaces meet in this list: files hashed at <bundle>/<file>, and
+    provenance resolved from a pinned commit in the SOURCE TREE. Without
+    `scope` they are indistinguishable, and any consumer joining a path under
+    the bundle silently mixes them."""
+    for r in ec.chain():
+        for a in r["artifacts"]:
+            for m in a["members"]:
+                assert m.get("scope") in ("bundle", "repo"), \
+                    f"{a['path']} -> {m.get('file')}: unscoped row"
+
+
+@needs_bundle
+def test_covered_contains_NO_repo_paths():
+    """A repo path joined under the bundle names a location NOTHING hashed.
+    Through `covered_files`, so this checks the shipped filter."""
+    covered = {c for r in ec.chain() for c in ec.covered_files(r["artifacts"])}
+    assert covered
+    assert not [c for c in covered if "/harness/" in c]
+
+
+def test_the_CHAIN_production_path_applies_the_scope_filter(tmp_path,
+                                                             monkeypatch):
+    """The wiring, not the filter in isolation.
+
+    Calling `covered_files` and `resolve_value` directly proves the filter
+    works; it does NOT prove `chain()` uses it. Reverting `chain()` to an
+    unscoped comprehension would leave those tests green (Codex). This drives
+    the real `chain()` over a real bundle on disk and reads the states it
+    produced.
+
+    Only `members_of` is stubbed -- the collision is about how `chain()`
+    CONSUMES member rows, and the two shapes it returns are asserted against the
+    real bundles by test_the_REAL_bundle_agrees_with_the_synthetic_rows.
+    """
+    bundle = tmp_path / "bundle"
+    (bundle / "harness").mkdir(parents=True)
+    manifest = bundle / "manifest.json"
+    manifest.write_text('{"members": []}')
+    (bundle / "a.json").write_text(json.dumps({"v": 1.5}))
+    # A file at exactly the path a repo-scoped provenance row would produce.
+    (bundle / "harness" / "p.py").write_text(json.dumps({"v": 0.999}))
+
+    claim = {
+        "id": "T-1", "evidence": [], "status": "active",
+        "artifact_status": "pinned", "evidence_kind": "measurement",
+        "artifacts": {"bundle/manifest.json": ec.sha256(manifest)},
+        "expected_values": [
+            {"file": "bundle/a.json", "path": "v",
+             "value": 1.5, "tolerance": 0.0},
+            {"file": "bundle/harness/p.py", "path": "v",
+             "value": 0.999, "tolerance": 0.0},
+        ],
+    }
+    monkeypatch.setattr(ec, "HOME", tmp_path)
+    monkeypatch.setattr(ec, "claims", lambda: [claim])
+    monkeypatch.setattr(ec, "bundles", lambda: {})
+    monkeypatch.setattr(ec, "members_of", lambda p: [
+        {"file": "a.json", "state": "matches", "scope": "bundle"},
+        {"file": "harness/p.py", "state": "matches", "scope": "repo"},
+    ])
+
+    states = {v["file"]: v["state"] for v in ec.chain()[0]["values"]}
+    assert states["bundle/a.json"] == "value-matches", \
+        "a genuinely covered figure must still resolve through chain()"
+    assert states["bundle/harness/p.py"] == "VALUE-UNPINNED-FILE", \
+        "chain() let a provenance-path collision cover a file"
+    assert ec.check() == 1, "and the collision must fail the routine check"

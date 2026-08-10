@@ -70,19 +70,28 @@ def claims() -> list[dict]:
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
-                   "evidence": [], "artifacts": {}}
+                   "evidence": [], "artifacts": {}, "expected_values": []}
             out.append(cur)
             in_art = False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
-            in_art = m.group(1) == "artifacts"
+            in_art = m.group(1) in ("artifacts", "expected_values")
+            section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) == "status":
-                cur["status"] = m.group(2).strip()
-        elif in_art and (m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
+            elif m.group(1) in ("status", "artifact_status", "evidence_kind"):
+                cur[m.group(1)] = m.group(2).strip()
+        elif in_art and section == "artifacts" and (
+                m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
+        elif in_art and section == "expected_values" and (
+                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(\S+)"
+                              r"(?:\s+~\s+(\S+))?\s*$", line)):
+            cur["expected_values"].append(
+                {"file": m.group(1), "path": m.group(2),
+                 "value": float(m.group(3)),
+                 "tolerance": float(m.group(4)) if m.group(4) else 0.0})
     return out
 
 
@@ -145,28 +154,28 @@ def members_of(manifest: Path) -> list[dict]:
     try:
         man = json.loads(manifest.read_text())
     except OSError as e:
-        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
                  "detail": str(e)}]
     except json.JSONDecodeError as e:
-        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
                  "detail": f"not JSON: {e}"}]
     if not isinstance(man, dict):
-        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": f"top level is {type(man).__name__}, not an object"}]
     # `members` is the one block every schema has carried. Its ABSENCE is a
     # different statement from an empty list, and only the second is a bundle
     # that legitimately published none.
     if "members" not in man:
-        return [{"file": manifest.name, "state": "MANIFEST-MISSING-MEMBERS",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-MISSING-MEMBERS",
                  "detail": f"keys: {sorted(man)[:8]}"}]
     bad = _schema_violations(man)
     if bad:
-        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": "; ".join(bad)}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
-                    "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == mem.get("output_sha256")
                               else "MISMATCH")})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
@@ -175,10 +184,18 @@ def members_of(manifest: Path) -> list[dict]:
     # the manifest records with analysis == "arm_stream": those are the raw runs
     # the multi-arm decomposition was computed from, and without them the chain
     # stopped at a derived JSON (owner §4).
+    # The BINARY that produced the numbers, and its provenance. Both are in the
+    # bundle; nothing followed them (owner §7).
+    for a in man.get("build_artifacts", []):
+        p = manifest.parent / a["file"]
+        out.append({"file": a["file"],
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                              "matches" if sha256(p) == a.get("sha256")
+                              else "MISMATCH")})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
-                    "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
         # The ANALYZER the manifest names, by digest. It was recorded and never
@@ -186,8 +203,8 @@ def members_of(manifest: Path) -> list[dict]:
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
-        out.append(_analyzer_state(an))
-    out.extend(_module_states(man))
+        out.append({"scope": "repo", **_analyzer_state(an)})
+    out.extend({"scope": "repo", **m} for m in _module_states(man))
     return out
 
 
@@ -198,6 +215,11 @@ def _blob_at(commit: str, path: str) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+#: Where a row's digest was actually verified. `bundle` means the file was
+#: hashed at <bundle>/<file>; `repo` means it was resolved from a pinned commit
+#: in the source tree. Joining a `repo` path under the bundle names a location
+#: NOTHING ever hashed, so a figure bound there would inherit a guarantee made
+#: about a different file entirely (Codex).
 def _analyzer_state(an: dict) -> dict:
     """Whether the analyzer this analysis ran can still be RECOVERED.
 
@@ -227,6 +249,23 @@ def _analyzer_state(an: dict) -> dict:
     if got != blob:
         return {"file": path, "state": "ANALYZER-BLOB-MISMATCH",
                 "detail": f"pinned {blob[:12]}, {commit[:12]} holds {got[:12]}"}
+    # The TRIPLE must agree. `content_sha256` records what RAN and `blob_sha`
+    # names what is RECOVERABLE; resolving the blob alone cannot tell the two
+    # apart, so a bundle built from an uncommitted file passed while its own
+    # manifest recorded the disagreement (owner P0-2).
+    content = an.get("analyzer_sha256")
+    if content:
+        raw = subprocess.run(["git", "cat-file", "blob", blob], cwd=REPO,
+                             capture_output=True)
+        if raw.returncode != 0:
+            return {"file": path, "state": "ANALYZER-UNRESOLVABLE",
+                    "detail": f"blob {blob[:12]} is not readable in this clone"}
+        recovered = hashlib.sha256(raw.stdout).hexdigest()
+        if recovered != content:
+            return {"file": path, "state": "PIN-INCONSISTENT",
+                    "detail": f"ran {content[:12]}, the pinned blob is "
+                              f"{recovered[:12]} -- the pin names a file that "
+                              f"did not run"}
     return {"file": path, "state": "matches"}
 
 
@@ -269,6 +308,94 @@ def _module_states(man: dict) -> list:
     return out
 
 
+def flatten(obj, prefix="") -> dict:
+    """{dotted path: leaf value} for one analysis JSON."""
+    out = {}
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            out.update(flatten(v, f"{prefix}.{k}" if prefix else str(k)))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            out.update(flatten(v, f"{prefix}[{i}]"))
+    else:
+        out[prefix] = obj
+    return out
+
+
+def covered_files(artifacts: list) -> set:
+    """The files a claim's pinned artifacts actually VOUCH for.
+
+    ONLY rows whose digest was verified AT <bundle>/<file>. The provenance rows
+    are verified in the SOURCE TREE, so joining their paths under the bundle
+    names a location nothing ever hashed -- a figure bound to
+    <bundle>/harness/g33_refine_analyze.py would have inherited a guarantee made
+    about the repo file of that name (Codex).
+
+    A function, not an expression inlined in `chain()`, so the regression test
+    can exercise THIS filter. The first version of that test re-derived its own
+    (`"/harness/" not in c`) and would have passed with the real one deleted --
+    the weaker-check-beside-the-real-one failure this repo keeps finding.
+    """
+    return {f"{Path(a['path']).parent}/{m['file']}"
+            for a in artifacts if a["state"] == "matches"
+            for m in a["members"]
+            if m["state"] == "matches" and m.get("scope") == "bundle"}
+
+
+def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
+    """Look up ONE declared figure in the artifact it is declared against.
+
+    Declared, never discovered. Searching the JSONs for a number equal to the
+    published one would bind a claim to whatever value happened to sit near it
+    -- on this fixture five unrelated fields across two files carry 1.0, so
+    "100.00%" would have matched all of them.
+
+    `covered` is the set of files whose DIGEST was verified: members, analyses
+    and build artifacts of a pinned manifest that itself matched. Requiring only
+    that the file sit in a pinned bundle DIRECTORY was not the same thing at
+    all -- a JSON dropped beside the manifest, covered by no digest, resolved
+    and reported `value-matches` (Codex). Beside the evidence is not the
+    evidence.
+    """
+    if want["file"] not in covered:
+        # Not covered has two causes, and only one is a defect. On a host
+        # without the private bundles NOTHING is covered, so failing here would
+        # fail the routine check everywhere the evidence legitimately is not --
+        # the very thing --require-available exists to keep separate.
+        if bundles.get(str(Path(want["file"]).parent)) == "unavailable":
+            return {**want, "state": "value-unavailable", "got": None}
+        return {**want, "state": "VALUE-UNPINNED-FILE", "got": None}
+    f = HOME / want["file"]
+    if not f.is_file():
+        return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
+    try:
+        doc = json.loads(f.read_text())
+    except (OSError, json.JSONDecodeError):
+        return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
+    if any("." in str(k) for k in _keys_of(doc)):
+        return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
+    flat = flatten(doc)
+    if want["path"] not in flat:
+        return {**want, "state": "VALUE-PATH-ABSENT", "got": None}
+    got = flat[want["path"]]
+    if isinstance(got, bool) or not isinstance(got, (int, float)):
+        return {**want, "state": "VALUE-NOT-NUMERIC", "got": got}
+    ok = (got == want["value"] if want["tolerance"] == 0.0
+          else abs(got - want["value"]) <= want["tolerance"])
+    return {**want, "state": "value-matches" if ok else "VALUE-MISMATCH",
+            "got": got}
+
+
+def _keys_of(obj) -> list:
+    """Every dict key anywhere in `obj`. A key containing "." would make the
+    flattened path ambiguous, so resolution refuses rather than guessing."""
+    if isinstance(obj, dict):
+        return list(obj) + [k for v in obj.values() for k in _keys_of(v)]
+    if isinstance(obj, list):
+        return [k for v in obj for k in _keys_of(v)]
+    return []
+
+
 def chain() -> list[dict]:
     """Per claim: its findings, its pinned artifacts, and each artifact's state."""
     have = bundles()
@@ -287,8 +414,17 @@ def chain() -> list[dict]:
             if state == "matches" and p.name == "manifest.json":
                 a["members"] = members_of(p)
             arts.append(a)
+        # A figure may only be bound to a file whose DIGEST this claim's
+        # pinned manifest verified. `members_of` already did that work; the
+        # binding follows the same link rather than re-deriving a weaker one.
+        covered = covered_files(arts)
+        bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
+        values = [resolve_value(w, covered, bundle_states)
+                  for w in c["expected_values"]]
         out.append({
-            "id": c["id"], "status": c.get("status", "?"),
+            "id": c["id"], "status": c.get("status", "?"), "values": values,
+            "artifact_status": c.get("artifact_status", "?"),
+            "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
             "runs": sorted({b for d in c["evidence"] for b in named.get(d, [])}),
@@ -345,45 +481,99 @@ PASSING_STATES = frozenset({
     "modules-unpinned",        # reported: the bundle predates the module pins
     "legacy-analyzer-changed",
     "legacy-analyzer-absent",
+    "value-matches",
+    "value-unavailable",       # the bundle the figure is declared against is not here
 })
 FAILING_STATES = frozenset({
-    "MISMATCH", "absent",
+    "MISMATCH", "absent", "PIN-INCONSISTENT",
     "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+    "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
+    "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
+    "VALUE-FILE-UNREADABLE",
 })
 
 
-def verdict(state: str) -> bool:
+#: The states that pass ONLY because the evidence is not there to check.
+#:
+#: For a routine run they are correct passes -- the decision-grade bundles live
+#: outside the repo by design, and a check cannot demand what was never
+#: committed. For a CLOSEOUT they are the opposite: "we could not check this"
+#: recorded as "we checked and it is fine" is exactly the reading a closeout
+#: must not permit. `--require-available` fails them (owner priority 6).
+EXCUSED_BY_ABSENCE = frozenset({
+    "unavailable",
+    "absent-finding",
+    "analyzer-unpinned",
+    "modules-unpinned",
+    "legacy-analyzer-absent",
+    "value-unavailable",
+})
+
+
+def verdict(state: str, require_available: bool = False) -> bool:
     """True if `state` fails the check. An unclassified state fails."""
-    if state in PASSING_STATES:
-        return False
-    return True
+    if require_available and state in EXCUSED_BY_ABSENCE:
+        return True
+    return state not in PASSING_STATES
 
 
-def check() -> int:
+def _why(state: str, require_available: bool) -> str:
+    """Say WHICH rule failed a state, so a closeout failure is not read as a
+    mismatch and chased as one."""
+    if require_available and state in EXCUSED_BY_ABSENCE:
+        return "  [absent -- passes a routine check, fails --require-available]"
+    if state in FAILING_STATES:
+        return ""
+    return "  [UNCLASSIFIED state -- failing by default]"
+
+
+def check(require_available: bool = False) -> int:
     """Fail only on the live direction: a pinned artifact that is present and
-    differs. Absent artifacts and divergent snapshots are not failures."""
+    differs. Absent artifacts and divergent snapshots are not failures.
+
+    With `require_available`, absence stops being an excuse -- see
+    EXCUSED_BY_ABSENCE. That is the closeout question, not the CI one.
+    """
     bad = []
     for r in chain():
+        # A claim carrying NO artifacts yields no rows below, so the walk alone
+        # cannot see the largest absence there is: a measurement whose run was
+        # never pinned. It declares that itself, and in a closeout the
+        # declaration is the finding (owner priority 6).
+        if require_available and r["artifact_status"] == "historical_unavailable":
+            bad.append(f"{r['id']}: artifact_status=historical_unavailable "
+                       f"({r['evidence_kind']}) -- the run behind this claim is "
+                       f"not reachable  [fails --require-available]")
+        for v in r["values"]:
+            if verdict(v["state"], require_available):
+                bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"
+                           f" (claim says {v['value']!r}, artifact has "
+                           f"{v['got']!r}){_why(v['state'], require_available)}")
         for a in r["artifacts"]:
-            if verdict(a["state"]):
+            if verdict(a["state"], require_available):
                 bad.append(f"{r['id']}: {a['path']} -> {a['state']}"
-                           + ("" if a["state"] in FAILING_STATES
-                              else "  [UNCLASSIFIED state -- failing by default]"))
+                           + _why(a["state"], require_available))
             # ABSENT is a failure HERE, unlike an absent top-level manifest
             # (owner P0-4). Once the parent manifest is present and matches, the
             # bundle has declared these files exist; one of them missing is a
             # corrupt or incomplete bundle, not an unavailable one.
             for m in a["members"]:
-                if not verdict(m["state"]):
+                if not verdict(m["state"], require_available):
                     continue
-                extra = "" if m["state"] in FAILING_STATES else \
-                    "  [UNCLASSIFIED state -- failing by default]"
+                extra = _why(m["state"], require_available)
                 bad.append(f"{r['id']}: {a['path']} -> {m.get('file', '?')}: "
                            f"{m['state']} {m.get('detail', '')}{extra}".rstrip())
     print("\n".join(bad))
+    if bad and require_available:
+        print(f"\n{len(bad)} blocker(s) under --require-available. A routine "
+              f"--check passes all of these:\nevidence that is not there cannot "
+              f"be checked, which is the right answer for CI and the wrong one\n"
+              f"for a closeout.")
     return 1 if bad else 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(check() if "--check" in sys.argv[1:] else (report(), 0)[1])
+    args = sys.argv[1:]
+    raise SystemExit(check("--require-available" in args)
+                     if "--check" in args else (report(), 0)[1])
