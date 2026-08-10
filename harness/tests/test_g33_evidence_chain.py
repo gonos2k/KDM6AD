@@ -893,3 +893,52 @@ def test_covered_contains_NO_repo_paths():
     covered = {c for r in ec.chain() for c in ec.covered_files(r["artifacts"])}
     assert covered
     assert not [c for c in covered if "/harness/" in c]
+
+
+def test_the_CHAIN_production_path_applies_the_scope_filter(tmp_path,
+                                                             monkeypatch):
+    """The wiring, not the filter in isolation.
+
+    Calling `covered_files` and `resolve_value` directly proves the filter
+    works; it does NOT prove `chain()` uses it. Reverting `chain()` to an
+    unscoped comprehension would leave those tests green (Codex). This drives
+    the real `chain()` over a real bundle on disk and reads the states it
+    produced.
+
+    Only `members_of` is stubbed -- the collision is about how `chain()`
+    CONSUMES member rows, and the two shapes it returns are asserted against the
+    real bundles by test_the_REAL_bundle_agrees_with_the_synthetic_rows.
+    """
+    bundle = tmp_path / "bundle"
+    (bundle / "harness").mkdir(parents=True)
+    manifest = bundle / "manifest.json"
+    manifest.write_text('{"members": []}')
+    (bundle / "a.json").write_text(json.dumps({"v": 1.5}))
+    # A file at exactly the path a repo-scoped provenance row would produce.
+    (bundle / "harness" / "p.py").write_text(json.dumps({"v": 0.999}))
+
+    claim = {
+        "id": "T-1", "evidence": [], "status": "active",
+        "artifact_status": "pinned", "evidence_kind": "measurement",
+        "artifacts": {"bundle/manifest.json": ec.sha256(manifest)},
+        "expected_values": [
+            {"file": "bundle/a.json", "path": "v",
+             "value": 1.5, "tolerance": 0.0},
+            {"file": "bundle/harness/p.py", "path": "v",
+             "value": 0.999, "tolerance": 0.0},
+        ],
+    }
+    monkeypatch.setattr(ec, "HOME", tmp_path)
+    monkeypatch.setattr(ec, "claims", lambda: [claim])
+    monkeypatch.setattr(ec, "bundles", lambda: {})
+    monkeypatch.setattr(ec, "members_of", lambda p: [
+        {"file": "a.json", "state": "matches", "scope": "bundle"},
+        {"file": "harness/p.py", "state": "matches", "scope": "repo"},
+    ])
+
+    states = {v["file"]: v["state"] for v in ec.chain()[0]["values"]}
+    assert states["bundle/a.json"] == "value-matches", \
+        "a genuinely covered figure must still resolve through chain()"
+    assert states["bundle/harness/p.py"] == "VALUE-UNPINNED-FILE", \
+        "chain() let a provenance-path collision cover a file"
+    assert ec.check() == 1, "and the collision must fail the routine check"
