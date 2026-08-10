@@ -48,7 +48,7 @@ def compositions(n: int) -> list[tuple]:
             for rest in compositions(n - first)]
 
 
-def read_records(text: str, *, label: str) -> dict:
+def read_records(text: str, *, label: str, nsplit: int = 1) -> dict:
     """{(cls, name, col, k): raw hex} for every G33R record.
 
     ONLY from a stream the strict parser took. The first version parsed the
@@ -62,7 +62,7 @@ def read_records(text: str, *, label: str) -> dict:
     The hex is taken raw afterwards, because the comparison is about the BITS
     the operator produced and 0.0 == -0.0 would hide a sign flip.
     """
-    ra.read_text(text, nsplit=1, label=label)
+    ra.read_text(text, nsplit=nsplit, label=label)
     out = {}
     for p in (ln.split() for ln in text.splitlines()):
         if p[:1] != ["G33R"]:
@@ -76,9 +76,10 @@ def read_records(text: str, *, label: str) -> dict:
     return out
 
 
-def read_state(text: str, *, label: str) -> dict:
+def read_state(text: str, *, label: str, nsplit: int = 1) -> dict:
     """{(field, col, k): raw hex} -- the final state only."""
-    return {k[1:]: v for k, v in read_records(text, label=label).items()
+    return {k[1:]: v
+            for k, v in read_records(text, label=label, nsplit=nsplit).items()
             if k[0] == "state"}
 
 
@@ -119,13 +120,64 @@ def _expect_same_inputs(base: dict, got: dict, label: str) -> None:
                 f"final state cannot be attributed to ncmin")
 
 
-def run(driver: str, tiles) -> str:
-    """The driver's stdout for one decomposition."""
-    r = subprocess.run([driver, "1", "rezero", ",".join(map(str, tiles))],
+#: Independent trajectories the same-atmosphere control is replicated over:
+#: every density profile the driver offers, both aux-carry arms, three
+#: sub-step counts. One confirming pair is an anecdote; the attribution rests
+#: on this holding wherever the operator is exercised.
+RHO_MODES = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
+TRAJECTORIES = tuple((nsplit, carry, rho)
+                     for rho in RHO_MODES
+                     for carry in ("rezero", "carry")
+                     for nsplit in (1, 3, 12))
+
+
+def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
+        rho: str = "as-is") -> str:
+    """The driver's stdout for one decomposition on one trajectory."""
+    r = subprocess.run([driver, str(nsplit), carry,
+                        ",".join(map(str, tiles)), rho],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"driver exited {r.returncode}\n{r.stderr[-2000:]}")
     return r.stdout
+
+
+def control_replication(driver: str, fixture: str) -> dict:
+    """The attribution control, run on every trajectory rather than one.
+
+    WITHIN a threshold class the decomposition genuinely changes -- `(1,2)` is
+    two kernel calls over (1,1) and (2,3), `(3,)` is one over (1,3) -- and the
+    answer must not. ACROSS classes it must. Both directions are needed: 36
+    identical results would otherwise be consistent with trajectories that are
+    insensitive to everything, which would make the control vacuous rather than
+    strong.
+    """
+    cls = equivalence_classes(fixture)
+    within = next((ms for ms in cls.values() if len(ms) > 1), None)
+    if within is None:
+        raise ra.RefineError(
+            f"{fixture}: no two decompositions share a threshold vector, so the "
+            f"same-atmosphere control cannot be formed on this fixture")
+    keys = list(cls)
+    across = (cls[keys[0]][0], cls[keys[1]][0]) if len(keys) > 1 else None
+
+    same, differ = [], []
+    for nsplit, carry, rho in TRAJECTORIES:
+        def state(tiles):
+            return read_state(run(driver, tiles, nsplit, carry, rho),
+                              label=f"{tiles}/{nsplit}/{carry}/{rho}",
+                              nsplit=nsplit)
+        leg = (nsplit, carry, rho)
+        if state(within[0]) == state(within[1]):
+            same.append(leg)
+        if across and state(across[0]) != state(across[1]):
+            differ.append(leg)
+    return {"within_pair": within[:2], "across_pair": across,
+            "trajectories": len(TRAJECTORIES),
+            "within_identical": len(same), "across_differing": len(differ),
+            "holds": (len(same) == len(TRAJECTORIES)
+                      and (across is None
+                           or len(differ) == len(TRAJECTORIES)))}
 
 
 def tile_brackets(text: str) -> list:
@@ -832,6 +884,24 @@ def report(driver: str, fixture: str) -> None:
           f"atmosphere. A null\n  result under an INERT gate is evidence of the "
           f"gate being inert, not of the\n  operator being local, so this "
           f"number has to sit beside the verdict (Codex).")
+    rep = control_replication(driver, fixture)
+    if not rep["holds"]:
+        raise ra.RefineError(
+            f"the same-atmosphere control FAILS: "
+            f"{rep['within_identical']}/{rep['trajectories']} trajectories keep "
+            f"{rep['within_pair'][0]} == {rep['within_pair'][1]} and "
+            f"{rep['across_differing']}/{rep['trajectories']} keep the "
+            f"across-class pair distinct -- the decomposition moves something "
+            f"other than the ncmin gate")
+    print(f"  Same-atmosphere control, replicated over {rep['trajectories']} "
+          f"trajectories (6 density\n  profiles x 2 aux arms x 3 sub-step "
+          f"counts): {rep['within_pair'][0]} and {rep['within_pair'][1]} share a "
+          f"threshold vector\n  but are genuinely different decompositions, and "
+          f"agree bit-for-bit in "
+          f"{rep['within_identical']}/{rep['trajectories']}.\n  The "
+          f"across-class pair differs in {rep['across_differing']}/"
+          f"{rep['trajectories']} -- both directions, so the null result is\n"
+          f"  not just trajectories insensitive to everything.")
     print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
           f"columns wide, which yields\n  exactly {law['within_pairs']} "
           f"within-class pair, so the data is CONSISTENT with the law rather\n"

@@ -168,7 +168,7 @@ def test_the_strict_parser_is_REUSED_not_reimplemented():
     """The repeated defect in this repo is a new tool re-deriving a weaker set
     of checks beside the strict parser that already has them."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
-    assert "ra.read_text(text, nsplit=1, label=label)" in src
+    assert "ra.read_text(text, nsplit=nsplit, label=label)" in src
 
 
 def test_a_COMMONLY_reduced_universe_is_refused(drivers, monkeypatch):
@@ -960,3 +960,59 @@ def test_the_report_PRINTS_the_gate_activity(drivers, capsys):
     out = capsys.readouterr().out
     assert "gate BINDS in 8/12 cells" in out
     assert "under an INERT gate is evidence of the gate being inert" in out
+
+
+# ---- the attribution control, replicated across trajectories ---------------
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_control_HOLDS_on_every_trajectory(drivers, arm):
+    """One confirming pair is an anecdote. Replicated over every density
+    profile the driver offers, both aux-carry arms and three sub-step counts:
+    36 independent trajectories, all on the atmosphere the published figures
+    come from, with the gate active."""
+    rep = nl.control_replication(drivers[arm], FIXTURE)
+    assert rep["trajectories"] == 36
+    assert rep["within_identical"] == 36
+    assert rep["across_differing"] == 36
+    assert rep["holds"] is True
+
+
+def test_BOTH_directions_are_required(drivers):
+    """36 identical results are also what trajectories insensitive to
+    EVERYTHING would produce. The across-class direction is what separates a
+    strong control from a vacuous one, so it is part of the verdict."""
+    rep = nl.control_replication(drivers["legacy"], FIXTURE)
+    assert rep["across_pair"] is not None
+    assert rep["across_differing"] == rep["trajectories"]
+
+
+def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
+    """Perturb one trajectory's state and the control must fail."""
+    real, seen = nl.read_state, {"n": 0}
+
+    def perturbed(text, *, label, nsplit=1):
+        got = dict(real(text, label=label, nsplit=nsplit))
+        seen["n"] += 1
+        if seen["n"] == 2:
+            got[sorted(got)[0]] = "DEADBEEF"
+        return got
+
+    monkeypatch.setattr(nl, "read_state", perturbed)
+    assert nl.control_replication(drivers["legacy"], FIXTURE)["holds"] is False
+
+
+def test_a_fixture_with_NO_within_class_pair_is_REFUSED(drivers, monkeypatch):
+    """The control cannot be formed there, and reporting one anyway would be a
+    verdict with nothing behind it."""
+    monkeypatch.setattr(nl, "threshold_vector",
+                        lambda tiles, fixture: tuple(tiles))
+    with pytest.raises(ra.RefineError, match="cannot be formed"):
+        nl.control_replication(drivers["legacy"], FIXTURE)
+
+
+def test_the_report_states_the_REPLICATION(drivers, capsys):
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "replicated over 36 trajectories" in out
+    assert "agree bit-for-bit in 36/36" in out
+    assert "not just trajectories insensitive to everything" in out
