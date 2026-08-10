@@ -569,3 +569,59 @@ def test_a_COMPLETE_v2_manifest_passes(tmp_path):
     import g33_refine_manifest as rm
 
     assert rm.validate(_man()) == []
+
+
+# ---- closeout mode: absence must not read as a pass (owner priority 6) ------
+
+def test_ABSENCE_passes_a_routine_check_and_FAILS_a_closeout():
+    """The two questions are different. CI cannot demand bundles that live
+    outside the repo by design; a closeout cannot record "we could not check
+    this" as "we checked and it is fine"."""
+    for state in ec.EXCUSED_BY_ABSENCE:
+        assert ec.verdict(state) is False, f"{state} must pass a routine check"
+        assert ec.verdict(state, require_available=True) is True, \
+            f"{state} must fail a closeout"
+
+
+def test_the_STRICT_mode_does_not_weaken_anything():
+    """It only ever adds failures: every state that fails routinely must still
+    fail, or a closeout could pass something CI rejects."""
+    for state in ec.FAILING_STATES | {"not-a-real-state"}:
+        assert ec.verdict(state) is True
+        assert ec.verdict(state, require_available=True) is True
+
+
+def test_a_claim_with_NO_artifacts_is_INVISIBLE_to_the_artifact_walk():
+    """The largest absence there is -- a measurement whose run was never pinned
+    -- yields NO rows to walk, so the artifact loop alone could never see it.
+    The claim declares it, and in a closeout the declaration is the finding."""
+    rows = ec.chain()
+    unpinned = [r for r in rows
+                if r["artifact_status"] == "historical_unavailable"]
+    assert unpinned, "expected claims still declaring their run unreachable"
+    assert all(not r["artifacts"] for r in unpinned), (
+        "these carry no artifacts, which is exactly why the walk cannot fail "
+        "them and the claim-level check is needed")
+
+
+def test_the_ROUTINE_check_still_PASSES(capsys):
+    """The strict mode is opt-in. Turning absence into a failure by default
+    would break every CI run on evidence that is unavailable by design."""
+    assert ec.check() == 0
+
+
+def test_the_CLOSEOUT_check_FAILS_today_and_says_why(capsys):
+    """C4 is on hold for exactly this reason, so the tool must say so rather
+    than reporting a clean closeout."""
+    assert ec.check(require_available=True) == 1
+    out = capsys.readouterr().out
+    assert "historical_unavailable" in out
+    assert "blocker(s) under --require-available" in out
+    assert "the right answer for CI and the wrong one" in out
+
+
+def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
+    """`not_applicable` means no run artifact APPLIES, not that one is missing.
+    Failing those would make the closeout unsatisfiable by construction."""
+    assert all(r["artifact_status"] != "historical_unavailable"
+               for r in ec.chain() if r["evidence_kind"] == "source")

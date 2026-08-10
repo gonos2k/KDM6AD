@@ -79,8 +79,8 @@ def claims() -> list[dict]:
             in_art = m.group(1) == "artifacts"
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) == "status":
-                cur["status"] = m.group(2).strip()
+            elif m.group(1) in ("status", "artifact_status", "evidence_kind"):
+                cur[m.group(1)] = m.group(2).strip()
         elif in_art and (m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
     return out
@@ -314,6 +314,8 @@ def chain() -> list[dict]:
             arts.append(a)
         out.append({
             "id": c["id"], "status": c.get("status", "?"),
+            "artifact_status": c.get("artifact_status", "?"),
+            "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
             "runs": sorted({b for d in c["evidence"] for b in named.get(d, [])}),
@@ -378,37 +380,80 @@ FAILING_STATES = frozenset({
 })
 
 
-def verdict(state: str) -> bool:
+#: The states that pass ONLY because the evidence is not there to check.
+#:
+#: For a routine run they are correct passes -- the decision-grade bundles live
+#: outside the repo by design, and a check cannot demand what was never
+#: committed. For a CLOSEOUT they are the opposite: "we could not check this"
+#: recorded as "we checked and it is fine" is exactly the reading a closeout
+#: must not permit. `--require-available` fails them (owner priority 6).
+EXCUSED_BY_ABSENCE = frozenset({
+    "unavailable",
+    "absent-finding",
+    "analyzer-unpinned",
+    "modules-unpinned",
+    "legacy-analyzer-absent",
+})
+
+
+def verdict(state: str, require_available: bool = False) -> bool:
     """True if `state` fails the check. An unclassified state fails."""
-    if state in PASSING_STATES:
-        return False
-    return True
+    if require_available and state in EXCUSED_BY_ABSENCE:
+        return True
+    return state not in PASSING_STATES
 
 
-def check() -> int:
+def _why(state: str, require_available: bool) -> str:
+    """Say WHICH rule failed a state, so a closeout failure is not read as a
+    mismatch and chased as one."""
+    if require_available and state in EXCUSED_BY_ABSENCE:
+        return "  [absent -- passes a routine check, fails --require-available]"
+    if state in FAILING_STATES:
+        return ""
+    return "  [UNCLASSIFIED state -- failing by default]"
+
+
+def check(require_available: bool = False) -> int:
     """Fail only on the live direction: a pinned artifact that is present and
-    differs. Absent artifacts and divergent snapshots are not failures."""
+    differs. Absent artifacts and divergent snapshots are not failures.
+
+    With `require_available`, absence stops being an excuse -- see
+    EXCUSED_BY_ABSENCE. That is the closeout question, not the CI one.
+    """
     bad = []
     for r in chain():
+        # A claim carrying NO artifacts yields no rows below, so the walk alone
+        # cannot see the largest absence there is: a measurement whose run was
+        # never pinned. It declares that itself, and in a closeout the
+        # declaration is the finding (owner priority 6).
+        if require_available and r["artifact_status"] == "historical_unavailable":
+            bad.append(f"{r['id']}: artifact_status=historical_unavailable "
+                       f"({r['evidence_kind']}) -- the run behind this claim is "
+                       f"not reachable  [fails --require-available]")
         for a in r["artifacts"]:
-            if verdict(a["state"]):
+            if verdict(a["state"], require_available):
                 bad.append(f"{r['id']}: {a['path']} -> {a['state']}"
-                           + ("" if a["state"] in FAILING_STATES
-                              else "  [UNCLASSIFIED state -- failing by default]"))
+                           + _why(a["state"], require_available))
             # ABSENT is a failure HERE, unlike an absent top-level manifest
             # (owner P0-4). Once the parent manifest is present and matches, the
             # bundle has declared these files exist; one of them missing is a
             # corrupt or incomplete bundle, not an unavailable one.
             for m in a["members"]:
-                if not verdict(m["state"]):
+                if not verdict(m["state"], require_available):
                     continue
-                extra = "" if m["state"] in FAILING_STATES else \
-                    "  [UNCLASSIFIED state -- failing by default]"
+                extra = _why(m["state"], require_available)
                 bad.append(f"{r['id']}: {a['path']} -> {m.get('file', '?')}: "
                            f"{m['state']} {m.get('detail', '')}{extra}".rstrip())
     print("\n".join(bad))
+    if bad and require_available:
+        print(f"\n{len(bad)} blocker(s) under --require-available. A routine "
+              f"--check passes all of these:\nevidence that is not there cannot "
+              f"be checked, which is the right answer for CI and the wrong one\n"
+              f"for a closeout.")
     return 1 if bad else 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(check() if "--check" in sys.argv[1:] else (report(), 0)[1])
+    args = sys.argv[1:]
+    raise SystemExit(check("--require-available" in args)
+                     if "--check" in args else (report(), 0)[1])
