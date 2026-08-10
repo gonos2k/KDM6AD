@@ -80,7 +80,8 @@ def claims() -> list[dict]:
             section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) in ("status", "artifact_status", "evidence_kind"):
+            elif m.group(1) in ("status", "artifact_status", "evidence_kind",
+                                "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
         elif in_art and section == "artifacts" and (
                 m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
@@ -437,6 +438,7 @@ def chain() -> list[dict]:
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "artifact_status": c.get("artifact_status", "?"),
+            "migration_blocker": c.get("migration_blocker", ""),
             "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
@@ -562,9 +564,11 @@ def check(require_available: bool = False) -> int:
         # never pinned. It declares that itself, and in a closeout the
         # declaration is the finding (owner priority 6).
         if require_available and r["artifact_status"] == "historical_unavailable":
+            why = (r["migration_blocker"]
+                   or "not yet assessed -- no migration_blocker recorded")
             bad.append(f"{r['id']}: artifact_status=historical_unavailable "
-                       f"({r['evidence_kind']}) -- the run behind this claim is "
-                       f"not reachable  [fails --require-available]")
+                       f"({r['evidence_kind']}) -- {why}"
+                       f"  [fails --require-available]")
         for v in r["values"]:
             if verdict(v["state"], require_available):
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"

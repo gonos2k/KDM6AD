@@ -1115,3 +1115,26 @@ def test_ARM_STREAMS_produce_no_analyzer_row_WITHOUT_private_data(tmp_path):
         f"analyses -- a derived analysis is not being analyzer-checked")
     arm = next(a for a in man["analyses"] if a["analysis"] == "arm_stream")
     assert "analyzer" not in arm, "the arm_stream must declare none"
+
+
+def test_an_UNMIGRATED_claim_says_WHY_or_says_it_was_never_assessed():
+    """21 identical `historical_unavailable` lines are debt with no handle on
+    it. The four the owner named now carry the specific reason they could not
+    be migrated, and any claim without one reports that it was NOT ASSESSED
+    rather than looking the same as the assessed ones."""
+    assessed = {c["id"] for c in ec.claims() if c.get("migration_blocker")}
+    assert {"G33-NCMIN-001", "G33-NUMBER-009", "G33-TRAJECTORY-001",
+            "G33-BASIS-004"} <= assessed
+
+
+def test_the_closeout_PRINTS_the_reason_it_has(capsys):
+    ec.check(require_available=True)
+    out = capsys.readouterr().out
+    assert "needs a MULTI-RUN analysis" in out
+    unassessed = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"
+                  and not c.get("migration_blocker")]
+    if unassessed:
+        assert "not yet assessed" in out, (
+            "a claim with no recorded blocker must SAY so, not print a bare "
+            "unreachable line indistinguishable from an assessed one")

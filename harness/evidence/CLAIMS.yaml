@@ -593,6 +593,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: the basis-parameterised water/enthalpy ledger figures are not among the analyses either pinned bundle carries
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -673,6 +674,7 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: no figure of this claim was located in either pinned bundle; not yet traced to an analysis that emits them
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -709,6 +711,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: its ice-chain density-arm matrix is in neither pinned bundle -- the conservative metric_trajectory carries the same MAIN-chain arms as legacy
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -1042,8 +1045,14 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and a higher droplet-number floor suppresses autoconversion, so
-      it rains ~21% LESS than the per-column answer. The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. The PROCESS
+      carrying that sign is NOT measured (owner §7): ncmin gates 18 sites in the
+      reference -- autoconversion (praut), three accretion branches, graupel
+      melting/evaporation (pgeml), and the max(ncmin,nci) floors that set the
+      diameters those rates consume -- and a final-state comparison cannot say
+      which of them carries it. Suppressed autoconversion is the leading
+      candidate and is no longer stated as the mechanism; an earlier version of
+      this text asserted it. The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1062,6 +1071,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: historical_unavailable
+    migration_blocker: needs a MULTI-RUN analysis: the producer's contract is (stream, basis) per member, and g33_ncmin_locality is (driver, fixture) and runs the driver once per decomposition
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
