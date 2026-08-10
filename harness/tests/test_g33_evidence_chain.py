@@ -625,3 +625,94 @@ def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
     Failing those would make the closeout unsatisfiable by construction."""
     assert all(r["artifact_status"] != "historical_unavailable"
                for r in ec.chain() if r["evidence_kind"] == "source")
+
+
+# ---- claim figures vs the pinned artifact (owner priority 7) ----------------
+
+_LEG = ("kdm6ad-g33m-migrate/number-003.bundles/"
+        "ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e")
+_TRUTH = {"file": f"{_LEG}/n12.rezero.defect_magnitude.json",
+          "path": "rows.main/nr/1.of_surface_flux",
+          "value": 0.150035513206531, "tolerance": 0.0}
+_PINNED = {_LEG}
+
+
+def _bundles_present():
+    return (ec.HOME / _TRUTH["file"]).is_file()
+
+
+needs_bundle = pytest.mark.skipif(not _bundles_present(),
+                                  reason="decision-grade bundle not on this host")
+
+
+@needs_bundle
+def test_the_PUBLISHED_figures_are_IN_the_pinned_artifact():
+    """The claim's prose said 15.0036/13.3377/11.8402% and nothing checked that
+    the pinned run actually produced them. A figure quoted in a claim and a
+    figure a run emitted were two unrelated facts."""
+    states = [v["state"] for r in ec.chain() for v in r["values"]]
+    assert states, "no claim declares a figure -- the check would be vacuous"
+    assert set(states) == {"value-matches"}, [
+        (r["id"], v["path"], v["state"]) for r in ec.chain() for v in r["values"]
+        if v["state"] != "value-matches"]
+
+
+@needs_bundle
+def test_a_LAST_DIGIT_change_is_caught():
+    """Exact by default. The claim asserts these reproduced EXACTLY, so an
+    approximate check would not be testing what the claim says."""
+    assert ec.resolve_value(_TRUTH, _PINNED)["state"] == "value-matches"
+    off = {**_TRUTH, "value": 0.150035513206532}
+    assert ec.resolve_value(off, _PINNED)["state"] == "VALUE-MISMATCH"
+    assert ec.resolve_value({**off, "tolerance": 1e-15},
+                            _PINNED)["state"] == "value-matches"
+
+
+@needs_bundle
+@pytest.mark.parametrize("mutation,expected", [
+    ({"path": "rows.main/nr/1.of_surface_fluxx"}, "VALUE-PATH-ABSENT"),
+    ({"file": f"{_LEG}/nope.json"}, "VALUE-FILE-ABSENT"),
+    ({"path": "note"}, "VALUE-NOT-NUMERIC"),
+])
+def test_every_way_a_BINDING_can_be_WRONG_is_a_FAILURE(mutation, expected):
+    """A typo in the path must not read as agreement, and a missing file must
+    not read as one either."""
+    r = ec.resolve_value({**_TRUTH, **mutation}, _PINNED)
+    assert r["state"] == expected
+    assert ec.verdict(r["state"]) is True
+
+
+def test_a_figure_may_only_be_bound_to_a_bundle_the_CLAIM_PINS():
+    """The check that makes the others mean anything. Without it a claim could
+    bind a figure to any JSON on the host: the comparison would succeed while
+    guaranteeing nothing, because no digest covers that file."""
+    loose = {**_TRUTH, "file": "kdm6ad-g33m-migrate/elsewhere/x.json"}
+    assert ec.resolve_value(loose, _PINNED)["state"] == "VALUE-UNPINNED-FILE"
+    assert ec.verdict("VALUE-UNPINNED-FILE") is True
+
+
+def test_the_binding_is_DECLARED_not_DISCOVERED():
+    """Searching the artifacts for a number equal to the published one would
+    bind to whatever sat near it. On this fixture 1.0 appears at five unrelated
+    paths across two files, so "100.00%" would have matched all five."""
+    src = (ec.__file__ and open(ec.__file__).read())
+    assert "Declared, never discovered" in src
+    for c in ec.claims():
+        for w in c["expected_values"]:
+            assert w["file"] and w["path"], "both must be named explicitly"
+
+
+def test_a_key_containing_a_DOT_makes_the_path_AMBIGUOUS():
+    """The flattened path joins keys with ".", so a key that contains one could
+    resolve two different structures to the same string. Refuse rather than
+    pick."""
+    assert ec.flatten({"a": {"b": 1}}) == {"a.b": 1}
+    assert "." in str(list({"a.b": {"c": 1}})[0])
+    assert ec._keys_of({"a.b": {"c": 1}}) == ["a.b", "c"]
+
+
+def test_TOLERANCE_defaults_to_EXACT_when_unstated():
+    for c in ec.claims():
+        for w in c["expected_values"]:
+            assert w["tolerance"] == 0.0, \
+                f"{c['id']}: a tolerance was introduced -- state why in the claim"

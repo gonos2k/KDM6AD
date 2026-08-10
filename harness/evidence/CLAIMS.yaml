@@ -217,6 +217,17 @@ claims:
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
       - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/manifest.json: 97587a90ebabe7a551074f27db9e6b4d40f1b57530643c9845fc83009865bd99
+    # The figures the text above publishes, bound to the exact path in
+    # the exact bundle that produced them. Legacy and conservative
+    # nr/1 are the SAME value, which is what "identical to the last
+    # digit" asserts -- so the two arms are declared separately.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 

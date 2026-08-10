@@ -70,19 +70,28 @@ def claims() -> list[dict]:
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
-                   "evidence": [], "artifacts": {}}
+                   "evidence": [], "artifacts": {}, "expected_values": []}
             out.append(cur)
             in_art = False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
-            in_art = m.group(1) == "artifacts"
+            in_art = m.group(1) in ("artifacts", "expected_values")
+            section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind"):
                 cur[m.group(1)] = m.group(2).strip()
-        elif in_art and (m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
+        elif in_art and section == "artifacts" and (
+                m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
+        elif in_art and section == "expected_values" and (
+                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(\S+)"
+                              r"(?:\s+~\s+(\S+))?\s*$", line)):
+            cur["expected_values"].append(
+                {"file": m.group(1), "path": m.group(2),
+                 "value": float(m.group(3)),
+                 "tolerance": float(m.group(4)) if m.group(4) else 0.0})
     return out
 
 
@@ -294,6 +303,67 @@ def _module_states(man: dict) -> list:
     return out
 
 
+def flatten(obj, prefix="") -> dict:
+    """{dotted path: leaf value} for one analysis JSON."""
+    out = {}
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            out.update(flatten(v, f"{prefix}.{k}" if prefix else str(k)))
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            out.update(flatten(v, f"{prefix}[{i}]"))
+    else:
+        out[prefix] = obj
+    return out
+
+
+def resolve_value(want: dict, pinned_bundles: set) -> dict:
+    """Look up ONE declared figure in the artifact it is declared against.
+
+    Declared, never discovered. Searching the JSONs for a number equal to the
+    published one would bind a claim to whatever value happened to sit near it
+    -- on this fixture five unrelated fields across two files carry 1.0, so
+    "100.00%" would have matched all of them.
+
+    The file is named by its FULL path, the same namespace `artifacts` uses. A
+    basename cannot say which arm a figure came from, and G33-NUMBER-003 pins
+    two bundles and publishes figures from both: 15.0036% is the legacy run and
+    +6.2789% is the conservative one, in files of the same name.
+    """
+    f = HOME / want["file"]
+    if str(Path(want["file"]).parent) not in pinned_bundles:
+        return {**want, "state": "VALUE-UNPINNED-FILE", "got": None}
+    if not f.is_file():
+        # A missing bundle is unavailable; a missing file inside a bundle that
+        # IS here is a broken declaration.
+        return {**want, "got": None,
+                "state": "VALUE-FILE-ABSENT" if f.parent.is_dir()
+                else "value-unavailable"}
+    doc = json.loads(f.read_text())
+    if any("." in str(k) for k in _keys_of(doc)):
+        return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
+    flat = flatten(doc)
+    if want["path"] not in flat:
+        return {**want, "state": "VALUE-PATH-ABSENT", "got": None}
+    got = flat[want["path"]]
+    if isinstance(got, bool) or not isinstance(got, (int, float)):
+        return {**want, "state": "VALUE-NOT-NUMERIC", "got": got}
+    ok = (got == want["value"] if want["tolerance"] == 0.0
+          else abs(got - want["value"]) <= want["tolerance"])
+    return {**want, "state": "value-matches" if ok else "VALUE-MISMATCH",
+            "got": got}
+
+
+def _keys_of(obj) -> list:
+    """Every dict key anywhere in `obj`. A key containing "." would make the
+    flattened path ambiguous, so resolution refuses rather than guessing."""
+    if isinstance(obj, dict):
+        return list(obj) + [k for v in obj.values() for k in _keys_of(v)]
+    if isinstance(obj, list):
+        return [k for v in obj for k in _keys_of(v)]
+    return []
+
+
 def chain() -> list[dict]:
     """Per claim: its findings, its pinned artifacts, and each artifact's state."""
     have = bundles()
@@ -312,8 +382,15 @@ def chain() -> list[dict]:
             if state == "matches" and p.name == "manifest.json":
                 a["members"] = members_of(p)
             arts.append(a)
+        # A figure may only be declared against a bundle THIS claim pins.
+        # Otherwise it would be read from a file no digest covers, and the
+        # binding would guarantee nothing.
+        pinned_bundles = {str(Path(rel).parent) for rel in c["artifacts"]
+                          if Path(rel).name == "manifest.json"}
+        values = [resolve_value(w, pinned_bundles)
+                  for w in c["expected_values"]]
         out.append({
-            "id": c["id"], "status": c.get("status", "?"),
+            "id": c["id"], "status": c.get("status", "?"), "values": values,
             "artifact_status": c.get("artifact_status", "?"),
             "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
@@ -372,11 +449,15 @@ PASSING_STATES = frozenset({
     "modules-unpinned",        # reported: the bundle predates the module pins
     "legacy-analyzer-changed",
     "legacy-analyzer-absent",
+    "value-matches",
+    "value-unavailable",       # the bundle the figure is declared against is not here
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
     "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+    "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
+    "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
 })
 
 
@@ -393,6 +474,7 @@ EXCUSED_BY_ABSENCE = frozenset({
     "analyzer-unpinned",
     "modules-unpinned",
     "legacy-analyzer-absent",
+    "value-unavailable",
 })
 
 
@@ -430,6 +512,11 @@ def check(require_available: bool = False) -> int:
             bad.append(f"{r['id']}: artifact_status=historical_unavailable "
                        f"({r['evidence_kind']}) -- the run behind this claim is "
                        f"not reachable  [fails --require-available]")
+        for v in r["values"]:
+            if verdict(v["state"], require_available):
+                bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"
+                           f" (claim says {v['value']!r}, artifact has "
+                           f"{v['got']!r}){_why(v['state'], require_available)}")
         for a in r["artifacts"]:
             if verdict(a["state"], require_available):
                 bad.append(f"{r['id']}: {a['path']} -> {a['state']}"
