@@ -291,6 +291,30 @@ def validate(man: dict) -> list:
                    for a in arts):
             bad.append("build_artifacts must include g33_refine_driver -- the "
                        "binary that produced these numbers")
+        else:
+            # The manifest states the executable digest TWICE, in
+            # build_artifacts and inside build_provenance, and nothing compared
+            # them. Two statements about the same binary that are never checked
+            # against each other are one statement and one decoration
+            # (owner §8.4).
+            got = {a.get("file"): a.get("sha256") for a in arts}
+            want = (man.get("build_provenance") or {}).get("executable_sha256")
+            if want and got.get("g33_refine_driver") != want:
+                bad.append(
+                    f"build_artifacts records g33_refine_driver as "
+                    f"{str(got.get('g33_refine_driver'))[:12]} but "
+                    f"build_provenance says {str(want)[:12]} -- the bundle "
+                    f"names two different binaries")
+    # An `--nflux` bundle must carry the instrumented analyses, not merely a
+    # non-empty `analyses`: one arm_stream satisfied that while carrying none
+    # of them (owner §8.3).
+    if man.get("instrumented") is True:
+        kinds = {a.get("analysis") for a in (man.get("analyses") or [])
+                 if isinstance(a, dict)}
+        absent = [k for k in REQUIRED_WHEN_INSTRUMENTED if k not in kinds]
+        if absent:
+            bad.append(f"instrumented bundle is missing the analyses that make "
+                       f"it instrumented: {absent}")
     for key in ("member_parsers", "producer_modules", "tracked_build_inputs"):
         block = man.get(key)
         if not isinstance(block, list) or not block:
@@ -345,6 +369,28 @@ def validate(man: dict) -> list:
 #: command that produced it. Requiring `{file, sha256}` of both let a derived
 #: JSON ship with NO analyzer, which the checker then reported as
 #: `analyzer-unpinned` -- a passing state kept for legacy bundles (owner P0-4).
+#: The density profiles an `arm_stream` entry may declare. A DIFFERENT
+#: namespace from the manifest-level `arm` (reference|probe|f64): that one says
+#: which precision arm the bundle is, this one says which density control the
+#: raw stream was run under.
+_RHO_ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
+
+#: The derived analyses a v2 bundle may carry. Declared here rather than
+#: imported, because the producer imports THIS module; a test asserts the two
+#: agree, so drift is a failure rather than a silently widened union.
+#: Without it any `analysis` string that was not "arm_stream" was accepted as a
+#: derived analysis, so a typo shipped as a new kind (owner §8.2).
+DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
+                    "dual_ledger", "defect_magnitude", "internal_cap_enthalpy",
+                    "metric_trajectory")
+
+#: What an `--nflux` bundle must actually contain. `instrumented: true` with a
+#: single arm_stream satisfied "analyses is non-empty" while carrying none of
+#: the instrumented analyses (owner §8.3).
+REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
+                              "extension_protocol", "dual_ledger",
+                              "defect_magnitude", "internal_cap_enthalpy")
+
 _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
                    "analyzer_commit", "analyzer_blob_sha")
 _ARM_FIELDS = ("analysis", "nsplit", "arm", "runtime_argv")
@@ -365,7 +411,31 @@ def _analysis_violations(analyses, member_nsplits) -> list:
         missing = [k for k in want if not a.get(k)]
         if missing:
             bad.append(f"analyses[{i}] ({kind}) is missing {missing}")
-        if kind != "arm_stream":
+        if kind == "arm_stream":
+            if a.get("arm") not in _RHO_ARMS:
+                bad.append(f"analyses[{i}] arm {a.get('arm')!r} is not one of "
+                           f"{_RHO_ARMS}")
+            argv = a.get("runtime_argv")
+            if not isinstance(argv, list) or not all(isinstance(x, str)
+                                                     for x in argv):
+                bad.append(f"analyses[{i}] runtime_argv must be a list of str")
+            elif len(argv) < 4:
+                bad.append(f"analyses[{i}] runtime_argv {argv} is too short to "
+                           f"say which run it was")
+            else:
+                # The argv is what RAN; the fields are what the manifest SAYS.
+                # Recording both without comparing them lets an entry describe a
+                # different run than the one it names (owner §8.1).
+                if argv[0] != str(a.get("nsplit")):
+                    bad.append(f"analyses[{i}] runtime_argv nsplit {argv[0]!r} "
+                               f"contradicts nsplit {a.get('nsplit')!r}")
+                if argv[3] != a.get("arm"):
+                    bad.append(f"analyses[{i}] runtime_argv arm {argv[3]!r} "
+                               f"contradicts arm {a.get('arm')!r}")
+        else:
+            if kind not in DERIVED_ANALYSES:
+                bad.append(f"analyses[{i}] unknown derived analysis {kind!r} "
+                           f"(known: {sorted(DERIVED_ANALYSES)})")
             if a.get("analyzer_commit") and not _hexlen(a["analyzer_commit"], 40):
                 bad.append(f"analyses[{i}] analyzer_commit is not a 40-hex sha")
             if a.get("analyzer_blob_sha") and not _hexlen(a["analyzer_blob_sha"], 40):
