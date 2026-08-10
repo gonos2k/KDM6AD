@@ -24,6 +24,7 @@ artifact from a plain one even when the two agree bit for bit.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import os
 import re
@@ -331,6 +332,66 @@ def producer_modules() -> tuple:
     return tuple(sorted(set(_CORE_MODULES) | set(_PARSER_MODULES)
                         | {mod for mod, _fn in ANALYSES.values()}
                         | {"g33_metric_trajectory"}))
+
+
+def _local_imports(module: str) -> set:
+    """The harness modules `module` imports. By AST, not by text: a name in a
+    comment or a docstring is not an import."""
+    f = HERE / f"{module}.py"
+    if not f.is_file():
+        return set()
+    names = set()
+    for n in ast.walk(ast.parse(f.read_text())):
+        if isinstance(n, ast.Import):
+            names |= {a.name.split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+            names.add(n.module.split(".")[0])
+    return {m for m in names if (HERE / f"{m}.py").is_file()}
+
+
+def reachable_modules() -> set:
+    """Every harness module the producer can actually reach, COMPUTED.
+
+    Two ways a module gets to decide what a bundle contains, and only one is an
+    import:
+
+      - imported, transitively, from the producer or any analysis module
+      - EXECUTED by the build script -- `g33_build_provenance` is run as a
+        subprocess and imported by nothing, so an import closure alone would
+        miss it entirely
+
+    This does not REPLACE `producer_modules()`. Deriving that list textually
+    from a shell script would be worse than curating it: `fortran_build.sh`
+    appears in refine_build.sh only inside comments, and a text scan pulls it
+    in. What was missing is that nothing FAILED when the curated list drifted,
+    so this is the check, not the source.
+    """
+    seeds = {"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
+    seen = set()
+    todo = list(seeds)
+    while todo:
+        m = todo.pop()
+        if m in seen:
+            continue
+        seen.add(m)
+        todo += list(_local_imports(m) - seen)
+    return seen | _build_script_modules()
+
+
+def _build_script_modules() -> set:
+    """Harness modules the build EXECUTES. Comment lines are stripped first --
+    a script named in a comment is not a script that runs."""
+    out = set()
+    for sh in TRACKED_BUILD_INPUTS:
+        p = HERE.parent / sh
+        if p.suffix != ".sh" or not p.is_file():
+            continue
+        for line in p.read_text().splitlines():
+            if line.lstrip().startswith("#") or not re.search(r"\bpython3?\b", line):
+                continue
+            out |= {m for m in re.findall(r"([a-z0-9_]+)\.py", line)
+                    if (HERE / f"{m}.py").is_file()}
+    return out
 
 
 def _pin(module: str) -> dict:

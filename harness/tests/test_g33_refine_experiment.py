@@ -682,3 +682,60 @@ def test_the_BINARY_that_produced_the_numbers_is_pinned():
     assert "g33_refine_driver" in files
     assert {"build_provenance.json", "commands.txt", "sources.txt"} <= files
     assert (b / "g33_refine_driver").is_file()
+
+
+# ---- the pinned module list must be COMPLETE, not remembered ---------------
+
+def test_every_module_the_producer_can_REACH_is_PINNED():
+    """`producer_modules()` was a union of three hand-written tuples. Nothing
+    failed when it drifted, so a producer that started importing a new module
+    shipped bundles whose provenance silently omitted it -- the one list the
+    binding depends on being the one nobody checked, one layer up from where
+    owner §9.2 found it the first time."""
+    missing = xp.reachable_modules() - set(xp.producer_modules())
+    assert not missing, (
+        f"reachable from the producer but not pinned: {sorted(missing)}. Add "
+        f"them to _CORE_MODULES/_PARSER_MODULES, or stop importing them.")
+
+
+def test_no_module_is_pinned_that_the_producer_CANNOT_reach():
+    """The other direction. A stale entry pins bytes that decide nothing, which
+    makes the list look more complete than it is."""
+    stale = set(xp.producer_modules()) - xp.reachable_modules()
+    assert not stale, f"pinned but unreachable: {sorted(stale)}"
+
+
+def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
+    """A check that cannot fail is not a check. Teach the closure that the
+    producer imports something unpinned and the gate must fire."""
+    real = xp._local_imports
+
+    def with_extra(module):
+        got = real(module)
+        return got | {"g33_evidence_chain"} if module == "g33_refine_experiment" \
+            else got
+
+    monkeypatch.setattr(xp, "_local_imports", with_extra)
+    assert "g33_evidence_chain" in xp.reachable_modules()
+    assert xp.reachable_modules() - set(xp.producer_modules())
+
+
+def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
+    """`g33_build_provenance` is executed by the build script and imported by
+    no one, so an import closure alone would miss it entirely -- and it writes
+    the provenance the whole chain rests on."""
+    assert "g33_build_provenance" in xp._build_script_modules()
+    assert "g33_build_provenance" not in xp._local_imports("g33_refine_experiment")
+    assert "g33_build_provenance" in xp.reachable_modules()
+
+
+def test_a_script_named_only_in_a_COMMENT_is_not_a_script_that_runs():
+    """Why this is a CHECK and not a derivation. `fortran_build.sh` appears in
+    refine_build.sh only inside comments; a text scan pulls it in, and a list
+    derived that way would be less trustworthy than the curated one."""
+    sh = (Path(xp.HERE).parent
+          / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "fortran_build.sh" in sh, "the comment case must still exist"
+    code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+    assert not [l for l in code if "fortran_build.sh" in l]
+    assert "fortran_build" not in xp._build_script_modules()
