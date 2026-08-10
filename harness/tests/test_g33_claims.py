@@ -438,3 +438,20 @@ def test_the_claims_pinned_to_a_RERUN_are_the_ones_that_reproduced():
     pinned = {c["id"] for c in CLAIMS if c.get("artifact_status") == "pinned"}
     assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ENTHALPY-003",
             "G33-ICE-CAP-001"} <= pinned
+
+
+def test_every_PINNED_claim_binds_its_HEADLINE_figures():
+    """Coverage, not just capability. `expected_values` existed but only
+    G33-NUMBER-003 used it, so the other three pinned claims reached their
+    exact bundle and analysis file while their published numbers were still
+    unchecked (owner §9)."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+    bound = {c["id"] for c in ec.claims() if c["expected_values"]}
+    pinned = {c["id"] for c in CLAIMS if c.get("artifact_status") == "pinned"}
+    missing = {p for p in pinned if p not in bound} - {"G33-TURNOVER-002"}
+    assert not missing, (
+        f"pinned but no figure bound to a JSON path: {sorted(missing)}")
+    assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ICE-CAP-001",
+            "G33-ENTHALPY-003"} <= bound

@@ -472,6 +472,12 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # R / window_initial_inventory, the three figures the
+    # text publishes as 0.2173% / 0.4379% / 0.6884%.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -929,6 +935,13 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # The ice cap share the text publishes as 100.0000%.
+    # Bound to the artifact's EXACT value: it is 1.0 to
+    # within double roundoff, not exactly 1.0, and the
+    # percentage is the rounded presentation of that.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1084,6 +1097,14 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # Gross destruction share (57.8080% / 48.0157%) and the
+    # departure-temperature correction (-14.5767 /
+    # -21.8481 J m^-2), event-local as the text states.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 

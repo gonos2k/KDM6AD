@@ -942,3 +942,26 @@ def test_the_CHAIN_production_path_applies_the_scope_filter(tmp_path,
     assert states["bundle/harness/p.py"] == "VALUE-UNPINNED-FILE", \
         "chain() let a provenance-path collision cover a file"
     assert ec.check() == 1, "and the collision must fail the routine check"
+
+
+def test_an_UNRECOVERABLE_legacy_analyzer_blocks_a_CLOSEOUT():
+    """`legacy-analyzer-changed` means no commit pin, only a content digest,
+    and the working-tree file no longer matches it -- so the exact analyzer
+    bytes that produced the analysis cannot be recovered from anywhere.
+
+    Routine: reportable, because old bundles legitimately predate the pin.
+    Closeout: a blocker, like every other unrecoverable entry (owner §10)."""
+    assert ec.verdict("legacy-analyzer-changed") is False
+    assert ec.verdict("legacy-analyzer-changed", require_available=True) is True
+    assert "legacy-analyzer-changed" in ec.EXCUSED_BY_ABSENCE
+
+
+def test_the_legacy_analyzer_blocker_is_currently_UNEXERCISED():
+    """Stated, not assumed. No bundle in the registry carries this state today,
+    so the guard is correct and inert: it protects a case that does not yet
+    occur. If one appears, the closeout count moves and that is the point."""
+    live = {m["state"] for r in ec.chain() for a in r["artifacts"]
+            for m in a["members"]}
+    assert "legacy-analyzer-changed" not in live, (
+        "a bundle now carries an unrecoverable legacy analyzer -- the closeout "
+        "blocker count should have risen; update this test deliberately")

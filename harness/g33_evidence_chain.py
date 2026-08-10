@@ -507,6 +507,13 @@ EXCUSED_BY_ABSENCE = frozenset({
     "analyzer-unpinned",
     "modules-unpinned",
     "legacy-analyzer-absent",
+    # No commit pin, only a content digest, and the working-tree file no longer
+    # matches it: the exact analyzer bytes that produced the analysis cannot be
+    # recovered from anywhere. Absent in the only sense that matters here.
+    # Reportable in a routine run -- old bundles legitimately predate the pin --
+    # and a blocker in a closeout, like every other unrecoverable entry
+    # (owner §10).
+    "legacy-analyzer-changed",
     "value-unavailable",
 })
 
