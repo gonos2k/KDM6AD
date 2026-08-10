@@ -602,6 +602,31 @@ def agreement_digits(oracle: dict, gap: float) -> float:
     return float("inf") if gap == 0.0 else -math.log10(gap / scale)
 
 
+def gate_activity(text: str, fixture: str) -> dict:
+    """How often the `ncmin` gate can BIND, per column, on this atmosphere.
+
+    Without this a null result reads as evidence when it may only be evidence
+    of an inert gate. `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so
+    `nci .le. ncmin` binds in 0 of 12 cells: showing no tiling dependence there
+    says little about whether some OTHER mechanism would respond under the
+    boundary fixture's regime, where it binds 12 of 12 (Codex).
+    """
+    rec = read_records(text, label="gate-activity")
+    out = {}
+    for col in range(1, fixture_dims(fixture)[0] + 1):
+        thr = fixture_ncmin(fixture)[0 if fixture_xland(fixture)[col] == 1.0
+                                     else 1]
+        vals = [_f32(v) for k, v in rec.items()
+                if k[0] == "initial" and k[1] == "nc" and k[2] == col]
+        out[col] = {"threshold": thr, "cells": len(vals),
+                    "binding": sum(1 for v in vals if v <= thr)}
+    return out
+
+
+def _f32(hexword: str) -> float:
+    return struct.unpack(">f", bytes.fromhex(hexword))[0]
+
+
 def threshold_vector(tiles, fixture: str) -> tuple:
     """The ncmin each column is GATED AT under this decomposition.
 
@@ -800,6 +825,13 @@ def report(driver: str, fixture: str) -> None:
             + " -- `ncmin` is not the only thing the decomposition changes here, "
               "so the synthetic result cannot be read as a statement about real "
               "decompositions")
+    act = gate_activity(base_text, fixture)
+    binding = sum(v["binding"] for v in act.values())
+    cells = sum(v["cells"] for v in act.values())
+    print(f"  The `nc <= ncmin` gate BINDS in {binding}/{cells} cells on this "
+          f"atmosphere. A null\n  result under an INERT gate is evidence of the "
+          f"gate being inert, not of the\n  operator being local, so this "
+          f"number has to sit beside the verdict (Codex).")
     print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
           f"columns wide, which yields\n  exactly {law['within_pairs']} "
           f"within-class pair, so the data is CONSISTENT with the law rather\n"

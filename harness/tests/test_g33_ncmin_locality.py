@@ -881,14 +881,18 @@ def test_the_control_fixture_really_IS_degenerate():
 
 
 def test_a_CONSTANT_threshold_vector_means_NO_tiling_dependence(uniform_driver):
-    """The control the attribution rests on. Every decomposition of an all-land
-    domain lands in ONE class, so the law predicts byte-identity across all of
-    them -- and if anything OTHER than `ncmin` responded to tiling, this is
-    where it would show, with the gate held fixed.
+    """SUPPORTING evidence, NOT the attribution.
 
-    Three within-class pairs here against one on the boundary fixture, on a
-    different atmosphere: the within-class evidence goes from a single pair to
-    four."""
+    The commit that added this claimed it licensed reading the 20.72% as an
+    `ncmin` cost rather than a tiling cost. It does not, and the reason is
+    measurable: on this fixture ncmin = 10 against nc ~ 1e8, so the gate binds
+    in 0 of 12 cells. A null result under an INERT gate is evidence that the
+    gate is inert (Codex). A second tiling-dependent mechanism exercised only
+    by the boundary fixture's regime would not show here.
+
+    What it does establish is narrower and still worth having: on THIS
+    atmosphere, with the threshold vector constant, the operator is
+    column-local across every decomposition."""
     law = nl.class_law(uniform_driver, UNIFORM)
     assert len(law["classes"]) == 1, "an all-land domain has one threshold class"
     assert law["within_pairs"] == 3
@@ -915,3 +919,44 @@ def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
     monkeypatch.setattr(nl, "read_records", perturbed)
     law = nl.class_law(uniform_driver, UNIFORM)
     assert not law["holds"]
+
+
+def test_the_control_fixture_gate_is_INERT_so_it_cannot_carry_attribution(
+        uniform_driver, drivers):
+    """Measured, because the previous commit asserted the opposite. `ncmin = 10`
+    against nc ~ 1e8 means the gate never binds on the control fixture, so its
+    null result cannot rule out a second tiling-dependent mechanism (Codex)."""
+    inert = nl.gate_activity(nl.run(uniform_driver, (3,)), UNIFORM)
+    assert sum(v["binding"] for v in inert.values()) == 0, \
+        "if this ever binds, the control gets stronger -- update the claim"
+
+    active = nl.gate_activity(nl.run(drivers["legacy"], (3,)), FIXTURE)
+    assert sum(v["binding"] for v in active.values()) > 0, \
+        "the boundary fixture must actually exercise the gate"
+
+
+def test_the_ATTRIBUTION_rests_on_a_SAME_ATMOSPHERE_control(drivers):
+    """The control that does carry it, on the atmosphere the figures come from.
+
+    `(1,2)` and `(3,)` share a threshold vector but are genuinely different
+    decompositions -- two kernel calls over (1,1) and (2,3) versus one over
+    (1,3), verified live. Same atmosphere, gate ACTIVE, decomposition changed,
+    output byte-identical in all 144 components. That is what licenses reading
+    the departure as an `ncmin` cost rather than a tiling cost."""
+    a_t, b_t = nl.run(drivers["legacy"], (1, 2)), nl.run(drivers["legacy"], (3,))
+    nl._expect_tiles_are_live(a_t, (1, 2), "a")
+    nl._expect_tiles_are_live(b_t, (3,), "b")
+    assert nl.tile_brackets(a_t) == [(1, 1), (2, 3)]
+    assert nl.tile_brackets(b_t) == [(1, 3)]
+    assert nl.threshold_vector((1, 2), FIXTURE) == nl.threshold_vector((3,), FIXTURE)
+    assert sum(v["binding"] for v in nl.gate_activity(b_t, FIXTURE).values()) > 0
+    assert nl.read_state(a_t, label="a") == nl.read_state(b_t, label="b")
+
+
+def test_the_report_PRINTS_the_gate_activity(drivers, capsys):
+    """So a future reader cannot repeat this error on a fixture where the gate
+    is inert."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "gate BINDS in 8/12 cells" in out
+    assert "under an INERT gate is evidence of the gate being inert" in out
