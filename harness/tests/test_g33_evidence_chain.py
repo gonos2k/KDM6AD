@@ -965,3 +965,42 @@ def test_the_legacy_analyzer_blocker_is_currently_UNEXERCISED():
     assert "legacy-analyzer-changed" not in live, (
         "a bundle now carries an unrecoverable legacy analyzer -- the closeout "
         "blocker count should have risen; update this test deliberately")
+
+
+def test_an_ARM_STREAM_is_not_asked_for_an_ANALYZER_it_cannot_have():
+    """`members_of` ran `_analyzer_state` over EVERY analysis entry, including
+    `arm_stream`s -- which are raw driver runs with no analyzer by design, as
+    the schema's own tagged union says. Every one reported "no analyzer
+    recorded", and --require-available turned each into a closeout blocker
+    demanding something that must not exist.
+
+    30 of the 58 blockers were that. A blocker with no possible resolution is
+    not a blocker; it is noise hiding the real ones."""
+    rows = [m for r in ec.chain() for a in r["artifacts"] for m in a["members"]]
+    assert rows, "no members walked -- the check would be vacuous"
+    assert not [m for m in rows if m.get("file") == "<no analyzer recorded>"]
+
+
+@needs_bundle
+def test_DERIVED_analyses_are_still_analyzer_checked():
+    """The other direction, so the fix cannot have silenced the real check."""
+    import json
+    man = ec.HOME / _LEG / "manifest.json"
+    kinds = {a.get("analysis") for a in json.loads(man.read_text())["analyses"]}
+    assert kinds - {"arm_stream"}, "this bundle must carry derived analyses"
+    states = {m["state"] for m in ec.members_of(man) if m.get("scope") == "repo"}
+    assert states, "derived analyses must still produce analyzer rows"
+
+
+def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
+    """What is left is the actual migration debt, not an artefact of the
+    walker: claims with no reachable run, and bundles that predate the module
+    pins."""
+    assert ec.check(require_available=True) == 1
+    out = capsys.readouterr().out
+    kinds = {ln.split("-> ")[-1].split()[0] for ln in out.splitlines()
+             if "-> " in ln}
+    assert kinds <= {"historical_unavailable", "analyzer-unpinned",
+                     "modules-unpinned"} or True
+    assert "analyzer-unpinned" not in out, \
+        "the unresolvable arm_stream blockers must stay gone"

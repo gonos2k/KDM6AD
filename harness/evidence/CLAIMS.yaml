@@ -252,7 +252,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -269,6 +269,22 @@ claims:
       conservative variant, where the control closes. The perturbed profiles are constructed probes, not
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
+    # Migrated to the run that is actually reachable: the same
+    # fixture, mode and sub-step count this claim was measured on,
+    # and the bundle already pinned by G33-NUMBER-003.
+    #
+    # NOT every figure the text publishes is bound. `arms.inverted.3`
+    # does not exist in this bundle, and the 99.9999% flattening
+    # figure is stated in the artifact as EXACTLY 0.0 residual --
+    # binding it would bind a different number than the claim makes.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
     evidence: [FINDING_density_falsification_v1.md]
     evidence_sha256: [FINDING_density_falsification_v1.md:15b9c15dfa68b3d52606e2884686a1ff64fffc7ee4539459386bf09ea2e81f1c]
 

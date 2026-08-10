@@ -203,7 +203,14 @@ def members_of(manifest: Path) -> list[dict]:
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
-        out.append({"scope": "repo", **_analyzer_state(an)})
+        # ONLY for derived analyses. An `arm_stream` is a raw driver run and
+        # has no analyzer BY DESIGN -- the schema's tagged union says so -- yet
+        # this reported "no analyzer recorded" for every one of them, and
+        # --require-available turned that into a closeout blocker demanding
+        # something that must not exist. A blocker with no resolution is not a
+        # blocker, it is noise that hides the real ones.
+        if an.get("analysis") != "arm_stream":
+            out.append({"scope": "repo", **_analyzer_state(an)})
     out.extend({"scope": "repo", **m} for m in _module_states(man))
     return out
 
