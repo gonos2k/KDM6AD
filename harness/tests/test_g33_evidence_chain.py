@@ -1030,8 +1030,13 @@ def _synthetic_bundle(root):
         p.write_text(text)
         return rm.sha256(p)
 
-    pin = {"path": "p", "content_sha256": "d" * 64, "commit": "e" * 40,
-           "blob_sha": "f" * 40}
+    # The pins carry the ANALYZER'S OWN PATH, as the real manifests do: every
+    # analyzer path is also a producer_modules pin there. A fixture using a
+    # placeholder path dodged the collision and let a path-based count pass
+    # (Codex).
+    def pin(path):
+        return {"path": path, "content_sha256": "d" * 64, "commit": "e" * 40,
+                "blob_sha": "f" * 40}
     man = {
         "schema": "refinement_experiment_v2",
         "artifact_type": "refinement_experiment", "arm": "reference",
@@ -1054,8 +1059,9 @@ def _synthetic_bundle(root):
                              "sha256": w("g33_refine_driver", "#!f\n")}],
         "build_provenance": {"executable_sha256": rm.sha256(
             root / "g33_refine_driver")},
-        "member_parsers": [pin], "producer_modules": [pin],
-        "tracked_build_inputs": [pin],
+        "member_parsers": [pin("harness/g33_refine_analyze.py")],
+        "producer_modules": [pin("harness/g33_matched_closure.py")],
+        "tracked_build_inputs": [pin("harness/g33_fortran/refine_build.sh")],
     }
     (root / "manifest.json").write_text(json.dumps(man))
     return root / "manifest.json"
@@ -1084,12 +1090,19 @@ def test_ARM_STREAMS_produce_no_analyzer_row_WITHOUT_private_data(tmp_path):
     # rows kept it green (Codex). This can only pass if each derived analysis
     # contributed its own analyzer row, and none of them is the arm_stream.
     derived = [a for a in man["analyses"] if a["analysis"] != "arm_stream"]
-    declared = {a["analyzer"] for a in derived}
-    assert declared, "no derived analysis declares an analyzer -- vacuous"
-    assert len(declared) == len(derived), "one analyzer path per derived analysis"
-    analyzer_rows = [r for r in rows if r.get("file") in declared]
-    assert len(analyzer_rows) == len(declared), (
-        f"{len(analyzer_rows)} analyzer rows for {len(declared)} derived "
+    assert derived, "no derived analysis -- this check would be vacuous"
+
+    # Counted by ORIGIN, not by path. Every analyzer path is ALSO a
+    # producer_modules pin, so a path-based count cannot tell the two apart and
+    # a missing analyzer row is masked by the module row at the same path
+    # (Codex). The fixture reproduces that collision deliberately.
+    collide = {a["analyzer"] for a in derived} & {
+        p["path"] for p in man["producer_modules"]}
+    assert collide, "the fixture must reproduce the analyzer/module collision"
+
+    analyzer_rows = [r for r in rows if r.get("origin") == "analyzer"]
+    assert len(analyzer_rows) == len(derived), (
+        f"{len(analyzer_rows)} analyzer rows for {len(derived)} derived "
         f"analyses -- a derived analysis is not being analyzer-checked")
     arm = next(a for a in man["analyses"] if a["analysis"] == "arm_stream")
     assert "analyzer" not in arm, "the arm_stream must declare none"

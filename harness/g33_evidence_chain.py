@@ -175,7 +175,7 @@ def members_of(manifest: Path) -> list[dict]:
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "member", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == mem.get("output_sha256")
                               else "MISMATCH")})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
@@ -189,13 +189,13 @@ def members_of(manifest: Path) -> list[dict]:
     for a in man.get("build_artifacts", []):
         p = manifest.parent / a["file"]
         out.append({"file": a["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "build_artifact", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == a.get("sha256")
                               else "MISMATCH")})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
         # The ANALYZER the manifest names, by digest. It was recorded and never
@@ -210,8 +210,14 @@ def members_of(manifest: Path) -> list[dict]:
         # something that must not exist. A blocker with no resolution is not a
         # blocker, it is noise that hides the real ones.
         if an.get("analysis") != "arm_stream":
-            out.append({"scope": "repo", **_analyzer_state(an)})
-    out.extend({"scope": "repo", **m} for m in _module_states(man))
+            out.append({"scope": "repo", "origin": "analyzer",
+                        **_analyzer_state(an)})
+    # ORIGIN, not path. Every analyzer path is ALSO a producer_modules pin --
+    # all six of them on the real bundle -- so counting rows by `file` cannot
+    # tell an analyzer row from a module-pin row, and a missing analyzer row is
+    # masked by the module row at the same path (Codex).
+    out.extend({"scope": "repo", "origin": "module_pin", **m}
+               for m in _module_states(man))
     return out
 
 
