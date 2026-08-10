@@ -536,7 +536,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: >
       measurement of both measures on the same stream, with the operator
@@ -549,6 +549,25 @@ claims:
       physical measure should be the canonical dry-air layer mass the host
       dynamics carries -- that is a separate binding, and G33-BASIS-002 remains
       the open compatibility question.
+    # Migrated to the reachable run on this claim's fixture. The six
+    # figures below are PAIRED: a cap_interface value against the
+    # dual_ledger physical residual for the same species and column.
+    # That pairing IS the claim -- one immutable layer mass shared by
+    # every analyzer -- so binding both sides is what makes the pin
+    # test the assertion rather than a number.
+    #
+    # The percentages the text quotes (15.0036/13.3377/11.8402) are
+    # already bound by G33-NUMBER-003 against the same bundle; 0.0717
+    # and 0.065 are not in it and are NOT invented here.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
     evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 

@@ -455,3 +455,21 @@ def test_every_PINNED_claim_binds_its_HEADLINE_figures():
         f"pinned but no figure bound to a JSON path: {sorted(missing)}")
     assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ICE-CAP-001",
             "G33-ENTHALPY-003"} <= bound
+
+
+def test_G33_BASIS_005_binds_BOTH_SIDES_of_each_comparison():
+    """The claim is that ONE immutable layer mass is shared by every analyzer,
+    so the figures are pairs: a `cap_interface` value against the `dual_ledger`
+    physical residual for the same species and column. Binding only one side
+    would pin a number; binding both pins the assertion."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    claim = next(c for c in ec.claims() if c["id"] == "G33-BASIS-005")
+    files = [Path(w["file"]).name for w in claim["expected_values"]]
+    assert files.count("n12.rezero.cap_interface.json") == 3
+    assert files.count("n12.rezero.dual_ledger.json") == 3, (
+        "each cap_interface figure needs its dual_ledger counterpart, or the "
+        "pin does not test the claim")
