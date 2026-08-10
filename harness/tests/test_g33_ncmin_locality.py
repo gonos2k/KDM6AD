@@ -765,3 +765,50 @@ def test_a_RESIDUAL_with_NO_departure_anywhere_is_a_CONTRADICTION():
     anything happened. Refuse rather than divide by zero or call it infinite."""
     with pytest.raises(ra.RefineError, match="whether anything happened"):
         nl.agreement_digits(_oracle({}, {}), 1.0e-3)
+
+
+# ---- the mechanism as a LAW over the decomposition space (owner priority 10) -
+
+@pytest.mark.parametrize("arm", ["legacy", "conservative"])
+def test_the_answer_is_a_FUNCTION_of_the_imposed_threshold_vector(drivers, arm):
+    """What licenses reading a synthetic result as a statement about real
+    decompositions. From the reference source: `ncmin` is a plain local (F:812,
+    not SAVE, not module-level) so it cannot outlive one kdm62D call, and the
+    loop that sets it (F:876-883) has no body but the assignment, so
+    `slmsk(ite)` wins. The answer should therefore depend on the imposed
+    threshold vector and nothing else -- byte-identical WITHIN a class,
+    different ACROSS."""
+    law = nl.class_law(drivers[arm], FIXTURE)
+    assert law["within"], "no within-class pair -- the law would be untested"
+    assert all(w["identical"] for w in law["within"])
+    assert all(x["differing"] > 0 for x in law["across"])
+
+
+def test_the_CLASSES_are_what_the_thresholds_say_they_are():
+    """(1,2) and (3,) both end every tile on land, so they must share a class --
+    which is why the `(1,2)` row differs from the whole domain in ZERO
+    components, a prediction the measurement already confirmed."""
+    cls = nl.equivalence_classes(FIXTURE)
+    members = {tuple(sorted(v)) for v in cls.values()}
+    assert ((1, 2), (3,)) in members or ((3,), (1, 2)) in members
+    assert len(cls) == 3, cls
+
+
+def test_the_LAW_can_come_out_FALSE(drivers, monkeypatch):
+    """A law that cannot be violated is not being tested. Merge two classes that
+    genuinely differ and the within-class identity must fail."""
+    monkeypatch.setattr(nl, "threshold_vector", lambda tiles, fixture: (1.0,))
+    law = nl.class_law(drivers["legacy"], FIXTURE)
+    assert len(law["classes"]) == 1
+    assert not all(w["identical"] for w in law["within"])
+
+
+def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
+    """Width 3 yields exactly ONE within-class pair. The report must say the
+    data is consistent with the law rather than a strong test of it, or a
+    reader takes a one-pair confirmation for a proven law."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "CONSISTENT with the law rather" in out
+    assert "than a strong test of it" in out
+    assert "geometry of the decomposition, not more physics" in out

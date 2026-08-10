@@ -602,6 +602,59 @@ def agreement_digits(oracle: dict, gap: float) -> float:
     return float("inf") if gap == 0.0 else -math.log10(gap / scale)
 
 
+def threshold_vector(tiles, fixture: str) -> tuple:
+    """The ncmin each column is GATED AT under this decomposition.
+
+    From the reference source, not inferred. `ncmin` is declared a plain local
+    (`real :: ncmin`, F:812) -- not SAVE, not module-level -- so it cannot
+    outlive one `kdm62D` call, and the loop that sets it (F:876-883) has no body
+    but the assignment, so its only effect is that `slmsk(ite)` wins. The
+    non-locality is therefore scoped to ONE call and determined solely by the
+    surface type at that call's LAST column.
+    """
+    return tuple(imposed_threshold(tiles, fixture, c)[0]
+                 for c in range(1, fixture_dims(fixture)[0] + 1))
+
+
+def equivalence_classes(fixture: str) -> dict:
+    """{threshold vector: [decompositions that produce it]}.
+
+    If the mechanism really is `slmsk(ite)`-only, this partitions the whole
+    decomposition space: same vector => same answer, bit for bit.
+    """
+    out = {}
+    for tiles in compositions(fixture_dims(fixture)[0]):
+        out.setdefault(threshold_vector(tiles, fixture), []).append(tiles)
+    return out
+
+
+def class_law(driver: str, fixture: str) -> dict:
+    """Test that prediction: byte-identity WITHIN a class, difference ACROSS.
+
+    This is what licenses reading a synthetic result as a statement about real
+    decompositions. It turns "tiling changes the answer" into "the answer is a
+    function of the imposed-threshold vector" -- so what a real MPI run would
+    show reduces to WHICH vectors its patch layout produces, a geometric
+    question about the decomposition rather than a physics campaign.
+    """
+    cls = equivalence_classes(fixture)
+    state = {t: read_state(run(driver, t), label=str(t))
+             for t in compositions(fixture_dims(fixture)[0])}
+    within = [{"a": a, "b": b, "identical": state[a] == state[b]}
+              for members in cls.values() for a in members[:1]
+              for b in members[1:]]
+    keys = list(cls)
+    across = [{"a": cls[keys[i]][0], "b": cls[keys[j]][0],
+               "differing": sum(1 for k in state[cls[keys[i]][0]]
+                                if state[cls[keys[i]][0]][k]
+                                != state[cls[keys[j]][0]][k])}
+              for i in range(len(keys)) for j in range(i + 1, len(keys))]
+    return {"classes": {",".join(f"{v:.3g}" for v in vec): [list(m) for m in ms]
+                        for vec, ms in cls.items()},
+            "within": within, "across": across,
+            "within_pairs": len(within)}
+
+
 def weight_is_uniform(base_text: str) -> bool:
     """Is a_k = 1/(1+qv(t0)) vertically CONSTANT in every column? Exactly.
 
@@ -690,6 +743,30 @@ def report(driver: str, fixture: str) -> None:
               f"{r['components_total']:<6} "
               f"{str(r['columns']) if r['columns'] else '-':>9} {w:>38}"
               + ("   <- the oracle" if r["is_the_oracle"] else ""))
+    law = class_law(driver, fixture)
+    print(f"\n  The mechanism as a LAW over the whole decomposition space. "
+          f"`ncmin` is a plain\n  local (F:812, not SAVE, not module-level), so "
+          f"it cannot outlive one kdm62D\n  call, and the loop that sets it "
+          f"(F:876-883) has no body but the assignment --\n  so `slmsk(ite)` "
+          f"wins and the answer should be a function of the imposed\n  "
+          f"threshold vector alone:")
+    for vec, members in law["classes"].items():
+        print(f"    [{vec}]  <- "
+              + ", ".join("(" + ",".join(map(str, m)) + ")" for m in members))
+    for w in law["within"]:
+        print(f"    WITHIN a class {tuple(w['a'])} vs {tuple(w['b'])}: "
+              f"byte-identical = {w['identical']}")
+    for x in law["across"]:
+        print(f"    ACROSS classes {tuple(x['a'])} vs {tuple(x['b'])}: "
+              f"{x['differing']} components differ")
+    print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
+          f"columns wide, which yields\n  exactly {law['within_pairs']} "
+          f"within-class pair, so the data is CONSISTENT with the law rather\n"
+          f"  than a strong test of it. What it does establish is what a real "
+          f"MPI run would\n  have to show: the question becomes WHICH threshold "
+          f"vectors a real coastal patch\n  layout produces -- geometry of the "
+          f"decomposition, not more physics.")
+
     print("\n  Why each row moves, per column -- the sign follows the "
           "threshold it was\n  given, and the two directions have opposite "
           "mechanisms:")
