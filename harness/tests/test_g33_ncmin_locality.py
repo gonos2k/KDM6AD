@@ -1016,3 +1016,30 @@ def test_the_report_states_the_REPLICATION(drivers, capsys):
     assert "replicated over 36 trajectories" in out
     assert "agree bit-for-bit in 36/36" in out
     assert "not just trajectories insensitive to everything" in out
+
+
+def test_a_ONE_CLASS_fixture_cannot_form_a_TWO_DIRECTIONAL_control(
+        uniform_driver):
+    """`holds` was True with ZERO across-class checks, and the report printed
+    "The across-class pair differs in 0/36 -- both directions" (Codex).
+    Self-contradictory on its face, and the same shape as the vacuous
+    same-atmosphere contract: a guarantee evaporating exactly where it could
+    not be checked.
+
+    An all-land fixture has one threshold class, so there IS no across-class
+    pair. That is a control that cannot be formed, not a control that passed."""
+    with pytest.raises(ra.RefineError, match="only one\n *direction|one "
+                                             "direction"):
+        nl.control_replication(uniform_driver, UNIFORM)
+
+
+def test_NEITHER_half_of_the_verdict_can_be_excused(drivers, monkeypatch):
+    """Both counts must reach the full trajectory set. Neither may be waived
+    for being unavailable -- unavailable is what made the first version pass."""
+    rep = nl.control_replication(drivers["legacy"], FIXTURE)
+    assert rep["within_identical"] == rep["trajectories"]
+    assert rep["across_differing"] == rep["trajectories"]
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    body = src[src.index("def control_replication("):src.index("def tile_brackets(")]
+    assert "across is None" not in body, \
+        "a missing across-class pair must be refused, never treated as satisfied"

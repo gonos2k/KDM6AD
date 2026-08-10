@@ -159,7 +159,19 @@ def control_replication(driver: str, fixture: str) -> dict:
             f"{fixture}: no two decompositions share a threshold vector, so the "
             f"same-atmosphere control cannot be formed on this fixture")
     keys = list(cls)
-    across = (cls[keys[0]][0], cls[keys[1]][0]) if len(keys) > 1 else None
+    if len(keys) < 2:
+        # BOTH halves are required. Treating a missing across-class pair as
+        # satisfied made `holds` True with ZERO across-class checks, and the
+        # report then printed "differs in 0/36 -- both directions" (Codex): a
+        # guarantee evaporating exactly where it could not be checked, the same
+        # shape as the vacuous same-atmosphere contract.
+        raise ra.RefineError(
+            f"{fixture}: every decomposition shares one threshold vector, so "
+            f"there is no across-class pair and the control has only one "
+            f"direction. A one-directional result cannot separate `the gate is "
+            f"what matters` from `these trajectories are insensitive to "
+            f"everything`")
+    across = (cls[keys[0]][0], cls[keys[1]][0])
 
     same, differ = [], []
     for nsplit, carry, rho in TRAJECTORIES:
@@ -170,14 +182,13 @@ def control_replication(driver: str, fixture: str) -> dict:
         leg = (nsplit, carry, rho)
         if state(within[0]) == state(within[1]):
             same.append(leg)
-        if across and state(across[0]) != state(across[1]):
+        if state(across[0]) != state(across[1]):
             differ.append(leg)
     return {"within_pair": within[:2], "across_pair": across,
             "trajectories": len(TRAJECTORIES),
             "within_identical": len(same), "across_differing": len(differ),
             "holds": (len(same) == len(TRAJECTORIES)
-                      and (across is None
-                           or len(differ) == len(TRAJECTORIES)))}
+                      and len(differ) == len(TRAJECTORIES))}
 
 
 def tile_brackets(text: str) -> list:
