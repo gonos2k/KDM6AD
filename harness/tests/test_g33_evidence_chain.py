@@ -15,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_evidence_chain as ec  # noqa: E402
+import g33_refine_manifest as rm  # noqa: E402
 
 
 def _sha(b: bytes) -> str:
@@ -968,6 +969,7 @@ def test_the_legacy_analyzer_blocker_is_currently_UNEXERCISED():
         "blocker count should have risen; update this test deliberately")
 
 
+@needs_bundle
 def test_an_ARM_STREAM_is_not_asked_for_an_ANALYZER_it_cannot_have():
     """`members_of` ran `_analyzer_state` over EVERY analysis entry, including
     `arm_stream`s -- which are raw driver runs with no analyzer by design, as
@@ -993,6 +995,7 @@ def test_DERIVED_analyses_are_still_analyzer_checked():
     assert states, "derived analyses must still produce analyzer rows"
 
 
+@needs_bundle
 def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     """What is left is the actual migration debt, not an artefact of the
     walker: claims with no reachable run, and bundles that predate the module
@@ -1015,3 +1018,62 @@ def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     assert "analyzer-unpinned" not in out, \
         "the unresolvable arm_stream blockers must stay gone"
     assert "historical_unavailable" in out, "the real migration debt must show"
+
+
+def _synthetic_bundle(root):
+    """A schema-valid v2 bundle carrying one derived analysis and one
+    arm_stream. No private data, so this runs on a public clone -- where the
+    bundle-backed version of this check produces zero member rows and its
+    non-empty guard fails (Codex)."""
+    def w(name, text):
+        p = root / name
+        p.write_text(text)
+        return rm.sha256(p)
+
+    pin = {"path": "p", "content_sha256": "d" * 64, "commit": "e" * 40,
+           "blob_sha": "f" * 40}
+    man = {
+        "schema": "refinement_experiment_v2",
+        "artifact_type": "refinement_experiment", "arm": "reference",
+        "precision": "f32", "instrumented": False, "decision_eligible": False,
+        "is_refinement_chain": True,
+        "members": [{"file": "n12.rezero.txt", "nsplit": 12,
+                     "output_sha256": w("n12.rezero.txt", "x\n")}],
+        "analyses": [
+            {"file": "n12.rezero.matched_closure.json",
+             "analysis": "matched_closure", "nsplit": 12,
+             "sha256": w("n12.rezero.matched_closure.json", "{}\n"),
+             "analyzer": "harness/g33_matched_closure.py",
+             "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
+             "analyzer_blob_sha": "c" * 40},
+            {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
+             "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
+             "arm": "uniform",
+             "runtime_argv": ["12", "rezero", "3", "uniform"]}],
+        "build_artifacts": [{"file": "g33_refine_driver",
+                             "sha256": w("g33_refine_driver", "#!f\n")}],
+        "build_provenance": {"executable_sha256": rm.sha256(
+            root / "g33_refine_driver")},
+        "member_parsers": [pin], "producer_modules": [pin],
+        "tracked_build_inputs": [pin],
+    }
+    (root / "manifest.json").write_text(json.dumps(man))
+    return root / "manifest.json"
+
+
+def test_the_synthetic_bundle_is_SCHEMA_VALID(tmp_path):
+    """Or the check below would be testing the schema's rejection path."""
+    manifest = _synthetic_bundle(tmp_path)
+    assert rm.validate(json.loads(manifest.read_text())) == []
+
+
+def test_ARM_STREAMS_produce_no_analyzer_row_WITHOUT_private_data(tmp_path):
+    """The rule, on a public clone. An `arm_stream` is a raw driver run with no
+    analyzer by design, so it must contribute no analyzer row -- while a
+    DERIVED analysis still does, or the fix would have silenced the real
+    check."""
+    rows = ec.members_of(_synthetic_bundle(tmp_path))
+    assert rows, "no rows walked -- this check would be vacuous"
+    assert not [r for r in rows if r.get("file") == "<no analyzer recorded>"]
+    repo_rows = [r for r in rows if r.get("scope") == "repo"]
+    assert repo_rows, "the derived analysis must still be analyzer-checked"
