@@ -1043,3 +1043,69 @@ def test_NEITHER_half_of_the_verdict_can_be_excused(drivers, monkeypatch):
     body = src[src.index("def control_replication("):src.index("def tile_brackets(")]
     assert "across is None" not in body, \
         "a missing across-class pair must be refused, never treated as satisfied"
+
+
+# ---- one gated runner, shared by all three analyses (owner P0-2) -----------
+
+def test_ALL_THREE_analyses_go_through_the_SAME_gated_runner():
+    """`control_replication` called `read_state(run(...))` directly and applied
+    NONE of the gates: no tile-liveness, no same-atmosphere contract, no
+    cell-universe check. A driver that mapped columns differently per tile
+    class, or dropped a column on one arm, could produce
+    within-class-identical / across-class-different and pass the attribution
+    control (owner P0-2)."""
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    for fn in ("def local_oracle(", "def class_law(", "def control_replication("):
+        body = src[src.index(fn):]
+        body = body[:body.index("\ndef ", 1)]
+        assert "gated_state(" in body, f"{fn} does not use the shared runner"
+        assert "read_state(run(" not in body, f"{fn} still reads a raw stream"
+
+
+def test_the_gated_runner_applies_EVERY_gate():
+    src = (ROOT / "g33_ncmin_locality.py").read_text()
+    body = src[src.index("def gated_state("):src.index("def control_replication(")]
+    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
+                 "_expect_universe", "read_records"):
+        assert gate in body, f"the shared runner skips {gate}"
+
+
+def test_a_TILES_IGNORING_driver_is_refused_by_the_REPLICATION(drivers,
+                                                                monkeypatch):
+    """The control's confirming outcome is identity, so a driver that ignored
+    the tile spec would make every within-class pair identical -- the strongest
+    confirmation from a completely broken run. Now refused where it was not."""
+    whole = nl.run(drivers["legacy"], (3,))
+    monkeypatch.setattr(nl, "run",
+                        lambda d, tiles, nsplit=1, carry="rezero", rho="as-is":
+                        whole)
+    with pytest.raises(ra.RefineError, match="the kernel was called over"):
+        nl.control_replication(drivers["legacy"], FIXTURE)
+
+
+def test_the_liveness_gate_now_checks_the_SUBSTEP_count(drivers):
+    """Surfaced by sharing the gate: the kernel is called over the
+    decomposition ONCE PER SUB-STEP, so the bracket sequence is the tile
+    pattern repeated `nsplit` times. The gate assumed nsplit=1 and only ever
+    ran there. Requiring the exact repetition -- not 'contains' -- means a run
+    that silently did fewer sub-steps fails here too."""
+    text = nl.run(drivers["legacy"], (1, 2), nsplit=3)
+    assert nl.tile_brackets(text) == [(1, 1), (2, 3)] * 3
+    nl._expect_tiles_are_live(text, (1, 2), "ok", 3)
+    with pytest.raises(ra.RefineError, match="sub-step count is not what"):
+        nl._expect_tiles_are_live(text, (1, 2), "wrong-nsplit", 1)
+
+
+def test_the_SAME_ATMOSPHERE_contract_is_per_TRAJECTORY(drivers):
+    """A different rho profile IS a different atmosphere, so the contract must
+    compare legs within one trajectory. Comparing across them would refuse
+    correctly but for the wrong reason, and that refusal would look like a
+    defect in the operator."""
+    a, _ = nl.gated_state(drivers["legacy"], FIXTURE, (3,), None, 1, "rezero",
+                          "as-is")
+    b, rec_b = nl.gated_state(drivers["legacy"], FIXTURE, (3,), None, 1,
+                              "rezero", "uniform")
+    assert a != b, "the rho profile must actually change the run"
+    with pytest.raises(ra.RefineError, match="did not receive the same"):
+        nl.gated_state(drivers["legacy"], FIXTURE, (3,), rec_b, 1, "rezero",
+                       "as-is")

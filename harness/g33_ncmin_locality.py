@@ -142,6 +142,34 @@ def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
     return r.stdout
 
 
+def gated_state(driver: str, fixture: str, tiles, reference=None,
+                nsplit: int = 1, carry: str = "rezero",
+                rho: str = "as-is") -> tuple:
+    """One decomposition's final state, through EVERY gate, once.
+
+    The single runner `local_oracle`, `class_law` and `control_replication`
+    share. The 36-trajectory control originally called `read_state(run(...))`
+    directly, applying none of them: no tile-liveness, no same-atmosphere
+    contract, no cell-universe check. A driver that mapped columns differently
+    per tile class, or dropped a column on one arm, could produce
+    within-class-identical and across-class-different and pass the attribution
+    control -- the weaker-reader-beside-the-strict-one defect this repo keeps
+    finding (owner P0-2).
+
+    Returns (state, records) so a caller can use the records as the reference
+    for the rest of its legs.
+    """
+    label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
+    text = run(driver, tiles, nsplit, carry, rho)
+    _expect_tiles_are_live(text, tiles, label, nsplit)
+    rec = read_records(text, label=label, nsplit=nsplit)
+    if reference is not None:
+        _expect_same_inputs(reference, rec, label)
+    state = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+    _expect_universe(state, *fixture_dims(fixture), label)
+    return state, rec
+
+
 def control_replication(driver: str, fixture: str) -> dict:
     """The attribution control, run on every trajectory rather than one.
 
@@ -175,14 +203,23 @@ def control_replication(driver: str, fixture: str) -> dict:
 
     same, differ = [], []
     for nsplit, carry, rho in TRAJECTORIES:
-        def state(tiles):
-            return read_state(run(driver, tiles, nsplit, carry, rho),
-                              label=f"{tiles}/{nsplit}/{carry}/{rho}",
-                              nsplit=nsplit)
+        # The reference for THIS trajectory: same nsplit/carry/rho, so the
+        # same-atmosphere contract compares runs that should share an
+        # atmosphere. Comparing across trajectories would refuse correctly but
+        # for the wrong reason -- a different rho profile IS a different
+        # atmosphere.
+        ref = None
+        states = {}
+        for tiles in (within[0], within[1], across[0], across[1]):
+            if tiles in states:
+                continue
+            states[tiles], rec = gated_state(driver, fixture, tiles, ref,
+                                             nsplit, carry, rho)
+            ref = ref or rec
         leg = (nsplit, carry, rho)
-        if state(within[0]) == state(within[1]):
+        if states[within[0]] == states[within[1]]:
             same.append(leg)
-        if state(across[0]) != state(across[1]):
+        if states[across[0]] != states[across[1]]:
             differ.append(leg)
     return {"within_pair": within[:2], "across_pair": across,
             "trajectories": len(TRAJECTORIES),
@@ -208,7 +245,8 @@ def tile_brackets(text: str) -> list:
     return [c["cols"] for c in nt.calls(text)]
 
 
-def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
+def _expect_tiles_are_live(text: str, tiles, label: str,
+                           nsplit: int = 1) -> None:
     """The kernel must have been called over the decomposition we ASKED for.
 
     The previous version ran an INVALID spec and required a refusal. That only
@@ -222,10 +260,16 @@ def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
     This reads the bounds the kernel was given, so validating-and-ignoring is
     caught where being-refused never was.
     """
-    want, i = [], 0
+    one, i = [], 0
     for t in tiles:
-        want.append((i + 1, i + t))
+        one.append((i + 1, i + t))
         i += t
+    # The kernel is called over the decomposition ONCE PER SUB-STEP, so the
+    # bracket sequence is the tile pattern repeated `nsplit` times. The gate
+    # assumed nsplit=1 and only ever ran there; requiring the exact repetition
+    # count rather than relaxing to "contains" makes it check the SUB-STEP
+    # count too -- a run that silently did fewer sub-steps now fails here.
+    want = one * nsplit
     got = tile_brackets(text)
     if not got:
         raise ra.RefineError(
@@ -234,7 +278,8 @@ def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
     if got != want:
         raise ra.RefineError(
             f"{label}: the kernel was called over {got}, not the requested "
-            f"{want} -- the tile argument is not reaching the partitioning")
+            f"{one} x {nsplit} sub-steps -- the tile argument is not reaching "
+            f"the partitioning, or the sub-step count is not what was asked")
 
 
 def _f32(h: str) -> float:
@@ -563,21 +608,14 @@ def local_oracle(driver: str, fixture: str) -> dict:
     """
     width, levels = fixture_dims(fixture)
     ones = (1,) * width
+    ref, ref_rec = gated_state(driver, fixture, ones)
     ref_text = run(driver, ones)
-    _expect_tiles_are_live(ref_text, ones, "local-oracle")
-    ref_rec = read_records(ref_text, label="local-oracle")
-    ref = {k[1:]: v for k, v in ref_rec.items() if k[0] == "state"}
-    _expect_universe(ref, width, levels, "local-oracle")
 
     rows = {}
     for tiles in compositions(width):
         label = ",".join(map(str, tiles))
+        got, _ = gated_state(driver, fixture, tiles, ref_rec)
         text = run(driver, tiles)
-        _expect_tiles_are_live(text, tiles, label)
-        rec = read_records(text, label=label)
-        _expect_same_inputs(ref_rec, rec, label)
-        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
-        _expect_universe(got, width, levels, label)
         diff = [k for k in ref if ref[k] != got[k]]
         rows[label] = {
             "is_the_oracle": tiles == ones,
@@ -734,20 +772,10 @@ def class_law(driver: str, fixture: str) -> dict:
     # then ran the whole domain would make every partition identical -- and
     # this check reads identity as the law HOLDING. The strongest possible
     # confirmation, produced by a completely broken run (Codex).
-    ref_text = run(driver, ones)
-    _expect_tiles_are_live(ref_text, ones, "class-law")
-    ref_rec = read_records(ref_text, label="class-law")
-
+    _ref_state, ref_rec = gated_state(driver, fixture, ones)
     state = {}
     for tiles in compositions(width):
-        label = ",".join(map(str, tiles))
-        text = run(driver, tiles)
-        _expect_tiles_are_live(text, tiles, label)
-        rec = read_records(text, label=label)
-        _expect_same_inputs(ref_rec, rec, label)
-        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
-        _expect_universe(got, width, levels, label)
-        state[tiles] = got
+        state[tiles], _ = gated_state(driver, fixture, tiles, ref_rec)
 
     within = [{"a": a, "b": b, "identical": state[a] == state[b]}
               for members in cls.values() for a in members[:1]
