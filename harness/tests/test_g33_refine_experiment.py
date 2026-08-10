@@ -32,29 +32,39 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         if fail_at == "build":
             raise SystemExit("build failed")
         # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would.
-        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        # build must leave one where a real build would -- and declare the
+        # digest OF THAT FILE. Stubbing a different one made the fixture
+        # describe a binary it had not written, which the manifest's
+        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
+        exe = workdir / "g33_refine_driver"
+        exe.write_text("#!fake\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": "ab" * 32}))
+            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode):
-        """One well-formed analysis entry.
+        """One well-formed entry per analysis a real bundle carries.
 
         The real `_analyses` runs the analyzers on a driver stream, which this
         fake has none of. Returning nothing made the producer publish an
-        `instrumented` bundle with no analyses -- which the v2 validator
-        correctly refuses, so the stub must produce a valid one rather than the
-        test asserting a shape the contract forbids.
+        `instrumented` bundle with no analyses; returning ONE made it publish
+        one with five of the six missing, which the schema now refuses -- an
+        instrumented bundle must carry the analyses that make it instrumented
+        (owner §8.3). The stub produces what a real bundle would rather than
+        the test asserting a shape the contract forbids.
         """
-        p = out / f"n{ns[0]}.{mode}.matched_closure.json"
-        p.write_text("{}\n")
-        return [{"file": p.name, "nsplit": ns[0], "analysis": "matched_closure",
-                 "sha256": xp.rm.sha256(p),
-                 **xp._analyzer_pin("g33_matched_closure")}]
+        out_entries = []
+        for kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+            p = out / f"n{ns[0]}.{mode}.{kind}.json"
+            p.write_text("{}\n")
+            out_entries.append({
+                "file": p.name, "nsplit": ns[0], "analysis": kind,
+                "sha256": xp.rm.sha256(p),
+                **xp._analyzer_pin(xp.ANALYSES[kind][0])})
+        return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3):
@@ -202,13 +212,17 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     def build(workdir, fixture, algo, nflux, arm="reference"):
         assert arm == "f64"
         # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would.
-        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        # build must leave one where a real build would -- and declare the
+        # digest OF THAT FILE. Stubbing a different one made the fixture
+        # describe a binary it had not written, which the manifest's
+        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
+        exe = workdir / "g33_refine_driver"
+        exe.write_text("#!fake\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": "cd" * 32}))
+            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3):
