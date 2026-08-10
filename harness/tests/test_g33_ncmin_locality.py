@@ -585,7 +585,10 @@ def test_the_MECHANISM_is_derived_from_the_thresholds_not_hardcoded(monkeypatch)
 
     monkeypatch.setattr(nl, "fixture_ncmin", lambda f: (2.5e7, 1.0e8))
     lo = nl.mechanism_for((3,), FIXTURE, 2)
-    assert "LOWER" in lo and "freer" in lo and "MORE rain" in lo
+    assert "LOWER" in lo and "MORE rain" in lo
+    assert "autoconversion" not in lo, (
+        "the pathway is inferred, not measured -- naming a process here "
+        "states an attribution the run never made (owner \u00a77)")
 
 
 def test_a_stream_with_no_INITIAL_qv_is_REFUSED_not_silently_accepted(drivers):
@@ -1145,3 +1148,36 @@ def test_the_LOCAL_figure_is_decomposition_INVARIANT(drivers):
                 for v in nl.gate_activity(nl.run(D, t), FIXTURE, t).values())
             for t in nl.compositions(3)}
     assert seen == {8}
+
+
+def test_the_PROCESS_pathway_is_NOT_claimed(drivers, capsys):
+    """The report said "suppressed autoconversion and LESS rain", stating a
+    process attribution the run never measured. `ncmin` gates 18 sites --
+    autoconversion (praut), three accretion branches, graupel
+    melting/evaporation (pgeml), and the max(ncmin, nci) floors that set the
+    diameters those rates use -- so the sign cannot be assigned to one of them
+    from a final-state comparison (owner §7).
+
+    The DIRECTION survives: it is measured. Only the pathway is withdrawn."""
+    nl.report(drivers["legacy"], FIXTURE)
+    out = capsys.readouterr().out
+    assert "HIGHER droplet floor, and LESS rain" in out
+    assert "LOWER droplet floor, and MORE rain" in out
+    assert "suppressed autoconversion" not in out
+    assert "freer autoconversion" not in out
+    assert "WHICH PROCESS carries the sign is NOT measured here" in out
+    assert "per-process tendency ledger" in out
+
+
+def test_the_gated_SITES_are_counted_from_the_REFERENCE_not_asserted():
+    """18 is a measurement of the pinned source, not a remembered number. If a
+    future reference changes it, the report's claim has to change with it."""
+    src = REF.read_text().splitlines()
+    sites = [ln for ln in src
+             if "ncmin" in ln
+             and "ncmin_land" not in ln and "ncmin_sea" not in ln
+             and ":: ncmin" not in ln.replace("  ", " ")
+             and not ln.lstrip().startswith("!")]
+    assert len(sites) == 18, (
+        f"the reference now has {len(sites)} ncmin sites, not 18 -- the "
+        f"report's caveat quotes this number")

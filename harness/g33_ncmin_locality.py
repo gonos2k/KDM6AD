@@ -673,9 +673,15 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
             f"col {col} moved under {tiles}, but it is gated at its own "
             f"{own:.3g} -- the `ncmin` mechanism does not explain this column")
     higher = imposed > own
+    # MEASURED: the threshold, and the sign of the rain departure. INFERRED:
+    # which process carries it. `ncmin` gates 18 sites -- autoconversion
+    # (praut), three accretion branches, graupel melting/evaporation (pgeml),
+    # and the max(ncmin, nci) floors that set the diameters those rates use --
+    # so naming autoconversion as the pathway states a process attribution the
+    # run never measured (owner §7). The direction stands; the mechanism is a
+    # candidate until a process-tendency ledger closes it.
     return (f"col {col}: gated at {imposed:.3g}, not its own {own:.3g} -- a "
-            f"{'HIGHER' if higher else 'LOWER'} droplet floor, so "
-            f"{'suppressed' if higher else 'freer'} autoconversion and "
+            f"{'HIGHER' if higher else 'LOWER'} droplet floor, and "
             f"{'LESS' if higher else 'MORE'} rain")
 
 
@@ -961,6 +967,15 @@ def report(driver: str, fixture: str) -> None:
           f"across-class pair differs in {rep['across_differing']}/"
           f"{rep['trajectories']} -- both directions, so the null result is\n"
           f"  not just trajectories insensitive to everything.")
+    print(f"\n  WHICH PROCESS carries the sign is NOT measured here. `ncmin` "
+          f"gates 18 sites:\n  autoconversion (praut), three accretion "
+          f"branches, graupel melting/evaporation\n  (pgeml), and the "
+          f"max(ncmin, nci) floors that set the diameters those rates\n  use. "
+          f"A higher droplet floor plausibly suppresses autoconversion first, "
+          f"but this\n  run measures the THRESHOLD and the RAIN SIGN, not the "
+          f"pathway between them. A\n  per-process tendency ledger "
+          f"(auto/accretion/evaporation/sedimentation/phase)\n  summing to "
+          f"the qr change is what would close it (owner §7).")
     print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
           f"columns wide, which yields\n  exactly {law['within_pairs']} "
           f"within-class pair, so the data is CONSISTENT with the law rather\n"
@@ -970,8 +985,7 @@ def report(driver: str, fixture: str) -> None:
           f"decomposition, not more physics.")
 
     print("\n  Why each row moves, per column -- the sign follows the "
-          "threshold it was\n  given, and the two directions have opposite "
-          "mechanisms:")
+          "threshold it was\n  given, and the two directions are opposite:")
     for tiles, r in o["partitions"].items():
         for col in r["columns"]:
             print("    " + mechanism_for(tuple(int(x) for x in tiles.split(",")),
