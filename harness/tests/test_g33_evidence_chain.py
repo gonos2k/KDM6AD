@@ -1072,8 +1072,24 @@ def test_ARM_STREAMS_produce_no_analyzer_row_WITHOUT_private_data(tmp_path):
     analyzer by design, so it must contribute no analyzer row -- while a
     DERIVED analysis still does, or the fix would have silenced the real
     check."""
-    rows = ec.members_of(_synthetic_bundle(tmp_path))
+    manifest = _synthetic_bundle(tmp_path)
+    man = json.loads(manifest.read_text())
+    rows = ec.members_of(manifest)
     assert rows, "no rows walked -- this check would be vacuous"
     assert not [r for r in rows if r.get("file") == "<no analyzer recorded>"]
-    repo_rows = [r for r in rows if r.get("scope") == "repo"]
-    assert repo_rows, "the derived analysis must still be analyzer-checked"
+
+    # Counted against the ANALYZER PATHS the manifest declares, not against
+    # "any repo-scoped row". The module pin blocks are repo-scoped too, so
+    # `assert repo_rows` survived with every analyzer row deleted -- three pin
+    # rows kept it green (Codex). This can only pass if each derived analysis
+    # contributed its own analyzer row, and none of them is the arm_stream.
+    derived = [a for a in man["analyses"] if a["analysis"] != "arm_stream"]
+    declared = {a["analyzer"] for a in derived}
+    assert declared, "no derived analysis declares an analyzer -- vacuous"
+    assert len(declared) == len(derived), "one analyzer path per derived analysis"
+    analyzer_rows = [r for r in rows if r.get("file") in declared]
+    assert len(analyzer_rows) == len(declared), (
+        f"{len(analyzer_rows)} analyzer rows for {len(declared)} derived "
+        f"analyses -- a derived analysis is not being analyzer-checked")
+    arm = next(a for a in man["analyses"] if a["analysis"] == "arm_stream")
+    assert "analyzer" not in arm, "the arm_stream must declare none"
