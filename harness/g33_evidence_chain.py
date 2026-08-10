@@ -322,6 +322,26 @@ def flatten(obj, prefix="") -> dict:
     return out
 
 
+def covered_files(artifacts: list) -> set:
+    """The files a claim's pinned artifacts actually VOUCH for.
+
+    ONLY rows whose digest was verified AT <bundle>/<file>. The provenance rows
+    are verified in the SOURCE TREE, so joining their paths under the bundle
+    names a location nothing ever hashed -- a figure bound to
+    <bundle>/harness/g33_refine_analyze.py would have inherited a guarantee made
+    about the repo file of that name (Codex).
+
+    A function, not an expression inlined in `chain()`, so the regression test
+    can exercise THIS filter. The first version of that test re-derived its own
+    (`"/harness/" not in c`) and would have passed with the real one deleted --
+    the weaker-check-beside-the-real-one failure this repo keeps finding.
+    """
+    return {f"{Path(a['path']).parent}/{m['file']}"
+            for a in artifacts if a["state"] == "matches"
+            for m in a["members"]
+            if m["state"] == "matches" and m.get("scope") == "bundle"}
+
+
 def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
     """Look up ONE declared figure in the artifact it is declared against.
 
@@ -397,15 +417,7 @@ def chain() -> list[dict]:
         # A figure may only be bound to a file whose DIGEST this claim's
         # pinned manifest verified. `members_of` already did that work; the
         # binding follows the same link rather than re-deriving a weaker one.
-        # ONLY rows whose digest was verified AT <bundle>/<file>. The
-        # provenance rows are verified in the SOURCE TREE, so joining their
-        # paths under the bundle names a location nothing ever hashed: a figure
-        # bound to <bundle>/harness/g33_refine_analyze.py would have inherited a
-        # guarantee made about the repo file of that name (Codex).
-        covered = {f"{Path(a['path']).parent}/{m['file']}"
-                   for a in arts if a["state"] == "matches"
-                   for m in a["members"]
-                   if m["state"] == "matches" and m.get("scope") == "bundle"}
+        covered = covered_files(arts)
         bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
         values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]

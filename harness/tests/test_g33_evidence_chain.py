@@ -4,6 +4,7 @@ Fixture bundles rather than the real ones: the published bundles live outside th
 repo and are absent in CI, so a test written against them would assert the host.
 """
 import hashlib
+import inspect
 import json
 import re
 import sys
@@ -787,43 +788,108 @@ def test_every_member_row_says_WHERE_its_digest_was_verified():
 
 @needs_bundle
 def test_covered_contains_NO_repo_paths():
-    """A repo path joined under the bundle names a location NOTHING hashed."""
-    covered = {f"{Path(a['path']).parent}/{m['file']}"
-               for r in ec.chain() for a in r["artifacts"]
-               if a["state"] == "matches"
-               for m in a["members"]
-               if m["state"] == "matches" and m.get("scope") == "bundle"}
+    """A repo path joined under the bundle names a location NOTHING hashed.
+    Through `covered_files`, so this checks the shipped filter."""
+    covered = {c for r in ec.chain() for c in ec.covered_files(r["artifacts"])}
     assert covered
     assert not [c for c in covered if "/harness/" in c]
 
 
-@needs_bundle
-def test_a_PROVENANCE_PATH_COLLISION_cannot_cover_a_file():
-    """The exploit, run for real. Provenance rows verify `harness/*.py` in the
-    repo; joining those under the bundle produced entries like
-    <bundle>/harness/g33_defect_magnitude.py. Writing JSON at exactly that path
-    made a claim's figure resolve against a file whose digest was never taken
-    there -- the guarantee belonged to the repo file of the same name (Codex).
-    """
-    rogue = ec.HOME / _LEG / "harness" / "g33_defect_magnitude.py"
-    rogue.parent.mkdir(parents=True, exist_ok=True)
-    rogue.write_text(json.dumps({"rows": {"main/nr/1":
-                                          {"of_surface_flux": 0.999}}}))
-    try:
-        rel = str(rogue.relative_to(ec.HOME))
-        unscoped = {f"{Path(a['path']).parent}/{m['file']}"
-                    for r in ec.chain() for a in r["artifacts"]
-                    if a["state"] == "matches"
-                    for m in a["members"] if m["state"] == "matches"}
-        assert rel in unscoped, "the collision must still be demonstrable"
+def _artifact_rows():
+    """One pinned manifest carrying both kinds of row, as `members_of` returns
+    them: an analysis hashed IN the bundle, and provenance resolved from the
+    source tree. No private bundle needed, so this runs in public CI -- where
+    the first version of this regression was skipped entirely (Codex)."""
+    return [{"path": f"{_LEG}/manifest.json", "state": "matches", "members": [
+        {"file": "n12.rezero.defect_magnitude.json", "state": "matches",
+         "scope": "bundle"},
+        {"file": "harness/g33_defect_magnitude.py", "state": "matches",
+         "scope": "repo"},
+    ]}]
 
-        covered = {c for c in unscoped if "/harness/" not in c}
-        assert rel not in covered
-        r = ec.resolve_value({"file": rel,
-                              "path": "rows.main/nr/1.of_surface_flux",
-                              "value": 0.999, "tolerance": 0.0},
-                             covered, {_LEG: "matches"})
-        assert r["state"] == "VALUE-UNPINNED-FILE"
-    finally:
-        rogue.unlink()
-        rogue.parent.rmdir()
+
+def test_a_PROVENANCE_PATH_COLLISION_cannot_cover_a_file():
+    """The exploit, against the PRODUCTION filter.
+
+    Provenance rows verify `harness/*.py` in the repo. Joining those under the
+    bundle produced entries like <bundle>/harness/g33_defect_magnitude.py, and a
+    JSON written at exactly that path made a claim's figure resolve against a
+    file whose digest was never taken there -- the guarantee belonged to the
+    repo file of the same name (Codex).
+
+    Asserts the collision is still DEMONSTRABLE on the unscoped join before
+    checking the real filter rejects it, so this cannot pass by the exploit
+    quietly ceasing to exist.
+    """
+    arts = _artifact_rows()
+    rogue = f"{_LEG}/harness/g33_defect_magnitude.py"
+
+    unscoped = {f"{Path(a['path']).parent}/{m['file']}"
+                for a in arts if a["state"] == "matches"
+                for m in a["members"] if m["state"] == "matches"}
+    assert rogue in unscoped, "the collision must still be demonstrable"
+
+    covered = ec.covered_files(arts)          # the PRODUCTION filter
+    assert rogue not in covered
+    assert f"{_LEG}/n12.rezero.defect_magnitude.json" in covered, \
+        "the legitimate member must survive the filter"
+
+    r = ec.resolve_value({"file": rogue, "path": "rows.main/nr/1.of_surface_flux",
+                          "value": 0.999, "tolerance": 0.0},
+                         covered, {_LEG: "matches"})
+    assert r["state"] == "VALUE-UNPINNED-FILE"
+    assert ec.verdict(r["state"]) is True
+
+
+def test_the_collision_test_uses_the_PRODUCTION_filter():
+    """A guard on the guard. The first version re-derived its own filter, on
+    the repo-path prefix, and would have passed with `covered_files` deleted --
+    testing a rule that existed only in the test."""
+    assert "def covered_files(" in Path(ec.__file__).read_text()
+    # Every OTHER test's source -- excluding this one by construction, since a
+    # guard that greps the whole file matches the literal it is grepping for.
+    me = "test_the_collision_test_uses_the_PRODUCTION_filter"
+    others = "\n".join(
+        inspect.getsource(f) for n, f in list(globals().items())
+        if n.startswith("test_") and n != me and callable(f))
+    assert "ec.covered_files(arts)" in others, \
+        "the collision regression must exercise the production filter"
+    # No test may BUILD a covered set by hand; they must call the real one.
+    assert 'scope") == "bundle"' not in others, \
+        "a hand-rolled stand-in for the production filter came back"
+
+
+@needs_bundle
+def test_the_REAL_bundle_agrees_with_the_synthetic_rows():
+    """The synthetic rows above must describe the real thing, or the CI test
+    guards a shape that does not occur."""
+    scopes = {m.get("scope") for r in ec.chain() for a in r["artifacts"]
+              for m in a["members"]}
+    assert scopes == {"bundle", "repo"}, scopes
+    assert any("/harness/" in f"{Path(a['path']).parent}/{m['file']}"
+               for r in ec.chain() for a in r["artifacts"]
+               if a["state"] == "matches"
+               for m in a["members"]
+               if m["state"] == "matches" and m.get("scope") == "repo"), \
+        "no repo-scoped row would collide -- the exploit shape is gone"
+
+
+def test_every_member_row_says_WHERE_its_digest_was_verified():
+    """Two namespaces meet in this list: files hashed at <bundle>/<file>, and
+    provenance resolved from a pinned commit in the SOURCE TREE. Without
+    `scope` they are indistinguishable, and any consumer joining a path under
+    the bundle silently mixes them."""
+    for r in ec.chain():
+        for a in r["artifacts"]:
+            for m in a["members"]:
+                assert m.get("scope") in ("bundle", "repo"), \
+                    f"{a['path']} -> {m.get('file')}: unscoped row"
+
+
+@needs_bundle
+def test_covered_contains_NO_repo_paths():
+    """A repo path joined under the bundle names a location NOTHING hashed.
+    Through `covered_files`, so this checks the shipped filter."""
+    covered = {c for r in ec.chain() for c in ec.covered_files(r["artifacts"])}
+    assert covered
+    assert not [c for c in covered if "/harness/" in c]
