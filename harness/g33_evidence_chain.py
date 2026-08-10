@@ -154,28 +154,28 @@ def members_of(manifest: Path) -> list[dict]:
     try:
         man = json.loads(manifest.read_text())
     except OSError as e:
-        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
                  "detail": str(e)}]
     except json.JSONDecodeError as e:
-        return [{"file": manifest.name, "state": "MANIFEST-UNREADABLE",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
                  "detail": f"not JSON: {e}"}]
     if not isinstance(man, dict):
-        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": f"top level is {type(man).__name__}, not an object"}]
     # `members` is the one block every schema has carried. Its ABSENCE is a
     # different statement from an empty list, and only the second is a bundle
     # that legitimately published none.
     if "members" not in man:
-        return [{"file": manifest.name, "state": "MANIFEST-MISSING-MEMBERS",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-MISSING-MEMBERS",
                  "detail": f"keys: {sorted(man)[:8]}"}]
     bad = _schema_violations(man)
     if bad:
-        return [{"file": manifest.name, "state": "MANIFEST-SCHEMA-MISMATCH",
+        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": "; ".join(bad)}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
-                    "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == mem.get("output_sha256")
                               else "MISMATCH")})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
@@ -189,13 +189,13 @@ def members_of(manifest: Path) -> list[dict]:
     for a in man.get("build_artifacts", []):
         p = manifest.parent / a["file"]
         out.append({"file": a["file"],
-                    "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == a.get("sha256")
                               else "MISMATCH")})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
-                    "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
         # The ANALYZER the manifest names, by digest. It was recorded and never
@@ -203,8 +203,8 @@ def members_of(manifest: Path) -> list[dict]:
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
-        out.append(_analyzer_state(an))
-    out.extend(_module_states(man))
+        out.append({"scope": "repo", **_analyzer_state(an)})
+    out.extend({"scope": "repo", **m} for m in _module_states(man))
     return out
 
 
@@ -215,6 +215,11 @@ def _blob_at(commit: str, path: str) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+#: Where a row's digest was actually verified. `bundle` means the file was
+#: hashed at <bundle>/<file>; `repo` means it was resolved from a pinned commit
+#: in the source tree. Joining a `repo` path under the bundle names a location
+#: NOTHING ever hashed, so a figure bound there would inherit a guarantee made
+#: about a different file entirely (Codex).
 def _analyzer_state(an: dict) -> dict:
     """Whether the analyzer this analysis ran can still be RECOVERED.
 
@@ -392,9 +397,15 @@ def chain() -> list[dict]:
         # A figure may only be bound to a file whose DIGEST this claim's
         # pinned manifest verified. `members_of` already did that work; the
         # binding follows the same link rather than re-deriving a weaker one.
+        # ONLY rows whose digest was verified AT <bundle>/<file>. The
+        # provenance rows are verified in the SOURCE TREE, so joining their
+        # paths under the bundle names a location nothing ever hashed: a figure
+        # bound to <bundle>/harness/g33_refine_analyze.py would have inherited a
+        # guarantee made about the repo file of that name (Codex).
         covered = {f"{Path(a['path']).parent}/{m['file']}"
                    for a in arts if a["state"] == "matches"
-                   for m in a["members"] if m["state"] == "matches"}
+                   for m in a["members"]
+                   if m["state"] == "matches" and m.get("scope") == "bundle"}
         bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
         values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]

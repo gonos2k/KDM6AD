@@ -771,3 +771,59 @@ def test_TOLERANCE_defaults_to_EXACT_when_unstated():
         for w in c["expected_values"]:
             assert w["tolerance"] == 0.0, \
                 f"{c['id']}: a tolerance was introduced -- state why in the claim"
+
+
+def test_every_member_row_says_WHERE_its_digest_was_verified():
+    """Two namespaces meet in this list: files hashed at <bundle>/<file>, and
+    provenance resolved from a pinned commit in the SOURCE TREE. Without
+    `scope` they are indistinguishable, and any consumer joining a path under
+    the bundle silently mixes them."""
+    for r in ec.chain():
+        for a in r["artifacts"]:
+            for m in a["members"]:
+                assert m.get("scope") in ("bundle", "repo"), \
+                    f"{a['path']} -> {m.get('file')}: unscoped row"
+
+
+@needs_bundle
+def test_covered_contains_NO_repo_paths():
+    """A repo path joined under the bundle names a location NOTHING hashed."""
+    covered = {f"{Path(a['path']).parent}/{m['file']}"
+               for r in ec.chain() for a in r["artifacts"]
+               if a["state"] == "matches"
+               for m in a["members"]
+               if m["state"] == "matches" and m.get("scope") == "bundle"}
+    assert covered
+    assert not [c for c in covered if "/harness/" in c]
+
+
+@needs_bundle
+def test_a_PROVENANCE_PATH_COLLISION_cannot_cover_a_file():
+    """The exploit, run for real. Provenance rows verify `harness/*.py` in the
+    repo; joining those under the bundle produced entries like
+    <bundle>/harness/g33_defect_magnitude.py. Writing JSON at exactly that path
+    made a claim's figure resolve against a file whose digest was never taken
+    there -- the guarantee belonged to the repo file of the same name (Codex).
+    """
+    rogue = ec.HOME / _LEG / "harness" / "g33_defect_magnitude.py"
+    rogue.parent.mkdir(parents=True, exist_ok=True)
+    rogue.write_text(json.dumps({"rows": {"main/nr/1":
+                                          {"of_surface_flux": 0.999}}}))
+    try:
+        rel = str(rogue.relative_to(ec.HOME))
+        unscoped = {f"{Path(a['path']).parent}/{m['file']}"
+                    for r in ec.chain() for a in r["artifacts"]
+                    if a["state"] == "matches"
+                    for m in a["members"] if m["state"] == "matches"}
+        assert rel in unscoped, "the collision must still be demonstrable"
+
+        covered = {c for c in unscoped if "/harness/" not in c}
+        assert rel not in covered
+        r = ec.resolve_value({"file": rel,
+                              "path": "rows.main/nr/1.of_surface_flux",
+                              "value": 0.999, "tolerance": 0.0},
+                             covered, {_LEG: "matches"})
+        assert r["state"] == "VALUE-UNPINNED-FILE"
+    finally:
+        rogue.unlink()
+        rogue.parent.rmdir()
