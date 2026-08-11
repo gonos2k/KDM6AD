@@ -598,22 +598,25 @@ def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
     assert not stray, (
         f"bindings point outside the bundles this claim pins: {sorted(set(stray))}")
 
-    ratios = {f"arms.{a}.{i}.metric_over_baseline"
-              for a, cs in (("inverted", (1, 2)), ("offset+", (1, 2)),
-                            ("offset-", (1, 2, 3)), ("uniform", (1, 2, 3)),
-                            ("x2", (1, 2, 3))) for i in cs}
-    assert len(ratios) == 13
-    assert ratios <= bound, (
-        f"metric ratios not bound: {sorted(ratios - bound)}. The text counts "
-        f"twelve of thirteen bit-exact; an unbound ratio is one that count is "
-        f"not checked against.")
+    ARMS = (("inverted", (1, 2)), ("offset+", (1, 2)), ("offset-", (1, 2, 3)),
+            ("uniform", (1, 2, 3)), ("x2", (1, 2, 3)))
 
-    offs = {f"arms.{a}.{i}.trajectory_over_metric"
-            for a, cs in (("offset+", (1, 2)), ("offset-", (1, 2, 3)))
-            for i in cs}
-    assert offs <= bound, (
-        f"offset trajectory ratios not bound: {sorted(offs - bound)}. The text "
-        f"states a RANGE (2.20-6.68%); an unbound end or middle is unchecked.")
+    # EVERY quantity the text's figures and counts range over, as one set.
+    # Requiring subsets separately left the five HEADLINE trajectory figures
+    # -- the 1.04/0.81/0.58/0.45/2.04% the claim is about -- guarded by
+    # nothing: they could all be dropped and this still passed (Codex).
+    ratios = {f"arms.{a}.{i}.metric_over_baseline" for a, cs in ARMS for i in cs}
+    headline = {f"arms.{a}.{i}.trajectory_over_metric"
+                for a, cs in ARMS if a in ("inverted", "x2") for i in cs}
+    offsets = {f"arms.{a}.{i}.trajectory_over_metric"
+               for a, cs in ARMS if a.startswith("offset") for i in cs}
+    assert (len(ratios), len(headline), len(offsets)) == (13, 5, 5)
+
+    required = ratios | headline | offsets
+    assert required == bound, (
+        f"the binding must cover exactly what the text's figures and counts "
+        f"range over.\n  missing: {sorted(required - bound)}"
+        f"\n  unexpected: {sorted(bound - required)}")
 
 
 def test_TRAJECTORY_001s_counted_claims_are_CHECKED_not_asserted():
