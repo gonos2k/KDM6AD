@@ -148,7 +148,7 @@ def _with_multi(root):
         "file": "fx.ncmin_locality.json", "analysis": "ncmin_locality",
         "sha256": "e" * 64, "fixture": "fx",
         "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]],
-        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
                 "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]]},
         "analyzer": "harness/g33_ncmin_locality.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
@@ -198,7 +198,7 @@ def test_a_MULTI_RUN_entry_records_the_CONFIG_IT_DROVE(tmp_path):
     it shared the bundle's configuration, which it does not (Codex)."""
     m = _with_multi(tmp_path)
     e = _multi(m)
-    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
                 "decompositions": e["decompositions"]}
     assert rm.validate(m) == []
 
@@ -212,7 +212,7 @@ def test_the_DECOMPOSITIONS_must_agree_with_what_RAN(tmp_path):
     from the analysis output."""
     m = _with_multi(tmp_path)
     e = _multi(m)
-    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
                 "decompositions": [[3]]}
     assert any("decompositions disagree" in b for b in rm.validate(m))
 

@@ -590,6 +590,11 @@ def analysis(driver: str, fixture: str) -> dict:
     # (Codex). The baseline is included because it was executed too.
     return {"f32_eps": F32_EPS, "partitions": rows,
             "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                    # The DOMAIN the decompositions cover. The driver
+                    # error-stops with "tile sizes must sum to B" on anything
+                    # else, so without it the record cannot be checked for
+                    # executability at all (Codex).
+                    "width": width,
                     "decompositions": [list(t) for t in compositions(width)]}}
 
 

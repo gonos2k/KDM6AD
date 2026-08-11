@@ -473,10 +473,10 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             # and it does not: this analysis chooses its own (Codex).
             ran = a.get("ran")
             if not isinstance(ran, dict) or not all(
-                    k in ran for k in ("nsplit", "carry", "rho",
+                    k in ran for k in ("nsplit", "carry", "rho", "width",
                                        "decompositions")):
                 bad.append(f"analyses[{i}] ({kind}) needs `ran` with nsplit, "
-                           f"carry, rho and decompositions")
+                           f"carry, rho, width and decompositions")
             # TYPED, not merely present. Checking only that the keys exist
             # accepted nsplit="twelve", nsplit=0, carry="banana" and
             # rho="purple" -- a run identity that cannot describe any run the
@@ -493,9 +493,24 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             elif ran["rho"] not in _RHO_ARMS:
                 bad.append(f"analyses[{i}] ({kind}) ran.rho {ran['rho']!r} "
                            f"is not one of {_RHO_ARMS}")
+            elif not isinstance(ran["width"], int) or isinstance(
+                    ran["width"], bool) or ran["width"] < 1:
+                bad.append(f"analyses[{i}] ({kind}) ran.width "
+                           f"{ran['width']!r} is not a positive integer")
             elif ran["decompositions"] != a.get("decompositions"):
                 bad.append(f"analyses[{i}] ({kind}) decompositions disagree "
                            f"with `ran` -- one of them is not what executed")
+            # EXECUTABLE, not merely well-formed. The driver error-stops with
+            # "tile sizes must sum to B", so a decomposition summing to
+            # anything else names a run that could not have happened -- and a
+            # SET of them summing to different totals cannot all describe one
+            # domain (Codex).
+            elif [d for d in ran["decompositions"] if sum(d) != ran["width"]]:
+                bad.append(
+                    f"analyses[{i}] ({kind}) decompositions "
+                    f"{[d for d in ran['decompositions'] if sum(d) != ran['width']]}"
+                    f" do not sum to the domain width {ran['width']} -- the "
+                    f"driver error-stops on tile sizes that do not cover B")
             for k in ("analyzer", "analyzer_sha256", "analyzer_commit",
                       "analyzer_blob_sha"):
                 if not a.get(k):
