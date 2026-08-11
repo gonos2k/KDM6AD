@@ -599,7 +599,14 @@ def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
     # pinned bundle passed unnoticed (Codex). Comparing everything also
     # subsumes the separate out-of-bundle check.
     required = {(artifact, q) for q in ratios | headline | offsets}
-    bound = {(w["file"], w["path"]) for w in claim["expected_values"]}
+    pairs = [(w["file"], w["path"]) for w in claim["expected_values"]]
+    bound = set(pairs)
+    # A set collapses duplicates, so the same (file, path) bound TWICE with
+    # different values satisfied the equality while one of the two carried a
+    # wrong number (Codex). Compare the counts as well as the contents.
+    assert len(pairs) == len(bound), (
+        f"duplicate bindings: "
+        f"{sorted({p for p in pairs if pairs.count(p) > 1})}")
     assert required == bound, (
         f"the binding must be exactly what the text's figures and counts range "
         f"over.\n  missing: {sorted(required - bound)}"
@@ -647,3 +654,19 @@ def test_TRAJECTORY_001s_counted_claims_are_CHECKED_not_asserted():
     assert set(ratios) <= bound, (
         f"metric ratios not bound: {sorted(set(ratios) - bound)} -- an unbound "
         f"ratio is one the count claim is not checked against")
+
+
+def test_NO_claim_binds_the_same_file_and_path_twice():
+    """General form of the same defect. Every consumer that builds a set from
+    `expected_values` collapses a duplicate, so a second entry for one
+    (file, path) can carry any value at all and be invisible to it -- while the
+    evidence chain, which resolves each entry independently, only catches it
+    where the bundle is present."""
+    ec = _chain()
+    seen = 0
+    for c in ec.claims():
+        pairs = [(w["file"], w["path"]) for w in c["expected_values"]]
+        seen += len(pairs)
+        dupes = {p for p in pairs if pairs.count(p) > 1}
+        assert not dupes, f"{c['id']} binds these twice: {sorted(dupes)}"
+    assert seen, "no bindings at all -- this check would be vacuous"
