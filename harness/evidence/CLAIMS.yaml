@@ -56,6 +56,7 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
     migration_blocker: >
       run_support is [unspecified] -- no fixture named, so nothing can be
       tied to a run at all; that must be resolved before any bundle can be
@@ -74,6 +75,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: analysis-not-carried
     migration_blocker: >
       extension_protocol names `mstepi` in `features` and counts its records
       (record_counts.mstep = 72), but summarizes COUNTS only -- no substep
@@ -110,6 +112,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
     migration_blocker: >
       a member-to-member SPREAD across the f64 members. The pinned bundles
       are f32 and each holds one member stream, so the spread has no members
@@ -129,6 +132,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
     migration_blocker: >
       the text publishes no numeric figure, so expected_values has nothing
       to bind; pinning would assert a bundle is the evidence with no
@@ -182,6 +186,7 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
     migration_blocker: >
       the text publishes no numeric figure, so expected_values has nothing
       to bind; pinning would assert a bundle is the evidence with no
@@ -334,6 +339,7 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
     migration_blocker: >
       run_support is [unspecified] -- no fixture named, so nothing can be
       tied to a run at all; that must be resolved before any bundle can be
@@ -467,6 +473,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-derived-field
     migration_blocker: >
       the humidity spreads ARE reproducible from the pinned dual_ledger --
       humidity.2 gives 2.61e-5 and humidity.3 gives 7.17e-4, matching the
@@ -642,6 +649,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: analysis-not-carried
     migration_blocker: >
       the basis-threaded WATER and ENTHALPY COLUMN ledgers are a different
       analysis from the pinned per-species dual_ledger, and no pinned
@@ -819,6 +827,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-run-variant
     migration_blocker: >
       the conservative bundle IS pinned, but its metric_trajectory is
       chain=main while this claim is entirely about the ICE chain. Needs a
@@ -862,6 +871,7 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
     migration_blocker: >
       run_support is [unspecified] -- no fixture named, so nothing can be
       tied to a run at all; that must be resolved before any bundle can be
@@ -895,6 +905,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-instrumentation
     migration_blocker: >
       the published triple is TOTAL surface precipitation, which the pinned
       bundle does not carry -- dual_ledger covers only the four instrumented
@@ -928,6 +939,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
     migration_blocker: >
       the figures are f64 and every pinned run is f32. Here the nearest
       pinned field DISAGREES rather than being absent -- internal_cap_enthalpy
@@ -982,6 +994,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
     migration_blocker: >
       R_W is quoted at f64 and every pinned run is f32. The pinned bundle
       also carries no column-water total -- dual_ledger rows are per species
@@ -1019,6 +1032,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
     migration_blocker: >
       the text publishes no numeric figure, so expected_values has nothing
       to bind; pinning would assert a bundle is the evidence with no
@@ -1055,6 +1069,7 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-derived-field
     migration_blocker: >
       principally a SOURCE claim -- module_big_step_utilities_em.F:4856 and
       Registry.EM_COMMON:122 -- carrying one measured figure, the 0.10%
@@ -1090,6 +1105,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: coincidental-match
     migration_blocker: >
       1 of 8 figures match a unique path, but the match is COINCIDENTAL --
       it lands in a bundle for a different fixture or quantity, and a
@@ -1386,6 +1402,7 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
     migration_blocker: >
       run_support is [unspecified] -- no fixture named, so nothing can be
       tied to a run at all; that must be resolved before any bundle can be

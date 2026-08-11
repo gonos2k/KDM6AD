@@ -1249,34 +1249,83 @@ def test_EVERY_unmigrated_claim_now_states_a_reason():
     assert not unassessed, f"unassessed claims remain: {sorted(unassessed)}"
 
 
-#: Each blocker kind and the marker that identifies it. A LIST of pairs, so a
-#: reason is matched against each in turn and must hit EXACTLY one -- an `or`
-#: chain here silently lost an `in r` and counted every reason as every kind.
-BLOCKER_KINDS = (
-    ("no fixture", "run_support is [unspecified]"),
-    ("no figure", "publishes no numeric figure"),
-    ("coincidental match", "COINCIDENTAL"),
-    ("no direct match", "matches an artifact value DIRECTLY"),
-    ("not in a bundle", "neither pinned bundle"),
-    ("analysis not carried", "not among the analyses"),
-    ("untraced", "not yet traced"),
-    ("needs a contract", "MULTI-RUN"),
-)
+#: The kinds a blocker may DECLARE. Each names a different remedy, which is the
+#: whole point of separating them: an f64 leg, a new analysis, and an
+#: unresolved fixture are three different pieces of work.
+#:
+#: These were once inferred by matching marker substrings against the prose.
+#: Rewriting nine blockers to say something useful changed the wording and all
+#: nine stopped classifying -- the taxonomy was tracking phrasing, not kind. It
+#: is the same defect as reading a member's identity off its path.
+BLOCKER_KINDS = frozenset({
+    "no-fixture", "no-figure", "coincidental-match", "not-in-bundle",
+    "analysis-not-carried", "untraced", "needs-contract",
+    "needs-f64", "needs-derived-field", "needs-instrumentation",
+    "needs-run-variant",
+})
 
 
 def test_the_blocker_reasons_are_DISTINCT_kinds():
     """Different remedies, which a single count concealed: a claim with no
     figure needs a different fix from one whose figures are simply not in a
     pinned bundle, and one with no fixture needs resolving before either."""
-    reasons = [c["migration_blocker"] for c in ec.claims()
-               if c.get("artifact_status") == "historical_unavailable"]
-    assert reasons, "nothing unmigrated -- update this test deliberately"
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    assert unmigrated, "nothing unmigrated -- update this test deliberately"
 
-    for r in reasons:
-        hit = [k for k, marker in BLOCKER_KINDS if marker in r]
-        assert len(hit) == 1, (
-            f"blocker matches {hit or 'no'} kind(s), must match exactly one: "
-            f"{r[:80]}")
+    for c in unmigrated:
+        kind = c.get("blocker_kind", "")
+        assert kind in BLOCKER_KINDS, (
+            f"{c['id']} declares blocker_kind {kind!r}, which is not a known "
+            f"kind -- a kind nobody can act on is not a work item")
+        assert c["migration_blocker"].strip(), (
+            f"{c['id']} declares a kind but no reason -- the kind says which "
+            f"remedy, the prose says why THIS claim needs it")
 
-    seen = {k for r in reasons for k, marker in BLOCKER_KINDS if marker in r}
-    assert {"no fixture", "no figure"} <= seen, sorted(seen)
+    seen = {c["blocker_kind"] for c in unmigrated}
+    assert {"no-fixture", "no-figure"} <= seen, sorted(seen)
+
+
+def test_a_blocker_kind_is_DECLARED_not_read_off_the_prose():
+    """The regression that produced this field. Rewording a blocker must not
+    change its kind -- if it can, the taxonomy is classifying English."""
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    f64 = [c for c in unmigrated if c["blocker_kind"] == "needs-f64"]
+    assert len(f64) == 3, [c["id"] for c in f64]
+    # Every one of them says "f64" -- and that is NOT how they were classified.
+    # The declaration is the authority, so a blocker that never spells the word
+    # still classifies, and one that spells it in passing does not acquire the
+    # kind. G33-PRECIP-001 mentions an f64 leg and is needs-instrumentation.
+    precip = next(c for c in unmigrated if c["id"] == "G33-PRECIP-001")
+    assert "f64" in precip["migration_blocker"]
+    assert precip["blocker_kind"] == "needs-instrumentation", (
+        "PRECIP-001 mentions f64 in passing; its remedy is the qs/qg "
+        "instrumentation the ledger never carried")
+
+
+def test_an_EMPTY_folded_block_reads_as_ABSENT(tmp_path, monkeypatch):
+    """`key: >` with no body left ">" as the value -- truthy, non-empty, and
+    indistinguishable from a real one to every caller that tested the field
+    for presence. It hid a deleted reason from the guard written to catch
+    exactly that, and it applies to every folded field, not just the blocker.
+    """
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(
+        "claims:\n"
+        "  - id: G33-EMPTY-001\n"
+        "    status: active\n"
+        "    blocker_kind: needs-f64\n"
+        "    migration_blocker: >\n"
+        "    evidence: [X.md]\n"
+        "  - id: G33-FULL-001\n"
+        "    status: active\n"
+        "    migration_blocker: >\n"
+        "      a stated reason\n"
+        "    evidence: [Y.md]\n")
+    monkeypatch.setattr(ec, "REGISTRY", reg)
+    got = {c["id"]: c.get("migration_blocker", "") for c in ec.claims()}
+    assert got["G33-EMPTY-001"] == "", (
+        f"an empty folded block read as {got['G33-EMPTY-001']!r} -- anything "
+        f"truthy here makes a deleted field look present")
+    assert got["G33-FULL-001"] == "a stated reason"

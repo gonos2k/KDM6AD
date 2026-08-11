@@ -82,7 +82,7 @@ def claims() -> list[dict]:
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "migration_blocker"):
+                                "blocker_kind", "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -91,6 +91,12 @@ def claims() -> list[dict]:
                 # containing ": " is invalid YAML, which is how a one-line
                 # blocker broke the file (Codex).
                 folded = m.group(1) if m.group(2).strip() == ">" else None
+                if folded:
+                    # An EMPTY folded block must read as absent. Leaving the
+                    # ">" as the value made a blocker with no body truthy and
+                    # non-empty, so "declares a kind but no reason" passed on a
+                    # claim whose reason had been deleted.
+                    cur[folded] = ""
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
@@ -476,6 +482,11 @@ def chain() -> list[dict]:
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
+            # DECLARED, not sniffed out of the prose. The kinds were inferred
+            # by substring until rewriting nine blockers changed the wording
+            # and every one of them stopped classifying -- the same failure as
+            # inferring a member's identity from its path.
+            "blocker_kind": c.get("blocker_kind", ""),
             "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
