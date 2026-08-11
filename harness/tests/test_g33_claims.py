@@ -438,3 +438,91 @@ def test_the_claims_pinned_to_a_RERUN_are_the_ones_that_reproduced():
     pinned = {c["id"] for c in CLAIMS if c.get("artifact_status") == "pinned"}
     assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ENTHALPY-003",
             "G33-ICE-CAP-001"} <= pinned
+
+
+def test_every_PINNED_claim_binds_its_HEADLINE_figures():
+    """Coverage, not just capability. `expected_values` existed but only
+    G33-NUMBER-003 used it, so the other three pinned claims reached their
+    exact bundle and analysis file while their published numbers were still
+    unchecked (owner §9)."""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+    bound = {c["id"] for c in ec.claims() if c["expected_values"]}
+    pinned = {c["id"] for c in CLAIMS if c.get("artifact_status") == "pinned"}
+    missing = {p for p in pinned if p not in bound} - {"G33-TURNOVER-002"}
+    assert not missing, (
+        f"pinned but no figure bound to a JSON path: {sorted(missing)}")
+    assert {"G33-NUMBER-003", "G33-MAGNITUDE-002", "G33-ICE-CAP-001",
+            "G33-ENTHALPY-003"} <= bound
+
+
+def test_G33_BASIS_005_binds_BOTH_SIDES_of_each_comparison():
+    """The claim is that ONE immutable layer mass is shared by every analyzer,
+    so the figures are pairs: a `cap_interface` value against the `dual_ledger`
+    physical residual for the same species and column. Binding only one side
+    would pin a number; binding both pins the assertion."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    claim = next(c for c in ec.claims() if c["id"] == "G33-BASIS-005")
+    files = [Path(w["file"]).name for w in claim["expected_values"]]
+    assert files.count("n12.rezero.cap_interface.json") == 3
+    assert files.count("n12.rezero.dual_ledger.json") == 3, (
+        "each cap_interface figure needs its dual_ledger counterpart, or the "
+        "pin does not test the claim")
+
+
+def test_no_unquoted_scalar_CONTAINS_a_colon_space():
+    """The exact invalidity that shipped, checked WITHOUT pyyaml.
+
+    An unquoted YAML scalar cannot contain ": ". The pyyaml test below is the
+    real check, but it `importorskip`s, and CI installs only numpy and pytest
+    -- so the gate that exists to keep this file parseable silently did not run
+    where it matters (Codex). CI now installs pyyaml AND this runs everywhere,
+    because a regression gate that can vanish is not a gate.
+    """
+    offenders = []
+    for n, line in enumerate(REGISTRY.read_text().splitlines(), 1):
+        m = re.match(r'^\s*[\w-]+: (?![\'">|])(.*)$', line)
+        if m and ": " in m.group(1):
+            offenders.append(f"{n}: {line.strip()[:70]}")
+    assert not offenders, (
+        "unquoted scalars containing ': ' -- fold them with `>`:\n  "
+        + "\n  ".join(offenders))
+
+
+def test_CLAIMS_yaml_is_actually_YAML():
+    """The file is consumed by a hand-written regex parser, so nothing ever
+    checked it against a real YAML reader -- and a `migration_blocker` value
+    containing ": " made it unparseable while every test stayed green (Codex).
+    An unquoted scalar cannot contain ": "; long text must be folded."""
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(REGISTRY.read_text())
+    assert isinstance(doc, dict) and doc.get("claims"), "no claims parsed"
+    assert len(doc["claims"]) == len(CLAIMS), (
+        f"the YAML reader sees {len(doc['claims'])} claims and the regex "
+        f"parser {len(CLAIMS)} -- the two disagree about the file")
+
+
+def test_the_two_readers_AGREE_on_every_migration_blocker():
+    """A folded value continues on the lines below it. Reading only the first
+    line captured the `>` itself: truthy, so the field looked present while
+    saying nothing, and the closeout printed a blocker with no reason."""
+    yaml = pytest.importorskip("yaml")
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    doc = yaml.safe_load(REGISTRY.read_text())
+    truth = {c["id"]: " ".join(str(c.get("migration_blocker", "")).split())
+             for c in doc["claims"]}
+    mine = {c["id"]: " ".join(c.get("migration_blocker", "").split())
+            for c in ec.claims()}
+    named = {k for k, v in truth.items() if v}
+    assert named, "no claim records a blocker -- this check would be vacuous"
+    for cid in named:
+        assert mine[cid] == truth[cid], (
+            f"{cid}: regex parser read {mine[cid]!r}, YAML says {truth[cid]!r}")

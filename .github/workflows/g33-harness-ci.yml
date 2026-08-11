@@ -53,11 +53,15 @@ jobs:
           python -m pip install --upgrade pip
           # numpy is used by the derived-flag comparator and the self-check;
           # pinned to the same combo as oracle-ci for reproducible float behavior.
-          pip install "numpy==2.4.6" "pytest==9.1.1"
+          # pyyaml validates CLAIMS.yaml against a REAL YAML reader. The
+          # registry is read by a hand-written regex parser, so without this
+          # the file can become unparseable while every test stays green --
+          # which happened (Codex).
+          pip install "numpy==2.4.6" "pytest==9.1.1" "pyyaml==6.0.2"
 
       - name: Record versions
         run: |
-          python -c 'import sys, numpy, pytest; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__)'
+          python -c 'import sys, numpy, pytest, yaml; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| pyyaml", yaml.__version__)'
           c++ --version | head -1   # the C++ probes are compiled by the suite
 
       - name: pytest (harness/tests — container, comparator, overlay, probes)

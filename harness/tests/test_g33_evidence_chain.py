@@ -15,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_evidence_chain as ec  # noqa: E402
+import g33_refine_manifest as rm  # noqa: E402
 
 
 def _sha(b: bytes) -> str:
@@ -624,8 +625,9 @@ def test_the_CLOSEOUT_check_FAILS_today_and_says_why(capsys):
 def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
     """`not_applicable` means no run artifact APPLIES, not that one is missing.
     Failing those would make the closeout unsatisfiable by construction."""
-    assert all(r["artifact_status"] != "historical_unavailable"
-               for r in ec.chain() if r["evidence_kind"] == "source")
+    source = [r for r in ec.chain() if r["evidence_kind"] == "source"]
+    assert source, "no source-only claims -- this check would be vacuous"
+    assert all(r["artifact_status"] != "historical_unavailable" for r in source)
 
 
 # ---- claim figures vs the pinned artifact (owner priority 7) ----------------
@@ -942,3 +944,197 @@ def test_the_CHAIN_production_path_applies_the_scope_filter(tmp_path,
     assert states["bundle/harness/p.py"] == "VALUE-UNPINNED-FILE", \
         "chain() let a provenance-path collision cover a file"
     assert ec.check() == 1, "and the collision must fail the routine check"
+
+
+def test_an_UNRECOVERABLE_legacy_analyzer_blocks_a_CLOSEOUT():
+    """`legacy-analyzer-changed` means no commit pin, only a content digest,
+    and the working-tree file no longer matches it -- so the exact analyzer
+    bytes that produced the analysis cannot be recovered from anywhere.
+
+    Routine: reportable, because old bundles legitimately predate the pin.
+    Closeout: a blocker, like every other unrecoverable entry (owner §10)."""
+    assert ec.verdict("legacy-analyzer-changed") is False
+    assert ec.verdict("legacy-analyzer-changed", require_available=True) is True
+    assert "legacy-analyzer-changed" in ec.EXCUSED_BY_ABSENCE
+
+
+def test_the_legacy_analyzer_blocker_is_currently_UNEXERCISED():
+    """Stated, not assumed. No bundle in the registry carries this state today,
+    so the guard is correct and inert: it protects a case that does not yet
+    occur. If one appears, the closeout count moves and that is the point."""
+    live = {m["state"] for r in ec.chain() for a in r["artifacts"]
+            for m in a["members"]}
+    assert "legacy-analyzer-changed" not in live, (
+        "a bundle now carries an unrecoverable legacy analyzer -- the closeout "
+        "blocker count should have risen; update this test deliberately")
+
+
+@needs_bundle
+def test_an_ARM_STREAM_is_not_asked_for_an_ANALYZER_it_cannot_have():
+    """`members_of` ran `_analyzer_state` over EVERY analysis entry, including
+    `arm_stream`s -- which are raw driver runs with no analyzer by design, as
+    the schema's own tagged union says. Every one reported "no analyzer
+    recorded", and --require-available turned each into a closeout blocker
+    demanding something that must not exist.
+
+    30 of the 58 blockers were that. A blocker with no possible resolution is
+    not a blocker; it is noise hiding the real ones."""
+    rows = [m for r in ec.chain() for a in r["artifacts"] for m in a["members"]]
+    assert rows, "no members walked -- the check would be vacuous"
+    assert not [m for m in rows if m.get("file") == "<no analyzer recorded>"]
+
+
+@needs_bundle
+def test_DERIVED_analyses_are_still_analyzer_checked():
+    """The other direction, so the fix cannot have silenced the real check."""
+    import json
+    man = ec.HOME / _LEG / "manifest.json"
+    kinds = {a.get("analysis") for a in json.loads(man.read_text())["analyses"]}
+    assert kinds - {"arm_stream"}, "this bundle must carry derived analyses"
+    states = {m["state"] for m in ec.members_of(man) if m.get("scope") == "repo"}
+    assert states, "derived analyses must still produce analyzer rows"
+
+
+@needs_bundle
+def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
+    """What is left is the actual migration debt, not an artefact of the
+    walker: claims with no reachable run, and bundles that predate the module
+    pins."""
+    assert ec.check(require_available=True) == 1
+    out = capsys.readouterr().out
+    # `id: path -> file: STATE  [note]` -- the state follows the LAST colon
+    # before the bracket, not the first token after the arrow, which is the
+    # file placeholder.
+    kinds = {ln.split("[")[0].rsplit(":", 1)[-1].strip()
+             for ln in out.splitlines() if " -> " in ln}
+    assert kinds, "no member blocker lines parsed -- this check would be vacuous"
+    assert kinds == {"modules-unpinned"}, (
+        f"unexpected member blocker kinds {sorted(kinds)}")
+    # DERIVED from the registry, not a constant. The closeout must report
+    # exactly the claims that still declare their run unreachable -- no more
+    # (noise) and no fewer (a silent gap). A hardcoded count would break on
+    # every migration and get bumped without anyone checking the relationship
+    # still holds.
+    claim_level = [ln for ln in out.splitlines()
+                   if " -> " not in ln and ln.startswith("G33")]
+    unreachable = [c for c in ec.claims()
+                   if c.get("artifact_status") == "historical_unavailable"]
+    assert unreachable, "nothing left unmigrated -- update this deliberately"
+    assert len(claim_level) == len(unreachable), (
+        f"{len(claim_level)} claim-level blockers for {len(unreachable)} "
+        f"claims declaring their run unreachable")
+    assert {ln.split(":")[0] for ln in claim_level} == {c["id"] for c in unreachable}
+    assert "analyzer-unpinned" not in out, \
+        "the unresolvable arm_stream blockers must stay gone"
+    assert "historical_unavailable" in out, "the real migration debt must show"
+
+
+def _synthetic_bundle(root):
+    """A schema-valid v2 bundle carrying one derived analysis and one
+    arm_stream. No private data, so this runs on a public clone -- where the
+    bundle-backed version of this check produces zero member rows and its
+    non-empty guard fails (Codex)."""
+    def w(name, text):
+        p = root / name
+        p.write_text(text)
+        return rm.sha256(p)
+
+    # The pins carry the ANALYZER'S OWN PATH, as the real manifests do: every
+    # analyzer path is also a producer_modules pin there. A fixture using a
+    # placeholder path dodged the collision and let a path-based count pass
+    # (Codex).
+    def pin(path):
+        return {"path": path, "content_sha256": "d" * 64, "commit": "e" * 40,
+                "blob_sha": "f" * 40}
+    man = {
+        "schema": "refinement_experiment_v2",
+        "artifact_type": "refinement_experiment", "arm": "reference",
+        "precision": "f32", "instrumented": False, "decision_eligible": False,
+        "is_refinement_chain": True,
+        "members": [{"file": "n12.rezero.txt", "nsplit": 12,
+                     "output_sha256": w("n12.rezero.txt", "x\n")}],
+        "analyses": [
+            {"file": "n12.rezero.matched_closure.json",
+             "analysis": "matched_closure", "nsplit": 12,
+             "sha256": w("n12.rezero.matched_closure.json", "{}\n"),
+             "analyzer": "harness/g33_matched_closure.py",
+             "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
+             "analyzer_blob_sha": "c" * 40},
+            {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
+             "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
+             "arm": "uniform",
+             "runtime_argv": ["12", "rezero", "3", "uniform"]}],
+        "build_artifacts": [{"file": "g33_refine_driver",
+                             "sha256": w("g33_refine_driver", "#!f\n")}],
+        "build_provenance": {"executable_sha256": rm.sha256(
+            root / "g33_refine_driver")},
+        "member_parsers": [pin("harness/g33_refine_analyze.py")],
+        "producer_modules": [pin("harness/g33_matched_closure.py")],
+        "tracked_build_inputs": [pin("harness/g33_fortran/refine_build.sh")],
+    }
+    (root / "manifest.json").write_text(json.dumps(man))
+    return root / "manifest.json"
+
+
+def test_the_synthetic_bundle_is_SCHEMA_VALID(tmp_path):
+    """Or the check below would be testing the schema's rejection path."""
+    manifest = _synthetic_bundle(tmp_path)
+    assert rm.validate(json.loads(manifest.read_text())) == []
+
+
+def test_ARM_STREAMS_produce_no_analyzer_row_WITHOUT_private_data(tmp_path):
+    """The rule, on a public clone. An `arm_stream` is a raw driver run with no
+    analyzer by design, so it must contribute no analyzer row -- while a
+    DERIVED analysis still does, or the fix would have silenced the real
+    check."""
+    manifest = _synthetic_bundle(tmp_path)
+    man = json.loads(manifest.read_text())
+    rows = ec.members_of(manifest)
+    assert rows, "no rows walked -- this check would be vacuous"
+    assert not [r for r in rows if r.get("file") == "<no analyzer recorded>"]
+
+    # Counted against the ANALYZER PATHS the manifest declares, not against
+    # "any repo-scoped row". The module pin blocks are repo-scoped too, so
+    # `assert repo_rows` survived with every analyzer row deleted -- three pin
+    # rows kept it green (Codex). This can only pass if each derived analysis
+    # contributed its own analyzer row, and none of them is the arm_stream.
+    derived = [a for a in man["analyses"] if a["analysis"] != "arm_stream"]
+    assert derived, "no derived analysis -- this check would be vacuous"
+
+    # Counted by ORIGIN, not by path. Every analyzer path is ALSO a
+    # producer_modules pin, so a path-based count cannot tell the two apart and
+    # a missing analyzer row is masked by the module row at the same path
+    # (Codex). The fixture reproduces that collision deliberately.
+    collide = {a["analyzer"] for a in derived} & {
+        p["path"] for p in man["producer_modules"]}
+    assert collide, "the fixture must reproduce the analyzer/module collision"
+
+    analyzer_rows = [r for r in rows if r.get("origin") == "analyzer"]
+    assert len(analyzer_rows) == len(derived), (
+        f"{len(analyzer_rows)} analyzer rows for {len(derived)} derived "
+        f"analyses -- a derived analysis is not being analyzer-checked")
+    arm = next(a for a in man["analyses"] if a["analysis"] == "arm_stream")
+    assert "analyzer" not in arm, "the arm_stream must declare none"
+
+
+def test_an_UNMIGRATED_claim_says_WHY_or_says_it_was_never_assessed():
+    """21 identical `historical_unavailable` lines are debt with no handle on
+    it. The four the owner named now carry the specific reason they could not
+    be migrated, and any claim without one reports that it was NOT ASSESSED
+    rather than looking the same as the assessed ones."""
+    assessed = {c["id"] for c in ec.claims() if c.get("migration_blocker")}
+    assert {"G33-NCMIN-001", "G33-NUMBER-009", "G33-TRAJECTORY-001",
+            "G33-BASIS-004"} <= assessed
+
+
+def test_the_closeout_PRINTS_the_reason_it_has(capsys):
+    ec.check(require_available=True)
+    out = capsys.readouterr().out
+    assert "needs a MULTI-RUN analysis" in out
+    unassessed = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"
+                  and not c.get("migration_blocker")]
+    if unassessed:
+        assert "not yet assessed" in out, (
+            "a claim with no recorded blocker must SAY so, not print a bare "
+            "unreachable line indistinguishable from an assessed one")

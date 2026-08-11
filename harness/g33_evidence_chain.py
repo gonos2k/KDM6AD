@@ -66,22 +66,33 @@ def claims() -> list[dict]:
     Parsed here rather than imported so this tool cannot inherit the stamper's
     parsing, which deliberately reads only what stamping needs.
     """
-    out, cur, in_art = [], None, False
+    out, cur, in_art, folded = [], None, False, None
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
                    "evidence": [], "artifacts": {}, "expected_values": []}
             out.append(cur)
-            in_art = False
+            in_art = folded = None or False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
+            folded = None
             in_art = m.group(1) in ("artifacts", "expected_values")
             section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) in ("status", "artifact_status", "evidence_kind"):
+            elif m.group(1) in ("status", "artifact_status", "evidence_kind",
+                                "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
+                # A FOLDED value (`key: >`) continues on the indented lines
+                # below. Capturing only the first line took the `>` itself as
+                # the value -- truthy, so the field looked present while saying
+                # nothing. Long text has to be folded here: an unquoted scalar
+                # containing ": " is invalid YAML, which is how a one-line
+                # blocker broke the file (Codex).
+                folded = m.group(1) if m.group(2).strip() == ">" else None
+        elif folded and line.startswith("      ") and line.strip():
+            cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
                 m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
@@ -175,7 +186,7 @@ def members_of(manifest: Path) -> list[dict]:
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
         out.append({"file": mem["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "member", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == mem.get("output_sha256")
                               else "MISMATCH")})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
@@ -189,13 +200,13 @@ def members_of(manifest: Path) -> list[dict]:
     for a in man.get("build_artifacts", []):
         p = manifest.parent / a["file"]
         out.append({"file": a["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "build_artifact", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == a.get("sha256")
                               else "MISMATCH")})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
         out.append({"file": an["file"],
-                    "scope": "bundle", "state": ("absent" if not p.is_file() else
+                    "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
         # The ANALYZER the manifest names, by digest. It was recorded and never
@@ -203,8 +214,21 @@ def members_of(manifest: Path) -> list[dict]:
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
         # analyzer lives in the repo, and an OLD bundle legitimately names a
         # path that a later refactor moved.
-        out.append({"scope": "repo", **_analyzer_state(an)})
-    out.extend({"scope": "repo", **m} for m in _module_states(man))
+        # ONLY for derived analyses. An `arm_stream` is a raw driver run and
+        # has no analyzer BY DESIGN -- the schema's tagged union says so -- yet
+        # this reported "no analyzer recorded" for every one of them, and
+        # --require-available turned that into a closeout blocker demanding
+        # something that must not exist. A blocker with no resolution is not a
+        # blocker, it is noise that hides the real ones.
+        if an.get("analysis") != "arm_stream":
+            out.append({"scope": "repo", "origin": "analyzer",
+                        **_analyzer_state(an)})
+    # ORIGIN, not path. Every analyzer path is ALSO a producer_modules pin --
+    # all six of them on the real bundle -- so counting rows by `file` cannot
+    # tell an analyzer row from a module-pin row, and a missing analyzer row is
+    # masked by the module row at the same path (Codex).
+    out.extend({"scope": "repo", "origin": "module_pin", **m}
+               for m in _module_states(man))
     return out
 
 
@@ -424,6 +448,7 @@ def chain() -> list[dict]:
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "artifact_status": c.get("artifact_status", "?"),
+            "migration_blocker": c.get("migration_blocker", ""),
             "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
@@ -507,6 +532,13 @@ EXCUSED_BY_ABSENCE = frozenset({
     "analyzer-unpinned",
     "modules-unpinned",
     "legacy-analyzer-absent",
+    # No commit pin, only a content digest, and the working-tree file no longer
+    # matches it: the exact analyzer bytes that produced the analysis cannot be
+    # recovered from anywhere. Absent in the only sense that matters here.
+    # Reportable in a routine run -- old bundles legitimately predate the pin --
+    # and a blocker in a closeout, like every other unrecoverable entry
+    # (owner §10).
+    "legacy-analyzer-changed",
     "value-unavailable",
 })
 
@@ -542,9 +574,11 @@ def check(require_available: bool = False) -> int:
         # never pinned. It declares that itself, and in a closeout the
         # declaration is the finding (owner priority 6).
         if require_available and r["artifact_status"] == "historical_unavailable":
+            why = (r["migration_blocker"]
+                   or "not yet assessed -- no migration_blocker recorded")
             bad.append(f"{r['id']}: artifact_status=historical_unavailable "
-                       f"({r['evidence_kind']}) -- the run behind this claim is "
-                       f"not reachable  [fails --require-available]")
+                       f"({r['evidence_kind']}) -- {why}"
+                       f"  [fails --require-available]")
         for v in r["values"]:
             if verdict(v["state"], require_available):
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"

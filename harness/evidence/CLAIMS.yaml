@@ -252,7 +252,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -269,6 +269,31 @@ claims:
       conservative variant, where the control closes. The perturbed profiles are constructed probes, not
       physical atmospheres; this establishes the cause, not the magnitude in a
       forecast.
+    # Migrated to the run that is actually reachable, with each
+    # point of agreement stated on its own basis:
+    #   fixture   RECORDED -- run_support names it, and the bundle
+    #             was built from it
+    #   sub-step  DERIVED -- scope says h = 25 s and the fixture's
+    #             DT is 300 s, so n12 is the run that gives it
+    #   mode      NOT RECORDED by this claim; the bundle is rezero
+    #   figures   MEASURED -- the five bound below reproduce EXACTLY,
+    #             which is the direct evidence that this run is the
+    #             one behind them
+    # An earlier version of this note asserted agreement on the mode,
+    # which the registry never recorded (Codex).
+    #
+    # NOT every figure the text publishes is bound. `arms.inverted.3`
+    # does not exist in this bundle, and the 99.9999% flattening
+    # figure is stated in the artifact as EXACTLY 0.0 residual --
+    # binding it would bind a different number than the claim makes.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
     evidence: [FINDING_density_falsification_v1.md]
     evidence_sha256: [FINDING_density_falsification_v1.md:15b9c15dfa68b3d52606e2884686a1ff64fffc7ee4539459386bf09ea2e81f1c]
 
@@ -472,6 +497,12 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # R / window_initial_inventory, the three figures the
+    # text publishes as 0.2173% / 0.4379% / 0.6884%.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -505,7 +536,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: >
       measurement of both measures on the same stream, with the operator
@@ -518,6 +549,25 @@ claims:
       physical measure should be the canonical dry-air layer mass the host
       dynamics carries -- that is a separate binding, and G33-BASIS-002 remains
       the open compatibility question.
+    # Migrated to the reachable run on this claim's fixture. The six
+    # figures below are PAIRED: a cap_interface value against the
+    # dual_ledger physical residual for the same species and column.
+    # That pairing IS the claim -- one immutable layer mass shared by
+    # every analyzer -- so binding both sides is what makes the pin
+    # test the assertion rather than a number.
+    #
+    # The percentages the text quotes (15.0036/13.3377/11.8402) are
+    # already bound by G33-NUMBER-003 against the same bundle; 0.0717
+    # and 0.065 are not in it and are NOT invented here.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
     evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 
@@ -543,6 +593,9 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the basis-parameterised water/enthalpy ledger figures are not among
+      the analyses either pinned bundle carries
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -623,6 +676,9 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      no figure of this claim was located in either pinned bundle; not yet
+      traced to an analysis that emits them
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -659,6 +715,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      its ice-chain density-arm matrix is in neither pinned bundle -- the
+      conservative metric_trajectory carries the same MAIN-chain arms as
+      legacy
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -929,6 +989,13 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # The ice cap share the text publishes as 100.0000%.
+    # Bound to the artifact's EXACT value: it is 1.0 to
+    # within double roundoff, not exactly 1.0, and the
+    # percentage is the rounded presentation of that.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -985,8 +1052,14 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and a higher droplet-number floor suppresses autoconversion, so
-      it rains ~21% LESS than the per-column answer. The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. The PROCESS
+      carrying that sign is NOT measured (owner §7): ncmin gates 18 sites in the
+      reference -- autoconversion (praut), three accretion branches, graupel
+      melting/evaporation (pgeml), and the max(ncmin,nci) floors that set the
+      diameters those rates consume -- and a final-state comparison cannot say
+      which of them carries it. Suppressed autoconversion is the leading
+      candidate and is no longer stated as the mechanism; an earlier version of
+      this text asserted it. The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1005,6 +1078,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      needs a MULTI-RUN analysis: the producer's contract is (stream,
+      basis) per member, and g33_ncmin_locality is (driver, fixture) and
+      runs the driver once per decomposition
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -1084,6 +1161,14 @@ claims:
     # only makes the run reachable (owner §12-6).
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    # Gross destruction share (57.8080% / 48.0157%) and the
+    # departure-temperature correction (-14.5767 /
+    # -21.8481 J m^-2), event-local as the text states.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 

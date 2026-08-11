@@ -8,14 +8,19 @@ under the destination only after everything succeeded.
 """
 import json
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+REPO = ROOT.parent
+REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'
 sys.path.insert(0, str(ROOT))
 import g33_refine_experiment as xp  # noqa: E402
+import g33_refine_manifest as rm  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "tests"))
 from test_g33_refine_analyze import _stream  # noqa: E402
@@ -27,29 +32,39 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         if fail_at == "build":
             raise SystemExit("build failed")
         # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would.
-        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        # build must leave one where a real build would -- and declare the
+        # digest OF THAT FILE. Stubbing a different one made the fixture
+        # describe a binary it had not written, which the manifest's
+        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
+        exe = workdir / "g33_refine_driver"
+        exe.write_text("#!fake\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": "ab" * 32}))
+            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode):
-        """One well-formed analysis entry.
+        """One well-formed entry per analysis a real bundle carries.
 
         The real `_analyses` runs the analyzers on a driver stream, which this
         fake has none of. Returning nothing made the producer publish an
-        `instrumented` bundle with no analyses -- which the v2 validator
-        correctly refuses, so the stub must produce a valid one rather than the
-        test asserting a shape the contract forbids.
+        `instrumented` bundle with no analyses; returning ONE made it publish
+        one with five of the six missing, which the schema now refuses -- an
+        instrumented bundle must carry the analyses that make it instrumented
+        (owner §8.3). The stub produces what a real bundle would rather than
+        the test asserting a shape the contract forbids.
         """
-        p = out / f"n{ns[0]}.{mode}.matched_closure.json"
-        p.write_text("{}\n")
-        return [{"file": p.name, "nsplit": ns[0], "analysis": "matched_closure",
-                 "sha256": xp.rm.sha256(p),
-                 **xp._analyzer_pin("g33_matched_closure")}]
+        out_entries = []
+        for kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+            p = out / f"n{ns[0]}.{mode}.{kind}.json"
+            p.write_text("{}\n")
+            out_entries.append({
+                "file": p.name, "nsplit": ns[0], "analysis": kind,
+                "sha256": xp.rm.sha256(p),
+                **xp._analyzer_pin(xp.ANALYSES[kind][0])})
+        return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3):
@@ -197,13 +212,17 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     def build(workdir, fixture, algo, nflux, arm="reference"):
         assert arm == "f64"
         # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would.
-        (workdir / "g33_refine_driver").write_text("#!fake\n")
+        # build must leave one where a real build would -- and declare the
+        # digest OF THAT FILE. Stubbing a different one made the fixture
+        # describe a binary it had not written, which the manifest's
+        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
+        exe = workdir / "g33_refine_driver"
+        exe.write_text("#!fake\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": "cd" * 32}))
+            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3):
@@ -754,3 +773,76 @@ def test_a_script_named_only_in_a_COMMENT_is_not_a_script_that_runs():
     code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
     assert not [l for l in code if "fortran_build.sh" in l]
     assert "fortran_build" not in xp._build_script_modules()
+
+
+# ---- content identity must survive a REAL rebuild (owner P0-1) -------------
+
+@pytest.mark.skipif(shutil.which("gfortran") is None or not REF.is_file(),
+                    reason="local-only (needs gfortran + the host tree)")
+def test_TWO_REAL_BUILDS_of_the_same_experiment_share_one_identity(tmp_path):
+    """The regression the owner asked for by name: two real Fortran builds, not
+    fake provenance.
+
+    `identity_digest` stripped `diagnostic` KEYS inside the manifest, but
+    `build_artifacts[].sha256` is a plain string holding the RAW digest of files
+    that embed the output directory -- a fresh temporary path every run. So two
+    identical experiments produced different addresses, and "an identical rerun
+    reuses the bundle" could only ever hold under fake provenance, which is the
+    one property a content address exists to provide (owner P0-1).
+
+    Measured before the fix: the stripped manifests differed in exactly two
+    fields, `build_provenance.json` and `commands.txt`, and in nothing else --
+    `g33_refine_driver` was byte-identical."""
+    ids = []
+    for name in ("A", "B"):
+        out = tmp_path / name
+        r = subprocess.run([sys.executable, str(ROOT / "g33_refine_experiment.py"),
+                            str(out), "--nsplit", "12", "--nflux"],
+                           capture_output=True, text=True, cwd=REPO)
+        assert r.returncode == 0, f"{name} failed:\n{r.stdout}\n{r.stderr}"
+        store = sorted((tmp_path / f"{name}.bundles").iterdir())
+        assert len(store) == 1, [p.name for p in store]
+        ids.append(store[0].name)
+
+    assert ids[0] == ids[1], (
+        f"the same experiment built in two directories got two addresses:\n"
+        f"  {ids[0]}\n  {ids[1]}")
+    assert len(ids[0]) == 64, "the address must stay a full digest"
+
+
+def test_the_LOCATION_DEPENDENT_artifacts_are_named_not_guessed():
+    """Which artifacts are payload-only is a RULE in the manifest module, not a
+    flag the producer sets per entry -- otherwise a producer could opt anything
+    out of identity. Their integrity is unaffected: the evidence chain verifies
+    every build_artifacts digest either way."""
+    assert rm.LOCATION_DEPENDENT_ARTIFACTS == {"build_provenance.json",
+                                               "commands.txt"}
+    assert "g33_refine_driver" not in rm.LOCATION_DEPENDENT_ARTIFACTS, \
+        "the binary that ran is the anchor -- it must stay in identity"
+    assert "sources.txt" not in rm.LOCATION_DEPENDENT_ARTIFACTS, \
+        "sources.txt holds repo-relative paths and was measured stable"
+
+
+def test_identity_ignores_a_payload_digest_but_NOT_the_binary():
+    """Both directions, so the strip cannot quietly widen."""
+    base = {"schema": "x", "build_artifacts": [
+        {"file": "g33_refine_driver", "sha256": "a" * 64},
+        {"file": "commands.txt", "sha256": "b" * 64}]}
+    moved = {"schema": "x", "build_artifacts": [
+        {"file": "g33_refine_driver", "sha256": "a" * 64},
+        {"file": "commands.txt", "sha256": "c" * 64}]}
+    rebuilt = {"schema": "x", "build_artifacts": [
+        {"file": "g33_refine_driver", "sha256": "d" * 64},
+        {"file": "commands.txt", "sha256": "b" * 64}]}
+    assert rm.identity_digest(base) == rm.identity_digest(moved)
+    assert rm.identity_digest(base) != rm.identity_digest(rebuilt)
+
+
+def test_an_UNRELATED_dirty_file_does_not_change_the_experiment():
+    """The producer REFUSES when any byte that will run differs from HEAD, so a
+    dirty tree can only mean unrelated files changed. Letting an edited README
+    move the address contradicts the producer's own rule for what makes a run
+    the same run (owner P0-1)."""
+    clean = {"schema": "x", "tree_dirty": False, "build_provenance": {}}
+    dirty = {"schema": "x", "tree_dirty": True, "build_provenance": {}}
+    assert rm.identity_digest(clean) == rm.identity_digest(dirty)

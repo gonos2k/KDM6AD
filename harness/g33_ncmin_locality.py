@@ -142,6 +142,34 @@ def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
     return r.stdout
 
 
+def gated_state(driver: str, fixture: str, tiles, reference=None,
+                nsplit: int = 1, carry: str = "rezero",
+                rho: str = "as-is") -> tuple:
+    """One decomposition's final state, through EVERY gate, once.
+
+    The single runner `local_oracle`, `class_law` and `control_replication`
+    share. The 36-trajectory control originally called `read_state(run(...))`
+    directly, applying none of them: no tile-liveness, no same-atmosphere
+    contract, no cell-universe check. A driver that mapped columns differently
+    per tile class, or dropped a column on one arm, could produce
+    within-class-identical and across-class-different and pass the attribution
+    control -- the weaker-reader-beside-the-strict-one defect this repo keeps
+    finding (owner P0-2).
+
+    Returns (state, records) so a caller can use the records as the reference
+    for the rest of its legs.
+    """
+    label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
+    text = run(driver, tiles, nsplit, carry, rho)
+    _expect_tiles_are_live(text, tiles, label, nsplit)
+    rec = read_records(text, label=label, nsplit=nsplit)
+    if reference is not None:
+        _expect_same_inputs(reference, rec, label)
+    state = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
+    _expect_universe(state, *fixture_dims(fixture), label)
+    return state, rec
+
+
 def control_replication(driver: str, fixture: str) -> dict:
     """The attribution control, run on every trajectory rather than one.
 
@@ -175,14 +203,23 @@ def control_replication(driver: str, fixture: str) -> dict:
 
     same, differ = [], []
     for nsplit, carry, rho in TRAJECTORIES:
-        def state(tiles):
-            return read_state(run(driver, tiles, nsplit, carry, rho),
-                              label=f"{tiles}/{nsplit}/{carry}/{rho}",
-                              nsplit=nsplit)
+        # The reference for THIS trajectory: same nsplit/carry/rho, so the
+        # same-atmosphere contract compares runs that should share an
+        # atmosphere. Comparing across trajectories would refuse correctly but
+        # for the wrong reason -- a different rho profile IS a different
+        # atmosphere.
+        ref = None
+        states = {}
+        for tiles in (within[0], within[1], across[0], across[1]):
+            if tiles in states:
+                continue
+            states[tiles], rec = gated_state(driver, fixture, tiles, ref,
+                                             nsplit, carry, rho)
+            ref = ref or rec
         leg = (nsplit, carry, rho)
-        if state(within[0]) == state(within[1]):
+        if states[within[0]] == states[within[1]]:
             same.append(leg)
-        if state(across[0]) != state(across[1]):
+        if states[across[0]] != states[across[1]]:
             differ.append(leg)
     return {"within_pair": within[:2], "across_pair": across,
             "trajectories": len(TRAJECTORIES),
@@ -208,7 +245,8 @@ def tile_brackets(text: str) -> list:
     return [c["cols"] for c in nt.calls(text)]
 
 
-def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
+def _expect_tiles_are_live(text: str, tiles, label: str,
+                           nsplit: int = 1) -> None:
     """The kernel must have been called over the decomposition we ASKED for.
 
     The previous version ran an INVALID spec and required a refusal. That only
@@ -222,10 +260,16 @@ def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
     This reads the bounds the kernel was given, so validating-and-ignoring is
     caught where being-refused never was.
     """
-    want, i = [], 0
+    one, i = [], 0
     for t in tiles:
-        want.append((i + 1, i + t))
+        one.append((i + 1, i + t))
         i += t
+    # The kernel is called over the decomposition ONCE PER SUB-STEP, so the
+    # bracket sequence is the tile pattern repeated `nsplit` times. The gate
+    # assumed nsplit=1 and only ever ran there; requiring the exact repetition
+    # count rather than relaxing to "contains" makes it check the SUB-STEP
+    # count too -- a run that silently did fewer sub-steps now fails here.
+    want = one * nsplit
     got = tile_brackets(text)
     if not got:
         raise ra.RefineError(
@@ -234,7 +278,8 @@ def _expect_tiles_are_live(text: str, tiles, label: str) -> None:
     if got != want:
         raise ra.RefineError(
             f"{label}: the kernel was called over {got}, not the requested "
-            f"{want} -- the tile argument is not reaching the partitioning")
+            f"{one} x {nsplit} sub-steps -- the tile argument is not reaching "
+            f"the partitioning, or the sub-step count is not what was asked")
 
 
 def _f32(h: str) -> float:
@@ -563,21 +608,14 @@ def local_oracle(driver: str, fixture: str) -> dict:
     """
     width, levels = fixture_dims(fixture)
     ones = (1,) * width
+    ref, ref_rec = gated_state(driver, fixture, ones)
     ref_text = run(driver, ones)
-    _expect_tiles_are_live(ref_text, ones, "local-oracle")
-    ref_rec = read_records(ref_text, label="local-oracle")
-    ref = {k[1:]: v for k, v in ref_rec.items() if k[0] == "state"}
-    _expect_universe(ref, width, levels, "local-oracle")
 
     rows = {}
     for tiles in compositions(width):
         label = ",".join(map(str, tiles))
+        got, _ = gated_state(driver, fixture, tiles, ref_rec)
         text = run(driver, tiles)
-        _expect_tiles_are_live(text, tiles, label)
-        rec = read_records(text, label=label)
-        _expect_same_inputs(ref_rec, rec, label)
-        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
-        _expect_universe(got, width, levels, label)
         diff = [k for k in ref if ref[k] != got[k]]
         rows[label] = {
             "is_the_oracle": tiles == ones,
@@ -635,9 +673,15 @@ def mechanism_for(tiles, fixture: str, col: int) -> str:
             f"col {col} moved under {tiles}, but it is gated at its own "
             f"{own:.3g} -- the `ncmin` mechanism does not explain this column")
     higher = imposed > own
+    # MEASURED: the threshold, and the sign of the rain departure. INFERRED:
+    # which process carries it. `ncmin` gates 18 sites -- autoconversion
+    # (praut), three accretion branches, graupel melting/evaporation (pgeml),
+    # and the max(ncmin, nci) floors that set the diameters those rates use --
+    # so naming autoconversion as the pathway states a process attribution the
+    # run never measured (owner §7). The direction stands; the mechanism is a
+    # candidate until a process-tendency ledger closes it.
     return (f"col {col}: gated at {imposed:.3g}, not its own {own:.3g} -- a "
-            f"{'HIGHER' if higher else 'LOWER'} droplet floor, so "
-            f"{'suppressed' if higher else 'freer'} autoconversion and "
+            f"{'HIGHER' if higher else 'LOWER'} droplet floor, and "
             f"{'LESS' if higher else 'MORE'} rain")
 
 
@@ -665,24 +709,40 @@ def agreement_digits(oracle: dict, gap: float) -> float:
     return float("inf") if gap == 0.0 else -math.log10(gap / scale)
 
 
-def gate_activity(text: str, fixture: str) -> dict:
+def gate_activity(text: str, fixture: str, tiles=None) -> dict:
     """How often the `ncmin` gate can BIND, per column, on this atmosphere.
 
-    Without this a null result reads as evidence when it may only be evidence
-    of an inert gate. `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so
-    `nci .le. ncmin` binds in 0 of 12 cells: showing no tiling dependence there
-    says little about whether some OTHER mechanism would respond under the
-    boundary fixture's regime, where it binds 12 of 12 (Codex).
+    Without it a null result reads as evidence when it may only be evidence of
+    an inert gate: `multisubcycle_v1` sets ncmin = 10 against nc ~ 1e8, so the
+    gate binds in 0 of 12 cells, and showing no tiling dependence there says
+    little about the boundary fixture's regime (Codex).
+
+    TWO thresholds, because they are different questions and the first version
+    reported only one under a name that read as the other (owner §6):
+
+      local    each column's OWN threshold -- the per-column oracle's gate,
+               what a corrected operator would apply
+      imposed  the scalar the run ACTUALLY used, from its tile's last column
+
+    On the whole-domain run of `boundary_mapping_v1` these differ: local binds
+    8/12, imposed 12/12, because the sea column is gated at the land threshold.
+    Reporting 8/12 alone described the oracle, not the run.
     """
     rec = read_records(text, label="gate-activity")
+    land, sea = fixture_ncmin(fixture)
+    xland = fixture_xland(fixture)
+    width = fixture_dims(fixture)[0]
+    tiles = tiles or (width,)
     out = {}
-    for col in range(1, fixture_dims(fixture)[0] + 1):
-        thr = fixture_ncmin(fixture)[0 if fixture_xland(fixture)[col] == 1.0
-                                     else 1]
+    for col in range(1, width + 1):
+        local = land if xland[col] == 1.0 else sea
+        imposed = imposed_threshold(tiles, fixture, col)[0]
         vals = [_f32(v) for k, v in rec.items()
                 if k[0] == "initial" and k[1] == "nc" and k[2] == col]
-        out[col] = {"threshold": thr, "cells": len(vals),
-                    "binding": sum(1 for v in vals if v <= thr)}
+        out[col] = {"cells": len(vals),
+                    "local_threshold": local, "imposed_threshold": imposed,
+                    "local_binding": sum(1 for v in vals if v <= local),
+                    "imposed_binding": sum(1 for v in vals if v <= imposed)}
     return out
 
 
@@ -734,20 +794,10 @@ def class_law(driver: str, fixture: str) -> dict:
     # then ran the whole domain would make every partition identical -- and
     # this check reads identity as the law HOLDING. The strongest possible
     # confirmation, produced by a completely broken run (Codex).
-    ref_text = run(driver, ones)
-    _expect_tiles_are_live(ref_text, ones, "class-law")
-    ref_rec = read_records(ref_text, label="class-law")
-
+    _ref_state, ref_rec = gated_state(driver, fixture, ones)
     state = {}
     for tiles in compositions(width):
-        label = ",".join(map(str, tiles))
-        text = run(driver, tiles)
-        _expect_tiles_are_live(text, tiles, label)
-        rec = read_records(text, label=label)
-        _expect_same_inputs(ref_rec, rec, label)
-        got = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
-        _expect_universe(got, width, levels, label)
-        state[tiles] = got
+        state[tiles], _ = gated_state(driver, fixture, tiles, ref_rec)
 
     within = [{"a": a, "b": b, "identical": state[a] == state[b]}
               for members in cls.values() for a in members[:1]
@@ -888,13 +938,17 @@ def report(driver: str, fixture: str) -> None:
             + " -- `ncmin` is not the only thing the decomposition changes here, "
               "so the synthetic result cannot be read as a statement about real "
               "decompositions")
-    act = gate_activity(base_text, fixture)
-    binding = sum(v["binding"] for v in act.values())
+    act = gate_activity(base_text, fixture, (fixture_dims(fixture)[0],))
     cells = sum(v["cells"] for v in act.values())
-    print(f"  The `nc <= ncmin` gate BINDS in {binding}/{cells} cells on this "
-          f"atmosphere. A null\n  result under an INERT gate is evidence of the "
-          f"gate being inert, not of the\n  operator being local, so this "
-          f"number has to sit beside the verdict (Codex).")
+    loc = sum(v["local_binding"] for v in act.values())
+    imp = sum(v["imposed_binding"] for v in act.values())
+    print(f"  The `nc <= ncmin` gate binds in {imp}/{cells} cells under the "
+          f"threshold this run\n  ACTUALLY imposed, and {loc}/{cells} under "
+          f"each column's own -- the per-column oracle's\n  gate. They differ "
+          f"because the sea column is gated at the land threshold, which is\n"
+          f"  the defect itself (owner §6). A null result under an INERT gate "
+          f"is evidence\n  of the gate being inert, not of the operator being "
+          f"local, so this sits beside\n  the verdict.")
     rep = control_replication(driver, fixture)
     if not rep["holds"]:
         raise ra.RefineError(
@@ -913,6 +967,15 @@ def report(driver: str, fixture: str) -> None:
           f"across-class pair differs in {rep['across_differing']}/"
           f"{rep['trajectories']} -- both directions, so the null result is\n"
           f"  not just trajectories insensitive to everything.")
+    print(f"\n  WHICH PROCESS carries the sign is NOT measured here. `ncmin` "
+          f"gates 18 sites:\n  autoconversion (praut), three accretion "
+          f"branches, graupel melting/evaporation\n  (pgeml), and the "
+          f"max(ncmin, nci) floors that set the diameters those rates\n  use. "
+          f"A higher droplet floor plausibly suppresses autoconversion first, "
+          f"but this\n  run measures the THRESHOLD and the RAIN SIGN, not the "
+          f"pathway between them. A\n  per-process tendency ledger "
+          f"(auto/accretion/evaporation/sedimentation/phase)\n  summing to "
+          f"the qr change is what would close it (owner §7).")
     print(f"  Held on every pair. But this fixture is {fixture_dims(fixture)[0]} "
           f"columns wide, which yields\n  exactly {law['within_pairs']} "
           f"within-class pair, so the data is CONSISTENT with the law rather\n"
@@ -922,8 +985,7 @@ def report(driver: str, fixture: str) -> None:
           f"decomposition, not more physics.")
 
     print("\n  Why each row moves, per column -- the sign follows the "
-          "threshold it was\n  given, and the two directions have opposite "
-          "mechanisms:")
+          "threshold it was\n  given, and the two directions are opposite:")
     for tiles, r in o["partitions"].items():
         for col in r["columns"]:
             print("    " + mechanism_for(tuple(int(x) for x in tiles.split(",")),
