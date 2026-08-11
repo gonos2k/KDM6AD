@@ -75,12 +75,11 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      extension_protocol names `mstepi` in `features` and counts its records
+      (record_counts.mstep = 72), but summarizes COUNTS only -- no substep
+      size is stored, so h = 25 s and h = 6.25 s cannot be read out of it.
+      Needs an analysis reducing the mstep/mstepi records to a per-column
+      schedule
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -112,12 +111,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      a member-to-member SPREAD across the f64 members. The pinned bundles
+      are f32 and each holds one member stream, so the spread has no members
+      to range over. Needs an f64 multi-member sweep
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -472,12 +468,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      the humidity spreads ARE reproducible from the pinned dual_ledger --
+      humidity.2 gives 2.61e-5 and humidity.3 gives 7.17e-4, matching the
+      claimed 2.6e-5 and 7.2e-4 -- but only as max minus min, which the
+      artifact does not store. The 2.2e-15/3.7e-4/1.4e-2 sensitivity triple
+      comes from a humidity-profile sweep that was never pinned. Needs a
+      derived spread field plus that sweep
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -647,12 +643,11 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      the basis-threaded WATER and ENTHALPY COLUMN ledgers are a different
+      analysis from the pinned per-species dual_ledger, and no pinned
+      artifact carries a water column total under both measures, so
+      4.5703e-09, 9.7626e-07 and 213.6x have nowhere to bind. Needs a run
+      emitting both bases for the column totals
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -825,12 +820,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      the conservative bundle IS pinned, but its metric_trajectory is
+      chain=main while this claim is entirely about the ICE chain. Needs a
+      conservative-variant run with chain=ice
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -904,12 +896,14 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      the published triple is TOTAL surface precipitation, which the pinned
+      bundle does not carry -- dual_ledger covers only the four instrumented
+      species (qr/nr/qi/ni), with no qs/qg and no `rain` accumulator. Do NOT
+      bind main/qr/*.operator.surface_out: it reproduces column 1 to three
+      figures (4.791e-4 against the claimed 4.8e-4) and then departs by 85x
+      and 560x in columns 2 and 3, so that column-1 agreement is a
+      coincidence, not the quantity. Needs qs/qg instrumentation, plus an
+      f64 leg for the 2.0e-7/~0/0.0 half
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -935,12 +929,13 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      the figures are f64 and every pinned run is f32. Here the nearest
+      pinned field DISAGREES rather than being absent -- internal_cap_enthalpy
+      column 1 gives residual -48.336 and dH -81.99 against the claimed
+      -42.09 -- so neither may be bound. `eta` alone is pinned
+      (all_charged_at_surface.1.eta = 0.41796), but the claim's eta sentence
+      is about the different regime where H_out ~ 0. Needs an f64 member
+      sweep
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -988,12 +983,10 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      R_W is quoted at f64 and every pinned run is f32. The pinned bundle
+      also carries no column-water total -- dual_ledger rows are per species
+      -- so W_final, W_initial and P_surface would each have to be summed by
+      the reader. Needs an f64 run of a water-column-ledger analysis
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -1063,12 +1056,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no published figure matches an artifact value DIRECTLY -- they are
-      absent, or degenerate and matching many paths at once. This does NOT
-      prove the evidence is missing: a scan for raw matches cannot see a
-      figure the text DERIVES from artifact values, which is exactly how
-      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
-      knows what the numbers mean
+      principally a SOURCE claim -- module_big_step_utilities_em.F:4856 and
+      Registry.EM_COMMON:122 -- carrying one measured figure, the 0.10%
+      column-mean qv. dual_ledger stores that only as 1+qv
+      (humidity.N.min/max ~ 1.0010), never qv itself, so binding 0.10% would
+      require a subtraction the artifact does not perform. Needs a derived
+      qv field, not a re-reading
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases

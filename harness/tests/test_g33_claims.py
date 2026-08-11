@@ -699,3 +699,58 @@ def test_the_two_process_shares_SUM_to_the_whole():
              for w in claim["expected_values"] if ".share." in w["path"]}
     assert set(share) == {"pracw", "praut"}, sorted(share)
     assert abs(sum(share.values()) - 1.0) < 1e-12, share
+
+
+def _fallout_bindings(values):
+    """Bound paths that read the qr-only fallout diagnostic. `rain` is the
+    TOTAL and snow/graupel are subsets of it, so a per-species surface_out is
+    a different quantity from a total-precipitation claim however close the
+    number lands."""
+    return [w["path"] for w in values if "surface_out" in w.get("path", "")]
+
+
+def test_no_claim_is_left_on_the_PLACEHOLDER_blocker():
+    """"Needs a reader who knows what the numbers mean" was a confession, not a
+    reason: nine claims shared it because a raw value-scan could not match their
+    figures, which says what the SCAN could not do and nothing about the claim.
+    Reading them gave nine different answers -- f64 runs, an unpinned sweep, a
+    chain=ice run, counts-only instrumentation, a species the ledger never
+    carried. A blocker that does not distinguish those cannot be worked."""
+    stale = [c["id"] for c in CLAIMS
+             if "Needs a reader who" in c.get("migration_blocker", "")]
+    assert not stale, (
+        f"{sorted(stale)} carry the placeholder again -- name why THIS claim "
+        f"cannot bind, or the closeout list is a count without a work item")
+
+
+def test_the_PRECIP_coincidence_stays_recorded_and_unbound():
+    """`main/qr/1.operator.surface_out` is 4.791e-4 against the claim's 4.8e-4
+    -- three figures -- and columns 2 and 3 are then off by 85x and 560x. The
+    claim is TOTAL precipitation; the ledger carries only qr/nr/qi/ni. So the
+    column-1 agreement is a coincidence, and it is exactly the kind a tolerant
+    value-scan binds. The blocker has to keep saying so, and the claim has to
+    stay off that field."""
+    claim = next(c for c in CLAIMS if c["id"] == "G33-PRECIP-001")
+    blocker = claim.get("migration_blocker", "")
+    for token in ("surface_out", "4.791e-4", "85x", "560x"):
+        assert token in blocker, (
+            f"the blocker stopped recording {token!r} -- without the measured "
+            f"near-miss, the next reader re-derives it or binds it")
+
+    ec = _chain()
+    live = next((c for c in ec.claims() if c["id"] == "G33-PRECIP-001"), None)
+    assert not _fallout_bindings((live or {}).get("expected_values", [])), (
+        "G33-PRECIP-001 bound a fallout-diagnostic path -- that is the qr-only "
+        "surface_out, not the total precipitation this claim states")
+
+
+def test_the_PRECIP_guard_is_not_VACUOUS():
+    """The claim carries no bindings yet, so the check above ranges over an
+    empty list and would pass however it were written -- the same fail-open
+    shape as a guard that skips when its bundle is absent. Proving it on a
+    synthetic binding is what makes it a guard rather than a comment."""
+    tempting = [{"file": "n12.rezero.dual_ledger.json",
+                 "path": "rows.main/qr/1.operator.surface_out",
+                 "value": 0.00047913007767785257}]
+    assert _fallout_bindings(tempting) == ["rows.main/qr/1.operator.surface_out"]
+    assert _fallout_bindings([{"path": "columns.1.total_delta"}]) == []
