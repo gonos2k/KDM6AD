@@ -575,10 +575,28 @@ def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
     nothing -- fail-open exactly where partial binding would go unnoticed
     (Codex). The bound PATHS are in the registry, so this part is checkable
     anywhere."""
+    from pathlib import PurePosixPath
     ec = _chain()
     claim = next(c for c in ec.claims() if c["id"] == "G33-TRAJECTORY-001")
-    bound = {w["path"] for w in claim["expected_values"]}
-    assert bound, "nothing bound -- this check would be vacuous"
+
+    # (file, path) PAIRS, and the file must sit in the bundle THIS claim pins.
+    # Collecting only `path` let a required ratio be repointed at
+    # `elsewhere/not-a-member.json` and still satisfy the guard -- the chain
+    # catches that as VALUE-UNPINNED-FILE, but only where the bundle exists,
+    # so the always-running check was the one with the hole (Codex).
+    pinned_dirs = {str(PurePosixPath(f).parent) for f in claim["artifacts"]
+                   if f.endswith("manifest.json")}
+    assert pinned_dirs, "the claim pins no manifest"
+    ARTIFACT = "n12.rezero.metric_trajectory.json"
+    bound = {w["path"] for w in claim["expected_values"]
+             if str(PurePosixPath(w["file"]).parent) in pinned_dirs
+             and PurePosixPath(w["file"]).name == ARTIFACT}
+    assert bound, "nothing bound to the pinned metric_trajectory artifact"
+
+    stray = [w["file"] for w in claim["expected_values"]
+             if str(PurePosixPath(w["file"]).parent) not in pinned_dirs]
+    assert not stray, (
+        f"bindings point outside the bundles this claim pins: {sorted(set(stray))}")
 
     ratios = {f"arms.{a}.{i}.metric_over_baseline"
               for a, cs in (("inverted", (1, 2)), ("offset+", (1, 2)),
