@@ -148,6 +148,8 @@ def _with_multi(root):
         "file": "fx.ncmin_locality.json", "analysis": "ncmin_locality",
         "sha256": "e" * 64, "fixture": "fx",
         "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]],
+        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]]},
         "analyzer": "harness/g33_ncmin_locality.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
@@ -187,3 +189,29 @@ def test_a_MULTI_RUN_analysis_needs_NO_member_nsplit(tmp_path):
     m = _with_multi(tmp_path)
     assert "nsplit" not in _multi(m)
     assert rm.validate(m) == []
+
+
+def test_a_MULTI_RUN_entry_records_the_CONFIG_IT_DROVE(tmp_path):
+    """The analysis chooses its own nsplit/mode/rho -- `g33_ncmin_locality`
+    drives the binary at nsplit=1/rezero/as-is regardless of what the bundle
+    was produced with. Recording only the fixture let the entry read as though
+    it shared the bundle's configuration, which it does not (Codex)."""
+    m = _with_multi(tmp_path)
+    e = _multi(m)
+    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                "decompositions": e["decompositions"]}
+    assert rm.validate(m) == []
+
+    e.pop("ran")
+    assert any("needs `ran`" in b for b in rm.validate(m))
+
+
+def test_the_DECOMPOSITIONS_must_agree_with_what_RAN(tmp_path):
+    """Two records of the same fact, so they must be checked against each
+    other -- the entry's list was derived from the FIXTURE while `ran` comes
+    from the analysis output."""
+    m = _with_multi(tmp_path)
+    e = _multi(m)
+    e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                "decompositions": [[3]]}
+    assert any("decompositions disagree" in b for b in rm.validate(m))

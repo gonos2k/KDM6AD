@@ -875,3 +875,16 @@ def test_a_multi_run_analyzer_is_DERIVED_not_hardcoded():
     body = body[:body.index("\ndef ", 1)]
     assert "_analyzer_pin(mod)" in body
     assert '_analyzer_pin("' not in body, "a hardcoded analyzer name came back"
+
+
+def test_the_MULTI_RUN_config_is_read_from_the_RESULT():
+    """Not recomputed from the fixture. Deriving `decompositions` from the
+    fixture recorded what the analysis was ASSUMED to have run; the analysis
+    now reports what it drove, and the producer copies that (Codex)."""
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    body = src[src.index("def _multi_run_analyses("):]
+    body = body[:body.index("\ndef ", 1)]
+    assert 'ran = result["ran"]' in body
+    assert '"decompositions": ran["decompositions"]' in body
+    assert "compositions_of(fixture)" not in body, \
+        "the recorded decompositions must come from the run, not the fixture"
