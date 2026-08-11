@@ -579,32 +579,13 @@ def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
     ec = _chain()
     claim = next(c for c in ec.claims() if c["id"] == "G33-TRAJECTORY-001")
 
-    # (file, path) PAIRS, and the file must sit in the bundle THIS claim pins.
-    # Collecting only `path` let a required ratio be repointed at
-    # `elsewhere/not-a-member.json` and still satisfy the guard -- the chain
-    # catches that as VALUE-UNPINNED-FILE, but only where the bundle exists,
-    # so the always-running check was the one with the hole (Codex).
     pinned_dirs = {str(PurePosixPath(f).parent) for f in claim["artifacts"]
                    if f.endswith("manifest.json")}
-    assert pinned_dirs, "the claim pins no manifest"
-    ARTIFACT = "n12.rezero.metric_trajectory.json"
-    bound = {w["path"] for w in claim["expected_values"]
-             if str(PurePosixPath(w["file"]).parent) in pinned_dirs
-             and PurePosixPath(w["file"]).name == ARTIFACT}
-    assert bound, "nothing bound to the pinned metric_trajectory artifact"
-
-    stray = [w["file"] for w in claim["expected_values"]
-             if str(PurePosixPath(w["file"]).parent) not in pinned_dirs]
-    assert not stray, (
-        f"bindings point outside the bundles this claim pins: {sorted(set(stray))}")
+    assert len(pinned_dirs) == 1, pinned_dirs
+    artifact = f"{next(iter(pinned_dirs))}/n12.rezero.metric_trajectory.json"
 
     ARMS = (("inverted", (1, 2)), ("offset+", (1, 2)), ("offset-", (1, 2, 3)),
             ("uniform", (1, 2, 3)), ("x2", (1, 2, 3)))
-
-    # EVERY quantity the text's figures and counts range over, as one set.
-    # Requiring subsets separately left the five HEADLINE trajectory figures
-    # -- the 1.04/0.81/0.58/0.45/2.04% the claim is about -- guarded by
-    # nothing: they could all be dropped and this still passed (Codex).
     ratios = {f"arms.{a}.{i}.metric_over_baseline" for a, cs in ARMS for i in cs}
     headline = {f"arms.{a}.{i}.trajectory_over_metric"
                 for a, cs in ARMS if a in ("inverted", "x2") for i in cs}
@@ -612,10 +593,16 @@ def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
                for a, cs in ARMS if a.startswith("offset") for i in cs}
     assert (len(ratios), len(headline), len(offsets)) == (13, 5, 5)
 
-    required = ratios | headline | offsets
+    # (file, path) pairs over the claim's COMPLETE binding list. Filtering
+    # `bound` to the metric_trajectory artifact first made the equality exact
+    # only over a subset, so an extra binding against another file in the same
+    # pinned bundle passed unnoticed (Codex). Comparing everything also
+    # subsumes the separate out-of-bundle check.
+    required = {(artifact, q) for q in ratios | headline | offsets}
+    bound = {(w["file"], w["path"]) for w in claim["expected_values"]}
     assert required == bound, (
-        f"the binding must cover exactly what the text's figures and counts "
-        f"range over.\n  missing: {sorted(required - bound)}"
+        f"the binding must be exactly what the text's figures and counts range "
+        f"over.\n  missing: {sorted(required - bound)}"
         f"\n  unexpected: {sorted(bound - required)}")
 
 
