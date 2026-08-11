@@ -555,3 +555,44 @@ def test_G33_TRAJECTORY_001_binds_the_DECOMPOSED_term_not_the_total():
         f"only {len(paths)} figures bound; the text publishes the trajectory "
         f"percentages, the exact metric ratios, the offset ratios and the "
         f"f32-roundoff twelfth")
+
+
+def test_TRAJECTORY_001s_counted_claims_are_CHECKED_not_asserted():
+    """A partial binding let two wrong numbers pass as verified.
+
+    The text said "11 of 12 metric ratios bit-exact, the twelfth 5.8e-7" and
+    "the 2.25-6.68% it moves under an offset". The pinned run carries THIRTEEN
+    metric ratios of which TWELVE are bit-exact, and the offset-arm trajectory
+    ratios run 2.20-6.68%, not 2.25-6.68%. Both are corrected in the text and
+    every ratio is bound, so the counts are now checked by the artifact rather
+    than asserted beside it."""
+    import json
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    claim = next(c for c in ec.claims() if c["id"] == "G33-TRAJECTORY-001")
+    art = next(f for f in claim["artifacts"] if f.endswith("manifest.json"))
+    bundle = (ec.HOME / art).parent
+    af = bundle / "n12.rezero.metric_trajectory.json"
+    if not af.is_file():
+        pytest.skip("bundle not on this host")
+
+    flat = ec.flatten(json.loads(af.read_text()))
+    ratios = {k: v for k, v in flat.items()
+              if k.endswith(".metric_over_baseline")}
+    exact = [v for v in ratios.values() if v in (-1.0, 0.0, 1.0, 2.0)]
+    assert len(ratios) == 13 and len(exact) == 12, (
+        f"{len(exact)} of {len(ratios)} bit-exact; the text states twelve of "
+        f"thirteen")
+
+    offs = [v for k, v in flat.items()
+            if k.endswith(".trajectory_over_metric") and "offset" in k]
+    assert offs, "no offset trajectory ratios -- vacuous"
+    assert round(min(offs) * 100, 2) == 2.20 and round(max(offs) * 100, 2) == 6.68
+
+    bound = {w["path"] for w in claim["expected_values"]}
+    assert set(ratios) <= bound, (
+        f"metric ratios not bound: {sorted(set(ratios) - bound)} -- an unbound "
+        f"ratio is one the count claim is not checked against")

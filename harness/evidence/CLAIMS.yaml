@@ -710,10 +710,17 @@ claims:
       the metric term. The OFFSET arms separate gradient from magnitude
       directly: adding a constant to every level cancels out of
       (rho_below - rho_above), so a +/-10% absolute density shift leaves the
-      metric term at exactly 1.0 (11 of 12 metric ratios bit-exact, the twelfth
-      5.8e-7 from f32 roundoff on the offset addition) while a doubled gradient
-      puts it at exactly 2.0. The residual follows the GRADIENT; the 2.25-6.68%
-      it moves under an offset is trajectory by construction. Stated precisely
+      metric term at exactly 1.0. CORRECTED against the pinned artifact: this
+      said "11 of 12 metric ratios bit-exact, the twelfth 5.8e-7". The run
+      carries THIRTEEN metric ratios -- inverted 2, offset+ 2, offset- 3,
+      uniform 3, x2 3, the short arms being the not-comparable columns named
+      below -- of which TWELVE are bit-exact and the THIRTEENTH, offset+
+      column 2, is 1.0000005804669767: 5.8e-7 from f32 roundoff on the offset
+      addition. A doubled gradient
+      puts it at exactly 2.0. The residual follows the GRADIENT; the 2.20-6.68%
+      it moves under an offset is trajectory by construction (CORRECTED from
+      2.25%: the smallest offset-arm trajectory ratio is offset+ column 2 at
+      2.20%, not offset+ column 1 at 2.25%). Stated precisely
       (owner §8): the DIRECT metric source term depends on the gradient only --
       a uniform offset leaves it at exactly 1.0 -- while the TOTAL residual is
       gradient-dominant but measurably magnitude-sensitive THROUGH the
@@ -782,6 +789,17 @@ claims:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.1.trajectory_over_metric: 0.022490700238730173
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.06683178521350588
 
+      # the remaining metric ratios, so "twelve of THIRTEEN bit-exact"
+      # is checked rather than asserted -- a partial binding let two
+      # wrong numbers pass as verified (owner)
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.1.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      # every offset-arm trajectory ratio, so the 2.20-6.68% RANGE is
+      # bound at both ends and in between
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.02203280763718808
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.1.trajectory_over_metric: 0.02553040486268832
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.024971554676023286
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353dbbbc763e271a987500f48ecd4cbae8ce685d3b3799552b69]
 
