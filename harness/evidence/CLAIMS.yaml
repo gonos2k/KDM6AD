@@ -57,9 +57,9 @@ claims:
     run_support: [unspecified]
     artifact_status: historical_unavailable
     migration_blocker: >
-      run_support is [unspecified], so this claim names no fixture and
-      cannot be tied to a run at all; that has to be resolved before any
-      bundle can be said to be its evidence
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: measurement
     scope: all refinement bundles
@@ -75,9 +75,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 1 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -109,9 +109,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 7 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -333,9 +333,9 @@ claims:
     run_support: [unspecified]
     artifact_status: historical_unavailable
     migration_blocker: >
-      run_support is [unspecified], so this claim names no fixture and
-      cannot be tied to a run at all; that has to be resolved before any
-      bundle can be said to be its evidence
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
     scope: >
@@ -387,11 +387,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      its published figures are absent from the pinned bundles or
-      degenerate -- 1.0000 matches 12 paths, so binding it would pin
-      whatever value sat nearby rather than the quantity claimed
+    artifact_status: pinned
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -400,6 +396,22 @@ claims:
       g33_fixture_multisubcycle_v1, legacy, h = 25 s for the numbers. The bundle
       change applies to future --nflux bundles and does not retrofit the ones
       already published.
+    # Migrated. The text names these quantities directly -- "ratios
+    # -28.58/-28.90 and 1.0000, 100.00% explained" -- and the artifact
+    # holds them at cap_interface rows.ice/{2,3} and rows.main/{1,2,3}.
+    # Bound to the artifact's EXACT values: 1.0000 and 100.00% are
+    # presentations of figures that are 1.0 only to within double
+    # roundoff.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
     evidence: [FINDING_bundle_analyses_v1.md]
     evidence_sha256: [FINDING_bundle_analyses_v1.md:81210e5f2cc451832e6787ac53dd051d9c904153cbd7055ac19095aa5885878c]
 
@@ -454,9 +466,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 9 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -626,8 +638,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the basis-parameterised water/enthalpy ledger figures are not among
-      the analyses either pinned bundle carries
+      all 11 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -709,8 +722,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      no figure of this claim was located in either pinned bundle; not yet
-      traced to an analysis that emits them
+      all 13 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -748,9 +762,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      its ice-chain density-arm matrix is in neither pinned bundle -- the
-      conservative metric_trajectory carries the same MAIN-chain arms as
-      legacy
+      all 18 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -791,9 +805,9 @@ claims:
     run_support: [unspecified]
     artifact_status: historical_unavailable
     migration_blocker: >
-      run_support is [unspecified], so this claim names no fixture and
-      cannot be tied to a run at all; that has to be resolved before any
-      bundle can be said to be its evidence
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: >
       each admitted mixture reproduced as a chain the old path accepted, plus a
@@ -824,9 +838,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 7 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -852,9 +866,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 4 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -902,9 +916,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 7 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -974,9 +988,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      all 3 published figures are absent from the pinned bundles or
+      degenerate, matching many paths at once, so binding one would pin
+      whatever value sat nearby
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
@@ -1006,9 +1020,9 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      its published figures are absent from the pinned bundles or
-      degenerate -- -0.0000 matches 75 paths, so binding it would pin
-      whatever value sat nearby rather than the quantity claimed
+      1 of 8 figures match a unique path, but the match is COINCIDENTAL --
+      it lands in a bundle for a different fixture or quantity, and a
+      unique number is a candidate, not a binding
     grade: confirmed
     basis: measurement with a matched mass control
     scope: g33_fixture_multisubcycle_v1, legacy, main chain
@@ -1069,14 +1083,23 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      its published figures are absent from the pinned bundles or
-      degenerate -- 1.0000 matches 12 paths, so binding it would pin
-      whatever value sat nearby rather than the quantity claimed
+    artifact_status: pinned
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
+    # Migrated. The text quotes the SAME cap_interface quantities as
+    # G33-CHAIN-002 but rounded (-28.6/-28.9 for -28.575.../-28.898...),
+    # so the binding takes the artifact's exact values. Two claims may
+    # cite one measurement; what must not happen is a claim citing a
+    # number no artifact holds.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1280,9 +1303,9 @@ claims:
     run_support: [unspecified]
     artifact_status: historical_unavailable
     migration_blocker: >
-      run_support is [unspecified], so this claim names no fixture and
-      cannot be tied to a run at all; that has to be resolved before any
-      bundle can be said to be its evidence
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: conditional-confirmed
     basis: >
       construction, with the resolvable-pin case proved by falsifying the

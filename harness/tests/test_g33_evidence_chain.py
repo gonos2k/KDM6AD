@@ -1217,29 +1217,42 @@ def test_EVERY_unmigrated_claim_now_states_a_reason():
     """The debt has a shape, not just a count. `not yet assessed` was honest
     while it was true; leaving it standing once the assessment exists would
     not be."""
-    unassessed = [c["id"] for c in ec.claims()
-                  if c.get("artifact_status") == "historical_unavailable"
-                  and not c.get("migration_blocker")]
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    assert unmigrated, ("nothing unmigrated -- this check would pass with "
+                        "nothing examined; update it deliberately")
+    unassessed = [c["id"] for c in unmigrated if not c.get("migration_blocker")]
     assert not unassessed, f"unassessed claims remain: {sorted(unassessed)}"
 
 
+#: Each blocker kind and the marker that identifies it. A LIST of pairs, so a
+#: reason is matched against each in turn and must hit EXACTLY one -- an `or`
+#: chain here silently lost an `in r` and counted every reason as every kind.
+BLOCKER_KINDS = (
+    ("no fixture", "run_support is [unspecified]"),
+    ("no figure", "publishes no numeric figure"),
+    ("coincidental match", "COINCIDENTAL"),
+    ("degenerate or absent", "absent from the pinned"),
+    ("not in a bundle", "neither pinned bundle"),
+    ("analysis not carried", "not among the analyses"),
+    ("untraced", "not yet traced"),
+    ("needs a contract", "MULTI-RUN"),
+)
+
+
 def test_the_blocker_reasons_are_DISTINCT_kinds():
-    """Three different remedies, which a single count concealed: a claim with
-    no figure needs a different fix from one whose figures are simply not in a
+    """Different remedies, which a single count concealed: a claim with no
+    figure needs a different fix from one whose figures are simply not in a
     pinned bundle, and one with no fixture needs resolving before either."""
     reasons = [c["migration_blocker"] for c in ec.claims()
                if c.get("artifact_status") == "historical_unavailable"]
     assert reasons, "nothing unmigrated -- update this test deliberately"
-    kinds = {
-        "no fixture": sum("run_support is [unspecified]" in r for r in reasons),
-        "no figure": sum("publishes no numeric figure" in r for r in reasons),
-        "not in a bundle": sum(("absent from the pinned bundles" in r
-                                or "neither pinned bundle" in r
-                                or "not among the analyses" in r
-                                or "not yet traced" in r) for r in reasons),
-        "needs a contract": sum("MULTI-RUN" in r for r in reasons),
-    }
-    assert sum(kinds.values()) == len(reasons), (
-        f"{len(reasons) - sum(kinds.values())} blocker(s) fit no known kind: "
-        f"{[r[:60] for r in reasons if not any(k in r for k in ('unspecified', 'numeric figure', 'pinned bundles', 'neither pinned', 'not among the analyses', 'not yet traced', 'MULTI-RUN'))]}")
-    assert kinds["no figure"] and kinds["no fixture"], kinds
+
+    for r in reasons:
+        hit = [k for k, marker in BLOCKER_KINDS if marker in r]
+        assert len(hit) == 1, (
+            f"blocker matches {hit or 'no'} kind(s), must match exactly one: "
+            f"{r[:80]}")
+
+    seen = {k for r in reasons for k, marker in BLOCKER_KINDS if marker in r}
+    assert {"no fixture", "no figure"} <= seen, sorted(seen)
