@@ -75,9 +75,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 1 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -109,9 +112,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 7 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -466,9 +472,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 9 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -638,9 +647,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 11 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -720,11 +732,7 @@ claims:
     status: active
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      all 13 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+    artifact_status: pinned
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -737,6 +745,33 @@ claims:
       term is not further decomposed -- it is everything the perturbation did to
       the run, and its size is measured, not apportioned. The metric
       counterfactual is defined only where the sub-step schedule holds.
+    # Migrated. The percentages this text publishes are DEPARTURES of
+    # the pinned arm ratios from the exact metric term, not values the
+    # artifact stores:
+    #
+    #   inverted/1  -0.98963...  -> 1.04% from -1
+    #   inverted/2  -0.99190...  -> 0.81%
+    #   x2/1        +2.01169...  -> 0.58% from +2
+    #   x2/2        +2.00908...  -> 0.45%
+    #   x2/3        +2.04072...  -> 2.04%
+    #
+    # An earlier blocker called them absent from the pinned bundles.
+    # They were not: a scan for RAW numeric matches cannot see a
+    # figure the text DERIVES from an artifact value, and it recorded
+    # that blindness as a fact about the bundle (Codex). The binding
+    # takes the ratios the artifact holds; the percentages are their
+    # presentation.
+    #
+    # These are the same paths G33-NUMBER-008 binds. Two claims may
+    # cite one measurement.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353dbbbc763e271a987500f48ecd4cbae8ce685d3b3799552b69]
 
@@ -762,9 +797,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 18 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -838,9 +876,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 7 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -866,9 +907,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 4 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -916,9 +960,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 7 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -988,9 +1035,12 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
     migration_blocker: >
-      all 3 published figures are absent from the pinned bundles or
-      degenerate, matching many paths at once, so binding one would pin
-      whatever value sat nearby
+      no published figure matches an artifact value DIRECTLY -- they are
+      absent, or degenerate and matching many paths at once. This does NOT
+      prove the evidence is missing: a scan for raw matches cannot see a
+      figure the text DERIVES from artifact values, which is exactly how
+      G33-TRAJECTORY-001 was wrongly called absent. Needs a reader who
+      knows what the numbers mean
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases

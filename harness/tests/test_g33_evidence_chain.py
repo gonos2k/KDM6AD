@@ -1232,7 +1232,7 @@ BLOCKER_KINDS = (
     ("no fixture", "run_support is [unspecified]"),
     ("no figure", "publishes no numeric figure"),
     ("coincidental match", "COINCIDENTAL"),
-    ("degenerate or absent", "absent from the pinned"),
+    ("no direct match", "matches an artifact value DIRECTLY"),
     ("not in a bundle", "neither pinned bundle"),
     ("analysis not carried", "not among the analyses"),
     ("untraced", "not yet traced"),
