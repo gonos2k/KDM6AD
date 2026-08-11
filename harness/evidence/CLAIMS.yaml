@@ -745,33 +745,43 @@ claims:
       term is not further decomposed -- it is everything the perturbation did to
       the run, and its size is measured, not apportioned. The metric
       counterfactual is defined only where the sub-step schedule holds.
-    # Migrated. The percentages this text publishes are DEPARTURES of
-    # the pinned arm ratios from the exact metric term, not values the
-    # artifact stores:
+    # Migrated. Each figure is bound to the quantity the text NAMES.
     #
-    #   inverted/1  -0.98963...  -> 1.04% from -1
-    #   inverted/2  -0.99190...  -> 0.81%
-    #   x2/1        +2.01169...  -> 0.58% from +2
-    #   x2/2        +2.00908...  -> 0.45%
-    #   x2/3        +2.04072...  -> 2.04%
-    #
-    # An earlier blocker called them absent from the pinned bundles.
-    # They were not: a scan for RAW numeric matches cannot see a
-    # figure the text DERIVES from an artifact value, and it recorded
-    # that blindness as a fact about the bundle (Codex). The binding
-    # takes the ratios the artifact holds; the percentages are their
-    # presentation.
-    #
-    # These are the same paths G33-NUMBER-008 binds. Two claims may
-    # cite one measurement.
+    # An earlier binding took `actual_over_baseline` -- the TOTAL --
+    # for a claim about the decomposed TRAJECTORY term, and computed
+    # departures by hand to justify it. The artifact stores
+    # `trajectory_over_metric` outright: doing arithmetic to defend a
+    # binding was the signal that the wrong field had been chosen
+    # (Codex). It was also incomplete -- 5 of 13 figures.
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
+      # the trajectory response, "measured at 1.04%/0.81% (inverted) and
+      # 0.58%/0.45%/2.04% (x2) of the metric term"
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.trajectory_over_metric: 0.010364583582156245
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.008092172377406054
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.trajectory_over_metric: 0.005847910326586326
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.0045428114297295565
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.02036492551370149
+      # "the metric term is EXACTLY 0/-1/+2 by construction"
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      # "a +/-10% absolute density shift leaves the metric term at exactly
+      # 1.0 (11 of 12 metric ratios bit-exact..."
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      # "...the twelfth 5.8e-7 from f32 roundoff on the offset addition"
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000005804669767
+      # "the 2.25-6.68% it moves under an offset is trajectory by
+      # construction" -- the ends of that range
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.1.trajectory_over_metric: 0.022490700238730173
+      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.06683178521350588
+
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353dbbbc763e271a987500f48ecd4cbae8ce685d3b3799552b69]
 

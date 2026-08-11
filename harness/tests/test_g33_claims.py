@@ -526,3 +526,32 @@ def test_the_two_readers_AGREE_on_every_migration_blocker():
     for cid in named:
         assert mine[cid] == truth[cid], (
             f"{cid}: regex parser read {mine[cid]!r}, YAML says {truth[cid]!r}")
+
+
+def test_G33_TRAJECTORY_001_binds_the_DECOMPOSED_term_not_the_total():
+    """The claim decomposes R = metric + trajectory and says "the entire
+    departure is the TRAJECTORY response, measured at 1.04%/0.81% ... of the
+    metric term". An earlier binding took `actual_over_baseline` -- the TOTAL --
+    and computed departures by hand to justify it, while the artifact stores
+    `trajectory_over_metric` outright (Codex).
+
+    Having to do arithmetic to defend a binding is the signal that the wrong
+    field was chosen: the artifact states the quantity a claim names, or the
+    claim is citing something the run did not measure."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    claim = next(c for c in ec.claims() if c["id"] == "G33-TRAJECTORY-001")
+    paths = [w["path"] for w in claim["expected_values"]]
+    assert paths, "nothing bound -- this check would be vacuous"
+    assert not [p for p in paths if "actual_over_baseline" in p], \
+        "the TOTAL is bound for a claim about the decomposed trajectory term"
+    assert sum("trajectory_over_metric" in p for p in paths) >= 5
+    assert sum("metric_over_baseline" in p for p in paths) >= 5, \
+        "the 'metric term is EXACTLY -1/+2' figures must be bound too"
+    assert len(paths) >= 15, (
+        f"only {len(paths)} figures bound; the text publishes the trajectory "
+        f"percentages, the exact metric ratios, the offset ratios and the "
+        f"f32-roundoff twelfth")
