@@ -557,13 +557,18 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     if len(_ncmin().equivalence_classes(fixture)) < 2:
         return made
     for name, (mod, fn) in MULTI_RUN.items():
+        result = fn(str(exe), fixture)
+        # FROM THE RESULT, not from the fixture. Deriving the decompositions
+        # from the fixture recorded what the analysis was ASSUMED to have run,
+        # and omitting nsplit/mode/rho let the entry read as though it shared
+        # the bundle's configuration -- which it does not (Codex).
+        ran = result["ran"]
         path = out / f"{fixture}.{name}.json"
-        path.write_text(rm.json.dumps(fn(str(exe), fixture), indent=2,
-                                      sort_keys=True) + "\n")
+        path.write_text(rm.json.dumps(result, indent=2, sort_keys=True) + "\n")
         made.append({
             "file": path.name, "analysis": name, "sha256": rm.sha256(path),
-            "fixture": fixture,
-            "decompositions": [list(t) for t in compositions_of(fixture)],
+            "fixture": fixture, "ran": ran,
+            "decompositions": ran["decompositions"],
             **_analyzer_pin(mod)})
     return made
 

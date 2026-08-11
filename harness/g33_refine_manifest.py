@@ -454,6 +454,18 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                            f"non-empty list of positive-int lists")
             elif len({tuple(x) for x in d}) != len(d):
                 bad.append(f"analyses[{i}] ({kind}) repeats a decomposition")
+            # The parameters the analysis DROVE THE BINARY AT. Without them
+            # the entry reads as though it shared the bundle's nsplit/mode,
+            # and it does not: this analysis chooses its own (Codex).
+            ran = a.get("ran")
+            if not isinstance(ran, dict) or not all(
+                    k in ran for k in ("nsplit", "carry", "rho",
+                                       "decompositions")):
+                bad.append(f"analyses[{i}] ({kind}) needs `ran` with nsplit, "
+                           f"carry, rho and decompositions")
+            elif ran["decompositions"] != a.get("decompositions"):
+                bad.append(f"analyses[{i}] ({kind}) decompositions disagree "
+                           f"with `ran` -- one of them is not what executed")
             for k in ("analyzer", "analyzer_sha256", "analyzer_commit",
                       "analyzer_blob_sha"):
                 if not a.get(k):
