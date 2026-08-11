@@ -337,6 +337,7 @@ def producer_modules() -> tuple:
     """Every module whose bytes decide what a bundle contains."""
     return tuple(sorted(set(_CORE_MODULES) | set(_PARSER_MODULES)
                         | {mod for mod, _fn in ANALYSES.values()}
+                        | {mod for mod, _fn in MULTI_RUN.values()}
                         | {"g33_metric_trajectory"}))
 
 
@@ -402,7 +403,7 @@ def reachable_modules() -> set:
     so this is the check, not the source.
     """
     seeds = ({"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
-             | _build_script_modules())
+             | {m for m, _fn in MULTI_RUN.values()} | _build_script_modules())
     seen = set()
     todo = list(seeds)
     while todo:
@@ -525,6 +526,24 @@ def _analyzer_pin(module: str) -> dict:
             "analyzer_blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
 
 
+#: Analyses that run the DRIVER over several decompositions, name -> (module,
+#: fn). A REGISTRY, mirroring ANALYSES, so `producer_modules()` derives their
+#: modules the same way it derives the per-member ones. The first version
+#: hardcoded `_analyzer_pin("g33_ncmin_locality")` inside the builder, which
+#: put the analyzer's bytes into a bundle while leaving the module out of the
+#: pin list -- the completeness check caught it as `unpinned_reachable`
+#: (Codex). A registry cannot drift the way a hand-written call can.
+MULTI_RUN = {
+    "ncmin_locality": ("g33_ncmin_locality",
+                       lambda exe, fixture: _ncmin().analysis(exe, fixture)),
+}
+
+
+def _ncmin():
+    import g33_ncmin_locality as nl
+    return nl
+
+
 def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     """Analyses that run the DRIVER over several decompositions.
 
@@ -534,19 +553,18 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     refuses rather than reporting a one-directional result. Producing it there
     anyway would put a vacuous table in the bundle.
     """
-    import g33_ncmin_locality as nl
     made = []
-    for name in rm.MULTI_RUN_ANALYSES:
-        if len(nl.equivalence_classes(fixture)) < 2:
-            continue
+    if len(_ncmin().equivalence_classes(fixture)) < 2:
+        return made
+    for name, (mod, fn) in MULTI_RUN.items():
         path = out / f"{fixture}.{name}.json"
-        path.write_text(rm.json.dumps(nl.analysis(str(exe), fixture), indent=2,
+        path.write_text(rm.json.dumps(fn(str(exe), fixture), indent=2,
                                       sort_keys=True) + "\n")
         made.append({
             "file": path.name, "analysis": name, "sha256": rm.sha256(path),
             "fixture": fixture,
             "decompositions": [list(t) for t in compositions_of(fixture)],
-            **_analyzer_pin("g33_ncmin_locality")})
+            **_analyzer_pin(mod)})
     return made
 
 
