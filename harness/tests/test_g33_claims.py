@@ -670,3 +670,32 @@ def test_NO_claim_binds_the_same_file_and_path_twice():
         dupes = {p for p in pairs if pairs.count(p) > 1}
         assert not dupes, f"{c['id']} binds these twice: {sorted(dupes)}"
     assert seen, "no bindings at all -- this check would be vacuous"
+
+
+def test_G33_NCMIN_001_records_the_MEASURED_process_not_the_inferred_one():
+    """The claim withdrew "suppressed autoconversion" as unmeasured, and the
+    ledger then CONTRADICTED it: accretion carries 85.3% of the qr change and
+    autoconversion 14.7%. A withdrawal and a refutation are different states,
+    and the registry has to say which one it is."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
+    paths = {w["path"] for w in claim["expected_values"]}
+    for q in ("columns.2.share.pracw", "columns.2.share.praut",
+              "columns.2.total_delta"):
+        assert q in paths, f"the measured process result is not bound: {q}"
+
+    files = {w["file"].rsplit("/", 1)[-1] for w in claim["expected_values"]}
+    assert "g33_fixture_boundary_mapping_v1.qr_process_ledger.json" in files
+    assert "g33_fixture_boundary_mapping_v1.ncmin_locality.json" in files, \
+        "both analyses back this claim; binding one would drop half of it"
+
+
+def test_the_two_process_shares_SUM_to_the_whole():
+    """Reported shares that do not sum to 1 would mean a term moved that the
+    decomposition did not account for."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
+    share = {w["path"].rsplit(".", 1)[-1]: w["value"]
+             for w in claim["expected_values"] if ".share." in w["path"]}
+    assert set(share) == {"pracw", "praut"}, sorted(share)
+    assert abs(sum(share.values()) - 1.0) < 1e-12, share

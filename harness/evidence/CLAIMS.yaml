@@ -1217,14 +1217,20 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and it rains ~21% LESS than the per-column answer. The PROCESS
-      carrying that sign is NOT measured (owner §7): ncmin gates 18 sites in the
-      reference -- autoconversion (praut), three accretion branches, graupel
-      melting/evaporation (pgeml), and the max(ncmin,nci) floors that set the
-      diameters those rates consume -- and a final-state comparison cannot say
-      which of them carries it. Suppressed autoconversion is the leading
-      candidate and is no longer stated as the mechanism; an earlier version of
-      this text asserted it. The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH
+      PROCESS carries that sign is now MEASURED, not inferred (owner §7). The
+      reference emits every operand of the qr update per cell
+      (`micro_qr_operands`, with `cold_gate` giving each cell's branch), so the
+      change decomposes exactly: in the sea column the total moves by
+      -1.1549e-06, of which ACCRETION (pracw) carries 85.3% and autoconversion
+      (praut) 14.7%. The two sum to the whole and no other term moves. So the
+      earlier "suppressed autoconversion" reading is WRONG as a direct
+      attribution -- it was withdrawn as unmeasured before this, and the
+      measurement now contradicts it. SCOPE: this decomposes the DIRECT terms,
+      not the causal chain. pracw consumes rain that praut produces, so a
+      suppressed autoconversion may still be upstream of the accretion
+      collapse; what is established is that autoconversion is not where the
+      change appears. The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1278,15 +1284,22 @@ claims:
     # one this artifact carries, and binding a same-looking number
     # from the wrong table would pin the wrong quantity.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/manifest.json: 03e347e9217917c8b2e482d75fe0babb497a6437b64ba2de79e7f489b107018a
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/manifest.json: b79b99878bde3fabf0f1e720c8df7cd6dad1a4690a80f2b3086514c5a582f614
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/c4cecddc441139d044025543de5a2a42e6652d04b7d32843cd405e445ea65723/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      # WHICH PROCESS carries that difference (owner §7), from the
+      # ledger analysis in the same bundle. Accretion, not
+      # autoconversion: the two shares sum to 1 and no other term
+      # moves.
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
 
