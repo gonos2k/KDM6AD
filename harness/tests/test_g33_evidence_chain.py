@@ -1211,3 +1211,35 @@ def test_no_reader_catches_only_JSONDecodeError():
     src = Path(ec.__file__).read_text()
     assert "except (OSError, json.JSONDecodeError)" not in src
     assert "except json.JSONDecodeError" not in src
+
+
+def test_EVERY_unmigrated_claim_now_states_a_reason():
+    """The debt has a shape, not just a count. `not yet assessed` was honest
+    while it was true; leaving it standing once the assessment exists would
+    not be."""
+    unassessed = [c["id"] for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"
+                  and not c.get("migration_blocker")]
+    assert not unassessed, f"unassessed claims remain: {sorted(unassessed)}"
+
+
+def test_the_blocker_reasons_are_DISTINCT_kinds():
+    """Three different remedies, which a single count concealed: a claim with
+    no figure needs a different fix from one whose figures are simply not in a
+    pinned bundle, and one with no fixture needs resolving before either."""
+    reasons = [c["migration_blocker"] for c in ec.claims()
+               if c.get("artifact_status") == "historical_unavailable"]
+    assert reasons, "nothing unmigrated -- update this test deliberately"
+    kinds = {
+        "no fixture": sum("run_support is [unspecified]" in r for r in reasons),
+        "no figure": sum("publishes no numeric figure" in r for r in reasons),
+        "not in a bundle": sum(("absent from the pinned bundles" in r
+                                or "neither pinned bundle" in r
+                                or "not among the analyses" in r
+                                or "not yet traced" in r) for r in reasons),
+        "needs a contract": sum("MULTI-RUN" in r for r in reasons),
+    }
+    assert sum(kinds.values()) == len(reasons), (
+        f"{len(reasons) - sum(kinds.values())} blocker(s) fit no known kind: "
+        f"{[r[:60] for r in reasons if not any(k in r for k in ('unspecified', 'numeric figure', 'pinned bundles', 'neither pinned', 'not among the analyses', 'not yet traced', 'MULTI-RUN'))]}")
+    assert kinds["no figure"] and kinds["no fixture"], kinds

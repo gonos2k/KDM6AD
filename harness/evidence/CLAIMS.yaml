@@ -56,6 +56,10 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      run_support is [unspecified], so this claim names no fixture and
+      cannot be tied to a run at all; that has to be resolved before any
+      bundle can be said to be its evidence
     grade: confirmed
     basis: measurement
     scope: all refinement bundles
@@ -70,6 +74,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -100,6 +108,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -115,6 +127,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, legacy
@@ -164,6 +180,10 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
@@ -312,6 +332,10 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      run_support is [unspecified], so this claim names no fixture and
+      cannot be tied to a run at all; that has to be resolved before any
+      bundle can be said to be its evidence
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
     scope: >
@@ -364,6 +388,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      its published figures are absent from the pinned bundles or
+      degenerate -- 1.0000 matches 12 paths, so binding it would pin
+      whatever value sat nearby rather than the quantity claimed
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -425,6 +453,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -758,6 +790,10 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      run_support is [unspecified], so this claim names no fixture and
+      cannot be tied to a run at all; that has to be resolved before any
+      bundle can be said to be its evidence
     grade: confirmed
     basis: >
       each admitted mixture reproduced as a chain the old path accepted, plus a
@@ -787,6 +823,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -811,6 +851,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -857,6 +901,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -889,6 +937,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
@@ -921,6 +973,10 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
@@ -949,6 +1005,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      its published figures are absent from the pinned bundles or
+      degenerate -- -0.0000 matches 75 paths, so binding it would pin
+      whatever value sat nearby rather than the quantity claimed
     grade: confirmed
     basis: measurement with a matched mass control
     scope: g33_fixture_multisubcycle_v1, legacy, main chain
@@ -1010,6 +1070,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      its published figures are absent from the pinned bundles or
+      degenerate -- 1.0000 matches 12 paths, so binding it would pin
+      whatever value sat nearby rather than the quantity claimed
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
@@ -1215,6 +1279,10 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    migration_blocker: >
+      run_support is [unspecified], so this claim names no fixture and
+      cannot be tied to a run at all; that has to be resolved before any
+      bundle can be said to be its evidence
     grade: conditional-confirmed
     basis: >
       construction, with the resolvable-pin case proved by falsifying the
