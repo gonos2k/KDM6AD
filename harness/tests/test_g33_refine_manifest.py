@@ -271,3 +271,34 @@ def test_the_NSPLIT_BOUND_is_the_DRIVERS_int32_limit(tmp_path):
 
     _multi(m)["ran"]["nsplit"] = rm._MAX_NSPLIT + 1
     assert any("1..2147483647" in b for b in rm.validate(m))
+
+
+@pytest.mark.parametrize("dec,note", [
+    ([[1, 1]], "sums to 2"),
+    ([[5, 7]], "sums to 12"),
+    ([[4]], "sums to 4"),
+    ([[3], [1, 1]], "two decompositions of different domains"),
+])
+def test_a_decomposition_must_COVER_the_domain(tmp_path, dec, note):
+    """The driver error-stops with "tile sizes must sum to B", so a
+    decomposition summing to anything else names a run that could not have
+    happened -- and a SET of them summing to different totals cannot all
+    describe one domain (Codex). Measured against the real binary: 1,1 / 5,7 /
+    4 all ERROR STOP on a 3-column fixture."""
+    m = _with_multi(tmp_path)
+    assert rm.validate(m) == [], "the base must be valid first"
+    e = _multi(m)
+    e["decompositions"] = dec
+    e["ran"]["decompositions"] = dec
+    assert any("do not sum to the domain width" in b
+               for b in rm.validate(m)), f"{note}: {rm.validate(m)}"
+
+
+def test_the_WIDTH_is_recorded_because_the_manifest_has_no_other_source(tmp_path):
+    """`fixture` is only a name here; nothing in the manifest resolves it to a
+    column count, and the schema cannot import the producer (which imports it).
+    So the entry states the domain it ran over and is checked against itself."""
+    m = _with_multi(tmp_path)
+    assert "width" in _multi(m)["ran"]
+    _multi(m)["ran"].pop("width")
+    assert any("needs `ran` with" in b for b in rm.validate(m))
