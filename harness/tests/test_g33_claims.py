@@ -557,6 +557,47 @@ def test_G33_TRAJECTORY_001_binds_the_DECOMPOSED_term_not_the_total():
         f"f32-roundoff twelfth")
 
 
+def _chain():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+    return ec
+
+
+def test_TRAJECTORY_001_binds_EVERY_ratio_its_counts_range_over():
+    """The structural half, which needs NO artifact and so never skips.
+
+    A claim stating a COUNT over a family of artifact values must bind every
+    member of that family, or the count is unchecked. The previous version of
+    this guard called `pytest.skip` when the bundle was absent, so on any host
+    without it the anti-partial-binding regression passed having checked
+    nothing -- fail-open exactly where partial binding would go unnoticed
+    (Codex). The bound PATHS are in the registry, so this part is checkable
+    anywhere."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-TRAJECTORY-001")
+    bound = {w["path"] for w in claim["expected_values"]}
+    assert bound, "nothing bound -- this check would be vacuous"
+
+    ratios = {f"arms.{a}.{i}.metric_over_baseline"
+              for a, cs in (("inverted", (1, 2)), ("offset+", (1, 2)),
+                            ("offset-", (1, 2, 3)), ("uniform", (1, 2, 3)),
+                            ("x2", (1, 2, 3))) for i in cs}
+    assert len(ratios) == 13
+    assert ratios <= bound, (
+        f"metric ratios not bound: {sorted(ratios - bound)}. The text counts "
+        f"twelve of thirteen bit-exact; an unbound ratio is one that count is "
+        f"not checked against.")
+
+    offs = {f"arms.{a}.{i}.trajectory_over_metric"
+            for a, cs in (("offset+", (1, 2)), ("offset-", (1, 2, 3)))
+            for i in cs}
+    assert offs <= bound, (
+        f"offset trajectory ratios not bound: {sorted(offs - bound)}. The text "
+        f"states a RANGE (2.20-6.68%); an unbound end or middle is unchecked.")
+
+
 def test_TRAJECTORY_001s_counted_claims_are_CHECKED_not_asserted():
     """A partial binding let two wrong numbers pass as verified.
 
@@ -577,7 +618,9 @@ def test_TRAJECTORY_001s_counted_claims_are_CHECKED_not_asserted():
     bundle = (ec.HOME / art).parent
     af = bundle / "n12.rezero.metric_trajectory.json"
     if not af.is_file():
-        pytest.skip("bundle not on this host")
+        # Only the RECOMPUTATION needs the artifact; the structural half runs
+        # everywhere, above.
+        pytest.skip("bundle not on this host -- structural half runs regardless")
 
     flat = ec.flatten(json.loads(af.read_text()))
     ratios = {k: v for k, v in flat.items()
