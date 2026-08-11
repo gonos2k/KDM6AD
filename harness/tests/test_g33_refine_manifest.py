@@ -215,3 +215,38 @@ def test_the_DECOMPOSITIONS_must_agree_with_what_RAN(tmp_path):
     e["ran"] = {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                 "decompositions": [[3]]}
     assert any("decompositions disagree" in b for b in rm.validate(m))
+
+
+@pytest.mark.parametrize("field,value,expect", [
+    ("nsplit", "twelve", "not a positive integer"),
+    ("nsplit", 0, "not a positive integer"),
+    ("nsplit", None, "not a positive integer"),
+    ("nsplit", True, "not a positive integer"),
+    ("carry", "banana", "is not one of"),
+    ("rho", "purple", "is not one of"),
+])
+def test_the_RUN_IDENTITY_is_TYPED_not_merely_present(tmp_path, field, value,
+                                                       expect):
+    """Checking only that the keys exist accepted nsplit="twelve", nsplit=0,
+    carry="banana" and rho="purple" -- a run identity that cannot describe any
+    run the driver would accept, since it error-stops on each (Codex).
+
+    `nsplit=True` is included because a bool IS an int in Python, so a plain
+    isinstance check would let it through."""
+    m = _with_multi(tmp_path)
+    assert rm.validate(m) == [], "the base must be valid first"
+    _multi(m)["ran"][field] = value
+    assert any(expect in b for b in rm.validate(m)), rm.validate(m)
+
+
+def test_the_RUN_IDENTITY_vocabularies_are_the_DRIVERS():
+    """Not a second list that can drift from what the binary accepts."""
+    assert rm._CARRY_MODES == ("carry", "rezero")
+    assert set(rm._RHO_ARMS) == {"as-is", "uniform", "inverted", "x2",
+                                 "offset+", "offset-"}
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_ncmin_locality as nl
+    assert set(nl.RHO_MODES) == set(rm._RHO_ARMS), \
+        "the analyzer and the schema disagree about the density arms"
