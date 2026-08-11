@@ -384,6 +384,14 @@ DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
                     "dual_ledger", "defect_magnitude", "internal_cap_enthalpy",
                     "metric_trajectory")
 
+#: Analyses that run the DRIVER over several configurations rather than
+#: reading one member stream. They analyse the bundle's own binary, so the
+#: bundle is where they belong -- but they have no single member to key on,
+#: which is why the derived variant's `nsplit` cannot describe them and a third
+#: tag is needed. `g33_ncmin_locality` is (driver, fixture) and runs the driver
+#: once per decomposition; the derived contract is (stream, basis) per member.
+MULTI_RUN_ANALYSES = ("ncmin_locality",)
+
 #: What an `--nflux` bundle must actually contain. `instrumented: true` with a
 #: single arm_stream satisfied "analyses is non-empty" while carrying none of
 #: the instrumented analyses (owner §8.3).
@@ -407,7 +415,8 @@ def _analysis_violations(analyses, member_nsplits) -> list:
         if not isinstance(kind, str):
             bad.append(f"analyses[{i}] declares no `analysis` kind")
             continue
-        want = _ARM_FIELDS if kind == "arm_stream" else _DERIVED_FIELDS
+        want = (_ARM_FIELDS if kind == "arm_stream"
+                else () if kind in MULTI_RUN_ANALYSES else _DERIVED_FIELDS)
         missing = [k for k in want if not a.get(k)]
         if missing:
             bad.append(f"analyses[{i}] ({kind}) is missing {missing}")
@@ -432,6 +441,23 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                 if argv[3] != a.get("arm"):
                     bad.append(f"analyses[{i}] runtime_argv arm {argv[3]!r} "
                                f"contradicts arm {a.get('arm')!r}")
+        elif kind in MULTI_RUN_ANALYSES:
+            # Keyed on the FIXTURE and the decompositions it ran, not on a
+            # member: there is no single stream this concluded from.
+            if not isinstance(a.get("fixture"), str) or not a["fixture"]:
+                bad.append(f"analyses[{i}] ({kind}) needs the `fixture` it ran")
+            d = a.get("decompositions")
+            if not isinstance(d, list) or not d or not all(
+                    isinstance(x, list) and x and all(isinstance(v, int) and v > 0
+                                                      for v in x) for x in d):
+                bad.append(f"analyses[{i}] ({kind}) needs `decompositions` as a "
+                           f"non-empty list of positive-int lists")
+            elif len({tuple(x) for x in d}) != len(d):
+                bad.append(f"analyses[{i}] ({kind}) repeats a decomposition")
+            for k in ("analyzer", "analyzer_sha256", "analyzer_commit",
+                      "analyzer_blob_sha"):
+                if not a.get(k):
+                    bad.append(f"analyses[{i}] ({kind}) is missing {k}")
         else:
             if kind not in DERIVED_ANALYSES:
                 bad.append(f"analyses[{i}] unknown derived analysis {kind!r} "
@@ -443,7 +469,10 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             if a.get("analyzer_sha256") and not _hexlen(a["analyzer_sha256"], 64):
                 bad.append(f"analyses[{i}] analyzer_sha256 is not a 64-hex sha")
         # An analysis of a member the bundle does not carry describes nothing.
-        if member_nsplits and a.get("nsplit") not in member_nsplits:
+        # A multi-run analysis reads no member, so it has no nsplit to check.
+        if kind in MULTI_RUN_ANALYSES:
+            pass
+        elif member_nsplits and a.get("nsplit") not in member_nsplits:
             bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not among "
                        f"the members {sorted(member_nsplits)}")
     return bad

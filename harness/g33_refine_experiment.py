@@ -525,6 +525,37 @@ def _analyzer_pin(module: str) -> dict:
             "analyzer_blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
 
 
+def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
+    """Analyses that run the DRIVER over several decompositions.
+
+    Emitted only where the fixture can support the question. `ncmin_locality`
+    compares decompositions that impose DIFFERENT thresholds, so on a
+    single-surface fixture there is no across-class pair and the analysis
+    refuses rather than reporting a one-directional result. Producing it there
+    anyway would put a vacuous table in the bundle.
+    """
+    import g33_ncmin_locality as nl
+    made = []
+    for name in rm.MULTI_RUN_ANALYSES:
+        if len(nl.equivalence_classes(fixture)) < 2:
+            continue
+        path = out / f"{fixture}.{name}.json"
+        path.write_text(rm.json.dumps(nl.analysis(str(exe), fixture), indent=2,
+                                      sort_keys=True) + "\n")
+        made.append({
+            "file": path.name, "analysis": name, "sha256": rm.sha256(path),
+            "fixture": fixture,
+            "decompositions": [list(t) for t in compositions_of(fixture)],
+            **_analyzer_pin("g33_ncmin_locality")})
+    return made
+
+
+def compositions_of(fixture: str) -> list:
+    """The decompositions a multi-run analysis covered, from the fixture."""
+    import g33_ncmin_locality as nl
+    return nl.compositions(fixture_dims(fixture)[0])
+
+
 def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
     """Run every analysis on every member, write it beside the member, digest it.
 
@@ -643,6 +674,10 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # arm as its own baseline.
         if nflux and rho_profile == "as-is":
             man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode, width)
+            # Analyses of the bundle's OWN binary across decompositions. They
+            # need the --nflux build, whose G33N records say which tiles the
+            # kernel actually received.
+            man["analyses"] += _multi_run_analyses(tmp, exe, fixture)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.
