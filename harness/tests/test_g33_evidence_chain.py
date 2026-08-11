@@ -1185,12 +1185,21 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     # exist, so registering or removing one breaks a test about something else.
     # The expected count comes from the manifest (Codex).
     expected = {a["file"] for a in man["analyses"] if "ran" in a}
-    rows = {r["file"]: r["state"] for r in ec.members_of(dst / "manifest.json")
-            if r.get("origin") == "run_identity"}
+    emitted = [r for r in ec.members_of(dst / "manifest.json")
+               if r.get("origin") == "run_identity"]
+    rows = {r["file"]: r["state"] for r in emitted}
     assert set(rows) == expected, (
         f"a run_identity row per `ran`-carrying analysis; "
         f"missing {sorted(expected - set(rows))}, "
         f"unexpected {sorted(set(rows) - expected)}")
+    # COUNT too. Keying by file collapses duplicates, so two rows for one
+    # analysis carrying the SAME state were invisible -- 4 rows over 2 files
+    # read as 2 (Codex). A differing duplicate happened to be caught, but only
+    # because the second overwrote the first's verdict, which is luck, not a
+    # check.
+    assert len(emitted) == len(expected), (
+        f"{len(emitted)} run_identity rows for {len(expected)} analyses: "
+        f"{sorted(r['file'] for r in emitted)}")
     assert tampered in rows, f"{tampered} produced no run_identity row"
     assert rows[tampered] == "RUN-IDENTITY-MISMATCH"
     assert all(s == "matches" for f, s in rows.items() if f != tampered), rows
