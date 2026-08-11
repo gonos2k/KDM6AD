@@ -1077,11 +1077,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      needs a MULTI-RUN analysis: the producer's contract is (stream,
-      basis) per member, and g33_ncmin_locality is (driver, fixture) and
-      runs the driver once per decomposition
+    artifact_status: pinned
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -1101,6 +1097,26 @@ claims:
       decomposition with haloes and per-rank surface patterns: this is a
       sequential multi-call tile experiment that PREDICTS rank sensitivity
       rather than demonstrating it.
+    # Migrated once the producer could carry a MULTI-RUN analysis:
+    # this claim's figures come from running the driver once per
+    # decomposition, which the per-member (stream, basis) contract had
+    # no shape for. The bundle analyses its OWN binary.
+    #
+    # The signed oracle figures (-20.72% / +20.67% against the
+    # per-column direct sum) are NOT bound here: they come from
+    # local_oracle, a different table from the whole-domain-baseline
+    # one this artifact carries, and binding a same-looking number
+    # from the wrong table would pin the wrong quantity.
+    artifacts:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/manifest.json: 721f253e496c1729bb934299c0dbb6e811ee5e0ad7f24e47e62762d30cdaabd5
+    expected_values:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/4c7401ab2af7a60fdbe16e05e7e324a47333d18e750615035dd1de2e39c69afc/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
 

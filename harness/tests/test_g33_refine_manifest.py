@@ -133,3 +133,57 @@ def test_DERIVED_ANALYSES_matches_the_PRODUCER_registry():
     import g33_refine_experiment as xp
     assert set(rm.DERIVED_ANALYSES) == set(xp.ANALYSES) | {"metric_trajectory"}
     assert set(rm.REQUIRED_WHEN_INSTRUMENTED) == set(xp.ANALYSES)
+
+
+# ---- the third union variant: analyses that run the DRIVER ------------------
+
+def _multi(m):
+    return next(a for a in m["analyses"]
+                if a["analysis"] in rm.MULTI_RUN_ANALYSES)
+
+
+def _with_multi(root):
+    m = synthetic_manifest(root)
+    m["analyses"].append({
+        "file": "fx.ncmin_locality.json", "analysis": "ncmin_locality",
+        "sha256": "e" * 64, "fixture": "fx",
+        "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]],
+        "analyzer": "harness/g33_ncmin_locality.py",
+        "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
+        "analyzer_blob_sha": "c" * 40})
+    return m
+
+
+def test_a_MULTI_RUN_analysis_is_a_THIRD_variant(tmp_path):
+    """It reads no member stream, so the derived contract's `nsplit` cannot
+    describe it: `g33_ncmin_locality` is (driver, fixture) and runs the driver
+    once per decomposition, while derived analyses are (stream, basis) per
+    member. Keyed on the FIXTURE and the decompositions instead."""
+    assert rm.validate(_with_multi(tmp_path)) == []
+    assert "ncmin_locality" not in rm.DERIVED_ANALYSES, \
+        "it must not be accepted as a per-member derived analysis"
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda a: a.pop("fixture"), "needs the `fixture` it ran"),
+    (lambda a: a.update(decompositions=[]), "non-empty list"),
+    (lambda a: a.update(decompositions=[[1, 2], [1, 2]]), "repeats a decomposition"),
+    (lambda a: a.update(decompositions=[[0, 3]]), "positive-int"),
+    (lambda a: a.pop("analyzer_sha256"), "is missing analyzer_sha256"),
+])
+def test_a_MULTI_RUN_entry_must_say_WHAT_IT_RAN(tmp_path, mutate, expect):
+    """A table with no record of which decompositions produced it cannot be
+    re-derived, and an unpinned analyzer means the code that concluded it is
+    unrecoverable."""
+    m = _with_multi(tmp_path)
+    assert rm.validate(m) == [], "the base must be valid first"
+    mutate(_multi(m))
+    assert any(expect in b for b in rm.validate(m)), rm.validate(m)
+
+
+def test_a_MULTI_RUN_analysis_needs_NO_member_nsplit(tmp_path):
+    """The member-nsplit check would reject it for having no nsplit -- it
+    analyses no member."""
+    m = _with_multi(tmp_path)
+    assert "nsplit" not in _multi(m)
+    assert rm.validate(m) == []
