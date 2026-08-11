@@ -379,6 +379,16 @@ _RHO_ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
 #: block naming something else describes a run that could not have happened.
 _CARRY_MODES = ("carry", "rezero")
 
+#: The driver reads NSPLIT into a Fortran default INTEGER, so the read fails
+#: above int32 and it error-stops. MEASURED against the real binary:
+#:
+#:   2147483647  accepted
+#:   2147483648  ERROR STOP NSPLIT must be a positive integer
+#:
+#: "Positive integer" alone therefore admits identities the driver rejects
+#: (Codex). Python ints are unbounded; the run this describes is not.
+_MAX_NSPLIT = 2 ** 31 - 1
+
 #: The derived analyses a v2 bundle may carry. Declared here rather than
 #: imported, because the producer imports THIS module; a test asserts the two
 #: agree, so drift is a failure rather than a silently widened union.
@@ -473,9 +483,10 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             # driver would accept (Codex). These are the driver's own
             # vocabularies: it error-stops on anything else.
             elif not isinstance(ran["nsplit"], int) or isinstance(
-                    ran["nsplit"], bool) or ran["nsplit"] < 1:
+                    ran["nsplit"], bool) or not 1 <= ran["nsplit"] <= _MAX_NSPLIT:
                 bad.append(f"analyses[{i}] ({kind}) ran.nsplit "
-                           f"{ran['nsplit']!r} is not a positive integer")
+                           f"{ran['nsplit']!r} is not a positive integer the "
+                           f"driver accepts (1..{_MAX_NSPLIT})")
             elif ran["carry"] not in _CARRY_MODES:
                 bad.append(f"analyses[{i}] ({kind}) ran.carry "
                            f"{ran['carry']!r} is not one of {_CARRY_MODES}")

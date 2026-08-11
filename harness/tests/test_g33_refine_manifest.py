@@ -222,6 +222,8 @@ def test_the_DECOMPOSITIONS_must_agree_with_what_RAN(tmp_path):
     ("nsplit", 0, "not a positive integer"),
     ("nsplit", None, "not a positive integer"),
     ("nsplit", True, "not a positive integer"),
+    ("nsplit", 2 ** 31, "1..2147483647"),
+    ("nsplit", 10 ** 30, "1..2147483647"),
     ("carry", "banana", "is not one of"),
     ("rho", "purple", "is not one of"),
 ])
@@ -250,3 +252,22 @@ def test_the_RUN_IDENTITY_vocabularies_are_the_DRIVERS():
     import g33_ncmin_locality as nl
     assert set(nl.RHO_MODES) == set(rm._RHO_ARMS), \
         "the analyzer and the schema disagree about the density arms"
+
+
+def test_the_NSPLIT_BOUND_is_the_DRIVERS_int32_limit(tmp_path):
+    """MEASURED against the real binary, not inferred:
+
+      2147483647  accepted
+      2147483648  ERROR STOP NSPLIT must be a positive integer
+
+    The driver reads NSPLIT into a Fortran default INTEGER, so the read fails
+    above int32. "Positive integer" alone admits identities it rejects, because
+    Python ints are unbounded and the run being described is not (Codex)."""
+    assert rm._MAX_NSPLIT == 2 ** 31 - 1
+
+    m = _with_multi(tmp_path)
+    _multi(m)["ran"]["nsplit"] = rm._MAX_NSPLIT
+    assert rm.validate(m) == [], "the boundary value itself must be accepted"
+
+    _multi(m)["ran"]["nsplit"] = rm._MAX_NSPLIT + 1
+    assert any("1..2147483647" in b for b in rm.validate(m))
