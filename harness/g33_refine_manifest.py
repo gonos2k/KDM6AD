@@ -404,7 +404,7 @@ DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
 #: which is why the derived variant's `nsplit` cannot describe them and a third
 #: tag is needed. `g33_ncmin_locality` is (driver, fixture) and runs the driver
 #: once per decomposition; the derived contract is (stream, basis) per member.
-MULTI_RUN_ANALYSES = ("ncmin_locality",)
+MULTI_RUN_ANALYSES = ("ncmin_locality", "qr_process_ledger")
 
 #: What an `--nflux` bundle must actually contain. `instrumented: true` with a
 #: single arm_stream satisfied "analyses is non-empty" while carrying none of

@@ -112,3 +112,24 @@ def decompose(base_text: str, got_text: str, width: int) -> dict:
                       if total else {}),
         }
     return out
+
+
+def analysis(driver: str, fixture: str) -> dict:
+    """The multi-run entry point: which process carries the decomposition's
+    qr difference, oracle against whole domain.
+
+    Same shape as `g33_ncmin_locality.analysis` -- (driver, fixture), running
+    the driver once per decomposition -- so it is a MULTI_RUN analysis and the
+    manifest records `ran` the same way.
+    """
+    import g33_ncmin_locality as nl
+    width = nl.fixture_dims(fixture)[0]
+    oracle, whole = (1,) * width, (width,)
+    got = decompose(nl.run(driver, oracle), nl.run(driver, whole), width)
+    return {
+        "columns": {str(c): r for c, r in got.items()},
+        "compared": {"oracle": list(oracle), "against": list(whole)},
+        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                "width": width,
+                "decompositions": [list(oracle), list(whole)]},
+    }

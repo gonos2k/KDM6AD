@@ -536,7 +536,15 @@ def _analyzer_pin(module: str) -> dict:
 MULTI_RUN = {
     "ncmin_locality": ("g33_ncmin_locality",
                        lambda exe, fixture: _ncmin().analysis(exe, fixture)),
+    # WHICH PROCESS carries the difference the one above measures (owner §7).
+    "qr_process_ledger": ("g33_qr_process_ledger",
+                          lambda exe, fixture: _ledger().analysis(exe, fixture)),
 }
+
+
+def _ledger():
+    import g33_qr_process_ledger as pl
+    return pl
 
 
 def _ncmin():
