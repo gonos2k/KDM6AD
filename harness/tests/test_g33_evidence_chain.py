@@ -1177,8 +1177,16 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     e = next(a for a in man["analyses"] if a["analysis"] == "ncmin_locality")
     e["ran"]["nsplit"] = 12                    # the file still says 1
     (dst / "manifest.json").write_text(json.dumps(man))
-    assert [r["state"] for r in ec.members_of(dst / "manifest.json")
-            if r.get("origin") == "run_identity"] == ["RUN-IDENTITY-MISMATCH"]
+    # PER ENTRY: tampering one multi-run analysis must flag that one and leave
+    # the others matching. The first version asserted a single-element list,
+    # which only held while exactly one multi-run analysis existed -- a second
+    # one broke it, and an `any()` here would have hidden which entry moved.
+    rows = {r["file"]: r["state"] for r in ec.members_of(dst / "manifest.json")
+            if r.get("origin") == "run_identity"}
+    assert len(rows) >= 2, f"expected several multi-run analyses, got {rows}"
+    tampered = next(f for f in rows if "ncmin_locality" in f)
+    assert rows[tampered] == "RUN-IDENTITY-MISMATCH"
+    assert all(s == "matches" for f, s in rows.items() if f != tampered), rows
 
 
 def test_every_RUN_IDENTITY_failure_state_FAILS():
