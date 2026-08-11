@@ -593,7 +593,9 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
-    migration_blocker: the basis-parameterised water/enthalpy ledger figures are not among the analyses either pinned bundle carries
+    migration_blocker: >
+      the basis-parameterised water/enthalpy ledger figures are not among
+      the analyses either pinned bundle carries
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -674,7 +676,9 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
-    migration_blocker: no figure of this claim was located in either pinned bundle; not yet traced to an analysis that emits them
+    migration_blocker: >
+      no figure of this claim was located in either pinned bundle; not yet
+      traced to an analysis that emits them
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -711,7 +715,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
-    migration_blocker: its ice-chain density-arm matrix is in neither pinned bundle -- the conservative metric_trajectory carries the same MAIN-chain arms as legacy
+    migration_blocker: >
+      its ice-chain density-arm matrix is in neither pinned bundle -- the
+      conservative metric_trajectory carries the same MAIN-chain arms as
+      legacy
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -1071,7 +1078,10 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: historical_unavailable
-    migration_blocker: needs a MULTI-RUN analysis: the producer's contract is (stream, basis) per member, and g33_ncmin_locality is (driver, fixture) and runs the driver once per decomposition
+    migration_blocker: >
+      needs a MULTI-RUN analysis: the producer's contract is (stream,
+      basis) per member, and g33_ncmin_locality is (driver, fixture) and
+      runs the driver once per decomposition
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the

@@ -66,16 +66,17 @@ def claims() -> list[dict]:
     Parsed here rather than imported so this tool cannot inherit the stamper's
     parsing, which deliberately reads only what stamping needs.
     """
-    out, cur, in_art = [], None, False
+    out, cur, in_art, folded = [], None, False, None
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
                    "evidence": [], "artifacts": {}, "expected_values": []}
             out.append(cur)
-            in_art = False
+            in_art = folded = None or False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
+            folded = None
             in_art = m.group(1) in ("artifacts", "expected_values")
             section = m.group(1)
             if m.group(1) == "evidence":
@@ -83,6 +84,15 @@ def claims() -> list[dict]:
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
                                 "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
+                # A FOLDED value (`key: >`) continues on the indented lines
+                # below. Capturing only the first line took the `>` itself as
+                # the value -- truthy, so the field looked present while saying
+                # nothing. Long text has to be folded here: an unquoted scalar
+                # containing ": " is invalid YAML, which is how a one-line
+                # blocker broke the file (Codex).
+                folded = m.group(1) if m.group(2).strip() == ">" else None
+        elif folded and line.startswith("      ") and line.strip():
+            cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
                 m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)

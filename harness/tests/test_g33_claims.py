@@ -473,3 +473,37 @@ def test_G33_BASIS_005_binds_BOTH_SIDES_of_each_comparison():
     assert files.count("n12.rezero.dual_ledger.json") == 3, (
         "each cap_interface figure needs its dual_ledger counterpart, or the "
         "pin does not test the claim")
+
+
+def test_CLAIMS_yaml_is_actually_YAML():
+    """The file is consumed by a hand-written regex parser, so nothing ever
+    checked it against a real YAML reader -- and a `migration_blocker` value
+    containing ": " made it unparseable while every test stayed green (Codex).
+    An unquoted scalar cannot contain ": "; long text must be folded."""
+    yaml = pytest.importorskip("yaml")
+    doc = yaml.safe_load(REGISTRY.read_text())
+    assert isinstance(doc, dict) and doc.get("claims"), "no claims parsed"
+    assert len(doc["claims"]) == len(CLAIMS), (
+        f"the YAML reader sees {len(doc['claims'])} claims and the regex "
+        f"parser {len(CLAIMS)} -- the two disagree about the file")
+
+
+def test_the_two_readers_AGREE_on_every_migration_blocker():
+    """A folded value continues on the lines below it. Reading only the first
+    line captured the `>` itself: truthy, so the field looked present while
+    saying nothing, and the closeout printed a blocker with no reason."""
+    yaml = pytest.importorskip("yaml")
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import g33_evidence_chain as ec
+
+    doc = yaml.safe_load(REGISTRY.read_text())
+    truth = {c["id"]: " ".join(str(c.get("migration_blocker", "")).split())
+             for c in doc["claims"]}
+    mine = {c["id"]: " ".join(c.get("migration_blocker", "").split())
+            for c in ec.claims()}
+    named = {k for k, v in truth.items() if v}
+    assert named, "no claim records a blocker -- this check would be vacuous"
+    for cid in named:
+        assert mine[cid] == truth[cid], (
+            f"{cid}: regex parser read {mine[cid]!r}, YAML says {truth[cid]!r}")
