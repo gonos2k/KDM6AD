@@ -475,6 +475,25 @@ def test_G33_BASIS_005_binds_BOTH_SIDES_of_each_comparison():
         "pin does not test the claim")
 
 
+def test_no_unquoted_scalar_CONTAINS_a_colon_space():
+    """The exact invalidity that shipped, checked WITHOUT pyyaml.
+
+    An unquoted YAML scalar cannot contain ": ". The pyyaml test below is the
+    real check, but it `importorskip`s, and CI installs only numpy and pytest
+    -- so the gate that exists to keep this file parseable silently did not run
+    where it matters (Codex). CI now installs pyyaml AND this runs everywhere,
+    because a regression gate that can vanish is not a gate.
+    """
+    offenders = []
+    for n, line in enumerate(REGISTRY.read_text().splitlines(), 1):
+        m = re.match(r'^\s*[\w-]+: (?![\'">|])(.*)$', line)
+        if m and ": " in m.group(1):
+            offenders.append(f"{n}: {line.strip()[:70]}")
+    assert not offenders, (
+        "unquoted scalars containing ': ' -- fold them with `>`:\n  "
+        + "\n  ".join(offenders))
+
+
 def test_CLAIMS_yaml_is_actually_YAML():
     """The file is consumed by a hand-written regex parser, so nothing ever
     checked it against a real YAML reader -- and a `migration_blocker` value
