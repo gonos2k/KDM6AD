@@ -1151,3 +1151,38 @@ def test_the_closeout_PRINTS_the_reason_it_has(capsys):
         assert "not yet assessed" in out, (
             "a claim with no recorded blocker must SAY so, not print a bare "
             "unreachable line indistinguishable from an assessed one")
+
+
+@needs_bundle
+def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
+    """The schema can only check the manifest against itself; it cannot know
+    whether the manifest tells the truth about the FILE. The producer copies
+    `ran` across, so they are two records of one fact -- and two records never
+    compared are one record and one decoration (Codex)."""
+    import shutil
+    import tempfile
+    store = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001.bundles"
+    src = next(store.glob("*/"), None)
+    if src is None:
+        pytest.skip("multi-run bundle not on this host")
+
+    rows = ec.members_of(src / "manifest.json")
+    ident = [r for r in rows if r.get("origin") == "run_identity"]
+    assert ident, "no run_identity row -- this check would be vacuous"
+    assert all(r["state"] == "matches" for r in ident)
+
+    dst = Path(tempfile.mkdtemp()) / "b"
+    shutil.copytree(src, dst)
+    man = json.loads((dst / "manifest.json").read_text())
+    e = next(a for a in man["analyses"] if a["analysis"] == "ncmin_locality")
+    e["ran"]["nsplit"] = 12                    # the file still says 1
+    (dst / "manifest.json").write_text(json.dumps(man))
+    assert [r["state"] for r in ec.members_of(dst / "manifest.json")
+            if r.get("origin") == "run_identity"] == ["RUN-IDENTITY-MISMATCH"]
+
+
+def test_every_RUN_IDENTITY_failure_state_FAILS():
+    for s in ("RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT",
+              "RUN-IDENTITY-UNREADABLE"):
+        assert ec.verdict(s) is True
+        assert s in ec.FAILING_STATES

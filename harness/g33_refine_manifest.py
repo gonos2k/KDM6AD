@@ -461,9 +461,11 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             if not isinstance(a.get("fixture"), str) or not a["fixture"]:
                 bad.append(f"analyses[{i}] ({kind}) needs the `fixture` it ran")
             d = a.get("decompositions")
-            if not isinstance(d, list) or not d or not all(
-                    isinstance(x, list) and x and all(isinstance(v, int) and v > 0
-                                                      for v in x) for x in d):
+            decomps_ok = (isinstance(d, list) and bool(d) and all(
+                isinstance(x, list) and x
+                and all(isinstance(v, int) and not isinstance(v, bool) and v > 0
+                        for v in x) for x in d))
+            if not decomps_ok:
                 bad.append(f"analyses[{i}] ({kind}) needs `decompositions` as a "
                            f"non-empty list of positive-int lists")
             elif len({tuple(x) for x in d}) != len(d):
@@ -505,6 +507,12 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             # anything else names a run that could not have happened -- and a
             # SET of them summing to different totals cannot all describe one
             # domain (Codex).
+            # GUARDED on the shape check above. Without it this reached
+            # `sum(d)` on a malformed value and raised TypeError -- a validator
+            # that CRASHES on bad input is worse than one that misses it, since
+            # `validate()` is contracted to RETURN violations (Codex).
+            elif not decomps_ok:
+                pass
             elif [d for d in ran["decompositions"] if sum(d) != ran["width"]]:
                 bad.append(
                     f"analyses[{i}] ({kind}) decompositions "

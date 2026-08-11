@@ -209,6 +209,13 @@ def members_of(manifest: Path) -> list[dict]:
                     "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
+        # The manifest's `ran` block against the one INSIDE the analysis it
+        # describes. The producer copies it across, so they are two records of
+        # one fact -- and two records never checked against each other are one
+        # record and one decoration (Codex).
+        if "ran" in an and p.is_file():
+            out.append({"file": an["file"], "scope": "bundle",
+                        "origin": "run_identity", "state": _ran_state(p, an)})
         # The ANALYZER the manifest names, by digest. It was recorded and never
         # checked, so an analyzer could change under a published analysis with
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
@@ -244,6 +251,17 @@ def _blob_at(commit: str, path: str) -> str | None:
 #: in the source tree. Joining a `repo` path under the bundle names a location
 #: NOTHING ever hashed, so a figure bound there would inherit a guarantee made
 #: about a different file entirely (Codex).
+def _ran_state(path: Path, an: dict) -> str:
+    """Does the analysis file agree with the manifest about what it ran?"""
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return "RUN-IDENTITY-UNREADABLE"
+    if not isinstance(doc, dict) or "ran" not in doc:
+        return "RUN-IDENTITY-ABSENT"
+    return "matches" if doc["ran"] == an["ran"] else "RUN-IDENTITY-MISMATCH"
+
+
 def _analyzer_state(an: dict) -> dict:
     """Whether the analyzer this analysis ran can still be RECOVERED.
 
@@ -516,6 +534,7 @@ FAILING_STATES = frozenset({
     "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
+    "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
 })
 
 

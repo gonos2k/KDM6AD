@@ -302,3 +302,17 @@ def test_the_WIDTH_is_recorded_because_the_manifest_has_no_other_source(tmp_path
     assert "width" in _multi(m)["ran"]
     _multi(m)["ran"].pop("width")
     assert any("needs `ran` with" in b for b in rm.validate(m))
+
+
+@pytest.mark.parametrize("dec", ["abc", [["a", "b"]], [None], [[1, 2], "x"], 3,
+                                 [[True, True]]])
+def test_a_malformed_decomposition_is_REJECTED_not_a_CRASH(tmp_path, dec):
+    """`validate()` is contracted to RETURN violations, so raising on bad input
+    is worse than missing it: the caller gets a traceback instead of a list.
+    The width check reached `sum(d)` even when the shape check had already
+    failed (Codex). `[[True, True]]` is included because bool subclasses int."""
+    m = _with_multi(tmp_path)
+    e = _multi(m)
+    e["decompositions"] = dec
+    e["ran"]["decompositions"] = dec
+    assert rm.validate(m), "must be rejected"
