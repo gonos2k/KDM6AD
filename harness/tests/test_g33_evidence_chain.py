@@ -1123,14 +1123,27 @@ def test_an_UNMIGRATED_claim_says_WHY_or_says_it_was_never_assessed():
     be migrated, and any claim without one reports that it was NOT ASSESSED
     rather than looking the same as the assessed ones."""
     assessed = {c["id"] for c in ec.claims() if c.get("migration_blocker")}
-    assert {"G33-NCMIN-001", "G33-NUMBER-009", "G33-TRAJECTORY-001",
-            "G33-BASIS-004"} <= assessed
+    assert assessed, "no claim records a blocker -- this check would be vacuous"
+
+    # The INVARIANT, not a list of ids. Naming G33-NCMIN-001 here broke the
+    # moment it was migrated -- the same shape as hardcoding the blocker count:
+    # a check that has to be edited on every success stops being a check.
+    unmigrated = {c["id"] for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"}
+    assert assessed <= unmigrated, (
+        f"migrated claims still carrying a migration_blocker: "
+        f"{sorted(assessed - unmigrated)} -- a resolved blocker must be removed "
+        f"with the pin, or the registry keeps a reason that no longer applies")
 
 
 def test_the_closeout_PRINTS_the_reason_it_has(capsys):
     ec.check(require_available=True)
     out = capsys.readouterr().out
-    assert "needs a MULTI-RUN analysis" in out
+    for c in ec.claims():
+        if c.get("migration_blocker"):
+            head = " ".join(c["migration_blocker"].split())[:40]
+            assert head in " ".join(out.split()), (
+                f"{c['id']}: its recorded reason is not in the closeout output")
     unassessed = [c for c in ec.claims()
                   if c.get("artifact_status") == "historical_unavailable"
                   and not c.get("migration_blocker")]
