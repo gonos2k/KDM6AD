@@ -113,7 +113,7 @@ def bundles() -> dict:
         for mf in sorted(root.glob("*/manifest.json")):
             try:
                 out[f"{root.name}/{mf.parent.name}"] = json.loads(mf.read_text())
-            except (OSError, json.JSONDecodeError):
+            except (OSError, ValueError):
                 continue
     return out
 
@@ -165,11 +165,15 @@ def members_of(manifest: Path) -> list[dict]:
     try:
         man = json.loads(manifest.read_text())
     except OSError as e:
-        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
-                 "detail": str(e)}]
-    except json.JSONDecodeError as e:
-        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
-                 "detail": f"not JSON: {e}"}]
+        return [{"file": manifest.name, "scope": "bundle",
+                 "state": "MANIFEST-UNREADABLE", "detail": str(e)}]
+    except ValueError as e:
+        # ValueError, not json.JSONDecodeError: a non-UTF-8 manifest raises
+        # UnicodeDecodeError from `read_text`, which is a ValueError but NOT a
+        # JSONDecodeError -- so it escaped BOTH clauses and crashed the whole
+        # chain walk instead of reporting the corruption it is (Codex).
+        return [{"file": manifest.name, "scope": "bundle",
+                 "state": "MANIFEST-UNREADABLE", "detail": f"not JSON: {e}"}]
     if not isinstance(man, dict):
         return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": f"top level is {type(man).__name__}, not an object"}]
@@ -255,7 +259,12 @@ def _ran_state(path: Path, an: dict) -> str:
     """Does the analysis file agree with the manifest about what it ran?"""
     try:
         doc = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):
+        # ValueError, not json.JSONDecodeError: a non-UTF-8 file raises
+        # UnicodeDecodeError from `read_text`, which is a ValueError but NOT a
+        # JSONDecodeError, so the narrower catch let it escape as a crash
+        # (Codex). Both mean the same thing here -- the file cannot be read as
+        # the JSON it claims to be.
         return "RUN-IDENTITY-UNREADABLE"
     if not isinstance(doc, dict) or "ran" not in doc:
         return "RUN-IDENTITY-ABSENT"
@@ -412,7 +421,7 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
         return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
     try:
         doc = json.loads(f.read_text())
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):
         return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
     if any("." in str(k) for k in _keys_of(doc)):
         return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}

@@ -1186,3 +1186,28 @@ def test_every_RUN_IDENTITY_failure_state_FAILS():
               "RUN-IDENTITY-UNREADABLE"):
         assert ec.verdict(s) is True
         assert s in ec.FAILING_STATES
+
+
+@pytest.mark.parametrize("data,note", [
+    (b"\xff\xfe\x00binary", "non-UTF-8"),
+    (b'{"members": ', "truncated JSON"),
+    (b"", "empty"),
+])
+def test_an_UNREADABLE_file_is_REPORTED_not_a_CRASH(tmp_path, data, note):
+    """`json.JSONDecodeError` and `UnicodeDecodeError` are SIBLING subclasses of
+    ValueError, not related to each other, so catching the narrower one looked
+    thorough while leaving a whole failure mode uncaught. `read_text()` decodes,
+    so every JSON read here had the hole -- and in `members_of` a non-UTF-8
+    manifest crashed the entire chain walk instead of reporting the corruption
+    it is (Codex)."""
+    f = tmp_path / "x.json"
+    f.write_bytes(data)
+    assert [r["state"] for r in ec.members_of(f)] == ["MANIFEST-UNREADABLE"], note
+    assert ec._ran_state(f, {"ran": {}}) == "RUN-IDENTITY-UNREADABLE", note
+
+
+def test_no_reader_catches_only_JSONDecodeError():
+    """The narrow catch must not come back anywhere in this module."""
+    src = Path(ec.__file__).read_text()
+    assert "except (OSError, json.JSONDecodeError)" not in src
+    assert "except json.JSONDecodeError" not in src
