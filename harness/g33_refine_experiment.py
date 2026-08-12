@@ -337,7 +337,15 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # pinned by nothing -- and that code decides which
                  # instrumentation is injected into the frozen Fortran, so it
                  # decides what every record in the stream says (Codex).
-                 "g33_schema", "g33_expectation")
+                 "g33_schema", "g33_expectation",
+                 # The reference UPDATE semantics: COLD_TERMS/WARM_TERMS, the
+                 # source-order f32 accumulation and the positivity clamp. The
+                 # qr process ledger decomposes against it, so these bytes
+                 # decide what the decomposition MEANS. It became reachable the
+                 # moment the ledger stopped restating the terms and started
+                 # importing them, and the closure caught that on the next run
+                 # (Codex) -- which is what the closure is for.
+                 "g33_update_replay")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
