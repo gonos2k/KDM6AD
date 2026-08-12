@@ -546,9 +546,57 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             if a.get("analyzer_sha256") and not _hexlen(a["analyzer_sha256"], 64):
                 bad.append(f"analyses[{i}] analyzer_sha256 is not a 64-hex sha")
         # An analysis of a member the bundle does not carry describes nothing.
-        # A multi-run analysis reads no member, so it has no nsplit to check.
+        # A multi-run analysis reads no member, so it has no nsplit to check --
+        # but it does have INPUTS, and those must be in the bundle.
         if kind in MULTI_RUN_ANALYSES:
-            pass
+            ins = a.get("inputs")
+            if not isinstance(ins, list) or not ins:
+                bad.append(f"analyses[{i}] is multi_run and records no "
+                           f"`inputs` -- the raw streams it consumed are the "
+                           f"evidence, and a derived JSON alone leaves the "
+                           f"chain unable to reach them")
+                continue
+            seen = set()
+            for k, src in enumerate(ins):
+                if not isinstance(src, dict):
+                    bad.append(f"analyses[{i}].inputs[{k}] is not an object")
+                    continue
+                f, d = src.get("file"), src.get("sha256")
+                if not isinstance(f, str) or not f:
+                    bad.append(f"analyses[{i}].inputs[{k}] names no file")
+                elif f in seen:
+                    bad.append(f"analyses[{i}].inputs lists {f!r} twice")
+                else:
+                    seen.add(f)
+                if not _hexlen(d or "", 64):
+                    bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) is not "
+                               f"pinned by a 64-hex sha")
+                argv = src.get("runtime_argv")
+                if not isinstance(argv, list) or len(argv) != 4:
+                    bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) records no "
+                               f"4-element runtime_argv -- which decomposition "
+                               f"it is has to be readable from the entry")
+            # Every decomposition the analysis says it RAN must be among the
+            # streams it kept. Otherwise `ran` describes a run the bundle
+            # cannot produce.
+            kept = {tuple(src["runtime_argv"][2].split(","))
+                    for src in ins
+                    if isinstance(src, dict)
+                    and isinstance(src.get("runtime_argv"), list)
+                    and len(src["runtime_argv"]) == 4}
+            # Only where `decompositions` is well formed. Iterating it blind
+            # crashed on [None] and on a bare int -- the same "a guard that
+            # crashes is not a guard" defect the width check already had, so
+            # the shape rules above report those and this stays quiet.
+            decs = a.get("decompositions")
+            if (isinstance(decs, list) and decs
+                    and all(isinstance(d, list) and d
+                            and all(isinstance(x, int) and not isinstance(x, bool)
+                                    for x in d) for d in decs)):
+                for dec in decs:
+                    if tuple(str(x) for x in dec) not in kept:
+                        bad.append(f"analyses[{i}] says it ran {dec} but kept "
+                                   f"no stream for it")
         elif member_nsplits and a.get("nsplit") not in member_nsplits:
             bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not among "
                        f"the members {sorted(member_nsplits)}")

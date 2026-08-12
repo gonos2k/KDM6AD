@@ -618,7 +618,23 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     if len(_ncmin().equivalence_classes(fixture)) < 2:
         return made
     for name, (mod, fn) in MULTI_RUN.items():
+        _ncmin().begin_capture()
         result = fn(str(exe), fixture)
+        # The RAW streams this analysis consumed, preserved as bundle members.
+        # Without them the chain reached the derived JSON, the analyzer and the
+        # binary, but never the stdout those numbers were computed from: the
+        # run was reproducible and the evidence was not retained, which are
+        # different contracts (owner P0-EVIDENCE-1). The density arms have
+        # always been kept this way.
+        inputs = []
+        for (_drv, nsp, carry, tiles, rho), text in _ncmin().recorded_runs().items():
+            stem = f"mr.n{nsp}.{carry}.{rho}.tiles-{'-'.join(map(str, tiles))}.txt"
+            rp = out / stem
+            if not rp.exists():          # shared between analyses, written once
+                rp.write_text(text)
+            inputs.append({"file": stem, "sha256": rm.sha256(rp),
+                           "runtime_argv": [str(nsp), carry,
+                                            ",".join(map(str, tiles)), rho]})
         # FROM THE RESULT, not from the fixture. Deriving the decompositions
         # from the fixture recorded what the analysis was ASSUMED to have run,
         # and omitting nsplit/mode/rho let the entry read as though it shared
@@ -630,6 +646,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
             "file": path.name, "analysis": name, "sha256": rm.sha256(path),
             "fixture": fixture, "ran": ran,
             "decompositions": ran["decompositions"],
+            "inputs": sorted(inputs, key=lambda i: i["file"]),
             **_analyzer_pin(mod)})
     return made
 

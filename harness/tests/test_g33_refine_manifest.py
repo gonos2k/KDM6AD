@@ -150,6 +150,13 @@ def _with_multi(root):
         "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]],
         "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
                 "decompositions": [[3], [1, 2], [2, 1], [1, 1, 1]]},
+        # The RAW streams the analysis consumed. A multi_run entry without
+        # them leaves the chain unable to reach the stdout its numbers came
+        # from (owner P0-EVIDENCE-1).
+        "inputs": [{"file": f"mr.n1.rezero.as-is.tiles-{'-'.join(map(str, d))}.txt",
+                    "sha256": "f" * 64,
+                    "runtime_argv": ["1", "rezero", ",".join(map(str, d)), "as-is"]}
+                   for d in ([3], [1, 2], [2, 1], [1, 1, 1])],
         "analyzer": "harness/g33_ncmin_locality.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
@@ -343,3 +350,47 @@ def test_the_FOUR_analysis_registries_agree():
         f"produced but not declared: {sorted(runs - declared)}; "
         f"declared but never produced: "
         f"{sorted(declared - runs - {'metric_trajectory'})}")
+
+
+def test_a_multi_run_analysis_must_KEEP_its_raw_streams(tmp_path):
+    """The chain reached the derived JSON, the analyzer and the binary, but
+    never the stdout the numbers were computed from. Reproducible and retained
+    are different contracts, and the density arms had always been kept this way
+    (owner P0-EVIDENCE-1)."""
+    m = _with_multi(tmp_path)
+    assert rm.validate(m) == [], "the base manifest must be valid first"
+    e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+    del e["inputs"]
+    assert any("records no `inputs`" in b for b in rm.validate(m))
+
+
+def test_a_kept_stream_must_be_PINNED_and_identifiable(tmp_path):
+    """A filename alone does not bind bytes, and without runtime_argv nothing
+    says WHICH decomposition the stream is."""
+    for damage, probe in (
+            (lambda s: s.pop("sha256"), "not pinned by a 64-hex sha"),
+            (lambda s: s.pop("runtime_argv"), "records no 4-element runtime_argv"),
+            (lambda s: s.__setitem__("runtime_argv", ["1", "rezero"]),
+             "records no 4-element runtime_argv")):
+        m = _with_multi(tmp_path)
+        e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+        damage(e["inputs"][0])
+        assert any(probe in b for b in rm.validate(m)), probe
+
+
+def test_a_DECOMPOSITION_the_analysis_ran_must_have_a_kept_stream(tmp_path):
+    """`ran` says which decompositions drove the binary. If one of them kept no
+    stream, the entry describes a run the bundle cannot show."""
+    m = _with_multi(tmp_path)
+    e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+    e["inputs"] = [s for s in e["inputs"] if "1-1-1" not in s["file"]]
+    assert any("kept no stream for it" in b for b in rm.validate(m))
+
+
+def test_the_same_stream_listed_TWICE_is_refused(tmp_path):
+    """Two analyses share a stream and both list it; one analysis listing it
+    twice is a different thing, and it would double-count coverage."""
+    m = _with_multi(tmp_path)
+    e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+    e["inputs"].append(dict(e["inputs"][0]))
+    assert any("twice" in b for b in rm.validate(m))
