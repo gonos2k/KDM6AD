@@ -1337,16 +1337,12 @@ claims:
       RATIOS, and a ratio near 1 says the runs disagree about a value, not that
       the value is large -- qi's 0.9966 sits on a 6.56e-08 kg/kg baseline, an
       absolute difference of 1.93e-05. Integrated over the column under the
-      rho*dz measure, which is the only physical form, the result is COLUMN RAIN
+      rho*dz OPERATOR measure, the result is COLUMN RAIN
       MASS differing by 20.67% (col 1) and 26.13% (col 2), cloud ice by 8.78%
       (col 1), and TOTAL CONDENSATE by 3.25% and 2.68%. The earlier "cloud ice
       is decided to O(1)" headline is withdrawn as a physical statement. Both
       bases are now computed (owner §7.1): the RELATIVE figures are identical
-      under operator rho_m*dz and physical rho_d*dz -- necessarily, since both
-      runs share the window-initial qv and the 1+qv weight cancels in the ratio
-      -- while the absolute masses differ by 0.10-0.17%. So the headline does
-      not depend on the basis, but it is measured under both rather than
-      asserted under one. The affected-column PREDICTION now includes the
+      under operator rho_m*dz and physical rho_d*dz -- while the absolute masses differ by 0.10-0.17%. So the headline does not depend on the basis ON THIS FIXTURE, and it is measured under both rather than asserted under one -- see the vertically-constant-weight condition below, which is why that equality is a property of the fixture rather than an identity. The affected-column PREDICTION now includes the
       threshold-activation predicate (owner §7.2): ncmin is both a gate and a
       floor (max(ncmin,nci), F:2736/2750/2888), and the two candidates agree
       where the number exceeds BOTH. Here nc runs 4.00e+07..5.04e+07 against
@@ -1360,20 +1356,7 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH
-      PROCESS carries that sign is now MEASURED, not inferred (owner §7). The
-      reference emits every operand of the qr update per cell
-      (`micro_qr_operands`, with `cold_gate` giving each cell's branch), so the
-      change decomposes exactly: in the sea column the total moves by
-      -1.1549e-06, of which ACCRETION (pracw) carries 85.3% and autoconversion
-      (praut) 14.7%. The two sum to the whole and no other term moves. So the
-      earlier "suppressed autoconversion" reading is WRONG as a direct
-      attribution -- it was withdrawn as unmeasured before this, and the
-      measurement now contradicts it. SCOPE: this decomposes the DIRECT terms,
-      not the causal chain. pracw consumes rain that praut produces, so a
-      suppressed autoconversion may still be upstream of the accretion
-      collapse; what is established is that autoconversion is not where the
-      change appears. The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH PROCESS carries that sign is a SEPARATE proposition and is not graded here -- see G33-NCMIN-004, on HOLD because the ledger that measured it does not reproduce the reference update (owner P0-SCI-1). The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1436,15 +1419,65 @@ claims:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
-      # WHICH PROCESS carries that difference (owner §7), from the
-      # ledger analysis in the same bundle. Accretion, not
-      # autoconversion: the two shares sum to 1 and no other term
-      # moves.
+    evidence: [FINDING_ncmin_scalar_vs_percell.md]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
+
+  - id: G33-NCMIN-004
+    text: >
+      The qr difference in the sea column decomposes by named process term:
+      the total moves by -1.1549e-06, of which pracw (accretion) carries
+      85.3193% and praut (autoconversion) 14.6807%, with no other term moving.
+      This CONTRADICTS the withdrawn "a higher droplet floor suppresses
+      autoconversion" reading as a DIRECT attribution.
+      .
+      HOLD (owner P0-SCI-1). The figures are what the current ledger computes,
+      and the ledger does not yet reproduce the reference update, so they are
+      recorded rather than certified. Five defects, all confirmed in the
+      analyzer rather than alleged: the warm branch adds paacw TWICE
+      (F:2922, `+paacw(i,k)+paacw(i,k)`) and a dict cannot hold a key twice, so
+      the multiplicity is structurally lost; records are keyed (col, k), so a
+      second internal loop would overwrite the first silently; a missing
+      operand reads as 0.0 through `.get(term, 0.0)`, making an uninstrumented
+      term indistinguishable from a zero rate; branch comparability is checked
+      by COUNTING cold and warm cells rather than comparing the (col, level)
+      branch map; and the terms are summed in Python f64 while the reference
+      accumulates f32 in source order under a positivity clamp. The repository
+      already carries the correct ordered form -- `g33_update_replay.WARM_TERMS`
+      with paacw twice and np.float32 accumulation -- which this analyzer
+      duplicated less carefully instead of reusing.
+      .
+      The shares are also UNWEIGHTED sums of per-level rates, so they are not a
+      column-integrated mass share; a mass-weighted decomposition under both
+      bases would be a different number. And "sum of deltas equals the total"
+      is a restatement of how total_delta is defined, not a closure against the
+      qr state update.
+    status: active
+    evidence_kind: measurement
+    run_support: [g33_fixture_boundary_mapping_v1]
+    artifact_status: pinned
+    grade: hold
+    basis: >
+      the decomposition is a direct measurement of emitted operands, but the
+      analyzer that reduces them is not yet faithful to the reference update,
+      so the SHARE is a candidate rather than a certified quantity
+    scope: >
+      Direct terms only, not the causal chain: pracw consumes rain that praut
+      produces, so a suppressed autoconversion may still be upstream of the
+      accretion collapse. What the measurement establishes, subject to the
+      HOLD above, is that autoconversion is not where the change APPEARS.
+      g33_fixture_boundary_mapping_v1, one call, nsplit=1. No mass weighting,
+      no dt, and no closure against micro_pre/post_state_update.
+    artifacts:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/manifest.json: 632d7ce6c6d054e77df8bf3f28ba8d1aa67edb8ec0965c5919320ec62e5aed77
+    # Bound so the HOLD is auditable: these are the exact numbers the
+    # current ledger produced, and a corrected ledger must be compared
+    # against them rather than quietly replacing them.
+    expected_values:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
       - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
 
   - id: G33-ENTHALPY-003
     text: >

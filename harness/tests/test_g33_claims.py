@@ -672,33 +672,49 @@ def test_NO_claim_binds_the_same_file_and_path_twice():
     assert seen, "no bindings at all -- this check would be vacuous"
 
 
-def test_G33_NCMIN_001_records_the_MEASURED_process_not_the_inferred_one():
-    """The claim withdrew "suppressed autoconversion" as unmeasured, and the
-    ledger then CONTRADICTED it: accretion carries 85.3% of the qr change and
-    autoconversion 14.7%. A withdrawal and a refutation are different states,
-    and the registry has to say which one it is."""
+def test_the_process_attribution_is_HELD_not_certified():
+    """The owner put the 85.3/14.7 share on HOLD, and the reason is in the
+    analyzer, not the measurement: the warm branch adds `paacw` twice
+    (F:2922) and a dict cannot hold a key twice, records are keyed (col, k) so
+    a second loop overwrites the first, a missing operand reads as 0.0, branch
+    comparability counts cells instead of comparing the branch MAP, and the
+    terms are summed in f64 while the reference accumulates f32 in source
+    order under a clamp.
+
+    So the figures live in their own claim, graded `hold`, bound so a
+    corrected ledger has to be compared against them rather than quietly
+    replacing them. G33-NCMIN-001 keeps the mechanism, which is unaffected.
+    """
+    held = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-004")
+    assert held["grade"] == "hold", (
+        f"the process share is graded {held['grade']!r}; the ledger does not "
+        f"reproduce the reference update, so it cannot be certified")
+    for token in ("paacw", "col, k", "0.0", "f32", "WARM_TERMS"):
+        assert token in held["text"], f"the HOLD does not name {token!r}"
+
+    mech = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-001")
+    assert mech["grade"] == "confirmed", "the mechanism is not what is on hold"
+    assert "85.3" not in mech["text"], (
+        "the process share is still asserted in the mechanism claim, which is "
+        "graded confirmed")
+    assert "G33-NCMIN-004" in mech["text"], \
+        "the mechanism claim must point at where the process question went"
+
+
+def test_the_process_shares_are_BOUND_so_a_rewrite_cannot_be_silent():
+    """Not a closure test. `sum(delta) == total_delta` restates how
+    total_delta is defined and was removed for saying so (owner P0-SCI-1 §4.6);
+    a real closure runs against micro_pre/post_state_update and needs the
+    corrected ledger first. What these bindings do is make the current numbers
+    immovable without a visible change."""
     ec = _chain()
-    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
-    paths = {w["path"] for w in claim["expected_values"]}
-    for q in ("columns.2.share.pracw", "columns.2.share.praut",
-              "columns.2.total_delta"):
-        assert q in paths, f"the measured process result is not bound: {q}"
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+    paths = {w["path"]: w["value"] for w in claim["expected_values"]}
+    assert set(paths) == {"columns.2.total_delta", "columns.2.share.pracw",
+                          "columns.2.share.praut"}, sorted(paths)
+    assert all(w["state"] == "value-matches" for w in
+               next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")["values"])
 
-    files = {w["file"].rsplit("/", 1)[-1] for w in claim["expected_values"]}
-    assert "g33_fixture_boundary_mapping_v1.qr_process_ledger.json" in files
-    assert "g33_fixture_boundary_mapping_v1.ncmin_locality.json" in files, \
-        "both analyses back this claim; binding one would drop half of it"
-
-
-def test_the_two_process_shares_SUM_to_the_whole():
-    """Reported shares that do not sum to 1 would mean a term moved that the
-    decomposition did not account for."""
-    ec = _chain()
-    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
-    share = {w["path"].rsplit(".", 1)[-1]: w["value"]
-             for w in claim["expected_values"] if ".share." in w["path"]}
-    assert set(share) == {"pracw", "praut"}, sorted(share)
-    assert abs(sum(share.values()) - 1.0) < 1e-12, share
 
 
 def _fallout_bindings(values):
