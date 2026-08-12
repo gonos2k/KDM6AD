@@ -879,14 +879,40 @@ def test_no_blocker_REPEATS_ITSELF():
     same long thing twice was appended to, whatever the words are.
     """
     for c in CLAIMS:
-        b = " ".join((c.get("migration_blocker") or "").split())
-        seen, dupes = set(), []
-        for i in range(0, max(0, len(b) - 60)):
-            w = b[i:i + 60]
-            if w in seen:
-                dupes.append(w)
-                break
-            seen.add(w)
-        assert not dupes, (
-            f"{c['id']} repeats {dupes[0]!r} -- a rewrite appended rather than "
+        w = _repeated_window(c.get("migration_blocker") or "")
+        assert w is None, (
+            f"{c['id']} repeats {w!r} -- a rewrite appended rather than "
             f"replaced, so both versions are live and they may disagree")
+
+
+#: Window width for the repeat check. Long enough that a shared turn of phrase
+#: is not flagged, short enough to catch a duplicated sentence.
+_W = 60
+
+
+def _repeated_window(text: str):
+    """The first `_W`-character window that occurs twice, or None.
+
+    A string of length L holds L - _W + 1 windows. The first version iterated
+    `range(L - _W)`, one short, so the window ENDING AT THE END was never
+    examined: a repeat of exactly _W characters occupying the final _W
+    characters was missed, and a blocker of exactly _W characters was not
+    checked at all (Codex).
+    """
+    b = " ".join(text.split())
+    seen = set()
+    for i in range(max(0, len(b) - _W + 1)):
+        w = b[i:i + _W]
+        if w in seen:
+            return w
+        seen.add(w)
+    return None
+
+
+def test_the_repeat_check_sees_the_LAST_window():
+    """The boundary the first version could not reach: a repeat exactly _W
+    long, ending the string, whose only duplicate window is the final one."""
+    p = "x" * _W
+    assert _repeated_window(p + " MIDDLE " + p) == p
+    assert _repeated_window(p) is None, "a single copy is not a repeat"
+    assert _repeated_window("short") is None
