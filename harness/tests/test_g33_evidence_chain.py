@@ -633,6 +633,20 @@ def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
 
 # ---- claim figures vs the pinned artifact (owner priority 7) ----------------
 
+def _published() -> Path:
+    """Where the store's published symlink actually POINTS.
+
+    Read whole, not by basename. The previous version took
+    `basename(readlink(...))` and glued it back onto an assumed
+    `number-003.bundles/` prefix, so the path it tested was RECONSTRUCTED
+    rather than the published one -- a link aimed at another bundle's store
+    yielded a path under number-003 that could exist and pass (Codex).
+    """
+    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
+    target = Path(os.readlink(link))       # raises if there is no link
+    return target if target.is_absolute() else (link.parent / target)
+
+
 def _leg() -> str:
     """The legacy bundle's path, RESOLVED, not written down.
 
@@ -643,16 +657,13 @@ def _leg() -> str:
     stops checking.
 
     `os.readlink`, not `Path.resolve`: resolve does NOT raise on a dangling
-    symlink, it returns the missing target's name, so the first version of this
-    produced a plausible path for a broken store and reported nothing (Codex).
-    readlink reads the link itself and raises when there is no link to read.
+    symlink, it returns the missing target's name, so an earlier version
+    produced a plausible path for a broken store and reported nothing.
     """
-    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
     try:
-        name = os.path.basename(os.readlink(link))
-    except OSError:                       # not a symlink, or not there at all
-        name = "absent"
-    return f"kdm6ad-g33m-migrate/number-003.bundles/{name}"
+        return str(_published().relative_to(ec.HOME))
+    except (OSError, ValueError):     # no link, or it points outside HOME
+        return "kdm6ad-g33m-migrate/number-003.bundles/absent"
 
 
 _LEG = _leg()
@@ -689,6 +700,16 @@ def test_the_bundle_these_checks_READ_is_actually_present():
     assert link.exists(), (
         f"{link.name} dangles: it names "
         f"{os.readlink(link)!r}, which is not there")
+    # The bundle under test must be number-003's OWN. Comparing `_LEG` to the
+    # link is vacuous -- `_LEG` is built from that link, so both sides move
+    # together and the assertion can never fail; the mutation that aimed the
+    # link at another bundle's store passed it. What actually binds them is the
+    # store layout: `dest.parent/f"{dest.name}.bundles"`, so number-003's link
+    # belongs under number-003.bundles and nowhere else.
+    home = f"kdm6ad-g33m-migrate/{link.name}.bundles/"
+    assert _LEG.startswith(home), (
+        f"the checks read {_LEG}, but {link.name} publishes into {home} -- "
+        f"the link points at a different bundle's store")
     assert _bundles_present(), (
         f"the store has number-003 but {_TRUTH['file']} is not there -- the "
         f"path is stale, and every `needs_bundle` test is skipping rather "
