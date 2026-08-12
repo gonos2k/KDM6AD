@@ -1410,47 +1410,48 @@ claims:
     # one this artifact carries, and binding a same-looking number
     # from the wrong table would pin the wrong quantity.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/manifest.json: 632d7ce6c6d054e77df8bf3f28ba8d1aa67edb8ec0965c5919320ec62e5aed77
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/manifest.json: b9597ee108f9020ae561bfd0457f984d3fe4b38a6dda09ffaa8d06a604d6ab89
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
 
   - id: G33-NCMIN-004
     text: >
-      The qr difference in the sea column decomposes by named process term:
-      the total moves by -1.1549e-06, of which pracw (accretion) carries
-      85.3193% and praut (autoconversion) 14.6807%, with no other term moving.
-      This CONTRADICTS the withdrawn "a higher droplet floor suppresses
-      autoconversion" reading as a DIRECT attribution.
+      The qr difference in the sea column decomposes by named process term,
+      against the update's own arithmetic. Accretion carries it and
+      autoconversion does not, which CONTRADICTS the withdrawn "a higher
+      droplet floor suppresses autoconversion" reading as a DIRECT attribution.
       .
-      HOLD (owner P0-SCI-1). The figures are what the current ledger computes,
-      and the ledger does not yet reproduce the reference update, so they are
-      recorded rather than certified. Five defects, all confirmed in the
-      analyzer rather than alleged: the warm branch adds paacw TWICE
-      (F:2922, `+paacw(i,k)+paacw(i,k)`) and a dict cannot hold a key twice, so
-      the multiplicity is structurally lost; records are keyed (col, k), so a
-      second internal loop would overwrite the first silently; a missing
-      operand reads as 0.0 through `.get(term, 0.0)`, making an uninstrumented
-      term indistinguishable from a zero rate; branch comparability is checked
-      by COUNTING cold and warm cells rather than comparing the (col, level)
-      branch map; and the terms are summed in Python f64 while the reference
-      accumulates f32 in source order under a positivity clamp. The repository
-      already carries the correct ordered form -- `g33_update_replay.WARM_TERMS`
-      with paacw twice and np.float32 accumulation -- which this analyzer
-      duplicated less carefully instead of reusing.
+      The share depends on the measure, and both are reported. Summing
+      per-level rates with equal weight gives pracw 85.3194% / praut 14.6806%.
+      Weighting by column mass gives pracw 86.9882% / praut 13.0118% under
+      operator rho_m*dz and the same under physical rho_d*dz -- 1+qv is
+      vertically constant on this fixture, so it cancels in the ratio, which is
+      measured rather than assumed. The mass-weighted pair is the
+      column-integrated statement; the unweighted pair is what the first
+      version of this ledger reported and is NOT a column share (owner §4.7).
+      Total qr change -4.4656e-02 kg/m2 under the operator measure.
       .
-      The shares are also UNWEIGHTED sums of per-level rates, so they are not a
-      column-integrated mass share; a mass-weighted decomposition under both
-      bases would be a different number. And "sum of deltas equals the total"
-      is a restatement of how total_delta is defined, not a closure against the
-      qr state update.
+      The decomposition is a source-order telescoping, C_j = F(W_1..W_j,
+      O_j+1..O_n) - F(W_1..W_j-1, O_j..O_n), so the terms sum to F(W) - F(O) by
+      construction rather than by assumption. It rests on a PRECONDITION that
+      now passes: all 12 cells in both runs replay their qr update bit-exactly
+      from their own operands through g33_update_replay -- f32 in source order,
+      times dtcld, clamped -- and the emitted cold_gate agrees with the branch
+      derived from the recorded temperature in every cell.
+      .
+      GRADE: the five defects the owner listed (P0-SCI-1) are fixed -- ordered
+      terms with paacw twice, (call, loop, col, k) keys, an exact field
+      universe, the branch MAP compared, and source-order f32 -- and the
+      figures moved when they were. The re-grade is the owner's; this stays
+      `hold` until then, with both measures bound so the change is auditable.
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
@@ -1468,14 +1469,22 @@ claims:
       g33_fixture_boundary_mapping_v1, one call, nsplit=1. No mass weighting,
       no dt, and no closure against micro_pre/post_state_update.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/manifest.json: 632d7ce6c6d054e77df8bf3f28ba8d1aa67edb8ec0965c5919320ec62e5aed77
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/manifest.json: b9597ee108f9020ae561bfd0457f984d3fe4b38a6dda09ffaa8d06a604d6ab89
     # Bound so the HOLD is auditable: these are the exact numbers the
     # current ledger produced, and a corrected ledger must be compared
     # against them rather than quietly replacing them.
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.total_delta: -6.929440905878437e-05
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.pracw: 0.8531936572759405
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.praut: 0.1468063427240594
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.total_delta: -0.04465581747357174
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.pracw: 0.8698817721107084
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.praut: 0.13011822788929156
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.total_delta: -0.044580031419154426
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.pracw: 0.8698817721107085
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.praut: 0.13011822788929162
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
 

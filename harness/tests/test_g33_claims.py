@@ -689,8 +689,21 @@ def test_the_process_attribution_is_HELD_not_certified():
     assert held["grade"] == "hold", (
         f"the process share is graded {held['grade']!r}; the ledger does not "
         f"reproduce the reference update, so it cannot be certified")
-    for token in ("paacw", "col, k", "0.0", "f32", "WARM_TERMS"):
-        assert token in held["text"], f"the HOLD does not name {token!r}"
+    # The corrected ledger reports BOTH measures, and they differ. Binding
+    # only one would hide that the first version's figure was not a column
+    # share at all (owner §4.7). Read through the CHAIN parser: this file's
+    # own reader does not parse expected_values.
+    ec = _chain()
+    got = {w["path"] for w in
+           next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+           ["expected_values"]}
+    for basis in ("unweighted", "operator", "physical"):
+        for term in ("pracw", "praut"):
+            assert f"columns.2.{basis}.share.{term}" in got, (basis, term)
+        assert f"columns.2.{basis}.total_delta" in got, basis
+    assert "85.3194" in held["text"] and "86.9882" in held["text"], (
+        "both measures must be stated; the weighted one supersedes the other "
+        "as the column statement, and the correction has to stay visible")
 
     mech = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-001")
     assert mech["grade"] == "confirmed", "the mechanism is not what is on hold"
@@ -710,8 +723,14 @@ def test_the_process_shares_are_BOUND_so_a_rewrite_cannot_be_silent():
     ec = _chain()
     claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
     paths = {w["path"]: w["value"] for w in claim["expected_values"]}
-    assert set(paths) == {"columns.2.total_delta", "columns.2.share.pracw",
-                          "columns.2.share.praut"}, sorted(paths)
+    want = {f"columns.2.{b}.{f}"
+            for b in ("unweighted", "operator", "physical")
+            for f in ("total_delta", "share.pracw", "share.praut")}
+    want |= {"replay.base.cold_gate_disagrees", "replay.got.cold_gate_disagrees"}
+    assert set(paths) == want, sorted(set(paths) ^ want)
+    # The replay is the precondition; binding it means a bundle whose cells
+    # stopped agreeing with their own operands cannot pass unnoticed.
+    assert paths["replay.base.cold_gate_disagrees"] == 0.0
     assert all(w["state"] == "value-matches" for w in
                next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")["values"])
 
