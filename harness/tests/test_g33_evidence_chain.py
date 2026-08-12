@@ -632,8 +632,27 @@ def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
 
 # ---- claim figures vs the pinned artifact (owner priority 7) ----------------
 
-_LEG = ("kdm6ad-g33m-migrate/number-003.bundles/"
-        "ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e")
+def _leg() -> str:
+    """The legacy bundle's path, RESOLVED, not written down.
+
+    This was a hardcoded identity digest. Re-producing the bundle -- which the
+    flat instrumented-analyses contract required -- moved it, the file stopped
+    existing, and `needs_bundle` turned TWELVE real tests into skips. The gate
+    still said "passed": a stale constant here does not fail, it quietly stops
+    checking, which is the failure mode this whole file exists to prevent.
+
+    The store is content-addressed and `dest` is a symlink onto the current
+    identity, so reading the link is the question this constant was trying to
+    answer.
+    """
+    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
+    try:
+        return f"kdm6ad-g33m-migrate/number-003.bundles/{link.resolve().name}"
+    except OSError:                       # no bundle on this host at all
+        return "kdm6ad-g33m-migrate/number-003.bundles/absent"
+
+
+_LEG = _leg()
 _TRUTH = {"file": f"{_LEG}/n12.rezero.defect_magnitude.json",
           "path": "rows.main/nr/1.of_surface_flux",
           "value": 0.150035513206531, "tolerance": 0.0}
@@ -643,6 +662,19 @@ _HERE = {_LEG: "matches"}
 
 def _bundles_present():
     return (ec.HOME / _TRUTH["file"]).is_file()
+
+
+def test_the_bundle_these_checks_READ_is_actually_present():
+    """`needs_bundle` skips when the bundle is missing, which is right on a
+    host that has none -- and indistinguishable from a stale path on a host
+    that has one. This says which case it is, and fails on the second."""
+    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
+    if not link.exists():
+        pytest.skip("no bundle store on this host")
+    assert _bundles_present(), (
+        f"the store has number-003 but {_TRUTH['file']} is not there -- the "
+        f"path is stale, and every `needs_bundle` test is skipping rather "
+        f"than checking")
 
 
 needs_bundle = pytest.mark.skipif(not _bundles_present(),
