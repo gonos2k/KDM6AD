@@ -396,7 +396,7 @@ _MAX_NSPLIT = 2 ** 31 - 1
 #: derived analysis, so a typo shipped as a new kind (owner §8.2).
 DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
                     "dual_ledger", "defect_magnitude", "internal_cap_enthalpy",
-                    "metric_trajectory")
+                    "metric_trajectory", "substep_schedule")
 
 #: Analyses that run the DRIVER over several configurations rather than
 #: reading one member stream. They analyse the bundle's own binary, so the

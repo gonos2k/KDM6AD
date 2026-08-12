@@ -316,3 +316,21 @@ def test_a_malformed_decomposition_is_REJECTED_not_a_CRASH(tmp_path, dec):
     e["decompositions"] = dec
     e["ran"]["decompositions"] = dec
     assert rm.validate(m), "must be rejected"
+
+
+def test_every_ANALYSIS_the_producer_RUNS_is_a_declared_derived_kind():
+    """Two hand-maintained lists in two modules, and a bundle is refused if they
+    disagree. Registering `substep_schedule` in `ANALYSES` without adding it
+    here made every instrumented publication fail validation (Codex).
+
+    They cannot be derived from one another -- the experiment imports the
+    manifest, so the dependency only runs that way -- which is exactly why the
+    agreement has to be asserted. `PRODUCER_MODULES` drifted the same way, and
+    was fixed by deriving it; this one is fixed by checking it.
+    """
+    import g33_refine_experiment as rx
+    produced = set(rx.ANALYSES) | {"metric_trajectory"}
+    declared = set(rm.DERIVED_ANALYSES)
+    assert produced == declared, (
+        f"produced but not declared: {sorted(produced - declared)}; "
+        f"declared but never produced: {sorted(declared - produced)}")
