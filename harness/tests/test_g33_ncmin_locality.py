@@ -1184,52 +1184,108 @@ def test_the_gated_SITES_are_counted_from_the_REFERENCE_not_asserted():
         f"report's caveat quotes this number")
 
 
-# ---- WHICH process carries the sign, decomposed (owner §7) ------------------
+# ---- WHICH process carries the sign, decomposed (owner §7, P0-SCI-1) -------
 
-def test_the_qr_change_DECOMPOSES_into_named_process_terms(drivers):
-    """§7 asked for a process-tendency ledger. The reference already emits one:
-    `micro_qr_operands` carries every operand of the qr update per cell, so the
-    decomposition needed reading, not new instrumentation."""
+def _dec(D):
     import g33_qr_process_ledger as pl
-    D = drivers["legacy"]
-    d = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)
+    base = nl.run(D, (1, 1, 1))
+    return pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
 
-    moved = {c: r for c, r in d.items() if r["total_delta"]}
-    assert set(moved) == {2}, (
-        f"only the sea column should move under the whole-domain gating, "
-        f"got {sorted(moved)}")
 
-    r = moved[2]
-    assert abs(sum(r["delta"].values()) - r["total_delta"]) < 1e-30
-    assert set(r["share"]) == {"praut", "pracw"}, (
-        f"terms moving: {sorted(r['share'])}")
+def test_the_update_REPLAYS_from_its_own_operands(drivers):
+    """The precondition. A decomposition of an update nobody can reproduce is
+    not evidence, so every cell's qr must replay bit-exactly from its operands
+    through `g33_update_replay` -- f32 in source order, times dtcld, clamped."""
+    r = _dec(drivers["legacy"])["replay"]
+    for leg in ("base", "got"):
+        assert r[leg]["cells"] == 12, r
+        assert r[leg]["cold_gate_disagrees"] == 0, (
+            "the emitted branch flag disagrees with the branch derived from "
+            "the recorded temperature")
+
+
+def test_the_warm_arm_adds_paacw_TWICE(drivers):
+    """F:2922 is `+paacw(i,k)+paacw(i,k)`, two separate f32 adds. The first
+    version of this ledger declared its terms in a DICT, which cannot hold a
+    key twice, so the multiplicity was structurally lost (owner P0-SCI-1).
+
+    The canonical ordered form already existed in `g33_update_replay` and is
+    now what the ledger uses."""
+    import g33_update_replay as ur
+    assert [n for _s, n in ur.WARM_TERMS].count("paacw") == 2, ur.WARM_TERMS
+    import g33_qr_process_ledger as pl
+    assert "paacw" in pl.OPERANDS
+
+
+def test_the_decomposition_TELESCOPES_to_the_whole_change(drivers):
+    """Not `sum(delta) == total_delta`, which restates a definition (owner
+    §4.6). Source-order telescoping makes the per-term contributions sum to
+    F(got) - F(base) by construction, so this checks it against the update's
+    own arithmetic under every basis."""
+    d = _dec(drivers["legacy"])["columns"]
+    moved = {c: r for c, r in d.items() if r["unweighted"]["total_delta"]}
+    assert set(moved) == {"2"}, f"only the sea column should move: {sorted(moved)}"
+    for basis in ("unweighted", "operator", "physical"):
+        b = moved["2"][basis]
+        assert abs(sum(b["delta"].values()) - b["total_delta"]) < 1e-30
+        assert set(b["share"]) == {"praut", "pracw"}, sorted(b["share"])
+
+
+def test_the_MASS_WEIGHTED_share_is_not_the_unweighted_one(drivers):
+    """The share the first ledger reported summed per-level rates with equal
+    weight, which is not a column-integrated mass share (owner §4.7). rho and
+    dz vary vertically here, and the two disagree: 85.32% unweighted against
+    86.99% weighted.
+
+    Operator and physical agree with each other because 1+qv is vertically
+    constant on this fixture, so it cancels in the ratio -- a property of the
+    fixture, measured, not an identity."""
+    m = _dec(drivers["legacy"])["columns"]["2"]
+    u = m["unweighted"]["share"]["pracw"]
+    o = m["operator"]["share"]["pracw"]
+    p = m["physical"]["share"]["pracw"]
+    assert abs(u - 0.8532) < 5e-4, u
+    assert abs(o - 0.8699) < 5e-4, o
+    assert abs(o - p) < 1e-9, "1+qv is vertically constant here, so it cancels"
+    assert abs(o - u) > 1e-2, (
+        "the weighted and unweighted shares must be reported as different "
+        "quantities; equality here would mean the weighting did nothing")
 
 
 def test_ACCRETION_not_autoconversion_carries_the_change(drivers):
-    """The leading candidate was wrong as a DIRECT attribution. Accretion
-    carries ~85% of the qr change and autoconversion ~15%.
+    """The leading candidate was wrong as a DIRECT attribution, under every
+    basis.
 
     Scope: this decomposes the DIRECT terms, not the causal chain. `pracw`
     consumes rain that `praut` produces, so a suppressed autoconversion may
     still be upstream of the accretion collapse. What is measured is that
     autoconversion is not where the change APPEARS."""
-    import g33_qr_process_ledger as pl
-    D = drivers["legacy"]
-    r = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)[2]
-    assert r["share"]["pracw"] > 0.8 > r["share"]["praut"]
-    assert r["share"]["praut"] > 0.1, "autoconversion is not negligible either"
+    m = _dec(drivers["legacy"])["columns"]["2"]
+    for basis in ("unweighted", "operator", "physical"):
+        s = m[basis]["share"]
+        assert s["pracw"] > 0.8 > s["praut"], (basis, s)
+        assert s["praut"] > 0.1, (basis, "autoconversion is not negligible")
 
 
-def test_the_branch_is_read_PER_CELL_not_per_column(drivers):
-    """`cold_gate` is `t(i,k) .le. t0c` and the update sits inside the k loop,
-    so one column carries warm cells and cold cells applying DIFFERENT operand
-    sets. Summing a column under one set would include terms its cells never
-    applied."""
+def test_a_MISSING_operand_is_refused_not_read_as_zero(drivers):
+    """`.get(term, 0.0)` made an uninstrumented term indistinguishable from a
+    zero rate -- the failure mode this repository keeps finding (owner §4.3)."""
     import g33_qr_process_ledger as pl
-    cells = pl.read_operands(nl.run(drivers["legacy"], (3,)), label="x")
-    branches, _ = pl.column_terms(cells, 1)
-    assert branches["cold"] and branches["warm"], (
-        f"this fixture must exercise both branches in one column: {branches}")
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                     if not (" micro_qr_operands " in l and " pracw " in l)) + "\n"
+    with pytest.raises(ra.RefineError, match="is missing"):
+        pl.read_cells(text, label="stripped")
+
+
+def test_a_DUPLICATE_operand_record_is_refused(drivers):
+    """Keyed (call, loop, col, k), so a repeat is corruption rather than an
+    update. Under the old (col, k) key a second internal loop overwrote the
+    first silently (owner §4.2)."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    dup = next(l for l in lines if " micro_qr_operands " in l and " pracw " in l)
+    with pytest.raises(ra.RefineError, match="duplicate"):
+        pl.read_cells("\n".join(lines + [dup]) + "\n", label="dup")
 
 
 def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
@@ -1240,4 +1296,4 @@ def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
     text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
                      if "micro_qr_operands" not in l) + "\n"
     with pytest.raises(ra.RefineError, match="no `micro_qr_operands` records"):
-        pl.read_operands(text, label="stripped")
+        pl.read_cells(text, label="stripped")
