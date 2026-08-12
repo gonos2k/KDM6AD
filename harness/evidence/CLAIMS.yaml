@@ -648,13 +648,21 @@ claims:
       measurement of both measures on the same stream, with the operator
       headlines shown unmoved
     scope: >
-      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The window-initial qv is
-      read from the FIRST call's pre-sed record; a cell absent from that call is
-      REFUSED rather than falling back to a per-call density, which would
-      silently restore the moving weight. This does not settle whether the
-      physical measure should be the canonical dry-air layer mass the host
-      dynamics carries -- that is a separate binding, and G33-BASIS-002 remains
-      the open compatibility question.
+      g33_fixture_multisubcycle_v1, legacy, h = 25 s. The window-initial qv
+      is read from `G33R INITIAL`, and rho and delz come from the union of all
+      calls after being verified identical in each -- they are forcing. The
+      measure is one immutable rho*dz per (col, k).
+      .
+      This scope previously described the FIRST implementation, which took qv
+      from the first call's pre-sed record and refused a cell absent from that
+      call. The text above corrects exactly that, so the two halves of this
+      claim contradicted each other and a reader had to decide which was
+      current (owner §6.2). The code matches the text: `window_cell_mass` reads
+      ("initial", "qv", col, k) and keys the measure (col, k).
+      .
+      This does not settle whether the physical measure should be the canonical
+      dry-air layer mass the host dynamics carries -- that is a separate
+      binding, and G33-BASIS-002 remains the open compatibility question.
     # Migrated to the reachable run on this claim's fixture. The six
     # figures below are PAIRED: a cap_interface value against the
     # dual_ledger physical residual for the same species and column.
@@ -675,7 +683,7 @@ claims:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
-    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:6ab12e012fc18e367e603a1fcfacca84804e1575dd641cb3dbb1b95e542c66a4]
 
   - id: G33-BASIS-004
     text: >
@@ -731,7 +739,7 @@ claims:
       own departure from the rho*dz budget is a separate known defect, and that
       defect dominates columns 2-3.
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
-    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
+    evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:6ab12e012fc18e367e603a1fcfacca84804e1575dd641cb3dbb1b95e542c66a4]
 
   - id: G33-PROTOCOL-003
     text: >
@@ -1423,7 +1431,7 @@ claims:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4d3438cd1b9f9f33795851e4e950f3d6247c4ae5c23c6cbb6c3fd21695cab242]
 
   - id: G33-NCMIN-004
     text: >
@@ -1489,7 +1497,7 @@ claims:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4d3438cd1b9f9f33795851e4e950f3d6247c4ae5c23c6cbb6c3fd21695cab242]
 
   - id: G33-ENTHALPY-003
     text: >

@@ -979,3 +979,38 @@ def test_the_SIGNED_oracle_figures_are_bound_with_their_SIGN():
     assert at("2,1", "1") > 0, "(2,1) rains MORE in the land column"
     assert abs(at("3", "2") + 0.2072) < 5e-5, at("3", "2")
     assert abs(at("2,1", "1") - 0.2067) < 5e-5, at("2,1", "1")
+
+
+def test_a_claims_TEXT_and_SCOPE_do_not_contradict_each_other():
+    """`G33-BASIS-005`'s text said the window-initial qv comes from
+    `G33R INITIAL` while its scope still said it comes from the FIRST call's
+    pre-sed record -- the implementation the text was correcting. A reader had
+    to decide which half of one active claim was current, which is what an
+    authority is for (owner §6.2).
+
+    The first version of THIS test matched a literal the rewritten scope no
+    longer contained, so it was vacuous: the mutation that removed the
+    superseding marker passed it. It now matches the description itself.
+    """
+    stale = re.compile(r"first\s+call'?s?\b[^.]*pre-sed", re.I | re.S)
+    marker = re.compile(r"\bpreviously\b|\bused to\b|\bsuperseded\b"
+                        r"|\bno longer\b", re.I)
+    guilty = []
+    for c in CLAIMS:
+        scope = c.get("scope", "") or ""
+        m = stale.search(scope)
+        if m and not marker.search(scope[max(0, m.start() - 200):m.end() + 120]):
+            guilty.append(c["id"])
+    assert not guilty, (
+        f"{guilty} describe the first-call pre-sed qv as the CURRENT source "
+        f"without marking it superseded, while the text says G33R INITIAL")
+
+
+def test_the_contradiction_guard_is_not_VACUOUS():
+    """It matched a literal the rewritten scope had already dropped. Proving it
+    fires on the shape it is meant to catch is what makes it a guard."""
+    stale = re.compile(r"first\s+call'?s?\b[^.]*pre-sed", re.I | re.S)
+    assert stale.search("the window-initial qv is read from the first call's "
+                        "pre-sed record")
+    assert stale.search("qv comes from the FIRST CALL pre-sed block")
+    assert not stale.search("qv is read from `G33R INITIAL`")
