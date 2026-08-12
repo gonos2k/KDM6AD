@@ -255,14 +255,34 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     for n in nsplits:
         member = out / f"n{n}.{mode}.txt"
         keep: dict = {}
-        path = out / f"n{n}.{mode}.metric_trajectory.json"
-        path.write_text(rm.json.dumps(
-            mtj.analysis(str(exe), n, mode=mode, width=width,
-                         baseline_stream=member.read_text(), keep=keep),
-            indent=2, sort_keys=True) + "\n")
-        made.append({"file": path.name, "nsplit": n,
-                     "analysis": "metric_trajectory", "sha256": rm.sha256(path),
-                     **_analyzer_pin("g33_metric_trajectory")})
+        # BOTH chains. `mtj.analysis` has taken a `chain` since it was written
+        # and nothing ever passed it, so every bundle carried the main chain
+        # and the ice one existed only as a default nobody exercised --
+        # G33-NUMBER-009 is entirely about ice and had no artifact to bind.
+        for chain in ("main", "ice"):
+            stem = f"n{n}.{mode}" + ("" if chain == "main" else f".{chain}")
+            got: dict = {}
+            path = out / f"{stem}.metric_trajectory.json"
+            path.write_text(rm.json.dumps(
+                mtj.analysis(str(exe), n, chain, mode=mode, width=width,
+                             baseline_stream=member.read_text(), keep=got),
+                indent=2, sort_keys=True) + "\n")
+            made.append({"file": path.name, "nsplit": n, "chain": chain,
+                         "analysis": "metric_trajectory",
+                         "sha256": rm.sha256(path),
+                         **_analyzer_pin("g33_metric_trajectory")})
+            # The arms are DENSITY profiles: they change what the driver runs,
+            # not which records the reduction reads. So both chains must see
+            # byte-identical arm streams, and the streams are published once.
+            # Checked rather than assumed -- if a chain ever did reach the
+            # driver, publishing one pass's streams would misdescribe the other.
+            if not keep:
+                keep = got
+            elif {k: v for k, v in got.items()} != keep:
+                raise ra.RefineError(
+                    f"chain {chain} produced different arm streams from main "
+                    f"-- the arm forcing is supposed to be chain-independent, "
+                    f"so one published set cannot describe both")
         for arm, text in sorted(keep.items()):
             if arm == "as-is":
                 continue                      # already published as the member
@@ -271,6 +291,18 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
                          "runtime_argv": [str(n), mode, str(width), arm]})
+            # The arm's OWN defect magnitude. `metric_trajectory` reports each
+            # arm as a ratio over the as-is baseline; a claim that also states
+            # the arm's residual as a percentage of ITS surface flux was
+            # therefore half-bindable, and binding half is what certified two
+            # false numbers on G33-TRAJECTORY-001. The stream is published
+            # precisely so this is re-derivable, so it is derived here.
+            dp = out / f"{ap.stem}.defect_magnitude.json"
+            dp.write_text(rm.json.dumps(dm.analysis(text), indent=2,
+                                        sort_keys=True) + "\n")
+            made.append({"file": dp.name, "nsplit": n, "arm": arm,
+                         "analysis": "defect_magnitude", "sha256": rm.sha256(dp),
+                         **_analyzer_pin("g33_defect_magnitude")})
     return made
 
 

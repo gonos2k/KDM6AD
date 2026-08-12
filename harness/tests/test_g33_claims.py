@@ -754,3 +754,24 @@ def test_the_PRECIP_guard_is_not_VACUOUS():
                  "value": 0.00047913007767785257}]
     assert _fallout_bindings(tempting) == ["rows.main/qr/1.operator.surface_out"]
     assert _fallout_bindings([{"path": "columns.1.total_delta"}]) == []
+
+
+def test_NUMBER_009_binds_BOTH_of_its_sources_and_the_RIGHT_chain():
+    """The text states each arm twice: as the arm's residual over ITS OWN
+    surface flux, and as the arm's ratio over the as-is baseline. Those live in
+    different artifacts -- `defect_magnitude` run on that arm's stream, and the
+    ice `metric_trajectory` -- so binding one leaves the other unbound, which
+    is how G33-TRAJECTORY-001 certified two false numbers. And the chain is
+    part of the identity: the main-chain file sits in the same bundle under an
+    almost identical name."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NUMBER-009")
+    files = {w["file"].rsplit("/", 1)[-1] for w in claim["expected_values"]}
+    assert "n12.rezero.ice.metric_trajectory.json" in files, \
+        "the ratios are unbound"
+    for arm in ("inverted", "x2", "uniform"):
+        assert f"n12.rezero.{arm}.defect_magnitude.json" in files, \
+            f"the {arm} percentages are unbound"
+    assert "n12.rezero.metric_trajectory.json" not in files, (
+        "bound the MAIN chain -- this claim is entirely about ice, and the "
+        "two files differ by one component of the name")
