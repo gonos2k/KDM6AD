@@ -375,6 +375,20 @@ def validate(man: dict) -> list:
 #: raw stream was run under.
 _RHO_ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
 
+#: The driver's second argument. It error-stops on anything else, so a `ran`
+#: block naming something else describes a run that could not have happened.
+_CARRY_MODES = ("carry", "rezero")
+
+#: The driver reads NSPLIT into a Fortran default INTEGER, so the read fails
+#: above int32 and it error-stops. MEASURED against the real binary:
+#:
+#:   2147483647  accepted
+#:   2147483648  ERROR STOP NSPLIT must be a positive integer
+#:
+#: "Positive integer" alone therefore admits identities the driver rejects
+#: (Codex). Python ints are unbounded; the run this describes is not.
+_MAX_NSPLIT = 2 ** 31 - 1
+
 #: The derived analyses a v2 bundle may carry. Declared here rather than
 #: imported, because the producer imports THIS module; a test asserts the two
 #: agree, so drift is a failure rather than a silently widened union.
@@ -382,14 +396,34 @@ _RHO_ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
 #: derived analysis, so a typo shipped as a new kind (owner §8.2).
 DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
                     "dual_ledger", "defect_magnitude", "internal_cap_enthalpy",
-                    "metric_trajectory")
+                    "metric_trajectory", "substep_schedule",
+                    "water_enthalpy_basis")
+
+#: Analyses that run the DRIVER over several configurations rather than
+#: reading one member stream. They analyse the bundle's own binary, so the
+#: bundle is where they belong -- but they have no single member to key on,
+#: which is why the derived variant's `nsplit` cannot describe them and a third
+#: tag is needed. `g33_ncmin_locality` is (driver, fixture) and runs the driver
+#: once per decomposition; the derived contract is (stream, basis) per member.
+MULTI_RUN_ANALYSES = ("ncmin_locality", "qr_process_ledger")
 
 #: What an `--nflux` bundle must actually contain. `instrumented: true` with a
 #: single arm_stream satisfied "analyses is non-empty" while carrying none of
 #: the instrumented analyses (owner §8.3).
+#: Every analysis an `--nflux` bundle must carry. FLAT, and the archive is
+#: brought up to it rather than exempted.
+#:
+#: Making it conditional on the bundle's own `producer_modules` looked like it
+#: spared four immutable archived bundles, but a manifest that omits a module
+#: pin then omits the requirement with it -- the synthetic manifest pins the
+#: placeholder "p", so the rule required NOTHING there and the existing
+#: instrumented-analyses regression went green while asserting nothing (Codex).
+#: A contract a manifest can switch off by leaving something out is not a
+#: contract, which is the same lesson as every other check here.
 REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
                               "extension_protocol", "dual_ledger",
-                              "defect_magnitude", "internal_cap_enthalpy")
+                              "defect_magnitude", "internal_cap_enthalpy",
+                              "substep_schedule", "water_enthalpy_basis")
 
 _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
                    "analyzer_commit", "analyzer_blob_sha")
@@ -407,7 +441,8 @@ def _analysis_violations(analyses, member_nsplits) -> list:
         if not isinstance(kind, str):
             bad.append(f"analyses[{i}] declares no `analysis` kind")
             continue
-        want = _ARM_FIELDS if kind == "arm_stream" else _DERIVED_FIELDS
+        want = (_ARM_FIELDS if kind == "arm_stream"
+                else () if kind in MULTI_RUN_ANALYSES else _DERIVED_FIELDS)
         missing = [k for k in want if not a.get(k)]
         if missing:
             bad.append(f"analyses[{i}] ({kind}) is missing {missing}")
@@ -432,6 +467,74 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                 if argv[3] != a.get("arm"):
                     bad.append(f"analyses[{i}] runtime_argv arm {argv[3]!r} "
                                f"contradicts arm {a.get('arm')!r}")
+        elif kind in MULTI_RUN_ANALYSES:
+            # Keyed on the FIXTURE and the decompositions it ran, not on a
+            # member: there is no single stream this concluded from.
+            if not isinstance(a.get("fixture"), str) or not a["fixture"]:
+                bad.append(f"analyses[{i}] ({kind}) needs the `fixture` it ran")
+            d = a.get("decompositions")
+            decomps_ok = (isinstance(d, list) and bool(d) and all(
+                isinstance(x, list) and x
+                and all(isinstance(v, int) and not isinstance(v, bool) and v > 0
+                        for v in x) for x in d))
+            if not decomps_ok:
+                bad.append(f"analyses[{i}] ({kind}) needs `decompositions` as a "
+                           f"non-empty list of positive-int lists")
+            elif len({tuple(x) for x in d}) != len(d):
+                bad.append(f"analyses[{i}] ({kind}) repeats a decomposition")
+            # The parameters the analysis DROVE THE BINARY AT. Without them
+            # the entry reads as though it shared the bundle's nsplit/mode,
+            # and it does not: this analysis chooses its own (Codex).
+            ran = a.get("ran")
+            if not isinstance(ran, dict) or not all(
+                    k in ran for k in ("nsplit", "carry", "rho", "width",
+                                       "decompositions")):
+                bad.append(f"analyses[{i}] ({kind}) needs `ran` with nsplit, "
+                           f"carry, rho, width and decompositions")
+            # TYPED, not merely present. Checking only that the keys exist
+            # accepted nsplit="twelve", nsplit=0, carry="banana" and
+            # rho="purple" -- a run identity that cannot describe any run the
+            # driver would accept (Codex). These are the driver's own
+            # vocabularies: it error-stops on anything else.
+            elif not isinstance(ran["nsplit"], int) or isinstance(
+                    ran["nsplit"], bool) or not 1 <= ran["nsplit"] <= _MAX_NSPLIT:
+                bad.append(f"analyses[{i}] ({kind}) ran.nsplit "
+                           f"{ran['nsplit']!r} is not a positive integer the "
+                           f"driver accepts (1..{_MAX_NSPLIT})")
+            elif ran["carry"] not in _CARRY_MODES:
+                bad.append(f"analyses[{i}] ({kind}) ran.carry "
+                           f"{ran['carry']!r} is not one of {_CARRY_MODES}")
+            elif ran["rho"] not in _RHO_ARMS:
+                bad.append(f"analyses[{i}] ({kind}) ran.rho {ran['rho']!r} "
+                           f"is not one of {_RHO_ARMS}")
+            elif not isinstance(ran["width"], int) or isinstance(
+                    ran["width"], bool) or ran["width"] < 1:
+                bad.append(f"analyses[{i}] ({kind}) ran.width "
+                           f"{ran['width']!r} is not a positive integer")
+            elif ran["decompositions"] != a.get("decompositions"):
+                bad.append(f"analyses[{i}] ({kind}) decompositions disagree "
+                           f"with `ran` -- one of them is not what executed")
+            # EXECUTABLE, not merely well-formed. The driver error-stops with
+            # "tile sizes must sum to B", so a decomposition summing to
+            # anything else names a run that could not have happened -- and a
+            # SET of them summing to different totals cannot all describe one
+            # domain (Codex).
+            # GUARDED on the shape check above. Without it this reached
+            # `sum(d)` on a malformed value and raised TypeError -- a validator
+            # that CRASHES on bad input is worse than one that misses it, since
+            # `validate()` is contracted to RETURN violations (Codex).
+            elif not decomps_ok:
+                pass
+            elif [d for d in ran["decompositions"] if sum(d) != ran["width"]]:
+                bad.append(
+                    f"analyses[{i}] ({kind}) decompositions "
+                    f"{[d for d in ran['decompositions'] if sum(d) != ran['width']]}"
+                    f" do not sum to the domain width {ran['width']} -- the "
+                    f"driver error-stops on tile sizes that do not cover B")
+            for k in ("analyzer", "analyzer_sha256", "analyzer_commit",
+                      "analyzer_blob_sha"):
+                if not a.get(k):
+                    bad.append(f"analyses[{i}] ({kind}) is missing {k}")
         else:
             if kind not in DERIVED_ANALYSES:
                 bad.append(f"analyses[{i}] unknown derived analysis {kind!r} "
@@ -443,7 +546,10 @@ def _analysis_violations(analyses, member_nsplits) -> list:
             if a.get("analyzer_sha256") and not _hexlen(a["analyzer_sha256"], 64):
                 bad.append(f"analyses[{i}] analyzer_sha256 is not a 64-hex sha")
         # An analysis of a member the bundle does not carry describes nothing.
-        if member_nsplits and a.get("nsplit") not in member_nsplits:
+        # A multi-run analysis reads no member, so it has no nsplit to check.
+        if kind in MULTI_RUN_ANALYSES:
+            pass
+        elif member_nsplits and a.get("nsplit") not in member_nsplits:
             bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not among "
                        f"the members {sorted(member_nsplits)}")
     return bad

@@ -583,7 +583,19 @@ def analysis(driver: str, fixture: str) -> dict:
             "causal_attribution_valid": bool(
                 sorted({k[1] for k in diff}) == sorted(predicted)),
         }
-    return {"f32_eps": F32_EPS, "partitions": rows}
+    # WHAT WAS RUN, reported by the code that ran it. A consumer recording
+    # this from the fixture instead would be recording an assumption: the
+    # analysis drives the binary at its OWN nsplit/mode/rho, which need not be
+    # -- and here is not -- the configuration the surrounding bundle used
+    # (Codex). The baseline is included because it was executed too.
+    return {"f32_eps": F32_EPS, "partitions": rows,
+            "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                    # The DOMAIN the decompositions cover. The driver
+                    # error-stops with "tile sizes must sum to B" on anything
+                    # else, so without it the record cannot be checked for
+                    # executability at all (Codex).
+                    "width": width,
+                    "decompositions": [list(t) for t in compositions(width)]}}
 
 
 def local_oracle(driver: str, fixture: str) -> dict:

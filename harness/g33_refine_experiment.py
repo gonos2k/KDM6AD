@@ -46,6 +46,8 @@ import g33_cap_interface as ci        # noqa: E402
 import g33_dual_ledger as dl          # noqa: E402
 import g33_defect_magnitude as dm     # noqa: E402
 import g33_metric_trajectory as mtj   # noqa: E402
+import g33_substep_schedule as sss    # noqa: E402
+import g33_water_enthalpy_basis as web  # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -210,6 +212,17 @@ ANALYSES = {
     "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
     "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    # WHICH sub-step schedule each chain ran, not how many records it emitted.
+    # The parser has always filed mstep and mstepi together; nothing reduced
+    # them, so `extension_protocol` could say 72 mstep records and not say that
+    # column 3 ran three of them while the ice chain ran one.
+    "substep_schedule": ("g33_substep_schedule", lambda s: sss.analysis(s)),
+    # The COLUMN totals under both bases. `dual_ledger` answers this per
+    # species; §9.2 asks it of the column, where the basis is the whole answer
+    # on a column that closes to roundoff and changes nothing on one that does
+    # not.
+    "water_enthalpy_basis": ("g33_water_enthalpy_basis",
+                             lambda s: web.analysis(s)),
     # Water destroyed INSIDE the column is not precipitation (owner §16-4).
     # Both ledgers, so the correction is visible rather than a silent swap.
     "internal_cap_enthalpy": ("g33_cap_interface",
@@ -255,14 +268,34 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     for n in nsplits:
         member = out / f"n{n}.{mode}.txt"
         keep: dict = {}
-        path = out / f"n{n}.{mode}.metric_trajectory.json"
-        path.write_text(rm.json.dumps(
-            mtj.analysis(str(exe), n, mode=mode, width=width,
-                         baseline_stream=member.read_text(), keep=keep),
-            indent=2, sort_keys=True) + "\n")
-        made.append({"file": path.name, "nsplit": n,
-                     "analysis": "metric_trajectory", "sha256": rm.sha256(path),
-                     **_analyzer_pin("g33_metric_trajectory")})
+        # BOTH chains. `mtj.analysis` has taken a `chain` since it was written
+        # and nothing ever passed it, so every bundle carried the main chain
+        # and the ice one existed only as a default nobody exercised --
+        # G33-NUMBER-009 is entirely about ice and had no artifact to bind.
+        for chain in ("main", "ice"):
+            stem = f"n{n}.{mode}" + ("" if chain == "main" else f".{chain}")
+            got: dict = {}
+            path = out / f"{stem}.metric_trajectory.json"
+            path.write_text(rm.json.dumps(
+                mtj.analysis(str(exe), n, chain, mode=mode, width=width,
+                             baseline_stream=member.read_text(), keep=got),
+                indent=2, sort_keys=True) + "\n")
+            made.append({"file": path.name, "nsplit": n, "chain": chain,
+                         "analysis": "metric_trajectory",
+                         "sha256": rm.sha256(path),
+                         **_analyzer_pin("g33_metric_trajectory")})
+            # The arms are DENSITY profiles: they change what the driver runs,
+            # not which records the reduction reads. So both chains must see
+            # byte-identical arm streams, and the streams are published once.
+            # Checked rather than assumed -- if a chain ever did reach the
+            # driver, publishing one pass's streams would misdescribe the other.
+            if not keep:
+                keep = got
+            elif {k: v for k, v in got.items()} != keep:
+                raise ra.RefineError(
+                    f"chain {chain} produced different arm streams from main "
+                    f"-- the arm forcing is supposed to be chain-independent, "
+                    f"so one published set cannot describe both")
         for arm, text in sorted(keep.items()):
             if arm == "as-is":
                 continue                      # already published as the member
@@ -271,6 +304,18 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
                          "runtime_argv": [str(n), mode, str(width), arm]})
+            # The arm's OWN defect magnitude. `metric_trajectory` reports each
+            # arm as a ratio over the as-is baseline; a claim that also states
+            # the arm's residual as a percentage of ITS surface flux was
+            # therefore half-bindable, and binding half is what certified two
+            # false numbers on G33-TRAJECTORY-001. The stream is published
+            # precisely so this is re-derivable, so it is derived here.
+            dp = out / f"{ap.stem}.defect_magnitude.json"
+            dp.write_text(rm.json.dumps(dm.analysis(text), indent=2,
+                                        sort_keys=True) + "\n")
+            made.append({"file": dp.name, "nsplit": n, "arm": arm,
+                         "analysis": "defect_magnitude", "sha256": rm.sha256(dp),
+                         **_analyzer_pin("g33_defect_magnitude")})
     return made
 
 
@@ -337,6 +382,7 @@ def producer_modules() -> tuple:
     """Every module whose bytes decide what a bundle contains."""
     return tuple(sorted(set(_CORE_MODULES) | set(_PARSER_MODULES)
                         | {mod for mod, _fn in ANALYSES.values()}
+                        | {mod for mod, _fn in MULTI_RUN.values()}
                         | {"g33_metric_trajectory"}))
 
 
@@ -402,7 +448,7 @@ def reachable_modules() -> set:
     so this is the check, not the source.
     """
     seeds = ({"g33_refine_experiment"} | {m for m, _fn in ANALYSES.values()}
-             | _build_script_modules())
+             | {m for m, _fn in MULTI_RUN.values()} | _build_script_modules())
     seen = set()
     todo = list(seeds)
     while todo:
@@ -525,6 +571,67 @@ def _analyzer_pin(module: str) -> dict:
             "analyzer_blob_sha": rm._git("rev-parse", f"HEAD:{path}")}
 
 
+#: Analyses that run the DRIVER over several decompositions, name -> (module,
+#: fn). A REGISTRY, mirroring ANALYSES, so `producer_modules()` derives their
+#: modules the same way it derives the per-member ones. The first version
+#: hardcoded `_analyzer_pin("g33_ncmin_locality")` inside the builder, which
+#: put the analyzer's bytes into a bundle while leaving the module out of the
+#: pin list -- the completeness check caught it as `unpinned_reachable`
+#: (Codex). A registry cannot drift the way a hand-written call can.
+MULTI_RUN = {
+    "ncmin_locality": ("g33_ncmin_locality",
+                       lambda exe, fixture: _ncmin().analysis(exe, fixture)),
+    # WHICH PROCESS carries the difference the one above measures (owner §7).
+    "qr_process_ledger": ("g33_qr_process_ledger",
+                          lambda exe, fixture: _ledger().analysis(exe, fixture)),
+}
+
+
+def _ledger():
+    import g33_qr_process_ledger as pl
+    return pl
+
+
+def _ncmin():
+    import g33_ncmin_locality as nl
+    return nl
+
+
+def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
+    """Analyses that run the DRIVER over several decompositions.
+
+    Emitted only where the fixture can support the question. `ncmin_locality`
+    compares decompositions that impose DIFFERENT thresholds, so on a
+    single-surface fixture there is no across-class pair and the analysis
+    refuses rather than reporting a one-directional result. Producing it there
+    anyway would put a vacuous table in the bundle.
+    """
+    made = []
+    if len(_ncmin().equivalence_classes(fixture)) < 2:
+        return made
+    for name, (mod, fn) in MULTI_RUN.items():
+        result = fn(str(exe), fixture)
+        # FROM THE RESULT, not from the fixture. Deriving the decompositions
+        # from the fixture recorded what the analysis was ASSUMED to have run,
+        # and omitting nsplit/mode/rho let the entry read as though it shared
+        # the bundle's configuration -- which it does not (Codex).
+        ran = result["ran"]
+        path = out / f"{fixture}.{name}.json"
+        path.write_text(rm.json.dumps(result, indent=2, sort_keys=True) + "\n")
+        made.append({
+            "file": path.name, "analysis": name, "sha256": rm.sha256(path),
+            "fixture": fixture, "ran": ran,
+            "decompositions": ran["decompositions"],
+            **_analyzer_pin(mod)})
+    return made
+
+
+def compositions_of(fixture: str) -> list:
+    """The decompositions a multi-run analysis covered, from the fixture."""
+    import g33_ncmin_locality as nl
+    return nl.compositions(fixture_dims(fixture)[0])
+
+
 def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
     """Run every analysis on every member, write it beside the member, digest it.
 
@@ -643,6 +750,10 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # arm as its own baseline.
         if nflux and rho_profile == "as-is":
             man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode, width)
+            # Analyses of the bundle's OWN binary across decompositions. They
+            # need the --nflux build, whose G33N records say which tiles the
+            # kernel actually received.
+            man["analyses"] += _multi_run_analyses(tmp, exe, fixture)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.

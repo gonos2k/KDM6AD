@@ -261,3 +261,4 @@ def test_tile_decomposition_invariance():
         "the final state depends on the tiling: "
         + "; ".join(f"{p} moves {len(v)}/{len(whole)} cells in columns "
                     f"{sorted({k[1] for k in v})}" for p, v in offenders.items()))
+

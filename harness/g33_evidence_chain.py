@@ -82,7 +82,7 @@ def claims() -> list[dict]:
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "migration_blocker"):
+                                "blocker_kind", "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -91,6 +91,12 @@ def claims() -> list[dict]:
                 # containing ": " is invalid YAML, which is how a one-line
                 # blocker broke the file (Codex).
                 folded = m.group(1) if m.group(2).strip() == ">" else None
+                if folded:
+                    # An EMPTY folded block must read as absent. Leaving the
+                    # ">" as the value made a blocker with no body truthy and
+                    # non-empty, so "declares a kind but no reason" passed on a
+                    # claim whose reason had been deleted.
+                    cur[folded] = ""
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
@@ -113,7 +119,7 @@ def bundles() -> dict:
         for mf in sorted(root.glob("*/manifest.json")):
             try:
                 out[f"{root.name}/{mf.parent.name}"] = json.loads(mf.read_text())
-            except (OSError, json.JSONDecodeError):
+            except (OSError, ValueError):
                 continue
     return out
 
@@ -165,11 +171,15 @@ def members_of(manifest: Path) -> list[dict]:
     try:
         man = json.loads(manifest.read_text())
     except OSError as e:
-        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
-                 "detail": str(e)}]
-    except json.JSONDecodeError as e:
-        return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-UNREADABLE",
-                 "detail": f"not JSON: {e}"}]
+        return [{"file": manifest.name, "scope": "bundle",
+                 "state": "MANIFEST-UNREADABLE", "detail": str(e)}]
+    except ValueError as e:
+        # ValueError, not json.JSONDecodeError: a non-UTF-8 manifest raises
+        # UnicodeDecodeError from `read_text`, which is a ValueError but NOT a
+        # JSONDecodeError -- so it escaped BOTH clauses and crashed the whole
+        # chain walk instead of reporting the corruption it is (Codex).
+        return [{"file": manifest.name, "scope": "bundle",
+                 "state": "MANIFEST-UNREADABLE", "detail": f"not JSON: {e}"}]
     if not isinstance(man, dict):
         return [{"file": manifest.name, "scope": "bundle", "state": "MANIFEST-SCHEMA-MISMATCH",
                  "detail": f"top level is {type(man).__name__}, not an object"}]
@@ -209,6 +219,13 @@ def members_of(manifest: Path) -> list[dict]:
                     "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
+        # The manifest's `ran` block against the one INSIDE the analysis it
+        # describes. The producer copies it across, so they are two records of
+        # one fact -- and two records never checked against each other are one
+        # record and one decoration (Codex).
+        if "ran" in an and p.is_file():
+            out.append({"file": an["file"], "scope": "bundle",
+                        "origin": "run_identity", "state": _ran_state(p, an)})
         # The ANALYZER the manifest names, by digest. It was recorded and never
         # checked, so an analyzer could change under a published analysis with
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
@@ -229,6 +246,67 @@ def members_of(manifest: Path) -> list[dict]:
     # masked by the module row at the same path (Codex).
     out.extend({"scope": "repo", "origin": "module_pin", **m}
                for m in _module_states(man))
+    out.extend({"scope": "repo", "origin": "commit_anchor", **c}
+               for c in _commit_states(man))
+    return out
+
+
+#: (repo, commit) -> reachable. `--contains` walks history and the bundles share
+#: a handful of commits, so the same question was asked once per bundle per
+#: walk. Measured, this is small -- one `chain()` goes from 670 git subprocesses
+#: to 660, the other 660 being the pre-existing `cat-file` blob resolutions --
+#: but it is per-bundle work that grows as bundles accumulate, and the answer
+#: cannot change within a run. Keyed on REPO as well as the commit because the
+#: regression points it at a throwaway repo, and a cache keyed on the sha alone
+#: would answer for the wrong one.
+_REACHABLE: dict = {}
+
+
+def _reachable(commit: str) -> bool:
+    """Is `commit` reachable from a ref, or merely still in the object database?
+
+    `git cat-file -e` answers the wrong question. A commit discarded by a
+    rebase or a squash survives as a loose object until gc, so every blob
+    pinned through it keeps resolving and every content digest keeps matching
+    -- the whole chain stays green while the anchor is already dangling.
+    """
+    key = (str(REPO), commit)
+    if key not in _REACHABLE:
+        r = subprocess.run(["git", "for-each-ref", "--contains", commit,
+                            "--count=1"], cwd=REPO, capture_output=True,
+                           text=True)
+        _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
+    return _REACHABLE[key]
+
+
+def _commit_states(man: dict) -> list:
+    """Every commit this manifest anchors a pin to, checked for reachability.
+
+    A bundle was produced, and the WIP commits it recorded were then squashed
+    into one. The bundle's content pins all still verified -- the bytes had not
+    changed -- but `repo_commit` and all three pin blocks named a commit no ref
+    contained, so nothing could fetch the history the pins point into and gc
+    would drop it (Codex). The point of pinning a commit is that a reader can
+    go and get it.
+    """
+    seen: dict = {}
+    if isinstance(man.get("repo_commit"), str) and man["repo_commit"]:
+        seen.setdefault(man["repo_commit"], set()).add("repo_commit")
+    for key, _field in _PIN_BLOCKS:
+        for e in man.get(key) or []:
+            c = e.get("commit")
+            if isinstance(c, str) and c:
+                seen.setdefault(c, set()).add(key)
+    out = []
+    for c, keys in sorted(seen.items()):
+        ok = _reachable(c)
+        out.append({
+            "file": f"{c[:12]} [{'+'.join(sorted(keys))}]",
+            "state": "matches" if ok else "COMMIT-UNREACHABLE",
+            "detail": "" if ok else
+                      f"no ref contains {c[:12]} -- this pin anchors to a "
+                      f"commit discarded by a rebase or squash. It resolves "
+                      f"today only because gc has not run"})
     return out
 
 
@@ -244,6 +322,22 @@ def _blob_at(commit: str, path: str) -> str | None:
 #: in the source tree. Joining a `repo` path under the bundle names a location
 #: NOTHING ever hashed, so a figure bound there would inherit a guarantee made
 #: about a different file entirely (Codex).
+def _ran_state(path: Path, an: dict) -> str:
+    """Does the analysis file agree with the manifest about what it ran?"""
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError):
+        # ValueError, not json.JSONDecodeError: a non-UTF-8 file raises
+        # UnicodeDecodeError from `read_text`, which is a ValueError but NOT a
+        # JSONDecodeError, so the narrower catch let it escape as a crash
+        # (Codex). Both mean the same thing here -- the file cannot be read as
+        # the JSON it claims to be.
+        return "RUN-IDENTITY-UNREADABLE"
+    if not isinstance(doc, dict) or "ran" not in doc:
+        return "RUN-IDENTITY-ABSENT"
+    return "matches" if doc["ran"] == an["ran"] else "RUN-IDENTITY-MISMATCH"
+
+
 def _analyzer_state(an: dict) -> dict:
     """Whether the analyzer this analysis ran can still be RECOVERED.
 
@@ -394,7 +488,7 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
         return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
     try:
         doc = json.loads(f.read_text())
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):
         return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
     if any("." in str(k) for k in _keys_of(doc)):
         return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
@@ -449,6 +543,11 @@ def chain() -> list[dict]:
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
+            # DECLARED, not sniffed out of the prose. The kinds were inferred
+            # by substring until rewriting nine blockers changed the wording
+            # and every one of them stopped classifying -- the same failure as
+            # inferring a member's identity from its path.
+            "blocker_kind": c.get("blocker_kind", ""),
             "evidence_kind": c.get("evidence_kind", "?"),
             "evidence": c["evidence"], "artifacts": arts,
             # A run that names this claim's finding, if one was ever published.
@@ -516,6 +615,8 @@ FAILING_STATES = frozenset({
     "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
+    "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
+    "COMMIT-UNREACHABLE",
 })
 
 

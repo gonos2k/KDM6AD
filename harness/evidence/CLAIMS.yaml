@@ -56,6 +56,11 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
+    migration_blocker: >
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: measurement
     scope: all refinement bundles
@@ -69,7 +74,36 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
+    artifacts:
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/manifest.json: 4c1fb892ca785ebc90bdf0d38a797b9da31fa25e107a88a9de99174aa2acafc5
+    # A REFINEMENT CHAIN, because the schedule is a property of the step the
+    # run was made at: dtcld = 300/nsplit, so 12/24/48 is 25 / 12.5 / 6.25 s.
+    # The claim is about where each chain REACHES one sub-step, which no single
+    # member can answer -- main goes 3 -> 2 -> 1 across these three while the
+    # ice chain is already at 1 in the first.
+    expected_values:
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#delt: 25.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.2.substeps: 2.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.3.substeps: 3.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#delt: 12.5
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.3.substeps: 2.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#delt: 6.25
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -100,6 +134,20 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
+    migration_blocker: >
+      a member-to-member SPREAD across the f64 members. The pinned bundles
+      are f32 and each holds one member stream, so the spread has no members
+      to range over. Needs an f64 multi-member sweep
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -115,6 +163,11 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, legacy
@@ -164,6 +217,11 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: source + hypothesis test against an independently emitted accumulator
     scope: module_mp_kdm6.F:1221-1224; measured on g33_fixture_multisubcycle_v1
@@ -215,19 +273,19 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/manifest.json: 97587a90ebabe7a551074f27db9e6b4d40f1b57530643c9845fc83009865bd99
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/manifest.json: 65e09a1220905ed01e7d7585b54609fc0aaeedacda5eed4761848db11e6f3adc
     # The figures the text above publishes, bound to the exact path in
     # the exact bundle that produced them. Legacy and conservative
     # nr/1 are the SAME value, which is what "identical to the last
     # digit" asserts -- so the two arms are declared separately.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 
@@ -287,13 +345,13 @@ claims:
     # figure is stated in the artifact as EXACTLY 0.0 residual --
     # binding it would bind a different number than the claim makes.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
     evidence: [FINDING_density_falsification_v1.md]
     evidence_sha256: [FINDING_density_falsification_v1.md:15b9c15dfa68b3d52606e2884686a1ff64fffc7ee4539459386bf09ea2e81f1c]
 
@@ -312,6 +370,11 @@ claims:
     evidence_kind: measurement
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
+    migration_blocker: >
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: measurement by g33_evidence_chain.py over the registry and this host
     scope: >
@@ -363,7 +426,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -372,8 +435,24 @@ claims:
       g33_fixture_multisubcycle_v1, legacy, h = 25 s for the numbers. The bundle
       change applies to future --nflux bundles and does not retrofit the ones
       already published.
+    # Migrated. The text names these quantities directly -- "ratios
+    # -28.58/-28.90 and 1.0000, 100.00% explained" -- and the artifact
+    # holds them at cap_interface rows.ice/{2,3} and rows.main/{1,2,3}.
+    # Bound to the artifact's EXACT values: 1.0000 and 100.00% are
+    # presentations of figures that are 1.0 only to within double
+    # roundoff.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
     evidence: [FINDING_bundle_analyses_v1.md]
-    evidence_sha256: [FINDING_bundle_analyses_v1.md:81210e5f2cc451832e6787ac53dd051d9c904153cbd7055ac19095aa5885878c]
+    evidence_sha256: [FINDING_bundle_analyses_v1.md:aa6cfb0ca3f4ea7d15c819235550d04adea9f177ab6cc3eb4a11aa9e8a0c9a21]
 
   - id: G33-COMPARE-001
     text: >
@@ -425,6 +504,33 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: analysis-not-carried
+    migration_blocker: >
+      the SPREADS are pinned and I was wrong to say otherwise: dual_ledger
+      stores `humidity.N.spread` outright -- 2.6146e-5 in column 2 and
+      7.1731e-4 in column 3, the claim's 2.6e-5 and 7.2e-4 -- alongside
+      `max_qv_change` 0.0, which is the sentence about sedimentation leaving
+      qv unchanged. The three `ratio_divergence` values (6.4e-14, 3.1e-14,
+      1.0e-14) carry "the ratios agree to 1e-14".
+
+      Missing is the sensitivity triple, and only that. It is NOT established
+      that it cannot be reproduced -- an earlier version of this blocker said
+      so and was wrong. What was shown is narrower: re-running the closure
+      with a substituted qv profile is the wrong instrument. Substituting qv
+      under the physical weighting breaks the matched mass control, by 1.1e3x
+      its gamma_n threshold on main/qr/3 and 9.18e5x on ice/qi/3, so
+      `usable()` excludes those rows by design and the divergence cannot be
+      read off `analysis()` at all. A uniform profile, which leaves the
+      control intact, gives 1.4485e-13 down to 5.8604e-16 against the claimed
+      2.2e-15.
+
+      So the sweep is a WEIGHTING sensitivity, not a re-run, and the artifacts
+      do not record which weighting calculation produced 2.2e-15 / 3.7e-4 /
+      1.4e-2. Binding the pinned four-fifths and leaving the triple unbound is
+      the partial binding that made G33-TRAJECTORY-001 certify two false
+      numbers, so this stays unpinned until the method is recovered rather
+      than guessed at
+
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
@@ -496,13 +602,13 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     # R / window_initial_inventory, the three figures the
     # text publishes as 0.2173% / 0.4379% / 0.6884%.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -560,14 +666,14 @@ claims:
     # already bound by G33-NUMBER-003 against the same bundle; 0.0717
     # and 0.065 are not in it and are NOT invented here.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
     evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 
@@ -592,10 +698,28 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      the basis-parameterised water/enthalpy ledger figures are not among
-      the analyses either pinned bundle carries
+    artifact_status: pinned
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
+    # Both halves. The water column is where the basis MATTERS -- 213.6x on
+    # column 1, which closes to roundoff, and 1.0x on columns 2 and 3, which
+    # are dominated by the precipitation-diagnostic departure. The enthalpy
+    # half is the opposite statement: basis-invariant, so its worst difference
+    # across all six rows is bound rather than the six rows separately.
+    #
+    # P_surface is prec[1], the TOTAL. Summing the three prec slots
+    # double-counts and column 2 reads 1.56e-01 instead of 6.83e-02.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.1.operator.relative: 4.570254565785757e-09
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.1.physical.relative: 9.762623735318004e-07
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.1.basis_factor: 213.61225277042158
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: 0.06827287428299673
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.2.physical.relative: 0.06836391940849848
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.2.basis_factor: 1.0013335475686047
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.17130822175278065
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.3.physical.relative: 0.17157744480605988
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#water.3.basis_factor: 1.001571571116229
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.water_enthalpy_basis.json#enthalpy.worst_basis_difference: 1.9892399359677793e-16
     grade: confirmed
     basis: measurement on both bases over the same member
     scope: >
@@ -653,10 +777,17 @@ claims:
       the metric term. The OFFSET arms separate gradient from magnitude
       directly: adding a constant to every level cancels out of
       (rho_below - rho_above), so a +/-10% absolute density shift leaves the
-      metric term at exactly 1.0 (11 of 12 metric ratios bit-exact, the twelfth
-      5.8e-7 from f32 roundoff on the offset addition) while a doubled gradient
-      puts it at exactly 2.0. The residual follows the GRADIENT; the 2.25-6.68%
-      it moves under an offset is trajectory by construction. Stated precisely
+      metric term at exactly 1.0. CORRECTED against the pinned artifact: this
+      said "11 of 12 metric ratios bit-exact, the twelfth 5.8e-7". The run
+      carries THIRTEEN metric ratios -- inverted 2, offset+ 2, offset- 3,
+      uniform 3, x2 3, the short arms being the not-comparable columns named
+      below -- of which TWELVE are bit-exact and the THIRTEENTH, offset+
+      column 2, is 1.0000005804669767: 5.8e-7 from f32 roundoff on the offset
+      addition. A doubled gradient
+      puts it at exactly 2.0. The residual follows the GRADIENT; the 2.20-6.68%
+      it moves under an offset is trajectory by construction (CORRECTED from
+      2.25%: the smallest offset-arm trajectory ratio is offset+ column 2 at
+      2.20%, not offset+ column 1 at 2.25%). Stated precisely
       (owner §8): the DIRECT metric source term depends on the gradient only --
       a uniform offset leaves it at exactly 1.0 -- while the TOTAL residual is
       gradient-dominant but measurably magnitude-sensitive THROUGH the
@@ -675,10 +806,7 @@ claims:
     status: active
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      no figure of this claim was located in either pinned bundle; not yet
-      traced to an analysis that emits them
+    artifact_status: pinned
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -691,6 +819,54 @@ claims:
       term is not further decomposed -- it is everything the perturbation did to
       the run, and its size is measured, not apportioned. The metric
       counterfactual is defined only where the sub-step schedule holds.
+    # Migrated. Each figure is bound to the quantity the text NAMES.
+    #
+    # An earlier binding took `actual_over_baseline` -- the TOTAL --
+    # for a claim about the decomposed TRAJECTORY term, and computed
+    # departures by hand to justify it. The artifact stores
+    # `trajectory_over_metric` outright: doing arithmetic to defend a
+    # binding was the signal that the wrong field had been chosen
+    # (Codex). It was also incomplete -- 5 of 13 figures.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
+    expected_values:
+      # the trajectory response, "measured at 1.04%/0.81% (inverted) and
+      # 0.58%/0.45%/2.04% (x2) of the metric term"
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.1.trajectory_over_metric: 0.010364583582156245
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.008092172377406054
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.1.trajectory_over_metric: 0.005847910326586326
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.0045428114297295565
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.02036492551370149
+      # "the metric term is EXACTLY 0/-1/+2 by construction"
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.1.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.1.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      # "a +/-10% absolute density shift leaves the metric term at exactly
+      # 1.0 (11 of 12 metric ratios bit-exact..."
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset+.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      # "...the twelfth 5.8e-7 from f32 roundoff on the offset addition"
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000005804669767
+      # "the 2.25-6.68% it moves under an offset is trajectory by
+      # construction" -- the ends of that range
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset+.1.trajectory_over_metric: 0.022490700238730173
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.06683178521350588
+
+      # the remaining metric ratios, so "twelve of THIRTEEN bit-exact"
+      # is checked rather than asserted -- a partial binding let two
+      # wrong numbers pass as verified (owner)
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.uniform.1.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      # every offset-arm trajectory ratio, so the 2.20-6.68% RANGE is
+      # bound at both ends and in between
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.02203280763718808
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.1.trajectory_over_metric: 0.02553040486268832
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.024971554676023286
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353dbbbc763e271a987500f48ecd4cbae8ce685d3b3799552b69]
 
@@ -714,11 +890,56 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      its ice-chain density-arm matrix is in neither pinned bundle -- the
-      conservative metric_trajectory carries the same MAIN-chain arms as
-      legacy
+    artifact_status: pinned
+    artifacts:
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/manifest.json: a0d5db775ad60454298aa5b53ea1a701d61ba6c88f6f69251c36f92a919e1a08
+    # Every figure the text publishes. The percentages and the ratios come
+    # from DIFFERENT artifacts -- an arm's residual as a fraction of ITS own
+    # surface flux is `defect_magnitude` run on that arm's stream, while the
+    # ratio over the as-is baseline is `metric_trajectory`. Binding only the
+    # ratios would have left the eight percentages unbound, which is exactly
+    # how G33-TRAJECTORY-001 certified two false numbers.
+    #
+    # `comparable` is true for all six rows -- the claim's "no ice column
+    # changes its sub-step schedule" -- and is a boolean, so it is read in
+    # this same artifact rather than bound here, which takes floats.
+    expected_values:
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: -0.07031193241925665
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: -0.07929657660689306
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.11912310379409295
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.13265305995533935
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.9882310767857814
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.011768923214218614
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.actual_over_baseline: -1.0223392439128696
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.metric_over_baseline: -0.9999996481135064
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.trajectory_over_metric: 0.022339603660368006
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.0117719207421003
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.005885960371050107
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.3.actual_over_baseline: 1.9639272724434371
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.018036363778281436
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.actual_over_baseline: 0.9877970211607088
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000008923722377
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.012203860321142707
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.actual_over_baseline: 1.0291939948540039
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.metric_over_baseline: 0.9999992006996976
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.trajectory_over_metric: 0.029194817489732572
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.actual_over_baseline: 1.0122978990090625
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.01229789900906251
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.actual_over_baseline: 0.9404924923752421
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.05950750762475787
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -758,6 +979,11 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
+    migration_blocker: >
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: confirmed
     basis: >
       each admitted mixture reproduced as a chain the old path accepted, plus a
@@ -787,6 +1013,16 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-instrumentation
+    migration_blocker: >
+      the published triple is TOTAL surface precipitation, which the pinned
+      bundle does not carry -- dual_ledger covers only the four instrumented
+      species (qr/nr/qi/ni), with no qs/qg and no `rain` accumulator. Do NOT
+      bind main/qr/*.operator.surface_out: it reproduces column 1 to three
+      figures (4.791e-4 against the claimed 4.8e-4) and then departs by 85x
+      and 560x in columns 2 and 3, so that column-1 agreement is a
+      coincidence, not the quantity. Needs qs/qg instrumentation, plus an
+      f64 leg for the 2.0e-7/~0/0.0 half
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1
@@ -811,6 +1047,24 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
+    migration_blocker: >
+      the figures are f64 and every pinned run is f32. Here the nearest
+      pinned field DISAGREES rather than being absent -- internal_cap_enthalpy
+      column 1 gives residual -48.336 and dH -81.99 against the claimed
+      -42.09 -- so neither may be bound. `eta` alone is pinned
+      (all_charged_at_surface.1.eta = 0.41796), but the claim's eta sentence
+      is about the different regime where H_out ~ 0. Needs an f64 member
+      sweep
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -857,6 +1111,21 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-f64
+    migration_blocker: >
+      R_W is quoted at f64 and every pinned run is f32. The pinned bundle
+      also carries no column-water total -- dual_ledger rows are per species
+      -- so W_final, W_initial and P_surface would each have to be summed by
+      the reader. Needs an f64 run of a water-column-ledger analysis
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64
@@ -889,6 +1158,11 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: no-figure
+    migration_blocker: >
+      the text publishes no numeric figure, so expected_values has nothing
+      to bind; pinning would assert a bundle is the evidence with no
+      reproducible check behind it
     grade: confirmed
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
@@ -921,6 +1195,22 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: needs-derived-field
+    migration_blocker: >
+      principally a SOURCE claim -- module_big_step_utilities_em.F:4856 and
+      Registry.EM_COMMON:122 -- carrying one measured figure, the 0.10%
+      column-mean qv. That figure CHECKS OUT: the window-initial qv is
+      exactly 1.000e-3 in column 1 (and 1.020e-3, 1.040e-3 in columns 2 and
+      3), vertically constant, which is also why the physical basis is a
+      per-column constant here and the ratios agree to roundoff.
+
+      It still cannot bind. `G33R INITIAL` carries qv in the STREAM, but no
+      pinned JSON holds it: dual_ledger stores 1+qv as
+      `humidity.N.min`/`max` (1.0010000000474975 in column 1), so binding
+      0.10% would take a subtraction the artifact does not perform. Needs a
+      derived qv field, which is a one-line addition to the humidity block --
+      and re-producing the archive, since every instrumented bundle would
+      then be missing it
     grade: confirmed
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
@@ -949,6 +1239,11 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
+    blocker_kind: coincidental-match
+    migration_blocker: >
+      1 of 8 figures match a unique path, but the match is COINCIDENTAL --
+      it lands in a bundle for a different fixture or quantity, and a
+      unique number is a candidate, not a binding
     grade: confirmed
     basis: measurement with a matched mass control
     scope: g33_fixture_multisubcycle_v1, legacy, main chain
@@ -988,14 +1283,14 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     # The ice cap share the text publishes as 100.0000%.
     # Bound to the artifact's EXACT value: it is 1.0 to
     # within double roundoff, not exactly 1.0, and the
     # percentage is the rounded presentation of that.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1009,10 +1304,23 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
-    artifact_status: historical_unavailable
+    artifact_status: pinned
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
+    # Migrated. The text quotes the SAME cap_interface quantities as
+    # G33-CHAIN-002 but rounded (-28.6/-28.9 for -28.575.../-28.898...),
+    # so the binding takes the artifact's exact values. Two claims may
+    # cite one measurement; what must not happen is a claim citing a
+    # number no artifact holds.
+    artifacts:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
+    expected_values:
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1052,14 +1360,20 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and it rains ~21% LESS than the per-column answer. The PROCESS
-      carrying that sign is NOT measured (owner §7): ncmin gates 18 sites in the
-      reference -- autoconversion (praut), three accretion branches, graupel
-      melting/evaporation (pgeml), and the max(ncmin,nci) floors that set the
-      diameters those rates consume -- and a final-state comparison cannot say
-      which of them carries it. Suppressed autoconversion is the leading
-      candidate and is no longer stated as the mechanism; an earlier version of
-      this text asserted it. The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH
+      PROCESS carries that sign is now MEASURED, not inferred (owner §7). The
+      reference emits every operand of the qr update per cell
+      (`micro_qr_operands`, with `cold_gate` giving each cell's branch), so the
+      change decomposes exactly: in the sea column the total moves by
+      -1.1549e-06, of which ACCRETION (pracw) carries 85.3% and autoconversion
+      (praut) 14.7%. The two sum to the whole and no other term moves. So the
+      earlier "suppressed autoconversion" reading is WRONG as a direct
+      attribution -- it was withdrawn as unmeasured before this, and the
+      measurement now contradicts it. SCOPE: this decomposes the DIRECT terms,
+      not the causal chain. pracw consumes rain that praut produces, so a
+      suppressed autoconversion may still be upstream of the accretion
+      collapse; what is established is that autoconversion is not where the
+      change appears. The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1077,11 +1391,7 @@ claims:
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
-    artifact_status: historical_unavailable
-    migration_blocker: >
-      needs a MULTI-RUN analysis: the producer's contract is (stream,
-      basis) per member, and g33_ncmin_locality is (driver, fixture) and
-      runs the driver once per decomposition
+    artifact_status: pinned
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -1101,6 +1411,38 @@ claims:
       decomposition with haloes and per-rank surface patterns: this is a
       sequential multi-call tile experiment that PREDICTS rank sensitivity
       rather than demonstrating it.
+    # Migrated once the producer could carry a MULTI-RUN analysis:
+    # this claim's figures come from running the driver once per
+    # decomposition, which the per-member (stream, basis) contract had
+    # no shape for. The bundle analyses its OWN binary.
+    #
+    # The analysis drove the binary at nsplit=1/rezero/as-is, which the
+    # manifest entry records in `ran` -- NOT the bundle's own n12 members.
+    # It chooses its own configuration, and the entry says so rather than
+    # letting a reader assume it shares the bundle's.
+    #
+    # The signed oracle figures (-20.72% / +20.67% against the
+    # per-column direct sum) are NOT bound here: they come from
+    # local_oracle, a different table from the whole-domain-baseline
+    # one this artifact carries, and binding a same-looking number
+    # from the wrong table would pin the wrong quantity.
+    artifacts:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/manifest.json: 632d7ce6c6d054e77df8bf3f28ba8d1aa67edb8ec0965c5919320ec62e5aed77
+    expected_values:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      # WHICH PROCESS carries that difference (owner §7), from the
+      # ledger analysis in the same bundle. Accretion, not
+      # autoconversion: the two shares sum to 1 and no other term
+      # moves.
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/eea7c347f19123ff9feb22e5c97a41bacfa96cec46c341863143d576affded74/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
 
@@ -1160,15 +1502,15 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     # Gross destruction share (57.8080% / 48.0157%) and the
     # departure-temperature correction (-14.5767 /
     # -21.8481 J m^-2), event-local as the text states.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 
@@ -1194,6 +1536,11 @@ claims:
     evidence_kind: mixed
     run_support: [unspecified]
     artifact_status: historical_unavailable
+    blocker_kind: no-fixture
+    migration_blocker: >
+      run_support is [unspecified] -- no fixture named, so nothing can be
+      tied to a run at all; that must be resolved before any bundle can be
+      called its evidence
     grade: conditional-confirmed
     basis: >
       construction, with the resolvable-pin case proved by falsifying the

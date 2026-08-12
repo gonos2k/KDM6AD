@@ -1182,3 +1182,62 @@ def test_the_gated_SITES_are_counted_from_the_REFERENCE_not_asserted():
     assert len(sites) == 18, (
         f"the reference now has {len(sites)} ncmin sites, not 18 -- the "
         f"report's caveat quotes this number")
+
+
+# ---- WHICH process carries the sign, decomposed (owner §7) ------------------
+
+def test_the_qr_change_DECOMPOSES_into_named_process_terms(drivers):
+    """§7 asked for a process-tendency ledger. The reference already emits one:
+    `micro_qr_operands` carries every operand of the qr update per cell, so the
+    decomposition needed reading, not new instrumentation."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    d = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)
+
+    moved = {c: r for c, r in d.items() if r["total_delta"]}
+    assert set(moved) == {2}, (
+        f"only the sea column should move under the whole-domain gating, "
+        f"got {sorted(moved)}")
+
+    r = moved[2]
+    assert abs(sum(r["delta"].values()) - r["total_delta"]) < 1e-30
+    assert set(r["share"]) == {"praut", "pracw"}, (
+        f"terms moving: {sorted(r['share'])}")
+
+
+def test_ACCRETION_not_autoconversion_carries_the_change(drivers):
+    """The leading candidate was wrong as a DIRECT attribution. Accretion
+    carries ~85% of the qr change and autoconversion ~15%.
+
+    Scope: this decomposes the DIRECT terms, not the causal chain. `pracw`
+    consumes rain that `praut` produces, so a suppressed autoconversion may
+    still be upstream of the accretion collapse. What is measured is that
+    autoconversion is not where the change APPEARS."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    r = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)[2]
+    assert r["share"]["pracw"] > 0.8 > r["share"]["praut"]
+    assert r["share"]["praut"] > 0.1, "autoconversion is not negligible either"
+
+
+def test_the_branch_is_read_PER_CELL_not_per_column(drivers):
+    """`cold_gate` is `t(i,k) .le. t0c` and the update sits inside the k loop,
+    so one column carries warm cells and cold cells applying DIFFERENT operand
+    sets. Summing a column under one set would include terms its cells never
+    applied."""
+    import g33_qr_process_ledger as pl
+    cells = pl.read_operands(nl.run(drivers["legacy"], (3,)), label="x")
+    branches, _ = pl.column_terms(cells, 1)
+    assert branches["cold"] and branches["warm"], (
+        f"this fixture must exercise both branches in one column: {branches}")
+
+
+def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
+    """A stream without the stage would otherwise decompose to all-zero, which
+    reads as "no process moved" -- the strongest possible null from a run that
+    measured nothing."""
+    import g33_qr_process_ledger as pl
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                     if "micro_qr_operands" not in l) + "\n"
+    with pytest.raises(ra.RefineError, match="no `micro_qr_operands` records"):
+        pl.read_operands(text, label="stripped")

@@ -58,3 +58,13 @@ docs/*복사본*
 
 # OS
 .DS_Store
+
+# Generated per-run by the column-separability permutation tests. The build
+# selects a module by NAME from its own directory, so the renderer has to write
+# these beside the committed fixtures; `_run` unlinks them in a `finally`. A
+# KILLED run never reaches that finally, and an orphan left in the working tree
+# makes it dirty -- which every producer that refuses to build a bundle from a
+# dirty tree then reports, as hundreds of errors nowhere near the cause.
+# Ignored so an orphan is inert, and so `git add -A` cannot commit one.
+harness/g33_fortran/g33_fixture_permtest_*.f90
+harness/g33_overlay/g33_fixture_permtest_*.h

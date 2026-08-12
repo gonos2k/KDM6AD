@@ -6,6 +6,7 @@ repo and are absent in CI, so a test written against them would assert the host.
 import hashlib
 import inspect
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -632,8 +633,40 @@ def test_SOURCE_only_claims_are_NOT_failed_by_the_closeout():
 
 # ---- claim figures vs the pinned artifact (owner priority 7) ----------------
 
-_LEG = ("kdm6ad-g33m-migrate/number-003.bundles/"
-        "ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e")
+def _published() -> Path:
+    """Where the store's published symlink actually POINTS.
+
+    Read whole, not by basename. The previous version took
+    `basename(readlink(...))` and glued it back onto an assumed
+    `number-003.bundles/` prefix, so the path it tested was RECONSTRUCTED
+    rather than the published one -- a link aimed at another bundle's store
+    yielded a path under number-003 that could exist and pass (Codex).
+    """
+    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
+    target = Path(os.readlink(link))       # raises if there is no link
+    return target if target.is_absolute() else (link.parent / target)
+
+
+def _leg() -> str:
+    """The legacy bundle's path, RESOLVED, not written down.
+
+    This was a hardcoded identity digest. Re-producing the bundle -- which the
+    flat instrumented-analyses contract required -- moved it, the file stopped
+    existing, and `needs_bundle` turned TWELVE real tests into skips while the
+    gate still said "passed". A stale constant does not fail here, it quietly
+    stops checking.
+
+    `os.readlink`, not `Path.resolve`: resolve does NOT raise on a dangling
+    symlink, it returns the missing target's name, so an earlier version
+    produced a plausible path for a broken store and reported nothing.
+    """
+    try:
+        return str(_published().relative_to(ec.HOME))
+    except (OSError, ValueError):     # no link, or it points outside HOME
+        return "kdm6ad-g33m-migrate/number-003.bundles/absent"
+
+
+_LEG = _leg()
 _TRUTH = {"file": f"{_LEG}/n12.rezero.defect_magnitude.json",
           "path": "rows.main/nr/1.of_surface_flux",
           "value": 0.150035513206531, "tolerance": 0.0}
@@ -643,6 +676,44 @@ _HERE = {_LEG: "matches"}
 
 def _bundles_present():
     return (ec.HOME / _TRUTH["file"]).is_file()
+
+
+def test_the_bundle_these_checks_READ_is_actually_present():
+    """`needs_bundle` skips when the bundle is missing, which is right on a
+    host that has none and wrong on a host whose store is BROKEN. Both look
+    identical to it, so this says which case it is.
+
+    Three states, not two. `Path.exists()` follows the link, so a dangling
+    symlink -- a store whose bundle directory was removed -- answered False and
+    read as "no store on this host", skipping twelve checks over a store that
+    was right there and damaged (Codex). `os.path.lexists` sees the link
+    itself, which is what separates them.
+    """
+    root = ec.HOME / "kdm6ad-g33m-migrate"
+    link, store = root / "number-003", root / "number-003.bundles"
+    if not store.is_dir() and not os.path.lexists(link):
+        pytest.skip("no bundle store for number-003 on this host")
+    assert os.path.lexists(link), (
+        f"{store.name} exists but {link.name} does not -- the store is here "
+        f"and its published link is gone, so every `needs_bundle` test is "
+        f"skipping rather than checking")
+    assert link.exists(), (
+        f"{link.name} dangles: it names "
+        f"{os.readlink(link)!r}, which is not there")
+    # The bundle under test must be number-003's OWN. Comparing `_LEG` to the
+    # link is vacuous -- `_LEG` is built from that link, so both sides move
+    # together and the assertion can never fail; the mutation that aimed the
+    # link at another bundle's store passed it. What actually binds them is the
+    # store layout: `dest.parent/f"{dest.name}.bundles"`, so number-003's link
+    # belongs under number-003.bundles and nowhere else.
+    home = f"kdm6ad-g33m-migrate/{link.name}.bundles/"
+    assert _LEG.startswith(home), (
+        f"the checks read {_LEG}, but {link.name} publishes into {home} -- "
+        f"the link points at a different bundle's store")
+    assert _bundles_present(), (
+        f"the store has number-003 but {_TRUTH['file']} is not there -- the "
+        f"path is stale, and every `needs_bundle` test is skipping rather "
+        f"than checking")
 
 
 needs_bundle = pytest.mark.skipif(not _bundles_present(),
@@ -1123,14 +1194,27 @@ def test_an_UNMIGRATED_claim_says_WHY_or_says_it_was_never_assessed():
     be migrated, and any claim without one reports that it was NOT ASSESSED
     rather than looking the same as the assessed ones."""
     assessed = {c["id"] for c in ec.claims() if c.get("migration_blocker")}
-    assert {"G33-NCMIN-001", "G33-NUMBER-009", "G33-TRAJECTORY-001",
-            "G33-BASIS-004"} <= assessed
+    assert assessed, "no claim records a blocker -- this check would be vacuous"
+
+    # The INVARIANT, not a list of ids. Naming G33-NCMIN-001 here broke the
+    # moment it was migrated -- the same shape as hardcoding the blocker count:
+    # a check that has to be edited on every success stops being a check.
+    unmigrated = {c["id"] for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"}
+    assert assessed <= unmigrated, (
+        f"migrated claims still carrying a migration_blocker: "
+        f"{sorted(assessed - unmigrated)} -- a resolved blocker must be removed "
+        f"with the pin, or the registry keeps a reason that no longer applies")
 
 
 def test_the_closeout_PRINTS_the_reason_it_has(capsys):
     ec.check(require_available=True)
     out = capsys.readouterr().out
-    assert "needs a MULTI-RUN analysis" in out
+    for c in ec.claims():
+        if c.get("migration_blocker"):
+            head = " ".join(c["migration_blocker"].split())[:40]
+            assert head in " ".join(out.split()), (
+                f"{c['id']}: its recorded reason is not in the closeout output")
     unassessed = [c for c in ec.claims()
                   if c.get("artifact_status") == "historical_unavailable"
                   and not c.get("migration_blocker")]
@@ -1138,3 +1222,237 @@ def test_the_closeout_PRINTS_the_reason_it_has(capsys):
         assert "not yet assessed" in out, (
             "a claim with no recorded blocker must SAY so, not print a bare "
             "unreachable line indistinguishable from an assessed one")
+
+
+@needs_bundle
+def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
+    """The schema can only check the manifest against itself; it cannot know
+    whether the manifest tells the truth about the FILE. The producer copies
+    `ran` across, so they are two records of one fact -- and two records never
+    compared are one record and one decoration (Codex)."""
+    import shutil
+    import tempfile
+    store = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001.bundles"
+    src = next(store.glob("*/"), None)
+    if src is None:
+        pytest.skip("multi-run bundle not on this host")
+
+    rows = ec.members_of(src / "manifest.json")
+    ident = [r for r in rows if r.get("origin") == "run_identity"]
+    assert ident, "no run_identity row -- this check would be vacuous"
+    assert all(r["state"] == "matches" for r in ident)
+
+    dst = Path(tempfile.mkdtemp()) / "b"
+    shutil.copytree(src, dst)
+    man = json.loads((dst / "manifest.json").read_text())
+    e = next(a for a in man["analyses"] if a["analysis"] == "ncmin_locality")
+    tampered = e["file"]                       # the file THIS entry describes
+    e["ran"]["nsplit"] = 12                    # the file still says 1
+    (dst / "manifest.json").write_text(json.dumps(man))
+    # PER ENTRY, keyed on the file the tampered ENTRY names -- not on a
+    # substring of the row's filename, which re-derives an identity the
+    # manifest already states. The first version also asserted a single-element
+    # list, then `len(rows) >= 2`: both hard-code how many multi-run analyses
+    # exist, so registering or removing one breaks a test about something else.
+    # The expected count comes from the manifest (Codex).
+    expected = {a["file"] for a in man["analyses"] if "ran" in a}
+    emitted = [r for r in ec.members_of(dst / "manifest.json")
+               if r.get("origin") == "run_identity"]
+    rows = {r["file"]: r["state"] for r in emitted}
+    assert set(rows) == expected, (
+        f"a run_identity row per `ran`-carrying analysis; "
+        f"missing {sorted(expected - set(rows))}, "
+        f"unexpected {sorted(set(rows) - expected)}")
+    # COUNT too. Keying by file collapses duplicates, so two rows for one
+    # analysis carrying the SAME state were invisible -- 4 rows over 2 files
+    # read as 2 (Codex). A differing duplicate happened to be caught, but only
+    # because the second overwrote the first's verdict, which is luck, not a
+    # check.
+    assert len(emitted) == len(expected), (
+        f"{len(emitted)} run_identity rows for {len(expected)} analyses: "
+        f"{sorted(r['file'] for r in emitted)}")
+    assert tampered in rows, f"{tampered} produced no run_identity row"
+    assert rows[tampered] == "RUN-IDENTITY-MISMATCH"
+    assert all(s == "matches" for f, s in rows.items() if f != tampered), rows
+
+
+def test_every_RUN_IDENTITY_failure_state_FAILS():
+    for s in ("RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT",
+              "RUN-IDENTITY-UNREADABLE"):
+        assert ec.verdict(s) is True
+        assert s in ec.FAILING_STATES
+
+
+@pytest.mark.parametrize("data,note", [
+    (b"\xff\xfe\x00binary", "non-UTF-8"),
+    (b'{"members": ', "truncated JSON"),
+    (b"", "empty"),
+])
+def test_an_UNREADABLE_file_is_REPORTED_not_a_CRASH(tmp_path, data, note):
+    """`json.JSONDecodeError` and `UnicodeDecodeError` are SIBLING subclasses of
+    ValueError, not related to each other, so catching the narrower one looked
+    thorough while leaving a whole failure mode uncaught. `read_text()` decodes,
+    so every JSON read here had the hole -- and in `members_of` a non-UTF-8
+    manifest crashed the entire chain walk instead of reporting the corruption
+    it is (Codex)."""
+    f = tmp_path / "x.json"
+    f.write_bytes(data)
+    assert [r["state"] for r in ec.members_of(f)] == ["MANIFEST-UNREADABLE"], note
+    assert ec._ran_state(f, {"ran": {}}) == "RUN-IDENTITY-UNREADABLE", note
+
+
+def test_no_reader_catches_only_JSONDecodeError():
+    """The narrow catch must not come back anywhere in this module."""
+    src = Path(ec.__file__).read_text()
+    assert "except (OSError, json.JSONDecodeError)" not in src
+    assert "except json.JSONDecodeError" not in src
+
+
+def test_EVERY_unmigrated_claim_now_states_a_reason():
+    """The debt has a shape, not just a count. `not yet assessed` was honest
+    while it was true; leaving it standing once the assessment exists would
+    not be."""
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    assert unmigrated, ("nothing unmigrated -- this check would pass with "
+                        "nothing examined; update it deliberately")
+    unassessed = [c["id"] for c in unmigrated if not c.get("migration_blocker")]
+    assert not unassessed, f"unassessed claims remain: {sorted(unassessed)}"
+
+
+#: The kinds a blocker may DECLARE. Each names a different remedy, which is the
+#: whole point of separating them: an f64 leg, a new analysis, and an
+#: unresolved fixture are three different pieces of work.
+#:
+#: These were once inferred by matching marker substrings against the prose.
+#: Rewriting nine blockers to say something useful changed the wording and all
+#: nine stopped classifying -- the taxonomy was tracking phrasing, not kind. It
+#: is the same defect as reading a member's identity off its path.
+BLOCKER_KINDS = frozenset({
+    "no-fixture", "no-figure", "coincidental-match", "not-in-bundle",
+    "analysis-not-carried", "untraced", "needs-contract",
+    "needs-f64", "needs-derived-field", "needs-instrumentation",
+    "needs-run-variant",
+})
+
+
+def test_the_blocker_reasons_are_DISTINCT_kinds():
+    """Different remedies, which a single count concealed: a claim with no
+    figure needs a different fix from one whose figures are simply not in a
+    pinned bundle, and one with no fixture needs resolving before either."""
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    assert unmigrated, "nothing unmigrated -- update this test deliberately"
+
+    for c in unmigrated:
+        kind = c.get("blocker_kind", "")
+        assert kind in BLOCKER_KINDS, (
+            f"{c['id']} declares blocker_kind {kind!r}, which is not a known "
+            f"kind -- a kind nobody can act on is not a work item")
+        assert c["migration_blocker"].strip(), (
+            f"{c['id']} declares a kind but no reason -- the kind says which "
+            f"remedy, the prose says why THIS claim needs it")
+
+    seen = {c["blocker_kind"] for c in unmigrated}
+    assert {"no-fixture", "no-figure"} <= seen, sorted(seen)
+
+
+def test_a_blocker_kind_is_DECLARED_not_read_off_the_prose():
+    """The regression that produced this field. Rewording a blocker must not
+    change its kind -- if it can, the taxonomy is classifying English."""
+    unmigrated = [c for c in ec.claims()
+                  if c.get("artifact_status") == "historical_unavailable"]
+    f64 = [c for c in unmigrated if c["blocker_kind"] == "needs-f64"]
+    assert len(f64) == 3, [c["id"] for c in f64]
+    # Every one of them says "f64" -- and that is NOT how they were classified.
+    # The declaration is the authority, so a blocker that never spells the word
+    # still classifies, and one that spells it in passing does not acquire the
+    # kind. G33-PRECIP-001 mentions an f64 leg and is needs-instrumentation.
+    precip = next(c for c in unmigrated if c["id"] == "G33-PRECIP-001")
+    assert "f64" in precip["migration_blocker"]
+    assert precip["blocker_kind"] == "needs-instrumentation", (
+        "PRECIP-001 mentions f64 in passing; its remedy is the qs/qg "
+        "instrumentation the ledger never carried")
+
+
+def test_an_EMPTY_folded_block_reads_as_ABSENT(tmp_path, monkeypatch):
+    """`key: >` with no body left ">" as the value -- truthy, non-empty, and
+    indistinguishable from a real one to every caller that tested the field
+    for presence. It hid a deleted reason from the guard written to catch
+    exactly that, and it applies to every folded field, not just the blocker.
+    """
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(
+        "claims:\n"
+        "  - id: G33-EMPTY-001\n"
+        "    status: active\n"
+        "    blocker_kind: needs-f64\n"
+        "    migration_blocker: >\n"
+        "    evidence: [X.md]\n"
+        "  - id: G33-FULL-001\n"
+        "    status: active\n"
+        "    migration_blocker: >\n"
+        "      a stated reason\n"
+        "    evidence: [Y.md]\n")
+    monkeypatch.setattr(ec, "REGISTRY", reg)
+    got = {c["id"]: c.get("migration_blocker", "") for c in ec.claims()}
+    assert got["G33-EMPTY-001"] == "", (
+        f"an empty folded block read as {got['G33-EMPTY-001']!r} -- anything "
+        f"truthy here makes a deleted field look present")
+    assert got["G33-FULL-001"] == "a stated reason"
+
+
+def _tiny_repo(tmp_path):
+    """A repo with one live commit and one that exists but no ref contains."""
+    import subprocess as sp
+    r = lambda *a: sp.run(a, cwd=tmp_path, capture_output=True, text=True)
+    r("git", "init", "-q", "-b", "main")
+    r("git", "config", "user.email", "t@t"); r("git", "config", "user.name", "t")
+    (tmp_path / "a.txt").write_text("one\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "one")
+    live = r("git", "rev-parse", "HEAD").stdout.strip()
+    (tmp_path / "a.txt").write_text("two\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "two")
+    dead = r("git", "rev-parse", "HEAD").stdout.strip()
+    r("git", "reset", "-q", "--hard", live)       # `dead` is now dangling
+    return live, dead
+
+
+def test_a_SQUASHED_provenance_commit_is_CAUGHT(tmp_path, monkeypatch):
+    """A bundle was produced, then the WIP commits it recorded were squashed
+    into one. Every content digest still verified -- the bytes had not moved --
+    so the chain stayed green while `repo_commit` and all three pin blocks
+    named a commit no ref contained (Codex).
+
+    The distinction this has to draw is EXISTS versus REACHABLE: a discarded
+    commit stays in the object database until gc, which is why a check built on
+    `git cat-file -e` kept passing.
+    """
+    import subprocess as sp
+    live, dead = _tiny_repo(tmp_path)
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+
+    assert sp.run(["git", "cat-file", "-e", f"{dead}^{{commit}}"], cwd=tmp_path
+                  ).returncode == 0, "the weaker check must still pass here, " \
+                                     "or this test is not exercising the gap"
+    assert ec._reachable(live), "a commit on the branch must be reachable"
+    assert not ec._reachable(dead), (
+        "a squashed commit is still in the object database -- reachability is "
+        "the question, and existence is not it")
+
+    man = {"repo_commit": dead,
+           "member_parsers": [{"path": "p.py", "commit": live}],
+           "producer_modules": [], "tracked_build_inputs": []}
+    rows = {r["state"] for r in ec._commit_states(man)}
+    assert "COMMIT-UNREACHABLE" in rows, ec._commit_states(man)
+    assert "COMMIT-UNREACHABLE" in ec.FAILING_STATES, \
+        "an unreachable anchor must FAIL, not be reported and passed over"
+
+
+def test_the_LIVE_bundles_anchor_to_reachable_commits():
+    """The bundles this repo actually pins. Not a synthetic: the defect was
+    found on a real one."""
+    for name, man in ec.bundles().items():
+        bad = [r for r in ec._commit_states(man)
+               if r["state"] == "COMMIT-UNREACHABLE"]
+        assert not bad, f"{name} anchors to a discarded commit: {bad}"

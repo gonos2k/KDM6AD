@@ -846,3 +846,45 @@ def test_an_UNRELATED_dirty_file_does_not_change_the_experiment():
     clean = {"schema": "x", "tree_dirty": False, "build_provenance": {}}
     dirty = {"schema": "x", "tree_dirty": True, "build_provenance": {}}
     assert rm.identity_digest(clean) == rm.identity_digest(dirty)
+
+
+def test_MULTI_RUN_analyzers_are_in_the_PIN_closure():
+    """A multi-run analyzer decides what a bundle contains exactly as a
+    per-member one does, so it must be pinned the same way. The first version
+    hardcoded `_analyzer_pin("g33_ncmin_locality")` inside the builder, which
+    put the analyzer's bytes into a bundle while leaving the module out of
+    `producer_modules()` -- `unpinned_reachable()` caught it, which is what
+    that check exists for (Codex)."""
+    mods = {m for m, _fn in xp.MULTI_RUN.values()}
+    assert mods, "no multi-run analysis registered -- this check would be vacuous"
+    assert mods <= set(xp.producer_modules())
+    assert not xp.unpinned_reachable()
+
+
+def test_the_two_MULTI_RUN_registries_agree():
+    """The producer says which analyses exist; the schema says which are
+    valid. Declared in both because the producer imports the manifest module,
+    so drift has to be a failure rather than a silently widened union."""
+    assert tuple(xp.MULTI_RUN) == rm.MULTI_RUN_ANALYSES
+
+
+def test_a_multi_run_analyzer_is_DERIVED_not_hardcoded():
+    """From the registry, so adding one cannot repeat the omission."""
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    body = src[src.index("def _multi_run_analyses("):]
+    body = body[:body.index("\ndef ", 1)]
+    assert "_analyzer_pin(mod)" in body
+    assert '_analyzer_pin("' not in body, "a hardcoded analyzer name came back"
+
+
+def test_the_MULTI_RUN_config_is_read_from_the_RESULT():
+    """Not recomputed from the fixture. Deriving `decompositions` from the
+    fixture recorded what the analysis was ASSUMED to have run; the analysis
+    now reports what it drove, and the producer copies that (Codex)."""
+    src = (ROOT / "g33_refine_experiment.py").read_text()
+    body = src[src.index("def _multi_run_analyses("):]
+    body = body[:body.index("\ndef ", 1)]
+    assert 'ran = result["ran"]' in body
+    assert '"decompositions": ran["decompositions"]' in body
+    assert "compositions_of(fixture)" not in body, \
+        "the recorded decompositions must come from the run, not the fixture"
