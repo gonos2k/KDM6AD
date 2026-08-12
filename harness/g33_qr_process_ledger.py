@@ -106,6 +106,17 @@ def read_cells(text: str, *, label: str) -> dict:
             raise ra.RefineError(
                 f"{label}: cell {key} is missing {sorted(missing)} -- an "
                 f"operand that was not emitted is not an operand that is zero")
+        # The gate is a PREDICATE and its domain is {0, 1}. The first version
+        # of this file checked that and the rewrite dropped it, so
+        # `cold_gate == 1.0` silently mapped 0.5, 7.0 and NaN to "warm" -- and
+        # on a cell the temperature also calls warm, the corruption agreed with
+        # the derived branch and reported zero disagreements (Codex).
+        gate = cell["cold_gate"]
+        if gate not in (0.0, 1.0):
+            raise ra.RefineError(
+                f"{label}: cell {key} has cold_gate {gate!r}, which is not 0 "
+                f"or 1 -- a branch predicate outside its domain says the "
+                f"record is corrupt, not that the cell is warm")
     return out
 
 

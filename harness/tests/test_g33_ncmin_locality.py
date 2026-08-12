@@ -1342,3 +1342,25 @@ def test_a_DISAGREEING_branch_flag_is_refused_not_counted(drivers):
     state = pl.read_state(text, label="x")
     with pytest.raises(ra.RefineError, match="disagrees with the temperature"):
         pl.verify_replay(cells, state, pl.read_dtcld(text, label="x"), label="x")
+
+
+@pytest.mark.parametrize("bits,label", [("3F000000", "0.5"), ("40E00000", "7.0"),
+                                        ("7FC00000", "NaN"), ("BF800000", "-1.0")])
+def test_a_cold_gate_OUTSIDE_ITS_DOMAIN_is_refused(drivers, bits, label):
+    """`cold_gate` is a predicate and its domain is {0, 1}. The first version
+    of the ledger checked that; the rewrite dropped it, so `gate == 1.0`
+    mapped every other value to "warm" -- and on a cell the temperature also
+    calls warm, the corruption AGREED with the derived branch and the replay
+    reported zero disagreements (Codex).
+
+    NaN is the one that matters most: it compares unequal to everything, so it
+    reads as warm under any `== 1.0` test.
+    """
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    warm = next(l for l in lines if " micro_qr_operands " in l
+                and l.split()[6] == "cold_gate" and l.split()[10] == "00000000")
+    text = "\n".join(warm.rsplit(" ", 1)[0] + " " + bits if l == warm else l
+                     for l in lines) + "\n"
+    with pytest.raises(ra.RefineError, match="not 0 or 1"):
+        pl.read_cells(text, label=label)
