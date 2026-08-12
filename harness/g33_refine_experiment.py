@@ -46,6 +46,7 @@ import g33_cap_interface as ci        # noqa: E402
 import g33_dual_ledger as dl          # noqa: E402
 import g33_defect_magnitude as dm     # noqa: E402
 import g33_metric_trajectory as mtj   # noqa: E402
+import g33_substep_schedule as sss    # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -210,6 +211,11 @@ ANALYSES = {
     "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
     "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    # WHICH sub-step schedule each chain ran, not how many records it emitted.
+    # The parser has always filed mstep and mstepi together; nothing reduced
+    # them, so `extension_protocol` could say 72 mstep records and not say that
+    # column 3 ran three of them while the ice chain ran one.
+    "substep_schedule": ("g33_substep_schedule", lambda s: sss.analysis(s)),
     # Water destroyed INSIDE the column is not precipitation (owner §16-4).
     # Both ledgers, so the correction is visible rather than a silent swap.
     "internal_cap_enthalpy": ("g33_cap_interface",
