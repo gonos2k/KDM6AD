@@ -52,11 +52,33 @@ OPERANDS = frozenset(n for _s, n in ur.COLD_TERMS + ur.WARM_TERMS)
 REQUIRED = OPERANDS | {"cold_gate"}
 
 
-def _rows(text: str, stage: str):
-    for p in (ln.split() for ln in text.splitlines()):
-        if len(p) >= 11 and p[:2] == ["G33F", "STAGE"] and p[4] == stage:
-            # (call, loop, col, k), term, value
-            yield (int(p[2]), int(p[5]), int(p[7]), int(p[8])), p[6], p[10]
+def _want_f32(kind: str, stage: str, field: str, key, label: str) -> None:
+    if kind != "f32":
+        raise ra.RefineError(
+            f"{label}: `{stage}` {field} at {key} is {kind}, not f32 -- it is "
+            f"read as float bits, so the wrong type is a wrong number")
+
+
+def _rows(text: str, stage: str, *, label: str):
+    """(key, term, hex) for one stage, refusing anything malformed.
+
+    A short line used to be skipped by a `len(p) >= 11` test, so a truncated
+    record read as an absent one. Absence and corruption are different, and
+    only one of them is safe to continue from.
+    """
+    for ln in text.splitlines():
+        p = ln.split()
+        if p[:2] != ["G33F", "STAGE"] or len(p) < 5 or p[4] != stage:
+            continue
+        if len(p) != 11:
+            raise ra.RefineError(
+                f"{label}: malformed `{stage}` record -- {len(p)} fields, "
+                f"expected 11: {ln[:90]!r}")
+        # SHAPE here, TYPE at the point of use. A stage mixes types --
+        # `substep_pre` carries f32 `dtcld`, i32 `mstep` and u8 `gate` -- so
+        # enumerating allowed types per stage refused legitimate records twice
+        # over. Each reader asserts the type of the fields it consumes.
+        yield (int(p[2]), int(p[5]), int(p[7]), int(p[8])), p[6], p[9], p[10]
 
 
 def read_cells(text: str, *, label: str) -> dict:
@@ -67,7 +89,8 @@ def read_cells(text: str, *, label: str) -> dict:
     """
     ra.read_text(text, nsplit=1, label=label)
     out: dict = {}
-    for key, term, hexv in _rows(text, STAGE):
+    for key, term, kind, hexv in _rows(text, STAGE, label=label):
+        _want_f32(kind, STAGE, term, key, label)
         cell = out.setdefault(key, {})
         if term in cell:
             raise ra.RefineError(
@@ -91,15 +114,30 @@ def read_state(text: str, *, label: str) -> dict:
     out: dict = {}
     for stage, field, into in ((PRE, "qr", "qr_pre"), (POST, "qr", "qr_post"),
                                (PRE, "t", "t")):
-        for key, term, hexv in _rows(text, stage):
-            if term == field:
-                out.setdefault(key, {})[into] = int(hexv, 16)
+        for key, term, kind, hexv in _rows(text, stage, label=label):
+            if term != field:
+                continue
+            _want_f32(kind, stage, field, key, label)
+            cell = out.setdefault(key, {})
+            if into in cell:
+                # `read_cells` refused this and `read_state` did not, so a
+                # repeated state record silently REPLACED the value the replay
+                # closes against -- the one number that decides whether the
+                # decomposition is of the actual update (Codex).
+                raise ra.RefineError(
+                    f"{label}: duplicate `{stage}` {field} for cell {key} -- "
+                    f"the replay closes against this value, so a second one is "
+                    f"corruption, not an update")
+            cell[into] = int(hexv, 16)
     return out
 
 
 def read_dtcld(text: str, *, label: str) -> float:
-    got = {float(ur.f32(int(h, 16)))
-           for _k, term, h in _rows(text, "substep_pre") if term == "dtcld"}
+    got = set()
+    for key, term, kind, h in _rows(text, "substep_pre", label=label):
+        if term == "dtcld":
+            _want_f32(kind, "substep_pre", term, key, label)
+            got.add(float(ur.f32(int(h, 16))))
     if len(got) != 1:
         raise ra.RefineError(f"{label}: dtcld is {got or 'absent'}; the "
                              f"decomposition needs exactly one")
@@ -152,10 +190,21 @@ def verify_replay(cells: dict, state: dict, dtcld: float, *, label: str) -> dict
         cold = ur.is_cold(st["t"])
         if bool(cell["cold_gate"] == 1.0) != cold:
             flag_disagrees.append(key)
+            continue
         pred = ur.replay_qr(st["qr_pre"], cell, dtcld, cold)
         if pred != st["qr_post"]:
             bad.append({"cell": list(key), "predicted": pred,
                         "actual": st["qr_post"]})
+    if flag_disagrees:
+        # The producer's flag and the branch derived from the recorded
+        # temperature disagree, so one of them is wrong about which operand
+        # set the cell applied. Counting that and carrying on would decompose
+        # against terms the cell never used.
+        raise ra.RefineError(
+            f"{label}: `cold_gate` disagrees with the temperature-derived "
+            f"branch in {len(flag_disagrees)} cell(s), first "
+            f"{flag_disagrees[0]} -- the operand set for those cells is not "
+            f"established")
     if bad:
         raise ra.RefineError(
             f"{label}: the qr update does not replay from its operands in "

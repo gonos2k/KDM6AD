@@ -1297,3 +1297,48 @@ def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
                      if "micro_qr_operands" not in l) + "\n"
     with pytest.raises(ra.RefineError, match="no `micro_qr_operands` records"):
         pl.read_cells(text, label="stripped")
+
+
+def test_a_DUPLICATE_state_record_is_refused(drivers):
+    """`read_cells` refused duplicates and `read_state` did not, so a repeated
+    pre-state record silently REPLACED the qr the replay closes against -- the
+    one value that decides whether the decomposition is of the actual update
+    (Codex). Demonstrated with a different value, so the miss is visible."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    dup = next(l for l in lines
+               if " micro_pre_state_update " in l and l.split()[6] == "qr")
+    tampered = dup.rsplit(" ", 1)[0] + " DEADBEEF"
+    with pytest.raises(ra.RefineError, match="duplicate"):
+        pl.read_state("\n".join(lines + [tampered]) + "\n", label="dup")
+
+
+def test_a_TRUNCATED_record_is_refused_not_skipped(drivers):
+    """A short line fell through a `len(p) >= 11` test, so a truncated record
+    read as an absent one. Absence and corruption are different."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    full = next(l for l in lines
+                if " micro_pre_state_update " in l and l.split()[6] == "qr")
+    text = "\n".join(l for l in lines if l != full) + "\n" + \
+        " ".join(full.split()[:9]) + "\n"
+    with pytest.raises(ra.RefineError, match="malformed"):
+        pl.read_state(text, label="short")
+
+
+def test_a_DISAGREEING_branch_flag_is_refused_not_counted(drivers):
+    """`cold_gate` is the producer's flag and `is_cold` derives the branch from
+    the recorded temperature. When they disagree, one is wrong about which
+    operand set the cell applied, so decomposing anyway would telescope over
+    terms the cell never used. It was counted and carried on."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    gate = next(l for l in lines
+                if " micro_qr_operands " in l and l.split()[6] == "cold_gate")
+    flip = "3F800000" if gate.split()[10] == "00000000" else "00000000"
+    text = "\n".join(gate.rsplit(" ", 1)[0] + " " + flip if l == gate else l
+                     for l in lines) + "\n"
+    cells = pl.read_cells(text, label="x")
+    state = pl.read_state(text, label="x")
+    with pytest.raises(ra.RefineError, match="disagrees with the temperature"):
+        pl.verify_replay(cells, state, pl.read_dtcld(text, label="x"), label="x")
