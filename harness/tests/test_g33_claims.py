@@ -818,8 +818,8 @@ def test_no_blocker_asserts_IMPOSSIBILITY_from_one_failed_attempt():
     """
     import re
     forbidden = re.compile(
-        r"\bcannot be (?:reproduced|recovered|derived)\b"
-        r"|\bdoes NOT reconstruct\b"
+        r"\bcannot be (?:reproduced|recovered|derived|reconstructed)\b"
+        r"|\bdoes NOT (?:reconstruct|reproduce)\b"
         r"|\bis impossible\b"
         r"|\bno way to\b", re.I)
     guilty = []
@@ -862,3 +862,31 @@ def test_BASIS_004_binds_BOTH_ledgers_and_the_TOTAL_precipitation():
     assert got["enthalpy.worst_basis_difference"] < 3e-11, \
         "the claim is 'basis-invariant to 3e-11 or better'"
 
+
+
+def test_no_blocker_REPEATS_ITSELF():
+    """An edit that APPENDS instead of replacing leaves both versions in place.
+
+    The rewrites here use `(?:      .*\\n)+` to find a folded body, which stops
+    at a blank line. Once a blocker contained blank lines -- introduced by an
+    earlier rewrite -- the next rewrite matched only its first paragraph and
+    left the rest of the old text below the new. G33-BASIS-003 then carried a
+    withdrawal of an overreach AND the overreach itself, ten lines apart, and
+    the guard against overreach missed it because the surviving copy used
+    "does NOT reproduce" where the pattern looked for "reconstruct".
+
+    Wording checks are brittle; this one is structural. A blocker that says the
+    same long thing twice was appended to, whatever the words are.
+    """
+    for c in CLAIMS:
+        b = " ".join((c.get("migration_blocker") or "").split())
+        seen, dupes = set(), []
+        for i in range(0, max(0, len(b) - 60)):
+            w = b[i:i + 60]
+            if w in seen:
+                dupes.append(w)
+                break
+            seen.add(w)
+        assert not dupes, (
+            f"{c['id']} repeats {dupes[0]!r} -- a rewrite appended rather than "
+            f"replaced, so both versions are live and they may disagree")

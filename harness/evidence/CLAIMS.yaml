@@ -531,15 +531,6 @@ claims:
       numbers, so this stays unpinned until the method is recovered rather
       than guessed at
 
-      What is missing is only the sensitivity triple. Reconstructing it by
-      substituting a humidity profile into the physical basis does NOT
-      reproduce it: a uniform qv gives divergences of 1.4485e-13 down to
-      5.8604e-16 against the claimed 2.2e-15, and both non-uniform profiles
-      leave every row unusable, so the numbers came from a computation whose
-      method the artifacts do not record. Binding the pinned four-fifths and
-      leaving the triple unbound is the partial binding that made
-      G33-TRAJECTORY-001 certify two false numbers, so this stays unpinned
-      until the sweep is reproduced rather than guessed at
     grade: confirmed
     basis: >
       measurement on the fixture plus a constructed humidity sweep holding all
