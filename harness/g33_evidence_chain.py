@@ -251,6 +251,17 @@ def members_of(manifest: Path) -> list[dict]:
     return out
 
 
+#: (repo, commit) -> reachable. `--contains` walks history and the bundles share
+#: a handful of commits, so the same question was asked once per bundle per
+#: walk. Measured, this is small -- one `chain()` goes from 670 git subprocesses
+#: to 660, the other 660 being the pre-existing `cat-file` blob resolutions --
+#: but it is per-bundle work that grows as bundles accumulate, and the answer
+#: cannot change within a run. Keyed on REPO as well as the commit because the
+#: regression points it at a throwaway repo, and a cache keyed on the sha alone
+#: would answer for the wrong one.
+_REACHABLE: dict = {}
+
+
 def _reachable(commit: str) -> bool:
     """Is `commit` reachable from a ref, or merely still in the object database?
 
@@ -259,9 +270,13 @@ def _reachable(commit: str) -> bool:
     pinned through it keeps resolving and every content digest keeps matching
     -- the whole chain stays green while the anchor is already dangling.
     """
-    r = subprocess.run(["git", "for-each-ref", "--contains", commit,
-                        "--count=1"], cwd=REPO, capture_output=True, text=True)
-    return r.returncode == 0 and bool(r.stdout.strip())
+    key = (str(REPO), commit)
+    if key not in _REACHABLE:
+        r = subprocess.run(["git", "for-each-ref", "--contains", commit,
+                            "--count=1"], cwd=REPO, capture_output=True,
+                           text=True)
+        _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
+    return _REACHABLE[key]
 
 
 def _commit_states(man: dict) -> list:
