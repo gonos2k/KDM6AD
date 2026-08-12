@@ -861,3 +861,27 @@ def test_BASIS_004_binds_BOTH_ledgers_and_the_TOTAL_precipitation():
             f"barely move it, or the claim's contrast is not what was measured")
     assert got["enthalpy.worst_basis_difference"] < 3e-11, \
         "the claim is 'basis-invariant to 3e-11 or better'"
+
+
+def test_a_FINDING_edit_and_its_REPIN_travel_together():
+    """Twice now I edited FINDING_bundle_analyses_v1 to add an analysis row and
+    left G33-CHAIN-002 pinning the old digest, and both times the 18-minute
+    gate is where it surfaced -- the second time after I had already pushed.
+
+    The digest check itself works; this is the cheap version of it, so the
+    mismatch is caught by the fast claim tests instead of at the end of a full
+    run. Every pinned digest, checked against the file on disk.
+    """
+    import hashlib
+    stale = []
+    for c in CLAIMS:
+        for name, pinned in (c.get("evidence_sha256") or {}).items():
+            f = EVIDENCE / name
+            if not f.is_file():
+                continue
+            got = hashlib.sha256(f.read_bytes()).hexdigest()
+            if got != pinned:
+                stale.append((c["id"], name, pinned[:12], got[:12]))
+    assert not stale, (
+        f"pinned digests no longer match the files: {stale}. Re-read the "
+        f"claim, then re-pin -- in the SAME commit as the edit")
