@@ -273,19 +273,19 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/manifest.json: 97587a90ebabe7a551074f27db9e6b4d40f1b57530643c9845fc83009865bd99
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/manifest.json: 28c5987f4f941daddc1cd3dca78ea875006374cf8688c8af8bb3bfd0a0278ef1
     # The figures the text above publishes, bound to the exact path in
     # the exact bundle that produced them. Legacy and conservative
     # nr/1 are the SAME value, which is what "identical to the last
     # digit" asserts -- so the two arms are declared separately.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
-      - kdm6ad-g33m-migrate/number-003-cons.bundles/6f455ca937698431493e43b9eaed2731e5115268aacc8d542356affa9805d58b/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-003-cons.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 
@@ -345,13 +345,13 @@ claims:
     # figure is stated in the artifact as EXACTLY 0.0 residual --
     # binding it would bind a different number than the claim makes.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.1.actual_over_baseline: -0.9896354164178438
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.991907827622594
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.1.actual_over_baseline: 2.0116958206531725
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.009085622859459
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.3.actual_over_baseline: 2.040729851027403
     evidence: [FINDING_density_falsification_v1.md]
     evidence_sha256: [FINDING_density_falsification_v1.md:15b9c15dfa68b3d52606e2884686a1ff64fffc7ee4539459386bf09ea2e81f1c]
 
@@ -442,15 +442,15 @@ claims:
     # presentations of figures that are 1.0 only to within double
     # roundoff.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
     evidence: [FINDING_bundle_analyses_v1.md]
     evidence_sha256: [FINDING_bundle_analyses_v1.md:81210e5f2cc451832e6787ac53dd051d9c904153cbd7055ac19095aa5885878c]
 
@@ -583,13 +583,13 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     # R / window_initial_inventory, the three figures the
     # text publishes as 0.2173% / 0.4379% / 0.6884%.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_initial_inventory: 0.002172521518963495
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_initial_inventory: 0.0043790562874034804
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_initial_inventory: 0.006883825464078589
     evidence: [FINDING_defect_magnitude_v1.md]
     evidence_sha256: [FINDING_defect_magnitude_v1.md:0d2027968658cbee0cc48a7621ac5f61f3ab333321148a6cea84d46a50cbf798]
 
@@ -647,14 +647,14 @@ claims:
     # already bound by G33-NUMBER-003 against the same bundle; 0.0717
     # and 0.065 are not in it and are NOT invented here.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.number_created: -523938166.8280626
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.dual_ledger.json#rows.ice/ni/3.physical.residual: -523393837.23585546
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.mass_interface_term: -0.00568599220489336
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.dual_ledger.json#rows.ice/qi/3.physical.residual: -0.005680084916564054
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/1.mass_residual: -1.50681461051091e-10
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.dual_ledger.json#rows.main/qr/1.physical.residual: -1.5053092683369624e-10
     evidence: [FINDING_water_enthalpy_dual_basis_v1.md]
     evidence_sha256: [FINDING_water_enthalpy_dual_basis_v1.md:900162e7af35197162988dc469f4c0af121301a76d472e2c992b099db96fa877]
 
@@ -795,45 +795,45 @@ claims:
     # binding was the signal that the wrong field had been chosen
     # (Codex). It was also incomplete -- 5 of 13 figures.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     expected_values:
       # the trajectory response, "measured at 1.04%/0.81% (inverted) and
       # 0.58%/0.45%/2.04% (x2) of the metric term"
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.trajectory_over_metric: 0.010364583582156245
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.008092172377406054
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.trajectory_over_metric: 0.005847910326586326
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.0045428114297295565
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.02036492551370149
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.1.trajectory_over_metric: 0.010364583582156245
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.008092172377406054
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.1.trajectory_over_metric: 0.005847910326586326
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.0045428114297295565
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.02036492551370149
       # "the metric term is EXACTLY 0/-1/+2 by construction"
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.1.metric_over_baseline: -1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.1.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.1.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.1.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
       # "a +/-10% absolute density shift leaves the metric term at exactly
       # 1.0 (11 of 12 metric ratios bit-exact..."
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.1.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.1.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset+.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.1.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
       # "...the twelfth 5.8e-7 from f32 roundoff on the offset addition"
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000005804669767
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000005804669767
       # "the 2.25-6.68% it moves under an offset is trajectory by
       # construction" -- the ends of that range
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.1.trajectory_over_metric: 0.022490700238730173
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.06683178521350588
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset+.1.trajectory_over_metric: 0.022490700238730173
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.06683178521350588
 
       # the remaining metric ratios, so "twelve of THIRTEEN bit-exact"
       # is checked rather than asserted -- a partial binding let two
       # wrong numbers pass as verified (owner)
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.1.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.uniform.1.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
       # every offset-arm trajectory ratio, so the 2.20-6.68% RANGE is
       # bound at both ends and in between
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.02203280763718808
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.1.trajectory_over_metric: 0.02553040486268832
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.024971554676023286
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.02203280763718808
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.1.trajectory_over_metric: 0.02553040486268832
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.024971554676023286
     evidence: [FINDING_metric_trajectory_split_v1.md]
     evidence_sha256: [FINDING_metric_trajectory_split_v1.md:add9b27668bf353dbbbc763e271a987500f48ecd4cbae8ce685d3b3799552b69]
 
@@ -859,7 +859,7 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
     artifacts:
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/manifest.json: fecc799272bb2af76f9ba1624ae0c43c978c7ce9b350dcd874a06c417fc80703
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/manifest.json: 6b90f68403cdae7602a23bb68d790c8bf80edaddb302fb5ec2d666bfa08cdc79
     # Every figure the text publishes. The percentages and the ratios come
     # from DIFFERENT artifacts -- an arm's residual as a fraction of ITS own
     # surface flux is `defect_magnitude` run on that arm's stream, while the
@@ -871,42 +871,42 @@ claims:
     # changes its sub-step schedule" -- and is a boolean, so it is read in
     # this same artifact rather than bound here, which takes floats.
     expected_values:
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: -0.07031193241925665
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: -0.07929657660689306
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.11912310379409295
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.13265305995533935
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.actual_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.actual_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.9882310767857814
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.011768923214218614
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.actual_over_baseline: -1.0223392439128696
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.metric_over_baseline: -0.9999996481135064
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.trajectory_over_metric: 0.022339603660368006
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.0117719207421003
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.005885960371050107
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.actual_over_baseline: 1.9639272724434371
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.018036363778281436
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.actual_over_baseline: 0.9877970211607088
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000008923722377
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.012203860321142707
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.actual_over_baseline: 1.0291939948540039
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.metric_over_baseline: 0.9999992006996976
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.trajectory_over_metric: 0.029194817489732572
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.actual_over_baseline: 1.0122978990090625
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.01229789900906251
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.actual_over_baseline: 0.9404924923752421
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.05950750762475787
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: -0.07031193241925665
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: -0.07929657660689306
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.11912310379409295
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.13265305995533935
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.9882310767857814
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.011768923214218614
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.actual_over_baseline: -1.0223392439128696
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.metric_over_baseline: -0.9999996481135064
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.trajectory_over_metric: 0.022339603660368006
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.0117719207421003
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.005885960371050107
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.3.actual_over_baseline: 1.9639272724434371
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.018036363778281436
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.actual_over_baseline: 0.9877970211607088
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000008923722377
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.012203860321142707
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.actual_over_baseline: 1.0291939948540039
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.metric_over_baseline: 0.9999992006996976
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.trajectory_over_metric: 0.029194817489732572
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.actual_over_baseline: 1.0122978990090625
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.01229789900906251
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.actual_over_baseline: 0.9404924923752421
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1bd8be4afc75b16d47c26a236d0918731186add74b6e4d60610b125813e17d18/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.05950750762475787
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -1242,14 +1242,14 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     # The ice cap share the text publishes as 100.0000%.
     # Bound to the artifact's EXACT value: it is 1.0 to
     # within double roundoff, not exactly 1.0, and the
     # percentage is the rounded presentation of that.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1273,13 +1273,13 @@ claims:
     # cite one measurement; what must not happen is a claim citing a
     # number no artifact holds.
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/1.created_over_predicted: 0.9999999999999993
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/2.created_over_predicted: 1.0000000000000007
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.main/3.created_over_predicted: 1.0
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/2.created_over_predicted: -28.575746788725695
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.cap_interface.json#rows.ice/3.created_over_predicted: -28.89840401046536
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1386,22 +1386,22 @@ claims:
     # one this artifact carries, and binding a same-looking number
     # from the wrong table would pin the wrong quantity.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/manifest.json: b79b99878bde3fabf0f1e720c8df7cd6dad1a4690a80f2b3086514c5a582f614
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/manifest.json: 14eee23a88af7dde77184d00cb7cd3f54ed66f30d4d1387ec52459b2d0b2c4a5
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
       # WHICH PROCESS carries that difference (owner §7), from the
       # ledger analysis in the same bundle. Accretion, not
       # autoconversion: the two shares sum to 1 and no other term
       # moves.
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/ec75550a255af26c9e67eb0c847f1b9b5d2f44394cb0559cf80f302d4deb5d57/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.total_delta: -1.1549066739058311e-06
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.pracw: 0.8531934043934657
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/db557da4c51e0db41e6b0441b540c74eeb319bdf294271817b6ee09e847e8cd8/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.share.praut: 0.14680659560653436
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4c53b950254ee4b277ced73961b2d37f58b112c399f180c979370991b10010d9]
 
@@ -1461,15 +1461,15 @@ claims:
     # figure reproduced EXACTLY, so migrating corrects nothing -- it
     # only makes the run reachable (owner §12-6).
     artifacts:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/manifest.json: 740cdc171d13ac6a1545066b1e89761092441a6a89ae48aed7f7197a92aa277f
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/manifest.json: 41f0bd8efff549630a780c8589d67539d48d884cba5ad39cb16f16e9b31b5d1e
     # Gross destruction share (57.8080% / 48.0157%) and the
     # departure-temperature correction (-14.5767 /
     # -21.8481 J m^-2), event-local as the text states.
     expected_values:
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
-      - kdm6ad-g33m-migrate/number-003.bundles/ae6234bf4ce333e124cacae1a28d236a11ed7fa03cb79fdcf4a1c3a4fd93c34e/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.cap_sink_share_of_column_loss: 0.5780798273387104
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.H_internal_cap_correction: -14.576672685293715
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.cap_sink_share_of_column_loss: 0.4801573140786493
+      - kdm6ad-g33m-migrate/number-003.bundles/39c6a52e2be3daa5ac584c1e07d305667cdda00706abe0f17853eb8d00330458/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.H_internal_cap_correction: -21.848063962260312
     evidence: [FINDING_internal_cap_enthalpy_v1.md]
     evidence_sha256: [FINDING_internal_cap_enthalpy_v1.md:e3ed8d45246b00865a26955bb3799261ba8baf06e5e6405560a8c5de10c3786f]
 
