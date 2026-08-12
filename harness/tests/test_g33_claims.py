@@ -833,3 +833,31 @@ def test_no_blocker_asserts_IMPOSSIBILITY_from_one_failed_attempt():
                 guilty.append((c["id"], m.group(0)))
     assert not guilty, (
         f"blockers assert unobtainability rather than what was tried: {guilty}")
+
+
+def test_BASIS_004_binds_BOTH_ledgers_and_the_TOTAL_precipitation():
+    """The claim makes two opposite statements and both have to be bound: the
+    basis is the whole answer on the water column that closes to roundoff
+    (213.6x), and no answer at all on the enthalpy rows (invariant). Binding
+    one would leave the other resting on nothing.
+
+    The 1.0x columns matter too. Without them "213.6x worse" reads as a
+    property of the basis rather than of a column whose residual is otherwise
+    at roundoff, which is the sentence the claim actually makes.
+    """
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-BASIS-004")
+    got = {w["path"]: w["value"] for w in claim["expected_values"]}
+    assert "enthalpy.worst_basis_difference" in got, "the enthalpy half is unbound"
+    for col in ("1", "2", "3"):
+        for b in ("operator", "physical"):
+            assert f"water.{col}.{b}.relative" in got, f"water {col}/{b} unbound"
+        assert f"water.{col}.basis_factor" in got, f"factor {col} unbound"
+
+    assert abs(got["water.1.basis_factor"] - 213.6) < 0.05, got["water.1.basis_factor"]
+    for col in ("2", "3"):
+        assert abs(got[f"water.{col}.basis_factor"] - 1.0) < 0.01, (
+            f"column {col} is dominated by a real departure; the basis must "
+            f"barely move it, or the claim's contrast is not what was measured")
+    assert got["enthalpy.worst_basis_difference"] < 3e-11, \
+        "the claim is 'basis-invariant to 3e-11 or better'"
