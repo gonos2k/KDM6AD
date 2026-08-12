@@ -775,3 +775,30 @@ def test_NUMBER_009_binds_BOTH_of_its_sources_and_the_RIGHT_chain():
     assert "n12.rezero.metric_trajectory.json" not in files, (
         "bound the MAIN chain -- this claim is entirely about ice, and the "
         "two files differ by one component of the name")
+
+
+def test_MSTEPI_001_binds_a_REFINEMENT_CHAIN_not_a_single_step():
+    """The claim is about where each chain REACHES one sub-step, and a schedule
+    is a property of the step the run was made at (dtcld = 300/nsplit). One
+    member cannot answer it: at h = 25 s the main chain is at 3 and the ice
+    chain is already at 1, and only the 6.25 s member shows main reaching 1.
+
+    Binding one member would have certified the ice half and left the main half
+    -- the "needs h = 6.25 s" -- resting on nothing.
+    """
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-MSTEPI-001")
+    got = {(w["file"].rsplit("/", 1)[-1], w["path"]): w["value"]
+           for w in claim["expected_values"]}
+    steps = {f: v for (f, p), v in got.items() if p == "delt"}
+    assert sorted(steps.values()) == [6.25, 12.5, 25.0], steps
+
+    def at(step, chain, col):
+        f = next(f for f, v in steps.items() if v == step)
+        return got[(f, f"by_chain.{chain}.{col}.substeps")]
+
+    # column 3 is the one the claim names
+    assert [at(h, "main", "3") for h in (25.0, 12.5, 6.25)] == [3.0, 2.0, 1.0], \
+        "the main chain's descent to one sub-step is what fixes h = 6.25 s"
+    assert [at(h, "ice", "3") for h in (25.0, 12.5, 6.25)] == [1.0, 1.0, 1.0], \
+        "the ice chain is already at one at the coarsest step"
