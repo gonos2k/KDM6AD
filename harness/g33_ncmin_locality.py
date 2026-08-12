@@ -616,6 +616,14 @@ def analysis(driver: str, fixture: str) -> dict:
     # -- and here is not -- the configuration the surrounding bundle used
     # (Codex). The baseline is included because it was executed too.
     return {"f32_eps": F32_EPS, "partitions": rows,
+            # The PER-COLUMN-ORACLE table, in the same artifact. Its signed
+            # figures are the claim's headline -- the whole domain rains 20.72%
+            # LESS than the local answer in the sea column, and (2,1) rains
+            # 20.67% MORE in the land column -- and they were unbindable while
+            # this table lived only in a function nothing published. Binding a
+            # same-looking number from the whole-domain-baseline table above
+            # would have pinned a different quantity (owner priority 6).
+            "local_oracle": local_oracle(driver, fixture),
             "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                     # The DOMAIN the decompositions cover. The driver
                     # error-stops with "tile sizes must sum to B" on anything
