@@ -311,16 +311,10 @@ def validate(man: dict) -> list:
     if man.get("instrumented") is True:
         kinds = {a.get("analysis") for a in (man.get("analyses") or [])
                  if isinstance(a, dict)}
-        pinned = {Path(e["path"]).stem
-                  for e in (man.get("producer_modules") or [])
-                  if isinstance(e, dict) and isinstance(e.get("path"), str)}
-        absent = [k for k, mod in sorted(REQUIRED_WHEN_INSTRUMENTED.items())
-                  if k not in kinds and mod in pinned]
+        absent = [k for k in REQUIRED_WHEN_INSTRUMENTED if k not in kinds]
         if absent:
-            bad.append(f"instrumented bundle pins the analyzer for {absent} but "
-                       f"carries no such analysis -- the module was reachable "
-                       f"when this bundle was made, so its output is missing, "
-                       f"not merely absent from an older contract")
+            bad.append(f"instrumented bundle is missing the analyses that make "
+                       f"it instrumented: {absent}")
     for key in ("member_parsers", "producer_modules", "tracked_build_inputs"):
         block = man.get(key)
         if not isinstance(block, list) or not block:
@@ -415,29 +409,20 @@ MULTI_RUN_ANALYSES = ("ncmin_locality", "qr_process_ledger")
 #: What an `--nflux` bundle must actually contain. `instrumented: true` with a
 #: single arm_stream satisfied "analyses is non-empty" while carrying none of
 #: the instrumented analyses (owner §8.3).
-#: analysis -> the producer module that computes it.
+#: Every analysis an `--nflux` bundle must carry. FLAT, and the archive is
+#: brought up to it rather than exempted.
 #:
-#: A MAPPING, not a list, because the requirement has to be conditional on the
-#: analyzer having EXISTED. Four archived bundles are instrumented, immutable
-#: and pinned by digest in the claim registry; requiring an analysis added
-#: afterwards would have declared all four schema-invalid and failed the whole
-#: evidence chain. Rewriting them is not an option and neither is exempting
-#: them by name.
-#:
-#: The bundle already answers the question about itself: `producer_modules` is
-#: derived from the analysis registries at production time, so a bundle pins
-#: `g33_substep_schedule` exactly when that analyzer was reachable when it was
-#: made. Requiring the analysis of a bundle that pins its module is therefore
-#: forward-binding without a version table and without an exception list.
-REQUIRED_WHEN_INSTRUMENTED = {
-    "matched_closure": "g33_matched_closure",
-    "cap_interface": "g33_cap_interface",
-    "extension_protocol": "g33_number_transport",
-    "dual_ledger": "g33_dual_ledger",
-    "defect_magnitude": "g33_defect_magnitude",
-    "internal_cap_enthalpy": "g33_cap_interface",
-    "substep_schedule": "g33_substep_schedule",
-}
+#: Making it conditional on the bundle's own `producer_modules` looked like it
+#: spared four immutable archived bundles, but a manifest that omits a module
+#: pin then omits the requirement with it -- the synthetic manifest pins the
+#: placeholder "p", so the rule required NOTHING there and the existing
+#: instrumented-analyses regression went green while asserting nothing (Codex).
+#: A contract a manifest can switch off by leaving something out is not a
+#: contract, which is the same lesson as every other check here.
+REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
+                              "extension_protocol", "dual_ledger",
+                              "defect_magnitude", "internal_cap_enthalpy",
+                              "substep_schedule")
 
 _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
                    "analyzer_commit", "analyzer_blob_sha")

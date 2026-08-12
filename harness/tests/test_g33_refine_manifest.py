@@ -318,22 +318,20 @@ def test_a_malformed_decomposition_is_REJECTED_not_a_CRASH(tmp_path, dec):
     assert rm.validate(m), "must be rejected"
 
 
-def test_the_THREE_analysis_registries_agree():
-    """One name has to appear in three places, in two modules:
+def test_the_FOUR_analysis_registries_agree():
+    """One name has to reach four places, in three files:
 
       ANALYSES                    what the producer RUNS
       DERIVED_ANALYSES            what the manifest ACCEPTS
       REQUIRED_WHEN_INSTRUMENTED  what an instrumented bundle MUST carry
+      FINDING_bundle_analyses_v1  what the record SAYS a bundle carries
 
-    `substep_schedule` reached the first and not the second, and every
-    instrumented publication failed. Adding it to the second left the third,
-    where the failure is quieter: an instrumented manifest could omit the
-    analysis and validate, so a claim bound to it would lose its artifact with
-    nothing saying so (Codex, twice).
-
-    `_analyses` runs exactly `ANALYSES`, exactly when `nflux`, so all three
-    cover the same set. They cannot be derived from one another -- the
-    experiment imports the manifest, so the dependency runs one way only.
+    `substep_schedule` reached them one at a time, each gap found separately:
+    publication failed on the second, an instrumented manifest could silently
+    omit the analysis on the third, and the finding disagreed with the code on
+    the fourth. Checking them together is what stops the next analysis
+    repeating it. They cannot be derived from one another -- the experiment
+    imports the manifest, so the dependency runs one way only.
     """
     import g33_refine_experiment as rx
     runs = set(rx.ANALYSES)
@@ -345,34 +343,3 @@ def test_the_THREE_analysis_registries_agree():
         f"produced but not declared: {sorted(runs - declared)}; "
         f"declared but never produced: "
         f"{sorted(declared - runs - {'metric_trajectory'})}")
-    # And the module each requirement names must be the module that computes
-    # it -- the requirement is conditional on that module being pinned, so a
-    # wrong name here silently switches the requirement off.
-    assert {k: v for k, v in rm.REQUIRED_WHEN_INSTRUMENTED.items()} == \
-        {name: mod for name, (mod, _fn) in rx.ANALYSES.items()}, \
-        "a requirement names a different module than the analysis it guards"
-
-
-def test_an_instrumented_bundle_that_PINS_an_analyzer_must_carry_its_output():
-    """Conditional on the pin, because four archived instrumented bundles are
-    immutable and pinned by digest: a flat requirement declared all four
-    schema-invalid and failed the entire evidence chain. A bundle produced
-    BEFORE the analyzer existed does not pin its module and is not asked for
-    its output; one produced after is."""
-    man = _real_manifest()
-    man["instrumented"] = True
-    man["analyses"] = [a for a in man["analyses"]
-                       if a.get("analysis") != "substep_schedule"]
-    man["producer_modules"] = [
-        {"path": "harness/g33_substep_schedule.py", "commit": "a" * 40,
-         "blob_sha": "b" * 40, "content_sha256": "c" * 64}]
-    bad = rm.validate(man)
-    assert any("substep_schedule" in b for b in bad), bad
-
-    # The same manifest WITHOUT that pin is a bundle from before the analyzer
-    # existed, and must stay valid.
-    man["producer_modules"] = [
-        {"path": "harness/g33_dual_ledger.py", "commit": "a" * 40,
-         "blob_sha": "b" * 40, "content_sha256": "c" * 64}]
-    assert not any("substep_schedule" in b for b in rm.validate(man)), \
-        "an older bundle was asked for an analysis that did not exist yet"
