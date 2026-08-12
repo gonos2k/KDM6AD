@@ -6,6 +6,7 @@ repo and are absent in CI, so a test written against them would assert the host.
 import hashlib
 import inspect
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -637,19 +638,21 @@ def _leg() -> str:
 
     This was a hardcoded identity digest. Re-producing the bundle -- which the
     flat instrumented-analyses contract required -- moved it, the file stopped
-    existing, and `needs_bundle` turned TWELVE real tests into skips. The gate
-    still said "passed": a stale constant here does not fail, it quietly stops
-    checking, which is the failure mode this whole file exists to prevent.
+    existing, and `needs_bundle` turned TWELVE real tests into skips while the
+    gate still said "passed". A stale constant does not fail here, it quietly
+    stops checking.
 
-    The store is content-addressed and `dest` is a symlink onto the current
-    identity, so reading the link is the question this constant was trying to
-    answer.
+    `os.readlink`, not `Path.resolve`: resolve does NOT raise on a dangling
+    symlink, it returns the missing target's name, so the first version of this
+    produced a plausible path for a broken store and reported nothing (Codex).
+    readlink reads the link itself and raises when there is no link to read.
     """
     link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
     try:
-        return f"kdm6ad-g33m-migrate/number-003.bundles/{link.resolve().name}"
-    except OSError:                       # no bundle on this host at all
-        return "kdm6ad-g33m-migrate/number-003.bundles/absent"
+        name = os.path.basename(os.readlink(link))
+    except OSError:                       # not a symlink, or not there at all
+        name = "absent"
+    return f"kdm6ad-g33m-migrate/number-003.bundles/{name}"
 
 
 _LEG = _leg()
@@ -666,11 +669,26 @@ def _bundles_present():
 
 def test_the_bundle_these_checks_READ_is_actually_present():
     """`needs_bundle` skips when the bundle is missing, which is right on a
-    host that has none -- and indistinguishable from a stale path on a host
-    that has one. This says which case it is, and fails on the second."""
-    link = ec.HOME / "kdm6ad-g33m-migrate" / "number-003"
-    if not link.exists():
-        pytest.skip("no bundle store on this host")
+    host that has none and wrong on a host whose store is BROKEN. Both look
+    identical to it, so this says which case it is.
+
+    Three states, not two. `Path.exists()` follows the link, so a dangling
+    symlink -- a store whose bundle directory was removed -- answered False and
+    read as "no store on this host", skipping twelve checks over a store that
+    was right there and damaged (Codex). `os.path.lexists` sees the link
+    itself, which is what separates them.
+    """
+    root = ec.HOME / "kdm6ad-g33m-migrate"
+    link, store = root / "number-003", root / "number-003.bundles"
+    if not store.is_dir() and not os.path.lexists(link):
+        pytest.skip("no bundle store for number-003 on this host")
+    assert os.path.lexists(link), (
+        f"{store.name} exists but {link.name} does not -- the store is here "
+        f"and its published link is gone, so every `needs_bundle` test is "
+        f"skipping rather than checking")
+    assert link.exists(), (
+        f"{link.name} dangles: it names "
+        f"{os.readlink(link)!r}, which is not there")
     assert _bundles_present(), (
         f"the store has number-003 but {_TRUTH['file']} is not there -- the "
         f"path is stale, and every `needs_bundle` test is skipping rather "
