@@ -31,6 +31,7 @@ superseded implementation (owner §8.1):
 | `defect_magnitude` | per member | the residual against every denominator that means something |
 | `internal_cap_enthalpy` | per member | both enthalpy ledgers: the internal cap sink charged where it died, beside the previous all-at-the-surface charge |
 | `substep_schedule` | per member | how many sub-steps each column ran, per chain: `mstep` for qr/nr/qs/qg and `mstep_i` for qi/ni |
+| `water_enthalpy_basis` | per member | the water and enthalpy COLUMN totals under both bases, and how much the basis moves each |
 | `metric_trajectory` | bundle | the metric/trajectory split across the density arms |
 <!-- /analyses -->
 

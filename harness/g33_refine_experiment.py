@@ -47,6 +47,7 @@ import g33_dual_ledger as dl          # noqa: E402
 import g33_defect_magnitude as dm     # noqa: E402
 import g33_metric_trajectory as mtj   # noqa: E402
 import g33_substep_schedule as sss    # noqa: E402
+import g33_water_enthalpy_basis as web  # noqa: E402
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -216,6 +217,12 @@ ANALYSES = {
     # them, so `extension_protocol` could say 72 mstep records and not say that
     # column 3 ran three of them while the ice chain ran one.
     "substep_schedule": ("g33_substep_schedule", lambda s: sss.analysis(s)),
+    # The COLUMN totals under both bases. `dual_ledger` answers this per
+    # species; §9.2 asks it of the column, where the basis is the whole answer
+    # on a column that closes to roundoff and changes nothing on one that does
+    # not.
+    "water_enthalpy_basis": ("g33_water_enthalpy_basis",
+                             lambda s: web.analysis(s)),
     # Water destroyed INSIDE the column is not precipitation (owner §16-4).
     # Both ledgers, so the correction is visible rather than a silent swap.
     "internal_cap_enthalpy": ("g33_cap_interface",

@@ -396,7 +396,8 @@ _MAX_NSPLIT = 2 ** 31 - 1
 #: derived analysis, so a typo shipped as a new kind (owner §8.2).
 DERIVED_ANALYSES = ("matched_closure", "cap_interface", "extension_protocol",
                     "dual_ledger", "defect_magnitude", "internal_cap_enthalpy",
-                    "metric_trajectory", "substep_schedule")
+                    "metric_trajectory", "substep_schedule",
+                    "water_enthalpy_basis")
 
 #: Analyses that run the DRIVER over several configurations rather than
 #: reading one member stream. They analyse the bundle's own binary, so the
@@ -422,7 +423,7 @@ MULTI_RUN_ANALYSES = ("ncmin_locality", "qr_process_ledger")
 REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
                               "extension_protocol", "dual_ledger",
                               "defect_magnitude", "internal_cap_enthalpy",
-                              "substep_schedule")
+                              "substep_schedule", "water_enthalpy_basis")
 
 _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
                    "analyzer_commit", "analyzer_blob_sha")
