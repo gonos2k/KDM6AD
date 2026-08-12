@@ -1410,15 +1410,15 @@ claims:
     # one this artifact carries, and binding a same-looking number
     # from the wrong table would pin the wrong quantity.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/manifest.json: b9597ee108f9020ae561bfd0457f984d3fe4b38a6dda09ffaa8d06a604d6ab89
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/manifest.json: 063a66c91755b12499f0911e004e448077f51a579a0c84fce775a616edd453eb
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
 
@@ -1469,22 +1469,22 @@ claims:
       g33_fixture_boundary_mapping_v1, one call, nsplit=1. No mass weighting,
       no dt, and no closure against micro_pre/post_state_update.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/manifest.json: b9597ee108f9020ae561bfd0457f984d3fe4b38a6dda09ffaa8d06a604d6ab89
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/manifest.json: 063a66c91755b12499f0911e004e448077f51a579a0c84fce775a616edd453eb
     # Bound so the HOLD is auditable: these are the exact numbers the
     # current ledger produced, and a corrected ledger must be compared
     # against them rather than quietly replacing them.
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.total_delta: -6.929440905878437e-05
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.pracw: 0.8531936572759405
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.praut: 0.1468063427240594
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.total_delta: -0.04465581747357174
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.pracw: 0.8698817721107084
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.praut: 0.13011822788929156
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.total_delta: -0.044580031419154426
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.pracw: 0.8698817721107085
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.praut: 0.13011822788929162
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/a3f27ee150df84396ec8e489b905608d24f9804cbff244c34c52e9778c1a5427/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.total_delta: -6.929440905878437e-05
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.pracw: 0.8531936572759405
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.praut: 0.1468063427240594
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.total_delta: -0.04465581747357174
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.pracw: 0.8698817721107084
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.praut: 0.13011822788929156
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.total_delta: -0.044580031419154426
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.pracw: 0.8698817721107085
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.praut: 0.13011822788929162
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/aeab4d339a1dfe49867cb019849c7c27be16bd94bed57c1e0896c62ff45c971f/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:e11283598f4282b07bdfd48d53026d628c908fa50082d3225fd9d40d5692de77]
 
