@@ -802,3 +802,34 @@ def test_MSTEPI_001_binds_a_REFINEMENT_CHAIN_not_a_single_step():
         "the main chain's descent to one sub-step is what fixes h = 6.25 s"
     assert [at(h, "ice", "3") for h in (25.0, 12.5, 6.25)] == [1.0, 1.0, 1.0], \
         "the ice chain is already at one at the coarsest step"
+
+
+def test_no_blocker_asserts_IMPOSSIBILITY_from_one_failed_attempt():
+    """Four times this session a blocker said evidence was absent or
+    unrecoverable, and four times it was a reading that had not gone far
+    enough: "no mstepi records" (wrong field, wrong case), "no substep size is
+    stored" (the parser had always filed it), "the artifact does not store the
+    spread" (it stores `humidity.N.spread`), and "the sensitivity triple does
+    NOT reconstruct" (one wrong instrument, not a proof) (Codex).
+
+    A blocker records why THIS attempt did not bind. Declaring the evidence
+    unobtainable is a different and much stronger claim, and it stopped further
+    work every time it was wrong.
+    """
+    import re
+    forbidden = re.compile(
+        r"\bcannot be (?:reproduced|recovered|derived)\b"
+        r"|\bdoes NOT reconstruct\b"
+        r"|\bis impossible\b"
+        r"|\bno way to\b", re.I)
+    guilty = []
+    for c in CLAIMS:
+        b = c.get("migration_blocker", "")
+        for m in forbidden.finditer(b):
+            # A blocker may quote the overreach in order to withdraw it.
+            window = b[max(0, m.start() - 60):m.start()]
+            if not re.search(r"\bNOT established\b|\bwas wrong\b|\bwithdraw",
+                             window, re.I):
+                guilty.append((c["id"], m.group(0)))
+    assert not guilty, (
+        f"blockers assert unobtainability rather than what was tried: {guilty}")
