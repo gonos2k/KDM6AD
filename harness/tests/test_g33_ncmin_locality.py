@@ -192,8 +192,12 @@ def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
     partition as clean. `(2,1)` survives because it also differs in column 1,
     which is exactly the trap: the tool would still look like it was working."""
     real = nl.read_records
-    monkeypatch.setattr(nl, "read_records", lambda t, label: {
-        k: v for k, v in real(t, label=label).items() if k[2] != 2})
+    # Forward EVERYTHING. The stub took (t, label) only, so it broke the moment
+    # `analysis` gained a call path that passes `nsplit` -- a stub narrower than
+    # the function it replaces fails on the caller it was not written for,
+    # which is a property of the stub and not of the change.
+    monkeypatch.setattr(nl, "read_records", lambda t, *a, **k: {
+        key: v for key, v in real(t, *a, **k).items() if key[2] != 2})
     monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
     p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert p["1,1,1"]["components_differing"] == 0, \

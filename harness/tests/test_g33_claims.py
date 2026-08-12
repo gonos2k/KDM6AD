@@ -951,3 +951,31 @@ def test_the_repeat_check_sees_the_LAST_window():
     assert _repeated_window(p + " MIDDLE " + p) == p
     assert _repeated_window(p) is None, "a single copy is not a repeat"
     assert _repeated_window("short") is None
+
+
+def test_the_SIGNED_oracle_figures_are_bound_with_their_SIGN():
+    """The claim's headline is signed: the whole domain rains 20.72% LESS than
+    the per-column answer in the sea column, and (2,1) rains 20.67% MORE in the
+    land column. An earlier version of this claim said "+20.72%" and "too
+    much", which is the opposite reading.
+
+    Bound from `local_oracle`, not from the whole-domain-baseline table. Those
+    tables carry same-looking magnitudes for different quantities, and binding
+    the wrong one was why these stayed unbound at all.
+    """
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
+    got = {w["path"]: w["value"] for w in claim["expected_values"]
+           if "local_oracle" in w["path"]}
+    assert len(got) == 3, sorted(got)
+    assert all("local_oracle.partitions." in p for p in got)
+
+    def at(part, col):
+        return got[f"local_oracle.partitions.{part}."
+                   f"column_integrated.operator.{col}/qr.signed_rel"]
+
+    assert at("3", "2") < 0, "the whole domain rains LESS in the sea column"
+    assert at("1,2", "2") == at("3", "2"), "(1,2) matches the whole domain"
+    assert at("2,1", "1") > 0, "(2,1) rains MORE in the land column"
+    assert abs(at("3", "2") + 0.2072) < 5e-5, at("3", "2")
+    assert abs(at("2,1", "1") - 0.2067) < 5e-5, at("2,1", "1")
