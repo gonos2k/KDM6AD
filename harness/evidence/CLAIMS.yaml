@@ -117,6 +117,15 @@ claims:
       a member-to-member SPREAD across the f64 members. The pinned bundles
       are f32 and each holds one member stream, so the spread has no members
       to range over. Needs an f64 multi-member sweep
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32 vs f64, legacy
@@ -828,7 +837,7 @@ claims:
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
     artifacts:
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/manifest.json: c0611c734dd36668ac4086af58cee4da676c444979fa7d81ce86a67dd486b846
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/manifest.json: fecc799272bb2af76f9ba1624ae0c43c978c7ce9b350dcd874a06c417fc80703
     # Every figure the text publishes. The percentages and the ratios come
     # from DIFFERENT artifacts -- an arm's residual as a fraction of ITS own
     # surface flux is `defect_magnitude` run on that arm's stream, while the
@@ -840,42 +849,42 @@ claims:
     # changes its sub-step schedule" -- and is a boolean, so it is read in
     # this same artifact rather than bound here, which takes floats.
     expected_values:
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: -0.07031193241925665
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: -0.07929657660689306
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.11912310379409295
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.13265305995533935
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.actual_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.actual_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.9882310767857814
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.011768923214218614
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.actual_over_baseline: -1.0223392439128696
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.metric_over_baseline: -0.9999996481135064
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.trajectory_over_metric: 0.022339603660368006
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.0117719207421003
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.005885960371050107
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.actual_over_baseline: 1.9639272724434371
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.018036363778281436
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.actual_over_baseline: 0.9877970211607088
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000008923722377
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.012203860321142707
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.actual_over_baseline: 1.0291939948540039
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.metric_over_baseline: 0.9999992006996976
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.trajectory_over_metric: 0.029194817489732572
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.actual_over_baseline: 1.0122978990090625
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.01229789900906251
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.actual_over_baseline: 0.9404924923752421
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
-      - kdm6ad-g33m-migrate/number-009-ice.bundles/0fcf95ec4e6927743be2cc2efca036be23816e65f58ea9b1a9646791de0f767d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.05950750762475787
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.uniform.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: -0.07031193241925665
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.inverted.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: -0.07929657660689306
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.11912310379409295
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.x2.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.13265305995533935
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.actual_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.metric_over_baseline: 0.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.actual_over_baseline: -0.9882310767857814
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.metric_over_baseline: -1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.trajectory_over_metric: 0.011768923214218614
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.actual_over_baseline: -1.0223392439128696
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.metric_over_baseline: -0.9999996481135064
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.trajectory_over_metric: 0.022339603660368006
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.actual_over_baseline: 2.0117719207421003
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.2.trajectory_over_metric: 0.005885960371050107
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.actual_over_baseline: 1.9639272724434371
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.metric_over_baseline: 2.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.x2.3.trajectory_over_metric: 0.018036363778281436
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.actual_over_baseline: 0.9877970211607088
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.metric_over_baseline: 1.0000008923722377
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.trajectory_over_metric: 0.012203860321142707
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.actual_over_baseline: 1.0291939948540039
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.metric_over_baseline: 0.9999992006996976
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.trajectory_over_metric: 0.029194817489732572
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.actual_over_baseline: 1.0122978990090625
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.trajectory_over_metric: 0.01229789900906251
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.actual_over_baseline: 0.9404924923752421
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.metric_over_baseline: 1.0
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/5b107e7b4f2eaabd2ec6cbae4372b7849ec916fff83c6b7eca425c7b49da591d/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.trajectory_over_metric: 0.05950750762475787
     grade: confirmed
     basis: >
       the same six arms with the ice mass control closing throughout, the exact
@@ -992,6 +1001,15 @@ claims:
       (all_charged_at_surface.1.eta = 0.41796), but the claim's eta sentence
       is about the different regime where H_out ~ 0. Needs an f64 member
       sweep
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f64 instrument arm
@@ -1044,6 +1062,15 @@ claims:
       also carries no column-water total -- dual_ledger rows are per species
       -- so W_final, W_initial and P_surface would each have to be summed by
       the reader. Needs an f64 run of a water-column-ledger analysis
+      This is NOT simply an unrun f64 leg. The analyses it needs are in
+      REQUIRED_WHEN_INSTRUMENTED, so they exist only in an instrumented
+      bundle, and instrumentation is `--nflux` -- which `--arm f64`
+      REFUSES, because the overlay's number records write
+      `'f32', transfer(<real>, 0)` and under -fdefault-real-8 that carries
+      four bytes of an eight-byte real under an f32 label. The parser
+      would read a valid-looking bit pattern that is not the number. The
+      remedy is a 16-hex-digit record family, which is an owner decision
+      about the record protocol, not a run anyone can schedule
     grade: confirmed-with-scope
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy, f32 and f64

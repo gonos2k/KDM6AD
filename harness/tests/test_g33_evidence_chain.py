@@ -1329,3 +1329,59 @@ def test_an_EMPTY_folded_block_reads_as_ABSENT(tmp_path, monkeypatch):
         f"an empty folded block read as {got['G33-EMPTY-001']!r} -- anything "
         f"truthy here makes a deleted field look present")
     assert got["G33-FULL-001"] == "a stated reason"
+
+
+def _tiny_repo(tmp_path):
+    """A repo with one live commit and one that exists but no ref contains."""
+    import subprocess as sp
+    r = lambda *a: sp.run(a, cwd=tmp_path, capture_output=True, text=True)
+    r("git", "init", "-q", "-b", "main")
+    r("git", "config", "user.email", "t@t"); r("git", "config", "user.name", "t")
+    (tmp_path / "a.txt").write_text("one\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "one")
+    live = r("git", "rev-parse", "HEAD").stdout.strip()
+    (tmp_path / "a.txt").write_text("two\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "two")
+    dead = r("git", "rev-parse", "HEAD").stdout.strip()
+    r("git", "reset", "-q", "--hard", live)       # `dead` is now dangling
+    return live, dead
+
+
+def test_a_SQUASHED_provenance_commit_is_CAUGHT(tmp_path, monkeypatch):
+    """A bundle was produced, then the WIP commits it recorded were squashed
+    into one. Every content digest still verified -- the bytes had not moved --
+    so the chain stayed green while `repo_commit` and all three pin blocks
+    named a commit no ref contained (Codex).
+
+    The distinction this has to draw is EXISTS versus REACHABLE: a discarded
+    commit stays in the object database until gc, which is why a check built on
+    `git cat-file -e` kept passing.
+    """
+    import subprocess as sp
+    live, dead = _tiny_repo(tmp_path)
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+
+    assert sp.run(["git", "cat-file", "-e", f"{dead}^{{commit}}"], cwd=tmp_path
+                  ).returncode == 0, "the weaker check must still pass here, " \
+                                     "or this test is not exercising the gap"
+    assert ec._reachable(live), "a commit on the branch must be reachable"
+    assert not ec._reachable(dead), (
+        "a squashed commit is still in the object database -- reachability is "
+        "the question, and existence is not it")
+
+    man = {"repo_commit": dead,
+           "member_parsers": [{"path": "p.py", "commit": live}],
+           "producer_modules": [], "tracked_build_inputs": []}
+    rows = {r["state"] for r in ec._commit_states(man)}
+    assert "COMMIT-UNREACHABLE" in rows, ec._commit_states(man)
+    assert "COMMIT-UNREACHABLE" in ec.FAILING_STATES, \
+        "an unreachable anchor must FAIL, not be reported and passed over"
+
+
+def test_the_LIVE_bundles_anchor_to_reachable_commits():
+    """The bundles this repo actually pins. Not a synthetic: the defect was
+    found on a real one."""
+    for name, man in ec.bundles().items():
+        bad = [r for r in ec._commit_states(man)
+               if r["state"] == "COMMIT-UNREACHABLE"]
+        assert not bad, f"{name} anchors to a discarded commit: {bad}"

@@ -246,6 +246,52 @@ def members_of(manifest: Path) -> list[dict]:
     # masked by the module row at the same path (Codex).
     out.extend({"scope": "repo", "origin": "module_pin", **m}
                for m in _module_states(man))
+    out.extend({"scope": "repo", "origin": "commit_anchor", **c}
+               for c in _commit_states(man))
+    return out
+
+
+def _reachable(commit: str) -> bool:
+    """Is `commit` reachable from a ref, or merely still in the object database?
+
+    `git cat-file -e` answers the wrong question. A commit discarded by a
+    rebase or a squash survives as a loose object until gc, so every blob
+    pinned through it keeps resolving and every content digest keeps matching
+    -- the whole chain stays green while the anchor is already dangling.
+    """
+    r = subprocess.run(["git", "for-each-ref", "--contains", commit,
+                        "--count=1"], cwd=REPO, capture_output=True, text=True)
+    return r.returncode == 0 and bool(r.stdout.strip())
+
+
+def _commit_states(man: dict) -> list:
+    """Every commit this manifest anchors a pin to, checked for reachability.
+
+    A bundle was produced, and the WIP commits it recorded were then squashed
+    into one. The bundle's content pins all still verified -- the bytes had not
+    changed -- but `repo_commit` and all three pin blocks named a commit no ref
+    contained, so nothing could fetch the history the pins point into and gc
+    would drop it (Codex). The point of pinning a commit is that a reader can
+    go and get it.
+    """
+    seen: dict = {}
+    if isinstance(man.get("repo_commit"), str) and man["repo_commit"]:
+        seen.setdefault(man["repo_commit"], set()).add("repo_commit")
+    for key, _field in _PIN_BLOCKS:
+        for e in man.get(key) or []:
+            c = e.get("commit")
+            if isinstance(c, str) and c:
+                seen.setdefault(c, set()).add(key)
+    out = []
+    for c, keys in sorted(seen.items()):
+        ok = _reachable(c)
+        out.append({
+            "file": f"{c[:12]} [{'+'.join(sorted(keys))}]",
+            "state": "matches" if ok else "COMMIT-UNREACHABLE",
+            "detail": "" if ok else
+                      f"no ref contains {c[:12]} -- this pin anchors to a "
+                      f"commit discarded by a rebase or squash. It resolves "
+                      f"today only because gc has not run"})
     return out
 
 
@@ -555,6 +601,7 @@ FAILING_STATES = frozenset({
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
     "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
+    "COMMIT-UNREACHABLE",
 })
 
 
