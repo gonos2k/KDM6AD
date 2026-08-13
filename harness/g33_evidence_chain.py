@@ -103,17 +103,17 @@ def claims() -> list[dict]:
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
-                m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
+                m := re.match(r"^      -\s+(\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
         elif in_art and section == "expected_values" and (
-                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(\S+)"
+                m := re.match(r"^      -\s+([^#\s]+)#([^:\s]+):\s*(\S+)"
                               r"(?:\s+~\s+(\S+))?\s*$", line)):
             cur["expected_values"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "value": float(m.group(3)),
                  "tolerance": float(m.group(4)) if m.group(4) else 0.0})
         elif in_art and section == "expected_predicates" and (
-                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
+                m := re.match(r"^      -\s+([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
             # NON-NUMERIC load-bearing facts. `expected_values` takes floats,
             # so `causal_attribution_valid: true` and `comparable: true` sat in
             # the artifact unbound -- a claim could rest on them and the chain
@@ -121,7 +121,7 @@ def claims() -> list[dict]:
             cur["expected_predicates"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "want": _literal(m.group(3))})
-        elif cur is not None and re.match(r"^\s+- \S", line):
+        elif cur is not None and re.match(r"^\s+-\s", line):
             # An ORPHAN list item: it is not inside a folded block (that branch
             # ran first) and it matched no binding shape. Two ways to get here
             # and both were silent:
@@ -133,7 +133,12 @@ def claims() -> list[dict]:
             #     declarations and the claim still read as bound (Codex).
             #
             # The first version only caught the first, because it required
-            # `in_art` -- which is exactly what a bad header switches off.
+            # `in_art` -- which is exactly what a bad header switches off. The
+            # second still demanded ONE space after the dash, in both the
+            # binding shapes and here, so `-  file#path: 0.5` and a tab were
+            # valid YAML that parsed as nothing and tripped nothing (Codex).
+            # The shapes now accept any list-item spacing, so this fires only
+            # on items that are genuinely not bindings.
             raise ValueError(
                 f"{cur['id']}: unparseable `{section}` entry: {line.strip()!r}")
     return out

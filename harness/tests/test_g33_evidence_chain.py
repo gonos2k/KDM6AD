@@ -1589,3 +1589,30 @@ def test_a_BROKEN_SECTION_HEADER_cannot_drop_the_whole_block(tmp_path, bad):
             ec.claims()
     finally:
         ec.REGISTRY = old
+
+
+@pytest.mark.parametrize("spacing", ["-  ", "-   ", "-\t"])
+def test_VALID_yaml_list_spacing_still_binds(tmp_path, spacing):
+    """`-  file#path: 0.5` and a tab are valid YAML. Both the binding shapes
+    and the orphan guard demanded exactly ONE space after the dash, so those
+    entries parsed as nothing AND tripped nothing -- the guard written to
+    backstop an over-narrow regex repeated its narrowness (Codex).
+
+    Refusing them would have been wrong too: this file is YAML, and a
+    reformat is not a corruption. They are accepted.
+    """
+    src = ec.REGISTRY.read_text()
+    base = sum(len(c["expected_values"]) + len(c["expected_predicates"])
+               for c in ec.claims())
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and ".json#" in l)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace(line, line.replace("- ", spacing, 1), 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        got = sum(len(c["expected_values"]) + len(c["expected_predicates"])
+                  for c in ec.claims())
+    finally:
+        ec.REGISTRY = old
+    assert got == base, (
+        f"{spacing!r} after the dash lost a binding: {got} of {base}")
