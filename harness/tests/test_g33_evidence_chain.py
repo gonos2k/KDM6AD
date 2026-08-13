@@ -1456,3 +1456,66 @@ def test_the_LIVE_bundles_anchor_to_reachable_commits():
         bad = [r for r in ec._commit_states(man)
                if r["state"] == "COMMIT-UNREACHABLE"]
         assert not bad, f"{name} anchors to a discarded commit: {bad}"
+
+
+def _pred_probe(tmp_path, doc, path, want):
+    """One predicate resolved against a synthetic artifact."""
+    (tmp_path / "b").mkdir(exist_ok=True)
+    (tmp_path / "b" / "a.json").write_text(json.dumps(doc))
+    old, ec.HOME = ec.HOME, tmp_path
+    try:
+        return ec.resolve_predicate({"file": "b/a.json", "path": path,
+                                     "want": want}, {"b/a.json"}, {"b": {}})
+    finally:
+        ec.HOME = old
+
+
+def test_a_PREDICATE_binds_a_non_numeric_fact(tmp_path):
+    """`expected_values` parses floats, so `causal_attribution_valid: true` and
+    `comparable: true` sat in the artifact unbound while claims rested on them
+    (owner §7.3). A claim could lose one and the chain had no way to say so."""
+    doc = {"ok": True, "s": "legacy"}
+    assert _pred_probe(tmp_path, doc, "ok", True)["state"] == "predicate-matches"
+    assert _pred_probe(tmp_path, doc, "ok", False)["state"] == "PREDICATE-MISMATCH"
+    assert _pred_probe(tmp_path, doc, "s", "legacy")["state"] == "predicate-matches"
+    assert _pred_probe(tmp_path, doc, "s", "x")["state"] == "PREDICATE-MISMATCH"
+    assert _pred_probe(tmp_path, doc, "gone", True)["state"] == "PREDICATE-PATH-ABSENT"
+
+
+def test_a_NUMERIC_one_does_not_satisfy_a_boolean_predicate(tmp_path):
+    """`1 == True` in Python, and `isinstance(True, int)` is True as well. So a
+    count of one would satisfy `flag: true` under a plain `==`, and "the flag is
+    set" and "the count is one" would be the same assertion.
+
+    `resolve_value` already guards the other direction, refusing a bool so a
+    `True` cannot arrive as the number 1 against a declared 1.0.
+    """
+    r = _pred_probe(tmp_path, {"n": 1}, "n", True)
+    assert r["state"] == "PREDICATE-MISMATCH", r
+    assert r["got"] == 1
+
+
+def test_an_UNPINNED_file_cannot_supply_a_predicate(tmp_path):
+    """Same gate as a value: a fact may only be read from a file the claim's own
+    pinned manifest vouched for, or it is a fact about whatever happens to be on
+    this host."""
+    (tmp_path / "b").mkdir(exist_ok=True)
+    (tmp_path / "b" / "a.json").write_text(json.dumps({"ok": True}))
+    old, ec.HOME = ec.HOME, tmp_path
+    try:
+        r = ec.resolve_predicate({"file": "b/a.json", "path": "ok", "want": True},
+                                 set(), {"b": {}})
+    finally:
+        ec.HOME = old
+    assert r["state"] == "PREDICATE-UNPINNED-FILE"
+
+
+def test_every_PREDICATE_state_is_classified():
+    """An unlisted state FAILS, but only if it is listed somewhere. Both
+    fail-open holes in this file were a producer emitting a state the verdict
+    had never heard of."""
+    for s in ("predicate-matches", "predicate-unavailable", "PREDICATE-MISMATCH",
+              "PREDICATE-PATH-ABSENT", "PREDICATE-FILE-ABSENT",
+              "PREDICATE-PATH-AMBIGUOUS", "PREDICATE-UNPINNED-FILE",
+              "PREDICATE-FILE-UNREADABLE"):
+        assert s in ec.PASSING_STATES or s in ec.FAILING_STATES, s

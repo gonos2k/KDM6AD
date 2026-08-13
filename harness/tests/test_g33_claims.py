@@ -1014,3 +1014,41 @@ def test_the_contradiction_guard_is_not_VACUOUS():
                         "pre-sed record")
     assert stale.search("qv comes from the FIRST CALL pre-sed block")
     assert not stale.search("qv is read from `G33R INITIAL`")
+
+
+#: What a claim may declare about how completely its figures are bound.
+#:
+#: SEPARATE from `artifact_status`. That field says the artifact is pinned and
+#: its digest verified; it never said every load-bearing figure in the text was
+#: bound, and two pinned claims carried figures a comment admitted were unbound
+#: (owner §7). A reader saw `pinned` and had no way to tell the difference.
+BINDING_STATUS = frozenset({"full", "partial", "none"})
+
+
+def test_every_pinned_claim_DECLARES_how_completely_it_is_bound():
+    """`pinned` and `fully bound` are different facts and were the same word."""
+    for c in CLAIMS:
+        if c.get("artifact_status") != "pinned":
+            continue
+        got = c.get("binding_status", "")
+        assert got in BINDING_STATUS, (
+            f"{c['id']} is pinned but declares binding_status {got!r} -- "
+            f"pinned says the artifact is verified, not that the claim's "
+            f"figures are bound")
+
+
+def test_a_claim_bound_to_NOTHING_cannot_call_itself_bound():
+    """The one mechanical half of the policy: `none` must have no
+    expected_values, and `full`/`partial` must have some. Whether `full` is
+    honest about the claim's PROSE is a judgement the registry cannot make."""
+    ec = _chain()
+    live = {c["id"]: c for c in ec.claims()}
+    for c in CLAIMS:
+        st = c.get("binding_status", "")
+        if st not in BINDING_STATUS:
+            continue
+        n = len((live.get(c["id"], {}) or {}).get("expected_values", []))
+        if st == "none":
+            assert n == 0, f"{c['id']} declares `none` but binds {n} values"
+        else:
+            assert n > 0, f"{c['id']} declares {st!r} but binds nothing"

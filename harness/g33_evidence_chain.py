@@ -70,19 +70,22 @@ def claims() -> list[dict]:
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
-                   "evidence": [], "artifacts": {}, "expected_values": []}
+                   "evidence": [], "artifacts": {}, "expected_values": [],
+                   "expected_predicates": []}
             out.append(cur)
             in_art = folded = None or False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
             folded = None
-            in_art = m.group(1) in ("artifacts", "expected_values")
+            in_art = m.group(1) in ("artifacts", "expected_values",
+                                    "expected_predicates")
             section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "migration_blocker"):
+                                "blocker_kind", "binding_status",
+                                "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -109,7 +112,33 @@ def claims() -> list[dict]:
                 {"file": m.group(1), "path": m.group(2),
                  "value": float(m.group(3)),
                  "tolerance": float(m.group(4)) if m.group(4) else 0.0})
+        elif in_art and section == "expected_predicates" and (
+                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
+            # NON-NUMERIC load-bearing facts. `expected_values` takes floats,
+            # so `causal_attribution_valid: true` and `comparable: true` sat in
+            # the artifact unbound -- a claim could rest on them and the chain
+            # had no way to say so (owner §7.3).
+            cur["expected_predicates"].append(
+                {"file": m.group(1), "path": m.group(2),
+                 "want": _literal(m.group(3))})
     return out
+
+
+def _literal(raw: str):
+    """The declared value: true/false/null, a number, or a bare string."""
+    low = raw.strip().strip('"\'')
+    if raw.strip() in ("true", "false"):
+        return raw.strip() == "true"
+    if raw.strip() == "null":
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        pass
+    try:
+        return float(raw.strip())
+    except ValueError:
+        return low
 
 
 def bundles() -> dict:
@@ -504,6 +533,37 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
             "got": got}
 
 
+def resolve_predicate(want: dict, covered: set, bundles_: dict) -> dict:
+    """A non-numeric fact, resolved exactly like a value.
+
+    Same digest-verified `covered` gate: a predicate may only be read from a
+    file the claim's own pinned manifest vouched for, or it is a fact about
+    some file that happens to be on this host.
+    """
+    if want["file"] not in covered:
+        if not any(want["file"].startswith(b + "/") for b in bundles_):
+            return {**want, "state": "predicate-unavailable", "got": None}
+        return {**want, "state": "PREDICATE-UNPINNED-FILE", "got": None}
+    f = HOME / want["file"]
+    if not f.is_file():
+        return {**want, "state": "PREDICATE-FILE-ABSENT", "got": None}
+    try:
+        doc = json.loads(f.read_text())
+    except (OSError, ValueError):
+        return {**want, "state": "PREDICATE-FILE-UNREADABLE", "got": None}
+    if any("." in str(k) for k in _keys_of(doc)):
+        return {**want, "state": "PREDICATE-PATH-AMBIGUOUS", "got": None}
+    flat = flatten(doc)
+    if want["path"] not in flat:
+        return {**want, "state": "PREDICATE-PATH-ABSENT", "got": None}
+    got = flat[want["path"]]
+    # EXACT, and type-sensitive: `True == 1` in Python, so a bool declared
+    # against a numeric 1 would pass while saying something different.
+    ok = type(got) is type(want["want"]) and got == want["want"]
+    return {**want, "state": "predicate-matches" if ok else "PREDICATE-MISMATCH",
+            "got": got}
+
+
 def _keys_of(obj) -> list:
     """Every dict key anywhere in `obj`. A key containing "." would make the
     flattened path ambiguous, so resolution refuses rather than guessing."""
@@ -539,8 +599,17 @@ def chain() -> list[dict]:
         bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
         values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]
+        preds = [resolve_predicate(w, covered, have)
+                 for w in c["expected_predicates"]]
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
+            "predicates": preds,
+            # DECLARED coverage. `artifact_status: pinned` says the artifact is
+            # pinned and verified; it never said every load-bearing figure was
+            # bound, and two pinned claims carried figures they admitted in a
+            # comment were unbound (owner §7). Separating the two makes that
+            # readable instead of a comment nobody greps.
+            "binding_status": c.get("binding_status", ""),
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
             # DECLARED, not sniffed out of the prose. The kinds were inferred
@@ -606,12 +675,17 @@ PASSING_STATES = frozenset({
     "legacy-analyzer-changed",
     "legacy-analyzer-absent",
     "value-matches",
+    "predicate-matches",
+    "predicate-unavailable",   # the bundle the fact is declared against is absent
     "value-unavailable",       # the bundle the figure is declared against is not here
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
     "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+    "PREDICATE-MISMATCH", "PREDICATE-PATH-ABSENT", "PREDICATE-FILE-ABSENT",
+    "PREDICATE-PATH-AMBIGUOUS", "PREDICATE-UNPINNED-FILE",
+    "PREDICATE-FILE-UNREADABLE",
     "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
@@ -685,6 +759,11 @@ def check(require_available: bool = False) -> int:
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"
                            f" (claim says {v['value']!r}, artifact has "
                            f"{v['got']!r}){_why(v['state'], require_available)}")
+        for w in r["predicates"]:
+            if verdict(w["state"], require_available):
+                bad.append(f"{r['id']}: {w['file']}#{w['path']} -> {w['state']}"
+                           f" (claim says {w['want']!r}, artifact has "
+                           f"{w['got']!r}){_why(w['state'], require_available)}")
         for a in r["artifacts"]:
             if verdict(a["state"], require_available):
                 bad.append(f"{r['id']}: {a['path']} -> {a['state']}"

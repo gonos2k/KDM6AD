@@ -75,6 +75,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/manifest.json: 4c1fb892ca785ebc90bdf0d38a797b9da31fa25e107a88a9de99174aa2acafc5
     # A REFINEMENT CHAIN, because the schedule is a property of the step the
@@ -107,6 +108,13 @@ claims:
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
+    # `substeps` is a MAXIMUM over calls, and this says whether the column
+    # actually held it. Bound because it is true here: column 3's main chain
+    # did NOT run the same schedule on every call, so "needs 3 substeps"
+    # is a statement about the worst call (owner §8).
+    expected_predicates:
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.3.varies_across_calls: true
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.3.varies_across_calls: false
     evidence: [FINDING_two_sedimentation_chains_v1.md]
     evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:127a84877d6474294da8ea60c9d0a41733342166a2c7032f9b9ada6d74d7d771]
 
@@ -193,6 +201,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
@@ -266,6 +275,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
@@ -311,6 +321,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -427,6 +438,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -582,6 +594,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed-with-scope
     basis: >
       measurement with per-call inventory preserved, so the aggregation is
@@ -643,6 +656,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: partial
     grade: confirmed
     basis: >
       measurement of both measures on the same stream, with the operator
@@ -707,6 +721,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     # Both halves. The water column is where the basis MATTERS -- 213.6x on
@@ -815,6 +830,7 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -899,6 +915,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/manifest.json: a0d5db775ad60454298aa5b53ea1a701d61ba6c88f6f69251c36f92a919e1a08
     # Every figure the text publishes. The percentages and the ratios come
@@ -1284,6 +1301,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
@@ -1313,6 +1331,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
@@ -1383,6 +1402,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -1430,6 +1450,14 @@ claims:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
       - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+    # The load-bearing BOOLEANS. `expected_values` takes floats, so these
+    # sat in the artifact unbound while the claim rested on them: the
+    # measurement is only evidence if the run passed its own gates, and the
+    # attribution to ncmin alone is exactly `causal_attribution_valid`.
+    expected_predicates:
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.causal_attribution_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/10114c94e84ca9487b21403d00819281449551fc6412d843bd04b0243e57ad7e/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:4d3438cd1b9f9f33795851e4e950f3d6247c4ae5c23c6cbb6c3fd21695cab242]
 
@@ -1467,6 +1495,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: pinned
+    binding_status: full
     grade: hold
     basis: >
       the decomposition is a direct measurement of emitted operands, but the
@@ -1535,6 +1564,7 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
+    binding_status: full
     grade: confirmed-with-scope
     basis: >
       direct interface measurement, with the diagnostic-inferred alternative
