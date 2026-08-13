@@ -394,3 +394,82 @@ def test_the_same_stream_listed_TWICE_is_refused(tmp_path):
     e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
     e["inputs"].append(dict(e["inputs"][0]))
     assert any("twice" in b for b in rm.validate(m))
+
+
+# ---- the run/analysis split: name the half that does not move (owner §12) ---
+
+@pytest.mark.parametrize("mutate,label", [
+    (lambda m: m.__setitem__("analyses", m["analyses"][:-1]), "drop an analysis"),
+    (lambda m: m.pop("analyzer_sha256", None), "drop analyzer_sha256"),
+    (lambda m: m.__setitem__("producer_modules", m["producer_modules"][:-1]),
+     "drop a producer module"),
+])
+def test_the_RUN_identity_does_not_move_when_the_ANALYSES_do(tmp_path, mutate, label):
+    """Adding an analyzer currently moves every bundle's address, so the whole
+    archive is re-produced and every binding re-pointed -- paid five times in
+    one day and growing with the archive (owner §12).
+
+    `run_identity` names the half that does not change. Nothing stores it yet:
+    recording it would move every manifest and force exactly the re-production
+    it exists to retire, so the invariant is guarded before anything relies
+    on it.
+    """
+    m = synthetic_manifest(tmp_path)
+    before, before_addr = rm.run_identity(m), rm.identity_digest(m)
+    mutate(m)
+    if rm.identity_digest(m) == before_addr:
+        # The mutation did not change this fixture -- it carries no such key --
+        # so it cannot demonstrate anything. Skipping is honest; asserting
+        # "the address moved" would fail on a no-op rather than on a defect.
+        pytest.skip(f"the synthetic manifest has nothing to {label}")
+    assert rm.run_identity(m) == before, f"{label} moved the run identity"
+    # ...and it is a DIFFERENT question from the bundle address, which DID move.
+    assert rm.identity_digest(m) != before_addr
+
+
+@pytest.mark.parametrize("mutate,label", [
+    (lambda m: m["build_artifacts"][0].__setitem__("sha256", "0" * 64),
+     "the binary"),
+    (lambda m: m.__setitem__("arm", "probe"), "the arm"),
+    (lambda m: m.__setitem__("precision", "f64"), "the precision"),
+    (lambda m: m["member_parsers"][0].__setitem__("content_sha256", "0" * 64),
+     "the member parser"),
+    (lambda m: m["tracked_build_inputs"][0].__setitem__("content_sha256", "0" * 64),
+     "a tracked build input"),
+])
+def test_the_RUN_identity_MOVES_when_the_run_does(tmp_path, mutate, label):
+    """The complement, so "stable" cannot degenerate into "constant".
+
+    Mutates keys the SYNTHETIC manifest actually carries. The first version
+    used module_sha256/fixture_sha256/repo_commit, which it does not, so every
+    case skipped -- a sensitivity check that never ran, in the commit that
+    fixed a regression for exactly that reason.
+    """
+    m = synthetic_manifest(tmp_path)
+    before = rm.run_identity(m)
+    mutate(m)
+    assert rm.run_identity(m) != before, f"changing {label} left the run identity"
+
+
+def test_a_member_digest_is_part_of_the_RUN(tmp_path):
+    """The raw streams ARE the run. A member changing under a stable identity
+    would make the name useless for the thing it is supposed to name."""
+    m = synthetic_manifest(tmp_path)
+    before = rm.run_identity(m)
+    m["members"][0]["output_sha256"] = "0" * 64
+    assert rm.run_identity(m) != before
+
+
+def test_the_two_bundles_that_share_a_RUN_are_recognised(tmp_path):
+    """number-003-cons and number-009-ice were produced from identical
+    arguments and collapsed to one content address. The run identity says so
+    independently, which is the property the split would rest on."""
+    import g33_evidence_chain as ec
+    have = ec.bundles()
+    if not have:
+        pytest.skip("no bundle store on this host")
+    groups = {}
+    for name, man in have.items():
+        groups.setdefault(rm.run_identity(man), []).append(name.split("/")[1])
+    shared = [sorted(v) for v in groups.values() if len(v) > 1]
+    assert ["number-003-cons", "number-009-ice"] in shared, groups

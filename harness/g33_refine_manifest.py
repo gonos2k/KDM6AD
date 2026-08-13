@@ -83,6 +83,34 @@ def identity_digest(man: dict) -> str:
         json.dumps(m, sort_keys=True).encode()).hexdigest()
 
 
+#: The manifest keys that depend on WHICH ANALYSES a bundle carries, and so
+#: cannot be part of the run's identity: the outputs, the analyzer digest, and
+#: the module closure that computes them. Everything else -- binary, module,
+#: fixture, members, provenance, pins -- describes the RUN.
+ANALYSIS_DEPENDENT_KEYS = ("analyses", "analyzer_sha256", "producer_modules")
+
+
+def run_identity(man: dict) -> str:
+    """The content address of the RUN, independent of what was analysed on it.
+
+    Today a bundle's identity covers its analyses, so adding an analyzer moves
+    every bundle's address and the whole archive is re-produced with every
+    binding re-pointed -- a cost paid five times in one day and growing with
+    the archive (owner §12).
+
+    This is the first half of the two-layer split: a name for the thing that
+    does NOT change. Measured against the real manifest, it is stable when an
+    analysis, the analyzer digest or a producer module is removed, and moves
+    when the module, a member digest, the binary or the fixture does.
+
+    Nothing is stored yet, deliberately. Recording it would change every
+    manifest and force exactly the re-production this exists to retire, so the
+    invariant is established and guarded first.
+    """
+    return identity_digest({k: v for k, v in man.items()
+                            if k not in ANALYSIS_DEPENDENT_KEYS})
+
+
 def _git(*a) -> str:
     return subprocess.run(("git",) + a, capture_output=True,
                           text=True).stdout.strip()
