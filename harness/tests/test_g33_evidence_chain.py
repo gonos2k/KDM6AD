@@ -1786,3 +1786,91 @@ def test_a_PREDICATE_resolves_exactly_like_a_VALUE(tmp_path):
         assert v == p == {"unavailable"}, (v, p)
     finally:
         ec.HOME = real
+
+
+def _world_with_a_bound_analysis(world):
+    """A SYNTHETIC bundle carrying one analysis with a value and a fact bound
+    to it. Built from `world` rather than copied from the real store, so it
+    runs on a public clone -- the version of this that copied
+    `kdm6ad-g33m-migrate` skipped in CI, which is the one place the regression
+    has to hold (Codex).
+    """
+    bundle, write = world
+    doc = {"flag": True, "n": 1.5}
+    blob = json.dumps(doc, indent=2, sort_keys=True).encode()
+    (bundle / "a.json").write_bytes(blob)
+    stream = b"G33R STATE 1 1 1 th 3F800000\n"
+    man = {"members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
+           "analyses": [{"file": "a.json", "sha256": _sha(blob),
+                         "analysis": "matched_closure", "nsplit": 3}],
+           "findings": []}
+    B = "kdm6ad-g33m-refine/run-a"
+    write(man, claim_extra=(
+        "    expected_values:\n"
+        f"      - {B}/a.json#n: 1.5\n"
+        "    expected_predicates:\n"
+        f"      - {B}/a.json#flag: true\n"))
+    return bundle
+
+
+def _kind(state):
+    """The state's KIND, with the value/predicate prefix removed, so the two
+    resolvers can be compared directly."""
+    for p in ("value-", "VALUE-", "predicate-", "PREDICATE-"):
+        if state.startswith(p):
+            return state[len(p):]
+    return state
+
+
+def test_values_and_predicates_resolve_ALIKE_on_a_synthetic_bundle(world):
+    """The rule, exercised where CI can see it.
+
+    `resolve_value` keys on the ARTIFACT's own state; `resolve_predicate` did a
+    prefix scan over bundle names, so a corrupted bundle failed on its figures
+    and passed on its facts. Asserted as AGREEMENT per case, because the
+    invariant is that they decide the same way -- not that either produces a
+    particular string.
+    """
+    bundle = _world_with_a_bound_analysis(world)
+
+    def kinds():
+        r = ec.chain()[0]
+        assert r["values"] and r["predicates"], "the fixture must bind both"
+        return ({_kind(w["state"]) for w in r["values"]},
+                {_kind(w["state"]) for w in r["predicates"]})
+
+    def art():
+        return {a["state"] for a in ec.chain()[0]["artifacts"]}
+
+    v, p = kinds()
+    assert v == p == {"matches"}, (v, p)
+    assert art() == {"matches"}
+
+    # the analysis file itself gone, manifest intact
+    keep = (bundle / "a.json").read_bytes()
+    (bundle / "a.json").unlink()
+    v, p = kinds()
+    assert v == p, f"analysis deleted: values {v} predicates {p}"
+    assert ec.check() != 0
+    (bundle / "a.json").write_bytes(keep)
+
+    # the manifest gone, bundle still standing
+    saved = (bundle / "manifest.json").read_bytes()
+    (bundle / "manifest.json").unlink()
+    v, p = kinds()
+    assert v == p == {"UNPINNED-FILE"}, (v, p)
+    # The artifact state that separates "here and gutted" from "not delivered".
+    assert art() == {"MANIFEST-ABSENT-IN-PRESENT-BUNDLE"}
+    assert ec.check() != 0
+    (bundle / "manifest.json").write_bytes(saved)
+
+    # the whole bundle gone: the one case that is excusable
+    import shutil
+    shutil.rmtree(bundle)
+    v, p = kinds()
+    assert v == p == {"unavailable"}, (v, p)
+    assert art() == {"unavailable"}
+    assert ec.check() == 0
+    # ...and a CLOSEOUT still refuses it, because "we could not check this" is
+    # not "we checked and it is fine".
+    assert ec.check(require_available=True) != 0
