@@ -243,7 +243,12 @@ def enthalpy_with_cap_sink(stream: str, basis: str = "operator") -> dict:
     """
     # Whichever family carries the window: an f64 build emits no G33R
     # and the probe stream holds the same values (owner D6 follow-on).
-    run = pr.window_state(stream)
+    try:
+        run = pr.window_state(stream)
+    except pr.ProbeError as e:
+        # `ra.read_text` raised RefineError here before, and the type is part
+        # of what a caller sees (Codex).
+        raise ra.RefineError(str(e)) from e
     if not run:
         return {}
     sink = cap_sink(stream, basis)

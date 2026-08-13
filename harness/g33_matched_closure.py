@@ -188,7 +188,15 @@ def window_cell_mass(stream: str, basis: str) -> dict:
     if basis != "operator":
         # G33R INITIAL, or G33P INITIAL when the build emitted no G33R --
         # the same values in a different encoding (owner D6 follow-on).
-        run = pr.window_state(stream)
+        try:
+            run = pr.window_state(stream)
+        except pr.ProbeError as e:
+            # This function has refused a windowless stream with ValueError
+            # since it existed, and callers catch that. The SELECTION rule
+            # stays in one place; only the type is restored at the boundary,
+            # because changing an exception type silently is a break nothing
+            # downstream would report (Codex).
+            raise ValueError(str(e)) from e
         # `run` also holds 3-tuple `prec` and `meta` keys, so the shape is
         # checked before unpacking rather than after it raises.
         qv0 = {(key[2], key[3]): v for key, v in run.items()

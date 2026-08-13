@@ -264,15 +264,39 @@ def test_forcing_that_MOVES_between_calls_is_refused(monkeypatch):
         mc.window_cell_mass(stream, "operator")
 
 
-def test_a_stream_with_no_G33R_cannot_produce_a_PHYSICAL_measure():
-    """It needs the window-initial qv, which lives in G33R INITIAL. Falling back
-    to a call's own qv is what this replaced."""
+def test_a_stream_with_NO_WINDOW_cannot_produce_a_PHYSICAL_measure():
+    """It needs the window-initial qv. Falling back to a call's own qv is what
+    this replaced.
+
+    The window may now come from G33R or from G33P -- an f64 build emits no
+    G33R at all and carries the same values in the probe family (owner D6
+    follow-on) -- so what is refused is a stream carrying NEITHER. The
+    exception type is still ValueError: this function has refused with one
+    since it existed and callers catch it, so the boundary translates rather
+    than letting the type change go unreported (Codex).
+    """
     from test_g33_dual_ledger import _stream
 
     g33n_only = _stream([0.01] * 4).split("G33R BEGIN")[0]
     mc.window_cell_mass(g33n_only, "operator")          # operator needs no qv
-    with pytest.raises(ValueError, match="no G33R block"):
+    with pytest.raises(ValueError, match="carries neither"):
         mc.window_cell_mass(g33n_only, "physical")
+
+
+def test_a_PROBE_stream_produces_the_physical_measure_a_G33R_one_does():
+    """The capability the change adds, checked here rather than only at the
+    reader: without it the test above would pass on an implementation that
+    refuses every f64 stream."""
+    from test_g33_dual_ledger import _stream
+    from test_g33_probe_read import _stream as _probe
+
+    full = _stream([0.01] * 4)
+    g33n_only = full.split("G33R BEGIN")[0]
+    want = mc.window_cell_mass(full, "physical")
+    got = mc.window_cell_mass(g33n_only + _probe(B=len({c for c, _k in want}),
+                                                 K=len({k for _c, k in want})),
+                              "physical")
+    assert set(got) == set(want), (sorted(got), sorted(want))
 
 
 def test_a_cell_absent_from_the_measure_is_REFUSED_not_recomputed():

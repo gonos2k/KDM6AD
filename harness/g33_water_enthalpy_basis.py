@@ -95,7 +95,13 @@ def enthalpy(stream: str) -> dict:
 def analysis(stream: str) -> dict:
     # G33R or G33P -- the column ledgers need the window ENDPOINTS, and an
     # f64 build carries them in the probe family (owner D6 follow-on).
-    run = pr.window_state(stream)
+    try:
+        run = pr.window_state(stream)
+    except pr.ProbeError as e:
+        # Refused with RefineError before, and the type is part of what a
+        # caller sees. Only the boundary translates; the selection rule does
+        # not get a second copy (Codex).
+        raise ra.RefineError(str(e)) from e
     if not run:
         raise ra.RefineError("no window block: the column ledgers need the "
                              "window endpoints, not the per-call stream")
