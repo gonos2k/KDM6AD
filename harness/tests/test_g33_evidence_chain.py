@@ -2103,3 +2103,75 @@ def test_an_unpinned_claim_gets_NO_binding_status(world):
     _, write = world
     write()                                   # no artifact_status: pinned
     assert ec.chain()[0]["binding_status"] == ""
+
+
+# --- one rule, two bindings (owner D3 / §16-9) -----------------------------
+
+def _drive(kind, tmp_path, monkeypatch):
+    """Every branch of the shared resolver, for one binding kind.
+
+    Behavioural, not a source scan. Unifying the two resolvers took their
+    state names out of the source as literals, so the textual completeness
+    check stopped seeing them -- and a check that silently stops checking is
+    the failure this file keeps finding. This drives the code instead.
+    """
+    monkeypatch.setattr(ec, "HOME", tmp_path)
+    (tmp_path / "b").mkdir(parents=True, exist_ok=True)
+    resolve = ec.resolve_value if kind == "VALUE" else ec.resolve_predicate
+
+    def want(file, path="a", **kw):
+        base = ({"value": 1.0, "tolerance": 0.0} if kind == "VALUE"
+                else {"want": True})
+        return {"file": file, "path": path, **base, **kw}
+
+    def write(name, text):
+        (tmp_path / "b" / name).write_text(text)
+        return f"b/{name}"
+
+    good = 1.0 if kind == "VALUE" else True
+    cases = [
+        (want("b/x.json"), set(), {}),                       # UNPINNED-FILE
+        (want("b/x.json"), set(), {"b": "unavailable"}),     # unavailable
+        (want("b/gone.json"), {"b/gone.json"}, {}),          # FILE-ABSENT
+        (want(write("bad.json", "{")), {"b/bad.json"}, {}),  # FILE-UNREADABLE
+        (want(write("dot.json", '{"a.b": {"c": 1}}')),
+         {"b/dot.json"}, {}),                                # PATH-AMBIGUOUS
+        (want(write("ok.json", json.dumps({"a": good})), path="zz"),
+         {"b/ok.json"}, {}),                                 # PATH-ABSENT
+        (want("b/ok.json"), {"b/ok.json"}, {}),              # matches
+        (want(write("no.json", json.dumps({"a": "text"}))),
+         {"b/no.json"}, {}),               # NOT-NUMERIC / MISMATCH by type
+    ]
+    if kind == "VALUE":
+        cases.append((want(write("off.json", json.dumps({"a": 2.0}))),
+                      {"b/off.json"}, {}))                   # VALUE-MISMATCH
+    return {resolve(w, c, b)["state"] for w, c, b in cases}
+
+
+@pytest.mark.parametrize("kind", ["VALUE", "PREDICATE"])
+def test_EVERY_state_a_RESOLVER_can_emit_is_classified(kind, tmp_path,
+                                                       monkeypatch):
+    got = _drive(kind, tmp_path, monkeypatch)
+    known = {s for s in (ec.PASSING_STATES | ec.FAILING_STATES)
+             if s.upper().startswith(kind)}
+    assert got == known, f"unreached: {sorted(known - got)}, new: {sorted(got - known)}"
+
+
+def test_the_two_BINDINGS_take_the_same_path_to_every_shared_state(
+        tmp_path, monkeypatch):
+    """The agreement that three separate findings broke, one at a time.
+
+    Pinned as a STRUCTURAL fact, not a list of cases: everything before the
+    comparison is one function, so `resolve_value` and `resolve_predicate`
+    cannot drift again without the shared core changing under both.
+    """
+    v = _drive("VALUE", tmp_path, monkeypatch)
+    p = _drive("PREDICATE", tmp_path / "p", monkeypatch)
+    shared = {s.split("-", 1)[1] for s in v} & {s.split("-", 1)[1] for s in p}
+    assert {"UNPINNED-FILE", "FILE-ABSENT", "FILE-UNREADABLE",
+            "PATH-AMBIGUOUS", "PATH-ABSENT", "unavailable",
+            "MISMATCH"} <= shared, sorted(shared)
+    src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
+    for fn in ("def resolve_value", "def resolve_predicate"):
+        body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
+        assert "_resolve(" in body, f"{fn} no longer goes through the shared core"

@@ -572,8 +572,8 @@ def covered_files(artifacts: list) -> set:
             if m["state"] == "matches" and m.get("scope") == "bundle"}
 
 
-def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
-    """Look up ONE declared figure in the artifact it is declared against.
+def _resolve(want: dict, covered: set, bundles: dict, kind: str, compare):
+    """Look up ONE declared fact in the artifact it is declared against.
 
     Declared, never discovered. Searching the JSONs for a number equal to the
     published one would bind a claim to whatever value happened to sit near it
@@ -586,75 +586,80 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
     all -- a JSON dropped beside the manifest, covered by no digest, resolved
     and reported `value-matches` (Codex). Beside the evidence is not the
     evidence.
+
+    ONE rule, two bindings. Figures and predicates were two functions that
+    said the same thing, and three findings in a single cycle were "the fix
+    reached one and not the other" (owner D3):
+
+      * `read_cells` refused duplicate rows, `read_state` did not;
+      * MANIFEST-ABSENT-IN-PRESENT-BUNDLE was seen by values, not predicates;
+      * the predicate resolver keyed the excusable case on a PREFIX SCAN over
+        bundle names while the value resolver keyed it on the artifact's own
+        state -- a lookalike, not the rule. They disagreed on the same input: a
+        deleted analysis file resolved VALUE-UNPINNED-FILE and failed, while
+        the predicate beside it resolved `predicate-unavailable` and passed.
+        Its docstring said "resolved exactly like a value" throughout.
+
+    So `kind` names the binding and `compare` is the only thing that differs.
+    The comparison owns its own state names because it owns its own failures
+    -- a figure can be non-numeric, a predicate cannot -- and everything
+    before it is shared code, which is the point.
     """
+    def out(state, got=None):
+        return {**want, "state": state, "got": got}
+
     if want["file"] not in covered:
         # Not covered has two causes, and only one is a defect. On a host
         # without the private bundles NOTHING is covered, so failing here would
         # fail the routine check everywhere the evidence legitimately is not --
         # the very thing --require-available exists to keep separate.
         if bundles.get(str(Path(want["file"]).parent)) == "unavailable":
-            return {**want, "state": "value-unavailable", "got": None}
-        return {**want, "state": "VALUE-UNPINNED-FILE", "got": None}
+            return out(f"{kind.lower()}-unavailable")
+        return out(f"{kind}-UNPINNED-FILE")
     f = HOME / want["file"]
     if not f.is_file():
-        return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
+        return out(f"{kind}-FILE-ABSENT")
     try:
         doc = json.loads(f.read_text())
     except (OSError, ValueError):
-        return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
+        return out(f"{kind}-FILE-UNREADABLE")
     if any("." in str(k) for k in _keys_of(doc)):
-        return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
+        return out(f"{kind}-PATH-AMBIGUOUS")
     flat = flatten(doc)
     if want["path"] not in flat:
-        return {**want, "state": "VALUE-PATH-ABSENT", "got": None}
+        return out(f"{kind}-PATH-ABSENT")
     got = flat[want["path"]]
+    return out(compare(want, got), got)
+
+
+def _compare_value(want: dict, got) -> str:
     if isinstance(got, bool) or not isinstance(got, (int, float)):
-        return {**want, "state": "VALUE-NOT-NUMERIC", "got": got}
+        return "VALUE-NOT-NUMERIC"
     ok = (got == want["value"] if want["tolerance"] == 0.0
           else abs(got - want["value"]) <= want["tolerance"])
-    return {**want, "state": "value-matches" if ok else "VALUE-MISMATCH",
-            "got": got}
+    return "value-matches" if ok else "VALUE-MISMATCH"
 
 
-def resolve_predicate(want: dict, covered: set, bundles_: dict) -> dict:
-    """A non-numeric fact, resolved exactly like a value.
-
-    Same digest-verified `covered` gate: a predicate may only be read from a
-    file the claim's own pinned manifest vouched for, or it is a fact about
-    some file that happens to be on this host.
-    """
-    if want["file"] not in covered:
-        # THE SAME RULE `resolve_value` uses, keyed on the artifact's own
-        # state: excusable only where the bundle this file belongs to is
-        # itself unavailable. This was a prefix scan over the bundle names --
-        # a lookalike, not the rule -- and it disagreed with values on the
-        # same input: a deleted analysis file resolved VALUE-UNPINNED-FILE and
-        # failed, while the predicate beside it resolved
-        # `predicate-unavailable` and passed (Codex).
-        #
-        # The docstring above claimed "resolved exactly like a value" while it
-        # was not, which is the part worth remembering.
-        if bundles_.get(str(Path(want["file"]).parent)) == "unavailable":
-            return {**want, "state": "predicate-unavailable", "got": None}
-        return {**want, "state": "PREDICATE-UNPINNED-FILE", "got": None}
-    f = HOME / want["file"]
-    if not f.is_file():
-        return {**want, "state": "PREDICATE-FILE-ABSENT", "got": None}
-    try:
-        doc = json.loads(f.read_text())
-    except (OSError, ValueError):
-        return {**want, "state": "PREDICATE-FILE-UNREADABLE", "got": None}
-    if any("." in str(k) for k in _keys_of(doc)):
-        return {**want, "state": "PREDICATE-PATH-AMBIGUOUS", "got": None}
-    flat = flatten(doc)
-    if want["path"] not in flat:
-        return {**want, "state": "PREDICATE-PATH-ABSENT", "got": None}
-    got = flat[want["path"]]
+def _compare_predicate(want: dict, got) -> str:
     # EXACT, and type-sensitive: `True == 1` in Python, so a bool declared
     # against a numeric 1 would pass while saying something different.
     ok = type(got) is type(want["want"]) and got == want["want"]
-    return {**want, "state": "predicate-matches" if ok else "PREDICATE-MISMATCH",
-            "got": got}
+    return "predicate-matches" if ok else "PREDICATE-MISMATCH"
+
+
+def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
+    """One declared FIGURE, compared numerically within its tolerance."""
+    return _resolve(want, covered, bundles, "VALUE", _compare_value)
+
+
+def resolve_predicate(want: dict, covered: set, bundles: dict) -> dict:
+    """One declared non-numeric FACT, compared exactly and by type.
+
+    `expected_values` takes floats, so `causal_attribution_valid: true` and
+    `comparable: true` sat in their artifacts unbound while claims rested on
+    them (owner §7.3).
+    """
+    return _resolve(want, covered, bundles, "PREDICATE", _compare_predicate)
 
 
 def _keys_of(obj) -> list:
