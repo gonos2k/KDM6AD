@@ -29,12 +29,63 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import g33_schema as schema  # noqa: E402
 import g33_fortran_bindings as fb  # noqa: E402
 
-_EMIT = {  # dtype -> (value expr wrapping the operand, Z format width)
-    "f32": ("transfer({e}, 0)",   "Z8.8"),
-    "f64": ("transfer({e}, 0_8)", "Z16.16"),
-    "i32": ("transfer({e}, 0)",   "Z8.8"),
-    "u8":  ("merge(1, 0, {e})",   "Z2.2"),
+#: dtype -> (value expr wrapping the operand, Z format width).
+#:
+#: Reals go straight to a Z edit descriptor. `transfer(<real>, 0)` took the
+#: bytes into a DEFAULT INTEGER, and under -fdefault-real-8 a default integer is
+#: still four bytes -- so an eight-byte real lost its high half and the record
+#: said `f32`. Measured: pi emitted `54442D18`, which is the LOW word of
+#: 400921FB54442D18 and reads as a perfectly ordinary 3.3702806e+12. A
+#: wrong-number path, not a crash (owner D6).
+#:
+#: The obvious repair -- an int64 mold -- is worse in the other direction:
+#: `transfer(<real4>, 0_int64)` measured `0000000140490FDB`, a stray 1 in the
+#: bytes the four-byte source never supplied. Z editing has no mold to get
+#: wrong: the width IS the declaration, it is standard for any intrinsic type
+#: (F2008 13.7.2.1), and at f32 it is byte-identical to the transfer form on pi,
+#: zero, negative zero, tiny and 1e30 -- so every archived stream reproduces.
+_EMIT = {
+    "f32": ("{e}", "Z8.8"),
+    "f64": ("{e}", "Z16.16"),
+    "i32": ("transfer({e}, 0)", "Z8.8"),
+    "u8":  ("merge(1, 0, {e})", "Z2.2"),
 }
+
+#: How wide a DEFAULT REAL is in the build this overlay is generated for.
+#:
+#: SEPARATE from the schema's dtype, and that is the whole of D6. The schema
+#: says what a field MEANS -- `dtcld` is semantically f32, `work1_qr` is
+#: semantically f64 because the pinned Fortran declares it `double precision`
+#: -- while this says how many bytes the compiler gave it. Under
+#: -fdefault-real-8 they diverge, and one label was carrying both jobs, so the
+#: divergence had nowhere to appear.
+REAL_KINDS = {"f32": 4, "f64": 8}
+
+#: Set once by `main` from --real-kind. Module state rather than a parameter
+#: threaded through nine emitters and their callers: the generator is one shot,
+#: and `_storage` is the only reader.
+_REAL_KIND = "f32"
+
+
+def _storage(dtype: str) -> str:
+    """The dtype a field the SCHEMA calls `dtype` is actually STORED as.
+
+    A schema-f32 field is a default real, so it is whatever this build made a
+    default real. A schema-f64 field is `double precision`, which
+    -fdefault-double-8 holds at eight bytes in both builds. Integers and
+    logicals are not promoted at all.
+
+    The emitted LABEL is this, not the schema's dtype. The label's only
+    operational job is telling a reader how wide the hex is; what the number
+    MEANS is `g33_schema.field_dtype`, which is where an analysis already asks.
+    One label was doing both jobs and they only agree at f32.
+    """
+    return _REAL_KIND if dtype == "f32" else dtype
+
+
+def _ZF() -> str:
+    """The Z width for a default real in this build."""
+    return _EMIT[_REAL_KIND][1]
 
 
 def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr,
@@ -44,10 +95,11 @@ def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr,
     `loop` is the RUNTIME cloud-subcycle index (kdm62D's `do loop = 1,loops`, which
     encloses every injection point), so records from different outer loops are
     distinguishable instead of collapsing onto loop 1."""
-    val, zf = _EMIT[dtype]
+    dt = _storage(dtype)
+    val, zf = _EMIT[dt]
     return (f"{fb.IND}write(*,'(A,1X,I0,2(1X,A),1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
             f"'G33F STAGE', {loop_expr}, '{chain}', '{stage}', {n_expr}, "
-            f"'{field}', i, {k_expr}, '{dtype}', {val.format(e=expr)}")
+            f"'{field}', i, {k_expr}, '{dt}', {val.format(e=expr)}")
 
 
 def _stage_block(stage, chain, n_expr, col_fields, whole_k_fields,
@@ -164,9 +216,9 @@ def _xfer_lines(chain, mass, num):
     already use, and nothing is written.
     """
     return ["#ifdef KDM6_G33_NUMBER_DUMP",
-            f"{fb.IND}if (k .eq. kts) write(*,'(A,3(1X,I0),2(1X,A),2(1X,Z8.8))') "
-            f"'G33F XFER', loop, n, i, '{chain}', 'f32', "
-            f"transfer({mass}, 0), transfer({num}, 0)",
+            f"{fb.IND}if (k .eq. kts) write(*,'(A,3(1X,I0),2(1X,A),2(1X,{_ZF()}))') "
+            f"'G33F XFER', loop, n, i, '{chain}', '{_REAL_KIND}', "
+            f"{mass}, {num}",
             "#endif"]
 
 
@@ -177,10 +229,9 @@ def _cap_inflow_lines(chain, own, inflow, own_n, inflow_n):
     difference under the rho*dz measure is the mass the interface destroys.
     """
     return ["#ifdef KDM6_G33_NUMBER_DUMP",
-            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),4(1X,Z8.8))') "
-            f"'G33F CAPIN', loop, n, i, kte-k, '{chain}', 'f32', "
-            f"transfer({own}, 0), transfer({inflow}, 0), "
-            f"transfer({own_n}, 0), transfer({inflow_n}, 0)",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),4(1X,{_ZF()}))') "
+            f"'G33F CAPIN', loop, n, i, kte-k, '{chain}', '{_REAL_KIND}', "
+            f"{own}, {inflow}, {own_n}, {inflow_n}",
             "#endif"]
 
 
@@ -188,9 +239,9 @@ def _top_lines(chain, removed, removed_n):
     """The top cell's actual removal, emitted BEFORE its update so the pre-update
     content is still there to cap against."""
     return ["#ifdef KDM6_G33_NUMBER_DUMP",
-            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),2(1X,Z8.8))') "
-            f"'G33F TOPOUT', loop, n, i, kte-k, '{chain}', 'f32', "
-            f"transfer({removed}, 0), transfer({removed_n}, 0)",
+            f"{fb.IND}write(*,'(A,4(1X,I0),2(1X,A),2(1X,{_ZF()}))') "
+            f"'G33F TOPOUT', loop, n, i, kte-k, '{chain}', '{_REAL_KIND}', "
+            f"{removed}, {removed_n}",
             "#endif"]
 
 
@@ -280,8 +331,8 @@ def build_overlay(algo, text):
              # with the C++ mirror.
              (fb.SURFACE_ANCHOR, "after",
               ["#ifdef KDM6_G33_NUMBER_DUMP",
-               *[f"{fb.IND}write(*,'(A,1X,I0,1X,I0,2(1X,A),1X,Z8.8)') "
-                 f"'G33F NFLUX', loop, i, '{f}', 'f32', transfer({e}, 0)"
+               *[f"{fb.IND}write(*,'(A,1X,I0,1X,I0,2(1X,A),1X,{_ZF()})') "
+                 f"'G33F NFLUX', loop, i, '{f}', '{_REAL_KIND}', {e}"
                  for f, e in fb.SURFACE_NUMBER_FIELDS],
                "#endif"])]
     edits += [(a, "after", _xfer_lines(ch, m, n))
@@ -366,8 +417,17 @@ def main():
     ap.add_argument("src", help="canonical reference module (.F)")
     ap.add_argument("dst", help="output overlay path (.F)")
     ap.add_argument("--algo", default="legacy", choices=sorted(fb.VARIANTS))
+    # Must MATCH the compile. An overlay generated for f32 and compiled with
+    # -fdefault-real-8 is the wrong-number path D6 names, so the build script
+    # passes this from the same variable that adds the flag, and the stream
+    # header below carries it out to the reader.
+    ap.add_argument("--real-kind", default="f32", choices=sorted(REAL_KINDS),
+                    help="width of a DEFAULT REAL in the build this overlay "
+                         "is compiled into (-fdefault-real-8 makes it f64)")
     args = ap.parse_args()
 
+    global _REAL_KIND
+    _REAL_KIND = args.real_kind
     _validate_against_schema(args.algo)
     raw = open(args.src, "rb").read()
     got = hashlib.sha256(raw).hexdigest()

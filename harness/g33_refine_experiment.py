@@ -517,8 +517,16 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
         raise SystemExit(
             f"REFUSED: {final} is addressed {identity[:16]} but its manifest "
             f"identifies as {rm.identity_digest(have)[:16]}")
+    # NESTED inputs too. A multi-run analysis records the raw stdout it read,
+    # with a digest each, and this loop walked only the three TOP-LEVEL blocks
+    # -- so an interrupted or hand-edited directory whose `mr.*.txt` had been
+    # changed or removed was adopted as this bundle, because the derived JSON
+    # beside it still matched (owner §5.2).
+    nested = [src for a in (have.get("analyses") or [])
+              if isinstance(a, dict)
+              for src in (a.get("inputs") or []) if isinstance(src, dict)]
     for entry in ((have.get("members") or []) + (have.get("analyses") or [])
-                  + (have.get("build_artifacts") or [])):
+                  + (have.get("build_artifacts") or []) + nested):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
         if not f.is_file():
@@ -697,19 +705,15 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     if any(n < 1 for n in nsplits):
         raise SystemExit(f"--nsplit must be positive, got {sorted(nsplits)}")
     require_pinned_producer(fixture)
-    # f64 + nflux is a WRONG-NUMBER path, not merely an unsupported one (owner
-    # P0-E2). The overlay's number records write `'f32', transfer(<real>, 0)`;
-    # under -fdefault-real-8 that takes four bytes of an eight-byte value into an
-    # int32 mold and labels the result f32, so the parser reads a valid-looking
-    # f32 bit pattern that is not the number. The f64 branch also runs only
-    # probe_members(), so nothing would parse G33N even though the manifest would
-    # record an nflux parser. Refused until an f64 number protocol exists.
-    if arm == "f64" and nflux:
-        raise SystemExit(
-            "--arm f64 with --nflux is refused: the G33F number records are "
-            "declared f32 and would carry four bytes of an eight-byte real. An "
-            "f64 number stream needs its own record family (16-hex-digit), not "
-            "the f32 one relabelled.")
+    # f64 + nflux WAS a wrong-number path: the overlay's number records wrote
+    # `'f32', transfer(<real>, 0)`, and under -fdefault-real-8 that took four
+    # bytes of an eight-byte value into an int32 mold and labelled the result
+    # f32. The record family now exists and the width is carried by the stream's
+    # own PROTOCOL header (owner D6), so the combination is allowed.
+    #
+    # The f64 branch still reads PROBE members: an f64 build emits no G33R, so
+    # there is nothing for the refinement parser to read. What --nflux adds is
+    # the G33N/G33F stream in the same stdout, which the number analyses take.
     # A density arm is a NUMBER-transport experiment, and only G33N and G33P
     # carry the arm. Plain G33R does not, and changing that header would
     # invalidate every archived decision artifact (72 committed members) and the

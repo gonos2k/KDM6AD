@@ -429,9 +429,28 @@ def test_EVERY_state_the_module_can_emit_is_classified():
     src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
     emitted = set(re.findall(r'"state": "([A-Za-z-]+)"', src))
     emitted |= set(re.findall(r'else "([A-Za-z-]+)"[,\)\n]', src))
-    known = ec.PASSING_STATES | ec.FAILING_STATES
+    # BINDING_STATUSES is the module's SECOND vocabulary and its words reach
+    # this scan through the same ternary shape. Unioned rather than excluded:
+    # an unclassified binding status must fail here too, which is what the next
+    # test checks from the other side.
+    known = ec.PASSING_STATES | ec.FAILING_STATES | ec.BINDING_STATUSES
     assert emitted <= known, f"unclassified: {sorted(emitted - known)}"
     assert emitted, "the scan found no states -- it has stopped checking anything"
+
+
+def test_EVERY_binding_status_the_module_can_return_is_classified():
+    """The same completeness rule on the second vocabulary. Without it, adding
+    a fourth answer would leave `BINDING_STATUSES` describing three of them and
+    every caller reading the enumeration as the whole set."""
+    got = set()
+    for rows, unbound in (([], []), ([], [{"why": "x"}]),
+                          ([{"state": "MISMATCH"}], []),
+                          ([{"state": "matches"}], [{"why": "x"}]),
+                          ([{"state": "matches"}, {"state": "MISMATCH"}], []),
+                          ([{"state": "matches"}], [])):
+        got.add(ec._binding_status(rows, unbound, pinned=True))
+    assert got == ec.BINDING_STATUSES, sorted(got ^ ec.BINDING_STATUSES)
+    assert ec._binding_status([], [], pinned=False) == ""
 
 
 def _pin(mod):
@@ -1270,7 +1289,15 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     man = json.loads((dst / "manifest.json").read_text())
     e = next(a for a in man["analyses"] if a["analysis"] == "ncmin_locality")
     tampered = e["file"]                       # the file THIS entry describes
-    e["ran"]["nsplit"] = 12                    # the file still says 1
+    # BOTH records inside the manifest. `ran.nsplit` and each kept stream's
+    # argv are now cross-checked, so moving one alone makes the manifest
+    # invalid in a DIFFERENT way and `members_of` returns the schema violation
+    # before it ever emits a run_identity row. The tamper has to be
+    # self-consistent to test what this test is about: the manifest agreeing
+    # with itself while disagreeing with the analysis FILE, which still says 1.
+    e["ran"]["nsplit"] = 12
+    for src in e.get("inputs") or []:
+        src["runtime_argv"][0] = "12"
     (dst / "manifest.json").write_text(json.dumps(man))
     # PER ENTRY, keyed on the file the tampered ENTRY names -- not on a
     # substring of the row's filename, which re-derives an identity the
@@ -1874,3 +1901,277 @@ def test_values_and_predicates_resolve_ALIKE_on_a_synthetic_bundle(world):
     # ...and a CLOSEOUT still refuses it, because "we could not check this" is
     # not "we checked and it is fine".
     assert ec.check(require_available=True) != 0
+
+
+def _world_with_a_multirun_input(world):
+    """A synthetic bundle whose analysis records the raw stream it read."""
+    bundle, write = world
+    raw = b"G33R STATE 1 1 1 th 3F800000\n"
+    (bundle / "mr.n1.rezero.as-is.tiles-3.txt").write_bytes(raw)
+    doc = {"n": 1.5}
+    blob = json.dumps(doc, indent=2, sort_keys=True).encode()
+    (bundle / "a.json").write_bytes(blob)
+    stream = b"G33R STATE 1 1 1 th 3F800000\n"
+    man = {"members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
+           "analyses": [{"file": "a.json", "sha256": _sha(blob),
+                         "analysis": "matched_closure", "nsplit": 3,
+                         "inputs": [{"file": "mr.n1.rezero.as-is.tiles-3.txt",
+                                     "sha256": _sha(raw),
+                                     "runtime_argv": ["1", "rezero", "3", "as-is"]}]}],
+           "findings": []}
+    write(man, claim_extra=(
+        "    expected_values:\n"
+        "      - kdm6ad-g33m-refine/run-a/a.json#n: 1.5\n"))
+    return bundle
+
+
+def test_a_KEPT_multirun_stream_is_re_hashed(world):
+    """The streams were written into the bundle with a digest each and then
+    never re-hashed. Measured on the real bundle before this: appending ONE
+    byte to `mr.*.txt`, and deleting it outright, left values, predicates,
+    artifacts and members entirely clean -- because every binding resolves
+    against the derived JSON, which still matched (owner §5.3).
+
+    The chain reached the analysis and stopped one step short of the stdout it
+    was computed from.
+    """
+    bundle = _world_with_a_multirun_input(world)
+    mr = bundle / "mr.n1.rezero.as-is.tiles-3.txt"
+
+    def kinds():
+        return {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]
+                if m.get("origin") == "multi_run_input"}
+
+    assert kinds() == {"matches"}, kinds()
+    assert ec.check() == 0
+
+    keep = mr.read_bytes()
+    mr.write_bytes(keep + b"X")
+    assert kinds() == {"MISMATCH"}
+    assert ec.check() != 0
+
+    mr.unlink()
+    assert kinds() == {"absent"}
+    assert ec.check() != 0
+
+    mr.write_bytes(keep)
+    assert kinds() == {"matches"} and ec.check() == 0
+
+
+def test_a_MALFORMED_input_entry_is_reported_not_skipped(world):
+    """An entry that is not an object, or names no file, would otherwise fall
+    out of the walk and read as a bundle with nothing to check."""
+    bundle = _world_with_a_multirun_input(world)
+    man = json.loads((bundle / "manifest.json").read_bytes())
+    man["analyses"][0]["inputs"] = ["not-an-object"]
+    (bundle / "manifest.json").write_bytes(
+        json.dumps(man, indent=2, sort_keys=True).encode())
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "MANIFEST-SCHEMA-MISMATCH" in states or ec.check() != 0
+
+
+# --- binding_status is COMPUTED, never declared (owner §16-7 / D5) ----------
+#
+# It was a declared field for one cycle and went wrong twice in that cycle,
+# both times identically: `full` written beside a comment admitting a figure
+# was unbound. A status a claim asserts about itself cannot catch that,
+# because the assertion IS the thing under test. The registry now records only
+# what it does NOT bind; the status follows.
+#
+# The owner ruled out the alternative -- scanning claim prose for numeric
+# literals -- because deciding which numbers are figures (`F:2922`, `31/144`,
+# `12 fields x 3 columns`) is a judgement, and it is theirs. `unbound:` is
+# where that judgement enters as data.
+
+_PINNED = "    artifact_status: pinned\n"
+
+
+def _status(write, extra=""):
+    write(claim_extra=_PINNED + extra)
+    return ec.chain()[0]["binding_status"]
+
+
+def _bindable(world, payload):
+    """A world whose bundle publishes `v.json` as a verified member, so a
+    figure may bind to it -- `covered` is built from the manifest's own member
+    digests and an unlisted file resolves VALUE-UNPINNED-FILE."""
+    bundle, write = world
+    raw = json.dumps(payload).encode()
+    (bundle / "v.json").write_bytes(raw)
+    man = {"members": [{"file": "v.json", "output_sha256": _sha(raw)}],
+           "findings": []}
+
+    def status(extra):
+        write(manifest=man, claim_extra=_PINNED + extra)
+        return ec.chain()[0]["binding_status"]
+
+    return status
+
+
+def test_a_pinned_claim_that_binds_and_admits_NOTHING_is_undeclared(world):
+    """Silence is not `none`. A claim with an attached, verified artifact and
+    no word about which of its figures it checks against it reads exactly like
+    one that checks them all -- which is the confusion the field exists for."""
+    _, write = world
+    assert _status(write) == "UNDECLARED"
+    assert ec.check() != 0
+
+
+def test_admitting_a_gap_makes_the_status_none_not_a_failure(world):
+    """`none` is an honest state: the artifact is pinned and verified, and no
+    figure in the text can be read from it. G33-TURNOVER-002 is the live one."""
+    _, write = world
+    assert _status(write,
+                   "    unbound:\n"
+                   "      - figure: the 13.7x error-floor drop\n"
+                   "        why: the bundle carries no analysis output\n") == "none"
+    assert ec.check() == 0
+
+
+def test_a_bound_claim_with_an_admitted_gap_is_partial(world):
+    """The state the two declarations got wrong: something IS bound, and
+    something the text publishes is not."""
+    status = _bindable(world, {"a": 1.0})
+    extra = ("    expected_values:\n"
+             "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n")
+    assert status(extra) == "full"
+    assert status(extra +
+                  "    unbound:\n"
+                  "      - figure: a ratio the bundle does not carry\n"
+                  "        why: it is a ratio between two contracts\n") == "partial"
+
+
+def test_a_binding_that_FAILS_cannot_leave_a_claim_full(world):
+    """What the declared field could not express at all: it was written once
+    and never revisited when the evidence moved under it. Here the artifact
+    holds a different number, so the claim binds one figure and verifies none."""
+    status = _bindable(world, {"a": 2.0})
+    got = status("    expected_values:\n"
+                 "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n")
+    assert got == "none", got
+    assert ec.check() != 0
+
+
+def test_HALF_the_bindings_verifying_is_partial_not_full(world):
+    status = _bindable(world, {"a": 1.0, "b": 9.0})
+    got = status("    expected_values:\n"
+                 "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n"
+                 "      - kdm6ad-g33m-refine/run-a/v.json#b: 1.0\n")
+    assert got == "partial", got
+
+
+def test_an_unexplained_gap_is_a_blocker(world):
+    """A figure listed as unbound with no reason is indistinguishable from an
+    oversight, and reads as diligence."""
+    _, write = world
+    write(claim_extra=_PINNED + "    unbound:\n"
+                                "      - figure: the 13.7x error-floor drop\n")
+    assert ec.chain()[0]["unbound"] == [{"figure": "the 13.7x error-floor drop",
+                                         "why": ""}]
+    assert ec.check() != 0
+
+
+def test_a_DECLARED_binding_status_is_refused(world):
+    """A field the tool no longer reads, left in the file, goes on reading as
+    the answer to a reviewer. Refused rather than ignored."""
+    _, write = world
+    write(claim_extra=_PINNED + "    binding_status: full\n")
+    with pytest.raises(ValueError, match="computed, not declared"):
+        ec.claims()
+
+
+@pytest.mark.parametrize("bad", [
+    "      - the 13.7x drop\n",                    # no `figure:` key
+    "      - figure: x\n        reason: y\n",      # `why` misspelt
+    "      - figur: x\n        why: y\n",          # `figure` misspelt
+    "\t- figure: x\n\t  why: y\n",                 # tabs: not YAML indentation
+])
+def test_an_unparseable_unbound_entry_is_REFUSED(world, bad):
+    """The same fail-closed rule the binding blocks carry. An unrecognised line
+    used to fall off the end of the parse chain and be ignored, which is how a
+    mistyped key silently unbinds a fact."""
+    _, write = world
+    write(claim_extra=_PINNED + "    unbound:\n" + bad)
+    with pytest.raises(ValueError, match="unparseable `unbound` entry"):
+        ec.claims()
+
+
+def test_an_unpinned_claim_gets_NO_binding_status(world):
+    """"How completely are this claim's figures bound" is a question about a
+    claim that HAS an artifact. Answering it for one that does not would print
+    the same word for missing evidence and for evidence that binds nothing."""
+    _, write = world
+    write()                                   # no artifact_status: pinned
+    assert ec.chain()[0]["binding_status"] == ""
+
+
+# --- one rule, two bindings (owner D3 / §16-9) -----------------------------
+
+def _drive(kind, tmp_path, monkeypatch):
+    """Every branch of the shared resolver, for one binding kind.
+
+    Behavioural, not a source scan. Unifying the two resolvers took their
+    state names out of the source as literals, so the textual completeness
+    check stopped seeing them -- and a check that silently stops checking is
+    the failure this file keeps finding. This drives the code instead.
+    """
+    monkeypatch.setattr(ec, "HOME", tmp_path)
+    (tmp_path / "b").mkdir(parents=True, exist_ok=True)
+    resolve = ec.resolve_value if kind == "VALUE" else ec.resolve_predicate
+
+    def want(file, path="a", **kw):
+        base = ({"value": 1.0, "tolerance": 0.0} if kind == "VALUE"
+                else {"want": True})
+        return {"file": file, "path": path, **base, **kw}
+
+    def write(name, text):
+        (tmp_path / "b" / name).write_text(text)
+        return f"b/{name}"
+
+    good = 1.0 if kind == "VALUE" else True
+    cases = [
+        (want("b/x.json"), set(), {}),                       # UNPINNED-FILE
+        (want("b/x.json"), set(), {"b": "unavailable"}),     # unavailable
+        (want("b/gone.json"), {"b/gone.json"}, {}),          # FILE-ABSENT
+        (want(write("bad.json", "{")), {"b/bad.json"}, {}),  # FILE-UNREADABLE
+        (want(write("dot.json", '{"a.b": {"c": 1}}')),
+         {"b/dot.json"}, {}),                                # PATH-AMBIGUOUS
+        (want(write("ok.json", json.dumps({"a": good})), path="zz"),
+         {"b/ok.json"}, {}),                                 # PATH-ABSENT
+        (want("b/ok.json"), {"b/ok.json"}, {}),              # matches
+        (want(write("no.json", json.dumps({"a": "text"}))),
+         {"b/no.json"}, {}),               # NOT-NUMERIC / MISMATCH by type
+    ]
+    if kind == "VALUE":
+        cases.append((want(write("off.json", json.dumps({"a": 2.0}))),
+                      {"b/off.json"}, {}))                   # VALUE-MISMATCH
+    return {resolve(w, c, b)["state"] for w, c, b in cases}
+
+
+@pytest.mark.parametrize("kind", ["VALUE", "PREDICATE"])
+def test_EVERY_state_a_RESOLVER_can_emit_is_classified(kind, tmp_path,
+                                                       monkeypatch):
+    got = _drive(kind, tmp_path, monkeypatch)
+    known = {s for s in (ec.PASSING_STATES | ec.FAILING_STATES)
+             if s.upper().startswith(kind)}
+    assert got == known, f"unreached: {sorted(known - got)}, new: {sorted(got - known)}"
+
+
+def test_the_two_BINDINGS_take_the_same_path_to_every_shared_state(
+        tmp_path, monkeypatch):
+    """The agreement that three separate findings broke, one at a time.
+
+    Pinned as a STRUCTURAL fact, not a list of cases: everything before the
+    comparison is one function, so `resolve_value` and `resolve_predicate`
+    cannot drift again without the shared core changing under both.
+    """
+    v = _drive("VALUE", tmp_path, monkeypatch)
+    p = _drive("PREDICATE", tmp_path / "p", monkeypatch)
+    shared = {s.split("-", 1)[1] for s in v} & {s.split("-", 1)[1] for s in p}
+    assert {"UNPINNED-FILE", "FILE-ABSENT", "FILE-UNREADABLE",
+            "PATH-AMBIGUOUS", "PATH-ABSENT", "unavailable",
+            "MISMATCH"} <= shared, sorted(shared)
+    src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
+    for fn in ("def resolve_value", "def resolve_predicate"):
+        body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
+        assert "_resolve(" in body, f"{fn} no longer goes through the shared core"

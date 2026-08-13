@@ -188,6 +188,38 @@ IDENTITY = ("schema", "precision", "source_precision", "fixture", "algorithm",
             "rho_profile")
 
 
+def window_state(text: str) -> dict:
+    """The window-initial state, from whichever record family carries it.
+
+    G33R and G33P are two ENCODINGS of the same content -- hex bits and
+    17-significant-digit decimal -- and `_ra.read_text` and `read` already
+    return the same key shape and the same values, so this only has to choose.
+    Measured on a real f64 stream: 324 probe values, every one of them an exact
+    `float()` round trip.
+
+    That is what unblocked the `needs-f64` claims, and it is smaller than it
+    looked. An f64 build emits no G33R at all, so three analyses -- dual_ledger,
+    internal_cap_enthalpy and water_enthalpy_basis, which are exactly the ones
+    those claims rest on -- failed for want of a window-initial qv the stream
+    was carrying the whole time under a different tag. The alternative was a
+    G33R f64 family, and G33R records carry no dtype token at all, so that
+    would have changed a record shape 72 committed members depend on
+    (owner D6 follow-on).
+
+    G33R FIRST, because an f32 probe build emits both and G33R is the pinned
+    convention every archived analysis was computed from -- so this cannot move
+    a published number. Neither present is REFUSED rather than returning an
+    empty dict: a measure built on nothing silently covers no cells.
+    """
+    if "G33R BEGIN" in text:
+        return _ra.read_text(text)
+    if "G33P BEGIN" in text:
+        return read(text)
+    raise ProbeError(
+        "the window-initial state needs a G33R or a G33P block and this "
+        "stream carries neither")
+
+
 def invariants(kind: str) -> tuple:
     """What must match for `kind`: everything identifying, less the axis under
     test and whatever necessarily moves with it."""

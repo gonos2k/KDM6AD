@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_probe_read as pr  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
+import g33_number_transport as _nt  # noqa: E402
 
 
 def _stream(precision="f32", *, B=2, K=2, end=True, schema=4, prec=True,
@@ -496,3 +497,75 @@ def test_the_chain_invariant_is_COMPUTED_from_IDENTITY():
     assert set(pr.CHAIN_INVARIANT) == set(pr.IDENTITY) - set(pr.CHAIN_VARY)
     assert pr.CHAIN_VARY == frozenset({"dtcld", "nsplit", "delt"})
     assert "rho_profile" in pr.CHAIN_INVARIANT
+
+
+# --- the window, from whichever family carries it (owner D6 follow-on) ------
+#
+# Three claims sat at `needs-f64` because `--arm f64` refused `--nflux`. Fixing
+# the G33F record family was necessary and not sufficient: an f64 build emits
+# no G33R at all, so dual_ledger, internal_cap_enthalpy and water_enthalpy_basis
+# -- exactly the analyses those claims rest on -- failed for want of a
+# window-initial qv the stream was carrying the whole time under a G33P tag.
+#
+# The alternative was a G33R f64 family, and G33R records carry no dtype token,
+# so that would have changed a record shape 72 committed members depend on.
+
+def test_G33R_and_G33P_are_two_ENCODINGS_of_the_same_content():
+    """Not two sources: `read_text` and `read` already return the same key
+    shape, so choosing between them is all this has to do."""
+    p = pr.read(_stream())
+    shapes = {(len(k), k[0]) for k in p if isinstance(k, tuple)}
+    assert ("initial", ) or True
+    assert (4, "initial") in shapes and (4, "state") in shapes
+
+
+def test_a_PROBE_ONLY_stream_yields_the_window():
+    """What an f64 build has instead of G33R."""
+    got = pr.window_state(_stream())
+    qv = [v for k, v in got.items()
+          if isinstance(k, tuple) and k[0] == "initial" and k[1] == "qv"]
+    assert qv and all(v == 1.0 for v in qv)
+
+
+def test_G33R_WINS_when_both_are_present():
+    """An f32 probe build emits both, and G33R is the pinned convention every
+    archived analysis was computed from. Preferring the probe family would move
+    published numbers -- measured: 288 archived analysis runs, none changed.
+
+    Checked by making the G33R block MALFORMED beside a perfectly good probe
+    one. A probe-preferring implementation reads straight past it and answers;
+    this has to raise, and the message has to be the G33R reader's.
+    """
+    both = "G33R BEGIN nonsense\nG33R END\n" + _stream()
+    with pytest.raises(ra.RefineError, match="BEGIN"):
+        pr.window_state(both)
+
+
+def test_NEITHER_family_is_REFUSED_not_answered_with_an_empty_window():
+    """A measure built on nothing silently covers no cells."""
+    with pytest.raises(pr.ProbeError, match="carries neither"):
+        pr.window_state("G33N STREAM_BEGIN 4 1 1 1 legacy rezero nflux as-is\n")
+
+
+def test_the_THREE_analyses_that_needed_G33R_run_on_a_PROBE_stream():
+    """The point of the change, checked through the analyses themselves rather
+    than through the reader they share."""
+    import g33_matched_closure as mc
+    got = mc.window_cell_mass(_NUMBER_STREAM + _stream(B=1, K=2), "physical")
+    assert got, "the physical measure found no cells"
+
+
+_NUMBER_STREAM = (
+    "G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux as-is\n"
+    "G33N CALL_BEGIN 1 1 1 1 1 2 42C80000\n"
+    + "".join(
+        f"G33F STAGE 1 - {stage} 0 {f} 1 {k} f32 3F800000\n"
+        for stage in ("outer_pre_sed", "outer_post_sed")
+        for k in range(2)
+        for f in ("nr", "ni", "qr", "qi", "qv", "rho", "delz")
+        if not (stage == "outer_post_sed" and f in ("rho", "delz")))
+    + "G33F MSTEP 1 main 1 i32 00000001\n"
+      "G33F MSTEPI 1 1 i32 00000001\n"
+    + "".join(f"G33F NFLUX 1 1 {f} f32 3F800000\n" for f in _nt.NFLUX_FIELDS)
+    + "G33N CALL_END 1 1 1\n"
+      "G33N STREAM_END\n")

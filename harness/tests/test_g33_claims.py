@@ -1056,39 +1056,114 @@ def test_the_contradiction_guard_is_not_VACUOUS():
     assert not stale.search("qv is read from `G33R INITIAL`")
 
 
-#: What a claim may declare about how completely its figures are bound.
+#: How completely a claim's figures are bound.
 #:
 #: SEPARATE from `artifact_status`. That field says the artifact is pinned and
 #: its digest verified; it never said every load-bearing figure in the text was
 #: bound, and two pinned claims carried figures a comment admitted were unbound
 #: (owner §7). A reader saw `pinned` and had no way to tell the difference.
-BINDING_STATUS = frozenset({"full", "partial", "none"})
+#:
+#: DERIVED, since owner §16-7: the registry lists what a claim does NOT bind
+#: and the status follows. It was declared for one cycle and went wrong twice
+#: in it, both times `full` beside a note admitting a gap -- which a
+#: self-declaration cannot catch, the declaration being the thing under test.
+#: `UNDECLARED` is deliberately NOT here: it is what the derivation says when a
+#: claim has said nothing, and a pinned claim resolving to it is a blocker, not
+#: a state it may sit in. Taken from the module rather than restated, so the two
+#: vocabularies cannot drift apart.
+BINDING_STATUS = _chain().BINDING_STATUSES - {"UNDECLARED"}
 
 
-def test_every_pinned_claim_DECLARES_how_completely_it_is_bound():
-    """`pinned` and `fully bound` are different facts and were the same word."""
+def test_every_pinned_claim_RESOLVES_how_completely_it_is_bound():
+    """`pinned` and `fully bound` are different facts and were the same word.
+
+    UNDECLARED is the failing answer: a pinned claim that binds nothing and
+    admits nothing has said the second one, which reads like the first.
+    """
+    ec = _chain()
+    live = {r["id"]: r for r in ec.chain()}
     for c in CLAIMS:
         if c.get("artifact_status") != "pinned":
             continue
-        got = c.get("binding_status", "")
+        got = live[c["id"]]["binding_status"]
         assert got in BINDING_STATUS, (
-            f"{c['id']} is pinned but declares binding_status {got!r} -- "
+            f"{c['id']} is pinned but its binding status resolves {got!r} -- "
             f"pinned says the artifact is verified, not that the claim's "
             f"figures are bound")
 
 
-def test_a_claim_bound_to_NOTHING_cannot_call_itself_bound():
-    """The one mechanical half of the policy: `none` must have no
-    expected_values, and `full`/`partial` must have some. Whether `full` is
-    honest about the claim's PROSE is a judgement the registry cannot make."""
+def test_the_registry_may_no_longer_DECLARE_a_binding_status():
+    """A field the tool stopped reading, left in the file, goes on reading as
+    the answer to a reviewer.
+
+    A DECLARATION -- a key at claim indentation. Prose about the old field is
+    exactly how the entries explain themselves, so matching the bare word
+    would forbid saying what changed.
+    """
+    bad = [l for l in REGISTRY.read_text().splitlines()
+           if re.match(r"^\s*binding_status:", l)]
+    assert not bad, bad
+
+
+def test_an_ADMISSION_belongs_in_unbound_not_in_a_COMMENT():
+    """`G33-NUMBER-008` declared `full` while a comment two lines above said
+    "NOT every figure the text publishes is bound" (owner §16-6). The knowledge
+    was there; it just was not anywhere the checker could reach.
+
+    So the admissions are data now, and this checks the prose has not grown a
+    second copy. It is not a numeric scan -- the owner ruled that out, because
+    deciding which numbers in a claim are figures is their judgement -- it
+    matches the ADMISSION, which is a deliberate sentence.
+    """
     ec = _chain()
-    live = {c["id"]: c for c in ec.claims()}
+    unbound = {c["id"]: c["unbound"] for c in ec.claims()}
+    src = REGISTRY.read_text()
+    admits = re.compile(r"NOT every figure|are not bound|is NOT bound"
+                        r"|nothing to bind to", re.I)
+    guilty = []
     for c in CLAIMS:
-        st = c.get("binding_status", "")
-        if st not in BINDING_STATUS:
-            continue
-        n = len((live.get(c["id"], {}) or {}).get("expected_values", []))
-        if st == "none":
-            assert n == 0, f"{c['id']} declares `none` but binds {n} values"
-        else:
-            assert n > 0, f"{c['id']} declares {st!r} but binds nothing"
+        entry = src.split(f"\n  - id: {c['id']}\n")[1].split("\n  - id: ")[0]
+        comments = "\n".join(l for l in entry.splitlines()
+                             if l.lstrip().startswith("#"))
+        if admits.search(comments):
+            guilty.append(c["id"])
+    assert not guilty, (
+        f"{guilty} admit an unbound figure in a COMMENT -- put it under "
+        f"`unbound:` with its reason, where the status can follow from it")
+    # And the three that were in those comments are still declared. Without
+    # this, deleting an `unbound:` block promotes a claim to `full` in silence
+    # -- the same move as the declaration, one level down. Closing a gap means
+    # BINDING the figure, which shows up here as the entry going away together
+    # with a new binding, not alone.
+    for cid in ("G33-TURNOVER-002", "G33-NUMBER-008", "G33-BASIS-005"):
+        assert unbound[cid], (
+            f"{cid} published figures its bundle cannot bind; if that changed, "
+            f"the figures are bound now and this list names which")
+
+
+def test_every_admitted_gap_gives_its_REASON():
+    """An unexplained gap is indistinguishable from an oversight and reads as
+    diligence. `check()` blocks on it; this says so at the registry."""
+    ec = _chain()
+    for c in ec.claims():
+        for u in c["unbound"]:
+            assert u["figure"] and u["why"], (c["id"], u)
+
+
+def test_NUMBER_009_binds_the_COMPARABILITY_it_rests_on():
+    """The density matrix is only a matrix if the rows are comparable, so "no
+    ice column changes its sub-step schedule" is load-bearing. It is a boolean,
+    and the entry used to say it was "read in this same artifact rather than
+    bound here, which takes floats" -- true when written, and no longer true
+    once expected_predicates existed (owner §16-6)."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NUMBER-009")
+    got = {w["path"]: w["want"] for w in claim["expected_predicates"]}
+    assert got, "the comparability is unbound"
+    assert all(v is True for v in got.values()), got
+    for arm in ("inverted", "x2", "offset+", "offset-", "uniform"):
+        for col in ("2", "3"):
+            assert f"arms.{arm}.{col}.comparable" in got, (arm, col)
+    assert all("ice.metric_trajectory" in w["file"]
+               for w in claim["expected_predicates"]), \
+        "the claim is about the ICE chain; the main-chain file is a different row set"

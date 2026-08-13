@@ -66,14 +66,25 @@ import subprocess
 import sys
 from pathlib import Path
 
+#: One hex field, either width. The width is the STORAGE the build gave a
+#: default real; `PROTOCOL` below says which, and `_real` refuses a record whose
+#: width, label and header do not all agree (owner D6).
+_H = r"([0-9A-F]{8}|[0-9A-F]{16})"
+
+#: Declared by the driver from `storage_size`, so it is what the compiler did
+#: rather than what the build script meant. Absent in every stream produced
+#: before the f64 family existed, which is exactly the f32 default.
+PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+)$")
+DEFAULT_REAL_BYTES = 4
+
 STREAM_BEGIN = re.compile(
     r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+) (\S+)$")
-XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) f32 "
-                  r"([0-9A-F]{8}) ([0-9A-F]{8})$")
-CAPIN = re.compile(r"^G33F CAPIN (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
-                   r"([0-9A-F]{8}) ([0-9A-F]{8}) ([0-9A-F]{8}) ([0-9A-F]{8})$")
-TOPOUT = re.compile(r"^G33F TOPOUT (\d+) (\d+) (\d+) (-?\d+) (main|ice) f32 "
-                    r"([0-9A-F]{8}) ([0-9A-F]{8})$")
+XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) (f32|f64) "
+                  + _H + " " + _H + "$")
+CAPIN = re.compile(r"^G33F CAPIN (\d+) (\d+) (\d+) (-?\d+) (main|ice) (f32|f64) "
+                   + " ".join([_H] * 4) + "$")
+TOPOUT = re.compile(r"^G33F TOPOUT (\d+) (\d+) (\d+) (-?\d+) (main|ice) (f32|f64) "
+                    + " ".join([_H] * 2) + "$")
 #: Extension records this parser knows. A stream declaring a feature it does not
 #: emit, or emitting one it did not declare, is refused.
 FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout"}
@@ -88,7 +99,7 @@ KNOWN_G33F = {"STAGE", "MSTEP", "MSTEPI", "NFLUX", "XFER", "CAPIN", "TOPOUT",
               "G33FOP"}
 STREAM_END = re.compile(r"^G33N STREAM_END$")
 CALL_BEGIN = re.compile(r"^G33N CALL_BEGIN (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) "
-                        r"([0-9A-F]{8})$")
+                        + _H + "$")
 CALL_END = re.compile(r"^G33N CALL_END (\d+) (\d+) (\d+)$")
 #: The protocol this parser implements. A stream declaring another is refused
 #: rather than read with the wrong field meanings.
@@ -116,8 +127,8 @@ EXTENSION_FAMILIES = frozenset(FAMILY_FEATURE)
 STAGE_REQUIRED = {"outer_pre_sed": ("rho", "delz", "qv", "nr", "ni", "qr", "qi"),
                   "outer_post_sed": ("qv", "nr", "ni", "qr", "qi")}
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
-                   r"(\S+) (\d+) (-?\d+) f32 ([0-9A-F]{8})$")
-NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) f32 ([0-9A-F]{8})$")
+                   r"(\S+) (\d+) (-?\d+) (f32|f64) " + _H + "$")
+NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) (f32|f64) " + _H + "$")
 MSTEP = re.compile(r"^G33F MSTEP \d+ \S+ (\d+) i32 ([0-9A-F]{8})$")
 MSTEPI = re.compile(r"^G33F MSTEPI \d+ (\d+) i32 ([0-9A-F]{8})$")
 
@@ -139,6 +150,29 @@ SPECIES = {"nr": ("main", "bottom_falln_nr", False),
 
 def _f32(h: str) -> float:
     return struct.unpack(">f", bytes.fromhex(h))[0]
+
+
+def _real(label: str, h: str, real_bytes: int, call=None) -> float:
+    """One real, decoded at the width the record declares -- and refused unless
+    the label, the hex width and the stream's own header ALL agree.
+
+    Three ways to be wrong here and only the first was ever possible before:
+    the bytes are half a number (an f64 build writing through an int32 mold),
+    the label lies about the width, or the stream header disagrees with its own
+    records. Any of them yields a valid-looking float, so none may be inferred
+    from the others -- each is checked (owner D6).
+    """
+    want = {"f32": 4, "f64": 8}[label]
+    if len(h) != 2 * want:
+        _expect_stream(False, f"a {label} record carries {len(h)} hex digits, "
+                              f"not {2 * want}")
+    if label == "f32" and real_bytes != 4:
+        _expect_stream(False, f"an f32 record in a stream whose header declares "
+                              f"{real_bytes}-byte reals")
+    if label == "f64" and real_bytes != 8:
+        _expect_stream(False, f"an f64 record in a stream whose header declares "
+                              f"{real_bytes}-byte reals")
+    return struct.unpack(">d" if want == 8 else ">f", bytes.fromhex(h))[0]
 
 
 def _mstep(hexv: str, call) -> int:
@@ -326,7 +360,11 @@ def calls(stream: str) -> list:
     it collapses every call onto the last, and a truncated stream or a changed
     call count is silently re-attributed instead of refused.
     """
-    g33n = [l for l in stream.splitlines() if l.startswith("G33N")]
+    # PROTOCOL is a HEADER record, not a bracket one, so it is out of the
+    # STREAM_BEGIN/END position checks. Leaving it in made those checks depend
+    # on which of the two the driver happens to write first.
+    g33n = [l for l in stream.splitlines()
+            if l.startswith("G33N") and not PROTOCOL.match(l)]
     _expect_stream(g33n, "stream carries no G33N records")
     _expect_stream(STREAM_BEGIN.match(g33n[0]),
                    f"first G33N record is not STREAM_BEGIN: {g33n[0]!r}")
@@ -339,7 +377,20 @@ def calls(stream: str) -> list:
     out = []
     cur, expect, header, ended, seen = None, 1, None, False, 0
     emitted = set()
+    # What a default real is in THIS stream. Absent in every stream produced
+    # before the f64 family existed, and those were all f32 builds -- so the
+    # default is the answer for them, not a guess (owner D6).
+    rb = DEFAULT_REAL_BYTES
     for line in stream.splitlines():
+        if (m := PROTOCOL.match(line)):
+            rb, db = int(m.group(1)), int(m.group(2))
+            _expect_stream(rb in (4, 8),
+                           f"stream declares {rb}-byte default reals")
+            _expect_stream(db == 8,
+                           f"stream declares {db}-byte doubles; -fdefault-real-8 "
+                           f"without -fdefault-double-8 promotes them to 16 and "
+                           f"the schema-f64 fields stop being readable")
+            continue
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
@@ -384,7 +435,11 @@ def calls(stream: str) -> list:
                 raise StreamError(
                     f"call {cid} does not match split {split} tile {tile} under "
                     f"ntile={header['ntile']}")
-            cur = _blank(cid, split, tile, _f32(m.group(7)))
+            # `delt` carries no label -- the record shape predates the f64
+            # family and every archived stream has it -- so its width comes
+            # from the PROTOCOL header, which is emitted before any call.
+            cur = _blank(cid, split, tile,
+                         _real("f64" if rb == 8 else "f32", m.group(7), rb))
             cur["cols"] = (int(m.group(4)), int(m.group(5)))
             cur["K"] = int(m.group(6))
             continue
@@ -421,10 +476,11 @@ def calls(stream: str) -> list:
         # with loops > 1 emits the same (stage, col, k) once per loop, and a key
         # without it lets the last loop silently overwrite the first.
         if (m := STAGE.match(line)):
-            stage, field, col, k, hexv = m.groups()
+            stage, field, col, k, dt, hexv = m.groups()
             loop = int(line.split()[2])
             cur["loops"].add(loop)
-            _put(cur[stage], (loop, int(col), int(k)), field, _f32(hexv), cur)
+            _put(cur[stage], (loop, int(col), int(k)), field,
+                 _real(dt, hexv, rb), cur)
         elif (m := MSTEP.match(line)):
             loop = int(line.split()[2])
             cur["loops"].add(loop)
@@ -438,23 +494,23 @@ def calls(stream: str) -> list:
         elif (m := NFLUX.match(line)):
             loop = int(line.split()[2])
             cur["loops"].add(loop)
-            col, field, hexv = m.groups()
-            _put(cur["flux"], (loop, int(col)), field, _f32(hexv), cur)
+            col, field, dt, hexv = m.groups()
+            _put(cur["flux"], (loop, int(col)), field, _real(dt, hexv, rb), cur)
         elif (m := XFER.match(line)):
-            loop, n, col, chain, dq, dn = m.groups()
+            loop, n, col, chain, dt, dq, dn = m.groups()
             cur["loops"].add(int(loop))
             _put(cur["xfer"], (int(loop), int(n), int(col), chain), None,
-                 (_f32(dq), _f32(dn)), cur)
+                 (_real(dt, dq, rb), _real(dt, dn, rb)), cur)
         elif (m := CAPIN.match(line)):
-            loop, n, col, k, chain, oq, iq, on, ino = m.groups()
+            loop, n, col, k, chain, dt, oq, iq, on, ino = m.groups()
             cur["loops"].add(int(loop))
             _put(cur["capin"], (int(loop), int(n), int(col), chain, int(k)), None,
-                 (_f32(oq), _f32(iq), _f32(on), _f32(ino)), cur)
+                 tuple(_real(dt, h, rb) for h in (oq, iq, on, ino)), cur)
         elif (m := TOPOUT.match(line)):
-            loop, n, col, k, chain, oq, on = m.groups()
+            loop, n, col, k, chain, dt, oq, on = m.groups()
             cur["loops"].add(int(loop))
             _put(cur["topout"], (int(loop), int(n), int(col), chain, int(k)), None,
-                 (_f32(oq), _f32(on)), cur)
+                 (_real(dt, oq, rb), _real(dt, on, rb)), cur)
         elif line.startswith("G33N"):
             raise StreamError(f"unknown G33N record inside a call: {line!r}")
         elif line.startswith("G33F"):

@@ -1461,3 +1461,75 @@ def test_a_VALID_external_step_still_passes_both_checks():
     g = ss.analysis(src)
     assert g["external_delt"] == 25.0
     assert g["external_delt_constant_across_calls"] is True
+
+
+def test_the_two_legs_must_START_from_the_same_qr(drivers):
+    """The telescoping substitutes operands one at a time into ONE starting
+    state, so it decomposes F(qr_O-, r_W) - F(qr_O-, r_O). The difference that
+    exists between the runs is F(qr_W-, r_W) - F(qr_O-, r_O), which carries an
+    extra term C_pre = F(qr_W-, r_W) - F(qr_O-, r_W).
+
+    Each leg replaying its own update proves F(qr_O-,r_O)=qr_O+ and
+    F(qr_W-,r_W)=qr_W+. It does NOT prove qr_O- == qr_W- (owner §4.2).
+
+    Measured: identical in all 12 cells here, so C_pre is zero -- which is why
+    it must be CHECKED. A possibility is not evidence.
+    """
+    import g33_number_transport as nt
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base, got = nl.run(D, (1, 1, 1)), nl.run(D, (3,))
+    sa, sb = pl.read_state(base, label="a"), pl.read_state(got, label="b")
+    assert not [k for k in sa if sa[k]["qr_pre"] != sb[k]["qr_pre"]]
+
+    d = pl.decompose(base, got, 3, ra.read_text(base))
+    assert d["replay"]["prestate_equal_cells"] == 12
+    assert d["replay"]["prestate_different_cells"] == 0
+
+    # A leg that starts elsewhere and is STILL SELF-CONSISTENT. Moving qr_pre
+    # alone breaks that leg's own replay, which is an earlier precondition and
+    # fires first -- so the pre-state check would never be reached and this
+    # test would be exercising the replay guard instead.
+    import g33_update_replay as ur
+    dt = pl.read_dtcld(got, label="b")
+    cells = pl.read_cells(got, label="b")
+    # A cell whose qr_pre is NON-ZERO: doubling zero is a no-op, so picking
+    # the first key silently produced an identical stream and the check under
+    # test was never reached.
+    key = next(k for k in sorted(sb) if ur.f32(sb[k]["qr_pre"]) != 0.0)
+    new_pre = ur.bits32(ur.f32(sb[key]["qr_pre"]) * 2.0)
+    new_post = ur.replay_qr(new_pre, cells[key], dt,
+                            ur.is_cold(sb[key]["t"]))
+    out = []
+    for l in got.splitlines():
+        p = l.split()
+        if (len(p) == 11 and p[:2] == ["G33F", "STAGE"]
+                and (int(p[2]), int(p[5]), int(p[7]), int(p[8])) == key
+                and p[6] == "qr"):
+            if p[4] == pl.PRE:
+                l = l.rsplit(" ", 1)[0] + f" {new_pre:08X}"
+            elif p[4] == pl.POST:
+                l = l.rsplit(" ", 1)[0] + f" {new_post:08X}"
+        out.append(l)
+    hacked = "\n".join(out) + "\n"
+    # it replays fine on its own...
+    pl.verify_replay(cells, pl.read_state(hacked, label="b"), dt, label="b")
+    # ...and is still refused, because the two runs no longer share a start.
+    with pytest.raises(ra.RefineError, match="different qr"):
+        pl.decompose(base, hacked, 3, ra.read_text(base))
+
+
+def test_the_decomposition_CLOSES_against_the_real_update(drivers):
+    """Not "the terms sum to their own total" -- that restates a definition.
+    This is the sum against the ACTUAL two-run qr_post difference, in raw f32
+    words: sum_j C_j == qr_W+ - qr_O+, exactly (owner §16-4)."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
+    for col, r in d["columns"].items():
+        assert r["closes_against_actual_update"] is True, (col, r)
+        assert r["telescoped_minus_actual"] == 0.0, (col, r)
+    # ...and the column that moves must actually move, or this is vacuous.
+    assert d["columns"]["2"]["actual_post_delta"] != 0.0
+    assert d["columns"]["1"]["actual_post_delta"] == 0.0

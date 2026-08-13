@@ -66,12 +66,13 @@ def claims() -> list[dict]:
     Parsed here rather than imported so this tool cannot inherit the stamper's
     parsing, which deliberately reads only what stamping needs.
     """
-    out, cur, in_art, folded = [], None, False, None
+    out, cur, in_art, folded, section = [], None, False, None, None
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
+            section = None
             cur = {"id": line.split("id:", 1)[1].strip(),
                    "evidence": [], "artifacts": {}, "expected_values": [],
-                   "expected_predicates": []}
+                   "expected_predicates": [], "unbound": []}
             out.append(cur)
             in_art = folded = None or False
         elif cur is None:
@@ -81,11 +82,21 @@ def claims() -> list[dict]:
             in_art = m.group(1) in ("artifacts", "expected_values",
                                     "expected_predicates")
             section = m.group(1)
+            if m.group(1) == "binding_status":
+                # COMPUTED now, from what the claim binds and what it declares
+                # it does not -- see `_binding_status`. Twice a claim declared
+                # `full` beside a comment saying a figure was unbound, which is
+                # what a self-declaration buys you. Refused here rather than
+                # ignored: a field the tool no longer reads, left in the file,
+                # goes on reading as the answer to a reviewer (owner §16-7).
+                raise ValueError(
+                    f"{cur['id']}: `binding_status` is computed, not declared "
+                    f"-- list what the claim does NOT bind under `unbound:` "
+                    f"and the status follows from it")
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "binding_status",
-                                "migration_blocker"):
+                                "blocker_kind", "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -121,6 +132,31 @@ def claims() -> list[dict]:
             cur["expected_predicates"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "want": _literal(m.group(3))})
+        elif section == "unbound" and not (
+                not line.strip() or line.lstrip().startswith("#")):
+            # A figure the claim's TEXT publishes and the claim does NOT bind,
+            # with the reason. This is where the author's judgement about what
+            # counts as a load-bearing figure enters as DATA -- the owner ruled
+            # out scanning the prose for numeric literals, because deciding
+            # which numbers are figures (`F:2922`, `31/144`, `12 fields x 3
+            # columns`) is exactly that judgement (owner D5).
+            #
+            # Every line in the block must match one of the three shapes. An
+            # unrecognised line used to fall off the end of this chain and be
+            # ignored, which is how a mistyped key silently unbinds a fact.
+            if (m := re.match(r"^      - +figure: +(\S.*?)\s*$", line)):
+                cur["unbound"].append({"figure": m.group(1), "why": ""})
+            elif cur["unbound"] and (
+                    m := re.match(r"^        why: +(\S.*?)\s*$", line)):
+                cur["unbound"][-1]["why"] = m.group(1)
+            elif cur["unbound"] and (m := re.match(r"^ {10,}(\S.*?)\s*$", line)):
+                # A continuation of the plain scalar above it, joined with a
+                # space -- what a YAML load does with the same lines.
+                last = cur["unbound"][-1]
+                last["why" if last["why"] else "figure"] += " " + m.group(1)
+            else:
+                raise ValueError(
+                    f"{cur['id']}: unparseable `unbound` entry: {line.strip()!r}")
         elif cur is not None and re.match(r"^\s+-\s", line):
             # An ORPHAN list item: it is not inside a folded block (that branch
             # ran first) and it matched no binding shape. Two ways to get here
@@ -273,6 +309,28 @@ def members_of(manifest: Path) -> list[dict]:
                     "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
+        # The RAW STREAMS a multi-run analysis read. They were written into the
+        # bundle with a digest each and then never re-hashed by anything, so a
+        # kept stream could be edited or deleted and the chain said nothing:
+        # the derived JSON still matched, and it is the JSON every binding
+        # resolves against (owner §5.3).
+        #
+        # Measured before this: appending one byte to `mr.*.txt`, and removing
+        # it outright, both left values, predicates, artifacts and members
+        # entirely clean.
+        for src in an.get("inputs") or []:
+            if not isinstance(src, dict) or not isinstance(src.get("file"), str):
+                out.append({"file": f"{an['file']}#inputs",
+                            "scope": "bundle", "origin": "multi_run_input",
+                            "state": "MANIFEST-SCHEMA-MISMATCH",
+                            "detail": f"malformed input entry: {src!r}"[:120]})
+                continue
+            q = manifest.parent / src["file"]
+            out.append({"file": src["file"], "scope": "bundle",
+                        "origin": "multi_run_input",
+                        "state": ("absent" if not q.is_file() else
+                                  "matches" if sha256(q) == src.get("sha256")
+                                  else "MISMATCH")})
         # The manifest's `ran` block against the one INSIDE the analysis it
         # describes. The producer copies it across, so they are two records of
         # one fact -- and two records never checked against each other are one
@@ -514,8 +572,8 @@ def covered_files(artifacts: list) -> set:
             if m["state"] == "matches" and m.get("scope") == "bundle"}
 
 
-def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
-    """Look up ONE declared figure in the artifact it is declared against.
+def _resolve(want: dict, covered: set, bundles: dict, kind: str, compare):
+    """Look up ONE declared fact in the artifact it is declared against.
 
     Declared, never discovered. Searching the JSONs for a number equal to the
     published one would bind a claim to whatever value happened to sit near it
@@ -528,75 +586,80 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
     all -- a JSON dropped beside the manifest, covered by no digest, resolved
     and reported `value-matches` (Codex). Beside the evidence is not the
     evidence.
+
+    ONE rule, two bindings. Figures and predicates were two functions that
+    said the same thing, and three findings in a single cycle were "the fix
+    reached one and not the other" (owner D3):
+
+      * `read_cells` refused duplicate rows, `read_state` did not;
+      * MANIFEST-ABSENT-IN-PRESENT-BUNDLE was seen by values, not predicates;
+      * the predicate resolver keyed the excusable case on a PREFIX SCAN over
+        bundle names while the value resolver keyed it on the artifact's own
+        state -- a lookalike, not the rule. They disagreed on the same input: a
+        deleted analysis file resolved VALUE-UNPINNED-FILE and failed, while
+        the predicate beside it resolved `predicate-unavailable` and passed.
+        Its docstring said "resolved exactly like a value" throughout.
+
+    So `kind` names the binding and `compare` is the only thing that differs.
+    The comparison owns its own state names because it owns its own failures
+    -- a figure can be non-numeric, a predicate cannot -- and everything
+    before it is shared code, which is the point.
     """
+    def out(state, got=None):
+        return {**want, "state": state, "got": got}
+
     if want["file"] not in covered:
         # Not covered has two causes, and only one is a defect. On a host
         # without the private bundles NOTHING is covered, so failing here would
         # fail the routine check everywhere the evidence legitimately is not --
         # the very thing --require-available exists to keep separate.
         if bundles.get(str(Path(want["file"]).parent)) == "unavailable":
-            return {**want, "state": "value-unavailable", "got": None}
-        return {**want, "state": "VALUE-UNPINNED-FILE", "got": None}
+            return out(f"{kind.lower()}-unavailable")
+        return out(f"{kind}-UNPINNED-FILE")
     f = HOME / want["file"]
     if not f.is_file():
-        return {**want, "state": "VALUE-FILE-ABSENT", "got": None}
+        return out(f"{kind}-FILE-ABSENT")
     try:
         doc = json.loads(f.read_text())
     except (OSError, ValueError):
-        return {**want, "state": "VALUE-FILE-UNREADABLE", "got": None}
+        return out(f"{kind}-FILE-UNREADABLE")
     if any("." in str(k) for k in _keys_of(doc)):
-        return {**want, "state": "VALUE-PATH-AMBIGUOUS", "got": None}
+        return out(f"{kind}-PATH-AMBIGUOUS")
     flat = flatten(doc)
     if want["path"] not in flat:
-        return {**want, "state": "VALUE-PATH-ABSENT", "got": None}
+        return out(f"{kind}-PATH-ABSENT")
     got = flat[want["path"]]
+    return out(compare(want, got), got)
+
+
+def _compare_value(want: dict, got) -> str:
     if isinstance(got, bool) or not isinstance(got, (int, float)):
-        return {**want, "state": "VALUE-NOT-NUMERIC", "got": got}
+        return "VALUE-NOT-NUMERIC"
     ok = (got == want["value"] if want["tolerance"] == 0.0
           else abs(got - want["value"]) <= want["tolerance"])
-    return {**want, "state": "value-matches" if ok else "VALUE-MISMATCH",
-            "got": got}
+    return "value-matches" if ok else "VALUE-MISMATCH"
 
 
-def resolve_predicate(want: dict, covered: set, bundles_: dict) -> dict:
-    """A non-numeric fact, resolved exactly like a value.
-
-    Same digest-verified `covered` gate: a predicate may only be read from a
-    file the claim's own pinned manifest vouched for, or it is a fact about
-    some file that happens to be on this host.
-    """
-    if want["file"] not in covered:
-        # THE SAME RULE `resolve_value` uses, keyed on the artifact's own
-        # state: excusable only where the bundle this file belongs to is
-        # itself unavailable. This was a prefix scan over the bundle names --
-        # a lookalike, not the rule -- and it disagreed with values on the
-        # same input: a deleted analysis file resolved VALUE-UNPINNED-FILE and
-        # failed, while the predicate beside it resolved
-        # `predicate-unavailable` and passed (Codex).
-        #
-        # The docstring above claimed "resolved exactly like a value" while it
-        # was not, which is the part worth remembering.
-        if bundles_.get(str(Path(want["file"]).parent)) == "unavailable":
-            return {**want, "state": "predicate-unavailable", "got": None}
-        return {**want, "state": "PREDICATE-UNPINNED-FILE", "got": None}
-    f = HOME / want["file"]
-    if not f.is_file():
-        return {**want, "state": "PREDICATE-FILE-ABSENT", "got": None}
-    try:
-        doc = json.loads(f.read_text())
-    except (OSError, ValueError):
-        return {**want, "state": "PREDICATE-FILE-UNREADABLE", "got": None}
-    if any("." in str(k) for k in _keys_of(doc)):
-        return {**want, "state": "PREDICATE-PATH-AMBIGUOUS", "got": None}
-    flat = flatten(doc)
-    if want["path"] not in flat:
-        return {**want, "state": "PREDICATE-PATH-ABSENT", "got": None}
-    got = flat[want["path"]]
+def _compare_predicate(want: dict, got) -> str:
     # EXACT, and type-sensitive: `True == 1` in Python, so a bool declared
     # against a numeric 1 would pass while saying something different.
     ok = type(got) is type(want["want"]) and got == want["want"]
-    return {**want, "state": "predicate-matches" if ok else "PREDICATE-MISMATCH",
-            "got": got}
+    return "predicate-matches" if ok else "PREDICATE-MISMATCH"
+
+
+def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
+    """One declared FIGURE, compared numerically within its tolerance."""
+    return _resolve(want, covered, bundles, "VALUE", _compare_value)
+
+
+def resolve_predicate(want: dict, covered: set, bundles: dict) -> dict:
+    """One declared non-numeric FACT, compared exactly and by type.
+
+    `expected_values` takes floats, so `causal_attribution_valid: true` and
+    `comparable: true` sat in their artifacts unbound while claims rested on
+    them (owner §7.3).
+    """
+    return _resolve(want, covered, bundles, "PREDICATE", _compare_predicate)
 
 
 def _keys_of(obj) -> list:
@@ -607,6 +670,53 @@ def _keys_of(obj) -> list:
     if isinstance(obj, list):
         return [k for v in obj for k in _keys_of(v)]
     return []
+
+
+#: Every answer `_binding_status` can give, plus "" for a claim the question
+#: does not apply to. A SECOND vocabulary, deliberately separate from the
+#: artifact states: those say whether a file is what it was pinned as, these
+#: say how much of a claim rests on one. Enumerated for the same reason --
+#: "nobody classified this" must not read as "this is fine".
+BINDING_STATUSES = frozenset({"full", "partial", "none", "UNDECLARED"})
+
+
+def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
+    """How completely a claim's figures are bound -- DERIVED, never declared.
+
+    Separate from `artifact_status`, which says the artifact is pinned and its
+    digest verified and never said a single figure in the text was checked
+    against it.
+
+    It was a declared field for one cycle and the declaration went wrong twice
+    in that cycle, both times the same way: `full` written beside a comment
+    admitting a figure was unbound. A status a claim asserts about itself
+    cannot catch that, because the assertion IS the thing being checked. So
+    the registry now records only what it does NOT bind, and this reads:
+
+      no bindings and no admission  UNDECLARED -- the claim says nothing, which
+                                    is not the same as saying `none`
+      nothing bound and verified    none
+      an admission, or a binding
+      that did not verify           partial
+      otherwise                     full
+
+    A binding that FAILS also cannot leave a claim `full`, which the declared
+    field could not express at all: it was written once and never revisited
+    when the evidence moved under it.
+
+    Empty for a claim with no verified artifact: "how completely are this
+    claim's figures bound" is a question about a claim that HAS an artifact,
+    and answering it for one that does not would report the same word for a
+    claim missing its evidence and a claim whose evidence binds nothing.
+    """
+    if not pinned:
+        return ""
+    if not rows and not unbound:
+        return "UNDECLARED"
+    bound = sum(1 for r in rows if not verdict(r["state"]))
+    if not bound:
+        return "none"
+    return "partial" if (unbound or bound < len(rows)) else "full"
 
 
 def chain() -> list[dict]:
@@ -664,12 +774,12 @@ def chain() -> list[dict]:
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "predicates": preds,
-            # DECLARED coverage. `artifact_status: pinned` says the artifact is
-            # pinned and verified; it never said every load-bearing figure was
-            # bound, and two pinned claims carried figures they admitted in a
-            # comment were unbound (owner §7). Separating the two makes that
-            # readable instead of a comment nobody greps.
-            "binding_status": c.get("binding_status", ""),
+            # COMPUTED from the two lines above and the claim's own list of
+            # what it does not bind -- see `_binding_status` (owner §16-7).
+            "binding_status": _binding_status(
+                values + preds, c.get("unbound", []),
+                c.get("artifact_status") == "pinned"),
+            "unbound": c.get("unbound", []),
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
             # DECLARED, not sniffed out of the prose. The kinds were inferred
@@ -691,11 +801,13 @@ def report() -> None:
     traceable = [r for r in rows if r["runs"]]
     print(f"  {len(rows)} claims: {len(pinned)} pin a run artifact, "
           f"{len(traceable)} cite a finding some published run names.\n")
-    print(f"  {'claim':22} {'status':10} {'artifacts':>10}  runs")
+    print(f"  {'claim':22} {'status':10} {'artifacts':>10} {'bound':>10}  runs")
     for r in rows:
         st = ",".join(sorted({a["state"] for a in r["artifacts"]})) or "-"
-        print(f"  {r['id']:22} {r['status']:10} {st:>10}  "
-              f"{','.join(r['runs']) or '-'}")
+        # The DERIVED binding status, beside the artifact states it is derived
+        # from. It answers the question `pinned` was silently taken to answer.
+        print(f"  {r['id']:22} {r['status']:10} {st:>10} "
+              f"{r['binding_status'] or '-':>10}  {','.join(r['runs']) or '-'}")
     for r in rows:
         for a in r["artifacts"]:
             if a["state"] == "MISMATCH":
@@ -827,6 +939,19 @@ def check(require_available: bool = False) -> int:
             bad.append(f"{r['id']}: artifact_status=historical_unavailable "
                        f"({r['evidence_kind']}) -- {why}"
                        f"  [fails --require-available]")
+        # A pinned claim that binds nothing and admits nothing. Not an absence
+        # of evidence -- the evidence is attached and verified -- but a claim
+        # that has not said which of its figures it checks against it, which
+        # reads exactly like one that checks them all (owner §16-7).
+        if r["binding_status"] == "UNDECLARED":
+            bad.append(f"{r['id']}: pins an artifact but binds no figure and "
+                       f"declares no `unbound:` entry -- `pinned` would be "
+                       f"read as `checked`")
+        for u in r["unbound"]:
+            if not u["why"]:
+                bad.append(f"{r['id']}: unbound figure {u['figure']!r} gives "
+                           f"no reason -- an unexplained gap is indistinguishable "
+                           f"from an oversight")
         for v in r["values"]:
             if verdict(v["state"], require_available):
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"

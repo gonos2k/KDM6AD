@@ -542,3 +542,89 @@ def test_a_legitimate_mstep_still_parses():
     s = _stream(_ext(mstep=3), feats=_FEATS)
     assert nt.calls(s)[0]["mstep"][(1, "main", 1)] == 3
     assert nt.MSTEP_MAX >= 1024
+
+
+# --- the f64 record family (owner D6) --------------------------------------
+#
+# The G33F records used to write `'f32', transfer(<real>, 0)`. Under
+# -fdefault-real-8 that took FOUR bytes of an EIGHT-byte value into an int32
+# mold and labelled the result f32, so a reader parsed a valid-looking bit
+# pattern that was not the number: pi came out `54442D18`, the low word of
+# 400921FB54442D18, which reads as 3.3702806e+12.
+#
+# It was guarded at three layers instead of fixed, and the guards were why it
+# stayed unfixed. What replaces them is an agreement, checked on every read,
+# between a record's label, its hex width and the stream's PROTOCOL header.
+
+_F64_ONE = "3FF0000000000000"      # 1.0
+_F32_ONE = "3F800000"
+
+
+def _f64(text):
+    """The f32 synthetic stream, widened -- header, labels and hex together."""
+    out = []
+    for line in text.splitlines():
+        if line.startswith("G33N STREAM_BEGIN"):
+            # AFTER the header, which is where the driver writes it.
+            out += [line, "G33N PROTOCOL 8 8"]
+            continue
+        line = line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
+        if line.startswith("G33N CALL_BEGIN"):
+            line = line.replace("42C80000", "4059000000000000")
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+def test_an_f64_STREAM_parses_to_the_SAME_numbers():
+    """The family is a width change, not a meaning change."""
+    s32 = _stream(_call(1))
+    got32, got64 = nt.calls(s32), nt.calls(_f64(s32))
+    assert len(got32) == len(got64) == 1
+    assert got32[0]["delt"] == got64[0]["delt"] == 100.0
+    assert got32[0]["outer_pre_sed"] == got64[0]["outer_pre_sed"]
+
+
+def test_an_f64_LABEL_on_an_f32_WIDTH_is_refused():
+    """The exact shape of the original defect: a label that does not describe
+    the bytes beside it."""
+    bad = _f64(_stream(_call(1))).replace(f"f64 {_F64_ONE}", f"f64 {_F32_ONE}", 1)
+    with pytest.raises(nt.StreamError, match="hex digits"):
+        nt.calls(bad)
+
+
+def test_an_f32_LABEL_on_an_f64_WIDTH_is_refused():
+    bad = _stream(_call(1)).replace(f"f32 {_F32_ONE}", f"f32 {_F64_ONE}", 1)
+    with pytest.raises(nt.StreamError, match="hex digits"):
+        nt.calls(bad)
+
+
+def test_a_RECORD_that_disagrees_with_the_HEADER_is_refused():
+    """The header is written from `storage_size`, so it is what the compiler
+    did. A record claiming otherwise means the overlay and the compile were
+    given different widths -- which is the wrong-number path itself."""
+    # An otherwise well-formed f64 stream with ONE record left at f32: its
+    # label and its width agree with each other and with nothing else.
+    one = _f64(_stream(_call(1))).replace(f"f64 {_F64_ONE}", f"f32 {_F32_ONE}", 1)
+    with pytest.raises(nt.StreamError, match="header declares"):
+        nt.calls(one)
+    # ...and the unlabelled `delt`, whose width is the header's word alone.
+    s = _stream(_call(1))
+    with pytest.raises(nt.StreamError, match="hex digits"):
+        nt.calls(s.replace("\n", "\nG33N PROTOCOL 8 8\n", 1))
+
+
+def test_a_stream_with_NO_protocol_header_reads_as_f32():
+    """Every archived stream predates the header, and every one of them was an
+    f32 build. The default is the answer for them, not a guess."""
+    s = _stream(_call(1))
+    assert "PROTOCOL" not in s
+    assert nt.calls(s)[0]["delt"] == 100.0
+
+
+def test_a_stream_whose_DOUBLES_were_promoted_to_16_bytes_is_refused():
+    """-fdefault-real-8 without -fdefault-double-8 makes `double precision`
+    REAL(16), and the schema-f64 fields stop being readable at all. The build
+    script passes both; this refuses a stream built by something that did not."""
+    with pytest.raises(nt.StreamError, match="16-byte doubles|byte doubles"):
+        nt.calls(_f64(_stream(_call(1))).replace("PROTOCOL 8 8",
+                                                 "PROTOCOL 8 16"))
