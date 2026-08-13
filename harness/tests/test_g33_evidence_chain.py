@@ -1730,3 +1730,59 @@ def test_a_PRESENT_bundle_with_no_manifest_is_not_merely_unavailable(tmp_path):
         assert ec.verdict("unavailable", require_available=True) is True
     finally:
         ec.HOME = real
+
+
+def test_a_PREDICATE_resolves_exactly_like_a_VALUE(tmp_path):
+    """Its docstring said "resolved exactly like a value" and it did not.
+    `resolve_value` keys on the ARTIFACT's own state -- excusable only where
+    the bundle this file belongs to is itself unavailable -- while the
+    predicate did a prefix scan over bundle names, a lookalike.
+
+    They disagreed on identical input: a deleted analysis file resolved
+    VALUE-UNPINNED-FILE and failed, and the predicate beside it resolved
+    `predicate-unavailable` and passed (Codex).
+
+    Asserted as AGREEMENT, per case, rather than as two separate expectations
+    -- the same shape as pinning this parser to pyyaml.
+    """
+    import shutil
+    real = ec.HOME
+    store = real / "kdm6ad-g33m-migrate"
+    if not store.is_dir():
+        pytest.skip("no bundle store on this host")
+    shutil.copytree(store, tmp_path / "kdm6ad-g33m-migrate", symlinks=False)
+    ec.HOME = tmp_path
+    try:
+        cid = "G33-MSTEPI-001"
+        claim = next(c for c in ec.claims() if c["id"] == cid)
+        mani = tmp_path / list(claim["artifacts"])[0]
+
+        def kinds():
+            r = next(x for x in ec.chain() if x["id"] == cid)
+            assert r["values"] and r["predicates"], "this claim must carry both"
+            return ({w["state"].split("-", 1)[1] if w["state"][0].isupper()
+                     else w["state"].split("-", 1)[1] for w in r["values"]},
+                    {w["state"].split("-", 1)[1] if w["state"][0].isupper()
+                     else w["state"].split("-", 1)[1] for w in r["predicates"]})
+
+        v, p = kinds()
+        assert v == p, f"intact: values {v} predicates {p}"
+
+        saved = mani.read_bytes()
+        mani.unlink()
+        v, p = kinds()
+        assert v == p == {"UNPINNED-FILE"}, (v, p)
+        mani.write_bytes(saved)
+
+        tgt = next(mani.parent.glob("*substep_schedule.json"))
+        keep = tgt.read_bytes()
+        tgt.unlink()
+        v, p = kinds()
+        assert v == p, f"deleted analysis: values {v} predicates {p}"
+        tgt.write_bytes(keep)
+
+        shutil.rmtree(mani.parent)
+        v, p = kinds()
+        assert v == p == {"unavailable"}, (v, p)
+    finally:
+        ec.HOME = real

@@ -566,7 +566,17 @@ def resolve_predicate(want: dict, covered: set, bundles_: dict) -> dict:
     some file that happens to be on this host.
     """
     if want["file"] not in covered:
-        if not any(want["file"].startswith(b + "/") for b in bundles_):
+        # THE SAME RULE `resolve_value` uses, keyed on the artifact's own
+        # state: excusable only where the bundle this file belongs to is
+        # itself unavailable. This was a prefix scan over the bundle names --
+        # a lookalike, not the rule -- and it disagreed with values on the
+        # same input: a deleted analysis file resolved VALUE-UNPINNED-FILE and
+        # failed, while the predicate beside it resolved
+        # `predicate-unavailable` and passed (Codex).
+        #
+        # The docstring above claimed "resolved exactly like a value" while it
+        # was not, which is the part worth remembering.
+        if bundles_.get(str(Path(want["file"]).parent)) == "unavailable":
             return {**want, "state": "predicate-unavailable", "got": None}
         return {**want, "state": "PREDICATE-UNPINNED-FILE", "got": None}
     f = HOME / want["file"]
@@ -641,7 +651,15 @@ def chain() -> list[dict]:
         # `.get`, because a synthetic claim in a test may predate the field.
         # Safe rather than fail-open: `claims()` initialises the key on every
         # real claim, so a missing one cannot come from the registry.
-        preds = [resolve_predicate(w, covered, have)
+        #
+        # `bundle_states`, the SAME namespace the values use. This passed
+        # `have`, whose keys are the store's symlink names
+        # (`kdm6ad-g33m-migrate/ncmin-001`) while a pinned path is
+        # `.../ncmin-001.bundles/<digest>/...` -- so the "is this file inside a
+        # bundle we pinned?" test never matched and every damaged or missing
+        # file fell through to `predicate-unavailable`, which passes. The same
+        # file resolved VALUE-UNPINNED-FILE and failed (Codex).
+        preds = [resolve_predicate(w, covered, bundle_states)
                  for w in c.get("expected_predicates", [])]
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
