@@ -672,33 +672,90 @@ def test_NO_claim_binds_the_same_file_and_path_twice():
     assert seen, "no bindings at all -- this check would be vacuous"
 
 
-def test_G33_NCMIN_001_records_the_MEASURED_process_not_the_inferred_one():
-    """The claim withdrew "suppressed autoconversion" as unmeasured, and the
-    ledger then CONTRADICTED it: accretion carries 85.3% of the qr change and
-    autoconversion 14.7%. A withdrawal and a refutation are different states,
-    and the registry has to say which one it is."""
+def test_the_process_attribution_is_HELD_not_certified():
+    """The owner put the 85.3/14.7 share on HOLD, and the reason is in the
+    analyzer, not the measurement: the warm branch adds `paacw` twice
+    (F:2922) and a dict cannot hold a key twice, records are keyed (col, k) so
+    a second loop overwrites the first, a missing operand reads as 0.0, branch
+    comparability counts cells instead of comparing the branch MAP, and the
+    terms are summed in f64 while the reference accumulates f32 in source
+    order under a clamp.
+
+    So the figures live in their own claim, graded `hold`, bound so a
+    corrected ledger has to be compared against them rather than quietly
+    replacing them. G33-NCMIN-001 keeps the mechanism, which is unaffected.
+    """
+    held = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-004")
+    assert held["grade"] == "hold", (
+        f"the process share is graded {held['grade']!r}; the ledger does not "
+        f"reproduce the reference update, so it cannot be certified")
+    # The corrected ledger reports BOTH measures, and they differ. Binding
+    # only one would hide that the first version's figure was not a column
+    # share at all (owner §4.7). Read through the CHAIN parser: this file's
+    # own reader does not parse expected_values.
     ec = _chain()
-    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
-    paths = {w["path"] for w in claim["expected_values"]}
-    for q in ("columns.2.share.pracw", "columns.2.share.praut",
-              "columns.2.total_delta"):
-        assert q in paths, f"the measured process result is not bound: {q}"
+    got = {w["path"] for w in
+           next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+           ["expected_values"]}
+    for basis in ("unweighted", "operator", "physical"):
+        for term in ("pracw", "praut"):
+            assert f"columns.2.{basis}.share.{term}" in got, (basis, term)
+        assert f"columns.2.{basis}.total_delta" in got, basis
+    assert "85.3194" in held["text"] and "86.9882" in held["text"], (
+        "both measures must be stated; the weighted one supersedes the other "
+        "as the column statement, and the correction has to stay visible")
 
-    files = {w["file"].rsplit("/", 1)[-1] for w in claim["expected_values"]}
-    assert "g33_fixture_boundary_mapping_v1.qr_process_ledger.json" in files
-    assert "g33_fixture_boundary_mapping_v1.ncmin_locality.json" in files, \
-        "both analyses back this claim; binding one would drop half of it"
+    mech = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-001")
+    assert mech["grade"] == "confirmed", "the mechanism is not what is on hold"
+    assert "85.3" not in mech["text"], (
+        "the process share is still asserted in the mechanism claim, which is "
+        "graded confirmed")
+    assert "G33-NCMIN-004" in mech["text"], \
+        "the mechanism claim must point at where the process question went"
 
 
-def test_the_two_process_shares_SUM_to_the_whole():
-    """Reported shares that do not sum to 1 would mean a term moved that the
-    decomposition did not account for."""
+def test_the_process_shares_are_BOUND_so_a_rewrite_cannot_be_silent():
+    """Not a closure test. `sum(delta) == total_delta` restates how
+    total_delta is defined and was removed for saying so (owner P0-SCI-1 §4.6);
+    a real closure runs against micro_pre/post_state_update and needs the
+    corrected ledger first. What these bindings do is make the current numbers
+    immovable without a visible change."""
     ec = _chain()
-    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
-    share = {w["path"].rsplit(".", 1)[-1]: w["value"]
-             for w in claim["expected_values"] if ".share." in w["path"]}
-    assert set(share) == {"pracw", "praut"}, sorted(share)
-    assert abs(sum(share.values()) - 1.0) < 1e-12, share
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+    paths = {w["path"]: w["value"] for w in claim["expected_values"]}
+    want = {f"columns.2.{b}.{f}"
+            for b in ("unweighted", "operator", "physical")
+            for f in ("total_delta", "share.pracw", "share.praut")}
+    want |= {"replay.base.cold_gate_disagrees", "replay.got.cold_gate_disagrees"}
+    assert set(paths) == want, sorted(set(paths) ^ want)
+    # The replay is the precondition; binding it means a bundle whose cells
+    # stopped agreeing with their own operands cannot pass unnoticed.
+    assert paths["replay.base.cold_gate_disagrees"] == 0.0
+    # NOT `== "value-matches"`. That holds only where the bundle is on the
+    # host: on a clone without it the same binding resolves to
+    # `value-unavailable`, which is the correct answer there and is what CI
+    # reported. The declaration is host-independent; its verification is not.
+    #
+    # `verdict` is the question that means the same thing everywhere -- is
+    # anything WRONG with these bindings -- and it still fails a mismatch, an
+    # absent path or an unpinned file.
+    row = next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")
+    states = [w["state"] for w in row["values"]]
+    assert states, "no bindings resolved at all"
+
+    # The ARTIFACT too. Checking only the values let a bundle whose manifest
+    # was missing pass: the figures went `value-unavailable`, which is a
+    # passing state, and nothing consulted the artifact that had just gone
+    # `MANIFEST-ABSENT-IN-PRESENT-BUNDLE` (Codex).
+    bad = [s for s in states + [a["state"] for a in row["artifacts"]]
+           if ec.verdict(s)]
+    assert not bad, f"the process evidence is in a failing state: {bad}"
+
+    # And CONSISTENCY: where the artifact verified, the figures must have been
+    # verified too. Otherwise "artifact fine, figures unchecked" reads as fine.
+    if {a["state"] for a in row["artifacts"]} == {"matches"}:
+        assert set(states) == {"value-matches"}, sorted(set(states))
+
 
 
 def _fallout_bindings(values):
@@ -800,6 +857,24 @@ def test_MSTEPI_001_binds_a_REFINEMENT_CHAIN_not_a_single_step():
     # column 3 is the one the claim names
     assert [at(h, "main", "3") for h in (25.0, 12.5, 6.25)] == [3.0, 2.0, 1.0], \
         "the main chain's descent to one sub-step is what fixes h = 6.25 s"
+
+    # "Reaches one" needs BOTH. The bound values are MAXIMA over calls -- at
+    # h = 25 s column 3's main chain ran 1, 2 and 3 -- so a maximum of 1 is
+    # only the schedule if the column also held it on every call (owner §8).
+    ec2 = _chain()
+    claim2 = next(c for c in ec2.claims() if c["id"] == "G33-MSTEPI-001")
+    const = {(w["file"].rsplit("/", 1)[-1], w["path"]): w["want"]
+             for w in claim2["expected_predicates"]}
+    assert const[("n48.rezero.substep_schedule.json",
+                  "by_chain.main.3.constant_across_calls")] is True, (
+        "at h = 6.25 s the main chain must run one sub-step on EVERY call, "
+        "not merely on its best one")
+    assert const[("n12.rezero.substep_schedule.json",
+                  "by_chain.main.3.constant_across_calls")] is False, (
+        "at h = 25 s it did NOT -- binding this as true would hide that the "
+        "3 is a maximum")
+    assert all(v is True for (f, p), v in const.items() if ".ice." in p), \
+        "the ice chain is single-step on every call at every step"
     assert [at(h, "ice", "3") for h in (25.0, 12.5, 6.25)] == [1.0, 1.0, 1.0], \
         "the ice chain is already at one at the coarsest step"
 
@@ -916,3 +991,104 @@ def test_the_repeat_check_sees_the_LAST_window():
     assert _repeated_window(p + " MIDDLE " + p) == p
     assert _repeated_window(p) is None, "a single copy is not a repeat"
     assert _repeated_window("short") is None
+
+
+def test_the_SIGNED_oracle_figures_are_bound_with_their_SIGN():
+    """The claim's headline is signed: the whole domain rains 20.72% LESS than
+    the per-column answer in the sea column, and (2,1) rains 20.67% MORE in the
+    land column. An earlier version of this claim said "+20.72%" and "too
+    much", which is the opposite reading.
+
+    Bound from `local_oracle`, not from the whole-domain-baseline table. Those
+    tables carry same-looking magnitudes for different quantities, and binding
+    the wrong one was why these stayed unbound at all.
+    """
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-001")
+    got = {w["path"]: w["value"] for w in claim["expected_values"]
+           if "local_oracle" in w["path"]}
+    assert len(got) == 3, sorted(got)
+    assert all("local_oracle.partitions." in p for p in got)
+
+    def at(part, col):
+        return got[f"local_oracle.partitions.{part}."
+                   f"column_integrated.operator.{col}/qr.signed_rel"]
+
+    assert at("3", "2") < 0, "the whole domain rains LESS in the sea column"
+    assert at("1,2", "2") == at("3", "2"), "(1,2) matches the whole domain"
+    assert at("2,1", "1") > 0, "(2,1) rains MORE in the land column"
+    assert abs(at("3", "2") + 0.2072) < 5e-5, at("3", "2")
+    assert abs(at("2,1", "1") - 0.2067) < 5e-5, at("2,1", "1")
+
+
+def test_a_claims_TEXT_and_SCOPE_do_not_contradict_each_other():
+    """`G33-BASIS-005`'s text said the window-initial qv comes from
+    `G33R INITIAL` while its scope still said it comes from the FIRST call's
+    pre-sed record -- the implementation the text was correcting. A reader had
+    to decide which half of one active claim was current, which is what an
+    authority is for (owner §6.2).
+
+    The first version of THIS test matched a literal the rewritten scope no
+    longer contained, so it was vacuous: the mutation that removed the
+    superseding marker passed it. It now matches the description itself.
+    """
+    stale = re.compile(r"first\s+call'?s?\b[^.]*pre-sed", re.I | re.S)
+    marker = re.compile(r"\bpreviously\b|\bused to\b|\bsuperseded\b"
+                        r"|\bno longer\b", re.I)
+    guilty = []
+    for c in CLAIMS:
+        scope = c.get("scope", "") or ""
+        m = stale.search(scope)
+        if m and not marker.search(scope[max(0, m.start() - 200):m.end() + 120]):
+            guilty.append(c["id"])
+    assert not guilty, (
+        f"{guilty} describe the first-call pre-sed qv as the CURRENT source "
+        f"without marking it superseded, while the text says G33R INITIAL")
+
+
+def test_the_contradiction_guard_is_not_VACUOUS():
+    """It matched a literal the rewritten scope had already dropped. Proving it
+    fires on the shape it is meant to catch is what makes it a guard."""
+    stale = re.compile(r"first\s+call'?s?\b[^.]*pre-sed", re.I | re.S)
+    assert stale.search("the window-initial qv is read from the first call's "
+                        "pre-sed record")
+    assert stale.search("qv comes from the FIRST CALL pre-sed block")
+    assert not stale.search("qv is read from `G33R INITIAL`")
+
+
+#: What a claim may declare about how completely its figures are bound.
+#:
+#: SEPARATE from `artifact_status`. That field says the artifact is pinned and
+#: its digest verified; it never said every load-bearing figure in the text was
+#: bound, and two pinned claims carried figures a comment admitted were unbound
+#: (owner §7). A reader saw `pinned` and had no way to tell the difference.
+BINDING_STATUS = frozenset({"full", "partial", "none"})
+
+
+def test_every_pinned_claim_DECLARES_how_completely_it_is_bound():
+    """`pinned` and `fully bound` are different facts and were the same word."""
+    for c in CLAIMS:
+        if c.get("artifact_status") != "pinned":
+            continue
+        got = c.get("binding_status", "")
+        assert got in BINDING_STATUS, (
+            f"{c['id']} is pinned but declares binding_status {got!r} -- "
+            f"pinned says the artifact is verified, not that the claim's "
+            f"figures are bound")
+
+
+def test_a_claim_bound_to_NOTHING_cannot_call_itself_bound():
+    """The one mechanical half of the policy: `none` must have no
+    expected_values, and `full`/`partial` must have some. Whether `full` is
+    honest about the claim's PROSE is a judgement the registry cannot make."""
+    ec = _chain()
+    live = {c["id"]: c for c in ec.claims()}
+    for c in CLAIMS:
+        st = c.get("binding_status", "")
+        if st not in BINDING_STATUS:
+            continue
+        n = len((live.get(c["id"], {}) or {}).get("expected_values", []))
+        if st == "none":
+            assert n == 0, f"{c['id']} declares `none` but binds {n} values"
+        else:
+            assert n > 0, f"{c['id']} declares {st!r} but binds nothing"

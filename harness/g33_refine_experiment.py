@@ -337,7 +337,15 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # pinned by nothing -- and that code decides which
                  # instrumentation is injected into the frozen Fortran, so it
                  # decides what every record in the stream says (Codex).
-                 "g33_schema", "g33_expectation")
+                 "g33_schema", "g33_expectation",
+                 # The reference UPDATE semantics: COLD_TERMS/WARM_TERMS, the
+                 # source-order f32 accumulation and the positivity clamp. The
+                 # qr process ledger decomposes against it, so these bytes
+                 # decide what the decomposition MEANS. It became reachable the
+                 # moment the ledger stopped restating the terms and started
+                 # importing them, and the closure caught that on the next run
+                 # (Codex) -- which is what the closure is for.
+                 "g33_update_replay")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
@@ -610,7 +618,23 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     if len(_ncmin().equivalence_classes(fixture)) < 2:
         return made
     for name, (mod, fn) in MULTI_RUN.items():
+        _ncmin().begin_capture()
         result = fn(str(exe), fixture)
+        # The RAW streams this analysis consumed, preserved as bundle members.
+        # Without them the chain reached the derived JSON, the analyzer and the
+        # binary, but never the stdout those numbers were computed from: the
+        # run was reproducible and the evidence was not retained, which are
+        # different contracts (owner P0-EVIDENCE-1). The density arms have
+        # always been kept this way.
+        inputs = []
+        for (_drv, nsp, carry, tiles, rho), text in _ncmin().recorded_runs().items():
+            stem = f"mr.n{nsp}.{carry}.{rho}.tiles-{'-'.join(map(str, tiles))}.txt"
+            rp = out / stem
+            if not rp.exists():          # shared between analyses, written once
+                rp.write_text(text)
+            inputs.append({"file": stem, "sha256": rm.sha256(rp),
+                           "runtime_argv": [str(nsp), carry,
+                                            ",".join(map(str, tiles)), rho]})
         # FROM THE RESULT, not from the fixture. Deriving the decompositions
         # from the fixture recorded what the analysis was ASSUMED to have run,
         # and omitting nsplit/mode/rho let the entry read as though it shared
@@ -622,6 +646,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
             "file": path.name, "analysis": name, "sha256": rm.sha256(path),
             "fixture": fixture, "ran": ran,
             "decompositions": ran["decompositions"],
+            "inputs": sorted(inputs, key=lambda i: i["file"]),
             **_analyzer_pin(mod)})
     return made
 

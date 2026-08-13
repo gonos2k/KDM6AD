@@ -9,6 +9,8 @@ import json
 import os
 import re
 import sys
+
+import yaml  # CI-pinned; the PARSER takes no third-party dep, this check does
 from pathlib import Path
 
 import pytest
@@ -83,10 +85,16 @@ def test_a_tampered_artifact_fails(world):
 
 def test_an_absent_bundle_is_unavailable_not_a_failure(world):
     """Bundles are outside the repo and absent in CI. Failing on absence would
-    make this uncheckable everywhere it matters and red everywhere else."""
+    make this uncheckable everywhere it matters and red everywhere else.
+
+    The WHOLE directory, which is what "absent in CI" means. This removed only
+    the manifest and left the bundle standing -- the corruption case, not the
+    absent one -- so it asserted that a gutted bundle is excusable (Codex).
+    """
+    import shutil
     bundle, write = world
     write()
-    (bundle / "manifest.json").unlink()
+    shutil.rmtree(bundle)
     assert ec.chain()[0]["artifacts"][0]["state"] == "unavailable"
     assert ec.check() == 0
 
@@ -119,12 +127,27 @@ def test_a_missing_member_inside_a_PRESENT_bundle_FAILS(world):
     assert ec.check() == 1, "a declared-but-missing member must fail"
 
 
-def test_the_two_kinds_of_absence_are_distinguished(world):
-    """Parent absent -> unavailable, no failure. Child absent -> failure."""
+def test_the_THREE_kinds_of_absence_are_distinguished(world):
+    """Bundle gone -> unavailable, no failure. Bundle present with its manifest
+    gone -> failure. Member gone under a good manifest -> failure.
+
+    The middle one used to be spelled the same as the first: this test removed
+    the manifest and called it "parent gone", so a bundle that is here and
+    broken was asserted to be as excusable as one that was never delivered
+    (Codex).
+    """
+    import shutil
     bundle, write = world
     write()
     assert ec.check() == 0
-    (bundle / "manifest.json").unlink()          # parent gone
+
+    (bundle / "manifest.json").unlink()          # here, and gutted
+    assert ec.chain()[0]["artifacts"][0]["state"] == \
+        "MANIFEST-ABSENT-IN-PRESENT-BUNDLE"
+    assert ec.check() != 0, "a bundle present without its manifest is broken"
+
+    shutil.rmtree(bundle)                        # not delivered at all
+    assert ec.chain()[0]["artifacts"][0]["state"] == "unavailable"
     assert ec.check() == 0, "an absent bundle is unavailable, not a failure"
 
 
@@ -1456,3 +1479,398 @@ def test_the_LIVE_bundles_anchor_to_reachable_commits():
         bad = [r for r in ec._commit_states(man)
                if r["state"] == "COMMIT-UNREACHABLE"]
         assert not bad, f"{name} anchors to a discarded commit: {bad}"
+
+
+def _pred_probe(tmp_path, doc, path, want):
+    """One predicate resolved against a synthetic artifact."""
+    (tmp_path / "b").mkdir(exist_ok=True)
+    (tmp_path / "b" / "a.json").write_text(json.dumps(doc))
+    old, ec.HOME = ec.HOME, tmp_path
+    try:
+        return ec.resolve_predicate({"file": "b/a.json", "path": path,
+                                     "want": want}, {"b/a.json"}, {"b": {}})
+    finally:
+        ec.HOME = old
+
+
+def test_a_PREDICATE_binds_a_non_numeric_fact(tmp_path):
+    """`expected_values` parses floats, so `causal_attribution_valid: true` and
+    `comparable: true` sat in the artifact unbound while claims rested on them
+    (owner §7.3). A claim could lose one and the chain had no way to say so."""
+    doc = {"ok": True, "s": "legacy"}
+    assert _pred_probe(tmp_path, doc, "ok", True)["state"] == "predicate-matches"
+    assert _pred_probe(tmp_path, doc, "ok", False)["state"] == "PREDICATE-MISMATCH"
+    assert _pred_probe(tmp_path, doc, "s", "legacy")["state"] == "predicate-matches"
+    assert _pred_probe(tmp_path, doc, "s", "x")["state"] == "PREDICATE-MISMATCH"
+    assert _pred_probe(tmp_path, doc, "gone", True)["state"] == "PREDICATE-PATH-ABSENT"
+
+
+def test_a_NUMERIC_one_does_not_satisfy_a_boolean_predicate(tmp_path):
+    """`1 == True` in Python, and `isinstance(True, int)` is True as well. So a
+    count of one would satisfy `flag: true` under a plain `==`, and "the flag is
+    set" and "the count is one" would be the same assertion.
+
+    `resolve_value` already guards the other direction, refusing a bool so a
+    `True` cannot arrive as the number 1 against a declared 1.0.
+    """
+    r = _pred_probe(tmp_path, {"n": 1}, "n", True)
+    assert r["state"] == "PREDICATE-MISMATCH", r
+    assert r["got"] == 1
+
+
+def test_an_UNPINNED_file_cannot_supply_a_predicate(tmp_path):
+    """Same gate as a value: a fact may only be read from a file the claim's own
+    pinned manifest vouched for, or it is a fact about whatever happens to be on
+    this host."""
+    (tmp_path / "b").mkdir(exist_ok=True)
+    (tmp_path / "b" / "a.json").write_text(json.dumps({"ok": True}))
+    old, ec.HOME = ec.HOME, tmp_path
+    try:
+        r = ec.resolve_predicate({"file": "b/a.json", "path": "ok", "want": True},
+                                 set(), {"b": {}})
+    finally:
+        ec.HOME = old
+    assert r["state"] == "PREDICATE-UNPINNED-FILE"
+
+
+def test_every_PREDICATE_state_is_classified():
+    """An unlisted state FAILS, but only if it is listed somewhere. Both
+    fail-open holes in this file were a producer emitting a state the verdict
+    had never heard of."""
+    for s in ("predicate-matches", "predicate-unavailable", "PREDICATE-MISMATCH",
+              "PREDICATE-PATH-ABSENT", "PREDICATE-FILE-ABSENT",
+              "PREDICATE-PATH-AMBIGUOUS", "PREDICATE-UNPINNED-FILE",
+              "PREDICATE-FILE-UNREADABLE"):
+        assert s in ec.PASSING_STATES or s in ec.FAILING_STATES, s
+
+
+@pytest.mark.parametrize("mangle,label", [
+    (lambda l: l.replace("#", "@", 1), "no '#' separator"),
+    (lambda l: l.replace(": ", " ", 1), "no ':' before the value"),
+    (lambda l: l.split("#")[0], "truncated after the file"),
+    (lambda l: l[2:], "entry indented 4"),
+    (lambda l: "  " + l, "entry indented 8"),
+])
+def test_an_UNPARSEABLE_binding_entry_is_refused_not_skipped(tmp_path, mangle, label):
+    """A list item under artifacts/expected_values/expected_predicates that
+    matched no shape was silently SKIPPED. A typo in a declaration therefore
+    unbound the fact while the claim still read as bound -- "not parsed" and
+    "not declared" became the same thing, which is the shape this file exists
+    to refuse (Codex).
+
+    A bad PATH is different and stays downstream: it parses, then resolves to
+    VALUE-FILE-ABSENT. Shape is the parser's job; existence is the chain's.
+    """
+    src = ec.REGISTRY.read_text()
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and "#" in l)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace(line, mangle(line), 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        with pytest.raises(ValueError, match="unparseable"):
+            ec.claims()
+    finally:
+        ec.REGISTRY = old
+
+
+def test_a_BAD_PATH_still_parses_and_fails_downstream(tmp_path):
+    """The complement, so the rule above cannot creep into rejecting valid
+    entries: an entry whose shape is right and whose file does not exist is a
+    resolution failure, not a parse error."""
+    src = ec.REGISTRY.read_text()
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and "#" in l and ".json#" in l)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace(line, line.replace("kdm6ad", "nosuch", 1), 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        got = ec.claims()          # parses cleanly
+    finally:
+        ec.REGISTRY = old
+    assert any(w["file"].startswith("nosuch")
+               for c in got for w in c["expected_values"] + c["expected_predicates"])
+
+
+@pytest.mark.parametrize("bad", ["    expected_predicate:", "     expected_predicates:"])
+def test_a_BROKEN_SECTION_HEADER_cannot_drop_the_whole_block(tmp_path, bad):
+    """Worse than a bad entry, and it survived the first fix. A mistyped or
+    mis-indented header leaves `in_art` false, so every item under it is an
+    orphan -- `expected_predicate:` singular dropped TWO declarations and the
+    claim still read as bound (Codex).
+
+    The first catch-all required `in_art`, which is precisely what a broken
+    header switches off: it guarded the case where the parser knew it was in a
+    binding block, and the damage was the parser not knowing.
+    """
+    src = ec.REGISTRY.read_text()
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace("    expected_predicates:", bad, 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        with pytest.raises(ValueError, match="unparseable"):
+            ec.claims()
+    finally:
+        ec.REGISTRY = old
+
+
+@pytest.mark.parametrize("spacing", ["- ", "-  ", "-    ", "-\t"])
+def test_this_parser_ACCEPTS_EXACTLY_what_pyyaml_accepts(tmp_path, spacing):
+    """The registry is YAML and this file parses it by hand, so the two must
+    agree on what a list item is. Not on my opinion of what a list item is:
+
+      * `-  file#path: 0.5` is valid YAML and was silently dropped, so the
+        shapes were widened;
+      * `-<tab>file#...` is NOT valid YAML -- a tab is illegal in indentation
+        and `yaml.safe_load` refuses it -- and the widening accepted it, which
+        put this parser AHEAD of the canonical one. The registry would then
+        pass here and fail the CI's YAML load (Codex).
+
+    So the assertion is agreement with pyyaml, checked per case, rather than a
+    hand-written verdict on each spelling.
+    """
+    src = ec.REGISTRY.read_text()
+    base = sum(len(c["expected_values"]) + len(c["expected_predicates"])
+               for c in ec.claims())
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and ".json#" in l)
+    text = src.replace(line, line.replace("- ", spacing, 1), 1)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(text)
+
+    try:
+        yaml.safe_load(text)
+        pyyaml_ok = True
+    except yaml.YAMLError:
+        pyyaml_ok = False
+
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        got = sum(len(c["expected_values"]) + len(c["expected_predicates"])
+                  for c in ec.claims())
+        ours_ok, dropped = True, base - got
+    except ValueError:
+        ours_ok, dropped = False, 0
+    finally:
+        ec.REGISTRY = old
+
+    assert ours_ok == pyyaml_ok, (
+        f"{spacing!r}: pyyaml {'accepts' if pyyaml_ok else 'rejects'} it and "
+        f"this parser {'accepts' if ours_ok else 'rejects'} it")
+    if pyyaml_ok:
+        assert dropped == 0, (
+            f"{spacing!r} parses as YAML but lost {dropped} binding(s) here")
+
+
+
+def test_EVERY_unavailable_state_is_excused_by_absence():
+    """A closeout must refuse "we could not check this", whatever kind of
+    evidence was unavailable.
+
+    `predicate-unavailable` reached PASSING_STATES and not
+    EXCUSED_BY_ABSENCE, so `--require-available` failed a FIGURE whose bundle
+    was absent and passed a FACT whose bundle was equally absent -- the two
+    say the same thing about what was checked, and only one said it (Codex).
+
+    Written as a CLASS rule, not a third entry: the defect was a state added
+    to a producer and half-wired into the verdict, and naming the next one
+    individually would be the same bet again.
+    """
+    un = sorted(s for s in ec.PASSING_STATES if s.endswith("unavailable"))
+    assert un, "no unavailable states -- this check would be vacuous"
+    missing = [s for s in un if s not in ec.EXCUSED_BY_ABSENCE]
+    assert not missing, (
+        f"{missing} pass a closeout: a state that passes only because the "
+        f"evidence is absent must FAIL --require-available")
+    for s in un:
+        assert ec.verdict(s, require_available=False) is False, s
+        assert ec.verdict(s, require_available=True) is True, s
+
+
+def test_a_PRESENT_bundle_with_no_manifest_is_not_merely_unavailable(tmp_path):
+    """`unavailable` meant two things: the bundle is not on this host, which is
+    correct on a public clone, and the bundle IS here with its manifest gone,
+    which is corruption. Both read as "nothing to check", so a claim bound to a
+    gutted bundle passed exactly like one on a machine that never had it
+    (Codex).
+
+    Same absent-versus-broken collapse as `exists()` against `lexists()` on the
+    store's symlink, one level up.
+    """
+    import shutil
+    real = ec.HOME
+    store = real / "kdm6ad-g33m-migrate"
+    if not store.is_dir():
+        pytest.skip("no bundle store on this host")
+    # symlinks=False DEREFERENCES. With symlinks=True the copied link still
+    # points at the real store, and damaging "the copy" damages the original --
+    # which is what happened the first time this was probed by hand.
+    shutil.copytree(store, tmp_path / "kdm6ad-g33m-migrate", symlinks=False)
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+    rel = list(claim["artifacts"])[0]
+    mani = tmp_path / rel
+    ec.HOME = tmp_path
+    try:
+        def states():
+            r = next(x for x in ec.chain() if x["id"] == "G33-NCMIN-004")
+            return {a["state"] for a in r["artifacts"]}
+
+        assert states() == {"matches"}
+
+        saved = mani.read_bytes()
+        mani.unlink()
+        assert states() == {"MANIFEST-ABSENT-IN-PRESENT-BUNDLE"}
+        assert ec.verdict("MANIFEST-ABSENT-IN-PRESENT-BUNDLE") is True
+        mani.write_bytes(saved)
+
+        # The whole bundle gone is the case that IS excusable.
+        shutil.rmtree(mani.parent)
+        assert states() == {"unavailable"}
+        assert ec.verdict("unavailable") is False
+        assert ec.verdict("unavailable", require_available=True) is True
+    finally:
+        ec.HOME = real
+
+
+def test_a_PREDICATE_resolves_exactly_like_a_VALUE(tmp_path):
+    """Its docstring said "resolved exactly like a value" and it did not.
+    `resolve_value` keys on the ARTIFACT's own state -- excusable only where
+    the bundle this file belongs to is itself unavailable -- while the
+    predicate did a prefix scan over bundle names, a lookalike.
+
+    They disagreed on identical input: a deleted analysis file resolved
+    VALUE-UNPINNED-FILE and failed, and the predicate beside it resolved
+    `predicate-unavailable` and passed (Codex).
+
+    Asserted as AGREEMENT, per case, rather than as two separate expectations
+    -- the same shape as pinning this parser to pyyaml.
+    """
+    import shutil
+    real = ec.HOME
+    store = real / "kdm6ad-g33m-migrate"
+    if not store.is_dir():
+        pytest.skip("no bundle store on this host")
+    shutil.copytree(store, tmp_path / "kdm6ad-g33m-migrate", symlinks=False)
+    ec.HOME = tmp_path
+    try:
+        cid = "G33-MSTEPI-001"
+        claim = next(c for c in ec.claims() if c["id"] == cid)
+        mani = tmp_path / list(claim["artifacts"])[0]
+
+        def kinds():
+            r = next(x for x in ec.chain() if x["id"] == cid)
+            assert r["values"] and r["predicates"], "this claim must carry both"
+            return ({w["state"].split("-", 1)[1] if w["state"][0].isupper()
+                     else w["state"].split("-", 1)[1] for w in r["values"]},
+                    {w["state"].split("-", 1)[1] if w["state"][0].isupper()
+                     else w["state"].split("-", 1)[1] for w in r["predicates"]})
+
+        v, p = kinds()
+        assert v == p, f"intact: values {v} predicates {p}"
+
+        saved = mani.read_bytes()
+        mani.unlink()
+        v, p = kinds()
+        assert v == p == {"UNPINNED-FILE"}, (v, p)
+        mani.write_bytes(saved)
+
+        tgt = next(mani.parent.glob("*substep_schedule.json"))
+        keep = tgt.read_bytes()
+        tgt.unlink()
+        v, p = kinds()
+        assert v == p, f"deleted analysis: values {v} predicates {p}"
+        tgt.write_bytes(keep)
+
+        shutil.rmtree(mani.parent)
+        v, p = kinds()
+        assert v == p == {"unavailable"}, (v, p)
+    finally:
+        ec.HOME = real
+
+
+def _world_with_a_bound_analysis(world):
+    """A SYNTHETIC bundle carrying one analysis with a value and a fact bound
+    to it. Built from `world` rather than copied from the real store, so it
+    runs on a public clone -- the version of this that copied
+    `kdm6ad-g33m-migrate` skipped in CI, which is the one place the regression
+    has to hold (Codex).
+    """
+    bundle, write = world
+    doc = {"flag": True, "n": 1.5}
+    blob = json.dumps(doc, indent=2, sort_keys=True).encode()
+    (bundle / "a.json").write_bytes(blob)
+    stream = b"G33R STATE 1 1 1 th 3F800000\n"
+    man = {"members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
+           "analyses": [{"file": "a.json", "sha256": _sha(blob),
+                         "analysis": "matched_closure", "nsplit": 3}],
+           "findings": []}
+    B = "kdm6ad-g33m-refine/run-a"
+    write(man, claim_extra=(
+        "    expected_values:\n"
+        f"      - {B}/a.json#n: 1.5\n"
+        "    expected_predicates:\n"
+        f"      - {B}/a.json#flag: true\n"))
+    return bundle
+
+
+def _kind(state):
+    """The state's KIND, with the value/predicate prefix removed, so the two
+    resolvers can be compared directly."""
+    for p in ("value-", "VALUE-", "predicate-", "PREDICATE-"):
+        if state.startswith(p):
+            return state[len(p):]
+    return state
+
+
+def test_values_and_predicates_resolve_ALIKE_on_a_synthetic_bundle(world):
+    """The rule, exercised where CI can see it.
+
+    `resolve_value` keys on the ARTIFACT's own state; `resolve_predicate` did a
+    prefix scan over bundle names, so a corrupted bundle failed on its figures
+    and passed on its facts. Asserted as AGREEMENT per case, because the
+    invariant is that they decide the same way -- not that either produces a
+    particular string.
+    """
+    bundle = _world_with_a_bound_analysis(world)
+
+    def kinds():
+        r = ec.chain()[0]
+        assert r["values"] and r["predicates"], "the fixture must bind both"
+        return ({_kind(w["state"]) for w in r["values"]},
+                {_kind(w["state"]) for w in r["predicates"]})
+
+    def art():
+        return {a["state"] for a in ec.chain()[0]["artifacts"]}
+
+    v, p = kinds()
+    assert v == p == {"matches"}, (v, p)
+    assert art() == {"matches"}
+
+    # the analysis file itself gone, manifest intact
+    keep = (bundle / "a.json").read_bytes()
+    (bundle / "a.json").unlink()
+    v, p = kinds()
+    assert v == p, f"analysis deleted: values {v} predicates {p}"
+    assert ec.check() != 0
+    (bundle / "a.json").write_bytes(keep)
+
+    # the manifest gone, bundle still standing
+    saved = (bundle / "manifest.json").read_bytes()
+    (bundle / "manifest.json").unlink()
+    v, p = kinds()
+    assert v == p == {"UNPINNED-FILE"}, (v, p)
+    # The artifact state that separates "here and gutted" from "not delivered".
+    assert art() == {"MANIFEST-ABSENT-IN-PRESENT-BUNDLE"}
+    assert ec.check() != 0
+    (bundle / "manifest.json").write_bytes(saved)
+
+    # the whole bundle gone: the one case that is excusable
+    import shutil
+    shutil.rmtree(bundle)
+    v, p = kinds()
+    assert v == p == {"unavailable"}, (v, p)
+    assert art() == {"unavailable"}
+    assert ec.check() == 0
+    # ...and a CLOSEOUT still refuses it, because "we could not check this" is
+    # not "we checked and it is fine".
+    assert ec.check(require_available=True) != 0

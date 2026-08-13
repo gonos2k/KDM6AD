@@ -131,14 +131,41 @@ TRAJECTORIES = tuple((nsplit, carry, rho)
                      for nsplit in (1, 3, 12))
 
 
+#: (driver, nsplit, carry, tiles, rho) -> stdout, and the keys touched since
+#: the last `begin_capture()`.
+#:
+#: Two analyses ran the driver over overlapping decompositions independently,
+#: so nothing linked the locality table and the process table to the SAME raw
+#: run -- deterministic or not, the evidence contract did not say so, and the
+#: streams were never preserved at all (owner P0-EVIDENCE-1). One cache makes
+#: the sharing a fact rather than an inference, and `recorded_runs()` is what
+#: the producer writes into the bundle.
+_RUNS: dict = {}
+_TOUCHED: set = set()
+
+
+def begin_capture() -> None:
+    _TOUCHED.clear()
+
+
+def recorded_runs() -> dict:
+    """{key: stdout} for every decomposition touched since `begin_capture()`."""
+    return {k: _RUNS[k] for k in sorted(_TOUCHED)}
+
+
 def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
         rho: str = "as-is") -> str:
     """The driver's stdout for one decomposition on one trajectory."""
+    key = (str(driver), int(nsplit), carry, tuple(tiles), rho)
+    _TOUCHED.add(key)
+    if key in _RUNS:
+        return _RUNS[key]
     r = subprocess.run([driver, str(nsplit), carry,
                         ",".join(map(str, tiles)), rho],
                        capture_output=True, text=True)
     if r.returncode != 0:
         raise SystemExit(f"driver exited {r.returncode}\n{r.stderr[-2000:]}")
+    _RUNS[key] = r.stdout
     return r.stdout
 
 
@@ -589,6 +616,14 @@ def analysis(driver: str, fixture: str) -> dict:
     # -- and here is not -- the configuration the surrounding bundle used
     # (Codex). The baseline is included because it was executed too.
     return {"f32_eps": F32_EPS, "partitions": rows,
+            # The PER-COLUMN-ORACLE table, in the same artifact. Its signed
+            # figures are the claim's headline -- the whole domain rains 20.72%
+            # LESS than the local answer in the sea column, and (2,1) rains
+            # 20.67% MORE in the land column -- and they were unbindable while
+            # this table lived only in a function nothing published. Binding a
+            # same-looking number from the whole-domain-baseline table above
+            # would have pinned a different quantity (owner priority 6).
+            "local_oracle": local_oracle(driver, fixture),
             "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                     # The DOMAIN the decompositions cover. The driver
                     # error-stops with "tile sizes must sum to B" on anything

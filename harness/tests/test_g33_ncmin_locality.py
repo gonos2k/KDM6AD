@@ -192,8 +192,12 @@ def test_dropping_the_SEA_column_would_have_HIDDEN_a_partition(drivers,
     partition as clean. `(2,1)` survives because it also differs in column 1,
     which is exactly the trap: the tool would still look like it was working."""
     real = nl.read_records
-    monkeypatch.setattr(nl, "read_records", lambda t, label: {
-        k: v for k, v in real(t, label=label).items() if k[2] != 2})
+    # Forward EVERYTHING. The stub took (t, label) only, so it broke the moment
+    # `analysis` gained a call path that passes `nsplit` -- a stub narrower than
+    # the function it replaces fails on the caller it was not written for,
+    # which is a property of the stub and not of the change.
+    monkeypatch.setattr(nl, "read_records", lambda t, *a, **k: {
+        key: v for key, v in real(t, *a, **k).items() if key[2] != 2})
     monkeypatch.setattr(nl, "_expect_universe", lambda *a, **k: None)
     p = nl.analysis(drivers["legacy"], FIXTURE)["partitions"]
     assert p["1,1,1"]["components_differing"] == 0, \
@@ -1184,52 +1188,108 @@ def test_the_gated_SITES_are_counted_from_the_REFERENCE_not_asserted():
         f"report's caveat quotes this number")
 
 
-# ---- WHICH process carries the sign, decomposed (owner §7) ------------------
+# ---- WHICH process carries the sign, decomposed (owner §7, P0-SCI-1) -------
 
-def test_the_qr_change_DECOMPOSES_into_named_process_terms(drivers):
-    """§7 asked for a process-tendency ledger. The reference already emits one:
-    `micro_qr_operands` carries every operand of the qr update per cell, so the
-    decomposition needed reading, not new instrumentation."""
+def _dec(D):
     import g33_qr_process_ledger as pl
-    D = drivers["legacy"]
-    d = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)
+    base = nl.run(D, (1, 1, 1))
+    return pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
 
-    moved = {c: r for c, r in d.items() if r["total_delta"]}
-    assert set(moved) == {2}, (
-        f"only the sea column should move under the whole-domain gating, "
-        f"got {sorted(moved)}")
 
-    r = moved[2]
-    assert abs(sum(r["delta"].values()) - r["total_delta"]) < 1e-30
-    assert set(r["share"]) == {"praut", "pracw"}, (
-        f"terms moving: {sorted(r['share'])}")
+def test_the_update_REPLAYS_from_its_own_operands(drivers):
+    """The precondition. A decomposition of an update nobody can reproduce is
+    not evidence, so every cell's qr must replay bit-exactly from its operands
+    through `g33_update_replay` -- f32 in source order, times dtcld, clamped."""
+    r = _dec(drivers["legacy"])["replay"]
+    for leg in ("base", "got"):
+        assert r[leg]["cells"] == 12, r
+        assert r[leg]["cold_gate_disagrees"] == 0, (
+            "the emitted branch flag disagrees with the branch derived from "
+            "the recorded temperature")
+
+
+def test_the_warm_arm_adds_paacw_TWICE(drivers):
+    """F:2922 is `+paacw(i,k)+paacw(i,k)`, two separate f32 adds. The first
+    version of this ledger declared its terms in a DICT, which cannot hold a
+    key twice, so the multiplicity was structurally lost (owner P0-SCI-1).
+
+    The canonical ordered form already existed in `g33_update_replay` and is
+    now what the ledger uses."""
+    import g33_update_replay as ur
+    assert [n for _s, n in ur.WARM_TERMS].count("paacw") == 2, ur.WARM_TERMS
+    import g33_qr_process_ledger as pl
+    assert "paacw" in pl.OPERANDS
+
+
+def test_the_decomposition_TELESCOPES_to_the_whole_change(drivers):
+    """Not `sum(delta) == total_delta`, which restates a definition (owner
+    §4.6). Source-order telescoping makes the per-term contributions sum to
+    F(got) - F(base) by construction, so this checks it against the update's
+    own arithmetic under every basis."""
+    d = _dec(drivers["legacy"])["columns"]
+    moved = {c: r for c, r in d.items() if r["unweighted"]["total_delta"]}
+    assert set(moved) == {"2"}, f"only the sea column should move: {sorted(moved)}"
+    for basis in ("unweighted", "operator", "physical"):
+        b = moved["2"][basis]
+        assert abs(sum(b["delta"].values()) - b["total_delta"]) < 1e-30
+        assert set(b["share"]) == {"praut", "pracw"}, sorted(b["share"])
+
+
+def test_the_MASS_WEIGHTED_share_is_not_the_unweighted_one(drivers):
+    """The share the first ledger reported summed per-level rates with equal
+    weight, which is not a column-integrated mass share (owner §4.7). rho and
+    dz vary vertically here, and the two disagree: 85.32% unweighted against
+    86.99% weighted.
+
+    Operator and physical agree with each other because 1+qv is vertically
+    constant on this fixture, so it cancels in the ratio -- a property of the
+    fixture, measured, not an identity."""
+    m = _dec(drivers["legacy"])["columns"]["2"]
+    u = m["unweighted"]["share"]["pracw"]
+    o = m["operator"]["share"]["pracw"]
+    p = m["physical"]["share"]["pracw"]
+    assert abs(u - 0.8532) < 5e-4, u
+    assert abs(o - 0.8699) < 5e-4, o
+    assert abs(o - p) < 1e-9, "1+qv is vertically constant here, so it cancels"
+    assert abs(o - u) > 1e-2, (
+        "the weighted and unweighted shares must be reported as different "
+        "quantities; equality here would mean the weighting did nothing")
 
 
 def test_ACCRETION_not_autoconversion_carries_the_change(drivers):
-    """The leading candidate was wrong as a DIRECT attribution. Accretion
-    carries ~85% of the qr change and autoconversion ~15%.
+    """The leading candidate was wrong as a DIRECT attribution, under every
+    basis.
 
     Scope: this decomposes the DIRECT terms, not the causal chain. `pracw`
     consumes rain that `praut` produces, so a suppressed autoconversion may
     still be upstream of the accretion collapse. What is measured is that
     autoconversion is not where the change APPEARS."""
-    import g33_qr_process_ledger as pl
-    D = drivers["legacy"]
-    r = pl.decompose(nl.run(D, (1, 1, 1)), nl.run(D, (3,)), 3)[2]
-    assert r["share"]["pracw"] > 0.8 > r["share"]["praut"]
-    assert r["share"]["praut"] > 0.1, "autoconversion is not negligible either"
+    m = _dec(drivers["legacy"])["columns"]["2"]
+    for basis in ("unweighted", "operator", "physical"):
+        s = m[basis]["share"]
+        assert s["pracw"] > 0.8 > s["praut"], (basis, s)
+        assert s["praut"] > 0.1, (basis, "autoconversion is not negligible")
 
 
-def test_the_branch_is_read_PER_CELL_not_per_column(drivers):
-    """`cold_gate` is `t(i,k) .le. t0c` and the update sits inside the k loop,
-    so one column carries warm cells and cold cells applying DIFFERENT operand
-    sets. Summing a column under one set would include terms its cells never
-    applied."""
+def test_a_MISSING_operand_is_refused_not_read_as_zero(drivers):
+    """`.get(term, 0.0)` made an uninstrumented term indistinguishable from a
+    zero rate -- the failure mode this repository keeps finding (owner §4.3)."""
     import g33_qr_process_ledger as pl
-    cells = pl.read_operands(nl.run(drivers["legacy"], (3,)), label="x")
-    branches, _ = pl.column_terms(cells, 1)
-    assert branches["cold"] and branches["warm"], (
-        f"this fixture must exercise both branches in one column: {branches}")
+    text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
+                     if not (" micro_qr_operands " in l and " pracw " in l)) + "\n"
+    with pytest.raises(ra.RefineError, match="is missing"):
+        pl.read_cells(text, label="stripped")
+
+
+def test_a_DUPLICATE_operand_record_is_refused(drivers):
+    """Keyed (call, loop, col, k), so a repeat is corruption rather than an
+    update. Under the old (col, k) key a second internal loop overwrote the
+    first silently (owner §4.2)."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    dup = next(l for l in lines if " micro_qr_operands " in l and " pracw " in l)
+    with pytest.raises(ra.RefineError, match="duplicate"):
+        pl.read_cells("\n".join(lines + [dup]) + "\n", label="dup")
 
 
 def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
@@ -1240,4 +1300,164 @@ def test_an_UNINSTRUMENTED_stream_is_refused_not_summed(drivers):
     text = "\n".join(l for l in nl.run(drivers["legacy"], (3,)).splitlines()
                      if "micro_qr_operands" not in l) + "\n"
     with pytest.raises(ra.RefineError, match="no `micro_qr_operands` records"):
-        pl.read_operands(text, label="stripped")
+        pl.read_cells(text, label="stripped")
+
+
+def test_a_DUPLICATE_state_record_is_refused(drivers):
+    """`read_cells` refused duplicates and `read_state` did not, so a repeated
+    pre-state record silently REPLACED the qr the replay closes against -- the
+    one value that decides whether the decomposition is of the actual update
+    (Codex). Demonstrated with a different value, so the miss is visible."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    dup = next(l for l in lines
+               if " micro_pre_state_update " in l and l.split()[6] == "qr")
+    tampered = dup.rsplit(" ", 1)[0] + " DEADBEEF"
+    with pytest.raises(ra.RefineError, match="duplicate"):
+        pl.read_state("\n".join(lines + [tampered]) + "\n", label="dup")
+
+
+def test_a_TRUNCATED_record_is_refused_not_skipped(drivers):
+    """A short line fell through a `len(p) >= 11` test, so a truncated record
+    read as an absent one. Absence and corruption are different."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    full = next(l for l in lines
+                if " micro_pre_state_update " in l and l.split()[6] == "qr")
+    text = "\n".join(l for l in lines if l != full) + "\n" + \
+        " ".join(full.split()[:9]) + "\n"
+    with pytest.raises(ra.RefineError, match="malformed"):
+        pl.read_state(text, label="short")
+
+
+def test_a_DISAGREEING_branch_flag_is_refused_not_counted(drivers):
+    """`cold_gate` is the producer's flag and `is_cold` derives the branch from
+    the recorded temperature. When they disagree, one is wrong about which
+    operand set the cell applied, so decomposing anyway would telescope over
+    terms the cell never used. It was counted and carried on."""
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    gate = next(l for l in lines
+                if " micro_qr_operands " in l and l.split()[6] == "cold_gate")
+    flip = "3F800000" if gate.split()[10] == "00000000" else "00000000"
+    text = "\n".join(gate.rsplit(" ", 1)[0] + " " + flip if l == gate else l
+                     for l in lines) + "\n"
+    cells = pl.read_cells(text, label="x")
+    state = pl.read_state(text, label="x")
+    with pytest.raises(ra.RefineError, match="disagrees with the temperature"):
+        pl.verify_replay(cells, state, pl.read_dtcld(text, label="x"), label="x")
+
+
+@pytest.mark.parametrize("bits,label", [("3F000000", "0.5"), ("40E00000", "7.0"),
+                                        ("7FC00000", "NaN"), ("BF800000", "-1.0")])
+def test_a_cold_gate_OUTSIDE_ITS_DOMAIN_is_refused(drivers, bits, label):
+    """`cold_gate` is a predicate and its domain is {0, 1}. The first version
+    of the ledger checked that; the rewrite dropped it, so `gate == 1.0`
+    mapped every other value to "warm" -- and on a cell the temperature also
+    calls warm, the corruption AGREED with the derived branch and the replay
+    reported zero disagreements (Codex).
+
+    NaN is the one that matters most: it compares unequal to everything, so it
+    reads as warm under any `== 1.0` test.
+    """
+    import g33_qr_process_ledger as pl
+    lines = nl.run(drivers["legacy"], (3,)).splitlines()
+    warm = next(l for l in lines if " micro_qr_operands " in l
+                and l.split()[6] == "cold_gate" and l.split()[10] == "00000000")
+    text = "\n".join(warm.rsplit(" ", 1)[0] + " " + bits if l == warm else l
+                     for l in lines) + "\n"
+    with pytest.raises(ra.RefineError, match="not 0 or 1"):
+        pl.read_cells(text, label=label)
+
+
+# ---- substep schedule: per-call quantities are verified, not sampled --------
+
+def _msched(nsplit=12):
+    import g33_substep_schedule as ss
+    D = Path.home() / "kdm6ad-g33m-migrate" / "mstepi-001"
+    if not D.is_dir():
+        pytest.skip("mstepi-001 bundle not on this host")
+    return ss, (D / f"n{nsplit}.rezero.txt").read_text()
+
+
+def test_a_MIXED_external_step_is_refused_not_sampled():
+    """`delt` is PER CALL and the sub-step counts are aggregated over every
+    call, so `calls[0]["delt"]` divided into all of them is only right while
+    the calls agree -- and nothing checked. A run whose calls carry different
+    external steps would have produced an effective sub-step from one call's
+    delt and another call's mstep (Codex).
+
+    `window_cell_mass` already treats rho/delz this way: forcing, verified
+    identical in each call rather than assumed.
+    """
+    import g33_number_transport as nt
+    ss, src = _msched()
+    assert ss.analysis(src)["external_delt_constant_across_calls"] is True
+
+    lines = src.splitlines()
+    i = [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")][3]
+    lines[i] = lines[i].rsplit(" ", 1)[0] + " 41480000"      # 25.0 -> 12.5
+    with pytest.raises(nt.StreamError, match="different external steps"):
+        ss.analysis("\n".join(lines) + "\n")
+
+
+def test_the_schedule_guards_RAISE_the_error_they_name():
+    """Three raises in this module named `nt.TransportError`, which does not
+    exist -- the class is `nt.StreamError`. Every one would have died with
+    AttributeError instead of the error it meant, escaping any
+    `except nt.StreamError` and any test asserting it.
+
+    They were never exercised, which is why the gate stayed green over three
+    dead guards.
+    """
+    import g33_number_transport as nt
+    import g33_substep_schedule as ss
+    assert not hasattr(nt, "TransportError")
+    assert issubclass(nt.StreamError, Exception)
+    src = Path(ss.__file__).read_text()
+    assert "TransportError" not in src, "a raise still names a class that does not exist"
+
+
+def test_an_uninstrumented_stream_has_no_schedule_to_report():
+    """The path that was dead. Stripping the mstep families must refuse, not
+    report an empty schedule."""
+    import g33_number_transport as nt
+    ss, src = _msched()
+    stripped = "\n".join(l for l in src.splitlines()
+                         if " MSTEP " not in l and " MSTEPI " not in l) + "\n"
+    with pytest.raises(nt.StreamError):
+        ss.analysis(stripped)
+
+
+@pytest.mark.parametrize("val,label", [
+    (0.0, "zero"), (-25.0, "negative"),
+    (float("inf"), "infinite"), (float("nan"), "NaN"),
+])
+def test_a_nonpositive_or_nonfinite_external_step_is_refused(val, label):
+    """The effective sub-step is delt/mstep, so the DOMAIN matters before the
+    spread does. Measured before fixing: delt=0 reported a sub-step of zero
+    duration, delt=-25 reported negative time, delt=inf reported infinity --
+    all as ordinary numbers (Codex).
+
+    NaN needed catching here specifically. It is never equal to itself, so N
+    calls carrying it made N distinct set entries and the SPREAD check fired
+    with "different external steps [nan, nan, ...]" -- closed for the wrong
+    reason, and open on a single-call run where the set holds one entry.
+    """
+    import struct
+    import g33_number_transport as nt
+    ss, src = _msched()
+    lines = src.splitlines()
+    bits = format(struct.unpack(">I", struct.pack(">f", val))[0], "08X")
+    for i in [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")]:
+        lines[i] = lines[i].rsplit(" ", 1)[0] + " " + bits
+    with pytest.raises(nt.StreamError, match="not a positive finite duration"):
+        ss.analysis("\n".join(lines) + "\n")
+
+
+def test_a_VALID_external_step_still_passes_both_checks():
+    """The complement, so neither rule can creep into refusing real runs."""
+    ss, src = _msched()
+    g = ss.analysis(src)
+    assert g["external_delt"] == 25.0
+    assert g["external_delt_constant_across_calls"] is True

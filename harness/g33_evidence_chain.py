@@ -70,19 +70,22 @@ def claims() -> list[dict]:
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
             cur = {"id": line.split("id:", 1)[1].strip(),
-                   "evidence": [], "artifacts": {}, "expected_values": []}
+                   "evidence": [], "artifacts": {}, "expected_values": [],
+                   "expected_predicates": []}
             out.append(cur)
             in_art = folded = None or False
         elif cur is None:
             continue
         elif (m := re.match(r"^    (\w+):\s*(.*)$", line)):
             folded = None
-            in_art = m.group(1) in ("artifacts", "expected_values")
+            in_art = m.group(1) in ("artifacts", "expected_values",
+                                    "expected_predicates")
             section = m.group(1)
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "migration_blocker"):
+                                "blocker_kind", "binding_status",
+                                "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -100,16 +103,67 @@ def claims() -> list[dict]:
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
-                m := re.match(r"^      - (\S+):\s*([0-9a-f]+)\s*$", line)):
+                m := re.match(r"^      - +(\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
         elif in_art and section == "expected_values" and (
-                m := re.match(r"^      - ([^#\s]+)#([^:\s]+):\s*(\S+)"
+                m := re.match(r"^      - +([^#\s]+)#([^:\s]+):\s*(\S+)"
                               r"(?:\s+~\s+(\S+))?\s*$", line)):
             cur["expected_values"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "value": float(m.group(3)),
                  "tolerance": float(m.group(4)) if m.group(4) else 0.0})
+        elif in_art and section == "expected_predicates" and (
+                m := re.match(r"^      - +([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
+            # NON-NUMERIC load-bearing facts. `expected_values` takes floats,
+            # so `causal_attribution_valid: true` and `comparable: true` sat in
+            # the artifact unbound -- a claim could rest on them and the chain
+            # had no way to say so (owner §7.3).
+            cur["expected_predicates"].append(
+                {"file": m.group(1), "path": m.group(2),
+                 "want": _literal(m.group(3))})
+        elif cur is not None and re.match(r"^\s+-\s", line):
+            # An ORPHAN list item: it is not inside a folded block (that branch
+            # ran first) and it matched no binding shape. Two ways to get here
+            # and both were silent:
+            #
+            #   * a malformed entry under a good header -- a missing "#", a
+            #     missing value -- which unbound one fact;
+            #   * a header that is mistyped or mis-indented, which orphans the
+            #     WHOLE block. `expected_predicate:` singular dropped two
+            #     declarations and the claim still read as bound (Codex).
+            #
+            # The first version only caught the first, because it required
+            # `in_art` -- which is exactly what a bad header switches off. The
+            # second still demanded ONE space after the dash, so
+            # `-  file#path: 0.5` -- valid YAML -- parsed as nothing and
+            # tripped nothing (Codex).
+            #
+            # The shapes take ` +`, SPACES only. A tab is not valid YAML
+            # anywhere in indentation and `yaml.safe_load` refuses it, so
+            # accepting one here would put this parser ahead of the canonical
+            # one and the registry would pass a check the CI's YAML load
+            # fails. A tab-separated item therefore reaches this branch and is
+            # refused, which is what pyyaml does with it (Codex).
+            raise ValueError(
+                f"{cur['id']}: unparseable `{section}` entry: {line.strip()!r}")
     return out
+
+
+def _literal(raw: str):
+    """The declared value: true/false/null, a number, or a bare string."""
+    low = raw.strip().strip('"\'')
+    if raw.strip() in ("true", "false"):
+        return raw.strip() == "true"
+    if raw.strip() == "null":
+        return None
+    try:
+        return int(raw.strip())
+    except ValueError:
+        pass
+    try:
+        return float(raw.strip())
+    except ValueError:
+        return low
 
 
 def bundles() -> dict:
@@ -504,6 +558,47 @@ def resolve_value(want: dict, covered: set, bundles: dict) -> dict:
             "got": got}
 
 
+def resolve_predicate(want: dict, covered: set, bundles_: dict) -> dict:
+    """A non-numeric fact, resolved exactly like a value.
+
+    Same digest-verified `covered` gate: a predicate may only be read from a
+    file the claim's own pinned manifest vouched for, or it is a fact about
+    some file that happens to be on this host.
+    """
+    if want["file"] not in covered:
+        # THE SAME RULE `resolve_value` uses, keyed on the artifact's own
+        # state: excusable only where the bundle this file belongs to is
+        # itself unavailable. This was a prefix scan over the bundle names --
+        # a lookalike, not the rule -- and it disagreed with values on the
+        # same input: a deleted analysis file resolved VALUE-UNPINNED-FILE and
+        # failed, while the predicate beside it resolved
+        # `predicate-unavailable` and passed (Codex).
+        #
+        # The docstring above claimed "resolved exactly like a value" while it
+        # was not, which is the part worth remembering.
+        if bundles_.get(str(Path(want["file"]).parent)) == "unavailable":
+            return {**want, "state": "predicate-unavailable", "got": None}
+        return {**want, "state": "PREDICATE-UNPINNED-FILE", "got": None}
+    f = HOME / want["file"]
+    if not f.is_file():
+        return {**want, "state": "PREDICATE-FILE-ABSENT", "got": None}
+    try:
+        doc = json.loads(f.read_text())
+    except (OSError, ValueError):
+        return {**want, "state": "PREDICATE-FILE-UNREADABLE", "got": None}
+    if any("." in str(k) for k in _keys_of(doc)):
+        return {**want, "state": "PREDICATE-PATH-AMBIGUOUS", "got": None}
+    flat = flatten(doc)
+    if want["path"] not in flat:
+        return {**want, "state": "PREDICATE-PATH-ABSENT", "got": None}
+    got = flat[want["path"]]
+    # EXACT, and type-sensitive: `True == 1` in Python, so a bool declared
+    # against a numeric 1 would pass while saying something different.
+    ok = type(got) is type(want["want"]) and got == want["want"]
+    return {**want, "state": "predicate-matches" if ok else "PREDICATE-MISMATCH",
+            "got": got}
+
+
 def _keys_of(obj) -> list:
     """Every dict key anywhere in `obj`. A key containing "." would make the
     flattened path ambiguous, so resolution refuses rather than guessing."""
@@ -526,8 +621,22 @@ def chain() -> list[dict]:
         arts = []
         for rel, want in c["artifacts"].items():
             p = HOME / rel
-            state = ("unavailable" if not p.is_file() else
-                     "matches" if sha256(p)[:len(want)] == want else "MISMATCH")
+            # `unavailable` conflated two different facts: the bundle is not on
+            # this host -- correct and expected on a public clone -- and the
+            # bundle IS here with its manifest missing, which is corruption.
+            # Both read as "nothing to check", so a claim bound to a gutted
+            # bundle passed exactly like one on a machine that never had it
+            # (Codex).
+            #
+            # The bundle DIRECTORY separates them, and it is the same
+            # absent-versus-broken distinction as `exists()` against `lexists()`
+            # on the store's symlink.
+            if p.is_file():
+                state = "matches" if sha256(p)[:len(want)] == want else "MISMATCH"
+            elif p.parent.is_dir():
+                state = "MANIFEST-ABSENT-IN-PRESENT-BUNDLE"
+            else:
+                state = "unavailable"
             a = {"path": rel, "pinned": want, "state": state, "members": []}
             if state == "matches" and p.name == "manifest.json":
                 a["members"] = members_of(p)
@@ -539,8 +648,28 @@ def chain() -> list[dict]:
         bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
         values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]
+        # `.get`, because a synthetic claim in a test may predate the field.
+        # Safe rather than fail-open: `claims()` initialises the key on every
+        # real claim, so a missing one cannot come from the registry.
+        #
+        # `bundle_states`, the SAME namespace the values use. This passed
+        # `have`, whose keys are the store's symlink names
+        # (`kdm6ad-g33m-migrate/ncmin-001`) while a pinned path is
+        # `.../ncmin-001.bundles/<digest>/...` -- so the "is this file inside a
+        # bundle we pinned?" test never matched and every damaged or missing
+        # file fell through to `predicate-unavailable`, which passes. The same
+        # file resolved VALUE-UNPINNED-FILE and failed (Codex).
+        preds = [resolve_predicate(w, covered, bundle_states)
+                 for w in c.get("expected_predicates", [])]
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
+            "predicates": preds,
+            # DECLARED coverage. `artifact_status: pinned` says the artifact is
+            # pinned and verified; it never said every load-bearing figure was
+            # bound, and two pinned claims carried figures they admitted in a
+            # comment were unbound (owner §7). Separating the two makes that
+            # readable instead of a comment nobody greps.
+            "binding_status": c.get("binding_status", ""),
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
             # DECLARED, not sniffed out of the prose. The kinds were inferred
@@ -606,17 +735,26 @@ PASSING_STATES = frozenset({
     "legacy-analyzer-changed",
     "legacy-analyzer-absent",
     "value-matches",
+    "predicate-matches",
+    "predicate-unavailable",   # the bundle the fact is declared against is absent
     "value-unavailable",       # the bundle the figure is declared against is not here
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
     "ANALYZER-UNRESOLVABLE", "ANALYZER-BLOB-MISMATCH",
     "MANIFEST-UNREADABLE", "MANIFEST-SCHEMA-MISMATCH", "MANIFEST-MISSING-MEMBERS",
+    "PREDICATE-MISMATCH", "PREDICATE-PATH-ABSENT", "PREDICATE-FILE-ABSENT",
+    "PREDICATE-PATH-AMBIGUOUS", "PREDICATE-UNPINNED-FILE",
+    "PREDICATE-FILE-UNREADABLE",
     "VALUE-MISMATCH", "VALUE-PATH-ABSENT", "VALUE-FILE-ABSENT",
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
     "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
     "COMMIT-UNREACHABLE",
+    # The bundle directory is here and its manifest is not. Absence of the
+    # whole bundle is excusable on a clone; absence of the manifest INSIDE one
+    # is a broken bundle, and it must not read as the former.
+    "MANIFEST-ABSENT-IN-PRESENT-BUNDLE",
 })
 
 
@@ -641,6 +779,15 @@ EXCUSED_BY_ABSENCE = frozenset({
     # (owner §10).
     "legacy-analyzer-changed",
     "value-unavailable",
+    # Added with `expected_predicates` and, at first, only to PASSING_STATES --
+    # so a closeout failed a FIGURE whose bundle was absent and passed a FACT
+    # whose bundle was equally absent. The two say the same thing about what
+    # was checked, and only one said it (Codex).
+    #
+    # This is the failure the note above PASSING_STATES describes, committed
+    # while quoting it: a state was added to a producer and half-wired into
+    # the verdict.
+    "predicate-unavailable",
 })
 
 
@@ -685,6 +832,11 @@ def check(require_available: bool = False) -> int:
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"
                            f" (claim says {v['value']!r}, artifact has "
                            f"{v['got']!r}){_why(v['state'], require_available)}")
+        for w in r["predicates"]:
+            if verdict(w["state"], require_available):
+                bad.append(f"{r['id']}: {w['file']}#{w['path']} -> {w['state']}"
+                           f" (claim says {w['want']!r}, artifact has "
+                           f"{w['got']!r}){_why(w['state'], require_available)}")
         for a in r["artifacts"]:
             if verdict(a["state"], require_available):
                 bad.append(f"{r['id']}: {a['path']} -> {a['state']}"

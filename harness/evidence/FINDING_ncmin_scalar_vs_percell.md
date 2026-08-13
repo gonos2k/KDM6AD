@@ -5,6 +5,7 @@
 | claim | status | grade | scope |
 |---|---|---|---|
 | `G33-NCMIN-001` | **active** | confirmed | g33_fixture_boundary_mapping_v1, one call, legacy and conservative. The real mixed-coastal case is still UNMEASURED, so the operational magnitude is not established -- only that the mechanism is O(1) where it bites. The (1,2) partition differs in ZERO cells because both tiles end on land: an even-split-only gate would pass while the operator was arbitrarily non-local, which is why the partition set is exhaustive. "31/144" counts prognostic state COMPONENTS (12 fields x 3 columns x 4 levels); the grid has 12 cells, so calling them cells overstated the spatial extent twelvefold (owner §11.1). The derived quantities that would decide operational significance -- q/N, characteristic diameter, reflectivity, surface precipitation -- are NOT measured, and neither is a real MPI rank decomposition with haloes and per-rank surface patterns: this is a sequential multi-call tile experiment that PREDICTS rank sensitivity rather than demonstrating it. |
+| `G33-NCMIN-004` | **active** | hold | Direct terms only, not the causal chain: pracw consumes rain that praut produces, so a suppressed autoconversion may still be upstream of the accretion collapse. What the measurement establishes, subject to the HOLD above, is that autoconversion is not where the change APPEARS. g33_fixture_boundary_mapping_v1, one call, nsplit=1. No mass weighting, no dt, and no closure against micro_pre/post_state_update. |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->
@@ -320,8 +321,14 @@ the actual coastal layout and multi-step feedback, none of which are here:
 sentence below it said the run "carries ~21% too much column rain". **The sign
 was backwards.** The whole-domain run gates the sea column on `ncmin_land`
 (1.0e+08) instead of its own `ncmin_sea` (2.5e+07); a *higher* droplet-number
-floor suppresses autoconversion, so it produces **~21% LESS** rain than the
-per-column answer, not more. `(2,1)` goes the other way for column 1, which ends
+floor produces **~21% LESS** rain than the per-column answer, not more.
+(The *reason* was given here as "a higher floor suppresses autoconversion".
+That is withdrawn as a direct attribution: the process ledger measures the qr
+change as **~87% accretion**, `pracw`, and ~13% autoconversion under the
+column-mass measure. See `G33-NCMIN-004`, which is on HOLD -- the figure is
+measured, its grade is the owner's. Autoconversion may still be upstream of the
+accretion collapse, since `pracw` consumes rain `praut` produces; what is
+established is that it is not where the change appears.) `(2,1)` goes the other way for column 1, which ends
 up on the *lower* sea threshold and rains more. The direction is now in the
 artifact as `signed_rel` and asserted, rather than being an `abs()` that reads
 the same either way.
@@ -361,10 +368,14 @@ type at each tile's `ite`:
 * **(2,1)** ends its first tile on the sea column, so **both** columns 1 and 2 are
   gated on `ncmin_sea` — the worst case, and the one an even split misses entirely.
 
-**This is the MPI rank-count gate as well.** A rank boundary is a tile boundary;
-the mechanism cannot distinguish them, and the partition set above is exhaustive
-for this domain. What a real MPI driver would add is halo and reduction behaviour,
-which is not what `ncmin` depends on.
+**This PREDICTS an MPI rank-count gate; it does not demonstrate one.** A rank
+boundary is a tile boundary and the mechanism cannot distinguish them, and the
+partition set above is exhaustive for this domain -- but this is a sequential
+three-column driver with no ranks, haloes, real coastal layout or multi-step
+feedback. What a real MPI driver adds is halo and reduction behaviour, which is
+not what `ncmin` depends on; that is an argument for the prediction, not a
+measurement of it. The claim's scope says the same, and this sentence used to
+say "this IS the MPI rank-count gate as well" (owner §6.3).
 
 An earlier run of this on `arithmetic_multisubcycle_v1` gave 0/144 at every
 partition. That fixture is all-land (xland 1, 1, 1), so `ncmin` is identical for
