@@ -85,10 +85,16 @@ def test_a_tampered_artifact_fails(world):
 
 def test_an_absent_bundle_is_unavailable_not_a_failure(world):
     """Bundles are outside the repo and absent in CI. Failing on absence would
-    make this uncheckable everywhere it matters and red everywhere else."""
+    make this uncheckable everywhere it matters and red everywhere else.
+
+    The WHOLE directory, which is what "absent in CI" means. This removed only
+    the manifest and left the bundle standing -- the corruption case, not the
+    absent one -- so it asserted that a gutted bundle is excusable (Codex).
+    """
+    import shutil
     bundle, write = world
     write()
-    (bundle / "manifest.json").unlink()
+    shutil.rmtree(bundle)
     assert ec.chain()[0]["artifacts"][0]["state"] == "unavailable"
     assert ec.check() == 0
 
@@ -121,12 +127,27 @@ def test_a_missing_member_inside_a_PRESENT_bundle_FAILS(world):
     assert ec.check() == 1, "a declared-but-missing member must fail"
 
 
-def test_the_two_kinds_of_absence_are_distinguished(world):
-    """Parent absent -> unavailable, no failure. Child absent -> failure."""
+def test_the_THREE_kinds_of_absence_are_distinguished(world):
+    """Bundle gone -> unavailable, no failure. Bundle present with its manifest
+    gone -> failure. Member gone under a good manifest -> failure.
+
+    The middle one used to be spelled the same as the first: this test removed
+    the manifest and called it "parent gone", so a bundle that is here and
+    broken was asserted to be as excusable as one that was never delivered
+    (Codex).
+    """
+    import shutil
     bundle, write = world
     write()
     assert ec.check() == 0
-    (bundle / "manifest.json").unlink()          # parent gone
+
+    (bundle / "manifest.json").unlink()          # here, and gutted
+    assert ec.chain()[0]["artifacts"][0]["state"] == \
+        "MANIFEST-ABSENT-IN-PRESENT-BUNDLE"
+    assert ec.check() != 0, "a bundle present without its manifest is broken"
+
+    shutil.rmtree(bundle)                        # not delivered at all
+    assert ec.chain()[0]["artifacts"][0]["state"] == "unavailable"
     assert ec.check() == 0, "an absent bundle is unavailable, not a failure"
 
 
@@ -1664,3 +1685,48 @@ def test_EVERY_unavailable_state_is_excused_by_absence():
     for s in un:
         assert ec.verdict(s, require_available=False) is False, s
         assert ec.verdict(s, require_available=True) is True, s
+
+
+def test_a_PRESENT_bundle_with_no_manifest_is_not_merely_unavailable(tmp_path):
+    """`unavailable` meant two things: the bundle is not on this host, which is
+    correct on a public clone, and the bundle IS here with its manifest gone,
+    which is corruption. Both read as "nothing to check", so a claim bound to a
+    gutted bundle passed exactly like one on a machine that never had it
+    (Codex).
+
+    Same absent-versus-broken collapse as `exists()` against `lexists()` on the
+    store's symlink, one level up.
+    """
+    import shutil
+    real = ec.HOME
+    store = real / "kdm6ad-g33m-migrate"
+    if not store.is_dir():
+        pytest.skip("no bundle store on this host")
+    # symlinks=False DEREFERENCES. With symlinks=True the copied link still
+    # points at the real store, and damaging "the copy" damages the original --
+    # which is what happened the first time this was probed by hand.
+    shutil.copytree(store, tmp_path / "kdm6ad-g33m-migrate", symlinks=False)
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NCMIN-004")
+    rel = list(claim["artifacts"])[0]
+    mani = tmp_path / rel
+    ec.HOME = tmp_path
+    try:
+        def states():
+            r = next(x for x in ec.chain() if x["id"] == "G33-NCMIN-004")
+            return {a["state"] for a in r["artifacts"]}
+
+        assert states() == {"matches"}
+
+        saved = mani.read_bytes()
+        mani.unlink()
+        assert states() == {"MANIFEST-ABSENT-IN-PRESENT-BUNDLE"}
+        assert ec.verdict("MANIFEST-ABSENT-IN-PRESENT-BUNDLE") is True
+        mani.write_bytes(saved)
+
+        # The whole bundle gone is the case that IS excusable.
+        shutil.rmtree(mani.parent)
+        assert states() == {"unavailable"}
+        assert ec.verdict("unavailable") is False
+        assert ec.verdict("unavailable", require_available=True) is True
+    finally:
+        ec.HOME = real

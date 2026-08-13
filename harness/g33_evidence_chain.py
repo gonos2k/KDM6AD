@@ -611,8 +611,22 @@ def chain() -> list[dict]:
         arts = []
         for rel, want in c["artifacts"].items():
             p = HOME / rel
-            state = ("unavailable" if not p.is_file() else
-                     "matches" if sha256(p)[:len(want)] == want else "MISMATCH")
+            # `unavailable` conflated two different facts: the bundle is not on
+            # this host -- correct and expected on a public clone -- and the
+            # bundle IS here with its manifest missing, which is corruption.
+            # Both read as "nothing to check", so a claim bound to a gutted
+            # bundle passed exactly like one on a machine that never had it
+            # (Codex).
+            #
+            # The bundle DIRECTORY separates them, and it is the same
+            # absent-versus-broken distinction as `exists()` against `lexists()`
+            # on the store's symlink.
+            if p.is_file():
+                state = "matches" if sha256(p)[:len(want)] == want else "MISMATCH"
+            elif p.parent.is_dir():
+                state = "MANIFEST-ABSENT-IN-PRESENT-BUNDLE"
+            else:
+                state = "unavailable"
             a = {"path": rel, "pinned": want, "state": state, "members": []}
             if state == "matches" and p.name == "manifest.json":
                 a["members"] = members_of(p)
@@ -719,6 +733,10 @@ FAILING_STATES = frozenset({
     "VALUE-FILE-UNREADABLE",
     "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
     "COMMIT-UNREACHABLE",
+    # The bundle directory is here and its manifest is not. Absence of the
+    # whole bundle is excusable on a clone; absence of the manifest INSIDE one
+    # is a broken bundle, and it must not read as the former.
+    "MANIFEST-ABSENT-IN-PRESENT-BUNDLE",
 })
 
 

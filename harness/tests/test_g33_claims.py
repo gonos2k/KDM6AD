@@ -739,11 +739,22 @@ def test_the_process_shares_are_BOUND_so_a_rewrite_cannot_be_silent():
     # `verdict` is the question that means the same thing everywhere -- is
     # anything WRONG with these bindings -- and it still fails a mismatch, an
     # absent path or an unpinned file.
-    states = [w["state"] for w in
-              next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")["values"]]
+    row = next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")
+    states = [w["state"] for w in row["values"]]
     assert states, "no bindings resolved at all"
-    bad = [s for s in states if ec.verdict(s)]
-    assert not bad, f"the process bindings are in a failing state: {bad}"
+
+    # The ARTIFACT too. Checking only the values let a bundle whose manifest
+    # was missing pass: the figures went `value-unavailable`, which is a
+    # passing state, and nothing consulted the artifact that had just gone
+    # `MANIFEST-ABSENT-IN-PRESENT-BUNDLE` (Codex).
+    bad = [s for s in states + [a["state"] for a in row["artifacts"]]
+           if ec.verdict(s)]
+    assert not bad, f"the process evidence is in a failing state: {bad}"
+
+    # And CONSISTENCY: where the artifact verified, the figures must have been
+    # verified too. Otherwise "artifact fine, figures unchecked" reads as fine.
+    if {a["state"] for a in row["artifacts"]} == {"matches"}:
+        assert set(states) == {"value-matches"}, sorted(set(states))
 
 
 
