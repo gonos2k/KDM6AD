@@ -66,12 +66,13 @@ def claims() -> list[dict]:
     Parsed here rather than imported so this tool cannot inherit the stamper's
     parsing, which deliberately reads only what stamping needs.
     """
-    out, cur, in_art, folded = [], None, False, None
+    out, cur, in_art, folded, section = [], None, False, None, None
     for line in REGISTRY.read_text().splitlines():
         if re.match(r"^  - id: ", line):
+            section = None
             cur = {"id": line.split("id:", 1)[1].strip(),
                    "evidence": [], "artifacts": {}, "expected_values": [],
-                   "expected_predicates": []}
+                   "expected_predicates": [], "unbound": []}
             out.append(cur)
             in_art = folded = None or False
         elif cur is None:
@@ -81,11 +82,21 @@ def claims() -> list[dict]:
             in_art = m.group(1) in ("artifacts", "expected_values",
                                     "expected_predicates")
             section = m.group(1)
+            if m.group(1) == "binding_status":
+                # COMPUTED now, from what the claim binds and what it declares
+                # it does not -- see `_binding_status`. Twice a claim declared
+                # `full` beside a comment saying a figure was unbound, which is
+                # what a self-declaration buys you. Refused here rather than
+                # ignored: a field the tool no longer reads, left in the file,
+                # goes on reading as the answer to a reviewer (owner §16-7).
+                raise ValueError(
+                    f"{cur['id']}: `binding_status` is computed, not declared "
+                    f"-- list what the claim does NOT bind under `unbound:` "
+                    f"and the status follows from it")
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
             elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "binding_status",
-                                "migration_blocker"):
+                                "blocker_kind", "migration_blocker"):
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -121,6 +132,32 @@ def claims() -> list[dict]:
             cur["expected_predicates"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "want": _literal(m.group(3))})
+        elif section == "unbound" and not (
+                not line.strip() or line.lstrip().startswith("#")):
+            # A figure the claim's TEXT publishes and the claim does NOT bind,
+            # with the reason. This is where the author's judgement about what
+            # counts as a load-bearing figure enters as DATA -- the owner ruled
+            # out scanning the prose for numeric literals, because deciding
+            # which numbers are figures (`F:2922`, `31/144`, `12 fields x 3
+            # columns`) is exactly that judgement (owner D5).
+            #
+            # Every line in the block must match one of the three shapes. An
+            # unrecognised line used to fall off the end of this chain and be
+            # ignored, which is how a mistyped key silently unbinds a fact.
+            if (m := re.match(r"^      - +figure: +(\S.*?)\s*$", line)):
+                cur["unbound"].append({"figure": m.group(1), "why": ""})
+            elif cur["unbound"] and (
+                    m := re.match(r"^        why: +(\S.*?)\s*$", line)):
+                cur["unbound"][-1]["why"] = m.group(1)
+            elif cur["unbound"] and (m := re.match(r"^ {10,}(\S.*?)\s*$", line)):
+                # A continuation of the plain scalar above it, joined with a
+                # space -- what a YAML load does with the same lines.
+                last = cur["unbound"][-1]
+                key = "why" if last["why"] else "figure"
+                last[key] += " " + m.group(1)
+            else:
+                raise ValueError(
+                    f"{cur['id']}: unparseable `unbound` entry: {line.strip()!r}")
         elif cur is not None and re.match(r"^\s+-\s", line):
             # An ORPHAN list item: it is not inside a folded block (that branch
             # ran first) and it matched no binding shape. Two ways to get here
@@ -631,6 +668,45 @@ def _keys_of(obj) -> list:
     return []
 
 
+def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
+    """How completely a claim's figures are bound -- DERIVED, never declared.
+
+    Separate from `artifact_status`, which says the artifact is pinned and its
+    digest verified and never said a single figure in the text was checked
+    against it.
+
+    It was a declared field for one cycle and the declaration went wrong twice
+    in that cycle, both times the same way: `full` written beside a comment
+    admitting a figure was unbound. A status a claim asserts about itself
+    cannot catch that, because the assertion IS the thing being checked. So
+    the registry now records only what it does NOT bind, and this reads:
+
+      no bindings and no admission  UNDECLARED -- the claim says nothing, which
+                                    is not the same as saying `none`
+      nothing bound and verified    none
+      an admission, or a binding
+      that did not verify           partial
+      otherwise                     full
+
+    A binding that FAILS also cannot leave a claim `full`, which the declared
+    field could not express at all: it was written once and never revisited
+    when the evidence moved under it.
+
+    Empty for a claim with no verified artifact: "how completely are this
+    claim's figures bound" is a question about a claim that HAS an artifact,
+    and answering it for one that does not would report the same word for a
+    claim missing its evidence and a claim whose evidence binds nothing.
+    """
+    if not pinned:
+        return ""
+    if not rows and not unbound:
+        return "UNDECLARED"
+    bound = sum(1 for r in rows if not verdict(r["state"]))
+    if not bound:
+        return "none"
+    return "partial" if (unbound or bound < len(rows)) else "full"
+
+
 def chain() -> list[dict]:
     """Per claim: its findings, its pinned artifacts, and each artifact's state."""
     have = bundles()
@@ -686,12 +762,12 @@ def chain() -> list[dict]:
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "predicates": preds,
-            # DECLARED coverage. `artifact_status: pinned` says the artifact is
-            # pinned and verified; it never said every load-bearing figure was
-            # bound, and two pinned claims carried figures they admitted in a
-            # comment were unbound (owner §7). Separating the two makes that
-            # readable instead of a comment nobody greps.
-            "binding_status": c.get("binding_status", ""),
+            # COMPUTED from the two lines above and the claim's own list of
+            # what it does not bind -- see `_binding_status` (owner §16-7).
+            "binding_status": _binding_status(
+                values + preds, c.get("unbound", []),
+                c.get("artifact_status") == "pinned"),
+            "unbound": c.get("unbound", []),
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
             # DECLARED, not sniffed out of the prose. The kinds were inferred
@@ -713,11 +789,13 @@ def report() -> None:
     traceable = [r for r in rows if r["runs"]]
     print(f"  {len(rows)} claims: {len(pinned)} pin a run artifact, "
           f"{len(traceable)} cite a finding some published run names.\n")
-    print(f"  {'claim':22} {'status':10} {'artifacts':>10}  runs")
+    print(f"  {'claim':22} {'status':10} {'artifacts':>10} {'bound':>10}  runs")
     for r in rows:
         st = ",".join(sorted({a["state"] for a in r["artifacts"]})) or "-"
-        print(f"  {r['id']:22} {r['status']:10} {st:>10}  "
-              f"{','.join(r['runs']) or '-'}")
+        # The DERIVED binding status, beside the artifact states it is derived
+        # from. It answers the question `pinned` was silently taken to answer.
+        print(f"  {r['id']:22} {r['status']:10} {st:>10} "
+              f"{r['binding_status'] or '-':>10}  {','.join(r['runs']) or '-'}")
     for r in rows:
         for a in r["artifacts"]:
             if a["state"] == "MISMATCH":
@@ -849,6 +927,19 @@ def check(require_available: bool = False) -> int:
             bad.append(f"{r['id']}: artifact_status=historical_unavailable "
                        f"({r['evidence_kind']}) -- {why}"
                        f"  [fails --require-available]")
+        # A pinned claim that binds nothing and admits nothing. Not an absence
+        # of evidence -- the evidence is attached and verified -- but a claim
+        # that has not said which of its figures it checks against it, which
+        # reads exactly like one that checks them all (owner §16-7).
+        if r["binding_status"] == "UNDECLARED":
+            bad.append(f"{r['id']}: pins an artifact but binds no figure and "
+                       f"declares no `unbound:` entry -- `pinned` would be "
+                       f"read as `checked`")
+        for u in r["unbound"]:
+            if not u["why"]:
+                bad.append(f"{r['id']}: unbound figure {u['figure']!r} gives "
+                           f"no reason -- an unexplained gap is indistinguishable "
+                           f"from an oversight")
         for v in r["values"]:
             if verdict(v["state"], require_available):
                 bad.append(f"{r['id']}: {v['file']}#{v['path']} -> {v['state']}"

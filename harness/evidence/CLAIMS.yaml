@@ -25,6 +25,16 @@
 # Required so a missing run-artifact is DECLARED rather than invisible: the
 # claim->commit machinery exists, but 14 of 16 active measurement claims still
 # stop at a finding digest (owner P0-4).
+# unbound: figures the TEXT publishes that this claim's artifacts cannot bind,
+#   each with the reason. How completely a claim is bound is COMPUTED from
+#   these and from what verifies -- `full`, `partial`, `none`, and UNDECLARED
+#   for a pinned claim that says neither. It was a declared field for one cycle
+#   and went wrong twice in it, both times `full` written beside a comment
+#   admitting a gap, which a self-declaration cannot catch: the declaration is
+#   the thing under test. The alternative -- scanning the prose for numeric
+#   literals -- is refused, because deciding which numbers are figures
+#   (`F:2922`, `31/144`, `12 fields x 3 columns`) is a judgement, and this is
+#   where that judgement is recorded (owner §16-7).
 # scope:  the fixture, precision and algorithm a claim is entitled to speak about
 #
 # Checked by harness/tests/test_g33_claims.py: every claim must name evidence
@@ -90,7 +100,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/manifest.json: 03c60f8393df3ade8b46de8f2dfcc0bfe16c4f49240dff2b68da27754d4c6920
     # A REFINEMENT CHAIN, because the schedule is a property of the step the
@@ -225,13 +234,16 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    # NONE, and the field is what surfaced it. This claim reads `pinned`
-    # because two manifests are attached and verify -- but both bundles carry
-    # only `build_provenance.json` and `manifest.json`, no analysis output at
-    # all, so its 13.7x / 114.7x error-floor figures have nothing to bind to.
+    # This claim reads `pinned` because two manifests are attached and verify.
     # `pinned` was doing two jobs: "an artifact is attached and verified" and
-    # "this claim's numbers are checked against it" (owner §7).
-    binding_status: none
+    # "this claim's numbers are checked against it" (owner §7). Its computed
+    # binding status is `none`, from the entries below.
+    unbound:
+      - figure: the 13.7x (th) and 114.7x (qv) error-floor drops at f64
+        why: both pinned bundles carry only `build_provenance.json` and
+          `manifest.json` -- no analysis output at all -- so there is no
+          artifact field for either ratio to be read from. Binding them needs
+          a run that publishes the floors, not a different pin.
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64
@@ -305,7 +317,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: measurement with a matched mass control on both arms
     scope: g33_fixture_multisubcycle_v1, h = 25 s, legacy and conservative
@@ -351,12 +362,18 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    # PARTIAL, which this claim's own note has said all along: `arms.inverted.3`
-    # is not in this bundle and the 99.9999% flattening figure is stored as
-    # exactly 0.0 residual, so binding it would bind a different number than the
-    # text states. Declaring `full` beside that note was the contradiction the
-    # field was introduced to make visible (owner §16-6).
-    binding_status: partial
+    # The two gaps this claim's note has admitted all along, as data. Declaring
+    # `full` beside that note was the contradiction the field was introduced to
+    # make visible; now the status follows from these entries (owner §16-6/7).
+    unbound:
+      - figure: the 99.9999% removal of the residual under a flattened profile
+        why: the artifact states that residual as EXACTLY 0.0, so the bindable
+          number and the published one are different numbers. The figure is a
+          ratio against the unperturbed residual and nothing in the bundle
+          carries it.
+      - figure: the third inverted-arm ratio, arms.inverted.3
+        why: this bundle has no inverted col-3 stream. The other two inverted
+          ratios are bound; the text quotes three.
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -386,10 +403,9 @@ claims:
     # An earlier version of this note asserted agreement on the mode,
     # which the registry never recorded (Codex).
     #
-    # NOT every figure the text publishes is bound. `arms.inverted.3`
-    # does not exist in this bundle, and the 99.9999% flattening
-    # figure is stated in the artifact as EXACTLY 0.0 residual --
-    # binding it would bind a different number than the claim makes.
+    # What the text publishes and this bundle cannot bind is listed
+    # under `unbound:` above -- as data, not as this paragraph, which
+    # sat two lines from `binding_status: full` for a whole cycle.
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     expected_values:
@@ -473,7 +489,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: >
       the tool is gated on reproducing the previously published figures, so a
@@ -629,7 +644,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed-with-scope
     basis: >
       measurement with per-call inventory preserved, so the aggregation is
@@ -691,7 +705,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: partial
     grade: confirmed
     basis: >
       measurement of both measures on the same stream, with the operator
@@ -722,6 +735,17 @@ claims:
     # The percentages the text quotes (15.0036/13.3377/11.8402) are
     # already bound by G33-NUMBER-003 against the same bundle; 0.0717
     # and 0.065 are not in it and are NOT invented here.
+    unbound:
+      - figure: the 0.0717% inter-call drift in a layer's dry mass under the
+          OLD recomputed-density contract
+        why: it measures the contract this claim REPLACED, and no artifact in
+          this bundle recomputes density per call any more -- the number can
+          only come from a run of the code that was removed.
+      - figure: the "at most 0.065%" bound on how far physical-basis residuals
+          move, and the 1.9% on main/qr/1
+        why: both are ratios BETWEEN two contracts. The bundle publishes the
+          post-change residuals, so the endpoints of the second pair are bound
+          below; the pre-change side is not in it and the ratio is not a field.
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     expected_values:
@@ -756,7 +780,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/manifest.json: 9616de8e34f7ab933f88dc6ac531a28bc5f822331370c501f392ec8ac4dbffb4
     # Both halves. The water column is where the basis MATTERS -- 213.6x on
@@ -865,7 +888,6 @@ claims:
     evidence_kind: mixed
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: >
       an algebraic identity evaluated on six real runs, over an interface
@@ -950,7 +972,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     artifacts:
       - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/manifest.json: a0d5db775ad60454298aa5b53ea1a701d61ba6c88f6f69251c36f92a919e1a08
     # Every figure the text publishes. The percentages and the ratios come
@@ -1350,7 +1371,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: measurement per interface
     scope: g33_fixture_multisubcycle_v1, legacy, h = 25 s
@@ -1380,7 +1400,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: measurement with a matched mass control on the same interfaces
     scope: g33_fixture_multisubcycle_v1, legacy, main chain, h = 25 s
@@ -1451,7 +1470,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed
     basis: >
       exhaustive measurement over the contiguous partitions, with the
@@ -1552,7 +1570,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: pinned
-    binding_status: full
     grade: hold
     basis: >
       source-order f32 direct arithmetic decomposition of the qr update.
@@ -1632,7 +1649,6 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
     grade: confirmed-with-scope
     basis: >
       direct interface measurement, with the diagnostic-inferred alternative
