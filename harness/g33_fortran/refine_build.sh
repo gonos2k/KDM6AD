@@ -38,20 +38,18 @@ for a in "$@"; do
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac
 done
-# f64 + nflux is a WRONG-NUMBER path, not merely unsupported (owner priority-2).
-# The G33F number records write `'f32', transfer(<real>, 0)`; under
-# -fdefault-real-8 that takes FOUR bytes of an EIGHT-byte value into an int32
-# mold and labels the result f32, so a reader parses a valid-looking f32 bit
-# pattern that is not the number. The Python producer refused this, but the build
-# script it calls did not, so anyone invoking the script directly still got the
-# broken binary. Guarded here AND in the preprocessor AND in the producer,
-# because each is reachable without the others.
-if [ "$F64" = 1 ] && [ "$NFLUX" = 1 ]; then
-    echo "--f64 with --nflux is refused: the G33F number records are declared" >&2
-    echo "f32 and would carry four bytes of an eight-byte real. An f64 number" >&2
-    echo "stream needs its own record family, not the f32 one relabelled." >&2
-    exit 2
-fi
+# f64 + nflux WAS refused here: the G33F records wrote `'f32', transfer(<real>,
+# 0)`, and under -fdefault-real-8 that took FOUR bytes of an EIGHT-byte value
+# into an int32 mold and labelled the result f32, so a reader parsed a
+# valid-looking f32 bit pattern that was not the number.
+#
+# The remedy is the record family, not the refusal (owner D6). The overlay now
+# emits reals through a Z edit descriptor whose WIDTH follows this build's
+# default real -- passed below as --real-kind, from the same variable that adds
+# the flag -- and the driver writes a G33N PROTOCOL header carrying what
+# `storage_size` says the compiler actually did.
+REAL_KIND=f32
+[ "$F64" = 1 ] && REAL_KIND=f64
 case "$ALGO" in
     legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
     conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
@@ -69,9 +67,10 @@ if [ "$F64" = 1 ]; then
     # -fdefault-double-8 is required with -fdefault-real-8: without it `double
     # precision` promotes to REAL(16) and the radar hostmatrix call fails to
     # typecheck.
-    # KDM6_G33_F64 suppresses the G33R stream: `transfer(real8, int32)` would
-    # write the first four bytes of an eight-byte value into a record the
-    # standard analyzer reads as an f32 bit pattern (owner P0-4).
+    # KDM6_G33_F64 still suppresses the G33R state stream. Its records carry no
+    # dtype token at all -- `G33R STATE <fld> <i> <k> <8hex>` -- so widening
+    # them needs a record change the archived streams would not survive, which
+    # is a separate protocol question from the G33F family fixed here.
     COMMON_FLAGS+=(-fdefault-real-8 -fdefault-double-8 -DKDM6_G33_F64)
 fi
 [ "$PROBE" = 1 ] && COMMON_FLAGS+=(-DKDM6_G33_PRECISION_PROBE)
@@ -120,7 +119,7 @@ if [ "$DUMP" = 1 ]; then
     # its own digest makes the path a function of the content: identical overlays
     # compile from an identical path, different ones cannot collide.
     python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
-        --algo="$ALGO" >/dev/null
+        --algo="$ALGO" --real-kind="$REAL_KIND" >/dev/null
     OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
     # CONTENT-ADDRESSED on the FULL digest (owner §13 P1-4). A 16-hex truncation
     # left a real race: two builds whose overlays share a 64-bit prefix but

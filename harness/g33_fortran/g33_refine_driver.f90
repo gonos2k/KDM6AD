@@ -27,16 +27,16 @@
 !
 ! Emits one G33R STATE line per field/cell plus the three precipitation
 ! accumulators, in the same top-first convention as the decision driver.
-#if defined(KDM6_G33_F64) && defined(KDM6_G33_NUMBER_DUMP)
-! The LAST of three guards on the same wrong-number path (owner priority-2). The
-! G33F number records write `'f32', transfer(<real>, 0)`; under -fdefault-real-8
-! that takes four bytes of an eight-byte value into an int32 mold and labels the
-! result f32, so a reader parses a valid-looking f32 bit pattern that is not the
-! number. The Python producer and the build script both refuse the combination;
-! this one catches a hand-rolled compile that reaches neither, and it fails at
-! COMPILE time rather than producing a binary whose output is quietly wrong.
-#error "KDM6_G33_F64 with KDM6_G33_NUMBER_DUMP: no f64 number record family exists"
-#endif
+! KDM6_G33_F64 with KDM6_G33_NUMBER_DUMP was refused here, the last of three
+! guards on the same wrong-number path: the G33F number records wrote
+! `'f32', transfer(<real>, 0)`, and under -fdefault-real-8 that took four bytes
+! of an eight-byte value into an int32 mold and labelled the result f32.
+!
+! The record family now exists (owner D6). Reals are written straight to a Z
+! edit descriptor whose width is the overlay's --real-kind, and the G33N
+! PROTOCOL header below reports `storage_size` -- what the compiler DID, not
+! what a flag intended -- so a reader refuses any record whose label, width and
+! header do not all agree. The guard that remains is that agreement.
 module g33_refine
   use, intrinsic :: iso_fortran_env, only: int32, real32
   use module_model_constants, only: g, cp, cpv, r_d, r_v, svpt0, ep_1, ep_2, &
@@ -53,6 +53,14 @@ module g33_refine
   use module_mp_kdm6, only: kdm62D
 #endif
   implicit none
+  ! The Z width of a DEFAULT REAL in this build, so one write statement serves
+  ! both arms. A parameter rather than a runtime choice: a format has to be a
+  ! constant expression and the width is a property of the compile.
+#ifdef KDM6_G33_F64
+  character(len=*), parameter :: G33_ZR = 'Z16.16'
+#else
+  character(len=*), parameter :: G33_ZR = 'Z8.8'
+#endif
 #ifdef KDM6_CONS
   character(len=*), parameter :: ALGOTAG = 'conservative'
 #else
@@ -216,8 +224,13 @@ contains
         ! two-tile run emitted 1,1,2,2 and the parser -- which reads the first
         ! field as a contiguous id -- refused a legitimate run. split and tile
         ! are kept alongside, since a tile boundary is a physical input here.
-        write(*,'(A,6(1X,I0),1X,Z8.8)') 'G33N CALL_BEGIN', &
-              (s - 1) * ntile + tl, s, tl, i0, i1, KM, transfer(delt, 0)
+        ! The SAME width rule the G33F records follow: `delt` is a default
+        ! real, so under -fdefault-real-8 `transfer(delt, 0)` emitted the low
+        ! word of an eight-byte value -- 0.3333.. came out AAAAAAAB. The record
+        ! shape is unchanged, because the G33N PROTOCOL header above already
+        ! tells a reader how wide the reals in this stream are (owner D6).
+        write(*,'(A,6(1X,I0),1X,'//G33_ZR//')') 'G33N CALL_BEGIN', &
+              (s - 1) * ntile + tl, s, tl, i0, i1, KM, delt
 #endif
         call kdm62D(tk(i0:i1,:), qk(i0:i1,:), qcik(i0:i1,:,:), qrsk(i0:i1,:,:)      &
                    ,ncik(i0:i1,:,:), nrsk(i0:i1,:,:), brsk(i0:i1,:)                 &
@@ -383,7 +396,15 @@ program g33_refine_driver
   ! instead of read off the record (owner §5).
   write(*,'(A,4(1X,I0),4(1X,A))') 'G33N STREAM_BEGIN', 4, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
-        'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name) 
+        'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name)
+  ! How wide the reals in this stream are, read from the COMPILER rather than
+  ! declared: `storage_size(1.0)` is what -fdefault-real-8 actually did, so the
+  ! header cannot disagree with the records under it. Without this the width was
+  ! implicit in the build flags, and an f64 build emitted four bytes of an
+  ! eight-byte real under an `f32` label -- a valid-looking number that was not
+  ! the number (owner D6).
+  write(*,'(A,2(1X,I0))') 'G33N PROTOCOL', storage_size(1.0)/8, &
+        storage_size(1.0d0)/8
 #endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &

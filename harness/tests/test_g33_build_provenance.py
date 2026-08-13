@@ -220,46 +220,63 @@ def test_identity_paths_are_normalised(build):
     assert got["sources"][0]["path"].startswith("<OUT>")
 
 
-# ---- owner priority-2: f64 + nflux is guarded at all THREE layers ------------
+# ---- owner D6: f64 + nflux is a RECORD FAMILY, no longer a refusal ---------
 #
-# The Python producer refused the combination; the build script it calls did not,
-# so anyone invoking the script directly still got a binary whose G33F number
-# records carry four bytes of an eight-byte real labelled `f32` -- a
-# valid-looking bit pattern that is not the number.
+# It was guarded at three layers -- producer, build script, preprocessor --
+# because the G33F number records wrote `'f32', transfer(<real>, 0)`, and under
+# -fdefault-real-8 that took four bytes of an eight-byte value into an int32
+# mold. Measured before the fix: pi emitted `54442D18`, the LOW word of
+# 400921FB54442D18, which reads as a perfectly ordinary 3.3702806e+12.
+#
+# Three guards, and each of them was the reason the fix kept being deferred.
+# What replaces them is the agreement between a record's label, its hex width
+# and the stream's own PROTOCOL header, which is checked on every read.
 
-def test_the_build_script_refuses_f64_with_nflux():
-    """The layer that was missing: `refine_build.sh OUT --f64 --nflux` set both
-    and carried on."""
+def test_the_build_script_ACCEPTS_f64_with_nflux_now():
+    """The refusal is gone from the layer that had it last. Not a build: this
+    only has to get past the guard, and it fails later for want of an output
+    directory it was told not to create."""
     script = REPO / "harness/g33_fortran/refine_build.sh"
-    r = subprocess.run(["bash", str(script), "/tmp/should-not-exist",
+    r = subprocess.run(["bash", str(script), "/tmp/g33-should-not-exist",
                         "--f64", "--nflux"], capture_output=True, text=True,
                        cwd=REPO)
-    assert r.returncode != 0, "the build script accepted --f64 --nflux"
-    assert "refused" in r.stderr
+    assert "refused" not in r.stderr, r.stderr[:300]
 
 
-def test_the_preprocessor_refuses_it_too():
-    """Catches a hand-rolled compile that reaches neither the producer nor the
-    script, and fails at COMPILE time rather than emitting a binary whose output
-    is quietly wrong."""
+def test_the_build_script_passes_the_REAL_KIND_to_the_overlay():
+    """The overlay's width and the compiler's flag must come from ONE variable.
+    An overlay generated for f32 and compiled with -fdefault-real-8 is exactly
+    the wrong-number path, and nothing downstream could tell."""
+    sh = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    assert "--real-kind=\"$REAL_KIND\"" in sh
+    # Both derived from $F64, so they cannot disagree about which arm this is.
+    kind = next(l for l in sh.splitlines() if l.strip().endswith("REAL_KIND=f64"))
+    flag = next(l for l in sh.splitlines() if "-fdefault-real-8" in l
+                and not l.lstrip().startswith("#"))
+    assert '"$F64" = 1' in kind, kind
+    assert sh.index(kind) < sh.index(flag)
+
+
+def test_the_preprocessor_guard_is_GONE_and_the_driver_still_compiles():
+    """A guard that outlives its reason reads as protection and refuses work
+    that is now correct."""
     drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
-    assert "#if defined(KDM6_G33_F64) && defined(KDM6_G33_NUMBER_DUMP)" in drv
-    assert "#error" in drv
+    assert "#error" not in drv
 
 
 @pytest.mark.skipif(shutil.which("gfortran") is None, reason="needs gfortran")
-def test_the_preprocessor_guard_actually_fires():
-    """A guard nothing triggers is worse than none: it reads as protection."""
+def test_the_driver_compiles_under_BOTH_real_kinds(tmp_path):
+    """The combination that was refused at compile time now has to parse."""
     drv = REPO / "harness/g33_fortran/g33_refine_driver.f90"
-    bad = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
-                          "-DKDM6_G33_F64", "-DKDM6_G33_NUMBER_DUMP", str(drv)],
-                         capture_output=True, text=True)
-    assert "no f64 number record family" in bad.stderr
-    # ...and stays silent for the combination that IS supported.
-    ok = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
-                         "-DKDM6_G33_NUMBER_DUMP", str(drv)],
-                        capture_output=True, text=True)
-    assert "no f64 number record family" not in ok.stderr
+    for extra in ([], ["-DKDM6_G33_F64"]):
+        r = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
+                            "-ffree-line-length-none", "-DKDM6_G33_NUMBER_DUMP",
+                            *extra, str(drv)],
+                           capture_output=True, text=True, cwd=tmp_path)
+        # It cannot LINK here (no fixture module), but it must get past the
+        # preprocessor and the declaration section.
+        assert "no f64 number record family" not in r.stderr
+        assert "#error" not in r.stderr
 
 
 def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path):
