@@ -398,11 +398,27 @@ def test_the_same_stream_listed_TWICE_is_refused(tmp_path):
 
 # ---- the run/analysis split: name the half that does not move (owner §12) ---
 
+def test_ANALYZER_MODULES_matches_the_producers_registries():
+    """`run_identity` filters producer_modules by this list, so a drift makes
+    it misclassify: an analyzer left out keeps moving the run identity, and a
+    RUN-side module wrongly listed stops moving it -- and the second is how
+    changing `g33_refine_experiment` could leave the run unchanged (Codex).
+
+    The manifest cannot import the experiment, so the list is declared and
+    checked, exactly like the four analysis registries.
+    """
+    import g33_refine_experiment as rx
+    want = ({mod for mod, _fn in rx.ANALYSES.values()}
+            | {mod for mod, _fn in rx.MULTI_RUN.values()}
+            | {"g33_metric_trajectory"})
+    assert set(rm.ANALYZER_MODULES) == want, (
+        f"declared but not an analyzer: {sorted(set(rm.ANALYZER_MODULES) - want)}; "
+        f"an analyzer but not declared: {sorted(want - set(rm.ANALYZER_MODULES))}")
+
+
 @pytest.mark.parametrize("mutate,label", [
     (lambda m: m.__setitem__("analyses", m["analyses"][:-1]), "drop an analysis"),
     (lambda m: m.pop("analyzer_sha256", None), "drop analyzer_sha256"),
-    (lambda m: m.__setitem__("producer_modules", m["producer_modules"][:-1]),
-     "drop a producer module"),
 ])
 def test_the_RUN_identity_does_not_move_when_the_ANALYSES_do(tmp_path, mutate, label):
     """Adding an analyzer currently moves every bundle's address, so the whole
@@ -436,6 +452,10 @@ def test_the_RUN_identity_does_not_move_when_the_ANALYSES_do(tmp_path, mutate, l
      "the member parser"),
     (lambda m: m["tracked_build_inputs"][0].__setitem__("content_sha256", "0" * 64),
      "a tracked build input"),
+    # The producer itself. Excluding `producer_modules` wholesale left this
+    # STABLE, so editing the code that makes the run did not change the run.
+    (lambda m: _touch_module(m, "g33_refine_experiment"), "the producer"),
+    (lambda m: _touch_module(m, "g33_schema"), "the overlay schema"),
 ])
 def test_the_RUN_identity_MOVES_when_the_run_does(tmp_path, mutate, label):
     """The complement, so "stable" cannot degenerate into "constant".
@@ -473,3 +493,35 @@ def test_the_two_bundles_that_share_a_RUN_are_recognised(tmp_path):
         groups.setdefault(rm.run_identity(man), []).append(name.split("/")[1])
     shared = [sorted(v) for v in groups.values() if len(v) > 1]
     assert ["number-003-cons", "number-009-ice"] in shared, groups
+
+
+def _touch_module(man, stem):
+    """Change one producer module's content digest, or add it if absent."""
+    from pathlib import Path as _P
+    for e in man.get("producer_modules") or []:
+        if isinstance(e, dict) and _P(str(e.get("path"))).stem == stem:
+            e["content_sha256"] = "0" * 64
+            return
+    man.setdefault("producer_modules", []).append(
+        {"path": f"harness/{stem}.py", "commit": "a" * 40,
+         "blob_sha": "b" * 40, "content_sha256": "0" * 64})
+
+
+def test_an_ANALYZER_module_does_not_define_the_run(tmp_path):
+    """The filter, both ways round, on a synthetic manifest so CI sees it."""
+    m = synthetic_manifest(tmp_path)
+    _touch_module(m, "g33_dual_ledger")          # make sure it is present
+    before = rm.run_identity(m)
+
+    m2 = copy.deepcopy(m)
+    for e in m2["producer_modules"]:
+        if e["path"].endswith("g33_dual_ledger.py"):
+            e["content_sha256"] = "1" * 64
+    assert rm.run_identity(m2) == before, "an analyzer moved the run identity"
+
+    m3 = copy.deepcopy(m)
+    _touch_module(m3, "g33_refine_experiment")
+    for e in m3["producer_modules"]:
+        if e["path"].endswith("g33_refine_experiment.py"):
+            e["content_sha256"] = "2" * 64
+    assert rm.run_identity(m3) != before, "the producer did NOT move the run identity"

@@ -83,11 +83,25 @@ def identity_digest(man: dict) -> str:
         json.dumps(m, sort_keys=True).encode()).hexdigest()
 
 
-#: The manifest keys that depend on WHICH ANALYSES a bundle carries, and so
-#: cannot be part of the run's identity: the outputs, the analyzer digest, and
-#: the module closure that computes them. Everything else -- binary, module,
-#: fixture, members, provenance, pins -- describes the RUN.
-ANALYSIS_DEPENDENT_KEYS = ("analyses", "analyzer_sha256", "producer_modules")
+#: Modules whose bytes decide an ANALYSIS and nothing about the run. DECLARED
+#: here and checked against the producer's registries, because this module
+#: cannot import the experiment (the dependency runs the other way).
+ANALYZER_MODULES = (
+    "g33_matched_closure", "g33_cap_interface", "g33_number_transport",
+    "g33_dual_ledger", "g33_defect_magnitude", "g33_substep_schedule",
+    "g33_water_enthalpy_basis", "g33_metric_trajectory",
+    "g33_ncmin_locality", "g33_qr_process_ledger",
+)
+
+#: Top-level keys that depend on WHICH analyses a bundle carries.
+#:
+#: `producer_modules` is NOT here, and that was the first version's mistake:
+#: the block mixes the analyzers with the code that makes the RUN --
+#: `g33_refine_experiment`, and `g33_schema`/`g33_expectation`, which decide
+#: what the overlay injects and therefore what every record in the stream says.
+#: Excluding it wholesale meant changing the producer left the run identity
+#: unmoved, which is backwards (Codex).
+ANALYSIS_DEPENDENT_KEYS = ("analyses", "analyzer_sha256")
 
 
 def run_identity(man: dict) -> str:
@@ -98,17 +112,25 @@ def run_identity(man: dict) -> str:
     binding re-pointed -- a cost paid five times in one day and growing with
     the archive (owner §12).
 
-    This is the first half of the two-layer split: a name for the thing that
-    does NOT change. Measured against the real manifest, it is stable when an
-    analysis, the analyzer digest or a producer module is removed, and moves
-    when the module, a member digest, the binary or the fixture does.
+    `producer_modules` is FILTERED rather than dropped: the analyzer entries
+    go, the rest stay. A module that is merely imported BY an analyzer --
+    `g33_update_replay`, say -- is treated as run-side and so still moves the
+    identity. That is the conservative direction on purpose: over-sensitivity
+    costs a re-production, under-sensitivity makes the name mean something it
+    does not.
 
     Nothing is stored yet, deliberately. Recording it would change every
     manifest and force exactly the re-production this exists to retire, so the
     invariant is established and guarded first.
     """
-    return identity_digest({k: v for k, v in man.items()
-                            if k not in ANALYSIS_DEPENDENT_KEYS})
+    m = {k: v for k, v in man.items() if k not in ANALYSIS_DEPENDENT_KEYS}
+    mods = m.get("producer_modules")
+    if isinstance(mods, list):
+        m["producer_modules"] = [
+            e for e in mods
+            if not (isinstance(e, dict) and isinstance(e.get("path"), str)
+                    and Path(e["path"]).stem in ANALYZER_MODULES)]
+    return identity_digest(m)
 
 
 def _git(*a) -> str:
