@@ -91,6 +91,11 @@ ANALYZER_MODULES = (
     "g33_dual_ledger", "g33_defect_magnitude", "g33_substep_schedule",
     "g33_water_enthalpy_basis", "g33_metric_trajectory",
     "g33_ncmin_locality", "g33_qr_process_ledger",
+    # Reachable ONLY through an analyzer. `g33_update_replay` is imported by
+    # the qr ledger and by nothing on the run side, so editing it cannot change
+    # a stream -- and counting it run-side meant analyzer-only code moved the
+    # run identity, which is the case the split exists for (Codex).
+    "g33_update_replay",
 )
 
 #: Top-level keys that depend on WHICH analyses a bundle carries.
@@ -112,12 +117,16 @@ def run_identity(man: dict) -> str:
     binding re-pointed -- a cost paid five times in one day and growing with
     the archive (owner §12).
 
-    `producer_modules` is FILTERED rather than dropped: the analyzer entries
-    go, the rest stay. A module that is merely imported BY an analyzer --
-    `g33_update_replay`, say -- is treated as run-side and so still moves the
-    identity. That is the conservative direction on purpose: over-sensitivity
-    costs a re-production, under-sensitivity makes the name mean something it
-    does not.
+    `producer_modules` is FILTERED rather than dropped: analyzer entries go,
+    the rest stay. "Analyzer" means the analyzers AND what only they reach --
+    computed as the analyzers' import closure minus the producer's own closure
+    taken with the analyzers as barriers, since the producer imports them in
+    order to run them and an unbarriered closure classifies everything as
+    run-side.
+
+    The direction of error still matters: over-sensitivity costs a
+    re-production, under-sensitivity makes the name mean something it does
+    not. So a module reachable from BOTH sides stays run-side.
 
     Nothing is stored yet, deliberately. Recording it would change every
     manifest and force exactly the re-production this exists to retire, so the

@@ -404,16 +404,44 @@ def test_ANALYZER_MODULES_matches_the_producers_registries():
     RUN-side module wrongly listed stops moving it -- and the second is how
     changing `g33_refine_experiment` could leave the run unchanged (Codex).
 
-    The manifest cannot import the experiment, so the list is declared and
-    checked, exactly like the four analysis registries.
+    The list is COMPUTED here, not restated. Writing the expectation by hand
+    is what put `g33_update_replay` on the wrong side: it is imported only by
+    the qr ledger, so editing it cannot change a stream, and calling it
+    run-side meant analyzer-only code moved the run identity.
+
+    The manifest cannot import the experiment -- the dependency runs the other
+    way -- so the list is declared there and checked here.
     """
     import g33_refine_experiment as rx
-    want = ({mod for mod, _fn in rx.ANALYSES.values()}
-            | {mod for mod, _fn in rx.MULTI_RUN.values()}
-            | {"g33_metric_trajectory"})
+
+    analyzers = ({mod for mod, _fn in rx.ANALYSES.values()}
+                 | {mod for mod, _fn in rx.MULTI_RUN.values()}
+                 | {"g33_metric_trajectory"})
+
+    def closure(roots, barriers=frozenset()):
+        """Transitive local imports, not descending INTO `barriers`."""
+        seen, todo = set(), list(roots)
+        while todo:
+            m = todo.pop()
+            if m in seen:
+                continue
+            seen.add(m)
+            if m in barriers:
+                continue                  # counted, not traversed
+            todo += sorted(rx._local_imports(m))
+        return seen
+
+    # The producer imports the analyzers in order to RUN them, so an
+    # unbarriered closure makes every analyzer "run-side" and the partition
+    # vacuous. With them as barriers, what remains is the run.
+    run_side = closure(["g33_refine_experiment"], barriers=analyzers) - analyzers
+    want = closure(sorted(analyzers)) - run_side
+
     assert set(rm.ANALYZER_MODULES) == want, (
-        f"declared but not an analyzer: {sorted(set(rm.ANALYZER_MODULES) - want)}; "
-        f"an analyzer but not declared: {sorted(want - set(rm.ANALYZER_MODULES))}")
+        f"declared but reachable from the run side: "
+        f"{sorted(set(rm.ANALYZER_MODULES) - want)}; "
+        f"analysis-only but not declared: "
+        f"{sorted(want - set(rm.ANALYZER_MODULES))}")
 
 
 @pytest.mark.parametrize("mutate,label", [
