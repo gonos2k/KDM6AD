@@ -351,7 +351,12 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
+    # PARTIAL, which this claim's own note has said all along: `arms.inverted.3`
+    # is not in this bundle and the 99.9999% flattening figure is stored as
+    # exactly 0.0 residual, so binding it would bind a different number than the
+    # text states. Declaring `full` beside that note was the contradiction the
+    # field was introduced to make visible (owner §16-6).
+    binding_status: partial
     grade: confirmed
     basis: >
       three-arm falsification test on the forcing, with the mass control holding
@@ -955,9 +960,6 @@ claims:
     # ratios would have left the eight percentages unbound, which is exactly
     # how G33-TRAJECTORY-001 certified two false numbers.
     #
-    # `comparable` is true for all six rows -- the claim's "no ice column
-    # changes its sub-step schedule" -- and is a boolean, so it is read in
-    # this same artifact rather than bound here, which takes floats.
     expected_values:
       - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/2.of_surface_flux: 0.06278854747831082
       - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.defect_magnitude.json#rows.ice/ni/3.of_surface_flux: 0.07058391004279457
@@ -1012,6 +1014,23 @@ claims:
       what makes the measurement possible and is NOT the reference; legacy's ice
       chain remains unmeasurable for the post-update cap reason. Constructed
       probes, and the trajectory term is measured but not apportioned.
+    # "no ice column changes its sub-step schedule so every row is
+    # comparable" is load-bearing -- the whole density matrix is only
+    # a matrix if the rows are comparable -- and it is a BOOLEAN. The
+    # note here said it was "read in this same artifact rather than
+    # bound, which takes floats"; expected_predicates now exists, so
+    # it is bound (owner §16-6).
+    expected_predicates:
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.2.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.inverted.3.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.2.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.x2.3.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.2.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset+.3.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.2.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.offset-.3.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.2.comparable: true
+      - kdm6ad-g33m-migrate/number-009-ice.bundles/1937a77e787042d0e6b878d87ca89dd1befb9ecfa241f228b13e3077065f9df2/n12.rezero.ice.metric_trajectory.json#arms.uniform.3.comparable: true
     evidence: [FINDING_ice_density_matrix_v1.md]
     evidence_sha256: [FINDING_ice_density_matrix_v1.md:3d94fd004e3bff54e1a1995ef11966ac9d81378fa47dd1abcdbcda5be9d15e20]
 

@@ -1092,3 +1092,47 @@ def test_a_claim_bound_to_NOTHING_cannot_call_itself_bound():
             assert n == 0, f"{c['id']} declares `none` but binds {n} values"
         else:
             assert n > 0, f"{c['id']} declares {st!r} but binds nothing"
+
+
+def test_a_claim_that_ADMITS_unbound_figures_is_not_full():
+    """`G33-NUMBER-008` declared `full` while its own note said "NOT every
+    figure the text publishes is bound" -- `arms.inverted.3` is absent from
+    its bundle and the 99.9999% flattening figure is stored as exactly 0.0
+    residual, so binding it would bind a different number than the text makes
+    (owner §16-6).
+
+    Checked structurally: a claim whose registry entry admits an unbound
+    figure may not call itself fully bound. This is not a prose numeric scan
+    -- it reads the admission, which is a deliberate sentence, not a number.
+    """
+    src = REGISTRY.read_text()
+    admits = re.compile(r"NOT every figure|are not bound|is NOT bound", re.I)
+    guilty = []
+    for c in CLAIMS:
+        if c.get("binding_status") != "full":
+            continue
+        entry = src.split(f"\n  - id: {c['id']}\n")[1].split("\n  - id: ")[0]
+        if admits.search(entry):
+            guilty.append(c["id"])
+    assert not guilty, (
+        f"{guilty} declare binding_status: full while admitting an unbound "
+        f"figure in their own entry")
+
+
+def test_NUMBER_009_binds_the_COMPARABILITY_it_rests_on():
+    """The density matrix is only a matrix if the rows are comparable, so "no
+    ice column changes its sub-step schedule" is load-bearing. It is a boolean,
+    and the entry used to say it was "read in this same artifact rather than
+    bound here, which takes floats" -- true when written, and no longer true
+    once expected_predicates existed (owner §16-6)."""
+    ec = _chain()
+    claim = next(c for c in ec.claims() if c["id"] == "G33-NUMBER-009")
+    got = {w["path"]: w["want"] for w in claim["expected_predicates"]}
+    assert got, "the comparability is unbound"
+    assert all(v is True for v in got.values()), got
+    for arm in ("inverted", "x2", "offset+", "offset-", "uniform"):
+        for col in ("2", "3"):
+            assert f"arms.{arm}.{col}.comparable" in got, (arm, col)
+    assert all("ice.metric_trajectory" in w["file"]
+               for w in claim["expected_predicates"]), \
+        "the claim is about the ICE chain; the main-chain file is a different row set"
