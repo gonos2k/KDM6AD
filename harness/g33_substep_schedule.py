@@ -50,17 +50,42 @@ def analysis(stream: str) -> dict:
     out: dict = {}
     for (chain, col), counts in sorted(seen.items()):
         out.setdefault(chain, {})[str(col)] = {
+            # BOTH ends, and whether the column held ONE schedule. `substeps`
+            # was a maximum over calls presented as the column's sub-step
+            # count: at h = 25 s column 3's main chain ran 1, 2 AND 3, so
+            # "needs 3" was true of its worst call and of no other (owner §8).
+            # Kept under its old name, as the maximum it always was, beside the
+            # fields that say so.
             "substeps": max(counts),
-            # Reported, not assumed away: if a column ran a different number of
-            # sub-steps on different calls, `substeps` is a summary of a thing
-            # that moved, and a reader has to be told.
+            "min_substeps": min(counts),
+            "max_substeps": max(counts),
+            "unique_substeps": sorted(counts),
+            "constant_across_calls": len(counts) == 1,
             "varies_across_calls": len(counts) > 1,
             "seen": sorted(counts),
         }
     delt = calls[0]["delt"]
-    return {"by_chain": out, "delt": delt, "calls": len(calls),
-            # Which columns ever needed the chain subdivided, per chain. The
-            # claim is about where a chain reaches ONE.
+    for cols in out.values():
+        for r in cols.values():
+            # The SUB-STEP, which is what a schedule is about. `delt` is the
+            # duration of the EXTERNAL call and the sub-step is delt/mstep, so
+            # reporting only `delt` invited it to be read as the step the chain
+            # integrates on (owner §8).
+            r["effective_dt_max"] = delt / r["min_substeps"]
+            r["effective_dt_min"] = delt / r["max_substeps"]
+    return {"by_chain": out,
+            # RENAMED, with `delt` kept so existing bindings still resolve.
+            # "delt" read as "the timestep"; it is the external call duration,
+            # and each chain subdivides it differently.
+            "external_delt": delt, "delt": delt, "calls": len(calls),
             "subdivided": {c: sorted(k for k, v in cols.items()
-                                     if v["substeps"] > 1)
-                           for c, cols in out.items()}}
+                                     if v["max_substeps"] > 1)
+                           for c, cols in out.items()},
+            # Where a chain runs the whole call in ONE step on EVERY call.
+            # "reaches one" needs both facts: a maximum of 1 says no call
+            # subdivided, and constancy says that is the schedule rather than
+            # its best case.
+            "single_step": {c: sorted(k for k, v in cols.items()
+                                      if v["max_substeps"] == 1
+                                      and v["constant_across_calls"])
+                            for c, cols in out.items()}}
