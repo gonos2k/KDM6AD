@@ -571,11 +571,47 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                 if not _hexlen(d or "", 64):
                     bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) is not "
                                f"pinned by a 64-hex sha")
+                # A plain basename. The file is joined to the bundle directory,
+                # so `../` walks out of it and names something the bundle never
+                # published.
+                if isinstance(f, str) and (
+                        "/" in f or "\\" in f or f in (".", "..")):
+                    bad.append(f"analyses[{i}].inputs[{k}] file {f!r} is not a "
+                               f"plain basename -- it is resolved inside the "
+                               f"bundle and must not leave it")
                 argv = src.get("runtime_argv")
                 if not isinstance(argv, list) or len(argv) != 4:
                     bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) records no "
                                f"4-element runtime_argv -- which decomposition "
                                f"it is has to be readable from the entry")
+                elif not all(isinstance(x, str) for x in argv):
+                    # Every element, before anything reads one. `argv[2]` was
+                    # `.split(",")` straight after the length check, so
+                    # `[1, 2, 3, 4]` raised AttributeError out of a function
+                    # whose contract is to RETURN violations -- a crash is not
+                    # fail-close (owner §6).
+                    bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) runtime_argv "
+                               f"is not all strings: {argv!r}")
+                else:
+                    # It must describe the run the ANALYSIS says it made.
+                    # Recorded and never compared, so an entry could name a
+                    # decomposition, nsplit, carry or rho the analysis never
+                    # used and the bundle would still validate.
+                    want = a.get("ran") if isinstance(a.get("ran"), dict) else {}
+                    for pos, key, label in ((0, "nsplit", "nsplit"),
+                                            (1, "carry", "carry"),
+                                            (3, "rho", "rho")):
+                        if key in want and argv[pos] != str(want[key]):
+                            bad.append(
+                                f"analyses[{i}].inputs[{k}] ({f!r}) says "
+                                f"{label}={argv[pos]!r} but `ran` says "
+                                f"{want[key]!r}")
+                    tiles = argv[2].split(",")
+                    if not tiles or not all(
+                            t.isdigit() and int(t) > 0 for t in tiles):
+                        bad.append(f"analyses[{i}].inputs[{k}] ({f!r}) "
+                                   f"decomposition {argv[2]!r} is not a vector "
+                                   f"of positive integers")
             # Every decomposition the analysis says it RAN must be among the
             # streams it kept. Otherwise `ran` describes a run the bundle
             # cannot produce.
@@ -583,7 +619,8 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                     for src in ins
                     if isinstance(src, dict)
                     and isinstance(src.get("runtime_argv"), list)
-                    and len(src["runtime_argv"]) == 4}
+                    and len(src["runtime_argv"]) == 4
+                    and all(isinstance(x, str) for x in src["runtime_argv"])}
             # Only where `decompositions` is well formed. Iterating it blind
             # crashed on [None] and on a bare int -- the same "a guard that
             # crashes is not a guard" defect the width check already had, so

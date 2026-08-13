@@ -1270,7 +1270,15 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     man = json.loads((dst / "manifest.json").read_text())
     e = next(a for a in man["analyses"] if a["analysis"] == "ncmin_locality")
     tampered = e["file"]                       # the file THIS entry describes
-    e["ran"]["nsplit"] = 12                    # the file still says 1
+    # BOTH records inside the manifest. `ran.nsplit` and each kept stream's
+    # argv are now cross-checked, so moving one alone makes the manifest
+    # invalid in a DIFFERENT way and `members_of` returns the schema violation
+    # before it ever emits a run_identity row. The tamper has to be
+    # self-consistent to test what this test is about: the manifest agreeing
+    # with itself while disagreeing with the analysis FILE, which still says 1.
+    e["ran"]["nsplit"] = 12
+    for src in e.get("inputs") or []:
+        src["runtime_argv"][0] = "12"
     (dst / "manifest.json").write_text(json.dumps(man))
     # PER ENTRY, keyed on the file the tampered ENTRY names -- not on a
     # substring of the row's filename, which re-derives an identity the

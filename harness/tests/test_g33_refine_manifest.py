@@ -273,10 +273,19 @@ def test_the_NSPLIT_BOUND_is_the_DRIVERS_int32_limit(tmp_path):
     assert rm._MAX_NSPLIT == 2 ** 31 - 1
 
     m = _with_multi(tmp_path)
-    _multi(m)["ran"]["nsplit"] = rm._MAX_NSPLIT
+
+    def set_nsplit(n):
+        """BOTH sides. `ran` and each kept stream's argv must agree, so moving
+        one alone now makes the manifest inconsistent -- which is a different
+        violation from the bound this test is about."""
+        _multi(m)["ran"]["nsplit"] = n
+        for src in _multi(m)["inputs"]:
+            src["runtime_argv"][0] = str(n)
+
+    set_nsplit(rm._MAX_NSPLIT)
     assert rm.validate(m) == [], "the boundary value itself must be accepted"
 
-    _multi(m)["ran"]["nsplit"] = rm._MAX_NSPLIT + 1
+    set_nsplit(rm._MAX_NSPLIT + 1)
     assert any("1..2147483647" in b for b in rm.validate(m))
 
 
@@ -394,3 +403,40 @@ def test_the_same_stream_listed_TWICE_is_refused(tmp_path):
     e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
     e["inputs"].append(dict(e["inputs"][0]))
     assert any("twice" in b for b in rm.validate(m))
+
+
+@pytest.mark.parametrize("argv,probe", [
+    ([1, 2, 3, 4], "not all strings"),
+    (["1", "rezero", 3, "as-is"], "not all strings"),
+    (["99", "rezero", "3", "as-is"], "nsplit"),
+    (["1", "carry", "3", "as-is"], "carry"),
+    (["1", "rezero", "3", "x2"], "rho"),
+    (["1", "rezero", "0", "as-is"], "positive integers"),
+    (["1", "rezero", "-1", "as-is"], "positive integers"),
+])
+def test_a_multirun_input_must_DESCRIBE_the_run_it_came_from(tmp_path, argv, probe):
+    """`runtime_argv` was length-checked and then `.split(",")` was applied to
+    argv[2], so `[1, 2, 3, 4]` raised AttributeError out of a function whose
+    contract is to RETURN violations -- a crash is not fail-close (owner §6).
+
+    And it was never compared with `ran`, so an entry could name an nsplit,
+    carry, rho or decomposition the analysis never used and the bundle still
+    validated.
+    """
+    m = _with_multi(tmp_path)
+    assert rm.validate(m) == [], "the base manifest must be valid first"
+    e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+    e["inputs"][0]["runtime_argv"] = argv
+    bad = rm.validate(m)                       # must not raise
+    assert any(probe in b for b in bad), (probe, bad)
+
+
+@pytest.mark.parametrize("name", ["../escape/mr.txt", "sub/mr.txt", ".."])
+def test_a_multirun_input_file_must_be_a_PLAIN_BASENAME(tmp_path, name):
+    """The file is resolved inside the bundle directory, so a path with a
+    separator names something the bundle never published -- and the digest
+    would then be checked against whatever sits there."""
+    m = _with_multi(tmp_path)
+    e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
+    e["inputs"][0]["file"] = name
+    assert any("plain basename" in b for b in rm.validate(m))
