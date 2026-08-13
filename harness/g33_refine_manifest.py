@@ -83,65 +83,6 @@ def identity_digest(man: dict) -> str:
         json.dumps(m, sort_keys=True).encode()).hexdigest()
 
 
-#: Modules whose bytes decide an ANALYSIS and nothing about the run. DECLARED
-#: here and checked against the producer's registries, because this module
-#: cannot import the experiment (the dependency runs the other way).
-ANALYZER_MODULES = (
-    "g33_matched_closure", "g33_cap_interface", "g33_number_transport",
-    "g33_dual_ledger", "g33_defect_magnitude", "g33_substep_schedule",
-    "g33_water_enthalpy_basis", "g33_metric_trajectory",
-    "g33_ncmin_locality", "g33_qr_process_ledger",
-    # Reachable ONLY through an analyzer. `g33_update_replay` is imported by
-    # the qr ledger and by nothing on the run side, so editing it cannot change
-    # a stream -- and counting it run-side meant analyzer-only code moved the
-    # run identity, which is the case the split exists for (Codex).
-    "g33_update_replay",
-)
-
-#: Top-level keys that depend on WHICH analyses a bundle carries.
-#:
-#: `producer_modules` is NOT here, and that was the first version's mistake:
-#: the block mixes the analyzers with the code that makes the RUN --
-#: `g33_refine_experiment`, and `g33_schema`/`g33_expectation`, which decide
-#: what the overlay injects and therefore what every record in the stream says.
-#: Excluding it wholesale meant changing the producer left the run identity
-#: unmoved, which is backwards (Codex).
-ANALYSIS_DEPENDENT_KEYS = ("analyses", "analyzer_sha256")
-
-
-def run_identity(man: dict) -> str:
-    """The content address of the RUN, independent of what was analysed on it.
-
-    Today a bundle's identity covers its analyses, so adding an analyzer moves
-    every bundle's address and the whole archive is re-produced with every
-    binding re-pointed -- a cost paid five times in one day and growing with
-    the archive (owner §12).
-
-    `producer_modules` is FILTERED rather than dropped: analyzer entries go,
-    the rest stay. "Analyzer" means the analyzers AND what only they reach --
-    computed as the analyzers' import closure minus the producer's own closure
-    taken with the analyzers as barriers, since the producer imports them in
-    order to run them and an unbarriered closure classifies everything as
-    run-side.
-
-    The direction of error still matters: over-sensitivity costs a
-    re-production, under-sensitivity makes the name mean something it does
-    not. So a module reachable from BOTH sides stays run-side.
-
-    Nothing is stored yet, deliberately. Recording it would change every
-    manifest and force exactly the re-production this exists to retire, so the
-    invariant is established and guarded first.
-    """
-    m = {k: v for k, v in man.items() if k not in ANALYSIS_DEPENDENT_KEYS}
-    mods = m.get("producer_modules")
-    if isinstance(mods, list):
-        m["producer_modules"] = [
-            e for e in mods
-            if not (isinstance(e, dict) and isinstance(e.get("path"), str)
-                    and Path(e["path"]).stem in ANALYZER_MODULES)]
-    return identity_digest(m)
-
-
 def _git(*a) -> str:
     return subprocess.run(("git",) + a, capture_output=True,
                           text=True).stdout.strip()
