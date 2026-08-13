@@ -33,6 +33,7 @@ from pathlib import Path
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
+import g33_probe_read as pr  # noqa: E402
 
 def endpoints(d: dict) -> dict:
     """The window's true first and last inventory, distinguished from the sums.
@@ -185,11 +186,9 @@ def window_cell_mass(stream: str, basis: str) -> dict:
 
     qv0 = {}
     if basis != "operator":
-        if "G33R BEGIN" not in stream:
-            raise ValueError(
-                "the physical measure needs the WINDOW-INITIAL qv, which lives "
-                "in G33R INITIAL, and this stream carries no G33R block")
-        run = ra.read_text(stream)
+        # G33R INITIAL, or G33P INITIAL when the build emitted no G33R --
+        # the same values in a different encoding (owner D6 follow-on).
+        run = pr.window_state(stream)
         # `run` also holds 3-tuple `prec` and `meta` keys, so the shape is
         # checked before unpacking rather than after it raises.
         qv0 = {(key[2], key[3]): v for key, v in run.items()

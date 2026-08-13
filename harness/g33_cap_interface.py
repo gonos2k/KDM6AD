@@ -50,6 +50,7 @@ sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
+import g33_probe_read as pr  # noqa: E402
 
 
 class Interface(NamedTuple):
@@ -240,7 +241,9 @@ def enthalpy_with_cap_sink(stream: str, basis: str = "operator") -> dict:
     every previously-quoted residual with no way to see what moved; publishing
     only the old one would leave the correction opt-in and never exercised.
     """
-    run = ra.read_text(stream)
+    # Whichever family carries the window: an f64 build emits no G33R
+    # and the probe stream holds the same values (owner D6 follow-on).
+    run = pr.window_state(stream)
     if not run:
         return {}
     sink = cap_sink(stream, basis)

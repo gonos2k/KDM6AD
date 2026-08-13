@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_cap_interface as ci  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
+import g33_probe_read as pr  # noqa: E402
 
 #: The water-bearing species. `qv` included: this is total water, not condensate.
 WATER = ("qv", "qc", "qr", "qi", "qs", "qg")
@@ -92,9 +93,11 @@ def enthalpy(stream: str) -> dict:
 
 
 def analysis(stream: str) -> dict:
-    run = ra.read_text(stream)
+    # G33R or G33P -- the column ledgers need the window ENDPOINTS, and an
+    # f64 build carries them in the probe family (owner D6 follow-on).
+    run = pr.window_state(stream)
     if not run:
-        raise ra.RefineError("no G33R block: the column ledgers need the "
+        raise ra.RefineError("no window block: the column ledgers need the "
                              "window endpoints, not the per-call stream")
     return {"water": water(run), "enthalpy": enthalpy(stream),
             "note": "P_surface is prec[1], the TOTAL. prec[2] and prec[3] are "
