@@ -121,12 +121,19 @@ def claims() -> list[dict]:
             cur["expected_predicates"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "want": _literal(m.group(3))})
-        elif in_art and re.match(r"^      - \S", line):
-            # A list item inside artifacts/expected_values/expected_predicates
-            # that matched NO shape above was silently skipped, so a typo --
-            # a missing "#", a missing value -- unbound the fact and left the
-            # claim reading as though it were bound. Not parsed and not
-            # declared are different, and only one of them is safe (Codex).
+        elif cur is not None and re.match(r"^\s+- \S", line):
+            # An ORPHAN list item: it is not inside a folded block (that branch
+            # ran first) and it matched no binding shape. Two ways to get here
+            # and both were silent:
+            #
+            #   * a malformed entry under a good header -- a missing "#", a
+            #     missing value -- which unbound one fact;
+            #   * a header that is mistyped or mis-indented, which orphans the
+            #     WHOLE block. `expected_predicate:` singular dropped two
+            #     declarations and the claim still read as bound (Codex).
+            #
+            # The first version only caught the first, because it required
+            # `in_art` -- which is exactly what a bad header switches off.
             raise ValueError(
                 f"{cur['id']}: unparseable `{section}` entry: {line.strip()!r}")
     return out

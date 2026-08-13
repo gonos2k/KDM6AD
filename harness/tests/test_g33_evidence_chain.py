@@ -1525,6 +1525,8 @@ def test_every_PREDICATE_state_is_classified():
     (lambda l: l.replace("#", "@", 1), "no '#' separator"),
     (lambda l: l.replace(": ", " ", 1), "no ':' before the value"),
     (lambda l: l.split("#")[0], "truncated after the file"),
+    (lambda l: l[2:], "entry indented 4"),
+    (lambda l: "  " + l, "entry indented 8"),
 ])
 def test_an_UNPARSEABLE_binding_entry_is_refused_not_skipped(tmp_path, mangle, label):
     """A list item under artifacts/expected_values/expected_predicates that
@@ -1565,3 +1567,25 @@ def test_a_BAD_PATH_still_parses_and_fails_downstream(tmp_path):
         ec.REGISTRY = old
     assert any(w["file"].startswith("nosuch")
                for c in got for w in c["expected_values"] + c["expected_predicates"])
+
+
+@pytest.mark.parametrize("bad", ["    expected_predicate:", "     expected_predicates:"])
+def test_a_BROKEN_SECTION_HEADER_cannot_drop_the_whole_block(tmp_path, bad):
+    """Worse than a bad entry, and it survived the first fix. A mistyped or
+    mis-indented header leaves `in_art` false, so every item under it is an
+    orphan -- `expected_predicate:` singular dropped TWO declarations and the
+    claim still read as bound (Codex).
+
+    The first catch-all required `in_art`, which is precisely what a broken
+    header switches off: it guarded the case where the parser knew it was in a
+    binding block, and the damage was the parser not knowing.
+    """
+    src = ec.REGISTRY.read_text()
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace("    expected_predicates:", bad, 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        with pytest.raises(ValueError, match="unparseable"):
+            ec.claims()
+    finally:
+        ec.REGISTRY = old
