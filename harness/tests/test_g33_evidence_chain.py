@@ -1640,3 +1640,27 @@ def test_this_parser_ACCEPTS_EXACTLY_what_pyyaml_accepts(tmp_path, spacing):
         assert dropped == 0, (
             f"{spacing!r} parses as YAML but lost {dropped} binding(s) here")
 
+
+
+def test_EVERY_unavailable_state_is_excused_by_absence():
+    """A closeout must refuse "we could not check this", whatever kind of
+    evidence was unavailable.
+
+    `predicate-unavailable` reached PASSING_STATES and not
+    EXCUSED_BY_ABSENCE, so `--require-available` failed a FIGURE whose bundle
+    was absent and passed a FACT whose bundle was equally absent -- the two
+    say the same thing about what was checked, and only one said it (Codex).
+
+    Written as a CLASS rule, not a third entry: the defect was a state added
+    to a producer and half-wired into the verdict, and naming the next one
+    individually would be the same bet again.
+    """
+    un = sorted(s for s in ec.PASSING_STATES if s.endswith("unavailable"))
+    assert un, "no unavailable states -- this check would be vacuous"
+    missing = [s for s in un if s not in ec.EXCUSED_BY_ABSENCE]
+    assert not missing, (
+        f"{missing} pass a closeout: a state that passes only because the "
+        f"evidence is absent must FAIL --require-available")
+    for s in un:
+        assert ec.verdict(s, require_available=False) is False, s
+        assert ec.verdict(s, require_available=True) is True, s

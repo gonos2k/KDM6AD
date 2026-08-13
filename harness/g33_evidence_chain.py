@@ -743,6 +743,15 @@ EXCUSED_BY_ABSENCE = frozenset({
     # (owner §10).
     "legacy-analyzer-changed",
     "value-unavailable",
+    # Added with `expected_predicates` and, at first, only to PASSING_STATES --
+    # so a closeout failed a FIGURE whose bundle was absent and passed a FACT
+    # whose bundle was equally absent. The two say the same thing about what
+    # was checked, and only one said it (Codex).
+    #
+    # This is the failure the note above PASSING_STATES describes, committed
+    # while quoting it: a state was added to a producer and half-wired into
+    # the verdict.
+    "predicate-unavailable",
 })
 
 
