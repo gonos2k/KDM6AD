@@ -233,6 +233,33 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
         raise ra.RefineError(f"dtcld differs between the runs ({dt_a} vs {dt_b})")
     replay = {"base": verify_replay(a, sa, dt_a, label="base"),
               "got": verify_replay(b, sb, dt_b, label="got")}
+
+    # THE PRE-STATE. The telescoping substitutes operands one at a time into a
+    # single starting qr, so it decomposes
+    #
+    #     F(qr_O-, r_W) - F(qr_O-, r_O)
+    #
+    # and the difference that actually exists between the runs is
+    #
+    #     F(qr_W-, r_W) - F(qr_O-, r_O)  =  C_pre + sum_j C_j,
+    #     C_pre = F(qr_W-, r_W) - F(qr_O-, r_W).
+    #
+    # Each leg replaying its own update proves F(qr_O-,r_O)=qr_O+ and
+    # F(qr_W-,r_W)=qr_W+. It does NOT prove qr_O- == qr_W-, and without that
+    # the reported shares are of a quantity that is not the run difference
+    # (owner §4.2).
+    #
+    # Measured here: identical in all 12 cells, so C_pre is zero -- which is
+    # exactly why it has to be CHECKED rather than relied on.
+    differing = sorted(k for k in a if sa[k]["qr_pre"] != sb[k]["qr_pre"])
+    if differing:
+        raise ra.RefineError(
+            f"the two runs start from different qr in {len(differing)} cell(s), "
+            f"first {differing[0]} -- the decomposition substitutes operands "
+            f"into ONE starting state, so a pre-state difference is a term it "
+            f"does not carry")
+    replay["prestate_equal_cells"] = len(a)
+    replay["prestate_different_cells"] = 0
     if set(a) != set(b):
         raise ra.RefineError("the two runs emitted different cells")
 
@@ -271,8 +298,21 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             for term, v in pre.items():
                 preclamp[term] = preclamp.get(term, 0.0) + v
 
+        # CLOSURE against the update the runs actually performed, in raw f32
+        # words: sum_j C_j must equal the real post-state difference. The
+        # telescoping is exact by construction GIVEN a shared pre-state, and
+        # this is the statement that says so rather than assuming it.
+        actual = 0.0
+        for key in keys:
+            actual += float(np.float32(ur.f32(sb[key]["qr_post"]))
+                            - np.float32(ur.f32(sa[key]["qr_post"])))
+        gap = actual - totals["unweighted"]
+
         out[str(col)] = {
             "cells": len(keys),
+            "actual_post_delta": actual,
+            "telescoped_minus_actual": gap,
+            "closes_against_actual_update": gap == 0.0,
             "cold_cells": sum(1 for k in keys if ur.is_cold(sa[k]["t"])),
             **{basis: {
                 "delta": acc[basis],
