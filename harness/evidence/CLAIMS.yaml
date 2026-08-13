@@ -69,42 +69,57 @@ claims:
 
   - id: G33-MSTEPI-001
     text: >
-      mstep governs qr/nr/qs/qg and mstep_i governs qi/ni; in column 3 the ice
-      chain reaches 1 at h = 25 s where the main chain needs h = 6.25 s.
+      mstep governs qr/nr/qs/qg and mstep_i governs qi/ni. In column 3 the
+      ice chain runs the whole external call in ONE sub-step at h = 25 s, on
+      every call, where the main chain needs h = 6.25 s to do the same.
+      .
+      PRECISION (owner §8): the intermediate counts are MAXIMA over calls, not
+      schedules. At h = 25 s column 3's main chain ran 1, 2 and 3 sub-steps on
+      different calls, so "needs 3" describes its worst call. The claim's own
+      statement is unaffected, because it is about REACHING one: where the
+      maximum is 1 the column ran 1 on every call, which is measured
+      (`constant_across_calls`) rather than inferred, and both facts are bound.
+      `single_step` per chain carries it directly -- main goes ['1'],
+      ['1','2'], ['1','2','3'] across h = 25 / 12.5 / 6.25 s while ice is
+      ['1','2','3'] at all three.
+      .
+      `delt` is the EXTERNAL call duration; the sub-step is delt/mstep, and the
+      artifact now reports it as `external_delt` with effective_dt_min/max
+      beside each column.
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
     binding_status: full
     artifacts:
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/manifest.json: 4c1fb892ca785ebc90bdf0d38a797b9da31fa25e107a88a9de99174aa2acafc5
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/manifest.json: 03c60f8393df3ade8b46de8f2dfcc0bfe16c4f49240dff2b68da27754d4c6920
     # A REFINEMENT CHAIN, because the schedule is a property of the step the
     # run was made at: dtcld = 300/nsplit, so 12/24/48 is 25 / 12.5 / 6.25 s.
     # The claim is about where each chain REACHES one sub-step, which no single
     # member can answer -- main goes 3 -> 2 -> 1 across these three while the
     # ice chain is already at 1 in the first.
     expected_values:
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#delt: 25.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.2.substeps: 2.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.3.substeps: 3.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#delt: 12.5
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.main.3.substeps: 2.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n24.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#delt: 6.25
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.main.3.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n48.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#delt: 25.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.main.2.substeps: 2.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.main.3.substeps: 3.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#delt: 12.5
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.main.3.substeps: 2.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#delt: 6.25
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.main.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.main.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.main.3.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.ice.1.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.ice.2.substeps: 1.0
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.ice.3.substeps: 1.0
     grade: confirmed
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, f32, legacy
@@ -112,9 +127,18 @@ claims:
     # actually held it. Bound because it is true here: column 3's main chain
     # did NOT run the same schedule on every call, so "needs 3 substeps"
     # is a statement about the worst call (owner §8).
+    # "Reaches one" needs BOTH facts, so both are bound. `max_substeps == 1`
+    # says no call subdivided; `constant_across_calls` says that is the
+    # column's schedule rather than its best call. At h = 25 s column 3's
+    # main chain ran 1, 2 AND 3, so the maximum alone was ambiguous exactly
+    # where the claim is not (owner §8).
     expected_predicates:
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.main.3.varies_across_calls: true
-      - kdm6ad-g33m-migrate/mstepi-001.bundles/567623f33eb4739f4b92c4b2d8a5731e6a325c4f440080a2820775d6ca97a10c/n12.rezero.substep_schedule.json#by_chain.ice.3.varies_across_calls: false
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.main.3.constant_across_calls: false
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.substep_schedule.json#by_chain.ice.3.constant_across_calls: true
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.main.3.constant_across_calls: false
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n24.rezero.substep_schedule.json#by_chain.ice.3.constant_across_calls: true
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.main.3.constant_across_calls: true
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n48.rezero.substep_schedule.json#by_chain.ice.3.constant_across_calls: true
     evidence: [FINDING_two_sedimentation_chains_v1.md]
     evidence_sha256: [FINDING_two_sedimentation_chains_v1.md:127a84877d6474294da8ea60c9d0a41733342166a2c7032f9b9ada6d74d7d771]
 

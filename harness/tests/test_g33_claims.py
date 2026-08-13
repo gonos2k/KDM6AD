@@ -835,6 +835,24 @@ def test_MSTEPI_001_binds_a_REFINEMENT_CHAIN_not_a_single_step():
     # column 3 is the one the claim names
     assert [at(h, "main", "3") for h in (25.0, 12.5, 6.25)] == [3.0, 2.0, 1.0], \
         "the main chain's descent to one sub-step is what fixes h = 6.25 s"
+
+    # "Reaches one" needs BOTH. The bound values are MAXIMA over calls -- at
+    # h = 25 s column 3's main chain ran 1, 2 and 3 -- so a maximum of 1 is
+    # only the schedule if the column also held it on every call (owner §8).
+    ec2 = _chain()
+    claim2 = next(c for c in ec2.claims() if c["id"] == "G33-MSTEPI-001")
+    const = {(w["file"].rsplit("/", 1)[-1], w["path"]): w["want"]
+             for w in claim2["expected_predicates"]}
+    assert const[("n48.rezero.substep_schedule.json",
+                  "by_chain.main.3.constant_across_calls")] is True, (
+        "at h = 6.25 s the main chain must run one sub-step on EVERY call, "
+        "not merely on its best one")
+    assert const[("n12.rezero.substep_schedule.json",
+                  "by_chain.main.3.constant_across_calls")] is False, (
+        "at h = 25 s it did NOT -- binding this as true would hide that the "
+        "3 is a maximum")
+    assert all(v is True for (f, p), v in const.items() if ".ice." in p), \
+        "the ice chain is single-step on every call at every step"
     assert [at(h, "ice", "3") for h in (25.0, 12.5, 6.25)] == [1.0, 1.0, 1.0], \
         "the ice chain is already at one at the coarsest step"
 
