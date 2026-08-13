@@ -1874,3 +1874,70 @@ def test_values_and_predicates_resolve_ALIKE_on_a_synthetic_bundle(world):
     # ...and a CLOSEOUT still refuses it, because "we could not check this" is
     # not "we checked and it is fine".
     assert ec.check(require_available=True) != 0
+
+
+def _world_with_a_multirun_input(world):
+    """A synthetic bundle whose analysis records the raw stream it read."""
+    bundle, write = world
+    raw = b"G33R STATE 1 1 1 th 3F800000\n"
+    (bundle / "mr.n1.rezero.as-is.tiles-3.txt").write_bytes(raw)
+    doc = {"n": 1.5}
+    blob = json.dumps(doc, indent=2, sort_keys=True).encode()
+    (bundle / "a.json").write_bytes(blob)
+    stream = b"G33R STATE 1 1 1 th 3F800000\n"
+    man = {"members": [{"file": "n3.rezero.txt", "output_sha256": _sha(stream)}],
+           "analyses": [{"file": "a.json", "sha256": _sha(blob),
+                         "analysis": "matched_closure", "nsplit": 3,
+                         "inputs": [{"file": "mr.n1.rezero.as-is.tiles-3.txt",
+                                     "sha256": _sha(raw),
+                                     "runtime_argv": ["1", "rezero", "3", "as-is"]}]}],
+           "findings": []}
+    write(man, claim_extra=(
+        "    expected_values:\n"
+        "      - kdm6ad-g33m-refine/run-a/a.json#n: 1.5\n"))
+    return bundle
+
+
+def test_a_KEPT_multirun_stream_is_re_hashed(world):
+    """The streams were written into the bundle with a digest each and then
+    never re-hashed. Measured on the real bundle before this: appending ONE
+    byte to `mr.*.txt`, and deleting it outright, left values, predicates,
+    artifacts and members entirely clean -- because every binding resolves
+    against the derived JSON, which still matched (owner §5.3).
+
+    The chain reached the analysis and stopped one step short of the stdout it
+    was computed from.
+    """
+    bundle = _world_with_a_multirun_input(world)
+    mr = bundle / "mr.n1.rezero.as-is.tiles-3.txt"
+
+    def kinds():
+        return {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]
+                if m.get("origin") == "multi_run_input"}
+
+    assert kinds() == {"matches"}, kinds()
+    assert ec.check() == 0
+
+    keep = mr.read_bytes()
+    mr.write_bytes(keep + b"X")
+    assert kinds() == {"MISMATCH"}
+    assert ec.check() != 0
+
+    mr.unlink()
+    assert kinds() == {"absent"}
+    assert ec.check() != 0
+
+    mr.write_bytes(keep)
+    assert kinds() == {"matches"} and ec.check() == 0
+
+
+def test_a_MALFORMED_input_entry_is_reported_not_skipped(world):
+    """An entry that is not an object, or names no file, would otherwise fall
+    out of the walk and read as a bundle with nothing to check."""
+    bundle = _world_with_a_multirun_input(world)
+    man = json.loads((bundle / "manifest.json").read_bytes())
+    man["analyses"][0]["inputs"] = ["not-an-object"]
+    (bundle / "manifest.json").write_bytes(
+        json.dumps(man, indent=2, sort_keys=True).encode())
+    states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
+    assert "MANIFEST-SCHEMA-MISMATCH" in states or ec.check() != 0

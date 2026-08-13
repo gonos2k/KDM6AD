@@ -517,8 +517,16 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
         raise SystemExit(
             f"REFUSED: {final} is addressed {identity[:16]} but its manifest "
             f"identifies as {rm.identity_digest(have)[:16]}")
+    # NESTED inputs too. A multi-run analysis records the raw stdout it read,
+    # with a digest each, and this loop walked only the three TOP-LEVEL blocks
+    # -- so an interrupted or hand-edited directory whose `mr.*.txt` had been
+    # changed or removed was adopted as this bundle, because the derived JSON
+    # beside it still matched (owner §5.2).
+    nested = [src for a in (have.get("analyses") or [])
+              if isinstance(a, dict)
+              for src in (a.get("inputs") or []) if isinstance(src, dict)]
     for entry in ((have.get("members") or []) + (have.get("analyses") or [])
-                  + (have.get("build_artifacts") or [])):
+                  + (have.get("build_artifacts") or []) + nested):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
         if not f.is_file():

@@ -273,6 +273,28 @@ def members_of(manifest: Path) -> list[dict]:
                     "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
                               "matches" if sha256(p) == an.get("sha256")
                               else "MISMATCH")})
+        # The RAW STREAMS a multi-run analysis read. They were written into the
+        # bundle with a digest each and then never re-hashed by anything, so a
+        # kept stream could be edited or deleted and the chain said nothing:
+        # the derived JSON still matched, and it is the JSON every binding
+        # resolves against (owner §5.3).
+        #
+        # Measured before this: appending one byte to `mr.*.txt`, and removing
+        # it outright, both left values, predicates, artifacts and members
+        # entirely clean.
+        for src in an.get("inputs") or []:
+            if not isinstance(src, dict) or not isinstance(src.get("file"), str):
+                out.append({"file": f"{an['file']}#inputs",
+                            "scope": "bundle", "origin": "multi_run_input",
+                            "state": "MANIFEST-SCHEMA-MISMATCH",
+                            "detail": f"malformed input entry: {src!r}"[:120]})
+                continue
+            q = manifest.parent / src["file"]
+            out.append({"file": src["file"], "scope": "bundle",
+                        "origin": "multi_run_input",
+                        "state": ("absent" if not q.is_file() else
+                                  "matches" if sha256(q) == src.get("sha256")
+                                  else "MISMATCH")})
         # The manifest's `ran` block against the one INSIDE the analysis it
         # describes. The producer copies it across, so they are two records of
         # one fact -- and two records never checked against each other are one
