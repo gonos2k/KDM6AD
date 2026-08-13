@@ -1427,3 +1427,37 @@ def test_an_uninstrumented_stream_has_no_schedule_to_report():
                          if " MSTEP " not in l and " MSTEPI " not in l) + "\n"
     with pytest.raises(nt.StreamError):
         ss.analysis(stripped)
+
+
+@pytest.mark.parametrize("val,label", [
+    (0.0, "zero"), (-25.0, "negative"),
+    (float("inf"), "infinite"), (float("nan"), "NaN"),
+])
+def test_a_nonpositive_or_nonfinite_external_step_is_refused(val, label):
+    """The effective sub-step is delt/mstep, so the DOMAIN matters before the
+    spread does. Measured before fixing: delt=0 reported a sub-step of zero
+    duration, delt=-25 reported negative time, delt=inf reported infinity --
+    all as ordinary numbers (Codex).
+
+    NaN needed catching here specifically. It is never equal to itself, so N
+    calls carrying it made N distinct set entries and the SPREAD check fired
+    with "different external steps [nan, nan, ...]" -- closed for the wrong
+    reason, and open on a single-call run where the set holds one entry.
+    """
+    import struct
+    import g33_number_transport as nt
+    ss, src = _msched()
+    lines = src.splitlines()
+    bits = format(struct.unpack(">I", struct.pack(">f", val))[0], "08X")
+    for i in [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")]:
+        lines[i] = lines[i].rsplit(" ", 1)[0] + " " + bits
+    with pytest.raises(nt.StreamError, match="not a positive finite duration"):
+        ss.analysis("\n".join(lines) + "\n")
+
+
+def test_a_VALID_external_step_still_passes_both_checks():
+    """The complement, so neither rule can creep into refusing real runs."""
+    ss, src = _msched()
+    g = ss.analysis(src)
+    assert g["external_delt"] == 25.0
+    assert g["external_delt_constant_across_calls"] is True

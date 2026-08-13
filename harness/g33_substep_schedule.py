@@ -20,6 +20,7 @@ one (dtcld = 300/nsplit).
 """
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -74,14 +75,28 @@ def analysis(stream: str) -> dict:
     # The repository already does this correctly for rho/delz in
     # `window_cell_mass`: they are forcing, verified identical in each call
     # rather than assumed. Same treatment here.
-    delts = sorted({c["delt"] for c in calls})
+    delts = {c["delt"] for c in calls}
+    # DOMAIN first. The effective sub-step is delt/mstep, so a delt of 0 gave
+    # a sub-step of zero duration, a negative one gave negative time and an
+    # infinite one gave infinity -- all reported as ordinary numbers (Codex).
+    #
+    # NaN has to be caught here too, and not by the equality check below: NaN
+    # is never equal to itself, so N calls carrying it produce N distinct set
+    # entries and the check reported "different external steps [nan, nan, ...]"
+    # -- failing closed for the wrong reason, and passing outright on a
+    # single-call run.
+    bad = sorted(d for d in delts if not math.isfinite(d) or d <= 0.0)
+    if bad:
+        raise nt.StreamError(
+            f"external step {bad} is not a positive finite duration -- the "
+            f"effective sub-step is delt/mstep, so this is not a schedule")
     if len(delts) != 1:
         raise nt.StreamError(
-            f"the calls carry different external steps {delts} -- the "
+            f"the calls carry different external steps {sorted(delts)} -- the "
             f"effective sub-step is delt/mstep, so a single schedule for this "
             f"member is not defined and one call's delt must not be applied "
             f"to another call's count")
-    delt = delts[0]
+    delt = delts.pop()
     for cols in out.values():
         for r in cols.values():
             # The SUB-STEP, which is what a schedule is about. `delt` is the
