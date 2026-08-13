@@ -1368,3 +1368,62 @@ def test_a_cold_gate_OUTSIDE_ITS_DOMAIN_is_refused(drivers, bits, label):
                      for l in lines) + "\n"
     with pytest.raises(ra.RefineError, match="not 0 or 1"):
         pl.read_cells(text, label=label)
+
+
+# ---- substep schedule: per-call quantities are verified, not sampled --------
+
+def _msched(nsplit=12):
+    import g33_substep_schedule as ss
+    D = Path.home() / "kdm6ad-g33m-migrate" / "mstepi-001"
+    if not D.is_dir():
+        pytest.skip("mstepi-001 bundle not on this host")
+    return ss, (D / f"n{nsplit}.rezero.txt").read_text()
+
+
+def test_a_MIXED_external_step_is_refused_not_sampled():
+    """`delt` is PER CALL and the sub-step counts are aggregated over every
+    call, so `calls[0]["delt"]` divided into all of them is only right while
+    the calls agree -- and nothing checked. A run whose calls carry different
+    external steps would have produced an effective sub-step from one call's
+    delt and another call's mstep (Codex).
+
+    `window_cell_mass` already treats rho/delz this way: forcing, verified
+    identical in each call rather than assumed.
+    """
+    import g33_number_transport as nt
+    ss, src = _msched()
+    assert ss.analysis(src)["external_delt_constant_across_calls"] is True
+
+    lines = src.splitlines()
+    i = [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")][3]
+    lines[i] = lines[i].rsplit(" ", 1)[0] + " 41480000"      # 25.0 -> 12.5
+    with pytest.raises(nt.StreamError, match="different external steps"):
+        ss.analysis("\n".join(lines) + "\n")
+
+
+def test_the_schedule_guards_RAISE_the_error_they_name():
+    """Three raises in this module named `nt.TransportError`, which does not
+    exist -- the class is `nt.StreamError`. Every one would have died with
+    AttributeError instead of the error it meant, escaping any
+    `except nt.StreamError` and any test asserting it.
+
+    They were never exercised, which is why the gate stayed green over three
+    dead guards.
+    """
+    import g33_number_transport as nt
+    import g33_substep_schedule as ss
+    assert not hasattr(nt, "TransportError")
+    assert issubclass(nt.StreamError, Exception)
+    src = Path(ss.__file__).read_text()
+    assert "TransportError" not in src, "a raise still names a class that does not exist"
+
+
+def test_an_uninstrumented_stream_has_no_schedule_to_report():
+    """The path that was dead. Stripping the mstep families must refuse, not
+    report an empty schedule."""
+    import g33_number_transport as nt
+    ss, src = _msched()
+    stripped = "\n".join(l for l in src.splitlines()
+                         if " MSTEP " not in l and " MSTEPI " not in l) + "\n"
+    with pytest.raises(nt.StreamError):
+        ss.analysis(stripped)

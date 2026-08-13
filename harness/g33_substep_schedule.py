@@ -31,7 +31,7 @@ def analysis(stream: str) -> dict:
     """{chain: {col: sub-steps}} for one member, with the step it ran at."""
     calls = list(nt.calls(stream))
     if not calls:
-        raise nt.TransportError("no calls in this stream")
+        raise nt.StreamError("no calls in this stream")
 
     # (chain, col) -> every count seen. A column is free to schedule
     # differently on different calls, and collapsing that to one number would
@@ -43,7 +43,7 @@ def analysis(stream: str) -> dict:
             seen.setdefault((chain, col), set()).add(int(n))
 
     if not seen:
-        raise nt.TransportError(
+        raise nt.StreamError(
             "no mstep/mstepi records -- this needs the instrumented build, "
             "whose `--nflux` overlay emits them")
 
@@ -64,7 +64,24 @@ def analysis(stream: str) -> dict:
             "varies_across_calls": len(counts) > 1,
             "seen": sorted(counts),
         }
-    delt = calls[0]["delt"]
+    # VERIFIED, not read once. `delt` is a PER-CALL quantity and the counts
+    # above are aggregated over every call, so taking it from `calls[0]` and
+    # dividing all of them by it is only right while every call agrees --
+    # which nothing checked. A run whose calls carry different external steps
+    # would have produced an effective sub-step computed from one call's delt
+    # and another call's mstep (Codex).
+    #
+    # The repository already does this correctly for rho/delz in
+    # `window_cell_mass`: they are forcing, verified identical in each call
+    # rather than assumed. Same treatment here.
+    delts = sorted({c["delt"] for c in calls})
+    if len(delts) != 1:
+        raise nt.StreamError(
+            f"the calls carry different external steps {delts} -- the "
+            f"effective sub-step is delt/mstep, so a single schedule for this "
+            f"member is not defined and one call's delt must not be applied "
+            f"to another call's count")
+    delt = delts[0]
     for cols in out.values():
         for r in cols.values():
             # The SUB-STEP, which is what a schedule is about. `delt` is the
@@ -78,6 +95,9 @@ def analysis(stream: str) -> dict:
             # "delt" read as "the timestep"; it is the external call duration,
             # and each chain subdivides it differently.
             "external_delt": delt, "delt": delt, "calls": len(calls),
+            # Recorded so a reader can see the check happened rather than
+            # trusting that it did.
+            "external_delt_constant_across_calls": True,
             "subdivided": {c: sorted(k for k, v in cols.items()
                                      if v["max_substeps"] > 1)
                            for c, cols in out.items()},
