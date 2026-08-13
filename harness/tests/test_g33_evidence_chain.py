@@ -9,6 +9,8 @@ import json
 import os
 import re
 import sys
+
+import yaml  # CI-pinned; the PARSER takes no third-party dep, this check does
 from pathlib import Path
 
 import pytest
@@ -1591,28 +1593,50 @@ def test_a_BROKEN_SECTION_HEADER_cannot_drop_the_whole_block(tmp_path, bad):
         ec.REGISTRY = old
 
 
-@pytest.mark.parametrize("spacing", ["-  ", "-   ", "-\t"])
-def test_VALID_yaml_list_spacing_still_binds(tmp_path, spacing):
-    """`-  file#path: 0.5` and a tab are valid YAML. Both the binding shapes
-    and the orphan guard demanded exactly ONE space after the dash, so those
-    entries parsed as nothing AND tripped nothing -- the guard written to
-    backstop an over-narrow regex repeated its narrowness (Codex).
+@pytest.mark.parametrize("spacing", ["- ", "-  ", "-    ", "-\t"])
+def test_this_parser_ACCEPTS_EXACTLY_what_pyyaml_accepts(tmp_path, spacing):
+    """The registry is YAML and this file parses it by hand, so the two must
+    agree on what a list item is. Not on my opinion of what a list item is:
 
-    Refusing them would have been wrong too: this file is YAML, and a
-    reformat is not a corruption. They are accepted.
+      * `-  file#path: 0.5` is valid YAML and was silently dropped, so the
+        shapes were widened;
+      * `-<tab>file#...` is NOT valid YAML -- a tab is illegal in indentation
+        and `yaml.safe_load` refuses it -- and the widening accepted it, which
+        put this parser AHEAD of the canonical one. The registry would then
+        pass here and fail the CI's YAML load (Codex).
+
+    So the assertion is agreement with pyyaml, checked per case, rather than a
+    hand-written verdict on each spelling.
     """
     src = ec.REGISTRY.read_text()
     base = sum(len(c["expected_values"]) + len(c["expected_predicates"])
                for c in ec.claims())
     line = next(l for l in src.splitlines()
                 if l.startswith("      - ") and ".json#" in l)
+    text = src.replace(line, line.replace("- ", spacing, 1), 1)
     reg = tmp_path / "CLAIMS.yaml"
-    reg.write_text(src.replace(line, line.replace("- ", spacing, 1), 1))
+    reg.write_text(text)
+
+    try:
+        yaml.safe_load(text)
+        pyyaml_ok = True
+    except yaml.YAMLError:
+        pyyaml_ok = False
+
     old, ec.REGISTRY = ec.REGISTRY, reg
     try:
         got = sum(len(c["expected_values"]) + len(c["expected_predicates"])
                   for c in ec.claims())
+        ours_ok, dropped = True, base - got
+    except ValueError:
+        ours_ok, dropped = False, 0
     finally:
         ec.REGISTRY = old
-    assert got == base, (
-        f"{spacing!r} after the dash lost a binding: {got} of {base}")
+
+    assert ours_ok == pyyaml_ok, (
+        f"{spacing!r}: pyyaml {'accepts' if pyyaml_ok else 'rejects'} it and "
+        f"this parser {'accepts' if ours_ok else 'rejects'} it")
+    if pyyaml_ok:
+        assert dropped == 0, (
+            f"{spacing!r} parses as YAML but lost {dropped} binding(s) here")
+

@@ -103,17 +103,17 @@ def claims() -> list[dict]:
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
         elif in_art and section == "artifacts" and (
-                m := re.match(r"^      -\s+(\S+):\s*([0-9a-f]+)\s*$", line)):
+                m := re.match(r"^      - +(\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
         elif in_art and section == "expected_values" and (
-                m := re.match(r"^      -\s+([^#\s]+)#([^:\s]+):\s*(\S+)"
+                m := re.match(r"^      - +([^#\s]+)#([^:\s]+):\s*(\S+)"
                               r"(?:\s+~\s+(\S+))?\s*$", line)):
             cur["expected_values"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "value": float(m.group(3)),
                  "tolerance": float(m.group(4)) if m.group(4) else 0.0})
         elif in_art and section == "expected_predicates" and (
-                m := re.match(r"^      -\s+([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
+                m := re.match(r"^      - +([^#\s]+)#([^:\s]+):\s*(.+?)\s*$", line)):
             # NON-NUMERIC load-bearing facts. `expected_values` takes floats,
             # so `causal_attribution_valid: true` and `comparable: true` sat in
             # the artifact unbound -- a claim could rest on them and the chain
@@ -134,11 +134,16 @@ def claims() -> list[dict]:
             #
             # The first version only caught the first, because it required
             # `in_art` -- which is exactly what a bad header switches off. The
-            # second still demanded ONE space after the dash, in both the
-            # binding shapes and here, so `-  file#path: 0.5` and a tab were
-            # valid YAML that parsed as nothing and tripped nothing (Codex).
-            # The shapes now accept any list-item spacing, so this fires only
-            # on items that are genuinely not bindings.
+            # second still demanded ONE space after the dash, so
+            # `-  file#path: 0.5` -- valid YAML -- parsed as nothing and
+            # tripped nothing (Codex).
+            #
+            # The shapes take ` +`, SPACES only. A tab is not valid YAML
+            # anywhere in indentation and `yaml.safe_load` refuses it, so
+            # accepting one here would put this parser ahead of the canonical
+            # one and the registry would pass a check the CI's YAML load
+            # fails. A tab-separated item therefore reaches this branch and is
+            # refused, which is what pyyaml does with it (Codex).
             raise ValueError(
                 f"{cur['id']}: unparseable `{section}` entry: {line.strip()!r}")
     return out
