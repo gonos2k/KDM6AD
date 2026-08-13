@@ -1519,3 +1519,49 @@ def test_every_PREDICATE_state_is_classified():
               "PREDICATE-PATH-AMBIGUOUS", "PREDICATE-UNPINNED-FILE",
               "PREDICATE-FILE-UNREADABLE"):
         assert s in ec.PASSING_STATES or s in ec.FAILING_STATES, s
+
+
+@pytest.mark.parametrize("mangle,label", [
+    (lambda l: l.replace("#", "@", 1), "no '#' separator"),
+    (lambda l: l.replace(": ", " ", 1), "no ':' before the value"),
+    (lambda l: l.split("#")[0], "truncated after the file"),
+])
+def test_an_UNPARSEABLE_binding_entry_is_refused_not_skipped(tmp_path, mangle, label):
+    """A list item under artifacts/expected_values/expected_predicates that
+    matched no shape was silently SKIPPED. A typo in a declaration therefore
+    unbound the fact while the claim still read as bound -- "not parsed" and
+    "not declared" became the same thing, which is the shape this file exists
+    to refuse (Codex).
+
+    A bad PATH is different and stays downstream: it parses, then resolves to
+    VALUE-FILE-ABSENT. Shape is the parser's job; existence is the chain's.
+    """
+    src = ec.REGISTRY.read_text()
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and "#" in l)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace(line, mangle(line), 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        with pytest.raises(ValueError, match="unparseable"):
+            ec.claims()
+    finally:
+        ec.REGISTRY = old
+
+
+def test_a_BAD_PATH_still_parses_and_fails_downstream(tmp_path):
+    """The complement, so the rule above cannot creep into rejecting valid
+    entries: an entry whose shape is right and whose file does not exist is a
+    resolution failure, not a parse error."""
+    src = ec.REGISTRY.read_text()
+    line = next(l for l in src.splitlines()
+                if l.startswith("      - ") and "#" in l and ".json#" in l)
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text(src.replace(line, line.replace("kdm6ad", "nosuch", 1), 1))
+    old, ec.REGISTRY = ec.REGISTRY, reg
+    try:
+        got = ec.claims()          # parses cleanly
+    finally:
+        ec.REGISTRY = old
+    assert any(w["file"].startswith("nosuch")
+               for c in got for w in c["expected_values"] + c["expected_predicates"])

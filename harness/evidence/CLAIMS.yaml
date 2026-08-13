@@ -201,7 +201,13 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: pinned
-    binding_status: full
+    # NONE, and the field is what surfaced it. This claim reads `pinned`
+    # because two manifests are attached and verify -- but both bundles carry
+    # only `build_provenance.json` and `manifest.json`, no analysis output at
+    # all, so its 13.7x / 114.7x error-floor figures have nothing to bind to.
+    # `pinned` was doing two jobs: "an artifact is attached and verified" and
+    # "this claim's numbers are checked against it" (owner §7).
+    binding_status: none
     grade: strong-candidate
     basis: measurement
     scope: g33_fixture_multisubcycle_v1, th/qv max-norm, f32 vs f64

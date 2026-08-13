@@ -121,6 +121,14 @@ def claims() -> list[dict]:
             cur["expected_predicates"].append(
                 {"file": m.group(1), "path": m.group(2),
                  "want": _literal(m.group(3))})
+        elif in_art and re.match(r"^      - \S", line):
+            # A list item inside artifacts/expected_values/expected_predicates
+            # that matched NO shape above was silently skipped, so a typo --
+            # a missing "#", a missing value -- unbound the fact and left the
+            # claim reading as though it were bound. Not parsed and not
+            # declared are different, and only one of them is safe (Codex).
+            raise ValueError(
+                f"{cur['id']}: unparseable `{section}` entry: {line.strip()!r}")
     return out
 
 
@@ -599,8 +607,11 @@ def chain() -> list[dict]:
         bundle_states = {str(Path(a["path"]).parent): a["state"] for a in arts}
         values = [resolve_value(w, covered, bundle_states)
                   for w in c["expected_values"]]
+        # `.get`, because a synthetic claim in a test may predate the field.
+        # Safe rather than fail-open: `claims()` initialises the key on every
+        # real claim, so a missing one cannot come from the registry.
         preds = [resolve_predicate(w, covered, have)
-                 for w in c["expected_predicates"]]
+                 for w in c.get("expected_predicates", [])]
         out.append({
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "predicates": preds,
