@@ -731,8 +731,19 @@ def test_the_process_shares_are_BOUND_so_a_rewrite_cannot_be_silent():
     # The replay is the precondition; binding it means a bundle whose cells
     # stopped agreeing with their own operands cannot pass unnoticed.
     assert paths["replay.base.cold_gate_disagrees"] == 0.0
-    assert all(w["state"] == "value-matches" for w in
-               next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")["values"])
+    # NOT `== "value-matches"`. That holds only where the bundle is on the
+    # host: on a clone without it the same binding resolves to
+    # `value-unavailable`, which is the correct answer there and is what CI
+    # reported. The declaration is host-independent; its verification is not.
+    #
+    # `verdict` is the question that means the same thing everywhere -- is
+    # anything WRONG with these bindings -- and it still fails a mismatch, an
+    # absent path or an unpinned file.
+    states = [w["state"] for w in
+              next(r for r in ec.chain() if r["id"] == "G33-NCMIN-004")["values"]]
+    assert states, "no bindings resolved at all"
+    bad = [s for s in states if ec.verdict(s)]
+    assert not bad, f"the process bindings are in a failing state: {bad}"
 
 
 
