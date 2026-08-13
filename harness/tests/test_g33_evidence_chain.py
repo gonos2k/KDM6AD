@@ -429,9 +429,28 @@ def test_EVERY_state_the_module_can_emit_is_classified():
     src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
     emitted = set(re.findall(r'"state": "([A-Za-z-]+)"', src))
     emitted |= set(re.findall(r'else "([A-Za-z-]+)"[,\)\n]', src))
-    known = ec.PASSING_STATES | ec.FAILING_STATES
+    # BINDING_STATUSES is the module's SECOND vocabulary and its words reach
+    # this scan through the same ternary shape. Unioned rather than excluded:
+    # an unclassified binding status must fail here too, which is what the next
+    # test checks from the other side.
+    known = ec.PASSING_STATES | ec.FAILING_STATES | ec.BINDING_STATUSES
     assert emitted <= known, f"unclassified: {sorted(emitted - known)}"
     assert emitted, "the scan found no states -- it has stopped checking anything"
+
+
+def test_EVERY_binding_status_the_module_can_return_is_classified():
+    """The same completeness rule on the second vocabulary. Without it, adding
+    a fourth answer would leave `BINDING_STATUSES` describing three of them and
+    every caller reading the enumeration as the whole set."""
+    got = set()
+    for rows, unbound in (([], []), ([], [{"why": "x"}]),
+                          ([{"state": "MISMATCH"}], []),
+                          ([{"state": "matches"}], [{"why": "x"}]),
+                          ([{"state": "matches"}, {"state": "MISMATCH"}], []),
+                          ([{"state": "matches"}], [])):
+        got.add(ec._binding_status(rows, unbound, pinned=True))
+    assert got == ec.BINDING_STATUSES, sorted(got ^ ec.BINDING_STATUSES)
+    assert ec._binding_status([], [], pinned=False) == ""
 
 
 def _pin(mod):

@@ -1067,7 +1067,11 @@ def test_the_contradiction_guard_is_not_VACUOUS():
 #: and the status follows. It was declared for one cycle and went wrong twice
 #: in it, both times `full` beside a note admitting a gap -- which a
 #: self-declaration cannot catch, the declaration being the thing under test.
-BINDING_STATUS = frozenset({"full", "partial", "none"})
+#: `UNDECLARED` is deliberately NOT here: it is what the derivation says when a
+#: claim has said nothing, and a pinned claim resolving to it is a blocker, not
+#: a state it may sit in. Taken from the module rather than restated, so the two
+#: vocabularies cannot drift apart.
+BINDING_STATUS = _chain().BINDING_STATUSES - {"UNDECLARED"}
 
 
 def test_every_pinned_claim_RESOLVES_how_completely_it_is_bound():

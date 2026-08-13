@@ -153,8 +153,7 @@ def claims() -> list[dict]:
                 # A continuation of the plain scalar above it, joined with a
                 # space -- what a YAML load does with the same lines.
                 last = cur["unbound"][-1]
-                key = "why" if last["why"] else "figure"
-                last[key] += " " + m.group(1)
+                last["why" if last["why"] else "figure"] += " " + m.group(1)
             else:
                 raise ValueError(
                     f"{cur['id']}: unparseable `unbound` entry: {line.strip()!r}")
@@ -666,6 +665,14 @@ def _keys_of(obj) -> list:
     if isinstance(obj, list):
         return [k for v in obj for k in _keys_of(v)]
     return []
+
+
+#: Every answer `_binding_status` can give, plus "" for a claim the question
+#: does not apply to. A SECOND vocabulary, deliberately separate from the
+#: artifact states: those say whether a file is what it was pinned as, these
+#: say how much of a claim rests on one. Enumerated for the same reason --
+#: "nobody classified this" must not read as "this is fine".
+BINDING_STATUSES = frozenset({"full", "partial", "none", "UNDECLARED"})
 
 
 def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
