@@ -1533,3 +1533,53 @@ def test_the_decomposition_CLOSES_against_the_real_update(drivers):
     # ...and the column that moves must actually move, or this is vacuous.
     assert d["columns"]["2"]["actual_post_delta"] != 0.0
     assert d["columns"]["1"]["actual_post_delta"] == 0.0
+
+
+def test_the_MASS_WEIGHTED_closure_is_published_too(drivers):
+    """The claim's headline is the mass-weighted 86.99/13.01, and the closure
+    was recorded unweighted only -- so the number a reader checks and the
+    number the claim makes were one algebraic step apart, taken by the reader
+    (owner priority 4).
+
+    It is a real step: `w*(a+b)` and `w*a + w*b` are different float64
+    expressions, so multiplying through the sum reorders it. Measured on the
+    real pair, column 2: gap 6.9e-18 against a total of -4.47e-02, which is
+    1.55e-16 relative -- about one and a half ULP, and twelve orders below the
+    smallest share a term carries.
+    """
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
+    for col, r in d["columns"].items():
+        for basis in ("unweighted", "operator", "physical"):
+            b = r[basis]
+            assert b["closes_against_actual_update"] is True, (col, basis, b)
+            assert b["total_delta"] == pytest.approx(
+                b["actual_post_delta"], abs=pl.F64_CLOSURE_TOL
+                * max(abs(b["actual_post_delta"]), 1e-300)), (col, basis, b)
+    # The unweighted one stays EXACT: nothing was reordered there.
+    for col, r in d["columns"].items():
+        assert r["unweighted"]["telescoped_minus_actual"] == 0.0, col
+    # ...and the weighted closure is not vacuous on the column that moves.
+    assert d["columns"]["2"]["operator"]["actual_post_delta"] != 0.0
+
+
+def test_the_weighted_closure_TOLERANCE_cannot_swallow_a_term(drivers):
+    """A screening bound is only worth having if it is far below the smallest
+    thing it must not hide. The smallest published share is praut at 13% of the
+    column total; the bound is 7.1e-15 relative."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
+    op = d["columns"]["2"]["operator"]
+    smallest = min(abs(v) for v in op["share"].values())
+    assert smallest > 1e6 * pl.F64_CLOSURE_TOL, (smallest, pl.F64_CLOSURE_TOL)
+    # And a fabricated gap at the size of a term is REFUSED by the predicate.
+    assert not pl._closes("operator", smallest * op["actual_post_delta"],
+                          op["actual_post_delta"])
+    assert pl._closes("operator", 0.0, op["actual_post_delta"])
+    # A zero actual difference admits only a zero gap -- a relative bound
+    # against nothing would pass hardest where it means least.
+    assert not pl._closes("operator", 1e-300, 0.0)

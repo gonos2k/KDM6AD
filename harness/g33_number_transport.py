@@ -712,6 +712,25 @@ def calls(stream: str) -> list:
     return out
 
 
+def stream_header(stream: str) -> dict:
+    """What the stream DECLARES about the run that produced it.
+
+    `calls()` reads this to validate the body and then throws it away, so a
+    caller wanting to ask "which run is this?" had to re-derive it from a
+    filename or trust a manifest field. Those are the two things that cannot
+    check each other (owner priority 5).
+    """
+    for line in stream.splitlines():
+        if (m := STREAM_BEGIN.match(line)):
+            (schema, nsplit, ntile, expected, algo, mode, feats,
+             rho_profile) = m.groups()
+            return {"schema": int(schema), "nsplit": int(nsplit),
+                    "ntile": int(ntile), "expected_calls": int(expected),
+                    "algorithm": algo, "mode": mode,
+                    "features": set(feats.split(",")), "rho_profile": rho_profile}
+    raise StreamError("stream carries no G33N STREAM_BEGIN header")
+
+
 def _expect_stream(cond, msg):
     if not cond:
         raise StreamError(msg)

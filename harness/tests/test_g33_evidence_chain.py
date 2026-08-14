@@ -1178,6 +1178,8 @@ def _synthetic_bundle(root):
             {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
              "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
              "arm": "uniform",
+             "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
+                     "rho": "uniform"},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],

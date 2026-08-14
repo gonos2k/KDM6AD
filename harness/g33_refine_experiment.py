@@ -247,6 +247,40 @@ def _protocol(stream: str) -> dict:
             "columns": list(calls[0]["cols"]) if calls else None}
 
 
+def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
+         where: str) -> dict:
+    """The arm's run identity, TYPED and checked against the raw stream.
+
+    `runtime_argv` is four strings and the schema compared two of them --
+    argv[0] against `nsplit`, argv[3] against `arm`. The mode and the domain
+    width were recorded and never read, so half the identity of an arbitrary v2
+    manifest went unverified. And nothing compared any position against the
+    RECORD the run produced, which is the only party that knows what actually
+    ran rather than what a caller meant to ask for (owner priority 5).
+
+    So the four fields are checked here, where the text is in hand: the stream's
+    own STREAM_BEGIN carries nsplit, mode and the density arm, and its
+    CALL_BEGIN brackets carry the columns, which is where the width is. A run
+    that does not answer for itself cannot be published as an arm.
+    """
+    hdr = nt.stream_header(text)
+    got = {"nsplit": hdr["nsplit"], "carry": hdr["mode"], "rho": hdr["rho_profile"]}
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho}
+    if got != want:
+        raise ra.RefineError(
+            f"{where}: the stream declares {got} and the manifest entry would "
+            f"say {want} -- an arm that describes a different run than the one "
+            f"it is filed as is worse than an unrecorded one")
+    covered = max(c["cols"][1] for c in nt.calls(text))
+    if covered != width:
+        raise ra.RefineError(
+            f"{where}: the stream's calls cover columns up to {covered}, the "
+            f"entry would declare width {width}")
+    # `carry` is the multi-run block's spelling of the driver's mode argument.
+    # One name for one argument, or the archive carries both.
+    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}
+
+
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                      width: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
@@ -303,6 +337,11 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             ap.write_text(text)
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
+                         # STRUCTURED, and checked against the stream's own
+                         # header rather than restated from the arguments this
+                         # function was called with (owner priority 5).
+                         "ran": _ran(text, nsplit=n, mode=mode, width=width,
+                                     rho=arm, where=ap.name),
                          "runtime_argv": [str(n), mode, str(width), arm]})
             # The arm's OWN defect magnitude. `metric_trajectory` reports each
             # arm as a ratio over the as-is baseline; a claim that also states

@@ -30,7 +30,10 @@ def synthetic_manifest(root):
     pin = {"path": "p", "content_sha256": "d" * 64, "commit": "e" * 40,
            "blob_sha": "f" * 40}
     return {
-        "schema": "refinement_experiment_v2",
+        # rm.SCHEMA, not a literal: pinned to "v2" this fixture went on
+        # testing the previous contract after the bump, and every v3
+        # check written against it asserted nothing.
+        "schema": rm.SCHEMA,
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
         "is_refinement_chain": True,
@@ -46,6 +49,10 @@ def synthetic_manifest(root):
             {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
              "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
              "arm": "uniform",
+             # TYPED beside the literal command line (owner priority 5): the
+             # argv is four strings and only two positions were ever compared.
+             "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
+                     "rho": "uniform"},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],
@@ -75,10 +82,21 @@ def test_the_REAL_bundles_still_validate():
 @pytest.mark.parametrize("mutate,expect", [
     (lambda m: _arm(m).update(arm="anything"), "is not one of"),
     (lambda m: _arm(m).update(runtime_argv="not-a-list"), "must be a list of str"),
-    (lambda m: _arm(m).update(runtime_argv=["9", "rezero", "3", "inverted"]),
-     "contradicts nsplit"),
+    # EVERY position, which is what v3 adds. Under v2 only [0] and [3] were
+    # compared, so a bundle could record `carry` and a domain width nobody
+    # read -- half the run identity (owner priority 5).
+    (lambda m: _arm(m).update(runtime_argv=["9", "rezero", "3", "uniform"]),
+     "runtime_argv[0]"),
+    (lambda m: _arm(m).update(runtime_argv=["12", "carry", "3", "uniform"]),
+     "runtime_argv[1]"),
+    (lambda m: _arm(m).update(runtime_argv=["12", "rezero", "5", "uniform"]),
+     "runtime_argv[2]"),
     (lambda m: _arm(m).update(runtime_argv=["12", "rezero", "3", "x2"]),
-     "contradicts arm"),
+     "runtime_argv[3]"),
+    # ...and the typed block must agree with the entry's own fields, or it is
+    # a third statement nobody compares.
+    (lambda m: _arm(m).update(nsplit=9), "contradicts nsplit"),
+    (lambda m: _arm(m).update(arm="x2"), "contradicts arm"),
 ])
 def test_an_ARM_STREAM_entry_must_MATCH_the_run_it_names(mutate, expect,
                                                         tmp_path):
@@ -91,6 +109,51 @@ def test_an_ARM_STREAM_entry_must_MATCH_the_run_it_names(mutate, expect,
     mutate(m)
     bad = rm.validate(m)
     assert any(expect in b for b in bad), bad
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda r: r.pop("carry"), "needs `ran` with"),
+    (lambda r: r.pop("width"), "needs `ran` with"),
+    (lambda r: r.update(nsplit="twelve"), "not a positive integer"),
+    (lambda r: r.update(nsplit=0), "not a positive integer"),
+    (lambda r: r.update(nsplit=True), "not a positive integer"),
+    (lambda r: r.update(carry="banana"), "ran.carry"),
+    (lambda r: r.update(rho="purple"), "ran.rho"),
+    (lambda r: r.update(width=0), "ran.width"),
+    (lambda r: r.update(width="three"), "ran.width"),
+])
+def test_an_ARM_RUN_IDENTITY_is_TYPED_not_merely_present(mutate, expect,
+                                                        tmp_path):
+    """The same rule the multi-run block already had, on the same vocabularies.
+    They are the DRIVER's: it error-stops on anything else, so a manifest
+    declaring anything else names a run that could not have happened."""
+    m = synthetic_manifest(tmp_path)
+    assert rm.validate(m) == []
+    mutate(_arm(m)["ran"])
+    assert any(expect in b for b in rm.validate(m)), rm.validate(m)
+
+
+def test_a_v2_arm_stream_is_GRANDFATHERED_not_broken(tmp_path):
+    """Five published bundles carry v2 arm streams with no `ran`. A new
+    required field on v2 would either invalidate them or have to be
+    opt-out-by-omission -- which is the defect the v2 bump itself was for. So
+    the requirement is a VERSION, and the old contract still validates the old
+    bundles."""
+    m = synthetic_manifest(tmp_path)
+    del _arm(m)["ran"]
+    assert any("needs `ran` with" in b for b in rm.validate(m)),         "v3 must require it"
+    m["schema"] = "refinement_experiment_v2"
+    assert not any("ran" in b for b in rm.validate(m)),         "v2 predates the block and must not be failed for lacking it"
+
+
+def test_the_TWO_ran_blocks_use_ONE_spelling(tmp_path):
+    """An arm stream and a multi-run analysis both carry `ran`, and the first
+    draft of the arm block said `mode` where the multi-run block says `carry`
+    -- two words for the driver's one argument, in one manifest."""
+    m = _with_multi(tmp_path)
+    assert set(rm._RAN_CORE) <= set(_multi(m)["ran"]),         "the multi-run block must carry the shared core under the same names"
+    assert set(rm._RAN_CORE) <= set(_arm(m)["ran"])
+    assert [f for _pos, f in rm._ARGV_TO_RAN] == list(rm._RAN_CORE),         "the argv mapping and the core field list must not drift apart"
 
 
 def test_an_UNKNOWN_derived_analysis_kind_is_REFUSED(tmp_path):

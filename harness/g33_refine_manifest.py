@@ -25,7 +25,15 @@ import g33_refine_analyze as ra   # noqa: E402
 #: those were optional metadata, so deleting them downgraded a new bundle to the
 #: legacy contract and the checker reported rather than failed -- a contract you
 #: can opt out of by omission is not a contract (owner P0-E2).
-SCHEMA = "refinement_experiment_v2"
+#:
+#: v3 REQUIRES a typed `ran` block on every arm stream. Under v2 an arm carried
+#: only `runtime_argv`, four strings of which the schema compared two, so the
+#: carry mode and the domain width were recorded and never read (owner priority
+#: 5). A VERSION rather than a new required field, because five published
+#: bundles carry v2 arm streams and adding the requirement to v2 would either
+#: invalidate them or have to be opt-out-by-omission -- which is the defect the
+#: v2 bump itself was for.
+SCHEMA = "refinement_experiment_v3"
 
 
 def sha256(path: Path) -> str:
@@ -223,7 +231,16 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
 #: bundle cannot be valid to one and invalid to the other (owner P0-2).
 _ARMS = ("reference", "probe", "f64")
 _PRECISIONS = ("f32", "f64")
-KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2")
+KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
+                 "refinement_experiment_v3")
+#: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
+#: comparison rather than a list someone extends by hand at each bump.
+_SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
+
+
+def at_least(schema: str, floor: str) -> bool:
+    """Whether `schema` carries `floor`'s contract."""
+    return _SCHEMA_RANK.get(schema, -1) >= _SCHEMA_RANK[floor]
 
 
 def _hexlen(v, n) -> bool:
@@ -250,7 +267,7 @@ def validate(man: dict) -> list:
     schema = man.get("schema")
     if schema not in KNOWN_SCHEMAS:
         return bad + [f"unknown schema {schema!r}"]
-    if schema != "refinement_experiment_v2":
+    if not at_least(schema, "refinement_experiment_v2"):
         return bad                       # v1 predates every field below
     if man.get("decision_eligible") is not False:
         bad.append("decision_eligible must be False: a refinement experiment is "
@@ -358,7 +375,7 @@ def validate(man: dict) -> list:
         bad.append("instrumented=true requires a non-empty `analyses`")
     nsplits = {m.get("nsplit") for m in (members if isinstance(members, list) else [])
                if isinstance(m, dict)}
-    bad += _analysis_violations(analyses or [], nsplits)
+    bad += _analysis_violations(analyses or [], nsplits, schema)
 
     # Every published file must live INSIDE the bundle. The producer generates
     # safe basenames, but this validator claims to judge an arbitrary v2
@@ -495,7 +512,69 @@ _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
 _ARM_FIELDS = ("analysis", "nsplit", "arm", "runtime_argv")
 
 
-def _analysis_violations(analyses, member_nsplits) -> list:
+#: The typed run identity, as VALUES rather than as string positions.
+#:
+#: ONE spelling, shared with the multi-run block below. They would otherwise be
+#: two `ran` blocks under one name with different field sets, and the first
+#: draft of this one said `mode` where that one says `carry` -- two words for
+#: the driver's one argument, in the same manifest.
+_RAN_CORE = ("nsplit", "carry", "width", "rho")
+
+#: argv position -> the `ran` field it must agree with. `runtime_argv` stays
+#: beside `ran` as the literal command line: a diagnostic, and the thing the
+#: typed block is checked against.
+_ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
+
+
+def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
+    """Every position of an arm's command line, against its typed identity.
+
+    Only argv[0] and argv[3] were compared before, so the carry mode and the
+    domain width were recorded and never read -- half the run identity of an
+    arbitrary v2 manifest (owner priority 5). The vocabularies are the driver's
+    own, the same ones the multi-run block uses: it error-stops on anything
+    else, so a manifest declaring anything else names a run that could not have
+    happened.
+    """
+    ran = a.get("ran")
+    if not isinstance(ran, dict) or not all(k in ran for k in _RAN_CORE):
+        return [f"analyses[{i}] (arm_stream) needs `ran` with "
+                f"{', '.join(_RAN_CORE)}: the command line alone is four "
+                f"strings and only two of them were ever checked"]
+    bad = []
+    if not isinstance(ran["nsplit"], int) or isinstance(ran["nsplit"], bool) \
+            or not 1 <= ran["nsplit"] <= _MAX_NSPLIT:
+        bad.append(f"analyses[{i}] (arm_stream) ran.nsplit {ran['nsplit']!r} "
+                   f"is not a positive integer the driver accepts "
+                   f"(1..{_MAX_NSPLIT})")
+    elif ran["carry"] not in _CARRY_MODES:
+        bad.append(f"analyses[{i}] (arm_stream) ran.carry {ran['carry']!r} is "
+                   f"not one of {_CARRY_MODES}")
+    elif ran["rho"] not in _RHO_ARMS:
+        bad.append(f"analyses[{i}] (arm_stream) ran.rho {ran['rho']!r} is not "
+                   f"one of {_RHO_ARMS}")
+    elif not isinstance(ran["width"], int) or isinstance(ran["width"], bool) \
+            or ran["width"] < 1:
+        bad.append(f"analyses[{i}] (arm_stream) ran.width {ran['width']!r} is "
+                   f"not a positive integer")
+    if bad:
+        return bad
+    for pos, field in _ARGV_TO_RAN:
+        if argv[pos] != str(ran[field]):
+            bad.append(f"analyses[{i}] runtime_argv[{pos}]={argv[pos]!r} "
+                       f"contradicts ran.{field}={ran[field]!r}")
+    # The entry's own top-level fields must agree with it too, or the block
+    # would be a third statement nobody compares.
+    if ran["nsplit"] != a.get("nsplit"):
+        bad.append(f"analyses[{i}] ran.nsplit={ran['nsplit']} contradicts "
+                   f"nsplit={a.get('nsplit')!r}")
+    if ran["rho"] != a.get("arm"):
+        bad.append(f"analyses[{i}] ran.rho={ran['rho']!r} contradicts "
+                   f"arm={a.get('arm')!r}")
+    return bad
+
+
+def _analysis_violations(analyses, member_nsplits, schema=SCHEMA) -> list:
     bad = []
     for i, a in enumerate(analyses):
         if not isinstance(a, dict) or not isinstance(a.get("file"), str) \
@@ -526,12 +605,26 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                 # The argv is what RAN; the fields are what the manifest SAYS.
                 # Recording both without comparing them lets an entry describe a
                 # different run than the one it names (owner §8.1).
-                if argv[0] != str(a.get("nsplit")):
-                    bad.append(f"analyses[{i}] runtime_argv nsplit {argv[0]!r} "
-                               f"contradicts nsplit {a.get('nsplit')!r}")
-                if argv[3] != a.get("arm"):
-                    bad.append(f"analyses[{i}] runtime_argv arm {argv[3]!r} "
-                               f"contradicts arm {a.get('arm')!r}")
+                #
+                # ALL FOUR positions, against a TYPED block (owner priority 5).
+                # Only argv[0] and argv[3] were compared, so the mode and the
+                # domain width were recorded and never read -- half the run
+                # identity of an arbitrary v2 manifest went unverified. `ran`
+                # carries them as values rather than as string positions, and
+                # the producer checks it against the raw stream's own header
+                # before writing it.
+                if at_least(schema, "refinement_experiment_v3"):
+                    bad += _arm_ran_violations(i, a, argv)
+                else:
+                    # v2 compared exactly these two positions.
+                    if argv[0] != str(a.get("nsplit")):
+                        bad.append(f"analyses[{i}] runtime_argv nsplit "
+                                   f"{argv[0]!r} contradicts nsplit "
+                                   f"{a.get('nsplit')!r}")
+                    if argv[3] != a.get("arm"):
+                        bad.append(f"analyses[{i}] runtime_argv arm "
+                                   f"{argv[3]!r} contradicts arm "
+                                   f"{a.get('arm')!r}")
         elif kind in MULTI_RUN_ANALYSES:
             # Keyed on the FIXTURE and the decompositions it ran, not on a
             # member: there is no single stream this concluded from.
