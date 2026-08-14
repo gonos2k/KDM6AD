@@ -135,3 +135,50 @@ def test_the_archived_samples_still_pass_the_strict_shape_check():
                 nt._shape(line, fam, widths)
                 total += 1
     assert total > 10_000, f"only {total} records reached the checker"
+
+
+# --- the class is DECLARED, and the undeclarable is refused (priority 6) -----
+
+def test_every_declared_override_LOOKS_like_the_cast_it_claims_to_be():
+    """The regex is kept, demoted to a cross-check. It must never be the thing
+    that DECIDES -- the forms it does not match are exactly the ones that would
+    be misclassified -- but a declaration it disagrees with is worth surfacing."""
+    for expr, cls in fb.STORAGE_OVERRIDES.items():
+        assert cls in fb.STORAGE_CLASSES, (expr, cls)
+        assert fb._LOOKS_PINNED.match(expr.strip()), (
+            f"{expr!r} is declared {cls} and does not look like a narrowing "
+            f"cast -- one of the two is wrong")
+
+
+@pytest.mark.parametrize("expr", [
+    "real(dend(i,k)*qrs(i,k,1), kind=4)",      # the standard's other spelling
+    "real(dend(i,k)*qrs(i,k,1), real32)",      # a named kind
+    "dble(dend(i,k)*qrs(i,k,1))",              # widening, equally undeclared
+    "int(mstep(i), 8)",
+])
+def test_an_UNDECLARED_conversion_is_refused_not_assumed(expr):
+    """The risk was never the two casts already in the table -- it was the next
+    binding, written in a form the pattern does not match and silently called a
+    default real. Deciding by pattern cannot catch that; refusing what it
+    cannot read can."""
+    with pytest.raises(KeyError, match="declare it in STORAGE_OVERRIDES"):
+        fb.storage_class("f32", expr)
+
+
+def test_a_plain_expression_is_still_a_DEFAULT_REAL_without_ceremony():
+    """The rule is about the ABSENCE of a construct, so the 200-odd ordinary
+    bindings need no declaration and none was added."""
+    assert fb.storage_class("f32", "dend(i,k)*qrs(i,k,1)") == "default_real"
+    assert not fb.STORAGE_OVERRIDES.keys() - {
+        e for _w, _f, _d, e in fb.all_bindings()}, \
+        "an override names an expression no binding uses"
+
+
+def test_EXACTLY_the_declared_expressions_carry_a_conversion():
+    """Measured over the whole table rather than asserted: if a new binding
+    arrives with a cast and no declaration, this is where it shows up -- and
+    `storage_class` refuses it either way."""
+    carriers = {e for _w, _f, _d, e in fb.all_bindings()
+                if fb._CONVERSION.search(e)}
+    assert carriers == set(fb.STORAGE_OVERRIDES), \
+        sorted(carriers ^ set(fb.STORAGE_OVERRIDES))

@@ -403,8 +403,16 @@ program g33_refine_driver
   ! implicit in the build flags, and an f64 build emitted four bytes of an
   ! eight-byte real under an `f32` label -- a valid-looking number that was not
   ! the number (owner D6).
-  write(*,'(A,2(1X,I0))') 'G33N PROTOCOL', storage_size(1.0)/8, &
-        storage_size(1.0d0)/8
+  ! ...and how those bytes are LAID OUT. A width alone does not say the format:
+  ! the reader unpacks with `>f`/`>d`, which is IEEE binary32/binary64, and
+  ! nothing in the standard makes four bytes of real mean that. `radix`,
+  ! `digits` and `maxexponent` are intrinsics, so this is what the compiler
+  ! reports about its own model rather than what the build script believes
+  ! (owner priority 7).
+  write(*,'(A,8(1X,I0))') 'G33N PROTOCOL', storage_size(1.0)/8, &
+        storage_size(1.0d0)/8, &
+        radix(1.0), digits(1.0), maxexponent(1.0), &
+        radix(1.0d0), digits(1.0d0), maxexponent(1.0d0)
 #endif
   call kdm6init(rhoair0, rhowater, rhosnow, cliq, cpv, f32(CCN0_BITS), 0, .true.)
   call run_refined(IM, KM, nsplit, tiles(1:ntile), ntile, carry_aux, outF, &

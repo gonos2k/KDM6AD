@@ -71,11 +71,29 @@ from pathlib import Path
 #: width, label and header do not all agree (owner D6).
 _H = r"([0-9A-F]{8}|[0-9A-F]{16})"
 
-#: Declared by the driver from `storage_size`, so it is what the compiler did
-#: rather than what the build script meant. Absent in every stream produced
-#: before the f64 family existed, which is exactly the f32 default.
-PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+)$")
+#: Declared by the driver from `storage_size`, `radix`, `digits` and
+#: `maxexponent`, so it is what the compiler reports about its own model rather
+#: than what the build script meant. Absent in every stream produced before the
+#: f64 family existed, which is exactly the f32 default.
+#:
+#: EIGHT fields, not two. A width says how many bytes to take and says nothing
+#: about how they are laid out -- and `_real` unpacks with `>f`/`>d`, which is
+#: IEEE binary32/binary64, a thing no Fortran standard promises from a storage
+#: size. Two fields would be a header that states half of what the reader
+#: assumes, which is worse than the archived streams that state none of it and
+#: are read under a documented default (owner priority 7).
+PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+) (\d+) (\d+) (\d+) "
+                      r"(\d+) (\d+) (\d+)$")
+#: ...and any PROTOCOL line at all, so a header in the OLD two-field shape is
+#: refused rather than falling through to "no header, assume f32" -- which would
+#: read an f64 stream as f32 and is the whole defect the header exists for.
+ANY_PROTOCOL = re.compile(r"^G33N PROTOCOL\b")
 DEFAULT_REAL_BYTES = 4
+
+#: bytes -> (radix, digits, maxexponent) for the IEEE binary formats this
+#: parser can decode. A stream reporting anything else is refused: the bytes
+#: would be a real number in a model `struct.unpack` does not implement.
+IEEE_FORMAT = {4: (2, 24, 128), 8: (2, 53, 1024)}
 
 #: Payload width per LABEL, in hex digits. The label says how wide the bytes
 #: are; what the number MEANS is the schema's dtype, and after D6 those are two
@@ -465,7 +483,7 @@ def calls(stream: str) -> list:
     # STREAM_BEGIN/END position checks. Leaving it in made those checks depend
     # on which of the two the driver happens to write first.
     g33n = [l for l in stream.splitlines()
-            if l.startswith("G33N") and not PROTOCOL.match(l)]
+            if l.startswith("G33N") and not ANY_PROTOCOL.match(l)]
     _expect_stream(g33n, "stream carries no G33N records")
     _expect_stream(STREAM_BEGIN.match(g33n[0]),
                    f"first G33N record is not STREAM_BEGIN: {g33n[0]!r}")
@@ -513,7 +531,23 @@ def calls(stream: str) -> list:
                            f"stream declares {db}-byte doubles; -fdefault-real-8 "
                            f"without -fdefault-double-8 promotes them to 16 and "
                            f"the schema-f64 fields stop being readable")
+            for what, nbytes, at in (("default reals", rb, 3), ("doubles", db, 6)):
+                got = tuple(int(m.group(g)) for g in (at, at + 1, at + 2))
+                if got != IEEE_FORMAT[nbytes]:
+                    raise StreamError(
+                        f"stream declares {nbytes}-byte {what} with "
+                        f"(radix, digits, maxexponent) {got}, not "
+                        f"{IEEE_FORMAT[nbytes]} -- the reader decodes IEEE "
+                        f"binary{nbytes * 8}, and a width alone does not make "
+                        f"the bytes one")
             continue
+        if ANY_PROTOCOL.match(line):
+            raise StreamError(
+                f"malformed G33N PROTOCOL header: {line!r} -- it must carry the "
+                f"real and double widths AND both radix/digits/maxexponent "
+                f"triples. A header stating half of what the reader assumes is "
+                f"worse than none, because none is read under a documented "
+                f"default and half is read as agreement")
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
