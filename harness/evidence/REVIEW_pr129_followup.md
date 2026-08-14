@@ -1,5 +1,8 @@
 # Review response: PR #129 follow-up
 
+> Superseded in part by `REVIEW_main_followup.md`, which answers the review of `main` at
+> `4274da2` and closes items 9 and 11 of the table below.
+
 The owner's post-merge review of PR #129 (`main` at `3180dbc`) listed twelve
 items in priority order. This records what each one became. It is a checklist,
 not a finding: nothing here is a measurement, and the numbers it quotes belong

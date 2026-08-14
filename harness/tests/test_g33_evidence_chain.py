@@ -2304,6 +2304,13 @@ def test_a_LOCAL_ONLY_commit_anchor_is_reported_and_only_BLOCKS_a_closeout(
 
 
 def test_the_TRUSTED_refs_are_ones_a_CLONE_would_have():
-    """A list of local branch names would defeat the point."""
-    assert all(r.startswith(("refs/remotes/origin/", "refs/tags/"))
+    """A list of local branch names would defeat the point. Any REMOTE-tracking
+    ref counts, not `origin/main` alone: a bundle produced on a review branch is
+    legitimate evidence whose anchor is fetchable the moment the branch is
+    pushed, and requiring `main` would call every such bundle unanchored until
+    the merge -- which says something false about whether a reviewer can get
+    the history."""
+    assert all(r.startswith(("refs/remotes/", "refs/tags/"))
                for r in ec.TRUSTED_REFS), ec.TRUSTED_REFS
+    assert not any(r.startswith("refs/heads/") for r in ec.TRUSTED_REFS), \
+        "a local branch is on one machine, which is the whole distinction"
