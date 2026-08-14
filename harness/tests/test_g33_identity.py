@@ -246,7 +246,25 @@ def test_two_analyses_are_COUPLED_to_the_whole_layer_by_one_import():
 # --- the same contract, on the real archive --------------------------------
 
 def _published():
-    return sorted(Path.home().glob("kdm6ad-g33m-*/*.bundles/*/manifest.json"))
+    """The CURRENT bundles -- what each store symlink points at.
+
+    Not every directory under `*.bundles/`. A bundle is immutable and a
+    re-production leaves the old one in place on purpose, so globbing the store
+    walks superseded bundles too -- and a superseded bundle can never satisfy a
+    contract added after it, because nothing may edit it. Requiring that would
+    mean no contract could ever be added without rewriting history.
+
+    A claim pinning a superseded bundle is still checked: the evidence chain
+    resolves the PATH the claim names, and `rm.validate` refuses a v3 manifest
+    whose identity block is incomplete wherever it is reached from
+    (Codex stop-time review).
+    """
+    out = []
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            if link.is_symlink() and (link.resolve() / "manifest.json").is_file():
+                out.append(link.resolve() / "manifest.json")
+    return out
 
 
 needs_bundles = pytest.mark.skipif(not _published(),
