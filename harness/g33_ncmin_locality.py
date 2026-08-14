@@ -592,7 +592,22 @@ def analysis(driver: str, fixture: str) -> dict:
             "is_roundoff_scale": all(d["max_rel"] <= 16 * F32_EPS
                                      for d in fields.values()),
             "predicted_columns": sorted(predicted),
-            "prediction_holds": sorted({k[1] for k in diff}) == sorted(predicted),
+            # The columns that DIFFER against the columns the tile-end ncmin
+            # rule says should. ONE field, and named for what it compares
+            # (owner priority 11).
+            #
+            # It was two. `prediction_holds` and `causal_attribution_valid`
+            # were the same expression -- measured equal in every published
+            # partition, because they are the same line written twice -- and
+            # the second name promised something the computation never did.
+            # This is a threshold-PATTERN check: the difference is attributable
+            # to ncmin and to nothing else in the decomposition. Which
+            # microphysical process MEDIATES it is G33-NCMIN-005, and it is
+            # open, so a machine-readable field called `causal_*` sitting next
+            # to that claim was an invitation to the exact conflation the split
+            # was made to prevent.
+            "affected_columns_match_prediction":
+                sorted({k[1] for k in diff}) == sorted(predicted),
             "by_field": fields,
             # What the disagreement is worth once integrated over the column --
             # the only form in which "cloud ice differs" is a physical
@@ -603,12 +618,11 @@ def analysis(driver: str, fixture: str) -> dict:
                     for (c, f), (x, y, ad, rd, sa, sr)
                     in column_integrated(base_text, got_text, b).items()}
                 for b in ("operator", "physical")},
-            # The measurement stands on its own; the CAUSAL attribution is a
-            # separate verdict. `prediction_holds: false` used to be recorded
-            # and returned as an ordinary result (owner §7.3).
+            # The measurement stands on its own; whether the difference is
+            # ATTRIBUTABLE to the threshold rule is a separate verdict, and it
+            # is `affected_columns_match_prediction` above. A false one used to
+            # be recorded and returned as an ordinary result (owner §7.3).
             "measurement_valid": True,
-            "causal_attribution_valid": bool(
-                sorted({k[1] for k in diff}) == sorted(predicted)),
         }
     # WHAT WAS RUN, reported by the code that ran it. A consumer recording
     # this from the fixture instead would be recording an assumption: the
