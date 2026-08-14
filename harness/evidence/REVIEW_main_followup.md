@@ -126,6 +126,17 @@ slice is what the id functions return, and one drops each element of the graph
 and each module of each reach entry in turn, requiring that whatever still
 validates still has slices the ids can stand on.
 
+**A slice could omit genuine dependencies.** Every check so far compared the
+graph against the manifest's *other declarations*, and a declaration cannot
+say whether a slice leaves out a real dependency: `dual_ledger`'s reach
+truncated 5 modules → 1 validated clean, after which four of its five
+dependencies could not move its id. The graph is now checked against the code
+it describes, read from the **pinned blobs** — never the working tree, which
+would defeat the recording. The dispatch cut had to be *recorded*
+(`analysis_seeds`): deriving it from the bundle's own `analyses` under-derives
+it, and the real f64 manifest — which carries none of the three f32-only
+analyses — failed its own check that way.
+
 The schema check refused the ncmin bundle produced an hour before it, on
 exactly the `metric_trajectory` gap. It was re-produced. Chain after: 1488
 `matches`, 15 `identity-predates-block` (the pre-v3 published bundles, reported
