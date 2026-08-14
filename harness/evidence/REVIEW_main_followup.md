@@ -99,6 +99,17 @@ so a bundle whose ids follow whichever checkout reads them looked exactly like
 one whose ids do not — and that difference IS the Phase B prerequisite. The
 chain now carries an `identity` row per bundle.
 
+**And the block was required while its contents were not.** Shape alone left
+the graph forgeable: `_by_role` filters the bundle's own pins THROUGH it, so on
+a real manifest with 19 module pins, a graph naming one module brought 1 of
+them into `run_recipe_id`, and one marking every module `analysis`-only brought
+0 — after which no run-role module's bytes could move it. Strictly worse than
+the coupling the block removes, because a manifest could weaken its own ids
+without saying anything false. The graph must now agree with the document:
+every Python pin carries a role, every named module is pinned, the roles come
+from a known vocabulary, and somebody is in the run role. Both real bundles
+satisfy it unchanged; six fabrications are refused.
+
 The schema check refused the ncmin bundle produced an hour before it, on
 exactly the `metric_trajectory` gap. It was re-produced. Chain after: 1488
 `matches`, 15 `identity-predates-block` (the pre-v3 published bundles, reported
