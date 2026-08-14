@@ -127,7 +127,7 @@ def unlabelled() -> set:
 IDENTITY_SCHEMA = "g33_layered_identity_v1"
 
 
-def identity_block() -> dict:
+def identity_block(published=()) -> dict:
     """The role graph and the per-analysis reach, as CONTENT for the manifest.
 
     Without this an id is a function of the manifest AND of the checkout it is
@@ -152,9 +152,31 @@ def identity_block() -> dict:
             # bundle's own `analyses`, which is under-derived for a bundle that
             # legitimately carries only some of them (an f64 bundle carries none
             # of the f32-only three).
-            "analysis_seeds": dict(sorted(producible().items())),
+            #
+            # EXACTLY the pinned registries plus what this bundle published.
+            # Recording every producible analysis left keys answerable to
+            # nothing -- an f64 bundle recorded 11 and published 8 -- and an
+            # invented key names any module the dispatcher imports, which
+            # widens the cut to cover it (Codex stop-time review).
+            "analysis_seeds": dict(sorted(_recorded(published).items())),
             "analysis_reach": {name: sorted(_closure({mod}))
-                               for name, mod in sorted(producible().items())}}
+                               for name, mod in sorted(_recorded(published).items())}}
+
+
+def _recorded(published) -> dict:
+    """The seeds a bundle records: the producer's registries, plus anything it
+    published that the registries do not name.
+
+    Registry entries stay even where this bundle produced none of them -- the
+    dispatcher imports those modules whatever one bundle made, so the cut needs
+    them. `metric_trajectory` is the other kind: dispatched by
+    `_driver_analyses` rather than through a registry, so it is recorded only by
+    the bundles that carry it, and there its seed is pinned to the analyzer its
+    own published entry names.
+    """
+    reg = set(rx.ANALYSES) | set(rx.MULTI_RUN)
+    keep = reg | set(published)
+    return {n: m for n, m in producible().items() if n in keep}
 
 
 def producible() -> dict:

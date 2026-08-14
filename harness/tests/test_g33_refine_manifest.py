@@ -679,6 +679,60 @@ def _real_v3_manifest():
     return None
 
 
+@pytest.mark.parametrize("victim", ["g33_identity", "g33_probe_read",
+                                    "g33_refine_manifest"])
+def test_an_INVENTED_seed_key_cannot_widen_the_cut(victim):
+    """The last thing the manifest still contributed to the cut.
+
+    A key that was neither in the pinned registries nor published by this
+    bundle was answerable to nothing: it could name any module the dispatcher
+    imports, and the module it named could then be dropped from the run role.
+    Measured before the fix: a bogus key naming `g33_identity` -- the module
+    that COMPUTES the identity -- passed the schema and the graph check clean
+    and took the run slice from 9 pins to 8.
+
+    The key set is now exactly the registries plus what the bundle published,
+    and the dispatch set is derived from the pinned dispatcher entirely, so the
+    manifest contributes nothing to it.
+    """
+    import copy
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    edges = rm.pinned_imports(man)
+    bad = copy.deepcopy(man)
+    bad["identity"]["analysis_seeds"]["not_an_analysis"] = victim
+    bad["identity"]["analysis_reach"]["not_an_analysis"] = sorted(
+        rm._blob_closure(edges, victim))
+    bad["identity"]["role_graph"][victim] = ["analysis"]
+    got = rm.validate(bad) or rm.graph_violations(bad)
+    assert got, victim
+    assert any("analysis_seeds keys" in g for g in got), got[:1]
+
+
+def test_the_DISPATCH_SET_comes_from_the_CODE_and_not_the_manifest():
+    """Both halves of it. The registries name nine modules; the tenth and
+    eleventh are named by the literal `_analyzer_pin` arguments, which is how
+    the producer records the analyzer of an analysis it writes outside a
+    registry. Together they are exactly what the producer dispatches to -- and
+    the manifest is not consulted, so it cannot widen them."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    blobs = rm.pinned_blobs(man)
+    _who, registry, dispatch = rm._dispatch_from_blobs(blobs)
+    assert set(registry.values()) < dispatch, \
+        "the literal-argument half contributes nothing -- it should"
+    assert "g33_metric_trajectory" in dispatch and \
+        "g33_metric_trajectory" not in set(registry.values())
+    # Nothing the manifest says can move it.
+    import copy
+    tampered = copy.deepcopy(man)
+    tampered["identity"]["analysis_seeds"] = {"x": "g33_identity"}
+    _w, _r, same = rm._dispatch_from_blobs(rm.pinned_blobs(tampered))
+    assert same == dispatch
+
+
 def test_the_DISPATCHER_is_derived_from_the_pinned_code_not_named():
     """Naming `g33_refine_experiment` in the checker would be a second place to
     keep in step with the producer. The module that DECLARES both registries is
@@ -687,7 +741,7 @@ def test_the_DISPATCHER_is_derived_from_the_pinned_code_not_named():
     if man is None:
         pytest.skip("no v3 bundle with recorded seeds on this host")
     blobs = rm.pinned_blobs(man)
-    who, registry = rm._dispatch_from_blobs(blobs)
+    who, registry, _dispatch = rm._dispatch_from_blobs(blobs)
     assert who == "g33_refine_experiment", who
     assert registry, "the registries parsed to nothing"
     assert set(registry) <= set(man["identity"]["analysis_seeds"])
@@ -708,13 +762,26 @@ def test_a_FORGED_seed_cannot_widen_the_cut(what, name, seed):
     module the seed now names is dropped from the run role, and the leak it
     creates is exactly what the cut would excuse.
     """
-    man = _real_v3_manifest()
+    # ANY v3 bundle recording this key, not the first v3 bundle. The f64
+    # bundle legitimately stopped recording `metric_trajectory` when the key
+    # set narrowed, and taking the first bundle made this case silently skip
+    # while the ncmin bundle -- which records it -- sat right beside it.
+    import json
+    man = None
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                cand = json.loads(mf.read_text())
+                if name in (cand.get("identity") or {}).get("analysis_seeds", {}):
+                    man = cand
+                    break
+        if man:
+            break
     if man is None:
-        pytest.skip("no v3 bundle with recorded seeds on this host")
+        pytest.skip(f"no v3 bundle records {name} on this host")
     import copy
     bad = copy.deepcopy(man)
-    if name not in bad["identity"]["analysis_seeds"]:
-        pytest.skip(f"{name} is not recorded in this bundle")
     edges = rm.pinned_imports(bad)
     bad["identity"]["analysis_seeds"][name] = seed
     bad["identity"]["analysis_reach"][name] = sorted(
@@ -736,7 +803,7 @@ def test_a_NON_DISPATCHER_cannot_use_the_cut_to_escape_closure():
         pytest.skip("no v3 bundle with recorded seeds on this host")
     import copy
     blobs = rm.pinned_blobs(man)
-    dispatcher, _reg = rm._dispatch_from_blobs(blobs)
+    dispatcher, _reg, _d = rm._dispatch_from_blobs(blobs)
     edges = rm.pinned_imports(man, blobs)
     seeds = set(man["identity"]["analysis_seeds"].values())
     others = sorted(m for m in man["identity"]["role_graph"]

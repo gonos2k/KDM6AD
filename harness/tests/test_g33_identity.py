@@ -509,10 +509,19 @@ def test_the_recorded_block_COVERS_every_analysis_the_producer_runs():
     # neither registry and it is in every instrumented as-is bundle. This test
     # asserted the registries and therefore agreed with the gap (Codex
     # stop-time review).
-    assert set(block["analysis_reach"]) == set(gi.producible())
+    # The registries, plus whatever the bundle published. Recording every
+    # producible analysis left keys answerable to nothing: an invented key names
+    # any module the dispatcher imports and widens the cut to cover it (Codex
+    # stop-time review). `metric_trajectory` is the one outside the registries,
+    # so it is recorded only where it is published -- and the CUT still covers
+    # it, because the cut is derived from the pinned code and not from here.
+    registries = set(rx.ANALYSES) | set(rx.MULTI_RUN)
+    assert set(block["analysis_reach"]) == registries
+    assert "metric_trajectory" not in block["analysis_reach"]
+    with_mt = gi.identity_block({"metric_trajectory"})
+    assert set(with_mt["analysis_reach"]) == registries | {"metric_trajectory"}
     assert set(gi.producible()) == (set(rm.DERIVED_ANALYSES)
                                     | set(rm.MULTI_RUN_ANALYSES))
-    assert "metric_trajectory" in block["analysis_reach"]
     assert set(block["role_graph"]) == set(gi.roles())
     for name, mods in block["analysis_reach"].items():
         assert mods, name
