@@ -110,6 +110,22 @@ every Python pin carries a role, every named module is pinned, the roles come
 from a known vocabulary, and somebody is in the run role. Both real bundles
 satisfy it unchanged; six fabrications are refused.
 
+**And three rounds of that validated the DECLARATIONS, not the SLICES.**
+`_by_role` and `_pins_for` both filter `producer_modules`, and a module can be
+pinned as a tracked BUILD INPUT instead — so a graph giving the `run` role only
+to `make_fortran_overlay` satisfied "somebody is in the run role" and left the
+run slice EMPTY: run-slice 0 with a clean validate, the same end state as the
+forgery the round before closed. A reach entry naming only a build input gives
+an analysis id over an empty pin list; one naming other pinned modules is
+non-empty, all-pinned, and still omits the analyzer that produced the analysis.
+
+The constraint is stated over the slice now. And because the rule lives in the
+manifest module while the slice is computed in the identity module, two tests
+tie them together: one asserts on real data that what the schema calls a valid
+slice is what the id functions return, and one drops each element of the graph
+and each module of each reach entry in turn, requiring that whatever still
+validates still has slices the ids can stand on.
+
 The schema check refused the ncmin bundle produced an hour before it, on
 exactly the `metric_trajectory` gap. It was re-produced. Chain after: 1488
 `matches`, 15 `identity-predates-block` (the pre-v3 published bundles, reported
