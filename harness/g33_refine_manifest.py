@@ -11,6 +11,7 @@ make an experiment look decision-grade.
 """
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import re
@@ -18,6 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as ra   # noqa: E402
 
@@ -25,7 +27,15 @@ import g33_refine_analyze as ra   # noqa: E402
 #: those were optional metadata, so deleting them downgraded a new bundle to the
 #: legacy contract and the checker reported rather than failed -- a contract you
 #: can opt out of by omission is not a contract (owner P0-E2).
-SCHEMA = "refinement_experiment_v2"
+#:
+#: v3 REQUIRES a typed `ran` block on every arm stream. Under v2 an arm carried
+#: only `runtime_argv`, four strings of which the schema compared two, so the
+#: carry mode and the domain width were recorded and never read (owner priority
+#: 5). A VERSION rather than a new required field, because five published
+#: bundles carry v2 arm streams and adding the requirement to v2 would either
+#: invalidate them or have to be opt-out-by-omission -- which is the defect the
+#: v2 bump itself was for.
+SCHEMA = "refinement_experiment_v3"
 
 
 def sha256(path: Path) -> str:
@@ -223,12 +233,393 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
 #: bundle cannot be valid to one and invalid to the other (owner P0-2).
 _ARMS = ("reference", "probe", "f64")
 _PRECISIONS = ("f32", "f64")
-KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2")
+KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
+                 "refinement_experiment_v3")
+#: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
+#: comparison rather than a list someone extends by hand at each bump.
+_SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
+
+
+def at_least(schema: str, floor: str) -> bool:
+    """Whether `schema` carries `floor`'s contract."""
+    return _SCHEMA_RANK.get(schema, -1) >= _SCHEMA_RANK[floor]
 
 
 def _hexlen(v, n) -> bool:
     return isinstance(v, str) and len(v) == n and \
         all(c in "0123456789abcdef" for c in v.lower())
+
+
+#: The layered-identity block a v3 bundle must carry, so its ids are
+#: reproducible FROM THE ARCHIVE rather than from whatever tree reads it.
+#: Spelled here rather than imported from `g33_identity`: that module imports
+#: the producer, which imports this one, and the requirement is a property of
+#: the DOCUMENT either way.
+IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+#: The roles a module can carry. `_by_role` filters on these words, so one it
+#: does not know silently removes a module from every id.
+_ROLES = ("run", "analysis")
+
+
+def _pinned_modules(man: dict) -> set:
+    """Every PYTHON module this bundle pins, under any of the three pin blocks.
+
+    All three, because `make_fortran_overlay` and `g33_fortran_bindings` are
+    tracked BUILD INPUTS rather than producer modules and they do carry roles --
+    so "is this module pinned" is a question about the whole document.
+
+    Python only, because the role graph is about modules. The build inputs also
+    pin `refine_build.sh`, the driver and the fixture `.f90`: real, pinned, and
+    not things an import closure has a role for. Including them would demand a
+    role for every file and get one invented.
+    """
+    out = set()
+    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
+        for e in man.get(key) or []:
+            if isinstance(e, dict) and isinstance(e.get("path"), str) \
+                    and e["path"].endswith(".py"):
+                out.add(e["path"].rsplit("/", 1)[-1][:-3])
+    return out
+
+
+def _identity_violations(man: dict) -> list:
+    """The recorded role graph, checked for presence, shape AND TRUTHFULNESS.
+
+    Shape alone is fail-open, and not mildly: `_by_role` filters the bundle's
+    module pins THROUGH this graph, so a manifest declaring a thin one gets a
+    recipe id over a subset of its own pins, and one declaring every module
+    `analysis`-only gets a recipe id over NOTHING. Measured on a real manifest:
+    19 pins, and a fabricated graph brings 0 of them into `run_recipe_id` --
+    after which no run-role module's bytes can move it. That is strictly worse
+    than the coupling the block was added to remove, because it is forgeable
+    (Codex stop-time review).
+
+    So the graph has to agree with the rest of the document: every module the
+    bundle PINS carries a role, every module the graph NAMES is pinned, the
+    roles come from a known vocabulary, and somebody is in the run role.
+    """
+    ident = man.get("identity")
+    if not isinstance(ident, dict):
+        return ["identity must be an object recording the role graph the ids "
+                "were derived under -- without it they follow the checkout"]
+    bad = []
+    if ident.get("schema") != IDENTITY_SCHEMA:
+        bad.append(f"identity.schema {ident.get('schema')!r} is not "
+                   f"{IDENTITY_SCHEMA!r}")
+    for key in ("role_graph", "analysis_seeds", "analysis_reach"):
+        v = ident.get(key)
+        if not isinstance(v, dict) or not v:
+            bad.append(f"identity.{key} must be a non-empty object")
+            continue
+        for name, val in v.items():
+            # `analysis_seeds` maps a name to ONE module; the other two map to
+            # lists. One loop, because "non-empty and made of module names" is
+            # the same requirement either way.
+            ok = (isinstance(val, str) and val) if key == "analysis_seeds" else (
+                isinstance(val, list) and val
+                and all(isinstance(x, str) for x in val))
+            if not ok:
+                bad.append(f"identity.{key}[{name!r}] must be a non-empty "
+                           f"{'module name' if key == 'analysis_seeds' else 'list'}")
+                break
+    if bad:
+        return bad
+
+    graph, reach = ident["role_graph"], ident["analysis_reach"]
+    seeds = ident["analysis_seeds"]
+    if set(seeds) != set(reach):
+        bad.append(f"identity.analysis_seeds and analysis_reach describe "
+                   f"different analyses: {sorted(set(seeds) ^ set(reach))}")
+    unknown = sorted({r for v in graph.values() for r in v} - set(_ROLES))
+    if unknown:
+        bad.append(f"identity.role_graph uses roles {unknown}, not in {_ROLES} "
+                   f"-- `_by_role` filters on these words, so one it does not "
+                   f"know removes a module from every id")
+    if not any("run" in v for v in graph.values()):
+        bad.append("identity.role_graph gives no module the `run` role, so the "
+                   "run recipe would be a digest over an empty module list")
+    pinned = _pinned_modules(man)
+    # THE LOAD-BEARING DIRECTION. A pin the graph omits is dropped from both
+    # ids by `_by_role`, so omitting pins is how a manifest makes its own ids
+    # weaker without saying anything false.
+    orphan_pins = sorted(pinned - set(graph))
+    if orphan_pins:
+        bad.append(f"identity.role_graph omits pinned modules {orphan_pins} -- "
+                   f"a pin with no role is filtered out of every id")
+    invented = sorted(set(graph) - pinned)
+    if invented:
+        bad.append(f"identity.role_graph names {invented}, which this bundle "
+                   f"pins nowhere -- the graph describes code the archive does "
+                   f"not hold")
+    unseeded = sorted(set(seeds.values()) - pinned)
+    if unseeded:
+        bad.append(f"identity.analysis_seeds names {unseeded}, which this "
+                   f"bundle pins nowhere")
+    unpinned_reach = sorted({m for v in reach.values() for m in v} - pinned)
+    if unpinned_reach:
+        bad.append(f"identity.analysis_reach names {unpinned_reach}, which this "
+                   f"bundle pins nowhere")
+    return bad + _identity_slice_violations(man, graph, reach)
+
+
+def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
+    """The SLICES the ids actually digest, not the declarations that produce them.
+
+    Three rounds of this check validated declarations and left the slices open,
+    which is the same mistake three times. `_by_role` and `_pins_for` both
+    filter `producer_modules` -- and a module can be pinned as a tracked BUILD
+    INPUT instead, so a graph that gives the `run` role only to
+    `make_fortran_overlay` and `g33_fortran_bindings` satisfies "somebody is in
+    the run role" and leaves the run slice EMPTY. Measured: run-slice 0 with a
+    clean validate, which is the same end state as the forgery the previous
+    round closed, reached through a different door.
+
+    So the constraint is stated over the slice: what survives the filter must be
+    non-empty, and an analysis's slice must contain its own analyzer -- a reach
+    entry naming other pinned modules is non-empty, all-pinned, and still does
+    not cover the bytes that produced the analysis (Codex stop-time review).
+    """
+    prod = {e["path"].rsplit("/", 1)[-1][:-3]
+            for e in man.get("producer_modules") or []
+            if isinstance(e, dict) and isinstance(e.get("path"), str)
+            and e["path"].endswith(".py")}
+    bad = []
+    if not (prod & {m for m, r in graph.items() if "run" in r}):
+        bad.append(
+            "identity.role_graph gives the `run` role to no module that is "
+            "pinned in producer_modules, so the run recipe digests an empty "
+            "list -- a module pinned only as a build input never reaches it")
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict) or a.get("analysis") == "arm_stream":
+            continue
+        name, analyzer = a.get("analysis"), a.get("analyzer")
+        if name not in reach:
+            continue                      # absence is reported by _identity_covers
+        slice_ = prod & set(reach[name])
+        if not slice_:
+            bad.append(f"identity.analysis_reach[{name!r}] names no module "
+                       f"pinned in producer_modules, so that analysis id "
+                       f"digests an empty list")
+            continue
+        if isinstance(analyzer, str) and analyzer.endswith(".py"):
+            own = analyzer.rsplit("/", 1)[-1][:-3]
+            if own in prod and own not in slice_:
+                bad.append(f"identity.analysis_reach[{name!r}] does not contain "
+                           f"{own!r}, the analyzer this entry names -- the id "
+                           f"would not cover the bytes that produced it")
+    return sorted(set(bad))
+
+
+def _identity_covers(man: dict) -> list:
+    """Analyses the bundle carries that its recorded reach map does not."""
+    reach = ((man.get("identity") or {}).get("analysis_reach") or {})
+    carried = {a.get("analysis") for a in (man.get("analyses") or [])
+               if isinstance(a, dict)} - {"arm_stream"}
+    return sorted(carried - set(reach))
+
+
+class BlobUnavailable(Exception):
+    """A pinned blob is not in this object database, so the recorded graph
+    cannot be checked against the code it claims to describe."""
+
+
+def _imports_from(blob: bytes, universe: set) -> set:
+    """The pinned modules `blob` imports. Same AST rule the producer uses on the
+    working tree -- a name in a comment or a docstring is not an import."""
+    names = set()
+    for n in ast.walk(ast.parse(blob)):
+        if isinstance(n, ast.Import):
+            names |= {a.name.split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+            names.add(n.module.split(".")[0])
+    return names & universe
+
+
+def pinned_blobs(man: dict) -> dict:
+    """module -> its PINNED source bytes.
+
+    Not the working tree. The whole point of recording the graph is that it
+    must not depend on the checkout reading it, so checking it against the
+    checkout would defeat the recording -- while checking it against the blobs
+    the manifest itself pins uses nothing the archive does not carry.
+    """
+    pins = {}
+    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
+        for e in man.get(key) or []:
+            if isinstance(e, dict) and str(e.get("path", "")).endswith(".py") \
+                    and isinstance(e.get("blob_sha"), str):
+                pins[e["path"].rsplit("/", 1)[-1][:-3]] = e["blob_sha"]
+    out = {}
+    for mod, sha in pins.items():
+        r = subprocess.run(["git", "cat-file", "blob", sha], cwd=REPO,
+                           capture_output=True)
+        if r.returncode != 0:
+            raise BlobUnavailable(f"{mod} pins blob {sha[:12]}, not in this "
+                                  f"object database")
+        out[mod] = r.stdout
+    return out
+
+
+def pinned_imports(man: dict, blobs: dict | None = None) -> dict:
+    """module -> the pinned modules it imports, read from the pinned blobs."""
+    blobs = pinned_blobs(man) if blobs is None else blobs
+    out = {}
+    for mod, src in blobs.items():
+        try:
+            out[mod] = _imports_from(src, set(blobs))
+        except SyntaxError as e:
+            raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
+    return out
+
+
+#: The registries whose entries ARE the producer's dispatch set. A module that
+#: declares both is the dispatcher, which is how the cut's SOURCE is derived
+#: rather than named: naming `g33_refine_experiment` here would be a second
+#: place to keep in step with the producer.
+_DISPATCH_REGISTRIES = ("ANALYSES", "MULTI_RUN")
+
+
+def _dispatch_from_blobs(blobs: dict) -> tuple:
+    """(dispatcher module, {analysis: seed module}) read from the pinned code.
+
+    The cut was DECLARED, and a declaration for an analysis the bundle did not
+    publish was unconstrained -- so a seed could be repointed to widen the set
+    of edges the closure check excuses. Derived here instead, from the same
+    registries the producer dispatches on (Codex stop-time review).
+    """
+    found = {}
+    for mod, src in blobs.items():
+        try:
+            tree = ast.parse(src)
+        except SyntaxError as e:
+            raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
+        names, reg = set(), {}
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Assign):
+                continue
+            for t in n.targets:
+                if isinstance(t, ast.Name) and t.id in _DISPATCH_REGISTRIES:
+                    names.add(t.id)
+                    if isinstance(n.value, ast.Dict):
+                        for k, v in zip(n.value.keys, n.value.values):
+                            if isinstance(k, ast.Constant) and \
+                                    isinstance(v, ast.Tuple) and v.elts and \
+                                    isinstance(v.elts[0], ast.Constant):
+                                reg[k.value] = v.elts[0].value
+        if set(_DISPATCH_REGISTRIES) <= names:
+            found[mod] = reg
+    if len(found) != 1:
+        raise BlobUnavailable(
+            f"{len(found)} pinned modules declare "
+            f"{' and '.join(_DISPATCH_REGISTRIES)}; the dispatch cut has "
+            f"exactly one source or it cannot be derived")
+    mod, reg = next(iter(found.items()))
+    if not reg:
+        raise BlobUnavailable(
+            f"{mod} declares the registries and none of their entries parse -- "
+            f"the shape changed, and an empty cut would excuse nothing while "
+            f"looking like it excused the right things")
+    return mod, reg
+
+
+def _blob_closure(edges: dict, seed: str) -> set:
+    seen, todo = set(), [seed]
+    while todo:
+        m = todo.pop()
+        if m in seen:
+            continue
+        seen.add(m)
+        todo += list(edges.get(m, set()) - seen)
+    return seen
+
+
+def graph_violations(man: dict) -> list:
+    """The recorded graph against the CODE IT CLAIMS TO DESCRIBE.
+
+    Everything before this checked the graph against the manifest's other
+    declarations, and a declaration cannot say whether a slice omits a genuine
+    dependency. Measured: `dual_ledger`'s reach truncated from five modules to
+    one validated clean, after which changes to four of its five dependencies
+    could not move its id; the run role narrowed from eleven modules to one did
+    the same to the recipe (Codex stop-time review).
+
+    Two properties, both computed from the pinned blobs and both exact on the
+    real bundles:
+
+      a reach entry EQUALS the import closure of the analyzer its own entry
+      names -- no seeds, no registries, nothing but the manifest;
+
+      a role is CLOSED under imports, except where a module imports an analyzer
+      this bundle names. That exception is the producer's dispatch cut, and it
+      is what makes `g33_refine_experiment` a run module that imports analysis
+      ones. Deriving it from `analyses` rather than from a registry keeps the
+      check a function of the document.
+    """
+    ident = man.get("identity") or {}
+    graph, reach = ident.get("role_graph"), ident.get("analysis_reach")
+    if not isinstance(graph, dict) or not isinstance(reach, dict):
+        return []                       # shape is the schema's business
+    seeds = ident.get("analysis_seeds")
+    if not isinstance(seeds, dict) or not seeds:
+        return ["identity.analysis_seeds must record each analysis's seed "
+                "module -- it is the producer's dispatch cut, and without it "
+                "the role closure cannot be checked"]
+    blobs = pinned_blobs(man)
+    edges = pinned_imports(man, blobs)
+    dispatcher, registry = _dispatch_from_blobs(blobs)
+    bad = []
+    # THE CUT, DERIVED. It was the recorded seeds, and a seed for an analysis
+    # this bundle did not publish was unconstrained -- so one could be repointed
+    # to widen the set of edges the closure check excuses. The registries in the
+    # pinned dispatcher say what the producer actually dispatches to
+    # (Codex stop-time review).
+    dispatch = set(registry.values()) | {
+        m for n, m in seeds.items() if n not in registry}
+    for name, seed in sorted(seeds.items()):
+        if name in registry and seed != registry[name]:
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seed!r} and the "
+                       f"pinned {dispatcher} registry names {registry[name]!r}")
+        elif name not in registry and seed not in edges.get(dispatcher, set()):
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seed!r}, which "
+                       f"is not in the pinned registries and is not imported "
+                       f"by {dispatcher} -- a seed the producer does not "
+                       f"dispatch to widens the cut for nothing")
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict) or not a.get("analyzer"):
+            continue
+        name, own = a.get("analysis"), Path(str(a["analyzer"])).stem
+        if name in seeds and seeds[name] != own:
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seeds[name]!r} "
+                       f"and the published entry names {own!r}")
+    for name, seed in sorted(seeds.items()):
+        if name not in reach or seed not in edges:
+            continue
+        want = _blob_closure(edges, seed)
+        got = set(reach[name])
+        if got != want:
+            bad.append(
+                f"identity.analysis_reach[{name!r}] is {sorted(got)}, and the "
+                f"import closure of {seed!r} over the PINNED blobs is "
+                f"{sorted(want)} -- a slice that omits a genuine dependency "
+                f"gives an id those bytes cannot move")
+    for role in ("run", "analysis"):
+        holders = {m for m, r in graph.items() if role in r}
+        for m in sorted(holders):
+            # The cut is SCOPED to the dispatcher. Excusing dispatch edges from
+            # every module let any module import an analyzer and escape the
+            # closure requirement -- 11 modules import something in that set,
+            # and the producer cuts out of exactly one (Codex stop-time review).
+            excused = dispatch if m == dispatcher else set()
+            leak = sorted(edges.get(m, set()) - holders - excused)
+            if leak:
+                bad.append(
+                    f"identity.role_graph gives {m!r} the {role!r} role and "
+                    f"not {leak}, which it imports -- a role that is not closed "
+                    f"under imports leaves those bytes out of the id")
+    return sorted(set(bad))
+
 
 
 def validate(man: dict) -> list:
@@ -250,7 +641,7 @@ def validate(man: dict) -> list:
     schema = man.get("schema")
     if schema not in KNOWN_SCHEMAS:
         return bad + [f"unknown schema {schema!r}"]
-    if schema != "refinement_experiment_v2":
+    if not at_least(schema, "refinement_experiment_v2"):
         return bad                       # v1 predates every field below
     if man.get("decision_eligible") is not False:
         bad.append("decision_eligible must be False: a refinement experiment is "
@@ -331,6 +722,19 @@ def validate(man: dict) -> list:
                            f"a 64-hex `content_sha256`, and 40-hex `commit` and "
                            f"`blob_sha`")
 
+    # The LAYERED IDENTITY block (owner priority 8). Required from v3, because
+    # without it the ids are a function of the manifest AND of whichever
+    # checkout computes them -- which is the coupling the block exists to
+    # remove. It was ADDED to the producer and required by nothing, so a
+    # manifest could omit it and still validate: the same "lower the contract
+    # by omission" defect the v2 bump was for, reproduced one field later.
+    if at_least(schema, "refinement_experiment_v3"):
+        bad += _identity_violations(man)
+        uncovered = _identity_covers(man)
+        if uncovered:
+            bad.append(f"identity.analysis_reach omits {uncovered}, which this "
+                       f"bundle carries -- those analyses' ids would fall back "
+                       f"to recomputing from the reader's import graph")
     # An analysis carried at a precision it is not DEFINED at (owner priority 6).
     # The other direction is REQUIRED_WHEN_INSTRUMENTED above; this one is what
     # a manifest cannot talk its way out of, because the precision it is checked
@@ -358,7 +762,7 @@ def validate(man: dict) -> list:
         bad.append("instrumented=true requires a non-empty `analyses`")
     nsplits = {m.get("nsplit") for m in (members if isinstance(members, list) else [])
                if isinstance(m, dict)}
-    bad += _analysis_violations(analyses or [], nsplits)
+    bad += _analysis_violations(analyses or [], nsplits, schema)
 
     # Every published file must live INSIDE the bundle. The producer generates
     # safe basenames, but this validator claims to judge an arbitrary v2
@@ -495,7 +899,69 @@ _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
 _ARM_FIELDS = ("analysis", "nsplit", "arm", "runtime_argv")
 
 
-def _analysis_violations(analyses, member_nsplits) -> list:
+#: The typed run identity, as VALUES rather than as string positions.
+#:
+#: ONE spelling, shared with the multi-run block below. They would otherwise be
+#: two `ran` blocks under one name with different field sets, and the first
+#: draft of this one said `mode` where that one says `carry` -- two words for
+#: the driver's one argument, in the same manifest.
+_RAN_CORE = ("nsplit", "carry", "width", "rho")
+
+#: argv position -> the `ran` field it must agree with. `runtime_argv` stays
+#: beside `ran` as the literal command line: a diagnostic, and the thing the
+#: typed block is checked against.
+_ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
+
+
+def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
+    """Every position of an arm's command line, against its typed identity.
+
+    Only argv[0] and argv[3] were compared before, so the carry mode and the
+    domain width were recorded and never read -- half the run identity of an
+    arbitrary v2 manifest (owner priority 5). The vocabularies are the driver's
+    own, the same ones the multi-run block uses: it error-stops on anything
+    else, so a manifest declaring anything else names a run that could not have
+    happened.
+    """
+    ran = a.get("ran")
+    if not isinstance(ran, dict) or not all(k in ran for k in _RAN_CORE):
+        return [f"analyses[{i}] (arm_stream) needs `ran` with "
+                f"{', '.join(_RAN_CORE)}: the command line alone is four "
+                f"strings and only two of them were ever checked"]
+    bad = []
+    if not isinstance(ran["nsplit"], int) or isinstance(ran["nsplit"], bool) \
+            or not 1 <= ran["nsplit"] <= _MAX_NSPLIT:
+        bad.append(f"analyses[{i}] (arm_stream) ran.nsplit {ran['nsplit']!r} "
+                   f"is not a positive integer the driver accepts "
+                   f"(1..{_MAX_NSPLIT})")
+    elif ran["carry"] not in _CARRY_MODES:
+        bad.append(f"analyses[{i}] (arm_stream) ran.carry {ran['carry']!r} is "
+                   f"not one of {_CARRY_MODES}")
+    elif ran["rho"] not in _RHO_ARMS:
+        bad.append(f"analyses[{i}] (arm_stream) ran.rho {ran['rho']!r} is not "
+                   f"one of {_RHO_ARMS}")
+    elif not isinstance(ran["width"], int) or isinstance(ran["width"], bool) \
+            or ran["width"] < 1:
+        bad.append(f"analyses[{i}] (arm_stream) ran.width {ran['width']!r} is "
+                   f"not a positive integer")
+    if bad:
+        return bad
+    for pos, field in _ARGV_TO_RAN:
+        if argv[pos] != str(ran[field]):
+            bad.append(f"analyses[{i}] runtime_argv[{pos}]={argv[pos]!r} "
+                       f"contradicts ran.{field}={ran[field]!r}")
+    # The entry's own top-level fields must agree with it too, or the block
+    # would be a third statement nobody compares.
+    if ran["nsplit"] != a.get("nsplit"):
+        bad.append(f"analyses[{i}] ran.nsplit={ran['nsplit']} contradicts "
+                   f"nsplit={a.get('nsplit')!r}")
+    if ran["rho"] != a.get("arm"):
+        bad.append(f"analyses[{i}] ran.rho={ran['rho']!r} contradicts "
+                   f"arm={a.get('arm')!r}")
+    return bad
+
+
+def _analysis_violations(analyses, member_nsplits, schema=SCHEMA) -> list:
     bad = []
     for i, a in enumerate(analyses):
         if not isinstance(a, dict) or not isinstance(a.get("file"), str) \
@@ -526,12 +992,26 @@ def _analysis_violations(analyses, member_nsplits) -> list:
                 # The argv is what RAN; the fields are what the manifest SAYS.
                 # Recording both without comparing them lets an entry describe a
                 # different run than the one it names (owner §8.1).
-                if argv[0] != str(a.get("nsplit")):
-                    bad.append(f"analyses[{i}] runtime_argv nsplit {argv[0]!r} "
-                               f"contradicts nsplit {a.get('nsplit')!r}")
-                if argv[3] != a.get("arm"):
-                    bad.append(f"analyses[{i}] runtime_argv arm {argv[3]!r} "
-                               f"contradicts arm {a.get('arm')!r}")
+                #
+                # ALL FOUR positions, against a TYPED block (owner priority 5).
+                # Only argv[0] and argv[3] were compared, so the mode and the
+                # domain width were recorded and never read -- half the run
+                # identity of an arbitrary v2 manifest went unverified. `ran`
+                # carries them as values rather than as string positions, and
+                # the producer checks it against the raw stream's own header
+                # before writing it.
+                if at_least(schema, "refinement_experiment_v3"):
+                    bad += _arm_ran_violations(i, a, argv)
+                else:
+                    # v2 compared exactly these two positions.
+                    if argv[0] != str(a.get("nsplit")):
+                        bad.append(f"analyses[{i}] runtime_argv nsplit "
+                                   f"{argv[0]!r} contradicts nsplit "
+                                   f"{a.get('nsplit')!r}")
+                    if argv[3] != a.get("arm"):
+                        bad.append(f"analyses[{i}] runtime_argv arm "
+                                   f"{argv[3]!r} contradicts arm "
+                                   f"{a.get('arm')!r}")
         elif kind in MULTI_RUN_ANALYSES:
             # Keyed on the FIXTURE and the decompositions it ran, not on a
             # member: there is no single stream this concluded from.

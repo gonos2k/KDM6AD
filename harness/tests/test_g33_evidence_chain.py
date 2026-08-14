@@ -106,8 +106,11 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     bundle, write = world
     write()
     # `modules-unpinned` rides along: this fixture pins no producer modules.
+    # `identity-predates-block` too: it is a v1 manifest, so its layered ids
+    # are a function of the reading checkout and the chain now says so.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches"] + ["modules-unpinned"] * 3
+        ["matches"] + ["modules-unpinned"] * 3 + ["identity-predates-block",
+                                                  "identity-graph-underived"]
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -275,8 +278,11 @@ def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
     content = hashlib.sha256((ec.REPO / path).read_bytes()).hexdigest()
     _pinned(bundle, write, _head(), _head_blob(path), path, content)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    # `modules-unpinned` rides along: this fixture pins no producer modules.
-    assert "matches" in states and not (states - {"matches", "modules-unpinned"})
+    # `modules-unpinned` and `identity-predates-block` ride along: this fixture
+    # pins no producer modules and its manifest predates the role graph.
+    assert "matches" in states and not (
+        states - {"matches", "modules-unpinned", "identity-predates-block",
+                  "identity-graph-underived"})
     assert ec.check() == 0
 
 
@@ -362,7 +368,8 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
     p.write_text("{" + head + ', "members": [], "analyses": []}')
     assert [m["state"] for m in ec.members_of(p)] == \
-        ["modules-unpinned"] * 3   # one per pin block
+        ["modules-unpinned"] * 3 + ["identity-predates-block",
+                                    "identity-graph-underived"]
 
 
 def test_a_manifest_that_declares_NO_schema_is_unidentifiable(world):
@@ -884,11 +891,31 @@ def test_a_key_containing_a_DOT_makes_the_path_AMBIGUOUS():
     assert ec._keys_of({"a.b": {"c": 1}}) == ["a.b", "c"]
 
 
-def test_TOLERANCE_defaults_to_EXACT_when_unstated():
+#: Claims permitted to bind a figure with a TOLERANCE, and the reason. A
+#: tolerance is how an exact binding stops being exact, so each one is listed
+#: here and the claim has to say in its own text why the quantity has no exact
+#: value to pin.
+TOLERATED = {
+    "G33-WATER-CONS-002": "ULP",
+}
+
+
+def test_a_TOLERANCE_is_DECLARED_and_EXPLAINED_or_the_binding_is_exact():
+    """The default is exact, and it stays the default. What changed is that
+    `R_W` in column 1 closes BELOW ONE ULP of its own terms, so its last digits
+    are summation order rather than a measurement -- pinning them exactly would
+    fail a gate for a reordering that changed nothing. That is a real
+    exception, so it is enumerated rather than allowed generally."""
     for c in ec.claims():
         for w in c["expected_values"]:
-            assert w["tolerance"] == 0.0, \
-                f"{c['id']}: a tolerance was introduced -- state why in the claim"
+            if w["tolerance"] == 0.0:
+                continue
+            assert c["id"] in TOLERATED, (
+                f"{c['id']}: a tolerance was introduced -- state why in the "
+                f"claim and add it to TOLERATED")
+            assert TOLERATED[c["id"]] in c["text"], (
+                f"{c['id']}: binds a tolerance and its text does not explain "
+                f"why the figure has no exact value")
 
 
 def test_every_member_row_says_WHERE_its_digest_was_verified():
@@ -1123,8 +1150,13 @@ def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     kinds = {ln.split("[")[0].rsplit(":", 1)[-1].strip()
              for ln in out.splitlines() if " -> " in ln}
     assert kinds, "no member blocker lines parsed -- this check would be vacuous"
-    assert kinds == {"modules-unpinned"}, (
+    assert kinds == {"modules-unpinned", "identity-predates-block",
+                     "identity-graph-underived"}, (
         f"unexpected member blocker kinds {sorted(kinds)}")
+    # Both are real migration debt and neither is an artefact of the walker:
+    # bundles that predate the module pins, and bundles that predate the
+    # recorded role graph -- the second being the Phase B prerequisite, stated
+    # per bundle rather than as a paragraph (Codex stop-time review).
     # DERIVED from the registry, not a constant. The closeout must report
     # exactly the claims that still declare their run unreachable -- no more
     # (noise) and no fewer (a silent gap). A hardcoded count would break on
@@ -1178,6 +1210,8 @@ def _synthetic_bundle(root):
             {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
              "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
              "arm": "uniform",
+             "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
+                     "rho": "uniform"},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],
@@ -1276,10 +1310,14 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     compared are one record and one decoration (Codex)."""
     import shutil
     import tempfile
-    store = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001.bundles"
-    src = next(store.glob("*/"), None)
-    if src is None:
+    # The CURRENT bundle -- what the symlink points at -- not an arbitrary one
+    # out of the store. Once a bundle is re-produced the store holds several,
+    # and `next(glob(...))` picked whichever the filesystem listed first, which
+    # is how this started reading a superseded manifest.
+    link = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001"
+    if not link.exists():
         pytest.skip("multi-run bundle not on this host")
+    src = link.resolve()
 
     rows = ec.members_of(src / "manifest.json")
     ident = [r for r in rows if r.get("origin") == "run_identity"]
@@ -1415,8 +1453,12 @@ def test_a_blocker_kind_is_DECLARED_not_read_off_the_prose():
     unmigrated = [c for c in ec.claims()
                   if c.get("artifact_status") == "historical_unavailable"]
     f64 = [c for c in unmigrated if c["blocker_kind"] == "needs-f64"]
-    assert len(f64) == 3, [c["id"] for c in f64]
-    # Every one of them says "f64" -- and that is NOT how they were classified.
+    assert not f64, (
+        f"{[c['id'] for c in f64]} still declare needs-f64. All three that did "
+        f"are migrated: ENTHALPY-001 and WATER-CONS-002 are pinned to the f64 "
+        f"--nflux bundle, and WATER-ORDER-002 was RECLASSIFIED to "
+        f"needs-derived-field once running the sweep showed the blocker named "
+        f"the wrong obstacle. Update this deliberately if the kind comes back.")
     # The declaration is the authority, so a blocker that never spells the word
     # still classifies, and one that spells it in passing does not acquire the
     # kind. G33-PRECIP-001 mentions an f64 leg and is needs-instrumentation.
@@ -2206,3 +2248,85 @@ def test_the_two_BINDINGS_take_the_same_path_to_every_shared_state(
     for fn in ("def resolve_value", "def resolve_predicate"):
         body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
         assert "_resolve(" in body, f"{fn} no longer goes through the shared core"
+
+
+# --- the bundle is SELF-CONTAINED, and the anchor is FETCHABLE (priority 10) -
+#
+# `Path.is_file()` follows symlinks, so a member could be a link to a file
+# outside the bundle and match its digest perfectly. The digest would be telling
+# the truth and the bundle would still not be the immutable, self-contained
+# thing the archive is defined to be. Measured before enforcing: 169 payload
+# files across the published archive, 0 symlinks.
+
+
+def test_a_member_that_is_a_SYMLINK_out_of_the_bundle_is_refused(world, tmp_path):
+    bundle, write = world
+    write()
+    assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "matches"
+    outside = tmp_path / "elsewhere.txt"
+    outside.write_bytes((bundle / "n3.rezero.txt").read_bytes())
+    (bundle / "n3.rezero.txt").unlink()
+    (bundle / "n3.rezero.txt").symlink_to(outside)
+    got = ec.chain()[0]["artifacts"][0]["members"][0]
+    assert got["state"] == "NOT-SELF-CONTAINED", got
+    assert ec.check() != 0, "the digest still matches; the containment does not"
+
+
+def test_a_symlink_to_a_file_INSIDE_the_bundle_is_refused_too(world):
+    """Not about where the bytes are -- about the bundle being a directory of
+    regular files. A link that resolves inside is still a link, and the archive
+    is copied, rsynced and tarred by things that treat the two differently."""
+    bundle, write = world
+    write()
+    (bundle / "real.txt").write_bytes((bundle / "n3.rezero.txt").read_bytes())
+    (bundle / "n3.rezero.txt").unlink()
+    (bundle / "n3.rezero.txt").symlink_to(bundle / "real.txt")
+    assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] \
+        == "NOT-SELF-CONTAINED"
+
+
+def test_a_LOCAL_ONLY_commit_anchor_is_reported_and_only_BLOCKS_a_closeout(
+        tmp_path, monkeypatch):
+    """`--contains` is satisfied by any ref, and a throwaway `wip/foo` is a ref
+    on one machine. "The anchor resolves where it was made" is not what pinning
+    a commit is for, so a closeout asks the narrower question.
+
+    Built on a REAL repository with a real local-only branch, so the narrowing
+    is exercised against git rather than against a stub.
+    """
+    import subprocess as sp
+    r = lambda *a: sp.run(a, cwd=tmp_path, capture_output=True, text=True)
+    live, _dead = _tiny_repo(tmp_path)
+    r("git", "checkout", "-q", "-b", "wip/local-only")
+    (tmp_path / "b.txt").write_text("local\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "local only")
+    local = r("git", "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+    monkeypatch.setattr(ec, "_REACHABLE", {})
+
+    assert ec._reachable(local), "a local branch does contain it"
+    assert not ec._reachable(local, trusted=True), (
+        "...and no ref a clone would have does -- which is the distinction")
+    assert ec._reachable(live) and not ec._reachable(live, trusted=True)
+
+    man = {"repo_commit": local, "member_parsers": [], "producer_modules": [],
+           "tracked_build_inputs": []}
+    row, = ec._commit_states(man)
+    assert row["state"] == "commit-local-anchor-only", row
+    assert row["state"] in ec.PASSING_STATES, "a routine run must not fail on it"
+    assert row["state"] in ec.EXCUSED_BY_ABSENCE, "a closeout must"
+    assert not ec.verdict(row["state"])
+    assert ec.verdict(row["state"], require_available=True)
+
+
+def test_the_TRUSTED_refs_are_ones_a_CLONE_would_have():
+    """A list of local branch names would defeat the point. Any REMOTE-tracking
+    ref counts, not `origin/main` alone: a bundle produced on a review branch is
+    legitimate evidence whose anchor is fetchable the moment the branch is
+    pushed, and requiring `main` would call every such bundle unanchored until
+    the merge -- which says something false about whether a reviewer can get
+    the history."""
+    assert all(r.startswith(("refs/remotes/", "refs/tags/"))
+               for r in ec.TRUSTED_REFS), ec.TRUSTED_REFS
+    assert not any(r.startswith("refs/heads/") for r in ec.TRUSTED_REFS), \
+        "a local branch is on one machine, which is the whole distinction"

@@ -121,6 +121,106 @@ def unlabelled() -> set:
     return rx.reachable_modules() - set(roles())
 
 
+#: The version of the layering these ids implement. Recorded in the bundle, so
+#: a manifest says which derivation produced its ids rather than leaving a
+#: reader to assume today's.
+IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+def identity_block() -> dict:
+    """The role graph and the per-analysis reach, as CONTENT for the manifest.
+
+    Without this an id is a function of the manifest AND of the checkout it is
+    computed in. `roles()` and `analysis_reach()` read the registries and the
+    import graph of whatever tree is present, so moving a module from run+
+    analysis to analysis-only -- a refactor that touches no bundle byte --
+    changes `_by_role`'s filter and moves a HISTORICAL manifest's
+    `run_content_id`. That is the same coupling the layers exist to remove,
+    one level further out, and it is the Phase B prerequisite: an id written
+    into an archive must be reproducible from the archive (owner priority 8).
+
+    Recorded rather than recomputed, because the graph is a fact about the code
+    that made the bundle, and that code is already pinned beside it.
+    """
+    return {"schema": IDENTITY_SCHEMA,
+            "role_graph": {m: sorted(r) for m, r in sorted(roles().items())},
+            # The SEED of each reach entry, which is also the producer's
+            # dispatch set -- the edges cut out of `g33_refine_experiment` to
+            # make the two roles separable. Recorded because the cut is part of
+            # the derivation: without it a checker either cannot excuse the run
+            # module's imports of analysis ones, or has to excuse them from the
+            # bundle's own `analyses`, which is under-derived for a bundle that
+            # legitimately carries only some of them (an f64 bundle carries none
+            # of the f32-only three).
+            "analysis_seeds": dict(sorted(producible().items())),
+            "analysis_reach": {name: sorted(_closure({mod}))
+                               for name, mod in sorted(producible().items())}}
+
+
+def producible() -> dict:
+    """analysis name -> the module that produces it, for EVERY analysis a
+    bundle can carry.
+
+    `metric_trajectory` is written by `_driver_analyses` directly rather than
+    dispatched through a registry, so it is in neither `ANALYSES` nor
+    `MULTI_RUN` -- and it is in every instrumented as-is bundle. Left out of the
+    reach map, its `analysis_id` fell back to recomputing from the reader's
+    import graph, which is the one thing the map exists to prevent. Checked
+    against the manifest module's own vocabulary by a test, so the next
+    analysis produced outside a registry fails here rather than going quiet.
+    """
+    out = {name: mod for name, (mod, _fn)
+           in {**rx.ANALYSES, **rx.MULTI_RUN}.items()}
+    out["metric_trajectory"] = "g33_metric_trajectory"
+    return out
+
+
+#: Schemas that MUST carry the identity block. Below this a manifest predates
+#: it and the fallback is the only thing available; at or above it, falling
+#: back would let a bundle opt out of the contract by omission -- which is the
+#: defect the block was added to close, reproduced one level down.
+_REQUIRES_IDENTITY = "refinement_experiment_v3"
+
+
+def _requires_block(man: dict) -> bool:
+    return rm.at_least(str(man.get("schema", "")), _REQUIRES_IDENTITY)
+
+
+def _graph(man: dict) -> dict:
+    """The role graph THIS manifest was produced under, or today's.
+
+    A manifest that records one is read with it, whatever the checkout looks
+    like now. One that PREDATES the block has nothing else to use, so its ids
+    remain a function of the current tree -- a fact about those bundles rather
+    than a property of the layering, and `identity_is_self_contained` is how a
+    caller asks which it is holding.
+
+    From v3 the block is required, and its absence RAISES rather than falling
+    back. The fallback was unconditional at first, so a v3 manifest could omit
+    the block and quietly get checkout-dependent ids anyway: the contract was
+    opt-out-by-omission, which is exactly what the schema bump before it was
+    for (Codex stop-time review).
+    """
+    rec = (man.get("identity") or {}).get("role_graph")
+    if isinstance(rec, dict) and rec:
+        return {m: set(r) for m, r in rec.items()}
+    if _requires_block(man):
+        raise ValueError(
+            f"schema {man.get('schema')!r} requires an `identity.role_graph` "
+            f"and this manifest has none -- deriving an id from the current "
+            f"checkout would be the coupling the block exists to remove")
+    return roles()
+
+
+def identity_is_self_contained(man: dict) -> bool:
+    """Whether this manifest's ids can be recomputed from the manifest alone."""
+    ident = man.get("identity") or {}
+    return (ident.get("schema") == IDENTITY_SCHEMA
+            and isinstance(ident.get("role_graph"), dict)
+            and bool(ident["role_graph"])
+            and isinstance(ident.get("analysis_reach"), dict))
+
+
 def split_analyses(man: dict) -> tuple:
     """(derived, raw) entries of the `analyses` block.
 
@@ -209,7 +309,7 @@ def _by_role(man: dict, role: str) -> list:
     moves when any analysis module's bytes move -- which is the whole cost
     being separated here, reproduced inside the recipe.
     """
-    keep = {m for m, r in roles().items() if role in r}
+    keep = {m for m, r in _graph(man).items() if role in r}
     return content_only(
         sorted((e for e in (man.get("producer_modules") or [])
                 if isinstance(e, dict)
@@ -286,6 +386,17 @@ def analysis_reach(man: dict, name: str) -> set:
     analysis role. An id over the role would move every analysis whenever any
     analysis module changed, which is the cost being separated here reproduced
     one layer down."""
+    rec = (man.get("identity") or {}).get("analysis_reach", {})
+    if isinstance(rec, dict) and rec.get(name):
+        # RECORDED: the closure as it stood when the bundle was made. Recomputing
+        # it walks today's import graph, so an analyzer that grew an import
+        # since would widen a historical analysis's id (owner priority 8).
+        return set(rec[name])
+    if _requires_block(man):
+        raise ValueError(
+            f"schema {man.get('schema')!r} requires an `identity.analysis_reach` "
+            f"entry for {name!r} and this manifest has none -- recomputing the "
+            f"closure would walk the reader's imports, not the producer's")
     derived, _raw = split_analyses(man)
     mods = {Path(str(a["analyzer"])).stem for a in derived
             if a.get("analysis") == name}
@@ -316,6 +427,15 @@ def analysis_id(man: dict, name: str) -> str:
                     "entries": content_only(
                         sorted(entries, key=lambda a: str(a.get("file")))),
                     "modules": _pins_for(man, analysis_reach(man, name))})
+
+
+#: Re-exported so the producer keeps one import. The CHECK lives in the
+#: manifest module because it is a property of the DOCUMENT against the bytes
+#: the document pins -- and the evidence chain must be able to run it without
+#: importing the producer.
+BlobUnavailable = rm.BlobUnavailable
+graph_violations = rm.graph_violations
+pinned_imports = rm.pinned_imports
 
 
 def report(man: dict) -> None:

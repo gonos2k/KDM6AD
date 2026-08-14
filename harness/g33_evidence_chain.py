@@ -65,6 +65,24 @@ def sha256(path: Path) -> str:
 #: must fail, not be silently ignored.
 COMPUTED_FIELDS = ("binding_status", "coverage_status", "verification_status")
 
+#: Every SCALAR (possibly folded) field a claim carries, read into the parsed
+#: view. `grade` and `scope` were missing for as long as this reader existed:
+#: nothing here consumed them, so `ec.claims()[i]["grade"]` was silently absent
+#: and a caller using `.get` would read "" as the claim's grade. Found by
+#: comparing the WHOLE parsed structure against PyYAML instead of one field of
+#: it (owner priority 9).
+#:
+#: Checked against the registry's own key set by a test, so a field added to the
+#: file and not here is a failure rather than a quiet omission.
+SCALAR_FIELDS = ("status", "artifact_status", "evidence_kind", "blocker_kind",
+                 "migration_blocker", "grade", "scope", "basis", "text",
+                 "superseded_by")
+
+#: Sections written as a YAML BLOCK sequence. Their key line carries no value,
+#: and one that does is a flow collection this reader does not implement.
+BLOCK_SECTIONS = ("artifacts", "expected_values", "expected_predicates",
+                  "unbound")
+
 
 def claims() -> list[dict]:
     """[{id, evidence[], artifacts{path: digest}}].
@@ -88,6 +106,17 @@ def claims() -> list[dict]:
             in_art = m.group(1) in ("artifacts", "expected_values",
                                     "expected_predicates")
             section = m.group(1)
+            # A BLOCK section's key line carries no value. `artifacts: [a, b]`
+            # and `artifacts: {a: b}` are valid YAML flow collections that this
+            # reader does not implement -- and it read them as an EMPTY block,
+            # which silently downgrades a claim to "binds nothing" rather than
+            # failing (owner priority 9).
+            if m.group(1) in BLOCK_SECTIONS and m.group(2).strip():
+                raise ValueError(
+                    f"{cur['id']}: `{m.group(1)}` carries a value on its key "
+                    f"line ({m.group(2).strip()[:40]!r}). This reader "
+                    f"implements the BLOCK form only; a flow collection here "
+                    f"would be read as an empty section")
             if m.group(1) in COMPUTED_FIELDS:
                 # COMPUTED now, from what the claim binds and what it declares
                 # it does not -- see `_coverage_status`. Twice a claim declared
@@ -105,8 +134,16 @@ def claims() -> list[dict]:
                     f"and the status follows from it")
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "migration_blocker"):
+            elif m.group(1) in SCALAR_FIELDS:
+                # An ANCHOR or ALIAS is valid YAML and this reader would take
+                # the sigil as part of the text -- `grade: *s` reads as the
+                # literal "*s" while PyYAML resolves it to the anchored value.
+                # Two readers, two documents.
+                if m.group(2).strip()[:1] in ("&", "*"):
+                    raise ValueError(
+                        f"{cur['id']}: `{m.group(1)}` uses a YAML anchor or "
+                        f"alias, which this reader does not resolve -- write "
+                        f"the value out")
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -123,6 +160,21 @@ def claims() -> list[dict]:
                     cur[folded] = ""
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
+        elif (section == "evidence" and re.match(r"^ {6,}\S", line)
+              and not line.lstrip().startswith("#")):
+            # A FLOW SEQUENCE MAY WRAP. `evidence: [a.md,` continued on the next
+            # line is ONE value, and this reader took the first line only -- so
+            # G33-TURNOVER-002 cited two findings and the chain followed one.
+            # The stamper's parser already handled the continuation, so the two
+            # readers of the authority file disagreed about what it says. Found
+            # by comparing the whole parsed structure against PyYAML rather than
+            # one field of it (owner priority 9).
+            found = re.findall(r"[\w.]+\.md", line)
+            if not found:
+                raise ValueError(
+                    f"{cur['id']}: unparseable `evidence` continuation: "
+                    f"{line.strip()!r}")
+            cur["evidence"] += found
         elif in_art and section == "artifacts" and (
                 m := re.match(r"^      - +(\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
@@ -256,6 +308,124 @@ def _schema_violations(man: dict) -> list:
     return rm.validate(man)
 
 
+def _identity_graph_state(man: dict) -> dict:
+    """The recorded role graph against the CODE IT CLAIMS TO DESCRIBE.
+
+    Everything else checks the graph against the manifest's other declarations,
+    and a declaration cannot say whether a slice omits a genuine dependency.
+    Measured: a reach truncated from five modules to one validated clean, after
+    which changes to four of its five dependencies could not move its id
+    (Codex stop-time review).
+
+    Read from the PINNED BLOBS, never the working tree -- checking a recorded
+    graph against the checkout would defeat the recording. A blob this object
+    database does not have is `unresolvable`: a passing state for a routine run
+    on a clone that did not fetch it, a blocker for a closeout, like every
+    other "we could not really check this".
+    """
+    if not (man.get("identity") or {}).get("role_graph"):
+        return {"state": "identity-graph-underived"}
+    try:
+        bad = rm.graph_violations(man)
+    except rm.BlobUnavailable as e:
+        return {"state": "identity-graph-unresolvable", "detail": str(e)}
+    return ({"state": "matches"} if not bad else
+            {"state": "IDENTITY-GRAPH-MISMATCH", "detail": "; ".join(bad)[:400]})
+
+
+#: Schemas from which a bundle must record the role graph its layered ids are
+#: derived under. Spelled here rather than imported: `g33_identity` imports the
+#: producer, and this module deliberately does not.
+_IDENTITY_FROM = "refinement_experiment_v3"
+_IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+def _identity_state(man: dict) -> str:
+    """Whether this bundle's layered ids can be recomputed FROM the bundle.
+
+    Nothing asked. `identity_is_self_contained` existed and no gate called it,
+    so a bundle whose ids follow whichever checkout reads them looked exactly
+    like one whose ids do not -- and that difference is the whole Phase B
+    prerequisite (Codex stop-time review).
+
+    A pre-v3 bundle legitimately predates the block: reported, and a blocker
+    only in a closeout, because "these ids are not reproducible from the
+    archive" is precisely the thing a closeout must not pass over. From v3 the
+    block is required and its absence is a schema violation, caught upstream.
+    """
+    ident = man.get("identity") or {}
+    if (ident.get("schema") == _IDENTITY_SCHEMA
+            and isinstance(ident.get("role_graph"), dict) and ident["role_graph"]
+            and isinstance(ident.get("analysis_reach"), dict)):
+        return "matches"
+    if _rank(str(man.get("schema", ""))) >= _rank(_IDENTITY_FROM):
+        return "IDENTITY-UNDERIVED"
+    return "identity-predates-block"
+
+
+#: Manifest schemas in order. A local copy, for the same reason as above.
+_SCHEMA_ORDER = ("refinement_experiment_v1", "refinement_experiment_v2",
+                 "refinement_experiment_v3")
+
+
+def _rank(schema: str) -> int:
+    return _SCHEMA_ORDER.index(schema) if schema in _SCHEMA_ORDER else -1
+
+
+#: The arm stream's own account of the run that produced it.
+_STREAM_BEGIN = re.compile(
+    r"^G33N STREAM_BEGIN \d+ (\d+) \d+ \d+ \S+ (\S+) \S+ (\S+)$", re.M)
+_CALL_COLS = re.compile(r"^G33N CALL_BEGIN \d+ \d+ \d+ \d+ (\d+) ", re.M)
+
+
+def _arm_ran_state(p: Path, an: dict) -> str:
+    """An arm's typed run identity against the header of the stream itself.
+
+    The manifest says which run this is; the stream says which run it was. Two
+    records of one fact, and until now they were never compared -- the schema
+    checked `runtime_argv` against the manifest's own fields, which is the
+    manifest agreeing with itself (owner priority 5).
+    """
+    try:
+        text = p.read_text()
+    except (OSError, ValueError):
+        return "RUN-IDENTITY-UNREADABLE"
+    m = _STREAM_BEGIN.search(text)
+    cols = _CALL_COLS.findall(text)
+    if not m or not cols:
+        return "RUN-IDENTITY-ABSENT"
+    ran = an.get("ran") or {}
+    got = {"nsplit": int(m.group(1)), "carry": m.group(2), "rho": m.group(3),
+           "width": max(int(c) for c in cols)}
+    want = {k: ran.get(k) for k in got}
+    return "matches" if got == want else "RUN-IDENTITY-MISMATCH"
+
+
+def _payload_state(p: Path, want: str, root: Path) -> str:
+    """One file a bundle declares, checked for presence, CONTAINMENT and digest.
+
+    `Path.is_file()` follows symlinks, so a bundle member could be a link to a
+    file outside the bundle and match its digest perfectly. The digest would be
+    telling the truth and the bundle would still not be the self-contained,
+    immutable thing the archive is defined to be: move or edit the target and
+    the "immutable" bundle changes with it (owner priority 10).
+
+    Measured before enforcing: 169 payload files across the published archive,
+    0 symlinks -- so this states a property the bundles already have rather
+    than imposing one they would have to be rebuilt for.
+    """
+    if p.is_symlink() or (p.exists() and not p.is_file()):
+        return "NOT-SELF-CONTAINED"
+    if not p.is_file():
+        return "absent"
+    try:
+        if p.resolve().parent != root.resolve():
+            return "NOT-SELF-CONTAINED"
+    except OSError:
+        return "NOT-SELF-CONTAINED"
+    return "matches" if sha256(p) == want else "MISMATCH"
+
+
 def members_of(manifest: Path) -> list[dict]:
     """Each member beside `manifest`, checked against the digest it recorded.
 
@@ -295,10 +465,9 @@ def members_of(manifest: Path) -> list[dict]:
                  "detail": "; ".join(bad)}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
-        out.append({"file": mem["file"],
-                    "scope": "bundle", "origin": "member", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == mem.get("output_sha256")
-                              else "MISMATCH")})
+        out.append({"file": mem["file"], "scope": "bundle", "origin": "member",
+                    "state": _payload_state(p, mem.get("output_sha256"),
+                                            manifest.parent)})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
     # from an analysis -- so a chain that stopped at the raw stream stopped one
     # step short of the number being cited. This includes the ARM STREAMS, which
@@ -309,16 +478,16 @@ def members_of(manifest: Path) -> list[dict]:
     # bundle; nothing followed them (owner §7).
     for a in man.get("build_artifacts", []):
         p = manifest.parent / a["file"]
-        out.append({"file": a["file"],
-                    "scope": "bundle", "origin": "build_artifact", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == a.get("sha256")
-                              else "MISMATCH")})
+        out.append({"file": a["file"], "scope": "bundle",
+                    "origin": "build_artifact",
+                    "state": _payload_state(p, a.get("sha256"),
+                                            manifest.parent)})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
-        out.append({"file": an["file"],
-                    "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == an.get("sha256")
-                              else "MISMATCH")})
+        out.append({"file": an["file"], "scope": "bundle",
+                    "origin": "analysis",
+                    "state": _payload_state(p, an.get("sha256"),
+                                            manifest.parent)})
         # The RAW STREAMS a multi-run analysis read. They were written into the
         # bundle with a digest each and then never re-hashed by anything, so a
         # kept stream could be edited or deleted and the chain said nothing:
@@ -338,16 +507,24 @@ def members_of(manifest: Path) -> list[dict]:
             q = manifest.parent / src["file"]
             out.append({"file": src["file"], "scope": "bundle",
                         "origin": "multi_run_input",
-                        "state": ("absent" if not q.is_file() else
-                                  "matches" if sha256(q) == src.get("sha256")
-                                  else "MISMATCH")})
+                        "state": _payload_state(q, src.get("sha256"),
+                                                manifest.parent)})
         # The manifest's `ran` block against the one INSIDE the analysis it
         # describes. The producer copies it across, so they are two records of
         # one fact -- and two records never checked against each other are one
         # record and one decoration (Codex).
+        #
+        # An ARM STREAM has no JSON to read a `ran` out of -- it IS the raw
+        # driver run -- so it is checked against the thing it does have: its own
+        # G33N header. That is a stronger check than the producer's, because it
+        # runs on the PUBLISHED bytes rather than on the text in hand at
+        # production time (owner priority 5).
         if "ran" in an and p.is_file():
             out.append({"file": an["file"], "scope": "bundle",
-                        "origin": "run_identity", "state": _ran_state(p, an)})
+                        "origin": "run_identity",
+                        "state": (_arm_ran_state(p, an)
+                                  if an.get("analysis") == "arm_stream"
+                                  else _ran_state(p, an))})
         # The ANALYZER the manifest names, by digest. It was recorded and never
         # checked, so an analyzer could change under a published analysis with
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
@@ -368,6 +545,10 @@ def members_of(manifest: Path) -> list[dict]:
     # masked by the module row at the same path (Codex).
     out.extend({"scope": "repo", "origin": "module_pin", **m}
                for m in _module_states(man))
+    out.append({"file": "identity", "scope": "bundle", "origin": "identity",
+                "state": _identity_state(man)})
+    out.append({"file": "identity", "scope": "repo", "origin": "identity_graph",
+                **_identity_graph_state(man)})
     out.extend({"scope": "repo", "origin": "commit_anchor", **c}
                for c in _commit_states(man))
     return out
@@ -384,19 +565,40 @@ def members_of(manifest: Path) -> list[dict]:
 _REACHABLE: dict = {}
 
 
-def _reachable(commit: str) -> bool:
+#: Refs an EXTERNAL reader can be expected to have. A local branch satisfies
+#: `--contains` and says nothing about whether anyone else can fetch the
+#: history: a throwaway `wip/foo` is a ref, and it is on one machine
+#: (owner priority 10). Measured across the archive: all pinned commits are
+#: already contained by one of these, so this states a property the pins have
+#: rather than one they would have to be re-produced for.
+#:
+#: Any REMOTE-tracking ref, not `origin/main` alone. A bundle produced on a
+#: review branch is legitimate evidence and its anchor is fetchable the moment
+#: the branch is pushed; requiring `main` would mark every bundle made during a
+#: review as unanchored until the merge, which says something false about
+#: whether a reviewer can get the history.
+TRUSTED_REFS = ("refs/remotes/", "refs/tags/")
+
+
+def _reachable(commit: str, trusted: bool = False) -> bool:
     """Is `commit` reachable from a ref, or merely still in the object database?
 
     `git cat-file -e` answers the wrong question. A commit discarded by a
     rebase or a squash survives as a loose object until gc, so every blob
     pinned through it keeps resolving and every content digest keeps matching
     -- the whole chain stays green while the anchor is already dangling.
+
+    `trusted` narrows the question from "some ref here" to "a ref a reviewer
+    who clones this could have". Routine runs ask the first; a closeout asks
+    the second, because "the anchor resolves on the machine that made it" is
+    not what pinning a commit is for.
     """
-    key = (str(REPO), commit)
+    key = (str(REPO), commit, trusted)
     if key not in _REACHABLE:
-        r = subprocess.run(["git", "for-each-ref", "--contains", commit,
-                            "--count=1"], cwd=REPO, capture_output=True,
-                           text=True)
+        cmd = ["git", "for-each-ref", "--contains", commit, "--count=1"]
+        if trusted:
+            cmd += list(TRUSTED_REFS)
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
         _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
     return _REACHABLE[key]
 
@@ -421,14 +623,24 @@ def _commit_states(man: dict) -> list:
                 seen.setdefault(c, set()).add(key)
     out = []
     for c, keys in sorted(seen.items()):
-        ok = _reachable(c)
-        out.append({
-            "file": f"{c[:12]} [{'+'.join(sorted(keys))}]",
-            "state": "matches" if ok else "COMMIT-UNREACHABLE",
-            "detail": "" if ok else
-                      f"no ref contains {c[:12]} -- this pin anchors to a "
-                      f"commit discarded by a rebase or squash. It resolves "
-                      f"today only because gc has not run"})
+        where = f"{c[:12]} [{'+'.join(sorted(keys))}]"
+        if not _reachable(c):
+            out.append({
+                "file": where, "state": "COMMIT-UNREACHABLE",
+                "detail": f"no ref contains {c[:12]} -- this pin anchors to a "
+                          f"commit discarded by a rebase or squash. It resolves "
+                          f"today only because gc has not run"})
+        elif not _reachable(c, trusted=True):
+            # Reachable HERE and nowhere a reviewer could follow. A passing
+            # state for a routine run and a blocker for a closeout, like every
+            # other "we could not really check this" (owner priority 10).
+            out.append({
+                "file": where, "state": "commit-local-anchor-only",
+                "detail": f"{c[:12]} is contained only by a local ref -- a "
+                          f"reviewer cloning this repository could not fetch "
+                          f"the history the pin points into"})
+        else:
+            out.append({"file": where, "state": "matches", "detail": ""})
     return out
 
 
@@ -905,6 +1117,15 @@ PASSING_STATES = frozenset({
     "predicate-matches",
     "predicate-unavailable",   # the bundle the fact is declared against is absent
     "value-unavailable",       # the bundle the figure is declared against is not here
+    # The anchor resolves on THIS machine and nowhere a reviewer could follow.
+    "commit-local-anchor-only",
+    # The bundle predates the recorded role graph, so its layered ids are a
+    # function of whichever checkout computes them.
+    "identity-predates-block",
+    # No recorded graph to check against the pinned code.
+    "identity-graph-underived",
+    # ...or a graph whose pinned blobs this object database does not have.
+    "identity-graph-unresolvable",
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
@@ -922,6 +1143,15 @@ FAILING_STATES = frozenset({
     # whole bundle is excusable on a clone; absence of the manifest INSIDE one
     # is a broken bundle, and it must not read as the former.
     "MANIFEST-ABSENT-IN-PRESENT-BUNDLE",
+    # A payload that is a symlink, or resolves outside its own bundle. The
+    # digest can be perfectly true and the bundle still not be the immutable,
+    # self-contained thing the archive is defined to be.
+    "NOT-SELF-CONTAINED",
+    # A v3 bundle that should carry the role graph and does not. The schema
+    # refuses it too; this is the row that says so per bundle.
+    "IDENTITY-UNDERIVED",
+    # The recorded graph disagrees with the code it claims to describe.
+    "IDENTITY-GRAPH-MISMATCH",
 })
 
 
@@ -945,6 +1175,15 @@ EXCUSED_BY_ABSENCE = frozenset({
     # and a blocker in a closeout, like every other unrecoverable entry
     # (owner §10).
     "legacy-analyzer-changed",
+    # Same shape, one layer out: the commit resolves because we are standing on
+    # the machine that has it (owner priority 10).
+    "commit-local-anchor-only",
+    # ...and one layer out again: the ids resolve because we are standing in a
+    # checkout whose role graph happens to match. Phase B cannot start while a
+    # pinned bundle answers this way (Codex stop-time review).
+    "identity-predates-block",
+    "identity-graph-underived",
+    "identity-graph-unresolvable",
     "value-unavailable",
     # Added with `expected_predicates` and, at first, only to PASSING_STATES --
     # so a closeout failed a FIGURE whose bundle was absent and passed a FACT

@@ -71,11 +71,29 @@ from pathlib import Path
 #: width, label and header do not all agree (owner D6).
 _H = r"([0-9A-F]{8}|[0-9A-F]{16})"
 
-#: Declared by the driver from `storage_size`, so it is what the compiler did
-#: rather than what the build script meant. Absent in every stream produced
-#: before the f64 family existed, which is exactly the f32 default.
-PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+)$")
+#: Declared by the driver from `storage_size`, `radix`, `digits` and
+#: `maxexponent`, so it is what the compiler reports about its own model rather
+#: than what the build script meant. Absent in every stream produced before the
+#: f64 family existed, which is exactly the f32 default.
+#:
+#: EIGHT fields, not two. A width says how many bytes to take and says nothing
+#: about how they are laid out -- and `_real` unpacks with `>f`/`>d`, which is
+#: IEEE binary32/binary64, a thing no Fortran standard promises from a storage
+#: size. Two fields would be a header that states half of what the reader
+#: assumes, which is worse than the archived streams that state none of it and
+#: are read under a documented default (owner priority 7).
+PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+) (\d+) (\d+) (\d+) "
+                      r"(\d+) (\d+) (\d+)$")
+#: ...and any PROTOCOL line at all, so a header in the OLD two-field shape is
+#: refused rather than falling through to "no header, assume f32" -- which would
+#: read an f64 stream as f32 and is the whole defect the header exists for.
+ANY_PROTOCOL = re.compile(r"^G33N PROTOCOL\b")
 DEFAULT_REAL_BYTES = 4
+
+#: bytes -> (radix, digits, maxexponent) for the IEEE binary formats this
+#: parser can decode. A stream reporting anything else is refused: the bytes
+#: would be a real number in a model `struct.unpack` does not implement.
+IEEE_FORMAT = {4: (2, 24, 128), 8: (2, 53, 1024)}
 
 #: Payload width per LABEL, in hex digits. The label says how wide the bytes
 #: are; what the number MEANS is the schema's dtype, and after D6 those are two
@@ -201,6 +219,42 @@ def _real(label: str, h: str, real_bytes: int, call=None) -> float:
     return struct.unpack(">d" if want == 8 else ">f", bytes.fromhex(h))[0]
 
 
+#: Decoders for a checked-only payload, by storage label. `i32` decodes and
+#: imposes nothing: a stage integer's domain is a property of the FIELD, not of
+#: the width, and `mstep` -- the one this parser bounds -- is bounded where it is
+#: consumed. Decoding it anyway is what makes "every label has a decoder" a
+#: checkable statement rather than a list someone has to remember to extend.
+_DECODE = {"f32": lambda h: struct.unpack(">f", bytes.fromhex(h))[0],
+           "f64": lambda h: struct.unpack(">d", bytes.fromhex(h))[0],
+           "i32": lambda h: struct.unpack(">i", bytes.fromhex(h))[0],
+           "u8": lambda h: h}
+
+
+def _domain(fam: str, label: str, hexv: str, line: str) -> None:
+    """The payload is a VALUE, not just the right number of hex digits.
+
+    Width and label agreement says the bytes are the size they claim. It does
+    not say they are a number: `7FF8000000000000` is a perfectly well-formed
+    sixteen-digit f64 and it is NaN, and `FF` is a perfectly well-formed u8 and
+    the emitter can only write `00` or `01` (`merge(1, 0, <logical>)`).
+    Measured: both parsed clean.
+
+    The consumed records have had this since a NaN XFER reached a JSON writer
+    that emits a bare `NaN` token -- malformed evidence that had passed every
+    gate (owner P0-5). The checked-only families got the width half of that
+    check and not the value half, so the same NaN in the op ladder was fine
+    (owner priority 2).
+    """
+    v = _DECODE[label](hexv)
+    if label == "u8":
+        if v not in ("00", "01"):
+            raise StreamError(
+                f"{fam} u8 payload {v!r} is outside the boolean domain the "
+                f"emitter can write (merge(1, 0, ...)): {line!r}")
+    elif isinstance(v, float) and (v != v or abs(v) == float("inf")):
+        raise StreamError(f"{fam} {label} payload is {v}: {line!r}")
+
+
 def _shape(line: str, fam: str, widths: dict) -> None:
     """One emitted record this parser does not consume, checked anyway.
 
@@ -231,6 +285,7 @@ def _shape(line: str, fam: str, widths: dict) -> None:
         raise StreamError(
             f"{fam} record labelled {label} carries {len(hexv)} hex digits, "
             f"not {HEX_WIDTH[label]}: {line!r}")
+    _domain(fam, label, hexv, line)
     key = (fam, tuple(m.group(g) for g in keys))
     if widths.setdefault(key, label) != label:
         raise StreamError(
@@ -428,7 +483,7 @@ def calls(stream: str) -> list:
     # STREAM_BEGIN/END position checks. Leaving it in made those checks depend
     # on which of the two the driver happens to write first.
     g33n = [l for l in stream.splitlines()
-            if l.startswith("G33N") and not PROTOCOL.match(l)]
+            if l.startswith("G33N") and not ANY_PROTOCOL.match(l)]
     _expect_stream(g33n, "stream carries no G33N records")
     _expect_stream(STREAM_BEGIN.match(g33n[0]),
                    f"first G33N record is not STREAM_BEGIN: {g33n[0]!r}")
@@ -476,7 +531,23 @@ def calls(stream: str) -> list:
                            f"stream declares {db}-byte doubles; -fdefault-real-8 "
                            f"without -fdefault-double-8 promotes them to 16 and "
                            f"the schema-f64 fields stop being readable")
+            for what, nbytes, at in (("default reals", rb, 3), ("doubles", db, 6)):
+                got = tuple(int(m.group(g)) for g in (at, at + 1, at + 2))
+                if got != IEEE_FORMAT[nbytes]:
+                    raise StreamError(
+                        f"stream declares {nbytes}-byte {what} with "
+                        f"(radix, digits, maxexponent) {got}, not "
+                        f"{IEEE_FORMAT[nbytes]} -- the reader decodes IEEE "
+                        f"binary{nbytes * 8}, and a width alone does not make "
+                        f"the bytes one")
             continue
+        if ANY_PROTOCOL.match(line):
+            raise StreamError(
+                f"malformed G33N PROTOCOL header: {line!r} -- it must carry the "
+                f"real and double widths AND both radix/digits/maxexponent "
+                f"triples. A header stating half of what the reader assumes is "
+                f"worse than none, because none is read under a documented "
+                f"default and half is read as agreement")
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
@@ -556,8 +627,32 @@ def calls(stream: str) -> list:
         # -- and CAPIN had no completeness check to notice the loss (owner P0-4).
         if fam in EXTENSION_FAMILIES and cur is None:
             raise StreamError(f"{fam} record outside any call: {line!r}")
+        # CLOSED WORLD, and it has to be closed HERE.
+        #
+        # The unknown-family refusals below sit AFTER this point, so they only
+        # ever saw records inside a bracket. An unknown `G33N` between two
+        # calls, an unknown `G33F` before the first one, a well-formed G33FOP
+        # after STREAM_END -- each was dropped without a word, and the parsed
+        # call count did not move. Measured: four such mutations on a real f64
+        # stream, four silent acceptances. That is the same defect class as the
+        # `********` payload that vanished instead of failing: a record the
+        # parser cannot place must not become a record that was never there
+        # (owner priority 1).
+        #
+        # Every bracket and header record is handled above and `continue`d, so
+        # anything reaching here in this parser's own namespace is a DATA
+        # record, and a data record outside a call describes nothing. Real
+        # streams carry none: measured 0 across every stream this parser reads.
+        # Other protocols sharing the same stdout -- G33R, G33P -- are not ours
+        # and are left alone, which is what keeps the world closed rather than
+        # merely small.
         if cur is None:
-            continue                      # records outside any call: not ours
+            if line.startswith(("G33N", "G33F")):
+                raise StreamError(
+                    f"record {'after STREAM_END' if ended else 'outside any call'}"
+                    f": {line!r} -- this parser's namespace is closed, so a "
+                    f"record it cannot place is a protocol change, not noise")
+            continue                      # another protocol's records: not ours
         if fam in FAMILY_FEATURE:
             feat = FAMILY_FEATURE[fam]
             if header and feat not in header["features"]:
@@ -649,6 +744,25 @@ def calls(stream: str) -> list:
                         f"at column {lo}")
                 lo = b + 1
     return out
+
+
+def stream_header(stream: str) -> dict:
+    """What the stream DECLARES about the run that produced it.
+
+    `calls()` reads this to validate the body and then throws it away, so a
+    caller wanting to ask "which run is this?" had to re-derive it from a
+    filename or trust a manifest field. Those are the two things that cannot
+    check each other (owner priority 5).
+    """
+    for line in stream.splitlines():
+        if (m := STREAM_BEGIN.match(line)):
+            (schema, nsplit, ntile, expected, algo, mode, feats,
+             rho_profile) = m.groups()
+            return {"schema": int(schema), "nsplit": int(nsplit),
+                    "ntile": int(ntile), "expected_calls": int(expected),
+                    "algorithm": algo, "mode": mode,
+                    "features": set(feats.split(",")), "rho_profile": rho_profile}
+    raise StreamError("stream carries no G33N STREAM_BEGIN header")
 
 
 def _expect_stream(cond, msg):

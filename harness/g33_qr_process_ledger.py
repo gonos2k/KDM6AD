@@ -224,6 +224,36 @@ def verify_replay(cells: dict, state: dict, dtcld: float, *, label: str) -> dict
     return {"cells": len(cells), "cold_gate_disagrees": len(flag_disagrees)}
 
 
+#: How far a WEIGHTED closure may sit from zero and still be closed.
+#:
+#: The unweighted closure is exact and is tested as `== 0.0`: every term and the
+#: actual difference are the same f32 words summed in float64 in the same order.
+#: The weighted one cannot be, and not because anything is approximate --
+#: `w*(a+b)` and `w*a + w*b` are different float64 expressions, so multiplying
+#: through the sum reorders it. What is left is float64 rounding over the cells
+#: of one column, which this bounds RELATIVELY: an absolute bound would mean
+#: something different on a column whose total is 1e-5 and one whose total is
+#: 1e+2, and both occur here.
+#:
+#: 64 * 2^-53 is ~7.1e-15 -- room for a few tens of roundings, far below any
+#: difference a term could carry, so a real gap cannot hide under it.
+F64_CLOSURE_TOL = 64 * 2.0 ** -53
+
+
+def _closes(basis: str, gap: float, actual: float) -> bool:
+    """Whether a per-basis closure is closed.
+
+    Exactly for the unweighted basis, and to the float64 rounding of the
+    reordered sum for the weighted ones -- see `F64_CLOSURE_TOL`. A zero actual
+    difference is closed only by a zero gap: there is nothing to take a relative
+    bound against, and calling any gap small compared to zero would make the
+    check pass hardest exactly where it means least.
+    """
+    if basis == "unweighted" or actual == 0.0:
+        return gap == 0.0
+    return abs(gap) <= F64_CLOSURE_TOL * abs(actual)
+
+
 def decompose(base_text: str, got_text: str, width: int, run) -> dict:
     """Per column, which terms move, weighted and unweighted."""
     a, b = (read_cells(base_text, label="base"), read_cells(got_text, label="got"))
@@ -279,6 +309,19 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             raise ra.RefineError(f"column {col} emitted no {STAGE} records")
         acc = {basis: {} for basis in ("unweighted", "operator", "physical")}
         totals = dict.fromkeys(acc, 0.0)
+        # CLOSURE against the update the runs actually performed, in raw f32
+        # words: sum_j C_j must equal the real post-state difference. The
+        # telescoping is exact by construction GIVEN a shared pre-state, and
+        # this is the statement that says so rather than assuming it.
+        #
+        # PER BASIS (owner priority 4). It was computed unweighted only, while
+        # the claim's headline -- 86.99/13.01 -- is the mass-weighted pair. The
+        # weighted closure does follow from the per-cell identity under a fixed
+        # weight, so this is not a doubt about the arithmetic; it is that a
+        # reader had to do that step themselves to see the headline closed. The
+        # actual difference is carried into each basis by the SAME weight the
+        # terms take, in the same loop, so nothing is re-derived.
+        actual = dict.fromkeys(acc, 0.0)
         preclamp: dict = {}
         for key in keys:
             _c, _l, _col, k = key
@@ -291,6 +334,10 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             qv0 = run[("initial", "qv", col, k)]
             w = {"unweighted": 1.0, "operator": rho * dz,
                  "physical": rho / (1.0 + qv0) * dz}
+            d = float(np.float32(ur.f32(sb[key]["qr_post"]))
+                      - np.float32(ur.f32(sa[key]["qr_post"])))
+            for basis, wt in w.items():
+                actual[basis] += d * wt
             for term, v in post.items():
                 for basis, wt in w.items():
                     acc[basis][term] = acc[basis].get(term, 0.0) + v * wt
@@ -298,25 +345,22 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             for term, v in pre.items():
                 preclamp[term] = preclamp.get(term, 0.0) + v
 
-        # CLOSURE against the update the runs actually performed, in raw f32
-        # words: sum_j C_j must equal the real post-state difference. The
-        # telescoping is exact by construction GIVEN a shared pre-state, and
-        # this is the statement that says so rather than assuming it.
-        actual = 0.0
-        for key in keys:
-            actual += float(np.float32(ur.f32(sb[key]["qr_post"]))
-                            - np.float32(ur.f32(sa[key]["qr_post"])))
-        gap = actual - totals["unweighted"]
+        gaps = {basis: actual[basis] - totals[basis] for basis in acc}
 
         out[str(col)] = {
             "cells": len(keys),
-            "actual_post_delta": actual,
-            "telescoped_minus_actual": gap,
-            "closes_against_actual_update": gap == 0.0,
+            "actual_post_delta": actual["unweighted"],
+            "telescoped_minus_actual": gaps["unweighted"],
+            "closes_against_actual_update": gaps["unweighted"] == 0.0,
             "cold_cells": sum(1 for k in keys if ur.is_cold(sa[k]["t"])),
             **{basis: {
                 "delta": acc[basis],
                 "total_delta": totals[basis],
+                # The same closure, in the basis the share is reported in.
+                "actual_post_delta": actual[basis],
+                "telescoped_minus_actual": gaps[basis],
+                "closes_against_actual_update": _closes(basis, gaps[basis],
+                                                        actual[basis]),
                 # Shares only where there IS a change: a share of a zero total
                 # is not a number, and 0/0 printed as a percentage is how a
                 # null result acquires a mechanism.

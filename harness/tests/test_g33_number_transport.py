@@ -364,12 +364,20 @@ def test_an_extension_record_outside_any_call_is_REFUSED():
         nt.calls(s)
 
 
-def test_a_NON_extension_record_outside_a_call_is_still_tolerated():
-    """The stream legitimately carries STAGE records for stages this parser does
-    not read. Refusing those would reject valid decision streams; only the
-    number-extension families are bracket-bound."""
+def test_a_stage_this_parser_does_not_READ_is_still_carried():
+    """The property the tolerance was FOR: the stream legitimately carries
+    stages this parser never consumes -- kernel_init_constants, the micro
+    bisection -- and refusing those would reject valid decision streams.
+
+    It used to be tested by putting one OUTSIDE the call bracket, which is a
+    different proposition and the one that was wrong. Measured across the whole
+    published archive: 55 streams, 6,265,378 records in this parser's
+    namespace, 0 of them outside a bracket. So "unread stage" is tolerated
+    here, inside the call, and "outside any call" is refused above
+    (owner priority 1).
+    """
     stray = "G33F STAGE 1 - kernel_init 0 rhoair0 1 0 f32 3F800000\n"
-    s = _hdr(1) + stray + _call(1) + "G33N STREAM_END\n"
+    s = _stream(_call(1).replace("G33F MSTEP 1 main 1", stray + "G33F MSTEP 1 main 1", 1))
     assert [c["call_id"] for c in nt.calls(s)] == [1]
 
 
@@ -556,6 +564,10 @@ def test_a_legitimate_mstep_still_parses():
 # stayed unfixed. What replaces them is an agreement, checked on every read,
 # between a record's label, its hex width and the stream's PROTOCOL header.
 
+#: The header a real f64 build writes: widths AND both IEEE triples.
+_PROTO64 = "G33N PROTOCOL 8 8 2 53 1024 2 53 1024"
+_PROTO32 = "G33N PROTOCOL 4 8 2 24 128 2 53 1024"
+
 _F64_ONE = "3FF0000000000000"      # 1.0
 _F32_ONE = "3F800000"
 
@@ -566,7 +578,7 @@ def _f64(text):
     for line in text.splitlines():
         if line.startswith("G33N STREAM_BEGIN"):
             # AFTER the header, which is where the driver writes it.
-            out += [line, "G33N PROTOCOL 8 8"]
+            out += [line, _PROTO64]
             continue
         line = line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
         if line.startswith("G33N CALL_BEGIN"):
@@ -610,7 +622,7 @@ def test_a_RECORD_that_disagrees_with_the_HEADER_is_refused():
     # ...and the unlabelled `delt`, whose width is the header's word alone.
     s = _stream(_call(1))
     with pytest.raises(nt.StreamError, match="hex digits"):
-        nt.calls(s.replace("\n", "\nG33N PROTOCOL 8 8\n", 1))
+        nt.calls(s.replace("\n", "\n" + _PROTO64 + "\n", 1))
 
 
 def test_a_stream_with_NO_protocol_header_reads_as_f32():
@@ -626,8 +638,8 @@ def test_a_stream_whose_DOUBLES_were_promoted_to_16_bytes_is_refused():
     REAL(16), and the schema-f64 fields stop being readable at all. The build
     script passes both; this refuses a stream built by something that did not."""
     with pytest.raises(nt.StreamError, match="16-byte doubles|byte doubles"):
-        nt.calls(_f64(_stream(_call(1))).replace("PROTOCOL 8 8",
-                                                 "PROTOCOL 8 16"))
+        nt.calls(_f64(_stream(_call(1))).replace(
+            "PROTOCOL 8 8 2 53 1024", "PROTOCOL 8 16 2 53 1024"))
 
 
 # --- the header is a STREAM-WIDE contract (owner priority 2) -----------------
@@ -642,8 +654,8 @@ def test_a_stream_whose_DOUBLES_were_promoted_to_16_bytes_is_refused():
 def test_a_SECOND_protocol_header_is_refused():
     s = _f64(_stream(_call(1)))
     with pytest.raises(nt.StreamError, match="two G33N PROTOCOL headers"):
-        nt.calls(s.replace("G33N PROTOCOL 8 8",
-                           "G33N PROTOCOL 8 8\nG33N PROTOCOL 8 8"))
+        nt.calls(s.replace(_PROTO64,
+                           _PROTO64 + '\n' + _PROTO64))
 
 
 def test_a_MIXED_WIDTH_stream_is_refused_at_its_second_header():
@@ -651,7 +663,7 @@ def test_a_MIXED_WIDTH_stream_is_refused_at_its_second_header():
     header, calls k+1.. at another. Every record agrees with the header in
     force when it was read, and the stream is still not one run."""
     s = _stream(_call(1), _call(2))
-    mixed = s.replace("G33N CALL_BEGIN 2", "G33N PROTOCOL 8 8\nG33N CALL_BEGIN 2")
+    mixed = s.replace("G33N CALL_BEGIN 2", _PROTO64 + "\nG33N CALL_BEGIN 2")
     with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
         nt.calls(mixed)
 
@@ -662,22 +674,22 @@ def test_a_LATE_protocol_header_is_refused():
     s = _stream(_call(1))
     with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
         nt.calls(s.replace("G33F MSTEP 1 main 1",
-                           "G33N PROTOCOL 8 8\nG33F MSTEP 1 main 1"))
+                           _PROTO64 + "\nG33F MSTEP 1 main 1"))
 
 
 def test_a_protocol_header_after_STREAM_END_is_refused():
     s = _stream(_call(1))
     with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
         nt.calls(s.replace("G33N STREAM_END",
-                           "G33N STREAM_END\nG33N PROTOCOL 8 8"))
+                           "G33N STREAM_END\n" + _PROTO64))
 
 
 def test_the_header_may_still_sit_on_either_side_of_STREAM_BEGIN():
     """The driver writes it after; nothing in the format requires that, and the
     position check is about the BODY, not about which header line comes first."""
     s = _f64(_stream(_call(1)))
-    before = s.replace("G33N PROTOCOL 8 8\n", "")
-    before = "G33N PROTOCOL 8 8\n" + before
+    before = s.replace(_PROTO64 + '\n', "")
+    before = _PROTO64 + '\n' + before
     assert nt.calls(before)[0]["delt"] == nt.calls(s)[0]["delt"] == 100.0
 
 
@@ -757,3 +769,140 @@ def test_a_PINNED_narrow_field_beside_a_wide_one_is_accepted_at_f64():
            "G33FOP 1 main 1 1 0 QR_FALK shadow_falk_f32 f32 3F800000\n")
     got = nt.calls(_with_ops(_f64(_stream(_call(1))), ops))
     assert len(got) == 1
+
+
+# --- the namespace is CLOSED, and it closes at the bracket (owner priority 1) -
+#
+# The unknown-family refusals lived AFTER `if cur is None: continue`, so they
+# only ever saw records inside a call. Measured on a real f64 stream: an
+# unknown G33N between two calls, an unknown G33F before the first, a
+# well-formed G33FOP after STREAM_END -- four mutations, four silent
+# acceptances, the parsed call count unchanged at 12. That is the `********`
+# defect again: a record the parser cannot place became a record that was never
+# there.
+
+@pytest.mark.parametrize("what,mutate", [
+    ("unknown G33N between calls",
+     lambda t: t.replace("G33N CALL_BEGIN", "G33N FUTURE_FAMILY 1 2\nG33N CALL_BEGIN", 1)),
+    ("unknown G33F between calls",
+     lambda t: t.replace("G33N CALL_BEGIN", "G33F NOSUCHFAMILY 1 2\nG33N CALL_BEGIN", 1)),
+    ("a WELL-FORMED op record outside any call",
+     lambda t: t.replace("G33N STREAM_END",
+                         "G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 3F800000\n"
+                         "G33N STREAM_END", 1)),
+    ("a WELL-FORMED stage record outside any call",
+     lambda t: t.replace("G33N STREAM_END",
+                         "G33F STAGE 1 - kernel_init_constants 0 pi 1 -1 f32 40490FDB\n"
+                         "G33N STREAM_END", 1)),
+    ("anything at all after STREAM_END",
+     lambda t: t.replace("G33N STREAM_END", "G33N STREAM_END\nG33F NOSUCH 9 9", 1)),
+])
+def test_a_record_this_parser_cannot_PLACE_is_refused(what, mutate):
+    with pytest.raises(nt.StreamError, match="outside any call|after STREAM_END"):
+        nt.calls(mutate(_stream(_call(1))))
+
+
+def test_ANOTHER_protocols_records_in_the_same_stdout_are_left_alone():
+    """What keeps the world closed rather than merely small: a driver writes
+    G33R and G33P into the same stdout, and those are not this parser's to
+    place. Only the G33N/G33F namespace is closed."""
+    s = _stream(_call(1)).replace(
+        "G33N CALL_BEGIN",
+        "G33P INITIAL qv 1 0 3F800000\nG33R STATE 1 1 1 th 3F800000\nG33N CALL_BEGIN", 1)
+    assert len(nt.calls(s)) == 1
+
+
+# --- a payload is a VALUE, not a digit count (owner priority 2) --------------
+
+@pytest.mark.parametrize("what,record", [
+    ("op f64 NaN",   "G33FOP 1 main 1 1 0 QR_FALK mul_work1 f64 7FF8000000000000"),
+    ("op f64 +Inf",  "G33FOP 1 main 1 1 0 QR_FALK mul_work1 f64 7FF0000000000000"),
+    ("op f32 NaN",   "G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 7FC00000"),
+    ("op u8 = FF",   "G33FOP 1 main 1 1 0 QR_OUTFLOW cap_active u8 FF"),
+    ("op u8 = 02",   "G33FOP 1 main 1 1 0 QR_OUTFLOW cap_active u8 02"),
+    ("stage f32 -Inf",
+     "G33F STAGE 1 - micro_post_melt 0 qq 1 0 f32 FF800000"),
+])
+def test_a_checked_only_payload_must_be_a_NUMBER_the_emitter_could_write(what, record):
+    """Width and label agreement says the bytes are the size they claim, not
+    that they are a number. The consumed records have had this since a NaN XFER
+    reached a JSON writer that emits a bare `NaN` token; the op ladder got the
+    width half and not the value half."""
+    bad = _with_ops(_stream(_call(1)), record + "\n")
+    with pytest.raises(nt.StreamError, match="payload"):
+        nt.calls(bad)
+
+
+def test_the_LEGAL_boolean_values_still_pass():
+    """`merge(1, 0, <logical>)` through Z2.2 is exactly these two."""
+    for h in ("00", "01"):
+        s = _with_ops(_stream(_call(1)),
+                      f"G33FOP 1 main 1 1 0 QR_OUTFLOW cap_active u8 {h}\n")
+        assert len(nt.calls(s)) == 1
+
+
+def test_EVERY_label_the_parser_admits_has_a_DECODER():
+    """The completeness rule on the third vocabulary. A label added to
+    HEX_WIDTH without a decoder would raise KeyError deep inside a parse
+    instead of being refused as an unknown label."""
+    assert set(nt.HEX_WIDTH) == set(nt._DECODE), \
+        sorted(set(nt.HEX_WIDTH) ^ set(nt._DECODE))
+
+
+# --- the header says the FORMAT, not only the width (owner priority 7) -------
+#
+# `_real` unpacks with `>f`/`>d`, which is IEEE binary32/binary64. A storage
+# size of four bytes does not make a Fortran real one of those -- the standard
+# does not say so -- and the header declared only the size. So the reader's
+# strongest assumption was the one thing the stream never stated.
+
+@pytest.mark.parametrize("what,header", [
+    ("the old two-field shape", "G33N PROTOCOL 8 8"),
+    ("widths and one triple", "G33N PROTOCOL 8 8 2 53 1024"),
+    ("a trailing field", "G33N PROTOCOL 8 8 2 53 1024 2 53 1024 0"),
+])
+def test_a_HALF_STATED_protocol_header_is_refused(what, header):
+    """Worse than none: none is read under a documented default, half is read
+    as agreement."""
+    s = _f64(_stream(_call(1))).replace(_PROTO64, header)
+    with pytest.raises(nt.StreamError, match="malformed G33N PROTOCOL"):
+        nt.calls(s)
+
+
+@pytest.mark.parametrize("what,triple", [
+    ("a decimal radix", "10 53 1024"),
+    ("binary32 digits on an 8-byte real", "2 24 1024"),
+    ("a truncated exponent range", "2 53 308"),
+])
+def test_a_NON_IEEE_real_model_is_refused(what, triple):
+    s = _f64(_stream(_call(1))).replace(
+        _PROTO64, f"G33N PROTOCOL 8 8 {triple} 2 53 1024")
+    with pytest.raises(nt.StreamError, match="radix, digits, maxexponent"):
+        nt.calls(s)
+
+
+def test_the_DOUBLE_model_is_checked_too():
+    """`double precision` is what the schema-f64 fields are, and it is decoded
+    with the same assumption."""
+    s = _f64(_stream(_call(1))).replace(
+        _PROTO64, "G33N PROTOCOL 8 8 2 53 1024 10 53 1024")
+    with pytest.raises(nt.StreamError, match="radix, digits, maxexponent"):
+        nt.calls(s)
+
+
+def test_an_f32_build_states_its_own_format():
+    """The f32 side of the same header, so the check is not f64-only."""
+    s = _stream(_call(1)).replace("G33N STREAM_BEGIN",
+                                  _PROTO32 + "\nG33N STREAM_BEGIN", 1)
+    assert nt.calls(s)[0]["delt"] == 100.0
+    bad = s.replace(_PROTO32, "G33N PROTOCOL 4 8 2 53 128 2 53 1024")
+    with pytest.raises(nt.StreamError, match="radix, digits, maxexponent"):
+        nt.calls(bad)
+
+
+def test_a_stream_with_NO_header_is_still_read_under_the_documented_default():
+    """Every archived stream predates the header entirely, and the default is
+    the answer for them rather than a guess -- unchanged by this."""
+    s = _stream(_call(1))
+    assert "PROTOCOL" not in s
+    assert nt.calls(s)[0]["delt"] == 100.0

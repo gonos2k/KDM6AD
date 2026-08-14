@@ -246,7 +246,25 @@ def test_two_analyses_are_COUPLED_to_the_whole_layer_by_one_import():
 # --- the same contract, on the real archive --------------------------------
 
 def _published():
-    return sorted(Path.home().glob("kdm6ad-g33m-*/*.bundles/*/manifest.json"))
+    """The CURRENT bundles -- what each store symlink points at.
+
+    Not every directory under `*.bundles/`. A bundle is immutable and a
+    re-production leaves the old one in place on purpose, so globbing the store
+    walks superseded bundles too -- and a superseded bundle can never satisfy a
+    contract added after it, because nothing may edit it. Requiring that would
+    mean no contract could ever be added without rewriting history.
+
+    A claim pinning a superseded bundle is still checked: the evidence chain
+    resolves the PATH the claim names, and `rm.validate` refuses a v3 manifest
+    whose identity block is incomplete wherever it is reached from
+    (Codex stop-time review).
+    """
+    out = []
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            if link.is_symlink() and (link.resolve() / "manifest.json").is_file():
+                out.append(link.resolve() / "manifest.json")
+    return out
 
 
 needs_bundles = pytest.mark.skipif(not _published(),
@@ -428,3 +446,226 @@ def test_and_a_REAL_commit_that_DID_change_the_run_code_moves_it():
     ma["producer_modules"] = _real_pins(a, [path])
     mb["producer_modules"] = _real_pins(b, [path])
     assert gi.run_recipe_id(ma) != gi.run_recipe_id(mb)
+
+
+# --- an id must be a function of the MANIFEST (owner priority 8) -------------
+#
+# `roles()` and `analysis_reach()` read the registries and the import graph of
+# whatever tree is present. So a refactor that moves a module from run+analysis
+# to analysis-only -- touching no bundle byte -- changes `_by_role`'s filter and
+# moves a HISTORICAL manifest's run_content_id. That is the coupling the layers
+# exist to remove, one level further out, and it is what Phase B was waiting on:
+# an id written into an archive has to be reproducible from the archive.
+
+
+def _with_identity(man):
+    out = copy.deepcopy(man)
+    out["identity"] = gi.identity_block()
+    return out
+
+
+def test_a_recorded_role_graph_makes_the_ids_SELF_CONTAINED():
+    man = _with_identity(_manifest())
+    assert gi.identity_is_self_contained(man)
+    assert not gi.identity_is_self_contained(_manifest())
+
+
+def test_a_REFACTOR_of_the_role_graph_does_not_move_a_RECORDED_id(monkeypatch):
+    """The regression. `g33_number_transport` carries both roles today; move it
+    to analysis-only and a manifest that RECORDS the old graph must not notice.
+    """
+    plain, recorded = _manifest(), _with_identity(_manifest())
+    before = (gi.run_recipe_id(recorded), gi.run_content_id(recorded))
+    before_plain = (gi.run_recipe_id(plain), gi.run_content_id(plain))
+
+    moved = {m: (r - {"run"} if m == "g33_number_transport" else r)
+             for m, r in gi.roles().items()}
+    monkeypatch.setattr(gi, "roles", lambda: moved)
+
+    assert (gi.run_recipe_id(recorded), gi.run_content_id(recorded)) == before, \
+        "a recorded graph must be read with, whatever the checkout looks like"
+    assert (gi.run_recipe_id(plain), gi.run_content_id(plain)) != before_plain, \
+        "...and without one the id DOES follow the tree -- or this proves nothing"
+
+
+def test_a_recorded_analysis_reach_does_not_follow_the_import_graph(monkeypatch):
+    """The same thing one layer down: an analyzer that grows an import would
+    widen a historical analysis's id."""
+    recorded = _with_identity(_manifest())
+    before = gi.analysis_id(recorded, "dual_ledger")
+    monkeypatch.setattr(gi, "_closure",
+                        lambda *a, **k: {"g33_dual_ledger", "g33_something_new"})
+    assert gi.analysis_id(recorded, "dual_ledger") == before
+
+
+def test_the_recorded_block_COVERS_every_analysis_the_producer_runs():
+    """A reach map missing an analysis silently falls back to recomputing it,
+    which is the behaviour the block exists to replace."""
+    import g33_refine_manifest as rm
+    block = gi.identity_block()
+    # EVERY analysis a bundle can carry, which is the manifest module's
+    # vocabulary -- not the producer's two dispatch registries.
+    # `metric_trajectory` is written by `_driver_analyses` directly, so it is in
+    # neither registry and it is in every instrumented as-is bundle. This test
+    # asserted the registries and therefore agreed with the gap (Codex
+    # stop-time review).
+    assert set(block["analysis_reach"]) == set(gi.producible())
+    assert set(gi.producible()) == (set(rm.DERIVED_ANALYSES)
+                                    | set(rm.MULTI_RUN_ANALYSES))
+    assert "metric_trajectory" in block["analysis_reach"]
+    assert set(block["role_graph"]) == set(gi.roles())
+    for name, mods in block["analysis_reach"].items():
+        assert mods, name
+
+
+def test_a_v3_manifest_may_NOT_opt_out_of_the_identity_block(tmp_path):
+    """The fallback was unconditional, so a v3 manifest could omit the block
+    and quietly get checkout-dependent ids anyway -- opt-out-by-omission, which
+    is the defect the schema bump before it was for (Codex stop-time review)."""
+    import g33_refine_manifest as rm
+    man = _with_identity(_manifest())
+    man["schema"] = rm.SCHEMA
+    assert gi.run_recipe_id(man)
+    del man["identity"]
+    for call in (lambda: gi.run_recipe_id(man),
+                 lambda: gi.run_content_id(man),
+                 lambda: gi.analysis_id(man, "dual_ledger")):
+        with pytest.raises(ValueError, match="requires an `identity"):
+            call()
+    # ...and a pre-v3 manifest still falls back, because it has nothing else.
+    man["schema"] = "refinement_experiment_v2"
+    assert gi.run_recipe_id(man)
+
+
+def test_a_v3_manifest_may_not_omit_ONE_analysis_from_the_reach_map(tmp_path):
+    """The partial case, which is the one that actually happened: a bundle
+    carrying `metric_trajectory` with no reach entry for it had that analysis's
+    id fall back while every other one was recorded."""
+    import g33_refine_manifest as rm
+    man = _with_identity(_manifest())
+    man["schema"] = rm.SCHEMA
+    del man["identity"]["analysis_reach"]["dual_ledger"]
+    with pytest.raises(ValueError, match="analysis_reach"):
+        gi.analysis_id(man, "dual_ledger")
+    # the OTHER analysis is unaffected -- the refusal is per entry
+    assert gi.analysis_id(man, "substep_schedule")
+
+
+# --- the SLICES, not the declarations (Codex stop-time review, round 3) ------
+#
+# Three rounds of identity checking validated the declarations and left the
+# slices open, which is the same mistake three times. `_by_role` and `_pins_for`
+# both filter `producer_modules`, and a module can be pinned as a tracked BUILD
+# INPUT instead -- so a graph giving the `run` role only to `make_fortran_overlay`
+# satisfied "somebody is in the run role" and left the run slice EMPTY. Measured:
+# run-slice 0 with a clean validate, the same end state as the forgery the round
+# before closed, through a different door.
+
+
+def _real_v3():
+    import json
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("identity") or {}).get("role_graph"):
+                    return man
+    return None
+
+
+def test_the_SCHEMA_rule_and_the_ID_functions_agree_about_the_slice():
+    """The check lives in the manifest module and the slice is computed in this
+    one, so they can drift -- which is exactly how the run-slice hole survived a
+    round that was looking for it. This ties them together on real data: what
+    the schema calls a non-empty slice is what `_by_role` and `_pins_for`
+    actually return.
+    """
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    assert gi._by_role(man, "run"), "the schema passed a run slice that is empty"
+    for a in man["analyses"]:
+        if a.get("analysis") == "arm_stream":
+            continue
+        mods = gi.analysis_reach(man, a["analysis"])
+        assert gi._pins_for(man, mods), (a["analysis"], sorted(mods))
+        own = Path(a["analyzer"]).stem
+        assert any(Path(p["path"]).stem == own for p in gi._pins_for(man, mods)), (
+            f"{a['analysis']}: its id does not cover {own}, the analyzer that "
+            f"produced it")
+
+
+@pytest.mark.parametrize("what,mutate", [
+    ("the run slice emptied through build-input pins",
+     lambda m: m["identity"].update(role_graph={
+         k: (["run"] if k in ("make_fortran_overlay", "g33_fortran_bindings")
+             else ["analysis"]) for k in m["identity"]["role_graph"]})),
+    ("an analysis slice emptied the same way",
+     lambda m: m["identity"]["analysis_reach"].update(
+         dual_ledger=["make_fortran_overlay"])),
+    ("an analysis slice that omits its own analyzer",
+     lambda m: m["identity"]["analysis_reach"].update(dual_ledger=["g33_schema"])),
+])
+def test_an_EMPTY_or_INCOMPLETE_slice_is_refused(what, mutate):
+    """Each of these validated clean before, and each produces an id over
+    modules that cannot answer for the thing it identifies."""
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    bad = copy.deepcopy(man)
+    mutate(bad)
+    assert rm.validate(bad), what
+
+
+def test_NO_single_edit_leaves_a_validating_manifest_with_a_BROKEN_slice():
+    """The check the last three rounds needed and did not have.
+
+    Hand-picked attacks find the holes you thought of; this drops each element
+    of the recorded graph and each module of each reach entry in turn, and
+    requires that whatever still VALIDATES still has slices the ids can stand
+    on. Three rounds of spot-checking declarations missed a run slice that
+    filtered to empty, so the property is asserted over the search rather than
+    over three examples.
+    """
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    broken, checked = [], 0
+
+    def slices_ok(d, why):
+        nonlocal checked
+        if rm.validate(d) != []:
+            return                                   # refused: nothing to check
+        checked += 1
+        if not gi._by_role(d, "run"):
+            broken.append((why, "empty run slice"))
+        for a in d["analyses"]:
+            if a.get("analysis") == "arm_stream":
+                continue
+            pins = gi._pins_for(d, gi.analysis_reach(d, a["analysis"]))
+            own = Path(a["analyzer"]).stem
+            if not pins:
+                broken.append((why, f"{a['analysis']}: empty analysis slice"))
+            elif not any(Path(p["path"]).stem == own for p in pins):
+                broken.append((why, f"{a['analysis']}: slice lost {own}"))
+
+    for m in sorted(man["identity"]["role_graph"]):
+        d = copy.deepcopy(man)
+        d["identity"]["role_graph"].pop(m)
+        slices_ok(d, f"role_graph drops {m}")
+    for name, mods in sorted(man["identity"]["analysis_reach"].items()):
+        for mod in sorted(mods):
+            rest = [x for x in mods if x != mod]
+            if not rest:
+                continue
+            d = copy.deepcopy(man)
+            d["identity"]["analysis_reach"][name] = rest
+            slices_ok(d, f"reach[{name}] drops {mod}")
+
+    assert checked, "every mutation was refused -- the search proves nothing"
+    assert not broken, broken[:5]

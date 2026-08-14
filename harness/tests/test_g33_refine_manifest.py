@@ -27,10 +27,19 @@ def synthetic_manifest(root):
         f.write_text(text)
         return rm.sha256(f)
 
-    pin = {"path": "p", "content_sha256": "d" * 64, "commit": "e" * 40,
-           "blob_sha": "f" * 40}
+    pin = {"path": "harness/p.py", "content_sha256": "d" * 64,
+           "commit": "e" * 40, "blob_sha": "f" * 40}
+    # The role graph has to AGREE with the pins, so both come from one list:
+    # a graph that omits a pinned module filters it out of every id, and one
+    # that names an unpinned module describes code the archive does not hold.
+    _mods = ["p"] + [f"g33_{k}" for k in sorted(set(rm.DERIVED_ANALYSES)
+                                                | set(rm.MULTI_RUN_ANALYSES))]
+    _pins = [{**pin, "path": f"harness/{m}.py"} for m in _mods]
     return {
-        "schema": "refinement_experiment_v2",
+        # rm.SCHEMA, not a literal: pinned to "v2" this fixture went on
+        # testing the previous contract after the bump, and every v3
+        # check written against it asserted nothing.
+        "schema": rm.SCHEMA,
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
         "is_refinement_chain": True,
@@ -46,13 +55,32 @@ def synthetic_manifest(root):
             {"file": "n12.rezero.uniform.txt", "analysis": "arm_stream",
              "nsplit": 12, "sha256": w("n12.rezero.uniform.txt", "y\n"),
              "arm": "uniform",
+             # TYPED beside the literal command line (owner priority 5): the
+             # argv is four strings and only two positions were ever compared.
+             "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
+                     "rho": "uniform"},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],
         "build_provenance": {"executable_sha256": rm.sha256(
             root / "g33_refine_driver")},
-        "member_parsers": [pin], "producer_modules": [pin],
+        "member_parsers": [pin], "producer_modules": _pins,
         "tracked_build_inputs": [pin],
+        # The role graph the layered ids are derived under. Required from v3:
+        # without it they follow whichever checkout reads the manifest, which
+        # is the coupling the block exists to remove (owner priority 8).
+        "identity": {
+            "schema": "g33_layered_identity_v1",
+            "role_graph": {m: (["run"] if m == "p" else ["analysis"])
+                           for m in _mods},
+            # The seed of each reach entry, which is also the dispatch cut.
+            "analysis_seeds": {k: f"g33_{k}" for k in
+                               set(rm.DERIVED_ANALYSES)
+                               | set(rm.MULTI_RUN_ANALYSES)},
+            "analysis_reach": {k: [f"g33_{k}"] for k in
+                               set(rm.DERIVED_ANALYSES)
+                               | set(rm.MULTI_RUN_ANALYSES)},
+        },
     }
 
 
@@ -75,10 +103,21 @@ def test_the_REAL_bundles_still_validate():
 @pytest.mark.parametrize("mutate,expect", [
     (lambda m: _arm(m).update(arm="anything"), "is not one of"),
     (lambda m: _arm(m).update(runtime_argv="not-a-list"), "must be a list of str"),
-    (lambda m: _arm(m).update(runtime_argv=["9", "rezero", "3", "inverted"]),
-     "contradicts nsplit"),
+    # EVERY position, which is what v3 adds. Under v2 only [0] and [3] were
+    # compared, so a bundle could record `carry` and a domain width nobody
+    # read -- half the run identity (owner priority 5).
+    (lambda m: _arm(m).update(runtime_argv=["9", "rezero", "3", "uniform"]),
+     "runtime_argv[0]"),
+    (lambda m: _arm(m).update(runtime_argv=["12", "carry", "3", "uniform"]),
+     "runtime_argv[1]"),
+    (lambda m: _arm(m).update(runtime_argv=["12", "rezero", "5", "uniform"]),
+     "runtime_argv[2]"),
     (lambda m: _arm(m).update(runtime_argv=["12", "rezero", "3", "x2"]),
-     "contradicts arm"),
+     "runtime_argv[3]"),
+    # ...and the typed block must agree with the entry's own fields, or it is
+    # a third statement nobody compares.
+    (lambda m: _arm(m).update(nsplit=9), "contradicts nsplit"),
+    (lambda m: _arm(m).update(arm="x2"), "contradicts arm"),
 ])
 def test_an_ARM_STREAM_entry_must_MATCH_the_run_it_names(mutate, expect,
                                                         tmp_path):
@@ -91,6 +130,51 @@ def test_an_ARM_STREAM_entry_must_MATCH_the_run_it_names(mutate, expect,
     mutate(m)
     bad = rm.validate(m)
     assert any(expect in b for b in bad), bad
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda r: r.pop("carry"), "needs `ran` with"),
+    (lambda r: r.pop("width"), "needs `ran` with"),
+    (lambda r: r.update(nsplit="twelve"), "not a positive integer"),
+    (lambda r: r.update(nsplit=0), "not a positive integer"),
+    (lambda r: r.update(nsplit=True), "not a positive integer"),
+    (lambda r: r.update(carry="banana"), "ran.carry"),
+    (lambda r: r.update(rho="purple"), "ran.rho"),
+    (lambda r: r.update(width=0), "ran.width"),
+    (lambda r: r.update(width="three"), "ran.width"),
+])
+def test_an_ARM_RUN_IDENTITY_is_TYPED_not_merely_present(mutate, expect,
+                                                        tmp_path):
+    """The same rule the multi-run block already had, on the same vocabularies.
+    They are the DRIVER's: it error-stops on anything else, so a manifest
+    declaring anything else names a run that could not have happened."""
+    m = synthetic_manifest(tmp_path)
+    assert rm.validate(m) == []
+    mutate(_arm(m)["ran"])
+    assert any(expect in b for b in rm.validate(m)), rm.validate(m)
+
+
+def test_a_v2_arm_stream_is_GRANDFATHERED_not_broken(tmp_path):
+    """Five published bundles carry v2 arm streams with no `ran`. A new
+    required field on v2 would either invalidate them or have to be
+    opt-out-by-omission -- which is the defect the v2 bump itself was for. So
+    the requirement is a VERSION, and the old contract still validates the old
+    bundles."""
+    m = synthetic_manifest(tmp_path)
+    del _arm(m)["ran"]
+    assert any("needs `ran` with" in b for b in rm.validate(m)),         "v3 must require it"
+    m["schema"] = "refinement_experiment_v2"
+    assert not any("ran" in b for b in rm.validate(m)),         "v2 predates the block and must not be failed for lacking it"
+
+
+def test_the_TWO_ran_blocks_use_ONE_spelling(tmp_path):
+    """An arm stream and a multi-run analysis both carry `ran`, and the first
+    draft of the arm block said `mode` where the multi-run block says `carry`
+    -- two words for the driver's one argument, in one manifest."""
+    m = _with_multi(tmp_path)
+    assert set(rm._RAN_CORE) <= set(_multi(m)["ran"]),         "the multi-run block must carry the shared core under the same names"
+    assert set(rm._RAN_CORE) <= set(_arm(m)["ran"])
+    assert [f for _pos, f in rm._ARGV_TO_RAN] == list(rm._RAN_CORE),         "the argv mapping and the core field list must not drift apart"
 
 
 def test_an_UNKNOWN_derived_analysis_kind_is_REFUSED(tmp_path):
@@ -496,3 +580,170 @@ def test_a_multirun_input_file_must_be_a_PLAIN_BASENAME(tmp_path, name):
     e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
     e["inputs"][0]["file"] = name
     assert any("plain basename" in b for b in rm.validate(m))
+
+
+# --- the recorded role graph must be TRUE, not merely shaped (stop-time) -----
+#
+# Requiring the block and checking only its shape is fail-open, and not mildly.
+# `_by_role` filters the bundle's own module pins THROUGH this graph, so a
+# manifest declaring a thin one gets a recipe id over a subset of its pins, and
+# one declaring every module `analysis`-only gets a recipe id over NOTHING.
+# Measured on a real manifest: 19 pins, and a fabricated graph brought 0 of them
+# into `run_recipe_id` -- after which no run-role module's bytes could move it.
+# Strictly worse than the coupling the block was added to remove, because it is
+# forgeable.
+
+def _ident(m):
+    return m["identity"]
+
+
+@pytest.mark.parametrize("what,mutate,expect", [
+    ("a thin graph", lambda i: i.update(role_graph={"g33_refine_experiment": ["run"]}),
+     "omits pinned modules"),
+    ("nobody in the run role",
+     lambda i: i.update(role_graph={m: ["analysis"] for m in i["role_graph"]}),
+     "no module the `run` role"),
+    ("a module the bundle pins nowhere",
+     lambda i: i["role_graph"].update(totally_made_up=["run"]), "pins nowhere"),
+    ("a role nothing filters on",
+     lambda i: i["role_graph"].update(g33_refine_experiment=["banana"]),
+     "not in ('run', 'analysis')"),
+    ("a reach entry naming unpinned code",
+     lambda i: i["analysis_reach"].update(dual_ledger=["not_a_module"]),
+     "pins nowhere"),
+    ("one pin quietly dropped from the graph",
+     lambda i: i["role_graph"].pop("g33_refine_analyze", None) or
+               i["role_graph"].pop(sorted(i["role_graph"])[0]),
+     "omits pinned modules"),
+])
+def test_a_FABRICATED_identity_graph_is_REFUSED(what, mutate, expect, tmp_path):
+    m = synthetic_manifest(tmp_path)
+    assert rm.validate(m) == [], "the base manifest must be valid first"
+    mutate(_ident(m))
+    bad = rm.validate(m)
+    assert any(expect in b for b in bad), (what, bad)
+
+
+def test_every_PYTHON_pin_carries_a_role_and_no_OTHER_pin_is_asked_for(tmp_path):
+    """The role graph is about modules. The build inputs also pin
+    `refine_build.sh`, the driver and the fixture `.f90` -- real, pinned, and
+    not things an import closure has a role for. Demanding a role for every
+    pinned FILE would get one invented."""
+    m = synthetic_manifest(tmp_path)
+    m["tracked_build_inputs"] = list(m["tracked_build_inputs"]) + [
+        {**m["tracked_build_inputs"][0], "path": "harness/g33_fortran/refine_build.sh"}]
+    assert rm.validate(m) == [], rm.validate(m)
+    assert "refine_build" not in rm._pinned_modules(m)
+
+
+def test_the_REAL_bundles_satisfy_the_graph_contract():
+    """It states a property the produced bundles HAVE. If it did not, the
+    contract would be describing something nobody makes."""
+    import json
+    from pathlib import Path
+    seen = 0
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if not (link.is_symlink() and mf.is_file()):
+                continue
+            man = json.loads(mf.read_text())
+            if not rm.at_least(str(man.get("schema", "")),
+                               "refinement_experiment_v3"):
+                continue
+            assert rm._identity_violations(man) == [], (link.name,
+                                                        rm._identity_violations(man))
+            seen += 1
+    if not seen:
+        pytest.skip("no v3 bundle on this host")
+
+
+# --- the dispatch cut is DERIVED, and scoped to the dispatcher (round 5) -----
+#
+# It was DECLARED, and a declaration for an analysis the bundle did not publish
+# was unconstrained -- so a seed could be repointed to widen the set of edges
+# the closure check excuses. And the cut was excused from EVERY module: 11 of
+# them import something in the dispatch set, while the producer cuts out of
+# exactly one.
+
+def _real_v3_manifest():
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("identity") or {}).get("analysis_seeds"):
+                    return man
+    return None
+
+
+def test_the_DISPATCHER_is_derived_from_the_pinned_code_not_named():
+    """Naming `g33_refine_experiment` in the checker would be a second place to
+    keep in step with the producer. The module that DECLARES both registries is
+    the dispatcher, and there must be exactly one."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    blobs = rm.pinned_blobs(man)
+    who, registry = rm._dispatch_from_blobs(blobs)
+    assert who == "g33_refine_experiment", who
+    assert registry, "the registries parsed to nothing"
+    assert set(registry) <= set(man["identity"]["analysis_seeds"])
+
+
+@pytest.mark.parametrize("what,name,seed", [
+    ("a seed for an UNPUBLISHED analysis", "ncmin_locality", "g33_refine_manifest"),
+    ("a seed for a PUBLISHED analysis", "dual_ledger", "g33_schema"),
+    ("a seed outside the registry", "metric_trajectory", "g33_expectation"),
+])
+def test_a_FORGED_seed_cannot_widen_the_cut(what, name, seed):
+    """The forgery has to be COMPETENT or the test measures the wrong check.
+
+    Repointing a seed and leaving `analysis_reach` alone trips the
+    reach-equals-closure rule, which would fail on the previous module too --
+    so the reach is recomputed to match the forged seed, leaving the cut as the
+    only thing under test. What the widened cut would buy is then taken: the
+    module the seed now names is dropped from the run role, and the leak it
+    creates is exactly what the cut would excuse.
+    """
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    import copy
+    bad = copy.deepcopy(man)
+    if name not in bad["identity"]["analysis_seeds"]:
+        pytest.skip(f"{name} is not recorded in this bundle")
+    edges = rm.pinned_imports(bad)
+    bad["identity"]["analysis_seeds"][name] = seed
+    bad["identity"]["analysis_reach"][name] = sorted(
+        rm._blob_closure(edges, seed))
+    roles = bad["identity"]["role_graph"]
+    if "run" in roles.get(seed, []):
+        roles[seed] = [r for r in roles[seed] if r != "run"] or ["analysis"]
+    got = rm.graph_violations(bad)
+    assert got, what
+    assert any("analysis_seeds" in g for g in got), (
+        f"{what}: refused, but not for the seed -- {got[:1]}")
+
+
+def test_a_NON_DISPATCHER_cannot_use_the_cut_to_escape_closure():
+    """The overbroad half. Excusing dispatch edges from every module let any
+    module import an analyzer and drop it from its role."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    import copy
+    blobs = rm.pinned_blobs(man)
+    dispatcher, _reg = rm._dispatch_from_blobs(blobs)
+    edges = rm.pinned_imports(man, blobs)
+    seeds = set(man["identity"]["analysis_seeds"].values())
+    others = sorted(m for m in man["identity"]["role_graph"]
+                    if m != dispatcher and edges.get(m, set()) & seeds)
+    assert others, "no non-dispatcher imports the cut set -- vacuous"
+    bad = copy.deepcopy(man)
+    victim = sorted(edges[others[0]] & seeds)[0]
+    bad["identity"]["role_graph"][victim] = [
+        r for r in bad["identity"]["role_graph"][victim] if r != "analysis"] or ["run"]
+    assert rm.graph_violations(bad), (others[0], victim)

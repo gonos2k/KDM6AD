@@ -23,11 +23,34 @@ and the two only agree at the reference precision.
 """
 import re
 
-#: A binding whose expression PINS its own width instead of taking the build's
-#: default real. `real(<expr>,4)` is an explicit KIND, so -fdefault-real-8 does
-#: not widen it -- and the semantic dtype cannot say so, because the field is
-#: semantically f32 either way.
-_PINNED_REAL32 = re.compile(r"^real\(.*,\s*4\)$")
+#: What a narrowing cast LOOKS like. Kept only as a cross-check on the
+#: declarations below -- it must never be the thing that decides, because the
+#: forms it does not match are exactly the ones that would be misclassified:
+#: `real(expr, kind=4)`, `real(expr, real32)`, a `real(kind=real32)` temporary.
+_LOOKS_PINNED = re.compile(r"^real\(.*,\s*4\)$")
+
+#: Bindings whose expression PINS its own storage width, DECLARED.
+#:
+#: `real(<expr>,4)` is an explicit KIND, so -fdefault-real-8 does not widen it,
+#: and the semantic dtype cannot say so: the field is semantically f32 either
+#: way. Which bindings those are is now a STATEMENT rather than an inference
+#: from the expression text (owner priority 6).
+#:
+#: Keyed by the expression, because the expression is what decides. Two rungs
+#: sharing a field name take the same class only if they compute the same thing.
+STORAGE_OVERRIDES = {
+    "real(dend(i,k)*qrs(i,k,1)*work1(i,k,1)/mstep(i),4)": "real32",
+    "real(nrs(i,k,1)*workn(i,k,1)/mstep(i),4)": "real32",
+}
+
+#: Any Fortran construct that can change a value's KIND. An expression carrying
+#: one and NOT declared above is refused rather than assumed to be a default
+#: real -- which is the whole point: the risk was never the two casts already
+#: here, it was the next binding written in a form the pattern does not match.
+#: Measured over the whole table: exactly two expressions carry one, and both
+#: are declared.
+_CONVERSION = re.compile(r"\b(real|dble|dfloat|int|nint|cmplx|kind)\s*[(=]",
+                         re.I)
 
 #: semantic dtype -> storage class, where the two cannot diverge. `f64` is
 #: `double precision`, which -fdefault-double-8 holds at eight bytes in BOTH
@@ -51,14 +74,30 @@ def storage_class(dtype: str, expr: str) -> str:
     f64 build. One label was carrying both jobs, so a blanket promotion and a
     blanket non-promotion are each wrong for one of them.
 
-    Refuses a dtype it does not know rather than defaulting: a new dtype would
+    FAIL-CLOSED on the forms it cannot read. Deciding this by matching
+    `real(...,4)` worked on the table as written and would have silently called
+    `real(expr, kind=4)` a default real -- the same value, spelled the way the
+    standard also allows. So an expression carrying ANY kind-conversion
+    construct must be declared in `STORAGE_OVERRIDES`, and one that is not is
+    refused. Everything else is a default real, which is a rule about the
+    absence of a construct rather than about the presence of a pattern.
+
+    Refuses a dtype it does not know for the same reason: a new dtype would
     otherwise land silently on whichever branch is written last.
     """
     if dtype in _FIXED_CLASS:
         return _FIXED_CLASS[dtype]
     if dtype != "f32":
         raise KeyError(f"no storage class for dtype {dtype!r} ({expr!r})")
-    return "real32" if _PINNED_REAL32.match(expr.strip()) else "default_real"
+    e = expr.strip()
+    if e in STORAGE_OVERRIDES:
+        return STORAGE_OVERRIDES[e]
+    if _CONVERSION.search(e):
+        raise KeyError(
+            f"{e!r} carries a kind-conversion construct, so its storage width "
+            f"is not the build's default real and cannot be inferred from the "
+            f"text -- declare it in STORAGE_OVERRIDES")
+    return "default_real"
 
 
 # ── shared rungs (identical in both variants) ─────────────────────────────────

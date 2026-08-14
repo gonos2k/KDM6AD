@@ -596,7 +596,7 @@ def test_a_NON_POSITIVE_nsplit_is_refused(tmp_path):
 def test_the_producer_writes_the_STRICT_schema():
     """A bundle made today must declare the contract it satisfies, or the
     checker cannot tell it from one that predates the pin blocks."""
-    assert xp.rm.SCHEMA == "refinement_experiment_v2"
+    assert xp.rm.SCHEMA == "refinement_experiment_v3"
 
 
 # ---- owner §9.1: an existing bundle directory is verified, not adopted -------

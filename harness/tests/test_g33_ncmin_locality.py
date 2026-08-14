@@ -383,7 +383,7 @@ def test_causal_attribution_is_a_SEPARATE_verdict(drivers):
     recorded as an ordinary row (owner §7.3)."""
     for r in nl.analysis(drivers["legacy"], FIXTURE)["partitions"].values():
         assert r["measurement_valid"] is True
-        assert r["causal_attribution_valid"] is True
+        assert r["affected_columns_match_prediction"] is True
 
 
 def test_the_ULP_metric_is_ORDER_PRESERVING_across_zero(drivers):
@@ -463,7 +463,7 @@ def test_the_MECHANISM_predicts_which_columns_differ_and_it_holds(drivers):
     assert a["1,1,1"]["predicted_columns"] == [2]       # the sea column alone
     assert a["2,1"]["predicted_columns"] == [1, 2]      # tile 1 ends on sea
     for tiles, r in a.items():
-        assert r["prediction_holds"], \
+        assert r["affected_columns_match_prediction"], \
             f"{tiles}: predicted {r['predicted_columns']}, saw {r['columns']}"
 
 
@@ -1533,3 +1533,77 @@ def test_the_decomposition_CLOSES_against_the_real_update(drivers):
     # ...and the column that moves must actually move, or this is vacuous.
     assert d["columns"]["2"]["actual_post_delta"] != 0.0
     assert d["columns"]["1"]["actual_post_delta"] == 0.0
+
+
+def test_the_MASS_WEIGHTED_closure_is_published_too(drivers):
+    """The claim's headline is the mass-weighted 86.99/13.01, and the closure
+    was recorded unweighted only -- so the number a reader checks and the
+    number the claim makes were one algebraic step apart, taken by the reader
+    (owner priority 4).
+
+    It is a real step: `w*(a+b)` and `w*a + w*b` are different float64
+    expressions, so multiplying through the sum reorders it. Measured on the
+    real pair, column 2: gap 6.9e-18 against a total of -4.47e-02, which is
+    1.55e-16 relative -- about one and a half ULP, and twelve orders below the
+    smallest share a term carries.
+    """
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
+    for col, r in d["columns"].items():
+        for basis in ("unweighted", "operator", "physical"):
+            b = r[basis]
+            assert b["closes_against_actual_update"] is True, (col, basis, b)
+            assert b["total_delta"] == pytest.approx(
+                b["actual_post_delta"], abs=pl.F64_CLOSURE_TOL
+                * max(abs(b["actual_post_delta"]), 1e-300)), (col, basis, b)
+    # The unweighted one stays EXACT: nothing was reordered there.
+    for col, r in d["columns"].items():
+        assert r["unweighted"]["telescoped_minus_actual"] == 0.0, col
+    # ...and the weighted closure is not vacuous on the column that moves.
+    assert d["columns"]["2"]["operator"]["actual_post_delta"] != 0.0
+
+
+def test_the_weighted_closure_TOLERANCE_cannot_swallow_a_term(drivers):
+    """A screening bound is only worth having if it is far below the smallest
+    thing it must not hide. The smallest published share is praut at 13% of the
+    column total; the bound is 7.1e-15 relative."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
+    op = d["columns"]["2"]["operator"]
+    smallest = min(abs(v) for v in op["share"].values())
+    assert smallest > 1e6 * pl.F64_CLOSURE_TOL, (smallest, pl.F64_CLOSURE_TOL)
+    # And a fabricated gap at the size of a term is REFUSED by the predicate.
+    assert not pl._closes("operator", smallest * op["actual_post_delta"],
+                          op["actual_post_delta"])
+    assert pl._closes("operator", 0.0, op["actual_post_delta"])
+    # A zero actual difference admits only a zero gap -- a relative bound
+    # against nothing would pass hardest where it means least.
+    assert not pl._closes("operator", 1e-300, 0.0)
+
+
+def test_the_attribution_verdict_is_ONE_field_named_for_what_it_COMPARES(drivers):
+    """It was two fields and one expression (owner priority 11).
+
+    `prediction_holds` and `causal_attribution_valid` were the same line
+    written twice -- equal in every published partition because they could not
+    be anything else -- and the second name promised a causal claim the
+    computation never makes. It compares the columns that DIFFER against the
+    columns the tile-end ncmin rule predicts: attributable to ncmin and to
+    nothing else in the decomposition. Which microphysical process MEDIATES
+    the difference is G33-NCMIN-005, and it is open.
+    """
+    D = drivers["legacy"]
+    rows = nl.analysis(D, "g33_fixture_boundary_mapping_v1")["partitions"]
+    assert rows
+    for key, r in rows.items():
+        assert "affected_columns_match_prediction" in r, key
+        for gone in ("causal_attribution_valid", "prediction_holds"):
+            assert gone not in r, (
+                f"{key}: {gone!r} is still emitted -- two names for one fact "
+                f"is how an archive ends up carrying both")
+        assert r["affected_columns_match_prediction"] is (
+            sorted(r["columns"]) == sorted(r["predicted_columns"])), key

@@ -247,6 +247,40 @@ def _protocol(stream: str) -> dict:
             "columns": list(calls[0]["cols"]) if calls else None}
 
 
+def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
+         where: str) -> dict:
+    """The arm's run identity, TYPED and checked against the raw stream.
+
+    `runtime_argv` is four strings and the schema compared two of them --
+    argv[0] against `nsplit`, argv[3] against `arm`. The mode and the domain
+    width were recorded and never read, so half the identity of an arbitrary v2
+    manifest went unverified. And nothing compared any position against the
+    RECORD the run produced, which is the only party that knows what actually
+    ran rather than what a caller meant to ask for (owner priority 5).
+
+    So the four fields are checked here, where the text is in hand: the stream's
+    own STREAM_BEGIN carries nsplit, mode and the density arm, and its
+    CALL_BEGIN brackets carry the columns, which is where the width is. A run
+    that does not answer for itself cannot be published as an arm.
+    """
+    hdr = nt.stream_header(text)
+    got = {"nsplit": hdr["nsplit"], "carry": hdr["mode"], "rho": hdr["rho_profile"]}
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho}
+    if got != want:
+        raise ra.RefineError(
+            f"{where}: the stream declares {got} and the manifest entry would "
+            f"say {want} -- an arm that describes a different run than the one "
+            f"it is filed as is worse than an unrecorded one")
+    covered = max(c["cols"][1] for c in nt.calls(text))
+    if covered != width:
+        raise ra.RefineError(
+            f"{where}: the stream's calls cover columns up to {covered}, the "
+            f"entry would declare width {width}")
+    # `carry` is the multi-run block's spelling of the driver's mode argument.
+    # One name for one argument, or the archive carries both.
+    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}
+
+
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                      width: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
@@ -303,6 +337,11 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             ap.write_text(text)
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
+                         # STRUCTURED, and checked against the stream's own
+                         # header rather than restated from the arguments this
+                         # function was called with (owner priority 5).
+                         "ran": _ran(text, nsplit=n, mode=mode, width=width,
+                                     rho=arm, where=ap.name),
                          "runtime_argv": [str(n), mode, str(width), arm]})
             # The arm's OWN defect magnitude. `metric_trajectory` reports each
             # arm as a ratio over the as-is baseline; a claim that also states
@@ -332,6 +371,12 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
 #: mis-schema'd member through before any analyzer sees it (owner P0-2).
 _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  "g33_build_provenance",
+                 # The LAYERED IDENTITY derivation. It decides the role graph a
+                 # bundle records, and that block is what makes the ids
+                 # reproducible from the archive rather than from a checkout --
+                 # so its bytes decide what the recorded identity MEANS
+                 # (owner priority 8).
+                 "g33_identity",
                  # The OVERLAY generator's dependencies. `make_fortran_overlay`
                  # is pinned as a tracked build input, but what it imports was
                  # pinned by nothing -- and that code decides which
@@ -847,6 +892,14 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # The SAME word the analyses were selected by, so the manifest cannot
         # declare one precision and have been analysed at another.
         man["precision"] = precision
+        # The ROLE GRAPH the layered ids are derived under (owner priority 8).
+        # Without it those ids are a function of the manifest AND of whichever
+        # checkout computes them, so a refactor that moves a module between
+        # roles moves a historical bundle's run_content_id with no bundle byte
+        # having changed. Imported here rather than at module scope: g33_identity
+        # imports this module, and the cycle only closes at call time.
+        import g33_identity as gi
+        man["identity"] = gi.identity_block()
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False

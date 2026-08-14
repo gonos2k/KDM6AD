@@ -254,7 +254,7 @@ is *why* the column prediction is exact here, not a general property. The
 predicate is computed now, so a fixture whose `nc` sat outside that band would
 not be over-predicted.
 
-**`causal_attribution_valid` is separate from `measurement_valid`.** A partition
+**`affected_columns_match_prediction` is separate from `measurement_valid`.** A partition
 whose observed columns miss the prediction used to be recorded as an ordinary
 row; the two verdicts are distinguished now, so a causal claim cannot rest on a
 run where the attribution failed.
