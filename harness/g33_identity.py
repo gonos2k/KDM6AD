@@ -17,6 +17,21 @@ recorded and no bundle is re-produced to compute them. They are DERIVED here
 and checked; whether the archive should also store them is a separate decision
 with a re-production cost attached.
 
+Every one of them is a digest over CONTENT, and that is a second separation the
+first attempt did not make:
+
+    content pin        path, content_sha256, blob_sha -- what the bytes ARE
+    provenance anchor  commit, repo_commit -- where they can be FETCHED from
+
+A git blob id is a digest of the content, so `blob_sha` is a content pin. A
+commit is not: it moves for every commit, including the analysis-only and
+documentation-only ones these layers exist to be stable across. Both stay in the
+manifest, because an anchor is what makes a pin recoverable and the evidence
+chain resolves it; only the anchors are kept out of the ids. Without that, a
+producer rebuilding the same bundle from the same bytes at a new HEAD gets a new
+`run_recipe_id` -- the coupling being removed one level up, reproduced inside
+the layer that removes it.
+
 The layering only means anything if the code behind each layer can be named,
 and that is where the first attempt stopped. `_CORE_MODULES` in the producer
 serves two purposes at once -- it declares the modules that make a run, AND it
@@ -142,28 +157,80 @@ def _digest(obj) -> str:
     return hashlib.sha256(json.dumps(obj, sort_keys=True).encode()).hexdigest()
 
 
+#: Keys that say WHERE a byte can be RETRIEVED from, not WHAT it is.
+#:
+#: This is the second half of the separation, and without it the first half does
+#: not work. Every pin block carries `commit` beside `content_sha256`, and
+#: `repo_commit` sits at the top of the manifest -- so an id over the pins moves
+#: whenever the CONTAINING commit moves, which is every commit, including the
+#: analysis-only and documentation-only ones the layering exists to be stable
+#: across. A producer that rebuilds the same bundle from the same bytes at a new
+#: HEAD would have got a new run_recipe_id, which is exactly the coupling that
+#: was being removed one level up.
+#:
+#: `blob_sha` STAYS: a git blob id is a digest of the content, so it is a
+#: content pin that happens to be spelled the way git spells one. It is stable
+#: across commits precisely when the bytes are.
+#:
+#: The anchors are not dropped from the MANIFEST -- they are what makes a pin
+#: recoverable, and the evidence chain resolves them. They are dropped from the
+#: IDENTITY, which is a different question about the same record.
+PROVENANCE_ANCHORS = ("commit", "analyzer_commit", "repo_commit")
+
+#: Blocks that describe the run rather than come out of it.
+#:
+#: `findings` is the prose a reviewer reads, digested at publish time so a later
+#: revision is visible. Correcting a sentence in a finding must not re-address
+#: the raw stream the finding describes.
+NARRATIVE_KEYS = ("findings",)
+
+
+def content_only(x):
+    """`x` with every retrieval anchor removed, at any depth.
+
+    Recursive rather than a top-level key list: the anchors are mostly INSIDE
+    the pin blocks (`producer_modules[].commit`, `analyses[].analyzer_commit`),
+    which is why stripping `repo_commit` alone would have looked like a fix and
+    left the same coupling one level down.
+    """
+    if isinstance(x, dict):
+        return {k: content_only(v) for k, v in x.items()
+                if k not in PROVENANCE_ANCHORS}
+    if isinstance(x, list):
+        return [content_only(v) for v in x]
+    return x
+
+
 def _by_role(man: dict, role: str) -> list:
-    """The manifest's producer-module pins, filtered to one role.
+    """The manifest's producer-module pins, filtered to one role and reduced to
+    their CONTENT.
 
     The manifest lists all 17 as one block, so an id built from it unfiltered
     moves when any analysis module's bytes move -- which is the whole cost
     being separated here, reproduced inside the recipe.
     """
     keep = {m for m, r in roles().items() if role in r}
-    return sorted((e for e in (man.get("producer_modules") or [])
-                   if isinstance(e, dict)
-                   and Path(str(e.get("path", ""))).stem in keep),
-                  key=lambda e: str(e.get("path")))
+    return content_only(
+        sorted((e for e in (man.get("producer_modules") or [])
+                if isinstance(e, dict)
+                and Path(str(e.get("path", ""))).stem in keep),
+               key=lambda e: str(e.get("path"))))
 
 
 def run_recipe_id(man: dict) -> str:
     """What was asked for: run-role code, the fixture, the module under test,
     and the argv. NOT the members -- a recipe that changed when its own output
-    changed could not answer "was this the same experiment"."""
+    changed could not answer "was this the same experiment".
+
+    Every pin is reduced to its CONTENT first. `member_parsers` and
+    `tracked_build_inputs` carry the same commit-beside-digest shape as the
+    module pins, so passing them through raw put the containing commit into the
+    recipe by the back door.
+    """
     return _digest({
         "modules": _by_role(man, "run"),
-        "member_parsers": man.get("member_parsers"),
-        "tracked_build_inputs": man.get("tracked_build_inputs"),
+        "member_parsers": content_only(man.get("member_parsers")),
+        "tracked_build_inputs": content_only(man.get("tracked_build_inputs")),
         "runtime_argv": man.get("runtime_argv"),
         "fixture": (man.get("fixture_path"), man.get("fixture_sha256")),
         "module": (man.get("module_path"), man.get("module_sha256")),
@@ -183,27 +250,35 @@ def run_content_id(man: dict) -> str:
     inherits the same rules about what is diagnostic and what is payload
     rather than inventing a second answer to that question.
 
-    Two things have to be taken out with it, and both were measured wrong
+    Four things have to be taken out with it, and each was measured wrong
     first. `producer_modules` is ONE flat block holding run-role and
     analysis-role pins together, so an unfiltered content id moved when an
-    analyzer's bytes moved -- the coupling this file exists to remove. And the
-    RAW arm streams stay IN, because they are content: see `split_analyses`.
+    analyzer's bytes moved -- the coupling this file exists to remove. The
+    retrieval ANCHORS go too, `repo_commit` at the top and `commit` inside every
+    pin, or the id moves on every commit whatever the bytes did. So do the
+    `findings`, which are prose attached to the run and not output of it. And
+    the RAW arm streams stay IN, because they are content: see `split_analyses`.
+
+    What deliberately STAYS is the compiler. It is not an anchor: two builds of
+    identical sources by different compilers are not the same run content, and
+    an id that called them equal would be answering a question nobody asked.
     """
     _derived, raw = split_analyses(man)
     keep = {k: v for k, v in man.items()
-            if k not in ("analyses", "analyzer_sha256")}
+            if k not in ("analyses", "analyzer_sha256") + NARRATIVE_KEYS}
     keep["producer_modules"] = _by_role(man, "run")
     if raw:
         keep["arm_streams"] = sorted(raw, key=lambda a: str(a.get("file")))
-    return rm.identity_digest(keep)
+    return rm.identity_digest(content_only(keep))
 
 
 def _pins_for(man: dict, modules: set) -> list:
-    """The manifest's pins for exactly these modules."""
-    return sorted((e for e in (man.get("producer_modules") or [])
-                   if isinstance(e, dict)
-                   and Path(str(e.get("path", ""))).stem in modules),
-                  key=lambda e: str(e.get("path")))
+    """The manifest's pins for exactly these modules, reduced to their CONTENT."""
+    return content_only(
+        sorted((e for e in (man.get("producer_modules") or [])
+                if isinstance(e, dict)
+                and Path(str(e.get("path", ""))).stem in modules),
+               key=lambda e: str(e.get("path"))))
 
 
 def analysis_reach(man: dict, name: str) -> set:
@@ -226,13 +301,20 @@ def analysis_reach(man: dict, name: str) -> set:
 
 def analysis_id(man: dict, name: str) -> str:
     """One analysis: the content it read, its own entry, and the code IT can
-    reach."""
+    reach.
+
+    The entry carries `analyzer_commit` beside `analyzer_sha256`, so it is
+    reduced to its content like every other pin: the analyzer's BYTES must move
+    this id, and they do -- `analyzer_sha256` and `analyzer_blob_sha` are both
+    still in it. The commit that happened to contain them must not.
+    """
     derived, _raw = split_analyses(man)
     entries = [a for a in derived if a.get("analysis") == name]
     if not entries:
         raise KeyError(f"no derived analysis named {name!r} in this manifest")
     return _digest({"run_content": run_content_id(man),
-                    "entries": sorted(entries, key=lambda a: str(a.get("file"))),
+                    "entries": content_only(
+                        sorted(entries, key=lambda a: str(a.get("file")))),
                     "modules": _pins_for(man, analysis_reach(man, name))})
 
 

@@ -331,6 +331,21 @@ def validate(man: dict) -> list:
                            f"a 64-hex `content_sha256`, and 40-hex `commit` and "
                            f"`blob_sha`")
 
+    # An analysis carried at a precision it is not DEFINED at (owner priority 6).
+    # The other direction is REQUIRED_WHEN_INSTRUMENTED above; this one is what
+    # a manifest cannot talk its way out of, because the precision it is checked
+    # against is the precision it declares about itself.
+    prec = man.get("precision")
+    if prec:
+        wrong = sorted({a.get("analysis") for a in (man.get("analyses") or [])
+                        if isinstance(a, dict)
+                        and a.get("analysis") in ANALYSIS_PRECISIONS
+                        and not applicable(a["analysis"], prec)})
+        if wrong:
+            bad.append(
+                f"precision={prec} bundle carries {wrong}, which are defined "
+                f"only at {sorted({p for a in wrong for p in ANALYSIS_PRECISIONS[a]})}"
+                f" -- an analysis nobody can read is not evidence")
     # arm and precision are not independent: an f64 arm at f32 precision, or the
     # reverse, describes a run that cannot exist.
     if man.get("arm") == "f64" and man.get("precision") != "f64":
@@ -424,6 +439,56 @@ REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
                               "extension_protocol", "dual_ledger",
                               "defect_magnitude", "internal_cap_enthalpy",
                               "substep_schedule", "water_enthalpy_basis")
+
+#: analysis -> the PRECISIONS at which it is defined (owner priority 6).
+#:
+#: An analysis is not automatically valid on every stream the producer can hand
+#: it, and until now nothing said so anywhere. `qr_process_ledger` REPLAYS the
+#: reference update in raw f32 words -- it reads each operand's f32 bits,
+#: accumulates in np.float32 in the source's own order under the positivity
+#: clamp, and closes against the stored f32 result. At f64 those stage records
+#: are f64 (D6), its `_want_f32` refuses them, and the producer dies mid-bundle.
+#: That is the SAFE outcome and still the wrong one: "not defined here" and
+#: "crashed here" are different facts and the bundle recorded neither.
+#:
+#: `ncmin_locality` and `metric_trajectory` are f32-only for a plainer reason --
+#: both read the bundle's G33R member, and an f64 build emits no G33R at all.
+#:
+#: The eight per-member analyses read the G33N/G33F extension records, whose
+#: width the stream's own PROTOCOL header carries, so they are defined at both
+#: and were measured running at both.
+#:
+#: DECLARED, and checked in the direction a manifest cannot fake: an entry that
+#: is not defined at the run's own declared precision is REFUSED, so a bundle
+#: cannot carry a table nobody can read.
+ANALYSIS_PRECISIONS = {
+    "matched_closure": ("f32", "f64"),
+    "cap_interface": ("f32", "f64"),
+    "extension_protocol": ("f32", "f64"),
+    "dual_ledger": ("f32", "f64"),
+    "defect_magnitude": ("f32", "f64"),
+    "substep_schedule": ("f32", "f64"),
+    "water_enthalpy_basis": ("f32", "f64"),
+    "internal_cap_enthalpy": ("f32", "f64"),
+    "metric_trajectory": ("f32",),
+    "ncmin_locality": ("f32",),
+    "qr_process_ledger": ("f32",),
+}
+
+
+def applicable(analysis: str, precision: str) -> bool:
+    """Whether `analysis` is DEFINED on a run at `precision`.
+
+    Refuses a name it does not know rather than defaulting to True: a new
+    analysis would otherwise be declared valid everywhere by the act of not
+    being listed, which is the fail-open shape every other check here closes.
+    """
+    if analysis not in ANALYSIS_PRECISIONS:
+        raise KeyError(
+            f"{analysis!r} has no declared precision applicability; add it to "
+            f"ANALYSIS_PRECISIONS rather than letting it default to valid")
+    return precision in ANALYSIS_PRECISIONS[analysis]
+
 
 _DERIVED_FIELDS = ("analysis", "nsplit", "analyzer", "analyzer_sha256",
                    "analyzer_commit", "analyzer_blob_sha")
