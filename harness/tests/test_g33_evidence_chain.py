@@ -2208,3 +2208,78 @@ def test_the_two_BINDINGS_take_the_same_path_to_every_shared_state(
     for fn in ("def resolve_value", "def resolve_predicate"):
         body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
         assert "_resolve(" in body, f"{fn} no longer goes through the shared core"
+
+
+# --- the bundle is SELF-CONTAINED, and the anchor is FETCHABLE (priority 10) -
+#
+# `Path.is_file()` follows symlinks, so a member could be a link to a file
+# outside the bundle and match its digest perfectly. The digest would be telling
+# the truth and the bundle would still not be the immutable, self-contained
+# thing the archive is defined to be. Measured before enforcing: 169 payload
+# files across the published archive, 0 symlinks.
+
+
+def test_a_member_that_is_a_SYMLINK_out_of_the_bundle_is_refused(world, tmp_path):
+    bundle, write = world
+    write()
+    assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "matches"
+    outside = tmp_path / "elsewhere.txt"
+    outside.write_bytes((bundle / "n3.rezero.txt").read_bytes())
+    (bundle / "n3.rezero.txt").unlink()
+    (bundle / "n3.rezero.txt").symlink_to(outside)
+    got = ec.chain()[0]["artifacts"][0]["members"][0]
+    assert got["state"] == "NOT-SELF-CONTAINED", got
+    assert ec.check() != 0, "the digest still matches; the containment does not"
+
+
+def test_a_symlink_to_a_file_INSIDE_the_bundle_is_refused_too(world):
+    """Not about where the bytes are -- about the bundle being a directory of
+    regular files. A link that resolves inside is still a link, and the archive
+    is copied, rsynced and tarred by things that treat the two differently."""
+    bundle, write = world
+    write()
+    (bundle / "real.txt").write_bytes((bundle / "n3.rezero.txt").read_bytes())
+    (bundle / "n3.rezero.txt").unlink()
+    (bundle / "n3.rezero.txt").symlink_to(bundle / "real.txt")
+    assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] \
+        == "NOT-SELF-CONTAINED"
+
+
+def test_a_LOCAL_ONLY_commit_anchor_is_reported_and_only_BLOCKS_a_closeout(
+        tmp_path, monkeypatch):
+    """`--contains` is satisfied by any ref, and a throwaway `wip/foo` is a ref
+    on one machine. "The anchor resolves where it was made" is not what pinning
+    a commit is for, so a closeout asks the narrower question.
+
+    Built on a REAL repository with a real local-only branch, so the narrowing
+    is exercised against git rather than against a stub.
+    """
+    import subprocess as sp
+    r = lambda *a: sp.run(a, cwd=tmp_path, capture_output=True, text=True)
+    live, _dead = _tiny_repo(tmp_path)
+    r("git", "checkout", "-q", "-b", "wip/local-only")
+    (tmp_path / "b.txt").write_text("local\n")
+    r("git", "add", "-A"); r("git", "commit", "-qm", "local only")
+    local = r("git", "rev-parse", "HEAD").stdout.strip()
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+    monkeypatch.setattr(ec, "_REACHABLE", {})
+
+    assert ec._reachable(local), "a local branch does contain it"
+    assert not ec._reachable(local, trusted=True), (
+        "...and no ref a clone would have does -- which is the distinction")
+    assert ec._reachable(live) and not ec._reachable(live, trusted=True)
+
+    man = {"repo_commit": local, "member_parsers": [], "producer_modules": [],
+           "tracked_build_inputs": []}
+    row, = ec._commit_states(man)
+    assert row["state"] == "commit-local-anchor-only", row
+    assert row["state"] in ec.PASSING_STATES, "a routine run must not fail on it"
+    assert row["state"] in ec.EXCUSED_BY_ABSENCE, "a closeout must"
+    assert not ec.verdict(row["state"])
+    assert ec.verdict(row["state"], require_available=True)
+
+
+def test_the_TRUSTED_refs_are_ones_a_CLONE_would_have():
+    """A list of local branch names would defeat the point."""
+    assert all(r.startswith(("refs/remotes/origin/", "refs/tags/"))
+               for r in ec.TRUSTED_REFS), ec.TRUSTED_REFS

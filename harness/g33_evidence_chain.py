@@ -308,6 +308,31 @@ def _schema_violations(man: dict) -> list:
     return rm.validate(man)
 
 
+def _payload_state(p: Path, want: str, root: Path) -> str:
+    """One file a bundle declares, checked for presence, CONTAINMENT and digest.
+
+    `Path.is_file()` follows symlinks, so a bundle member could be a link to a
+    file outside the bundle and match its digest perfectly. The digest would be
+    telling the truth and the bundle would still not be the self-contained,
+    immutable thing the archive is defined to be: move or edit the target and
+    the "immutable" bundle changes with it (owner priority 10).
+
+    Measured before enforcing: 169 payload files across the published archive,
+    0 symlinks -- so this states a property the bundles already have rather
+    than imposing one they would have to be rebuilt for.
+    """
+    if p.is_symlink() or (p.exists() and not p.is_file()):
+        return "NOT-SELF-CONTAINED"
+    if not p.is_file():
+        return "absent"
+    try:
+        if p.resolve().parent != root.resolve():
+            return "NOT-SELF-CONTAINED"
+    except OSError:
+        return "NOT-SELF-CONTAINED"
+    return "matches" if sha256(p) == want else "MISMATCH"
+
+
 def members_of(manifest: Path) -> list[dict]:
     """Each member beside `manifest`, checked against the digest it recorded.
 
@@ -347,10 +372,9 @@ def members_of(manifest: Path) -> list[dict]:
                  "detail": "; ".join(bad)}]
     for mem in man.get("members", []):
         p = manifest.parent / mem["file"]
-        out.append({"file": mem["file"],
-                    "scope": "bundle", "origin": "member", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == mem.get("output_sha256")
-                              else "MISMATCH")})
+        out.append({"file": mem["file"], "scope": "bundle", "origin": "member",
+                    "state": _payload_state(p, mem.get("output_sha256"),
+                                            manifest.parent)})
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
     # from an analysis -- so a chain that stopped at the raw stream stopped one
     # step short of the number being cited. This includes the ARM STREAMS, which
@@ -361,16 +385,16 @@ def members_of(manifest: Path) -> list[dict]:
     # bundle; nothing followed them (owner §7).
     for a in man.get("build_artifacts", []):
         p = manifest.parent / a["file"]
-        out.append({"file": a["file"],
-                    "scope": "bundle", "origin": "build_artifact", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == a.get("sha256")
-                              else "MISMATCH")})
+        out.append({"file": a["file"], "scope": "bundle",
+                    "origin": "build_artifact",
+                    "state": _payload_state(p, a.get("sha256"),
+                                            manifest.parent)})
     for an in man.get("analyses", []):
         p = manifest.parent / an["file"]
-        out.append({"file": an["file"],
-                    "scope": "bundle", "origin": "analysis", "state": ("absent" if not p.is_file() else
-                              "matches" if sha256(p) == an.get("sha256")
-                              else "MISMATCH")})
+        out.append({"file": an["file"], "scope": "bundle",
+                    "origin": "analysis",
+                    "state": _payload_state(p, an.get("sha256"),
+                                            manifest.parent)})
         # The RAW STREAMS a multi-run analysis read. They were written into the
         # bundle with a digest each and then never re-hashed by anything, so a
         # kept stream could be edited or deleted and the chain said nothing:
@@ -390,9 +414,8 @@ def members_of(manifest: Path) -> list[dict]:
             q = manifest.parent / src["file"]
             out.append({"file": src["file"], "scope": "bundle",
                         "origin": "multi_run_input",
-                        "state": ("absent" if not q.is_file() else
-                                  "matches" if sha256(q) == src.get("sha256")
-                                  else "MISMATCH")})
+                        "state": _payload_state(q, src.get("sha256"),
+                                                manifest.parent)})
         # The manifest's `ran` block against the one INSIDE the analysis it
         # describes. The producer copies it across, so they are two records of
         # one fact -- and two records never checked against each other are one
@@ -436,19 +459,35 @@ def members_of(manifest: Path) -> list[dict]:
 _REACHABLE: dict = {}
 
 
-def _reachable(commit: str) -> bool:
+#: Refs an EXTERNAL reader can be expected to have. A local branch satisfies
+#: `--contains` and says nothing about whether anyone else can fetch the
+#: history: a throwaway `wip/foo` is a ref, and it is on one machine
+#: (owner priority 10). Measured across the archive: all three pinned commits
+#: are already contained by one of these, so this states a property the pins
+#: have rather than one they would have to be re-produced for.
+TRUSTED_REFS = ("refs/remotes/origin/main", "refs/remotes/origin/HEAD",
+                "refs/tags/")
+
+
+def _reachable(commit: str, trusted: bool = False) -> bool:
     """Is `commit` reachable from a ref, or merely still in the object database?
 
     `git cat-file -e` answers the wrong question. A commit discarded by a
     rebase or a squash survives as a loose object until gc, so every blob
     pinned through it keeps resolving and every content digest keeps matching
     -- the whole chain stays green while the anchor is already dangling.
+
+    `trusted` narrows the question from "some ref here" to "a ref a reviewer
+    who clones this could have". Routine runs ask the first; a closeout asks
+    the second, because "the anchor resolves on the machine that made it" is
+    not what pinning a commit is for.
     """
-    key = (str(REPO), commit)
+    key = (str(REPO), commit, trusted)
     if key not in _REACHABLE:
-        r = subprocess.run(["git", "for-each-ref", "--contains", commit,
-                            "--count=1"], cwd=REPO, capture_output=True,
-                           text=True)
+        cmd = ["git", "for-each-ref", "--contains", commit, "--count=1"]
+        if trusted:
+            cmd += list(TRUSTED_REFS)
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
         _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
     return _REACHABLE[key]
 
@@ -473,14 +512,24 @@ def _commit_states(man: dict) -> list:
                 seen.setdefault(c, set()).add(key)
     out = []
     for c, keys in sorted(seen.items()):
-        ok = _reachable(c)
-        out.append({
-            "file": f"{c[:12]} [{'+'.join(sorted(keys))}]",
-            "state": "matches" if ok else "COMMIT-UNREACHABLE",
-            "detail": "" if ok else
-                      f"no ref contains {c[:12]} -- this pin anchors to a "
-                      f"commit discarded by a rebase or squash. It resolves "
-                      f"today only because gc has not run"})
+        where = f"{c[:12]} [{'+'.join(sorted(keys))}]"
+        if not _reachable(c):
+            out.append({
+                "file": where, "state": "COMMIT-UNREACHABLE",
+                "detail": f"no ref contains {c[:12]} -- this pin anchors to a "
+                          f"commit discarded by a rebase or squash. It resolves "
+                          f"today only because gc has not run"})
+        elif not _reachable(c, trusted=True):
+            # Reachable HERE and nowhere a reviewer could follow. A passing
+            # state for a routine run and a blocker for a closeout, like every
+            # other "we could not really check this" (owner priority 10).
+            out.append({
+                "file": where, "state": "commit-local-anchor-only",
+                "detail": f"{c[:12]} is contained only by a local ref -- a "
+                          f"reviewer cloning this repository could not fetch "
+                          f"the history the pin points into"})
+        else:
+            out.append({"file": where, "state": "matches", "detail": ""})
     return out
 
 
@@ -957,6 +1006,8 @@ PASSING_STATES = frozenset({
     "predicate-matches",
     "predicate-unavailable",   # the bundle the fact is declared against is absent
     "value-unavailable",       # the bundle the figure is declared against is not here
+    # The anchor resolves on THIS machine and nowhere a reviewer could follow.
+    "commit-local-anchor-only",
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
@@ -974,6 +1025,10 @@ FAILING_STATES = frozenset({
     # whole bundle is excusable on a clone; absence of the manifest INSIDE one
     # is a broken bundle, and it must not read as the former.
     "MANIFEST-ABSENT-IN-PRESENT-BUNDLE",
+    # A payload that is a symlink, or resolves outside its own bundle. The
+    # digest can be perfectly true and the bundle still not be the immutable,
+    # self-contained thing the archive is defined to be.
+    "NOT-SELF-CONTAINED",
 })
 
 
@@ -997,6 +1052,9 @@ EXCUSED_BY_ABSENCE = frozenset({
     # and a blocker in a closeout, like every other unrecoverable entry
     # (owner §10).
     "legacy-analyzer-changed",
+    # Same shape, one layer out: the commit resolves because we are standing on
+    # the machine that has it (owner priority 10).
+    "commit-local-anchor-only",
     "value-unavailable",
     # Added with `expected_predicates` and, at first, only to PASSING_STATES --
     # so a closeout failed a FIGURE whose bundle was absent and passed a FACT
