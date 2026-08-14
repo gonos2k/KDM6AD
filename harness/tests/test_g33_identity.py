@@ -549,3 +549,123 @@ def test_a_v3_manifest_may_not_omit_ONE_analysis_from_the_reach_map(tmp_path):
         gi.analysis_id(man, "dual_ledger")
     # the OTHER analysis is unaffected -- the refusal is per entry
     assert gi.analysis_id(man, "substep_schedule")
+
+
+# --- the SLICES, not the declarations (Codex stop-time review, round 3) ------
+#
+# Three rounds of identity checking validated the declarations and left the
+# slices open, which is the same mistake three times. `_by_role` and `_pins_for`
+# both filter `producer_modules`, and a module can be pinned as a tracked BUILD
+# INPUT instead -- so a graph giving the `run` role only to `make_fortran_overlay`
+# satisfied "somebody is in the run role" and left the run slice EMPTY. Measured:
+# run-slice 0 with a clean validate, the same end state as the forgery the round
+# before closed, through a different door.
+
+
+def _real_v3():
+    import json
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("identity") or {}).get("role_graph"):
+                    return man
+    return None
+
+
+def test_the_SCHEMA_rule_and_the_ID_functions_agree_about_the_slice():
+    """The check lives in the manifest module and the slice is computed in this
+    one, so they can drift -- which is exactly how the run-slice hole survived a
+    round that was looking for it. This ties them together on real data: what
+    the schema calls a non-empty slice is what `_by_role` and `_pins_for`
+    actually return.
+    """
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    assert gi._by_role(man, "run"), "the schema passed a run slice that is empty"
+    for a in man["analyses"]:
+        if a.get("analysis") == "arm_stream":
+            continue
+        mods = gi.analysis_reach(man, a["analysis"])
+        assert gi._pins_for(man, mods), (a["analysis"], sorted(mods))
+        own = Path(a["analyzer"]).stem
+        assert any(Path(p["path"]).stem == own for p in gi._pins_for(man, mods)), (
+            f"{a['analysis']}: its id does not cover {own}, the analyzer that "
+            f"produced it")
+
+
+@pytest.mark.parametrize("what,mutate", [
+    ("the run slice emptied through build-input pins",
+     lambda m: m["identity"].update(role_graph={
+         k: (["run"] if k in ("make_fortran_overlay", "g33_fortran_bindings")
+             else ["analysis"]) for k in m["identity"]["role_graph"]})),
+    ("an analysis slice emptied the same way",
+     lambda m: m["identity"]["analysis_reach"].update(
+         dual_ledger=["make_fortran_overlay"])),
+    ("an analysis slice that omits its own analyzer",
+     lambda m: m["identity"]["analysis_reach"].update(dual_ledger=["g33_schema"])),
+])
+def test_an_EMPTY_or_INCOMPLETE_slice_is_refused(what, mutate):
+    """Each of these validated clean before, and each produces an id over
+    modules that cannot answer for the thing it identifies."""
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    bad = copy.deepcopy(man)
+    mutate(bad)
+    assert rm.validate(bad), what
+
+
+def test_NO_single_edit_leaves_a_validating_manifest_with_a_BROKEN_slice():
+    """The check the last three rounds needed and did not have.
+
+    Hand-picked attacks find the holes you thought of; this drops each element
+    of the recorded graph and each module of each reach entry in turn, and
+    requires that whatever still VALIDATES still has slices the ids can stand
+    on. Three rounds of spot-checking declarations missed a run slice that
+    filtered to empty, so the property is asserted over the search rather than
+    over three examples.
+    """
+    import g33_refine_manifest as rm
+    man = _real_v3()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    broken, checked = [], 0
+
+    def slices_ok(d, why):
+        nonlocal checked
+        if rm.validate(d) != []:
+            return                                   # refused: nothing to check
+        checked += 1
+        if not gi._by_role(d, "run"):
+            broken.append((why, "empty run slice"))
+        for a in d["analyses"]:
+            if a.get("analysis") == "arm_stream":
+                continue
+            pins = gi._pins_for(d, gi.analysis_reach(d, a["analysis"]))
+            own = Path(a["analyzer"]).stem
+            if not pins:
+                broken.append((why, f"{a['analysis']}: empty analysis slice"))
+            elif not any(Path(p["path"]).stem == own for p in pins):
+                broken.append((why, f"{a['analysis']}: slice lost {own}"))
+
+    for m in sorted(man["identity"]["role_graph"]):
+        d = copy.deepcopy(man)
+        d["identity"]["role_graph"].pop(m)
+        slices_ok(d, f"role_graph drops {m}")
+    for name, mods in sorted(man["identity"]["analysis_reach"].items()):
+        for mod in sorted(mods):
+            rest = [x for x in mods if x != mod]
+            if not rest:
+                continue
+            d = copy.deepcopy(man)
+            d["identity"]["analysis_reach"][name] = rest
+            slices_ok(d, f"reach[{name}] drops {mod}")
+
+    assert checked, "every mutation was refused -- the search proves nothing"
+    assert not broken, broken[:5]

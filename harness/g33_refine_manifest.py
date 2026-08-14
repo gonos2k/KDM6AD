@@ -346,7 +346,55 @@ def _identity_violations(man: dict) -> list:
     if unpinned_reach:
         bad.append(f"identity.analysis_reach names {unpinned_reach}, which this "
                    f"bundle pins nowhere")
-    return bad
+    return bad + _identity_slice_violations(man, graph, reach)
+
+
+def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
+    """The SLICES the ids actually digest, not the declarations that produce them.
+
+    Three rounds of this check validated declarations and left the slices open,
+    which is the same mistake three times. `_by_role` and `_pins_for` both
+    filter `producer_modules` -- and a module can be pinned as a tracked BUILD
+    INPUT instead, so a graph that gives the `run` role only to
+    `make_fortran_overlay` and `g33_fortran_bindings` satisfies "somebody is in
+    the run role" and leaves the run slice EMPTY. Measured: run-slice 0 with a
+    clean validate, which is the same end state as the forgery the previous
+    round closed, reached through a different door.
+
+    So the constraint is stated over the slice: what survives the filter must be
+    non-empty, and an analysis's slice must contain its own analyzer -- a reach
+    entry naming other pinned modules is non-empty, all-pinned, and still does
+    not cover the bytes that produced the analysis (Codex stop-time review).
+    """
+    prod = {e["path"].rsplit("/", 1)[-1][:-3]
+            for e in man.get("producer_modules") or []
+            if isinstance(e, dict) and isinstance(e.get("path"), str)
+            and e["path"].endswith(".py")}
+    bad = []
+    if not (prod & {m for m, r in graph.items() if "run" in r}):
+        bad.append(
+            "identity.role_graph gives the `run` role to no module that is "
+            "pinned in producer_modules, so the run recipe digests an empty "
+            "list -- a module pinned only as a build input never reaches it")
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict) or a.get("analysis") == "arm_stream":
+            continue
+        name, analyzer = a.get("analysis"), a.get("analyzer")
+        if name not in reach:
+            continue                      # absence is reported by _identity_covers
+        slice_ = prod & set(reach[name])
+        if not slice_:
+            bad.append(f"identity.analysis_reach[{name!r}] names no module "
+                       f"pinned in producer_modules, so that analysis id "
+                       f"digests an empty list")
+            continue
+        if isinstance(analyzer, str) and analyzer.endswith(".py"):
+            own = analyzer.rsplit("/", 1)[-1][:-3]
+            if own in prod and own not in slice_:
+                bad.append(f"identity.analysis_reach[{name!r}] does not contain "
+                           f"{own!r}, the analyzer this entry names -- the id "
+                           f"would not cover the bytes that produced it")
+    return sorted(set(bad))
 
 
 def _identity_covers(man: dict) -> list:
