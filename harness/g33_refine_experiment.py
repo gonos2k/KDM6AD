@@ -886,6 +886,14 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # The SAME word the analyses were selected by, so the manifest cannot
         # declare one precision and have been analysed at another.
         man["precision"] = precision
+        # The ROLE GRAPH the layered ids are derived under (owner priority 8).
+        # Without it those ids are a function of the manifest AND of whichever
+        # checkout computes them, so a refactor that moves a module between
+        # roles moves a historical bundle's run_content_id with no bundle byte
+        # having changed. Imported here rather than at module scope: g33_identity
+        # imports this module, and the cycle only closes at call time.
+        import g33_identity as gi
+        man["identity"] = gi.identity_block()
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False

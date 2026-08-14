@@ -121,6 +121,58 @@ def unlabelled() -> set:
     return rx.reachable_modules() - set(roles())
 
 
+#: The version of the layering these ids implement. Recorded in the bundle, so
+#: a manifest says which derivation produced its ids rather than leaving a
+#: reader to assume today's.
+IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+def identity_block() -> dict:
+    """The role graph and the per-analysis reach, as CONTENT for the manifest.
+
+    Without this an id is a function of the manifest AND of the checkout it is
+    computed in. `roles()` and `analysis_reach()` read the registries and the
+    import graph of whatever tree is present, so moving a module from run+
+    analysis to analysis-only -- a refactor that touches no bundle byte --
+    changes `_by_role`'s filter and moves a HISTORICAL manifest's
+    `run_content_id`. That is the same coupling the layers exist to remove,
+    one level further out, and it is the Phase B prerequisite: an id written
+    into an archive must be reproducible from the archive (owner priority 8).
+
+    Recorded rather than recomputed, because the graph is a fact about the code
+    that made the bundle, and that code is already pinned beside it.
+    """
+    return {"schema": IDENTITY_SCHEMA,
+            "role_graph": {m: sorted(r) for m, r in sorted(roles().items())},
+            "analysis_reach": {name: sorted(_closure({name_mod}))
+                               for name, (name_mod, _fn)
+                               in sorted({**rx.ANALYSES, **rx.MULTI_RUN}.items())}}
+
+
+def _graph(man: dict) -> dict:
+    """The role graph THIS manifest was produced under, or today's.
+
+    A manifest that records one is read with it, whatever the checkout looks
+    like now. One that does not predates the block, and there is nothing else
+    to use -- so its ids remain a function of the current tree, which is a fact
+    about those bundles rather than a property of the layering, and
+    `identity_is_self_contained` is how a caller asks which it is holding.
+    """
+    rec = (man.get("identity") or {}).get("role_graph")
+    if isinstance(rec, dict) and rec:
+        return {m: set(r) for m, r in rec.items()}
+    return roles()
+
+
+def identity_is_self_contained(man: dict) -> bool:
+    """Whether this manifest's ids can be recomputed from the manifest alone."""
+    ident = man.get("identity") or {}
+    return (ident.get("schema") == IDENTITY_SCHEMA
+            and isinstance(ident.get("role_graph"), dict)
+            and bool(ident["role_graph"])
+            and isinstance(ident.get("analysis_reach"), dict))
+
+
 def split_analyses(man: dict) -> tuple:
     """(derived, raw) entries of the `analyses` block.
 
@@ -209,7 +261,7 @@ def _by_role(man: dict, role: str) -> list:
     moves when any analysis module's bytes move -- which is the whole cost
     being separated here, reproduced inside the recipe.
     """
-    keep = {m for m, r in roles().items() if role in r}
+    keep = {m for m, r in _graph(man).items() if role in r}
     return content_only(
         sorted((e for e in (man.get("producer_modules") or [])
                 if isinstance(e, dict)
@@ -286,6 +338,12 @@ def analysis_reach(man: dict, name: str) -> set:
     analysis role. An id over the role would move every analysis whenever any
     analysis module changed, which is the cost being separated here reproduced
     one layer down."""
+    rec = (man.get("identity") or {}).get("analysis_reach", {})
+    if isinstance(rec, dict) and rec.get(name):
+        # RECORDED: the closure as it stood when the bundle was made. Recomputing
+        # it walks today's import graph, so an analyzer that grew an import
+        # since would widen a historical analysis's id (owner priority 8).
+        return set(rec[name])
     derived, _raw = split_analyses(man)
     mods = {Path(str(a["analyzer"])).stem for a in derived
             if a.get("analysis") == name}

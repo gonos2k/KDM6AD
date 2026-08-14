@@ -428,3 +428,63 @@ def test_and_a_REAL_commit_that_DID_change_the_run_code_moves_it():
     ma["producer_modules"] = _real_pins(a, [path])
     mb["producer_modules"] = _real_pins(b, [path])
     assert gi.run_recipe_id(ma) != gi.run_recipe_id(mb)
+
+
+# --- an id must be a function of the MANIFEST (owner priority 8) -------------
+#
+# `roles()` and `analysis_reach()` read the registries and the import graph of
+# whatever tree is present. So a refactor that moves a module from run+analysis
+# to analysis-only -- touching no bundle byte -- changes `_by_role`'s filter and
+# moves a HISTORICAL manifest's run_content_id. That is the coupling the layers
+# exist to remove, one level further out, and it is what Phase B was waiting on:
+# an id written into an archive has to be reproducible from the archive.
+
+
+def _with_identity(man):
+    out = copy.deepcopy(man)
+    out["identity"] = gi.identity_block()
+    return out
+
+
+def test_a_recorded_role_graph_makes_the_ids_SELF_CONTAINED():
+    man = _with_identity(_manifest())
+    assert gi.identity_is_self_contained(man)
+    assert not gi.identity_is_self_contained(_manifest())
+
+
+def test_a_REFACTOR_of_the_role_graph_does_not_move_a_RECORDED_id(monkeypatch):
+    """The regression. `g33_number_transport` carries both roles today; move it
+    to analysis-only and a manifest that RECORDS the old graph must not notice.
+    """
+    plain, recorded = _manifest(), _with_identity(_manifest())
+    before = (gi.run_recipe_id(recorded), gi.run_content_id(recorded))
+    before_plain = (gi.run_recipe_id(plain), gi.run_content_id(plain))
+
+    moved = {m: (r - {"run"} if m == "g33_number_transport" else r)
+             for m, r in gi.roles().items()}
+    monkeypatch.setattr(gi, "roles", lambda: moved)
+
+    assert (gi.run_recipe_id(recorded), gi.run_content_id(recorded)) == before, \
+        "a recorded graph must be read with, whatever the checkout looks like"
+    assert (gi.run_recipe_id(plain), gi.run_content_id(plain)) != before_plain, \
+        "...and without one the id DOES follow the tree -- or this proves nothing"
+
+
+def test_a_recorded_analysis_reach_does_not_follow_the_import_graph(monkeypatch):
+    """The same thing one layer down: an analyzer that grows an import would
+    widen a historical analysis's id."""
+    recorded = _with_identity(_manifest())
+    before = gi.analysis_id(recorded, "dual_ledger")
+    monkeypatch.setattr(gi, "_closure",
+                        lambda *a, **k: {"g33_dual_ledger", "g33_something_new"})
+    assert gi.analysis_id(recorded, "dual_ledger") == before
+
+
+def test_the_recorded_block_COVERS_every_analysis_the_producer_runs():
+    """A reach map missing an analysis silently falls back to recomputing it,
+    which is the behaviour the block exists to replace."""
+    block = gi.identity_block()
+    assert set(block["analysis_reach"]) == set(rx.ANALYSES) | set(rx.MULTI_RUN)
+    assert set(block["role_graph"]) == set(gi.roles())
+    for name, mods in block["analysis_reach"].items():
+        assert mods, name
