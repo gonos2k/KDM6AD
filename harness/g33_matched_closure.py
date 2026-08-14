@@ -58,9 +58,8 @@ def endpoints(d: dict) -> dict:
         "calls": len(pcs)}
 
 
-def window_inventories(stream: str, basis: str = "operator",
-                       nsplit: int | None = None) -> dict:
-    """{(field, col): (window_initial, window_final)} from G33R INITIAL/STATE.
+def window_inventories(stream: str, basis: str = "operator") -> dict:
+    """{(field, col): (window_initial, window_final)} from the window state.
 
     The true endpoints of the microphysics window, read from the SAME stream the
     segment endpoints come from -- so "is the segment endpoint the window
@@ -73,14 +72,29 @@ def window_inventories(stream: str, basis: str = "operator",
     during microphysics, so recomputing it from each endpoint's own qv would
     make a conserved quantity move.
 
-    Returns `{}` ONLY when the stream carries no G33R records at all. A stream
-    that HAS them and fails to parse RAISES -- that is evidence corruption, and
-    swallowing it would report a corrupt member as one that merely lacked
-    endpoints (owner P1-3).
+    FROM WHICHEVER FAMILY CARRIES IT (owner priority 3). This read G33R only,
+    and an f64 build emits G33P instead -- so at f64 it returned `{}` and
+    `defect_magnitude` published 46 null fields per member without failing.
+    Measured on the first f64 bundle: 9 members, 414 nulls, and the analysis
+    still counted as present. Its two siblings, `window_cell_mass` here and
+    `water_enthalpy_basis`, had already moved to `pr.window_state`, which is the
+    one selection rule; this was the last reader with a private copy of the
+    question. G33P carries every family this needs -- forcing rho/delz,
+    initial, state -- verified against a real f64 stream.
+
+    `nsplit` is gone with it: no caller passed one, and a parameter that
+    cross-checks the member only on the G33R path is a second contract that
+    holds half the time.
+
+    Returns `{}` ONLY when the stream carries NEITHER family. A stream that has
+    one and fails to parse RAISES -- that is evidence corruption, and swallowing
+    it would report a corrupt member as one that merely lacked endpoints
+    (owner P1-3). Checked by PRESENCE rather than by catching the selector's
+    refusal, so a corrupt G33P raises exactly as a corrupt G33R does.
     """
-    if "G33R BEGIN" not in stream:
+    if "G33R BEGIN" not in stream and "G33P BEGIN" not in stream:
         return {}
-    run = ra.read_text(stream, nsplit=nsplit)
+    run = pr.window_state(stream)
 
     def layer_mass(col, k):
         rho = run[("forcing", "rho", col, k)] * run[("forcing", "delz", col, k)]
@@ -88,12 +102,14 @@ def window_inventories(stream: str, basis: str = "operator",
             return rho / (1.0 + run[("initial", "qv", col, k)])
         return rho
 
-    cols = sorted({k[2] for k in run if k[0] == "state"})
+    # `len(k) == 4` because `window_state` also returns 2-tuple `meta` and
+    # 3-tuple `prec` keys, which have no column to read.
+    cols = sorted({k[2] for k in run if len(k) == 4 and k[0] == "state"})
     out = {}
     for field in ("nr", "ni", "qr", "qi"):
         for col in cols:
-            ks = sorted(k[3] for k in run
-                        if k[0] == "state" and k[1] == field and k[2] == col)
+            ks = sorted(k[3] for k in run if len(k) == 4
+                        and k[0] == "state" and k[1] == field and k[2] == col)
             if ks:
                 out[(field, col)] = tuple(
                     sum(layer_mass(col, k) * run[(cls, field, col, k)] for k in ks)

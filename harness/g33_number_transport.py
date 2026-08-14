@@ -201,6 +201,42 @@ def _real(label: str, h: str, real_bytes: int, call=None) -> float:
     return struct.unpack(">d" if want == 8 else ">f", bytes.fromhex(h))[0]
 
 
+#: Decoders for a checked-only payload, by storage label. `i32` decodes and
+#: imposes nothing: a stage integer's domain is a property of the FIELD, not of
+#: the width, and `mstep` -- the one this parser bounds -- is bounded where it is
+#: consumed. Decoding it anyway is what makes "every label has a decoder" a
+#: checkable statement rather than a list someone has to remember to extend.
+_DECODE = {"f32": lambda h: struct.unpack(">f", bytes.fromhex(h))[0],
+           "f64": lambda h: struct.unpack(">d", bytes.fromhex(h))[0],
+           "i32": lambda h: struct.unpack(">i", bytes.fromhex(h))[0],
+           "u8": lambda h: h}
+
+
+def _domain(fam: str, label: str, hexv: str, line: str) -> None:
+    """The payload is a VALUE, not just the right number of hex digits.
+
+    Width and label agreement says the bytes are the size they claim. It does
+    not say they are a number: `7FF8000000000000` is a perfectly well-formed
+    sixteen-digit f64 and it is NaN, and `FF` is a perfectly well-formed u8 and
+    the emitter can only write `00` or `01` (`merge(1, 0, <logical>)`).
+    Measured: both parsed clean.
+
+    The consumed records have had this since a NaN XFER reached a JSON writer
+    that emits a bare `NaN` token -- malformed evidence that had passed every
+    gate (owner P0-5). The checked-only families got the width half of that
+    check and not the value half, so the same NaN in the op ladder was fine
+    (owner priority 2).
+    """
+    v = _DECODE[label](hexv)
+    if label == "u8":
+        if v not in ("00", "01"):
+            raise StreamError(
+                f"{fam} u8 payload {v!r} is outside the boolean domain the "
+                f"emitter can write (merge(1, 0, ...)): {line!r}")
+    elif isinstance(v, float) and (v != v or abs(v) == float("inf")):
+        raise StreamError(f"{fam} {label} payload is {v}: {line!r}")
+
+
 def _shape(line: str, fam: str, widths: dict) -> None:
     """One emitted record this parser does not consume, checked anyway.
 
@@ -231,6 +267,7 @@ def _shape(line: str, fam: str, widths: dict) -> None:
         raise StreamError(
             f"{fam} record labelled {label} carries {len(hexv)} hex digits, "
             f"not {HEX_WIDTH[label]}: {line!r}")
+    _domain(fam, label, hexv, line)
     key = (fam, tuple(m.group(g) for g in keys))
     if widths.setdefault(key, label) != label:
         raise StreamError(
@@ -556,8 +593,32 @@ def calls(stream: str) -> list:
         # -- and CAPIN had no completeness check to notice the loss (owner P0-4).
         if fam in EXTENSION_FAMILIES and cur is None:
             raise StreamError(f"{fam} record outside any call: {line!r}")
+        # CLOSED WORLD, and it has to be closed HERE.
+        #
+        # The unknown-family refusals below sit AFTER this point, so they only
+        # ever saw records inside a bracket. An unknown `G33N` between two
+        # calls, an unknown `G33F` before the first one, a well-formed G33FOP
+        # after STREAM_END -- each was dropped without a word, and the parsed
+        # call count did not move. Measured: four such mutations on a real f64
+        # stream, four silent acceptances. That is the same defect class as the
+        # `********` payload that vanished instead of failing: a record the
+        # parser cannot place must not become a record that was never there
+        # (owner priority 1).
+        #
+        # Every bracket and header record is handled above and `continue`d, so
+        # anything reaching here in this parser's own namespace is a DATA
+        # record, and a data record outside a call describes nothing. Real
+        # streams carry none: measured 0 across every stream this parser reads.
+        # Other protocols sharing the same stdout -- G33R, G33P -- are not ours
+        # and are left alone, which is what keeps the world closed rather than
+        # merely small.
         if cur is None:
-            continue                      # records outside any call: not ours
+            if line.startswith(("G33N", "G33F")):
+                raise StreamError(
+                    f"record {'after STREAM_END' if ended else 'outside any call'}"
+                    f": {line!r} -- this parser's namespace is closed, so a "
+                    f"record it cannot place is a protocol change, not noise")
+            continue                      # another protocol's records: not ours
         if fam in FAMILY_FEATURE:
             feat = FAMILY_FEATURE[fam]
             if header and feat not in header["features"]:

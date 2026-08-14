@@ -430,13 +430,68 @@ def test_the_dry_air_layer_mass_is_HELD_over_the_window(stream):
         ra.read_text = orig
 
 
-def test_a_stream_with_no_G33R_is_unavailable(stream):
-    """Older G33N-only members legitimately have no endpoints."""
+def test_a_stream_with_NEITHER_window_family_is_unavailable(stream):
+    """Older G33N-only members legitimately have no endpoints. The contract is
+    now about BOTH families: stripping G33R alone no longer means the window is
+    gone, because a build that emits none still emits G33P."""
     import g33_matched_closure as mc
 
     assert mc.window_inventories(
         "\n".join(l for l in stream.splitlines()
-                   if not l.startswith("G33R"))) == {}
+                   if not l.startswith(("G33R", "G33P")))) == {}
+
+
+@pytest.fixture(scope="module")
+def f64_stream(tmp_path_factory):
+    """The same fixture at f64, which emits G33P and no G33R at all."""
+    out = tmp_path_factory.mktemp("cap64") / "build"
+    b = subprocess.run(["bash", str(BUILD), str(out),
+                        "--fixture=g33_fixture_multisubcycle_v1",
+                        "--algo=legacy", "--nflux", "--f64"],
+                       capture_output=True, text=True, cwd=REPO)
+    assert b.returncode == 0, f"build failed:\n{b.stdout}\n{b.stderr}"
+    r = subprocess.run([str(out / "g33_refine_driver"), "12", "rezero"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return r.stdout
+
+
+def test_the_WINDOW_survives_a_build_that_emits_no_G33R(stream, f64_stream):
+    """The defect the first f64 bundle shipped with (owner priority 3).
+
+    `window_inventories` read G33R only, an f64 build emits G33P instead, so it
+    returned `{}` and `defect_magnitude` published 46 null fields per member
+    across nine members WITHOUT failing -- an analysis that is present, counted,
+    and empty. Its two siblings had already moved to the one selection rule;
+    this was the last reader holding a private copy of the question.
+
+    The key SET is the assertion: same cells, same species, from a different
+    record family.
+    """
+    import g33_matched_closure as mc
+
+    assert "G33R BEGIN" not in f64_stream and "G33P BEGIN" in f64_stream
+    got = mc.window_inventories(f64_stream)
+    assert got, "an f64 build has a window; it is carried under G33P"
+    assert set(got) == set(mc.window_inventories(stream))
+
+
+def test_the_f64_defect_magnitude_no_longer_publishes_a_NULL_DENOMINATOR(f64_stream):
+    """The five fields the window feeds. `segment_endpoints_are_window_endpoints`
+    is the one that mattered most: null read as "not asked", and it is the whole
+    question of whether the segment the ledger measures is the window it is
+    reported against."""
+    import g33_defect_magnitude as dm
+
+    rows = dm.analysis(f64_stream)["rows"]
+    live = {k: v for k, v in rows.items() if v["window_initial_inventory"]}
+    assert live, "no row has a nonzero window inventory -- nothing is checked"
+    for key, row in rows.items():
+        assert row["window_initial_inventory"] is not None, key
+        assert row["window_final_inventory"] is not None, key
+        assert isinstance(row["segment_endpoints_are_window_endpoints"], bool), key
+    for key, row in live.items():
+        assert row["of_initial_inventory"] is not None, key
 
 
 def test_a_CORRUPT_G33R_raises_instead_of_reporting_no_endpoints(stream):
