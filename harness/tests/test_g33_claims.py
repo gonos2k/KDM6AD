@@ -672,23 +672,39 @@ def test_NO_claim_binds_the_same_file_and_path_twice():
     assert seen, "no bindings at all -- this check would be vacuous"
 
 
-def test_the_process_attribution_is_HELD_not_certified():
-    """The owner put the 85.3/14.7 share on HOLD, and the reason is in the
-    analyzer, not the measurement: the warm branch adds `paacw` twice
-    (F:2922) and a dict cannot hold a key twice, records are keyed (col, k) so
-    a second loop overwrites the first, a missing operand reads as 0.0, branch
-    comparability counts cells instead of comparing the branch MAP, and the
-    terms are summed in f64 while the reference accumulates f32 in source
-    order under a clamp.
+def test_the_process_attribution_is_SCOPED_not_held_and_not_bare_confirmed():
+    """The share was HELD because the analyzer did not reproduce the reference
+    update: the warm branch adds `paacw` twice (F:2922) and a dict cannot hold
+    a key twice, records were keyed (col, k) so a second loop overwrote the
+    first, a missing operand read as 0.0, branch comparability counted cells
+    instead of comparing the branch MAP, and the terms were summed in f64 while
+    the reference accumulates f32 in source order under a clamp.
 
-    So the figures live in their own claim, graded `hold`, bound so a
-    corrected ledger has to be compared against them rather than quietly
-    replacing them. G33-NCMIN-001 keeps the mechanism, which is unaffected.
+    Every one of those closed, and the ledger now replays each leg bit-exactly
+    and closes against the ACTUAL two-run post-state difference. So the hold is
+    lifted (owner priority 7) -- and lifted to `confirmed-with-scope`, not to
+    `confirmed`, because F is non-linear and the per-term split is exact only
+    under the stated substitution order.
+
+    What was keeping it held is a DIFFERENT proposition and moved to its own
+    entry: where the difference first arose, which nothing measures.
     """
     held = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-004")
-    assert held["grade"] == "hold", (
-        f"the process share is graded {held['grade']!r}; the ledger does not "
-        f"reproduce the reference update, so it cannot be certified")
+    assert held["grade"] == "confirmed-with-scope", (
+        f"the process share is graded {held['grade']!r}; the decomposition "
+        f"closes against the real update, and it is order-dependent, so it is "
+        f"neither held nor unconditionally confirmed")
+    for phrase in ("source-order", "not a causal mediation fraction",
+                   "not an adjoint sensitivity"):
+        assert phrase in " ".join(held["scope"].split()), (
+            f"the scope must say what the figure is NOT; {phrase!r} is missing")
+
+    causal = next(c for c in CLAIMS if c["id"] == "G33-NCMIN-005")
+    assert causal["grade"] == "open-question" and causal["status"] == "hold", (
+        "the causal question must stay open on its own, or lifting the hold "
+        "above quietly certifies it too")
+    assert "G33-NCMIN-005" in held["text"], \
+        "the measured claim must point at where the causal question went"
     # The corrected ledger reports BOTH measures, and they differ. Binding
     # only one would hide that the first version's figure was not a column
     # share at all (owner §4.7). Read through the CHAIN parser: this file's
