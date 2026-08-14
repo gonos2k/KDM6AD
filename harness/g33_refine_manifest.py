@@ -256,8 +256,49 @@ def _hexlen(v, n) -> bool:
 IDENTITY_SCHEMA = "g33_layered_identity_v1"
 
 
-def _identity_violations(ident) -> list:
-    """The recorded role graph, checked for presence and shape."""
+#: The roles a module can carry. `_by_role` filters on these words, so one it
+#: does not know silently removes a module from every id.
+_ROLES = ("run", "analysis")
+
+
+def _pinned_modules(man: dict) -> set:
+    """Every PYTHON module this bundle pins, under any of the three pin blocks.
+
+    All three, because `make_fortran_overlay` and `g33_fortran_bindings` are
+    tracked BUILD INPUTS rather than producer modules and they do carry roles --
+    so "is this module pinned" is a question about the whole document.
+
+    Python only, because the role graph is about modules. The build inputs also
+    pin `refine_build.sh`, the driver and the fixture `.f90`: real, pinned, and
+    not things an import closure has a role for. Including them would demand a
+    role for every file and get one invented.
+    """
+    out = set()
+    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
+        for e in man.get(key) or []:
+            if isinstance(e, dict) and isinstance(e.get("path"), str) \
+                    and e["path"].endswith(".py"):
+                out.add(e["path"].rsplit("/", 1)[-1][:-3])
+    return out
+
+
+def _identity_violations(man: dict) -> list:
+    """The recorded role graph, checked for presence, shape AND TRUTHFULNESS.
+
+    Shape alone is fail-open, and not mildly: `_by_role` filters the bundle's
+    module pins THROUGH this graph, so a manifest declaring a thin one gets a
+    recipe id over a subset of its own pins, and one declaring every module
+    `analysis`-only gets a recipe id over NOTHING. Measured on a real manifest:
+    19 pins, and a fabricated graph brings 0 of them into `run_recipe_id` --
+    after which no run-role module's bytes can move it. That is strictly worse
+    than the coupling the block was added to remove, because it is forgeable
+    (Codex stop-time review).
+
+    So the graph has to agree with the rest of the document: every module the
+    bundle PINS carries a role, every module the graph NAMES is pinned, the
+    roles come from a known vocabulary, and somebody is in the run role.
+    """
+    ident = man.get("identity")
     if not isinstance(ident, dict):
         return ["identity must be an object recording the role graph the ids "
                 "were derived under -- without it they follow the checkout"]
@@ -274,11 +315,37 @@ def _identity_violations(ident) -> list:
             if not isinstance(val, list) or not val or not all(
                     isinstance(x, str) for x in val):
                 bad.append(f"identity.{key}[{name!r}] must be a non-empty list "
-                           f"of module names")
+                           f"of {'roles' if key == 'role_graph' else 'modules'}")
                 break
-    # Every analysis this bundle carries must be in the reach map, or that
-    # analysis's id silently falls back to recomputing from today's imports --
-    # which is the one thing the block is for.
+    if bad:
+        return bad
+
+    graph, reach = ident["role_graph"], ident["analysis_reach"]
+    unknown = sorted({r for v in graph.values() for r in v} - set(_ROLES))
+    if unknown:
+        bad.append(f"identity.role_graph uses roles {unknown}, not in {_ROLES} "
+                   f"-- `_by_role` filters on these words, so one it does not "
+                   f"know removes a module from every id")
+    if not any("run" in v for v in graph.values()):
+        bad.append("identity.role_graph gives no module the `run` role, so the "
+                   "run recipe would be a digest over an empty module list")
+    pinned = _pinned_modules(man)
+    # THE LOAD-BEARING DIRECTION. A pin the graph omits is dropped from both
+    # ids by `_by_role`, so omitting pins is how a manifest makes its own ids
+    # weaker without saying anything false.
+    orphan_pins = sorted(pinned - set(graph))
+    if orphan_pins:
+        bad.append(f"identity.role_graph omits pinned modules {orphan_pins} -- "
+                   f"a pin with no role is filtered out of every id")
+    invented = sorted(set(graph) - pinned)
+    if invented:
+        bad.append(f"identity.role_graph names {invented}, which this bundle "
+                   f"pins nowhere -- the graph describes code the archive does "
+                   f"not hold")
+    unpinned_reach = sorted({m for v in reach.values() for m in v} - pinned)
+    if unpinned_reach:
+        bad.append(f"identity.analysis_reach names {unpinned_reach}, which this "
+                   f"bundle pins nowhere")
     return bad
 
 
@@ -397,7 +464,7 @@ def validate(man: dict) -> list:
     # manifest could omit it and still validate: the same "lower the contract
     # by omission" defect the v2 bump was for, reproduced one field later.
     if at_least(schema, "refinement_experiment_v3"):
-        bad += _identity_violations(man.get("identity"))
+        bad += _identity_violations(man)
         uncovered = _identity_covers(man)
         if uncovered:
             bad.append(f"identity.analysis_reach omits {uncovered}, which this "

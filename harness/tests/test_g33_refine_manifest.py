@@ -27,8 +27,14 @@ def synthetic_manifest(root):
         f.write_text(text)
         return rm.sha256(f)
 
-    pin = {"path": "p", "content_sha256": "d" * 64, "commit": "e" * 40,
-           "blob_sha": "f" * 40}
+    pin = {"path": "harness/p.py", "content_sha256": "d" * 64,
+           "commit": "e" * 40, "blob_sha": "f" * 40}
+    # The role graph has to AGREE with the pins, so both come from one list:
+    # a graph that omits a pinned module filters it out of every id, and one
+    # that names an unpinned module describes code the archive does not hold.
+    _mods = ["p"] + [f"g33_{k}" for k in sorted(set(rm.DERIVED_ANALYSES)
+                                                | set(rm.MULTI_RUN_ANALYSES))]
+    _pins = [{**pin, "path": f"harness/{m}.py"} for m in _mods]
     return {
         # rm.SCHEMA, not a literal: pinned to "v2" this fixture went on
         # testing the previous contract after the bump, and every v3
@@ -58,14 +64,15 @@ def synthetic_manifest(root):
                              "sha256": w("g33_refine_driver", "#!f\n")}],
         "build_provenance": {"executable_sha256": rm.sha256(
             root / "g33_refine_driver")},
-        "member_parsers": [pin], "producer_modules": [pin],
+        "member_parsers": [pin], "producer_modules": _pins,
         "tracked_build_inputs": [pin],
         # The role graph the layered ids are derived under. Required from v3:
         # without it they follow whichever checkout reads the manifest, which
         # is the coupling the block exists to remove (owner priority 8).
         "identity": {
             "schema": "g33_layered_identity_v1",
-            "role_graph": {"g33_refine_experiment": ["run"]},
+            "role_graph": {m: (["run"] if m == "p" else ["analysis"])
+                           for m in _mods},
             "analysis_reach": {k: [f"g33_{k}"] for k in
                                set(rm.DERIVED_ANALYSES)
                                | set(rm.MULTI_RUN_ANALYSES)},
@@ -569,3 +576,79 @@ def test_a_multirun_input_file_must_be_a_PLAIN_BASENAME(tmp_path, name):
     e = next(a for a in m["analyses"] if a.get("analysis") == "ncmin_locality")
     e["inputs"][0]["file"] = name
     assert any("plain basename" in b for b in rm.validate(m))
+
+
+# --- the recorded role graph must be TRUE, not merely shaped (stop-time) -----
+#
+# Requiring the block and checking only its shape is fail-open, and not mildly.
+# `_by_role` filters the bundle's own module pins THROUGH this graph, so a
+# manifest declaring a thin one gets a recipe id over a subset of its pins, and
+# one declaring every module `analysis`-only gets a recipe id over NOTHING.
+# Measured on a real manifest: 19 pins, and a fabricated graph brought 0 of them
+# into `run_recipe_id` -- after which no run-role module's bytes could move it.
+# Strictly worse than the coupling the block was added to remove, because it is
+# forgeable.
+
+def _ident(m):
+    return m["identity"]
+
+
+@pytest.mark.parametrize("what,mutate,expect", [
+    ("a thin graph", lambda i: i.update(role_graph={"g33_refine_experiment": ["run"]}),
+     "omits pinned modules"),
+    ("nobody in the run role",
+     lambda i: i.update(role_graph={m: ["analysis"] for m in i["role_graph"]}),
+     "no module the `run` role"),
+    ("a module the bundle pins nowhere",
+     lambda i: i["role_graph"].update(totally_made_up=["run"]), "pins nowhere"),
+    ("a role nothing filters on",
+     lambda i: i["role_graph"].update(g33_refine_experiment=["banana"]),
+     "not in ('run', 'analysis')"),
+    ("a reach entry naming unpinned code",
+     lambda i: i["analysis_reach"].update(dual_ledger=["not_a_module"]),
+     "pins nowhere"),
+    ("one pin quietly dropped from the graph",
+     lambda i: i["role_graph"].pop("g33_refine_analyze", None) or
+               i["role_graph"].pop(sorted(i["role_graph"])[0]),
+     "omits pinned modules"),
+])
+def test_a_FABRICATED_identity_graph_is_REFUSED(what, mutate, expect, tmp_path):
+    m = synthetic_manifest(tmp_path)
+    assert rm.validate(m) == [], "the base manifest must be valid first"
+    mutate(_ident(m))
+    bad = rm.validate(m)
+    assert any(expect in b for b in bad), (what, bad)
+
+
+def test_every_PYTHON_pin_carries_a_role_and_no_OTHER_pin_is_asked_for(tmp_path):
+    """The role graph is about modules. The build inputs also pin
+    `refine_build.sh`, the driver and the fixture `.f90` -- real, pinned, and
+    not things an import closure has a role for. Demanding a role for every
+    pinned FILE would get one invented."""
+    m = synthetic_manifest(tmp_path)
+    m["tracked_build_inputs"] = list(m["tracked_build_inputs"]) + [
+        {**m["tracked_build_inputs"][0], "path": "harness/g33_fortran/refine_build.sh"}]
+    assert rm.validate(m) == [], rm.validate(m)
+    assert "refine_build" not in rm._pinned_modules(m)
+
+
+def test_the_REAL_bundles_satisfy_the_graph_contract():
+    """It states a property the produced bundles HAVE. If it did not, the
+    contract would be describing something nobody makes."""
+    import json
+    from pathlib import Path
+    seen = 0
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if not (link.is_symlink() and mf.is_file()):
+                continue
+            man = json.loads(mf.read_text())
+            if not rm.at_least(str(man.get("schema", "")),
+                               "refinement_experiment_v3"):
+                continue
+            assert rm._identity_violations(man) == [], (link.name,
+                                                        rm._identity_violations(man))
+            seen += 1
+    if not seen:
+        pytest.skip("no v3 bundle on this host")
