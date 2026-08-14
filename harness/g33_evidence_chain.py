@@ -308,6 +308,35 @@ def _schema_violations(man: dict) -> list:
     return rm.validate(man)
 
 
+#: The arm stream's own account of the run that produced it.
+_STREAM_BEGIN = re.compile(
+    r"^G33N STREAM_BEGIN \d+ (\d+) \d+ \d+ \S+ (\S+) \S+ (\S+)$", re.M)
+_CALL_COLS = re.compile(r"^G33N CALL_BEGIN \d+ \d+ \d+ \d+ (\d+) ", re.M)
+
+
+def _arm_ran_state(p: Path, an: dict) -> str:
+    """An arm's typed run identity against the header of the stream itself.
+
+    The manifest says which run this is; the stream says which run it was. Two
+    records of one fact, and until now they were never compared -- the schema
+    checked `runtime_argv` against the manifest's own fields, which is the
+    manifest agreeing with itself (owner priority 5).
+    """
+    try:
+        text = p.read_text()
+    except (OSError, ValueError):
+        return "RUN-IDENTITY-UNREADABLE"
+    m = _STREAM_BEGIN.search(text)
+    cols = _CALL_COLS.findall(text)
+    if not m or not cols:
+        return "RUN-IDENTITY-ABSENT"
+    ran = an.get("ran") or {}
+    got = {"nsplit": int(m.group(1)), "carry": m.group(2), "rho": m.group(3),
+           "width": max(int(c) for c in cols)}
+    want = {k: ran.get(k) for k in got}
+    return "matches" if got == want else "RUN-IDENTITY-MISMATCH"
+
+
 def _payload_state(p: Path, want: str, root: Path) -> str:
     """One file a bundle declares, checked for presence, CONTAINMENT and digest.
 
@@ -420,9 +449,18 @@ def members_of(manifest: Path) -> list[dict]:
         # describes. The producer copies it across, so they are two records of
         # one fact -- and two records never checked against each other are one
         # record and one decoration (Codex).
+        #
+        # An ARM STREAM has no JSON to read a `ran` out of -- it IS the raw
+        # driver run -- so it is checked against the thing it does have: its own
+        # G33N header. That is a stronger check than the producer's, because it
+        # runs on the PUBLISHED bytes rather than on the text in hand at
+        # production time (owner priority 5).
         if "ran" in an and p.is_file():
             out.append({"file": an["file"], "scope": "bundle",
-                        "origin": "run_identity", "state": _ran_state(p, an)})
+                        "origin": "run_identity",
+                        "state": (_arm_ran_state(p, an)
+                                  if an.get("analysis") == "arm_stream"
+                                  else _ran_state(p, an))})
         # The ANALYZER the manifest names, by digest. It was recorded and never
         # checked, so an analyzer could change under a published analysis with
         # nothing reporting it (owner §8.2). Absent is reported, not failed: the
