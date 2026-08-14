@@ -1620,10 +1620,26 @@ claims:
     # The closure itself, as a PREDICATE: a boolean cannot be an
     # expected_value, and "the decomposition closes against the real
     # update" is the statement D1 rests on.
+    #
+    # ...and the PRECONDITION, from the same bundle and the same run pair
+    # (owner §4, priority 7). A decomposition of "the difference between
+    # these two runs" says nothing unless the difference is the one the
+    # claim is about, and `partitions.1,1,1` IS this claim's pair: the
+    # per-column oracle against the whole-domain baseline.
+    #
+    # `causal_attribution_valid` here means the columns that differ are
+    # exactly the columns the ncmin threshold rule predicts -- the
+    # difference is attributable to ncmin and to nothing else in the
+    # decomposition. That is NOT the sense in which G33-NCMIN-005 is open:
+    # that one asks which microphysical process MEDIATES the difference,
+    # which nothing in this artifact measures. Two senses of the word, one
+    # bound and one open, and only naming both keeps them apart.
     expected_predicates:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.closes_against_actual_update: true
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.closes_against_actual_update: true
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.causal_attribution_valid: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:bbdf36b782ce19e7ab9be78b5835059a8055ac340a1c0548b35b3b45d77c051e]
 
