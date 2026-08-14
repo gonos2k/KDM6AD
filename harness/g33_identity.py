@@ -144,23 +144,62 @@ def identity_block() -> dict:
     """
     return {"schema": IDENTITY_SCHEMA,
             "role_graph": {m: sorted(r) for m, r in sorted(roles().items())},
-            "analysis_reach": {name: sorted(_closure({name_mod}))
-                               for name, (name_mod, _fn)
-                               in sorted({**rx.ANALYSES, **rx.MULTI_RUN}.items())}}
+            "analysis_reach": {name: sorted(_closure({mod}))
+                               for name, mod in sorted(producible().items())}}
+
+
+def producible() -> dict:
+    """analysis name -> the module that produces it, for EVERY analysis a
+    bundle can carry.
+
+    `metric_trajectory` is written by `_driver_analyses` directly rather than
+    dispatched through a registry, so it is in neither `ANALYSES` nor
+    `MULTI_RUN` -- and it is in every instrumented as-is bundle. Left out of the
+    reach map, its `analysis_id` fell back to recomputing from the reader's
+    import graph, which is the one thing the map exists to prevent. Checked
+    against the manifest module's own vocabulary by a test, so the next
+    analysis produced outside a registry fails here rather than going quiet.
+    """
+    out = {name: mod for name, (mod, _fn)
+           in {**rx.ANALYSES, **rx.MULTI_RUN}.items()}
+    out["metric_trajectory"] = "g33_metric_trajectory"
+    return out
+
+
+#: Schemas that MUST carry the identity block. Below this a manifest predates
+#: it and the fallback is the only thing available; at or above it, falling
+#: back would let a bundle opt out of the contract by omission -- which is the
+#: defect the block was added to close, reproduced one level down.
+_REQUIRES_IDENTITY = "refinement_experiment_v3"
+
+
+def _requires_block(man: dict) -> bool:
+    return rm.at_least(str(man.get("schema", "")), _REQUIRES_IDENTITY)
 
 
 def _graph(man: dict) -> dict:
     """The role graph THIS manifest was produced under, or today's.
 
     A manifest that records one is read with it, whatever the checkout looks
-    like now. One that does not predates the block, and there is nothing else
-    to use -- so its ids remain a function of the current tree, which is a fact
-    about those bundles rather than a property of the layering, and
-    `identity_is_self_contained` is how a caller asks which it is holding.
+    like now. One that PREDATES the block has nothing else to use, so its ids
+    remain a function of the current tree -- a fact about those bundles rather
+    than a property of the layering, and `identity_is_self_contained` is how a
+    caller asks which it is holding.
+
+    From v3 the block is required, and its absence RAISES rather than falling
+    back. The fallback was unconditional at first, so a v3 manifest could omit
+    the block and quietly get checkout-dependent ids anyway: the contract was
+    opt-out-by-omission, which is exactly what the schema bump before it was
+    for (Codex stop-time review).
     """
     rec = (man.get("identity") or {}).get("role_graph")
     if isinstance(rec, dict) and rec:
         return {m: set(r) for m, r in rec.items()}
+    if _requires_block(man):
+        raise ValueError(
+            f"schema {man.get('schema')!r} requires an `identity.role_graph` "
+            f"and this manifest has none -- deriving an id from the current "
+            f"checkout would be the coupling the block exists to remove")
     return roles()
 
 
@@ -344,6 +383,11 @@ def analysis_reach(man: dict, name: str) -> set:
         # it walks today's import graph, so an analyzer that grew an import
         # since would widen a historical analysis's id (owner priority 8).
         return set(rec[name])
+    if _requires_block(man):
+        raise ValueError(
+            f"schema {man.get('schema')!r} requires an `identity.analysis_reach` "
+            f"entry for {name!r} and this manifest has none -- recomputing the "
+            f"closure would walk the reader's imports, not the producer's")
     derived, _raw = split_analyses(man)
     mods = {Path(str(a["analyzer"])).stem for a in derived
             if a.get("analysis") == name}

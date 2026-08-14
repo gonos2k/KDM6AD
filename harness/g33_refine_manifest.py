@@ -248,6 +248,48 @@ def _hexlen(v, n) -> bool:
         all(c in "0123456789abcdef" for c in v.lower())
 
 
+#: The layered-identity block a v3 bundle must carry, so its ids are
+#: reproducible FROM THE ARCHIVE rather than from whatever tree reads it.
+#: Spelled here rather than imported from `g33_identity`: that module imports
+#: the producer, which imports this one, and the requirement is a property of
+#: the DOCUMENT either way.
+IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+def _identity_violations(ident) -> list:
+    """The recorded role graph, checked for presence and shape."""
+    if not isinstance(ident, dict):
+        return ["identity must be an object recording the role graph the ids "
+                "were derived under -- without it they follow the checkout"]
+    bad = []
+    if ident.get("schema") != IDENTITY_SCHEMA:
+        bad.append(f"identity.schema {ident.get('schema')!r} is not "
+                   f"{IDENTITY_SCHEMA!r}")
+    for key in ("role_graph", "analysis_reach"):
+        v = ident.get(key)
+        if not isinstance(v, dict) or not v:
+            bad.append(f"identity.{key} must be a non-empty object")
+            continue
+        for name, val in v.items():
+            if not isinstance(val, list) or not val or not all(
+                    isinstance(x, str) for x in val):
+                bad.append(f"identity.{key}[{name!r}] must be a non-empty list "
+                           f"of module names")
+                break
+    # Every analysis this bundle carries must be in the reach map, or that
+    # analysis's id silently falls back to recomputing from today's imports --
+    # which is the one thing the block is for.
+    return bad
+
+
+def _identity_covers(man: dict) -> list:
+    """Analyses the bundle carries that its recorded reach map does not."""
+    reach = ((man.get("identity") or {}).get("analysis_reach") or {})
+    carried = {a.get("analysis") for a in (man.get("analyses") or [])
+               if isinstance(a, dict)} - {"arm_stream"}
+    return sorted(carried - set(reach))
+
+
 def validate(man: dict) -> list:
     """Everything wrong with this manifest, as a list of sentences.
 
@@ -348,6 +390,19 @@ def validate(man: dict) -> list:
                            f"a 64-hex `content_sha256`, and 40-hex `commit` and "
                            f"`blob_sha`")
 
+    # The LAYERED IDENTITY block (owner priority 8). Required from v3, because
+    # without it the ids are a function of the manifest AND of whichever
+    # checkout computes them -- which is the coupling the block exists to
+    # remove. It was ADDED to the producer and required by nothing, so a
+    # manifest could omit it and still validate: the same "lower the contract
+    # by omission" defect the v2 bump was for, reproduced one field later.
+    if at_least(schema, "refinement_experiment_v3"):
+        bad += _identity_violations(man.get("identity"))
+        uncovered = _identity_covers(man)
+        if uncovered:
+            bad.append(f"identity.analysis_reach omits {uncovered}, which this "
+                       f"bundle carries -- those analyses' ids would fall back "
+                       f"to recomputing from the reader's import graph")
     # An analysis carried at a precision it is not DEFINED at (owner priority 6).
     # The other direction is REQUIRED_WHEN_INSTRUMENTED above; this one is what
     # a manifest cannot talk its way out of, because the precision it is checked

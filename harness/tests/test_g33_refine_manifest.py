@@ -60,6 +60,16 @@ def synthetic_manifest(root):
             root / "g33_refine_driver")},
         "member_parsers": [pin], "producer_modules": [pin],
         "tracked_build_inputs": [pin],
+        # The role graph the layered ids are derived under. Required from v3:
+        # without it they follow whichever checkout reads the manifest, which
+        # is the coupling the block exists to remove (owner priority 8).
+        "identity": {
+            "schema": "g33_layered_identity_v1",
+            "role_graph": {"g33_refine_experiment": ["run"]},
+            "analysis_reach": {k: [f"g33_{k}"] for k in
+                               set(rm.DERIVED_ANALYSES)
+                               | set(rm.MULTI_RUN_ANALYSES)},
+        },
     }
 
 

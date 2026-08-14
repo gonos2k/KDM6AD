@@ -483,8 +483,51 @@ def test_a_recorded_analysis_reach_does_not_follow_the_import_graph(monkeypatch)
 def test_the_recorded_block_COVERS_every_analysis_the_producer_runs():
     """A reach map missing an analysis silently falls back to recomputing it,
     which is the behaviour the block exists to replace."""
+    import g33_refine_manifest as rm
     block = gi.identity_block()
-    assert set(block["analysis_reach"]) == set(rx.ANALYSES) | set(rx.MULTI_RUN)
+    # EVERY analysis a bundle can carry, which is the manifest module's
+    # vocabulary -- not the producer's two dispatch registries.
+    # `metric_trajectory` is written by `_driver_analyses` directly, so it is in
+    # neither registry and it is in every instrumented as-is bundle. This test
+    # asserted the registries and therefore agreed with the gap (Codex
+    # stop-time review).
+    assert set(block["analysis_reach"]) == set(gi.producible())
+    assert set(gi.producible()) == (set(rm.DERIVED_ANALYSES)
+                                    | set(rm.MULTI_RUN_ANALYSES))
+    assert "metric_trajectory" in block["analysis_reach"]
     assert set(block["role_graph"]) == set(gi.roles())
     for name, mods in block["analysis_reach"].items():
         assert mods, name
+
+
+def test_a_v3_manifest_may_NOT_opt_out_of_the_identity_block(tmp_path):
+    """The fallback was unconditional, so a v3 manifest could omit the block
+    and quietly get checkout-dependent ids anyway -- opt-out-by-omission, which
+    is the defect the schema bump before it was for (Codex stop-time review)."""
+    import g33_refine_manifest as rm
+    man = _with_identity(_manifest())
+    man["schema"] = rm.SCHEMA
+    assert gi.run_recipe_id(man)
+    del man["identity"]
+    for call in (lambda: gi.run_recipe_id(man),
+                 lambda: gi.run_content_id(man),
+                 lambda: gi.analysis_id(man, "dual_ledger")):
+        with pytest.raises(ValueError, match="requires an `identity"):
+            call()
+    # ...and a pre-v3 manifest still falls back, because it has nothing else.
+    man["schema"] = "refinement_experiment_v2"
+    assert gi.run_recipe_id(man)
+
+
+def test_a_v3_manifest_may_not_omit_ONE_analysis_from_the_reach_map(tmp_path):
+    """The partial case, which is the one that actually happened: a bundle
+    carrying `metric_trajectory` with no reach entry for it had that analysis's
+    id fall back while every other one was recorded."""
+    import g33_refine_manifest as rm
+    man = _with_identity(_manifest())
+    man["schema"] = rm.SCHEMA
+    del man["identity"]["analysis_reach"]["dual_ledger"]
+    with pytest.raises(ValueError, match="analysis_reach"):
+        gi.analysis_id(man, "dual_ledger")
+    # the OTHER analysis is unaffected -- the refusal is per entry
+    assert gi.analysis_id(man, "substep_schedule")

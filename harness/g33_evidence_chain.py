@@ -308,6 +308,45 @@ def _schema_violations(man: dict) -> list:
     return rm.validate(man)
 
 
+#: Schemas from which a bundle must record the role graph its layered ids are
+#: derived under. Spelled here rather than imported: `g33_identity` imports the
+#: producer, and this module deliberately does not.
+_IDENTITY_FROM = "refinement_experiment_v3"
+_IDENTITY_SCHEMA = "g33_layered_identity_v1"
+
+
+def _identity_state(man: dict) -> str:
+    """Whether this bundle's layered ids can be recomputed FROM the bundle.
+
+    Nothing asked. `identity_is_self_contained` existed and no gate called it,
+    so a bundle whose ids follow whichever checkout reads them looked exactly
+    like one whose ids do not -- and that difference is the whole Phase B
+    prerequisite (Codex stop-time review).
+
+    A pre-v3 bundle legitimately predates the block: reported, and a blocker
+    only in a closeout, because "these ids are not reproducible from the
+    archive" is precisely the thing a closeout must not pass over. From v3 the
+    block is required and its absence is a schema violation, caught upstream.
+    """
+    ident = man.get("identity") or {}
+    if (ident.get("schema") == _IDENTITY_SCHEMA
+            and isinstance(ident.get("role_graph"), dict) and ident["role_graph"]
+            and isinstance(ident.get("analysis_reach"), dict)):
+        return "matches"
+    if _rank(str(man.get("schema", ""))) >= _rank(_IDENTITY_FROM):
+        return "IDENTITY-UNDERIVED"
+    return "identity-predates-block"
+
+
+#: Manifest schemas in order. A local copy, for the same reason as above.
+_SCHEMA_ORDER = ("refinement_experiment_v1", "refinement_experiment_v2",
+                 "refinement_experiment_v3")
+
+
+def _rank(schema: str) -> int:
+    return _SCHEMA_ORDER.index(schema) if schema in _SCHEMA_ORDER else -1
+
+
 #: The arm stream's own account of the run that produced it.
 _STREAM_BEGIN = re.compile(
     r"^G33N STREAM_BEGIN \d+ (\d+) \d+ \d+ \S+ (\S+) \S+ (\S+)$", re.M)
@@ -481,6 +520,8 @@ def members_of(manifest: Path) -> list[dict]:
     # masked by the module row at the same path (Codex).
     out.extend({"scope": "repo", "origin": "module_pin", **m}
                for m in _module_states(man))
+    out.append({"file": "identity", "scope": "bundle", "origin": "identity",
+                "state": _identity_state(man)})
     out.extend({"scope": "repo", "origin": "commit_anchor", **c}
                for c in _commit_states(man))
     return out
@@ -1051,6 +1092,9 @@ PASSING_STATES = frozenset({
     "value-unavailable",       # the bundle the figure is declared against is not here
     # The anchor resolves on THIS machine and nowhere a reviewer could follow.
     "commit-local-anchor-only",
+    # The bundle predates the recorded role graph, so its layered ids are a
+    # function of whichever checkout computes them.
+    "identity-predates-block",
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
@@ -1072,6 +1116,9 @@ FAILING_STATES = frozenset({
     # digest can be perfectly true and the bundle still not be the immutable,
     # self-contained thing the archive is defined to be.
     "NOT-SELF-CONTAINED",
+    # A v3 bundle that should carry the role graph and does not. The schema
+    # refuses it too; this is the row that says so per bundle.
+    "IDENTITY-UNDERIVED",
 })
 
 
@@ -1098,6 +1145,10 @@ EXCUSED_BY_ABSENCE = frozenset({
     # Same shape, one layer out: the commit resolves because we are standing on
     # the machine that has it (owner priority 10).
     "commit-local-anchor-only",
+    # ...and one layer out again: the ids resolve because we are standing in a
+    # checkout whose role graph happens to match. Phase B cannot start while a
+    # pinned bundle answers this way (Codex stop-time review).
+    "identity-predates-block",
     "value-unavailable",
     # Added with `expected_predicates` and, at first, only to PASSING_STATES --
     # so a closeout failed a FIGURE whose bundle was absent and passed a FACT
