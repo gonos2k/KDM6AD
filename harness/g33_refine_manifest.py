@@ -437,11 +437,11 @@ def _imports_from(blob: bytes, universe: set) -> set:
     return names & universe
 
 
-def pinned_imports(man: dict) -> dict:
-    """module -> the pinned modules it imports, read from the PINNED BLOBS.
+def pinned_blobs(man: dict) -> dict:
+    """module -> its PINNED source bytes.
 
-    Not from the working tree. The whole point of recording the graph is that
-    it must not depend on the checkout reading it, so checking it against the
+    Not the working tree. The whole point of recording the graph is that it
+    must not depend on the checkout reading it, so checking it against the
     checkout would defeat the recording -- while checking it against the blobs
     the manifest itself pins uses nothing the archive does not carry.
     """
@@ -458,11 +458,70 @@ def pinned_imports(man: dict) -> dict:
         if r.returncode != 0:
             raise BlobUnavailable(f"{mod} pins blob {sha[:12]}, not in this "
                                   f"object database")
+        out[mod] = r.stdout
+    return out
+
+
+def pinned_imports(man: dict, blobs: dict | None = None) -> dict:
+    """module -> the pinned modules it imports, read from the pinned blobs."""
+    blobs = pinned_blobs(man) if blobs is None else blobs
+    out = {}
+    for mod, src in blobs.items():
         try:
-            out[mod] = _imports_from(r.stdout, set(pins))
+            out[mod] = _imports_from(src, set(blobs))
         except SyntaxError as e:
             raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
     return out
+
+
+#: The registries whose entries ARE the producer's dispatch set. A module that
+#: declares both is the dispatcher, which is how the cut's SOURCE is derived
+#: rather than named: naming `g33_refine_experiment` here would be a second
+#: place to keep in step with the producer.
+_DISPATCH_REGISTRIES = ("ANALYSES", "MULTI_RUN")
+
+
+def _dispatch_from_blobs(blobs: dict) -> tuple:
+    """(dispatcher module, {analysis: seed module}) read from the pinned code.
+
+    The cut was DECLARED, and a declaration for an analysis the bundle did not
+    publish was unconstrained -- so a seed could be repointed to widen the set
+    of edges the closure check excuses. Derived here instead, from the same
+    registries the producer dispatches on (Codex stop-time review).
+    """
+    found = {}
+    for mod, src in blobs.items():
+        try:
+            tree = ast.parse(src)
+        except SyntaxError as e:
+            raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
+        names, reg = set(), {}
+        for n in ast.walk(tree):
+            if not isinstance(n, ast.Assign):
+                continue
+            for t in n.targets:
+                if isinstance(t, ast.Name) and t.id in _DISPATCH_REGISTRIES:
+                    names.add(t.id)
+                    if isinstance(n.value, ast.Dict):
+                        for k, v in zip(n.value.keys, n.value.values):
+                            if isinstance(k, ast.Constant) and \
+                                    isinstance(v, ast.Tuple) and v.elts and \
+                                    isinstance(v.elts[0], ast.Constant):
+                                reg[k.value] = v.elts[0].value
+        if set(_DISPATCH_REGISTRIES) <= names:
+            found[mod] = reg
+    if len(found) != 1:
+        raise BlobUnavailable(
+            f"{len(found)} pinned modules declare "
+            f"{' and '.join(_DISPATCH_REGISTRIES)}; the dispatch cut has "
+            f"exactly one source or it cannot be derived")
+    mod, reg = next(iter(found.items()))
+    if not reg:
+        raise BlobUnavailable(
+            f"{mod} declares the registries and none of their entries parse -- "
+            f"the shape changed, and an empty cut would excuse nothing while "
+            f"looking like it excused the right things")
+    return mod, reg
 
 
 def _blob_closure(edges: dict, seed: str) -> set:
@@ -507,14 +566,26 @@ def graph_violations(man: dict) -> list:
         return ["identity.analysis_seeds must record each analysis's seed "
                 "module -- it is the producer's dispatch cut, and without it "
                 "the role closure cannot be checked"]
-    edges = pinned_imports(man)
+    blobs = pinned_blobs(man)
+    edges = pinned_imports(man, blobs)
+    dispatcher, registry = _dispatch_from_blobs(blobs)
     bad = []
-    # THE CUT, from the recorded seeds rather than from this bundle's
-    # `analyses`: a bundle carries only the analyses its precision admits, so
-    # deriving the dispatch set from what it published under-derives it.
-    dispatch = set(seeds.values())
-    # ...and the seeds cannot be invented to widen the cut: every one that this
-    # bundle actually published must be the analyzer that entry names.
+    # THE CUT, DERIVED. It was the recorded seeds, and a seed for an analysis
+    # this bundle did not publish was unconstrained -- so one could be repointed
+    # to widen the set of edges the closure check excuses. The registries in the
+    # pinned dispatcher say what the producer actually dispatches to
+    # (Codex stop-time review).
+    dispatch = set(registry.values()) | {
+        m for n, m in seeds.items() if n not in registry}
+    for name, seed in sorted(seeds.items()):
+        if name in registry and seed != registry[name]:
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seed!r} and the "
+                       f"pinned {dispatcher} registry names {registry[name]!r}")
+        elif name not in registry and seed not in edges.get(dispatcher, set()):
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seed!r}, which "
+                       f"is not in the pinned registries and is not imported "
+                       f"by {dispatcher} -- a seed the producer does not "
+                       f"dispatch to widens the cut for nothing")
     for a in man.get("analyses") or []:
         if not isinstance(a, dict) or not a.get("analyzer"):
             continue
@@ -536,7 +607,12 @@ def graph_violations(man: dict) -> list:
     for role in ("run", "analysis"):
         holders = {m for m, r in graph.items() if role in r}
         for m in sorted(holders):
-            leak = sorted(edges.get(m, set()) - holders - dispatch)
+            # The cut is SCOPED to the dispatcher. Excusing dispatch edges from
+            # every module let any module import an analyzer and escape the
+            # closure requirement -- 11 modules import something in that set,
+            # and the producer cuts out of exactly one (Codex stop-time review).
+            excused = dispatch if m == dispatcher else set()
+            leak = sorted(edges.get(m, set()) - holders - excused)
             if leak:
                 bad.append(
                     f"identity.role_graph gives {m!r} the {role!r} role and "

@@ -656,3 +656,94 @@ def test_the_REAL_bundles_satisfy_the_graph_contract():
             seen += 1
     if not seen:
         pytest.skip("no v3 bundle on this host")
+
+
+# --- the dispatch cut is DERIVED, and scoped to the dispatcher (round 5) -----
+#
+# It was DECLARED, and a declaration for an analysis the bundle did not publish
+# was unconstrained -- so a seed could be repointed to widen the set of edges
+# the closure check excuses. And the cut was excused from EVERY module: 11 of
+# them import something in the dispatch set, while the producer cuts out of
+# exactly one.
+
+def _real_v3_manifest():
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("identity") or {}).get("analysis_seeds"):
+                    return man
+    return None
+
+
+def test_the_DISPATCHER_is_derived_from_the_pinned_code_not_named():
+    """Naming `g33_refine_experiment` in the checker would be a second place to
+    keep in step with the producer. The module that DECLARES both registries is
+    the dispatcher, and there must be exactly one."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    blobs = rm.pinned_blobs(man)
+    who, registry = rm._dispatch_from_blobs(blobs)
+    assert who == "g33_refine_experiment", who
+    assert registry, "the registries parsed to nothing"
+    assert set(registry) <= set(man["identity"]["analysis_seeds"])
+
+
+@pytest.mark.parametrize("what,name,seed", [
+    ("a seed for an UNPUBLISHED analysis", "ncmin_locality", "g33_refine_manifest"),
+    ("a seed for a PUBLISHED analysis", "dual_ledger", "g33_schema"),
+    ("a seed outside the registry", "metric_trajectory", "g33_expectation"),
+])
+def test_a_FORGED_seed_cannot_widen_the_cut(what, name, seed):
+    """The forgery has to be COMPETENT or the test measures the wrong check.
+
+    Repointing a seed and leaving `analysis_reach` alone trips the
+    reach-equals-closure rule, which would fail on the previous module too --
+    so the reach is recomputed to match the forged seed, leaving the cut as the
+    only thing under test. What the widened cut would buy is then taken: the
+    module the seed now names is dropped from the run role, and the leak it
+    creates is exactly what the cut would excuse.
+    """
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    import copy
+    bad = copy.deepcopy(man)
+    if name not in bad["identity"]["analysis_seeds"]:
+        pytest.skip(f"{name} is not recorded in this bundle")
+    edges = rm.pinned_imports(bad)
+    bad["identity"]["analysis_seeds"][name] = seed
+    bad["identity"]["analysis_reach"][name] = sorted(
+        rm._blob_closure(edges, seed))
+    roles = bad["identity"]["role_graph"]
+    if "run" in roles.get(seed, []):
+        roles[seed] = [r for r in roles[seed] if r != "run"] or ["analysis"]
+    got = rm.graph_violations(bad)
+    assert got, what
+    assert any("analysis_seeds" in g for g in got), (
+        f"{what}: refused, but not for the seed -- {got[:1]}")
+
+
+def test_a_NON_DISPATCHER_cannot_use_the_cut_to_escape_closure():
+    """The overbroad half. Excusing dispatch edges from every module let any
+    module import an analyzer and drop it from its role."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle with recorded seeds on this host")
+    import copy
+    blobs = rm.pinned_blobs(man)
+    dispatcher, _reg = rm._dispatch_from_blobs(blobs)
+    edges = rm.pinned_imports(man, blobs)
+    seeds = set(man["identity"]["analysis_seeds"].values())
+    others = sorted(m for m in man["identity"]["role_graph"]
+                    if m != dispatcher and edges.get(m, set()) & seeds)
+    assert others, "no non-dispatcher imports the cut set -- vacuous"
+    bad = copy.deepcopy(man)
+    victim = sorted(edges[others[0]] & seeds)[0]
+    bad["identity"]["role_graph"][victim] = [
+        r for r in bad["identity"]["role_graph"][victim] if r != "analysis"] or ["run"]
+    assert rm.graph_violations(bad), (others[0], victim)
