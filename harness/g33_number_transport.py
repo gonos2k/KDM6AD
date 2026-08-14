@@ -77,6 +77,32 @@ _H = r"([0-9A-F]{8}|[0-9A-F]{16})"
 PROTOCOL = re.compile(r"^G33N PROTOCOL (\d+) (\d+)$")
 DEFAULT_REAL_BYTES = 4
 
+#: Payload width per LABEL, in hex digits. The label says how wide the bytes
+#: are; what the number MEANS is the schema's dtype, and after D6 those are two
+#: tables because -fdefault-real-8 makes them disagree.
+HEX_WIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
+
+#: Records this parser CHECKS without consuming.
+#:
+#: The stream legitimately carries stages the number analyses never read
+#: (kernel_init_constants, the micro bisection) and the whole G33FOP op ladder.
+#: "Not read" had quietly become "not looked at": the family check accepted the
+#: first token and nothing ever matched the rest of the line, so a record whose
+#: Z edit descriptor OVERFLOWED -- which is what an eight-byte default real
+#: written through `Z8.8` does -- was dropped without a word. That is the same
+#: wrong-number path D6 closed for the widths it happened to reach, surviving in
+#: the family it did not (owner priority 3).
+#:
+#: The key is what a width must be CONSTANT over: (stage, field) for a stage,
+#: (op_id, field) for an op rung.
+ANY_STAGE = re.compile(r"^G33F STAGE (\d+) (\S+) (\S+) (\d+) (\S+) (\d+) (-?\d+) "
+                       r"(f32|f64|i32|u8) ([0-9A-F]+)$")
+G33FOP = re.compile(r"^G33FOP (\d+) (\S+) (\d+) (\d+) (-?\d+) (\S+) (\S+) "
+                    r"(f32|f64|u8) ([0-9A-F]+)$")
+#: family -> (pattern, key group numbers, label group, hex group)
+CHECKED_SHAPES = {"STAGE": (ANY_STAGE, (3, 5), 8, 9),
+                  "G33FOP": (G33FOP, (6, 7), 8, 9)}
+
 STREAM_BEGIN = re.compile(
     r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+) (\S+)$")
 XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) (f32|f64) "
@@ -173,6 +199,44 @@ def _real(label: str, h: str, real_bytes: int, call=None) -> float:
         _expect_stream(False, f"an f64 record in a stream whose header declares "
                               f"{real_bytes}-byte reals")
     return struct.unpack(">d" if want == 8 else ">f", bytes.fromhex(h))[0]
+
+
+def _shape(line: str, fam: str, widths: dict) -> None:
+    """One emitted record this parser does not consume, checked anyway.
+
+    Three things, and only the first is about this record alone:
+
+      the line MATCHES its family's grammar -- an overflowed or truncated
+      payload is refused instead of silently matching nothing;
+      the hex width is the one the LABEL promises;
+      the label is the one this key carried EARLIER IN THE SAME STREAM.
+
+    The last is what a per-record check cannot give and a header cannot either:
+    a single PROTOCOL header says what a default real is, but a field pinned at
+    `real(...,4)` is legitimately narrower than that, so "matches the header" is
+    not the contract. "Never changes width within one run" is, and it is the
+    property a mixed-width stream breaks.
+
+    What this does NOT certify is which of the two a given field should be.
+    That is a property of the Fortran EXPRESSION behind the binding, it is
+    decided by `g33_fortran_bindings.storage_class`, and the overlay generator
+    checks the whole table against it before it writes a line.
+    """
+    pat, keys, li, hi = CHECKED_SHAPES[fam]
+    m = pat.match(line)
+    if not m:
+        raise StreamError(f"malformed {fam} record: {line!r}")
+    label, hexv = m.group(li), m.group(hi)
+    if len(hexv) != HEX_WIDTH[label]:
+        raise StreamError(
+            f"{fam} record labelled {label} carries {len(hexv)} hex digits, "
+            f"not {HEX_WIDTH[label]}: {line!r}")
+    key = (fam, tuple(m.group(g) for g in keys))
+    if widths.setdefault(key, label) != label:
+        raise StreamError(
+            f"{fam} {'.'.join(key[1])} is {label} here and {widths[key]} "
+            f"earlier in the same stream; a field does not change width "
+            f"mid-run, so one of the two records is not the number it says")
 
 
 def _mstep(hexv: str, call) -> int:
@@ -381,8 +445,30 @@ def calls(stream: str) -> list:
     # before the f64 family existed, and those were all f32 builds -- so the
     # default is the answer for them, not a guess (owner D6).
     rb = DEFAULT_REAL_BYTES
+    # The PROTOCOL header's POSITION and UNIQUENESS, which nothing checked: `rb`
+    # was a variable the loop reassigned, so a second header mid-stream simply
+    # took effect and a run whose first half was f32 and whose second half was
+    # f64 read as one consistent stream. A width is a property of the BUILD, so
+    # it cannot change inside one run -- and a header arriving after the records
+    # it governs would be retroactive, which is not a contract either
+    # (owner priority 2).
+    proto, body = False, False
+    # (family, key) -> the label it first carried, for the records below that
+    # this parser checks without consuming.
+    widths = {}
     for line in stream.splitlines():
         if (m := PROTOCOL.match(line)):
+            if proto:
+                raise StreamError(
+                    "two G33N PROTOCOL headers in one stream: the default-real "
+                    "width is what the compiler did to the whole run, so a "
+                    "second declaration cannot be true of the same records")
+            if body or ended:
+                raise StreamError(
+                    "a G33N PROTOCOL header after the stream body began: every "
+                    "record before it was read at the default width, so the "
+                    "header would be retroactive")
+            proto = True
             rb, db = int(m.group(1)), int(m.group(2))
             _expect_stream(rb in (4, 8),
                            f"stream declares {rb}-byte default reals")
@@ -428,6 +514,7 @@ def calls(stream: str) -> list:
                 raise StreamError(f"call {cur['call_id']} never ended")
             if ended:
                 raise StreamError("a call begins after STREAM_END")
+            body = True
             cid, split, tile = int(m.group(1)), int(m.group(2)), int(m.group(3))
             if cid != expect:
                 raise StreamError(f"call ids jump: expected {expect}, got {cid}")
@@ -457,6 +544,12 @@ def calls(stream: str) -> list:
             cur, expect, seen = None, expect + 1, seen + 1
             continue
         fam = _family(line) if line.startswith("G33F") else None
+        # CHECKED before the consumption branches, and before the `cur is None`
+        # drop below: a record this parser does not read is still a record the
+        # run emitted, and the only thing worse than reading it wrong is not
+        # looking at it (owner priority 3).
+        if fam in CHECKED_SHAPES:
+            _shape(line, fam, widths)
         # An extension record describes one bracketed call and is meaningless
         # outside it. Falling through to `continue` DROPPED it silently, so a
         # stream whose records had drifted out of their brackets looked complete

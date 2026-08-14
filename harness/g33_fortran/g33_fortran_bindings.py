@@ -16,7 +16,50 @@ Each binding is (field, dtype, expr). For u8, `expr` is the BOOLEAN condition th
 C++ producer emits ((pre_cap > reservoir), (preclamp < 0)); the comparator
 derives the authoritative branch state independently from the two operands.
 `g33_fqb`/`g33_fnb` are fall/falln captured into scratch temps at cell entry.
+
+`dtype` is the SEMANTIC width -- what the field means, and what the C++ mirror
+declares. It is NOT how many bytes the build gives it; `storage_class` below is,
+and the two only agree at the reference precision.
 """
+import re
+
+#: A binding whose expression PINS its own width instead of taking the build's
+#: default real. `real(<expr>,4)` is an explicit KIND, so -fdefault-real-8 does
+#: not widen it -- and the semantic dtype cannot say so, because the field is
+#: semantically f32 either way.
+_PINNED_REAL32 = re.compile(r"^real\(.*,\s*4\)$")
+
+#: semantic dtype -> storage class, where the two cannot diverge. `f64` is
+#: `double precision`, which -fdefault-double-8 holds at eight bytes in BOTH
+#: builds; integers and logicals are not promoted at all.
+_FIXED_CLASS = {"f64": "real64", "i32": "int32", "u8": "logical"}
+
+#: Every class `storage_class` can return. Enumerated so a caller can map the
+#: whole vocabulary rather than the cases it happened to think of.
+STORAGE_CLASSES = frozenset({"default_real", "real32", "real64", "int32",
+                             "logical"})
+
+
+def storage_class(dtype: str, expr: str) -> str:
+    """How many bytes the BUILD gives this binding, as a class rather than a
+    width -- because `default_real` has no width until a build says so.
+
+    This is the whole of D6 applied to the op ladder. A schema-f32 field is a
+    DEFAULT REAL in almost every binding, so under -fdefault-real-8 it is eight
+    bytes; `shadow_falk_f32` is the exception, and it is an exception in the
+    other direction -- an explicit `real(...,4)` that stays four bytes in an
+    f64 build. One label was carrying both jobs, so a blanket promotion and a
+    blanket non-promotion are each wrong for one of them.
+
+    Refuses a dtype it does not know rather than defaulting: a new dtype would
+    otherwise land silently on whichever branch is written last.
+    """
+    if dtype in _FIXED_CLASS:
+        return _FIXED_CLASS[dtype]
+    if dtype != "f32":
+        raise KeyError(f"no storage class for dtype {dtype!r} ({expr!r})")
+    return "real32" if _PINNED_REAL32.match(expr.strip()) else "default_real"
+
 
 # ── shared rungs (identical in both variants) ─────────────────────────────────
 QR_FALK = [
@@ -192,6 +235,28 @@ FIELD_EXPR = {
     "legacy": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "conservative": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
 }
+
+
+def all_bindings() -> list:
+    """Every (field, dtype, expr) triple this module declares, wherever it lives.
+
+    SCANNED, not listed. The op ladder is validated against the schema by name,
+    but the twenty-odd STAGE lists are not -- so a list added here and left out
+    of a validation list would be exactly the one whose storage class nobody
+    ever asked for. The shape IS the filter: a list of 3-string tuples is a
+    binding table and nothing else in this module is one.
+    """
+    out = []
+    for name, v in sorted(globals().items()):
+        if (isinstance(v, list) and v
+                and all(isinstance(t, tuple) and len(t) == 3
+                        and all(isinstance(x, str) for x in t) for t in v)):
+            out += [(name, *t) for t in v]
+    for algo, roles in FIELD_EXPR.items():
+        for role, ops in roles.items():
+            for op_id, rungs in ops.items():
+                out += [(f"{algo}/{role}/{op_id}", *t) for t in rungs]
+    return out
 
 # q_post/n_post are the ACTUAL stored qrs/nrs — emitted by the generator's POST
 # phase AFTER the update statement completes (all other fields are pre-update).
