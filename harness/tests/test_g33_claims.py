@@ -507,6 +507,132 @@ def test_CLAIMS_yaml_is_actually_YAML():
         f"parser {len(CLAIMS)} -- the two disagree about the file")
 
 
+#: What the registry reader produces, per claim, as a comparable projection of
+#: the YAML document. The hand parser re-implements enough of YAML to read this
+#: file, so the guard against divergence has to cover the WHOLE structure --
+#: `migration_blocker` alone was one field of eleven (owner priority 9).
+def _from_yaml(c: dict) -> dict:
+    def pairs(key):
+        out = []
+        for e in c.get(key) or []:
+            # Not a single-key mapping: a flow collection the block reader does
+            # not implement. Rendered so the comparison SHOWS the disagreement
+            # rather than erroring out before it can.
+            if not isinstance(e, dict) or len(e) != 1:
+                out.append((f"<not-a-pair:{e!r}>", None))
+                continue
+            (path, value), = e.items()
+            out.append((path, value))
+        return out
+
+    fold = lambda v: " ".join(str(v).split()) if v is not None else ""
+    return {
+        "id": c["id"],
+        "evidence": list(c.get("evidence") or []),
+        "artifacts": {p: str(v) for p, v in pairs("artifacts")},
+        "values": [(p, str(v)) for p, v in pairs("expected_values")],
+        "predicates": [(p, v) for p, v in pairs("expected_predicates")],
+        "unbound": [{"figure": fold(u.get("figure")), "why": fold(u.get("why"))}
+                    for u in (c.get("unbound") or [])],
+        **{k: fold(c.get(k, "")) for k in
+           ("status", "artifact_status", "evidence_kind", "blocker_kind",
+            "migration_blocker", "scope", "grade")},
+    }
+
+
+def _from_regex(c: dict) -> dict:
+    fold = lambda v: " ".join(str(v).split()) if v is not None else ""
+    return {
+        "id": c["id"],
+        "evidence": list(c["evidence"]),
+        "artifacts": dict(c["artifacts"]),
+        "values": [(f"{w['file']}#{w['path']}", None) for w in c["expected_values"]],
+        "predicates": [(f"{w['file']}#{w['path']}", w["want"])
+                       for w in c["expected_predicates"]],
+        "unbound": [{"figure": fold(u["figure"]), "why": fold(u["why"])}
+                    for u in c["unbound"]],
+        **{k: fold(c.get(k, "")) for k in
+           ("status", "artifact_status", "evidence_kind", "blocker_kind",
+            "migration_blocker", "scope", "grade")},
+    }
+
+
+def test_the_two_readers_AGREE_on_the_WHOLE_registry():
+    """Not one field. The hand parser re-implements folded scalars, list shapes,
+    orphan detection and literal typing, and each of those is a place PyYAML can
+    disagree with it -- so the agreement is checked over every claim and every
+    field, on the authoritative file (owner priority 9).
+
+    The numeric VALUES are compared by path only: the regex reader parses them
+    to float and applies a tolerance, which is a projection PyYAML does not make.
+    Their paths, count and order are the structure, and that is what can drift.
+    """
+    yaml = pytest.importorskip("yaml")
+    ec = _chain()
+    doc = yaml.safe_load(REGISTRY.read_text())
+    mine = {c["id"]: _from_regex(c) for c in ec.claims()}
+    truth = {c["id"]: _from_yaml(c) for c in doc["claims"]}
+    assert set(mine) == set(truth), sorted(set(mine) ^ set(truth))
+    for cid in sorted(truth):
+        a, b = dict(mine[cid]), dict(truth[cid])
+        # values: paths and order, not the parsed float
+        a["values"] = [p for p, _v in a["values"]]
+        b["values"] = [p for p, _v in b["values"]]
+        assert a == b, f"{cid}: readers disagree\n  regex {a}\n  yaml  {b}"
+
+
+#: YAML this file does not use and the hand parser does not implement. It must
+#: REFUSE them, not read them differently from PyYAML -- "never silently
+#: disagree" is the property, and it is weaker than "implements YAML" but it is
+#: the one that matters for an authority file.
+_UNIMPLEMENTED = [
+    ("an anchor and alias",
+     "    scope: &s a scope\n    grade: *s\n"),
+    ("a flow sequence of artifacts",
+     "    artifacts: [a/b.json, c/d.json]\n"),
+    ("a flow mapping",
+     "    artifacts: {a/b.json: deadbeef}\n"),
+    ("a tab in the indentation",
+     "    expected_values:\n\t- a/b.json#x: 1.0\n"),
+]
+
+
+@pytest.mark.parametrize("what,block", _UNIMPLEMENTED)
+def test_the_regex_reader_REFUSES_yaml_it_does_not_implement(what, block,
+                                                             tmp_path,
+                                                             monkeypatch):
+    """A construct it cannot read must fail loudly. Reading it as something
+    else is how an authority file and its reader stop describing the same
+    document."""
+    ec = _chain()
+    reg = tmp_path / "CLAIMS.yaml"
+    reg.write_text("schema: 1\n\nclaims:\n"
+                   "  - id: G33-X-001\n"
+                   "    status: active\n"
+                   "    evidence: [FINDING_x.md]\n" + block)
+    monkeypatch.setattr(ec, "REGISTRY", reg)
+    yaml = pytest.importorskip("yaml")
+    try:
+        doc = yaml.safe_load(reg.read_text())
+    except yaml.YAMLError:
+        doc = None
+    try:
+        got = ec.claims()
+    except ValueError:
+        return                      # refused, which is the contract
+    if doc is None:
+        pytest.fail(f"{what}: PyYAML refuses the file and the regex reader "
+                    f"accepted it as {got}")
+    # Accepted by both: then they must AGREE about what they read.
+    mine = _from_regex(got[0])
+    theirs = _from_yaml(doc["claims"][0])
+    mine["values"] = [p for p, _v in mine["values"]]
+    theirs["values"] = [p for p, _v in theirs["values"]]
+    assert mine == theirs, (
+        f"{what}: both readers accepted the file and read different documents"
+        f"\n  regex {mine}\n  yaml  {theirs}")
+
+
 def test_the_two_readers_AGREE_on_every_migration_blocker():
     """A folded value continues on the lines below it. Reading only the first
     line captured the `>` itself: truthy, so the field looked present while

@@ -65,6 +65,24 @@ def sha256(path: Path) -> str:
 #: must fail, not be silently ignored.
 COMPUTED_FIELDS = ("binding_status", "coverage_status", "verification_status")
 
+#: Every SCALAR (possibly folded) field a claim carries, read into the parsed
+#: view. `grade` and `scope` were missing for as long as this reader existed:
+#: nothing here consumed them, so `ec.claims()[i]["grade"]` was silently absent
+#: and a caller using `.get` would read "" as the claim's grade. Found by
+#: comparing the WHOLE parsed structure against PyYAML instead of one field of
+#: it (owner priority 9).
+#:
+#: Checked against the registry's own key set by a test, so a field added to the
+#: file and not here is a failure rather than a quiet omission.
+SCALAR_FIELDS = ("status", "artifact_status", "evidence_kind", "blocker_kind",
+                 "migration_blocker", "grade", "scope", "basis", "text",
+                 "superseded_by")
+
+#: Sections written as a YAML BLOCK sequence. Their key line carries no value,
+#: and one that does is a flow collection this reader does not implement.
+BLOCK_SECTIONS = ("artifacts", "expected_values", "expected_predicates",
+                  "unbound")
+
 
 def claims() -> list[dict]:
     """[{id, evidence[], artifacts{path: digest}}].
@@ -88,6 +106,17 @@ def claims() -> list[dict]:
             in_art = m.group(1) in ("artifacts", "expected_values",
                                     "expected_predicates")
             section = m.group(1)
+            # A BLOCK section's key line carries no value. `artifacts: [a, b]`
+            # and `artifacts: {a: b}` are valid YAML flow collections that this
+            # reader does not implement -- and it read them as an EMPTY block,
+            # which silently downgrades a claim to "binds nothing" rather than
+            # failing (owner priority 9).
+            if m.group(1) in BLOCK_SECTIONS and m.group(2).strip():
+                raise ValueError(
+                    f"{cur['id']}: `{m.group(1)}` carries a value on its key "
+                    f"line ({m.group(2).strip()[:40]!r}). This reader "
+                    f"implements the BLOCK form only; a flow collection here "
+                    f"would be read as an empty section")
             if m.group(1) in COMPUTED_FIELDS:
                 # COMPUTED now, from what the claim binds and what it declares
                 # it does not -- see `_coverage_status`. Twice a claim declared
@@ -105,8 +134,16 @@ def claims() -> list[dict]:
                     f"and the status follows from it")
             if m.group(1) == "evidence":
                 cur["evidence"] = re.findall(r"[\w.]+\.md", m.group(2))
-            elif m.group(1) in ("status", "artifact_status", "evidence_kind",
-                                "blocker_kind", "migration_blocker"):
+            elif m.group(1) in SCALAR_FIELDS:
+                # An ANCHOR or ALIAS is valid YAML and this reader would take
+                # the sigil as part of the text -- `grade: *s` reads as the
+                # literal "*s" while PyYAML resolves it to the anchored value.
+                # Two readers, two documents.
+                if m.group(2).strip()[:1] in ("&", "*"):
+                    raise ValueError(
+                        f"{cur['id']}: `{m.group(1)}` uses a YAML anchor or "
+                        f"alias, which this reader does not resolve -- write "
+                        f"the value out")
                 cur[m.group(1)] = m.group(2).strip()
                 # A FOLDED value (`key: >`) continues on the indented lines
                 # below. Capturing only the first line took the `>` itself as
@@ -123,6 +160,21 @@ def claims() -> list[dict]:
                     cur[folded] = ""
         elif folded and line.startswith("      ") and line.strip():
             cur[folded] = (cur[folded] + " " + line.strip()).lstrip("> ").strip()
+        elif (section == "evidence" and re.match(r"^ {6,}\S", line)
+              and not line.lstrip().startswith("#")):
+            # A FLOW SEQUENCE MAY WRAP. `evidence: [a.md,` continued on the next
+            # line is ONE value, and this reader took the first line only -- so
+            # G33-TURNOVER-002 cited two findings and the chain followed one.
+            # The stamper's parser already handled the continuation, so the two
+            # readers of the authority file disagreed about what it says. Found
+            # by comparing the whole parsed structure against PyYAML rather than
+            # one field of it (owner priority 9).
+            found = re.findall(r"[\w.]+\.md", line)
+            if not found:
+                raise ValueError(
+                    f"{cur['id']}: unparseable `evidence` continuation: "
+                    f"{line.strip()!r}")
+            cur["evidence"] += found
         elif in_art and section == "artifacts" and (
                 m := re.match(r"^      - +(\S+):\s*([0-9a-f]+)\s*$", line)):
             cur["artifacts"][m.group(1)] = m.group(2)
