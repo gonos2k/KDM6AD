@@ -613,7 +613,8 @@ def _ncmin():
     return nl
 
 
-def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
+def _multi_run_analyses(out: Path, exe: Path, fixture: str,
+                        precision: str = "f32") -> list:
     """Analyses that run the DRIVER over several decompositions.
 
     Emitted only where the fixture can support the question. `ncmin_locality`
@@ -621,11 +622,19 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str) -> list:
     single-surface fixture there is no across-class pair and the analysis
     refuses rather than reporting a one-directional result. Producing it there
     anyway would put a vacuous table in the bundle.
+
+    ...and only where the PRECISION can. Both of these read the bundle's G33R
+    member and `qr_process_ledger` replays f32 words besides, so at an f64 arm
+    they were being handed a stream neither is defined on -- which surfaced as
+    a parser error from inside the producer, indistinguishable in the bundle
+    from an analysis nobody ran (owner priority 6).
     """
     made = []
     if len(_ncmin().equivalence_classes(fixture)) < 2:
         return made
     for name, (mod, fn) in MULTI_RUN.items():
+        if not rm.applicable(name, precision):
+            continue
         _ncmin().begin_capture()
         result = fn(str(exe), fixture)
         # The RAW streams this analysis consumed, preserved as bundle members.
@@ -665,17 +674,26 @@ def compositions_of(fixture: str) -> list:
     return nl.compositions(fixture_dims(fixture)[0])
 
 
-def _analyses(out: Path, exe: Path, nsplits, mode: str) -> list:
-    """Run every analysis on every member, write it beside the member, digest it.
+def _analyses(out: Path, exe: Path, nsplits, mode: str,
+              precision: str = "f32") -> list:
+    """Run every APPLICABLE analysis on every member, write it beside the
+    member, digest it.
 
     The digest of the ANALYZER is recorded next to the digest of its output: an
     analysis JSON identifies what was concluded, and the module identifies the
     code that concluded it. Neither alone lets a reader re-derive the table.
+
+    Applicability is asked of `rm.ANALYSIS_PRECISIONS` rather than discovered by
+    running the analyzer and seeing whether it raises: the two outcomes read the
+    same from the bundle, and only one of them is a fact about the experiment
+    (owner priority 6).
     """
     made = []
     for n in nsplits:
         stream = (out / f"n{n}.{mode}.txt").read_text()
         for name, (mod, fn) in ANALYSES.items():
+            if not rm.applicable(name, precision):
+                continue
             path = out / f"n{n}.{mode}.{name}.json"
             path.write_text(rm.json.dumps(fn(stream), indent=2,
                                           sort_keys=True) + "\n")
@@ -772,17 +790,21 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # A claim could pin a raw stream and a manifest, but the numbers it quotes
         # come from an analysis that ran somewhere else and left nothing behind --
         # so "the run is pinned" stopped one step short of the table.
-        man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []
+        precision = "f64" if arm == "f64" else "f32"
+        man["analyses"] = (_analyses(tmp, exe, nsplits, mode, precision)
+                           if nflux else [])
         # The metric/trajectory split needs FOUR runs of the same driver, so it
         # is a bundle-level analysis rather than a per-member one. Only for the
         # unperturbed arm: running it from a perturbed bundle would take that
         # arm as its own baseline.
         if nflux and rho_profile == "as-is":
-            man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode, width)
+            if rm.applicable("metric_trajectory", precision):
+                man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode,
+                                                    width)
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
-            man["analyses"] += _multi_run_analyses(tmp, exe, fixture)
+            man["analyses"] += _multi_run_analyses(tmp, exe, fixture, precision)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.
@@ -822,7 +844,9 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                                         "commands.txt", "sources.txt"))
             if q.is_file()]
         man["arm"] = arm
-        man["precision"] = "f64" if arm == "f64" else "f32"
+        # The SAME word the analyses were selected by, so the manifest cannot
+        # declare one precision and have been analysed at another.
+        man["precision"] = precision
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False

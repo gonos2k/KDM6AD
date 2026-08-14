@@ -67,20 +67,29 @@ REAL_KINDS = {"f32": 4, "f64": 8}
 _REAL_KIND = "f32"
 
 
-def _storage(dtype: str) -> str:
+#: storage class -> the emitted dtype label. `default_real` is the one that has
+#: no answer until a build supplies one, which is why the classes exist at all.
+_CLASS_LABEL = {"real32": "f32", "real64": "f64", "int32": "i32",
+                "logical": "u8"}
+
+
+def _storage(dtype: str, expr: str) -> str:
     """The dtype a field the SCHEMA calls `dtype` is actually STORED as.
 
-    A schema-f32 field is a default real, so it is whatever this build made a
-    default real. A schema-f64 field is `double precision`, which
-    -fdefault-double-8 holds at eight bytes in both builds. Integers and
-    logicals are not promoted at all.
+    A schema-f32 field is USUALLY a default real, so it is whatever this build
+    made a default real -- but not always, and reading the schema alone cannot
+    tell which: `shadow_falk_f32` is an explicit `real(...,4)` that stays four
+    bytes in an f64 build, while `mul_dend_q` beside it is a default real that
+    does not. The binding's own EXPRESSION is what decides, so the class comes
+    from `g33_fortran_bindings.storage_class`, which reads it.
 
     The emitted LABEL is this, not the schema's dtype. The label's only
     operational job is telling a reader how wide the hex is; what the number
     MEANS is `g33_schema.field_dtype`, which is where an analysis already asks.
     One label was doing both jobs and they only agree at f32.
     """
-    return _REAL_KIND if dtype == "f32" else dtype
+    cls = fb.storage_class(dtype, expr)
+    return _REAL_KIND if cls == "default_real" else _CLASS_LABEL[cls]
 
 
 def _ZF() -> str:
@@ -95,7 +104,7 @@ def _stage_write(stage, chain, n_expr, field, k_expr, dtype, expr,
     `loop` is the RUNTIME cloud-subcycle index (kdm62D's `do loop = 1,loops`, which
     encloses every injection point), so records from different outer loops are
     distinguishable instead of collapsing onto loop 1."""
-    dt = _storage(dtype)
+    dt = _storage(dtype, expr)
     val, zf = _EMIT[dt]
     return (f"{fb.IND}write(*,'(A,1X,I0,2(1X,A),1X,I0,1X,A,2(1X,I0),1X,A,1X,{zf})') "
             f"'G33F STAGE', {loop_expr}, '{chain}', '{stage}', {n_expr}, "
@@ -138,9 +147,30 @@ def _cell_stage_block(stage, chain, n_expr, fields, loop_expr="loop"):
             "#endif"]
 
 
+def _validate_every_binding_classifies():
+    """Every binding this generator can emit must have a STORAGE class.
+
+    Not a restatement of `storage_class`'s own refusal: that fires at the one
+    call site the emitter happens to reach, and an f64 generation is where the
+    classes first matter -- so a binding only reachable from an untaken branch
+    would be classified for the first time in the run that publishes it. Asked
+    of the whole table before any line is written instead (owner priority 1).
+    """
+    for where, field, dtype, expr in fb.all_bindings():
+        cls = fb.storage_class(dtype, expr)      # raises on an unknown dtype
+        if cls not in fb.STORAGE_CLASSES:
+            raise SystemExit(
+                f"{where}.{field}: storage class {cls!r} is not one of "
+                f"{sorted(fb.STORAGE_CLASSES)}")
+        if cls not in _CLASS_LABEL and cls != "default_real":
+            raise SystemExit(
+                f"{where}.{field}: storage class {cls!r} has no emitted label")
+
+
 def _validate_against_schema(algo):
     """Emitted field list MUST equal schema.op_fields(...), in order, for every
     (role, species, op) in scope — ties the bindings to the one schema."""
+    _validate_every_binding_classifies()
     for role in ("TOP", "INTERIOR"):
         for species in ("qr", "nr"):
             for op_id in schema.ops_for_species(algo, role, species):
@@ -164,18 +194,27 @@ def _emit_lines(algo, role, species, phase):
     line is  G33FOP <loop> <chain> <n> <col> <k_top> <op_id> <field> <dtype> <hex>,
     where <loop> is the RUNTIME cloud-subcycle index (was a hardcoded literal).
     phase 'pre' emits every field EXCEPT the actual post-update q_post/n_post;
-    phase 'post' emits ONLY those (the stored value, read after the update)."""
+    phase 'post' emits ONLY those (the stored value, read after the update).
+
+    `<dtype>` is the STORAGE, the same contract STAGE has carried since D6. It
+    was the SCHEMA dtype here, and only here: at f32 the two agree, so the
+    divergence had nowhere to appear until an f64 build wrote a default real --
+    eight bytes -- through the schema's `Z8.8` and called it f32 (owner D6,
+    priority 1). Byte-identical at f32, where every class resolves to the label
+    it already had.
+    """
     body = []
     for op_id in schema.ops_for_species(algo, role, species):
         for field, dtype, expr in fb.FIELD_EXPR[algo][role][op_id]:
             is_post = field in fb.POST_FIELDS
             if (phase == "pre") == is_post:
                 continue
-            val, zf = _EMIT[dtype]
+            dt = _storage(dtype, expr)
+            val, zf = _EMIT[dt]
             body.append(
                 f"{fb.IND}write(*,'(A,1X,I0,1X,A,3(1X,I0),1X,A,1X,A,1X,A,1X,{zf})') "
                 f"'G33FOP', loop, 'main', n, i, kte-k, "
-                f"'{op_id}', '{field}', '{dtype}', {val.format(e=expr)}")
+                f"'{op_id}', '{field}', '{dt}', {val.format(e=expr)}")
     return ["#ifdef KDM6_G33_FORTRAN_DUMP", *body, "#endif"] if body else []
 
 

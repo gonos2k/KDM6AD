@@ -60,6 +60,12 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+#: Fields a claim may not DECLARE, because the tool derives them. `binding_status`
+#: is the retired name and stays on the list: a registry entry still carrying it
+#: must fail, not be silently ignored.
+COMPUTED_FIELDS = ("binding_status", "coverage_status", "verification_status")
+
+
 def claims() -> list[dict]:
     """[{id, evidence[], artifacts{path: digest}}].
 
@@ -82,15 +88,19 @@ def claims() -> list[dict]:
             in_art = m.group(1) in ("artifacts", "expected_values",
                                     "expected_predicates")
             section = m.group(1)
-            if m.group(1) == "binding_status":
+            if m.group(1) in COMPUTED_FIELDS:
                 # COMPUTED now, from what the claim binds and what it declares
-                # it does not -- see `_binding_status`. Twice a claim declared
+                # it does not -- see `_coverage_status`. Twice a claim declared
                 # `full` beside a comment saying a figure was unbound, which is
                 # what a self-declaration buys you. Refused here rather than
                 # ignored: a field the tool no longer reads, left in the file,
                 # goes on reading as the answer to a reviewer (owner §16-7).
+                #
+                # All THREE names, including the two that replaced the first:
+                # renaming a computed field would otherwise make declaring it
+                # under its new name legal again.
                 raise ValueError(
-                    f"{cur['id']}: `binding_status` is computed, not declared "
+                    f"{cur['id']}: `{m.group(1)}` is computed, not declared "
                     f"-- list what the claim does NOT bind under `unbound:` "
                     f"and the status follows from it")
             if m.group(1) == "evidence":
@@ -672,16 +682,26 @@ def _keys_of(obj) -> list:
     return []
 
 
-#: Every answer `_binding_status` can give, plus "" for a claim the question
+#: Every answer `_coverage_status` can give, plus "" for a claim the question
 #: does not apply to. A SECOND vocabulary, deliberately separate from the
 #: artifact states: those say whether a file is what it was pinned as, these
 #: say how much of a claim rests on one. Enumerated for the same reason --
 #: "nobody classified this" must not read as "this is fine".
-BINDING_STATUSES = frozenset({"full", "partial", "none", "UNDECLARED"})
+COVERAGE_STATUSES = frozenset({"full", "partial", "none", "UNDECLARED"})
+
+#: ...and a THIRD, for what happened when those bindings were actually checked.
+#:
+#: One word was answering both questions and they have different answers on the
+#: same claim. On a public clone every bundle is absent, `value-unavailable`
+#: passes -- correctly, for a routine run -- and the single word therefore read
+#: `full` for a claim whose evidence nobody could open. Not a safety failure,
+#: because a closeout fails those states; a reporting one, and the report is
+#: what a reviewer reads (owner priority 8).
+VERIFICATION_STATUSES = frozenset({"verified", "unavailable", "FAILING"})
 
 
-def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
-    """How completely a claim's figures are bound -- DERIVED, never declared.
+def _coverage_status(rows: list, unbound: list, pinned: bool) -> str:
+    """How much of a claim is BOUND -- DERIVED, never declared.
 
     Separate from `artifact_status`, which says the artifact is pinned and its
     digest verified and never said a single figure in the text was checked
@@ -695,14 +715,20 @@ def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
 
       no bindings and no admission  UNDECLARED -- the claim says nothing, which
                                     is not the same as saying `none`
-      nothing bound and verified    none
-      an admission, or a binding
-      that did not verify           partial
-      otherwise                     full
+      an admission and no binding   none
+      an admission and a binding    partial
+      bindings and no admission     full
 
-    A binding that FAILS also cannot leave a claim `full`, which the declared
-    field could not express at all: it was written once and never revisited
-    when the evidence moved under it.
+    DECLARATIONS ONLY. Whether a binding verified is `_verification_status`,
+    beside it. Mixing them made `full` mean "everything declared is bound AND
+    every one of them checked out", which no reader could take apart -- and on
+    a host without the bundles the second half is unanswerable, not false.
+
+    What `full` does NOT mean, in either word: that every load-bearing figure
+    in the prose was declared. That is the author's judgement entering as data
+    through `unbound:`, and the owner ruled out scanning the prose for numeric
+    literals to replace it. `full` is coverage of the DECLARED, which is why
+    an undeclared gap is a `check()` blocker rather than a status.
 
     Empty for a claim with no verified artifact: "how completely are this
     claim's figures bound" is a question about a claim that HAS an artifact,
@@ -713,10 +739,29 @@ def _binding_status(rows: list, unbound: list, pinned: bool) -> str:
         return ""
     if not rows and not unbound:
         return "UNDECLARED"
-    bound = sum(1 for r in rows if not verdict(r["state"]))
-    if not bound:
+    if not rows:
         return "none"
-    return "partial" if (unbound or bound < len(rows)) else "full"
+    return "partial" if unbound else "full"
+
+
+def _verification_status(rows: list, pinned: bool) -> str:
+    """What happened when the declared bindings were CHECKED.
+
+    Ordered by what a reviewer must not miss: a failing binding outranks an
+    absent bundle, because "we looked and it disagreed" and "we could not
+    look" are the two things this word exists to keep apart.
+
+    Empty where there is nothing to verify, so a claim that binds nothing
+    reports its coverage and stays silent here rather than claiming a clean
+    check of the empty set.
+    """
+    if not pinned or not rows:
+        return ""
+    if any(verdict(r["state"]) for r in rows):
+        return "FAILING"
+    if any(r["state"] in EXCUSED_BY_ABSENCE for r in rows):
+        return "unavailable"
+    return "verified"
 
 
 def chain() -> list[dict]:
@@ -775,10 +820,15 @@ def chain() -> list[dict]:
             "id": c["id"], "status": c.get("status", "?"), "values": values,
             "predicates": preds,
             # COMPUTED from the two lines above and the claim's own list of
-            # what it does not bind -- see `_binding_status` (owner §16-7).
-            "binding_status": _binding_status(
+            # what it does not bind -- see `_coverage_status` (owner §16-7).
+            # TWO words, because one was answering two questions: how much of
+            # the claim is bound, and what happened when it was checked
+            # (owner priority 8).
+            "coverage_status": _coverage_status(
                 values + preds, c.get("unbound", []),
                 c.get("artifact_status") == "pinned"),
+            "verification_status": _verification_status(
+                values + preds, c.get("artifact_status") == "pinned"),
             "unbound": c.get("unbound", []),
             "artifact_status": c.get("artifact_status", "?"),
             "migration_blocker": c.get("migration_blocker", ""),
@@ -801,13 +851,18 @@ def report() -> None:
     traceable = [r for r in rows if r["runs"]]
     print(f"  {len(rows)} claims: {len(pinned)} pin a run artifact, "
           f"{len(traceable)} cite a finding some published run names.\n")
-    print(f"  {'claim':22} {'status':10} {'artifacts':>10} {'bound':>10}  runs")
+    print(f"  {'claim':22} {'status':10} {'artifacts':>10} {'bound':>10} "
+          f"{'checked':>12}  runs")
     for r in rows:
         st = ",".join(sorted({a["state"] for a in r["artifacts"]})) or "-"
-        # The DERIVED binding status, beside the artifact states it is derived
-        # from. It answers the question `pinned` was silently taken to answer.
+        # The DERIVED coverage, beside what CHECKING it produced and beside the
+        # artifact states both are derived from. `bound` answers the question
+        # `pinned` was silently taken to answer; `checked` answers the one
+        # `bound` was silently taken to answer.
         print(f"  {r['id']:22} {r['status']:10} {st:>10} "
-              f"{r['binding_status'] or '-':>10}  {','.join(r['runs']) or '-'}")
+              f"{r['coverage_status'] or '-':>10} "
+              f"{r['verification_status'] or '-':>12}  "
+              f"{','.join(r['runs']) or '-'}")
     for r in rows:
         for a in r["artifacts"]:
             if a["state"] == "MISMATCH":
@@ -943,7 +998,7 @@ def check(require_available: bool = False) -> int:
         # of evidence -- the evidence is attached and verified -- but a claim
         # that has not said which of its figures it checks against it, which
         # reads exactly like one that checks them all (owner §16-7).
-        if r["binding_status"] == "UNDECLARED":
+        if r["coverage_status"] == "UNDECLARED":
             bad.append(f"{r['id']}: pins an artifact but binds no figure and "
                        f"declares no `unbound:` entry -- `pinned` would be "
                        f"read as `checked`")

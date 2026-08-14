@@ -135,6 +135,62 @@ def test_DERIVED_ANALYSES_matches_the_PRODUCER_registry():
     assert set(rm.REQUIRED_WHEN_INSTRUMENTED) == set(xp.ANALYSES)
 
 
+# ---- applicability: an analysis is not valid on every stream (priority 6) ----
+
+def test_EVERY_analysis_the_producer_runs_declares_its_PRECISIONS():
+    """The fifth place a name has to reach. Without it a new analysis is valid
+    at every precision by the act of not being listed, which is the fail-open
+    shape the other four registries exist to close."""
+    import g33_refine_experiment as xp
+    runs = set(xp.ANALYSES) | set(xp.MULTI_RUN) | {"metric_trajectory"}
+    assert set(rm.ANALYSIS_PRECISIONS) == runs, (
+        f"run but unclassified: {sorted(runs - set(rm.ANALYSIS_PRECISIONS))}; "
+        f"classified but never run: {sorted(set(rm.ANALYSIS_PRECISIONS) - runs)}")
+    for name, precisions in rm.ANALYSIS_PRECISIONS.items():
+        assert "f32" in precisions, (
+            f"{name} is not defined at the REFERENCE precision, which is the "
+            f"only one that produces decision evidence")
+
+
+def test_an_unclassified_analysis_is_refused_rather_than_assumed_valid():
+    with pytest.raises(KeyError, match="no declared precision applicability"):
+        rm.applicable("something_new", "f32")
+
+
+def test_the_f32_only_analyses_are_the_ones_that_replay_or_read_G33R():
+    """Named, so a later reader can check the reason rather than the list."""
+    only32 = {n for n, p in rm.ANALYSIS_PRECISIONS.items() if p == ("f32",)}
+    assert only32 == {"qr_process_ledger", "ncmin_locality", "metric_trajectory"}
+    assert not rm.applicable("qr_process_ledger", "f64")
+    assert rm.applicable("dual_ledger", "f64")
+
+
+def test_an_f64_bundle_carrying_an_f32_only_analysis_is_REFUSED(tmp_path):
+    """The direction a manifest cannot talk its way out of: the precision it is
+    checked against is the precision it declares about itself."""
+    m = synthetic_manifest(tmp_path)
+    m["arm"], m["precision"] = "f64", "f64"
+    m["analyses"].append({
+        "file": "n12.rezero.qr_process_ledger.json",
+        "analysis": "qr_process_ledger", "sha256": "e" * 64, "fixture": "fx",
+        "decompositions": [[3], [1, 1, 1]],
+        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
+                "decompositions": [[3], [1, 1, 1]]},
+        "inputs": [{"file": "mr.n1.rezero.as-is.tiles-3.txt", "sha256": "f" * 64,
+                    "runtime_argv": ["1", "rezero", "3", "as-is"]},
+                   {"file": "mr.n1.rezero.as-is.tiles-1-1-1.txt",
+                    "sha256": "f" * 64,
+                    "runtime_argv": ["1", "rezero", "1,1,1", "as-is"]}],
+        "analyzer": "harness/g33_qr_process_ledger.py",
+        "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
+        "analyzer_blob_sha": "c" * 40})
+    assert any("defined only at" in b for b in rm.validate(m))
+    # ...and the same entry on an f32 bundle is fine, so the refusal is about
+    # the precision and not about the analysis.
+    m["arm"], m["precision"] = "reference", "f32"
+    assert not any("defined only at" in b for b in rm.validate(m))
+
+
 # ---- the third union variant: analyses that run the DRIVER ------------------
 
 def _multi(m):

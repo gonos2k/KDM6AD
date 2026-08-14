@@ -10,11 +10,14 @@ Synthetic manifests throughout, so the whole file runs where the bundles are
 not: the layering is a property of the manifest shape, not of this host.
 """
 import copy
+import hashlib
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import g33_identity as gi          # noqa: E402
 import g33_refine_experiment as rx  # noqa: E402
@@ -278,3 +281,150 @@ def test_the_LAYERING_holds_on_a_real_manifest():
     other = copy.deepcopy(man)
     other["members"][0]["output_sha256"] = "0" * 64
     assert _moved(man, other) == {"content", "address"}
+
+
+# --- the anchors (owner priority 4-5) ---------------------------------------
+#
+# The layering was measured on synthetic MUTATIONS -- change one analyzer's
+# content hash, watch which id moves -- and passed. What it never reproduced is
+# the path a producer actually takes: rebuild the same bundle from the same
+# bytes at a new HEAD. Every pin carries `commit` beside `content_sha256` and
+# `repo_commit` sits at the top of the manifest, so an id over the pins moved on
+# EVERY commit, including the analysis-only and documentation-only ones the
+# layers exist to be stable across.
+
+
+def _reanchor(man, commit="e" * 40):
+    """The same run, published from a different commit. Nothing about the bytes
+    changes: only where they can be fetched from, and the prose beside them."""
+    out = copy.deepcopy(man)
+    out["repo_commit"] = commit
+    out["build_provenance"]["repo_commit"] = commit
+    for block in ("producer_modules", "member_parsers", "tracked_build_inputs"):
+        for e in out[block]:
+            e["commit"] = commit
+    for a in out["analyses"]:
+        if a.get("analyzer"):
+            a["analyzer_commit"] = commit
+    out["findings"] = [{"path": "harness/evidence/FINDING_x.md",
+                        "sha256": "8" * 64}]
+    return out
+
+
+def test_a_commit_that_moved_no_bytes_moves_NO_run_id():
+    """The regression the synthetic mutations could not express."""
+    man = _manifest()
+    man["repo_commit"] = "c" * 40
+    assert gi.run_recipe_id(man) == gi.run_recipe_id(_reanchor(man))
+    assert gi.run_content_id(man) == gi.run_content_id(_reanchor(man))
+    for name in ("dual_ledger", "substep_schedule"):
+        assert gi.analysis_id(man, name) == gi.analysis_id(_reanchor(man), name)
+
+
+def test_the_BUNDLE_ADDRESS_still_moves_and_that_is_the_point():
+    """The contrast is the whole argument for the layers: today's one address
+    cannot tell a re-publication from a re-run, and the layers can."""
+    man = _manifest()
+    man["repo_commit"] = "c" * 40
+    assert rm.identity_digest(man) != rm.identity_digest(_reanchor(man))
+
+
+def test_a_finding_correction_does_not_re_address_the_raw_stream():
+    """`findings` is prose attached to the run at publish time, not output of
+    it. Editing a sentence used to move the run's content id."""
+    man, other = _mutate(lambda m: m.update(
+        findings=[{"path": "harness/evidence/FINDING_x.md", "sha256": "8" * 64}]))
+    assert gi.run_content_id(man) == gi.run_content_id(other)
+
+
+def test_the_BYTES_still_move_every_id_they_should():
+    """The anchors are dropped; nothing else is. A run-role module whose CONTENT
+    moved must still move the recipe -- otherwise this stopped answering the
+    question it exists for."""
+    man, other = _mutate(lambda m: m["producer_modules"][4].update(
+        content_sha256="9" * 64, blob_sha="9" * 40))
+    assert gi.run_recipe_id(man) != gi.run_recipe_id(other)
+    man, other = _mutate(lambda m: m["analyses"][0].update(
+        analyzer_sha256="e" * 64))
+    assert gi.run_recipe_id(man) == gi.run_recipe_id(other)
+    assert gi.run_content_id(man) == gi.run_content_id(other)
+    assert gi.analysis_id(man, "dual_ledger") != gi.analysis_id(other, "dual_ledger")
+    assert gi.analysis_id(man, "substep_schedule") == \
+        gi.analysis_id(other, "substep_schedule")
+
+
+# --- and the same thing against REAL commits of this repository -------------
+
+def _blob_at(commit, path):
+    r = subprocess.run(["git", "rev-parse", f"{commit}:{path}"],
+                       cwd=REPO, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def _two_commits_sharing_a_blob(path):
+    """Two REAL commits of this repository whose blob for `path` is identical.
+
+    Almost every commit qualifies -- that is the point: a run-role file is
+    unchanged by most commits, and those are exactly the commits that were
+    moving its run id.
+    """
+    log = subprocess.run(["git", "rev-list", "-n", "60", "HEAD"],
+                         cwd=REPO, capture_output=True, text=True).stdout.split()
+    seen = {}
+    for c in log:
+        b = _blob_at(c, path)
+        if b and b in seen:
+            return seen[b], c, b
+        if b:
+            seen[b] = c
+    return None, None, None
+
+
+def _real_pins(commit, paths):
+    out = []
+    for p in paths:
+        blob = _blob_at(commit, p)
+        raw = subprocess.run(["git", "cat-file", "blob", blob], cwd=REPO,
+                             capture_output=True).stdout
+        out.append({"path": p, "content_sha256": hashlib.sha256(raw).hexdigest(),
+                    "commit": commit, "blob_sha": blob})
+    return out
+
+
+#: Run-role modules, so `_by_role` keeps them in the recipe.
+_RUN_ROLE_PATHS = ["harness/g33_number_transport.py",
+                   "harness/g33_refine_analyze.py"]
+
+
+def test_TWO_REAL_COMMITS_that_left_the_run_code_alone_give_ONE_recipe_id():
+    """Not a mutated manifest: two commits that exist in this repository's
+    history, their real blob ids, and the real bytes behind them."""
+    a, b, _blob = _two_commits_sharing_a_blob(_RUN_ROLE_PATHS[0])
+    if a is None:
+        pytest.skip("shallow clone: no two commits share a blob for this path")
+    assert a != b
+    man = _manifest()
+    ma, mb = copy.deepcopy(man), copy.deepcopy(man)
+    ma["producer_modules"] = _real_pins(a, _RUN_ROLE_PATHS)
+    mb["producer_modules"] = _real_pins(b, _RUN_ROLE_PATHS)
+    assert ma["producer_modules"] != mb["producer_modules"], \
+        "the two pin blocks must differ, or this proves nothing"
+    assert gi.run_recipe_id(ma) == gi.run_recipe_id(mb)
+    assert gi.run_content_id(ma) == gi.run_content_id(mb)
+
+
+def test_and_a_REAL_commit_that_DID_change_the_run_code_moves_it():
+    """The other direction, so the test above is not passing by ignoring the
+    block entirely."""
+    path = _RUN_ROLE_PATHS[0]
+    log = subprocess.run(["git", "rev-list", "-n", "200", "HEAD", "--", path],
+                         cwd=REPO, capture_output=True, text=True).stdout.split()
+    if len(log) < 2:
+        pytest.skip(f"shallow clone: fewer than two commits touch {path}")
+    a, b = log[0], log[1]
+    assert _blob_at(a, path) != _blob_at(b, path)
+    man = _manifest()
+    ma, mb = copy.deepcopy(man), copy.deepcopy(man)
+    ma["producer_modules"] = _real_pins(a, [path])
+    mb["producer_modules"] = _real_pins(b, [path])
+    assert gi.run_recipe_id(ma) != gi.run_recipe_id(mb)

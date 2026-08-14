@@ -1451,7 +1451,7 @@ claims:
       at +20.67% because its first tile ends on sea. SIGN CORRECTED (owner
       §9.4): this said "+20.72%" and "too much". The whole-domain run gates the
       sea column on ncmin_land (1.0e+08) rather than its own ncmin_sea
-      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH PROCESS carries that sign is a SEPARATE proposition and is not graded here -- see G33-NCMIN-004. It is on HOLD, but no longer for the reason first given: the ledger DOES reproduce the reference update, each leg bit-exactly, and it now closes against the actual two-run post-state difference. What remains open there is the substitution-order dependence of the per-term split and the causal chain (owner §7.1). The direction is now a
+      (2.5e+07), and it rains ~21% LESS than the per-column answer. WHICH PROCESS carries that sign is a SEPARATE proposition and is not graded here -- see G33-NCMIN-004, now confirmed-with-scope: the ledger reproduces the reference update, each leg bit-exactly, and it closes against the actual two-run post-state difference, so the direct arithmetic share is measured. WHERE the difference first AROSE is a third proposition again and is open at G33-NCMIN-005 (owner §7.1, priority 7). The direction is now a
       signed field in the artifact and asserted. Both bases agree, but NOT by an
       identity (owner §9.2): a_k = 1/(1+qv(t0)) sits inside the column sum, so
       only a vertically CONSTANT weight cancels -- on this fixture its spread is
@@ -1526,7 +1526,7 @@ claims:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.causal_attribution_valid: true
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:febaebb6cf315d879248f154bd3cabc99601b63ac1c768afe7bd4745bd367757]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:bbdf36b782ce19e7ab9be78b5835059a8055ac340a1c0548b35b3b45d77c051e]
 
   - id: G33-NCMIN-004
     text: >
@@ -1562,21 +1562,29 @@ claims:
       UNMEASURED: pracw consumes rain praut produces, so a term can carry the
       arithmetic while another is upstream of it.
       .
-      GRADE: hold. The re-grade is the owner's. What has closed since the HOLD
-      was set: the five P0-SCI-1 defects, the pre-state contribution, and the
-      closure against the actual post-state difference. What has not: the
-      ordering dependence of the individual shares, and the causal chain.
+      GRADE: confirmed-with-scope (owner priority 7). What closed the HOLD is
+      what the HOLD was for -- the five P0-SCI-1 defects, the pre-state
+      contribution C_pre, MEASURED zero in all 12 cells rather than assumed,
+      and the closure of the telescoped terms against the actual two-run
+      qr_post difference in raw f32 words with a gap of 0 in every column.
+      .
+      What did NOT close is not an unfinished part of this measurement. It is a
+      different proposition about a different quantity, and it now has its own
+      entry: WHERE the difference first arose is G33-NCMIN-005, and it is open.
+      Keeping it inside this claim is what made a measured decomposition read
+      as unmeasured. The substitution-order dependence stays HERE, as scope
+      rather than as a hold: under the stated convention the decomposition is
+      exact, and the convention is the source's own order.
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_boundary_mapping_v1]
     artifact_status: pinned
-    grade: hold
+    grade: confirmed-with-scope
     basis: >
       source-order f32 direct arithmetic decomposition of the qr update.
       Each leg replays its own update bit-exactly, the two legs share a
       bit-identical pre-state, and the terms close against the actual two-run
-      post-state difference. The remaining scope is the substitution-order
-      dependence of the per-term split and the unmeasured causal chain.
+      post-state difference in raw f32 words.
     scope: >
       g33_fixture_boundary_mapping_v1, one call, nsplit=1. Operator and
       physical mass weighting are BOTH computed; dtcld is applied; the
@@ -1585,7 +1593,13 @@ claims:
       version of the ledger, which the text above had already corrected
       (owner §7.1).
       .
-      Direct terms only, not the causal chain.
+      What the figure IS: a source-order direct arithmetic share on a
+      one-call synthetic fixture. What it is NOT, each ruled out for its own
+      reason: not a path-independent process fraction, because F is non-linear
+      and the split moves with the substitution order; not a causal mediation
+      fraction, because pracw consumes the rain praut produces (G33-NCMIN-005);
+      not an adjoint sensitivity, because nothing here differentiates the
+      operator.
     artifacts:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/manifest.json: 153e70c4e418ad6141a859c9abd0bf9447a864de759a6d7df9fb75870e3098c7
     # Bound so the HOLD is auditable: these are the exact numbers the
@@ -1606,12 +1620,60 @@ claims:
     # The closure itself, as a PREDICATE: a boolean cannot be an
     # expected_value, and "the decomposition closes against the real
     # update" is the statement D1 rests on.
+    #
+    # ...and the PRECONDITION, from the same bundle and the same run pair
+    # (owner §4, priority 7). A decomposition of "the difference between
+    # these two runs" says nothing unless the difference is the one the
+    # claim is about, and `partitions.1,1,1` IS this claim's pair: the
+    # per-column oracle against the whole-domain baseline.
+    #
+    # `causal_attribution_valid` here means the columns that differ are
+    # exactly the columns the ncmin threshold rule predicts -- the
+    # difference is attributable to ncmin and to nothing else in the
+    # decomposition. That is NOT the sense in which G33-NCMIN-005 is open:
+    # that one asks which microphysical process MEDIATES the difference,
+    # which nothing in this artifact measures. Two senses of the word, one
+    # bound and one open, and only naming both keeps them apart.
     expected_predicates:
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.closes_against_actual_update: true
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.closes_against_actual_update: true
       - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/2ba9c5800ace728222dc6c441f96d91b073c5a1958e59edc77a894a3a84451a6/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.causal_attribution_valid: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
-    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:febaebb6cf315d879248f154bd3cabc99601b63ac1c768afe7bd4745bd367757]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:bbdf36b782ce19e7ab9be78b5835059a8055ac340a1c0548b35b3b45d77c051e]
+
+  - id: G33-NCMIN-005
+    text: >
+      WHICH process the ncmin difference ORIGINATES in, as against which one
+      carries it in the final update. G33-NCMIN-004 measures the second and is
+      confirmed-with-scope; this is the first, and nothing here measures it.
+      .
+      The two are not the same question and the arithmetic cannot tell them
+      apart. `pracw` consumes the rain `praut` produces, so the chain
+      .
+      ncmin -> N_c -> r_c -> praut -> q_r -> pracw -> q_r+
+      .
+      would put 86.99% of the DIRECT share on accretion while autoconversion
+      was upstream of most of it. A source-order substitution measures where a
+      change APPEARS; a mediation measurement -- holding one link at the
+      oracle's value while the rest of the chain runs at the whole domain's --
+      is what would say where it AROSE, and no such run exists.
+      .
+      Splitting it out is the point. Held inside G33-NCMIN-004 this question
+      kept a decomposition that DOES close against the real update graded as
+      though it did not (owner priority 7).
+    status: hold
+    grade: open-question
+    basis: none
+    scope: >
+      needs a mediation experiment, not another reading of this fixture: one
+      arm per link of the chain, each holding that link at the local-oracle
+      value with the rest of the run unchanged. The adjoint form of the same
+      question -- d(q_r+)/d(ncmin) through each path -- needs the forcing VJP,
+      which is not implemented.
+    evidence: [FINDING_ncmin_scalar_vs_percell.md]
+    evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:bbdf36b782ce19e7ab9be78b5835059a8055ac340a1c0548b35b3b45d77c051e]
 
   - id: G33-ENTHALPY-003
     text: >

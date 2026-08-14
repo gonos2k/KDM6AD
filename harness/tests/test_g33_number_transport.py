@@ -628,3 +628,132 @@ def test_a_stream_whose_DOUBLES_were_promoted_to_16_bytes_is_refused():
     with pytest.raises(nt.StreamError, match="16-byte doubles|byte doubles"):
         nt.calls(_f64(_stream(_call(1))).replace("PROTOCOL 8 8",
                                                  "PROTOCOL 8 16"))
+
+
+# --- the header is a STREAM-WIDE contract (owner priority 2) -----------------
+#
+# The width was read into a variable the record loop reassigned, so a second
+# PROTOCOL simply took effect from where it appeared. A run whose first calls
+# were f32 and whose later ones were f64 then read as one consistent stream --
+# which is exactly the agreement between label, width and header that the D6
+# family was supposed to establish, defeated by making the header mutable.
+
+
+def test_a_SECOND_protocol_header_is_refused():
+    s = _f64(_stream(_call(1)))
+    with pytest.raises(nt.StreamError, match="two G33N PROTOCOL headers"):
+        nt.calls(s.replace("G33N PROTOCOL 8 8",
+                           "G33N PROTOCOL 8 8\nG33N PROTOCOL 8 8"))
+
+
+def test_a_MIXED_WIDTH_stream_is_refused_at_its_second_header():
+    """The failure this closes, spelled out: calls 1..k at one width, a fresh
+    header, calls k+1.. at another. Every record agrees with the header in
+    force when it was read, and the stream is still not one run."""
+    s = _stream(_call(1), _call(2))
+    mixed = s.replace("G33N CALL_BEGIN 2", "G33N PROTOCOL 8 8\nG33N CALL_BEGIN 2")
+    with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
+        nt.calls(mixed)
+
+
+def test_a_LATE_protocol_header_is_refused():
+    """After the body began it would be retroactive: the records before it were
+    already decoded at the default width."""
+    s = _stream(_call(1))
+    with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
+        nt.calls(s.replace("G33F MSTEP 1 main 1",
+                           "G33N PROTOCOL 8 8\nG33F MSTEP 1 main 1"))
+
+
+def test_a_protocol_header_after_STREAM_END_is_refused():
+    s = _stream(_call(1))
+    with pytest.raises(nt.StreamError, match="PROTOCOL header after the stream"):
+        nt.calls(s.replace("G33N STREAM_END",
+                           "G33N STREAM_END\nG33N PROTOCOL 8 8"))
+
+
+def test_the_header_may_still_sit_on_either_side_of_STREAM_BEGIN():
+    """The driver writes it after; nothing in the format requires that, and the
+    position check is about the BODY, not about which header line comes first."""
+    s = _f64(_stream(_call(1)))
+    before = s.replace("G33N PROTOCOL 8 8\n", "")
+    before = "G33N PROTOCOL 8 8\n" + before
+    assert nt.calls(before)[0]["delt"] == nt.calls(s)[0]["delt"] == 100.0
+
+
+# --- records this parser CHECKS without consuming (owner priority 3) ---------
+#
+# `KNOWN_G33F` accepted a family name and never looked at the rest of the line,
+# so the whole G33FOP op ladder and every unconsumed STAGE went through the
+# number analyses unread. An eight-byte default real written through the
+# schema's `Z8.8` overflows to `********` in gfortran, which matched nothing,
+# matched no pattern, and was dropped in silence -- the D6 wrong-number path
+# surviving in the family D6 did not reach.
+
+_OP = ("G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 3F800000\n"
+       "G33FOP 1 main 1 1 0 QR_FALK mul_work1 f64 3FF0000000000000\n"
+       "G33FOP 1 main 1 1 0 QR_FALK shadow_falk_f32 f32 3F800000\n")
+
+
+def _with_ops(text, ops=_OP):
+    return text.replace("G33F MSTEP 1 main 1", ops + "G33F MSTEP 1 main 1", 1)
+
+
+def test_a_well_formed_op_ladder_rides_along_untouched():
+    """It is CHECKED, not consumed: the numbers the analyses produce are the
+    same with and without it."""
+    plain, withops = _stream(_call(1)), _with_ops(_stream(_call(1)))
+    assert nt.calls(plain)[0]["outer_pre_sed"] == \
+        nt.calls(withops)[0]["outer_pre_sed"]
+
+
+def test_an_OVERFLOWED_op_record_is_refused_instead_of_dropped():
+    """What `Z8.8` does to an eight-byte value. It used to match no pattern,
+    reach the family check, and be skipped -- so the wrong-number path showed up
+    as a stream that simply had fewer records than the run emitted."""
+    bad = _with_ops(_stream(_call(1)),
+                    "G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 ********\n")
+    with pytest.raises(nt.StreamError, match="malformed G33FOP"):
+        nt.calls(bad)
+
+
+def test_an_op_record_whose_LABEL_and_WIDTH_disagree_is_refused():
+    bad = _with_ops(_stream(_call(1)),
+                    "G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 "
+                    "3FF0000000000000\n")
+    with pytest.raises(nt.StreamError, match="carries 16 hex digits"):
+        nt.calls(bad)
+
+
+def test_one_op_field_may_not_change_WIDTH_within_a_stream():
+    """A width is a property of the build, so it is constant over the run. This
+    is the check a header cannot make: a field pinned at `real(...,4)` is
+    legitimately narrower than the default real, so "agrees with the header" is
+    not the contract -- "never moves" is."""
+    bad = _with_ops(_stream(_call(1)),
+                    "G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f32 3F800000\n"
+                    "G33FOP 1 main 2 1 0 QR_FALK mul_dend_q f64 "
+                    "3FF0000000000000\n")
+    with pytest.raises(nt.StreamError, match="mid-run"):
+        nt.calls(bad)
+
+
+def test_an_UNCONSUMED_stage_is_checked_too():
+    """`kernel_init_constants` and the micro bisection are carried by the same
+    stdout and read by nobody here. They are records the run emitted."""
+    bad = _with_ops(_stream(_call(1)),
+                    "G33F STAGE 1 - kernel_init_constants 0 pi 1 -1 f32 "
+                    "40490FDB40490FDB\n")
+    with pytest.raises(nt.StreamError, match="carries 16 hex digits"):
+        nt.calls(bad)
+
+
+def test_a_PINNED_narrow_field_beside_a_wide_one_is_accepted_at_f64():
+    """The case a blanket promotion gets wrong. In an f64 build `mul_dend_q` is
+    a default real and widens; `shadow_falk_f32` is an explicit `real(...,4)`
+    and does not. Both are schema-f32, so only the storage class separates
+    them -- and the stream is well-formed with the two side by side."""
+    ops = ("G33FOP 1 main 1 1 0 QR_FALK mul_dend_q f64 3FF0000000000000\n"
+           "G33FOP 1 main 1 1 0 QR_FALK shadow_falk_f32 f32 3F800000\n")
+    got = nt.calls(_with_ops(_f64(_stream(_call(1))), ops))
+    assert len(got) == 1
