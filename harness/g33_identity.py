@@ -144,6 +144,15 @@ def identity_block() -> dict:
     """
     return {"schema": IDENTITY_SCHEMA,
             "role_graph": {m: sorted(r) for m, r in sorted(roles().items())},
+            # The SEED of each reach entry, which is also the producer's
+            # dispatch set -- the edges cut out of `g33_refine_experiment` to
+            # make the two roles separable. Recorded because the cut is part of
+            # the derivation: without it a checker either cannot excuse the run
+            # module's imports of analysis ones, or has to excuse them from the
+            # bundle's own `analyses`, which is under-derived for a bundle that
+            # legitimately carries only some of them (an f64 bundle carries none
+            # of the f32-only three).
+            "analysis_seeds": dict(sorted(producible().items())),
             "analysis_reach": {name: sorted(_closure({mod}))
                                for name, mod in sorted(producible().items())}}
 
@@ -418,6 +427,15 @@ def analysis_id(man: dict, name: str) -> str:
                     "entries": content_only(
                         sorted(entries, key=lambda a: str(a.get("file")))),
                     "modules": _pins_for(man, analysis_reach(man, name))})
+
+
+#: Re-exported so the producer keeps one import. The CHECK lives in the
+#: manifest module because it is a property of the DOCUMENT against the bytes
+#: the document pins -- and the evidence chain must be able to run it without
+#: importing the producer.
+BlobUnavailable = rm.BlobUnavailable
+graph_violations = rm.graph_violations
+pinned_imports = rm.pinned_imports
 
 
 def report(man: dict) -> None:

@@ -11,6 +11,7 @@ make an experiment look decision-grade.
 """
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import re
@@ -18,6 +19,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as ra   # noqa: E402
 
@@ -306,21 +308,30 @@ def _identity_violations(man: dict) -> list:
     if ident.get("schema") != IDENTITY_SCHEMA:
         bad.append(f"identity.schema {ident.get('schema')!r} is not "
                    f"{IDENTITY_SCHEMA!r}")
-    for key in ("role_graph", "analysis_reach"):
+    for key in ("role_graph", "analysis_seeds", "analysis_reach"):
         v = ident.get(key)
         if not isinstance(v, dict) or not v:
             bad.append(f"identity.{key} must be a non-empty object")
             continue
         for name, val in v.items():
-            if not isinstance(val, list) or not val or not all(
-                    isinstance(x, str) for x in val):
-                bad.append(f"identity.{key}[{name!r}] must be a non-empty list "
-                           f"of {'roles' if key == 'role_graph' else 'modules'}")
+            # `analysis_seeds` maps a name to ONE module; the other two map to
+            # lists. One loop, because "non-empty and made of module names" is
+            # the same requirement either way.
+            ok = (isinstance(val, str) and val) if key == "analysis_seeds" else (
+                isinstance(val, list) and val
+                and all(isinstance(x, str) for x in val))
+            if not ok:
+                bad.append(f"identity.{key}[{name!r}] must be a non-empty "
+                           f"{'module name' if key == 'analysis_seeds' else 'list'}")
                 break
     if bad:
         return bad
 
     graph, reach = ident["role_graph"], ident["analysis_reach"]
+    seeds = ident["analysis_seeds"]
+    if set(seeds) != set(reach):
+        bad.append(f"identity.analysis_seeds and analysis_reach describe "
+                   f"different analyses: {sorted(set(seeds) ^ set(reach))}")
     unknown = sorted({r for v in graph.values() for r in v} - set(_ROLES))
     if unknown:
         bad.append(f"identity.role_graph uses roles {unknown}, not in {_ROLES} "
@@ -342,6 +353,10 @@ def _identity_violations(man: dict) -> list:
         bad.append(f"identity.role_graph names {invented}, which this bundle "
                    f"pins nowhere -- the graph describes code the archive does "
                    f"not hold")
+    unseeded = sorted(set(seeds.values()) - pinned)
+    if unseeded:
+        bad.append(f"identity.analysis_seeds names {unseeded}, which this "
+                   f"bundle pins nowhere")
     unpinned_reach = sorted({m for v in reach.values() for m in v} - pinned)
     if unpinned_reach:
         bad.append(f"identity.analysis_reach names {unpinned_reach}, which this "
@@ -403,6 +418,132 @@ def _identity_covers(man: dict) -> list:
     carried = {a.get("analysis") for a in (man.get("analyses") or [])
                if isinstance(a, dict)} - {"arm_stream"}
     return sorted(carried - set(reach))
+
+
+class BlobUnavailable(Exception):
+    """A pinned blob is not in this object database, so the recorded graph
+    cannot be checked against the code it claims to describe."""
+
+
+def _imports_from(blob: bytes, universe: set) -> set:
+    """The pinned modules `blob` imports. Same AST rule the producer uses on the
+    working tree -- a name in a comment or a docstring is not an import."""
+    names = set()
+    for n in ast.walk(ast.parse(blob)):
+        if isinstance(n, ast.Import):
+            names |= {a.name.split(".")[0] for a in n.names}
+        elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+            names.add(n.module.split(".")[0])
+    return names & universe
+
+
+def pinned_imports(man: dict) -> dict:
+    """module -> the pinned modules it imports, read from the PINNED BLOBS.
+
+    Not from the working tree. The whole point of recording the graph is that
+    it must not depend on the checkout reading it, so checking it against the
+    checkout would defeat the recording -- while checking it against the blobs
+    the manifest itself pins uses nothing the archive does not carry.
+    """
+    pins = {}
+    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
+        for e in man.get(key) or []:
+            if isinstance(e, dict) and str(e.get("path", "")).endswith(".py") \
+                    and isinstance(e.get("blob_sha"), str):
+                pins[e["path"].rsplit("/", 1)[-1][:-3]] = e["blob_sha"]
+    out = {}
+    for mod, sha in pins.items():
+        r = subprocess.run(["git", "cat-file", "blob", sha], cwd=REPO,
+                           capture_output=True)
+        if r.returncode != 0:
+            raise BlobUnavailable(f"{mod} pins blob {sha[:12]}, not in this "
+                                  f"object database")
+        try:
+            out[mod] = _imports_from(r.stdout, set(pins))
+        except SyntaxError as e:
+            raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
+    return out
+
+
+def _blob_closure(edges: dict, seed: str) -> set:
+    seen, todo = set(), [seed]
+    while todo:
+        m = todo.pop()
+        if m in seen:
+            continue
+        seen.add(m)
+        todo += list(edges.get(m, set()) - seen)
+    return seen
+
+
+def graph_violations(man: dict) -> list:
+    """The recorded graph against the CODE IT CLAIMS TO DESCRIBE.
+
+    Everything before this checked the graph against the manifest's other
+    declarations, and a declaration cannot say whether a slice omits a genuine
+    dependency. Measured: `dual_ledger`'s reach truncated from five modules to
+    one validated clean, after which changes to four of its five dependencies
+    could not move its id; the run role narrowed from eleven modules to one did
+    the same to the recipe (Codex stop-time review).
+
+    Two properties, both computed from the pinned blobs and both exact on the
+    real bundles:
+
+      a reach entry EQUALS the import closure of the analyzer its own entry
+      names -- no seeds, no registries, nothing but the manifest;
+
+      a role is CLOSED under imports, except where a module imports an analyzer
+      this bundle names. That exception is the producer's dispatch cut, and it
+      is what makes `g33_refine_experiment` a run module that imports analysis
+      ones. Deriving it from `analyses` rather than from a registry keeps the
+      check a function of the document.
+    """
+    ident = man.get("identity") or {}
+    graph, reach = ident.get("role_graph"), ident.get("analysis_reach")
+    if not isinstance(graph, dict) or not isinstance(reach, dict):
+        return []                       # shape is the schema's business
+    seeds = ident.get("analysis_seeds")
+    if not isinstance(seeds, dict) or not seeds:
+        return ["identity.analysis_seeds must record each analysis's seed "
+                "module -- it is the producer's dispatch cut, and without it "
+                "the role closure cannot be checked"]
+    edges = pinned_imports(man)
+    bad = []
+    # THE CUT, from the recorded seeds rather than from this bundle's
+    # `analyses`: a bundle carries only the analyses its precision admits, so
+    # deriving the dispatch set from what it published under-derives it.
+    dispatch = set(seeds.values())
+    # ...and the seeds cannot be invented to widen the cut: every one that this
+    # bundle actually published must be the analyzer that entry names.
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict) or not a.get("analyzer"):
+            continue
+        name, own = a.get("analysis"), Path(str(a["analyzer"])).stem
+        if name in seeds and seeds[name] != own:
+            bad.append(f"identity.analysis_seeds[{name!r}] is {seeds[name]!r} "
+                       f"and the published entry names {own!r}")
+    for name, seed in sorted(seeds.items()):
+        if name not in reach or seed not in edges:
+            continue
+        want = _blob_closure(edges, seed)
+        got = set(reach[name])
+        if got != want:
+            bad.append(
+                f"identity.analysis_reach[{name!r}] is {sorted(got)}, and the "
+                f"import closure of {seed!r} over the PINNED blobs is "
+                f"{sorted(want)} -- a slice that omits a genuine dependency "
+                f"gives an id those bytes cannot move")
+    for role in ("run", "analysis"):
+        holders = {m for m, r in graph.items() if role in r}
+        for m in sorted(holders):
+            leak = sorted(edges.get(m, set()) - holders - dispatch)
+            if leak:
+                bad.append(
+                    f"identity.role_graph gives {m!r} the {role!r} role and "
+                    f"not {leak}, which it imports -- a role that is not closed "
+                    f"under imports leaves those bytes out of the id")
+    return sorted(set(bad))
+
 
 
 def validate(man: dict) -> list:

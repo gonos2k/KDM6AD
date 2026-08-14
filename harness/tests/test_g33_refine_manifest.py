@@ -73,6 +73,10 @@ def synthetic_manifest(root):
             "schema": "g33_layered_identity_v1",
             "role_graph": {m: (["run"] if m == "p" else ["analysis"])
                            for m in _mods},
+            # The seed of each reach entry, which is also the dispatch cut.
+            "analysis_seeds": {k: f"g33_{k}" for k in
+                               set(rm.DERIVED_ANALYSES)
+                               | set(rm.MULTI_RUN_ANALYSES)},
             "analysis_reach": {k: [f"g33_{k}"] for k in
                                set(rm.DERIVED_ANALYSES)
                                | set(rm.MULTI_RUN_ANALYSES)},

@@ -308,6 +308,31 @@ def _schema_violations(man: dict) -> list:
     return rm.validate(man)
 
 
+def _identity_graph_state(man: dict) -> dict:
+    """The recorded role graph against the CODE IT CLAIMS TO DESCRIBE.
+
+    Everything else checks the graph against the manifest's other declarations,
+    and a declaration cannot say whether a slice omits a genuine dependency.
+    Measured: a reach truncated from five modules to one validated clean, after
+    which changes to four of its five dependencies could not move its id
+    (Codex stop-time review).
+
+    Read from the PINNED BLOBS, never the working tree -- checking a recorded
+    graph against the checkout would defeat the recording. A blob this object
+    database does not have is `unresolvable`: a passing state for a routine run
+    on a clone that did not fetch it, a blocker for a closeout, like every
+    other "we could not really check this".
+    """
+    if not (man.get("identity") or {}).get("role_graph"):
+        return {"state": "identity-graph-underived"}
+    try:
+        bad = rm.graph_violations(man)
+    except rm.BlobUnavailable as e:
+        return {"state": "identity-graph-unresolvable", "detail": str(e)}
+    return ({"state": "matches"} if not bad else
+            {"state": "IDENTITY-GRAPH-MISMATCH", "detail": "; ".join(bad)[:400]})
+
+
 #: Schemas from which a bundle must record the role graph its layered ids are
 #: derived under. Spelled here rather than imported: `g33_identity` imports the
 #: producer, and this module deliberately does not.
@@ -522,6 +547,8 @@ def members_of(manifest: Path) -> list[dict]:
                for m in _module_states(man))
     out.append({"file": "identity", "scope": "bundle", "origin": "identity",
                 "state": _identity_state(man)})
+    out.append({"file": "identity", "scope": "repo", "origin": "identity_graph",
+                **_identity_graph_state(man)})
     out.extend({"scope": "repo", "origin": "commit_anchor", **c}
                for c in _commit_states(man))
     return out
@@ -1095,6 +1122,10 @@ PASSING_STATES = frozenset({
     # The bundle predates the recorded role graph, so its layered ids are a
     # function of whichever checkout computes them.
     "identity-predates-block",
+    # No recorded graph to check against the pinned code.
+    "identity-graph-underived",
+    # ...or a graph whose pinned blobs this object database does not have.
+    "identity-graph-unresolvable",
 })
 FAILING_STATES = frozenset({
     "MISMATCH", "absent", "PIN-INCONSISTENT",
@@ -1119,6 +1150,8 @@ FAILING_STATES = frozenset({
     # A v3 bundle that should carry the role graph and does not. The schema
     # refuses it too; this is the row that says so per bundle.
     "IDENTITY-UNDERIVED",
+    # The recorded graph disagrees with the code it claims to describe.
+    "IDENTITY-GRAPH-MISMATCH",
 })
 
 
@@ -1149,6 +1182,8 @@ EXCUSED_BY_ABSENCE = frozenset({
     # checkout whose role graph happens to match. Phase B cannot start while a
     # pinned bundle answers this way (Codex stop-time review).
     "identity-predates-block",
+    "identity-graph-underived",
+    "identity-graph-unresolvable",
     "value-unavailable",
     # Added with `expected_predicates` and, at first, only to PASSING_STATES --
     # so a closeout failed a FIGURE whose bundle was absent and passed a FACT
