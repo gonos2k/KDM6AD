@@ -500,11 +500,16 @@ _REACHABLE: dict = {}
 #: Refs an EXTERNAL reader can be expected to have. A local branch satisfies
 #: `--contains` and says nothing about whether anyone else can fetch the
 #: history: a throwaway `wip/foo` is a ref, and it is on one machine
-#: (owner priority 10). Measured across the archive: all three pinned commits
-#: are already contained by one of these, so this states a property the pins
-#: have rather than one they would have to be re-produced for.
-TRUSTED_REFS = ("refs/remotes/origin/main", "refs/remotes/origin/HEAD",
-                "refs/tags/")
+#: (owner priority 10). Measured across the archive: all pinned commits are
+#: already contained by one of these, so this states a property the pins have
+#: rather than one they would have to be re-produced for.
+#:
+#: Any REMOTE-tracking ref, not `origin/main` alone. A bundle produced on a
+#: review branch is legitimate evidence and its anchor is fetchable the moment
+#: the branch is pushed; requiring `main` would mark every bundle made during a
+#: review as unanchored until the merge, which says something false about
+#: whether a reviewer can get the history.
+TRUSTED_REFS = ("refs/remotes/", "refs/tags/")
 
 
 def _reachable(commit: str, trusted: bool = False) -> bool:

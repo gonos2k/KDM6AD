@@ -884,11 +884,31 @@ def test_a_key_containing_a_DOT_makes_the_path_AMBIGUOUS():
     assert ec._keys_of({"a.b": {"c": 1}}) == ["a.b", "c"]
 
 
-def test_TOLERANCE_defaults_to_EXACT_when_unstated():
+#: Claims permitted to bind a figure with a TOLERANCE, and the reason. A
+#: tolerance is how an exact binding stops being exact, so each one is listed
+#: here and the claim has to say in its own text why the quantity has no exact
+#: value to pin.
+TOLERATED = {
+    "G33-WATER-CONS-002": "ULP",
+}
+
+
+def test_a_TOLERANCE_is_DECLARED_and_EXPLAINED_or_the_binding_is_exact():
+    """The default is exact, and it stays the default. What changed is that
+    `R_W` in column 1 closes BELOW ONE ULP of its own terms, so its last digits
+    are summation order rather than a measurement -- pinning them exactly would
+    fail a gate for a reordering that changed nothing. That is a real
+    exception, so it is enumerated rather than allowed generally."""
     for c in ec.claims():
         for w in c["expected_values"]:
-            assert w["tolerance"] == 0.0, \
-                f"{c['id']}: a tolerance was introduced -- state why in the claim"
+            if w["tolerance"] == 0.0:
+                continue
+            assert c["id"] in TOLERATED, (
+                f"{c['id']}: a tolerance was introduced -- state why in the "
+                f"claim and add it to TOLERATED")
+            assert TOLERATED[c["id"]] in c["text"], (
+                f"{c['id']}: binds a tolerance and its text does not explain "
+                f"why the figure has no exact value")
 
 
 def test_every_member_row_says_WHERE_its_digest_was_verified():
@@ -1417,8 +1437,12 @@ def test_a_blocker_kind_is_DECLARED_not_read_off_the_prose():
     unmigrated = [c for c in ec.claims()
                   if c.get("artifact_status") == "historical_unavailable"]
     f64 = [c for c in unmigrated if c["blocker_kind"] == "needs-f64"]
-    assert len(f64) == 3, [c["id"] for c in f64]
-    # Every one of them says "f64" -- and that is NOT how they were classified.
+    assert not f64, (
+        f"{[c['id'] for c in f64]} still declare needs-f64. All three that did "
+        f"are migrated: ENTHALPY-001 and WATER-CONS-002 are pinned to the f64 "
+        f"--nflux bundle, and WATER-ORDER-002 was RECLASSIFIED to "
+        f"needs-derived-field once running the sweep showed the blocker named "
+        f"the wrong obstacle. Update this deliberately if the kind comes back.")
     # The declaration is the authority, so a blocker that never spells the word
     # still classifies, and one that spells it in passing does not acquire the
     # kind. G33-PRECIP-001 mentions an f64 leg and is needs-instrumentation.
