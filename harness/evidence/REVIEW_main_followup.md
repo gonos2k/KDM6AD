@@ -146,6 +146,16 @@ producer cuts out of exactly one. The cut is derived from the registries in the
 pinned DISPATCHER blob now, the dispatcher is derived rather than named, and
 the excuse is scoped to it: 11 modules excused, now 1.
 
+**And an invented seed key was the last thing the manifest fed the cut.** A key
+neither in the pinned registries nor published by the bundle was answerable to
+nothing: it could name any of the fourteen modules the dispatcher imports, and
+that module could then be dropped from the run role. Measured: a bogus key
+naming `g33_identity` -- the module that COMPUTES the identity -- passed both
+checks clean and took the run slice from 9 pins to 8. The key set is now the
+registries plus what the bundle published, and the dispatch set is derived from
+the pinned dispatcher entirely -- registry values plus the literal
+`_analyzer_pin` arguments -- so the manifest contributes nothing to it.
+
 The schema check refused the ncmin bundle produced an hour before it, on
 exactly the `metric_trajectory` gap. It was re-produced. Chain after: 1488
 `matches`, 15 `identity-predates-block` (the pre-v3 published bundles, reported

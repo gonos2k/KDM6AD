@@ -762,13 +762,26 @@ def test_a_FORGED_seed_cannot_widen_the_cut(what, name, seed):
     module the seed now names is dropped from the run role, and the leak it
     creates is exactly what the cut would excuse.
     """
-    man = _real_v3_manifest()
+    # ANY v3 bundle recording this key, not the first v3 bundle. The f64
+    # bundle legitimately stopped recording `metric_trajectory` when the key
+    # set narrowed, and taking the first bundle made this case silently skip
+    # while the ncmin bundle -- which records it -- sat right beside it.
+    import json
+    man = None
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                cand = json.loads(mf.read_text())
+                if name in (cand.get("identity") or {}).get("analysis_seeds", {}):
+                    man = cand
+                    break
+        if man:
+            break
     if man is None:
-        pytest.skip("no v3 bundle with recorded seeds on this host")
+        pytest.skip(f"no v3 bundle records {name} on this host")
     import copy
     bad = copy.deepcopy(man)
-    if name not in bad["identity"]["analysis_seeds"]:
-        pytest.skip(f"{name} is not recorded in this bundle")
     edges = rm.pinned_imports(bad)
     bad["identity"]["analysis_seeds"][name] = seed
     bad["identity"]["analysis_reach"][name] = sorted(
