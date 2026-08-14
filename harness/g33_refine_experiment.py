@@ -371,6 +371,12 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
 #: mis-schema'd member through before any analyzer sees it (owner P0-2).
 _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  "g33_build_provenance",
+                 # The LAYERED IDENTITY derivation. It decides the role graph a
+                 # bundle records, and that block is what makes the ids
+                 # reproducible from the archive rather than from a checkout --
+                 # so its bytes decide what the recorded identity MEANS
+                 # (owner priority 8).
+                 "g33_identity",
                  # The OVERLAY generator's dependencies. `make_fortran_overlay`
                  # is pinned as a tracked build input, but what it imports was
                  # pinned by nothing -- and that code decides which
