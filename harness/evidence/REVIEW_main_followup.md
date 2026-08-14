@@ -75,6 +75,35 @@ figure is a spread ACROSS members while every analysis in the bundle is per
 member. The remedy is a bundle-level water-endpoint analysis, which re-produces
 the archive — an owner decision, not a run.
 
+## What a stop-time review found after all eleven were "closed"
+
+Three fail-open paths, all in the identity work of item 8, and the first is the
+defect this repository has a name for.
+
+**The block was added to the producer and required by nothing.**
+`rm.validate` never asked for `identity`, so a v3 manifest could omit it and
+validate clean — and `_graph()` then fell back to the reading checkout's role
+graph and computed ids anyway. The block exists to remove exactly that
+coupling; omitting it restored it in silence. Required from v3 now, and the
+derivation RAISES rather than falling back.
+
+**The reach map was built from the wrong vocabulary.** It came from the
+producer's two dispatch registries, and `metric_trajectory` is in neither — it
+is written by `_driver_analyses` directly, and it is in every instrumented
+as-is bundle. So its `analysis_id` fell back to the reader's imports while
+every other analysis in the same bundle was recorded. The test that should have
+caught this asserted the same two registries, so it agreed with the gap.
+
+**Nothing asked.** `identity_is_self_contained` existed and no gate called it,
+so a bundle whose ids follow whichever checkout reads them looked exactly like
+one whose ids do not — and that difference IS the Phase B prerequisite. The
+chain now carries an `identity` row per bundle.
+
+The schema check refused the ncmin bundle produced an hour before it, on
+exactly the `metric_trajectory` gap. It was re-produced. Chain after: 1488
+`matches`, 15 `identity-predates-block` (the pre-v3 published bundles, reported
+and blocking only a closeout), 6 `modules-unpinned` (pre-existing).
+
 ## Not closed, and why
 
 **12. Stage A real MPI one-call gate — not started.** Every ncmin figure comes

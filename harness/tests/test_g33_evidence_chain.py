@@ -106,8 +106,10 @@ def test_pinning_the_manifest_reaches_the_RAW_STREAMS_through_it(world):
     bundle, write = world
     write()
     # `modules-unpinned` rides along: this fixture pins no producer modules.
+    # `identity-predates-block` too: it is a v1 manifest, so its layered ids
+    # are a function of the reading checkout and the chain now says so.
     assert [m["state"] for m in ec.chain()[0]["artifacts"][0]["members"]] == \
-        ["matches"] + ["modules-unpinned"] * 3
+        ["matches"] + ["modules-unpinned"] * 3 + ["identity-predates-block"]
     (bundle / "n3.rezero.txt").write_bytes(b"G33R STATE 1 1 1 th DEADBEEF\n")
     assert ec.chain()[0]["artifacts"][0]["members"][0]["state"] == "MISMATCH"
     assert ec.check() == 1, "a tampered raw stream must fail even when the " \
@@ -275,8 +277,10 @@ def test_a_resolvable_commit_and_blob_PASSES_whatever_the_working_tree_holds(
     content = hashlib.sha256((ec.REPO / path).read_bytes()).hexdigest()
     _pinned(bundle, write, _head(), _head_blob(path), path, content)
     states = {m["state"] for a in ec.chain()[0]["artifacts"] for m in a["members"]}
-    # `modules-unpinned` rides along: this fixture pins no producer modules.
-    assert "matches" in states and not (states - {"matches", "modules-unpinned"})
+    # `modules-unpinned` and `identity-predates-block` ride along: this fixture
+    # pins no producer modules and its manifest predates the role graph.
+    assert "matches" in states and not (
+        states - {"matches", "modules-unpinned", "identity-predates-block"})
     assert ec.check() == 0
 
 
@@ -362,7 +366,7 @@ def test_a_manifest_with_no_members_KEY_is_refused_but_an_empty_list_is_not(
     assert ec.members_of(p)[0]["state"] == "MANIFEST-MISSING-MEMBERS"
     p.write_text("{" + head + ', "members": [], "analyses": []}')
     assert [m["state"] for m in ec.members_of(p)] == \
-        ["modules-unpinned"] * 3   # one per pin block
+        ["modules-unpinned"] * 3 + ["identity-predates-block"]
 
 
 def test_a_manifest_that_declares_NO_schema_is_unidentifiable(world):
@@ -1143,8 +1147,12 @@ def test_the_CLOSEOUT_blockers_are_now_only_REAL_ones(capsys):
     kinds = {ln.split("[")[0].rsplit(":", 1)[-1].strip()
              for ln in out.splitlines() if " -> " in ln}
     assert kinds, "no member blocker lines parsed -- this check would be vacuous"
-    assert kinds == {"modules-unpinned"}, (
+    assert kinds == {"modules-unpinned", "identity-predates-block"}, (
         f"unexpected member blocker kinds {sorted(kinds)}")
+    # Both are real migration debt and neither is an artefact of the walker:
+    # bundles that predate the module pins, and bundles that predate the
+    # recorded role graph -- the second being the Phase B prerequisite, stated
+    # per bundle rather than as a paragraph (Codex stop-time review).
     # DERIVED from the registry, not a constant. The closeout must report
     # exactly the claims that still declare their run unreachable -- no more
     # (noise) and no fewer (a silent gap). A hardcoded count would break on
@@ -1298,10 +1306,14 @@ def test_the_manifest_RAN_is_bound_to_the_ANALYSIS_FILE():
     compared are one record and one decoration (Codex)."""
     import shutil
     import tempfile
-    store = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001.bundles"
-    src = next(store.glob("*/"), None)
-    if src is None:
+    # The CURRENT bundle -- what the symlink points at -- not an arbitrary one
+    # out of the store. Once a bundle is re-produced the store holds several,
+    # and `next(glob(...))` picked whichever the filesystem listed first, which
+    # is how this started reading a superseded manifest.
+    link = ec.HOME / "kdm6ad-g33m-migrate/ncmin-001"
+    if not link.exists():
         pytest.skip("multi-run bundle not on this host")
+    src = link.resolve()
 
     rows = ec.members_of(src / "manifest.json")
     ident = [r for r in rows if r.get("origin") == "run_identity"]
