@@ -1071,7 +1071,7 @@ def test_the_contradiction_guard_is_not_VACUOUS():
 #: claim has said nothing, and a pinned claim resolving to it is a blocker, not
 #: a state it may sit in. Taken from the module rather than restated, so the two
 #: vocabularies cannot drift apart.
-BINDING_STATUS = _chain().BINDING_STATUSES - {"UNDECLARED"}
+COVERAGE_STATUS = _chain().COVERAGE_STATUSES - {"UNDECLARED"}
 
 
 def test_every_pinned_claim_RESOLVES_how_completely_it_is_bound():
@@ -1085,14 +1085,14 @@ def test_every_pinned_claim_RESOLVES_how_completely_it_is_bound():
     for c in CLAIMS:
         if c.get("artifact_status") != "pinned":
             continue
-        got = live[c["id"]]["binding_status"]
-        assert got in BINDING_STATUS, (
-            f"{c['id']} is pinned but its binding status resolves {got!r} -- "
+        got = live[c["id"]]["coverage_status"]
+        assert got in COVERAGE_STATUS, (
+            f"{c['id']} is pinned but its coverage resolves {got!r} -- "
             f"pinned says the artifact is verified, not that the claim's "
             f"figures are bound")
 
 
-def test_the_registry_may_no_longer_DECLARE_a_binding_status():
+def test_the_registry_may_no_longer_DECLARE_a_computed_status():
     """A field the tool stopped reading, left in the file, goes on reading as
     the answer to a reviewer.
 
@@ -1101,7 +1101,7 @@ def test_the_registry_may_no_longer_DECLARE_a_binding_status():
     would forbid saying what changed.
     """
     bad = [l for l in REGISTRY.read_text().splitlines()
-           if re.match(r"^\s*binding_status:", l)]
+           if re.match(r"^\s*(binding|coverage|verification)_status:", l)]
     assert not bad, bad
 
 

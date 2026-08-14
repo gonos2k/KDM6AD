@@ -8,6 +8,7 @@ import inspect
 import json
 import os
 import re
+import shutil
 import sys
 
 import yaml  # CI-pinned; the PARSER takes no third-party dep, this check does
@@ -429,18 +430,19 @@ def test_EVERY_state_the_module_can_emit_is_classified():
     src = (ec.REPO / "harness" / "g33_evidence_chain.py").read_text()
     emitted = set(re.findall(r'"state": "([A-Za-z-]+)"', src))
     emitted |= set(re.findall(r'else "([A-Za-z-]+)"[,\)\n]', src))
-    # BINDING_STATUSES is the module's SECOND vocabulary and its words reach
-    # this scan through the same ternary shape. Unioned rather than excluded:
-    # an unclassified binding status must fail here too, which is what the next
-    # test checks from the other side.
-    known = ec.PASSING_STATES | ec.FAILING_STATES | ec.BINDING_STATUSES
+    # COVERAGE_STATUSES and VERIFICATION_STATUSES are the module's other two
+    # vocabularies and their words reach this scan through the same ternary
+    # shape. Unioned rather than excluded: an unclassified status must fail
+    # here too, which is what the next test checks from the other side.
+    known = (ec.PASSING_STATES | ec.FAILING_STATES | ec.COVERAGE_STATUSES
+             | ec.VERIFICATION_STATUSES)
     assert emitted <= known, f"unclassified: {sorted(emitted - known)}"
     assert emitted, "the scan found no states -- it has stopped checking anything"
 
 
-def test_EVERY_binding_status_the_module_can_return_is_classified():
+def test_EVERY_coverage_status_the_module_can_return_is_classified():
     """The same completeness rule on the second vocabulary. Without it, adding
-    a fourth answer would leave `BINDING_STATUSES` describing three of them and
+    a fourth answer would leave `COVERAGE_STATUSES` describing three of them and
     every caller reading the enumeration as the whole set."""
     got = set()
     for rows, unbound in (([], []), ([], [{"why": "x"}]),
@@ -448,9 +450,9 @@ def test_EVERY_binding_status_the_module_can_return_is_classified():
                           ([{"state": "matches"}], [{"why": "x"}]),
                           ([{"state": "matches"}, {"state": "MISMATCH"}], []),
                           ([{"state": "matches"}], [])):
-        got.add(ec._binding_status(rows, unbound, pinned=True))
-    assert got == ec.BINDING_STATUSES, sorted(got ^ ec.BINDING_STATUSES)
-    assert ec._binding_status([], [], pinned=False) == ""
+        got.add(ec._coverage_status(rows, unbound, pinned=True))
+    assert got == ec.COVERAGE_STATUSES, sorted(got ^ ec.COVERAGE_STATUSES)
+    assert ec._coverage_status([], [], pinned=False) == ""
 
 
 def _pin(mod):
@@ -1970,7 +1972,7 @@ def test_a_MALFORMED_input_entry_is_reported_not_skipped(world):
     assert "MANIFEST-SCHEMA-MISMATCH" in states or ec.check() != 0
 
 
-# --- binding_status is COMPUTED, never declared (owner §16-7 / D5) ----------
+# --- coverage/verification are COMPUTED, never declared (owner §16-7 / D5) --
 #
 # It was a declared field for one cycle and went wrong twice in that cycle,
 # both times identically: `full` written beside a comment admitting a figure
@@ -1988,7 +1990,7 @@ _PINNED = "    artifact_status: pinned\n"
 
 def _status(write, extra=""):
     write(claim_extra=_PINNED + extra)
-    return ec.chain()[0]["binding_status"]
+    return ec.chain()[0]["coverage_status"]
 
 
 def _bindable(world, payload):
@@ -2003,7 +2005,7 @@ def _bindable(world, payload):
 
     def status(extra):
         write(manifest=man, claim_extra=_PINNED + extra)
-        return ec.chain()[0]["binding_status"]
+        return ec.chain()[0]["coverage_status"]
 
     return status
 
@@ -2041,23 +2043,50 @@ def test_a_bound_claim_with_an_admitted_gap_is_partial(world):
                   "        why: it is a ratio between two contracts\n") == "partial"
 
 
-def test_a_binding_that_FAILS_cannot_leave_a_claim_full(world):
-    """What the declared field could not express at all: it was written once
-    and never revisited when the evidence moved under it. Here the artifact
-    holds a different number, so the claim binds one figure and verifies none."""
+def test_a_binding_that_FAILS_is_FULLY_BOUND_and_NOT_VERIFIED(world):
+    """The two words in the case that forced them apart.
+
+    The claim declared one figure and bound it, so its COVERAGE is full: there
+    is nothing more it could have bound. What happened when that binding was
+    checked is a different fact, and reporting it as `none` -- as one word had
+    to -- said the claim binds nothing, which is the opposite of the truth and
+    sends a reader looking for a missing declaration instead of a wrong number
+    (owner priority 8).
+    """
     status = _bindable(world, {"a": 2.0})
     got = status("    expected_values:\n"
                  "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n")
-    assert got == "none", got
+    assert got == "full", got
+    assert ec.chain()[0]["verification_status"] == "FAILING"
     assert ec.check() != 0
 
 
-def test_HALF_the_bindings_verifying_is_partial_not_full(world):
+def test_HALF_the_bindings_verifying_is_still_FULL_coverage_and_FAILING(world):
     status = _bindable(world, {"a": 1.0, "b": 9.0})
     got = status("    expected_values:\n"
                  "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n"
                  "      - kdm6ad-g33m-refine/run-a/v.json#b: 1.0\n")
-    assert got == "partial", got
+    assert got == "full", got
+    assert ec.chain()[0]["verification_status"] == "FAILING"
+
+
+def test_an_ABSENT_bundle_is_fully_covered_and_NOT_verified(world):
+    """The reading the single word got wrong on every public clone: the bundles
+    live outside the repo by design, `value-unavailable` passes a routine check
+    -- correctly -- and the one word therefore said `full` about a claim whose
+    evidence nobody could open. Now it says `full` and `unavailable`, which are
+    both true and are not the same sentence."""
+    bundle, write = world
+    write(claim_extra=_PINNED + "    expected_values:\n"
+          "      - kdm6ad-g33m-refine/run-a/v.json#a: 1.0\n")
+    shutil.rmtree(bundle)          # a public clone: the bundles are not here
+    row = ec.chain()[0]
+    assert row["artifacts"][0]["state"] == "unavailable"
+    assert {v["state"] for v in row["values"]} == {"value-unavailable"}
+    assert row["coverage_status"] == "full"
+    assert row["verification_status"] == "unavailable"
+    assert ec.check() == 0, "a routine run does not fail on absence"
+    assert ec.check(require_available=True) != 0, "a closeout does"
 
 
 def test_an_unexplained_gap_is_a_blocker(world):
@@ -2071,13 +2100,15 @@ def test_an_unexplained_gap_is_a_blocker(world):
     assert ec.check() != 0
 
 
-def test_a_DECLARED_binding_status_is_refused(world):
+def test_a_DECLARED_computed_status_is_refused(world):
     """A field the tool no longer reads, left in the file, goes on reading as
-    the answer to a reviewer. Refused rather than ignored."""
+    the answer to a reviewer. Refused rather than ignored -- and under EVERY
+    name it has had, or renaming one would make declaring it legal again."""
     _, write = world
-    write(claim_extra=_PINNED + "    binding_status: full\n")
-    with pytest.raises(ValueError, match="computed, not declared"):
-        ec.claims()
+    for field in ec.COMPUTED_FIELDS:
+        write(claim_extra=_PINNED + f"    {field}: full\n")
+        with pytest.raises(ValueError, match="computed, not declared"):
+            ec.claims()
 
 
 @pytest.mark.parametrize("bad", [
@@ -2096,13 +2127,13 @@ def test_an_unparseable_unbound_entry_is_REFUSED(world, bad):
         ec.claims()
 
 
-def test_an_unpinned_claim_gets_NO_binding_status(world):
+def test_an_unpinned_claim_gets_NO_coverage_status(world):
     """"How completely are this claim's figures bound" is a question about a
     claim that HAS an artifact. Answering it for one that does not would print
     the same word for missing evidence and for evidence that binds nothing."""
     _, write = world
     write()                                   # no artifact_status: pinned
-    assert ec.chain()[0]["binding_status"] == ""
+    assert ec.chain()[0]["coverage_status"] == ""
 
 
 # --- one rule, two bindings (owner D3 / §16-9) -----------------------------

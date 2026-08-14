@@ -45,7 +45,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
-    def analyses(out, exe, ns, mode):
+    def analyses(out, exe, ns, mode, precision="f32"):
         """One well-formed entry per analysis a real bundle carries.
 
         The real `_analyses` runs the analyzers on a driver stream, which this
@@ -304,9 +304,12 @@ def test_the_analyses_are_only_produced_for_instrumented_bundles():
     """All three read extension records, which a non-nflux stream does not carry;
     running them anyway would put an empty analysis in the manifest and make an
     uninstrumented bundle look analysed."""
-    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
-    assert 'man["analyses"] = _analyses(tmp, exe, nsplits, mode) if nflux else []' \
-        in src
+    # Whitespace-normalised: the guard is the contract, not where the line
+    # happens to wrap.
+    src = " ".join((ROOT.parent
+                    / "harness/g33_refine_experiment.py").read_text().split())
+    assert ('man["analyses"] = (_analyses(tmp, exe, nsplits, mode, precision) '
+            'if nflux else [])') in src
 
 
 def test_each_analysis_records_the_ANALYZER_digest_beside_its_own():
