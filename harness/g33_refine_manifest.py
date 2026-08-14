@@ -481,13 +481,27 @@ def pinned_imports(man: dict, blobs: dict | None = None) -> dict:
 _DISPATCH_REGISTRIES = ("ANALYSES", "MULTI_RUN")
 
 
-def _dispatch_from_blobs(blobs: dict) -> tuple:
-    """(dispatcher module, {analysis: seed module}) read from the pinned code.
+#: How the producer records the analyzer of every analysis it writes. Its
+#: LITERAL arguments name the modules it dispatches to outside the registries --
+#: `metric_trajectory` is written by `_driver_analyses` directly and is in
+#: neither one.
+_ANALYZER_PIN = "_analyzer_pin"
 
-    The cut was DECLARED, and a declaration for an analysis the bundle did not
-    publish was unconstrained -- so a seed could be repointed to widen the set
-    of edges the closure check excuses. Derived here instead, from the same
-    registries the producer dispatches on (Codex stop-time review).
+
+def _dispatch_from_blobs(blobs: dict) -> tuple:
+    """(dispatcher, {analysis: seed module}, dispatch set) from the pinned code.
+
+    The cut was DECLARED, and the declaration was answerable to nothing for a
+    key that was neither in the registries nor published -- so an invented key
+    could name any module the dispatcher imports and widen the excused edges.
+    Measured: a bogus key naming `g33_identity` passed both checks and took the
+    run slice from 9 pins to 8 (Codex stop-time review).
+
+    So the SET is derived here and the manifest no longer contributes to it.
+    Two sources, and together they are exactly the eleven modules the producer
+    dispatches to: the registry values, and the literal `_analyzer_pin`
+    arguments -- which is how the producer names the analyzer of an analysis it
+    writes outside a registry.
     """
     found = {}
     for mod, src in blobs.items():
@@ -495,8 +509,12 @@ def _dispatch_from_blobs(blobs: dict) -> tuple:
             tree = ast.parse(src)
         except SyntaxError as e:
             raise BlobUnavailable(f"{mod}: pinned blob does not parse: {e}")
-        names, reg = set(), {}
+        names, reg, lits = set(), {}, set()
         for n in ast.walk(tree):
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) \
+                    and n.func.id == _ANALYZER_PIN:
+                lits |= {a.value for a in n.args
+                         if isinstance(a, ast.Constant) and isinstance(a.value, str)}
             if not isinstance(n, ast.Assign):
                 continue
             for t in n.targets:
@@ -509,19 +527,19 @@ def _dispatch_from_blobs(blobs: dict) -> tuple:
                                     isinstance(v.elts[0], ast.Constant):
                                 reg[k.value] = v.elts[0].value
         if set(_DISPATCH_REGISTRIES) <= names:
-            found[mod] = reg
+            found[mod] = (reg, lits)
     if len(found) != 1:
         raise BlobUnavailable(
             f"{len(found)} pinned modules declare "
             f"{' and '.join(_DISPATCH_REGISTRIES)}; the dispatch cut has "
             f"exactly one source or it cannot be derived")
-    mod, reg = next(iter(found.items()))
+    mod, (reg, lits) = next(iter(found.items()))
     if not reg:
         raise BlobUnavailable(
             f"{mod} declares the registries and none of their entries parse -- "
             f"the shape changed, and an empty cut would excuse nothing while "
             f"looking like it excused the right things")
-    return mod, reg
+    return mod, reg, set(reg.values()) | lits
 
 
 def _blob_closure(edges: dict, seed: str) -> set:
@@ -568,15 +586,34 @@ def graph_violations(man: dict) -> list:
                 "the role closure cannot be checked"]
     blobs = pinned_blobs(man)
     edges = pinned_imports(man, blobs)
-    dispatcher, registry = _dispatch_from_blobs(blobs)
+    dispatcher, registry, dispatch = _dispatch_from_blobs(blobs)
     bad = []
     # THE CUT, DERIVED. It was the recorded seeds, and a seed for an analysis
     # this bundle did not publish was unconstrained -- so one could be repointed
     # to widen the set of edges the closure check excuses. The registries in the
     # pinned dispatcher say what the producer actually dispatches to
     # (Codex stop-time review).
-    dispatch = set(registry.values()) | {
-        m for n, m in seeds.items() if n not in registry}
+    # THE KEY SET, exactly. A key that is neither in the pinned registries nor
+    # published by this bundle was answerable to nothing: it could name any
+    # module the dispatcher imports, which widens the cut, and the module it
+    # names can then be dropped from the run role. Measured: a bogus key naming
+    # `g33_identity` passed the schema AND the graph check clean and took the
+    # run slice from 9 pins to 8 -- removing the module that computes the
+    # identity from the id (Codex stop-time review).
+    #
+    # Registry keys stay even when this bundle publishes none of them: the
+    # dispatcher imports those modules whatever one bundle produced, so the cut
+    # needs them. What goes is the freedom to invent a key.
+    published = {a["analysis"] for a in man.get("analyses") or []
+                 if isinstance(a, dict) and a.get("analyzer")
+                 and isinstance(a.get("analysis"), str)}
+    want_keys = set(registry) | published
+    if set(seeds) != want_keys:
+        bad.append(
+            f"identity.analysis_seeds keys {sorted(set(seeds) ^ want_keys)} "
+            f"differ from the pinned {dispatcher} registries plus what this "
+            f"bundle published -- an invented key names any module the "
+            f"dispatcher imports and widens the cut to cover it")
     for name, seed in sorted(seeds.items()):
         if name in registry and seed != registry[name]:
             bad.append(f"identity.analysis_seeds[{name!r}] is {seed!r} and the "

@@ -899,7 +899,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # having changed. Imported here rather than at module scope: g33_identity
         # imports this module, and the cycle only closes at call time.
         import g33_identity as gi
-        man["identity"] = gi.identity_block()
+        man["identity"] = gi.identity_block(
+            {a["analysis"] for a in man["analyses"] if a.get("analyzer")})
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False
