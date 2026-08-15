@@ -1581,6 +1581,11 @@ def test_the_closure_bound_is_a_FORWARD_error_bound_not_net_relative(drivers):
     assert op["closure_scale"] > 0 and op["closure_ops"] > 0
     assert op["closure_bound"] == pytest.approx(
         pl._gamma(op["closure_ops"]) * op["closure_scale"])
+    # The count is FLOPS, not terms: two per accumulated term (multiply + add)
+    # across both sums, plus the final subtraction -- so it is odd and > the
+    # cell count by an order (owner review §11).
+    cells = d["columns"]["2"]["cells"]
+    assert op["closure_ops"] % 2 == 1 and op["closure_ops"] > 2 * cells
     # The bound must sit far below the smallest published term, or it could
     # swallow one: praut carries 13% of the column total.
     smallest_term = min(abs(v) for v in op["delta"].values() if v)
