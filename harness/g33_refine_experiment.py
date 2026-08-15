@@ -209,12 +209,20 @@ def _require_same_run(name, rid, run, parsed):
     conservative/delt=300 passed every check, because each fact was validated
     only inside its own protocol. Every fact both sides record is compared;
     a fact only one side records cannot be, and stays with that side's own
-    checks. Floats compare as f32 WORDS -- the two protocols print the same
-    f32 value in different notations, so word equality is the honest test and
-    a tolerance would re-admit genuinely different numbers.
+    checks. Floats compare as WORDS AT THE MEMBER'S PRECISION -- the two
+    protocols print the same value in different notations, so word equality
+    is the honest test and a tolerance would re-admit genuinely different
+    numbers. The width comes from the window's declared precision (Codex):
+    comparing an f64 member's records as f32 words dropped 29 bits, so two
+    DISTINCT f64 streams whose rho/delz differed below f32 resolution
+    compared equal -- the conflation this contract exists to refuse. On an
+    f64 member both sides carry exact f64 (16-hex payloads, 17-digit
+    decimals); on an f32 member the f32 word is the value model itself.
     """
-    def w32(v):
-        return struct.pack(">f", v)
+    fmt = ">d" if run.get(("meta", "precision")) == "f64" else ">f"
+
+    def word(v):
+        return struct.pack(fmt, v)
 
     walg = run.get(("meta", "algorithm"))
     if walg is not None and walg != rid["algorithm"]:
@@ -226,13 +234,13 @@ def _require_same_run(name, rid, run, parsed):
         raise ra.RefineError(
             f"{name}: the window protocol declares no delt to hold the G33N "
             f"leg's {rid['delt']} to -- the same-run contract cannot bind")
-    if w32(wdelt) != w32(rid["delt"]):
+    if word(wdelt) != word(rid["delt"]):
         raise ra.RefineError(
             f"{name}: the window protocol stepped delt={wdelt}, the G33N leg "
             f"stepped delt={rid['delt']} -- two timesteps, one stdout")
     wdt = run.get(("meta", "dtcld"))
     if (wdt is not None and rid["dtcld"] is not None
-            and w32(wdt) != w32(rid["dtcld"])):
+            and word(wdt) != word(rid["dtcld"])):
         raise ra.RefineError(
             f"{name}: the window protocol sub-cycled at dtcld={wdt}, the "
             f"G33N leg at {rid['dtcld']}")
@@ -260,7 +268,7 @@ def _require_same_run(name, rid, run, parsed):
             for (lp, c, kk), rec in call["outer_pre_sed"].items():
                 for nm in ("rho", "delz"):
                     wv = frc.get((nm, c, kk))
-                    if wv is None or w32(rec[nm]) != w32(wv):
+                    if wv is None or word(rec[nm]) != word(wv):
                         raise ra.RefineError(
                             f"{name}: call {call['call_id']} loop {lp} "
                             f"col {c} level {kk}: G33N {nm}={rec[nm]!r} vs "

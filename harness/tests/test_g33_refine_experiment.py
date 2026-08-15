@@ -1006,3 +1006,22 @@ def test_two_strict_protocols_describing_two_runs_are_refused(mutate, match):
     with pytest.raises(xp.ra.RefineError, match=match):
         xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
                                    "rezero", "as-is", 3, 4, run)
+
+
+def test_the_same_run_contract_compares_at_the_MEMBERS_precision():
+    """f32 words dropped 29 bits on the f64 arm, so two DISTINCT f64 streams
+    whose forcing differed below f32 resolution compared equal (Codex). The
+    width now comes from the window's declared precision: a sub-f32
+    perturbation on an f64 member must refuse."""
+    run = _samerun_window()
+    run[("meta", "precision")] = "f64"
+    run[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
+    with pytest.raises(xp.ra.RefineError, match="two different runs"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)
+    # ...and the SAME perturbation on an f32 member is below the value
+    # model's resolution: both notations name one f32 word, so it passes.
+    ok = _samerun_window()
+    ok[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                               "rezero", "as-is", 3, 4, ok)
