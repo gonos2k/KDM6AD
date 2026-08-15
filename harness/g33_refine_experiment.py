@@ -547,7 +547,15 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # moment the ledger stopped restating the terms and started
                  # importing them, and the closure caught that on the next run
                  # (Codex) -- which is what the closure is for.
-                 "g33_update_replay")
+                 "g33_update_replay",
+                 # The density-arm matrix runner (owner review §8): it decides
+                 # what every published arm stream IS -- which arms run, and
+                 # that requested equals declared -- so its bytes are run
+                 # content's provenance. Split out of the metric-trajectory
+                 # analyzer precisely so the run recipe pins it; the
+                 # completeness check below caught its absence from this
+                 # tuple, which is what the check is for.
+                 "g33_run_matrix")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
