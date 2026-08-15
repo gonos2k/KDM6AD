@@ -189,6 +189,16 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
     text = run(driver, tiles, nsplit, carry, rho)
     _expect_tiles_are_live(text, tiles, label, nsplit)
+    # The FULL member contract, the same one the primary members answer to
+    # (owner review §6): tile liveness, the raw-hex reader and the
+    # same-atmosphere gates below each prove something, but none proves the
+    # G33N and G33R legs describe ONE run -- forcing values, timesteps, the
+    # loop universe. A decomposition published under a weaker contract than
+    # the member beside it is exactly the gap this closes.
+    from g33_refine_experiment import validate_member_stream
+    validate_member_stream(text, name=label, nsplit=nsplit, mode=carry,
+                           rho=rho, width=fixture_dims(fixture)[0],
+                           levels=fixture_dims(fixture)[1], fixture=fixture)
     rec = read_records(text, label=label, nsplit=nsplit)
     if reference is not None:
         _expect_same_inputs(reference, rec, label)

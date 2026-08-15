@@ -482,6 +482,48 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
             row["detail"] = str(e)[:160]
         out.append(row)
+    # The OTHER raw streams, same contract (owner review §6): the density
+    # arms and the multi-run decompositions are load-bearing -- analyses are
+    # computed from them -- and they were re-checked only through their G33N
+    # identity. An arm stream's expected values come from its typed `ran`
+    # block; a multi-run input's from the producer's own filename schema,
+    # which is a contract too: a name the schema cannot parse is refused,
+    # not skipped.
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict):
+            continue
+        targets = []
+        if a.get("analysis") == "arm_stream" and isinstance(a.get("ran"), dict):
+            r = a["ran"]
+            targets.append((a["file"], r.get("nsplit"), r.get("carry"),
+                            r.get("rho")))
+        for src in a.get("inputs") or []:
+            f = src.get("file") if isinstance(src, dict) else None
+            if isinstance(f, str) and f.startswith("mr."):
+                m2 = re.match(r"mr\.n(\d+)\.(carry|rezero)\.([a-z2+-]+)\.", f)
+                if not m2:
+                    out.append({"file": f, "scope": "bundle",
+                                "origin": "member_contract",
+                                "state": "MEMBER-CONTRACT-MISMATCH",
+                                "detail": "multi-run filename does not parse "
+                                          "as mr.n<N>.<mode>.<rho>."})
+                    continue
+                targets.append((f, int(m2.group(1)), m2.group(2), m2.group(3)))
+        for fname, n2, mode2, rho2 in targets:
+            p = root / fname
+            if not p.is_file():
+                continue            # the digest row already reports absence
+            row = {"file": fname, "scope": "bundle",
+                   "origin": "member_contract"}
+            try:
+                xp.validate_member_stream(
+                    p.read_text(), name=fname, nsplit=n2, mode=mode2,
+                    rho=rho2, width=width, levels=levels, fixture=fixture)
+                row["state"] = "matches"
+            except Exception as e:                      # noqa: BLE001
+                row["state"] = "MEMBER-CONTRACT-MISMATCH"
+                row["detail"] = str(e)[:160]
+            out.append(row)
     _MEMBER_CONTRACT[key] = out
     return out
 

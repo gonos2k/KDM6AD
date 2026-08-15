@@ -2382,3 +2382,24 @@ def test_a_member_the_current_contract_accepts_reports_matches(
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["matches"], rows
+
+
+def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
+                                                               monkeypatch):
+    """The density arms and multi-run decompositions are load-bearing raw
+    streams re-checked only through their G33N identity (owner review §6).
+    An arm_stream entry whose `ran` claims a different rho than its stream
+    declares must be reported, with the expected values taken from the typed
+    block -- and a well-formed one reports matches."""
+    import g33_refine_experiment as xp
+    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
+    man["analyses"] = [{"analysis": "arm_stream", "file": "n1.rezero.txt",
+                        "ran": {"nsplit": 1, "carry": "rezero",
+                                "rho": "uniform", "width": 2, "levels": 2}}]
+    rows = [r for r in ec._member_contract_states(root, man)
+            if r["file"] == "n1.rezero.txt"]
+    # the member row (as-is) matches; the arm row (claiming uniform) refuses
+    assert [r["state"] for r in rows] == ["matches",
+                                          "MEMBER-CONTRACT-MISMATCH"]
+    assert "'as-is'" in rows[1]["detail"]

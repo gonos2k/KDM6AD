@@ -174,6 +174,25 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
     return runs
 
 
+def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
+                           arm="reference", algo=None, fixture=None):
+    """ONE validator for every raw driver stream (owner review §6).
+
+    The primary members carried the full fixture-domain / same-run contract;
+    the density arms were checked only through their G33N identity, and the
+    ncmin decompositions through their own gate set -- load-bearing raw
+    streams published under a WEAKER contract than the members beside them.
+    Every raw execution routes through here now: the window protocol is
+    parsed by the arm's own strict parser, then held to the same contract
+    the primary members answer to.
+    """
+    run = (pr.read(text) if arm == "f64"
+           else ra.read_text(text, nsplit=nsplit, label=name))
+    _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
+                            run, arm=arm, algo=algo, fixture=fixture)
+    return run
+
+
 def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
                             arm="reference", algo=None, fixture=None):
     """The G33N leg against the fixture AND the window protocol beside it.
@@ -532,7 +551,7 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
-                     width: int, levels: int) -> list:
+                     width: int, levels: int, algo=None, fixture=None) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
     `mode` and `width` come from the bundle being produced (owner P0-2).
@@ -581,6 +600,14 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                 continue                      # already published as the member
             ap = out / f"n{n}.{mode}.{arm.replace('+', 'plus').replace('-', 'minus')}.txt"
             ap.write_text(text)
+            # The FULL member contract, not just the G33N identity (owner
+            # review §6): these are load-bearing raw streams -- the density
+            # decomposition is computed from them -- and they were published
+            # under a weaker contract than the members beside them. The arm
+            # name is the stream's expected rho profile.
+            validate_member_stream(text, name=ap.name, nsplit=n, mode=mode,
+                                   rho=arm, width=width, levels=levels,
+                                   algo=algo, fixture=fixture)
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
                          # STRUCTURED, and checked against the stream's own
@@ -1118,7 +1145,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             if rm.applicable("metric_trajectory", precision):
                 man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode,
                                                     width,
-                                                    fixture_dims(fixture)[1])
+                                                    fixture_dims(fixture)[1],
+                                                    algo=algo, fixture=fixture)
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
