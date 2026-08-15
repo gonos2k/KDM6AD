@@ -394,7 +394,7 @@ def _protocol(stream: str) -> dict:
 
 
 def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
-         where: str) -> dict:
+         levels: int, where: str) -> dict:
     """The arm's run identity, TYPED and checked against the raw stream.
 
     `runtime_argv` is four strings and the schema compared two of them --
@@ -414,12 +414,16 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # the chain's copy was two regular expressions that reported `matches` on
     # streams `calls()` refuses.
     try:
-        got = nt.validated_run_identity(text, expected_width=width)
+        got = nt.validated_run_identity(text, expected_width=width,
+                                        expected_levels=levels)
     except nt.StreamError as e:
         raise ra.RefineError(f"{where}: {e}")
+    # `levels` is the FIXTURE's K, passed in -- not read back from the stream
+    # (owner review §9): `want["levels"] = got["levels"]` satisfied the schema
+    # while checking the stream against itself, which is no check at all.
     want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width,
-            "levels": got["levels"]}
-    if got != want:
+            "levels": levels}
+    if {k: got[k] for k in want} != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
             f"say {want} -- an arm that describes a different run than the one "
@@ -432,11 +436,11 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # compares this block against `validated_run_identity`, which now proves
     # K as well as W (owner review §4).
     return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho,
-            "levels": got["levels"]}
+            "levels": levels}
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
-                     width: int) -> list:
+                     width: int, levels: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
     `mode` and `width` come from the bundle being produced (owner P0-2).
@@ -496,7 +500,7 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                          # header rather than restated from the arguments this
                          # function was called with (owner priority 5).
                          "ran": _ran(text, nsplit=n, mode=mode, width=width,
-                                     rho=arm, where=ap.name),
+                                     rho=arm, levels=levels, where=ap.name),
                          "runtime_argv": [str(n), mode, str(width), arm]})
             # The arm's OWN defect magnitude. `metric_trajectory` reports each
             # arm as a ratio over the as-is baseline; a claim that also states
@@ -1016,7 +1020,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if nflux and rho_profile == "as-is":
             if rm.applicable("metric_trajectory", precision):
                 man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode,
-                                                    width)
+                                                    width,
+                                                    fixture_dims(fixture)[1])
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.

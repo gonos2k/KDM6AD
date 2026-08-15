@@ -394,7 +394,7 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
     import g33_metric_trajectory as mtj
     monkeypatch.setattr(mtj, "analysis", fake)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
-    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5)
+    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5, 4)
     assert seen["mode"] == "carry", "the bundle's mode must be inherited"
     assert seen["width"] == 5, "the fixture width must be inherited"
     assert seen["baseline"] == "member-bytes\n", \
@@ -414,15 +414,15 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     _fake(monkeypatch)
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
-                        lambda out, exe, ns, mode, width: seen.update(
-                            mode=mode, width=width) or [])
+                        lambda out, exe, ns, mode, width, levels: seen.update(
+                            mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
                algo="legacy", nsplits=(3, 6), mode="carry", nflux=True,
                module=MOD)
-    assert seen == {"mode": "carry", "width": 5}, (
+    assert seen == {"mode": "carry", "width": 5, "levels": 4}, (
         "produce() must hand the analysis the bundle's OWN mode and fixture "
-        f"width, got {seen}")
+        f"width and level count, got {seen}")
 
 
 def test_the_metric_analysis_records_the_run_it_describes():
