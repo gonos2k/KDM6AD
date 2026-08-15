@@ -41,13 +41,23 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
-import g33_matched_closure as mc      # noqa: E402
-import g33_cap_interface as ci        # noqa: E402
-import g33_dual_ledger as dl          # noqa: E402
-import g33_defect_magnitude as dm     # noqa: E402
-import g33_metric_trajectory as mtj   # noqa: E402
-import g33_substep_schedule as sss    # noqa: E402
-import g33_water_enthalpy_basis as web  # noqa: E402
+
+
+def _an(name: str):
+    """An ANALYZER module, imported when an analysis runs -- never before.
+
+    The analyzers were imported at module load, so their top-level code
+    executed before the raw driver was built or run. The identity layering
+    claims analysis-only bytes cannot influence the run; a Python import is
+    code EXECUTION, not a dependency declaration, so an import-time side
+    effect -- an environment variable, a numeric-context change, a monkey
+    patch -- would have run first and the claim would rest on inspection of
+    today's analyzers rather than on structure (owner review §8). Importing
+    at dispatch time puts every raw member on disk, strict-parsed, before any
+    analyzer's first statement executes.
+    """
+    import importlib
+    return importlib.import_module(name)
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -255,29 +265,29 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
 #: analysis name -> (module, callable taking the stream) (owner §14-4). Only for
 #: `--nflux` bundles: these all read the extension records.
 ANALYSES = {
-    "matched_closure": ("g33_matched_closure", lambda s: mc.analysis(s)),
-    "cap_interface": ("g33_cap_interface", lambda s: ci.analysis(s)),
+    "matched_closure": ("g33_matched_closure", lambda s: _an("g33_matched_closure").analysis(s)),
+    "cap_interface": ("g33_cap_interface", lambda s: _an("g33_cap_interface").analysis(s)),
     "extension_protocol": ("g33_number_transport", lambda s: _protocol(s)),
     # Both column measures, always (owner §9): reporting one makes a statement
     # about the OPERATOR read as a statement about the ATMOSPHERE.
-    "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
+    "dual_ledger": ("g33_dual_ledger", lambda s: _an("g33_dual_ledger").analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
-    "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    "defect_magnitude": ("g33_defect_magnitude", lambda s: _an("g33_defect_magnitude").analysis(s)),
     # WHICH sub-step schedule each chain ran, not how many records it emitted.
     # The parser has always filed mstep and mstepi together; nothing reduced
     # them, so `extension_protocol` could say 72 mstep records and not say that
     # column 3 ran three of them while the ice chain ran one.
-    "substep_schedule": ("g33_substep_schedule", lambda s: sss.analysis(s)),
+    "substep_schedule": ("g33_substep_schedule", lambda s: _an("g33_substep_schedule").analysis(s)),
     # The COLUMN totals under both bases. `dual_ledger` answers this per
     # species; §9.2 asks it of the column, where the basis is the whole answer
     # on a column that closes to roundoff and changes nothing on one that does
     # not.
     "water_enthalpy_basis": ("g33_water_enthalpy_basis",
-                             lambda s: web.analysis(s)),
+                             lambda s: _an("g33_water_enthalpy_basis").analysis(s)),
     # Water destroyed INSIDE the column is not precipitation (owner §16-4).
     # Both ledgers, so the correction is visible rather than a silent swap.
     "internal_cap_enthalpy": ("g33_cap_interface",
-                              lambda s: ci.enthalpy_with_cap_sink(s)),
+                              lambda s: _an("g33_cap_interface").enthalpy_with_cap_sink(s)),
 }
 
 
@@ -370,7 +380,8 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             got: dict = {}
             path = out / f"{stem}.metric_trajectory.json"
             path.write_text(rm.json.dumps(
-                mtj.analysis(str(exe), n, chain, mode=mode, width=width,
+                _an("g33_metric_trajectory").analysis(
+                    str(exe), n, chain, mode=mode, width=width,
                              baseline_stream=member.read_text(), keep=got),
                 indent=2, sort_keys=True) + "\n")
             made.append({"file": path.name, "nsplit": n, "chain": chain,
@@ -409,7 +420,8 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             # false numbers on G33-TRAJECTORY-001. The stream is published
             # precisely so this is re-derivable, so it is derived here.
             dp = out / f"{ap.stem}.defect_magnitude.json"
-            dp.write_text(rm.json.dumps(dm.analysis(text), indent=2,
+            dp.write_text(rm.json.dumps(
+                _an("g33_defect_magnitude").analysis(text), indent=2,
                                         sort_keys=True) + "\n")
             made.append({"file": dp.name, "nsplit": n, "arm": arm,
                          "analysis": "defect_magnitude", "sha256": rm.sha256(dp),
