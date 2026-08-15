@@ -141,6 +141,11 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
                         continue
                     out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
     for c in cols:
+        # the surface stage has the exact-universe contract too: one row per
+        # column at k = -1, a consistent field set
+        out.append(f"G33F STAGE {loop} - surface 0 bottom_fall_total {c} -1 "
+                   f"f32 3F800000")
+    for c in cols:
         out.append(f"G33F MSTEP {loop} main {c} i32 00000001")
         out.append(f"G33F MSTEPI {loop} {c} i32 00000001")
     for c in cols:
@@ -1136,4 +1141,15 @@ def test_the_subcycle_step_must_derive_from_the_external_step():
     s = _stream(_call(1)).replace("G33F NFLUX 1 1 nflux_dtcld f32 42C80000",
                                   "G33F NFLUX 1 1 nflux_dtcld f32 40000000")
     with pytest.raises(nt.StreamError, match="not this stream's"):
+        nt.calls(s)
+
+
+def test_a_missing_surface_row_is_refused_not_skipped():
+    """A surface cell that is not there used to come back as None -- a
+    surface-dependent row silently dropped (owner review §9.2). Measured:
+    all 8945 published loops carry exactly cols x {k=-1}."""
+    s = _stream(_call(1, cols=(1, 2)))
+    s = s.replace("G33F STAGE 1 - surface 0 bottom_fall_total 2 -1 f32 3F800000\n",
+                  "")
+    with pytest.raises(nt.StreamError, match="cannot be skipped"):
         nt.calls(s)

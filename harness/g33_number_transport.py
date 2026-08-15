@@ -424,6 +424,27 @@ def _check_loop(call, lp, feats=frozenset()):
                         f"call {call['call_id']} loop {lp} col {c} level {k}: "
                         f"{stage} carries fields {sorted(got)}, the rest of the "
                         f"stage carries {sorted(fields)}")
+    # The SURFACE stage gets the same exact-universe contract as pre/post
+    # (owner review §9.2): its rows feed surface-dependent closures, and a
+    # missing cell used to come back as None -- a row silently skipped
+    # rather than a stream refused. Measured across all 8945 published
+    # loops: every one carries exactly cols x {k=-1}, one field set.
+    srf = {(c, k) for l, c, k in call["surface"] if l == lp}
+    if srf != {(c, -1) for c in cols}:
+        raise StreamError(
+            f"call {call['call_id']} loop {lp}: surface covers "
+            f"{sorted(srf)}, the state covers columns {sorted(cols)} at "
+            f"k=-1 -- a surface row that is not there cannot be skipped, "
+            f"only refused")
+    sf = {f for (l, c, k), rec in call["surface"].items() if l == lp
+          for f in rec}
+    for c in sorted(cols):
+        got_sf = set(call["surface"][(lp, c, -1)])
+        if got_sf != sf:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c}: surface carries "
+                f"fields {sorted(got_sf)}, the rest of the stage carries "
+                f"{sorted(sf)}")
     # Filtered BY LOOP: unfiltered, a column missing its NFLUX in loop 1 passed
     # because loop 2 supplied one (owner P0-2).
     got = {c for l, c in call["flux"] if l == lp}
