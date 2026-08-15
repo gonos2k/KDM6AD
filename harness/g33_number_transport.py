@@ -349,7 +349,21 @@ def _check(call):
     multi-loop call is a well-formed stream that this particular arithmetic does
     not describe, and conflating the two would make the parser reject data it has
     no complaint about.
+
+    A call with NO loops is refused before the per-loop walk (owner review §5).
+    Every completeness rule here iterates `call["loops"]`, so an empty set ran
+    every check zero times and an empty call -- CALL_BEGIN, CALL_END, nothing
+    between -- counted as complete. Measured: a two-tile split whose first
+    tile carried zero records parsed clean, its declared columns covered by
+    nothing, while the tile-span check happily summed the declaration. The
+    recurring defect class: measuring nothing, certified as complete.
     """
+    if not call["loops"]:
+        raise StreamError(
+            f"call {call['call_id']} declares columns "
+            f"{call['cols']} and carries no records at all -- an empty call "
+            f"is not a processed tile, it is a declaration with nothing "
+            f"behind it")
     for lp in sorted(call["loops"]):
         _check_loop(call, lp, call.get("features", frozenset()))
 
@@ -589,15 +603,43 @@ def calls(stream: str) -> list:
             cid, split, tile = int(m.group(1)), int(m.group(2)), int(m.group(3))
             if cid != expect:
                 raise StreamError(f"call ids jump: expected {expect}, got {cid}")
+            # RANGES first, then the equation (owner review §6). The cid
+            # equation alone is satisfiable outside the domain: under ntile=2,
+            # split=0/tile=3 gives cid 1 and split=1/tile=2 gives cid 2, and
+            # both parsed clean -- a decomposition the header does not
+            # describe, admitted because arithmetic is not a range check.
+            if header and not 1 <= split <= header["nsplit"]:
+                raise StreamError(
+                    f"call {cid}: split {split} is outside 1..{header['nsplit']}")
+            if header and not 1 <= tile <= header["ntile"]:
+                raise StreamError(
+                    f"call {cid}: tile {tile} is outside 1..{header['ntile']}")
             if header and cid != (split - 1) * header["ntile"] + tile:
                 raise StreamError(
                     f"call {cid} does not match split {split} tile {tile} under "
                     f"ntile={header['ntile']}")
+            # The GEOMETRY the call declares, checked where it is declared
+            # (owner review §5). Each was individually masked by later checks
+            # on well-formed streams and unchecked on degenerate ones: K=0
+            # makes the level universe empty, an inverted column range makes
+            # `range(lo, hi+1)` empty, and `delt` reached `_blank` without a
+            # finiteness check anywhere.
+            lo_c, hi_c, kk = int(m.group(4)), int(m.group(5)), int(m.group(6))
+            if kk < 1:
+                raise StreamError(f"call {cid}: K={kk} is not a level count")
+            if not 1 <= lo_c <= hi_c:
+                raise StreamError(
+                    f"call {cid}: column range {lo_c}..{hi_c} is not a "
+                    f"non-empty 1-based range")
             # `delt` carries no label -- the record shape predates the f64
             # family and every archived stream has it -- so its width comes
             # from the PROTOCOL header, which is emitted before any call.
-            cur = _blank(cid, split, tile,
-                         _real("f64" if rb == 8 else "f32", m.group(7), rb))
+            delt = _real("f64" if rb == 8 else "f32", m.group(7), rb)
+            if delt != delt or abs(delt) == float("inf") or delt <= 0:
+                raise StreamError(
+                    f"call {cid}: delt={delt} is not a positive finite "
+                    f"timestep")
+            cur = _blank(cid, split, tile, delt)
             cur["cols"] = (int(m.group(4)), int(m.group(5)))
             cur["K"] = int(m.group(6))
             continue
@@ -731,6 +773,24 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"header declares features {sorted(missing)} that no record "
                 f"in the stream emits")
+        # One stream, one problem: every call must declare the SAME level
+        # count and the SAME timestep (owner review §6). The ranges above plus
+        # the cid equation plus the sequential-id and count checks force the
+        # (split, tile) set to be exactly {1..nsplit} x {1..ntile} -- a
+        # bijection needs no separate universe walk -- but nothing tied K and
+        # delt together across calls, so one call could describe a different
+        # vertical grid or step than its neighbours and each would validate
+        # alone.
+        ks = {c["K"] for c in out}
+        if len(ks) > 1:
+            raise StreamError(
+                f"calls declare different level counts {sorted(ks)} -- one "
+                f"stream describes one problem")
+        dts = {c["delt"] for c in out}
+        if len(dts) > 1:
+            raise StreamError(
+                f"calls declare different timesteps {sorted(dts)} -- one "
+                f"stream describes one problem")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
