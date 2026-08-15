@@ -859,12 +859,16 @@ def calls(stream: str) -> list:
         # ...and the sub-cycle step is the external step divided by the loop
         # count -- the kernel's own rule, restated in every NFLUX group and
         # never compared to the CALL_BEGIN delt it derives from (owner
-        # review §9.1). At the f32 word, where it holds on all 4827
-        # published groups exactly.
+        # review §9.1). At the STREAM'S OWN word width (Codex): packing an
+        # f64 stream's values to f32 dropped 29 bits, so two distinct f64
+        # facts that shared an f32 word compared equal -- the conflation
+        # this family of checks exists to refuse. Holds exactly on all 4827
+        # published groups at their native widths.
         if dtclds:
             d = next(iter(dtclds))
             dt = next(iter(dts))
-            if struct.pack(">f", d * len(lset)) != struct.pack(">f", dt):
+            wfmt = ">d" if rb == 8 else ">f"
+            if struct.pack(wfmt, d * len(lset)) != struct.pack(wfmt, dt):
                 raise StreamError(
                     f"NFLUX dtcld {d} x {len(lset)} loops != delt {dt} -- "
                     f"the sub-cycle step is not this stream's")

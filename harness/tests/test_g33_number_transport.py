@@ -1153,3 +1153,18 @@ def test_a_missing_surface_row_is_refused_not_skipped():
                   "")
     with pytest.raises(nt.StreamError, match="cannot be skipped"):
         nt.calls(s)
+
+
+def test_the_dtcld_relation_holds_at_the_STREAMS_width():
+    """Packing an f64 stream's dtcld x loops and delt to f32 dropped 29
+    bits, so two distinct f64 facts sharing an f32 word compared equal
+    (Codex). The relation now checks at the stream's own default-real
+    width: a sub-f32 perturbation on an f64 stream refuses."""
+    import struct
+    s = _f64(_stream(_call(1)))
+    bad = struct.pack(">d", 100.0 * (1 + 1e-12)).hex().upper()
+    s2 = s.replace("nflux_dtcld f64 4059000000000000", f"nflux_dtcld f64 {bad}")
+    assert s2 != s
+    with pytest.raises(nt.StreamError, match="not this stream's"):
+        nt.calls(s2)
+    nt.calls(s)                         # the consistent stream still parses
