@@ -731,19 +731,61 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"header declares features {sorted(missing)} that no record "
                 f"in the stream emits")
-        # Every split's tiles must cover the domain exactly once: a gap or an
+        # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
+        #
+        # Anchored at COLUMN 1, and congruent ACROSS splits (owner review §7).
+        # The check used to take the first tile's own start as the origin, so a
+        # split covering 2..3 -- column 1 missing entirely -- was contiguous
+        # from where it happened to begin, and passed. And nothing compared one
+        # split's coverage against another's, so 1..2 beside 1..3 was two
+        # decompositions of two different domains in one stream. The real
+        # driver refuses both before emitting, but this parser judges
+        # arbitrary artifacts and may not re-assume the producer's checks.
+        spans = {}
         for sp in sorted({c["split"] for c in out}):
             seg = sorted(c["cols"] for c in out if c["split"] == sp)
-            lo = seg[0][0]
+            lo = 1
             for a, b in seg:
                 if a != lo:
                     raise StreamError(
-                        f"split {sp}: tile columns {seg} leave a gap or overlap "
-                        f"at column {lo}")
+                        f"split {sp}: tile columns {seg} do not cover the "
+                        f"domain from column 1 -- gap or overlap at column {lo}")
                 lo = b + 1
+            spans[sp] = lo - 1
+        if len(set(spans.values())) > 1:
+            raise StreamError(
+                f"splits cover different domains: {spans} -- one stream, one "
+                f"domain, so every decomposition must partition the same "
+                f"columns")
     return out
+
+
+def validated_run_identity(text: str, expected_width: int | None = None) -> dict:
+    """The run identity, FROM the strict parser -- never beside it.
+
+    The evidence chain re-derived nsplit/carry/rho/width from the published
+    bytes with two regular expressions, so a stream the strict parser REFUSES
+    -- duplicate STREAM_BEGIN, an unterminated call, NaN payloads -- could
+    still report `matches` for its run identity. Measured: it did (owner
+    review §6). One function, built on `calls()`, used by the producer at
+    publish time and by the chain on the published artifact, so there is no
+    weaker reader to drift back to.
+
+    `expected_width` pins the domain where the caller knows it: `calls()`
+    itself proves the tiles partition 1..W for a single W, and this proves W is
+    the fixture's.
+    """
+    parsed = calls(text)
+    hdr = stream_header(text)
+    width = max(c["cols"][1] for c in parsed)
+    if expected_width is not None and width != expected_width:
+        raise StreamError(
+            f"the stream's splits cover columns 1..{width}, the caller "
+            f"expected the fixture's 1..{expected_width}")
+    return {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
+            "rho": hdr["rho_profile"], "width": width}
 
 
 def stream_header(stream: str) -> dict:

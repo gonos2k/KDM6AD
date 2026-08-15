@@ -1164,18 +1164,25 @@ claims:
     # nearest-pinned f32 field said: it gave residual -48.336 against the
     # claimed -42.09, and the disagreement was the precision, not the claim.
     artifacts:
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/manifest.json: f3e1850a3b740b0f77a495d69f484a188ccdb55f9faaae3a82c05c5cca81205e
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/manifest.json: 759a9d3cf9e45dd77ebeb18b1f10710e1bc3b20923c8a75f49cad486e4a44c83
     # h = 25 s (nsplit=12 of delt=300), the member the finding's table quotes.
     # `eta` is bound beside the residual because the claim's second sentence is
     # about eta being ~1 in this regime -- unbound, "eta is a norm, not an
     # acceptance criterion" would rest on nothing.
     expected_values:
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.1.residual: -42.09239275342804
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.1.eta: 0.9993263127233228
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.residual: -21.18835352251389
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.eta: 1.0
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.residual: 443.7374176261958
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.eta: 1.0
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.1.residual: -42.09239275342804
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.1.eta: 0.9993263127233228
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.residual: -21.18835352251389
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.eta: 1.0
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.residual: 443.7374176261958
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.eta: 1.0
+    unbound:
+      - figure: identical in legacy and conservative
+        why: only the legacy f64 bundle is published; the equality needs a
+          conservative f64 bundle and a cross-variant comparator, which is the
+          two-bundle analysis shape G33-VARIANT-F64-001's blocker names
+          (owner review §12.1) -- until then this sentence rests on the
+          historical measurement, not on a pinned artifact
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
     evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206def981358e64b6f201fc3e6434ba05c918a9429855de8490d]
 
@@ -1210,20 +1217,36 @@ claims:
 
   - id: G33-WATER-CONS-002
     text: >
-      R_W = (W_final - W_initial) + P_surface closes at f64 to BELOW ONE ULP /
-      -1.6e-8 / exactly 0.0 (relative: below one ULP / -6.6e-8 / 0). At f32
-      columns 2 and 3 do not close (6.8% / 17.1%), but P there is the `rain`
-      diagnostic which departs from the rho*dz budget by up to 10x (P0-4b), so
-      those rows are that defect plus any true non-conservation.
+      The f64 water-budget residual R_W = (W_final - W_initial) + P_surface,
+      UNDER THE OPERATOR rho_m*dz MEASURE, is MEASURED per column at h = 25 s:
+      column 1 below one ULP of its own initial inventory (0.20 ULP), column 2
+      -1.5969e-8 kg/m2 (relative -6.585e-8), column 3 exactly 0.0.
       .
-      COLUMN 1 CORRECTED (owner priority 9). This said "-4.4e-17 (relative
-      -9e-17)", a value the re-run does not reproduce: it now measures
-      +1.1e-17 (relative +2.3e-17). Neither is wrong and neither is a
-      measurement. W_initial there is 0.4930884 kg/m2 and one ULP of that is
-      5.55e-17, so the old figure was 0.79 ULP and the new one is 0.20 ULP --
-      both are the sum closing below the representability of its own terms,
-      and the sign and last digits of a sub-ULP residual are summation order.
-      The proposition that survives, and the one now bound, is |R_W| < 1 ULP.
+      MEASUREMENT AND ACCEPTANCE ARE SEPARATED (owner review §9). This claim
+      previously said all three columns "close at f64". Column 1 closes in the
+      only sense that needs no external standard -- the residual is below the
+      representability of its own terms, and that PREDICATE is now computed in
+      the artifact and bound here, so a future artifact at 1.5 ULP FAILS
+      rather than passing an absolute tolerance (the old gate admitted 2.16
+      ULP against a "below one ULP" sentence). Column 3 is exactly zero.
+      Column 2's residual is SMALL AND MEASURED, and nothing more: it is
+      5.8e8 ULP of its inventory, no roundoff bound or physical threshold for
+      it has been established, and whether -1.6e-8 kg/m2 is acceptable is an
+      owner criterion this claim does not assert.
+      .
+      BASIS (owner review §10): every figure here is the OPERATOR rho_m*dz
+      budget. The physical rho_d*dz budget is computed in the same artifact;
+      which measure a corrected transport should conserve is G33-BASIS-002 and
+      remains open, so no basis-independent "water conservation" is claimed.
+      .
+      At f32 columns 2 and 3 do not close (6.8% / 17.1%), but P there is the
+      `rain` diagnostic which departs from the rho*dz budget by up to 10x
+      (P0-4b), so those rows are that defect plus any true non-conservation.
+      .
+      COLUMN 1 HISTORY (owner priority 9). An earlier text pinned "-4.4e-17":
+      a re-run measures +1.1e-17. Neither is a measurement -- both are below
+      one ULP of W_initial (0.79 and 0.20), and the sign and last digits of a
+      sub-ULP residual are summation order.
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
@@ -1239,7 +1262,11 @@ claims:
     # basis, which is exactly R_W and its parts. What was actually missing was
     # the f64 --nflux run, and that is this bundle.
     artifacts:
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/manifest.json: f3e1850a3b740b0f77a495d69f484a188ccdb55f9faaae3a82c05c5cca81205e
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/manifest.json: 759a9d3cf9e45dd77ebeb18b1f10710e1bc3b20923c8a75f49cad486e4a44c83
+      # The f32 half of the claim, from the f32 instrumented bundle: the
+      # text publishes 6.8% / 17.1% and only the f64 bundle was pinned, so
+      # half the sentences rested on nothing (owner review §12.2).
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/manifest.json: 03c60f8393df3ade8b46de8f2dfcc0bfe16c4f49240dff2b68da27754d4c6920
     # Columns 2 and 3 bind EXACTLY. Column 1 binds to a BOUND, and the reason
     # is in the numbers rather than in a preference: W_initial there is
     # 0.4930884 kg/m2, whose ULP is 5.55e-17, so the published -4.4e-17 was
@@ -1247,13 +1274,23 @@ claims:
     # the representability of its own terms; the sign and last digits of a
     # sub-ULP residual are summation order, not a measurement, and pinning
     # them exactly would fail a gate for a reordering that changed nothing.
+    # Column 1 binds the PREDICATE the text makes -- "below one ULP of its
+    # own initial inventory" -- plus the measured ratio, exact. The old
+    # binding was an absolute tolerance of 1.2e-16, which is 2.16 ULP of
+    # W_initial: a gate visibly weaker than the sentence it certified
+    # (owner review §8).
+    expected_predicates:
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.1.operator.closes_within_one_initial_ulp: true
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.3.operator.closes_within_one_initial_ulp: true
     expected_values:
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual: 0.0 ~ 1.2e-16
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.relative: 0.0 ~ 2.5e-16
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual: -1.5968866062809894e-08
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: -6.58486880484506e-08
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.residual: 0.0
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.0
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual_in_initial_ulps: 0.2025456428527832
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual: -1.5968866062809894e-08
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: -6.58486880484506e-08
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.3.operator.residual: 0.0
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.0
+      # ...and the f32 rows the text quotes as 6.8% / 17.1%.
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: 0.06827287428299673
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.17130822175278065
     evidence: [FINDING_column_water_orders_v1.md]
     evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d51393f613467a7b7fbc0580b4642c15e9a971560e1546226901]
 
@@ -1283,11 +1320,18 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
-    blocker_kind: no-figure
+    blocker_kind: needs-run-variant
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      RECLASSIFIED from no-figure, which contradicted the claim's own text
+      (owner review §12.1): "0 of 333" and "39" are figures, published right
+      there. What actually blocks binding them is that the comparison spans
+      TWO runs -- a legacy f64 stream and a conservative f64 stream -- and
+      the archive's analysis vocabulary is per-bundle, so no single pinned
+      artifact carries mismatching_records/compared_records. Migrating needs
+      a conservative f64 bundle beside the legacy one and a cross-variant
+      comparator artifact, which is a new analysis SHAPE (two-bundle) and
+      therefore an owner vocabulary decision, not a run anyone can schedule
+      under the current schema.
     grade: confirmed
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
@@ -1340,19 +1384,65 @@ claims:
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6c9aa3d62f446eec0e8739b71af265f1423e4ca93beca6db1]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
 
   - id: G33-BASIS-002
     text: >
-      Whether the reference intends sum(rho_d*dz*nr) or sum(rho*dz*nr) as THE
-      conserved column measure. Changes what a corrected number transport should
-      conserve.
+      Which measure a CORRECTED number transport should conserve, as a matter
+      of compatibility and default policy -- NOT which measure is physical.
+      .
+      SPLIT (owner review §11): the previous wording asked "whether the
+      reference intends rho_d*dz*nr or rho_m*dz*nr as the conserved measure",
+      which put a unit fact and two policy decisions in one open question, so
+      a scientific fact read as if it were awaiting a preference. The pieces
+      are:
+      .
+      (1) The PHYSICAL column number is sum(rho_d*dz*nr) -- forced by units,
+      not chosen: `nr` is per kg of DRY air (WRF registry, QVAPOR basis), so
+      multiplying by moist density counts water vapor as carrier mass. This is
+      G33-BASIS-006 and is a source claim, not a decision.
+      .
+      (2) The measure the LEGACY OPERATOR actually budgets is rho_m*dz on the
+      mass side and effectively dz-only on the number side -- measured, and it
+      is the defect G33-NUMBER-003 confirms. Also not a decision.
+      .
+      What REMAINS a decision, and what this claim now holds open: whether the
+      corrected transport preserves bit-compatibility with the legacy
+      operator's pseudo-measure where it is not conserving anything (an
+      engineering policy), and whether the default variant promotes to the
+      physical measure (a release decision).
     status: hold
     grade: open-question
     basis: none
-    scope: owner physics decision
+    scope: >
+      owner engineering-compatibility and release policy; the physics is
+      G33-BASIS-006 and the operator's measured behaviour is G33-NUMBER-003
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6c9aa3d62f446eec0e8739b71af265f1423e4ca93beca6db1]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
+
+  - id: G33-BASIS-006
+    text: >
+      The physical column number measure is sum_k rho_d,k * dz_k * nr_k,
+      because `nr` is a mixing ratio per kg of DRY air: the WRF registry
+      declares the QVAPOR basis dry (kg kg-1 dry), `nrs(i,k,1) = nr(i,k,j)`
+      packs it unchanged (F:388), and a per-dry-kg quantity times moist
+      density counts water vapor as carrier mass. Unit-forced, not chosen.
+      rho_m*dz*nr remains meaningful only as the legacy operator's
+      pseudo-measure, which is a statement about the operator (G33-NUMBER-003),
+      not about particles.
+    status: active
+    evidence_kind: source
+    run_support: [none]
+    artifact_status: not_applicable
+    grade: confirmed
+    basis: >
+      unit analysis of pinned source definitions (F:388, WRF registry
+      QVAPOR basis)
+    scope: >
+      source definitions only; which measure the correction adopts as
+      default is G33-BASIS-002, which stays an owner decision
+    evidence: [FINDING_number_mass_basis_v1.md]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
 
   - id: G33-NUMBER-005
     text: >
@@ -1416,6 +1506,17 @@ claims:
     expected_values:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      # The interface counts and terms the text publishes -- 39/108, 8.63e-3,
+      # 23/147, 2.70e-11 -- were prose without bindings while the claim read
+      # `coverage full` (owner review §12.3): full meant "no declared gap",
+      # not "every load-bearing figure bound". They were in the pinned
+      # artifact all along.
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.mass_departure_arrival_differ: 39
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.interfaces: 108
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.sum_abs_interface_term: 0.008628152138746835
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.mass_departure_arrival_differ: 23
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.interfaces: 147
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.net_interface_term: 2.697212881290125e-11
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
@@ -1530,31 +1631,31 @@ claims:
     # letting a reader assume it shares the bundle's.
     #
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/manifest.json: 1bb47121c7243cb0579d264fee7e4304b208312692d3fd219ad3d6dfb43f2a26
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/manifest.json: ec6ec1441dc2d9476dbb465709b302afca630d1a06ea8d40b8688ac8edff00a9
     # The SIGNED oracle figures, against the per-column direct sum -- the
     # claim's headline. They were unbindable until `local_oracle` was
     # published in the artifact: a same-looking number from the
     # whole-domain-baseline table above is a DIFFERENT quantity, and the
     # sign is the whole point (the whole domain rains LESS, not more).
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.3.column_integrated.operator.2/qr.signed_rel: -0.2071890623998982
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.1,2.column_integrated.operator.2/qr.signed_rel: -0.2071890623998982
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.2,1.column_integrated.operator.1/qr.signed_rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.3.column_integrated.operator.2/qr.signed_rel: -0.2071890623998982
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.1,2.column_integrated.operator.2/qr.signed_rel: -0.2071890623998982
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#local_oracle.partitions.2,1.column_integrated.operator.1/qr.signed_rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.components_differing: 31
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.components_differing: 16
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,2.components_differing: 0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.qi.max_rel: 0.996613402486649
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.by_field.ni.max_rel: 0.8839382817146095
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.column_integrated.operator.1/qr.rel: 0.20668056982756972
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.column_integrated.operator.2/qr.rel: 0.26133476794237354
     # The load-bearing BOOLEANS. `expected_values` takes floats, so these
     # sat in the artifact unbound while the claim rested on them: the
     # measurement is only evidence if the run passed its own gates, and the
     # attribution to ncmin alone is exactly `affected_columns_match_prediction`.
     expected_predicates:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.measurement_valid: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.affected_columns_match_prediction: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.2,1.affected_columns_match_prediction: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:da1082a59375d663737494b1c9befc587945d0ca3ae1a7e48cb1033ef0b692ff]
 
@@ -1631,22 +1732,22 @@ claims:
       not an adjoint sensitivity, because nothing here differentiates the
       operator.
     artifacts:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/manifest.json: 1bb47121c7243cb0579d264fee7e4304b208312692d3fd219ad3d6dfb43f2a26
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/manifest.json: ec6ec1441dc2d9476dbb465709b302afca630d1a06ea8d40b8688ac8edff00a9
     # Bound so the HOLD is auditable: these are the exact numbers the
     # current ledger produced, and a corrected ledger must be compared
     # against them rather than quietly replacing them.
     expected_values:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.total_delta: -6.929440905878437e-05
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.pracw: 0.8531936572759405
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.praut: 0.1468063427240594
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.total_delta: -0.04465581747357174
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.pracw: 0.8698817721107084
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.praut: 0.13011822788929156
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.total_delta: -0.044580031419154426
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.pracw: 0.8698817721107085
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.praut: 0.13011822788929162
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.total_delta: -6.929440905878437e-05
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.pracw: 0.8531936572759405
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.unweighted.share.praut: 0.1468063427240594
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.total_delta: -0.04465581747357174
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.pracw: 0.8698817721107084
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.share.praut: 0.13011822788929156
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.total_delta: -0.044580031419154426
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.pracw: 0.8698817721107085
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.share.praut: 0.13011822788929162
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.base.cold_gate_disagrees: 0.0
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#replay.got.cold_gate_disagrees: 0.0
     # The closure itself, as a PREDICATE: a boolean cannot be an
     # expected_value, and "the decomposition closes against the real
     # update" is the statement D1 rests on.
@@ -1665,9 +1766,9 @@ claims:
     # which nothing in this artifact measures. Two senses of the word, one
     # bound and one open, and only naming both keeps them apart.
     expected_predicates:
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.closes_against_actual_update: true
       # ...and in the basis the HEADLINE is reported in (owner priority
       # 4). The unweighted closure is exact; the weighted ones are the
       # same terms multiplied through the sum, so they close to the
@@ -1675,14 +1776,14 @@ claims:
       # and a half ULP, twelve orders below the smallest share a term
       # carries. Binding only the unweighted one left the claim's own
       # 86.99/13.01 one algebraic step from anything checkable.
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.operator.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.physical.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.operator.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.physical.closes_against_actual_update: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
-      - kdm6ad-g33m-migrate/ncmin-001.bundles/b8742c63d5ab7f07d38b2036d44bc1db519c9a1cc6352010bc51db20188ea042/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.affected_columns_match_prediction: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.operator.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.1.physical.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.operator.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.2.physical.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.operator.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.qr_process_ledger.json#columns.3.physical.closes_against_actual_update: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.measurement_valid: true
+      - kdm6ad-g33m-migrate/ncmin-001.bundles/d26d6759b8d5aba7f8a5620d30c2f4ed0ca7dfbc9e13bb60d3e693575891795b/g33_fixture_boundary_mapping_v1.ncmin_locality.json#partitions.1,1,1.affected_columns_match_prediction: true
     evidence: [FINDING_ncmin_scalar_vs_percell.md]
     evidence_sha256: [FINDING_ncmin_scalar_vs_percell.md:da1082a59375d663737494b1c9befc587945d0ca3ae1a7e48cb1033ef0b692ff]
 

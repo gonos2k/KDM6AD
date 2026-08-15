@@ -5,7 +5,8 @@
 | claim | status | grade | scope |
 |---|---|---|---|
 | `G33-BASIS-001` | **active** | confirmed | g33_fixture_multisubcycle_v1 for the magnitude; source for the bases |
-| `G33-BASIS-002` | **hold** | open-question | owner physics decision |
+| `G33-BASIS-002` | **hold** | open-question | owner engineering-compatibility and release policy; the physics is G33-BASIS-006 and the operator's measured behaviour is G33-NUMBER-003 |
+| `G33-BASIS-006` | **active** | confirmed | source definitions only; which measure the correction adopts as default is G33-BASIS-002, which stays an owner decision |
 
 Statuses above are the authority; prose below may predate them.
 <!-- /claim-status -->

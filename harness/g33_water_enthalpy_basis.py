@@ -20,6 +20,8 @@ exactly 0), so a weight that moved with the process would not be a budget.
 """
 from __future__ import annotations
 
+import math
+
 import sys
 from pathlib import Path
 
@@ -57,10 +59,21 @@ def water(run: dict) -> dict:
                     * _weight(run, col, k, basis) for k in ks)
             p = run[("prec", 1, col)]          # the TOTAL; 2 and 3 are subsets
             resid = (ends["state"] - ends["initial"]) + p
+            # The residual IN UNITS OF the initial inventory's ULP (owner
+            # review §8). "Closes below one ULP" was a claim about a ratio the
+            # artifact never published, so its binding had to be an absolute
+            # tolerance -- and the one chosen admitted 2.16 ULP against a
+            # "< 1 ULP" sentence. The ratio and the verdict are fields now, so
+            # the claim binds the predicate it actually makes, and a future
+            # artifact at 1.5 ULP FAILS instead of passing a loose gate.
+            ulp = math.ulp(ends["initial"]) if ends["initial"] else None
             row[basis] = {
                 "W_initial": ends["initial"], "W_final": ends["state"],
                 "P_surface": p, "residual": resid,
                 "relative": resid / ends["initial"] if ends["initial"] else None,
+                "residual_in_initial_ulps": abs(resid) / ulp if ulp else None,
+                "closes_within_one_initial_ulp":
+                    (abs(resid) / ulp < 1.0) if ulp else None,
             }
         ro, rp = row["operator"]["relative"], row["physical"]["relative"]
         # How much the basis MATTERS here. Reported as a ratio because the

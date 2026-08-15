@@ -70,7 +70,9 @@ def synthetic_manifest(root):
         # without it they follow whichever checkout reads the manifest, which
         # is the coupling the block exists to remove (owner priority 8).
         "identity": {
-            "schema": "g33_layered_identity_v1",
+            # rm.IDENTITY_SCHEMA, not a literal -- a fixture pinned to the
+            # old tag tests the previous contract after a bump.
+            "schema": rm.IDENTITY_SCHEMA,
             "role_graph": {m: (["run"] if m == "p" else ["analysis"])
                            for m in _mods},
             # The seed of each reach entry, which is also the dispatch cut.
@@ -814,3 +816,55 @@ def test_a_NON_DISPATCHER_cannot_use_the_cut_to_escape_closure():
     bad["identity"]["role_graph"][victim] = [
         r for r in bad["identity"]["role_graph"][victim] if r != "analysis"] or ["run"]
     assert rm.graph_violations(bad), (others[0], victim)
+
+
+# --- one file, one pin; one module name, one file (owner review §5) ----------
+#
+# The pin collectors keyed by basename STEM, so a file pinned in two blocks was
+# silently last-wins -- and the graph could read one blob while the id digested
+# the other pin. Measured: g33_number_transport.py and g33_probe_read.py are
+# each pinned in producer_modules AND member_parsers on the real bundle, and a
+# divergent duplicate passed validate() clean.
+
+
+def test_a_DIVERGENT_duplicate_pin_is_refused(tmp_path):
+    m = synthetic_manifest(tmp_path)
+    m["member_parsers"] = [{**m["producer_modules"][0], "blob_sha": "1" * 40}]
+    assert any("two records of one fact" in b for b in rm.validate(m)), \
+        rm.validate(m)[:2]
+
+
+def test_a_CONSISTENT_duplicate_pin_is_fine(tmp_path):
+    """Two records of one fact that AGREE are the normal case."""
+    m = synthetic_manifest(tmp_path)
+    m["member_parsers"] = [dict(m["producer_modules"][0])]
+    assert rm.pin_conflicts(m) == []
+
+
+def test_two_paths_sharing_a_MODULE_NAME_are_refused(tmp_path):
+    """The import graph is keyed by module name; two files under one name
+    would collide in it, and whichever the resolver kept would answer for
+    both."""
+    m = synthetic_manifest(tmp_path)
+    m["tracked_build_inputs"] = list(m["tracked_build_inputs"]) + [
+        {**m["producer_modules"][0], "path": "elsewhere/p.py",
+         "blob_sha": "2" * 40}]
+    assert any("both import as" in b for b in rm.validate(m)), rm.validate(m)[:2]
+
+
+def test_the_blob_must_HASH_to_the_pinned_content():
+    """`pinned_blobs` reads the blob the pin names; the graph then answers for
+    those bytes. If the blob does not hash to content_sha256 the pin names two
+    different files, and which one 'ran' is unknowable from the manifest."""
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    import copy, hashlib
+    blobs = rm.pinned_blobs(man)          # the real one resolves clean
+    assert blobs
+    bad = copy.deepcopy(man)
+    for e in bad["producer_modules"]:
+        if e["path"].endswith("g33_schema.py"):
+            e["content_sha256"] = "9" * 64
+    with pytest.raises(rm.BlobUnavailable, match="does not hash"):
+        rm.pinned_blobs(bad)

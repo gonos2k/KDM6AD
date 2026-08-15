@@ -263,19 +263,20 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     CALL_BEGIN brackets carry the columns, which is where the width is. A run
     that does not answer for itself cannot be published as an arm.
     """
-    hdr = nt.stream_header(text)
-    got = {"nsplit": hdr["nsplit"], "carry": hdr["mode"], "rho": hdr["rho_profile"]}
-    want = {"nsplit": nsplit, "carry": mode, "rho": rho}
+    # ONE reader for run identity, the strict one (owner review §6): the
+    # evidence chain and this function previously derived it separately, and
+    # the chain's copy was two regular expressions that reported `matches` on
+    # streams `calls()` refuses.
+    try:
+        got = nt.validated_run_identity(text, expected_width=width)
+    except nt.StreamError as e:
+        raise ra.RefineError(f"{where}: {e}")
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width}
     if got != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
             f"say {want} -- an arm that describes a different run than the one "
             f"it is filed as is worse than an unrecorded one")
-    covered = max(c["cols"][1] for c in nt.calls(text))
-    if covered != width:
-        raise ra.RefineError(
-            f"{where}: the stream's calls cover columns up to {covered}, the "
-            f"entry would declare width {width}")
     # `carry` is the multi-run block's spelling of the driver's mode argument.
     # One name for one argument, or the archive carries both.
     return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}
@@ -909,6 +910,20 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # P0-2). Before publish, so a malformed bundle is never renamed into
         # place rather than being caught by whoever reads it later.
         violations = rm.validate(man)
+        # ...and the RESOLVED graph check, which the schema deliberately does
+        # not run -- reading blobs is not shape validation, and a public clone
+        # may legitimately lack them. The PRODUCER may not: it pinned those
+        # blobs seconds ago from its own HEAD, so `BlobUnavailable` here is a
+        # broken pin, not an excusable absence. Without this the check ran only
+        # AFTER publication, in the evidence chain -- so a regression in
+        # `identity_block()` would publish a structurally-valid bundle and be
+        # discovered by whoever read it later (owner review §4).
+        try:
+            violations += rm.graph_violations(man)
+        except rm.BlobUnavailable as e:
+            raise SystemExit(
+                f"REFUSED: the identity graph cannot be resolved against the "
+                f"pinned blobs at publish time -- {e}")
         if violations:
             raise SystemExit("REFUSED: the manifest does not satisfy "
                              f"{man['schema']}:\n  " + "\n  ".join(violations))
