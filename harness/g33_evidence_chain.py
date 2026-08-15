@@ -1226,6 +1226,10 @@ FAILING_STATES = frozenset({
     "VALUE-PATH-AMBIGUOUS", "VALUE-NOT-NUMERIC", "VALUE-UNPINNED-FILE",
     "VALUE-FILE-UNREADABLE",
     "RUN-IDENTITY-MISMATCH", "RUN-IDENTITY-ABSENT", "RUN-IDENTITY-UNREADABLE",
+    # The semantic re-validation of the primary members (owner review §7): a
+    # member the CURRENT strict parsers or the same-run contract refuse, and
+    # a manifest whose fixture the repo cannot resolve to a (B, K).
+    "MEMBER-CONTRACT-MISMATCH", "FIXTURE-UNRESOLVED",
     "COMMIT-UNREACHABLE",
     # The bundle directory is here and its manifest is not. Absence of the
     # whole bundle is excusable on a clone; absence of the manifest INSIDE one
