@@ -945,7 +945,8 @@ def test_two_splits_covering_DIFFERENT_domains_are_refused():
 
 def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     got = nt.validated_run_identity(_stream(_call(1)))
-    assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 1}
+    assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                   "width": 1, "levels": 2}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -1022,3 +1023,8 @@ def test_one_stream_declares_ONE_K_and_ONE_delt():
     assert bad != good
     with pytest.raises(nt.StreamError, match="different timesteps"):
         nt.calls(bad)
+
+
+def test_validated_run_identity_pins_the_EXPECTED_levels():
+    with pytest.raises(nt.StreamError, match="expected the fixture's 4"):
+        nt.validated_run_identity(_stream(_call(1)), expected_levels=4)

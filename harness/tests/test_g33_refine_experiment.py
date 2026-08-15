@@ -67,7 +67,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
-                rho_profile="as-is", width=3):
+                rho_profile="as-is", width=3, levels=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -159,7 +159,7 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
     _fake(monkeypatch)
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
-            rho_profile="as-is", width=3):
+            rho_profile="as-is", width=3, levels=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)

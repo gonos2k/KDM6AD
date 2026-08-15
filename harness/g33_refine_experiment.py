@@ -122,13 +122,22 @@ def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> lis
 
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
-            nflux=False, rho_profile="as-is", width=3) -> dict:
+            nflux=False, rho_profile="as-is", width=3, levels=None) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
     could ship a G33P stream that was truncated, transposed or NaN, and an
     --nflux arm could ship a G33N stream nothing had parsed. The arm declares
     which protocols must be present; each is read by its own strict parser.
+
+    The G33N leg is pinned to the FIXTURE's domain, not merely to itself
+    (owner review §4). `calls()` proves the tiles partition 1..W for one W and
+    one K; nothing proved W and K were the fixture's B and K, so a stdout
+    whose window protocol covered 1..3 beside a G33N covering 1..2 was two
+    internally-strict protocols describing different domains, and every G33N
+    analysis silently omitted column 3. The arm streams have carried this pin
+    since the typed `ran` block; the PRIMARY members -- the ones every claim
+    binds into -- did not.
     """
     runs = {}
     for n in nsplits:
@@ -140,8 +149,40 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
             probe = pr.read(text)               # G33P
             _agree(runs[n], probe, p.name)
         if nflux:
-            nt.calls(text)                      # G33N, whole-stream validated
+            _require_fixture_domain(text, p.name, n, mode, rho_profile,
+                                    width, levels, runs[n])
     return runs
+
+
+def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
+    """The G33N leg against the fixture AND the window protocol beside it.
+
+    Three parties describe one run in a single stdout: the G33N header, the
+    window records (G33R/G33P), and the member metadata the manifest will
+    carry. Any two agreeing proves nothing about the third, so all three are
+    tied here, at production, where the text is in hand.
+    """
+    rid = nt.validated_run_identity(text, expected_width=width,
+                                    expected_levels=levels)
+    want = {"nsplit": n, "carry": mode, "rho": rho, "width": width}
+    got = {k: rid[k] for k in want}
+    if got != want:
+        raise ra.RefineError(
+            f"{name}: the G33N leg declares {got}, the member is being "
+            f"published as {want}")
+    # ...and the WINDOW protocol in the same stdout. `run` is keyed
+    # (class, field, col, k); its columns and levels are the window's domain.
+    wcols = {k[2] for k in run if len(k) == 4 and k[0] == "state"}
+    wks = {k[3] for k in run if len(k) == 4 and k[0] == "state"}
+    if wcols and max(wcols) != rid["width"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol covers columns up to {max(wcols)} "
+            f"and the G33N leg covers 1..{rid['width']} -- two protocols, two "
+            f"domains, one stdout")
+    if wks and len(wks) != rid["levels"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol carries {len(wks)} levels and the "
+            f"G33N leg declares K={rid['levels']}")
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:
@@ -191,13 +232,23 @@ def _probe_member(path: Path) -> dict:
 
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
-                  rho_profile: str = "as-is", width: int = 3) -> dict:
-    """Run every member and read it with the G33P strict parser."""
+                  rho_profile: str = "as-is", width: int = 3,
+                  levels=None) -> dict:
+    """Run every member: G33P strict parse AND the fixture-domain pin.
+
+    The f64 path validated only G33P; the G33N leg in the same stdout was read
+    later by each analysis without a fixture width to hold it to, so a G33N
+    covering fewer columns than the window protocol would pass every strict
+    parse and the analyses would silently omit the rest (owner review §4).
+    """
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        p.write_text(_run(_argv(exe, n, mode, rho_profile, width)))
-        runs[n] = pr.read(p.read_text())
+        text = _run(_argv(exe, n, mode, rho_profile, width))
+        p.write_text(text)
+        runs[n] = pr.read(text)
+        _require_fixture_domain(text, p.name, n, mode, rho_profile,
+                                width, levels, runs[n])
     return runs
 
 
@@ -807,7 +858,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
-            runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width)
+            runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
+                                 levels=fixture_dims(fixture)[1])
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member
@@ -815,7 +867,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             pr.require_probe_chain(runs)
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
-                           rho_profile=rho_profile, width=width)
+                           rho_profile=rho_profile, width=width,
+                           levels=fixture_dims(fixture)[1])
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"

@@ -822,7 +822,8 @@ def calls(stream: str) -> list:
     return out
 
 
-def validated_run_identity(text: str, expected_width: int | None = None) -> dict:
+def validated_run_identity(text: str, expected_width: int | None = None,
+                           expected_levels: int | None = None) -> dict:
     """The run identity, FROM the strict parser -- never beside it.
 
     The evidence chain re-derived nsplit/carry/rho/width from the published
@@ -833,19 +834,27 @@ def validated_run_identity(text: str, expected_width: int | None = None) -> dict
     publish time and by the chain on the published artifact, so there is no
     weaker reader to drift back to.
 
-    `expected_width` pins the domain where the caller knows it: `calls()`
-    itself proves the tiles partition 1..W for a single W, and this proves W is
-    the fixture's.
+    `expected_width`/`expected_levels` pin the domain where the caller knows
+    it: `calls()` itself proves the tiles partition 1..W for a single W and
+    one K, and these prove W and K are the FIXTURE's. Without the width pin a
+    stream whose G33N covers 1..2 beside a window protocol covering 1..3 is
+    two internally-strict protocols describing different domains in one
+    stdout, and every G33N analysis silently omits column 3 (owner review §4).
     """
     parsed = calls(text)
     hdr = stream_header(text)
     width = max(c["cols"][1] for c in parsed)
+    levels = parsed[0]["K"]
     if expected_width is not None and width != expected_width:
         raise StreamError(
             f"the stream's splits cover columns 1..{width}, the caller "
             f"expected the fixture's 1..{expected_width}")
+    if expected_levels is not None and levels != expected_levels:
+        raise StreamError(
+            f"the stream declares K={levels} levels, the caller expected the "
+            f"fixture's {expected_levels}")
     return {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
-            "rho": hdr["rho_profile"], "width": width}
+            "rho": hdr["rho_profile"], "width": width, "levels": levels}
 
 
 def stream_header(stream: str) -> dict:
