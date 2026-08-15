@@ -1210,20 +1210,36 @@ claims:
 
   - id: G33-WATER-CONS-002
     text: >
-      R_W = (W_final - W_initial) + P_surface closes at f64 to BELOW ONE ULP /
-      -1.6e-8 / exactly 0.0 (relative: below one ULP / -6.6e-8 / 0). At f32
-      columns 2 and 3 do not close (6.8% / 17.1%), but P there is the `rain`
-      diagnostic which departs from the rho*dz budget by up to 10x (P0-4b), so
-      those rows are that defect plus any true non-conservation.
+      The f64 water-budget residual R_W = (W_final - W_initial) + P_surface,
+      UNDER THE OPERATOR rho_m*dz MEASURE, is MEASURED per column at h = 25 s:
+      column 1 below one ULP of its own initial inventory (0.20 ULP), column 2
+      -1.5969e-8 kg/m2 (relative -6.585e-8), column 3 exactly 0.0.
       .
-      COLUMN 1 CORRECTED (owner priority 9). This said "-4.4e-17 (relative
-      -9e-17)", a value the re-run does not reproduce: it now measures
-      +1.1e-17 (relative +2.3e-17). Neither is wrong and neither is a
-      measurement. W_initial there is 0.4930884 kg/m2 and one ULP of that is
-      5.55e-17, so the old figure was 0.79 ULP and the new one is 0.20 ULP --
-      both are the sum closing below the representability of its own terms,
-      and the sign and last digits of a sub-ULP residual are summation order.
-      The proposition that survives, and the one now bound, is |R_W| < 1 ULP.
+      MEASUREMENT AND ACCEPTANCE ARE SEPARATED (owner review §9). This claim
+      previously said all three columns "close at f64". Column 1 closes in the
+      only sense that needs no external standard -- the residual is below the
+      representability of its own terms, and that PREDICATE is now computed in
+      the artifact and bound here, so a future artifact at 1.5 ULP FAILS
+      rather than passing an absolute tolerance (the old gate admitted 2.16
+      ULP against a "below one ULP" sentence). Column 3 is exactly zero.
+      Column 2's residual is SMALL AND MEASURED, and nothing more: it is
+      5.8e8 ULP of its inventory, no roundoff bound or physical threshold for
+      it has been established, and whether -1.6e-8 kg/m2 is acceptable is an
+      owner criterion this claim does not assert.
+      .
+      BASIS (owner review §10): every figure here is the OPERATOR rho_m*dz
+      budget. The physical rho_d*dz budget is computed in the same artifact;
+      which measure a corrected transport should conserve is G33-BASIS-002 and
+      remains open, so no basis-independent "water conservation" is claimed.
+      .
+      At f32 columns 2 and 3 do not close (6.8% / 17.1%), but P there is the
+      `rain` diagnostic which departs from the rho*dz budget by up to 10x
+      (P0-4b), so those rows are that defect plus any true non-conservation.
+      .
+      COLUMN 1 HISTORY (owner priority 9). An earlier text pinned "-4.4e-17":
+      a re-run measures +1.1e-17. Neither is a measurement -- both are below
+      one ULP of W_initial (0.79 and 0.20), and the sign and last digits of a
+      sub-ULP residual are summation order.
     status: active
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
@@ -1247,9 +1263,16 @@ claims:
     # the representability of its own terms; the sign and last digits of a
     # sub-ULP residual are summation order, not a measurement, and pinning
     # them exactly would fail a gate for a reordering that changed nothing.
+    # Column 1 binds the PREDICATE the text makes -- "below one ULP of its
+    # own initial inventory" -- plus the measured ratio, exact. The old
+    # binding was an absolute tolerance of 1.2e-16, which is 2.16 ULP of
+    # W_initial: a gate visibly weaker than the sentence it certified
+    # (owner review §8).
+    expected_predicates:
+      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.closes_within_one_initial_ulp: true
+      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.closes_within_one_initial_ulp: true
     expected_values:
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual: 0.0 ~ 1.2e-16
-      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.relative: 0.0 ~ 2.5e-16
+      - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual_in_initial_ulps: 0.2025456428527832
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual: -1.5968866062809894e-08
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: -6.58486880484506e-08
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.residual: 0.0

@@ -895,8 +895,13 @@ def test_a_key_containing_a_DOT_makes_the_path_AMBIGUOUS():
 #: tolerance is how an exact binding stops being exact, so each one is listed
 #: here and the claim has to say in its own text why the quantity has no exact
 #: value to pin.
-TOLERATED = {
-    "G33-WATER-CONS-002": "ULP",
+TOLERATED: dict = {
+    # EMPTY, and the emptiness is the point (owner review §8). The one entry
+    # this held was G33-WATER-CONS-002's column 1, whose absolute tolerance of
+    # 1.2e-16 was 2.16 ULP of the inventory it gated -- visibly weaker than
+    # the "below one ULP" sentence it certified. The artifact now computes the
+    # ULP ratio and the predicate, and the claim binds those exactly, so the
+    # exception dissolved rather than being loosened.
 }
 
 
