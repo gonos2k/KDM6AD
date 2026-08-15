@@ -423,7 +423,8 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     _fake(monkeypatch)
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
-                        lambda out, exe, ns, mode, width, levels: seen.update(
+                        lambda out, exe, ns, mode, width, levels, algo=None,
+                        fixture=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
@@ -1124,3 +1125,45 @@ def test_the_window_metadata_must_be_the_requested_experiment(key, val, match):
         xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
                                    "rezero", "as-is", 3, 4, run,
                                    algo="legacy", fixture="g33_fixture_x")
+
+
+# --- today's capability profile, instrumented or not (owner review §8) -------
+
+def _profile_run():
+    run = {("state", "qr", c, k): 1.0 for c in (1, 2) for k in range(2)}
+    run[("initial", "qr", 1, 0)] = 1.0
+    run.update({("forcing", nm, c, k): 1.0
+                for nm in ("rho", "delz") for c in (1, 2) for k in range(2)})
+    run.update({("meta", "delt"): 100.0, ("meta", "loops"): 1,
+                ("meta", "dtcld"): 100.0, ("meta", "nsplit"): 1,
+                ("meta", "algorithm"): "legacy"})
+    return run
+
+
+def test_the_current_profile_control_passes():
+    xp._require_current_profile(_profile_run(), "n1", 2, 2, algo="legacy")
+
+
+@pytest.mark.parametrize("mutate,match", [
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "forcing"],
+     "publishes its rho"),
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "initial"],
+     "no INITIAL state"),
+    (lambda r: r.pop(("meta", "loops")), "declares no loops"),
+    (lambda r: r.update({("meta", "dtcld"): 50.0}),
+     "not one kernel's"),
+    (lambda r: r.update({("meta", "delt"): -1.0, ("meta", "dtcld"): -1.0}),
+     "must be positive"),
+    (lambda r: [r.pop(k) for k in list(r)
+                if k[0] == "state" and k[2] == 2],
+     "the fixture declares"),
+])
+def test_a_member_below_todays_profile_is_refused(mutate, match):
+    """The reader keeps INITIAL/forcing/time-geometry OPTIONAL so archived
+    streams still parse; the producer of new evidence may not inherit that
+    leniency (owner review §8). The loops x dtcld == delt rule is the
+    kernel's own, measured to hold on all 192 published headers."""
+    run = _profile_run()
+    mutate(run)
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_current_profile(run, "n1", 2, 2)

@@ -157,6 +157,12 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = ra.read(p, nsplit=n)          # G33R
+        # TODAY'S capability profile, instrumented or not (owner review §8):
+        # the fixture-domain pin ran only under --nflux, so a plain bundle's
+        # members were never held to the fixture's B/K, and the reader's
+        # archive-compatibility options (INITIAL, forcing, time geometry all
+        # optional) silently became the producer's requirements.
+        _require_current_profile(runs[n], p.name, width, levels, algo=algo)
         probe = None
         if arm == "probe":
             probe = pr.read(text)               # G33P
@@ -174,6 +180,62 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
     return runs
 
 
+def _require_current_profile(run, name, width, levels, algo=None):
+    """What TODAY'S producer requires of every member it publishes -- with or
+    without instrumentation (owner review §8).
+
+    The strict parsers keep INITIAL, the rho/delz forcing and the
+    delt/loops/dtcld header OPTIONAL so archived streams from before those
+    records existed still parse -- right for a reader of history, wrong for
+    a producer of evidence: a non-instrumented bundle could publish members
+    with no initial state, no forcing and no time geometry, and nothing
+    compared the window's domain to the fixture at all. Reading the archive
+    and producing into it are different contracts; this is the second one.
+    """
+    wcols = {k[2] for k in run if len(k) == 4 and k[0] == "state"}
+    wks = {k[3] for k in run if len(k) == 4 and k[0] == "state"}
+    if wcols != set(range(1, width + 1)) or wks != set(range(levels)):
+        raise ra.RefineError(
+            f"{name}: the window covers columns {sorted(wcols)} x levels "
+            f"{sorted(wks)}, the fixture declares 1..{width} x 0..{levels - 1}")
+    if not any(k[0] == "initial" for k in run):
+        raise ra.RefineError(
+            f"{name}: no INITIAL state -- every budget is measured from it, "
+            f"and a current member without one is not evidence")
+    names = {k[1] for k in run if k[0] == "forcing"}
+    if not {"rho", "delz"} <= names:
+        raise ra.RefineError(
+            f"{name}: forcing carries {sorted(names)} -- a current member "
+            f"publishes its rho*dz measure, not a promise of one")
+    for fld in ("delt", "loops", "dtcld"):
+        if ("meta", fld) not in run:
+            raise ra.RefineError(
+                f"{name}: the header declares no {fld} -- a current member "
+                f"records its own time geometry")
+    delt = run[("meta", "delt")]
+    loops = run[("meta", "loops")]
+    dtcld = run[("meta", "dtcld")]
+    if not (delt > 0 and dtcld > 0 and loops >= 1
+            and run[("meta", "nsplit")] >= 1):
+        raise ra.RefineError(
+            f"{name}: delt={delt}, loops={loops}, dtcld={dtcld}, "
+            f"nsplit={run[('meta', 'nsplit')]} -- run geometry must be "
+            f"positive")
+    # The kernel's own rule, measured to hold on all 192 published headers
+    # at the channel's resolution: the sub-cycle step times the loop count
+    # is the external step.
+    if f"{loops * dtcld:.6f}" != f"{delt:.6f}":
+        raise ra.RefineError(
+            f"{name}: loops({loops}) x dtcld({dtcld}) = "
+            f"{loops * dtcld:.6f} but delt is {delt:.6f} -- the header's "
+            f"time geometry is not one kernel's")
+    walg = run.get(("meta", "algorithm"))
+    if algo is not None and walg is not None and walg != algo:
+        raise ra.RefineError(
+            f"{name}: the member ran {walg}, the caller asked to build "
+            f"{algo!r}")
+
+
 def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
                            arm="reference", algo=None, fixture=None):
     """ONE validator for every raw driver stream (owner review §6).
@@ -188,6 +250,7 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     """
     run = (pr.read(text) if arm == "f64"
            else ra.read_text(text, nsplit=nsplit, label=name))
+    _require_current_profile(run, name, width, levels, algo=algo)
     _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
                             run, arm=arm, algo=algo, fixture=fixture)
     return run
@@ -451,6 +514,7 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = pr.read(text)
+        _require_current_profile(runs[n], p.name, width, levels, algo=algo)
         if nflux:
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
                                     width, levels, runs[n], arm="f64",
