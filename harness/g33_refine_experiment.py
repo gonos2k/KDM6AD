@@ -182,17 +182,19 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
             f"published as {want}")
     # ...and the WINDOW protocol in the same stdout. `run` is keyed
     # (class, field, col, k); its columns and levels are the window's domain.
+    # EXACT sets, not max/len (owner review §4): {1,3} has max 3, {-1,0,1,2}
+    # has len 4, and either is a different domain wearing the right summary.
     wcols = {k[2] for k in run if len(k) == 4 and k[0] == "state"}
     wks = {k[3] for k in run if len(k) == 4 and k[0] == "state"}
-    if wcols and max(wcols) != rid["width"]:
+    if wcols != set(range(1, rid["width"] + 1)):
         raise ra.RefineError(
-            f"{name}: the window protocol covers columns up to {max(wcols)} "
-            f"and the G33N leg covers 1..{rid['width']} -- two protocols, two "
-            f"domains, one stdout")
-    if wks and len(wks) != rid["levels"]:
+            f"{name}: the window protocol covers columns {sorted(wcols)} "
+            f"and the G33N leg covers exactly 1..{rid['width']} -- two "
+            f"protocols, two domains, one stdout")
+    if wks != set(range(rid["levels"])):
         raise ra.RefineError(
-            f"{name}: the window protocol carries {len(wks)} levels and the "
-            f"G33N leg declares K={rid['levels']}")
+            f"{name}: the window protocol carries levels {sorted(wks)} and "
+            f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:

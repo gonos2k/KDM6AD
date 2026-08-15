@@ -909,3 +909,36 @@ def test_the_producer_gates_publication_on_the_RESOLVED_graph():
     assert src.index("graph_violations(man)") < src.index(
         '(tmp / "manifest.json").write_text'), \
         "the resolved check must run BEFORE the manifest is written"
+
+
+# --- the window universe is EXACT, not summarized (owner review §4) ----------
+
+def _domain_run(cols=(1, 2, 3), ks=range(4)):
+    """A window `run` dict with only the keys the domain pin reads."""
+    return {("state", "qr", c, k): 1.0 for c in cols for k in ks}
+
+
+def _domain_text():
+    from test_g33_number_transport import _call as _ncall, _stream as _nstream
+    return _nstream(_ncall(1, cols=(1, 2, 3), ks=4))
+
+
+def test_the_exact_window_universe_is_the_control_case():
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
+                               "as-is", 3, 4, _domain_run())
+
+
+@pytest.mark.parametrize("cols,ks,match", [
+    ((1, 3), range(4), "two protocols, two domains"),      # column 2 missing
+    ((0, 1, 2, 3), range(4), "two protocols, two domains"),  # illegal column 0
+    ((1, 2, 3), (-1, 0, 1, 2), "declares exactly 0..3"),   # shifted levels
+    ((1, 2, 3), (0, 1, 2, 4), "declares exactly 0..3"),    # gapped levels
+])
+def test_a_summarized_domain_is_not_an_exact_one(cols, ks, match):
+    """max(cols)==B and len(ks)==K are summaries: {1,3} has max 3 and
+    {-1,0,1,2} has len 4, and each is a different domain wearing the right
+    summary. The pin compares the SETS."""
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4,
+                                   _domain_run(cols, ks))
