@@ -1048,3 +1048,24 @@ def test_a_valid_NON_INTEGRAL_split_is_not_two_timesteps():
     with pytest.raises(xp.ra.RefineError, match="two timesteps"):
         xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
                                    "as-is", 3, 4, run)
+
+
+def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
+    """Rounding BOTH sides re-admitted forgery (Codex): delt=42.8571425 --
+    more precision than F0.6 can produce, a genuinely different number than
+    the G33N word -- rounded to the same six decimals and bound. A value
+    that does not round-trip through the channel is refused, not rounded."""
+    import struct
+    delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
+    hex32 = struct.pack(">f", delt32).hex().upper()
+    from test_g33_number_transport import _call as _nc, _stream as _ns
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    run = _samerun_window()
+    run[("meta", "delt")] = 42.85714250
+    with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)
+    run[("meta", "delt")] = float("nan")
+    with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)

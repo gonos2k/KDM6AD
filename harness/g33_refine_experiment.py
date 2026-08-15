@@ -236,8 +236,16 @@ def _require_same_run(name, rid, run, parsed):
     # "42.857143" in the window, two spellings of one recorded fact. A record
     # can only bind as tightly as its channel, so these two compare at the
     # channel's resolution: the G33N word must PRINT to the window's record.
-    # The full-precision channels (the per-cell forcing below) keep word
-    # equality at the member's width.
+    #
+    # ...and the window's value must itself BE that channel's output (Codex,
+    # round two): rounding BOTH sides re-admitted forgery, because a header
+    # carrying delt=42.8571425 -- more precision than F0.6 can produce, and a
+    # genuinely different number than the G33N word -- rounded to the same
+    # six decimals and bound. This parser judges arbitrary artifacts and may
+    # not re-assume the producer's printing, so a value that does not
+    # round-trip through the channel is refused, not rounded. The
+    # full-precision channels (the per-cell forcing below) keep word equality
+    # at the member's width.
     def rec6(v):
         return f"{v:.6f}"
 
@@ -246,6 +254,12 @@ def _require_same_run(name, rid, run, parsed):
         raise ra.RefineError(
             f"{name}: the window protocol declares no delt to hold the G33N "
             f"leg's {rid['delt']} to -- the same-run contract cannot bind")
+    for label, wv in (("delt", wdelt), ("dtcld", run.get(("meta", "dtcld")))):
+        if wv is not None and float(rec6(wv)) != wv:
+            raise ra.RefineError(
+                f"{name}: the window protocol's {label}={wv!r} carries more "
+                f"precision than the F0.6 channel can produce -- not that "
+                f"channel's record, so nothing to bind at its resolution")
     if rec6(wdelt) != rec6(rid["delt"]):
         raise ra.RefineError(
             f"{name}: the window protocol stepped delt={wdelt}, the G33N leg "
