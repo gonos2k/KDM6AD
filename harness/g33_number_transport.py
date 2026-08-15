@@ -841,7 +841,8 @@ def calls(stream: str) -> list:
 
 
 def validated_run_identity(text: str, expected_width: int | None = None,
-                           expected_levels: int | None = None) -> dict:
+                           expected_levels: int | None = None,
+                           with_calls: bool = False):
     """The run identity, FROM the strict parser -- never beside it.
 
     The evidence chain re-derived nsplit/carry/rho/width from the published
@@ -880,12 +881,16 @@ def validated_run_identity(text: str, expected_width: int | None = None,
     row = sorted((c["tile"], c["cols"]) for c in parsed if c["split"] == 1)
     tiles = tuple(cols for _t, cols in row)
     dtclds = {f["nflux_dtcld"] for c in parsed for f in c["flux"].values()}
-    return {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
-            "rho": hdr["rho_profile"], "width": width, "levels": levels,
-            "ntile": hdr["ntile"], "tile_ranges": tiles,
-            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
-            "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
-            "dtcld": dtclds.pop() if dtclds else None}
+    rid = {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
+           "rho": hdr["rho_profile"], "width": width, "levels": levels,
+           "ntile": hdr["ntile"], "tile_ranges": tiles,
+           "tile_sizes": tuple(b - a + 1 for a, b in tiles),
+           "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
+           "dtcld": dtclds.pop() if dtclds else None}
+    # `with_calls` hands back the strict parse the identity was derived FROM,
+    # so a caller that also needs the records (the same-run forcing check)
+    # does not parse a many-megabyte stream twice. Same reader, same parse.
+    return (rid, parsed) if with_calls else rid
 
 
 def stream_header(stream: str) -> dict:

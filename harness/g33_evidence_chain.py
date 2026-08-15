@@ -412,6 +412,14 @@ def _arm_ran_state(p: Path, an: dict) -> str:
             else "RUN-IDENTITY-MISMATCH")
 
 
+#: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
+#: the manifest digests every member, so the answer cannot change within a
+#: run -- and the chain is walked repeatedly by the tests, each walk otherwise
+#: re-parsing tens of megabytes of streams. A member edited UNDER a cached
+#: manifest is caught by its digest row, which is not cached.
+_MEMBER_CONTRACT: dict = {}
+
+
 def _member_contract_states(root: Path, man: dict) -> list[dict]:
     """Every primary member, re-parsed by the CURRENT strict parsers and held
     to the fixture-domain / same-run contract the producer enforces today.
@@ -426,14 +434,20 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     footnote.
     """
     import g33_refine_experiment as xp
-    out = []
+    key = (str(root.resolve()),
+           hashlib.sha256(json.dumps(man, sort_keys=True).encode()).hexdigest())
+    if key in _MEMBER_CONTRACT:
+        return _MEMBER_CONTRACT[key]
+    out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
         width, levels = xp.fixture_dims(fixture)
     except (KeyError, TypeError, SystemExit) as e:
-        return [{"file": "members", "scope": "repo",
-                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
-                 "detail": str(e)[:120]}]
+        out = [{"file": "members", "scope": "repo",
+                "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
+                "detail": str(e)[:120]}]
+        _MEMBER_CONTRACT[key] = out
+        return out
     arm = man.get("arm", "reference")
     for mem in man.get("members", []):
         p = root / mem["file"]
@@ -458,6 +472,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
             row["detail"] = str(e)[:160]
         out.append(row)
+    _MEMBER_CONTRACT[key] = out
     return out
 
 

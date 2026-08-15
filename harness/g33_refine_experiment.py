@@ -173,8 +173,9 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
     carry. Any two agreeing proves nothing about the third, so all three are
     tied here, at production, where the text is in hand.
     """
-    rid = nt.validated_run_identity(text, expected_width=width,
-                                    expected_levels=levels)
+    rid, parsed = nt.validated_run_identity(text, expected_width=width,
+                                            expected_levels=levels,
+                                            with_calls=True)
     want = {"nsplit": n, "carry": mode, "rho": rho, "width": width}
     got = {k: rid[k] for k in want}
     if got != want:
@@ -196,10 +197,10 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
         raise ra.RefineError(
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
-    _require_same_run(name, rid, run, text)
+    _require_same_run(name, rid, run, parsed)
 
 
-def _require_same_run(name, rid, run, text):
+def _require_same_run(name, rid, run, parsed):
     """The SAME-RUN contract (owner review §6): the protocols in one stdout
     record the same facts twice, and until here nothing compared them.
 
@@ -255,7 +256,7 @@ def _require_same_run(name, rid, run, text):
         raise ra.RefineError(
             f"{name}: the window protocol carries no rho/delz forcing to hold "
             f"the G33N leg's to -- the same-run contract cannot bind")
-    for call in nt.calls(text):
+    for call in parsed:
             for (lp, c, kk), rec in call["outer_pre_sed"].items():
                 for nm in ("rho", "delz"):
                     wv = frc.get((nm, c, kk))
