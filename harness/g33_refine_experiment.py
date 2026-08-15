@@ -909,6 +909,20 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # P0-2). Before publish, so a malformed bundle is never renamed into
         # place rather than being caught by whoever reads it later.
         violations = rm.validate(man)
+        # ...and the RESOLVED graph check, which the schema deliberately does
+        # not run -- reading blobs is not shape validation, and a public clone
+        # may legitimately lack them. The PRODUCER may not: it pinned those
+        # blobs seconds ago from its own HEAD, so `BlobUnavailable` here is a
+        # broken pin, not an excusable absence. Without this the check ran only
+        # AFTER publication, in the evidence chain -- so a regression in
+        # `identity_block()` would publish a structurally-valid bundle and be
+        # discovered by whoever read it later (owner review §4).
+        try:
+            violations += rm.graph_violations(man)
+        except rm.BlobUnavailable as e:
+            raise SystemExit(
+                f"REFUSED: the identity graph cannot be resolved against the "
+                f"pinned blobs at publish time -- {e}")
         if violations:
             raise SystemExit("REFUSED: the manifest does not satisfy "
                              f"{man['schema']}:\n  " + "\n  ".join(violations))

@@ -891,3 +891,19 @@ def test_the_MULTI_RUN_config_is_read_from_the_RESULT():
     assert '"decompositions": ran["decompositions"]' in body
     assert "compositions_of(fixture)" not in body, \
         "the recorded decompositions must come from the run, not the fixture"
+
+
+def test_the_producer_gates_publication_on_the_RESOLVED_graph():
+    """`rm.validate` is shape; `graph_violations` reads the pinned blobs. Only
+    the second can see a graph that disagrees with the code, and it ran only
+    AFTER publication -- so a regression in `identity_block()` would publish a
+    structurally-valid bundle and be discovered by whoever read it later
+    (owner review §4). Source-level: the producer must call both, and must
+    treat an unresolvable blob as refusal, not absence."""
+    src = " ".join((ROOT.parent / "harness/g33_refine_experiment.py")
+                   .read_text().split())
+    assert "violations += rm.graph_violations(man)" in src
+    assert "except rm.BlobUnavailable" in src
+    assert src.index("graph_violations(man)") < src.index(
+        '(tmp / "manifest.json").write_text'), \
+        "the resolved check must run BEFORE the manifest is written"

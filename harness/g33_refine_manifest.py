@@ -263,6 +263,69 @@ IDENTITY_SCHEMA = "g33_layered_identity_v2"
 _ROLES = ("run", "analysis")
 
 
+#: The three blocks a file can be pinned under. One file may legitimately be
+#: pinned in several -- `g33_number_transport` is a producer module AND a
+#: member parser -- and those pins are two records of one fact.
+_PIN_BLOCK_KEYS = ("producer_modules", "member_parsers", "tracked_build_inputs")
+
+
+def resolved_pins(man: dict) -> dict:
+    """repo path -> its ONE consistent pin, from every block that carries it.
+
+    The pin collectors keyed by basename STEM, so when one file was pinned in
+    two blocks the later block silently overwrote the earlier -- and the graph
+    check could read one blob while the id digested the other pin. Measured on
+    the real f64 manifest: `g33_number_transport.py` and `g33_probe_read.py`
+    are each pinned in producer_modules AND member_parsers, and a divergent
+    duplicate passed `validate()` clean (owner review §5).
+
+    So the table is keyed by the FULL repo path, and refuses:
+
+      the same path pinned with different content anywhere in the document --
+      two records of one fact that disagree are one record and one lie;
+      two different paths whose basename gives the same Python module name --
+      the import graph is keyed by module name, so they would collide in it.
+    """
+    table, bad = {}, []
+    for key in _PIN_BLOCK_KEYS:
+        for e in man.get(key) or []:
+            if not (isinstance(e, dict) and isinstance(e.get("path"), str)):
+                continue
+            path = e["path"]
+            body = {"content_sha256": e.get("content_sha256"),
+                    "blob_sha": e.get("blob_sha")}
+            if path in table and table[path] != body:
+                bad.append(f"{path} is pinned as {table[path]['blob_sha'] and table[path]['blob_sha'][:12]}"
+                           f" in one block and {body['blob_sha'] and body['blob_sha'][:12]} in {key}"
+                           f" -- two records of one fact that disagree")
+            table[path] = body
+    stems = {}
+    for path in table:
+        if path.endswith(".py"):
+            stem = path.rsplit("/", 1)[-1][:-3]
+            if stem in stems and stems[stem] != path:
+                bad.append(f"{stems[stem]} and {path} both import as "
+                           f"{stem!r} -- the import graph is keyed by module "
+                           f"name and cannot hold both")
+            stems[stem] = path
+    if bad:
+        raise PinConflict("; ".join(sorted(set(bad))))
+    return table
+
+
+class PinConflict(Exception):
+    """The document pins one file two ways, or two files under one name."""
+
+
+def pin_conflicts(man: dict) -> list:
+    """`resolved_pins` as a violation list, for the validator."""
+    try:
+        resolved_pins(man)
+        return []
+    except PinConflict as e:
+        return [str(e)]
+
+
 def _pinned_modules(man: dict) -> set:
     """Every PYTHON module this bundle pins, under any of the three pin blocks.
 
@@ -275,13 +338,8 @@ def _pinned_modules(man: dict) -> set:
     not things an import closure has a role for. Including them would demand a
     role for every file and get one invented.
     """
-    out = set()
-    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
-        for e in man.get(key) or []:
-            if isinstance(e, dict) and isinstance(e.get("path"), str) \
-                    and e["path"].endswith(".py"):
-                out.add(e["path"].rsplit("/", 1)[-1][:-3])
-    return out
+    return {p.rsplit("/", 1)[-1][:-3] for p in resolved_pins(man)
+            if p.endswith(".py")}
 
 
 def _identity_violations(man: dict) -> list:
@@ -445,19 +503,24 @@ def pinned_blobs(man: dict) -> dict:
     checkout would defeat the recording -- while checking it against the blobs
     the manifest itself pins uses nothing the archive does not carry.
     """
-    pins = {}
-    for key in ("producer_modules", "tracked_build_inputs", "member_parsers"):
-        for e in man.get(key) or []:
-            if isinstance(e, dict) and str(e.get("path", "")).endswith(".py") \
-                    and isinstance(e.get("blob_sha"), str):
-                pins[e["path"].rsplit("/", 1)[-1][:-3]] = e["blob_sha"]
     out = {}
-    for mod, sha in pins.items():
-        r = subprocess.run(["git", "cat-file", "blob", sha], cwd=REPO,
-                           capture_output=True)
+    for path, pin in resolved_pins(man).items():
+        if not path.endswith(".py") or not isinstance(pin["blob_sha"], str):
+            continue
+        mod = path.rsplit("/", 1)[-1][:-3]
+        r = subprocess.run(["git", "cat-file", "blob", pin["blob_sha"]],
+                           cwd=REPO, capture_output=True)
         if r.returncode != 0:
-            raise BlobUnavailable(f"{mod} pins blob {sha[:12]}, not in this "
-                                  f"object database")
+            raise BlobUnavailable(f"{mod} pins blob {pin['blob_sha'][:12]}, "
+                                  f"not in this object database")
+        # The blob must BE the content the pin claims ran. `_pin_path` checks
+        # this at production; checking it here too makes the graph read bytes
+        # the id answers for, from an arbitrary manifest (owner review §5).
+        if isinstance(pin["content_sha256"], str) and \
+                hashlib.sha256(r.stdout).hexdigest() != pin["content_sha256"]:
+            raise BlobUnavailable(
+                f"{mod}: blob {pin['blob_sha'][:12]} does not hash to the "
+                f"pinned content_sha256 -- the pin names two different files")
         out[mod] = r.stdout
     return out
 
@@ -579,6 +642,9 @@ def graph_violations(man: dict) -> list:
     graph, reach = ident.get("role_graph"), ident.get("analysis_reach")
     if not isinstance(graph, dict) or not isinstance(reach, dict):
         return []                       # shape is the schema's business
+    conflicts = pin_conflicts(man)
+    if conflicts:
+        return conflicts                # the table the graph reads is not one
     seeds = ident.get("analysis_seeds")
     if not isinstance(seeds, dict) or not seeds:
         return ["identity.analysis_seeds must record each analysis's seed "
@@ -766,7 +832,15 @@ def validate(man: dict) -> list:
     # manifest could omit it and still validate: the same "lower the contract
     # by omission" defect the v2 bump was for, reproduced one field later.
     if at_least(schema, "refinement_experiment_v3"):
-        bad += _identity_violations(man)
+        conflicts = pin_conflicts(man)
+        bad += conflicts
+        # The identity checks read the pin table, so on a CONFLICTED table
+        # they cannot be evaluated -- `validate` is contracted to RETURN
+        # violations, and letting the resolver's refusal escape as an
+        # exception made the validator crash on exactly the input it exists
+        # to describe (measured writing this).
+        if not conflicts:
+            bad += _identity_violations(man)
         uncovered = _identity_covers(man)
         if uncovered:
             bad.append(f"identity.analysis_reach omits {uncovered}, which this "
