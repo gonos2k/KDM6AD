@@ -1174,15 +1174,24 @@ def test_a_VALID_subcycle_whose_quotient_does_not_invert_still_parses():
     """The kernel rounds delt/L to the build's width; re-multiplying does
     NOT recover delt for ~9% of (delt, L) pairs at f64, so a product rule
     refused valid streams (Codex). The check now recomputes the kernel's
-    own operation: dtcld must equal the correctly-rounded quotient."""
+    own operation: dtcld must equal the correctly-rounded quotient.
+
+    The pair is KERNEL-CONSISTENT (Codex, next round): the kernel picks
+    L = max(nint(delt/dtcldcr), 1) with dtcldcr = 120 (F:930), so
+    delt = 384.007... gives nint(3.2) = 3 loops -- a stream the kernel can
+    actually emit, unlike an arbitrary (delt, L) the parser would judge but
+    no run would produce."""
+    import math
     import struct
-    delt = float.fromhex("0x1.f07cb867c72c3p+12")
-    q = struct.unpack(">d", struct.pack(">d", delt / 5))[0]
-    assert struct.pack(">d", q * 5) != struct.pack(">d", delt), \
+    delt = float.fromhex("0x1.8001d7dbf7f69p+8")     # 384.00720000079906
+    assert max(math.floor(delt / 120 + 0.5), 1) == 3, \
+        "the pair no longer matches the kernel's own loop rule"
+    q = struct.unpack(">d", struct.pack(">d", delt / 3))[0]
+    assert struct.pack(">d", q * 3) != struct.pack(">d", delt), \
         "the chosen pair no longer demonstrates the non-inverting case"
     dh = struct.pack(">d", delt).hex().upper()
     qh = struct.pack(">d", q).hex().upper()
-    parts = [_call(1, loop=l) for l in range(1, 6)]
+    parts = [_call(1, loop=l) for l in range(1, 4)]
     merged = parts[0].rstrip().rsplit("G33N CALL_END", 1)[0]
     for pt in parts[1:]:
         merged += pt.split("42C80000\n", 1)[1].rsplit("G33N CALL_END", 1)[0]
@@ -1191,4 +1200,4 @@ def test_a_VALID_subcycle_whose_quotient_does_not_invert_still_parses():
              "as-is\n" + merged + "G33N STREAM_END\n")
     s = s.replace("4059000000000000", dh)
     s = s.replace(f"nflux_dtcld f64 {dh}", f"nflux_dtcld f64 {qh}")
-    assert sorted(nt.calls(s)[0]["loops"]) == [1, 2, 3, 4, 5]
+    assert sorted(nt.calls(s)[0]["loops"]) == [1, 2, 3]
