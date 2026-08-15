@@ -243,13 +243,16 @@ def _probe_member(path: Path) -> dict:
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
                   rho_profile: str = "as-is", width: int = 3,
-                  levels=None) -> dict:
+                  levels=None, nflux=False) -> dict:
     """Run every member: G33P strict parse AND the fixture-domain pin.
 
     The f64 path validated only G33P; the G33N leg in the same stdout was read
     later by each analysis without a fixture width to hold it to, so a G33N
     covering fewer columns than the window protocol would pass every strict
     parse and the analyses would silently omit the rest (owner review §4).
+    The pin reads the G33N header, so it applies exactly when the build emits
+    one -- an --nflux build; without the overlay there is no transport stream
+    for any parser to hold to anything.
     """
     runs = {}
     for n in nsplits:
@@ -257,8 +260,9 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = pr.read(text)
-        _require_fixture_domain(text, p.name, n, mode, rho_profile,
-                                width, levels, runs[n])
+        if nflux:
+            _require_fixture_domain(text, p.name, n, mode, rho_profile,
+                                    width, levels, runs[n])
     return runs
 
 
@@ -891,7 +895,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
-                                 levels=fixture_dims(fixture)[1])
+                                 levels=fixture_dims(fixture)[1], nflux=nflux)
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member

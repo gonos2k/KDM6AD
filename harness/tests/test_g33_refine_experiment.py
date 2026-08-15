@@ -226,7 +226,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
-                      levels=None):
+                      levels=None, nflux=False):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
