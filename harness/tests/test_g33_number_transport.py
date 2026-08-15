@@ -278,7 +278,7 @@ def test_partial_consumption_cannot_skip_the_end_checks():
 def test_tiles_with_a_gap_or_overlap_are_refused():
     s = _stream(_call(1, cols=(1,), split=1, tile=1),
                 _call(2, cols=(3,), split=1, tile=2), nsplit=1, ntile=2)
-    with pytest.raises(nt.StreamError, match="gap or overlap"):
+    with pytest.raises(nt.StreamError, match="domain stands at column 2"):
         list(nt.calls(s))
 
 
@@ -918,7 +918,7 @@ def test_a_stream_with_NO_header_is_still_read_under_the_documented_default():
 
 def test_a_split_whose_tiles_start_past_COLUMN_1_is_refused():
     s = _stream(_call(1, cols=(2,), split=1, tile=1), nsplit=1, ntile=1)
-    with pytest.raises(nt.StreamError, match="from column 1"):
+    with pytest.raises(nt.StreamError, match="domain stands at column 1"):
         nt.calls(s)
 
 
@@ -936,7 +936,7 @@ def test_two_splits_covering_DIFFERENT_domains_are_refused():
          + _call(3, cols=(1,), split=2, tile=1)
          + _call(4, cols=(2, 3), split=2, tile=2)
          + "G33N STREAM_END\n")
-    with pytest.raises(nt.StreamError, match="different domains"):
+    with pytest.raises(nt.StreamError, match="decompose the domain differently"):
         nt.calls(s)
 
 
@@ -946,7 +946,8 @@ def test_two_splits_covering_DIFFERENT_domains_are_refused():
 def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     got = nt.validated_run_identity(_stream(_call(1)))
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
-                   "width": 1, "levels": 2}
+                   "width": 1, "levels": 2, "ntile": 1,
+                   "tile_ranges": ((1, 1),), "tile_sizes": (1,)}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -1028,3 +1029,44 @@ def test_one_stream_declares_ONE_K_and_ONE_delt():
 def test_validated_run_identity_pins_the_EXPECTED_levels():
     with pytest.raises(nt.StreamError, match="expected the fixture's 4"):
         nt.validated_run_identity(_stream(_call(1)), expected_levels=4)
+
+
+# --- one decomposition per stream, in tile-ID order (owner review §5) --------
+#
+# Coverage was checked with segments sorted by COLUMN RANGE and compared across
+# splits only by the last column, so two shapes passed that are not one
+# decomposition: a stream whose splits tile the domain differently, and a
+# stream whose tile IDs are spatially permuted. `ncmin` is set by a tile's
+# LAST column, so both change what the kernel computed. Measured before fixed.
+
+
+def test_splits_running_DIFFERENT_tile_vectors_are_refused():
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(2, 3), split=1, tile=2),
+                _call(3, cols=(1, 2), split=2, tile=1),
+                _call(4, cols=(3,), split=2, tile=2),
+                nsplit=2, ntile=2)
+    with pytest.raises(nt.StreamError, match="decompose the domain differently"):
+        nt.calls(s)
+
+
+def test_spatially_PERMUTED_tile_ids_are_refused():
+    s = _stream(_call(1, cols=(2, 3), split=1, tile=1),
+                _call(2, cols=(1,), split=1, tile=2),
+                _call(3, cols=(2, 3), split=2, tile=1),
+                _call(4, cols=(1,), split=2, tile=2),
+                nsplit=2, ntile=2)
+    with pytest.raises(nt.StreamError, match="in tile-ID order"):
+        nt.calls(s)
+
+
+def test_the_run_identity_carries_the_decomposition():
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(2, 3), split=1, tile=2),
+                _call(3, cols=(1,), split=2, tile=1),
+                _call(4, cols=(2, 3), split=2, tile=2),
+                nsplit=2, ntile=2)
+    rid = nt.validated_run_identity(s)
+    assert rid["ntile"] == 2
+    assert rid["tile_ranges"] == ((1, 1), (2, 3))
+    assert rid["tile_sizes"] == (1, 2)
