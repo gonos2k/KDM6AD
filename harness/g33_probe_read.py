@@ -91,14 +91,16 @@ def read(text: str) -> dict:
     # The delt/dtcld TOKENS are fixed-6 records and are validated as tokens,
     # where the precision they claim is still visible (Codex): float()
     # collapses a forged higher-precision spelling onto the same double as
-    # the channel's own output. CANONICAL spellings only -- and the channel
-    # has two producers: gfortran's F0.6 prints .390625 below one, the C++
-    # driver's std::fixed/setprecision(6) prints 0.390625, so the integer
-    # part is empty, zero, or nonzero-leading. A padded 00042.857143, which
-    # neither producer can print, is not the channel's record.
+    # the channel's own output. G33P has exactly ONE producer -- the Fortran
+    # driver (the C++ driver emits no G33P record at all) -- so the grammar
+    # is gfortran's F0.6 alone: an integer part that is empty below one
+    # (.390625) or nonzero-leading. Admitting the C++ 0.390625 spelling here
+    # would widen this parser for a producer that never writes this protocol
+    # (Codex); that spelling belongs to G33R's grammar, where both drivers
+    # emit.
     for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
-        _expect(re.fullmatch(r"(?:0|[1-9]\d*)?\.\d{6}", tok),
-                f"{nmm} token {tok!r} is not a fixed-6 record")
+        _expect(re.fullmatch(r"(?:[1-9]\d*)?\.\d{6}", tok),
+                f"{nmm} token {tok!r} is not an F0.6 record")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
 
     out, seen = {}, set()

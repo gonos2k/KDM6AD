@@ -577,8 +577,11 @@ def test_the_G33P_delt_token_is_judged_as_a_CANONICAL_F06_record():
     00042.857143 is a spelling F0.6 cannot print. Canonical spelling only."""
     good = _stream()
     pr.read(good)                                  # the builder's own F0.6 parses
-    for tok in ("25.0000001", "2.5E+01", "00025.000000", "025.000000"):
+    # ...including the C++ std::fixed sub-one spelling: the C++ driver emits
+    # no G33P at all, so 0-leading below one is not THIS protocol's output
+    for tok in ("25.0000001", "2.5E+01", "00025.000000", "025.000000",
+                "0.390625"):
         bad = good.replace(" 25.000000 25.000000 ", f" {tok} 25.000000 ", 1)
         assert bad != good, "the replacement found nothing to replace"
-        with pytest.raises(pr.ProbeError, match="not a fixed-6 record"):
+        with pytest.raises(pr.ProbeError, match="not an F0.6 record"):
             pr.read(bad)
