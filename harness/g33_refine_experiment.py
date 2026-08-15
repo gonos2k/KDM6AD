@@ -201,13 +201,23 @@ def _agree(g33r: dict, g33p: dict, name: str) -> None:
     """At the probe arm the same f32 values are written twice — raw hex on G33R
     and decimal on G33P. Requiring them to agree catches exactly the two defects
     that got through before: a transposed index and a format that dropped an
-    exponent's `E`."""
+    exponent's `E`.
+
+    BOTH directions (owner review §4.3): checking only that every G33R key has
+    a G33P counterpart let G33P carry records G33R never wrote -- {1,3} against
+    {1,2,3} compared two columns and called three agreed. The two protocols
+    must describe the same record universe before any value is compared."""
+    fams = ("state", "initial", "forcing", "prec")
+    kr = {k for k in g33r if k[0] in fams}
+    kp = {k for k in g33p if k[0] in fams}
+    if kr != kp:
+        raise pr.ProbeError(
+            f"{name}: G33R and G33P describe different record universes: "
+            f"{len(kp - kr)} only on G33P, {len(kr - kp)} only on G33R")
     for key, hexv in g33r.items():
-        if key[0] not in ("state", "initial", "forcing", "prec"):
+        if key[0] not in fams:
             continue
-        got = g33p.get(key)
-        if got is None:
-            raise pr.ProbeError(f"{name}: G33P is missing {key}, which G33R has")
+        got = g33p[key]
         # EXACT (owner §7.3). Both sides are the same f32 value written twice --
         # raw hex and decimal -- so they must round-trip to the same f32 word. A
         # 1e-6 relative tolerance admits several f32 ULP near 1 and would pass a

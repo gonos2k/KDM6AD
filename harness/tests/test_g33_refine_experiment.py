@@ -285,7 +285,7 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     with pytest.raises(xp.pr.ProbeError, match="different f32 words at"):
         xp._agree(g33r, swapped, "n.txt")
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
-    with pytest.raises(xp.pr.ProbeError, match="is missing"):
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33R"):
         xp._agree(g33r, missing, "n.txt")
 
 
@@ -942,3 +942,19 @@ def test_a_summarized_domain_is_not_an_exact_one(cols, ks, match):
         xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
                                    "rezero", "as-is", 3, 4,
                                    _domain_run(cols, ks))
+
+
+# --- probe agreement is a UNIVERSE equality, then a value equality (§4.3) ----
+
+def test_probe_agreement_requires_the_same_record_universe_BOTH_ways():
+    """One direction let G33P carry records G33R never wrote: every G33R key
+    found its counterpart, the extras were never visited, and two protocols
+    with different domains were called agreed."""
+    g33r = {("state", "qr", 1, 0): 1.0, ("meta", "nsplit"): 1}
+    extra = dict(g33r)
+    extra[("state", "qr", 2, 0)] = 5.0
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33P"):
+        xp._agree(g33r, extra, "x")
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33R"):
+        xp._agree(g33r, {("meta", "nsplit"): 1}, "x")
+    xp._agree(g33r, dict(g33r), "x")    # the control still passes
