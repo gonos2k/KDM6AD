@@ -412,6 +412,40 @@ def _arm_ran_state(p: Path, an: dict) -> str:
             else "RUN-IDENTITY-MISMATCH")
 
 
+def _pinned_fixture_dims(man: dict) -> tuple:
+    """(B, K) from the fixture bytes the MANIFEST pins -- never the checkout.
+
+    The semantic re-validation read the fixture through `fixture_dims`, which
+    parses the current working tree (owner review §7): edit the fixture
+    source and every historical bundle is suddenly judged against a domain
+    its run never saw -- in both directions, since a wrongly-shrunk checkout
+    would approve artifacts against the wrong (B, K) too. The scientific
+    input identity is the PINNED one: the blob at the bundle's own
+    `repo_commit`, required to hash to its recorded `fixture_sha256` before
+    a single dimension is read from it.
+    """
+    fixture = Path(str(man.get("fixture_path", ""))).name
+    rel = f"harness/g33_fortran/{fixture}"
+    commit = man.get("repo_commit")
+    r = subprocess.run(["git", "cat-file", "blob", f"{commit}:{rel}"],
+                       cwd=REPO, capture_output=True)
+    if r.returncode != 0:
+        raise ValueError(
+            f"cannot resolve {rel} at the pinned commit "
+            f"{str(commit)[:12]} -- the fixture the run consumed is not "
+            f"recoverable from here")
+    if hashlib.sha256(r.stdout).hexdigest() != man.get("fixture_sha256"):
+        raise ValueError(
+            f"the blob at {str(commit)[:12]}:{rel} does not hash to the "
+            f"manifest's fixture_sha256 -- the pin names bytes the commit "
+            f"does not hold")
+    m = re.search(rb"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)\s*,\s*"
+                  rb"K\s*=\s*(\d+)", r.stdout)
+    if not m:
+        raise ValueError(f"cannot read dimensions B, K from the pinned {rel}")
+    return int(m.group(1)), int(m.group(2))
+
+
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
 #: the manifest digests every member, so the answer cannot change within a
 #: run -- and the chain is walked repeatedly by the tests, each walk otherwise
@@ -441,8 +475,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels = xp.fixture_dims(fixture)
-    except (KeyError, TypeError, SystemExit) as e:
+        width, levels = _pinned_fixture_dims(man)
+    except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
                 "detail": str(e)[:120]}]

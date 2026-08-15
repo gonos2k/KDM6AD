@@ -2367,8 +2367,7 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
     """The G33N leg covers one column of a two-column window: internally
     strict, approved by an older producer, refused by today's fixture-domain
     pin -- and the chain must say so rather than stopping at the digest."""
-    import g33_refine_experiment as xp
-    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1,))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["MEMBER-CONTRACT-MISMATCH"]
@@ -2377,8 +2376,7 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
 
 def test_a_member_the_current_contract_accepts_reports_matches(
         tmp_path, monkeypatch):
-    import g33_refine_experiment as xp
-    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["matches"], rows
@@ -2391,8 +2389,7 @@ def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
     An arm_stream entry whose `ran` claims a different rho than its stream
     declares must be reported, with the expected values taken from the typed
     block -- and a well-formed one reports matches."""
-    import g33_refine_experiment as xp
-    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     man["analyses"] = [{"analysis": "arm_stream", "file": "n1.rezero.txt",
                         "ran": {"nsplit": 1, "carry": "rezero",
@@ -2403,3 +2400,32 @@ def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
     assert [r["state"] for r in rows] == ["matches",
                                           "MEMBER-CONTRACT-MISMATCH"]
     assert "'as-is'" in rows[1]["detail"]
+
+
+def test_the_pinned_fixture_not_the_checkout_supplies_the_domain():
+    """Semantic re-validation read (B, K) from the working tree, so editing
+    the fixture source re-judged every historical bundle against a domain
+    its run never saw (owner review §7). The dims now come from the blob at
+    the bundle's own repo_commit, required to hash to fixture_sha256 first
+    -- a manifest whose digest lies gets FIXTURE-UNRESOLVED, not a guess."""
+    man = _real_v3_manifest_here()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    import copy
+    b, k = ec._pinned_fixture_dims(man)
+    assert b >= 1 and k >= 1
+    lied = copy.deepcopy(man)
+    lied["fixture_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="does not hash"):
+        ec._pinned_fixture_dims(lied)
+
+
+def _real_v3_manifest_here():
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if man.get("identity"):
+                    return man
+    return None
