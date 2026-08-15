@@ -1025,3 +1025,26 @@ def test_the_same_run_contract_compares_at_the_MEMBERS_precision():
     ok[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
     xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
                                "rezero", "as-is", 3, 4, ok)
+
+
+def test_a_valid_NON_INTEGRAL_split_is_not_two_timesteps():
+    """delt/dtcld reach the window through the header's F0.6 print -- a
+    six-decimal channel whatever the member's precision. Word equality at f64
+    width refused delt = 300/7: exact in the G33N word, "42.857143" in the
+    window, two spellings of ONE recorded fact (Codex). The channel's
+    resolution is the binding's resolution; a genuinely different delt still
+    refuses."""
+    import struct
+    delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
+    hex32 = struct.pack(">f", delt32).hex().upper()
+    from test_g33_number_transport import _call as _nc, _stream as _ns
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    run = _samerun_window()
+    run[("meta", "precision")] = "f64"
+    run[("meta", "delt")] = float(f"{delt32:.6f}")
+    xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero", "as-is",
+                               3, 4, run)
+    run[("meta", "delt")] = 300.0
+    with pytest.raises(xp.ra.RefineError, match="two timesteps"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)

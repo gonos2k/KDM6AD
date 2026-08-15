@@ -229,18 +229,30 @@ def _require_same_run(name, rid, run, parsed):
         raise ra.RefineError(
             f"{name}: the window protocol ran {walg}, the G33N leg ran "
             f"{rid['algorithm']} -- two algorithms, one stdout")
+    # delt/dtcld reach the window through the header's F0.6 print -- a
+    # SIX-DECIMAL channel on both G33R and G33P, whatever the member's
+    # precision. Word equality at f64 width therefore refused VALID
+    # non-integral splits (Codex): delt = 300/7 is exact in the G33N word and
+    # "42.857143" in the window, two spellings of one recorded fact. A record
+    # can only bind as tightly as its channel, so these two compare at the
+    # channel's resolution: the G33N word must PRINT to the window's record.
+    # The full-precision channels (the per-cell forcing below) keep word
+    # equality at the member's width.
+    def rec6(v):
+        return f"{v:.6f}"
+
     wdelt = run.get(("meta", "delt"))
     if wdelt is None:
         raise ra.RefineError(
             f"{name}: the window protocol declares no delt to hold the G33N "
             f"leg's {rid['delt']} to -- the same-run contract cannot bind")
-    if word(wdelt) != word(rid["delt"]):
+    if rec6(wdelt) != rec6(rid["delt"]):
         raise ra.RefineError(
             f"{name}: the window protocol stepped delt={wdelt}, the G33N leg "
             f"stepped delt={rid['delt']} -- two timesteps, one stdout")
     wdt = run.get(("meta", "dtcld"))
     if (wdt is not None and rid["dtcld"] is not None
-            and word(wdt) != word(rid["dtcld"])):
+            and rec6(wdt) != rec6(rid["dtcld"])):
         raise ra.RefineError(
             f"{name}: the window protocol sub-cycled at dtcld={wdt}, the "
             f"G33N leg at {rid['dtcld']}")
