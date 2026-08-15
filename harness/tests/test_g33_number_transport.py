@@ -947,7 +947,8 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     got = nt.validated_run_identity(_stream(_call(1)))
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
-                   "tile_ranges": ((1, 1),), "tile_sizes": (1,)}
+                   "tile_ranges": ((1, 1),), "tile_sizes": (1,),
+                   "algorithm": "legacy", "delt": 100.0, "dtcld": 1.0}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -1070,3 +1071,13 @@ def test_the_run_identity_carries_the_decomposition():
     assert rid["ntile"] == 2
     assert rid["tile_ranges"] == ((1, 1), (2, 3))
     assert rid["tile_sizes"] == (1, 2)
+
+
+def test_NFLUX_records_declaring_two_subcycle_steps_are_refused():
+    """dtcld is a scalar of the run, recorded once per column in every NFLUX
+    group -- two values is two runs' records in one stream (owner review §6)."""
+    s = _stream(_call(1, cols=(1, 2)))
+    s = s.replace("G33F NFLUX 1 2 nflux_dtcld f32 3F800000",
+                  "G33F NFLUX 1 2 nflux_dtcld f32 40000000")
+    with pytest.raises(nt.StreamError, match="different sub-cycle steps"):
+        nt.calls(s)

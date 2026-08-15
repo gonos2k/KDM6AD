@@ -195,6 +195,75 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
         raise ra.RefineError(
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
+    _require_same_run(name, rid, run, text)
+
+
+def _require_same_run(name, rid, run, text):
+    """The SAME-RUN contract (owner review §6): the protocols in one stdout
+    record the same facts twice, and until here nothing compared them.
+
+    Two internally-strict protocols can describe two different runs: a G33N
+    leg declaring legacy/delt=100 beside a window declaring
+    conservative/delt=300 passed every check, because each fact was validated
+    only inside its own protocol. Every fact both sides record is compared;
+    a fact only one side records cannot be, and stays with that side's own
+    checks. Floats compare as f32 WORDS -- the two protocols print the same
+    f32 value in different notations, so word equality is the honest test and
+    a tolerance would re-admit genuinely different numbers.
+    """
+    def w32(v):
+        return struct.pack(">f", v)
+
+    walg = run.get(("meta", "algorithm"))
+    if walg is not None and walg != rid["algorithm"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol ran {walg}, the G33N leg ran "
+            f"{rid['algorithm']} -- two algorithms, one stdout")
+    wdelt = run.get(("meta", "delt"))
+    if wdelt is None:
+        raise ra.RefineError(
+            f"{name}: the window protocol declares no delt to hold the G33N "
+            f"leg's {rid['delt']} to -- the same-run contract cannot bind")
+    if w32(wdelt) != w32(rid["delt"]):
+        raise ra.RefineError(
+            f"{name}: the window protocol stepped delt={wdelt}, the G33N leg "
+            f"stepped delt={rid['delt']} -- two timesteps, one stdout")
+    wdt = run.get(("meta", "dtcld"))
+    if (wdt is not None and rid["dtcld"] is not None
+            and w32(wdt) != w32(rid["dtcld"])):
+        raise ra.RefineError(
+            f"{name}: the window protocol sub-cycled at dtcld={wdt}, the "
+            f"G33N leg at {rid['dtcld']}")
+    wn = run.get(("meta", "ntile"))
+    if wn is not None and wn != rid["ntile"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol declares {wn} tiles, the G33N leg "
+            f"ran {rid['ntile']}")
+    wt = run.get(("meta", "tiles"))
+    if wt is not None and tuple(wt) != rid["tile_sizes"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol decomposed as {tuple(wt)}, the "
+            f"G33N leg as {rid['tile_sizes']} -- two decompositions, one run")
+    # The forcing VALUES, per cell (owner review §6): matched closure builds
+    # the physical layer mass from G33N's rho/delz beside the window's initial
+    # qv, which silently assumes the two protocols' rho/delz are the same
+    # numbers. Assume nothing: compare every cell of every call.
+    frc = {(k[1], k[2], k[3]): v for k, v in run.items()
+           if k[0] == "forcing" and k[1] in ("rho", "delz")}
+    if not frc:
+        raise ra.RefineError(
+            f"{name}: the window protocol carries no rho/delz forcing to hold "
+            f"the G33N leg's to -- the same-run contract cannot bind")
+    for call in nt.calls(text):
+            for (lp, c, kk), rec in call["outer_pre_sed"].items():
+                for nm in ("rho", "delz"):
+                    wv = frc.get((nm, c, kk))
+                    if wv is None or w32(rec[nm]) != w32(wv):
+                        raise ra.RefineError(
+                            f"{name}: call {call['call_id']} loop {lp} "
+                            f"col {c} level {kk}: G33N {nm}={rec[nm]!r} vs "
+                            f"window forcing {wv!r} -- the physical measure "
+                            f"would be built from two different runs")
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:

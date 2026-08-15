@@ -925,7 +925,7 @@ def _domain_text():
 
 def test_the_exact_window_universe_is_the_control_case():
     xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
-                               "as-is", 3, 4, _domain_run())
+                               "as-is", 3, 4, _samerun_window())
 
 
 @pytest.mark.parametrize("cols,ks,match", [
@@ -958,3 +958,47 @@ def test_probe_agreement_requires_the_same_record_universe_BOTH_ways():
     with pytest.raises(xp.pr.ProbeError, match="1 only on G33R"):
         xp._agree(g33r, {("meta", "nsplit"): 1}, "x")
     xp._agree(g33r, dict(g33r), "x")    # the control still passes
+
+
+# --- the SAME-RUN contract across protocols in one stdout (owner review §6) --
+
+def _samerun_window(cols=(1, 2, 3), ks=range(4)):
+    run = _domain_run(cols, ks)
+    run[("meta", "algorithm")] = "legacy"
+    run[("meta", "delt")] = 100.0
+    run.update({("forcing", nm, c, k): 1.0
+                for nm in ("rho", "delz") for c in cols for k in ks})
+    return run
+
+
+def test_the_same_run_contract_control_passes():
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
+                               "as-is", 3, 4, _samerun_window())
+
+
+@pytest.mark.parametrize("mutate,match", [
+    (lambda r: r.update({("meta", "algorithm"): "conservative"}),
+     "two algorithms, one stdout"),
+    (lambda r: r.update({("meta", "delt"): 300.0}),
+     "two timesteps, one stdout"),
+    (lambda r: r.pop(("meta", "delt")),
+     "declares no delt"),
+    (lambda r: r.update({("forcing", "rho", 2, 1): 2.0}),
+     "two different runs"),
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "forcing"],
+     "no rho/delz forcing"),
+    (lambda r: r.update({("meta", "ntile"): 3}),
+     "declares 3 tiles"),
+    (lambda r: r.update({("meta", "tiles"): (1, 2)}),
+     "two decompositions, one run"),
+])
+def test_two_strict_protocols_describing_two_runs_are_refused(mutate, match):
+    """Each protocol validated only inside itself, so a G33N leg declaring
+    legacy/delt=100/rho=1.0 beside a window declaring
+    conservative/delt=300/rho=2.0 passed every check -- measured before this
+    contract existed. Every fact BOTH sides record is now compared."""
+    run = _samerun_window()
+    mutate(run)
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)

@@ -796,6 +796,14 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"calls declare different timesteps {sorted(dts)} -- one "
                 f"stream describes one problem")
+        # ...and one SUB-CYCLE step: dtcld is a scalar of the run, recorded
+        # once per column in every NFLUX group, so any two disagreeing is two
+        # runs' records in one stream (owner review §6).
+        dtclds = {f["nflux_dtcld"] for c in out for f in c["flux"].values()}
+        if len(dtclds) > 1:
+            raise StreamError(
+                f"NFLUX records declare different sub-cycle steps "
+                f"{sorted(dtclds)} -- one stream describes one problem")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
@@ -866,13 +874,18 @@ def validated_run_identity(text: str, expected_width: int | None = None,
     # The decomposition is part of the identity (owner review §5): `calls()`
     # has proven every split runs the same tile vector, so split 1's row IS
     # the stream's. `ncmin` is set by a tile's last column, which makes the
-    # ranges scientific content, not bookkeeping.
+    # ranges scientific content, not bookkeeping. algorithm/delt/dtcld are
+    # identity facts too (owner review §6): each is proven single for the
+    # stream, so a caller holding a second protocol's copy can compare.
     row = sorted((c["tile"], c["cols"]) for c in parsed if c["split"] == 1)
     tiles = tuple(cols for _t, cols in row)
+    dtclds = {f["nflux_dtcld"] for c in parsed for f in c["flux"].values()}
     return {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
             "rho": hdr["rho_profile"], "width": width, "levels": levels,
             "ntile": hdr["ntile"], "tile_ranges": tiles,
-            "tile_sizes": tuple(b - a + 1 for a, b in tiles)}
+            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
+            "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
+            "dtcld": dtclds.pop() if dtclds else None}
 
 
 def stream_header(stream: str) -> dict:
