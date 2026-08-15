@@ -1069,3 +1069,18 @@ def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
     with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
         xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
                                    "as-is", 3, 4, run)
+
+
+def test_the_window_loop_count_binds_the_G33N_loop_universe():
+    """Two records of one fact (owner review §4, sixth round): the window
+    header records what the kernel ran; calls() proves the G33N records
+    cover exactly 1..L. A window declaring 3 beside records covering 1..1
+    is two runs' paperwork in one stdout."""
+    run = _samerun_window()
+    run[("meta", "loops")] = 3
+    with pytest.raises(xp.ra.RefineError, match="ran 3 inner loops"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)
+    run[("meta", "loops")] = 1
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                               "rezero", "as-is", 3, 4, run)

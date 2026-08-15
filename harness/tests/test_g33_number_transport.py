@@ -948,7 +948,8 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
                    "tile_ranges": ((1, 1),), "tile_sizes": (1,),
-                   "algorithm": "legacy", "delt": 100.0, "dtcld": 1.0}
+                   "algorithm": "legacy", "delt": 100.0, "dtcld": 1.0,
+                   "loops": 1}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -1081,3 +1082,24 @@ def test_NFLUX_records_declaring_two_subcycle_steps_are_refused():
                   "G33F NFLUX 1 2 nflux_dtcld f32 40000000")
     with pytest.raises(nt.StreamError, match="different sub-cycle steps"):
         nt.calls(s)
+
+
+# --- the loop universe is exact 1..L, one L per stream (owner review §4 r6) --
+
+
+def test_records_living_only_on_loop_2_are_refused():
+    """The per-loop checks walked the loops a call HAPPENS to carry, so a
+    call whose records all sit on loop 2 -- loop 1 entirely absent -- was
+    complete for every loop anyone looked at. Measured."""
+    with pytest.raises(nt.StreamError, match="not exactly 1..1"):
+        nt.calls(_stream(_call(1, loop=2)))
+
+
+def test_calls_running_DISJOINT_loop_sets_are_refused():
+    s = _stream(_call(1, loop=1), _call(2, loop=2))
+    with pytest.raises(nt.StreamError, match="different inner-loop sets"):
+        nt.calls(s)
+
+
+def test_the_run_identity_carries_the_loop_count():
+    assert nt.validated_run_identity(_stream(_call(1)))["loops"] == 1

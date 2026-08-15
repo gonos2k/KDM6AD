@@ -804,6 +804,23 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"NFLUX records declare different sub-cycle steps "
                 f"{sorted(dtclds)} -- one stream describes one problem")
+        # ...and one LOOP UNIVERSE (owner review §4, sixth round): the
+        # per-loop checks walk the loops a call HAPPENS to carry, so a call
+        # whose records all sit on loop 2 -- loop 1 entirely absent -- was
+        # complete for every loop anyone looked at, and two calls could run
+        # disjoint loop sets. The kernel counts inner loops 1..L from one on
+        # every external call, so the set is exactly {1..L}, the same L for
+        # every call.
+        loop_sets = {tuple(sorted(c["loops"])) for c in out}
+        if len(loop_sets) > 1:
+            raise StreamError(
+                f"calls carry different inner-loop sets "
+                f"{sorted(loop_sets)} -- one stream describes one problem")
+        lset = loop_sets.pop()
+        if lset != tuple(range(1, len(lset) + 1)):
+            raise StreamError(
+                f"inner loops {list(lset)} are not exactly 1..{len(lset)} -- "
+                f"a loop the kernel counted is missing from the record")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
@@ -886,7 +903,10 @@ def validated_run_identity(text: str, expected_width: int | None = None,
            "ntile": hdr["ntile"], "tile_ranges": tiles,
            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
            "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
-           "dtcld": dtclds.pop() if dtclds else None}
+           "dtcld": dtclds.pop() if dtclds else None,
+           # Proven exactly {1..L}, one L per stream, by `calls()` above --
+           # so a caller holding the window header's `loops` can compare.
+           "loops": len(parsed[0]["loops"])}
     # `with_calls` hands back the strict parse the identity was derived FROM,
     # so a caller that also needs the records (the same-run forcing check)
     # does not parse a many-megabyte stream twice. Same reader, same parse.

@@ -270,6 +270,14 @@ def _require_same_run(name, rid, run, parsed):
         raise ra.RefineError(
             f"{name}: the window protocol sub-cycled at dtcld={wdt}, the "
             f"G33N leg at {rid['dtcld']}")
+    # The LOOP COUNT is a duplicate fact too (owner review §4, sixth round):
+    # the window header records what the kernel ran, `calls()` has proven the
+    # G33N records cover exactly 1..L -- two records of one fact, compared.
+    wloops = run.get(("meta", "loops"))
+    if wloops is not None and wloops != rid["loops"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol ran {wloops} inner loops, the G33N "
+            f"records cover 1..{rid['loops']}")
     wn = run.get(("meta", "ntile"))
     if wn is not None and wn != rid["ntile"]:
         raise ra.RefineError(
