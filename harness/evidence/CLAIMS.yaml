@@ -1384,19 +1384,65 @@ claims:
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6c9aa3d62f446eec0e8739b71af265f1423e4ca93beca6db1]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
 
   - id: G33-BASIS-002
     text: >
-      Whether the reference intends sum(rho_d*dz*nr) or sum(rho*dz*nr) as THE
-      conserved column measure. Changes what a corrected number transport should
-      conserve.
+      Which measure a CORRECTED number transport should conserve, as a matter
+      of compatibility and default policy -- NOT which measure is physical.
+      .
+      SPLIT (owner review §11): the previous wording asked "whether the
+      reference intends rho_d*dz*nr or rho_m*dz*nr as the conserved measure",
+      which put a unit fact and two policy decisions in one open question, so
+      a scientific fact read as if it were awaiting a preference. The pieces
+      are:
+      .
+      (1) The PHYSICAL column number is sum(rho_d*dz*nr) -- forced by units,
+      not chosen: `nr` is per kg of DRY air (WRF registry, QVAPOR basis), so
+      multiplying by moist density counts water vapor as carrier mass. This is
+      G33-BASIS-006 and is a source claim, not a decision.
+      .
+      (2) The measure the LEGACY OPERATOR actually budgets is rho_m*dz on the
+      mass side and effectively dz-only on the number side -- measured, and it
+      is the defect G33-NUMBER-003 confirms. Also not a decision.
+      .
+      What REMAINS a decision, and what this claim now holds open: whether the
+      corrected transport preserves bit-compatibility with the legacy
+      operator's pseudo-measure where it is not conserving anything (an
+      engineering policy), and whether the default variant promotes to the
+      physical measure (a release decision).
     status: hold
     grade: open-question
     basis: none
-    scope: owner physics decision
+    scope: >
+      owner engineering-compatibility and release policy; the physics is
+      G33-BASIS-006 and the operator's measured behaviour is G33-NUMBER-003
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:1e20e6d19b64cbe6c9aa3d62f446eec0e8739b71af265f1423e4ca93beca6db1]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
+
+  - id: G33-BASIS-006
+    text: >
+      The physical column number measure is sum_k rho_d,k * dz_k * nr_k,
+      because `nr` is a mixing ratio per kg of DRY air: the WRF registry
+      declares the QVAPOR basis dry (kg kg-1 dry), `nrs(i,k,1) = nr(i,k,j)`
+      packs it unchanged (F:388), and a per-dry-kg quantity times moist
+      density counts water vapor as carrier mass. Unit-forced, not chosen.
+      rho_m*dz*nr remains meaningful only as the legacy operator's
+      pseudo-measure, which is a statement about the operator (G33-NUMBER-003),
+      not about particles.
+    status: active
+    evidence_kind: source
+    run_support: [none]
+    artifact_status: not_applicable
+    grade: confirmed
+    basis: >
+      unit analysis of pinned source definitions (F:388, WRF registry
+      QVAPOR basis)
+    scope: >
+      source definitions only; which measure the correction adopts as
+      default is G33-BASIS-002, which stays an owner decision
+    evidence: [FINDING_number_mass_basis_v1.md]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
 
   - id: G33-NUMBER-005
     text: >
