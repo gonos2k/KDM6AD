@@ -859,19 +859,24 @@ def calls(stream: str) -> list:
         # ...and the sub-cycle step is the external step divided by the loop
         # count -- the kernel's own rule, restated in every NFLUX group and
         # never compared to the CALL_BEGIN delt it derives from (owner
-        # review §9.1). At the STREAM'S OWN word width (Codex): packing an
-        # f64 stream's values to f32 dropped 29 bits, so two distinct f64
-        # facts that shared an f32 word compared equal -- the conflation
-        # this family of checks exists to refuse. Holds exactly on all 4827
-        # published groups at their native widths.
+        # review §9.1). Checked as the kernel COMPUTES it (Codex, round
+        # two): the kernel rounds the quotient delt/L to the build's real
+        # width, and re-multiplying that back does NOT recover delt for
+        # ~9%% of (delt, L) pairs at f64 -- a product rule refused VALID
+        # sub-cycle streams. So the recorded dtcld must equal the
+        # correctly-rounded quotient at the stream's own word width, which
+        # is exact by construction of the operation being checked -- and a
+        # forged dtcld still differs from that quotient at the same width.
         if dtclds:
             d = next(iter(dtclds))
             dt = next(iter(dts))
             wfmt = ">d" if rb == 8 else ">f"
-            if struct.pack(wfmt, d * len(lset)) != struct.pack(wfmt, dt):
+            q = struct.unpack(wfmt, struct.pack(wfmt, dt / len(lset)))[0]
+            if struct.pack(wfmt, d) != struct.pack(wfmt, q):
                 raise StreamError(
-                    f"NFLUX dtcld {d} x {len(lset)} loops != delt {dt} -- "
-                    f"the sub-cycle step is not this stream's")
+                    f"NFLUX dtcld {d} != delt {dt} / {len(lset)} loops "
+                    f"(= {q} at this stream's width) -- the sub-cycle step "
+                    f"is not this stream's")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).

@@ -1168,3 +1168,27 @@ def test_the_dtcld_relation_holds_at_the_STREAMS_width():
     with pytest.raises(nt.StreamError, match="not this stream's"):
         nt.calls(s2)
     nt.calls(s)                         # the consistent stream still parses
+
+
+def test_a_VALID_subcycle_whose_quotient_does_not_invert_still_parses():
+    """The kernel rounds delt/L to the build's width; re-multiplying does
+    NOT recover delt for ~9% of (delt, L) pairs at f64, so a product rule
+    refused valid streams (Codex). The check now recomputes the kernel's
+    own operation: dtcld must equal the correctly-rounded quotient."""
+    import struct
+    delt = float.fromhex("0x1.f07cb867c72c3p+12")
+    q = struct.unpack(">d", struct.pack(">d", delt / 5))[0]
+    assert struct.pack(">d", q * 5) != struct.pack(">d", delt), \
+        "the chosen pair no longer demonstrates the non-inverting case"
+    dh = struct.pack(">d", delt).hex().upper()
+    qh = struct.pack(">d", q).hex().upper()
+    parts = [_call(1, loop=l) for l in range(1, 6)]
+    merged = parts[0].rstrip().rsplit("G33N CALL_END", 1)[0]
+    for pt in parts[1:]:
+        merged += pt.split("42C80000\n", 1)[1].rsplit("G33N CALL_END", 1)[0]
+    merged += "G33N CALL_END 1 1 1\n"
+    s = _f64("G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux "
+             "as-is\n" + merged + "G33N STREAM_END\n")
+    s = s.replace("4059000000000000", dh)
+    s = s.replace(f"nflux_dtcld f64 {dh}", f"nflux_dtcld f64 {qh}")
+    assert sorted(nt.calls(s)[0]["loops"]) == [1, 2, 3, 4, 5]
