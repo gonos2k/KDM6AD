@@ -767,3 +767,18 @@ def test_LIST_ORDER_does_not_move_an_id():
     d2 = copy.deepcopy(man)
     d2["runtime_argv"] = [list(reversed(a)) for a in d2["runtime_argv"]]
     assert gi.run_recipe_id(d2) != before[0]
+
+
+def test_INPUT_order_does_not_move_an_analysis_id():
+    """analyses[].inputs are a set of digested files: the chain reads them
+    per-file and nothing reads their order, so a differently-ordered but
+    otherwise identical entry must address as the same analysis (§10.2).
+    Measured on the live f64 manifest before the fix: reversing one
+    multi-run analysis's inputs moved its analysis_id."""
+    a = {"analyses": [{"analysis": "x",
+                       "inputs": [{"file": "b", "sha256": "2"},
+                                  {"file": "a", "sha256": "1"}]}]}
+    b = {"analyses": [{"analysis": "x",
+                       "inputs": [{"file": "a", "sha256": "1"},
+                                  {"file": "b", "sha256": "2"}]}]}
+    assert gi._canonical_lists(a) == gi._canonical_lists(b)

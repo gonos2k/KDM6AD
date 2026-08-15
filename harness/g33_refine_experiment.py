@@ -41,6 +41,7 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
+import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
 
 
 def _an(name: str):
@@ -172,8 +173,9 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
     carry. Any two agreeing proves nothing about the third, so all three are
     tied here, at production, where the text is in hand.
     """
-    rid = nt.validated_run_identity(text, expected_width=width,
-                                    expected_levels=levels)
+    rid, parsed = nt.validated_run_identity(text, expected_width=width,
+                                            expected_levels=levels,
+                                            with_calls=True)
     want = {"nsplit": n, "carry": mode, "rho": rho, "width": width}
     got = {k: rid[k] for k in want}
     if got != want:
@@ -182,30 +184,145 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
             f"published as {want}")
     # ...and the WINDOW protocol in the same stdout. `run` is keyed
     # (class, field, col, k); its columns and levels are the window's domain.
+    # EXACT sets, not max/len (owner review §4): {1,3} has max 3, {-1,0,1,2}
+    # has len 4, and either is a different domain wearing the right summary.
     wcols = {k[2] for k in run if len(k) == 4 and k[0] == "state"}
     wks = {k[3] for k in run if len(k) == 4 and k[0] == "state"}
-    if wcols and max(wcols) != rid["width"]:
+    if wcols != set(range(1, rid["width"] + 1)):
         raise ra.RefineError(
-            f"{name}: the window protocol covers columns up to {max(wcols)} "
-            f"and the G33N leg covers 1..{rid['width']} -- two protocols, two "
-            f"domains, one stdout")
-    if wks and len(wks) != rid["levels"]:
+            f"{name}: the window protocol covers columns {sorted(wcols)} "
+            f"and the G33N leg covers exactly 1..{rid['width']} -- two "
+            f"protocols, two domains, one stdout")
+    if wks != set(range(rid["levels"])):
         raise ra.RefineError(
-            f"{name}: the window protocol carries {len(wks)} levels and the "
-            f"G33N leg declares K={rid['levels']}")
+            f"{name}: the window protocol carries levels {sorted(wks)} and "
+            f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
+    _require_same_run(name, rid, run, parsed)
+
+
+def _require_same_run(name, rid, run, parsed):
+    """The SAME-RUN contract (owner review §6): the protocols in one stdout
+    record the same facts twice, and until here nothing compared them.
+
+    Two internally-strict protocols can describe two different runs: a G33N
+    leg declaring legacy/delt=100 beside a window declaring
+    conservative/delt=300 passed every check, because each fact was validated
+    only inside its own protocol. Every fact both sides record is compared;
+    a fact only one side records cannot be, and stays with that side's own
+    checks. Floats compare as WORDS AT THE MEMBER'S PRECISION -- the two
+    protocols print the same value in different notations, so word equality
+    is the honest test and a tolerance would re-admit genuinely different
+    numbers. The width comes from the window's declared precision (Codex):
+    comparing an f64 member's records as f32 words dropped 29 bits, so two
+    DISTINCT f64 streams whose rho/delz differed below f32 resolution
+    compared equal -- the conflation this contract exists to refuse. On an
+    f64 member both sides carry exact f64 (16-hex payloads, 17-digit
+    decimals); on an f32 member the f32 word is the value model itself.
+    """
+    fmt = ">d" if run.get(("meta", "precision")) == "f64" else ">f"
+
+    def word(v):
+        return struct.pack(fmt, v)
+
+    walg = run.get(("meta", "algorithm"))
+    if walg is not None and walg != rid["algorithm"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol ran {walg}, the G33N leg ran "
+            f"{rid['algorithm']} -- two algorithms, one stdout")
+    # delt/dtcld reach the window through the header's F0.6 print -- a
+    # SIX-DECIMAL channel on both G33R and G33P, whatever the member's
+    # precision. Word equality at f64 width therefore refused VALID
+    # non-integral splits (Codex): delt = 300/7 is exact in the G33N word and
+    # "42.857143" in the window, two spellings of one recorded fact. A record
+    # can only bind as tightly as its channel, so these two compare at the
+    # channel's resolution: the G33N word must PRINT to the window's record.
+    #
+    # ...and the window's value must itself BE that channel's output (Codex,
+    # round two): rounding BOTH sides re-admitted forgery, because a header
+    # carrying delt=42.8571425 -- more precision than F0.6 can produce, and a
+    # genuinely different number than the G33N word -- rounded to the same
+    # six decimals and bound. This parser judges arbitrary artifacts and may
+    # not re-assume the producer's printing, so a value that does not
+    # round-trip through the channel is refused, not rounded. The
+    # full-precision channels (the per-cell forcing below) keep word equality
+    # at the member's width.
+    def rec6(v):
+        return f"{v:.6f}"
+
+    wdelt = run.get(("meta", "delt"))
+    if wdelt is None:
+        raise ra.RefineError(
+            f"{name}: the window protocol declares no delt to hold the G33N "
+            f"leg's {rid['delt']} to -- the same-run contract cannot bind")
+    for label, wv in (("delt", wdelt), ("dtcld", run.get(("meta", "dtcld")))):
+        if wv is not None and float(rec6(wv)) != wv:
+            raise ra.RefineError(
+                f"{name}: the window protocol's {label}={wv!r} carries more "
+                f"precision than the F0.6 channel can produce -- not that "
+                f"channel's record, so nothing to bind at its resolution")
+    if rec6(wdelt) != rec6(rid["delt"]):
+        raise ra.RefineError(
+            f"{name}: the window protocol stepped delt={wdelt}, the G33N leg "
+            f"stepped delt={rid['delt']} -- two timesteps, one stdout")
+    wdt = run.get(("meta", "dtcld"))
+    if (wdt is not None and rid["dtcld"] is not None
+            and rec6(wdt) != rec6(rid["dtcld"])):
+        raise ra.RefineError(
+            f"{name}: the window protocol sub-cycled at dtcld={wdt}, the "
+            f"G33N leg at {rid['dtcld']}")
+    wn = run.get(("meta", "ntile"))
+    if wn is not None and wn != rid["ntile"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol declares {wn} tiles, the G33N leg "
+            f"ran {rid['ntile']}")
+    wt = run.get(("meta", "tiles"))
+    if wt is not None and tuple(wt) != rid["tile_sizes"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol decomposed as {tuple(wt)}, the "
+            f"G33N leg as {rid['tile_sizes']} -- two decompositions, one run")
+    # The forcing VALUES, per cell (owner review §6): matched closure builds
+    # the physical layer mass from G33N's rho/delz beside the window's initial
+    # qv, which silently assumes the two protocols' rho/delz are the same
+    # numbers. Assume nothing: compare every cell of every call.
+    frc = {(k[1], k[2], k[3]): v for k, v in run.items()
+           if k[0] == "forcing" and k[1] in ("rho", "delz")}
+    if not frc:
+        raise ra.RefineError(
+            f"{name}: the window protocol carries no rho/delz forcing to hold "
+            f"the G33N leg's to -- the same-run contract cannot bind")
+    for call in parsed:
+            for (lp, c, kk), rec in call["outer_pre_sed"].items():
+                for nm in ("rho", "delz"):
+                    wv = frc.get((nm, c, kk))
+                    if wv is None or word(rec[nm]) != word(wv):
+                        raise ra.RefineError(
+                            f"{name}: call {call['call_id']} loop {lp} "
+                            f"col {c} level {kk}: G33N {nm}={rec[nm]!r} vs "
+                            f"window forcing {wv!r} -- the physical measure "
+                            f"would be built from two different runs")
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:
     """At the probe arm the same f32 values are written twice — raw hex on G33R
     and decimal on G33P. Requiring them to agree catches exactly the two defects
     that got through before: a transposed index and a format that dropped an
-    exponent's `E`."""
+    exponent's `E`.
+
+    BOTH directions (owner review §4.3): checking only that every G33R key has
+    a G33P counterpart let G33P carry records G33R never wrote -- {1,3} against
+    {1,2,3} compared two columns and called three agreed. The two protocols
+    must describe the same record universe before any value is compared."""
+    fams = ("state", "initial", "forcing", "prec")
+    kr = {k for k in g33r if k[0] in fams}
+    kp = {k for k in g33p if k[0] in fams}
+    if kr != kp:
+        raise pr.ProbeError(
+            f"{name}: G33R and G33P describe different record universes: "
+            f"{len(kp - kr)} only on G33P, {len(kr - kp)} only on G33R")
     for key, hexv in g33r.items():
-        if key[0] not in ("state", "initial", "forcing", "prec"):
+        if key[0] not in fams:
             continue
-        got = g33p.get(key)
-        if got is None:
-            raise pr.ProbeError(f"{name}: G33P is missing {key}, which G33R has")
+        got = g33p[key]
         # EXACT (owner §7.3). Both sides are the same f32 value written twice --
         # raw hex and decimal -- so they must round-trip to the same f32 word. A
         # 1e-6 relative tolerance admits several f32 ULP near 1 and would pass a
@@ -313,7 +430,7 @@ def _protocol(stream: str) -> dict:
 
 
 def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
-         where: str) -> dict:
+         levels: int, where: str) -> dict:
     """The arm's run identity, TYPED and checked against the raw stream.
 
     `runtime_argv` is four strings and the schema compared two of them --
@@ -333,12 +450,16 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # the chain's copy was two regular expressions that reported `matches` on
     # streams `calls()` refuses.
     try:
-        got = nt.validated_run_identity(text, expected_width=width)
+        got = nt.validated_run_identity(text, expected_width=width,
+                                        expected_levels=levels)
     except nt.StreamError as e:
         raise ra.RefineError(f"{where}: {e}")
+    # `levels` is the FIXTURE's K, passed in -- not read back from the stream
+    # (owner review §9): `want["levels"] = got["levels"]` satisfied the schema
+    # while checking the stream against itself, which is no check at all.
     want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width,
-            "levels": got["levels"]}
-    if got != want:
+            "levels": levels}
+    if {k: got[k] for k in want} != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
             f"say {want} -- an arm that describes a different run than the one "
@@ -351,11 +472,11 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # compares this block against `validated_run_identity`, which now proves
     # K as well as W (owner review §4).
     return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho,
-            "levels": got["levels"]}
+            "levels": levels}
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
-                     width: int) -> list:
+                     width: int, levels: int) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
     `mode` and `width` come from the bundle being produced (owner P0-2).
@@ -374,36 +495,31 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     made = []
     for n in nsplits:
         member = out / f"n{n}.{mode}.txt"
-        keep: dict = {}
+        # The driver matrix runs ONCE, through the run-role module (owner
+        # review §8): the arm streams are raw run content published into the
+        # bundle, so the code that produces them must sit in the run recipe --
+        # `g33_run_matrix` is imported directly, never through the analysis
+        # dispatch. Both chains then read the SAME collected streams, which
+        # makes chain-independence structural where it used to be a
+        # compare-after-the-fact between two separate driver passes.
+        keep = rmx.collect(str(exe), n, mode=mode, width=width,
+                           baseline_stream=member.read_text())
         # BOTH chains. `mtj.analysis` has taken a `chain` since it was written
         # and nothing ever passed it, so every bundle carried the main chain
         # and the ice one existed only as a default nobody exercised --
         # G33-NUMBER-009 is entirely about ice and had no artifact to bind.
         for chain in ("main", "ice"):
             stem = f"n{n}.{mode}" + ("" if chain == "main" else f".{chain}")
-            got: dict = {}
             path = out / f"{stem}.metric_trajectory.json"
             path.write_text(rm.json.dumps(
                 _an("g33_metric_trajectory").analysis(
                     str(exe), n, chain, mode=mode, width=width,
-                             baseline_stream=member.read_text(), keep=got),
+                    baseline_stream=member.read_text(), raw=keep),
                 indent=2, sort_keys=True) + "\n")
             made.append({"file": path.name, "nsplit": n, "chain": chain,
                          "analysis": "metric_trajectory",
                          "sha256": rm.sha256(path),
                          **_analyzer_pin("g33_metric_trajectory")})
-            # The arms are DENSITY profiles: they change what the driver runs,
-            # not which records the reduction reads. So both chains must see
-            # byte-identical arm streams, and the streams are published once.
-            # Checked rather than assumed -- if a chain ever did reach the
-            # driver, publishing one pass's streams would misdescribe the other.
-            if not keep:
-                keep = got
-            elif {k: v for k, v in got.items()} != keep:
-                raise ra.RefineError(
-                    f"chain {chain} produced different arm streams from main "
-                    f"-- the arm forcing is supposed to be chain-independent, "
-                    f"so one published set cannot describe both")
         for arm, text in sorted(keep.items()):
             if arm == "as-is":
                 continue                      # already published as the member
@@ -415,7 +531,7 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                          # header rather than restated from the arguments this
                          # function was called with (owner priority 5).
                          "ran": _ran(text, nsplit=n, mode=mode, width=width,
-                                     rho=arm, where=ap.name),
+                                     rho=arm, levels=levels, where=ap.name),
                          "runtime_argv": [str(n), mode, str(width), arm]})
             # The arm's OWN defect magnitude. `metric_trajectory` reports each
             # arm as a ratio over the as-is baseline; a claim that also states
@@ -465,7 +581,15 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # moment the ledger stopped restating the terms and started
                  # importing them, and the closure caught that on the next run
                  # (Codex) -- which is what the closure is for.
-                 "g33_update_replay")
+                 "g33_update_replay",
+                 # The density-arm matrix runner (owner review §8): it decides
+                 # what every published arm stream IS -- which arms run, and
+                 # that requested equals declared -- so its bytes are run
+                 # content's provenance. Split out of the metric-trajectory
+                 # analyzer precisely so the run recipe pins it; the
+                 # completeness check below caught its absence from this
+                 # tuple, which is what the check is for.
+                 "g33_run_matrix")
 _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
 
 
@@ -935,7 +1059,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if nflux and rho_profile == "as-is":
             if rm.applicable("metric_trajectory", precision):
                 man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode,
-                                                    width)
+                                                    width,
+                                                    fixture_dims(fixture)[1])
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.

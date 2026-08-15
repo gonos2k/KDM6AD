@@ -88,6 +88,19 @@ def read(text: str) -> dict:
      ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
+    # The delt/dtcld TOKENS are fixed-6 records and are validated as tokens,
+    # where the precision they claim is still visible (Codex): float()
+    # collapses a forged higher-precision spelling onto the same double as
+    # the channel's own output. G33P has exactly ONE producer -- the Fortran
+    # driver (the C++ driver emits no G33P record at all) -- so the grammar
+    # is gfortran's F0.6 alone: an integer part that is empty below one
+    # (.390625) or nonzero-leading. Admitting the C++ 0.390625 spelling here
+    # would widen this parser for a producer that never writes this protocol
+    # (Codex); that spelling belongs to G33R's grammar, where both drivers
+    # emit.
+    for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
+        _expect(re.fullmatch(r"(?:[1-9]\d*)?\.\d{6}", tok),
+                f"{nmm} token {tok!r} is not an F0.6 record")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
 
     out, seen = {}, set()

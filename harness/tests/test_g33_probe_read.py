@@ -569,3 +569,19 @@ _NUMBER_STREAM = (
     + "".join(f"G33F NFLUX 1 1 {f} f32 3F800000\n" for f in _nt.NFLUX_FIELDS)
     + "G33N CALL_END 1 1 1\n"
       "G33N STREAM_END\n")
+
+
+def test_the_G33P_delt_token_is_judged_as_a_CANONICAL_F06_record():
+    """Same token rule as G33R, tested on THIS parser (Codex): float()
+    collapses forged spellings onto the channel's double, and a padded
+    00042.857143 is a spelling F0.6 cannot print. Canonical spelling only."""
+    good = _stream()
+    pr.read(good)                                  # the builder's own F0.6 parses
+    # ...including the C++ std::fixed sub-one spelling: the C++ driver emits
+    # no G33P at all, so 0-leading below one is not THIS protocol's output
+    for tok in ("25.0000001", "2.5E+01", "00025.000000", "025.000000",
+                "0.390625"):
+        bad = good.replace(" 25.000000 25.000000 ", f" {tok} 25.000000 ", 1)
+        assert bad != good, "the replacement found nothing to replace"
+        with pytest.raises(pr.ProbeError, match="not an F0.6 record"):
+            pr.read(bad)

@@ -2335,3 +2335,50 @@ def test_the_TRUSTED_refs_are_ones_a_CLONE_would_have():
                for r in ec.TRUSTED_REFS), ec.TRUSTED_REFS
     assert not any(r.startswith("refs/heads/") for r in ec.TRUSTED_REFS), \
         "a local branch is on one machine, which is the whole distinction"
+
+
+# --- the members are SEMANTICALLY re-validated, not just re-hashed (§7) ------
+#
+# The digest rows prove "these bytes are the bytes the producer approved";
+# nothing proved those bytes still pass the CURRENT decision contract. The two
+# statements diverge exactly when the parser is hardened after publication --
+# which is what every review cycle does. The arm streams had this re-check
+# through `_arm_ran_state`; the primary members did not.
+
+
+def _contract_bundle(tmp_path, g33n_cols):
+    sys.path.insert(0, str(ROOT / "tests"))
+    from test_g33_refine_analyze import _stream_fc as _g33r
+    from test_g33_number_transport import _call, _stream as _g33n
+    root = tmp_path / "bundle"
+    root.mkdir()
+    body = _g33r(nsplit=1, B=2, K=2).splitlines()
+    body[0] = "G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 dtcld 1.000000"
+    (root / "n1.rezero.txt").write_text(
+        "\n".join(body) + "\n" + _g33n(_call(1, cols=g33n_cols, ks=2), nsplit=1))
+    man = {"identity": {"schema": "x"}, "arm": "reference", "instrumented": True,
+           "rho_profile": "as-is", "fixture_path": "/x/fx.f90",
+           "members": [{"file": "n1.rezero.txt", "nsplit": 1,
+                        "mode": "rezero"}]}
+    return root, man
+
+
+def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch):
+    """The G33N leg covers one column of a two-column window: internally
+    strict, approved by an older producer, refused by today's fixture-domain
+    pin -- and the chain must say so rather than stopping at the digest."""
+    import g33_refine_experiment as xp
+    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    root, man = _contract_bundle(tmp_path, g33n_cols=(1,))
+    rows = ec._member_contract_states(root, man)
+    assert [r["state"] for r in rows] == ["MEMBER-CONTRACT-MISMATCH"]
+    assert "1..1" in rows[0]["detail"]
+
+
+def test_a_member_the_current_contract_accepts_reports_matches(
+        tmp_path, monkeypatch):
+    import g33_refine_experiment as xp
+    monkeypatch.setattr(xp, "fixture_dims", lambda f: (2, 2))
+    root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
+    rows = ec._member_contract_states(root, man)
+    assert [r["state"] for r in rows] == ["matches"], rows

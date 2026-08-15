@@ -1176,3 +1176,30 @@ def test_the_phase_of_the_sink_is_used_not_the_surface_fraction():
     assert liq == pytest.approx(w * hl)
     assert ice == pytest.approx(w * hi)
     assert liq - ice == pytest.approx(w * (hl - hi))   # the latent heat of fusion
+
+
+def test_the_delt_TOKEN_is_validated_before_float_collapses_it():
+    """float() maps '42.857142999999999999' and '4.2857143E+01' onto the same
+    double as '42.857143', so a guard on the parsed value cannot tell the
+    F0.6 channel's output from a forgery claiming precision the channel never
+    produced (Codex). The token is the record; it is judged as one. The channel
+    has two producers: gfortran's F0.6 prints .390625 below one, the C++
+    driver's std::fixed prints 0.390625 -- both are the channel's own;
+    padded integer parts are neither's."""
+    for tok, ok in [("42.857143", True), (".390625", True),
+                    ("100.000000", True),
+                    ("42.857142999999999999", False),
+                    ("4.2857143E+01", False), ("42.8571425", False),
+                    # padded spellings F0.6 cannot print (Codex): canonical
+                    # means empty-or-nonzero-leading integer part, nothing else
+                    ("00042.857143", False), ("0.390625", True),   # C++ std::fixed spelling
+                    ("042.857143", False)]:
+        body = _stream_fc(nsplit=1).splitlines()
+        body[0] = (f"G33R BEGIN nsplit 1 rezero legacy delt {tok} "
+                   f"loops 1 dtcld 1.000000")
+        text = "\n".join(body) + "\n"
+        if ok:
+            ra.read_text(text, nsplit=1)
+        else:
+            with pytest.raises(ra.RefineError, match="not a fixed-6 record"):
+                ra.read_text(text, nsplit=1)

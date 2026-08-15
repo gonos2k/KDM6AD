@@ -285,7 +285,7 @@ def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
     with pytest.raises(xp.pr.ProbeError, match="different f32 words at"):
         xp._agree(g33r, swapped, "n.txt")
     missing = {k: v for k, v in g33r.items() if k != ("prec", 2, 1)}
-    with pytest.raises(xp.pr.ProbeError, match="is missing"):
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33R"):
         xp._agree(g33r, missing, "n.txt")
 
 
@@ -383,22 +383,26 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
     PASSES, so that is what is captured."""
     seen = {}
 
+    def fake_collect(driver, n, *, mode, width, baseline_stream=None):
+        seen.update(n=n, mode=mode, width=width, baseline=baseline_stream)
+        return {"as-is": baseline_stream}
+
     def fake(exe, n, chain="main", *, mode, width, baseline_stream=None,
-             keep=None):
-        seen.update(exe=exe, n=n, mode=mode, width=width,
-                    baseline=baseline_stream)
-        if keep is not None:
-            keep["as-is"] = "x"
+             keep=None, raw=None):
+        seen.update(raw=raw)
         return {"arms": {}}
 
     import g33_metric_trajectory as mtj
     monkeypatch.setattr(mtj, "analysis", fake)
+    monkeypatch.setattr(xp.rmx, "collect", fake_collect)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
-    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5)
+    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5, 4)
     assert seen["mode"] == "carry", "the bundle's mode must be inherited"
     assert seen["width"] == 5, "the fixture width must be inherited"
     assert seen["baseline"] == "member-bytes\n", \
         "the baseline must be the bundle's stored member, not a re-run"
+    assert seen["raw"] == {"as-is": "member-bytes\n"}, \
+        "the analysis must receive the run side's collected streams"
 
 
 def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
@@ -414,15 +418,15 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     _fake(monkeypatch)
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
-                        lambda out, exe, ns, mode, width: seen.update(
-                            mode=mode, width=width) or [])
+                        lambda out, exe, ns, mode, width, levels: seen.update(
+                            mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
                algo="legacy", nsplits=(3, 6), mode="carry", nflux=True,
                module=MOD)
-    assert seen == {"mode": "carry", "width": 5}, (
+    assert seen == {"mode": "carry", "width": 5, "levels": 4}, (
         "produce() must hand the analysis the bundle's OWN mode and fixture "
-        f"width, got {seen}")
+        f"width and level count, got {seen}")
 
 
 def test_the_metric_analysis_records_the_run_it_describes():
@@ -909,3 +913,159 @@ def test_the_producer_gates_publication_on_the_RESOLVED_graph():
     assert src.index("graph_violations(man)") < src.index(
         '(tmp / "manifest.json").write_text'), \
         "the resolved check must run BEFORE the manifest is written"
+
+
+# --- the window universe is EXACT, not summarized (owner review §4) ----------
+
+def _domain_run(cols=(1, 2, 3), ks=range(4)):
+    """A window `run` dict with only the keys the domain pin reads."""
+    return {("state", "qr", c, k): 1.0 for c in cols for k in ks}
+
+
+def _domain_text():
+    from test_g33_number_transport import _call as _ncall, _stream as _nstream
+    return _nstream(_ncall(1, cols=(1, 2, 3), ks=4))
+
+
+def test_the_exact_window_universe_is_the_control_case():
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
+                               "as-is", 3, 4, _samerun_window())
+
+
+@pytest.mark.parametrize("cols,ks,match", [
+    ((1, 3), range(4), "two protocols, two domains"),      # column 2 missing
+    ((0, 1, 2, 3), range(4), "two protocols, two domains"),  # illegal column 0
+    ((1, 2, 3), (-1, 0, 1, 2), "declares exactly 0..3"),   # shifted levels
+    ((1, 2, 3), (0, 1, 2, 4), "declares exactly 0..3"),    # gapped levels
+])
+def test_a_summarized_domain_is_not_an_exact_one(cols, ks, match):
+    """max(cols)==B and len(ks)==K are summaries: {1,3} has max 3 and
+    {-1,0,1,2} has len 4, and each is a different domain wearing the right
+    summary. The pin compares the SETS."""
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4,
+                                   _domain_run(cols, ks))
+
+
+# --- probe agreement is a UNIVERSE equality, then a value equality (§4.3) ----
+
+def test_probe_agreement_requires_the_same_record_universe_BOTH_ways():
+    """One direction let G33P carry records G33R never wrote: every G33R key
+    found its counterpart, the extras were never visited, and two protocols
+    with different domains were called agreed."""
+    g33r = {("state", "qr", 1, 0): 1.0, ("meta", "nsplit"): 1}
+    extra = dict(g33r)
+    extra[("state", "qr", 2, 0)] = 5.0
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33P"):
+        xp._agree(g33r, extra, "x")
+    with pytest.raises(xp.pr.ProbeError, match="1 only on G33R"):
+        xp._agree(g33r, {("meta", "nsplit"): 1}, "x")
+    xp._agree(g33r, dict(g33r), "x")    # the control still passes
+
+
+# --- the SAME-RUN contract across protocols in one stdout (owner review §6) --
+
+def _samerun_window(cols=(1, 2, 3), ks=range(4)):
+    run = _domain_run(cols, ks)
+    run[("meta", "algorithm")] = "legacy"
+    run[("meta", "delt")] = 100.0
+    run.update({("forcing", nm, c, k): 1.0
+                for nm in ("rho", "delz") for c in cols for k in ks})
+    return run
+
+
+def test_the_same_run_contract_control_passes():
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
+                               "as-is", 3, 4, _samerun_window())
+
+
+@pytest.mark.parametrize("mutate,match", [
+    (lambda r: r.update({("meta", "algorithm"): "conservative"}),
+     "two algorithms, one stdout"),
+    (lambda r: r.update({("meta", "delt"): 300.0}),
+     "two timesteps, one stdout"),
+    (lambda r: r.pop(("meta", "delt")),
+     "declares no delt"),
+    (lambda r: r.update({("forcing", "rho", 2, 1): 2.0}),
+     "two different runs"),
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "forcing"],
+     "no rho/delz forcing"),
+    (lambda r: r.update({("meta", "ntile"): 3}),
+     "declares 3 tiles"),
+    (lambda r: r.update({("meta", "tiles"): (1, 2)}),
+     "two decompositions, one run"),
+])
+def test_two_strict_protocols_describing_two_runs_are_refused(mutate, match):
+    """Each protocol validated only inside itself, so a G33N leg declaring
+    legacy/delt=100/rho=1.0 beside a window declaring
+    conservative/delt=300/rho=2.0 passed every check -- measured before this
+    contract existed. Every fact BOTH sides record is now compared."""
+    run = _samerun_window()
+    mutate(run)
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)
+
+
+def test_the_same_run_contract_compares_at_the_MEMBERS_precision():
+    """f32 words dropped 29 bits on the f64 arm, so two DISTINCT f64 streams
+    whose forcing differed below f32 resolution compared equal (Codex). The
+    width now comes from the window's declared precision: a sub-f32
+    perturbation on an f64 member must refuse."""
+    run = _samerun_window()
+    run[("meta", "precision")] = "f64"
+    run[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
+    with pytest.raises(xp.ra.RefineError, match="two different runs"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)
+    # ...and the SAME perturbation on an f32 member is below the value
+    # model's resolution: both notations name one f32 word, so it passes.
+    ok = _samerun_window()
+    ok[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                               "rezero", "as-is", 3, 4, ok)
+
+
+def test_a_valid_NON_INTEGRAL_split_is_not_two_timesteps():
+    """delt/dtcld reach the window through the header's F0.6 print -- a
+    six-decimal channel whatever the member's precision. Word equality at f64
+    width refused delt = 300/7: exact in the G33N word, "42.857143" in the
+    window, two spellings of ONE recorded fact (Codex). The channel's
+    resolution is the binding's resolution; a genuinely different delt still
+    refuses."""
+    import struct
+    delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
+    hex32 = struct.pack(">f", delt32).hex().upper()
+    from test_g33_number_transport import _call as _nc, _stream as _ns
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    run = _samerun_window()
+    run[("meta", "precision")] = "f64"
+    run[("meta", "delt")] = float(f"{delt32:.6f}")
+    xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero", "as-is",
+                               3, 4, run)
+    run[("meta", "delt")] = 300.0
+    with pytest.raises(xp.ra.RefineError, match="two timesteps"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)
+
+
+def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
+    """Rounding BOTH sides re-admitted forgery (Codex): delt=42.8571425 --
+    more precision than F0.6 can produce, a genuinely different number than
+    the G33N word -- rounded to the same six decimals and bound. A value
+    that does not round-trip through the channel is refused, not rounded."""
+    import struct
+    delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
+    hex32 = struct.pack(">f", delt32).hex().upper()
+    from test_g33_number_transport import _call as _nc, _stream as _ns
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    run = _samerun_window()
+    run[("meta", "delt")] = 42.85714250
+    with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)
+    run[("meta", "delt")] = float("nan")
+    with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
+        xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)

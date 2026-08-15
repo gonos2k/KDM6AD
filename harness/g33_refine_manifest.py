@@ -832,6 +832,35 @@ def validate(man: dict) -> list:
                            f"a 64-hex `content_sha256`, and 40-hex `commit` and "
                            f"`blob_sha`")
 
+    # A repeated row in a SET-valued block is refused, not de-duplicated
+    # (owner review §10): canonical sorting made ORDER irrelevant to the ids,
+    # but [p1, p1, p2] still hashed differently from [p1, p2] while recording
+    # the same facts, and no block gives multiplicity a meaning. The
+    # cross-block pin table already refuses same-path DIVERGENT duplicates;
+    # this closes the identical ones, and the per-block ones.
+    def _dupes(rows, key):
+        seen, out = set(), []
+        for r in rows or []:
+            if isinstance(r, dict) and (k := key(r)) is not None:
+                if k in seen:
+                    out.append(k)
+                seen.add(k)
+        return out
+    for key in ("member_parsers", "producer_modules", "tracked_build_inputs"):
+        for d in _dupes(man.get(key), lambda e: e.get("path")):
+            bad.append(f"{key} pins {d!r} twice -- a set-valued block gives "
+                       f"multiplicity no meaning")
+    for d in _dupes(man.get("members"), lambda e: e.get("file")):
+        bad.append(f"members records {d!r} twice")
+    for d in _dupes(man.get("build_artifacts"), lambda e: e.get("file")):
+        bad.append(f"build_artifacts records {d!r} twice")
+    for d in _dupes(man.get("analyses"), lambda e: e.get("file")):
+        bad.append(f"analyses records {d!r} twice")
+    for i, a in enumerate(man.get("analyses") or []):
+        if isinstance(a, dict):
+            for d in _dupes(a.get("inputs"), lambda e: e.get("file")):
+                bad.append(f"analyses[{i}].inputs records {d!r} twice")
+
     # The LAYERED IDENTITY block (owner priority 8). Required from v3, because
     # without it the ids are a function of the manifest AND of whichever
     # checkout computes them -- which is the coupling the block exists to

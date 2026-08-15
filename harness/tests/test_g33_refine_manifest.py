@@ -868,3 +868,38 @@ def test_the_blob_must_HASH_to_the_pinned_content():
             e["content_sha256"] = "9" * 64
     with pytest.raises(rm.BlobUnavailable, match="does not hash"):
         rm.pinned_blobs(bad)
+
+
+# --- a repeated row in a set-valued block is refused (owner review §10) ------
+#
+# Canonical sorting made ORDER irrelevant to the ids; [p1, p1, p2] still
+# hashed differently from [p1, p2] while recording the same facts. Measured on
+# the live manifest: an exact duplicate pin row validated CLEAN and moved
+# run_recipe_id. No block gives multiplicity a meaning.
+
+
+def test_an_exact_duplicate_row_is_refused_not_deduplicated():
+    import copy
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    assert rm.validate(man) == []
+    for key in ("producer_modules", "members", "build_artifacts", "analyses"):
+        dup = copy.deepcopy(man)
+        dup[key].append(copy.deepcopy(dup[key][0]))
+        assert any("twice" in v for v in rm.validate(dup)), key
+
+
+def test_duplicate_analysis_inputs_are_refused():
+    import copy
+    man = _real_v3_manifest()
+    if man is None:
+        pytest.skip("no v3 bundle on this host")
+    dup = copy.deepcopy(man)
+    for a in dup.get("analyses", []):
+        if isinstance(a.get("inputs"), list) and a["inputs"]:
+            a["inputs"].append(copy.deepcopy(a["inputs"][0]))
+            break
+    else:
+        pytest.skip("no input-carrying analysis in the live manifest")
+    assert any("inputs records" in v for v in rm.validate(dup))

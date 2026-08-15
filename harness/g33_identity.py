@@ -339,6 +339,16 @@ def _canonical_lists(man: dict) -> dict:
     if isinstance(out.get("build_artifacts"), list):
         out["build_artifacts"] = sorted(out["build_artifacts"],
                                         key=lambda e: str(e.get("file", e)))
+    # An analysis's `inputs` are a set of digested files (owner review §10.2):
+    # the chain reads them per-file, nothing reads their order, and
+    # `analysis_id` hashes the entry -- so the order must not move the id.
+    if isinstance(out.get("analyses"), list):
+        out["analyses"] = [
+            {**a, "inputs": sorted(a["inputs"],
+                                   key=lambda e: str(e.get("file", e)))}
+            if isinstance(a, dict) and isinstance(a.get("inputs"), list)
+            else a
+            for a in out["analyses"]]
     return out
 
 
@@ -496,6 +506,7 @@ def analysis_id(man: dict, name: str) -> str:
     this id, and they do -- `analyzer_sha256` and `analyzer_blob_sha` are both
     still in it. The commit that happened to contain them must not.
     """
+    man = _canonical_lists(man)
     derived, _raw = split_analyses(man)
     entries = [a for a in derived if a.get("analysis") == name]
     if not entries:

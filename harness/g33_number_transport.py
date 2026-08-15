@@ -796,39 +796,53 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"calls declare different timesteps {sorted(dts)} -- one "
                 f"stream describes one problem")
+        # ...and one SUB-CYCLE step: dtcld is a scalar of the run, recorded
+        # once per column in every NFLUX group, so any two disagreeing is two
+        # runs' records in one stream (owner review §6).
+        dtclds = {f["nflux_dtcld"] for c in out for f in c["flux"].values()}
+        if len(dtclds) > 1:
+            raise StreamError(
+                f"NFLUX records declare different sub-cycle steps "
+                f"{sorted(dtclds)} -- one stream describes one problem")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
         #
-        # Anchored at COLUMN 1, and congruent ACROSS splits (owner review §7).
-        # The check used to take the first tile's own start as the origin, so a
-        # split covering 2..3 -- column 1 missing entirely -- was contiguous
-        # from where it happened to begin, and passed. And nothing compared one
-        # split's coverage against another's, so 1..2 beside 1..3 was two
-        # decompositions of two different domains in one stream. The real
-        # driver refuses both before emitting, but this parser judges
-        # arbitrary artifacts and may not re-assume the producer's checks.
-        spans = {}
+        # Anchored at COLUMN 1, in TILE-ID ORDER, and IDENTICAL across splits
+        # (owner review §5). Sorting each split's segments by column range let
+        # tile 1 cover 2..3 while tile 2 covered 1..1 -- spatially contiguous,
+        # but the tile that OWNS a column differs from the one the ID says --
+        # and comparing only each split's last column let split 1 tile as
+        # (1..1)(2..3) beside split 2's (1..2)(3..3): every substep of one
+        # member running a different decomposition. `ncmin` is set by a tile's
+        # LAST column, so which tile ends where is the scientific content of
+        # the decomposition, not a labelling. The real driver refuses these
+        # before emitting, but this parser judges arbitrary artifacts and may
+        # not re-assume the producer's checks.
+        by_split = {}
         for sp in sorted({c["split"] for c in out}):
-            seg = sorted(c["cols"] for c in out if c["split"] == sp)
+            row = sorted((c["tile"], c["cols"]) for c in out
+                         if c["split"] == sp)
             lo = 1
-            for a, b in seg:
+            for t, (a, b) in row:
                 if a != lo:
                     raise StreamError(
-                        f"split {sp}: tile columns {seg} do not cover the "
-                        f"domain from column 1 -- gap or overlap at column {lo}")
+                        f"split {sp}: tile {t} covers columns {a}..{b} where "
+                        f"the domain stands at column {lo} -- tiles must "
+                        f"partition 1..W in tile-ID order")
                 lo = b + 1
-            spans[sp] = lo - 1
-        if len(set(spans.values())) > 1:
+            by_split[sp] = tuple(cols for _t, cols in row)
+        if len(set(by_split.values())) > 1:
             raise StreamError(
-                f"splits cover different domains: {spans} -- one stream, one "
-                f"domain, so every decomposition must partition the same "
-                f"columns")
+                f"splits decompose the domain differently: {by_split} -- one "
+                f"stream, one decomposition, so every split must run the same "
+                f"tile vector")
     return out
 
 
 def validated_run_identity(text: str, expected_width: int | None = None,
-                           expected_levels: int | None = None) -> dict:
+                           expected_levels: int | None = None,
+                           with_calls: bool = False):
     """The run identity, FROM the strict parser -- never beside it.
 
     The evidence chain re-derived nsplit/carry/rho/width from the published
@@ -858,8 +872,25 @@ def validated_run_identity(text: str, expected_width: int | None = None,
         raise StreamError(
             f"the stream declares K={levels} levels, the caller expected the "
             f"fixture's {expected_levels}")
-    return {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
-            "rho": hdr["rho_profile"], "width": width, "levels": levels}
+    # The decomposition is part of the identity (owner review §5): `calls()`
+    # has proven every split runs the same tile vector, so split 1's row IS
+    # the stream's. `ncmin` is set by a tile's last column, which makes the
+    # ranges scientific content, not bookkeeping. algorithm/delt/dtcld are
+    # identity facts too (owner review §6): each is proven single for the
+    # stream, so a caller holding a second protocol's copy can compare.
+    row = sorted((c["tile"], c["cols"]) for c in parsed if c["split"] == 1)
+    tiles = tuple(cols for _t, cols in row)
+    dtclds = {f["nflux_dtcld"] for c in parsed for f in c["flux"].values()}
+    rid = {"nsplit": hdr["nsplit"], "carry": hdr["mode"],
+           "rho": hdr["rho_profile"], "width": width, "levels": levels,
+           "ntile": hdr["ntile"], "tile_ranges": tiles,
+           "tile_sizes": tuple(b - a + 1 for a, b in tiles),
+           "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
+           "dtcld": dtclds.pop() if dtclds else None}
+    # `with_calls` hands back the strict parse the identity was derived FROM,
+    # so a caller that also needs the records (the same-run forcing check)
+    # does not parse a many-megabyte stream twice. Same reader, same parse.
+    return (rid, parsed) if with_calls else rid
 
 
 def stream_header(stream: str) -> dict:
