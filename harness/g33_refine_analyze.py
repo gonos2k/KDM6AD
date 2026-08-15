@@ -96,6 +96,18 @@ def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
     # dtcld design rule checkable from the output instead of recomputed from delt
     # by whoever reads the table (owner review §2.3).
     delt, loops, dtcld = m.group(4), m.group(5), m.group(6)
+    # The TOKEN is the record, and it is validated here, where it still
+    # exists (Codex): float() collapses "42.857142999999999999" and
+    # "4.2857143E+01" onto the same double as "42.857143", so a guard on the
+    # parsed value cannot tell the F0.6 channel's output from a forgery
+    # claiming precision the channel never produced. The channel's grammar,
+    # measured across all 474 published header tokens: digits, a point, six
+    # decimals -- with the integer part EMPTY below one, because gfortran's
+    # F0.6 prints .390625, not 0.390625.
+    if delt is not None:
+        for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
+            _expect(re.fullmatch(r"\d*\.\d{6}", tok),
+                    f"{nmm} token {tok!r} is not an F0.6 record", label)
     if nsplit is not None:
         _expect(got_n == nsplit,
                 f"BEGIN says nsplit={got_n}, filename says {nsplit} "

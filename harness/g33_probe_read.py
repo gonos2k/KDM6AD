@@ -88,6 +88,14 @@ def read(text: str) -> dict:
      ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
+    # The delt/dtcld TOKENS are F0.6 records and are validated as tokens,
+    # where the precision they claim is still visible (Codex): float()
+    # collapses a forged higher-precision spelling onto the same double as
+    # the channel's own output. gfortran's F0.6 prints .390625 below one, so
+    # the integer part may be empty.
+    for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
+        _expect(re.fullmatch(r"\d*\.\d{6}", tok),
+                f"{nmm} token {tok!r} is not an F0.6 record")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
 
     out, seen = {}, set()

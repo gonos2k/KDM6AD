@@ -1176,3 +1176,25 @@ def test_the_phase_of_the_sink_is_used_not_the_surface_fraction():
     assert liq == pytest.approx(w * hl)
     assert ice == pytest.approx(w * hi)
     assert liq - ice == pytest.approx(w * (hl - hi))   # the latent heat of fusion
+
+
+def test_the_delt_TOKEN_is_validated_before_float_collapses_it():
+    """float() maps '42.857142999999999999' and '4.2857143E+01' onto the same
+    double as '42.857143', so a guard on the parsed value cannot tell the
+    F0.6 channel's output from a forgery claiming precision the channel never
+    produced (Codex). The token is the record; it is judged as one. gfortran's
+    F0.6 prints .390625 below one, so the leading-zero-less spelling is the
+    channel's own."""
+    for tok, ok in [("42.857143", True), (".390625", True),
+                    ("100.000000", True),
+                    ("42.857142999999999999", False),
+                    ("4.2857143E+01", False), ("42.8571425", False)]:
+        body = _stream_fc(nsplit=1).splitlines()
+        body[0] = (f"G33R BEGIN nsplit 1 rezero legacy delt {tok} "
+                   f"loops 1 dtcld 1.000000")
+        text = "\n".join(body) + "\n"
+        if ok:
+            ra.read_text(text, nsplit=1)
+        else:
+            with pytest.raises(ra.RefineError, match="not an F0.6 record"):
+                ra.read_text(text, nsplit=1)
