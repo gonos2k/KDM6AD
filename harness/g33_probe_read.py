@@ -88,16 +88,17 @@ def read(text: str) -> dict:
      ntile, delt, dtcld, B, K) = m.groups()
     _expect(int(schema) == SCHEMA,
             f"stream declares schema {schema}, parser is {SCHEMA}")
-    # The delt/dtcld TOKENS are F0.6 records and are validated as tokens,
+    # The delt/dtcld TOKENS are fixed-6 records and are validated as tokens,
     # where the precision they claim is still visible (Codex): float()
     # collapses a forged higher-precision spelling onto the same double as
-    # the channel's own output. CANONICAL spelling only: the integer part is
-    # empty below one (gfortran's F0.6 prints .390625) or starts with a
-    # nonzero digit, so a padded 00042.857143 -- which F0.6 cannot print --
-    # is not the channel's record either.
+    # the channel's own output. CANONICAL spellings only -- and the channel
+    # has two producers: gfortran's F0.6 prints .390625 below one, the C++
+    # driver's std::fixed/setprecision(6) prints 0.390625, so the integer
+    # part is empty, zero, or nonzero-leading. A padded 00042.857143, which
+    # neither producer can print, is not the channel's record.
     for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
-        _expect(re.fullmatch(r"(?:[1-9]\d*)?\.\d{6}", tok),
-                f"{nmm} token {tok!r} is not an F0.6 record")
+        _expect(re.fullmatch(r"(?:0|[1-9]\d*)?\.\d{6}", tok),
+                f"{nmm} token {tok!r} is not a fixed-6 record")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
 
     out, seen = {}, set()

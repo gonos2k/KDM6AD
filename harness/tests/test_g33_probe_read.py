@@ -580,5 +580,5 @@ def test_the_G33P_delt_token_is_judged_as_a_CANONICAL_F06_record():
     for tok in ("25.0000001", "2.5E+01", "00025.000000", "025.000000"):
         bad = good.replace(" 25.000000 25.000000 ", f" {tok} 25.000000 ", 1)
         assert bad != good, "the replacement found nothing to replace"
-        with pytest.raises(pr.ProbeError, match="not an F0.6 record"):
+        with pytest.raises(pr.ProbeError, match="not a fixed-6 record"):
             pr.read(bad)
