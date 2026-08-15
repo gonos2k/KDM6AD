@@ -1555,9 +1555,8 @@ def test_the_MASS_WEIGHTED_closure_is_published_too(drivers):
         for basis in ("unweighted", "operator", "physical"):
             b = r[basis]
             assert b["closes_against_actual_update"] is True, (col, basis, b)
-            assert b["total_delta"] == pytest.approx(
-                b["actual_post_delta"], abs=pl.F64_CLOSURE_TOL
-                * max(abs(b["actual_post_delta"]), 1e-300)), (col, basis, b)
+            assert abs(b["telescoped_minus_actual"]) <= b["closure_bound"], \
+                (col, basis, b)
     # The unweighted one stays EXACT: nothing was reordered there.
     for col, r in d["columns"].items():
         assert r["unweighted"]["telescoped_minus_actual"] == 0.0, col
@@ -1565,24 +1564,35 @@ def test_the_MASS_WEIGHTED_closure_is_published_too(drivers):
     assert d["columns"]["2"]["operator"]["actual_post_delta"] != 0.0
 
 
-def test_the_weighted_closure_TOLERANCE_cannot_swallow_a_term(drivers):
-    """A screening bound is only worth having if it is far below the smallest
-    thing it must not hide. The smallest published share is praut at 13% of the
-    column total; the bound is 7.1e-15 relative."""
+def test_the_closure_bound_is_a_FORWARD_error_bound_not_net_relative(drivers):
+    """gamma_n * sum|weighted terms|, published in the artifact (owner review
+    §14.2). The previous bound was 64*eps relative to the NET result, which a
+    reordered sum's error is not proportional to: under cancellation the net
+    shrinks and a legitimate closure gets rejected, and at net == 0 the old
+    rule demanded an exact zero from a reordered floating sum. The scale, the
+    op count and the bound are fields now, so the acceptance criterion is a
+    number a reader can recompute rather than a constant chosen here.
+    """
     import g33_qr_process_ledger as pl
     D = drivers["legacy"]
     base = nl.run(D, (1, 1, 1))
     d = pl.decompose(base, nl.run(D, (3,)), 3, ra.read_text(base))
     op = d["columns"]["2"]["operator"]
-    smallest = min(abs(v) for v in op["share"].values())
-    assert smallest > 1e6 * pl.F64_CLOSURE_TOL, (smallest, pl.F64_CLOSURE_TOL)
-    # And a fabricated gap at the size of a term is REFUSED by the predicate.
-    assert not pl._closes("operator", smallest * op["actual_post_delta"],
-                          op["actual_post_delta"])
-    assert pl._closes("operator", 0.0, op["actual_post_delta"])
-    # A zero actual difference admits only a zero gap -- a relative bound
-    # against nothing would pass hardest where it means least.
-    assert not pl._closes("operator", 1e-300, 0.0)
+    assert op["closure_scale"] > 0 and op["closure_ops"] > 0
+    assert op["closure_bound"] == pytest.approx(
+        pl._gamma(op["closure_ops"]) * op["closure_scale"])
+    # The bound must sit far below the smallest published term, or it could
+    # swallow one: praut carries 13% of the column total.
+    smallest_term = min(abs(v) for v in op["delta"].values() if v)
+    assert op["closure_bound"] < 1e-6 * smallest_term, \
+        (op["closure_bound"], smallest_term)
+    # And the predicate refuses a gap at term size while passing the bound.
+    assert not pl._closes("operator", smallest_term, op["closure_bound"])
+    assert pl._closes("operator", 0.0, op["closure_bound"])
+    # A CANCELLED net no longer rejects a legitimate closure: the bound is a
+    # function of the terms, not of the net, so it is unchanged at net == 0.
+    assert pl._closes("operator", op["closure_bound"] * 0.5,
+                      op["closure_bound"])
 
 
 def test_the_attribution_verdict_is_ONE_field_named_for_what_it_COMPARES(drivers):
@@ -1607,3 +1617,36 @@ def test_the_attribution_verdict_is_ONE_field_named_for_what_it_COMPARES(drivers
                 f"is how an archive ends up carrying both")
         assert r["affected_columns_match_prediction"] is (
             sorted(r["columns"]) == sorted(r["predicted_columns"])), key
+
+
+def test_the_ledger_REFUSES_runs_that_disagree_on_the_WEIGHT_field(drivers):
+    """The weights come from the BASE stream and multiply both runs'
+    differences, so disagreeing forcing would make the 'mass-weighted
+    difference' two measures presented as one (owner review §14.1). The
+    multi-run caller guarantees agreement by sharing one fixture; the ledger
+    is standalone and must check its own precondition."""
+    import g33_qr_process_ledger as pl
+    D = drivers["legacy"]
+    base = nl.run(D, (1, 1, 1))
+    got = nl.run(D, (3,))
+    # a compared stream with ONE forcing value changed
+    import re
+    m = re.search(r"^(G33R FORCING rho \d+ \d+ )([0-9A-F]{8})$", got, re.M)
+    if m is None:
+        # G33R spells forcing differently; find any rho record generically
+        lines = got.splitlines()
+        idx, new = None, None
+        for i, ln in enumerate(lines):
+            if ln.startswith("G33R") and " rho " in ln:
+                idx = i
+                new = ln[:-8] + ("3F800000" if not ln.endswith("3F800000")
+                                 else "40000000")
+                break
+        assert idx is not None, "no rho record found to mutate"
+        lines[idx] = new
+        tampered = "\n".join(lines) + "\n"
+    else:
+        repl = "3F800000" if m.group(2) != "3F800000" else "40000000"
+        tampered = got[:m.start(2)] + repl + got[m.end(2):]
+    with pytest.raises(ra.RefineError, match="disagree on rho|weight"):
+        pl.decompose(base, tampered, 3, ra.read_text(base))

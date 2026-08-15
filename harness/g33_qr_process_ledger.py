@@ -224,34 +224,66 @@ def verify_replay(cells: dict, state: dict, dtcld: float, *, label: str) -> dict
     return {"cells": len(cells), "cold_gate_disagrees": len(flag_disagrees)}
 
 
-#: How far a WEIGHTED closure may sit from zero and still be closed.
-#:
-#: The unweighted closure is exact and is tested as `== 0.0`: every term and the
-#: actual difference are the same f32 words summed in float64 in the same order.
-#: The weighted one cannot be, and not because anything is approximate --
-#: `w*(a+b)` and `w*a + w*b` are different float64 expressions, so multiplying
-#: through the sum reorders it. What is left is float64 rounding over the cells
-#: of one column, which this bounds RELATIVELY: an absolute bound would mean
-#: something different on a column whose total is 1e-5 and one whose total is
-#: 1e+2, and both occur here.
-#:
-#: 64 * 2^-53 is ~7.1e-15 -- room for a few tens of roundings, far below any
-#: difference a term could carry, so a real gap cannot hide under it.
-F64_CLOSURE_TOL = 64 * 2.0 ** -53
+#: binary64 unit roundoff. The weighted closure bound is a FORWARD-ERROR
+#: bound, gamma_n * scale, not a tolerance relative to the net result: a
+#: reordered floating sum's error is proportional to the sum of the |terms|
+#: that went in, and the net can be arbitrarily small under cancellation --
+#: where a net-relative threshold rejects legitimate closures, and an
+#: exact-zero demand at actual == 0 rejects any reordering at all (owner
+#: review §14.2).
+_U64 = 2.0 ** -53
 
 
-def _closes(basis: str, gap: float, actual: float) -> bool:
+def _gamma(n: int) -> float:
+    """The standard summation error constant gamma_n = n*u / (1 - n*u)."""
+    nu = n * _U64
+    return nu / (1.0 - nu)
+
+
+def _closes(basis: str, gap: float, bound: float) -> bool:
     """Whether a per-basis closure is closed.
 
-    Exactly for the unweighted basis, and to the float64 rounding of the
-    reordered sum for the weighted ones -- see `F64_CLOSURE_TOL`. A zero actual
-    difference is closed only by a zero gap: there is nothing to take a relative
-    bound against, and calling any gap small compared to zero would make the
-    check pass hardest exactly where it means least.
+    Exactly for the unweighted basis: every term and the actual difference are
+    the same f32 words summed in float64 in the same order, so nothing is
+    reordered and the gap is identically zero -- measured so on every run.
+    The weighted bases multiply through the sum, which reorders it, and the
+    gap is judged against the forward-error bound published beside it.
     """
-    if basis == "unweighted" or actual == 0.0:
+    if basis == "unweighted":
         return gap == 0.0
-    return abs(gap) <= F64_CLOSURE_TOL * abs(actual)
+    return abs(gap) <= bound
+
+
+#: The G33R keys whose values ARE the weight field. `rho`/`delz` are forcing;
+#: `qv` at the window start builds the physical basis's dry-air factor.
+_WEIGHT_KEYS = (("forcing", "rho"), ("forcing", "delz"), ("initial", "qv"))
+
+
+def _require_same_weights(base_run: dict, got_run: dict) -> None:
+    """The two runs must agree, RAW, on every value the weights are built from.
+
+    The ledger reads rho, delz and the initial qv from the BASE stream and
+    multiplies both runs' differences by them -- so if the compared stream
+    carried different forcing, the "mass-weighted difference" would be two
+    different measures presented as one (owner review §14.1). The multi-run
+    caller happens to guarantee this because both arms share one fixture, but
+    the ledger is a standalone function and the precondition it rests on has
+    to be one it checks.
+    """
+    for cls, field in _WEIGHT_KEYS:
+        keys = sorted(k for k in base_run
+                      if len(k) == 4 and k[0] == cls and k[1] == field)
+        if not keys:
+            raise ra.RefineError(
+                f"the base stream carries no ({cls}, {field}) records -- the "
+                f"weight field cannot be built, let alone compared")
+        diff = [k for k in keys if got_run.get(k) != base_run[k]]
+        if diff:
+            raise ra.RefineError(
+                f"the two runs disagree on {field} at {len(diff)} cell(s), "
+                f"first {diff[0]} -- the weights are built from the base "
+                f"stream, so a weighted difference over disagreeing forcing "
+                f"would be two measures presented as one")
 
 
 def decompose(base_text: str, got_text: str, width: int, run) -> dict:
@@ -263,6 +295,7 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
         raise ra.RefineError(f"dtcld differs between the runs ({dt_a} vs {dt_b})")
     replay = {"base": verify_replay(a, sa, dt_a, label="base"),
               "got": verify_replay(b, sb, dt_b, label="got")}
+    _require_same_weights(run, ra.read_text(got_text))
 
     # THE PRE-STATE. The telescoping substitutes operands one at a time into a
     # single starting qr, so it decomposes
@@ -322,6 +355,12 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
         # actual difference is carried into each basis by the SAME weight the
         # terms take, in the same loop, so nothing is re-derived.
         actual = dict.fromkeys(acc, 0.0)
+        # The forward-error SCALE: the sum of the absolute weighted terms that
+        # entered each basis's two accumulations. The bound is gamma_n times
+        # this, published in the artifact, so the acceptance criterion is a
+        # number a reader can recompute rather than a constant chosen here.
+        scale = dict.fromkeys(acc, 0.0)
+        ops = 0
         preclamp: dict = {}
         for key in keys:
             _c, _l, _col, k = key
@@ -338,14 +377,18 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
                       - np.float32(ur.f32(sa[key]["qr_post"])))
             for basis, wt in w.items():
                 actual[basis] += d * wt
+                scale[basis] += abs(d * wt)
+            ops += 1 + len(post)
             for term, v in post.items():
                 for basis, wt in w.items():
                     acc[basis][term] = acc[basis].get(term, 0.0) + v * wt
                     totals[basis] += v * wt
+                    scale[basis] += abs(v * wt)
             for term, v in pre.items():
                 preclamp[term] = preclamp.get(term, 0.0) + v
 
         gaps = {basis: actual[basis] - totals[basis] for basis in acc}
+        bounds = {basis: _gamma(ops) * scale[basis] for basis in acc}
 
         out[str(col)] = {
             "cells": len(keys),
@@ -359,8 +402,11 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
                 # The same closure, in the basis the share is reported in.
                 "actual_post_delta": actual[basis],
                 "telescoped_minus_actual": gaps[basis],
+                "closure_scale": scale[basis],
+                "closure_ops": ops,
+                "closure_bound": bounds[basis],
                 "closes_against_actual_update": _closes(basis, gaps[basis],
-                                                        actual[basis]),
+                                                        bounds[basis]),
                 # Shares only where there IS a change: a share of a zero total
                 # is not a number, and 0/0 printed as a percentage is how a
                 # null result acquires a mechanism.
