@@ -1045,7 +1045,7 @@ def test_a_valid_NON_INTEGRAL_split_is_not_two_timesteps():
     delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
     hex32 = struct.pack(">f", delt32).hex().upper()
     from test_g33_number_transport import _call as _nc, _stream as _ns
-    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32))
     run = _samerun_window()
     run[("meta", "precision")] = "f64"
     run[("meta", "delt")] = float(f"{delt32:.6f}")
@@ -1066,7 +1066,7 @@ def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
     delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
     hex32 = struct.pack(">f", delt32).hex().upper()
     from test_g33_number_transport import _call as _nc, _stream as _ns
-    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32))
     run = _samerun_window()
     run[("meta", "delt")] = 42.85714250
     with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):

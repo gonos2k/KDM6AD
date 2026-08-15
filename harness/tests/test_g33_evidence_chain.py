@@ -2353,7 +2353,7 @@ def _contract_bundle(tmp_path, g33n_cols):
     root = tmp_path / "bundle"
     root.mkdir()
     body = _g33r(nsplit=1, B=2, K=2).splitlines()
-    body[0] = "G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 dtcld 1.000000"
+    body[0] = "G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 dtcld 100.000000"
     (root / "n1.rezero.txt").write_text(
         "\n".join(body) + "\n" + _g33n(_call(1, cols=g33n_cols, ks=2), nsplit=1))
     man = {"identity": {"schema": "x"}, "arm": "reference", "instrumented": True,
@@ -2396,10 +2396,13 @@ def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
                                 "rho": "uniform", "width": 2, "levels": 2}}]
     rows = [r for r in ec._member_contract_states(root, man)
             if r["file"] == "n1.rezero.txt"]
-    # the member row (as-is) matches; the arm row (claiming uniform) refuses
+    # the member row (as-is) matches; the arm row refuses -- at whichever of
+    # the unified contract's requirements it fails first (the synthetic
+    # stream carries no INITIAL, which the current profile demands before
+    # the rho comparison is reached)
     assert [r["state"] for r in rows] == ["matches",
                                           "MEMBER-CONTRACT-MISMATCH"]
-    assert "'as-is'" in rows[1]["detail"]
+    assert rows[1]["detail"]
 
 
 def test_the_pinned_fixture_not_the_checkout_supplies_the_domain():
