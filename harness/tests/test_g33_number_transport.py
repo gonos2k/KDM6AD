@@ -945,7 +945,8 @@ def test_two_splits_covering_DIFFERENT_domains_are_refused():
 
 def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     got = nt.validated_run_identity(_stream(_call(1)))
-    assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 1}
+    assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+                   "width": 1, "levels": 2}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -962,3 +963,68 @@ def test_validated_run_identity_pins_the_EXPECTED_width():
     s = _stream(_call(1))
     with pytest.raises(nt.StreamError, match="expected the fixture"):
         nt.validated_run_identity(s, expected_width=3)
+
+
+# --- an empty call is not a processed tile (owner review §5) -----------------
+#
+# Every completeness rule iterates `call["loops"]`, so an empty set ran every
+# check zero times and CALL_BEGIN + CALL_END with nothing between counted as
+# complete -- its declared columns covered by nothing while the tile-span check
+# summed the declaration. Measured. The recurring defect class: measuring
+# nothing, certified as complete.
+
+
+def test_an_EMPTY_call_is_refused():
+    s = ("G33N STREAM_BEGIN 4 1 2 2 legacy rezero mstep,mstepi,nflux as-is\n"
+         "G33N CALL_BEGIN 1 1 1 1 1 2 42C80000\nG33N CALL_END 1 1 1\n"
+         + _call(2, cols=(2,), split=1, tile=2) + "G33N STREAM_END\n")
+    with pytest.raises(nt.StreamError, match="carries no records at all"):
+        nt.calls(s)
+
+
+@pytest.mark.parametrize("what,begin,expect", [
+    ("K = 0", "G33N CALL_BEGIN 1 1 1 1 1 0 42C80000", "not a level count"),
+    ("inverted columns", "G33N CALL_BEGIN 1 1 1 3 1 2 42C80000",
+     "non-empty 1-based"),
+    ("column 0", "G33N CALL_BEGIN 1 1 1 0 1 2 42C80000", "non-empty 1-based"),
+    ("NaN delt", "G33N CALL_BEGIN 1 1 1 1 1 2 7FC00000", "positive finite"),
+    ("zero delt", "G33N CALL_BEGIN 1 1 1 1 1 2 00000000", "positive finite"),
+])
+def test_call_GEOMETRY_is_checked_where_it_is_declared(what, begin, expect):
+    """Each of these was individually masked by later checks on well-formed
+    streams and unchecked on degenerate ones."""
+    s = ("G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux as-is\n"
+         + begin + "\nG33N CALL_END 1 1 1\nG33N STREAM_END\n")
+    with pytest.raises(nt.StreamError, match=expect):
+        nt.calls(s)
+
+
+# --- the cid equation is not a range check (owner review §6) -----------------
+
+
+def test_split_and_tile_must_be_IN_RANGE_not_merely_consistent():
+    """Under ntile=2, split=0/tile=3 gives cid 1 and split=1/tile=2 gives cid
+    2 -- the equation satisfied, the decomposition outside the domain the
+    header declares. Measured passing."""
+    s = ("G33N STREAM_BEGIN 4 1 2 2 legacy rezero mstep,mstepi,nflux as-is\n"
+         + _call(1, cols=(1,), split=0, tile=3)
+         + _call(2, cols=(2,), split=1, tile=2) + "G33N STREAM_END\n")
+    with pytest.raises(nt.StreamError, match="outside 1"):
+        nt.calls(s)
+
+
+def test_one_stream_declares_ONE_K_and_ONE_delt():
+    """The ranges plus the cid equation force the (split, tile) universe; K
+    and delt were tied to nothing, so one call could describe a different
+    vertical grid or step than its neighbours and each validated alone."""
+    good = _stream(_call(1), _call(2))
+    bad = good.replace("G33N CALL_BEGIN 2 2 1 1 1 2 42C80000",
+                       "G33N CALL_BEGIN 2 2 1 1 1 2 42C90000")
+    assert bad != good
+    with pytest.raises(nt.StreamError, match="different timesteps"):
+        nt.calls(bad)
+
+
+def test_validated_run_identity_pins_the_EXPECTED_levels():
+    with pytest.raises(nt.StreamError, match="expected the fixture's 4"):
+        nt.validated_run_identity(_stream(_call(1)), expected_levels=4)

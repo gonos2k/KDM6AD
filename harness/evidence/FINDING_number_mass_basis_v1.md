@@ -55,9 +55,13 @@ systematic 0.1% offset here and would carry ~2% on a moist real case.
 - **Settled from source**: `den` is moist-air density; `nr` is per dry kg; the
   two bases differ by `(1 + qv)`.
 - **Settled by measurement**: the resulting weight error is 0.10% on this fixture.
-- **Not settled**: whether the reference intends `Σ ρ_d Δz nr` or
-  `Σ ρ Δz nr` as *the* conserved column measure. That is a physics-definition
-  question for the owner, and it changes which quantity a corrected number
-  transport should conserve.
+- **Settled since (owner review §10, superseding the line that stood here)**:
+  the PHYSICAL column number is `Σ ρ_d Δz nr` -- unit-forced, because `nr` is
+  per kg of dry air, so it is not an owner preference (G33-BASIS-006).
+  `Σ ρ_m Δz nr` remains meaningful only as the legacy operator's
+  pseudo-measure. What stays an owner decision is narrower than this line
+  originally said: whether a corrected transport keeps compatibility with the
+  pseudo-measure, and whether the default promotes to the physical measure
+  (G33-BASIS-002).
 - **Not measured**: the effect on a real case, where qv is 20× larger and varies
   strongly in the vertical.

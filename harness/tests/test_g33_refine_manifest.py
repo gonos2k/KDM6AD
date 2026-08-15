@@ -58,7 +58,7 @@ def synthetic_manifest(root):
              # TYPED beside the literal command line (owner priority 5): the
              # argv is four strings and only two positions were ever compared.
              "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
-                     "rho": "uniform"},
+                     "rho": "uniform", "levels": 4},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],

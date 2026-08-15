@@ -378,7 +378,11 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             for basis, wt in w.items():
                 actual[basis] += d * wt
                 scale[basis] += abs(d * wt)
-            ops += 1 + len(post)
+            # TWO floating operations per term -- the multiply v*wt and the
+            # accumulator add -- not one; counting terms alone understated n
+            # by half and the bound was gamma_n of the wrong n (owner review
+            # §11). The gap's final subtraction is the +1 at the bound below.
+            ops += 2 * (1 + len(post))
             for term, v in post.items():
                 for basis, wt in w.items():
                     acc[basis][term] = acc[basis].get(term, 0.0) + v * wt
@@ -388,7 +392,9 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
                 preclamp[term] = preclamp.get(term, 0.0) + v
 
         gaps = {basis: actual[basis] - totals[basis] for basis in acc}
-        bounds = {basis: _gamma(ops) * scale[basis] for basis in acc}
+        # gamma over the FULL op count: 2 ops per accumulated term in each of
+        # the two sums, plus the final subtraction forming the gap.
+        bounds = {basis: _gamma(ops + 1) * scale[basis] for basis in acc}
 
         out[str(col)] = {
             "cells": len(keys),
@@ -403,7 +409,7 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
                 "actual_post_delta": actual[basis],
                 "telescoped_minus_actual": gaps[basis],
                 "closure_scale": scale[basis],
-                "closure_ops": ops,
+                "closure_ops": ops + 1,
                 "closure_bound": bounds[basis],
                 "closes_against_actual_update": _closes(basis, gaps[basis],
                                                         bounds[basis]),

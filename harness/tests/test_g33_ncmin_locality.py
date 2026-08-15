@@ -1397,7 +1397,8 @@ def test_a_MIXED_external_step_is_refused_not_sampled():
     lines = src.splitlines()
     i = [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")][3]
     lines[i] = lines[i].rsplit(" ", 1)[0] + " 41480000"      # 25.0 -> 12.5
-    with pytest.raises(nt.StreamError, match="different external steps"):
+    with pytest.raises(nt.StreamError,
+                       match="different external steps|different timesteps"):
         ss.analysis("\n".join(lines) + "\n")
 
 
@@ -1451,7 +1452,8 @@ def test_a_nonpositive_or_nonfinite_external_step_is_refused(val, label):
     bits = format(struct.unpack(">I", struct.pack(">f", val))[0], "08X")
     for i in [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")]:
         lines[i] = lines[i].rsplit(" ", 1)[0] + " " + bits
-    with pytest.raises(nt.StreamError, match="not a positive finite duration"):
+    with pytest.raises(nt.StreamError,
+                       match="not a positive finite (duration|timestep)"):
         ss.analysis("\n".join(lines) + "\n")
 
 
@@ -1581,6 +1583,11 @@ def test_the_closure_bound_is_a_FORWARD_error_bound_not_net_relative(drivers):
     assert op["closure_scale"] > 0 and op["closure_ops"] > 0
     assert op["closure_bound"] == pytest.approx(
         pl._gamma(op["closure_ops"]) * op["closure_scale"])
+    # The count is FLOPS, not terms: two per accumulated term (multiply + add)
+    # across both sums, plus the final subtraction -- so it is odd and > the
+    # cell count by an order (owner review §11).
+    cells = d["columns"]["2"]["cells"]
+    assert op["closure_ops"] % 2 == 1 and op["closure_ops"] > 2 * cells
     # The bound must sit far below the smallest published term, or it could
     # swallow one: praut carries 13% of the column total.
     smallest_term = min(abs(v) for v in op["delta"].values() if v)

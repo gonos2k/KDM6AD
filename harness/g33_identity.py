@@ -316,6 +316,32 @@ PROVENANCE_ANCHORS = ("commit", "analyzer_commit", "repo_commit")
 NARRATIVE_KEYS = ("findings",)
 
 
+def _canonical_lists(man: dict) -> dict:
+    """The manifest with every SET-valued list in canonical order.
+
+    JSON objects hash order-independently (`sort_keys`); lists do not, and
+    four of the manifest's lists are semantically SETS -- the pins, the
+    members, the build artifacts. The producer happens to write them in one
+    order, but two valid manifests recording the same rows differently ordered
+    would carry different ids, and Phase B stores ids (owner review §7.3). The
+    ORDER-BEARING lists are left alone: `runtime_argv` is a command line, and
+    an `analyses` entry's `inputs` follow its own sort.
+    """
+    out = dict(man)
+    for key in ("member_parsers", "tracked_build_inputs", "producer_modules"):
+        if isinstance(out.get(key), list):
+            out[key] = sorted(out[key], key=lambda e: str(e.get("path", e)))
+    if isinstance(out.get("members"), list):
+        out["members"] = sorted(
+            out["members"],
+            key=lambda e: (e.get("nsplit", 0), str(e.get("mode", "")),
+                           str(e.get("file", ""))))
+    if isinstance(out.get("build_artifacts"), list):
+        out["build_artifacts"] = sorted(out["build_artifacts"],
+                                        key=lambda e: str(e.get("file", e)))
+    return out
+
+
 def content_only(x):
     """`x` with every retrieval anchor removed, at any depth.
 
@@ -358,6 +384,7 @@ def run_recipe_id(man: dict) -> str:
     module pins, so passing them through raw put the containing commit into the
     recipe by the back door.
     """
+    man = _canonical_lists(man)
     return _digest({
         "modules": _by_role(man, "run"),
         "member_parsers": content_only(man.get("member_parsers")),
@@ -394,6 +421,7 @@ def run_content_id(man: dict) -> str:
     identical sources by different compilers are not the same run content, and
     an id that called them equal would be answering a question nobody asked.
     """
+    man = _canonical_lists(man)
     _derived, raw = split_analyses(man)
     keep = {k: v for k, v in man.items()
             if k not in ("analyses", "analyzer_sha256") + NARRATIVE_KEYS}

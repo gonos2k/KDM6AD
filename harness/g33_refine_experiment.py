@@ -41,13 +41,23 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
-import g33_matched_closure as mc      # noqa: E402
-import g33_cap_interface as ci        # noqa: E402
-import g33_dual_ledger as dl          # noqa: E402
-import g33_defect_magnitude as dm     # noqa: E402
-import g33_metric_trajectory as mtj   # noqa: E402
-import g33_substep_schedule as sss    # noqa: E402
-import g33_water_enthalpy_basis as web  # noqa: E402
+
+
+def _an(name: str):
+    """An ANALYZER module, imported when an analysis runs -- never before.
+
+    The analyzers were imported at module load, so their top-level code
+    executed before the raw driver was built or run. The identity layering
+    claims analysis-only bytes cannot influence the run; a Python import is
+    code EXECUTION, not a dependency declaration, so an import-time side
+    effect -- an environment variable, a numeric-context change, a monkey
+    patch -- would have run first and the claim would rest on inspection of
+    today's analyzers rather than on structure (owner review §8). Importing
+    at dispatch time puts every raw member on disk, strict-parsed, before any
+    analyzer's first statement executes.
+    """
+    import importlib
+    return importlib.import_module(name)
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -122,13 +132,22 @@ def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> lis
 
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
-            nflux=False, rho_profile="as-is", width=3) -> dict:
+            nflux=False, rho_profile="as-is", width=3, levels=None) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
     could ship a G33P stream that was truncated, transposed or NaN, and an
     --nflux arm could ship a G33N stream nothing had parsed. The arm declares
     which protocols must be present; each is read by its own strict parser.
+
+    The G33N leg is pinned to the FIXTURE's domain, not merely to itself
+    (owner review §4). `calls()` proves the tiles partition 1..W for one W and
+    one K; nothing proved W and K were the fixture's B and K, so a stdout
+    whose window protocol covered 1..3 beside a G33N covering 1..2 was two
+    internally-strict protocols describing different domains, and every G33N
+    analysis silently omitted column 3. The arm streams have carried this pin
+    since the typed `ran` block; the PRIMARY members -- the ones every claim
+    binds into -- did not.
     """
     runs = {}
     for n in nsplits:
@@ -140,8 +159,40 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
             probe = pr.read(text)               # G33P
             _agree(runs[n], probe, p.name)
         if nflux:
-            nt.calls(text)                      # G33N, whole-stream validated
+            _require_fixture_domain(text, p.name, n, mode, rho_profile,
+                                    width, levels, runs[n])
     return runs
+
+
+def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
+    """The G33N leg against the fixture AND the window protocol beside it.
+
+    Three parties describe one run in a single stdout: the G33N header, the
+    window records (G33R/G33P), and the member metadata the manifest will
+    carry. Any two agreeing proves nothing about the third, so all three are
+    tied here, at production, where the text is in hand.
+    """
+    rid = nt.validated_run_identity(text, expected_width=width,
+                                    expected_levels=levels)
+    want = {"nsplit": n, "carry": mode, "rho": rho, "width": width}
+    got = {k: rid[k] for k in want}
+    if got != want:
+        raise ra.RefineError(
+            f"{name}: the G33N leg declares {got}, the member is being "
+            f"published as {want}")
+    # ...and the WINDOW protocol in the same stdout. `run` is keyed
+    # (class, field, col, k); its columns and levels are the window's domain.
+    wcols = {k[2] for k in run if len(k) == 4 and k[0] == "state"}
+    wks = {k[3] for k in run if len(k) == 4 and k[0] == "state"}
+    if wcols and max(wcols) != rid["width"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol covers columns up to {max(wcols)} "
+            f"and the G33N leg covers 1..{rid['width']} -- two protocols, two "
+            f"domains, one stdout")
+    if wks and len(wks) != rid["levels"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol carries {len(wks)} levels and the "
+            f"G33N leg declares K={rid['levels']}")
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:
@@ -191,42 +242,56 @@ def _probe_member(path: Path) -> dict:
 
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
-                  rho_profile: str = "as-is", width: int = 3) -> dict:
-    """Run every member and read it with the G33P strict parser."""
+                  rho_profile: str = "as-is", width: int = 3,
+                  levels=None, nflux=False) -> dict:
+    """Run every member: G33P strict parse AND the fixture-domain pin.
+
+    The f64 path validated only G33P; the G33N leg in the same stdout was read
+    later by each analysis without a fixture width to hold it to, so a G33N
+    covering fewer columns than the window protocol would pass every strict
+    parse and the analyses would silently omit the rest (owner review §4).
+    The pin reads the G33N header, so it applies exactly when the build emits
+    one -- an --nflux build; without the overlay there is no transport stream
+    for any parser to hold to anything.
+    """
     runs = {}
     for n in nsplits:
         p = out / f"n{n}.{mode}.txt"
-        p.write_text(_run(_argv(exe, n, mode, rho_profile, width)))
-        runs[n] = pr.read(p.read_text())
+        text = _run(_argv(exe, n, mode, rho_profile, width))
+        p.write_text(text)
+        runs[n] = pr.read(text)
+        if nflux:
+            _require_fixture_domain(text, p.name, n, mode, rho_profile,
+                                    width, levels, runs[n])
     return runs
 
 
 #: analysis name -> (module, callable taking the stream) (owner §14-4). Only for
 #: `--nflux` bundles: these all read the extension records.
 ANALYSES = {
-    "matched_closure": ("g33_matched_closure", lambda s: mc.analysis(s)),
-    "cap_interface": ("g33_cap_interface", lambda s: ci.analysis(s)),
+    "matched_closure": ("g33_matched_closure", lambda s: _an("g33_matched_closure").analysis(s)),
+    "cap_interface": ("g33_cap_interface", lambda s: _an("g33_cap_interface").analysis(s)),
     "extension_protocol": ("g33_number_transport", lambda s: _protocol(s)),
     # Both column measures, always (owner §9): reporting one makes a statement
     # about the OPERATOR read as a statement about the ATMOSPHERE.
-    "dual_ledger": ("g33_dual_ledger", lambda s: dl.analysis(s)),
+    "dual_ledger": ("g33_dual_ledger", lambda s: _an("g33_dual_ledger").analysis(s)),
     # What the headline percentage is a percentage OF (owner §11).
-    "defect_magnitude": ("g33_defect_magnitude", lambda s: dm.analysis(s)),
+    "defect_magnitude": ("g33_defect_magnitude", lambda s: _an("g33_defect_magnitude").analysis(s)),
     # WHICH sub-step schedule each chain ran, not how many records it emitted.
     # The parser has always filed mstep and mstepi together; nothing reduced
     # them, so `extension_protocol` could say 72 mstep records and not say that
     # column 3 ran three of them while the ice chain ran one.
-    "substep_schedule": ("g33_substep_schedule", lambda s: sss.analysis(s)),
+    "substep_schedule": ("g33_substep_schedule", lambda s: _an("g33_substep_schedule").analysis(s)),
     # The COLUMN totals under both bases. `dual_ledger` answers this per
     # species; §9.2 asks it of the column, where the basis is the whole answer
     # on a column that closes to roundoff and changes nothing on one that does
     # not.
     "water_enthalpy_basis": ("g33_water_enthalpy_basis",
-                             lambda s: web.analysis(s)),
+                             lambda s: _an("g33_water_enthalpy_basis").analysis(s)),
     # Water destroyed INSIDE the column is not precipitation (owner §16-4).
     # Both ledgers, so the correction is visible rather than a silent swap.
     "internal_cap_enthalpy": ("g33_cap_interface",
-                              lambda s: ci.enthalpy_with_cap_sink(s)),
+                              lambda s: _an("g33_cap_interface").enthalpy_with_cap_sink(s)),
 }
 
 
@@ -271,7 +336,8 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
         got = nt.validated_run_identity(text, expected_width=width)
     except nt.StreamError as e:
         raise ra.RefineError(f"{where}: {e}")
-    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width}
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width,
+            "levels": got["levels"]}
     if got != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
@@ -279,7 +345,13 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
             f"it is filed as is worse than an unrecorded one")
     # `carry` is the multi-run block's spelling of the driver's mode argument.
     # One name for one argument, or the archive carries both.
-    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}
+    #
+    # `levels` joins the block for the same reason `width` is in it: the run
+    # identity is the domain the stream actually processed, and the chain
+    # compares this block against `validated_run_identity`, which now proves
+    # K as well as W (owner review §4).
+    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho,
+            "levels": got["levels"]}
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
@@ -312,7 +384,8 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             got: dict = {}
             path = out / f"{stem}.metric_trajectory.json"
             path.write_text(rm.json.dumps(
-                mtj.analysis(str(exe), n, chain, mode=mode, width=width,
+                _an("g33_metric_trajectory").analysis(
+                    str(exe), n, chain, mode=mode, width=width,
                              baseline_stream=member.read_text(), keep=got),
                 indent=2, sort_keys=True) + "\n")
             made.append({"file": path.name, "nsplit": n, "chain": chain,
@@ -351,7 +424,8 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             # false numbers on G33-TRAJECTORY-001. The stream is published
             # precisely so this is re-derivable, so it is derived here.
             dp = out / f"{ap.stem}.defect_magnitude.json"
-            dp.write_text(rm.json.dumps(dm.analysis(text), indent=2,
+            dp.write_text(rm.json.dumps(
+                _an("g33_defect_magnitude").analysis(text), indent=2,
                                         sort_keys=True) + "\n")
             made.append({"file": dp.name, "nsplit": n, "arm": arm,
                          "analysis": "defect_magnitude", "sha256": rm.sha256(dp),
@@ -470,8 +544,17 @@ def unpinned_reachable() -> set:
 
 
 def _local_imports(module: str) -> set:
-    """The harness modules `module` imports. By AST, not by text: a name in a
-    comment or a docstring is not an import."""
+    """The harness modules `module` DEPENDS ON. By AST, not by text: a name in
+    a comment or a docstring is not an import.
+
+    A lazy `_an("...")` dispatch is a dependency edge like an `import`
+    statement -- it names a module whose bytes decide the result -- and it is
+    collected here so making an import lazy changes WHEN the code executes
+    without changing what the derivation says it depends on. Without this, the
+    lazy-import change would have silently dropped every analyzer from the
+    reachable set and the role graph (owner review §8: execution isolation
+    must not weaken the dependency record).
+    """
     f = _module_file(module)
     if f is None:
         return set()
@@ -481,6 +564,10 @@ def _local_imports(module: str) -> set:
             names |= {a.name.split(".")[0] for a in n.names}
         elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
             names.add(n.module.split(".")[0])
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Name) \
+                and n.func.id == "_an":
+            names |= {a.value for a in n.args
+                      if isinstance(a, ast.Constant) and isinstance(a.value, str)}
     return {m for m in names if _module_file(m) is not None}
 
 
@@ -807,7 +894,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
-            runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width)
+            runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
+                                 levels=fixture_dims(fixture)[1], nflux=nflux)
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member
@@ -815,7 +903,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             pr.require_probe_chain(runs)
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
-                           rho_profile=rho_profile, width=width)
+                           rho_profile=rho_profile, width=width,
+                           levels=fixture_dims(fixture)[1])
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"
