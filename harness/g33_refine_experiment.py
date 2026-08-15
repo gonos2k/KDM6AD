@@ -263,19 +263,20 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     CALL_BEGIN brackets carry the columns, which is where the width is. A run
     that does not answer for itself cannot be published as an arm.
     """
-    hdr = nt.stream_header(text)
-    got = {"nsplit": hdr["nsplit"], "carry": hdr["mode"], "rho": hdr["rho_profile"]}
-    want = {"nsplit": nsplit, "carry": mode, "rho": rho}
+    # ONE reader for run identity, the strict one (owner review §6): the
+    # evidence chain and this function previously derived it separately, and
+    # the chain's copy was two regular expressions that reported `matches` on
+    # streams `calls()` refuses.
+    try:
+        got = nt.validated_run_identity(text, expected_width=width)
+    except nt.StreamError as e:
+        raise ra.RefineError(f"{where}: {e}")
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width}
     if got != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
             f"say {want} -- an arm that describes a different run than the one "
             f"it is filed as is worse than an unrecorded one")
-    covered = max(c["cols"][1] for c in nt.calls(text))
-    if covered != width:
-        raise ra.RefineError(
-            f"{where}: the stream's calls cover columns up to {covered}, the "
-            f"entry would declare width {width}")
     # `carry` is the multi-run block's spelling of the driver's mode argument.
     # One name for one argument, or the archive carries both.
     return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}

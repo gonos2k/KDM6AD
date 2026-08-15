@@ -906,3 +906,59 @@ def test_a_stream_with_NO_header_is_still_read_under_the_documented_default():
     s = _stream(_call(1))
     assert "PROTOCOL" not in s
     assert nt.calls(s)[0]["delt"] == 100.0
+
+
+# --- coverage anchored at column 1, congruent across splits (review §7) ------
+#
+# The check took the first tile's own start as origin, so a split covering 2..3
+# -- column 1 missing entirely -- was contiguous from where it happened to
+# begin, and passed. Measured. The real driver refuses these before emitting,
+# but this parser judges arbitrary artifacts and may not re-assume that.
+
+
+def test_a_split_whose_tiles_start_past_COLUMN_1_is_refused():
+    s = _stream(_call(1, cols=(2,), split=1, tile=1), nsplit=1, ntile=1)
+    with pytest.raises(nt.StreamError, match="from column 1"):
+        nt.calls(s)
+
+
+def test_two_splits_covering_DIFFERENT_domains_are_refused():
+    s = _stream(_call(1, cols=(1,), split=1, tile=1),
+                _call(2, cols=(1,), split=2, tile=1),
+                _call(3, cols=(2,), split=2, tile=2),
+                nsplit=2, ntile=1)
+    # nsplit/ntile bookkeeping: build by hand -- split 1 covers 1..1, split 2
+    # covers 1..2, headers consistent.
+    s = (_hdr(nsplit=1, ntile=3, schema=4).replace(" 3 ", " 3 ", 1))
+    s = ("G33N STREAM_BEGIN 4 2 2 4 legacy rezero mstep,mstepi,nflux as-is\n"
+         + _call(1, cols=(1,), split=1, tile=1)
+         + _call(2, cols=(2,), split=1, tile=2)
+         + _call(3, cols=(1,), split=2, tile=1)
+         + _call(4, cols=(2, 3), split=2, tile=2)
+         + "G33N STREAM_END\n")
+    with pytest.raises(nt.StreamError, match="different domains"):
+        nt.calls(s)
+
+
+# --- ONE identity reader, the strict one (review §6) -------------------------
+
+
+def test_validated_run_identity_is_the_strict_parse_plus_the_header():
+    got = nt.validated_run_identity(_stream(_call(1)))
+    assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 1}
+
+
+def test_validated_run_identity_REFUSES_what_calls_refuses():
+    """The property the private regex lost: a stream the strict parser refuses
+    has no run identity to report."""
+    bad = ("G33N STREAM_BEGIN 4 12 1 12 legacy rezero mstep as-is\n"
+           "G33N CALL_BEGIN 1 1 1 1 3 4 42C80000\n"
+           "G33N STREAM_BEGIN 4 12 1 12 legacy rezero mstep as-is\n")
+    with pytest.raises(nt.StreamError):
+        nt.validated_run_identity(bad)
+
+
+def test_validated_run_identity_pins_the_EXPECTED_width():
+    s = _stream(_call(1))
+    with pytest.raises(nt.StreamError, match="expected the fixture"):
+        nt.validated_run_identity(s, expected_width=3)

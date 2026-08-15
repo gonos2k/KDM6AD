@@ -372,31 +372,35 @@ def _rank(schema: str) -> int:
     return _SCHEMA_ORDER.index(schema) if schema in _SCHEMA_ORDER else -1
 
 
-#: The arm stream's own account of the run that produced it.
-_STREAM_BEGIN = re.compile(
-    r"^G33N STREAM_BEGIN \d+ (\d+) \d+ \d+ \S+ (\S+) \S+ (\S+)$", re.M)
-_CALL_COLS = re.compile(r"^G33N CALL_BEGIN \d+ \d+ \d+ \d+ (\d+) ", re.M)
-
-
 def _arm_ran_state(p: Path, an: dict) -> str:
-    """An arm's typed run identity against the header of the stream itself.
+    """An arm's typed run identity against the STRICT PARSE of the stream.
 
     The manifest says which run this is; the stream says which run it was. Two
     records of one fact, and until now they were never compared -- the schema
     checked `runtime_argv` against the manifest's own fields, which is the
     manifest agreeing with itself (owner priority 5).
+
+    Through `validated_run_identity`, never a private regex (owner review §6).
+    The first version re-derived the identity here with two regular
+    expressions, so a published stream the strict parser REFUSES -- duplicate
+    STREAM_BEGIN, an unterminated call, NaN payloads -- reported `matches`:
+    the exact weaker-reader bypass the strict parser exists to prevent, built
+    into the checker one commit after the parser was hardened. Imported
+    lazily, because this module deliberately does not import the producer's
+    stack at load time.
     """
     try:
         text = p.read_text()
     except (OSError, ValueError):
         return "RUN-IDENTITY-UNREADABLE"
-    m = _STREAM_BEGIN.search(text)
-    cols = _CALL_COLS.findall(text)
-    if not m or not cols:
+    if "G33N STREAM_BEGIN" not in text:
         return "RUN-IDENTITY-ABSENT"
+    import g33_number_transport as nt
+    try:
+        got = nt.validated_run_identity(text)
+    except nt.StreamError:
+        return "RUN-IDENTITY-UNREADABLE"
     ran = an.get("ran") or {}
-    got = {"nsplit": int(m.group(1)), "carry": m.group(2), "rho": m.group(3),
-           "width": max(int(c) for c in cols)}
     want = {k: ran.get(k) for k in got}
     return "matches" if got == want else "RUN-IDENTITY-MISMATCH"
 
