@@ -1286,11 +1286,22 @@ claims:
       - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual_in_initial_ulps: 0.2025456428527832
       - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual: -1.5968866062809894e-08
       - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: -6.58486880484506e-08
+      # ...and the same residual in units of its own inventory's ULP --
+      # the '5.8e8 ULP' the text quotes to say HOW far from roundoff
+      # column 2 sits. It was quoted and unbound (owner review §9).
+      - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual_in_initial_ulps: 575339034.0
       - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.3.operator.residual: 0.0
       - kdm6ad-g33m-f64/water-001.bundles/a0f9e8c1e36a9ca219916a75b7ef6e0f09624028afa0cf8900f7d895fd879e9a/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.0
       # ...and the f32 rows the text quotes as 6.8% / 17.1%.
       - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: 0.06827287428299673
       - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.17130822175278065
+    unbound:
+      - figure: the rain diagnostic departs from the rho*dz budget by up
+          to 10x
+        why: the P0-4b fallout-diagnostic measurement predates this
+          archive and no pinned artifact publishes the ratio; it scopes
+          WHY the f32 rows are not clean conservation statements rather
+          than asserting a bindable figure of this claim
     evidence: [FINDING_column_water_orders_v1.md]
     evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d51393f613467a7b7fbc0580b4642c15e9a971560e1546226901]
 
@@ -1384,7 +1395,7 @@ claims:
     basis: source + measurement
     scope: g33_fixture_multisubcycle_v1 for the magnitude; source for the bases
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:e2e884082d875ff9e56c8444187f0a561bc2ab4af10e5c6d32a5ccc0498023cb]
 
   - id: G33-BASIS-002
     text: >
@@ -1418,7 +1429,7 @@ claims:
       owner engineering-compatibility and release policy; the physics is
       G33-BASIS-006 and the operator's measured behaviour is G33-NUMBER-003
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:e2e884082d875ff9e56c8444187f0a561bc2ab4af10e5c6d32a5ccc0498023cb]
 
   - id: G33-BASIS-006
     text: >
@@ -1442,7 +1453,7 @@ claims:
       source definitions only; which measure the correction adopts as
       default is G33-BASIS-002, which stays an owner decision
     evidence: [FINDING_number_mass_basis_v1.md]
-    evidence_sha256: [FINDING_number_mass_basis_v1.md:b12a5e2fe24165139256e01a490a2a9996e821c7a611d05d659d6cad2432eef8]
+    evidence_sha256: [FINDING_number_mass_basis_v1.md:e2e884082d875ff9e56c8444187f0a561bc2ab4af10e5c6d32a5ccc0498023cb]
 
   - id: G33-NUMBER-005
     text: >

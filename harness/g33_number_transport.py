@@ -8,8 +8,13 @@ carries only the thickness ratio (F:1221-1224):
     dnr(i,k+1) = min(falkn(i,k+1,1)*delz(i,k+1)/delz(i,k)*dtcld, nrs(i,k+1,1))
     nrs(i,k,1) = max(nrs(i,k,1) - dnr(i,k) + dnr(i,k+1), 0.)
 
-`nrs` IS the prognostic number MIXING ratio (`nrs(i,k,1) = nr(i,k,j)`, F:388), so
-the physical column measure is `sum_k den_k*delz_k*nr_k`. Weighted, the number
+`nrs` IS the prognostic number MIXING ratio (`nrs(i,k,1) = nr(i,k,j)`, F:388).
+`den` here is MOIST density, so `sum_k den_k*delz_k*nr_k` is the OPERATOR's
+pseudo-measure -- the weight the mass channel actually carries; the PHYSICAL
+dry-air column number is `sum_k rho_d,k*delz_k*nr_k` (G33-BASIS-006, since
+`nr` is per kg of dry air). This module measures the operator's own budget,
+which is the right measure for asking what the operator conserves; which one a
+CORRECTION should conserve is G33-BASIS-002. Weighted either way, the number
 arriving below is `den(lower)*delz(upper)*b` where the number that left above was
 `den(upper)*delz(upper)*b`. Density increases downward, so every interface
 CREATES number:

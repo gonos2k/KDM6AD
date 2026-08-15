@@ -322,7 +322,8 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
         got = nt.validated_run_identity(text, expected_width=width)
     except nt.StreamError as e:
         raise ra.RefineError(f"{where}: {e}")
-    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width}
+    want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width,
+            "levels": got["levels"]}
     if got != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
@@ -330,7 +331,13 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
             f"it is filed as is worse than an unrecorded one")
     # `carry` is the multi-run block's spelling of the driver's mode argument.
     # One name for one argument, or the archive carries both.
-    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho}
+    #
+    # `levels` joins the block for the same reason `width` is in it: the run
+    # identity is the domain the stream actually processed, and the chain
+    # compares this block against `validated_run_identity`, which now proves
+    # K as well as W (owner review §4).
+    return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho,
+            "levels": got["levels"]}
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,

@@ -1055,6 +1055,13 @@ def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
             or ran["width"] < 1:
         bad.append(f"analyses[{i}] (arm_stream) ran.width {ran['width']!r} is "
                    f"not a positive integer")
+    # `levels` is ran-only -- the command line has no position for it -- and
+    # required for the same reason `width` is: it is half the domain the
+    # stream processed, and the chain compares it against the strict parse.
+    lv = ran.get("levels")
+    if not isinstance(lv, int) or isinstance(lv, bool) or lv < 1:
+        bad.append(f"analyses[{i}] (arm_stream) ran.levels {lv!r} is not a "
+                   f"positive integer")
     if bad:
         return bad
     for pos, field in _ARGV_TO_RAN:
