@@ -1176,6 +1176,13 @@ claims:
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.2.eta: 1.0
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.residual: 443.7374176261958
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.internal_cap_enthalpy.json#with_internal_cap_sink.3.eta: 1.0
+    unbound:
+      - figure: identical in legacy and conservative
+        why: only the legacy f64 bundle is published; the equality needs a
+          conservative f64 bundle and a cross-variant comparator, which is the
+          two-bundle analysis shape G33-VARIANT-F64-001's blocker names
+          (owner review §12.1) -- until then this sentence rests on the
+          historical measurement, not on a pinned artifact
     evidence: [FINDING_fixture_precipitates_only_at_f32_v1.md]
     evidence_sha256: [FINDING_fixture_precipitates_only_at_f32_v1.md:3fbb736a5f13206def981358e64b6f201fc3e6434ba05c918a9429855de8490d]
 
@@ -1256,6 +1263,10 @@ claims:
     # the f64 --nflux run, and that is this bundle.
     artifacts:
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/manifest.json: f3e1850a3b740b0f77a495d69f484a188ccdb55f9faaae3a82c05c5cca81205e
+      # The f32 half of the claim, from the f32 instrumented bundle: the
+      # text publishes 6.8% / 17.1% and only the f64 bundle was pinned, so
+      # half the sentences rested on nothing (owner review §12.2).
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/manifest.json: 03c60f8393df3ade8b46de8f2dfcc0bfe16c4f49240dff2b68da27754d4c6920
     # Columns 2 and 3 bind EXACTLY. Column 1 binds to a BOUND, and the reason
     # is in the numbers rather than in a preference: W_initial there is
     # 0.4930884 kg/m2, whose ULP is 5.55e-17, so the published -4.4e-17 was
@@ -1277,6 +1288,9 @@ claims:
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: -6.58486880484506e-08
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.residual: 0.0
       - kdm6ad-g33m-f64/water-001.bundles/c422d7a91982e855a2e2d87451e7e223dee7bd23685a9fe45aeb98b2b6539160/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.0
+      # ...and the f32 rows the text quotes as 6.8% / 17.1%.
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.2.operator.relative: 0.06827287428299673
+      - kdm6ad-g33m-migrate/mstepi-001.bundles/9c94632c8835ea2908f5d9f606b76f216ab3423943712dc7b09443ff3cc70155/n12.rezero.water_enthalpy_basis.json#water.3.operator.relative: 0.17130822175278065
     evidence: [FINDING_column_water_orders_v1.md]
     evidence_sha256: [FINDING_column_water_orders_v1.md:9eeaaf4b5d65d51393f613467a7b7fbc0580b4642c15e9a971560e1546226901]
 
@@ -1306,11 +1320,18 @@ claims:
     evidence_kind: measurement
     run_support: [g33_fixture_multisubcycle_v1]
     artifact_status: historical_unavailable
-    blocker_kind: no-figure
+    blocker_kind: needs-run-variant
     migration_blocker: >
-      the text publishes no numeric figure, so expected_values has nothing
-      to bind; pinning would assert a bundle is the evidence with no
-      reproducible check behind it
+      RECLASSIFIED from no-figure, which contradicted the claim's own text
+      (owner review §12.1): "0 of 333" and "39" are figures, published right
+      there. What actually blocks binding them is that the comparison spans
+      TWO runs -- a legacy f64 stream and a conservative f64 stream -- and
+      the archive's analysis vocabulary is per-bundle, so no single pinned
+      artifact carries mismatching_records/compared_records. Migrating needs
+      a conservative f64 bundle beside the legacy one and a cross-variant
+      comparator artifact, which is a new analysis SHAPE (two-bundle) and
+      therefore an owner vocabulary decision, not a run anyone can schedule
+      under the current schema.
     grade: confirmed
     basis: measurement under a named comparison contract
     scope: g33_fixture_multisubcycle_v1, h = 25 s
@@ -1439,6 +1460,17 @@ claims:
     expected_values:
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/2.explained: 1.0000000000000002
       - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#rows.ice/3.explained: 0.9999999999999997
+      # The interface counts and terms the text publishes -- 39/108, 8.63e-3,
+      # 23/147, 2.70e-11 -- were prose without bindings while the claim read
+      # `coverage full` (owner review §12.3): full meant "no declared gap",
+      # not "every load-bearing figure bound". They were in the pinned
+      # artifact all along.
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.mass_departure_arrival_differ: 39
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.interfaces: 108
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.ice.sum_abs_interface_term: 0.008628152138746835
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.mass_departure_arrival_differ: 23
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.interfaces: 147
+      - kdm6ad-g33m-migrate/number-003.bundles/6b23eaaee498b5bc0ec63b8cf8ec1de0560a5c4b7788f792a4225b44f35d73a5/n12.rezero.cap_interface.json#by_chain.main.net_interface_term: 2.697212881290125e-11
     evidence: [FINDING_ice_chain_missing_term_v1.md]
     evidence_sha256: [FINDING_ice_chain_missing_term_v1.md:5404b43a413fadd76b391e2319f71d2a9b4ac9cb39e502ec5e88201e4bfeab81]
 
