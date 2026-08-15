@@ -133,7 +133,8 @@ def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> lis
 
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
-            nflux=False, rho_profile="as-is", width=3, levels=None) -> dict:
+            nflux=False, rho_profile="as-is", width=3, levels=None,
+            algo=None, fixture=None) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
@@ -156,22 +157,34 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = ra.read(p, nsplit=n)          # G33R
+        probe = None
         if arm == "probe":
             probe = pr.read(text)               # G33P
             _agree(runs[n], probe, p.name)
         if nflux:
+            # On the probe arm the contract runs against the G33P dict: it is
+            # the side that carries precision/source/fixture metadata, and
+            # `_agree` has already proven the two protocols share one record
+            # universe with equal values, so holding G33P to the contract
+            # holds G33R with it (owner review §5).
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
-                                    width, levels, runs[n])
+                                    width, levels,
+                                    probe if probe is not None else runs[n],
+                                    arm=arm, algo=algo, fixture=fixture)
     return runs
 
 
-def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
+def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
+                            arm="reference", algo=None, fixture=None):
     """The G33N leg against the fixture AND the window protocol beside it.
 
     Three parties describe one run in a single stdout: the G33N header, the
     window records (G33R/G33P), and the member metadata the manifest will
     carry. Any two agreeing proves nothing about the third, so all three are
     tied here, at production, where the text is in hand.
+
+    `arm`/`algo`/`fixture` are the EXPECTED experiment (owner review §5):
+    what the caller asked to run, held against what the stream claims to be.
     """
     rid, parsed = nt.validated_run_identity(text, expected_width=width,
                                             expected_levels=levels,
@@ -197,10 +210,11 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run):
         raise ra.RefineError(
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
-    _require_same_run(name, rid, run, parsed)
+    _require_same_run(name, rid, run, parsed, arm, algo, fixture)
 
 
-def _require_same_run(name, rid, run, parsed):
+def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
+                      fixture=None):
     """The SAME-RUN contract (owner review §6): the protocols in one stdout
     record the same facts twice, and until here nothing compared them.
 
@@ -219,16 +233,49 @@ def _require_same_run(name, rid, run, parsed):
     f64 member both sides carry exact f64 (16-hex payloads, 17-digit
     decimals); on an f32 member the f32 word is the value model itself.
     """
-    fmt = ">d" if run.get(("meta", "precision")) == "f64" else ">f"
+    # The comparison width comes from the EXPECTED arm, never from the
+    # header's own claim (owner review §5): letting a stream declare
+    # precision=f32 chose the f32 width for it, which re-opened the 29-bit
+    # conflation this contract closed -- a forged label was choosing how
+    # strictly the forgery was checked. The header must then AGREE with the
+    # arm, so an honest label is redundant and a dishonest one is refused.
+    fmt = ">d" if arm == "f64" else ">f"
 
     def word(v):
         return struct.pack(fmt, v)
 
+    if arm in ("probe", "f64"):
+        want_prec = "f64" if arm == "f64" else "f32"
+        wprec = run.get(("meta", "precision"))
+        if wprec != want_prec:
+            raise ra.RefineError(
+                f"{name}: the {arm} arm writes G33P at {want_prec}, this "
+                f"header claims {wprec!r} -- a label may not choose the "
+                f"width it is checked at")
+        if run.get(("meta", "source_precision")) != "f32":
+            raise ra.RefineError(
+                f"{name}: source_precision "
+                f"{run.get(('meta', 'source_precision'))!r} -- the reference "
+                f"this archive instruments is f32, always")
+    wfix = run.get(("meta", "fixture"))
+    if fixture is not None and wfix is not None and wfix != fixture:
+        raise ra.RefineError(
+            f"{name}: the window protocol ran fixture {wfix!r}, the caller "
+            f"asked for {fixture!r}")
     walg = run.get(("meta", "algorithm"))
     if walg is not None and walg != rid["algorithm"]:
         raise ra.RefineError(
             f"{name}: the window protocol ran {walg}, the G33N leg ran "
             f"{rid['algorithm']} -- two algorithms, one stdout")
+    if algo is not None and walg is not None and walg != algo:
+        raise ra.RefineError(
+            f"{name}: the window protocol ran {walg}, the caller asked to "
+            f"build {algo!r}")
+    wrho = run.get(("meta", "rho_profile"))
+    if wrho is not None and wrho != rid["rho"]:
+        raise ra.RefineError(
+            f"{name}: the window protocol declares rho_profile {wrho!r}, "
+            f"the G33N leg ran {rid['rho']!r}")
     # delt/dtcld reach the window through the header's F0.6 print -- a
     # SIX-DECIMAL channel on both G33R and G33P, whatever the member's
     # precision. Word equality at f64 width therefore refused VALID
@@ -368,7 +415,7 @@ def _probe_member(path: Path) -> dict:
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
                   rho_profile: str = "as-is", width: int = 3,
-                  levels=None, nflux=False) -> dict:
+                  levels=None, nflux=False, algo=None, fixture=None) -> dict:
     """Run every member: G33P strict parse AND the fixture-domain pin.
 
     The f64 path validated only G33P; the G33N leg in the same stdout was read
@@ -387,7 +434,8 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         runs[n] = pr.read(text)
         if nflux:
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
-                                    width, levels, runs[n])
+                                    width, levels, runs[n], arm="f64",
+                                    algo=algo, fixture=fixture)
     return runs
 
 
@@ -1027,7 +1075,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
-                                 levels=fixture_dims(fixture)[1], nflux=nflux)
+                                 levels=fixture_dims(fixture)[1], nflux=nflux,
+                                 algo=algo, fixture=fixture)
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member
@@ -1036,7 +1085,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
                            rho_profile=rho_profile, width=width,
-                           levels=fixture_dims(fixture)[1])
+                           levels=fixture_dims(fixture)[1],
+                           algo=algo, fixture=fixture)
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"

@@ -67,7 +67,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
-                rho_profile="as-is", width=3, levels=None):
+                rho_profile="as-is", width=3, levels=None, algo=None,
+                fixture=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -159,7 +160,8 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
     _fake(monkeypatch)
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
-            rho_profile="as-is", width=3, levels=None):
+            rho_profile="as-is", width=3, levels=None, algo=None,
+            fixture=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -226,11 +228,14 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
-                      levels=None, nflux=False):
+                      levels=None, nflux=False, algo=None, fixture=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
-            p.write_text(_probe_stream(n))
+            # The manifest cross-check now compares each member's recorded
+            # fixture against the bundle's own pin, so the fake stream must
+            # declare the fixture this test's autouse redirect actually pins.
+            p.write_text(_probe_stream(n, fixture=FIX.stem))
             runs[n] = xp.pr.read(p.read_text())
         return runs
 
@@ -246,11 +251,11 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     assert [m["precision"] for m in man["members"]] == ["f64", "f64"]
 
 
-def _probe_stream(nsplit=3):
+def _probe_stream(nsplit=3, fixture="fx"):
     """A COMPLETE probe stream: the reader now requires the exact
     field x cell universe plus INITIAL, all three forcings and PREC, because
     'absent' silently disabled every check (owner §7.2)."""
-    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture fx "
+    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture {fixture} "
            f"algorithm legacy mode rezero tiles 1 rho_profile as-is "
            f"{nsplit} 1 1 {300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
@@ -1015,10 +1020,11 @@ def test_the_same_run_contract_compares_at_the_MEMBERS_precision():
     perturbation on an f64 member must refuse."""
     run = _samerun_window()
     run[("meta", "precision")] = "f64"
+    run[("meta", "source_precision")] = "f32"
     run[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
     with pytest.raises(xp.ra.RefineError, match="two different runs"):
         xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
-                                   "rezero", "as-is", 3, 4, run)
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
     # ...and the SAME perturbation on an f32 member is below the value
     # model's resolution: both notations name one f32 word, so it passes.
     ok = _samerun_window()
@@ -1084,3 +1090,37 @@ def test_the_window_loop_count_binds_the_G33N_loop_universe():
     run[("meta", "loops")] = 1
     xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
                                "rezero", "as-is", 3, 4, run)
+
+
+# --- the EXPECTED experiment binds the header's claims (owner review §5) -----
+
+def test_a_header_may_not_choose_the_width_it_is_checked_at():
+    """The comparison width came from the header's own precision claim, so a
+    G33P forging precision=f32 on an f64 stream re-opened the 29-bit
+    conflation the width fix closed -- measured on a live member. The width
+    now comes from the EXPECTED arm, and the header must agree with it."""
+    run = _samerun_window()
+    run[("meta", "precision")] = "f32"
+    run[("meta", "source_precision")] = "f32"
+    with pytest.raises(xp.ra.RefineError, match="may not choose the width"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
+    run[("meta", "precision")] = "f64"
+    run[("meta", "source_precision")] = "f64"
+    with pytest.raises(xp.ra.RefineError, match="f32, always"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
+
+
+@pytest.mark.parametrize("key,val,match", [
+    (("meta", "fixture"), "g33_fixture_other_v1", "the caller asked for"),
+    (("meta", "algorithm"), "conservative", "two algorithms, one stdout"),
+    (("meta", "rho_profile"), "inverted", "rho_profile"),
+])
+def test_the_window_metadata_must_be_the_requested_experiment(key, val, match):
+    run = _samerun_window()
+    run[key] = val
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run,
+                                   algo="legacy", fixture="g33_fixture_x")

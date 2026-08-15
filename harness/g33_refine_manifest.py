@@ -777,6 +777,36 @@ def validate(man: dict) -> list:
                     or not _hexlen(m.get("output_sha256"), 64):
                 bad.append(f"members[{i}] needs `file` and a 64-hex "
                            f"`output_sha256`")
+        # Member metadata against the manifest's OWN top level (owner review
+        # §5): the f64 rows record the precision/fixture the STREAM declared,
+        # the top level records what the bundle claims to be, and two records
+        # of one fact never compared are one record and one decoration. Only
+        # checked where the row carries the field -- reference members
+        # legitimately record less.
+        fxstem = Path(str(man.get("fixture_path", ""))).stem
+        for i, m in enumerate(members):
+            if not isinstance(m, dict):
+                continue
+            if (m.get("precision") is not None
+                    and m["precision"] != man.get("precision")):
+                bad.append(
+                    f"members[{i}] ran at {m['precision']} but the bundle "
+                    f"claims precision {man.get('precision')!r}")
+            if m.get("source_precision") not in (None, "f32"):
+                bad.append(
+                    f"members[{i}] source_precision "
+                    f"{m['source_precision']!r} -- the reference this archive "
+                    f"instruments is f32, always")
+            if (m.get("fixture") is not None and fxstem
+                    and m["fixture"] != fxstem):
+                bad.append(
+                    f"members[{i}] ran fixture {m['fixture']!r} but the "
+                    f"bundle pins {fxstem!r}")
+        algos = {m.get("algorithm") for m in members
+                 if isinstance(m, dict)} - {None}
+        if len(algos) > 1:
+            bad.append(f"members ran different algorithms {sorted(algos)} -- "
+                       f"one bundle, one experiment")
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:

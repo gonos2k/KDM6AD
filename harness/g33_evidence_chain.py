@@ -462,11 +462,21 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             else:
                 run = xp.ra.read(p, nsplit=mem["nsplit"])
                 if arm == "probe":
-                    xp._agree(run, xp.pr.read(text), mem["file"])
+                    probe = xp.pr.read(text)
+                    xp._agree(run, probe, mem["file"])
+                    # The contract runs against G33P on this arm -- the side
+                    # carrying precision/source/fixture metadata; `_agree`
+                    # has already tied G33R to it record for record.
+                    run = probe
             if man.get("instrumented"):
+                # The EXPECTED experiment comes from the manifest -- what the
+                # bundle claims to be -- so a stream whose header forges a
+                # different precision, fixture or profile is caught against
+                # the document that published it (owner review §5).
                 xp._require_fixture_domain(
                     text, mem["file"], mem["nsplit"], mem["mode"],
-                    man.get("rho_profile", "as-is"), width, levels, run)
+                    man.get("rho_profile", "as-is"), width, levels, run,
+                    arm=arm, fixture=fixture)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
