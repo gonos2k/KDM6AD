@@ -44,7 +44,12 @@ def _stream(qv, qr=0.0):
                     continue
                 L.append(f"G33F STAGE 1 - {stage} 0 {f} 1 {k} f32 {_hex(v)}")
     L += ["G33F MSTEP 1 main 1 i32 00000001", "G33F MSTEPI 1 1 i32 00000001"]
-    L += [f"G33F NFLUX 1 1 {f} f32 {_hex(1.0)}" for f in mc.nt.NFLUX_FIELDS]
+    # den/delz restate the bottom cell and dtcld restates delt/loops -- the
+    # parser compares those duplicates now, so the fixture must be one
+    # consistent run (delt = 100, loops = 1).
+    L += [f"G33F NFLUX 1 1 {f} f32 "
+          f"{_hex({'nflux_den': RHO[-1], 'nflux_delz': DZ, 'nflux_dtcld': 100.0}.get(f, 1.0))}"
+          for f in mc.nt.NFLUX_FIELDS]
     L += [f"G33F XFER 1 1 1 main f32 {_hex(0.0)} {_hex(XFER[-1])}",
           "G33F XFER 1 1 1 ice f32 00000000 00000000",
           "G33N CALL_END 1 1 1", "G33N STREAM_END"]

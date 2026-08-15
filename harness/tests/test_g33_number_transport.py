@@ -147,7 +147,11 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
         for f in nt.NFLUX_FIELDS:
             if drop == f:
                 continue
-            out.append(f"G33F NFLUX {loop} {c} {f} f32 3F800000")
+            # dtcld restates delt/loops and den/delz the bottom cell -- the
+            # parser now compares the duplicates, so the helper must emit a
+            # CONSISTENT stream (delt=100, loops=1 -> dtcld=100).
+            hexv = "42C80000" if f == "nflux_dtcld" else "3F800000"
+            out.append(f"G33F NFLUX {loop} {c} {f} f32 {hexv}")
     if end:
         out.append(f"G33N CALL_END {cid} {split} {tile}")
     return "\n".join(out) + "\n"
@@ -208,8 +212,14 @@ def test_internal_loop2_does_not_overwrite_loop1():
     """A call with loops > 1 emits the same (stage, col, k) once per loop. The
     key carries the loop, so nothing is overwritten -- and the segment budget,
     which is defined for ONE loop, refuses the call rather than collapsing it."""
-    two = _call(1).rstrip().rsplit("G33N CALL_END", 1)[0] \
-        + _call(1, loop=2).split("42C80000\n", 1)[1]
+    # a 2-loop call sub-cycles at dtcld = delt/2, and the parser now
+    # compares that duplicate fact -- so the composed stream must say 50.0
+    half = _call(1).replace("nflux_dtcld f32 42C80000",
+                            "nflux_dtcld f32 42480000")
+    half2 = _call(1, loop=2).replace("nflux_dtcld f32 42C80000",
+                                     "nflux_dtcld f32 42480000")
+    two = half.rstrip().rsplit("G33N CALL_END", 1)[0] \
+        + half2.split("42C80000\n", 1)[1]
     calls = list(nt.calls(_stream(two)))          # well-formed: parses
     assert calls[0]["loops"] == {1, 2}
     assert calls[0]["mstep"][(1, "ice", 1)] == 1
@@ -580,9 +590,10 @@ def _f64(text):
             # AFTER the header, which is where the driver writes it.
             out += [line, _PROTO64]
             continue
-        line = line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
-        if line.startswith("G33N CALL_BEGIN"):
-            line = line.replace("42C80000", "4059000000000000")
+        # 42C80000 (100.0) appears both as the CALL_BEGIN delt and as the
+        # NFLUX dtcld payload -- both widen with the stream.
+        line = (line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
+                .replace("42C80000", "4059000000000000"))
         out.append(line)
     return "\n".join(out) + "\n"
 
@@ -948,7 +959,7 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
                    "tile_ranges": ((1, 1),), "tile_sizes": (1,),
-                   "algorithm": "legacy", "delt": 100.0, "dtcld": 1.0,
+                   "algorithm": "legacy", "delt": 100.0, "dtcld": 100.0,
                    "loops": 1}
 
 
@@ -1078,7 +1089,7 @@ def test_NFLUX_records_declaring_two_subcycle_steps_are_refused():
     """dtcld is a scalar of the run, recorded once per column in every NFLUX
     group -- two values is two runs' records in one stream (owner review §6)."""
     s = _stream(_call(1, cols=(1, 2)))
-    s = s.replace("G33F NFLUX 1 2 nflux_dtcld f32 3F800000",
+    s = s.replace("G33F NFLUX 1 2 nflux_dtcld f32 42C80000",
                   "G33F NFLUX 1 2 nflux_dtcld f32 40000000")
     with pytest.raises(nt.StreamError, match="different sub-cycle steps"):
         nt.calls(s)
@@ -1103,3 +1114,26 @@ def test_calls_running_DISJOINT_loop_sets_are_refused():
 
 def test_the_run_identity_carries_the_loop_count():
     assert nt.validated_run_identity(_stream(_call(1)))["loops"] == 1
+
+
+# --- duplicate facts inside one stream are compared (owner review §9.1) ------
+
+
+def test_nflux_den_delz_must_restate_the_bottom_cell():
+    """The NFLUX group restates the bottom cell's rho/delz, recorded
+    independently in outer_pre_sed at k = K-1. Measured across 4827
+    published flux groups: exactly equal, every one."""
+    s = _stream(_call(1)).replace("G33F NFLUX 1 1 nflux_den f32 3F800000",
+                                  "G33F NFLUX 1 1 nflux_den f32 40000000")
+    with pytest.raises(nt.StreamError, match="one run records one atmosphere"):
+        nt.calls(s)
+
+
+def test_the_subcycle_step_must_derive_from_the_external_step():
+    """dtcld x loops == delt at the f32 word -- the kernel's own rule,
+    restated in every NFLUX group and never compared to the CALL_BEGIN delt
+    it derives from."""
+    s = _stream(_call(1)).replace("G33F NFLUX 1 1 nflux_dtcld f32 42C80000",
+                                  "G33F NFLUX 1 1 nflux_dtcld f32 40000000")
+    with pytest.raises(nt.StreamError, match="not this stream's"):
+        nt.calls(s)

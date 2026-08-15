@@ -441,6 +441,20 @@ def _check_loop(call, lp, feats=frozenset()):
         for name in ("nflux_den", "nflux_delz", "nflux_dtcld"):
             if f[name] <= 0:
                 raise StreamError(f"call {call['call_id']} col {c}: {name}={f[name]}")
+        # DUPLICATE facts, compared (owner review §9.1): the NFLUX group
+        # restates the bottom cell's rho/delz, recorded independently in
+        # outer_pre_sed at k = K-1. Measured across 4827 published flux
+        # groups: exactly equal, every one -- so a group that disagrees is
+        # two runs' records, not a rounding.
+        if call["K"] is not None:
+            pre = call["outer_pre_sed"].get((lp, c, call["K"] - 1))
+            if pre is not None:
+                for nm, key in (("nflux_den", "rho"), ("nflux_delz", "delz")):
+                    if f[nm] != pre[key]:
+                        raise StreamError(
+                            f"call {call['call_id']} loop {lp} col {c}: "
+                            f"{nm}={f[nm]!r} but the bottom cell's {key} is "
+                            f"{pre[key]!r} -- one run records one atmosphere")
     for chain in ("main", "ice"):
         got = {c for l, ch, c in call["mstep"] if ch == chain and l == lp}
         if got != cols:
@@ -821,6 +835,18 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"inner loops {list(lset)} are not exactly 1..{len(lset)} -- "
                 f"a loop the kernel counted is missing from the record")
+        # ...and the sub-cycle step is the external step divided by the loop
+        # count -- the kernel's own rule, restated in every NFLUX group and
+        # never compared to the CALL_BEGIN delt it derives from (owner
+        # review §9.1). At the f32 word, where it holds on all 4827
+        # published groups exactly.
+        if dtclds:
+            d = next(iter(dtclds))
+            dt = next(iter(dts))
+            if struct.pack(">f", d * len(lset)) != struct.pack(">f", dt):
+                raise StreamError(
+                    f"NFLUX dtcld {d} x {len(lset)} loops != delt {dt} -- "
+                    f"the sub-cycle step is not this stream's")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
