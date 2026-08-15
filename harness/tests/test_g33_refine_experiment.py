@@ -383,22 +383,26 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
     PASSES, so that is what is captured."""
     seen = {}
 
+    def fake_collect(driver, n, *, mode, width, baseline_stream=None):
+        seen.update(n=n, mode=mode, width=width, baseline=baseline_stream)
+        return {"as-is": baseline_stream}
+
     def fake(exe, n, chain="main", *, mode, width, baseline_stream=None,
-             keep=None):
-        seen.update(exe=exe, n=n, mode=mode, width=width,
-                    baseline=baseline_stream)
-        if keep is not None:
-            keep["as-is"] = "x"
+             keep=None, raw=None):
+        seen.update(raw=raw)
         return {"arms": {}}
 
     import g33_metric_trajectory as mtj
     monkeypatch.setattr(mtj, "analysis", fake)
+    monkeypatch.setattr(xp.rmx, "collect", fake_collect)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
     xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5, 4)
     assert seen["mode"] == "carry", "the bundle's mode must be inherited"
     assert seen["width"] == 5, "the fixture width must be inherited"
     assert seen["baseline"] == "member-bytes\n", \
         "the baseline must be the bundle's stored member, not a re-run"
+    assert seen["raw"] == {"as-is": "member-bytes\n"}, \
+        "the analysis must receive the run side's collected streams"
 
 
 def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(

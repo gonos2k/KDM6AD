@@ -41,6 +41,7 @@ import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
+import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
 
 
 def _an(name: str):
@@ -459,36 +460,31 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     made = []
     for n in nsplits:
         member = out / f"n{n}.{mode}.txt"
-        keep: dict = {}
+        # The driver matrix runs ONCE, through the run-role module (owner
+        # review §8): the arm streams are raw run content published into the
+        # bundle, so the code that produces them must sit in the run recipe --
+        # `g33_run_matrix` is imported directly, never through the analysis
+        # dispatch. Both chains then read the SAME collected streams, which
+        # makes chain-independence structural where it used to be a
+        # compare-after-the-fact between two separate driver passes.
+        keep = rmx.collect(str(exe), n, mode=mode, width=width,
+                           baseline_stream=member.read_text())
         # BOTH chains. `mtj.analysis` has taken a `chain` since it was written
         # and nothing ever passed it, so every bundle carried the main chain
         # and the ice one existed only as a default nobody exercised --
         # G33-NUMBER-009 is entirely about ice and had no artifact to bind.
         for chain in ("main", "ice"):
             stem = f"n{n}.{mode}" + ("" if chain == "main" else f".{chain}")
-            got: dict = {}
             path = out / f"{stem}.metric_trajectory.json"
             path.write_text(rm.json.dumps(
                 _an("g33_metric_trajectory").analysis(
                     str(exe), n, chain, mode=mode, width=width,
-                             baseline_stream=member.read_text(), keep=got),
+                    baseline_stream=member.read_text(), raw=keep),
                 indent=2, sort_keys=True) + "\n")
             made.append({"file": path.name, "nsplit": n, "chain": chain,
                          "analysis": "metric_trajectory",
                          "sha256": rm.sha256(path),
                          **_analyzer_pin("g33_metric_trajectory")})
-            # The arms are DENSITY profiles: they change what the driver runs,
-            # not which records the reduction reads. So both chains must see
-            # byte-identical arm streams, and the streams are published once.
-            # Checked rather than assumed -- if a chain ever did reach the
-            # driver, publishing one pass's streams would misdescribe the other.
-            if not keep:
-                keep = got
-            elif {k: v for k, v in got.items()} != keep:
-                raise ra.RefineError(
-                    f"chain {chain} produced different arm streams from main "
-                    f"-- the arm forcing is supposed to be chain-independent, "
-                    f"so one published set cannot describe both")
         for arm, text in sorted(keep.items()):
             if arm == "as-is":
                 continue                      # already published as the member

@@ -34,19 +34,17 @@ every call into one dict keyed by `(loop, chain, col)` -- identical across calls
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, __file__.rsplit("/", 1)[0])
 import g33_number_transport as nt  # noqa: E402
+import g33_run_matrix as rmx  # noqa: E402
 
-#: `offset+/-` shift every level by the same constant, so the GRADIENT is
-#: untouched and only the absolute density moves. Since the residual depends on
-#: (rho_below - rho_above), a constant cancels exactly -- which separates "the
-#: gradient matters" from "the magnitude matters" far more directly than scaling
-#: the contrast does (owner §7).
-ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
+#: ONE arm list, owned by the run side: which streams exist is a fact about
+#: the RUN, and the analysis reads whatever the matrix collected. The rationale
+#: for the arms themselves (why offset+/- exist) lives with the list.
+ARMS = rmx.ARMS
 
 
 def interface_terms(stream: str, chain: str = "main") -> dict:
@@ -173,47 +171,26 @@ def decompose(base: dict, arm: dict) -> dict:
 def analysis(driver: str, nsplit: int, chain: str = "main", *,
              mode: str = "rezero", width: int = 3,
              baseline_stream: str | None = None,
-             keep: dict | None = None) -> dict:
-    """Re-run the driver under every arm and decompose each against `as-is`.
+             keep: dict | None = None, raw: dict | None = None) -> dict:
+    """Decompose every density arm against `as-is`.
 
     `mode` and `width` are arguments, not constants (owner P0-2). Hardcoded, a
     bundle produced with `--mode carry` carried a `metric_trajectory.json`
     silently generated under `rezero`, and a fixture that is not three columns
     wide failed the driver's tile-sum check. The values a bundle actually used
     are recorded beside the result so a reader can see which run this describes.
+
+    The DRIVER RUNS are not made here (owner review §8): the arm streams are
+    raw run content, published and digested into the bundle, and the code that
+    produces run content belongs in the run recipe -- so it lives in
+    `g33_run_matrix`, which the producer imports directly. The `raw` parameter
+    is the producer handing those collected streams in; without it this
+    function asks `g33_run_matrix` itself, which keeps the standalone report
+    working and keeps exactly one implementation of the matrix.
     """
-    # Validate the supplied baseline FIRST: it costs nothing and a wrong one
-    # would otherwise be discovered after five driver runs.
-    if baseline_stream is not None:
-        got = _declared_arm(baseline_stream)
-        if got != "as-is":
-            raise SystemExit(
-                f"the supplied baseline stream declares arm {got!r}, not 'as-is'")
-
-    argv_of = lambda arm: [driver, str(nsplit), mode, str(width), arm]
-
-    def run(arm):
-        r = subprocess.run(argv_of(arm), capture_output=True, text=True)
-        if r.returncode != 0:
-            raise SystemExit(f"{arm}: driver exited {r.returncode}\n{r.stderr[-2000:]}")
-        got = _declared_arm(r.stdout)
-        # REQUESTED must equal DECLARED (owner §13.1). Recording both and leaving
-        # a reviewer to notice the mismatch in the JSON is not a check: a stream
-        # that ran the wrong forcing would still be published, and every number
-        # derived from it would be attributed to an arm it is not.
-        if got != arm:
-            raise SystemExit(
-                f"asked the driver for arm {arm!r} and its stream declares "
-                f"{got!r} — refusing to attribute this run to {arm!r}")
-        return r.stdout
-
-    # `baseline_stream` lets the caller supply the bundle's OWN stored as-is
-    # member instead of a fresh run of it (owner §4). Re-running the baseline
-    # meant the decomposition compared against a stream nobody kept, so the
-    # published members and the analysis baseline were only *probably* the same.
-    raw = {a: run(a) for a in ARMS if a != "as-is" or baseline_stream is None}
-    if baseline_stream is not None:
-        raw["as-is"] = baseline_stream
+    if raw is None:
+        raw = rmx.collect(driver, nsplit, mode=mode, width=width,
+                          baseline_stream=baseline_stream)
     base = interface_terms(raw["as-is"], chain)
     # Hand the raw streams back so the caller can PRESERVE them beside the
     # analysis. Without this the six runs existed only inside this function and
@@ -226,19 +203,15 @@ def analysis(driver: str, nsplit: int, chain: str = "main", *,
             # The exact command line for each arm, and the arm the STREAM
             # declares -- so a reader can check the analysis describes the run it
             # claims to, without the raw bytes.
-            "arms_runtime": {a: {"argv": argv_of(a)[1:],
+            "arms_runtime": {a: {"argv": [str(nsplit), mode, str(width), a],
                                  "declared_rho_profile": _declared_arm(raw[a])}
                              for a in ARMS},
             "arms": {a: decompose(base, interface_terms(raw[a], chain))
                      for a in ARMS if a != "as-is"}}
 
 
-def _declared_arm(stream: str) -> str:
-    """The arm the STREAM says it is, read back from its own header."""
-    for ln in stream.splitlines():
-        if ln.startswith("G33N STREAM_BEGIN"):
-            return ln.split()[-1]
-    return "?"
+#: One reader for "which arm does this stream declare", the run side's.
+_declared_arm = rmx.declared_arm
 
 
 def report(driver: str, nsplit: int) -> None:

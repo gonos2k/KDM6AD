@@ -400,9 +400,65 @@ def _arm_ran_state(p: Path, an: dict) -> str:
         got = nt.validated_run_identity(text)
     except nt.StreamError:
         return "RUN-IDENTITY-UNREADABLE"
+    # Compared over the ran block's CANONICAL fields, not over whichever keys
+    # either side happens to carry: the strict reader now returns more facts
+    # than the block stores (decomposition, algorithm, steps), and building
+    # `want` from the reader's keys would fail every published arm for fields
+    # the schema never asked it to record.
     ran = an.get("ran") or {}
-    want = {k: ran.get(k) for k in got}
-    return "matches" if got == want else "RUN-IDENTITY-MISMATCH"
+    fields = ("nsplit", "carry", "width", "rho", "levels")
+    want = {k: ran.get(k) for k in fields}
+    return ("matches" if {k: got[k] for k in fields} == want
+            else "RUN-IDENTITY-MISMATCH")
+
+
+def _member_contract_states(root: Path, man: dict) -> list[dict]:
+    """Every primary member, re-parsed by the CURRENT strict parsers and held
+    to the fixture-domain / same-run contract the producer enforces today.
+
+    Lazy imports, like `_arm_ran_state`: the chain deliberately does not load
+    the producer stack until it needs it. The fixture's (B, K) come from the
+    repo source via `fixture_dims` -- the same independent anchor production
+    uses, so the checker cannot inherit a domain from the stream it is
+    judging. Any refusal is the exact refusal production would raise now: a
+    member that no longer passes is evidence produced under a contract the
+    archive has since found wanting, which is a re-production decision, not a
+    footnote.
+    """
+    import g33_refine_experiment as xp
+    out = []
+    try:
+        fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
+        width, levels = xp.fixture_dims(fixture)
+    except (KeyError, TypeError, SystemExit) as e:
+        return [{"file": "members", "scope": "repo",
+                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
+                 "detail": str(e)[:120]}]
+    arm = man.get("arm", "reference")
+    for mem in man.get("members", []):
+        p = root / mem["file"]
+        if not p.is_file():
+            continue                # the digest row already reports absence
+        row = {"file": mem["file"], "scope": "bundle",
+               "origin": "member_contract"}
+        try:
+            text = p.read_text()
+            if arm == "f64":
+                run = xp.pr.read(text)
+            else:
+                run = xp.ra.read(p, nsplit=mem["nsplit"])
+                if arm == "probe":
+                    xp._agree(run, xp.pr.read(text), mem["file"])
+            if man.get("instrumented"):
+                xp._require_fixture_domain(
+                    text, mem["file"], mem["nsplit"], mem["mode"],
+                    man.get("rho_profile", "as-is"), width, levels, run)
+            row["state"] = "matches"
+        except Exception as e:                          # noqa: BLE001
+            row["state"] = "MEMBER-CONTRACT-MISMATCH"
+            row["detail"] = str(e)[:160]
+        out.append(row)
+    return out
 
 
 def _payload_state(p: Path, want: str, root: Path) -> str:
@@ -472,6 +528,19 @@ def members_of(manifest: Path) -> list[dict]:
         out.append({"file": mem["file"], "scope": "bundle", "origin": "member",
                     "state": _payload_state(p, mem.get("output_sha256"),
                                             manifest.parent)})
+    # SEMANTIC re-validation of the primary members (owner review §7). The
+    # digest rows above prove "these bytes are the bytes the producer
+    # approved"; they say nothing about whether those bytes pass the CURRENT
+    # decision contract -- the producer's checks ran once, at production, on a
+    # parser that has been hardened since. The arm streams have had exactly
+    # this re-check through `_arm_ran_state`; the primary members -- the ones
+    # every claim binds into -- did not. Scoped to the current manifest
+    # generation: pre-identity bundles are already excluded from closeout by
+    # `identity-predates-block`, and holding their members to a contract that
+    # postdates them would add a blocker with no resolution but re-production,
+    # which that blocker already demands.
+    if man.get("identity"):
+        out.extend(_member_contract_states(manifest.parent, man))
     # The ANALYSES too (owner §14-4). A claim quotes a table, and the table comes
     # from an analysis -- so a chain that stopped at the raw stream stopped one
     # step short of the number being cited. This includes the ARM STREAMS, which
