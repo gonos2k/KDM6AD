@@ -484,14 +484,21 @@ class BlobUnavailable(Exception):
 
 
 def _imports_from(blob: bytes, universe: set) -> set:
-    """The pinned modules `blob` imports. Same AST rule the producer uses on the
-    working tree -- a name in a comment or a docstring is not an import."""
+    """The pinned modules `blob` DEPENDS ON. Same AST rule the producer uses on
+    the working tree -- a name in a comment or a docstring is not an import,
+    and a lazy `_an("...")` dispatch IS a dependency edge, or making an import
+    lazy would silently drop it from the recorded graph while the code still
+    runs it."""
     names = set()
     for n in ast.walk(ast.parse(blob)):
         if isinstance(n, ast.Import):
             names |= {a.name.split(".")[0] for a in n.names}
         elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
             names.add(n.module.split(".")[0])
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Name) \
+                and n.func.id == "_an":
+            names |= {a.value for a in n.args
+                      if isinstance(a, ast.Constant) and isinstance(a.value, str)}
     return names & universe
 
 

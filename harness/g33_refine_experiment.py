@@ -540,8 +540,17 @@ def unpinned_reachable() -> set:
 
 
 def _local_imports(module: str) -> set:
-    """The harness modules `module` imports. By AST, not by text: a name in a
-    comment or a docstring is not an import."""
+    """The harness modules `module` DEPENDS ON. By AST, not by text: a name in
+    a comment or a docstring is not an import.
+
+    A lazy `_an("...")` dispatch is a dependency edge like an `import`
+    statement -- it names a module whose bytes decide the result -- and it is
+    collected here so making an import lazy changes WHEN the code executes
+    without changing what the derivation says it depends on. Without this, the
+    lazy-import change would have silently dropped every analyzer from the
+    reachable set and the role graph (owner review §8: execution isolation
+    must not weaken the dependency record).
+    """
     f = _module_file(module)
     if f is None:
         return set()
@@ -551,6 +560,10 @@ def _local_imports(module: str) -> set:
             names |= {a.name.split(".")[0] for a in n.names}
         elif isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
             names.add(n.module.split(".")[0])
+        elif isinstance(n, ast.Call) and isinstance(n.func, ast.Name) \
+                and n.func.id == "_an":
+            names |= {a.value for a in n.args
+                      if isinstance(a, ast.Constant) and isinstance(a.value, str)}
     return {m for m in names if _module_file(m) is not None}
 
 
