@@ -1188,7 +1188,11 @@ def test_the_delt_TOKEN_is_validated_before_float_collapses_it():
     for tok, ok in [("42.857143", True), (".390625", True),
                     ("100.000000", True),
                     ("42.857142999999999999", False),
-                    ("4.2857143E+01", False), ("42.8571425", False)]:
+                    ("4.2857143E+01", False), ("42.8571425", False),
+                    # padded spellings F0.6 cannot print (Codex): canonical
+                    # means empty-or-nonzero-leading integer part, nothing else
+                    ("00042.857143", False), ("0.390625", False),
+                    ("042.857143", False)]:
         body = _stream_fc(nsplit=1).splitlines()
         body[0] = (f"G33R BEGIN nsplit 1 rezero legacy delt {tok} "
                    f"loops 1 dtcld 1.000000")

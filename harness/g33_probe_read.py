@@ -91,10 +91,12 @@ def read(text: str) -> dict:
     # The delt/dtcld TOKENS are F0.6 records and are validated as tokens,
     # where the precision they claim is still visible (Codex): float()
     # collapses a forged higher-precision spelling onto the same double as
-    # the channel's own output. gfortran's F0.6 prints .390625 below one, so
-    # the integer part may be empty.
+    # the channel's own output. CANONICAL spelling only: the integer part is
+    # empty below one (gfortran's F0.6 prints .390625) or starts with a
+    # nonzero digit, so a padded 00042.857143 -- which F0.6 cannot print --
+    # is not the channel's record either.
     for tok, nmm in ((delt, "delt"), (dtcld, "dtcld")):
-        _expect(re.fullmatch(r"\d*\.\d{6}", tok),
+        _expect(re.fullmatch(r"(?:[1-9]\d*)?\.\d{6}", tok),
                 f"{nmm} token {tok!r} is not an F0.6 record")
     _expect(END.match(lines[-1]), "stream has no G33P END — it is truncated")
 
