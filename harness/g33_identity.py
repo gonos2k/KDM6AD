@@ -124,7 +124,16 @@ def unlabelled() -> set:
 #: The version of the layering these ids implement. Recorded in the bundle, so
 #: a manifest says which derivation produced its ids rather than leaving a
 #: reader to assume today's.
-IDENTITY_SCHEMA = "g33_layered_identity_v1"
+#:
+#: v2: `run_content_id` reduces the recorded `identity` block to its schema tag.
+#: Under v1 the whole block -- role graph, seeds, reach -- rode into the content
+#: id, so an ANALYSIS-ONLY change that regenerated the block moved the run's
+#: content id: the coupling the layers exist to remove, re-entering through the
+#: block that records them. Measured on the real f64 manifest: growing one
+#: reach entry moved `run_content_id` with no run byte changed. A version
+#: rather than a quiet fix, because it changes what the id MEANS (owner
+#: review §3).
+IDENTITY_SCHEMA = "g33_layered_identity_v2"
 
 
 def identity_block(published=()) -> dict:
@@ -389,6 +398,24 @@ def run_content_id(man: dict) -> str:
     keep = {k: v for k, v in man.items()
             if k not in ("analyses", "analyzer_sha256") + NARRATIVE_KEYS}
     keep["producer_modules"] = _by_role(man, "run")
+    # The identity block is reduced to its SCHEMA TAG (identity v2). The block
+    # holds the role graph, the seeds and every reach entry, so hashing it
+    # whole put the ANALYSIS half of the derivation into the run's content id
+    # -- an analysis growing one import moved the id of a run whose bytes had
+    # not (owner review §3). The run-role information the content id needs is
+    # already in it: `_by_role` above filters the pins THROUGH the recorded
+    # graph, so a graph that assigns run-role differently changes the pin list
+    # itself. The tag stays because two manifests canonicalised under
+    # different rules are not comparable ids.
+    #
+    # Still SUBTRACTIVE, deliberately, against the reviewed allow-list shape:
+    # an enumerated projection silently DROPS any new manifest field from the
+    # id until someone remembers to add it -- fail-open in the other
+    # direction. Subtraction moves the id on an unclassified new field, which
+    # is the fail-closed default everything else here follows; the exceptions
+    # are enumerated and each carries its measurement.
+    if isinstance(keep.get("identity"), dict):
+        keep["identity"] = {"schema": keep["identity"].get("schema")}
     if raw:
         keep["arm_streams"] = sorted(raw, key=lambda a: str(a.get("file")))
     return rm.identity_digest(content_only(keep))

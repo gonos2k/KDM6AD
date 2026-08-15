@@ -70,7 +70,9 @@ def synthetic_manifest(root):
         # without it they follow whichever checkout reads the manifest, which
         # is the coupling the block exists to remove (owner priority 8).
         "identity": {
-            "schema": "g33_layered_identity_v1",
+            # rm.IDENTITY_SCHEMA, not a literal -- a fixture pinned to the
+            # old tag tests the previous contract after a bump.
+            "schema": rm.IDENTITY_SCHEMA,
             "role_graph": {m: (["run"] if m == "p" else ["analysis"])
                            for m in _mods},
             # The seed of each reach entry, which is also the dispatch cut.

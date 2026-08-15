@@ -255,7 +255,7 @@ def _hexlen(v, n) -> bool:
 #: Spelled here rather than imported from `g33_identity`: that module imports
 #: the producer, which imports this one, and the requirement is a property of
 #: the DOCUMENT either way.
-IDENTITY_SCHEMA = "g33_layered_identity_v1"
+IDENTITY_SCHEMA = "g33_layered_identity_v2"
 
 
 #: The roles a module can carry. `_by_role` filters on these words, so one it

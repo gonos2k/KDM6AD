@@ -337,7 +337,7 @@ def _identity_graph_state(man: dict) -> dict:
 #: derived under. Spelled here rather than imported: `g33_identity` imports the
 #: producer, and this module deliberately does not.
 _IDENTITY_FROM = "refinement_experiment_v3"
-_IDENTITY_SCHEMA = "g33_layered_identity_v1"
+_IDENTITY_SCHEMA = "g33_layered_identity_v2"
 
 
 def _identity_state(man: dict) -> str:
