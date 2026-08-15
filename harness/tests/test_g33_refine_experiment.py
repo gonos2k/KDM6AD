@@ -225,7 +225,8 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
-    def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3):
+    def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
+                      levels=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -390,7 +391,8 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
             keep["as-is"] = "x"
         return {"arms": {}}
 
-    monkeypatch.setattr(xp.mtj, "analysis", fake)
+    import g33_metric_trajectory as mtj
+    monkeypatch.setattr(mtj, "analysis", fake)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
     xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5)
     assert seen["mode"] == "carry", "the bundle's mode must be inherited"

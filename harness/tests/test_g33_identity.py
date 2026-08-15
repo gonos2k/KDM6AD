@@ -747,3 +747,23 @@ def test_the_schema_TAG_still_moves_the_content_id():
     d = copy.deepcopy(man)
     d["identity"]["schema"] = "g33_layered_identity_v1"
     assert gi.run_content_id(d) != gi.run_content_id(man)
+
+
+def test_LIST_ORDER_does_not_move_an_id():
+    """Four of the manifest's lists are semantically sets; JSON hashes their
+    order. Two valid manifests recording the same rows differently ordered
+    carried different ids -- harmless while ids are derived-only, fatal once
+    Phase B stores them (owner review §7.3)."""
+    man = _with_identity(_manifest())
+    man["identity"]["schema"] = gi.IDENTITY_SCHEMA
+    before = (gi.run_recipe_id(man), gi.run_content_id(man))
+    d = copy.deepcopy(man)
+    d["producer_modules"] = list(reversed(d["producer_modules"]))
+    d["members"] = list(reversed(d["members"]))
+    d["member_parsers"] = list(reversed(d["member_parsers"]))
+    d["build_artifacts"] = list(reversed(d["build_artifacts"]))
+    assert (gi.run_recipe_id(d), gi.run_content_id(d)) == before
+    # ...and an ORDER-BEARING list still moves it: argv is a command line.
+    d2 = copy.deepcopy(man)
+    d2["runtime_argv"] = [list(reversed(a)) for a in d2["runtime_argv"]]
+    assert gi.run_recipe_id(d2) != before[0]

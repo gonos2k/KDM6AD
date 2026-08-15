@@ -1397,7 +1397,8 @@ def test_a_MIXED_external_step_is_refused_not_sampled():
     lines = src.splitlines()
     i = [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")][3]
     lines[i] = lines[i].rsplit(" ", 1)[0] + " 41480000"      # 25.0 -> 12.5
-    with pytest.raises(nt.StreamError, match="different external steps"):
+    with pytest.raises(nt.StreamError,
+                       match="different external steps|different timesteps"):
         ss.analysis("\n".join(lines) + "\n")
 
 
@@ -1451,7 +1452,8 @@ def test_a_nonpositive_or_nonfinite_external_step_is_refused(val, label):
     bits = format(struct.unpack(">I", struct.pack(">f", val))[0], "08X")
     for i in [n for n, l in enumerate(lines) if l.startswith("G33N CALL_BEGIN")]:
         lines[i] = lines[i].rsplit(" ", 1)[0] + " " + bits
-    with pytest.raises(nt.StreamError, match="not a positive finite duration"):
+    with pytest.raises(nt.StreamError,
+                       match="not a positive finite (duration|timestep)"):
         ss.analysis("\n".join(lines) + "\n")
 
 
