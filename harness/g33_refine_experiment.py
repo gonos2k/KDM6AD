@@ -224,29 +224,16 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
         p = out / f"n{n}.{mode}.txt"
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
-        runs[n] = ra.read(p, nsplit=n)          # G33R
-        # TODAY'S capability profile, instrumented or not (owner review §8):
-        # the fixture-domain pin ran only under --nflux, so a plain bundle's
-        # members were never held to the fixture's B/K, and the reader's
-        # archive-compatibility options (INITIAL, forcing, time geometry all
-        # optional) silently became the producer's requirements.
-        _require_current_profile(runs[n], p.name, width, levels, algo=algo,
-                                 nsplit=n, horizon=horizon)
-        probe = None
-        if arm == "probe":
-            probe = pr.read(text)               # G33P
-            _agree(runs[n], probe, p.name)
-        if nflux:
-            # On the probe arm the contract runs against the G33P dict: it is
-            # the side that carries precision/source/fixture metadata, and
-            # `_agree` has already proven the two protocols share one record
-            # universe with equal values, so holding G33P to the contract
-            # holds G33R with it (owner review §5).
-            _require_fixture_domain(text, p.name, n, mode, rho_profile,
-                                    width, levels,
-                                    probe if probe is not None else runs[n],
-                                    arm=arm, algo=algo, fixture=fixture,
-                                    horizon=horizon, tiles=(width,))
+        runs[n] = ra.read(p, nsplit=n)          # what the analyses read
+        # ONE validator, every arm (owner review §9): the profile every
+        # current member answers to, plus -- when the build emits G33N --
+        # the fixture-domain and same-run contract, against the window dict
+        # this arm defines.
+        validate_member_stream(text, name=p.name, nsplit=n, mode=mode,
+                               rho=rho_profile, width=width, levels=levels,
+                               arm=arm, algo=algo, fixture=fixture,
+                               horizon=horizon, tiles=(width,),
+                               transport=nflux)
     return runs
 
 
@@ -323,7 +310,7 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
 
 def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
                            arm="reference", algo=None, fixture=None,
-                           horizon=None, tiles=None):
+                           horizon=None, tiles=None, transport=True):
     """ONE validator for every raw driver stream (owner review §6).
 
     The primary members carried the full fixture-domain / same-run contract;
@@ -334,15 +321,32 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     parsed by the arm's own strict parser, then held to the same contract
     the primary members answer to.
     """
-    run = (pr.read(text) if arm == "f64"
-           else ra.read_text(text, nsplit=nsplit, label=name))
-    _require_current_profile(run, name, width, levels, algo=algo,
+    # EVERY arm read here, including the probe (owner review §9). The
+    # function claimed to be the one validator while picking `pr.read` for
+    # f64 alone, so a probe stream was read as G33R and then held to a
+    # contract that demands G33P metadata it had never parsed -- a direct
+    # call would refuse a valid member, and the primary probe path worked
+    # only because `members()` did the G33R/G33P/_agree dance itself. The
+    # dance lives here now, and there is no second path.
+    if arm == "f64":
+        window = pr.read(text)                       # no G33R on this arm
+    else:
+        g33r = ra.read_text(text, nsplit=nsplit, label=name)
+        window = g33r
+        if arm == "probe":
+            probe = pr.read(text)
+            _agree(g33r, probe, name)
+            # G33P is the side that carries precision/source/fixture, and
+            # `_agree` has just tied G33R to it record for record.
+            window = probe
+    _require_current_profile(window, name, width, levels, algo=algo,
                              nsplit=nsplit, horizon=horizon,
                              precision="f64" if arm == "f64" else "f32")
-    _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
-                            run, arm=arm, algo=algo, fixture=fixture,
-                            horizon=horizon, tiles=tiles)
-    return run
+    if transport:
+        _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
+                                window, arm=arm, algo=algo, fixture=fixture,
+                                horizon=horizon, tiles=tiles)
+    return window
 
 
 def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
@@ -639,13 +643,11 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = pr.read(text)
-        _require_current_profile(runs[n], p.name, width, levels, algo=algo,
-                                 nsplit=n, horizon=horizon, precision="f64")
-        if nflux:
-            _require_fixture_domain(text, p.name, n, mode, rho_profile,
-                                    width, levels, runs[n], arm="f64",
-                                    algo=algo, fixture=fixture,
-                                    horizon=horizon, tiles=(width,))
+        validate_member_stream(text, name=p.name, nsplit=n, mode=mode,
+                               rho=rho_profile, width=width, levels=levels,
+                               arm="f64", algo=algo, fixture=fixture,
+                               horizon=horizon, tiles=(width,),
+                               transport=nflux)
     return runs
 
 

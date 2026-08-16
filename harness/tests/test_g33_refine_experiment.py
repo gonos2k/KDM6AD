@@ -6,6 +6,7 @@ prevented provenance from one build being published beside members from another.
 These tests hold the replacement to that: fail-closed at every stage, and visible
 under the destination only after everything succeeded.
 """
+import inspect
 import json
 import re
 import shutil
@@ -1227,3 +1228,18 @@ def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
     with pytest.raises(xp.ra.RefineError, match="asked for \\(3,\\)"):
         xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2,
                                    run, horizon=100.0, tiles=(3,))
+
+
+def test_the_ONE_validator_reads_the_probe_arm_too(tmp_path):
+    """It claimed to be the single validator while picking the G33P reader
+    for f64 alone: a probe stream was read as G33R and then held to a
+    contract demanding G33P metadata it had never parsed, so a direct call
+    refused a VALID member and the primary path only worked because
+    members() did the G33R/G33P/_agree dance itself (owner review §9)."""
+    src = inspect.getsource(xp.validate_member_stream)
+    assert "_agree(g33r, probe, name)" in src, \
+        "the probe arm must be read and cross-checked inside the validator"
+    assert "pr.read(text)" in src and "ra.read_text(" in src
+    # ...and members() no longer keeps a second copy of that sequence
+    body = inspect.getsource(xp.members)
+    assert "_agree(" not in body and "_require_fixture_domain(" not in body
