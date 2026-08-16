@@ -1233,7 +1233,7 @@ def _ncmin():
 
 
 def _multi_run_analyses(out: Path, exe: Path, fixture: str,
-                        precision: str = "f32") -> list:
+                        precision: str = "f32", algo: str | None = None) -> list:
     """Analyses that run the DRIVER over several decompositions.
 
     Emitted only where the fixture can support the question. `ncmin_locality`
@@ -1255,7 +1255,11 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
         if not rm.applicable(name, precision):
             continue
         _ncmin().begin_capture()
-        result = fn(str(exe), fixture)
+        # The bundle's ALGORITHM, bound BEFORE publication (owner
+        # review §7): without it a multi-run stream whose two
+        # protocols agreed on `conservative` could enter the
+        # immutable store and be refused only later, by the chain.
+        result = fn(str(exe), fixture, algo)
         # The RAW streams this analysis consumed, preserved as bundle members.
         # Without them the chain reached the derived JSON, the analyzer and the
         # binary, but never the stdout those numbers were computed from: the
@@ -1440,7 +1444,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
-            man["analyses"] += _multi_run_analyses(tmp, exe, fixture, precision)
+            man["analyses"] += _multi_run_analyses(tmp, exe, fixture,
+                                                   precision, algo)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.

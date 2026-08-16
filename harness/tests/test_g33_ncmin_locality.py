@@ -921,8 +921,9 @@ def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is"):
-        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
+                  carry="rezero", rho="as-is", algo=None):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
+                          algo=algo)
         seen["n"] += 1
         if seen["n"] == 3:               # one partition answers differently
             state = {**state, sorted(state)[0]: "DEADBEEF"}
@@ -1006,8 +1007,9 @@ def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is"):
-        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
+                  carry="rezero", rho="as-is", algo=None):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
+                          algo=algo)
         seen["n"] += 1
         if seen["n"] == 2:
             state = {**state, sorted(state)[0]: "DEADBEEF"}
@@ -1657,3 +1659,25 @@ def test_the_ledger_REFUSES_runs_that_disagree_on_the_WEIGHT_field(drivers):
         tampered = got[:m.start(2)] + repl + got[m.end(2):]
     with pytest.raises(ra.RefineError, match="disagree on rho|weight"):
         pl.decompose(base, tampered, 3, ra.read_text(base))
+
+
+def test_the_run_cache_is_keyed_on_the_EXECUTABLES_BYTES():
+    """Keyed on the driver PATH, a rebuilt binary at the same path would be
+    served a previous build's stdout inside one process -- a cache answering
+    for a run that no longer exists (owner review §10)."""
+    import inspect
+    src = inspect.getsource(nl.run)
+    assert "_exe_digest(driver)" in src
+    assert "str(driver)" not in src
+
+
+def test_every_multi_run_leg_takes_the_bundles_ALGORITHM():
+    """Without it a multi-run stream whose two protocols agreed on
+    `conservative` could enter the immutable store and be refused only
+    later, by the evidence chain (owner review §7)."""
+    import inspect
+    for fn in (nl.analysis, nl.local_oracle, nl.class_law,
+               nl.control_replication):
+        assert "algo" in inspect.signature(fn).parameters, fn.__name__
+    assert "algo=algo" in inspect.getsource(nl.gated_state) or \
+        "algo" in inspect.signature(nl.gated_state).parameters

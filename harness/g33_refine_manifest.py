@@ -1206,6 +1206,38 @@ def _expected_run_violations(man: dict, members: list) -> list:
                 bad.append(f"members[{i}] ran mode {m['mode']!r}, the bundle "
                            f"declares {exp.get('mode')!r} -- one experiment, "
                            f"one auxiliary-state rule")
+        # ...and the COMMAND LINES close the loop (owner review §6): the
+        # recipe id hashes runtime_argv, so an argv that does not describe
+        # the declared experiment puts a different request into the id than
+        # the one the document states. Four records of one invocation --
+        # argv, expected_run, the member rows, and (in the chain) the raw
+        # headers -- and until here the first three were never tied.
+        argv = man.get("runtime_argv")
+        if not isinstance(argv, list) or not argv:
+            bad.append("runtime_argv must be a non-empty list: it is the "
+                       "recipe id's record of what was invoked")
+        else:
+            seen = []
+            for i, a in enumerate(argv):
+                if not (isinstance(a, list) and len(a) >= 2):
+                    bad.append(f"runtime_argv[{i}] {a!r} is not a driver "
+                               f"command line")
+                    continue
+                if a[1] != exp.get("mode"):
+                    bad.append(f"runtime_argv[{i}] ran mode {a[1]!r}, the "
+                               f"bundle declares {exp.get('mode')!r}")
+                try:
+                    seen.append(int(a[0]))
+                except (TypeError, ValueError):
+                    bad.append(f"runtime_argv[{i}] nsplit {a[0]!r} is not an "
+                               f"integer")
+                if len(a) >= 4 and a[3] != exp.get("rho_profile"):
+                    bad.append(f"runtime_argv[{i}] ran rho_profile {a[3]!r}, "
+                               f"the bundle declares "
+                               f"{exp.get('rho_profile')!r}")
+            if seen and isinstance(ns, list) and sorted(seen) != sorted(ns):
+                bad.append(f"runtime_argv invokes nsplits {sorted(seen)}, the "
+                           f"bundle declares {sorted(ns)}")
     if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
         bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
                    f"the pinned fixture "

@@ -125,6 +125,13 @@ def unlabelled() -> set:
 #: a manifest says which derivation produced its ids rather than leaving a
 #: reader to assume today's.
 #:
+#: v3: `run_recipe_id` carries the canonical `expected_run` and the
+#: `kernel_geometry` the run was held to. Both are "what was REQUESTED",
+#: which is the recipe's own question -- and until v3 the subtractive
+#: content id picked them up while the recipe id did not, so changing the
+#: request moved the id of the OUTPUT and not the id of the ASK
+#: (owner review §6).
+#:
 #: v2: `run_content_id` reduces the recorded `identity` block to its schema tag.
 #: Under v1 the whole block -- role graph, seeds, reach -- rode into the content
 #: id, so an ANALYSIS-ONLY change that regenerated the block moved the run's
@@ -133,7 +140,7 @@ def unlabelled() -> set:
 #: reach entry moved `run_content_id` with no run byte changed. A version
 #: rather than a quiet fix, because it changes what the id MEANS (owner
 #: review §3).
-IDENTITY_SCHEMA = "g33_layered_identity_v2"
+IDENTITY_SCHEMA = "g33_layered_identity_v3"
 
 
 def identity_block(published=()) -> dict:
@@ -406,6 +413,14 @@ def run_recipe_id(man: dict) -> str:
         "rho_profile": man.get("rho_profile"),
         "instrumented": man.get("instrumented"),
         "schema": man.get("schema"), "artifact_type": man.get("artifact_type"),
+        # WHAT WAS ASKED FOR (identity v3, owner review §6). The recipe is
+        # the request; `expected_run` is the request stated in full and
+        # `kernel_geometry` is the rule the request is interpreted under.
+        # The subtractive content id picked both up automatically, so
+        # without them here a changed request moved the OUTPUT's id and not
+        # the ASK's -- the wrong way round for the question each answers.
+        "expected_run": man.get("expected_run"),
+        "kernel_geometry": man.get("kernel_geometry"),
     })
 
 
