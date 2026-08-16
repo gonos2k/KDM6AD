@@ -1322,6 +1322,50 @@ def _ncmin():
     return nl
 
 
+def resolved_violations(man: dict, root: Path, contract) -> list:
+    """The manifest against the BYTES it points at, before publication.
+
+    `rm.validate` can only hold a document to itself. The fixture's
+    parameters are in the fixture's bytes, the sub-cycle limit is in the
+    compiled overlay's, and each member's geometry is in its own stream --
+    so the resolved comparison is a different check from the structural one,
+    and it belongs on the publish path rather than only in the chain
+    (owner review §9).
+    """
+    bad = []
+    exp = man.get("expected_run") or {}
+    src = (HERE / "g33_fortran" / f"{contract.fixture}.f90").read_text()
+    for key, want in (("columns", fixture_dims(contract.fixture)[0]),
+                      ("levels", fixture_dims(contract.fixture)[1]),
+                      ("dt_bits", fixture_dt_bits_from(src, contract.fixture)),
+                      ("window_seconds", fixture_horizon_from(src,
+                                                              contract.fixture)),
+                      ("fixture_id", contract.fixture)):
+        if exp.get(key) != want:
+            bad.append(f"expected_run.{key} {exp.get(key)!r} is not the "
+                       f"fixture's {want!r}")
+    kg = man.get("kernel_geometry") or {}
+    if kg.get("dtcldcr") != contract.dtcldcr:
+        bad.append(f"kernel_geometry.dtcldcr {kg.get('dtcldcr')!r} is not the "
+                   f"{contract.dtcldcr!r} this build was held to")
+    for m in man.get("members") or []:
+        p = root / m.get("file", "")
+        if not p.is_file():
+            bad.append(f"members[{m.get('file')!r}] is not in the bundle")
+            continue
+        want_d, want_L, want_h = expected_geometry(
+            contract.horizon, m["nsplit"], contract.precision,
+            contract.dtcldcr)
+        for key, want in (("delt", want_d), ("dtcld", want_h)):
+            if f"{m.get(key, float('nan')):.6f}" != f"{want:.6f}":
+                bad.append(f"members[{m['file']}] records {key}={m.get(key)!r},"
+                           f" the fixture's horizon gives {want}")
+        if m.get("loops") != want_L:
+            bad.append(f"members[{m['file']}] records loops={m.get('loops')!r},"
+                       f" the kernel's rule gives {want_L}")
+    return bad
+
+
 def _multi_run_analyses(out: Path, exe: Path, fixture: str,
                         precision: str = "f32", algo: str | None = None,
                         contract=None) -> list:
@@ -1663,6 +1707,14 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             raise SystemExit(
                 f"REFUSED: the identity graph cannot be resolved against the "
                 f"pinned blobs at publish time -- {e}")
+        # ...and the RESOLVED experiment (owner review §9). `rm.validate`
+        # holds the document to itself; the fixture's own parameters live in
+        # its bytes and the members' in theirs, and until now only the
+        # evidence chain compared them -- so a producer regression writing
+        # `levels: 999` entered the immutable store and was found afterwards.
+        # This repository's rule is the other way round: refuse before
+        # publishing.
+        violations += resolved_violations(man, tmp, contract)
         if violations:
             raise SystemExit("REFUSED: the manifest does not satisfy "
                              f"{man['schema']}:\n  " + "\n  ".join(violations))

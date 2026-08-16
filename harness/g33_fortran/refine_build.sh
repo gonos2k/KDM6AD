@@ -101,16 +101,34 @@ fc() { local o="$1"; shift
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
 
-fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$FIXTURE_SRC"
-fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/frame/libmassv.F"
-fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$HERE/stub_wrf_error.f90"
-fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/share/module_model_constants.F"
-fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/phys/module_mp_radar.F"
+# CONTENT-ADDRESSED STAGING for every private source (owner §10). The build
+# compiled straight from the host tree and the provenance collector re-read
+# those same paths afterwards, so an edit in between yielded an executable
+# from one byte set and a record of another. Staging by digest makes the two
+# the same bytes by construction: what is hashed is what was compiled, and a
+# concurrent edit produces a different staged path rather than a silent
+# substitution. The overlay has been content-addressed since §9.1; this
+# extends it to the sources it is built beside.
+STAGE="$OUT/staged"; mkdir -p "$STAGE"
+stage() {
+    local src="$1" d b
+    d=$(shasum -a 256 "$src" | cut -d' ' -f1); b=$(basename "$src")
+    local dst="$STAGE/$d-$b"
+    [ -f "$dst" ] || { cp "$src" "$dst.$$.tmp" && mv -f "$dst.$$.tmp" "$dst"; }
+    printf '%s' "$dst"
+}
+
+fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$(stage "$FIXTURE_SRC")"
+fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/frame/libmassv.F")"
+fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$(stage "$HERE/stub_wrf_error.f90")"
+fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/share/module_model_constants.F")"
+fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/phys/module_mp_radar.F")"
 # The PINNED module by default: this measures the reference operator, and
 # instrumentation would otherwise be a second difference between sweep members.
 # --dump swaps in the generated overlay, whose macro-OFF form is textually
 # identical to the pinned source (the A/B/C non-invasiveness proof).
-MODULE_SRC="$MODULE"; DUMP_DEF=()
+MODULE_STAGED=$(stage "$MODULE")
+MODULE_SRC="$MODULE_STAGED"; DUMP_DEF=()
 if [ "$DUMP" = 1 ]; then
     # CONTENT-ADDRESSED overlay path (owner §9.1). gfortran embeds each source's
     # filename in the binary for backtraces -- `-ffile-prefix-map` does not reach
@@ -118,7 +136,7 @@ if [ "$DUMP" = 1 ]; then
     # build a different executable digest in every output directory. Naming it by
     # its own digest makes the path a function of the content: identical overlays
     # compile from an identical path, different ones cannot collide.
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE_STAGED" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" --real-kind="$REAL_KIND" >/dev/null
     OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
     # CONTENT-ADDRESSED on the FULL digest (owner §13 P1-4). A 16-hex truncation
@@ -150,5 +168,6 @@ printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
 # recorded: binding only the compiled one would make an instrumented bundle
 # unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
-    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" "$MODULE_SRC"
+    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" \
+    "$MODULE_SRC" "$MODULE_STAGED"
 echo "$OUT"

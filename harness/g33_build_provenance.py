@@ -44,7 +44,8 @@ def _git(*args: str) -> str:
 
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
-            exe: Path | None = None, compiled: Path | None = None) -> dict:
+            exe: Path | None = None, compiled: Path | None = None,
+            staged: Path | None = None) -> dict:
     """Provenance for one build. `fc` may be a name or a path; it is resolved,
     because the digest of whatever `gfortran` resolved to is the point."""
     binary = shutil.which(fc) or fc
@@ -86,7 +87,13 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
                     if srcs.exists() else []),
         "executable_sha256": sha256(exe) if exe and Path(exe).exists() else None,
         "build_script_sha256": sha256(script),
-        "module_path": norm(str(module)), "module_sha256": sha256(module),
+        # The PATH is the pinned host location -- what the experiment is
+        # about -- and the DIGEST is of the staged bytes the compiler read,
+        # which are the same bytes by construction (owner review §10). Hashing
+        # the host path again here is what left a window for an edit between
+        # compile and record.
+        "module_path": norm(str(module)),
+        "module_sha256": sha256(staged if staged is not None else module),
         # None when the pinned module IS what was compiled.
         "compiled_module_path": (norm(str(compiled)) if compiled
                                  and Path(compiled) != Path(module) else None),
@@ -115,7 +122,8 @@ def main(argv) -> int:
         json.dumps(collect(out, argv[1], Path(argv[2]), Path(argv[3]),
                            Path(argv[4]),
                            Path(argv[5]) if len(argv) > 5 else None,
-                           Path(argv[6]) if len(argv) > 6 else None),
+                           Path(argv[6]) if len(argv) > 6 else None,
+                           Path(argv[7]) if len(argv) > 7 else None),
                    indent=2, sort_keys=True) + "\n")
     return 0
 
