@@ -2488,3 +2488,32 @@ def test_the_multirun_TYPED_runtime_identity_is_what_is_checked():
     refused = [r for r in rows if r["state"] == "MEMBER-CONTRACT-MISMATCH"]
     assert refused, [r["state"] for r in rows]
     assert "asked for (3,)" in refused[0]["detail"]
+
+
+def test_the_declared_decomposition_is_held_to_the_PRIMARY_stream():
+    """The chain passed no expected tiling for the primary members, so the
+    declared decomposition was a decoration: a manifest could declare (1,2)
+    beside members that ran (3,) and every row still matched (Codex)."""
+    import copy
+    root = man = None
+    for base in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(base.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                m = json.loads(mf.read_text())
+                if m.get("schema") == "refinement_experiment_v4" \
+                        and m.get("instrumented"):
+                    root, man = link.resolve(), m
+                    break
+        if root:
+            break
+    if root is None:
+        pytest.skip("no instrumented v4 bundle on this host")
+    lied = copy.deepcopy(man)
+    lied["expected_run"]["tile_sizes"] = [1, 2]
+    ec._MEMBER_CONTRACT.clear()
+    rows = ec._member_contract_states(root, lied)
+    ec._MEMBER_CONTRACT.clear()
+    mem = {m["file"] for m in man["members"]}
+    assert any(r["state"] == "MEMBER-CONTRACT-MISMATCH" and r["file"] in mem
+               for r in rows), [r["state"] for r in rows]

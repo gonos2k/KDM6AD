@@ -507,6 +507,15 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
         _MEMBER_CONTRACT[key] = out
         return out
     arm = man.get("arm", "reference")
+    # The DECLARED decomposition, held to the streams (Codex): `expected_run`
+    # states the tiling the experiment asked for, and nothing compared it to
+    # what the primary members ran -- so a v4 manifest could declare (1,2),
+    # publish members that ran (3,), and validate clean. `ncmin` is set by a
+    # tile's last column, so those are two operators and the document was
+    # describing the other one. A schema that predates the block declares
+    # nothing and is held to nothing.
+    want_tiles = (man.get("expected_run") or {}).get("tile_sizes")
+    want_tiles = tuple(want_tiles) if isinstance(want_tiles, list) else None
     for mem in man.get("members", []):
         p = root / mem["file"]
         if not p.is_file():
@@ -544,7 +553,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     text, mem["file"], mem["nsplit"], mem["mode"],
                     man.get("rho_profile", "as-is"), width, levels, run,
                     arm=arm, algo=man.get("algorithm"), fixture=fixture,
-                    horizon=horizon)
+                    horizon=horizon, tiles=want_tiles)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -564,7 +573,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
         if a.get("analysis") == "arm_stream" and isinstance(a.get("ran"), dict):
             r = a["ran"]
             targets.append((a["file"], r.get("nsplit"), r.get("carry"),
-                            r.get("rho"), r.get("tile_sizes")))
+                            r.get("rho"),
+                            r.get("tile_sizes") or want_tiles))
         # The TYPED runtime identity, not the filename (owner review §6). The
         # name carries the decomposition -- mr.n1.rezero.as-is.tiles-2-1.txt --
         # and re-deriving only nsplit/mode/rho from it left the tile vector

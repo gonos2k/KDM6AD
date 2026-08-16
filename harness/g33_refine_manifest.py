@@ -1146,6 +1146,23 @@ def _expected_run_violations(man: dict, members: list) -> list:
     elif isinstance(exp.get("columns"), int) and sum(tiles) != exp["columns"]:
         bad.append(f"expected_run.tile_sizes {tiles} sums to {sum(tiles)}, "
                    f"not the {exp['columns']} columns it declares")
+    # The arms run the BUNDLE'S decomposition -- g33_run_matrix passes the
+    # domain width as one tile -- so their typed `ran` blocks answer to the
+    # declared one. Two records of one fact again (Codex): the chain already
+    # ties each `ran` to its stream, and this ties it to the request, so the
+    # document cannot declare one operator and publish another. The
+    # multi-run inputs are deliberately NOT held here: varying the
+    # decomposition is what that analysis is for, and each is checked
+    # against its own recorded runtime_argv.
+    if isinstance(tiles, list):
+        for i, a in enumerate(man.get("analyses") or []):
+            if not isinstance(a, dict) or a.get("analysis") != "arm_stream":
+                continue
+            got = (a.get("ran") or {}).get("tile_sizes")
+            if isinstance(got, list) and got != tiles:
+                bad.append(
+                    f"analyses[{i}] (arm_stream) ran the decomposition {got}, "
+                    f"the bundle's expected_run declares {tiles}")
     prec = exp.get("precision", man.get("precision", "f32"))
     for i, m in enumerate(members):
         if not isinstance(m, dict) or not isinstance(m.get("nsplit"), int):

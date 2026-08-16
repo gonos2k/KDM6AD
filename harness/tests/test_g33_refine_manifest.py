@@ -914,3 +914,36 @@ def test_duplicate_analysis_inputs_are_refused():
     else:
         pytest.skip("no input-carrying analysis in the live manifest")
     assert any("inputs records" in v for v in rm.validate(dup))
+
+
+def test_the_DECLARED_decomposition_is_bound_to_what_the_arms_ran():
+    """expected_run states the tiling the experiment asked for, and nothing
+    compared it to what was published: a v4 manifest could declare (1,2),
+    carry arms that ran (3,), and validate clean -- and `ncmin` makes those
+    two operators, so the document would be describing the other one
+    (Codex). The multi-run inputs are deliberately exempt: varying the
+    decomposition is what that analysis is FOR."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    assert rm.validate(man) == []
+    lied = copy.deepcopy(man)
+    lied["expected_run"]["tile_sizes"] = [1, 2]
+    v = rm.validate(lied)
+    assert any("expected_run declares [1, 2]" in x for x in v), v[:2]
+
+
+def _real_v3_manifest_here_v4():
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("schema") == "refinement_experiment_v4"
+                        and any(a.get("analysis") == "arm_stream"
+                                for a in man.get("analyses", []))):
+                    return man
+    return None
