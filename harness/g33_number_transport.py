@@ -175,6 +175,22 @@ EXTENSION_FAMILIES = frozenset(FAMILY_FEATURE)
 #: not touch qv" from an assumption into something the ledger checks.
 STAGE_REQUIRED = {"outer_pre_sed": ("rho", "delz", "qv", "nr", "ni", "qr", "qi"),
                   "outer_post_sed": ("qv", "nr", "ni", "qr", "qi")}
+
+#: The SURFACE stage's exact field vocabulary (owner review §7).
+#:
+#: Requiring merely that every column carry the SAME set let a stream whose
+#: only surface field was something no analysis reads pass the universe check,
+#: while a surface-based closure looking for `bottom_fall_qr` got `None` and
+#: dropped its row in silence -- "a surface row exists" is not "the quantity
+#: the analysis needs exists". Measured across the archive before enforcing:
+#: all 26751 published surface cells carry exactly these seven.
+#:
+#: Stated HERE, with the protocol, rather than imported from the overlay
+#: generator that emits them -- and a test compares the two, because two
+#: records of one fact are only worth having if something checks them.
+SURFACE_REQUIRED = frozenset({
+    "bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi",
+    "bottom_fall_total", "delz_bottom", "surface_denr"})
 STAGE = re.compile(r"^G33F STAGE \d+ \S+ (outer_pre_sed|outer_post_sed|surface) 0 "
                    r"(\S+) (\d+) (-?\d+) (f32|f64) " + _H + "$")
 NFLUX = re.compile(r"^G33F NFLUX \d+ (\d+) (\S+) (f32|f64) " + _H + "$")
@@ -436,15 +452,14 @@ def _check_loop(call, lp, feats=frozenset()):
             f"{sorted(srf)}, the state covers columns {sorted(cols)} at "
             f"k=-1 -- a surface row that is not there cannot be skipped, "
             f"only refused")
-    sf = {f for (l, c, k), rec in call["surface"].items() if l == lp
-          for f in rec}
     for c in sorted(cols):
         got_sf = set(call["surface"][(lp, c, -1)])
-        if got_sf != sf:
+        if got_sf != set(SURFACE_REQUIRED):
             raise StreamError(
                 f"call {call['call_id']} loop {lp} col {c}: surface carries "
-                f"fields {sorted(got_sf)}, the rest of the stage carries "
-                f"{sorted(sf)}")
+                f"fields {sorted(got_sf)}, the protocol's surface stage is "
+                f"exactly {sorted(SURFACE_REQUIRED)} -- a row that is present "
+                f"but missing the quantity an analysis reads is a silent skip")
     # Filtered BY LOOP: unfiltered, a column missing its NFLUX in loop 1 passed
     # because loop 2 supplied one (owner P0-2).
     got = {c for l, c in call["flux"] if l == lp}
