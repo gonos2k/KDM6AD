@@ -1136,8 +1136,16 @@ def _expected_run_violations(man: dict, members: list) -> list:
             bad.append(f"expected_run.{key} {exp[key]!r} disagrees with the "
                        f"manifest's {top} {man[top]!r}")
     horizon = exp.get("window_seconds")
-    if (not isinstance(horizon, (int, float)) or isinstance(horizon, bool)
-            or not math.isfinite(horizon) or horizon <= 0):
+    # `math.isfinite` takes a FLOAT, and an unbounded Python int overflows
+    # on the way in -- so the guard against a nonsense horizon crashed on a
+    # nonsense horizon (Codex). JSON gives ints and floats alike; both are
+    # coerced here, and a value that cannot become one is the violation.
+    try:
+        horizon = float(horizon) if isinstance(
+            horizon, (int, float)) and not isinstance(horizon, bool) else None
+    except (OverflowError, ValueError):
+        horizon = None
+    if horizon is None or not math.isfinite(horizon) or horizon <= 0:
         return bad + [f"expected_run.window_seconds {horizon!r} is not a "
                       f"positive number"]
     tiles = exp.get("tile_sizes")

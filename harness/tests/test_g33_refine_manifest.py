@@ -978,6 +978,18 @@ def test_a_bundle_may_declare_only_the_decomposition_it_can_SUBSTANTIATE():
     ("nsplit 0", lambda m: m["members"][0].update({"nsplit": 0})),
     ("horizon enormous",
      lambda m: m["expected_run"].update({"window_seconds": 1e300})),
+    # an unbounded Python INT: math.isfinite takes a float and overflows on
+    # the way in, so the guard against a nonsense horizon crashed on one
+    ("horizon huge int",
+     lambda m: m["expected_run"].update({"window_seconds": 10 ** 400})),
+    ("horizon huge negative int",
+     lambda m: m["expected_run"].update({"window_seconds": -(10 ** 400)})),
+    ("horizon is a string",
+     lambda m: m["expected_run"].update({"window_seconds": "300"})),
+    ("horizon is a bool",
+     lambda m: m["expected_run"].update({"window_seconds": True})),
+    ("nsplit huge int",
+     lambda m: m["members"][0].update({"nsplit": 10 ** 400})),
     ("horizon inf",
      lambda m: m["expected_run"].update({"window_seconds": float("inf")})),
     ("horizon nan",
