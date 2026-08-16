@@ -1397,6 +1397,24 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # The SAME word the analyses were selected by, so the manifest cannot
         # declare one precision and have been analysed at another.
         man["precision"] = precision
+        # The EXPERIMENT the bundle claims to be (owner review §6). The
+        # algorithm lived only in the member rows, so the document could say
+        # what each member ran and never what the bundle was FOR -- and the
+        # checker had nothing to hold a re-validated member to. `expected_run`
+        # states the fixture's own parameters beside the requested
+        # decomposition, so every member's geometry is a derivable fact the
+        # validator recomputes rather than a number it copies.
+        man["algorithm"] = algo
+        man["expected_run"] = {
+            "fixture_id": Path(fx).stem,
+            "window_seconds": fixture_horizon(fixture),
+            "columns": width,
+            "levels": fixture_dims(fixture)[1],
+            "tile_sizes": [width],
+            "rho_profile": rho_profile,
+            "algorithm": algo,
+            "precision": precision,
+        }
         # The ROLE GRAPH the layered ids are derived under (owner priority 8).
         # Without it those ids are a function of the manifest AND of whichever
         # checkout computes them, so a refactor that moves a module between

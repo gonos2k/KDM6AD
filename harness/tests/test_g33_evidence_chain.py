@@ -2440,3 +2440,51 @@ def _real_v3_manifest_here():
                 if man.get("identity"):
                     return man
     return None
+
+
+def test_the_multirun_TYPED_runtime_identity_is_what_is_checked():
+    """The filename carries the decomposition -- mr.n1.rezero.as-is.tiles-2-1
+    -- and the chain re-derived only nsplit/mode/rho from it, leaving the tile
+    vector unread: a manifest recording tiles 2,1 beside a raw stream that ran
+    tiles 3 passed closeout while the derived JSON was labelled (2,1), and
+    `ncmin` makes those two different operators (owner review §6)."""
+    import copy
+    man = _real_v3_manifest_here()
+    root = None
+    for base in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(base.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                m = json.loads(mf.read_text())
+                if any(str(s.get("file", "")).startswith("mr.")
+                       for a in m.get("analyses", []) if isinstance(a, dict)
+                       for s in a.get("inputs") or []):
+                    man, root = m, link.resolve()
+                    break
+        if root:
+            break
+    if root is None:
+        pytest.skip("no bundle with multi-run inputs on this host")
+    man = copy.deepcopy(man)
+    man.setdefault("algorithm", "legacy")
+    # forge ONE input's request: same bytes, a decomposition it did not run
+    forged = None
+    for a in man["analyses"]:
+        for s in a.get("inputs") or []:
+            if str(s.get("file", "")).startswith("mr.") and \
+                    s["runtime_argv"][2] != "3":
+                s["runtime_argv"][2] = "3"
+                forged = s["file"]
+                break
+        if forged:
+            break
+    ec._MEMBER_CONTRACT.clear()
+    rows = [r for r in ec._member_contract_states(root, man)
+            if r.get("origin") == "member_contract" and r["file"] == forged]
+    ec._MEMBER_CONTRACT.clear()
+    # the same raw stream is an input to more than one analysis, so only the
+    # entry whose REQUEST was forged refuses -- which is the point: the row
+    # answers for the request it records, not for the file's name
+    refused = [r for r in rows if r["state"] == "MEMBER-CONTRACT-MISMATCH"]
+    assert refused, [r["state"] for r in rows]
+    assert "asked for (3,)" in refused[0]["detail"]

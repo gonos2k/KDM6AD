@@ -556,20 +556,39 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
         if a.get("analysis") == "arm_stream" and isinstance(a.get("ran"), dict):
             r = a["ran"]
             targets.append((a["file"], r.get("nsplit"), r.get("carry"),
-                            r.get("rho")))
+                            r.get("rho"), r.get("tile_sizes")))
+        # The TYPED runtime identity, not the filename (owner review §6). The
+        # name carries the decomposition -- mr.n1.rezero.as-is.tiles-2-1.txt --
+        # and re-deriving only nsplit/mode/rho from it left the tile vector
+        # unread: a manifest recording tiles 2,1 beside a raw stream that ran
+        # tiles 3 passed closeout while the derived JSON was labelled (2,1),
+        # and `ncmin` makes those two different operators. `runtime_argv` is
+        # the command line the producer actually issued; it is the request.
         for src in a.get("inputs") or []:
             f = src.get("file") if isinstance(src, dict) else None
-            if isinstance(f, str) and f.startswith("mr."):
-                m2 = re.match(r"mr\.n(\d+)\.(carry|rezero)\.([a-z2+-]+)\.", f)
-                if not m2:
-                    out.append({"file": f, "scope": "bundle",
-                                "origin": "member_contract",
-                                "state": "MEMBER-CONTRACT-MISMATCH",
-                                "detail": "multi-run filename does not parse "
-                                          "as mr.n<N>.<mode>.<rho>."})
-                    continue
-                targets.append((f, int(m2.group(1)), m2.group(2), m2.group(3)))
-        for fname, n2, mode2, rho2 in targets:
+            if not (isinstance(f, str) and f.startswith("mr.")):
+                continue
+            argv = src.get("runtime_argv")
+            if not (isinstance(argv, list) and len(argv) == 4):
+                out.append({"file": f, "scope": "bundle",
+                            "origin": "member_contract",
+                            "state": "MEMBER-CONTRACT-MISMATCH",
+                            "detail": "multi-run input carries no four-field "
+                                      "runtime_argv to be checked against"})
+                continue
+            try:
+                n2, mode2, tiles2, rho2 = (int(argv[0]), argv[1],
+                                           tuple(int(t) for t
+                                                 in str(argv[2]).split(",")),
+                                           argv[3])
+            except ValueError as e:
+                out.append({"file": f, "scope": "bundle",
+                            "origin": "member_contract",
+                            "state": "MEMBER-CONTRACT-MISMATCH",
+                            "detail": f"unreadable runtime_argv {argv!r}: {e}"})
+                continue
+            targets.append((f, n2, mode2, rho2, list(tiles2)))
+        for fname, n2, mode2, rho2, tiles2 in targets:
             p = root / fname
             if not p.is_file():
                 continue            # the digest row already reports absence
@@ -579,7 +598,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                 xp.validate_member_stream(
                     p.read_text(), name=fname, nsplit=n2, mode=mode2,
                     rho=rho2, width=width, levels=levels, fixture=fixture,
-                    algo=man.get("algorithm"), horizon=horizon)
+                    algo=man.get("algorithm"), horizon=horizon,
+                    tiles=tuple(tiles2) if tiles2 else None)
                 row["state"] = "matches"
             except Exception as e:                      # noqa: BLE001
                 row["state"] = "MEMBER-CONTRACT-MISMATCH"

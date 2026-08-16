@@ -233,6 +233,9 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
 #: bundle cannot be valid to one and invalid to the other (owner P0-2).
 _ARMS = ("reference", "probe", "f64")
 _PRECISIONS = ("f32", "f64")
+#: The driver's own `ALGOTAG` vocabulary. It error-stops on anything else, so
+#: a manifest declaring another word names a run that could not have happened.
+_ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
@@ -807,6 +810,7 @@ def validate(man: dict) -> list:
         if len(algos) > 1:
             bad.append(f"members ran different algorithms {sorted(algos)} -- "
                        f"one bundle, one experiment")
+        bad += _expected_run_violations(man, members)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1088,6 +1092,75 @@ _RAN_CORE = ("nsplit", "carry", "width", "rho")
 #: beside `ran` as the literal command line: a diagnostic, and the thing the
 #: typed block is checked against.
 _ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
+
+
+def _expected_run_violations(man: dict, members: list) -> list:
+    """The bundle's declared experiment, and every member's geometry against
+    it (owner review §4, §6).
+
+    Two records of one fact again, at the document level: `expected_run`
+    states the fixture's parameters and the requested decomposition, the
+    member rows state what each run stepped -- and until now the second was
+    copied out of the streams and compared to nothing. The geometry is
+    RECOMPUTED here from the fixture's horizon by the driver's own rule, so
+    a member row can no longer carry a step nobody could have asked for.
+
+    Not a re-read of the streams: that is the evidence chain's job, against
+    the bytes. This is the DOCUMENT answering for itself.
+    """
+    import g33_refine_experiment as xp                  # cycle closes at call
+    bad = []
+    if man.get("algorithm") not in _ALGOS:
+        bad.append(f"algorithm {man.get('algorithm')!r} is not one of {_ALGOS}")
+    else:
+        for i, m in enumerate(members):
+            if isinstance(m, dict) and m.get("algorithm") not in (
+                    None, man["algorithm"]):
+                bad.append(f"members[{i}] ran {m['algorithm']!r} but the "
+                           f"bundle declares algorithm {man['algorithm']!r}")
+    exp = man.get("expected_run")
+    if not isinstance(exp, dict):
+        return bad + ["expected_run must be an object: without it the "
+                      "manifest records what each member stepped and never "
+                      "what the experiment asked for"]
+    if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
+        bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
+                   f"the pinned fixture "
+                   f"{Path(str(man.get('fixture_path', ''))).stem!r}")
+    for key, top in (("algorithm", "algorithm"), ("precision", "precision"),
+                     ("rho_profile", "rho_profile")):
+        if key in exp and top in man and exp[key] != man[top]:
+            bad.append(f"expected_run.{key} {exp[key]!r} disagrees with the "
+                       f"manifest's {top} {man[top]!r}")
+    horizon = exp.get("window_seconds")
+    if not isinstance(horizon, (int, float)) or horizon <= 0:
+        return bad + [f"expected_run.window_seconds {horizon!r} is not a "
+                      f"positive number"]
+    tiles = exp.get("tile_sizes")
+    if (not isinstance(tiles, list) or not tiles
+            or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
+                       for t in tiles)):
+        bad.append(f"expected_run.tile_sizes {tiles!r} is not a non-empty "
+                   f"list of positive column counts")
+    elif isinstance(exp.get("columns"), int) and sum(tiles) != exp["columns"]:
+        bad.append(f"expected_run.tile_sizes {tiles} sums to {sum(tiles)}, "
+                   f"not the {exp['columns']} columns it declares")
+    prec = exp.get("precision", man.get("precision", "f32"))
+    for i, m in enumerate(members):
+        if not isinstance(m, dict) or not isinstance(m.get("nsplit"), int):
+            continue
+        want_d, want_L, want_h = xp.expected_geometry(horizon, m["nsplit"],
+                                                      prec)
+        for key, want in (("delt", want_d), ("dtcld", want_h)):
+            got = m.get(key)
+            if got is not None and f"{got:.6f}" != f"{want:.6f}":
+                bad.append(
+                    f"members[{i}] records {key}={got} at nsplit={m['nsplit']},"
+                    f" but the fixture's {horizon} s horizon gives {want}")
+        if m.get("loops") is not None and m["loops"] != want_L:
+            bad.append(f"members[{i}] records loops={m['loops']}, the kernel's "
+                       f"rule gives {want_L} for delt={want_d}")
+    return bad
 
 
 def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
