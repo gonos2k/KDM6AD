@@ -1408,7 +1408,9 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # validator recomputes rather than a number it copies.
         man["algorithm"] = algo
         man["expected_run"] = {
-            "fixture_id": Path(fx).stem,
+            # the fixture the MANIFEST pins, not a name the
+            # producer holds separately: two records of one fact
+            "fixture_id": Path(man["fixture_path"]).stem,
             "window_seconds": fixture_horizon(fixture),
             "columns": width,
             "levels": fixture_dims(fixture)[1],

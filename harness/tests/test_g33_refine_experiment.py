@@ -69,7 +69,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3, levels=None, algo=None,
-                fixture=None):
+                fixture=None, horizon=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -162,7 +162,7 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
             rho_profile="as-is", width=3, levels=None, algo=None,
-            fixture=None):
+            fixture=None, horizon=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -229,7 +229,8 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
-                      levels=None, nflux=False, algo=None, fixture=None):
+                      levels=None, nflux=False, algo=None, fixture=None,
+                      horizon=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -425,7 +426,7 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
                         lambda out, exe, ns, mode, width, levels, algo=None,
-                        fixture=None: seen.update(
+                        fixture=None, horizon=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
@@ -609,7 +610,7 @@ def test_a_NON_POSITIVE_nsplit_is_refused(tmp_path):
 def test_the_producer_writes_the_STRICT_schema():
     """A bundle made today must declare the contract it satisfies, or the
     checker cannot tell it from one that predates the pin blocks."""
-    assert xp.rm.SCHEMA == "refinement_experiment_v3"
+    assert xp.rm.SCHEMA == rm.SCHEMA
 
 
 # ---- owner §9.1: an existing bundle directory is verified, not adopted -------
@@ -1152,7 +1153,7 @@ def test_the_current_profile_control_passes():
      "no INITIAL state"),
     (lambda r: r.pop(("meta", "loops")), "declares no loops"),
     (lambda r: r.update({("meta", "dtcld"): 50.0}),
-     "not one kernel's"),
+     "kernel's rule gives"),
     (lambda r: r.update({("meta", "delt"): -1.0, ("meta", "dtcld"): -1.0}),
      "must be positive"),
     (lambda r: [r.pop(k) for k in list(r)
@@ -1167,7 +1168,7 @@ def test_a_member_below_todays_profile_is_refused(mutate, match):
     run = _profile_run()
     mutate(run)
     with pytest.raises(xp.ra.RefineError, match=match):
-        xp._require_current_profile(run, "n1", 2, 2)
+        xp._require_current_profile(run, "n1", 2, 2, nsplit=1, horizon=100.0)
 
 
 # --- the fixture's HORIZON is the third dimension (owner review §4) ---------
