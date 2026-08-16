@@ -195,10 +195,17 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     # G33N and G33R legs describe ONE run -- forcing values, timesteps, the
     # loop universe. A decomposition published under a weaker contract than
     # the member beside it is exactly the gap this closes.
-    from g33_refine_experiment import validate_member_stream
+    from g33_refine_experiment import (fixture_horizon,
+                                       validate_member_stream)
+    # ...including the DECOMPOSITION this leg asked for: `ncmin` is set by a
+    # tile's last column, so a decomposition that is not the requested one is
+    # a different operator -- and this analysis exists to measure exactly
+    # that difference (owner review §5).
     validate_member_stream(text, name=label, nsplit=nsplit, mode=carry,
                            rho=rho, width=fixture_dims(fixture)[0],
-                           levels=fixture_dims(fixture)[1], fixture=fixture)
+                           levels=fixture_dims(fixture)[1], fixture=fixture,
+                           horizon=fixture_horizon(fixture),
+                           tiles=tuple(tiles))
     rec = read_records(text, label=label, nsplit=nsplit)
     if reference is not None:
         _expect_same_inputs(reference, rec, label)

@@ -2353,6 +2353,11 @@ def _contract_bundle(tmp_path, g33n_cols):
     root = tmp_path / "bundle"
     root.mkdir()
     body = _g33r(nsplit=1, B=2, K=2).splitlines()
+    # today's profile requires an INITIAL state beside the final one
+    body = (body[:-1]
+            + [ln.replace("G33R STATE", "G33R INITIAL")
+               for ln in body if ln.startswith("G33R STATE")]
+            + [body[-1]])
     body[0] = "G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 dtcld 100.000000"
     (root / "n1.rezero.txt").write_text(
         "\n".join(body) + "\n" + _g33n(_call(1, cols=g33n_cols, ks=2), nsplit=1))
@@ -2367,7 +2372,8 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
     """The G33N leg covers one column of a two-column window: internally
     strict, approved by an older producer, refused by today's fixture-domain
     pin -- and the chain must say so rather than stopping at the digest."""
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1,))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["MEMBER-CONTRACT-MISMATCH"]
@@ -2376,7 +2382,8 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
 
 def test_a_member_the_current_contract_accepts_reports_matches(
         tmp_path, monkeypatch):
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["matches"], rows
@@ -2389,7 +2396,8 @@ def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
     An arm_stream entry whose `ran` claims a different rho than its stream
     declares must be reported, with the expected values taken from the typed
     block -- and a well-formed one reports matches."""
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     man["analyses"] = [{"analysis": "arm_stream", "file": "n1.rezero.txt",
                         "ran": {"nsplit": 1, "carry": "rezero",
@@ -2415,8 +2423,8 @@ def test_the_pinned_fixture_not_the_checkout_supplies_the_domain():
     if man is None:
         pytest.skip("no v3 bundle on this host")
     import copy
-    b, k = ec._pinned_fixture_dims(man)
-    assert b >= 1 and k >= 1
+    b, k, horizon = ec._pinned_fixture_dims(man)
+    assert b >= 1 and k >= 1 and horizon > 0
     lied = copy.deepcopy(man)
     lied["fixture_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="does not hash"):
@@ -2432,3 +2440,80 @@ def _real_v3_manifest_here():
                 if man.get("identity"):
                     return man
     return None
+
+
+def test_the_multirun_TYPED_runtime_identity_is_what_is_checked():
+    """The filename carries the decomposition -- mr.n1.rezero.as-is.tiles-2-1
+    -- and the chain re-derived only nsplit/mode/rho from it, leaving the tile
+    vector unread: a manifest recording tiles 2,1 beside a raw stream that ran
+    tiles 3 passed closeout while the derived JSON was labelled (2,1), and
+    `ncmin` makes those two different operators (owner review §6)."""
+    import copy
+    man = _real_v3_manifest_here()
+    root = None
+    for base in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(base.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                m = json.loads(mf.read_text())
+                if any(str(s.get("file", "")).startswith("mr.")
+                       for a in m.get("analyses", []) if isinstance(a, dict)
+                       for s in a.get("inputs") or []):
+                    man, root = m, link.resolve()
+                    break
+        if root:
+            break
+    if root is None:
+        pytest.skip("no bundle with multi-run inputs on this host")
+    man = copy.deepcopy(man)
+    man.setdefault("algorithm", "legacy")
+    # forge ONE input's request: same bytes, a decomposition it did not run
+    forged = None
+    for a in man["analyses"]:
+        for s in a.get("inputs") or []:
+            if str(s.get("file", "")).startswith("mr.") and \
+                    s["runtime_argv"][2] != "3":
+                s["runtime_argv"][2] = "3"
+                forged = s["file"]
+                break
+        if forged:
+            break
+    ec._MEMBER_CONTRACT.clear()
+    rows = [r for r in ec._member_contract_states(root, man)
+            if r.get("origin") == "member_contract" and r["file"] == forged]
+    ec._MEMBER_CONTRACT.clear()
+    # the same raw stream is an input to more than one analysis, so only the
+    # entry whose REQUEST was forged refuses -- which is the point: the row
+    # answers for the request it records, not for the file's name
+    refused = [r for r in rows if r["state"] == "MEMBER-CONTRACT-MISMATCH"]
+    assert refused, [r["state"] for r in rows]
+    assert "asked for (3,)" in refused[0]["detail"]
+
+
+def test_the_declared_decomposition_is_held_to_the_PRIMARY_stream():
+    """The chain passed no expected tiling for the primary members, so the
+    declared decomposition was a decoration: a manifest could declare (1,2)
+    beside members that ran (3,) and every row still matched (Codex)."""
+    import copy
+    root = man = None
+    for base in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(base.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                m = json.loads(mf.read_text())
+                if m.get("schema") == "refinement_experiment_v4" \
+                        and m.get("instrumented"):
+                    root, man = link.resolve(), m
+                    break
+        if root:
+            break
+    if root is None:
+        pytest.skip("no instrumented v4 bundle on this host")
+    lied = copy.deepcopy(man)
+    lied["expected_run"]["tile_sizes"] = [1, 2]
+    ec._MEMBER_CONTRACT.clear()
+    rows = ec._member_contract_states(root, lied)
+    ec._MEMBER_CONTRACT.clear()
+    mem = {m["file"] for m in man["members"]}
+    assert any(r["state"] == "MEMBER-CONTRACT-MISMATCH" and r["file"] in mem
+               for r in rows), [r["state"] for r in rows]

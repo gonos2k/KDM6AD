@@ -566,7 +566,8 @@ _NUMBER_STREAM = (
         for k in range(2)
         for f in ("nr", "ni", "qr", "qi", "qv", "rho", "delz")
         if not (stage == "outer_post_sed" and f in ("rho", "delz")))
-    + "G33F STAGE 1 - surface 0 bottom_fall_total 1 -1 f32 3F800000\n"
+    + "".join(f"G33F STAGE 1 - surface 0 {sf} 1 -1 f32 3F800000\n"
+              for sf in sorted(_nt.SURFACE_REQUIRED))
     + "G33F MSTEP 1 main 1 i32 00000001\n"
       "G33F MSTEPI 1 1 i32 00000001\n"
     + "".join(f"G33F NFLUX 1 1 {f} f32 "

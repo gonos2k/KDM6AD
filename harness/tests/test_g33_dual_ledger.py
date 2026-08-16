@@ -44,7 +44,8 @@ def _stream(qv, qr=0.0):
                     continue
                 L.append(f"G33F STAGE 1 - {stage} 0 {f} 1 {k} f32 {_hex(v)}")
     # the surface stage carries the exact-universe contract too
-    L += [f"G33F STAGE 1 - surface 0 bottom_fall_total 1 -1 f32 {_hex(1.0)}"]
+    L += [f"G33F STAGE 1 - surface 0 {sf} 1 -1 f32 {_hex(1.0)}"
+          for sf in sorted(mc.nt.SURFACE_REQUIRED)]
     L += ["G33F MSTEP 1 main 1 i32 00000001", "G33F MSTEPI 1 1 i32 00000001"]
     # den/delz restate the bottom cell and dtcld restates delt/loops -- the
     # parser compares those duplicates now, so the fixture must be one

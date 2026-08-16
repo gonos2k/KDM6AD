@@ -372,7 +372,7 @@ def _rank(schema: str) -> int:
     return _SCHEMA_ORDER.index(schema) if schema in _SCHEMA_ORDER else -1
 
 
-def _arm_ran_state(p: Path, an: dict) -> str:
+def _arm_ran_state(p: Path, an: dict, decomposition: bool = True) -> str:
     """An arm's typed run identity against the STRICT PARSE of the stream.
 
     The manifest says which run this is; the stream says which run it was. Two
@@ -406,14 +406,32 @@ def _arm_ran_state(p: Path, an: dict) -> str:
     # `want` from the reader's keys would fail every published arm for fields
     # the schema never asked it to record.
     ran = an.get("ran") or {}
-    fields = ("nsplit", "carry", "width", "rho", "levels")
+    # The decomposition joined the `ran` block at schema v4; a bundle
+    # published before it promises nothing about tiles, and demanding the
+    # field of a document whose contract predates it is a blocker with no
+    # resolution but re-production -- which is a decision, not a check.
+    fields = (("nsplit", "carry", "width", "rho", "levels", "ntile")
+              if decomposition else ("nsplit", "carry", "width", "rho",
+                                     "levels"))
     want = {k: ran.get(k) for k in fields}
-    return ("matches" if {k: got[k] for k in fields} == want
-            else "RUN-IDENTITY-MISMATCH")
+    if {k: got[k] for k in fields} != want:
+        return "RUN-IDENTITY-MISMATCH"
+    if not decomposition:
+        return "matches"
+    # The decomposition too, as a value rather than a count: `ncmin` is set
+    # by a tile's LAST column, so (1,2) and (2,1) are two operators with one
+    # ntile (owner review §5). JSON gives lists, the reader gives tuples.
+    if [list(r) for r in got["tile_ranges"]] != [
+            list(r) for r in ran.get("tile_ranges", [])]:
+        return "RUN-IDENTITY-MISMATCH"
+    if list(got["tile_sizes"]) != list(ran.get("tile_sizes", [])):
+        return "RUN-IDENTITY-MISMATCH"
+    return "matches"
 
 
 def _pinned_fixture_dims(man: dict) -> tuple:
-    """(B, K) from the fixture bytes the MANIFEST pins -- never the checkout.
+    """(B, K, horizon) from the fixture bytes the MANIFEST pins -- never the
+    checkout.
 
     The semantic re-validation read the fixture through `fixture_dims`, which
     parses the current working tree (owner review §7): edit the fixture
@@ -443,7 +461,13 @@ def _pinned_fixture_dims(man: dict) -> tuple:
                   rb"K\s*=\s*(\d+)", r.stdout)
     if not m:
         raise ValueError(f"cannot read dimensions B, K from the pinned {rel}")
-    return int(m.group(1)), int(m.group(2))
+    # ...and the third dimension, the fixture's total integration time: the
+    # member geometry is derived from it, so a closeout that read B and K
+    # from the pin and the HORIZON from anywhere else would be pinning two
+    # thirds of the experiment (owner review §4).
+    import g33_refine_experiment as _xp
+    horizon = _xp.fixture_horizon_from(r.stdout.decode(errors="replace"), rel)
+    return int(m.group(1)), int(m.group(2)), horizon
 
 
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
@@ -475,7 +499,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels = _pinned_fixture_dims(man)
+        width, levels, horizon = _pinned_fixture_dims(man)
     except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
@@ -483,6 +507,15 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
         _MEMBER_CONTRACT[key] = out
         return out
     arm = man.get("arm", "reference")
+    # The DECLARED decomposition, held to the streams (Codex): `expected_run`
+    # states the tiling the experiment asked for, and nothing compared it to
+    # what the primary members ran -- so a v4 manifest could declare (1,2),
+    # publish members that ran (3,), and validate clean. `ncmin` is set by a
+    # tile's last column, so those are two operators and the document was
+    # describing the other one. A schema that predates the block declares
+    # nothing and is held to nothing.
+    want_tiles = (man.get("expected_run") or {}).get("tile_sizes")
+    want_tiles = tuple(want_tiles) if isinstance(want_tiles, list) else None
     for mem in man.get("members", []):
         p = root / mem["file"]
         if not p.is_file():
@@ -502,6 +535,16 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     # carrying precision/source/fixture metadata; `_agree`
                     # has already tied G33R to it record for record.
                     run = probe
+            # TODAY'S profile for every current-schema member, instrumented
+            # or not (owner review §10): the producer applies it either way,
+            # and gating the re-check on `instrumented` left non-instrumented
+            # bundles never re-validated for exact B/K, INITIAL, forcing,
+            # time geometry or the fixture's horizon.
+            xp._require_current_profile(
+                run, mem["file"], width, levels, algo=man.get("algorithm"),
+                nsplit=mem["nsplit"], horizon=horizon,
+                precision="f64" if arm == "f64" else "f32",
+                tiles=want_tiles)
             if man.get("instrumented"):
                 # The EXPECTED experiment comes from the manifest -- what the
                 # bundle claims to be -- so a stream whose header forges a
@@ -510,7 +553,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                 xp._require_fixture_domain(
                     text, mem["file"], mem["nsplit"], mem["mode"],
                     man.get("rho_profile", "as-is"), width, levels, run,
-                    arm=arm, fixture=fixture)
+                    arm=arm, algo=man.get("algorithm"), fixture=fixture,
+                    horizon=horizon, tiles=want_tiles)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -530,20 +574,40 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
         if a.get("analysis") == "arm_stream" and isinstance(a.get("ran"), dict):
             r = a["ran"]
             targets.append((a["file"], r.get("nsplit"), r.get("carry"),
-                            r.get("rho")))
+                            r.get("rho"),
+                            r.get("tile_sizes") or want_tiles))
+        # The TYPED runtime identity, not the filename (owner review §6). The
+        # name carries the decomposition -- mr.n1.rezero.as-is.tiles-2-1.txt --
+        # and re-deriving only nsplit/mode/rho from it left the tile vector
+        # unread: a manifest recording tiles 2,1 beside a raw stream that ran
+        # tiles 3 passed closeout while the derived JSON was labelled (2,1),
+        # and `ncmin` makes those two different operators. `runtime_argv` is
+        # the command line the producer actually issued; it is the request.
         for src in a.get("inputs") or []:
             f = src.get("file") if isinstance(src, dict) else None
-            if isinstance(f, str) and f.startswith("mr."):
-                m2 = re.match(r"mr\.n(\d+)\.(carry|rezero)\.([a-z2+-]+)\.", f)
-                if not m2:
-                    out.append({"file": f, "scope": "bundle",
-                                "origin": "member_contract",
-                                "state": "MEMBER-CONTRACT-MISMATCH",
-                                "detail": "multi-run filename does not parse "
-                                          "as mr.n<N>.<mode>.<rho>."})
-                    continue
-                targets.append((f, int(m2.group(1)), m2.group(2), m2.group(3)))
-        for fname, n2, mode2, rho2 in targets:
+            if not (isinstance(f, str) and f.startswith("mr.")):
+                continue
+            argv = src.get("runtime_argv")
+            if not (isinstance(argv, list) and len(argv) == 4):
+                out.append({"file": f, "scope": "bundle",
+                            "origin": "member_contract",
+                            "state": "MEMBER-CONTRACT-MISMATCH",
+                            "detail": "multi-run input carries no four-field "
+                                      "runtime_argv to be checked against"})
+                continue
+            try:
+                n2, mode2, tiles2, rho2 = (int(argv[0]), argv[1],
+                                           tuple(int(t) for t
+                                                 in str(argv[2]).split(",")),
+                                           argv[3])
+            except ValueError as e:
+                out.append({"file": f, "scope": "bundle",
+                            "origin": "member_contract",
+                            "state": "MEMBER-CONTRACT-MISMATCH",
+                            "detail": f"unreadable runtime_argv {argv!r}: {e}"})
+                continue
+            targets.append((f, n2, mode2, rho2, list(tiles2)))
+        for fname, n2, mode2, rho2, tiles2 in targets:
             p = root / fname
             if not p.is_file():
                 continue            # the digest row already reports absence
@@ -552,7 +616,9 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             try:
                 xp.validate_member_stream(
                     p.read_text(), name=fname, nsplit=n2, mode=mode2,
-                    rho=rho2, width=width, levels=levels, fixture=fixture)
+                    rho=rho2, width=width, levels=levels, fixture=fixture,
+                    algo=man.get("algorithm"), horizon=horizon,
+                    tiles=tuple(tiles2) if tiles2 else None)
                 row["state"] = "matches"
             except Exception as e:                      # noqa: BLE001
                 row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -696,7 +762,11 @@ def members_of(manifest: Path) -> list[dict]:
         if "ran" in an and p.is_file():
             out.append({"file": an["file"], "scope": "bundle",
                         "origin": "run_identity",
-                        "state": (_arm_ran_state(p, an)
+                        "state": (_arm_ran_state(
+                                      p, an,
+                                      rm.at_least(
+                                          man.get("schema"),
+                                          "refinement_experiment_v4"))
                                   if an.get("analysis") == "arm_stream"
                                   else _ran_state(p, an))})
         # The ANALYZER the manifest names, by digest. It was recorded and never

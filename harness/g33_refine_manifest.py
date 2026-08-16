@@ -14,7 +14,9 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import math
 import re
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -35,7 +37,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v3"
+SCHEMA = "refinement_experiment_v4"
 
 
 def sha256(path: Path) -> str:
@@ -233,8 +235,11 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
 #: bundle cannot be valid to one and invalid to the other (owner P0-2).
 _ARMS = ("reference", "probe", "f64")
 _PRECISIONS = ("f32", "f64")
+#: The driver's own `ALGOTAG` vocabulary. It error-stops on anything else, so
+#: a manifest declaring another word names a run that could not have happened.
+_ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
-                 "refinement_experiment_v3")
+                 "refinement_experiment_v3", "refinement_experiment_v4")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -807,6 +812,8 @@ def validate(man: dict) -> list:
         if len(algos) > 1:
             bad.append(f"members ran different algorithms {sorted(algos)} -- "
                        f"one bundle, one experiment")
+        if at_least(schema, "refinement_experiment_v4"):
+            bad += _expected_run_violations(man, members)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1090,7 +1097,139 @@ _RAN_CORE = ("nsplit", "carry", "width", "rho")
 _ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
 
 
-def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
+def _expected_run_violations(man: dict, members: list) -> list:
+    """The bundle's declared experiment, and every member's geometry against
+    it (owner review §4, §6).
+
+    Two records of one fact again, at the document level: `expected_run`
+    states the fixture's parameters and the requested decomposition, the
+    member rows state what each run stepped -- and until now the second was
+    copied out of the streams and compared to nothing. The geometry is
+    RECOMPUTED here from the fixture's horizon by the driver's own rule, so
+    a member row can no longer carry a step nobody could have asked for.
+
+    Not a re-read of the streams: that is the evidence chain's job, against
+    the bytes. This is the DOCUMENT answering for itself.
+    """
+    import g33_refine_experiment as xp                  # cycle closes at call
+    bad = []
+    if man.get("algorithm") not in _ALGOS:
+        bad.append(f"algorithm {man.get('algorithm')!r} is not one of {_ALGOS}")
+    else:
+        for i, m in enumerate(members):
+            if isinstance(m, dict) and m.get("algorithm") not in (
+                    None, man["algorithm"]):
+                bad.append(f"members[{i}] ran {m['algorithm']!r} but the "
+                           f"bundle declares algorithm {man['algorithm']!r}")
+    exp = man.get("expected_run")
+    if not isinstance(exp, dict):
+        return bad + ["expected_run must be an object: without it the "
+                      "manifest records what each member stepped and never "
+                      "what the experiment asked for"]
+    if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
+        bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
+                   f"the pinned fixture "
+                   f"{Path(str(man.get('fixture_path', ''))).stem!r}")
+    for key, top in (("algorithm", "algorithm"), ("precision", "precision"),
+                     ("rho_profile", "rho_profile")):
+        if key in exp and top in man and exp[key] != man[top]:
+            bad.append(f"expected_run.{key} {exp[key]!r} disagrees with the "
+                       f"manifest's {top} {man[top]!r}")
+    horizon = exp.get("window_seconds")
+    # `math.isfinite` takes a FLOAT, and an unbounded Python int overflows
+    # on the way in -- so the guard against a nonsense horizon crashed on a
+    # nonsense horizon (Codex). JSON gives ints and floats alike; both are
+    # coerced here, and a value that cannot become one is the violation.
+    try:
+        horizon = float(horizon) if isinstance(
+            horizon, (int, float)) and not isinstance(horizon, bool) else None
+    except (OverflowError, ValueError):
+        horizon = None
+    if horizon is None or not math.isfinite(horizon) or horizon <= 0:
+        return bad + [f"expected_run.window_seconds {horizon!r} is not a "
+                      f"positive number"]
+    tiles = exp.get("tile_sizes")
+    # A decomposition may be declared exactly where this bundle carries a
+    # protocol that records one: G33N under --nflux, or G33P on the probe
+    # and f64 arms (Codex). A plain reference bundle has neither, so a
+    # declaration there answers to nothing -- and its ABSENCE where one is
+    # substantiable would leave the operator unrecorded.
+    substantiable = bool(man.get("instrumented")) or man.get("arm") in (
+        "probe", "f64")
+    if tiles is not None and not substantiable:
+        bad.append("expected_run.tile_sizes declares a decomposition no "
+                   "protocol in this bundle records: an uninstrumented "
+                   "reference member writes no tile vector")
+    elif tiles is None and substantiable:
+        bad.append("expected_run.tile_sizes is missing, and this bundle's "
+                   "protocols do record the decomposition it ran")
+    elif tiles is None:
+        pass
+    elif (not isinstance(tiles, list) or not tiles
+            or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
+                       for t in tiles)):
+        bad.append(f"expected_run.tile_sizes {tiles!r} is not a non-empty "
+                   f"list of positive column counts")
+    elif isinstance(exp.get("columns"), int) and sum(tiles) != exp["columns"]:
+        bad.append(f"expected_run.tile_sizes {tiles} sums to {sum(tiles)}, "
+                   f"not the {exp['columns']} columns it declares")
+    # The arms run the BUNDLE'S decomposition -- g33_run_matrix passes the
+    # domain width as one tile -- so their typed `ran` blocks answer to the
+    # declared one. Two records of one fact again (Codex): the chain already
+    # ties each `ran` to its stream, and this ties it to the request, so the
+    # document cannot declare one operator and publish another. The
+    # multi-run inputs are deliberately NOT held here: varying the
+    # decomposition is what that analysis is for, and each is checked
+    # against its own recorded runtime_argv.
+    if isinstance(tiles, list):
+        for i, a in enumerate(man.get("analyses") or []):
+            if not isinstance(a, dict) or a.get("analysis") != "arm_stream":
+                continue
+            ran = a.get("ran")
+            got = ran.get("tile_sizes") if isinstance(ran, dict) else None
+            if isinstance(got, list) and got != tiles:
+                bad.append(
+                    f"analyses[{i}] (arm_stream) ran the decomposition {got}, "
+                    f"the bundle's expected_run declares {tiles}")
+    prec = exp.get("precision", man.get("precision", "f32"))
+    for i, m in enumerate(members):
+        if not isinstance(m, dict):
+            continue
+        n = m.get("nsplit")
+        if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+            continue                      # the members block already says so
+        # The arithmetic runs on numbers a malformed document supplies, so
+        # its failures are VIOLATIONS, not exceptions: `validate` is
+        # contracted to return them, and a checker that crashes on exactly
+        # the input it exists to describe is the defect one level up
+        # (Codex; the same shape as the pin resolver's escape before it).
+        try:
+            want_d, want_L, want_h = xp.expected_geometry(horizon, n, prec)
+        except (ArithmeticError, OverflowError, ValueError, struct.error) as e:
+            bad.append(f"members[{i}]: the fixture's {horizon} s horizon over "
+                       f"{n} splits is not computable at {prec}: {e}")
+            continue
+        for key, want in (("delt", want_d), ("dtcld", want_h)):
+            got = m.get(key)
+            if got is None or isinstance(got, bool) \
+                    or not isinstance(got, (int, float)):
+                bad.append(f"members[{i}] records {key}={got!r}, which is not "
+                           f"a number this contract can check")
+            elif f"{got:.6f}" != f"{want:.6f}":
+                bad.append(
+                    f"members[{i}] records {key}={got} at nsplit={n},"
+                    f" but the fixture's {horizon} s horizon gives {want}")
+        loops = m.get("loops")
+        if not isinstance(loops, int) or isinstance(loops, bool):
+            bad.append(f"members[{i}] records loops={loops!r}, which is not an "
+                       f"integer this contract can check")
+        elif loops != want_L:
+            bad.append(f"members[{i}] records loops={loops}, the kernel's "
+                       f"rule gives {want_L} for delt={want_d}")
+    return bad
+
+
+def _arm_ran_violations(i: int, a: dict, argv: list, v4: bool = True) -> list:
     """Every position of an arm's command line, against its typed identity.
 
     Only argv[0] and argv[3] were compared before, so the carry mode and the
@@ -1128,6 +1267,25 @@ def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
     if not isinstance(lv, int) or isinstance(lv, bool) or lv < 1:
         bad.append(f"analyses[{i}] (arm_stream) ran.levels {lv!r} is not a "
                    f"positive integer")
+    # ...and so is the DECOMPOSITION, for a stronger reason than either
+    # (owner review §5): `ncmin` is a scalar set by a tile's last column, so
+    # two arm streams differing only in their tiling ran two different
+    # operators. A `ran` block that cannot say which one it ran cannot be
+    # checked against the request by anything downstream.
+    ts = ran.get("tile_sizes")
+    if not v4:
+        pass                     # published before the decomposition was typed
+    elif (not isinstance(ts, list) or not ts
+            or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
+                       for t in ts)):
+        bad.append(f"analyses[{i}] (arm_stream) ran.tile_sizes {ts!r} is not a "
+                   f"non-empty list of positive column counts")
+    elif sum(ts) != ran["width"]:
+        bad.append(f"analyses[{i}] (arm_stream) ran.tile_sizes {ts} sums to "
+                   f"{sum(ts)}, not the domain width {ran['width']}")
+    elif ran.get("ntile") != len(ts):
+        bad.append(f"analyses[{i}] (arm_stream) ran.ntile {ran.get('ntile')!r} "
+                   f"is not the {len(ts)} tiles it lists")
     if bad:
         return bad
     for pos, field in _ARGV_TO_RAN:
@@ -1185,7 +1343,9 @@ def _analysis_violations(analyses, member_nsplits, schema=SCHEMA) -> list:
                 # the producer checks it against the raw stream's own header
                 # before writing it.
                 if at_least(schema, "refinement_experiment_v3"):
-                    bad += _arm_ran_violations(i, a, argv)
+                    bad += _arm_ran_violations(
+                        i, a, argv,
+                        at_least(schema, "refinement_experiment_v4"))
                 else:
                     # v2 compared exactly these two positions.
                     if argv[0] != str(a.get("nsplit")):

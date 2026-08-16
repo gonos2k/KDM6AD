@@ -43,7 +43,17 @@ def synthetic_manifest(root):
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
         "is_refinement_chain": True,
+        # v4: the experiment the bundle claims to be, and the geometry every
+        # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
+        "algorithm": "legacy", "rho_profile": "as-is",
+        "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
+        "expected_run": {"fixture_id": "g33_fixture_multisubcycle_v1",
+                         "window_seconds": 300.0, "columns": 3, "levels": 4,
+                         "tile_sizes": [3], "rho_profile": "as-is",
+                         "algorithm": "legacy", "precision": "f32"},
         "members": [{"file": "n12.rezero.txt", "nsplit": 12,
+                     "algorithm": "legacy", "delt": 25.0, "loops": 1,
+                     "dtcld": 25.0,
                      "output_sha256": w("n12.rezero.txt", "x\n")}],
         "analyses": [
             {"file": f"n12.rezero.{k}.json", "analysis": k, "nsplit": 12,
@@ -58,7 +68,8 @@ def synthetic_manifest(root):
              # TYPED beside the literal command line (owner priority 5): the
              # argv is four strings and only two positions were ever compared.
              "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
-                     "rho": "uniform", "levels": 4},
+                     "rho": "uniform", "levels": 4, "ntile": 1,
+                     "tile_sizes": [3], "tile_ranges": [[1, 3]]},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],
@@ -903,3 +914,112 @@ def test_duplicate_analysis_inputs_are_refused():
     else:
         pytest.skip("no input-carrying analysis in the live manifest")
     assert any("inputs records" in v for v in rm.validate(dup))
+
+
+def test_the_DECLARED_decomposition_is_bound_to_what_the_arms_ran():
+    """expected_run states the tiling the experiment asked for, and nothing
+    compared it to what was published: a v4 manifest could declare (1,2),
+    carry arms that ran (3,), and validate clean -- and `ncmin` makes those
+    two operators, so the document would be describing the other one
+    (Codex). The multi-run inputs are deliberately exempt: varying the
+    decomposition is what that analysis is FOR."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    assert rm.validate(man) == []
+    lied = copy.deepcopy(man)
+    lied["expected_run"]["tile_sizes"] = [1, 2]
+    v = rm.validate(lied)
+    assert any("expected_run declares [1, 2]" in x for x in v), v[:2]
+
+
+def _real_v3_manifest_here_v4():
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        for link in sorted(root.iterdir()):
+            mf = link.resolve() / "manifest.json"
+            if link.is_symlink() and mf.is_file():
+                man = json.loads(mf.read_text())
+                if (man.get("schema") == "refinement_experiment_v4"
+                        and any(a.get("analysis") == "arm_stream"
+                                for a in man.get("analyses", []))):
+                    return man
+    return None
+
+
+def test_a_bundle_may_declare_only_the_decomposition_it_can_SUBSTANTIATE():
+    """A declaration answers to a protocol or to nothing (Codex). G33N under
+    --nflux records the tiling and so does G33P on the probe/f64 arms; a
+    plain reference bundle writes no tile vector at all, so declaring one
+    there is a decoration -- and omitting one where it IS recorded leaves
+    the operator unstated."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    plain = copy.deepcopy(man)
+    plain["instrumented"] = False
+    plain["arm"] = "reference"
+    plain["analyses"] = [a for a in plain["analyses"]
+                         if a.get("analysis") != "arm_stream"]
+    assert any("no protocol in this bundle records" in v
+               for v in rm.validate(plain))
+    plain["expected_run"].pop("tile_sizes")
+    assert not any("tile_sizes" in v for v in rm.validate(plain))
+    # ...and where it IS substantiable, the declaration is required
+    absent = copy.deepcopy(man)
+    absent["expected_run"].pop("tile_sizes")
+    assert any("do record the decomposition" in v for v in rm.validate(absent))
+
+
+@pytest.mark.parametrize("tag,mutate", [
+    ("nsplit 0", lambda m: m["members"][0].update({"nsplit": 0})),
+    ("horizon enormous",
+     lambda m: m["expected_run"].update({"window_seconds": 1e300})),
+    # an unbounded Python INT: math.isfinite takes a float and overflows on
+    # the way in, so the guard against a nonsense horizon crashed on one
+    ("horizon huge int",
+     lambda m: m["expected_run"].update({"window_seconds": 10 ** 400})),
+    ("horizon huge negative int",
+     lambda m: m["expected_run"].update({"window_seconds": -(10 ** 400)})),
+    ("horizon is a string",
+     lambda m: m["expected_run"].update({"window_seconds": "300"})),
+    ("horizon is a bool",
+     lambda m: m["expected_run"].update({"window_seconds": True})),
+    ("nsplit huge int",
+     lambda m: m["members"][0].update({"nsplit": 10 ** 400})),
+    ("horizon inf",
+     lambda m: m["expected_run"].update({"window_seconds": float("inf")})),
+    ("horizon nan",
+     lambda m: m["expected_run"].update({"window_seconds": float("nan")})),
+    ("delt is a string", lambda m: m["members"][0].update({"delt": "25"})),
+    ("delt absent", lambda m: m["members"][0].update({"delt": None})),
+    ("dtcld absent", lambda m: m["members"][0].update({"dtcld": None})),
+    ("loops absent", lambda m: m["members"][0].update({"loops": None})),
+    ("loops is a bool", lambda m: m["members"][0].update({"loops": True})),
+    ("ran is a list", lambda m: [a.update({"ran": [1]})
+                                 for a in m["analyses"]
+                                 if a.get("analysis") == "arm_stream"]),
+    ("expected_run is None", lambda m: m.update({"expected_run": None})),
+    ("members are ints", lambda m: m.update({"members": [1, 2]})),
+])
+def test_the_v4_checks_RETURN_violations_on_a_malformed_manifest(tag, mutate):
+    """`validate` is contracted to RETURN violations, and the v4 arithmetic
+    runs on numbers a malformed document supplies: nsplit=0 divided by zero,
+    a 1e300 horizon overflowed the f32 pack, a string delt broke the format,
+    a list `ran` broke the attribute access -- four crashes measured, each on
+    exactly the input the checker exists to describe (Codex). A checker that
+    raises there is the defect one level up."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    d = copy.deepcopy(man)
+    try:
+        mutate(d)
+    except Exception:                      # a mutation the shape cannot take
+        pytest.skip(f"{tag} not applicable to this manifest")
+    got = rm.validate(d)                   # must not raise
+    assert isinstance(got, list) and got, f"{tag} produced no violation"

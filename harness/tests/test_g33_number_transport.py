@@ -141,10 +141,11 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
                         continue
                     out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
     for c in cols:
-        # the surface stage has the exact-universe contract too: one row per
-        # column at k = -1, a consistent field set
-        out.append(f"G33F STAGE {loop} - surface 0 bottom_fall_total {c} -1 "
-                   f"f32 3F800000")
+        # the surface stage has an exact universe AND an exact vocabulary:
+        # one row per column at k = -1, carrying the protocol's seven fields
+        for sf in sorted(nt.SURFACE_REQUIRED):
+            out.append(f"G33F STAGE {loop} - surface 0 {sf} {c} -1 "
+                       f"f32 3F800000")
     for c in cols:
         out.append(f"G33F MSTEP {loop} main {c} i32 00000001")
         out.append(f"G33F MSTEPI {loop} {c} i32 00000001")
@@ -1149,8 +1150,8 @@ def test_a_missing_surface_row_is_refused_not_skipped():
     surface-dependent row silently dropped (owner review §9.2). Measured:
     all 8945 published loops carry exactly cols x {k=-1}."""
     s = _stream(_call(1, cols=(1, 2)))
-    s = s.replace("G33F STAGE 1 - surface 0 bottom_fall_total 2 -1 f32 3F800000\n",
-                  "")
+    for sf in sorted(nt.SURFACE_REQUIRED):        # column 2 loses the stage
+        s = s.replace(f"G33F STAGE 1 - surface 0 {sf} 2 -1 f32 3F800000\n", "")
     with pytest.raises(nt.StreamError, match="cannot be skipped"):
         nt.calls(s)
 
@@ -1201,3 +1202,24 @@ def test_a_VALID_subcycle_whose_quotient_does_not_invert_still_parses():
     s = s.replace("4059000000000000", dh)
     s = s.replace(f"nflux_dtcld f64 {dh}", f"nflux_dtcld f64 {qh}")
     assert sorted(nt.calls(s)[0]["loops"]) == [1, 2, 3]
+
+
+def test_the_surface_VOCABULARY_is_the_emitters_own():
+    """Two records of one fact: the parser states the surface stage's field
+    set, the overlay generator emits it. Compared here rather than imported,
+    so the reader does not depend on the writer -- and so a field added on
+    one side without the other fails loudly (owner review §7)."""
+    import sys as _s
+    _s.path.insert(0, str(ROOT / "g33_fortran"))
+    import g33_fortran_bindings as fb
+    assert set(nt.SURFACE_REQUIRED) == {f for f, _dt, _e in fb.SURFACE_FIELDS}
+
+
+def test_a_surface_row_missing_the_quantity_an_analysis_reads_is_refused():
+    """A row that is PRESENT but carries something no analysis reads passed
+    the universe check while a surface closure got None and dropped it."""
+    s = _stream(_call(1))
+    s = s.replace("G33F STAGE 1 - surface 0 bottom_fall_qr 1 -1 f32 3F800000\n",
+                  "")
+    with pytest.raises(nt.StreamError, match="is a silent skip"):
+        nt.calls(s)
