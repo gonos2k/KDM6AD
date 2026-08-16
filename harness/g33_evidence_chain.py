@@ -337,7 +337,9 @@ def _identity_graph_state(man: dict) -> dict:
 #: derived under. Spelled here rather than imported: `g33_identity` imports the
 #: producer, and this module deliberately does not.
 _IDENTITY_FROM = "refinement_experiment_v3"
-_IDENTITY_SCHEMA = "g33_layered_identity_v2"
+#: Every id semantics a published bundle may carry: a document answers for
+#: the rules it was produced under, not for today's.
+_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3")
 
 
 def _identity_state(man: dict) -> str:
@@ -354,7 +356,7 @@ def _identity_state(man: dict) -> str:
     block is required and its absence is a schema violation, caught upstream.
     """
     ident = man.get("identity") or {}
-    if (ident.get("schema") == _IDENTITY_SCHEMA
+    if (ident.get("schema") in _IDENTITY_SCHEMAS
             and isinstance(ident.get("role_graph"), dict) and ident["role_graph"]
             and isinstance(ident.get("analysis_reach"), dict)):
         return "matches"
