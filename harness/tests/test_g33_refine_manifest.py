@@ -972,3 +972,42 @@ def test_a_bundle_may_declare_only_the_decomposition_it_can_SUBSTANTIATE():
     absent = copy.deepcopy(man)
     absent["expected_run"].pop("tile_sizes")
     assert any("do record the decomposition" in v for v in rm.validate(absent))
+
+
+@pytest.mark.parametrize("tag,mutate", [
+    ("nsplit 0", lambda m: m["members"][0].update({"nsplit": 0})),
+    ("horizon enormous",
+     lambda m: m["expected_run"].update({"window_seconds": 1e300})),
+    ("horizon inf",
+     lambda m: m["expected_run"].update({"window_seconds": float("inf")})),
+    ("horizon nan",
+     lambda m: m["expected_run"].update({"window_seconds": float("nan")})),
+    ("delt is a string", lambda m: m["members"][0].update({"delt": "25"})),
+    ("delt absent", lambda m: m["members"][0].update({"delt": None})),
+    ("dtcld absent", lambda m: m["members"][0].update({"dtcld": None})),
+    ("loops absent", lambda m: m["members"][0].update({"loops": None})),
+    ("loops is a bool", lambda m: m["members"][0].update({"loops": True})),
+    ("ran is a list", lambda m: [a.update({"ran": [1]})
+                                 for a in m["analyses"]
+                                 if a.get("analysis") == "arm_stream"]),
+    ("expected_run is None", lambda m: m.update({"expected_run": None})),
+    ("members are ints", lambda m: m.update({"members": [1, 2]})),
+])
+def test_the_v4_checks_RETURN_violations_on_a_malformed_manifest(tag, mutate):
+    """`validate` is contracted to RETURN violations, and the v4 arithmetic
+    runs on numbers a malformed document supplies: nsplit=0 divided by zero,
+    a 1e300 horizon overflowed the f32 pack, a string delt broke the format,
+    a list `ran` broke the attribute access -- four crashes measured, each on
+    exactly the input the checker exists to describe (Codex). A checker that
+    raises there is the defect one level up."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    d = copy.deepcopy(man)
+    try:
+        mutate(d)
+    except Exception:                      # a mutation the shape cannot take
+        pytest.skip(f"{tag} not applicable to this manifest")
+    got = rm.validate(d)                   # must not raise
+    assert isinstance(got, list) and got, f"{tag} produced no violation"

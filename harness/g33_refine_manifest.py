@@ -14,7 +14,9 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import math
 import re
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -1134,7 +1136,8 @@ def _expected_run_violations(man: dict, members: list) -> list:
             bad.append(f"expected_run.{key} {exp[key]!r} disagrees with the "
                        f"manifest's {top} {man[top]!r}")
     horizon = exp.get("window_seconds")
-    if not isinstance(horizon, (int, float)) or horizon <= 0:
+    if (not isinstance(horizon, (int, float)) or isinstance(horizon, bool)
+            or not math.isfinite(horizon) or horizon <= 0):
         return bad + [f"expected_run.window_seconds {horizon!r} is not a "
                       f"positive number"]
     tiles = exp.get("tile_sizes")
@@ -1174,25 +1177,46 @@ def _expected_run_violations(man: dict, members: list) -> list:
         for i, a in enumerate(man.get("analyses") or []):
             if not isinstance(a, dict) or a.get("analysis") != "arm_stream":
                 continue
-            got = (a.get("ran") or {}).get("tile_sizes")
+            ran = a.get("ran")
+            got = ran.get("tile_sizes") if isinstance(ran, dict) else None
             if isinstance(got, list) and got != tiles:
                 bad.append(
                     f"analyses[{i}] (arm_stream) ran the decomposition {got}, "
                     f"the bundle's expected_run declares {tiles}")
     prec = exp.get("precision", man.get("precision", "f32"))
     for i, m in enumerate(members):
-        if not isinstance(m, dict) or not isinstance(m.get("nsplit"), int):
+        if not isinstance(m, dict):
             continue
-        want_d, want_L, want_h = xp.expected_geometry(horizon, m["nsplit"],
-                                                      prec)
+        n = m.get("nsplit")
+        if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+            continue                      # the members block already says so
+        # The arithmetic runs on numbers a malformed document supplies, so
+        # its failures are VIOLATIONS, not exceptions: `validate` is
+        # contracted to return them, and a checker that crashes on exactly
+        # the input it exists to describe is the defect one level up
+        # (Codex; the same shape as the pin resolver's escape before it).
+        try:
+            want_d, want_L, want_h = xp.expected_geometry(horizon, n, prec)
+        except (ArithmeticError, OverflowError, ValueError, struct.error) as e:
+            bad.append(f"members[{i}]: the fixture's {horizon} s horizon over "
+                       f"{n} splits is not computable at {prec}: {e}")
+            continue
         for key, want in (("delt", want_d), ("dtcld", want_h)):
             got = m.get(key)
-            if got is not None and f"{got:.6f}" != f"{want:.6f}":
+            if got is None or isinstance(got, bool) \
+                    or not isinstance(got, (int, float)):
+                bad.append(f"members[{i}] records {key}={got!r}, which is not "
+                           f"a number this contract can check")
+            elif f"{got:.6f}" != f"{want:.6f}":
                 bad.append(
-                    f"members[{i}] records {key}={got} at nsplit={m['nsplit']},"
+                    f"members[{i}] records {key}={got} at nsplit={n},"
                     f" but the fixture's {horizon} s horizon gives {want}")
-        if m.get("loops") is not None and m["loops"] != want_L:
-            bad.append(f"members[{i}] records loops={m['loops']}, the kernel's "
+        loops = m.get("loops")
+        if not isinstance(loops, int) or isinstance(loops, bool):
+            bad.append(f"members[{i}] records loops={loops!r}, which is not an "
+                       f"integer this contract can check")
+        elif loops != want_L:
+            bad.append(f"members[{i}] records loops={loops}, the kernel's "
                        f"rule gives {want_L} for delt={want_d}")
     return bad
 
