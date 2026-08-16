@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import math
 import os
 import re
 import shutil
@@ -118,6 +119,73 @@ def fixture_width(fixture: str) -> int:
     return fixture_dims(fixture)[0]
 
 
+def fixture_horizon_from(src: str, where: str = "<fixture>") -> float:
+    """The fixture's TOTAL integration time, from its `DT_BITS` word.
+
+    The third dimension of a fixture, and the one nothing checked (owner
+    review §4). B and K say what the domain IS; `DT_BITS` says how long the
+    experiment RUNS, and the driver derives every member's step from it as
+    `f32(DT_BITS)/nsplit`. Without it the contract proved a run internally
+    consistent -- both protocols agreeing on delt=20 at nsplit=12 -- while
+    the horizon it integrated (240 s) was not the fixture's (300 s).
+
+    Takes TEXT, so the evidence chain can pass the PINNED blob's bytes and
+    the producer the working tree's, through one reader.
+    """
+    m = re.search(r"DT_BITS\s*=\s*int\(z'([0-9A-Fa-f]{8})'", src)
+    if not m:
+        raise SystemExit(f"cannot read DT_BITS from {where}")
+    return struct.unpack(">f", bytes.fromhex(m.group(1)))[0]
+
+
+def fixture_horizon(fixture: str) -> float:
+    return fixture_horizon_from(
+        (HERE / "g33_fortran" / f"{fixture}.f90").read_text(), f"{fixture}.f90")
+
+
+def expected_geometry(total_seconds: float, nsplit: int,
+                      precision: str = "f32") -> tuple:
+    """(delt, loops, dtcld) exactly as the DRIVER computes them, at the
+    build's default-real width.
+
+    The one place this arithmetic is written down (owner review §8): the
+    producer's capability profile carried its own fixed-six PRODUCT
+    inverse -- `loops*dtcld == delt` -- which the transport parser had
+    already abandoned for refusing VALID streams, since the kernel ROUNDS
+    the quotient and re-multiplying does not recover delt. Both callers
+    read this instead, in the quotient direction the kernel runs.
+
+        delt  = f32(DT_BITS)/nsplit                  (driver F:362)
+        loops = max(nint(delt/dtcldcr), 1)           (kernel F:930)
+        dtcld = delt/loops, or delt when delt <= dtcldcr  (F:931-932)
+    """
+    w = ">d" if precision == "f64" else ">f"
+
+    def r(v):
+        return struct.unpack(w, struct.pack(w, v))[0]
+
+    delt = r(r(total_seconds) / nsplit)
+    # Fortran `nint` rounds half AWAY FROM ZERO; Python's round() is
+    # half-to-even, which differs at exactly delt/120 = n + 0.5.
+    loops = max(int(math.floor(delt / DTCLDCR + 0.5)), 1)
+    dtcld = delt if delt <= DTCLDCR else r(delt / loops)
+    return delt, loops, dtcld
+
+
+#: The kernel's maximum minor-loop step (`dtcldcr`, F:56). Read from the
+#: frozen source rather than restated, so a change there cannot leave this
+#: contract quietly describing the old kernel.
+def _dtcldcr() -> float:
+    src = (HERE.parent / "host" / "KIM-meso_v1.0" / "phys"
+           / "module_mp_kdm6.F")
+    m = re.search(r"dtcldcr\s*=\s*([0-9.]+)", src.read_text()) if \
+        src.is_file() else None
+    return float(m.group(1)) if m else 120.0
+
+
+DTCLDCR = _dtcldcr()
+
+
 def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> list:
     """The driver command line, recorded verbatim in the manifest (owner §5.2).
 
@@ -134,7 +202,7 @@ def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> lis
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
             nflux=False, rho_profile="as-is", width=3, levels=None,
-            algo=None, fixture=None) -> dict:
+            algo=None, fixture=None, horizon=None) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
@@ -162,7 +230,8 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
         # members were never held to the fixture's B/K, and the reader's
         # archive-compatibility options (INITIAL, forcing, time geometry all
         # optional) silently became the producer's requirements.
-        _require_current_profile(runs[n], p.name, width, levels, algo=algo)
+        _require_current_profile(runs[n], p.name, width, levels, algo=algo,
+                                 nsplit=n, horizon=horizon)
         probe = None
         if arm == "probe":
             probe = pr.read(text)               # G33P
@@ -180,7 +249,8 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
     return runs
 
 
-def _require_current_profile(run, name, width, levels, algo=None):
+def _require_current_profile(run, name, width, levels, algo=None, *,
+                             nsplit=None, horizon=None, precision="f32"):
     """What TODAY'S producer requires of every member it publishes -- with or
     without instrumentation (owner review §8).
 
@@ -221,14 +291,28 @@ def _require_current_profile(run, name, width, levels, algo=None):
             f"{name}: delt={delt}, loops={loops}, dtcld={dtcld}, "
             f"nsplit={run[('meta', 'nsplit')]} -- run geometry must be "
             f"positive")
-    # The kernel's own rule, measured to hold on all 192 published headers
-    # at the channel's resolution: the sub-cycle step times the loop count
-    # is the external step.
-    if f"{loops * dtcld:.6f}" != f"{delt:.6f}":
-        raise ra.RefineError(
-            f"{name}: loops({loops}) x dtcld({dtcld}) = "
-            f"{loops * dtcld:.6f} but delt is {delt:.6f} -- the header's "
-            f"time geometry is not one kernel's")
+    # The member's time geometry against the FIXTURE'S, computed the way the
+    # driver computes it (owner review §4, §8). This replaced a fixed-six
+    # PRODUCT inverse -- `loops*dtcld == delt` -- which the transport parser
+    # had already abandoned for refusing VALID streams (f32 delt=400, L=3
+    # gives 3 x 133.333328 = 399.999984). And a self-consistent triple was
+    # never the question: 12 members stepping 20 s are internally perfect
+    # and integrate 240 s of a 300 s fixture.
+    if horizon is not None:
+        want_d, want_L, want_h = expected_geometry(horizon, nsplit, precision)
+        if f"{delt:.6f}" != f"{want_d:.6f}":
+            raise ra.RefineError(
+                f"{name}: stepped delt={delt} at nsplit={nsplit}, but the "
+                f"fixture's {horizon} s horizon gives {want_d} -- the member "
+                f"integrates {delt * nsplit} s of a {horizon} s experiment")
+        if loops != want_L:
+            raise ra.RefineError(
+                f"{name}: ran {loops} inner loops, the kernel's rule gives "
+                f"{want_L} for delt={want_d}")
+        if f"{dtcld:.6f}" != f"{want_h:.6f}":
+            raise ra.RefineError(
+                f"{name}: sub-cycled at dtcld={dtcld}, the kernel's rule "
+                f"gives {want_h}")
     walg = run.get(("meta", "algorithm"))
     if algo is not None and walg is not None and walg != algo:
         raise ra.RefineError(
@@ -237,7 +321,8 @@ def _require_current_profile(run, name, width, levels, algo=None):
 
 
 def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
-                           arm="reference", algo=None, fixture=None):
+                           arm="reference", algo=None, fixture=None,
+                           horizon=None):
     """ONE validator for every raw driver stream (owner review §6).
 
     The primary members carried the full fixture-domain / same-run contract;
@@ -250,14 +335,18 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     """
     run = (pr.read(text) if arm == "f64"
            else ra.read_text(text, nsplit=nsplit, label=name))
-    _require_current_profile(run, name, width, levels, algo=algo)
+    _require_current_profile(run, name, width, levels, algo=algo,
+                             nsplit=nsplit, horizon=horizon,
+                             precision="f64" if arm == "f64" else "f32")
     _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
-                            run, arm=arm, algo=algo, fixture=fixture)
+                            run, arm=arm, algo=algo, fixture=fixture,
+                            horizon=horizon)
     return run
 
 
 def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
-                            arm="reference", algo=None, fixture=None):
+                            arm="reference", algo=None, fixture=None,
+                            horizon=None):
     """The G33N leg against the fixture AND the window protocol beside it.
 
     Three parties describe one run in a single stdout: the G33N header, the
@@ -292,11 +381,12 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
         raise ra.RefineError(
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
-    _require_same_run(name, rid, run, parsed, arm, algo, fixture)
+    _require_same_run(name, rid, run, parsed, arm, algo, fixture,
+                      horizon=horizon, nsplit=n)
 
 
 def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
-                      fixture=None):
+                      fixture=None, *, horizon=None, nsplit=None):
     """The SAME-RUN contract (owner review §6): the protocols in one stdout
     record the same facts twice, and until here nothing compared them.
 
@@ -407,6 +497,26 @@ def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
         raise ra.RefineError(
             f"{name}: the window protocol ran {wloops} inner loops, the G33N "
             f"records cover 1..{rid['loops']}")
+    # ...and the G33N leg answers to the FIXTURE directly, at its own word
+    # width. The window carries delt/dtcld through a six-decimal channel, so
+    # binding G33N to the window binds it only to six decimals: a G33N delt
+    # differing from the fixture's below that resolution satisfies both
+    # comparisons. Here the raw word meets the raw expectation.
+    if horizon is not None and nsplit is not None:
+        want_d, want_L, want_h = expected_geometry(
+            horizon, nsplit, "f64" if arm == "f64" else "f32")
+        if word(rid["delt"]) != word(want_d):
+            raise ra.RefineError(
+                f"{name}: the G33N leg stepped delt={rid['delt']!r}, the "
+                f"fixture's {horizon} s over {nsplit} splits is {want_d!r}")
+        if rid["loops"] != want_L:
+            raise ra.RefineError(
+                f"{name}: the G33N records cover 1..{rid['loops']}, the "
+                f"kernel's rule gives {want_L} loops")
+        if rid["dtcld"] is not None and word(rid["dtcld"]) != word(want_h):
+            raise ra.RefineError(
+                f"{name}: the G33N leg sub-cycled at {rid['dtcld']!r}, the "
+                f"kernel's rule gives {want_h!r}")
     wn = run.get(("meta", "ntile"))
     if wn is not None and wn != rid["ntile"]:
         raise ra.RefineError(
@@ -497,7 +607,8 @@ def _probe_member(path: Path) -> dict:
 
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
                   rho_profile: str = "as-is", width: int = 3,
-                  levels=None, nflux=False, algo=None, fixture=None) -> dict:
+                  levels=None, nflux=False, algo=None, fixture=None,
+                  horizon=None) -> dict:
     """Run every member: G33P strict parse AND the fixture-domain pin.
 
     The f64 path validated only G33P; the G33N leg in the same stdout was read
@@ -514,7 +625,8 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         text = _run(_argv(exe, n, mode, rho_profile, width))
         p.write_text(text)
         runs[n] = pr.read(text)
-        _require_current_profile(runs[n], p.name, width, levels, algo=algo)
+        _require_current_profile(runs[n], p.name, width, levels, algo=algo,
+                                 nsplit=n, horizon=horizon, precision="f64")
         if nflux:
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
                                     width, levels, runs[n], arm="f64",
@@ -1167,7 +1279,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
                                  levels=fixture_dims(fixture)[1], nflux=nflux,
-                                 algo=algo, fixture=fixture)
+                                 algo=algo, fixture=fixture,
+                                 horizon=fixture_horizon(fixture))
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member
@@ -1177,7 +1290,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
                            rho_profile=rho_profile, width=width,
                            levels=fixture_dims(fixture)[1],
-                           algo=algo, fixture=fixture)
+                           algo=algo, fixture=fixture,
+                           horizon=fixture_horizon(fixture))
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"

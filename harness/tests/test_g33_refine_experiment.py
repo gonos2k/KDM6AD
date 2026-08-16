@@ -1167,3 +1167,43 @@ def test_a_member_below_todays_profile_is_refused(mutate, match):
     mutate(run)
     with pytest.raises(xp.ra.RefineError, match=match):
         xp._require_current_profile(run, "n1", 2, 2)
+
+
+# --- the fixture's HORIZON is the third dimension (owner review §4) ---------
+
+def test_the_fixture_horizon_and_the_kernels_geometry_rule():
+    """DT_BITS is a fixture parameter like B and K, and every member's step
+    is derived from it. The rule is the driver's own (F:362, F:930-932)."""
+    assert xp.fixture_horizon("g33_fixture_boundary_mapping_v1") == 60.0
+    assert xp.fixture_horizon("g33_fixture_multisubcycle_v1") == 300.0
+    assert xp.expected_geometry(60.0, 12) == (5.0, 1, 5.0)
+    assert xp.expected_geometry(300.0, 3, "f64") == (100.0, 1, 100.0)
+    # delt > dtcldcr is where the loop count stops being 1
+    assert xp.expected_geometry(300.0, 1) == (300.0, 3, 100.0)
+
+
+def test_a_member_that_integrates_the_WRONG_HORIZON_is_refused():
+    """Both protocols agreeing on delt proves one internally consistent run,
+    not the REQUESTED one: 12 members stepping 20 s are perfect with each
+    other and integrate 240 s of a 300 s fixture. Measured before fixed."""
+    run = _samerun_window()
+    run[("initial", "qr", 1, 0)] = 1.0
+    run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
+                ("meta", "nsplit"): 1})
+    xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=100.0)
+    with pytest.raises(xp.ra.RefineError, match="integrates 100.0 s of a 300"):
+        xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=300.0)
+
+
+def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
+    """The window carries delt through a six-decimal channel, so binding the
+    G33N leg to the window binds it only to six decimals. The raw word must
+    meet the raw expectation."""
+    run = _samerun_window()
+    run[("meta", "loops")] = 1
+    run[("meta", "dtcld")] = 100.0
+    xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
+                               3, 4, run, horizon=100.0)
+    with pytest.raises(xp.ra.RefineError, match="the fixture's 300.0 s"):
+        xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
+                                   3, 4, run, horizon=300.0)

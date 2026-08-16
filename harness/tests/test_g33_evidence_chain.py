@@ -2353,6 +2353,11 @@ def _contract_bundle(tmp_path, g33n_cols):
     root = tmp_path / "bundle"
     root.mkdir()
     body = _g33r(nsplit=1, B=2, K=2).splitlines()
+    # today's profile requires an INITIAL state beside the final one
+    body = (body[:-1]
+            + [ln.replace("G33R STATE", "G33R INITIAL")
+               for ln in body if ln.startswith("G33R STATE")]
+            + [body[-1]])
     body[0] = "G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 dtcld 100.000000"
     (root / "n1.rezero.txt").write_text(
         "\n".join(body) + "\n" + _g33n(_call(1, cols=g33n_cols, ks=2), nsplit=1))
@@ -2367,7 +2372,8 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
     """The G33N leg covers one column of a two-column window: internally
     strict, approved by an older producer, refused by today's fixture-domain
     pin -- and the chain must say so rather than stopping at the digest."""
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1,))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["MEMBER-CONTRACT-MISMATCH"]
@@ -2376,7 +2382,8 @@ def test_a_member_the_CURRENT_contract_refuses_is_reported(tmp_path, monkeypatch
 
 def test_a_member_the_current_contract_accepts_reports_matches(
         tmp_path, monkeypatch):
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     rows = ec._member_contract_states(root, man)
     assert [r["state"] for r in rows] == ["matches"], rows
@@ -2389,7 +2396,8 @@ def test_arm_streams_and_multirun_inputs_get_the_SAME_contract(tmp_path,
     An arm_stream entry whose `ran` claims a different rho than its stream
     declares must be reported, with the expected values taken from the typed
     block -- and a well-formed one reports matches."""
-    monkeypatch.setattr(ec, "_pinned_fixture_dims", lambda man: (2, 2))
+    monkeypatch.setattr(ec, "_pinned_fixture_dims",
+                        lambda man: (2, 2, 100.0))
     root, man = _contract_bundle(tmp_path, g33n_cols=(1, 2))
     man["analyses"] = [{"analysis": "arm_stream", "file": "n1.rezero.txt",
                         "ran": {"nsplit": 1, "carry": "rezero",
@@ -2415,8 +2423,8 @@ def test_the_pinned_fixture_not_the_checkout_supplies_the_domain():
     if man is None:
         pytest.skip("no v3 bundle on this host")
     import copy
-    b, k = ec._pinned_fixture_dims(man)
-    assert b >= 1 and k >= 1
+    b, k, horizon = ec._pinned_fixture_dims(man)
+    assert b >= 1 and k >= 1 and horizon > 0
     lied = copy.deepcopy(man)
     lied["fixture_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="does not hash"):

@@ -413,7 +413,8 @@ def _arm_ran_state(p: Path, an: dict) -> str:
 
 
 def _pinned_fixture_dims(man: dict) -> tuple:
-    """(B, K) from the fixture bytes the MANIFEST pins -- never the checkout.
+    """(B, K, horizon) from the fixture bytes the MANIFEST pins -- never the
+    checkout.
 
     The semantic re-validation read the fixture through `fixture_dims`, which
     parses the current working tree (owner review §7): edit the fixture
@@ -443,7 +444,13 @@ def _pinned_fixture_dims(man: dict) -> tuple:
                   rb"K\s*=\s*(\d+)", r.stdout)
     if not m:
         raise ValueError(f"cannot read dimensions B, K from the pinned {rel}")
-    return int(m.group(1)), int(m.group(2))
+    # ...and the third dimension, the fixture's total integration time: the
+    # member geometry is derived from it, so a closeout that read B and K
+    # from the pin and the HORIZON from anywhere else would be pinning two
+    # thirds of the experiment (owner review §4).
+    import g33_refine_experiment as _xp
+    horizon = _xp.fixture_horizon_from(r.stdout.decode(errors="replace"), rel)
+    return int(m.group(1)), int(m.group(2)), horizon
 
 
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
@@ -475,7 +482,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels = _pinned_fixture_dims(man)
+        width, levels, horizon = _pinned_fixture_dims(man)
     except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
@@ -502,6 +509,15 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     # carrying precision/source/fixture metadata; `_agree`
                     # has already tied G33R to it record for record.
                     run = probe
+            # TODAY'S profile for every current-schema member, instrumented
+            # or not (owner review §10): the producer applies it either way,
+            # and gating the re-check on `instrumented` left non-instrumented
+            # bundles never re-validated for exact B/K, INITIAL, forcing,
+            # time geometry or the fixture's horizon.
+            xp._require_current_profile(
+                run, mem["file"], width, levels, algo=man.get("algorithm"),
+                nsplit=mem["nsplit"], horizon=horizon,
+                precision="f64" if arm == "f64" else "f32")
             if man.get("instrumented"):
                 # The EXPECTED experiment comes from the manifest -- what the
                 # bundle claims to be -- so a stream whose header forges a
@@ -510,7 +526,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                 xp._require_fixture_domain(
                     text, mem["file"], mem["nsplit"], mem["mode"],
                     man.get("rho_profile", "as-is"), width, levels, run,
-                    arm=arm, fixture=fixture)
+                    arm=arm, algo=man.get("algorithm"), fixture=fixture,
+                    horizon=horizon)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -552,7 +569,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             try:
                 xp.validate_member_stream(
                     p.read_text(), name=fname, nsplit=n2, mode=mode2,
-                    rho=rho2, width=width, levels=levels, fixture=fixture)
+                    rho=rho2, width=width, levels=levels, fixture=fixture,
+                    algo=man.get("algorithm"), horizon=horizon)
                 row["state"] = "matches"
             except Exception as e:                      # noqa: BLE001
                 row["state"] = "MEMBER-CONTRACT-MISMATCH"
