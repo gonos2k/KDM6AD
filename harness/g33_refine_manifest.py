@@ -37,7 +37,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v5"
+SCHEMA = "refinement_experiment_v6"
 
 
 def sha256(path: Path) -> str:
@@ -240,7 +240,7 @@ _PRECISIONS = ("f32", "f64")
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
-                 "refinement_experiment_v5")
+                 "refinement_experiment_v5", "refinement_experiment_v6")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -784,6 +784,54 @@ def validate(man: dict) -> list:
     if not isinstance(man.get("build_provenance"), dict) or \
             not man["build_provenance"]:
         bad.append("build_provenance must be a non-empty object")
+    elif at_least(schema, "refinement_experiment_v6"):
+        # A CLOSED provenance contract (owner review §4). "Non-empty object"
+        # let an arbitrary v5 manifest reduce a build's whole record --
+        # compiler, every compiled source, the module, the overlay actually
+        # fed to the compiler -- to one executable digest, while the real
+        # producer wrote all of it. What the producer records is what the
+        # document must carry.
+        bp = man["build_provenance"]
+        for key in ("compiler_version", "compiler_sha256", "executable_sha256",
+                    "module_path", "module_sha256", "fixture_sha256",
+                    "build_script_sha256", "sources", "compile_commands"):
+            if bp.get(key) in (None, "", [], {}):
+                bad.append(f"build_provenance.{key} is required from v6: a "
+                           f"build record missing it cannot answer for what "
+                           f"was compiled")
+        for key in ("executable_sha256", "module_sha256", "fixture_sha256",
+                    "build_script_sha256", "compiler_sha256"):
+            if key in bp and not _hexlen(bp.get(key), 64):
+                bad.append(f"build_provenance.{key} is not a 64-hex digest")
+        if not isinstance(bp.get("sources"), list) or not bp.get("sources"):
+            bad.append("build_provenance.sources must be a non-empty list of "
+                       "the files this build compiled")
+        else:
+            for i, src in enumerate(bp["sources"]):
+                if not (isinstance(src, dict) and isinstance(src.get("path"),
+                                                             str)
+                        and _hexlen(src.get("sha256"), 64)):
+                    bad.append(f"build_provenance.sources[{i}] needs `path` "
+                               f"and a 64-hex `sha256`")
+        # The INSTRUMENTED build compiles a generated overlay, not the
+        # pinned module, so that file is what the executable was actually
+        # made from -- and it must be recorded and published, not assumed
+        # to preserve the module's constants (owner review §4.3).
+        if man.get("instrumented") is True:
+            if not _hexlen(bp.get("compiled_module_sha256"), 64):
+                bad.append("build_provenance.compiled_module_sha256 is "
+                           "required for an instrumented build: the compiler "
+                           "was fed the generated overlay, not the module")
+            arts = {a.get("file"): a.get("sha256")
+                    for a in (man.get("build_artifacts") or [])
+                    if isinstance(a, dict)}
+            if "module_mp_ovl.F" not in arts:
+                bad.append("build_artifacts must publish module_mp_ovl.F: the "
+                           "bytes the compiler read are evidence, not a "
+                           "temporary")
+            elif arts["module_mp_ovl.F"] != bp.get("compiled_module_sha256"):
+                bad.append("the published module_mp_ovl.F is not the "
+                           "compiled_module_sha256 the build recorded")
 
     members = man.get("members")
     if not isinstance(members, list) or not members:
@@ -1368,7 +1416,13 @@ def _expected_run_violations(man: dict, members: list) -> list:
     if kg.get("schema") not in xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS:
         bad.append(f"kernel_geometry.schema {kg.get('schema')!r} is not one "
                    f"of {xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS}")
-    elif v5 and kg["schema"] != xp.KERNEL_GEOMETRY_SCHEMA:
+    elif at_least(man.get("schema"), "refinement_experiment_v6") and \
+            kg["schema"] != xp.KERNEL_GEOMETRY_SCHEMA:
+        bad.append(f"kernel_geometry.schema {kg['schema']!r} is not "
+                   f"{xp.KERNEL_GEOMETRY_SCHEMA!r}, which answers for the "
+                   f"COMPILED bytes")
+    elif v5 and kg["schema"] not in ("kdm6_subcycle_v2",
+                                     xp.KERNEL_GEOMETRY_SCHEMA):
         bad.append(f"kernel_geometry.schema {kg['schema']!r} is not "
                    f"{xp.KERNEL_GEOMETRY_SCHEMA!r}, which records WHICH "
                    f"kernel the limit came from")
@@ -1395,6 +1449,52 @@ def _expected_run_violations(man: dict, members: list) -> list:
     if not _hexlen(kg.get("source_sha256"), 64):
         bad.append("kernel_geometry.source_sha256 is not a 64-hex digest of "
                    "the kernel source the limit was read from")
+    # The digest must be the MODULE THIS BUNDLE PINS, not merely 64 hex
+    # (owner review §4): the record was length-checked and compared to the
+    # checkout's source map, so an arbitrary digest -- or one naming a
+    # different file than the manifest and the build provenance record --
+    # passed while claiming to be the provenance of the limit.
+    if at_least(man.get("schema"), "refinement_experiment_v6"):
+        bp = man.get("build_provenance")
+        bp = bp if isinstance(bp, dict) else {}
+        for field, top in (("source_path", "module_path"),
+                           ("source_sha256", "module_sha256")):
+            if not man.get(top):
+                bad.append(f"{top} is required from v6: the kernel geometry's "
+                           f"provenance is the module this bundle pins")
+            elif kg.get(field) != man.get(top):
+                bad.append(f"kernel_geometry.{field} {kg.get(field)!r} is not "
+                           f"the manifest's {top} {man.get(top)!r} -- the "
+                           f"limit would be provenanced to another file")
+            elif bp.get(top) not in (None, man[top]):
+                bad.append(f"build_provenance.{top} {bp[top]!r} is not the "
+                           f"manifest's {man[top]!r} -- two records of the "
+                           f"module that was compiled")
+        # ...and the STORAGE is the build's own real kind: `dtcldcr` is a
+        # default real, so an f64 build stores it in eight bytes. 120.0 is
+        # exact in both widths, so the two only diverge for a future limit
+        # that is not f32-exact -- which is exactly when the loop count
+        # would move silently (owner review §5).
+        # The limit the EXECUTABLE enforces was read from the overlay the
+        # compiler was fed, not assumed from the module it was generated
+        # out of (owner review §4.3).
+        if man.get("instrumented") is True:
+            if kg.get("compiled_source_sha256") != bp.get(
+                    "compiled_module_sha256"):
+                bad.append(
+                    f"kernel_geometry.compiled_source_sha256 "
+                    f"{str(kg.get('compiled_source_sha256'))[:12]!r} is not "
+                    f"the compiled_module_sha256 "
+                    f"{str(bp.get('compiled_module_sha256'))[:12]!r} -- the "
+                    f"limit was read from other bytes than the compiler did")
+            if kg.get("compiled_dtcldcr_word") != kg.get("dtcldcr_word"):
+                bad.append("kernel_geometry.compiled_dtcldcr_word is not the "
+                           "module's own word: the generated overlay carries "
+                           "a different sub-cycle limit")
+        if kg.get("dtcldcr_storage") != man.get("precision"):
+            bad.append(f"kernel_geometry.dtcldcr_storage "
+                       f"{kg.get('dtcldcr_storage')!r} is not this build's "
+                       f"real kind {man.get('precision')!r}")
     # WHICH kernel: the build compiles a different module per algorithm
     # (refine_build.sh:54-55), so a record naming the other one describes a
     # file this run never compiled (Codex).

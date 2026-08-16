@@ -217,8 +217,12 @@ KERNEL_SOURCES = {
 #: v2 added `algorithm`: which kernel the limit was read from is part of
 #: the fact, and a tag whose required keys change without changing is a tag
 #: that means two things (Codex).
-KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v2"
-KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2")
+#: v3 records the limit read from the bytes the compiler actually read --
+#: an --nflux build feeds it a generated overlay, so the pinned module's
+#: constant was an assumption about that overlay until now (owner review §4).
+KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v3"
+KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2",
+                                 "kdm6_subcycle_v3")
 #: The CLOSED expected-run contract (owner review §5). Versioned because it
 #: is a document schema: an added field is a new contract, not a new
 #: optional convenience, and "compare if present" is what made the previous
@@ -226,7 +230,18 @@ KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2")
 EXPECTED_RUN_SCHEMA = "g33_expected_run_v1"
 
 
-def kernel_geometry(precision: str = "f32", algo: str = "legacy") -> dict:
+def _dtcldcr_from(text: str, where: str) -> float:
+    """The one declaration of `dtcldcr` in a kernel source's bytes."""
+    hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
+    if len(hits) != 1:
+        raise SystemExit(
+            f"REFUSED: {where} declares dtcldcr {len(hits)} times; the "
+            f"geometry contract needs exactly one")
+    return float(hits[0])
+
+
+def kernel_geometry(precision: str = "f32", algo: str = "legacy",
+                    compiled: Path | None = None) -> dict:
     """What the kernel this bundle compiles against uses for `dtcldcr`.
 
     Recorded IN the bundle so a reader never has to have the private source
@@ -245,15 +260,27 @@ def kernel_geometry(precision: str = "f32", algo: str = "legacy") -> dict:
             f"REFUSED: {rel} is not here, so the sub-cycle limit the "
             f"{algo} kernel enforces cannot be read -- and a default would "
             f"be a number nobody measured")
-    text = src.read_text()
-    hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
-    if len(hits) != 1:
-        raise SystemExit(
-            f"REFUSED: {rel} declares dtcldcr {len(hits)} times; "
-            f"the geometry contract needs exactly one")
-    value = float(hits[0])
+    value = _dtcldcr_from(src.read_text(), str(rel))
     w = ">d" if precision == "f64" else ">f"
+    # ...and the bytes the COMPILER read, where this build generated them.
+    # The overlay is derived from the module, so the two agreeing is the
+    # expected case -- but "expected" is what a contract exists to check,
+    # and the executable was made from the overlay (owner review §4).
+    compiled_word = None
+    if compiled is not None:
+        got = _dtcldcr_from(Path(compiled).read_text(errors="replace"),
+                            str(compiled))
+        if struct.pack(w, got) != struct.pack(w, value):
+            raise SystemExit(
+                f"REFUSED: {rel} declares dtcldcr {value} but the compiled "
+                f"{Path(compiled).name} declares {got} -- the executable was "
+                f"made from the second")
+        compiled_word = struct.pack(w, got).hex().upper()
     return {"schema": KERNEL_GEOMETRY_SCHEMA,
+            **({"compiled_dtcldcr_word": compiled_word,
+                "compiled_source_sha256": hashlib.sha256(
+                    Path(compiled).read_bytes()).hexdigest()}
+               if compiled is not None else {}),
             "dtcldcr": struct.unpack(w, struct.pack(w, value))[0],
             "dtcldcr_storage": precision,
             "dtcldcr_word": struct.pack(w, value).hex().upper(),
@@ -1401,10 +1428,17 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # geometry contract is built on it, and a checker that re-reads it from
     # whatever tree it happens to sit in is not checking a content-addressed
     # archive (owner review §4).
-    kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo)
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)
+        # AFTER the build, so the generated overlay the compiler read exists
+        # and the record can answer for those bytes rather than assuming the
+        # module's constant survived generation (owner review §4). Read ONCE
+        # per bundle: every member, arm and multi-run leg is held to this
+        # value, so a source edit mid-run cannot bind two legs to two limits.
+        ovl = tmp / "module_mp_ovl.F"
+        kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo,
+                                ovl if ovl.is_file() else None)
         if arm == "f64":
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
@@ -1501,7 +1535,12 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             {"file": q.name, "sha256": rm.sha256(q)}
             for q in (tmp / n for n in ("g33_refine_driver",
                                         "build_provenance.json",
-                                        "commands.txt", "sources.txt"))
+                                        "commands.txt", "sources.txt",
+                                        # the GENERATED overlay an --nflux
+                                        # build feeds the compiler: the bytes
+                                        # the executable was made from are
+                                        # evidence, not a temporary
+                                        "module_mp_ovl.F"))
             if q.is_file()]
         man["arm"] = arm
         # The SAME word the analyses were selected by, so the manifest cannot
