@@ -947,3 +947,28 @@ def _real_v3_manifest_here_v4():
                                 for a in man.get("analyses", []))):
                     return man
     return None
+
+
+def test_a_bundle_may_declare_only_the_decomposition_it_can_SUBSTANTIATE():
+    """A declaration answers to a protocol or to nothing (Codex). G33N under
+    --nflux records the tiling and so does G33P on the probe/f64 arms; a
+    plain reference bundle writes no tile vector at all, so declaring one
+    there is a decoration -- and omitting one where it IS recorded leaves
+    the operator unstated."""
+    import copy
+    man = _real_v3_manifest_here_v4()
+    if man is None:
+        pytest.skip("no v4 bundle on this host")
+    plain = copy.deepcopy(man)
+    plain["instrumented"] = False
+    plain["arm"] = "reference"
+    plain["analyses"] = [a for a in plain["analyses"]
+                         if a.get("analysis") != "arm_stream"]
+    assert any("no protocol in this bundle records" in v
+               for v in rm.validate(plain))
+    plain["expected_run"].pop("tile_sizes")
+    assert not any("tile_sizes" in v for v in rm.validate(plain))
+    # ...and where it IS substantiable, the declaration is required
+    absent = copy.deepcopy(man)
+    absent["expected_run"].pop("tile_sizes")
+    assert any("do record the decomposition" in v for v in rm.validate(absent))

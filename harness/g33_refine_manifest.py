@@ -1138,7 +1138,23 @@ def _expected_run_violations(man: dict, members: list) -> list:
         return bad + [f"expected_run.window_seconds {horizon!r} is not a "
                       f"positive number"]
     tiles = exp.get("tile_sizes")
-    if (not isinstance(tiles, list) or not tiles
+    # A decomposition may be declared exactly where this bundle carries a
+    # protocol that records one: G33N under --nflux, or G33P on the probe
+    # and f64 arms (Codex). A plain reference bundle has neither, so a
+    # declaration there answers to nothing -- and its ABSENCE where one is
+    # substantiable would leave the operator unrecorded.
+    substantiable = bool(man.get("instrumented")) or man.get("arm") in (
+        "probe", "f64")
+    if tiles is not None and not substantiable:
+        bad.append("expected_run.tile_sizes declares a decomposition no "
+                   "protocol in this bundle records: an uninstrumented "
+                   "reference member writes no tile vector")
+    elif tiles is None and substantiable:
+        bad.append("expected_run.tile_sizes is missing, and this bundle's "
+                   "protocols do record the decomposition it ran")
+    elif tiles is None:
+        pass
+    elif (not isinstance(tiles, list) or not tiles
             or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
                        for t in tiles)):
         bad.append(f"expected_run.tile_sizes {tiles!r} is not a non-empty "

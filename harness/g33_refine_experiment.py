@@ -238,7 +238,8 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
 
 
 def _require_current_profile(run, name, width, levels, algo=None, *,
-                             nsplit=None, horizon=None, precision="f32"):
+                             nsplit=None, horizon=None, precision="f32",
+                             tiles=None):
     """What TODAY'S producer requires of every member it publishes -- with or
     without instrumentation (owner review §8).
 
@@ -301,6 +302,16 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
             raise ra.RefineError(
                 f"{name}: sub-cycled at dtcld={dtcld}, the kernel's rule "
                 f"gives {want_h}")
+    # The window's OWN tile record, where it has one (Codex): G33P carries
+    # the vector in its header, so a probe or f64 member substantiates the
+    # requested decomposition with or without the transport leg -- which is
+    # what a non-instrumented bundle needs, having no G33N to be held to.
+    wt = run.get(("meta", "tiles"))
+    if tiles is not None and wt is not None and tuple(wt) != tuple(tiles):
+        raise ra.RefineError(
+            f"{name}: the window protocol decomposed as {tuple(wt)}, the "
+            f"caller asked for {tuple(tiles)} -- `ncmin` is set by a tile's "
+            f"last column, so these are two operators")
     walg = run.get(("meta", "algorithm"))
     if algo is not None and walg is not None and walg != algo:
         raise ra.RefineError(
@@ -341,7 +352,8 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
             window = probe
     _require_current_profile(window, name, width, levels, algo=algo,
                              nsplit=nsplit, horizon=horizon,
-                             precision="f64" if arm == "f64" else "f32")
+                             precision="f64" if arm == "f64" else "f32",
+                             tiles=tiles)
     if transport:
         _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
                                 window, arm=arm, algo=algo, fixture=fixture,
@@ -1414,7 +1426,12 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             "window_seconds": fixture_horizon(fixture),
             "columns": width,
             "levels": fixture_dims(fixture)[1],
-            "tile_sizes": [width],
+            # Declared only where a protocol in this bundle RECORDS a
+            # tiling -- G33N under --nflux, or G33P on the probe/f64 arms.
+            # A plain reference bundle has neither, and a declaration
+            # nothing can substantiate is a decoration (Codex).
+            **({"tile_sizes": [width]}
+               if (nflux or arm in ("probe", "f64")) else {}),
             "rho_profile": rho_profile,
             "algorithm": algo,
             "precision": precision,

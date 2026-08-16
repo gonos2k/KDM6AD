@@ -543,7 +543,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             xp._require_current_profile(
                 run, mem["file"], width, levels, algo=man.get("algorithm"),
                 nsplit=mem["nsplit"], horizon=horizon,
-                precision="f64" if arm == "f64" else "f32")
+                precision="f64" if arm == "f64" else "f32",
+                tiles=want_tiles)
             if man.get("instrumented"):
                 # The EXPECTED experiment comes from the manifest -- what the
                 # bundle claims to be -- so a stream whose header forges a
