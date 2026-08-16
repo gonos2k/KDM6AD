@@ -205,7 +205,8 @@ def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
                            levels=fixture_dims(fixture)[1], fixture=fixture,
                            horizon=fixture_horizon(fixture),
                            tiles=tuple(tiles), algo=algo,
-                           dtcldcr=kernel_geometry()["dtcldcr"])
+                           dtcldcr=kernel_geometry(
+                               algo=algo or "legacy")["dtcldcr"])
     return text
 
 

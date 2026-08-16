@@ -205,8 +205,15 @@ def expected_geometry(total_seconds: float, nsplit: int,
     return delt, loops, dtcld
 
 
-#: The kernel's frozen sub-cycle limit, as a fact ABOUT A SOURCE FILE.
-KERNEL_SOURCE = Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F")
+#: The kernel's frozen sub-cycle limit, as a fact ABOUT A SOURCE FILE --
+#: and WHICH file depends on the algorithm, exactly as the build script
+#: chooses it (refine_build.sh:54-55). Pinning the legacy module for a
+#: conservative bundle recorded a digest of a file that run never compiled
+#: (Codex).
+KERNEL_SOURCES = {
+    "legacy": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
+    "conservative": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F"),
+}
 KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v1"
 #: The CLOSED expected-run contract (owner review §5). Versioned because it
 #: is a document schema: an added field is a new contract, not a new
@@ -215,7 +222,7 @@ KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v1"
 EXPECTED_RUN_SCHEMA = "g33_expected_run_v1"
 
 
-def kernel_geometry(precision: str = "f32") -> dict:
+def kernel_geometry(precision: str = "f32", algo: str = "legacy") -> dict:
     """What the kernel this bundle compiles against uses for `dtcldcr`.
 
     Recorded IN the bundle so a reader never has to have the private source
@@ -223,17 +230,22 @@ def kernel_geometry(precision: str = "f32") -> dict:
     defaulting: a silent 120.0 is a number nobody measured, and the whole
     contract above is built on it.
     """
-    src = HERE.parent / KERNEL_SOURCE
+    rel = KERNEL_SOURCES.get(algo)
+    if rel is None:
+        raise SystemExit(
+            f"REFUSED: no kernel source is known for algorithm {algo!r}; the "
+            f"build script compiles {sorted(KERNEL_SOURCES)}")
+    src = HERE.parent / rel
     if not src.is_file():
         raise SystemExit(
-            f"REFUSED: {KERNEL_SOURCE} is not here, so the sub-cycle limit "
-            f"the kernel enforces cannot be read -- and a default would be a "
-            f"number nobody measured")
+            f"REFUSED: {rel} is not here, so the sub-cycle limit the "
+            f"{algo} kernel enforces cannot be read -- and a default would "
+            f"be a number nobody measured")
     text = src.read_text()
     hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
     if len(hits) != 1:
         raise SystemExit(
-            f"REFUSED: {KERNEL_SOURCE} declares dtcldcr {len(hits)} times; "
+            f"REFUSED: {rel} declares dtcldcr {len(hits)} times; "
             f"the geometry contract needs exactly one")
     value = float(hits[0])
     w = ">d" if precision == "f64" else ">f"
@@ -241,7 +253,8 @@ def kernel_geometry(precision: str = "f32") -> dict:
             "dtcldcr": struct.unpack(w, struct.pack(w, value))[0],
             "dtcldcr_storage": precision,
             "dtcldcr_word": struct.pack(w, value).hex().upper(),
-            "source_path": str(KERNEL_SOURCE),
+            "algorithm": algo,
+            "source_path": str(rel),
             "source_sha256": hashlib.sha256(src.read_bytes()).hexdigest()}
 
 
@@ -1384,7 +1397,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # geometry contract is built on it, and a checker that re-reads it from
     # whatever tree it happens to sit in is not checking a content-addressed
     # archive (owner review §4).
-    kgeom = kernel_geometry("f64" if arm == "f64" else "f32")
+    kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo)
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)

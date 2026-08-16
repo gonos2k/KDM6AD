@@ -1280,3 +1280,17 @@ def test_the_loop_count_rounds_the_quotient_at_the_MEMBERS_width():
     src = inspect.getsource(xp.expected_geometry)
     assert "q = r(delt / limit)" in src
     assert "math.floor(q + 0.5)" in src
+
+
+def test_the_kernel_geometry_names_the_source_THIS_algorithm_compiles():
+    """The build compiles a different module per algorithm
+    (refine_build.sh:54-55), so pinning the legacy one for a conservative
+    bundle recorded the digest of a file that run never compiled (Codex)."""
+    legacy = xp.kernel_geometry("f32", "legacy")
+    cons = xp.kernel_geometry("f32", "conservative")
+    assert legacy["source_path"].endswith("module_mp_kdm6.F")
+    assert cons["source_path"].endswith("module_mp_kdm6_cons.F")
+    assert legacy["source_sha256"] != cons["source_sha256"]
+    assert legacy["algorithm"] == "legacy" and cons["algorithm"] == "conservative"
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.kernel_geometry("f32", "made-up")

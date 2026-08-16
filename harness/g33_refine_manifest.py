@@ -1353,6 +1353,17 @@ def _expected_run_violations(man: dict, members: list) -> list:
     if not _hexlen(kg.get("source_sha256"), 64):
         bad.append("kernel_geometry.source_sha256 is not a 64-hex digest of "
                    "the kernel source the limit was read from")
+    # WHICH kernel: the build compiles a different module per algorithm
+    # (refine_build.sh:54-55), so a record naming the other one describes a
+    # file this run never compiled (Codex).
+    if kg.get("algorithm") != man.get("algorithm"):
+        bad.append(f"kernel_geometry.algorithm {kg.get('algorithm')!r} is not "
+                   f"the bundle's {man.get('algorithm')!r} -- the limit was "
+                   f"read from another kernel than the one that ran")
+    want_src = xp.KERNEL_SOURCES.get(man.get("algorithm"))
+    if want_src is not None and kg.get("source_path") != str(want_src):
+        bad.append(f"kernel_geometry.source_path {kg.get('source_path')!r} is "
+                   f"not the {man.get('algorithm')} kernel {str(want_src)!r}")
     for i, m in enumerate(members):
         if not isinstance(m, dict):
             continue
