@@ -1246,6 +1246,19 @@ def _expected_run_violations(man: dict, members: list) -> list:
                     bad.append(f"runtime_argv[{i}] ran rho_profile {a[3]!r}, "
                                f"the bundle declares "
                                f"{exp.get('rho_profile')!r}")
+                # ...and the TILE argument, which is the decomposition the
+                # command line actually requested (Codex). It sits at
+                # position 2 whenever the line carries one, and `ncmin` is
+                # set by a tile's last column -- so an argv asking for a
+                # tiling the bundle does not declare put a different
+                # operator into the recipe id than the document states.
+                declared = exp.get("tile_sizes")
+                if len(a) >= 3 and isinstance(declared, list):
+                    want = ",".join(str(t) for t in declared)
+                    if str(a[2]) != want:
+                        bad.append(
+                            f"runtime_argv[{i}] requested the decomposition "
+                            f"{a[2]!r}, the bundle declares {want!r}")
             if seen and isinstance(ns, list) and sorted(seen) != sorted(ns):
                 bad.append(f"runtime_argv invokes nsplits {sorted(seen)}, the "
                            f"bundle declares {sorted(ns)}")

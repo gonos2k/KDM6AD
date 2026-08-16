@@ -1073,3 +1073,21 @@ def test_the_expected_run_block_is_a_CLOSED_contract(tmp_path, tag, mutate,
     assert rm.validate(man) == [], rm.validate(man)[:2]
     mutate(man["expected_run"], man)
     assert any(needle in v for v in rm.validate(man)), rm.validate(man)[:2]
+
+
+@pytest.mark.parametrize("argv_tiles,ok", [
+    ("3", True), ("1,2", False), ("2,1", False), ("1,1,1", False),
+])
+def test_the_argv_TILE_argument_is_the_declared_decomposition(tmp_path,
+                                                              argv_tiles, ok):
+    """The argv check compared nsplit, mode and rho_profile but skipped the
+    TILE argument at position 2 -- the decomposition the command line
+    actually requested, and the one the recipe id hashes. `ncmin` is set by
+    a tile's last column, so an argv asking for a tiling the bundle does not
+    declare puts a different operator into the id than the document states
+    (Codex)."""
+    man = synthetic_manifest(tmp_path)
+    man["schema"] = "refinement_experiment_v5"
+    man["runtime_argv"] = [["12", "rezero", argv_tiles, "as-is"]]
+    got = [v for v in rm.validate(man) if "decomposition" in v]
+    assert (not got) is ok, got
