@@ -1242,9 +1242,19 @@ def _expected_run_violations(man: dict, members: list) -> list:
                 except (TypeError, ValueError):
                     bad.append(f"runtime_argv[{i}] nsplit {a[0]!r} is not an "
                                f"integer")
-                if len(a) >= 4 and a[3] != exp.get("rho_profile"):
-                    bad.append(f"runtime_argv[{i}] ran rho_profile {a[3]!r}, "
-                               f"the bundle declares "
+                # The forcing argument, present or ABSENT (Codex): the
+                # driver defaults it to `as-is`
+                # (g33_refine_driver.f90:320,347), so a line that omits it
+                # requested the unperturbed profile -- and leaving the
+                # omission unbound let a bundle declare `uniform` beside an
+                # invocation that never asked for one. An omitted argument
+                # is a request, not a silence.
+                got_rho = a[3] if len(a) >= 4 else "as-is"
+                how = "" if len(a) >= 4 else " (the omitted argument is the " \
+                                             "driver's default)"
+                if got_rho != exp.get("rho_profile"):
+                    bad.append(f"runtime_argv[{i}] ran rho_profile "
+                               f"{got_rho!r}{how}, the bundle declares "
                                f"{exp.get('rho_profile')!r}")
                 # ...and the TILE argument, which is the decomposition the
                 # command line actually requested (Codex). It sits at

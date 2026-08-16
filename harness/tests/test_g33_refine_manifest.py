@@ -1100,3 +1100,27 @@ def test_the_argv_TILE_argument_is_the_declared_decomposition(tmp_path,
     if argv_tiles is None:
         man["expected_run"]["tile_sizes"] = [1, 2]
         assert any("no tile argument" in v for v in rm.validate(man))
+
+
+@pytest.mark.parametrize("argv,declared,ok", [
+    (["12", "rezero", "3", "uniform"], "uniform", True),
+    (["12", "rezero", "3"], "as-is", True),
+    (["12", "rezero"], "as-is", True),
+    # an OMITTED forcing argument is the driver's default, not a silence
+    (["12", "rezero", "3"], "uniform", False),
+    (["12", "rezero"], "uniform", False),
+])
+def test_an_OMITTED_argv_position_is_still_a_request(tmp_path, argv, declared,
+                                                     ok):
+    """The forcing argument defaults to `as-is`
+    (g33_refine_driver.f90:320,347), so a line that omits it requested the
+    unperturbed profile -- and leaving the omission unbound let a bundle
+    declare `uniform` beside an invocation that never asked for one
+    (Codex)."""
+    man = synthetic_manifest(tmp_path)
+    man["schema"] = "refinement_experiment_v5"
+    man["runtime_argv"] = [argv]
+    man["rho_profile"] = declared
+    man["expected_run"]["rho_profile"] = declared
+    got = [v for v in rm.validate(man) if "rho_profile" in v]
+    assert (not got) is ok, got
