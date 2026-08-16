@@ -406,10 +406,19 @@ def _arm_ran_state(p: Path, an: dict) -> str:
     # `want` from the reader's keys would fail every published arm for fields
     # the schema never asked it to record.
     ran = an.get("ran") or {}
-    fields = ("nsplit", "carry", "width", "rho", "levels")
+    fields = ("nsplit", "carry", "width", "rho", "levels", "ntile")
     want = {k: ran.get(k) for k in fields}
-    return ("matches" if {k: got[k] for k in fields} == want
-            else "RUN-IDENTITY-MISMATCH")
+    if {k: got[k] for k in fields} != want:
+        return "RUN-IDENTITY-MISMATCH"
+    # The decomposition too, as a value rather than a count: `ncmin` is set
+    # by a tile's LAST column, so (1,2) and (2,1) are two operators with one
+    # ntile (owner review §5). JSON gives lists, the reader gives tuples.
+    if [list(r) for r in got["tile_ranges"]] != [
+            list(r) for r in ran.get("tile_ranges", [])]:
+        return "RUN-IDENTITY-MISMATCH"
+    if list(got["tile_sizes"]) != list(ran.get("tile_sizes", [])):
+        return "RUN-IDENTITY-MISMATCH"
+    return "matches"
 
 
 def _pinned_fixture_dims(man: dict) -> tuple:

@@ -1128,6 +1128,23 @@ def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
     if not isinstance(lv, int) or isinstance(lv, bool) or lv < 1:
         bad.append(f"analyses[{i}] (arm_stream) ran.levels {lv!r} is not a "
                    f"positive integer")
+    # ...and so is the DECOMPOSITION, for a stronger reason than either
+    # (owner review §5): `ncmin` is a scalar set by a tile's last column, so
+    # two arm streams differing only in their tiling ran two different
+    # operators. A `ran` block that cannot say which one it ran cannot be
+    # checked against the request by anything downstream.
+    ts = ran.get("tile_sizes")
+    if (not isinstance(ts, list) or not ts
+            or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
+                       for t in ts)):
+        bad.append(f"analyses[{i}] (arm_stream) ran.tile_sizes {ts!r} is not a "
+                   f"non-empty list of positive column counts")
+    elif sum(ts) != ran["width"]:
+        bad.append(f"analyses[{i}] (arm_stream) ran.tile_sizes {ts} sums to "
+                   f"{sum(ts)}, not the domain width {ran['width']}")
+    elif ran.get("ntile") != len(ts):
+        bad.append(f"analyses[{i}] (arm_stream) ran.ntile {ran.get('ntile')!r} "
+                   f"is not the {len(ts)} tiles it lists")
     if bad:
         return bad
     for pos, field in _ARGV_TO_RAN:

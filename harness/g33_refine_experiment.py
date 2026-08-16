@@ -245,7 +245,8 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
                                     width, levels,
                                     probe if probe is not None else runs[n],
-                                    arm=arm, algo=algo, fixture=fixture)
+                                    arm=arm, algo=algo, fixture=fixture,
+                                    horizon=horizon, tiles=(width,))
     return runs
 
 
@@ -322,7 +323,7 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
 
 def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
                            arm="reference", algo=None, fixture=None,
-                           horizon=None):
+                           horizon=None, tiles=None):
     """ONE validator for every raw driver stream (owner review §6).
 
     The primary members carried the full fixture-domain / same-run contract;
@@ -340,13 +341,13 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
                              precision="f64" if arm == "f64" else "f32")
     _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
                             run, arm=arm, algo=algo, fixture=fixture,
-                            horizon=horizon)
+                            horizon=horizon, tiles=tiles)
     return run
 
 
 def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
                             arm="reference", algo=None, fixture=None,
-                            horizon=None):
+                            horizon=None, tiles=None):
     """The G33N leg against the fixture AND the window protocol beside it.
 
     Three parties describe one run in a single stdout: the G33N header, the
@@ -382,11 +383,12 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
     _require_same_run(name, rid, run, parsed, arm, algo, fixture,
-                      horizon=horizon, nsplit=n)
+                      horizon=horizon, nsplit=n, tiles=tiles)
 
 
 def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
-                      fixture=None, *, horizon=None, nsplit=None):
+                      fixture=None, *, horizon=None, nsplit=None,
+                      tiles=None):
     """The SAME-RUN contract (owner review §6): the protocols in one stdout
     record the same facts twice, and until here nothing compared them.
 
@@ -527,6 +529,18 @@ def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
         raise ra.RefineError(
             f"{name}: the window protocol decomposed as {tuple(wt)}, the "
             f"G33N leg as {rid['tile_sizes']} -- two decompositions, one run")
+    # ...and the decomposition the CALLER ASKED FOR (owner review §5). Both
+    # protocols agreeing proves one decomposition, not the requested one --
+    # and `ncmin` is a scalar set by a tile's last column, so an unrequested
+    # tiling changes the operator. In the density experiment that is a
+    # confounder: the arm moves the density profile, an unchecked tile change
+    # would move the threshold vector with it, and the residual could not be
+    # attributed to the intervention.
+    if tiles is not None and tuple(tiles) != rid["tile_sizes"]:
+        raise ra.RefineError(
+            f"{name}: ran the decomposition {rid['tile_sizes']}, the caller "
+            f"asked for {tuple(tiles)} -- `ncmin` is set by a tile's last "
+            f"column, so these are two operators")
     # The forcing VALUES, per cell (owner review §6): matched closure builds
     # the physical layer mass from G33N's rho/delz beside the window's initial
     # qv, which silently assumes the two protocols' rho/delz are the same
@@ -630,7 +644,8 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
         if nflux:
             _require_fixture_domain(text, p.name, n, mode, rho_profile,
                                     width, levels, runs[n], arm="f64",
-                                    algo=algo, fixture=fixture)
+                                    algo=algo, fixture=fixture,
+                                    horizon=horizon, tiles=(width,))
     return runs
 
 
@@ -681,7 +696,7 @@ def _protocol(stream: str) -> dict:
 
 
 def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
-         levels: int, where: str) -> dict:
+         levels: int, where: str, tiles=None) -> dict:
     """The arm's run identity, TYPED and checked against the raw stream.
 
     `runtime_argv` is four strings and the schema compared two of them --
@@ -710,6 +725,8 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # while checking the stream against itself, which is no check at all.
     want = {"nsplit": nsplit, "carry": mode, "rho": rho, "width": width,
             "levels": levels}
+    if tiles is not None:
+        want["tile_sizes"] = tuple(tiles)
     if {k: got[k] for k in want} != want:
         raise ra.RefineError(
             f"{where}: the stream declares {got} and the manifest entry would "
@@ -722,12 +739,19 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
     # identity is the domain the stream actually processed, and the chain
     # compares this block against `validated_run_identity`, which now proves
     # K as well as W (owner review §4).
+    # The DECOMPOSITION is part of the run identity, not decoration: two
+    # arm streams differing only in their tiling are two operators (owner
+    # review §5), and a `ran` block that cannot say which one it ran cannot
+    # be re-checked against the request by anything downstream.
     return {"nsplit": nsplit, "carry": mode, "width": width, "rho": rho,
-            "levels": levels}
+            "levels": levels, "ntile": got["ntile"],
+            "tile_sizes": list(got["tile_sizes"]),
+            "tile_ranges": [list(r) for r in got["tile_ranges"]]}
 
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
-                     width: int, levels: int, algo=None, fixture=None) -> list:
+                     width: int, levels: int, algo=None, fixture=None,
+                     horizon=None) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
     `mode` and `width` come from the bundle being produced (owner P0-2).
@@ -783,14 +807,16 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
             # name is the stream's expected rho profile.
             validate_member_stream(text, name=ap.name, nsplit=n, mode=mode,
                                    rho=arm, width=width, levels=levels,
-                                   algo=algo, fixture=fixture)
+                                   algo=algo, fixture=fixture,
+                                   horizon=horizon, tiles=(width,))
             made.append({"file": ap.name, "nsplit": n, "analysis": "arm_stream",
                          "arm": arm, "sha256": rm.sha256(ap),
                          # STRUCTURED, and checked against the stream's own
                          # header rather than restated from the arguments this
                          # function was called with (owner priority 5).
                          "ran": _ran(text, nsplit=n, mode=mode, width=width,
-                                     rho=arm, levels=levels, where=ap.name),
+                                     rho=arm, levels=levels, where=ap.name,
+                                     tiles=(width,)),
                          "runtime_argv": [str(n), mode, str(width), arm]})
             # The arm's OWN defect magnitude. `metric_trajectory` reports each
             # arm as a ratio over the as-is baseline; a claim that also states
@@ -1321,10 +1347,10 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # arm as its own baseline.
         if nflux and rho_profile == "as-is":
             if rm.applicable("metric_trajectory", precision):
-                man["analyses"] += _driver_analyses(tmp, exe, nsplits, mode,
-                                                    width,
-                                                    fixture_dims(fixture)[1],
-                                                    algo=algo, fixture=fixture)
+                man["analyses"] += _driver_analyses(
+                    tmp, exe, nsplits, mode, width, fixture_dims(fixture)[1],
+                    algo=algo, fixture=fixture,
+                    horizon=fixture_horizon(fixture))
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.

@@ -1207,3 +1207,23 @@ def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
     with pytest.raises(xp.ra.RefineError, match="the fixture's 300.0 s"):
         xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
                                    3, 4, run, horizon=300.0)
+
+
+def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
+    """Both protocols agreeing proves ONE decomposition, not the requested
+    one -- and `ncmin` is a scalar set by a tile's last column, so an
+    unrequested tiling is a different operator. In the density experiment
+    that is a confounder: the arm moves the density profile and an unchecked
+    tile change would move the threshold vector with it. Measured before
+    fixed."""
+    from test_g33_number_transport import _call as _nc, _stream as _ns
+    text = _ns(_nc(1, cols=(1,), split=1, tile=1),
+               _nc(2, cols=(2, 3), split=1, tile=2), nsplit=1, ntile=2)
+    run = _samerun_window(cols=(1, 2, 3), ks=range(2))
+    run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
+                ("meta", "nsplit"): 1})
+    xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2, run,
+                               horizon=100.0, tiles=(1, 2))
+    with pytest.raises(xp.ra.RefineError, match="asked for \\(3,\\)"):
+        xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2,
+                                   run, horizon=100.0, tiles=(3,))
