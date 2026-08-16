@@ -337,7 +337,9 @@ def _identity_graph_state(man: dict) -> dict:
 #: derived under. Spelled here rather than imported: `g33_identity` imports the
 #: producer, and this module deliberately does not.
 _IDENTITY_FROM = "refinement_experiment_v3"
-_IDENTITY_SCHEMA = "g33_layered_identity_v2"
+#: Every id semantics a published bundle may carry: a document answers for
+#: the rules it was produced under, not for today's.
+_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3")
 
 
 def _identity_state(man: dict) -> str:
@@ -354,7 +356,7 @@ def _identity_state(man: dict) -> str:
     block is required and its absence is a schema violation, caught upstream.
     """
     ident = man.get("identity") or {}
-    if (ident.get("schema") == _IDENTITY_SCHEMA
+    if (ident.get("schema") in _IDENTITY_SCHEMAS
             and isinstance(ident.get("role_graph"), dict) and ident["role_graph"]
             and isinstance(ident.get("analysis_reach"), dict)):
         return "matches"
@@ -466,8 +468,10 @@ def _pinned_fixture_dims(man: dict) -> tuple:
     # from the pin and the HORIZON from anywhere else would be pinning two
     # thirds of the experiment (owner review §4).
     import g33_refine_experiment as _xp
-    horizon = _xp.fixture_horizon_from(r.stdout.decode(errors="replace"), rel)
-    return int(m.group(1)), int(m.group(2)), horizon
+    text = r.stdout.decode(errors="replace")
+    horizon = _xp.fixture_horizon_from(text, rel)
+    return (int(m.group(1)), int(m.group(2)), horizon,
+            _xp.fixture_dt_bits_from(text, rel))
 
 
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
@@ -499,7 +503,25 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels, horizon = _pinned_fixture_dims(man)
+        width, levels, horizon, dt_bits = _pinned_fixture_dims(man)
+        # The DECLARED experiment against the PINNED bytes (owner review §5).
+        # The validator can only hold `expected_run` to the rest of the
+        # document; the fixture's own parameters live in the blob, and a
+        # manifest declaring levels=999 beside a K=4 fixture is a document
+        # describing an experiment nobody could run.
+        exp = man.get("expected_run")
+        if isinstance(exp, dict):
+            for key, want in (("columns", width), ("levels", levels),
+                              ("dt_bits", dt_bits),
+                              ("window_seconds", horizon),
+                              ("fixture_id", fixture)):
+                if key in exp and exp[key] != want:
+                    out.append({"file": "expected_run", "scope": "bundle",
+                                "origin": "member_contract",
+                                "state": "MEMBER-CONTRACT-MISMATCH",
+                                "detail": f"expected_run.{key} {exp[key]!r} "
+                                          f"is not the pinned fixture's "
+                                          f"{want!r}"})
     except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
@@ -516,6 +538,14 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     # nothing and is held to nothing.
     want_tiles = (man.get("expected_run") or {}).get("tile_sizes")
     want_tiles = tuple(want_tiles) if isinstance(want_tiles, list) else None
+    # The kernel's sub-cycle limit, from the bundle's OWN record: re-reading
+    # it from this checkout would make the verdict a property of the host
+    # (owner review §4). A schema that predates the record answers for no
+    # geometry, and is asked for none.
+    kg = man.get("kernel_geometry")
+    want_limit = kg.get("dtcldcr") if isinstance(kg, dict) else None
+    if not isinstance(want_limit, (int, float)) or isinstance(want_limit, bool):
+        want_limit = None
     for mem in man.get("members", []):
         p = root / mem["file"]
         if not p.is_file():
@@ -544,7 +574,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                 run, mem["file"], width, levels, algo=man.get("algorithm"),
                 nsplit=mem["nsplit"], horizon=horizon,
                 precision="f64" if arm == "f64" else "f32",
-                tiles=want_tiles)
+                tiles=want_tiles, dtcldcr=want_limit)
             if man.get("instrumented"):
                 # The EXPECTED experiment comes from the manifest -- what the
                 # bundle claims to be -- so a stream whose header forges a
@@ -554,7 +584,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     text, mem["file"], mem["nsplit"], mem["mode"],
                     man.get("rho_profile", "as-is"), width, levels, run,
                     arm=arm, algo=man.get("algorithm"), fixture=fixture,
-                    horizon=horizon, tiles=want_tiles)
+                    horizon=horizon, tiles=want_tiles, dtcldcr=want_limit)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -618,7 +648,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     p.read_text(), name=fname, nsplit=n2, mode=mode2,
                     rho=rho2, width=width, levels=levels, fixture=fixture,
                     algo=man.get("algorithm"), horizon=horizon,
-                    tiles=tuple(tiles2) if tiles2 else None)
+                    tiles=tuple(tiles2) if tiles2 else None,
+                    dtcldcr=want_limit)
                 row["state"] = "matches"
             except Exception as e:                      # noqa: BLE001
                 row["state"] = "MEMBER-CONTRACT-MISMATCH"

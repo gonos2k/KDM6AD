@@ -846,11 +846,19 @@ def test_the_law_check_APPLIES_THE_SAME_GATES_as_the_oracle():
     src = (ROOT / "g33_ncmin_locality.py").read_text()
     body = src[src.index("def class_law("):src.index("def weight_is_uniform(")]
     assert "gated_state(" in body, "class_law must use the shared runner"
-    runner = src[src.index("def gated_state("):
-                 src.index("def control_replication(")]
-    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
-                 "_expect_universe"):
-        assert gate in runner, f"the shared runner skips {gate}"
+    # The gates live in TWO functions now: `gated_text` is the seam every
+    # raw execution shares -- including the ledger, which used to call run()
+    # directly -- and `gated_state` adds what a STATE comparison needs on
+    # top. The runner is the pair, so the check reads the pair.
+    text_gate = src[src.index("def gated_text("):src.index("def gated_state(")]
+    state_gate = src[src.index("def gated_state("):
+                     src.index("def control_replication(")]
+    assert "gated_text(" in state_gate, \
+        "gated_state must go through the shared seam, not around it"
+    for gate in ("_expect_tiles_are_live", "validate_member_stream"):
+        assert gate in text_gate, f"the shared seam skips {gate}"
+    for gate in ("_expect_same_inputs", "_expect_universe"):
+        assert gate in state_gate, f"the state runner skips {gate}"
 
 
 def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
@@ -921,8 +929,9 @@ def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is"):
-        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
+                  carry="rezero", rho="as-is", algo=None):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
+                          algo=algo)
         seen["n"] += 1
         if seen["n"] == 3:               # one partition answers differently
             state = {**state, sorted(state)[0]: "DEADBEEF"}
@@ -1006,8 +1015,9 @@ def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is"):
-        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho)
+                  carry="rezero", rho="as-is", algo=None):
+        state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
+                          algo=algo)
         seen["n"] += 1
         if seen["n"] == 2:
             state = {**state, sorted(state)[0]: "DEADBEEF"}
@@ -1079,11 +1089,18 @@ def test_ALL_THREE_analyses_go_through_the_SAME_gated_runner():
 
 
 def test_the_gated_runner_applies_EVERY_gate():
+    """The gates span the two layers of one runner: `gated_text` is the seam
+    every raw execution shares -- tile liveness and the full member contract
+    -- and `gated_state` adds what a STATE comparison needs. Together they
+    are the gated runner, and nothing may reach a state without both."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
+    seam = src[src.index("def gated_text("):src.index("def gated_state(")]
     body = src[src.index("def gated_state("):src.index("def control_replication(")]
-    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
-                 "_expect_universe", "read_records"):
-        assert gate in body, f"the shared runner skips {gate}"
+    for gate in ("_expect_tiles_are_live", "validate_member_stream"):
+        assert gate in seam, f"the shared seam skips {gate}"
+    for gate in ("gated_text", "_expect_same_inputs", "_expect_universe",
+                 "read_records"):
+        assert gate in body, f"the state runner skips {gate}"
 
 
 def test_a_TILES_IGNORING_driver_is_refused_by_the_REPLICATION(drivers,
@@ -1657,3 +1674,25 @@ def test_the_ledger_REFUSES_runs_that_disagree_on_the_WEIGHT_field(drivers):
         tampered = got[:m.start(2)] + repl + got[m.end(2):]
     with pytest.raises(ra.RefineError, match="disagree on rho|weight"):
         pl.decompose(base, tampered, 3, ra.read_text(base))
+
+
+def test_the_run_cache_is_keyed_on_the_EXECUTABLES_BYTES():
+    """Keyed on the driver PATH, a rebuilt binary at the same path would be
+    served a previous build's stdout inside one process -- a cache answering
+    for a run that no longer exists (owner review §10)."""
+    import inspect
+    src = inspect.getsource(nl.run)
+    assert "_exe_digest(driver)" in src
+    assert "str(driver)" not in src
+
+
+def test_every_multi_run_leg_takes_the_bundles_ALGORITHM():
+    """Without it a multi-run stream whose two protocols agreed on
+    `conservative` could enter the immutable store and be refused only
+    later, by the evidence chain (owner review §7)."""
+    import inspect
+    for fn in (nl.analysis, nl.local_oracle, nl.class_law,
+               nl.control_replication):
+        assert "algo" in inspect.signature(fn).parameters, fn.__name__
+    assert "algo=algo" in inspect.getsource(nl.gated_state) or \
+        "algo" in inspect.signature(nl.gated_state).parameters

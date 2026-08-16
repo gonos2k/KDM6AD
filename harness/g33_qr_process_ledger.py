@@ -427,12 +427,19 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
     return {"columns": out, "replay": replay, "dtcld": dt_a}
 
 
-def analysis(driver: str, fixture: str) -> dict:
-    """Oracle decomposition against the whole domain, as a multi-run analysis."""
+def analysis(driver: str, fixture: str, algo: str | None = None) -> dict:
+    """Oracle decomposition against the whole domain, as a multi-run analysis.
+
+    Both streams go through the SHARED member contract (owner review §7):
+    calling `run()` directly published the two streams this whole comparison
+    rests on under no contract at all, while the ncmin legs beside them
+    carried the full one.
+    """
     import g33_ncmin_locality as nl
     width = nl.fixture_dims(fixture)[0]
     oracle, whole = (1,) * width, (width,)
-    base_text, got_text = nl.run(driver, oracle), nl.run(driver, whole)
+    base_text = nl.gated_text(driver, fixture, oracle, algo=algo)
+    got_text = nl.gated_text(driver, fixture, whole, algo=algo)
     got = decompose(base_text, got_text, width, ra.read_text(base_text))
     return {
         **got,

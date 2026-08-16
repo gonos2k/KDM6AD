@@ -69,7 +69,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3, levels=None, algo=None,
-                fixture=None, horizon=None):
+                fixture=None, horizon=None, dtcldcr=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -106,6 +106,32 @@ def _produce(dest, **kw):
     return xp.produce(dest, fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                       nsplits=kw.pop("nsplits", (3, 6)), mode="rezero",
                       nflux=kw.pop("nflux", False), module=MOD, **kw)
+
+
+@pytest.fixture(autouse=True)
+def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
+    """The kernel source is PRIVATE and gitignored, and the producer now
+    REFUSES rather than defaulting the sub-cycle limit -- which is the point
+    of that refusal, and which stops every bundle-ASSEMBLY test on a public
+    checkout at a read those tests are not about. Where the source is
+    present the real one is used; where it is absent the record is faked
+    like the compiler and the driver beside it. The refusal has its own
+    test."""
+    # A test ABOUT the read opts out, or the seam would answer for it: on a
+    # public checkout the stub replaced the function whose refusal the test
+    # asserts, returning a fake for `legacy` and a KeyError for the unknown
+    # algorithm rather than the SystemExit under test (Codex).
+    if REF.is_file() or request.node.get_closest_marker("real_kernel_geometry"):
+        return
+    monkeypatch.setattr(xp, "kernel_geometry",
+                        lambda precision="f32", algo="legacy": {
+                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
+                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
+                            "dtcldcr_word": ("42F00000" if precision == "f32"
+                                             else "405E000000000000"),
+                            "algorithm": algo,
+                            "source_path": str(xp.KERNEL_SOURCES[algo]),
+                            "source_sha256": "0" * 64})
 
 
 @pytest.fixture(autouse=True)
@@ -162,7 +188,7 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
             rho_profile="as-is", width=3, levels=None, algo=None,
-            fixture=None, horizon=None):
+            fixture=None, horizon=None, dtcldcr=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -230,7 +256,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
                       levels=None, nflux=False, algo=None, fixture=None,
-                      horizon=None):
+                      horizon=None, dtcldcr=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -426,7 +452,7 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
                         lambda out, exe, ns, mode, width, levels, algo=None,
-                        fixture=None, horizon=None: seen.update(
+                        fixture=None, horizon=None, dtcldcr=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
@@ -1168,7 +1194,7 @@ def test_a_member_below_todays_profile_is_refused(mutate, match):
     run = _profile_run()
     mutate(run)
     with pytest.raises(xp.ra.RefineError, match=match):
-        xp._require_current_profile(run, "n1", 2, 2, nsplit=1, horizon=100.0)
+        xp._require_current_profile(run, "n1", 2, 2, nsplit=1, horizon=100.0, dtcldcr=120.0)
 
 
 # --- the fixture's HORIZON is the third dimension (owner review §4) ---------
@@ -1178,10 +1204,10 @@ def test_the_fixture_horizon_and_the_kernels_geometry_rule():
     is derived from it. The rule is the driver's own (F:362, F:930-932)."""
     assert xp.fixture_horizon("g33_fixture_boundary_mapping_v1") == 60.0
     assert xp.fixture_horizon("g33_fixture_multisubcycle_v1") == 300.0
-    assert xp.expected_geometry(60.0, 12) == (5.0, 1, 5.0)
-    assert xp.expected_geometry(300.0, 3, "f64") == (100.0, 1, 100.0)
+    assert xp.expected_geometry(60.0, 12, "f32", 120.0) == (5.0, 1, 5.0)
+    assert xp.expected_geometry(300.0, 3, "f64", 120.0) == (100.0, 1, 100.0)
     # delt > dtcldcr is where the loop count stops being 1
-    assert xp.expected_geometry(300.0, 1) == (300.0, 3, 100.0)
+    assert xp.expected_geometry(300.0, 1, "f32", 120.0) == (300.0, 3, 100.0)
 
 
 def test_a_member_that_integrates_the_WRONG_HORIZON_is_refused():
@@ -1192,9 +1218,9 @@ def test_a_member_that_integrates_the_WRONG_HORIZON_is_refused():
     run[("initial", "qr", 1, 0)] = 1.0
     run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
                 ("meta", "nsplit"): 1})
-    xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=100.0)
+    xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=100.0, dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="integrates 100.0 s of a 300"):
-        xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=300.0)
+        xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=300.0, dtcldcr=120.0)
 
 
 def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
@@ -1205,10 +1231,10 @@ def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
     run[("meta", "loops")] = 1
     run[("meta", "dtcld")] = 100.0
     xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
-                               3, 4, run, horizon=100.0)
+                               3, 4, run, horizon=100.0, dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="the fixture's 300.0 s"):
         xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
-                                   3, 4, run, horizon=300.0)
+                                   3, 4, run, horizon=300.0, dtcldcr=120.0)
 
 
 def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
@@ -1225,10 +1251,10 @@ def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
     run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
                 ("meta", "nsplit"): 1})
     xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2, run,
-                               horizon=100.0, tiles=(1, 2))
+                               horizon=100.0, tiles=(1, 2), dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="asked for \\(3,\\)"):
         xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2,
-                                   run, horizon=100.0, tiles=(3,))
+                                   run, horizon=100.0, tiles=(3,), dtcldcr=120.0)
 
 
 def test_the_ONE_validator_reads_the_probe_arm_too(tmp_path):
@@ -1244,3 +1270,71 @@ def test_the_ONE_validator_reads_the_probe_arm_too(tmp_path):
     # ...and members() no longer keeps a second copy of that sequence
     body = inspect.getsource(xp.members)
     assert "_agree(" not in body and "_require_fixture_domain(" not in body
+
+
+# --- the geometry rule is PURE, and its limit travels with the bundle (§4) ---
+
+def test_expected_geometry_takes_its_limit_rather_than_reading_one():
+    """It read `dtcldcr` from a module global sourced from the working
+    tree's private kernel, with a silent 120.0 fallback -- so the same
+    historical bundle could get different verdicts on two hosts, and a
+    checker whose answer depends on its checkout is not checking a
+    content-addressed archive. Measured: at 120 a 300 s / 1 split member is
+    (300, 3, 100); at 60 it is (300, 5, 60), and a manifest CLEAN under one
+    is refused under the other."""
+    assert not hasattr(xp, "DTCLDCR"), "the ambient limit must be gone"
+    assert xp.expected_geometry(300.0, 1, "f32", 120.0) == (300.0, 3, 100.0)
+    assert xp.expected_geometry(300.0, 1, "f32", 60.0) == (300.0, 5, 60.0)
+    with pytest.raises(TypeError):
+        xp.expected_geometry(300.0, 1, "f32")       # no default to fall back to
+
+
+@pytest.mark.skipif(not REF.is_file(),
+                    reason="the private kernel source is not on this host")
+def test_the_kernel_geometry_record_is_measured_not_assumed():
+    """REFUSES rather than defaulting: a silent 120.0 is a number nobody
+    measured, and the whole geometry contract is built on it."""
+    kg = xp.kernel_geometry("f32")
+    assert kg["schema"] == xp.KERNEL_GEOMETRY_SCHEMA
+    assert kg["dtcldcr"] == 120.0 and kg["dtcldcr_word"] == "42F00000"
+    assert len(kg["source_sha256"]) == 64
+    assert xp.kernel_geometry("f64")["dtcldcr_word"] == "405E000000000000"
+
+
+def test_the_loop_count_rounds_the_quotient_at_the_MEMBERS_width():
+    """The kernel forms round_w(delt/dtcldcr) and applies nint to THAT;
+    dividing in Python's binary64 and rounding that is a different function
+    near a half-integer boundary (owner review §9)."""
+    src = inspect.getsource(xp.expected_geometry)
+    assert "q = r(delt / limit)" in src
+    assert "math.floor(q + 0.5)" in src
+
+
+@pytest.mark.skipif(not REF.is_file(),
+                    reason="the private kernel source is not on this host")
+def test_the_kernel_geometry_names_the_source_THIS_algorithm_compiles():
+    """The build compiles a different module per algorithm
+    (refine_build.sh:54-55), so pinning the legacy one for a conservative
+    bundle recorded the digest of a file that run never compiled (Codex)."""
+    legacy = xp.kernel_geometry("f32", "legacy")
+    cons = xp.kernel_geometry("f32", "conservative")
+    assert legacy["source_path"].endswith("module_mp_kdm6.F")
+    assert cons["source_path"].endswith("module_mp_kdm6_cons.F")
+    assert legacy["source_sha256"] != cons["source_sha256"]
+    assert legacy["algorithm"] == "legacy" and cons["algorithm"] == "conservative"
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.kernel_geometry("f32", "made-up")
+
+
+@pytest.mark.real_kernel_geometry
+def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
+                                                                tmp_path):
+    """The refusal the seam above stands in for, tested on its own: the whole
+    geometry contract rests on the sub-cycle limit, so a silent 120.0 would
+    be a number nobody measured (owner review §4)."""
+    monkeypatch.setattr(xp, "KERNEL_SOURCES",
+                        {"legacy": tmp_path / "nope.F"})
+    with pytest.raises(SystemExit, match="is not here"):
+        xp.kernel_geometry("f32", "legacy")
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.kernel_geometry("f32", "conservative")

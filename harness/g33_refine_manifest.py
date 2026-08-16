@@ -37,7 +37,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v4"
+SCHEMA = "refinement_experiment_v5"
 
 
 def sha256(path: Path) -> str:
@@ -239,7 +239,8 @@ _PRECISIONS = ("f32", "f64")
 #: a manifest declaring another word names a run that could not have happened.
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
-                 "refinement_experiment_v3", "refinement_experiment_v4")
+                 "refinement_experiment_v3", "refinement_experiment_v4",
+                 "refinement_experiment_v5")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -260,7 +261,13 @@ def _hexlen(v, n) -> bool:
 #: Spelled here rather than imported from `g33_identity`: that module imports
 #: the producer, which imports this one, and the requirement is a property of
 #: the DOCUMENT either way.
-IDENTITY_SCHEMA = "g33_layered_identity_v2"
+IDENTITY_SCHEMA = "g33_layered_identity_v3"
+#: ...and the tags a bundle may legitimately carry. A document is held to the
+#: id semantics it was PRODUCED under: v3 moved `expected_run` and
+#: `kernel_geometry` into the recipe id, which is a different question about
+#: the same manifest, and demanding it of an artifact published before it
+#: would be a blocker with no resolution but re-production.
+KNOWN_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3")
 
 
 #: The roles a module can carry. `_by_role` filters on these words, so one it
@@ -368,9 +375,14 @@ def _identity_violations(man: dict) -> list:
         return ["identity must be an object recording the role graph the ids "
                 "were derived under -- without it they follow the checkout"]
     bad = []
-    if ident.get("schema") != IDENTITY_SCHEMA:
-        bad.append(f"identity.schema {ident.get('schema')!r} is not "
-                   f"{IDENTITY_SCHEMA!r}")
+    if ident.get("schema") not in KNOWN_IDENTITY_SCHEMAS:
+        bad.append(f"identity.schema {ident.get('schema')!r} is not one of "
+                   f"{KNOWN_IDENTITY_SCHEMAS}")
+    elif (at_least(man.get("schema"), "refinement_experiment_v5")
+            and ident["schema"] != IDENTITY_SCHEMA):
+        bad.append(f"identity.schema {ident['schema']!r} is not "
+                   f"{IDENTITY_SCHEMA!r}, which {man.get('schema')!r} "
+                   f"records its ids under")
     for key in ("role_graph", "analysis_seeds", "analysis_reach"):
         v = ident.get(key)
         if not isinstance(v, dict) or not v:
@@ -1112,6 +1124,7 @@ def _expected_run_violations(man: dict, members: list) -> list:
     the bytes. This is the DOCUMENT answering for itself.
     """
     import g33_refine_experiment as xp                  # cycle closes at call
+    EXPECTED_RUN_SCHEMA = xp.EXPECTED_RUN_SCHEMA
     bad = []
     if man.get("algorithm") not in _ALGOS:
         bad.append(f"algorithm {man.get('algorithm')!r} is not one of {_ALGOS}")
@@ -1126,6 +1139,154 @@ def _expected_run_violations(man: dict, members: list) -> list:
         return bad + ["expected_run must be an object: without it the "
                       "manifest records what each member stepped and never "
                       "what the experiment asked for"]
+    # A CLOSED schema (owner review §5). Every field was "compare if
+    # present", so deleting one deleted its check: a v4 manifest could drop
+    # algorithm, precision and rho_profile and still validate, and `levels`
+    # was never read at all. The key set is exact -- a missing field is a
+    # contract not met, an extra one is a contract nobody wrote.
+    v5 = at_least(man.get("schema"), "refinement_experiment_v5")
+    if v5:
+        substantiable = bool(man.get("instrumented")) or man.get("arm") in (
+            "probe", "f64")
+        want_keys = {"schema", "fixture_id", "fixture_sha256", "dt_bits",
+                     "window_seconds", "columns", "levels", "algorithm",
+                     "precision", "source_precision", "mode", "nsplits",
+                     "rho_profile"} | ({"tile_sizes"} if substantiable
+                                       else set())
+        if set(exp) != want_keys:
+            bad.append(
+                f"expected_run is not the {EXPECTED_RUN_SCHEMA} key set: "
+                f"missing {sorted(want_keys - set(exp))}, unexpected "
+                f"{sorted(set(exp) - want_keys)}")
+        if exp.get("schema") != EXPECTED_RUN_SCHEMA:
+            bad.append(f"expected_run.schema {exp.get('schema')!r} is not "
+                       f"{EXPECTED_RUN_SCHEMA!r}")
+        if exp.get("fixture_sha256") != man.get("fixture_sha256"):
+            bad.append("expected_run.fixture_sha256 is not the manifest's "
+                       "own fixture digest")
+        # The WORD is canonical: 300.000001 decodes to the same f32 as
+        # 300.0, so a document compared only on the decimal can name a
+        # horizon the fixture does not hold.
+        word = exp.get("dt_bits")
+        if not (isinstance(word, str) and re.fullmatch(r"[0-9A-F]{8}", word)):
+            bad.append(f"expected_run.dt_bits {word!r} is not an 8-hex "
+                       f"f32 word")
+        else:
+            decoded = struct.unpack(">f", bytes.fromhex(word))[0]
+            got = exp.get("window_seconds")
+            # EXACT, not "rounds to the same f32": 300.000001 rounds to
+            # 300.0 and would derive identical geometry while naming a
+            # horizon no fixture holds. The decimal is a DECODE of the word,
+            # so it is the decode or it is wrong (owner review §5).
+            try:
+                as_float = (float(got)
+                            if isinstance(got, (int, float))
+                            and not isinstance(got, bool) else None)
+            except (OverflowError, ValueError):     # an unbounded Python int
+                as_float = None
+            if as_float is None or as_float != decoded:
+                bad.append(
+                    f"expected_run.window_seconds {got!r} is not the decode "
+                    f"of the declared DT_BITS word {word} ({decoded})")
+        if exp.get("source_precision") != "f32":
+            bad.append(f"expected_run.source_precision "
+                       f"{exp.get('source_precision')!r} -- the reference "
+                       f"this archive instruments is f32, always")
+        if exp.get("mode") not in _CARRY_MODES:
+            bad.append(f"expected_run.mode {exp.get('mode')!r} is not one of "
+                       f"{_CARRY_MODES}")
+        ns = exp.get("nsplits")
+        if (not isinstance(ns, list) or not ns
+                or not all(isinstance(n, int) and not isinstance(n, bool)
+                           and 1 <= n <= _MAX_NSPLIT for n in ns)
+                or sorted(ns) != ns or len(set(ns)) != len(ns)):
+            bad.append(f"expected_run.nsplits {ns!r} is not a sorted list of "
+                       f"distinct steps the driver accepts")
+        # ...and the four records of one invocation agree: the declared
+        # steps and mode, the member rows, and (below) the geometry each
+        # implies (owner review §6).
+        elif isinstance(members, list):
+            got_ns = sorted(m.get("nsplit") for m in members
+                            if isinstance(m, dict))
+            if got_ns != sorted(ns):
+                bad.append(f"expected_run.nsplits {sorted(ns)} is not the "
+                           f"members' {got_ns}")
+        for i, m in enumerate(members if isinstance(members, list) else []):
+            if isinstance(m, dict) and m.get("mode") not in (None,
+                                                             exp.get("mode")):
+                bad.append(f"members[{i}] ran mode {m['mode']!r}, the bundle "
+                           f"declares {exp.get('mode')!r} -- one experiment, "
+                           f"one auxiliary-state rule")
+        # ...and the COMMAND LINES close the loop (owner review §6): the
+        # recipe id hashes runtime_argv, so an argv that does not describe
+        # the declared experiment puts a different request into the id than
+        # the one the document states. Four records of one invocation --
+        # argv, expected_run, the member rows, and (in the chain) the raw
+        # headers -- and until here the first three were never tied.
+        argv = man.get("runtime_argv")
+        if not isinstance(argv, list) or not argv:
+            bad.append("runtime_argv must be a non-empty list: it is the "
+                       "recipe id's record of what was invoked")
+        else:
+            seen = []
+            for i, a in enumerate(argv):
+                if not (isinstance(a, list) and len(a) >= 2):
+                    bad.append(f"runtime_argv[{i}] {a!r} is not a driver "
+                               f"command line")
+                    continue
+                if a[1] != exp.get("mode"):
+                    bad.append(f"runtime_argv[{i}] ran mode {a[1]!r}, the "
+                               f"bundle declares {exp.get('mode')!r}")
+                try:
+                    seen.append(int(a[0]))
+                except (TypeError, ValueError):
+                    bad.append(f"runtime_argv[{i}] nsplit {a[0]!r} is not an "
+                               f"integer")
+                # The forcing argument, present or ABSENT (Codex): the
+                # driver defaults it to `as-is`
+                # (g33_refine_driver.f90:320,347), so a line that omits it
+                # requested the unperturbed profile -- and leaving the
+                # omission unbound let a bundle declare `uniform` beside an
+                # invocation that never asked for one. An omitted argument
+                # is a request, not a silence.
+                got_rho = a[3] if len(a) >= 4 else "as-is"
+                how = "" if len(a) >= 4 else " (the omitted argument is the " \
+                                             "driver's default)"
+                if got_rho != exp.get("rho_profile"):
+                    bad.append(f"runtime_argv[{i}] ran rho_profile "
+                               f"{got_rho!r}{how}, the bundle declares "
+                               f"{exp.get('rho_profile')!r}")
+                # ...and the TILE argument, which is the decomposition the
+                # command line actually requested (Codex). It sits at
+                # position 2 whenever the line carries one, and `ncmin` is
+                # set by a tile's last column -- so an argv asking for a
+                # tiling the bundle does not declare put a different
+                # operator into the recipe id than the document states.
+                declared = exp.get("tile_sizes")
+                if isinstance(declared, list):
+                    want = ",".join(str(t) for t in declared)
+                    if len(a) >= 3:
+                        if str(a[2]) != want:
+                            bad.append(
+                                f"runtime_argv[{i}] requested the "
+                                f"decomposition {a[2]!r}, the bundle declares "
+                                f"{want!r}")
+                    # A command line with NO tile argument requests the
+                    # driver's DEFAULT -- one tile over the whole domain
+                    # (g33_refine_driver.f90:365-366) -- and that is a
+                    # request like any other (Codex): leaving it unbound let
+                    # a bundle declare (1,2) beside an argv that asked for
+                    # the default, with nothing at the document level to
+                    # notice.
+                    elif declared != [exp.get("columns")]:
+                        bad.append(
+                            f"runtime_argv[{i}] carries no tile argument, so "
+                            f"it requested the driver's default of one tile "
+                            f"over {exp.get('columns')!r} columns -- the "
+                            f"bundle declares {declared}")
+            if seen and isinstance(ns, list) and sorted(seen) != sorted(ns):
+                bad.append(f"runtime_argv invokes nsplits {sorted(seen)}, the "
+                           f"bundle declares {sorted(ns)}")
     if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
         bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
                    f"the pinned fixture "
@@ -1192,6 +1353,61 @@ def _expected_run_violations(man: dict, members: list) -> list:
                     f"analyses[{i}] (arm_stream) ran the decomposition {got}, "
                     f"the bundle's expected_run declares {tiles}")
     prec = exp.get("precision", man.get("precision", "f32"))
+    # The sub-cycle limit comes from the bundle's OWN record, never from the
+    # tree validating it (owner review §4): a verdict that depends on the
+    # checkout is not a verdict about a content-addressed artifact.
+    kg = man.get("kernel_geometry")
+    v5 = at_least(man.get("schema"), "refinement_experiment_v5")
+    if kg is None and not v5:
+        return bad                  # predates the record; nothing to derive
+    if not isinstance(kg, dict):
+        return bad + ["kernel_geometry must be an object: the member "
+                      "geometry is derived from the kernel's sub-cycle "
+                      "limit, and a bundle that does not record it can only "
+                      "be checked against whatever tree reads it"]
+    if kg.get("schema") not in xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS:
+        bad.append(f"kernel_geometry.schema {kg.get('schema')!r} is not one "
+                   f"of {xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS}")
+    elif v5 and kg["schema"] != xp.KERNEL_GEOMETRY_SCHEMA:
+        bad.append(f"kernel_geometry.schema {kg['schema']!r} is not "
+                   f"{xp.KERNEL_GEOMETRY_SCHEMA!r}, which records WHICH "
+                   f"kernel the limit came from")
+    limit = kg.get("dtcldcr")
+    try:
+        limit = float(limit) if isinstance(limit, (int, float)) and not \
+            isinstance(limit, bool) else None
+    except (OverflowError, ValueError):
+        limit = None
+    if limit is None or not math.isfinite(limit) or limit <= 0:
+        return bad + [f"kernel_geometry.dtcldcr {kg.get('dtcldcr')!r} is not "
+                      f"a positive finite number"]
+    if kg.get("dtcldcr_storage") not in _PRECISIONS:
+        bad.append(f"kernel_geometry.dtcldcr_storage "
+                   f"{kg.get('dtcldcr_storage')!r} is not one of "
+                   f"{_PRECISIONS}")
+    else:
+        w = ">d" if kg["dtcldcr_storage"] == "f64" else ">f"
+        want_word = struct.pack(w, limit).hex().upper()
+        if kg.get("dtcldcr_word") != want_word:
+            bad.append(f"kernel_geometry.dtcldcr_word "
+                       f"{kg.get('dtcldcr_word')!r} is not {want_word} -- the "
+                       f"word and the value name two different limits")
+    if not _hexlen(kg.get("source_sha256"), 64):
+        bad.append("kernel_geometry.source_sha256 is not a 64-hex digest of "
+                   "the kernel source the limit was read from")
+    # WHICH kernel: the build compiles a different module per algorithm
+    # (refine_build.sh:54-55), so a record naming the other one describes a
+    # file this run never compiled (Codex).
+    if kg.get("schema") != "kdm6_subcycle_v1" and \
+            kg.get("algorithm") != man.get("algorithm"):
+        bad.append(f"kernel_geometry.algorithm {kg.get('algorithm')!r} is not "
+                   f"the bundle's {man.get('algorithm')!r} -- the limit was "
+                   f"read from another kernel than the one that ran")
+    want_src = xp.KERNEL_SOURCES.get(man.get("algorithm"))
+    if (kg.get("schema") != "kdm6_subcycle_v1" and want_src is not None
+            and kg.get("source_path") != str(want_src)):
+        bad.append(f"kernel_geometry.source_path {kg.get('source_path')!r} is "
+                   f"not the {man.get('algorithm')} kernel {str(want_src)!r}")
     for i, m in enumerate(members):
         if not isinstance(m, dict):
             continue
@@ -1204,7 +1420,8 @@ def _expected_run_violations(man: dict, members: list) -> list:
         # the input it exists to describe is the defect one level up
         # (Codex; the same shape as the pin resolver's escape before it).
         try:
-            want_d, want_L, want_h = xp.expected_geometry(horizon, n, prec)
+            want_d, want_L, want_h = xp.expected_geometry(
+                horizon, n, prec, limit)
         except (ArithmeticError, OverflowError, ValueError, struct.error) as e:
             bad.append(f"members[{i}]: the fixture's {horizon} s horizon over "
                        f"{n} splits is not computable at {prec}: {e}")

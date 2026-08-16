@@ -782,3 +782,21 @@ def test_INPUT_order_does_not_move_an_analysis_id():
                        "inputs": [{"file": "a", "sha256": "1"},
                                   {"file": "b", "sha256": "2"}]}]}
     assert gi._canonical_lists(a) == gi._canonical_lists(b)
+
+
+def test_the_RECIPE_id_carries_what_was_requested():
+    """`expected_run` and `kernel_geometry` are the REQUEST and the rule it
+    is read under, so they belong to the recipe -- and until identity v3 the
+    subtractive content id picked them up while the recipe id did not, so
+    changing the request moved the id of the OUTPUT and not the id of the
+    ASK (owner review §6). Measured on the live manifest before the fix."""
+    man = _with_identity(_manifest())
+    man["identity"]["schema"] = gi.IDENTITY_SCHEMA
+    man["expected_run"] = {"schema": "g33_expected_run_v1",
+                           "window_seconds": 300.0}
+    man["kernel_geometry"] = {"schema": "kdm6_subcycle_v1", "dtcldcr": 120.0}
+    for key, field, value in [("expected_run", "window_seconds", 240.0),
+                              ("kernel_geometry", "dtcldcr", 60.0)]:
+        d = copy.deepcopy(man)
+        d[key][field] = value
+        assert gi.run_recipe_id(d) != gi.run_recipe_id(man), key
