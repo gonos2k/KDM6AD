@@ -144,16 +144,18 @@ def fixture_horizon(fixture: str) -> float:
 
 
 def expected_geometry(total_seconds: float, nsplit: int,
-                      precision: str = "f32") -> tuple:
+                      precision: str, dtcldcr: float) -> tuple:
     """(delt, loops, dtcld) exactly as the DRIVER computes them, at the
     build's default-real width.
 
-    The one place this arithmetic is written down (owner review §8): the
-    producer's capability profile carried its own fixed-six PRODUCT
-    inverse -- `loops*dtcld == delt` -- which the transport parser had
-    already abandoned for refusing VALID streams, since the kernel ROUNDS
-    the quotient and re-multiplying does not recover delt. Both callers
-    read this instead, in the quotient direction the kernel runs.
+    PURE (owner review §4). `dtcldcr` was a module global read from the
+    working tree's private kernel source, with a silent 120.0 fallback when
+    the tree lacked it -- so the same historical bundle could get different
+    verdicts on two hosts, and a checker whose answer depends on its
+    checkout is not checking a content-addressed archive. It is a parameter
+    now: the producer takes it from the frozen source it is about to
+    compile against, and the evidence chain from the value the bundle
+    RECORDED.
 
         delt  = f32(DT_BITS)/nsplit                  (driver F:362)
         loops = max(nint(delt/dtcldcr), 1)           (kernel F:930)
@@ -165,25 +167,52 @@ def expected_geometry(total_seconds: float, nsplit: int,
         return struct.unpack(w, struct.pack(w, v))[0]
 
     delt = r(r(total_seconds) / nsplit)
+    limit = r(dtcldcr)
+    # The QUOTIENT is formed at the build's width before `nint` sees it
+    # (owner review §9): dividing in Python's binary64 and rounding that is
+    # a different function near a half-integer boundary, and the kernel's
+    # arithmetic is the one being certified.
+    q = r(delt / limit)
     # Fortran `nint` rounds half AWAY FROM ZERO; Python's round() is
-    # half-to-even, which differs at exactly delt/120 = n + 0.5.
-    loops = max(int(math.floor(delt / DTCLDCR + 0.5)), 1)
-    dtcld = delt if delt <= DTCLDCR else r(delt / loops)
+    # half-to-even, which differs at exactly q = n + 0.5.
+    loops = max(int(math.floor(q + 0.5)), 1)
+    dtcld = delt if delt <= limit else r(delt / loops)
     return delt, loops, dtcld
 
 
-#: The kernel's maximum minor-loop step (`dtcldcr`, F:56). Read from the
-#: frozen source rather than restated, so a change there cannot leave this
-#: contract quietly describing the old kernel.
-def _dtcldcr() -> float:
-    src = (HERE.parent / "host" / "KIM-meso_v1.0" / "phys"
-           / "module_mp_kdm6.F")
-    m = re.search(r"dtcldcr\s*=\s*([0-9.]+)", src.read_text()) if \
-        src.is_file() else None
-    return float(m.group(1)) if m else 120.0
+#: The kernel's frozen sub-cycle limit, as a fact ABOUT A SOURCE FILE.
+KERNEL_SOURCE = Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F")
+KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v1"
 
 
-DTCLDCR = _dtcldcr()
+def kernel_geometry(precision: str = "f32") -> dict:
+    """What the kernel this bundle compiles against uses for `dtcldcr`.
+
+    Recorded IN the bundle so a reader never has to have the private source
+    to know what the run was held to (owner review §4). REFUSES rather than
+    defaulting: a silent 120.0 is a number nobody measured, and the whole
+    contract above is built on it.
+    """
+    src = HERE.parent / KERNEL_SOURCE
+    if not src.is_file():
+        raise SystemExit(
+            f"REFUSED: {KERNEL_SOURCE} is not here, so the sub-cycle limit "
+            f"the kernel enforces cannot be read -- and a default would be a "
+            f"number nobody measured")
+    text = src.read_text()
+    hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
+    if len(hits) != 1:
+        raise SystemExit(
+            f"REFUSED: {KERNEL_SOURCE} declares dtcldcr {len(hits)} times; "
+            f"the geometry contract needs exactly one")
+    value = float(hits[0])
+    w = ">d" if precision == "f64" else ">f"
+    return {"schema": KERNEL_GEOMETRY_SCHEMA,
+            "dtcldcr": struct.unpack(w, struct.pack(w, value))[0],
+            "dtcldcr_storage": precision,
+            "dtcldcr_word": struct.pack(w, value).hex().upper(),
+            "source_path": str(KERNEL_SOURCE),
+            "source_sha256": hashlib.sha256(src.read_bytes()).hexdigest()}
 
 
 def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> list:
@@ -202,7 +231,7 @@ def _argv(exe: Path, n: int, mode: str, rho_profile: str, width: int = 3) -> lis
 
 def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
             nflux=False, rho_profile="as-is", width=3, levels=None,
-            algo=None, fixture=None, horizon=None) -> dict:
+            algo=None, fixture=None, horizon=None, dtcldcr=None) -> dict:
     """Run every member and STRICT-parse EVERY protocol it emits (owner P0-4).
 
     A bundle used to be published after validating only G33R, so a probe arm
@@ -233,13 +262,13 @@ def members(exe: Path, out: Path, nsplits, mode: str, *, arm="reference",
                                rho=rho_profile, width=width, levels=levels,
                                arm=arm, algo=algo, fixture=fixture,
                                horizon=horizon, tiles=(width,),
-                               transport=nflux)
+                               transport=nflux, dtcldcr=dtcldcr)
     return runs
 
 
 def _require_current_profile(run, name, width, levels, algo=None, *,
                              nsplit=None, horizon=None, precision="f32",
-                             tiles=None):
+                             tiles=None, dtcldcr=None):
     """What TODAY'S producer requires of every member it publishes -- with or
     without instrumentation (owner review §8).
 
@@ -287,8 +316,9 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
     # gives 3 x 133.333328 = 399.999984). And a self-consistent triple was
     # never the question: 12 members stepping 20 s are internally perfect
     # and integrate 240 s of a 300 s fixture.
-    if horizon is not None:
-        want_d, want_L, want_h = expected_geometry(horizon, nsplit, precision)
+    if horizon is not None and dtcldcr is not None:
+        want_d, want_L, want_h = expected_geometry(horizon, nsplit, precision,
+                                                   dtcldcr)
         if f"{delt:.6f}" != f"{want_d:.6f}":
             raise ra.RefineError(
                 f"{name}: stepped delt={delt} at nsplit={nsplit}, but the "
@@ -321,7 +351,8 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
 
 def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
                            arm="reference", algo=None, fixture=None,
-                           horizon=None, tiles=None, transport=True):
+                           horizon=None, tiles=None, transport=True,
+                           dtcldcr=None):
     """ONE validator for every raw driver stream (owner review §6).
 
     The primary members carried the full fixture-domain / same-run contract;
@@ -353,17 +384,18 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     _require_current_profile(window, name, width, levels, algo=algo,
                              nsplit=nsplit, horizon=horizon,
                              precision="f64" if arm == "f64" else "f32",
-                             tiles=tiles)
+                             tiles=tiles, dtcldcr=dtcldcr)
     if transport:
         _require_fixture_domain(text, name, nsplit, mode, rho, width, levels,
                                 window, arm=arm, algo=algo, fixture=fixture,
-                                horizon=horizon, tiles=tiles)
+                                horizon=horizon, tiles=tiles,
+                                dtcldcr=dtcldcr)
     return window
 
 
 def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
                             arm="reference", algo=None, fixture=None,
-                            horizon=None, tiles=None):
+                            horizon=None, tiles=None, dtcldcr=None):
     """The G33N leg against the fixture AND the window protocol beside it.
 
     Three parties describe one run in a single stdout: the G33N header, the
@@ -399,12 +431,13 @@ def _require_fixture_domain(text, name, n, mode, rho, width, levels, run,
             f"{name}: the window protocol carries levels {sorted(wks)} and "
             f"the G33N leg declares exactly 0..{rid['levels'] - 1}")
     _require_same_run(name, rid, run, parsed, arm, algo, fixture,
-                      horizon=horizon, nsplit=n, tiles=tiles)
+                      horizon=horizon, nsplit=n, tiles=tiles,
+                      dtcldcr=dtcldcr)
 
 
 def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
                       fixture=None, *, horizon=None, nsplit=None,
-                      tiles=None):
+                      tiles=None, dtcldcr=None):
     """The SAME-RUN contract (owner review §6): the protocols in one stdout
     record the same facts twice, and until here nothing compared them.
 
@@ -520,9 +553,9 @@ def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
     # binding G33N to the window binds it only to six decimals: a G33N delt
     # differing from the fixture's below that resolution satisfies both
     # comparisons. Here the raw word meets the raw expectation.
-    if horizon is not None and nsplit is not None:
+    if horizon is not None and nsplit is not None and dtcldcr is not None:
         want_d, want_L, want_h = expected_geometry(
-            horizon, nsplit, "f64" if arm == "f64" else "f32")
+            horizon, nsplit, "f64" if arm == "f64" else "f32", dtcldcr)
         if word(rid["delt"]) != word(want_d):
             raise ra.RefineError(
                 f"{name}: the G33N leg stepped delt={rid['delt']!r}, the "
@@ -638,7 +671,7 @@ def _probe_member(path: Path) -> dict:
 def probe_members(exe: Path, out: Path, nsplits, mode: str,
                   rho_profile: str = "as-is", width: int = 3,
                   levels=None, nflux=False, algo=None, fixture=None,
-                  horizon=None) -> dict:
+                  horizon=None, dtcldcr=None) -> dict:
     """Run every member: G33P strict parse AND the fixture-domain pin.
 
     The f64 path validated only G33P; the G33N leg in the same stdout was read
@@ -659,7 +692,7 @@ def probe_members(exe: Path, out: Path, nsplits, mode: str,
                                rho=rho_profile, width=width, levels=levels,
                                arm="f64", algo=algo, fixture=fixture,
                                horizon=horizon, tiles=(width,),
-                               transport=nflux)
+                               transport=nflux, dtcldcr=dtcldcr)
     return runs
 
 
@@ -765,7 +798,7 @@ def _ran(text: str, *, nsplit: int, mode: str, width: int, rho: str,
 
 def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
                      width: int, levels: int, algo=None, fixture=None,
-                     horizon=None) -> list:
+                     horizon=None, dtcldcr=None) -> list:
     """Analyses that re-run the driver under several arms, not one stream.
 
     `mode` and `width` come from the bundle being produced (owner P0-2).
@@ -1310,6 +1343,12 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             f"the second would overwrite the first, so the bundle would silently "
             f"contain fewer members than requested.")
     width = fixture_width(fixture)
+    # The sub-cycle limit the kernel enforces, read ONCE from the frozen
+    # source this build compiles against and recorded in the bundle: the
+    # geometry contract is built on it, and a checker that re-reads it from
+    # whatever tree it happens to sit in is not checking a content-addressed
+    # archive (owner review §4).
+    kgeom = kernel_geometry("f64" if arm == "f64" else "f32")
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)
@@ -1320,7 +1359,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
                                  levels=fixture_dims(fixture)[1], nflux=nflux,
                                  algo=algo, fixture=fixture,
-                                 horizon=fixture_horizon(fixture))
+                                 horizon=fixture_horizon(fixture),
+                                 dtcldcr=kgeom["dtcldcr"])
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
             # f64 bundle got every per-member check and none of the between-member
@@ -1331,7 +1371,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                            rho_profile=rho_profile, width=width,
                            levels=fixture_dims(fixture)[1],
                            algo=algo, fixture=fixture,
-                           horizon=fixture_horizon(fixture))
+                           horizon=fixture_horizon(fixture),
+                           dtcldcr=kgeom["dtcldcr"])
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
         fx = HERE / "g33_fortran" / f"{fixture}.f90"
@@ -1364,7 +1405,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                 man["analyses"] += _driver_analyses(
                     tmp, exe, nsplits, mode, width, fixture_dims(fixture)[1],
                     algo=algo, fixture=fixture,
-                    horizon=fixture_horizon(fixture))
+                    horizon=fixture_horizon(fixture),
+                    dtcldcr=kgeom["dtcldcr"])
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
@@ -1419,6 +1461,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # decomposition, so every member's geometry is a derivable fact the
         # validator recomputes rather than a number it copies.
         man["algorithm"] = algo
+        man["kernel_geometry"] = kgeom
         man["expected_run"] = {
             # the fixture the MANIFEST pins, not a name the
             # producer holds separately: two records of one fact

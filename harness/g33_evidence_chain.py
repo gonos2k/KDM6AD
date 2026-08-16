@@ -516,6 +516,14 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     # nothing and is held to nothing.
     want_tiles = (man.get("expected_run") or {}).get("tile_sizes")
     want_tiles = tuple(want_tiles) if isinstance(want_tiles, list) else None
+    # The kernel's sub-cycle limit, from the bundle's OWN record: re-reading
+    # it from this checkout would make the verdict a property of the host
+    # (owner review §4). A schema that predates the record answers for no
+    # geometry, and is asked for none.
+    kg = man.get("kernel_geometry")
+    want_limit = kg.get("dtcldcr") if isinstance(kg, dict) else None
+    if not isinstance(want_limit, (int, float)) or isinstance(want_limit, bool):
+        want_limit = None
     for mem in man.get("members", []):
         p = root / mem["file"]
         if not p.is_file():
@@ -544,7 +552,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                 run, mem["file"], width, levels, algo=man.get("algorithm"),
                 nsplit=mem["nsplit"], horizon=horizon,
                 precision="f64" if arm == "f64" else "f32",
-                tiles=want_tiles)
+                tiles=want_tiles, dtcldcr=want_limit)
             if man.get("instrumented"):
                 # The EXPECTED experiment comes from the manifest -- what the
                 # bundle claims to be -- so a stream whose header forges a
@@ -554,7 +562,7 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     text, mem["file"], mem["nsplit"], mem["mode"],
                     man.get("rho_profile", "as-is"), width, levels, run,
                     arm=arm, algo=man.get("algorithm"), fixture=fixture,
-                    horizon=horizon, tiles=want_tiles)
+                    horizon=horizon, tiles=want_tiles, dtcldcr=want_limit)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
@@ -618,7 +626,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
                     p.read_text(), name=fname, nsplit=n2, mode=mode2,
                     rho=rho2, width=width, levels=levels, fixture=fixture,
                     algo=man.get("algorithm"), horizon=horizon,
-                    tiles=tuple(tiles2) if tiles2 else None)
+                    tiles=tuple(tiles2) if tiles2 else None,
+                    dtcldcr=want_limit)
                 row["state"] = "matches"
             except Exception as e:                      # noqa: BLE001
                 row["state"] = "MEMBER-CONTRACT-MISMATCH"

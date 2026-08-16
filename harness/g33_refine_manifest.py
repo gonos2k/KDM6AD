@@ -37,7 +37,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v4"
+SCHEMA = "refinement_experiment_v5"
 
 
 def sha256(path: Path) -> str:
@@ -239,7 +239,8 @@ _PRECISIONS = ("f32", "f64")
 #: a manifest declaring another word names a run that could not have happened.
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
-                 "refinement_experiment_v3", "refinement_experiment_v4")
+                 "refinement_experiment_v3", "refinement_experiment_v4",
+                 "refinement_experiment_v5")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -1192,6 +1193,44 @@ def _expected_run_violations(man: dict, members: list) -> list:
                     f"analyses[{i}] (arm_stream) ran the decomposition {got}, "
                     f"the bundle's expected_run declares {tiles}")
     prec = exp.get("precision", man.get("precision", "f32"))
+    # The sub-cycle limit comes from the bundle's OWN record, never from the
+    # tree validating it (owner review §4): a verdict that depends on the
+    # checkout is not a verdict about a content-addressed artifact.
+    kg = man.get("kernel_geometry")
+    v5 = at_least(man.get("schema"), "refinement_experiment_v5")
+    if kg is None and not v5:
+        return bad                  # predates the record; nothing to derive
+    if not isinstance(kg, dict):
+        return bad + ["kernel_geometry must be an object: the member "
+                      "geometry is derived from the kernel's sub-cycle "
+                      "limit, and a bundle that does not record it can only "
+                      "be checked against whatever tree reads it"]
+    if kg.get("schema") != xp.KERNEL_GEOMETRY_SCHEMA:
+        bad.append(f"kernel_geometry.schema {kg.get('schema')!r} is not "
+                   f"{xp.KERNEL_GEOMETRY_SCHEMA!r}")
+    limit = kg.get("dtcldcr")
+    try:
+        limit = float(limit) if isinstance(limit, (int, float)) and not \
+            isinstance(limit, bool) else None
+    except (OverflowError, ValueError):
+        limit = None
+    if limit is None or not math.isfinite(limit) or limit <= 0:
+        return bad + [f"kernel_geometry.dtcldcr {kg.get('dtcldcr')!r} is not "
+                      f"a positive finite number"]
+    if kg.get("dtcldcr_storage") not in _PRECISIONS:
+        bad.append(f"kernel_geometry.dtcldcr_storage "
+                   f"{kg.get('dtcldcr_storage')!r} is not one of "
+                   f"{_PRECISIONS}")
+    else:
+        w = ">d" if kg["dtcldcr_storage"] == "f64" else ">f"
+        want_word = struct.pack(w, limit).hex().upper()
+        if kg.get("dtcldcr_word") != want_word:
+            bad.append(f"kernel_geometry.dtcldcr_word "
+                       f"{kg.get('dtcldcr_word')!r} is not {want_word} -- the "
+                       f"word and the value name two different limits")
+    if not _hexlen(kg.get("source_sha256"), 64):
+        bad.append("kernel_geometry.source_sha256 is not a 64-hex digest of "
+                   "the kernel source the limit was read from")
     for i, m in enumerate(members):
         if not isinstance(m, dict):
             continue
@@ -1204,7 +1243,8 @@ def _expected_run_violations(man: dict, members: list) -> list:
         # the input it exists to describe is the defect one level up
         # (Codex; the same shape as the pin resolver's escape before it).
         try:
-            want_d, want_L, want_h = xp.expected_geometry(horizon, n, prec)
+            want_d, want_L, want_h = xp.expected_geometry(
+                horizon, n, prec, limit)
         except (ArithmeticError, OverflowError, ValueError, struct.error) as e:
             bad.append(f"members[{i}]: the fixture's {horizon} s horizon over "
                        f"{n} splits is not computable at {prec}: {e}")

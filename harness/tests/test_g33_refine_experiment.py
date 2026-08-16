@@ -1244,3 +1244,39 @@ def test_the_ONE_validator_reads_the_probe_arm_too(tmp_path):
     # ...and members() no longer keeps a second copy of that sequence
     body = inspect.getsource(xp.members)
     assert "_agree(" not in body and "_require_fixture_domain(" not in body
+
+
+# --- the geometry rule is PURE, and its limit travels with the bundle (§4) ---
+
+def test_expected_geometry_takes_its_limit_rather_than_reading_one():
+    """It read `dtcldcr` from a module global sourced from the working
+    tree's private kernel, with a silent 120.0 fallback -- so the same
+    historical bundle could get different verdicts on two hosts, and a
+    checker whose answer depends on its checkout is not checking a
+    content-addressed archive. Measured: at 120 a 300 s / 1 split member is
+    (300, 3, 100); at 60 it is (300, 5, 60), and a manifest CLEAN under one
+    is refused under the other."""
+    assert not hasattr(xp, "DTCLDCR"), "the ambient limit must be gone"
+    assert xp.expected_geometry(300.0, 1, "f32", 120.0) == (300.0, 3, 100.0)
+    assert xp.expected_geometry(300.0, 1, "f32", 60.0) == (300.0, 5, 60.0)
+    with pytest.raises(TypeError):
+        xp.expected_geometry(300.0, 1, "f32")       # no default to fall back to
+
+
+def test_the_kernel_geometry_record_is_measured_not_assumed():
+    """REFUSES rather than defaulting: a silent 120.0 is a number nobody
+    measured, and the whole geometry contract is built on it."""
+    kg = xp.kernel_geometry("f32")
+    assert kg["schema"] == xp.KERNEL_GEOMETRY_SCHEMA
+    assert kg["dtcldcr"] == 120.0 and kg["dtcldcr_word"] == "42F00000"
+    assert len(kg["source_sha256"]) == 64
+    assert xp.kernel_geometry("f64")["dtcldcr_word"] == "405E000000000000"
+
+
+def test_the_loop_count_rounds_the_quotient_at_the_MEMBERS_width():
+    """The kernel forms round_w(delt/dtcldcr) and applies nint to THAT;
+    dividing in Python's binary64 and rounding that is a different function
+    near a half-integer boundary (owner review §9)."""
+    src = inspect.getsource(xp.expected_geometry)
+    assert "q = r(delt / limit)" in src
+    assert "math.floor(q + 0.5)" in src
