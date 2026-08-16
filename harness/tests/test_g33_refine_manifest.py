@@ -46,12 +46,16 @@ def synthetic_manifest(root):
         # v4: the experiment the bundle claims to be, and the geometry every
         # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
         "algorithm": "legacy", "rho_profile": "as-is",
+        # the invocation the recipe id records, tied to expected_run below
+        "runtime_argv": [["12", "rezero"]],
         "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
         "fixture_sha256": "9" * 64,
-        "kernel_geometry": {"schema": "kdm6_subcycle_v1", "dtcldcr": 120.0,
+        "kernel_geometry": {"schema": "kdm6_subcycle_v2", "dtcldcr": 120.0,
                             "dtcldcr_storage": "f32",
                             "dtcldcr_word": "42F00000",
-                            "source_path": "host/x.F",
+                            "algorithm": "legacy",
+                            "source_path":
+                                "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
                             "source_sha256": "8" * 64},
         "expected_run": {"schema": "g33_expected_run_v1",
                          "fixture_id": "g33_fixture_multisubcycle_v1",

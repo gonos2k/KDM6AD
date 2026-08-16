@@ -1327,9 +1327,13 @@ def _expected_run_violations(man: dict, members: list) -> list:
                       "geometry is derived from the kernel's sub-cycle "
                       "limit, and a bundle that does not record it can only "
                       "be checked against whatever tree reads it"]
-    if kg.get("schema") != xp.KERNEL_GEOMETRY_SCHEMA:
-        bad.append(f"kernel_geometry.schema {kg.get('schema')!r} is not "
-                   f"{xp.KERNEL_GEOMETRY_SCHEMA!r}")
+    if kg.get("schema") not in xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS:
+        bad.append(f"kernel_geometry.schema {kg.get('schema')!r} is not one "
+                   f"of {xp.KNOWN_KERNEL_GEOMETRY_SCHEMAS}")
+    elif v5 and kg["schema"] != xp.KERNEL_GEOMETRY_SCHEMA:
+        bad.append(f"kernel_geometry.schema {kg['schema']!r} is not "
+                   f"{xp.KERNEL_GEOMETRY_SCHEMA!r}, which records WHICH "
+                   f"kernel the limit came from")
     limit = kg.get("dtcldcr")
     try:
         limit = float(limit) if isinstance(limit, (int, float)) and not \
@@ -1356,12 +1360,14 @@ def _expected_run_violations(man: dict, members: list) -> list:
     # WHICH kernel: the build compiles a different module per algorithm
     # (refine_build.sh:54-55), so a record naming the other one describes a
     # file this run never compiled (Codex).
-    if kg.get("algorithm") != man.get("algorithm"):
+    if kg.get("schema") != "kdm6_subcycle_v1" and \
+            kg.get("algorithm") != man.get("algorithm"):
         bad.append(f"kernel_geometry.algorithm {kg.get('algorithm')!r} is not "
                    f"the bundle's {man.get('algorithm')!r} -- the limit was "
                    f"read from another kernel than the one that ran")
     want_src = xp.KERNEL_SOURCES.get(man.get("algorithm"))
-    if want_src is not None and kg.get("source_path") != str(want_src):
+    if (kg.get("schema") != "kdm6_subcycle_v1" and want_src is not None
+            and kg.get("source_path") != str(want_src)):
         bad.append(f"kernel_geometry.source_path {kg.get('source_path')!r} is "
                    f"not the {man.get('algorithm')} kernel {str(want_src)!r}")
     for i, m in enumerate(members):

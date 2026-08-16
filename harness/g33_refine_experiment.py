@@ -214,7 +214,11 @@ KERNEL_SOURCES = {
     "legacy": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
     "conservative": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F"),
 }
-KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v1"
+#: v2 added `algorithm`: which kernel the limit was read from is part of
+#: the fact, and a tag whose required keys change without changing is a tag
+#: that means two things (Codex).
+KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v2"
+KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2")
 #: The CLOSED expected-run contract (owner review §5). Versioned because it
 #: is a document schema: an added field is a new contract, not a new
 #: optional convenience, and "compare if present" is what made the previous
