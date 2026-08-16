@@ -27,6 +27,7 @@ import argparse
 import ast
 import hashlib
 import math
+from dataclasses import dataclass, replace
 import os
 import re
 import shutil
@@ -230,6 +231,34 @@ KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2",
 EXPECTED_RUN_SCHEMA = "g33_expected_run_v1"
 
 
+@dataclass(frozen=True)
+class RunContract:
+    """Everything a raw execution is held to, read ONCE per bundle.
+
+    The producer read the kernel source for its members and the multi-run
+    legs read it again per leg, so one bundle had two geometry authorities
+    and a source edit between them would bind different legs to different
+    limits (owner review §6). Frozen, passed down, never re-derived: the
+    contract a stream answers to is the contract the bundle was built
+    under, whatever the tree does afterwards.
+    """
+    fixture: str
+    columns: int
+    levels: int
+    horizon: float
+    dtcldcr: float
+    algorithm: str
+    precision: str
+    mode: str
+    rho_profile: str
+    tiles: tuple
+
+    def for_tiles(self, tiles) -> "RunContract":
+        """The same contract with a different requested decomposition -- the
+        one axis a multi-run leg legitimately varies."""
+        return replace(self, tiles=tuple(tiles))
+
+
 def _dtcldcr_from(text: str, where: str) -> float:
     """The one declaration of `dtcldcr` in a kernel source's bytes."""
     hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
@@ -423,7 +452,8 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
             f"{algo!r}")
 
 
-def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
+def validate_member_stream(text, *, name, nsplit, contract=None, mode=None,
+                           rho=None, width=None, levels=None,
                            arm="reference", algo=None, fixture=None,
                            horizon=None, tiles=None, transport=True,
                            dtcldcr=None):
@@ -437,6 +467,20 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     parsed by the arm's own strict parser, then held to the same contract
     the primary members answer to.
     """
+    # A CONTRACT, where the caller has one (owner review §6): every field
+    # below then comes from the object the producer built once, rather than
+    # from arguments each call site assembles -- and from a source nobody
+    # re-reads.
+    if contract is not None:
+        mode = contract.mode if mode is None else mode
+        rho = contract.rho_profile if rho is None else rho
+        width = contract.columns if width is None else width
+        levels = contract.levels if levels is None else levels
+        algo = contract.algorithm if algo is None else algo
+        fixture = contract.fixture if fixture is None else fixture
+        horizon = contract.horizon if horizon is None else horizon
+        dtcldcr = contract.dtcldcr if dtcldcr is None else dtcldcr
+        tiles = contract.tiles if tiles is None else tiles
     # EVERY arm read here, including the probe (owner review §9). The
     # function claimed to be the one validator while picking `pr.read` for
     # f64 alone, so a probe stream was read as G33R and then held to a
@@ -1259,12 +1303,12 @@ def _analyzer_pin(module: str) -> dict:
 #: (Codex). A registry cannot drift the way a hand-written call can.
 MULTI_RUN = {
     "ncmin_locality": ("g33_ncmin_locality",
-                       lambda exe, fixture, algo=None:
-                       _ncmin().analysis(exe, fixture, algo)),
+                       lambda exe, fixture, algo=None, contract=None:
+                       _ncmin().analysis(exe, fixture, algo, contract)),
     # WHICH PROCESS carries the difference the one above measures (owner §7).
     "qr_process_ledger": ("g33_qr_process_ledger",
-                          lambda exe, fixture, algo=None:
-                          _ledger().analysis(exe, fixture, algo)),
+                          lambda exe, fixture, algo=None, contract=None:
+                          _ledger().analysis(exe, fixture, algo, contract)),
 }
 
 
@@ -1279,7 +1323,8 @@ def _ncmin():
 
 
 def _multi_run_analyses(out: Path, exe: Path, fixture: str,
-                        precision: str = "f32", algo: str | None = None) -> list:
+                        precision: str = "f32", algo: str | None = None,
+                        contract=None) -> list:
     """Analyses that run the DRIVER over several decompositions.
 
     Emitted only where the fixture can support the question. `ncmin_locality`
@@ -1305,7 +1350,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
         # review §7): without it a multi-run stream whose two
         # protocols agreed on `conservative` could enter the
         # immutable store and be refused only later, by the chain.
-        result = fn(str(exe), fixture, algo)
+        result = fn(str(exe), fixture, algo, contract)
         # The RAW streams this analysis consumed, preserved as bundle members.
         # Without them the chain reached the derived JSON, the analyzer and the
         # binary, but never the stdout those numbers were computed from: the
@@ -1439,6 +1484,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         ovl = tmp / "module_mp_ovl.F"
         kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo,
                                 ovl if ovl.is_file() else None)
+        contract = RunContract(
+            fixture=fixture, columns=width, levels=fixture_dims(fixture)[1],
+            horizon=fixture_horizon(fixture), dtcldcr=kgeom["dtcldcr"],
+            algorithm=algo, precision="f64" if arm == "f64" else "f32",
+            mode=mode, rho_profile=rho_profile, tiles=(width,))
         if arm == "f64":
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
@@ -1498,7 +1548,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
             man["analyses"] += _multi_run_analyses(tmp, exe, fixture,
-                                                   precision, algo)
+                                                   precision, algo, contract)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.

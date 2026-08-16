@@ -1696,3 +1696,23 @@ def test_every_multi_run_leg_takes_the_bundles_ALGORITHM():
         assert "algo" in inspect.signature(fn).parameters, fn.__name__
     assert "algo=algo" in inspect.getsource(nl.gated_state) or \
         "algo" in inspect.signature(nl.gated_state).parameters
+
+
+def test_a_supplied_CONTRACT_stops_the_leg_re_reading_the_kernel_source():
+    """The producer read the kernel source once for its members and each
+    multi-run leg read it again, so one bundle had two geometry authorities
+    and a source edit between them would bind different legs to different
+    limits (owner review §6). With a contract in hand the leg reads nothing:
+    the seam validates against the object the bundle was built under."""
+    import inspect
+    src = inspect.getsource(nl.gated_text)
+    head = src[:src.index("if contract is not None")]
+    tail = src[src.index("if contract is not None"):]
+    assert "return text" in tail.split("kernel_geometry")[0], \
+        "the contract path must return before any source read"
+    assert "kernel_geometry(" in src, \
+        "the no-contract fallback stays for direct callers"
+    # and every multi-run entry point can carry one
+    for fn in (nl.analysis, nl.local_oracle, nl.class_law,
+               nl.control_replication, nl.gated_state):
+        assert "contract" in inspect.signature(fn).parameters, fn.__name__

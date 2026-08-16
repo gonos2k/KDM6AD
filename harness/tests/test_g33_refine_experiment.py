@@ -1338,3 +1338,16 @@ def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
         xp.kernel_geometry("f32", "legacy")
     with pytest.raises(SystemExit, match="no kernel source is known"):
         xp.kernel_geometry("f32", "conservative")
+
+
+def test_the_run_contract_is_frozen_and_varies_only_the_decomposition():
+    """One object, read once, passed down -- and the single axis a
+    multi-run leg legitimately varies is the requested tiling."""
+    c = xp.RunContract(fixture="fx", columns=3, levels=4, horizon=60.0,
+                       dtcldcr=120.0, algorithm="legacy", precision="f32",
+                       mode="rezero", rho_profile="as-is", tiles=(3,))
+    with pytest.raises(Exception):
+        c.dtcldcr = 60.0                      # frozen
+    other = c.for_tiles((1, 2))
+    assert other.tiles == (1, 2)
+    assert other.dtcldcr == c.dtcldcr and other.horizon == c.horizon
