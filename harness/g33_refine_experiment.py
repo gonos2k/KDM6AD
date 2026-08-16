@@ -119,6 +119,16 @@ def fixture_width(fixture: str) -> int:
     return fixture_dims(fixture)[0]
 
 
+class FixtureContractError(ValueError):
+    """A fixture that cannot answer for its own parameters.
+
+    A ValueError, not a SystemExit (owner review §8): the evidence chain
+    judges arbitrary artifacts and must report `FIXTURE-UNRESOLVED` for a
+    malformed pin rather than terminating the process that found it. The
+    producer translates it at its own boundary, where exiting is right.
+    """
+
+
 def fixture_horizon_from(src: str, where: str = "<fixture>") -> float:
     """The fixture's TOTAL integration time, from its `DT_BITS` word.
 
@@ -132,10 +142,25 @@ def fixture_horizon_from(src: str, where: str = "<fixture>") -> float:
     Takes TEXT, so the evidence chain can pass the PINNED blob's bytes and
     the producer the working tree's, through one reader.
     """
+    return struct.unpack(
+        ">f", bytes.fromhex(fixture_dt_bits_from(src, where)))[0]
+
+
+def fixture_dt_bits_from(src: str, where: str = "<fixture>") -> str:
+    """The fixture's `DT_BITS` WORD, uppercase hex -- the canonical horizon.
+
+    The decimal is a decode of it, and two different decimals can decode to
+    one f32 (owner review §5), so the word is what a document is held to.
+    """
     m = re.search(r"DT_BITS\s*=\s*int\(z'([0-9A-Fa-f]{8})'", src)
     if not m:
-        raise SystemExit(f"cannot read DT_BITS from {where}")
-    return struct.unpack(">f", bytes.fromhex(m.group(1)))[0]
+        raise FixtureContractError(f"cannot read DT_BITS from {where}")
+    return m.group(1).upper()
+
+
+def fixture_dt_bits(fixture: str) -> str:
+    return fixture_dt_bits_from(
+        (HERE / "g33_fortran" / f"{fixture}.f90").read_text(), f"{fixture}.f90")
 
 
 def fixture_horizon(fixture: str) -> float:
@@ -183,6 +208,11 @@ def expected_geometry(total_seconds: float, nsplit: int,
 #: The kernel's frozen sub-cycle limit, as a fact ABOUT A SOURCE FILE.
 KERNEL_SOURCE = Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F")
 KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v1"
+#: The CLOSED expected-run contract (owner review §5). Versioned because it
+#: is a document schema: an added field is a new contract, not a new
+#: optional convenience, and "compare if present" is what made the previous
+#: block deletable field by field.
+EXPECTED_RUN_SCHEMA = "g33_expected_run_v1"
 
 
 def kernel_geometry(precision: str = "f32") -> dict:
@@ -1463,21 +1493,31 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         man["algorithm"] = algo
         man["kernel_geometry"] = kgeom
         man["expected_run"] = {
-            # the fixture the MANIFEST pins, not a name the
-            # producer holds separately: two records of one fact
+            "schema": EXPECTED_RUN_SCHEMA,
+            # the fixture the MANIFEST pins, not a name the producer holds
+            # separately: two records of one fact
             "fixture_id": Path(man["fixture_path"]).stem,
+            "fixture_sha256": man["fixture_sha256"],
+            # The RAW WORD is the canonical horizon (owner review §5): a
+            # decimal alias like 300.000001 rounds to the same f32 geometry,
+            # so a document comparing only the decimal can name a horizon the
+            # fixture does not hold.
+            "dt_bits": fixture_dt_bits(fixture),
             "window_seconds": fixture_horizon(fixture),
             "columns": width,
             "levels": fixture_dims(fixture)[1],
+            "algorithm": algo,
+            "precision": precision,
+            "source_precision": "f32",
+            "mode": mode,
+            "nsplits": sorted(nsplits),
+            "rho_profile": rho_profile,
             # Declared only where a protocol in this bundle RECORDS a
             # tiling -- G33N under --nflux, or G33P on the probe/f64 arms.
             # A plain reference bundle has neither, and a declaration
             # nothing can substantiate is a decoration (Codex).
             **({"tile_sizes": [width]}
                if (nflux or arm in ("probe", "f64")) else {}),
-            "rho_profile": rho_profile,
-            "algorithm": algo,
-            "precision": precision,
         }
         # The ROLE GRAPH the layered ids are derived under (owner priority 8).
         # Without it those ids are a function of the manifest AND of whichever

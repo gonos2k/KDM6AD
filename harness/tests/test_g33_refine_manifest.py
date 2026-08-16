@@ -47,11 +47,22 @@ def synthetic_manifest(root):
         # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
         "algorithm": "legacy", "rho_profile": "as-is",
         "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
-        "expected_run": {"fixture_id": "g33_fixture_multisubcycle_v1",
+        "fixture_sha256": "9" * 64,
+        "kernel_geometry": {"schema": "kdm6_subcycle_v1", "dtcldcr": 120.0,
+                            "dtcldcr_storage": "f32",
+                            "dtcldcr_word": "42F00000",
+                            "source_path": "host/x.F",
+                            "source_sha256": "8" * 64},
+        "expected_run": {"schema": "g33_expected_run_v1",
+                         "fixture_id": "g33_fixture_multisubcycle_v1",
+                         "fixture_sha256": "9" * 64, "dt_bits": "43960000",
                          "window_seconds": 300.0, "columns": 3, "levels": 4,
                          "tile_sizes": [3], "rho_profile": "as-is",
+                         "mode": "rezero", "nsplits": [12],
+                         "source_precision": "f32",
                          "algorithm": "legacy", "precision": "f32"},
         "members": [{"file": "n12.rezero.txt", "nsplit": 12,
+                     "mode": "rezero",
                      "algorithm": "legacy", "delt": 25.0, "loops": 1,
                      "dtcld": 25.0,
                      "output_sha256": w("n12.rezero.txt", "x\n")}],
@@ -1005,21 +1016,56 @@ def test_a_bundle_may_declare_only_the_decomposition_it_can_SUBSTANTIATE():
     ("expected_run is None", lambda m: m.update({"expected_run": None})),
     ("members are ints", lambda m: m.update({"members": [1, 2]})),
 ])
-def test_the_v4_checks_RETURN_violations_on_a_malformed_manifest(tag, mutate):
+def test_the_v4_checks_RETURN_violations_on_a_malformed_manifest(tmp_path, tag,
+                                                                mutate):
     """`validate` is contracted to RETURN violations, and the v4 arithmetic
     runs on numbers a malformed document supplies: nsplit=0 divided by zero,
     a 1e300 horizon overflowed the f32 pack, a string delt broke the format,
     a list `ran` broke the attribute access -- four crashes measured, each on
     exactly the input the checker exists to describe (Codex). A checker that
     raises there is the defect one level up."""
-    import copy
-    man = _real_v3_manifest_here_v4()
-    if man is None:
-        pytest.skip("no v4 bundle on this host")
-    d = copy.deepcopy(man)
+    # a v5 document: the geometry arithmetic only runs where the bundle
+    # records the limit it was held to, and that is what the fuzz exercises
+    d = synthetic_manifest(tmp_path)
+    d["schema"] = "refinement_experiment_v5"
+    assert rm.validate(d) == []
     try:
         mutate(d)
     except Exception:                      # a mutation the shape cannot take
         pytest.skip(f"{tag} not applicable to this manifest")
     got = rm.validate(d)                   # must not raise
     assert isinstance(got, list) and got, f"{tag} produced no violation"
+
+
+@pytest.mark.parametrize("tag,mutate,needle", [
+    ("drop algorithm", lambda e, m: e.pop("algorithm"), "key set"),
+    ("drop precision", lambda e, m: e.pop("precision"), "key set"),
+    ("drop rho_profile", lambda e, m: e.pop("rho_profile"), "key set"),
+    ("an extra key", lambda e, m: e.update({"note": "x"}), "unexpected"),
+    ("horizon is not the decode",
+     lambda e, m: e.update({"window_seconds": 300.000001}), "decode"),
+    ("dt_bits of another fixture",
+     lambda e, m: e.update({"dt_bits": "42700000"}), "decode"),
+    ("source_precision f64",
+     lambda e, m: e.update({"source_precision": "f64"}), "f32, always"),
+    ("mode absent from the vocabulary",
+     lambda e, m: e.update({"mode": "drift"}), "expected_run.mode"),
+    ("nsplits do not match the members",
+     lambda e, m: e.update({"nsplits": [7]}), "is not the members'"),
+    ("a member on another mode",
+     lambda e, m: m["members"][0].update({"mode": "carry"}),
+     "one auxiliary-state rule"),
+])
+def test_the_expected_run_block_is_a_CLOSED_contract(tmp_path, tag, mutate,
+                                                    needle):
+    """Every field was "compare if present", so deleting one deleted its
+    check: a manifest could drop algorithm, precision and rho_profile and
+    still validate, `levels` was never read, the horizon was never held to
+    the pinned DT_BITS word, and mode/nsplits were absent so a mixed
+    carry/rezero bundle passed at the document level (owner review §5).
+    Seven gaps measured; the key set is exact now."""
+    man = synthetic_manifest(tmp_path)
+    man["schema"] = "refinement_experiment_v5"
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man["expected_run"], man)
+    assert any(needle in v for v in rm.validate(man)), rm.validate(man)[:2]

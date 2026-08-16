@@ -466,8 +466,10 @@ def _pinned_fixture_dims(man: dict) -> tuple:
     # from the pin and the HORIZON from anywhere else would be pinning two
     # thirds of the experiment (owner review §4).
     import g33_refine_experiment as _xp
-    horizon = _xp.fixture_horizon_from(r.stdout.decode(errors="replace"), rel)
-    return int(m.group(1)), int(m.group(2)), horizon
+    text = r.stdout.decode(errors="replace")
+    horizon = _xp.fixture_horizon_from(text, rel)
+    return (int(m.group(1)), int(m.group(2)), horizon,
+            _xp.fixture_dt_bits_from(text, rel))
 
 
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
@@ -499,7 +501,25 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels, horizon = _pinned_fixture_dims(man)
+        width, levels, horizon, dt_bits = _pinned_fixture_dims(man)
+        # The DECLARED experiment against the PINNED bytes (owner review §5).
+        # The validator can only hold `expected_run` to the rest of the
+        # document; the fixture's own parameters live in the blob, and a
+        # manifest declaring levels=999 beside a K=4 fixture is a document
+        # describing an experiment nobody could run.
+        exp = man.get("expected_run")
+        if isinstance(exp, dict):
+            for key, want in (("columns", width), ("levels", levels),
+                              ("dt_bits", dt_bits),
+                              ("window_seconds", horizon),
+                              ("fixture_id", fixture)):
+                if key in exp and exp[key] != want:
+                    out.append({"file": "expected_run", "scope": "bundle",
+                                "origin": "member_contract",
+                                "state": "MEMBER-CONTRACT-MISMATCH",
+                                "detail": f"expected_run.{key} {exp[key]!r} "
+                                          f"is not the pinned fixture's "
+                                          f"{want!r}"})
     except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",

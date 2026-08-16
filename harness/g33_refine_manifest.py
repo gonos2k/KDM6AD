@@ -1113,6 +1113,7 @@ def _expected_run_violations(man: dict, members: list) -> list:
     the bytes. This is the DOCUMENT answering for itself.
     """
     import g33_refine_experiment as xp                  # cycle closes at call
+    EXPECTED_RUN_SCHEMA = xp.EXPECTED_RUN_SCHEMA
     bad = []
     if man.get("algorithm") not in _ALGOS:
         bad.append(f"algorithm {man.get('algorithm')!r} is not one of {_ALGOS}")
@@ -1127,6 +1128,84 @@ def _expected_run_violations(man: dict, members: list) -> list:
         return bad + ["expected_run must be an object: without it the "
                       "manifest records what each member stepped and never "
                       "what the experiment asked for"]
+    # A CLOSED schema (owner review §5). Every field was "compare if
+    # present", so deleting one deleted its check: a v4 manifest could drop
+    # algorithm, precision and rho_profile and still validate, and `levels`
+    # was never read at all. The key set is exact -- a missing field is a
+    # contract not met, an extra one is a contract nobody wrote.
+    v5 = at_least(man.get("schema"), "refinement_experiment_v5")
+    if v5:
+        substantiable = bool(man.get("instrumented")) or man.get("arm") in (
+            "probe", "f64")
+        want_keys = {"schema", "fixture_id", "fixture_sha256", "dt_bits",
+                     "window_seconds", "columns", "levels", "algorithm",
+                     "precision", "source_precision", "mode", "nsplits",
+                     "rho_profile"} | ({"tile_sizes"} if substantiable
+                                       else set())
+        if set(exp) != want_keys:
+            bad.append(
+                f"expected_run is not the {EXPECTED_RUN_SCHEMA} key set: "
+                f"missing {sorted(want_keys - set(exp))}, unexpected "
+                f"{sorted(set(exp) - want_keys)}")
+        if exp.get("schema") != EXPECTED_RUN_SCHEMA:
+            bad.append(f"expected_run.schema {exp.get('schema')!r} is not "
+                       f"{EXPECTED_RUN_SCHEMA!r}")
+        if exp.get("fixture_sha256") != man.get("fixture_sha256"):
+            bad.append("expected_run.fixture_sha256 is not the manifest's "
+                       "own fixture digest")
+        # The WORD is canonical: 300.000001 decodes to the same f32 as
+        # 300.0, so a document compared only on the decimal can name a
+        # horizon the fixture does not hold.
+        word = exp.get("dt_bits")
+        if not (isinstance(word, str) and re.fullmatch(r"[0-9A-F]{8}", word)):
+            bad.append(f"expected_run.dt_bits {word!r} is not an 8-hex "
+                       f"f32 word")
+        else:
+            decoded = struct.unpack(">f", bytes.fromhex(word))[0]
+            got = exp.get("window_seconds")
+            # EXACT, not "rounds to the same f32": 300.000001 rounds to
+            # 300.0 and would derive identical geometry while naming a
+            # horizon no fixture holds. The decimal is a DECODE of the word,
+            # so it is the decode or it is wrong (owner review §5).
+            try:
+                as_float = (float(got)
+                            if isinstance(got, (int, float))
+                            and not isinstance(got, bool) else None)
+            except (OverflowError, ValueError):     # an unbounded Python int
+                as_float = None
+            if as_float is None or as_float != decoded:
+                bad.append(
+                    f"expected_run.window_seconds {got!r} is not the decode "
+                    f"of the declared DT_BITS word {word} ({decoded})")
+        if exp.get("source_precision") != "f32":
+            bad.append(f"expected_run.source_precision "
+                       f"{exp.get('source_precision')!r} -- the reference "
+                       f"this archive instruments is f32, always")
+        if exp.get("mode") not in _CARRY_MODES:
+            bad.append(f"expected_run.mode {exp.get('mode')!r} is not one of "
+                       f"{_CARRY_MODES}")
+        ns = exp.get("nsplits")
+        if (not isinstance(ns, list) or not ns
+                or not all(isinstance(n, int) and not isinstance(n, bool)
+                           and 1 <= n <= _MAX_NSPLIT for n in ns)
+                or sorted(ns) != ns or len(set(ns)) != len(ns)):
+            bad.append(f"expected_run.nsplits {ns!r} is not a sorted list of "
+                       f"distinct steps the driver accepts")
+        # ...and the four records of one invocation agree: the declared
+        # steps and mode, the member rows, and (below) the geometry each
+        # implies (owner review §6).
+        elif isinstance(members, list):
+            got_ns = sorted(m.get("nsplit") for m in members
+                            if isinstance(m, dict))
+            if got_ns != sorted(ns):
+                bad.append(f"expected_run.nsplits {sorted(ns)} is not the "
+                           f"members' {got_ns}")
+        for i, m in enumerate(members if isinstance(members, list) else []):
+            if isinstance(m, dict) and m.get("mode") not in (None,
+                                                             exp.get("mode")):
+                bad.append(f"members[{i}] ran mode {m['mode']!r}, the bundle "
+                           f"declares {exp.get('mode')!r} -- one experiment, "
+                           f"one auxiliary-state rule")
     if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
         bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
                    f"the pinned fixture "
