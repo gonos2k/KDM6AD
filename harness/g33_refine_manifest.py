@@ -1253,12 +1253,27 @@ def _expected_run_violations(man: dict, members: list) -> list:
                 # tiling the bundle does not declare put a different
                 # operator into the recipe id than the document states.
                 declared = exp.get("tile_sizes")
-                if len(a) >= 3 and isinstance(declared, list):
+                if isinstance(declared, list):
                     want = ",".join(str(t) for t in declared)
-                    if str(a[2]) != want:
+                    if len(a) >= 3:
+                        if str(a[2]) != want:
+                            bad.append(
+                                f"runtime_argv[{i}] requested the "
+                                f"decomposition {a[2]!r}, the bundle declares "
+                                f"{want!r}")
+                    # A command line with NO tile argument requests the
+                    # driver's DEFAULT -- one tile over the whole domain
+                    # (g33_refine_driver.f90:365-366) -- and that is a
+                    # request like any other (Codex): leaving it unbound let
+                    # a bundle declare (1,2) beside an argv that asked for
+                    # the default, with nothing at the document level to
+                    # notice.
+                    elif declared != [exp.get("columns")]:
                         bad.append(
-                            f"runtime_argv[{i}] requested the decomposition "
-                            f"{a[2]!r}, the bundle declares {want!r}")
+                            f"runtime_argv[{i}] carries no tile argument, so "
+                            f"it requested the driver's default of one tile "
+                            f"over {exp.get('columns')!r} columns -- the "
+                            f"bundle declares {declared}")
             if seen and isinstance(ns, list) and sorted(seen) != sorted(ns):
                 bad.append(f"runtime_argv invokes nsplits {sorted(seen)}, the "
                            f"bundle declares {sorted(ns)}")

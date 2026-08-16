@@ -1077,6 +1077,9 @@ def test_the_expected_run_block_is_a_CLOSED_contract(tmp_path, tag, mutate,
 
 @pytest.mark.parametrize("argv_tiles,ok", [
     ("3", True), ("1,2", False), ("2,1", False), ("1,1,1", False),
+    # ...and NO tile argument is a request too: the driver's default of one
+    # tile over the whole domain (g33_refine_driver.f90:365-366)
+    (None, True),
 ])
 def test_the_argv_TILE_argument_is_the_declared_decomposition(tmp_path,
                                                               argv_tiles, ok):
@@ -1088,6 +1091,12 @@ def test_the_argv_TILE_argument_is_the_declared_decomposition(tmp_path,
     (Codex)."""
     man = synthetic_manifest(tmp_path)
     man["schema"] = "refinement_experiment_v5"
-    man["runtime_argv"] = [["12", "rezero", argv_tiles, "as-is"]]
-    got = [v for v in rm.validate(man) if "decomposition" in v]
+    man["runtime_argv"] = ([["12", "rezero"]] if argv_tiles is None
+                           else [["12", "rezero", argv_tiles, "as-is"]])
+    got = [v for v in rm.validate(man)
+           if "decomposition" in v or "tile argument" in v]
     assert (not got) is ok, got
+    # the implicit default is bound to the DECLARED tiling, not assumed
+    if argv_tiles is None:
+        man["expected_run"]["tile_sizes"] = [1, 2]
+        assert any("no tile argument" in v for v in rm.validate(man))
