@@ -68,8 +68,9 @@ def _g33r(qv, qr, pre, post, initial_qv=None):
     pre-sed value passes its own.
     """
     iq = qv if initial_qv is None else initial_qv
-    L = ["G33R BEGIN nsplit 1 rezero legacy delt 60.000000 loops 1 "
-         "dtcld 60.000000"]
+    # the SAME run as the G33N leg beside it: delt 100 (42C80000), one loop
+    L = ["G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 "
+         "dtcld 100.000000"]
     for cls, vals, hum in (("INITIAL", pre, iq), ("STATE", post, qv)):
         for k in range(len(RHO)):
             for f in mc.ra.STATE_FIELDS:

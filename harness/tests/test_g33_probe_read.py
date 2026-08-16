@@ -551,7 +551,9 @@ def test_the_THREE_analyses_that_needed_G33R_run_on_a_PROBE_stream():
     """The point of the change, checked through the analyses themselves rather
     than through the reader they share."""
     import g33_matched_closure as mc
-    got = mc.window_cell_mass(_NUMBER_STREAM + _stream(B=1, K=2), "physical")
+    got = mc.window_cell_mass(
+        _NUMBER_STREAM + _stream(B=1, K=2, nsplit=1, loops=1,
+                                 delt=100.0, dtcld=100.0), "physical")
     assert got, "the physical measure found no cells"
 
 
