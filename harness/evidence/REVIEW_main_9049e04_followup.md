@@ -47,8 +47,18 @@ rules they were published under. Both live bundles were re-produced;
 **49 of 49 pinned figures verified byte-identical before the pins moved**.
 
 ```
-ncmin-001   ff0be031… -> d05708a4…      water-001   be3413b9… -> 1db03280…
+ncmin-001   ff0be031… -> b97f36f9…      water-001   be3413b9… -> 0a7ca415…
 ```
+
+The Codex stop-time review caught two things in this cycle's own work, both
+reproduced and both fixed before the pins moved: `kernel_geometry` pinned
+the LEGACY kernel source for every bundle, so a conservative one would have
+recorded the digest of a module it never compiled (the build compiles
+`module_mp_kdm6_cons.F` for that arm, `refine_build.sh:54-55`); and adding
+the `algorithm` key to that block made it stricter while leaving the tag at
+`kdm6_subcycle_v1` — a tag meaning two things, which is the one discipline
+this campaign has kept unbroken. The tag is `kdm6_subcycle_v2`, v1 is held
+to what v1 promised, and the bundles were re-produced under it.
 
 ## Deferred, with reasons
 
