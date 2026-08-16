@@ -179,6 +179,36 @@ def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
     return r.stdout
 
 
+def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
+               carry: str = "rezero", rho: str = "as-is",
+               algo: str | None = None) -> str:
+    """One decomposition's raw stdout, through the FULL member contract.
+
+    The seam every multi-run leg shares. `qr_process_ledger` called `run()`
+    directly, so its two streams -- the oracle decomposition and the whole
+    domain, which its whole comparison rests on -- were published under no
+    contract at all while the ncmin legs beside them carried the full one
+    (owner review §7).
+    """
+    from g33_refine_experiment import (fixture_dims, fixture_horizon,
+                                       kernel_geometry,
+                                       validate_member_stream)
+    label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
+    text = run(driver, tiles, nsplit, carry, rho)
+    _expect_tiles_are_live(text, tiles, label, nsplit)
+    # ...including the DECOMPOSITION this leg asked for: `ncmin` is set by a
+    # tile's last column, so a decomposition that is not the requested one is
+    # a different operator -- and this analysis exists to measure exactly
+    # that difference (owner review §5).
+    validate_member_stream(text, name=label, nsplit=nsplit, mode=carry,
+                           rho=rho, width=fixture_dims(fixture)[0],
+                           levels=fixture_dims(fixture)[1], fixture=fixture,
+                           horizon=fixture_horizon(fixture),
+                           tiles=tuple(tiles), algo=algo,
+                           dtcldcr=kernel_geometry()["dtcldcr"])
+    return text
+
+
 def gated_state(driver: str, fixture: str, tiles, reference=None,
                 nsplit: int = 1, carry: str = "rezero",
                 rho: str = "as-is", algo: str | None = None) -> tuple:
@@ -196,27 +226,8 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     Returns (state, records) so a caller can use the records as the reference
     for the rest of its legs.
     """
+    text = gated_text(driver, fixture, tiles, nsplit, carry, rho, algo)
     label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
-    text = run(driver, tiles, nsplit, carry, rho)
-    _expect_tiles_are_live(text, tiles, label, nsplit)
-    # The FULL member contract, the same one the primary members answer to
-    # (owner review §6): tile liveness, the raw-hex reader and the
-    # same-atmosphere gates below each prove something, but none proves the
-    # G33N and G33R legs describe ONE run -- forcing values, timesteps, the
-    # loop universe. A decomposition published under a weaker contract than
-    # the member beside it is exactly the gap this closes.
-    from g33_refine_experiment import (fixture_horizon, kernel_geometry,
-                                       validate_member_stream)
-    # ...including the DECOMPOSITION this leg asked for: `ncmin` is set by a
-    # tile's last column, so a decomposition that is not the requested one is
-    # a different operator -- and this analysis exists to measure exactly
-    # that difference (owner review §5).
-    validate_member_stream(text, name=label, nsplit=nsplit, mode=carry,
-                           rho=rho, width=fixture_dims(fixture)[0],
-                           levels=fixture_dims(fixture)[1], fixture=fixture,
-                           horizon=fixture_horizon(fixture),
-                           tiles=tuple(tiles), algo=algo,
-                           dtcldcr=kernel_geometry()["dtcldcr"])
     rec = read_records(text, label=label, nsplit=nsplit)
     if reference is not None:
         _expect_same_inputs(reference, rec, label)

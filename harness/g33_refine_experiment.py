@@ -1215,10 +1215,12 @@ def _analyzer_pin(module: str) -> dict:
 #: (Codex). A registry cannot drift the way a hand-written call can.
 MULTI_RUN = {
     "ncmin_locality": ("g33_ncmin_locality",
-                       lambda exe, fixture: _ncmin().analysis(exe, fixture)),
+                       lambda exe, fixture, algo=None:
+                       _ncmin().analysis(exe, fixture, algo)),
     # WHICH PROCESS carries the difference the one above measures (owner §7).
     "qr_process_ledger": ("g33_qr_process_ledger",
-                          lambda exe, fixture: _ledger().analysis(exe, fixture)),
+                          lambda exe, fixture, algo=None:
+                          _ledger().analysis(exe, fixture, algo)),
 }
 
 
