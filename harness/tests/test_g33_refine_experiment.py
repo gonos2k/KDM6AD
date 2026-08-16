@@ -95,20 +95,6 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     # _driver_analyses RUNS the driver four times; the fake build returns a
     # path with no binary behind it, so it must be stubbed alongside.
     monkeypatch.setattr(xp, "_driver_analyses", lambda *a, **k: [])
-    # The kernel source is PRIVATE and gitignored, so a public checkout has
-    # none -- and the producer now refuses rather than defaulting the
-    # sub-cycle limit, which is the point of that refusal. These tests
-    # exercise bundle ASSEMBLY with a fake build; the geometry record is
-    # faked with them, exactly like the compiler and the driver.
-    monkeypatch.setattr(xp, "kernel_geometry",
-                        lambda precision="f32", algo="legacy": {
-                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
-                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
-                            "dtcldcr_word": ("42F00000" if precision == "f32"
-                                             else "405E000000000000"),
-                            "algorithm": algo,
-                            "source_path": str(xp.KERNEL_SOURCES[algo]),
-                            "source_sha256": "0" * 64})
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 
@@ -120,6 +106,28 @@ def _produce(dest, **kw):
     return xp.produce(dest, fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                       nsplits=kw.pop("nsplits", (3, 6)), mode="rezero",
                       nflux=kw.pop("nflux", False), module=MOD, **kw)
+
+
+@pytest.fixture(autouse=True)
+def _kernel_geometry_on_a_public_checkout(monkeypatch):
+    """The kernel source is PRIVATE and gitignored, and the producer now
+    REFUSES rather than defaulting the sub-cycle limit -- which is the point
+    of that refusal, and which stops every bundle-ASSEMBLY test on a public
+    checkout at a read those tests are not about. Where the source is
+    present the real one is used; where it is absent the record is faked
+    like the compiler and the driver beside it. The refusal has its own
+    test."""
+    if REF.is_file():
+        return
+    monkeypatch.setattr(xp, "kernel_geometry",
+                        lambda precision="f32", algo="legacy": {
+                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
+                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
+                            "dtcldcr_word": ("42F00000" if precision == "f32"
+                                             else "405E000000000000"),
+                            "algorithm": algo,
+                            "source_path": str(xp.KERNEL_SOURCES[algo]),
+                            "source_sha256": "0" * 64})
 
 
 @pytest.fixture(autouse=True)
@@ -257,20 +265,6 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
 
     monkeypatch.setattr(xp, "build", build)
     monkeypatch.setattr(xp, "probe_members", probe_members)
-    # The kernel source is PRIVATE and gitignored, so a public checkout has
-    # none -- and the producer now refuses rather than defaulting the
-    # sub-cycle limit, which is the point of that refusal. These tests
-    # exercise bundle ASSEMBLY with a fake build; the geometry record is
-    # faked with them, exactly like the compiler and the driver.
-    monkeypatch.setattr(xp, "kernel_geometry",
-                        lambda precision="f32", algo="legacy": {
-                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
-                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
-                            "dtcldcr_word": ("42F00000" if precision == "f32"
-                                             else "405E000000000000"),
-                            "algorithm": algo,
-                            "source_path": str(xp.KERNEL_SOURCES[algo]),
-                            "source_sha256": "0" * 64})
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
     dest = xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
                       algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False,
@@ -1326,3 +1320,16 @@ def test_the_kernel_geometry_names_the_source_THIS_algorithm_compiles():
     assert legacy["algorithm"] == "legacy" and cons["algorithm"] == "conservative"
     with pytest.raises(SystemExit, match="no kernel source is known"):
         xp.kernel_geometry("f32", "made-up")
+
+
+def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
+                                                                tmp_path):
+    """The refusal the seam above stands in for, tested on its own: the whole
+    geometry contract rests on the sub-cycle limit, so a silent 120.0 would
+    be a number nobody measured (owner review §4)."""
+    monkeypatch.setattr(xp, "KERNEL_SOURCES",
+                        {"legacy": tmp_path / "nope.F"})
+    with pytest.raises(SystemExit, match="is not here"):
+        xp.kernel_geometry("f32", "legacy")
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.kernel_geometry("f32", "conservative")
