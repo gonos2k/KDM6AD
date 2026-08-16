@@ -109,7 +109,7 @@ def _produce(dest, **kw):
 
 
 @pytest.fixture(autouse=True)
-def _kernel_geometry_on_a_public_checkout(monkeypatch):
+def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
     """The kernel source is PRIVATE and gitignored, and the producer now
     REFUSES rather than defaulting the sub-cycle limit -- which is the point
     of that refusal, and which stops every bundle-ASSEMBLY test on a public
@@ -117,7 +117,11 @@ def _kernel_geometry_on_a_public_checkout(monkeypatch):
     present the real one is used; where it is absent the record is faked
     like the compiler and the driver beside it. The refusal has its own
     test."""
-    if REF.is_file():
+    # A test ABOUT the read opts out, or the seam would answer for it: on a
+    # public checkout the stub replaced the function whose refusal the test
+    # asserts, returning a fake for `legacy` and a KeyError for the unknown
+    # algorithm rather than the SystemExit under test (Codex).
+    if REF.is_file() or request.node.get_closest_marker("real_kernel_geometry"):
         return
     monkeypatch.setattr(xp, "kernel_geometry",
                         lambda precision="f32", algo="legacy": {
@@ -1322,6 +1326,7 @@ def test_the_kernel_geometry_names_the_source_THIS_algorithm_compiles():
         xp.kernel_geometry("f32", "made-up")
 
 
+@pytest.mark.real_kernel_geometry
 def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
                                                                 tmp_path):
     """The refusal the seam above stands in for, tested on its own: the whole
