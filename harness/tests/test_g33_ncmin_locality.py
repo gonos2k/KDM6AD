@@ -846,11 +846,19 @@ def test_the_law_check_APPLIES_THE_SAME_GATES_as_the_oracle():
     src = (ROOT / "g33_ncmin_locality.py").read_text()
     body = src[src.index("def class_law("):src.index("def weight_is_uniform(")]
     assert "gated_state(" in body, "class_law must use the shared runner"
-    runner = src[src.index("def gated_state("):
-                 src.index("def control_replication(")]
-    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
-                 "_expect_universe"):
-        assert gate in runner, f"the shared runner skips {gate}"
+    # The gates live in TWO functions now: `gated_text` is the seam every
+    # raw execution shares -- including the ledger, which used to call run()
+    # directly -- and `gated_state` adds what a STATE comparison needs on
+    # top. The runner is the pair, so the check reads the pair.
+    text_gate = src[src.index("def gated_text("):src.index("def gated_state(")]
+    state_gate = src[src.index("def gated_state("):
+                     src.index("def control_replication(")]
+    assert "gated_text(" in state_gate, \
+        "gated_state must go through the shared seam, not around it"
+    for gate in ("_expect_tiles_are_live", "validate_member_stream"):
+        assert gate in text_gate, f"the shared seam skips {gate}"
+    for gate in ("_expect_same_inputs", "_expect_universe"):
+        assert gate in state_gate, f"the state runner skips {gate}"
 
 
 def test_the_report_states_the_LIMIT_of_the_evidence(drivers, capsys):
@@ -1081,11 +1089,18 @@ def test_ALL_THREE_analyses_go_through_the_SAME_gated_runner():
 
 
 def test_the_gated_runner_applies_EVERY_gate():
+    """The gates span the two layers of one runner: `gated_text` is the seam
+    every raw execution shares -- tile liveness and the full member contract
+    -- and `gated_state` adds what a STATE comparison needs. Together they
+    are the gated runner, and nothing may reach a state without both."""
     src = (ROOT / "g33_ncmin_locality.py").read_text()
+    seam = src[src.index("def gated_text("):src.index("def gated_state(")]
     body = src[src.index("def gated_state("):src.index("def control_replication(")]
-    for gate in ("_expect_tiles_are_live", "_expect_same_inputs",
-                 "_expect_universe", "read_records"):
-        assert gate in body, f"the shared runner skips {gate}"
+    for gate in ("_expect_tiles_are_live", "validate_member_stream"):
+        assert gate in seam, f"the shared seam skips {gate}"
+    for gate in ("gated_text", "_expect_same_inputs", "_expect_universe",
+                 "read_records"):
+        assert gate in body, f"the state runner skips {gate}"
 
 
 def test_a_TILES_IGNORING_driver_is_refused_by_the_REPLICATION(drivers,
