@@ -141,13 +141,22 @@ def _call(cid, cols=(1,), *, ks=2, end=True, drop=None, split=None, tile=1,
                         continue
                     out.append(f"G33F STAGE {loop} - {stage} 0 {f} {c} {k} f32 3F800000")
     for c in cols:
+        # the surface stage has the exact-universe contract too: one row per
+        # column at k = -1, a consistent field set
+        out.append(f"G33F STAGE {loop} - surface 0 bottom_fall_total {c} -1 "
+                   f"f32 3F800000")
+    for c in cols:
         out.append(f"G33F MSTEP {loop} main {c} i32 00000001")
         out.append(f"G33F MSTEPI {loop} {c} i32 00000001")
     for c in cols:
         for f in nt.NFLUX_FIELDS:
             if drop == f:
                 continue
-            out.append(f"G33F NFLUX {loop} {c} {f} f32 3F800000")
+            # dtcld restates delt/loops and den/delz the bottom cell -- the
+            # parser now compares the duplicates, so the helper must emit a
+            # CONSISTENT stream (delt=100, loops=1 -> dtcld=100).
+            hexv = "42C80000" if f == "nflux_dtcld" else "3F800000"
+            out.append(f"G33F NFLUX {loop} {c} {f} f32 {hexv}")
     if end:
         out.append(f"G33N CALL_END {cid} {split} {tile}")
     return "\n".join(out) + "\n"
@@ -208,8 +217,14 @@ def test_internal_loop2_does_not_overwrite_loop1():
     """A call with loops > 1 emits the same (stage, col, k) once per loop. The
     key carries the loop, so nothing is overwritten -- and the segment budget,
     which is defined for ONE loop, refuses the call rather than collapsing it."""
-    two = _call(1).rstrip().rsplit("G33N CALL_END", 1)[0] \
-        + _call(1, loop=2).split("42C80000\n", 1)[1]
+    # a 2-loop call sub-cycles at dtcld = delt/2, and the parser now
+    # compares that duplicate fact -- so the composed stream must say 50.0
+    half = _call(1).replace("nflux_dtcld f32 42C80000",
+                            "nflux_dtcld f32 42480000")
+    half2 = _call(1, loop=2).replace("nflux_dtcld f32 42C80000",
+                                     "nflux_dtcld f32 42480000")
+    two = half.rstrip().rsplit("G33N CALL_END", 1)[0] \
+        + half2.split("42C80000\n", 1)[1]
     calls = list(nt.calls(_stream(two)))          # well-formed: parses
     assert calls[0]["loops"] == {1, 2}
     assert calls[0]["mstep"][(1, "ice", 1)] == 1
@@ -580,9 +595,10 @@ def _f64(text):
             # AFTER the header, which is where the driver writes it.
             out += [line, _PROTO64]
             continue
-        line = line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
-        if line.startswith("G33N CALL_BEGIN"):
-            line = line.replace("42C80000", "4059000000000000")
+        # 42C80000 (100.0) appears both as the CALL_BEGIN delt and as the
+        # NFLUX dtcld payload -- both widen with the stream.
+        line = (line.replace(" f32 ", " f64 ").replace(_F32_ONE, _F64_ONE)
+                .replace("42C80000", "4059000000000000"))
         out.append(line)
     return "\n".join(out) + "\n"
 
@@ -948,7 +964,8 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
                    "tile_ranges": ((1, 1),), "tile_sizes": (1,),
-                   "algorithm": "legacy", "delt": 100.0, "dtcld": 1.0}
+                   "algorithm": "legacy", "delt": 100.0, "dtcld": 100.0,
+                   "loops": 1}
 
 
 def test_validated_run_identity_REFUSES_what_calls_refuses():
@@ -1077,7 +1094,110 @@ def test_NFLUX_records_declaring_two_subcycle_steps_are_refused():
     """dtcld is a scalar of the run, recorded once per column in every NFLUX
     group -- two values is two runs' records in one stream (owner review §6)."""
     s = _stream(_call(1, cols=(1, 2)))
-    s = s.replace("G33F NFLUX 1 2 nflux_dtcld f32 3F800000",
+    s = s.replace("G33F NFLUX 1 2 nflux_dtcld f32 42C80000",
                   "G33F NFLUX 1 2 nflux_dtcld f32 40000000")
     with pytest.raises(nt.StreamError, match="different sub-cycle steps"):
         nt.calls(s)
+
+
+# --- the loop universe is exact 1..L, one L per stream (owner review §4 r6) --
+
+
+def test_records_living_only_on_loop_2_are_refused():
+    """The per-loop checks walked the loops a call HAPPENS to carry, so a
+    call whose records all sit on loop 2 -- loop 1 entirely absent -- was
+    complete for every loop anyone looked at. Measured."""
+    with pytest.raises(nt.StreamError, match="not exactly 1..1"):
+        nt.calls(_stream(_call(1, loop=2)))
+
+
+def test_calls_running_DISJOINT_loop_sets_are_refused():
+    s = _stream(_call(1, loop=1), _call(2, loop=2))
+    with pytest.raises(nt.StreamError, match="different inner-loop sets"):
+        nt.calls(s)
+
+
+def test_the_run_identity_carries_the_loop_count():
+    assert nt.validated_run_identity(_stream(_call(1)))["loops"] == 1
+
+
+# --- duplicate facts inside one stream are compared (owner review §9.1) ------
+
+
+def test_nflux_den_delz_must_restate_the_bottom_cell():
+    """The NFLUX group restates the bottom cell's rho/delz, recorded
+    independently in outer_pre_sed at k = K-1. Measured across 4827
+    published flux groups: exactly equal, every one."""
+    s = _stream(_call(1)).replace("G33F NFLUX 1 1 nflux_den f32 3F800000",
+                                  "G33F NFLUX 1 1 nflux_den f32 40000000")
+    with pytest.raises(nt.StreamError, match="one run records one atmosphere"):
+        nt.calls(s)
+
+
+def test_the_subcycle_step_must_derive_from_the_external_step():
+    """dtcld x loops == delt at the f32 word -- the kernel's own rule,
+    restated in every NFLUX group and never compared to the CALL_BEGIN delt
+    it derives from."""
+    s = _stream(_call(1)).replace("G33F NFLUX 1 1 nflux_dtcld f32 42C80000",
+                                  "G33F NFLUX 1 1 nflux_dtcld f32 40000000")
+    with pytest.raises(nt.StreamError, match="not this stream's"):
+        nt.calls(s)
+
+
+def test_a_missing_surface_row_is_refused_not_skipped():
+    """A surface cell that is not there used to come back as None -- a
+    surface-dependent row silently dropped (owner review §9.2). Measured:
+    all 8945 published loops carry exactly cols x {k=-1}."""
+    s = _stream(_call(1, cols=(1, 2)))
+    s = s.replace("G33F STAGE 1 - surface 0 bottom_fall_total 2 -1 f32 3F800000\n",
+                  "")
+    with pytest.raises(nt.StreamError, match="cannot be skipped"):
+        nt.calls(s)
+
+
+def test_the_dtcld_relation_holds_at_the_STREAMS_width():
+    """Packing an f64 stream's dtcld x loops and delt to f32 dropped 29
+    bits, so two distinct f64 facts sharing an f32 word compared equal
+    (Codex). The relation now checks at the stream's own default-real
+    width: a sub-f32 perturbation on an f64 stream refuses."""
+    import struct
+    s = _f64(_stream(_call(1)))
+    bad = struct.pack(">d", 100.0 * (1 + 1e-12)).hex().upper()
+    s2 = s.replace("nflux_dtcld f64 4059000000000000", f"nflux_dtcld f64 {bad}")
+    assert s2 != s
+    with pytest.raises(nt.StreamError, match="not this stream's"):
+        nt.calls(s2)
+    nt.calls(s)                         # the consistent stream still parses
+
+
+def test_a_VALID_subcycle_whose_quotient_does_not_invert_still_parses():
+    """The kernel rounds delt/L to the build's width; re-multiplying does
+    NOT recover delt for ~9% of (delt, L) pairs at f64, so a product rule
+    refused valid streams (Codex). The check now recomputes the kernel's
+    own operation: dtcld must equal the correctly-rounded quotient.
+
+    The pair is KERNEL-CONSISTENT (Codex, next round): the kernel picks
+    L = max(nint(delt/dtcldcr), 1) with dtcldcr = 120 (F:930), so
+    delt = 384.007... gives nint(3.2) = 3 loops -- a stream the kernel can
+    actually emit, unlike an arbitrary (delt, L) the parser would judge but
+    no run would produce."""
+    import math
+    import struct
+    delt = float.fromhex("0x1.8001d7dbf7f69p+8")     # 384.00720000079906
+    assert max(math.floor(delt / 120 + 0.5), 1) == 3, \
+        "the pair no longer matches the kernel's own loop rule"
+    q = struct.unpack(">d", struct.pack(">d", delt / 3))[0]
+    assert struct.pack(">d", q * 3) != struct.pack(">d", delt), \
+        "the chosen pair no longer demonstrates the non-inverting case"
+    dh = struct.pack(">d", delt).hex().upper()
+    qh = struct.pack(">d", q).hex().upper()
+    parts = [_call(1, loop=l) for l in range(1, 4)]
+    merged = parts[0].rstrip().rsplit("G33N CALL_END", 1)[0]
+    for pt in parts[1:]:
+        merged += pt.split("42C80000\n", 1)[1].rsplit("G33N CALL_END", 1)[0]
+    merged += "G33N CALL_END 1 1 1\n"
+    s = _f64("G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux "
+             "as-is\n" + merged + "G33N STREAM_END\n")
+    s = s.replace("4059000000000000", dh)
+    s = s.replace(f"nflux_dtcld f64 {dh}", f"nflux_dtcld f64 {qh}")
+    assert sorted(nt.calls(s)[0]["loops"]) == [1, 2, 3]

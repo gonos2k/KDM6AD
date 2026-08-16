@@ -551,7 +551,9 @@ def test_the_THREE_analyses_that_needed_G33R_run_on_a_PROBE_stream():
     """The point of the change, checked through the analyses themselves rather
     than through the reader they share."""
     import g33_matched_closure as mc
-    got = mc.window_cell_mass(_NUMBER_STREAM + _stream(B=1, K=2), "physical")
+    got = mc.window_cell_mass(
+        _NUMBER_STREAM + _stream(B=1, K=2, nsplit=1, loops=1,
+                                 delt=100.0, dtcld=100.0), "physical")
     assert got, "the physical measure found no cells"
 
 
@@ -564,9 +566,12 @@ _NUMBER_STREAM = (
         for k in range(2)
         for f in ("nr", "ni", "qr", "qi", "qv", "rho", "delz")
         if not (stage == "outer_post_sed" and f in ("rho", "delz")))
+    + "G33F STAGE 1 - surface 0 bottom_fall_total 1 -1 f32 3F800000\n"
     + "G33F MSTEP 1 main 1 i32 00000001\n"
       "G33F MSTEPI 1 1 i32 00000001\n"
-    + "".join(f"G33F NFLUX 1 1 {f} f32 3F800000\n" for f in _nt.NFLUX_FIELDS)
+    + "".join(f"G33F NFLUX 1 1 {f} f32 "
+              f"{'42C80000' if f == 'nflux_dtcld' else '3F800000'}\n"
+              for f in _nt.NFLUX_FIELDS)
     + "G33N CALL_END 1 1 1\n"
       "G33N STREAM_END\n")
 

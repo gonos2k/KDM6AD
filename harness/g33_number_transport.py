@@ -424,6 +424,27 @@ def _check_loop(call, lp, feats=frozenset()):
                         f"call {call['call_id']} loop {lp} col {c} level {k}: "
                         f"{stage} carries fields {sorted(got)}, the rest of the "
                         f"stage carries {sorted(fields)}")
+    # The SURFACE stage gets the same exact-universe contract as pre/post
+    # (owner review §9.2): its rows feed surface-dependent closures, and a
+    # missing cell used to come back as None -- a row silently skipped
+    # rather than a stream refused. Measured across all 8945 published
+    # loops: every one carries exactly cols x {k=-1}, one field set.
+    srf = {(c, k) for l, c, k in call["surface"] if l == lp}
+    if srf != {(c, -1) for c in cols}:
+        raise StreamError(
+            f"call {call['call_id']} loop {lp}: surface covers "
+            f"{sorted(srf)}, the state covers columns {sorted(cols)} at "
+            f"k=-1 -- a surface row that is not there cannot be skipped, "
+            f"only refused")
+    sf = {f for (l, c, k), rec in call["surface"].items() if l == lp
+          for f in rec}
+    for c in sorted(cols):
+        got_sf = set(call["surface"][(lp, c, -1)])
+        if got_sf != sf:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c}: surface carries "
+                f"fields {sorted(got_sf)}, the rest of the stage carries "
+                f"{sorted(sf)}")
     # Filtered BY LOOP: unfiltered, a column missing its NFLUX in loop 1 passed
     # because loop 2 supplied one (owner P0-2).
     got = {c for l, c in call["flux"] if l == lp}
@@ -441,6 +462,20 @@ def _check_loop(call, lp, feats=frozenset()):
         for name in ("nflux_den", "nflux_delz", "nflux_dtcld"):
             if f[name] <= 0:
                 raise StreamError(f"call {call['call_id']} col {c}: {name}={f[name]}")
+        # DUPLICATE facts, compared (owner review §9.1): the NFLUX group
+        # restates the bottom cell's rho/delz, recorded independently in
+        # outer_pre_sed at k = K-1. Measured across 4827 published flux
+        # groups: exactly equal, every one -- so a group that disagrees is
+        # two runs' records, not a rounding.
+        if call["K"] is not None:
+            pre = call["outer_pre_sed"].get((lp, c, call["K"] - 1))
+            if pre is not None:
+                for nm, key in (("nflux_den", "rho"), ("nflux_delz", "delz")):
+                    if f[nm] != pre[key]:
+                        raise StreamError(
+                            f"call {call['call_id']} loop {lp} col {c}: "
+                            f"{nm}={f[nm]!r} but the bottom cell's {key} is "
+                            f"{pre[key]!r} -- one run records one atmosphere")
     for chain in ("main", "ice"):
         got = {c for l, ch, c in call["mstep"] if ch == chain and l == lp}
         if got != cols:
@@ -804,6 +839,44 @@ def calls(stream: str) -> list:
             raise StreamError(
                 f"NFLUX records declare different sub-cycle steps "
                 f"{sorted(dtclds)} -- one stream describes one problem")
+        # ...and one LOOP UNIVERSE (owner review §4, sixth round): the
+        # per-loop checks walk the loops a call HAPPENS to carry, so a call
+        # whose records all sit on loop 2 -- loop 1 entirely absent -- was
+        # complete for every loop anyone looked at, and two calls could run
+        # disjoint loop sets. The kernel counts inner loops 1..L from one on
+        # every external call, so the set is exactly {1..L}, the same L for
+        # every call.
+        loop_sets = {tuple(sorted(c["loops"])) for c in out}
+        if len(loop_sets) > 1:
+            raise StreamError(
+                f"calls carry different inner-loop sets "
+                f"{sorted(loop_sets)} -- one stream describes one problem")
+        lset = loop_sets.pop()
+        if lset != tuple(range(1, len(lset) + 1)):
+            raise StreamError(
+                f"inner loops {list(lset)} are not exactly 1..{len(lset)} -- "
+                f"a loop the kernel counted is missing from the record")
+        # ...and the sub-cycle step is the external step divided by the loop
+        # count -- the kernel's own rule, restated in every NFLUX group and
+        # never compared to the CALL_BEGIN delt it derives from (owner
+        # review §9.1). Checked as the kernel COMPUTES it (Codex, round
+        # two): the kernel rounds the quotient delt/L to the build's real
+        # width, and re-multiplying that back does NOT recover delt for
+        # ~9%% of (delt, L) pairs at f64 -- a product rule refused VALID
+        # sub-cycle streams. So the recorded dtcld must equal the
+        # correctly-rounded quotient at the stream's own word width, which
+        # is exact by construction of the operation being checked -- and a
+        # forged dtcld still differs from that quotient at the same width.
+        if dtclds:
+            d = next(iter(dtclds))
+            dt = next(iter(dts))
+            wfmt = ">d" if rb == 8 else ">f"
+            q = struct.unpack(wfmt, struct.pack(wfmt, dt / len(lset)))[0]
+            if struct.pack(wfmt, d) != struct.pack(wfmt, q):
+                raise StreamError(
+                    f"NFLUX dtcld {d} != delt {dt} / {len(lset)} loops "
+                    f"(= {q} at this stream's width) -- the sub-cycle step "
+                    f"is not this stream's")
         # Every split's tiles must cover THE DOMAIN exactly once: a gap or an
         # overlap between tiles is a decomposition that did not process the
         # state it claims to (owner P0-3).
@@ -886,7 +959,10 @@ def validated_run_identity(text: str, expected_width: int | None = None,
            "ntile": hdr["ntile"], "tile_ranges": tiles,
            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
            "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
-           "dtcld": dtclds.pop() if dtclds else None}
+           "dtcld": dtclds.pop() if dtclds else None,
+           # Proven exactly {1..L}, one L per stream, by `calls()` above --
+           # so a caller holding the window header's `loops` can compare.
+           "loops": len(parsed[0]["loops"])}
     # `with_calls` hands back the strict parse the identity was derived FROM,
     # so a caller that also needs the records (the same-run forcing check)
     # does not parse a many-megabyte stream twice. Same reader, same parse.

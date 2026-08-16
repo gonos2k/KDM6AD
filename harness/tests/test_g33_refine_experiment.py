@@ -67,7 +67,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
-                rho_profile="as-is", width=3, levels=None):
+                rho_profile="as-is", width=3, levels=None, algo=None,
+                fixture=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -159,7 +160,8 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
     _fake(monkeypatch)
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
-            rho_profile="as-is", width=3, levels=None):
+            rho_profile="as-is", width=3, levels=None, algo=None,
+            fixture=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -226,11 +228,14 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
-                      levels=None, nflux=False):
+                      levels=None, nflux=False, algo=None, fixture=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
-            p.write_text(_probe_stream(n))
+            # The manifest cross-check now compares each member's recorded
+            # fixture against the bundle's own pin, so the fake stream must
+            # declare the fixture this test's autouse redirect actually pins.
+            p.write_text(_probe_stream(n, fixture=FIX.stem))
             runs[n] = xp.pr.read(p.read_text())
         return runs
 
@@ -246,11 +251,11 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
     assert [m["precision"] for m in man["members"]] == ["f64", "f64"]
 
 
-def _probe_stream(nsplit=3):
+def _probe_stream(nsplit=3, fixture="fx"):
     """A COMPLETE probe stream: the reader now requires the exact
     field x cell universe plus INITIAL, all three forcings and PREC, because
     'absent' silently disabled every check (owner §7.2)."""
-    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture fx "
+    out = [f"G33P BEGIN 4 precision f64 source_precision f32 fixture {fixture} "
            f"algorithm legacy mode rezero tiles 1 rho_profile as-is "
            f"{nsplit} 1 1 {300.0/nsplit:.6f} {300.0/nsplit:.6f} 1 1"]
     for f in xp.pr.FIELDS:
@@ -418,7 +423,8 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     _fake(monkeypatch)
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
-                        lambda out, exe, ns, mode, width, levels: seen.update(
+                        lambda out, exe, ns, mode, width, levels, algo=None,
+                        fixture=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
@@ -1015,10 +1021,11 @@ def test_the_same_run_contract_compares_at_the_MEMBERS_precision():
     perturbation on an f64 member must refuse."""
     run = _samerun_window()
     run[("meta", "precision")] = "f64"
+    run[("meta", "source_precision")] = "f32"
     run[("forcing", "rho", 2, 1)] = 1.0 * (1 + 1e-12)
     with pytest.raises(xp.ra.RefineError, match="two different runs"):
         xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
-                                   "rezero", "as-is", 3, 4, run)
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
     # ...and the SAME perturbation on an f32 member is below the value
     # model's resolution: both notations name one f32 word, so it passes.
     ok = _samerun_window()
@@ -1038,7 +1045,7 @@ def test_a_valid_NON_INTEGRAL_split_is_not_two_timesteps():
     delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
     hex32 = struct.pack(">f", delt32).hex().upper()
     from test_g33_number_transport import _call as _nc, _stream as _ns
-    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32))
     run = _samerun_window()
     run[("meta", "precision")] = "f64"
     run[("meta", "delt")] = float(f"{delt32:.6f}")
@@ -1059,7 +1066,7 @@ def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
     delt32 = struct.unpack(">f", struct.pack(">f", 300.0 / 7.0))[0]
     hex32 = struct.pack(">f", delt32).hex().upper()
     from test_g33_number_transport import _call as _nc, _stream as _ns
-    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32, 1))
+    text = _ns(_nc(1, cols=(1, 2, 3), ks=4).replace("42C80000", hex32))
     run = _samerun_window()
     run[("meta", "delt")] = 42.85714250
     with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
@@ -1069,3 +1076,94 @@ def test_a_header_claiming_MORE_precision_than_its_channel_is_refused():
     with pytest.raises(xp.ra.RefineError, match="more precision than the F0.6"):
         xp._require_fixture_domain(text, "n7.rezero.txt", 1, "rezero",
                                    "as-is", 3, 4, run)
+
+
+def test_the_window_loop_count_binds_the_G33N_loop_universe():
+    """Two records of one fact (owner review §4, sixth round): the window
+    header records what the kernel ran; calls() proves the G33N records
+    cover exactly 1..L. A window declaring 3 beside records covering 1..1
+    is two runs' paperwork in one stdout."""
+    run = _samerun_window()
+    run[("meta", "loops")] = 3
+    with pytest.raises(xp.ra.RefineError, match="ran 3 inner loops"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run)
+    run[("meta", "loops")] = 1
+    xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                               "rezero", "as-is", 3, 4, run)
+
+
+# --- the EXPECTED experiment binds the header's claims (owner review §5) -----
+
+def test_a_header_may_not_choose_the_width_it_is_checked_at():
+    """The comparison width came from the header's own precision claim, so a
+    G33P forging precision=f32 on an f64 stream re-opened the 29-bit
+    conflation the width fix closed -- measured on a live member. The width
+    now comes from the EXPECTED arm, and the header must agree with it."""
+    run = _samerun_window()
+    run[("meta", "precision")] = "f32"
+    run[("meta", "source_precision")] = "f32"
+    with pytest.raises(xp.ra.RefineError, match="may not choose the width"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
+    run[("meta", "precision")] = "f64"
+    run[("meta", "source_precision")] = "f64"
+    with pytest.raises(xp.ra.RefineError, match="f32, always"):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run, arm="f64")
+
+
+@pytest.mark.parametrize("key,val,match", [
+    (("meta", "fixture"), "g33_fixture_other_v1", "the caller asked for"),
+    (("meta", "algorithm"), "conservative", "two algorithms, one stdout"),
+    (("meta", "rho_profile"), "inverted", "rho_profile"),
+])
+def test_the_window_metadata_must_be_the_requested_experiment(key, val, match):
+    run = _samerun_window()
+    run[key] = val
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1,
+                                   "rezero", "as-is", 3, 4, run,
+                                   algo="legacy", fixture="g33_fixture_x")
+
+
+# --- today's capability profile, instrumented or not (owner review §8) -------
+
+def _profile_run():
+    run = {("state", "qr", c, k): 1.0 for c in (1, 2) for k in range(2)}
+    run[("initial", "qr", 1, 0)] = 1.0
+    run.update({("forcing", nm, c, k): 1.0
+                for nm in ("rho", "delz") for c in (1, 2) for k in range(2)})
+    run.update({("meta", "delt"): 100.0, ("meta", "loops"): 1,
+                ("meta", "dtcld"): 100.0, ("meta", "nsplit"): 1,
+                ("meta", "algorithm"): "legacy"})
+    return run
+
+
+def test_the_current_profile_control_passes():
+    xp._require_current_profile(_profile_run(), "n1", 2, 2, algo="legacy")
+
+
+@pytest.mark.parametrize("mutate,match", [
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "forcing"],
+     "publishes its rho"),
+    (lambda r: [r.pop(k) for k in list(r) if k[0] == "initial"],
+     "no INITIAL state"),
+    (lambda r: r.pop(("meta", "loops")), "declares no loops"),
+    (lambda r: r.update({("meta", "dtcld"): 50.0}),
+     "not one kernel's"),
+    (lambda r: r.update({("meta", "delt"): -1.0, ("meta", "dtcld"): -1.0}),
+     "must be positive"),
+    (lambda r: [r.pop(k) for k in list(r)
+                if k[0] == "state" and k[2] == 2],
+     "the fixture declares"),
+])
+def test_a_member_below_todays_profile_is_refused(mutate, match):
+    """The reader keeps INITIAL/forcing/time-geometry OPTIONAL so archived
+    streams still parse; the producer of new evidence may not inherit that
+    leniency (owner review §8). The loops x dtcld == delt rule is the
+    kernel's own, measured to hold on all 192 published headers."""
+    run = _profile_run()
+    mutate(run)
+    with pytest.raises(xp.ra.RefineError, match=match):
+        xp._require_current_profile(run, "n1", 2, 2)

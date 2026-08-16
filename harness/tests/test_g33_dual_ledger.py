@@ -43,8 +43,15 @@ def _stream(qv, qr=0.0):
                 if stage == "outer_post_sed" and f in ("rho", "delz"):
                     continue
                 L.append(f"G33F STAGE 1 - {stage} 0 {f} 1 {k} f32 {_hex(v)}")
+    # the surface stage carries the exact-universe contract too
+    L += [f"G33F STAGE 1 - surface 0 bottom_fall_total 1 -1 f32 {_hex(1.0)}"]
     L += ["G33F MSTEP 1 main 1 i32 00000001", "G33F MSTEPI 1 1 i32 00000001"]
-    L += [f"G33F NFLUX 1 1 {f} f32 {_hex(1.0)}" for f in mc.nt.NFLUX_FIELDS]
+    # den/delz restate the bottom cell and dtcld restates delt/loops -- the
+    # parser compares those duplicates now, so the fixture must be one
+    # consistent run (delt = 100, loops = 1).
+    L += [f"G33F NFLUX 1 1 {f} f32 "
+          f"{_hex({'nflux_den': RHO[-1], 'nflux_delz': DZ, 'nflux_dtcld': 100.0}.get(f, 1.0))}"
+          for f in mc.nt.NFLUX_FIELDS]
     L += [f"G33F XFER 1 1 1 main f32 {_hex(0.0)} {_hex(XFER[-1])}",
           "G33F XFER 1 1 1 ice f32 00000000 00000000",
           "G33N CALL_END 1 1 1", "G33N STREAM_END"]
@@ -61,8 +68,9 @@ def _g33r(qv, qr, pre, post, initial_qv=None):
     pre-sed value passes its own.
     """
     iq = qv if initial_qv is None else initial_qv
-    L = ["G33R BEGIN nsplit 1 rezero legacy delt 60.000000 loops 1 "
-         "dtcld 60.000000"]
+    # the SAME run as the G33N leg beside it: delt 100 (42C80000), one loop
+    L = ["G33R BEGIN nsplit 1 rezero legacy delt 100.000000 loops 1 "
+         "dtcld 100.000000"]
     for cls, vals, hum in (("INITIAL", pre, iq), ("STATE", post, qv)):
         for k in range(len(RHO)):
             for f in mc.ra.STATE_FIELDS:

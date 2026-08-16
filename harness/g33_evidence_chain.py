@@ -412,6 +412,40 @@ def _arm_ran_state(p: Path, an: dict) -> str:
             else "RUN-IDENTITY-MISMATCH")
 
 
+def _pinned_fixture_dims(man: dict) -> tuple:
+    """(B, K) from the fixture bytes the MANIFEST pins -- never the checkout.
+
+    The semantic re-validation read the fixture through `fixture_dims`, which
+    parses the current working tree (owner review §7): edit the fixture
+    source and every historical bundle is suddenly judged against a domain
+    its run never saw -- in both directions, since a wrongly-shrunk checkout
+    would approve artifacts against the wrong (B, K) too. The scientific
+    input identity is the PINNED one: the blob at the bundle's own
+    `repo_commit`, required to hash to its recorded `fixture_sha256` before
+    a single dimension is read from it.
+    """
+    fixture = Path(str(man.get("fixture_path", ""))).name
+    rel = f"harness/g33_fortran/{fixture}"
+    commit = man.get("repo_commit")
+    r = subprocess.run(["git", "cat-file", "blob", f"{commit}:{rel}"],
+                       cwd=REPO, capture_output=True)
+    if r.returncode != 0:
+        raise ValueError(
+            f"cannot resolve {rel} at the pinned commit "
+            f"{str(commit)[:12]} -- the fixture the run consumed is not "
+            f"recoverable from here")
+    if hashlib.sha256(r.stdout).hexdigest() != man.get("fixture_sha256"):
+        raise ValueError(
+            f"the blob at {str(commit)[:12]}:{rel} does not hash to the "
+            f"manifest's fixture_sha256 -- the pin names bytes the commit "
+            f"does not hold")
+    m = re.search(rb"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)\s*,\s*"
+                  rb"K\s*=\s*(\d+)", r.stdout)
+    if not m:
+        raise ValueError(f"cannot read dimensions B, K from the pinned {rel}")
+    return int(m.group(1)), int(m.group(2))
+
+
 #: (bundle dir, manifest digest) -> contract rows. A bundle is immutable and
 #: the manifest digests every member, so the answer cannot change within a
 #: run -- and the chain is walked repeatedly by the tests, each walk otherwise
@@ -441,8 +475,8 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
     out: list = []
     try:
         fixture = Path(man["fixture_path"]).name.removesuffix(".f90")
-        width, levels = xp.fixture_dims(fixture)
-    except (KeyError, TypeError, SystemExit) as e:
+        width, levels = _pinned_fixture_dims(man)
+    except (KeyError, TypeError, ValueError) as e:
         out = [{"file": "members", "scope": "repo",
                 "origin": "member_contract", "state": "FIXTURE-UNRESOLVED",
                 "detail": str(e)[:120]}]
@@ -462,16 +496,68 @@ def _member_contract_states(root: Path, man: dict) -> list[dict]:
             else:
                 run = xp.ra.read(p, nsplit=mem["nsplit"])
                 if arm == "probe":
-                    xp._agree(run, xp.pr.read(text), mem["file"])
+                    probe = xp.pr.read(text)
+                    xp._agree(run, probe, mem["file"])
+                    # The contract runs against G33P on this arm -- the side
+                    # carrying precision/source/fixture metadata; `_agree`
+                    # has already tied G33R to it record for record.
+                    run = probe
             if man.get("instrumented"):
+                # The EXPECTED experiment comes from the manifest -- what the
+                # bundle claims to be -- so a stream whose header forges a
+                # different precision, fixture or profile is caught against
+                # the document that published it (owner review §5).
                 xp._require_fixture_domain(
                     text, mem["file"], mem["nsplit"], mem["mode"],
-                    man.get("rho_profile", "as-is"), width, levels, run)
+                    man.get("rho_profile", "as-is"), width, levels, run,
+                    arm=arm, fixture=fixture)
             row["state"] = "matches"
         except Exception as e:                          # noqa: BLE001
             row["state"] = "MEMBER-CONTRACT-MISMATCH"
             row["detail"] = str(e)[:160]
         out.append(row)
+    # The OTHER raw streams, same contract (owner review §6): the density
+    # arms and the multi-run decompositions are load-bearing -- analyses are
+    # computed from them -- and they were re-checked only through their G33N
+    # identity. An arm stream's expected values come from its typed `ran`
+    # block; a multi-run input's from the producer's own filename schema,
+    # which is a contract too: a name the schema cannot parse is refused,
+    # not skipped.
+    for a in man.get("analyses") or []:
+        if not isinstance(a, dict):
+            continue
+        targets = []
+        if a.get("analysis") == "arm_stream" and isinstance(a.get("ran"), dict):
+            r = a["ran"]
+            targets.append((a["file"], r.get("nsplit"), r.get("carry"),
+                            r.get("rho")))
+        for src in a.get("inputs") or []:
+            f = src.get("file") if isinstance(src, dict) else None
+            if isinstance(f, str) and f.startswith("mr."):
+                m2 = re.match(r"mr\.n(\d+)\.(carry|rezero)\.([a-z2+-]+)\.", f)
+                if not m2:
+                    out.append({"file": f, "scope": "bundle",
+                                "origin": "member_contract",
+                                "state": "MEMBER-CONTRACT-MISMATCH",
+                                "detail": "multi-run filename does not parse "
+                                          "as mr.n<N>.<mode>.<rho>."})
+                    continue
+                targets.append((f, int(m2.group(1)), m2.group(2), m2.group(3)))
+        for fname, n2, mode2, rho2 in targets:
+            p = root / fname
+            if not p.is_file():
+                continue            # the digest row already reports absence
+            row = {"file": fname, "scope": "bundle",
+                   "origin": "member_contract"}
+            try:
+                xp.validate_member_stream(
+                    p.read_text(), name=fname, nsplit=n2, mode=mode2,
+                    rho=rho2, width=width, levels=levels, fixture=fixture)
+                row["state"] = "matches"
+            except Exception as e:                      # noqa: BLE001
+                row["state"] = "MEMBER-CONTRACT-MISMATCH"
+                row["detail"] = str(e)[:160]
+            out.append(row)
     _MEMBER_CONTRACT[key] = out
     return out
 
