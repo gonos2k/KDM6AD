@@ -69,7 +69,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
                 rho_profile="as-is", width=3, levels=None, algo=None,
-                fixture=None, horizon=None):
+                fixture=None, horizon=None, dtcldcr=None):
         if fail_at == "run":
             raise SystemExit("driver failed")
         runs = {}
@@ -162,7 +162,7 @@ def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypat
 
     def bad(exe, out, ns, mode, *, arm="reference", nflux=False,
             rho_profile="as-is", width=3, levels=None, algo=None,
-            fixture=None, horizon=None):
+            fixture=None, horizon=None, dtcldcr=None):
         (out / "n3.rezero.txt").write_text("G33R BEGIN nsplit 3 rezero legacy\n")
         return {3: xp.ra.read(out / "n3.rezero.txt", nsplit=3)}
     monkeypatch.setattr(xp, "members", bad)
@@ -230,7 +230,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
                       levels=None, nflux=False, algo=None, fixture=None,
-                      horizon=None):
+                      horizon=None, dtcldcr=None):
         runs = {}
         for n in ns:
             p = out / f"n{n}.{mode}.txt"
@@ -426,7 +426,7 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
     seen = {}
     monkeypatch.setattr(xp, "_driver_analyses",
                         lambda out, exe, ns, mode, width, levels, algo=None,
-                        fixture=None, horizon=None: seen.update(
+                        fixture=None, horizon=None, dtcldcr=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
     monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
@@ -1168,7 +1168,7 @@ def test_a_member_below_todays_profile_is_refused(mutate, match):
     run = _profile_run()
     mutate(run)
     with pytest.raises(xp.ra.RefineError, match=match):
-        xp._require_current_profile(run, "n1", 2, 2, nsplit=1, horizon=100.0)
+        xp._require_current_profile(run, "n1", 2, 2, nsplit=1, horizon=100.0, dtcldcr=120.0)
 
 
 # --- the fixture's HORIZON is the third dimension (owner review §4) ---------
@@ -1178,10 +1178,10 @@ def test_the_fixture_horizon_and_the_kernels_geometry_rule():
     is derived from it. The rule is the driver's own (F:362, F:930-932)."""
     assert xp.fixture_horizon("g33_fixture_boundary_mapping_v1") == 60.0
     assert xp.fixture_horizon("g33_fixture_multisubcycle_v1") == 300.0
-    assert xp.expected_geometry(60.0, 12) == (5.0, 1, 5.0)
-    assert xp.expected_geometry(300.0, 3, "f64") == (100.0, 1, 100.0)
+    assert xp.expected_geometry(60.0, 12, "f32", 120.0) == (5.0, 1, 5.0)
+    assert xp.expected_geometry(300.0, 3, "f64", 120.0) == (100.0, 1, 100.0)
     # delt > dtcldcr is where the loop count stops being 1
-    assert xp.expected_geometry(300.0, 1) == (300.0, 3, 100.0)
+    assert xp.expected_geometry(300.0, 1, "f32", 120.0) == (300.0, 3, 100.0)
 
 
 def test_a_member_that_integrates_the_WRONG_HORIZON_is_refused():
@@ -1192,9 +1192,9 @@ def test_a_member_that_integrates_the_WRONG_HORIZON_is_refused():
     run[("initial", "qr", 1, 0)] = 1.0
     run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
                 ("meta", "nsplit"): 1})
-    xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=100.0)
+    xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=100.0, dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="integrates 100.0 s of a 300"):
-        xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=300.0)
+        xp._require_current_profile(run, "n1", 3, 4, nsplit=1, horizon=300.0, dtcldcr=120.0)
 
 
 def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
@@ -1205,10 +1205,10 @@ def test_the_G33N_leg_answers_to_the_FIXTURE_at_its_own_width():
     run[("meta", "loops")] = 1
     run[("meta", "dtcld")] = 100.0
     xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
-                               3, 4, run, horizon=100.0)
+                               3, 4, run, horizon=100.0, dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="the fixture's 300.0 s"):
         xp._require_fixture_domain(_domain_text(), "n1", 1, "rezero", "as-is",
-                                   3, 4, run, horizon=300.0)
+                                   3, 4, run, horizon=300.0, dtcldcr=120.0)
 
 
 def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
@@ -1225,10 +1225,10 @@ def test_the_REQUESTED_decomposition_binds_not_merely_a_coherent_one():
     run.update({("meta", "loops"): 1, ("meta", "dtcld"): 100.0,
                 ("meta", "nsplit"): 1})
     xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2, run,
-                               horizon=100.0, tiles=(1, 2))
+                               horizon=100.0, tiles=(1, 2), dtcldcr=120.0)
     with pytest.raises(xp.ra.RefineError, match="asked for \\(3,\\)"):
         xp._require_fixture_domain(text, "arm", 1, "rezero", "as-is", 3, 2,
-                                   run, horizon=100.0, tiles=(3,))
+                                   run, horizon=100.0, tiles=(3,), dtcldcr=120.0)
 
 
 def test_the_ONE_validator_reads_the_probe_arm_too(tmp_path):
