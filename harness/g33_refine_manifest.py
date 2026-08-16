@@ -35,7 +35,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v3"
+SCHEMA = "refinement_experiment_v4"
 
 
 def sha256(path: Path) -> str:
@@ -237,7 +237,7 @@ _PRECISIONS = ("f32", "f64")
 #: a manifest declaring another word names a run that could not have happened.
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
-                 "refinement_experiment_v3")
+                 "refinement_experiment_v3", "refinement_experiment_v4")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -810,7 +810,8 @@ def validate(man: dict) -> list:
         if len(algos) > 1:
             bad.append(f"members ran different algorithms {sorted(algos)} -- "
                        f"one bundle, one experiment")
-        bad += _expected_run_violations(man, members)
+        if at_least(schema, "refinement_experiment_v4"):
+            bad += _expected_run_violations(man, members)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1163,7 +1164,7 @@ def _expected_run_violations(man: dict, members: list) -> list:
     return bad
 
 
-def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
+def _arm_ran_violations(i: int, a: dict, argv: list, v4: bool = True) -> list:
     """Every position of an arm's command line, against its typed identity.
 
     Only argv[0] and argv[3] were compared before, so the carry mode and the
@@ -1207,7 +1208,9 @@ def _arm_ran_violations(i: int, a: dict, argv: list) -> list:
     # operators. A `ran` block that cannot say which one it ran cannot be
     # checked against the request by anything downstream.
     ts = ran.get("tile_sizes")
-    if (not isinstance(ts, list) or not ts
+    if not v4:
+        pass                     # published before the decomposition was typed
+    elif (not isinstance(ts, list) or not ts
             or not all(isinstance(t, int) and not isinstance(t, bool) and t > 0
                        for t in ts)):
         bad.append(f"analyses[{i}] (arm_stream) ran.tile_sizes {ts!r} is not a "
@@ -1275,7 +1278,9 @@ def _analysis_violations(analyses, member_nsplits, schema=SCHEMA) -> list:
                 # the producer checks it against the raw stream's own header
                 # before writing it.
                 if at_least(schema, "refinement_experiment_v3"):
-                    bad += _arm_ran_violations(i, a, argv)
+                    bad += _arm_ran_violations(
+                        i, a, argv,
+                        at_least(schema, "refinement_experiment_v4"))
                 else:
                     # v2 compared exactly these two positions.
                     if argv[0] != str(a.get("nsplit")):

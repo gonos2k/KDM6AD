@@ -372,7 +372,7 @@ def _rank(schema: str) -> int:
     return _SCHEMA_ORDER.index(schema) if schema in _SCHEMA_ORDER else -1
 
 
-def _arm_ran_state(p: Path, an: dict) -> str:
+def _arm_ran_state(p: Path, an: dict, decomposition: bool = True) -> str:
     """An arm's typed run identity against the STRICT PARSE of the stream.
 
     The manifest says which run this is; the stream says which run it was. Two
@@ -406,10 +406,18 @@ def _arm_ran_state(p: Path, an: dict) -> str:
     # `want` from the reader's keys would fail every published arm for fields
     # the schema never asked it to record.
     ran = an.get("ran") or {}
-    fields = ("nsplit", "carry", "width", "rho", "levels", "ntile")
+    # The decomposition joined the `ran` block at schema v4; a bundle
+    # published before it promises nothing about tiles, and demanding the
+    # field of a document whose contract predates it is a blocker with no
+    # resolution but re-production -- which is a decision, not a check.
+    fields = (("nsplit", "carry", "width", "rho", "levels", "ntile")
+              if decomposition else ("nsplit", "carry", "width", "rho",
+                                     "levels"))
     want = {k: ran.get(k) for k in fields}
     if {k: got[k] for k in fields} != want:
         return "RUN-IDENTITY-MISMATCH"
+    if not decomposition:
+        return "matches"
     # The decomposition too, as a value rather than a count: `ncmin` is set
     # by a tile's LAST column, so (1,2) and (2,1) are two operators with one
     # ntile (owner review §5). JSON gives lists, the reader gives tuples.
@@ -743,7 +751,11 @@ def members_of(manifest: Path) -> list[dict]:
         if "ran" in an and p.is_file():
             out.append({"file": an["file"], "scope": "bundle",
                         "origin": "run_identity",
-                        "state": (_arm_ran_state(p, an)
+                        "state": (_arm_ran_state(
+                                      p, an,
+                                      rm.at_least(
+                                          man.get("schema"),
+                                          "refinement_experiment_v4"))
                                   if an.get("analysis") == "arm_stream"
                                   else _ran_state(p, an))})
         # The ANALYZER the manifest names, by digest. It was recorded and never

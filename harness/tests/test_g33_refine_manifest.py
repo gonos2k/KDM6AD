@@ -43,7 +43,17 @@ def synthetic_manifest(root):
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
         "is_refinement_chain": True,
+        # v4: the experiment the bundle claims to be, and the geometry every
+        # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
+        "algorithm": "legacy", "rho_profile": "as-is",
+        "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
+        "expected_run": {"fixture_id": "g33_fixture_multisubcycle_v1",
+                         "window_seconds": 300.0, "columns": 3, "levels": 4,
+                         "tile_sizes": [3], "rho_profile": "as-is",
+                         "algorithm": "legacy", "precision": "f32"},
         "members": [{"file": "n12.rezero.txt", "nsplit": 12,
+                     "algorithm": "legacy", "delt": 25.0, "loops": 1,
+                     "dtcld": 25.0,
                      "output_sha256": w("n12.rezero.txt", "x\n")}],
         "analyses": [
             {"file": f"n12.rezero.{k}.json", "analysis": k, "nsplit": 12,
@@ -58,7 +68,8 @@ def synthetic_manifest(root):
              # TYPED beside the literal command line (owner priority 5): the
              # argv is four strings and only two positions were ever compared.
              "ran": {"nsplit": 12, "carry": "rezero", "width": 3,
-                     "rho": "uniform", "levels": 4},
+                     "rho": "uniform", "levels": 4, "ntile": 1,
+                     "tile_sizes": [3], "tile_ranges": [[1, 3]]},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")}],
