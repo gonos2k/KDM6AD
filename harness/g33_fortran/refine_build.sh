@@ -114,11 +114,24 @@ STAGE="${TMPDIR:-/tmp}/g33-stage"; mkdir -p "$STAGE"
 # map keeps the LOGICAL path, which is what the record is about; the staged
 # bytes are what gets compiled and hashed.
 STAGE_MAP="$OUT/staged-map.txt"; : >"$STAGE_MAP"
+# COPY FIRST, then hash the COPY, and name it by that (Codex). Hashing the
+# source and copying it afterwards left the same window staging exists to
+# close, one level down: an edit in between stored bytes under an address
+# that is not their digest, and the store is shared and persistent, so the
+# next build to ask for the ORIGINAL digest was handed those bytes by the
+# existence check and compiled them. Reproduced -- the entry's name and its
+# content disagreed, and a later build restoring the original source
+# compiled the poisoned copy. Deriving the address from the stored bytes
+# makes a concurrent edit produce a DIFFERENT address instead.
 stage() {
-    local src="$1" d b
-    d=$(shasum -a 256 "$src" | cut -d' ' -f1); b=$(basename "$src")
-    local dst="$STAGE/$d-$b"
-    [ -f "$dst" ] || { cp "$src" "$dst.$$.tmp" && mv -f "$dst.$$.tmp" "$dst"; }
+    local src="$1" b tmp d dst
+    b=$(basename "$src")
+    tmp=$(mktemp "$STAGE/.staging.XXXXXX")
+    cp "$src" "$tmp"
+    d=$(shasum -a 256 "$tmp" | cut -d' ' -f1)
+    dst="$STAGE/$d-$b"
+    [ -f "$dst" ] || mv -f "$tmp" "$dst"
+    rm -f "$tmp"
     printf '%s\t%s\n' "$dst" "$src" >>"$STAGE_MAP"
     printf '%s' "$dst"
 }
@@ -159,7 +172,11 @@ if [ "$DUMP" = 1 ]; then
     # compile from an identical path, different ones cannot collide.
     python3 "$HERE/make_fortran_overlay.py" "$MODULE_STAGED" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" --real-kind="$REAL_KIND" >/dev/null
-    OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
+    # ...copied BEFORE it is hashed, for the reason `stage` is (Codex): the
+    # address has to be the digest of the bytes at the address.
+    OVLTMP=$(mktemp "${TMPDIR:-/tmp}/g33-ovl.XXXXXX")
+    cp "$OUT/module_mp_ovl.F" "$OVLTMP"
+    OVLFULL=$(shasum -a 256 "$OVLTMP" | cut -d' ' -f1)
     # CONTENT-ADDRESSED on the FULL digest (owner §13 P1-4). A 16-hex truncation
     # left a real race: two builds whose overlays share a 64-bit prefix but
     # differ in content both see "no file", both write, and the loser's compile
@@ -168,8 +185,8 @@ if [ "$DUMP" = 1 ]; then
     # so there is no collision to guard -- only a partial write, which the
     # temp-then-rename handles.
     MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL}.F"
-    cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"
-    mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"
+    [ -f "$MODULE_SRC" ] || mv -f "$OVLTMP" "$MODULE_SRC"
+    rm -f "$OVLTMP"
     # ...and the source log names it as the bundle publishes it: the
     # content-addressed path lives under TMPDIR, which differs per machine,
     # and a machine-specific string in the provenance would move the same
@@ -189,8 +206,12 @@ DTCLDCR=$(sed -n 's/.*::[[:space:]]*dtcldcr[[:space:]]*=[[:space:]]*\([0-9.]\{1,
 [ "$(printf '%s\n' "$DTCLDCR" | grep -c .)" = 1 ] || {
     echo "REFUSED: $MODULE_SRC declares dtcldcr $(printf '%s\n' "$DTCLDCR" | grep -c .) times; the driver's window header needs exactly one" >&2
     exit 2; }
+# ...and the driver is staged like every other compiled source. It was the one
+# input read straight from the tree, so `fc` hashed it and the compiler read it
+# again -- the window this staging exists to close, left open on the file that
+# writes the window header (Codex).
 fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "-DKDM6_DTCLDCR=$DTCLDCR" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
-                                   "$HERE/g33_refine_driver.f90"
+                                   "$(stage "$HERE/g33_refine_driver.f90")"
 LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
       "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"
       "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o"
