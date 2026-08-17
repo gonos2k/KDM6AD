@@ -261,13 +261,15 @@ def _hexlen(v, n) -> bool:
 #: Spelled here rather than imported from `g33_identity`: that module imports
 #: the producer, which imports this one, and the requirement is a property of
 #: the DOCUMENT either way.
-IDENTITY_SCHEMA = "g33_layered_identity_v3"
+IDENTITY_SCHEMA = "g33_layered_identity_v4"
 #: ...and the tags a bundle may legitimately carry. A document is held to the
 #: id semantics it was PRODUCED under: v3 moved `expected_run` and
 #: `kernel_geometry` into the recipe id, which is a different question about
 #: the same manifest, and demanding it of an artifact published before it
 #: would be a blocker with no resolution but re-production.
-KNOWN_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3")
+KNOWN_IDENTITY_SCHEMAS = ("g33_layered_identity_v2",
+                          "g33_layered_identity_v3",
+                          "g33_layered_identity_v4")
 
 
 #: The roles a module can carry. `_by_role` filters on these words, so one it
@@ -378,7 +380,7 @@ def _identity_violations(man: dict) -> list:
     if ident.get("schema") not in KNOWN_IDENTITY_SCHEMAS:
         bad.append(f"identity.schema {ident.get('schema')!r} is not one of "
                    f"{KNOWN_IDENTITY_SCHEMAS}")
-    elif (at_least(man.get("schema"), "refinement_experiment_v5")
+    elif (at_least(man.get("schema"), "refinement_experiment_v6")
             and ident["schema"] != IDENTITY_SCHEMA):
         bad.append(f"identity.schema {ident['schema']!r} is not "
                    f"{IDENTITY_SCHEMA!r}, which {man.get('schema')!r} "

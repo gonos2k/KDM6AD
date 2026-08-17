@@ -339,7 +339,8 @@ def _identity_graph_state(man: dict) -> dict:
 _IDENTITY_FROM = "refinement_experiment_v3"
 #: Every id semantics a published bundle may carry: a document answers for
 #: the rules it was produced under, not for today's.
-_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3")
+_IDENTITY_SCHEMAS = ("g33_layered_identity_v2", "g33_layered_identity_v3",
+                     "g33_layered_identity_v4")
 
 
 def _identity_state(man: dict) -> str:

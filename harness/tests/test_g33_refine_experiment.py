@@ -98,8 +98,12 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 
-MOD = ROOT / "g33_refine_analyze.py"       # any two real files, for digests
-FIX = ROOT / "g33_refine_manifest.py"
+# REAL files, because v6 ties the kernel record to the module the manifest
+# pins and the resolved gate reads the fixture's own bytes: a stand-in would
+# be testing a document that could not describe a run.
+FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
+MOD = (REPO / xp.KERNEL_SOURCES["legacy"]
+       if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file() else FIX)
 
 
 def _produce(dest, **kw):
