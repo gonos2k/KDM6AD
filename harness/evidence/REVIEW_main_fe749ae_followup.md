@@ -151,6 +151,15 @@ hitting:
   module_path …`. Reproduced in a clone with no host tree, 18 failures,
   the same 18. A test now asserts the two signatures match, so the next
   drift fails on the machine that causes it rather than on CI.
+
+  And once more in the mirror image: two doubles for `gated_state`, the
+  ones that prove the locality control can come out FALSE, kept the
+  signature it had before the `RunContract` was threaded through it. They
+  run ONLY where gfortran and the private tree are, so the full suite
+  reported a `TypeError` where a verdict belonged and CI saw nothing. The
+  guard there reads the doubles' parameter lists out of the test file and
+  holds them to `inspect.signature(gated_state)` — verified by
+  re-introducing the drift, which the guard catches everywhere in 0.16 s.
 * **a fix can move the artifact's address.** Staging under `$OUT` put
   output-directory paths inside the binaries, so two builds of one
   experiment addressed differently — found by the test that asserts they
