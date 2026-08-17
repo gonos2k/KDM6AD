@@ -3,6 +3,7 @@
 LOCAL ONLY (needs gfortran + the gitignored host reference tree).
 """
 import contextlib
+import inspect
 import io
 import shutil
 import subprocess
@@ -929,9 +930,12 @@ def test_the_control_would_CATCH_a_second_non_local_mechanism(uniform_driver,
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is", algo=None):
+                  carry="rezero", rho="as-is", algo=None, contract=None):
+        # ...forwarding EVERY argument: a double that drops one is answering a
+        # different question than the function it stands in for, and this one
+        # runs only where gfortran and the host tree are (Codex, three times).
         state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
-                          algo=algo)
+                          algo=algo, contract=contract)
         seen["n"] += 1
         if seen["n"] == 3:               # one partition answers differently
             state = {**state, sorted(state)[0]: "DEADBEEF"}
@@ -1010,14 +1014,37 @@ def test_BOTH_directions_are_required(drivers):
     assert rep["across_differing"] == rep["trajectories"]
 
 
+def test_the_gated_state_doubles_have_the_signature_they_stand_in_for():
+    """Two tests replace `gated_state` to perturb one trajectory. Both run
+    only where gfortran and the private tree are, so when the immutable
+    contract was threaded through `gated_state` the doubles kept the old
+    signature and the perturbation tests -- the ones that prove the control
+    can FAIL -- died on a TypeError instead. Read the doubles' signatures out
+    of the source and hold them to the real one, so the next parameter added
+    to `gated_state` fails here, everywhere, and immediately."""
+    src = Path(__file__).read_text()
+    doubles = [ln for ln in src.splitlines() if ln.strip().startswith(
+        "def perturbed(")]
+    assert doubles, "the doubles were renamed; this guard is now blind"
+    want = list(inspect.signature(nl.gated_state).parameters)
+    for i, ln in enumerate(doubles):
+        block = src.split(ln, 1)[1].split("):", 1)[0]
+        got = [a.split("=")[0].strip().split(":")[0].strip()
+               for a in (ln.split("(", 1)[1] + block).split(",")]
+        assert got == want, f"double {i}: {got} != {want}"
+
+
 def test_the_control_verdict_can_come_out_FALSE(drivers, monkeypatch):
     """Perturb one trajectory's state and the control must fail."""
     real, seen = nl.gated_state, {"n": 0}
 
     def perturbed(driver, fixture, tiles, reference=None, nsplit=1,
-                  carry="rezero", rho="as-is", algo=None):
+                  carry="rezero", rho="as-is", algo=None, contract=None):
+        # ...forwarding EVERY argument: a double that drops one is answering a
+        # different question than the function it stands in for, and this one
+        # runs only where gfortran and the host tree are (Codex, three times).
         state, rec = real(driver, fixture, tiles, reference, nsplit, carry, rho,
-                          algo=algo)
+                          algo=algo, contract=contract)
         seen["n"] += 1
         if seen["n"] == 2:
             state = {**state, sorted(state)[0]: "DEADBEEF"}
