@@ -94,13 +94,6 @@ CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
 # change to libmassv, the model constants, the radar module, the stub or the
 # driver was invisible -- and host/** is gitignored, so repo_commit and
 # tree_dirty do not see them either (owner P0-3).
-SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
-fc() { local o="$1"; shift
-       printf '%s\n' "${@: -1}" >>"$SRCLOG"
-       printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
-       "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
-        || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
-
 # CONTENT-ADDRESSED STAGING for every private source (owner §10). The build
 # compiled straight from the host tree and the provenance collector re-read
 # those same paths afterwards, so an edit in between yielded an executable
@@ -109,14 +102,36 @@ fc() { local o="$1"; shift
 # concurrent edit produces a different staged path rather than a silent
 # substitution. The overlay has been content-addressed since §9.1; this
 # extends it to the sources it is built beside.
-STAGE="$OUT/staged"; mkdir -p "$STAGE"
+# OUTSIDE the output directory, and named by content: gfortran embeds each
+# source's filename in the binary, so staging under $OUT made the same
+# experiment compile to different executables in different output
+# directories -- the exact property the overlay was content-addressed for
+# (§9.1). Same bytes, same path, same binary.
+STAGE="${TMPDIR:-/tmp}/g33-stage"; mkdir -p "$STAGE"
+# The staged path is an IMPLEMENTATION detail -- it lives under the output
+# directory, so logging it would make the source record vary per build
+# directory and two builds of one experiment would address differently. The
+# map keeps the LOGICAL path, which is what the record is about; the staged
+# bytes are what gets compiled and hashed.
+STAGE_MAP="$OUT/staged-map.txt"; : >"$STAGE_MAP"
 stage() {
     local src="$1" d b
     d=$(shasum -a 256 "$src" | cut -d' ' -f1); b=$(basename "$src")
     local dst="$STAGE/$d-$b"
     [ -f "$dst" ] || { cp "$src" "$dst.$$.tmp" && mv -f "$dst.$$.tmp" "$dst"; }
+    printf '%s\t%s\n' "$dst" "$src" >>"$STAGE_MAP"
     printf '%s' "$dst"
 }
+
+SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
+fc() { local o="$1"; shift
+       # log the LOGICAL source, not the staging copy that carries its bytes
+       local last="${@: -1}" logical
+       logical=$(awk -F'\t' -v k="$last" '$1==k{print $2}' "$STAGE_MAP" 2>/dev/null | tail -1)
+       printf '%s\n' "${logical:-$last}" >>"$SRCLOG"
+       printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
+       "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
+        || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
 
 fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$(stage "$FIXTURE_SRC")"
 fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/frame/libmassv.F")"

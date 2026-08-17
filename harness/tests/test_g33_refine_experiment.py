@@ -39,11 +39,24 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
         exe = workdir / "g33_refine_driver"
         exe.write_text("#!fake\n")
+        # the GENERATED overlay an instrumented build feeds the compiler --
+        # v6 publishes it and reads the sub-cycle limit from those bytes
+        ovl = workdir / "module_mp_ovl.F"
+        ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
+        # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
+            "module_path": str(MOD),
+            "module_sha256": xp.rm.sha256(MOD),
+            "fixture_sha256": xp.rm.sha256(FIX),
+            "compiler_version": "gfortran (fake) 1.0",
+            "compiler_sha256": "1" * 64,
+            "build_script_sha256": "7" * 64,
+            "compile_commands": ["gfortran -c fake"],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "compiled_module_sha256": xp.rm.sha256(ovl),
+            "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode, precision="f32"):
@@ -102,7 +115,9 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 # pins and the resolved gate reads the fixture's own bytes: a stand-in would
 # be testing a document that could not describe a run.
 FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
-MOD = (REPO / xp.KERNEL_SOURCES["legacy"]
+# ...and RELATIVE, as the real invocation records it: the kernel record and
+# the manifest name one file, so they must spell it the same way.
+MOD = (xp.KERNEL_SOURCES["legacy"]
        if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file() else FIX)
 
 
@@ -251,11 +266,24 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
         exe = workdir / "g33_refine_driver"
         exe.write_text("#!fake\n")
+        # the GENERATED overlay an instrumented build feeds the compiler --
+        # v6 publishes it and reads the sub-cycle limit from those bytes
+        ovl = workdir / "module_mp_ovl.F"
+        ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
+        # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
+            "module_path": str(MOD),
+            "module_sha256": xp.rm.sha256(MOD),
+            "fixture_sha256": xp.rm.sha256(FIX),
+            "compiler_version": "gfortran (fake) 1.0",
+            "compiler_sha256": "1" * 64,
+            "build_script_sha256": "7" * 64,
+            "compile_commands": ["gfortran -c fake"],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "compiled_module_sha256": xp.rm.sha256(ovl),
+            "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
@@ -458,11 +486,12 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
                         lambda out, exe, ns, mode, width, levels, algo=None,
                         fixture=None, horizon=None, dtcldcr=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
-    monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
+
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
                algo="legacy", nsplits=(3, 6), mode="carry", nflux=True,
                module=MOD)
-    assert seen == {"mode": "carry", "width": 5, "levels": 4}, (
+    want_w, want_k = xp.fixture_dims("g33_fixture_multisubcycle_v1")
+    assert seen == {"mode": "carry", "width": want_w, "levels": want_k}, (
         "produce() must hand the analysis the bundle's OWN mode and fixture "
         f"width and level count, got {seen}")
 
