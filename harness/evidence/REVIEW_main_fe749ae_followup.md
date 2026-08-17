@@ -143,7 +143,14 @@ hitting:
   seam above: the producer tests used stand-in files for the module and
   the fixture, so a binding that compares real paths could not fail, and a
   faked `fixture_width` contradicted the fixture the resolved gate reads.
-  All three now use the real files.
+  All three now use the real files. The same seam then failed a third way,
+  on CI: it had drifted from the signature of the function it replaces —
+  the compiled-overlay argument went to the real one and not the stub —
+  and it faked only one of the three records v6 ties together, so every
+  bundle-assembly test refused with `source_path … is not the manifest's
+  module_path …`. Reproduced in a clone with no host tree, 18 failures,
+  the same 18. A test now asserts the two signatures match, so the next
+  drift fails on the machine that causes it rather than on CI.
 * **a fix can move the artifact's address.** Staging under `$OUT` put
   output-directory paths inside the binaries, so two builds of one
   experiment addressed differently — found by the test that asserts they
