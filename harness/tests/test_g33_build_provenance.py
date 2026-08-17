@@ -310,3 +310,31 @@ def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path
     assert len(digest) == 64, f"path carries {len(digest)} hex, not the full digest"
     assert hashlib.sha256(overlays[0].read_bytes()).hexdigest() == digest
     assert not list(tmp_path.glob("*.tmp")), "a temp file survived the rename"
+
+
+def test_the_driver_takes_the_subcycle_limit_from_what_was_compiled():
+    """`loops_used = max(nint(delt_used/120.0), 1)` made the window header a
+    THIRD owner of the sub-cycle limit, agreeing with the pinned kernel by
+    coincidence (owner review §11). Forcing the driver's constant to 60 while
+    the kernel kept 120 moved the header to `loops 5 dtcld 60.000000` with
+    EVERY kernel record byte-identical -- a geometry claim nothing else in the
+    stream could contradict. The build now reads the limit out of the bytes it
+    is about to compile (the overlay under --nflux, not the original), and a
+    driver built without it does not compile at all."""
+    build = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    driver = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    extract = build.split("DTCLDCR=$(sed")[1].split("\n")[0]
+    assert '"$MODULE_SRC"' in extract, "the limit must come from what is compiled"
+    assert '"-DKDM6_DTCLDCR=$DTCLDCR"' in build
+    assert "#ifndef KDM6_DTCLDCR" in driver and "#error" in driver
+    assert "real, parameter :: dtcldcr = KDM6_DTCLDCR" in driver
+    assert "120.0" not in driver.split("loops_used = ")[1].split("\n")[0]
+
+
+def test_a_kernel_declaring_the_limit_twice_is_refused_not_guessed():
+    """One declaration or none: picking one of two would let the build and the
+    kernel disagree silently, which is the whole point of reading it here."""
+    build = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    guard = build.split("DTCLDCR=$(sed")[1]
+    assert "grep -c ." in guard and "declares dtcldcr" in guard
+    assert "exit 2" in guard.split("declares dtcldcr")[1][:200]

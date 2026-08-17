@@ -179,7 +179,17 @@ if [ "$DUMP" = 1 ]; then
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi
 fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
-fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
+# The window header's loop count is the KERNEL's arithmetic, so its limit has
+# to be the KERNEL's constant. The driver held a literal 120.0, which agreed
+# with the pinned kernel by coincidence and would have gone on agreeing with
+# nothing if the kernel's limit ever moved (owner review §11). Taken from
+# $MODULE_SRC -- the bytes about to be compiled, overlay included -- so the
+# two cannot disagree by construction rather than by inspection.
+DTCLDCR=$(sed -n 's/.*::[[:space:]]*dtcldcr[[:space:]]*=[[:space:]]*\([0-9.]\{1,\}\).*/\1/p' "$MODULE_SRC")
+[ "$(printf '%s\n' "$DTCLDCR" | grep -c .)" = 1 ] || {
+    echo "REFUSED: $MODULE_SRC declares dtcldcr $(printf '%s\n' "$DTCLDCR" | grep -c .) times; the driver's window header needs exactly one" >&2
+    exit 2; }
+fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "-DKDM6_DTCLDCR=$DTCLDCR" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
                                    "$HERE/g33_refine_driver.f90"
 LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
       "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"

@@ -323,6 +323,15 @@ program g33_refine_driver
   integer(int32) :: b
   logical :: carry_aux
   real :: delt_used, dtcld_used
+#ifndef KDM6_DTCLDCR
+#error "refine_build.sh must pass the compiled kernel's dtcldcr"
+#endif
+  ! The KERNEL's sub-cycle limit, extracted by the build from the bytes the
+  ! compiler was fed. It was a literal 120.0 below, which made the window
+  ! header a third path agreeing with the kernel by coincidence: a kernel
+  ! whose limit moved would still have been reported with the loop count 120
+  ! implies, which is not the count it ran (owner review §11).
+  real, parameter :: dtcldcr = KDM6_DTCLDCR
 
   if (command_argument_count() < 1) &
       error stop 'usage: g33_refine_driver NSPLIT [carry|rezero] [TILE,SIZES]'
@@ -421,9 +430,9 @@ program g33_refine_driver
   ! delt/loops/dtcld as the KERNEL computed them (F:930-932), not as the caller
   ! intended: the sweep must refine dtcld, and a reader should be able to check
   ! that from the stream rather than re-deriving it.
-  loops_used = max(nint(delt_used/120.0), 1)
+  loops_used = max(nint(delt_used/dtcldcr), 1)
   dtcld_used = delt_used / real(loops_used)
-  if (delt_used <= 120.0) dtcld_used = delt_used
+  if (delt_used <= dtcldcr) dtcld_used = delt_used
 #ifndef KDM6_G33_F64
   write(*,'(A,1X,I0,1X,A,1X,A,1X,A,1X,F0.6,1X,A,1X,I0,1X,A,1X,F0.6)') &
        'G33R BEGIN nsplit', nsplit, trim(merge('carry ', 'rezero', carry_aux)), &
