@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import json
 import math
 from dataclasses import dataclass, replace
 import os
@@ -1363,6 +1364,44 @@ def resolved_violations(man: dict, root: Path, contract) -> list:
         if m.get("loops") != want_L:
             bad.append(f"members[{m['file']}] records loops={m.get('loops')!r},"
                        f" the kernel's rule gives {want_L}")
+    return bad + _witness_violations(man, root)
+
+
+#: The four records that describe ONE build. `build_artifacts` digests each
+#: file, so each is faithfully recorded -- but nothing asked whether they
+#: describe the same build (owner review §6). Measured: a manifest embedding
+#: build A beside a published `build_provenance.json` holding build B, with
+#: the artifact digest honestly naming B, validated CLEAN.
+def _witness_violations(man: dict, root: Path) -> list:
+    bad = []
+    embedded = man.get("build_provenance")
+    published = root / "build_provenance.json"
+    if not isinstance(embedded, dict) or not published.is_file():
+        return ["build_provenance is not an object, or the published record "
+                "is not in the bundle"]
+    try:
+        got = json.loads(published.read_text())
+    except ValueError as e:
+        return [f"build_provenance.json is not readable JSON: {e}"]
+    if got != embedded:
+        keys = sorted({k for k in set(got) | set(embedded)
+                       if got.get(k) != embedded.get(k)})
+        bad.append(f"the manifest's build_provenance is not the published "
+                   f"build_provenance.json; they differ at {keys}")
+    # ...and the two logs the collector read them FROM, through the collector's
+    # own parsers, so this comparison cannot drift from how the record is made.
+    # ...and the two logs the record was DERIVED from. The collector owns
+    # that derivation and is deliberately reached only as a subprocess -- it
+    # is stdlib-only so it can run inside the build, and importing it here
+    # would move it into the producer's import closure and reclassify it in
+    # the identity graph. So the check crosses the same boundary the build
+    # already uses, and there is still exactly one definition of the format.
+    r = subprocess.run([sys.executable, str(HERE / "g33_build_provenance.py"),
+                        "--verify", str(root)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        bad += [ln for ln in r.stdout.splitlines() if ln.strip()] or \
+            [f"the published logs do not re-derive the record: {r.stderr.strip()[:200]}"]
     return bad
 
 
