@@ -264,24 +264,40 @@ def test_the_build_script_passes_the_REAL_KIND_to_the_overlay():
 
 def test_the_preprocessor_guard_is_GONE_and_the_driver_still_compiles():
     """A guard that outlives its reason reads as protection and refuses work
-    that is now correct."""
-    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
-    assert "#error" not in drv
+    that is now correct.
+
+    Names the retired guard rather than asserting the driver has no `#error`
+    at all: the sub-cycle limit arrives as a `-D` from the build, and a
+    driver that compiles without it would carry no limit at all (§11)."""
+    lines = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text() \
+        .splitlines()
+    assert not any("no f64 number record family" in ln for ln in lines)
+    errors = [i for i, ln in enumerate(lines) if ln.startswith("#error")]
+    assert [lines[i - 1] for i in errors] == ["#ifndef KDM6_DTCLDCR"], \
+        "the only refusal left is a driver with no sub-cycle limit at all"
 
 
 @pytest.mark.skipif(shutil.which("gfortran") is None, reason="needs gfortran")
 def test_the_driver_compiles_under_BOTH_real_kinds(tmp_path):
-    """The combination that was refused at compile time now has to parse."""
+    """The combination that was refused at compile time now has to parse.
+
+    `-DKDM6_DTCLDCR` is what the build passes from the compiled kernel (§11),
+    so a direct compile has to pass it too -- and the last case asserts that
+    LEAVING IT OUT is the refusal, not a driver carrying no limit."""
     drv = REPO / "harness/g33_fortran/g33_refine_driver.f90"
+    base = ["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
+            "-ffree-line-length-none", "-DKDM6_G33_NUMBER_DUMP"]
     for extra in ([], ["-DKDM6_G33_F64"]):
-        r = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
-                            "-ffree-line-length-none", "-DKDM6_G33_NUMBER_DUMP",
-                            *extra, str(drv)],
+        r = subprocess.run([*base, "-DKDM6_DTCLDCR=120.", *extra, str(drv)],
                            capture_output=True, text=True, cwd=tmp_path)
         # It cannot LINK here (no fixture module), but it must get past the
         # preprocessor and the declaration section.
         assert "no f64 number record family" not in r.stderr
         assert "#error" not in r.stderr
+    r = subprocess.run([*base, str(drv)], capture_output=True, text=True,
+                       cwd=tmp_path)
+    # (both runs fail on the missing .mod files, so the MESSAGE is the signal)
+    assert "must pass the compiled kernel" in r.stderr
 
 
 def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path):
