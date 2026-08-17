@@ -114,7 +114,7 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
 
 
 def main(argv) -> int:
-    if not 5 <= len(argv) <= 7:
+    if not 5 <= len(argv) <= 8:
         print(__doc__)
         return 2
     out = Path(argv[0])
