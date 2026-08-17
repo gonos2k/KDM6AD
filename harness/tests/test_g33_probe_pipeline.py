@@ -91,7 +91,10 @@ def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
             dest = xp.produce(tmp_path / "chain",
                           fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                           nsplits=(3, 6, 12), mode="rezero", nflux=False,
-                          module=REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+                          # RELATIVE, as the real invocation records it: the
+                          # kernel record and the manifest name one file, so
+                          # they must spell it the same way
+                          module=xp.KERNEL_SOURCES["legacy"],
                           arm="f64")
     finally:
         monkeypatch_pin.undo()
