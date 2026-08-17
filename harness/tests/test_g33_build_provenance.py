@@ -354,3 +354,70 @@ def test_a_kernel_declaring_the_limit_twice_is_refused_not_guessed():
     guard = build.split("DTCLDCR=$(sed")[1]
     assert "grep -c ." in guard and "declares dtcldcr" in guard
     assert "exit 2" in guard.split("declares dtcldcr")[1][:200]
+
+
+def _stage_fn(script: str) -> str:
+    """The shipped `stage()`, lifted so the test exercises it rather than a
+    paraphrase of it."""
+    return "stage() {" + script.split("stage() {", 1)[1].split("\n}\n", 1)[0] + "\n}"
+
+
+@pytest.mark.skipif(shutil.which("shasum") is None, reason="needs shasum")
+def test_the_staging_address_is_the_digest_of_what_it_STORES(tmp_path):
+    """Staging hashed the SOURCE and copied it afterwards, which is the window
+    staging exists to close, one level down (Codex): an edit in between stored
+    bytes under an address that is not their digest. The store is shared and
+    persistent, so the poisoning outlived the build -- a later run asking for
+    the ORIGINAL digest was handed those bytes by the existence check and
+    compiled them.
+
+    The adversary edits ONLY the source, and only when something hashes it, so
+    it fires exactly when the source is read before it is copied."""
+    stage_dir, out = tmp_path / "stage", tmp_path / "out"
+    binn = tmp_path / "bin"
+    for d in (stage_dir, out, binn):
+        d.mkdir()
+    (binn / "shasum").write_text(
+        '#!/bin/bash\n'
+        f'out=$({shutil.which("shasum")} "$@")\n'
+        'f="${@: -1}"\n'
+        '[ "$f" = "$G33_RACE_FILE" ] && printf "EDITED\\n" >>"$f"\n'
+        'printf "%s\\n" "$out"\n')
+    (binn / "shasum").chmod(0o755)
+    src = tmp_path / "src.F"
+    src.write_text("original bytes\n")
+    want = hashlib.sha256(src.read_bytes()).hexdigest()
+
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    prog = (f'STAGE={stage_dir}\nSTAGE_MAP={out}/staged-map.txt\n:>"$STAGE_MAP"\n'
+            + _stage_fn(script) + f'\nstage {src}\n')
+    env = {**os.environ, "PATH": f"{binn}{os.pathsep}{os.environ['PATH']}",
+           "G33_RACE_FILE": str(src)}
+    dst = Path(subprocess.run(["bash", "-c", prog], capture_output=True,
+                              text=True, env=env, check=True).stdout.strip())
+
+    assert dst.name.split("-")[0] == bp.sha256(dst), \
+        "the staged entry's address is not the digest of its own bytes"
+    # ...and the store cannot answer for an address it does not hold: a later
+    # build staging the UNCHANGED source gets the original bytes back
+    src.write_text("original bytes\n")
+    again = Path(subprocess.run(
+        ["bash", "-c", prog], capture_output=True, text=True,
+        env={**os.environ, "PATH": env["PATH"], "G33_RACE_FILE": ""},
+        check=True).stdout.strip())
+    assert again.name.split("-")[0] == want
+    assert again.read_text() == "original bytes\n"
+    assert not list(stage_dir.glob(".staging.*")), "a staging temp survived"
+
+
+def test_every_compiled_source_including_the_driver_is_staged():
+    """The driver was the one compiled input read straight from the tree, so
+    the collector's re-read window stayed open on the file that writes the
+    window header (Codex)."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh") \
+        .read_text().replace("\\\n", " ")        # one command, one line
+    compiles = [ln for ln in script.splitlines() if ln.startswith("fc ")]
+    assert compiles, "the build stopped using fc(); this guard is now blind"
+    unstaged = [ln for ln in compiles
+                if "$(stage " not in ln and "$MODULE_SRC" not in ln]
+    assert not unstaged, f"compiled without staging: {unstaged}"

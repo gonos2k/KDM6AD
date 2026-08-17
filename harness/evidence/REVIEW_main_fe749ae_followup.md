@@ -108,7 +108,7 @@ they were published under. Both live bundles were re-produced;
 **49 of 49 pinned figures verified byte-identical before the pins moved**.
 
 ```
-ncmin-001   b97f36f9… -> 9300dd61…      water-001   0a7ca415… -> dfdd55cd…
+ncmin-001   b97f36f9… -> 4394c51e…      water-001   0a7ca415… -> f5ded55d…
 ```
 
 The §11 change was re-produced separately and shown inert: every member's
@@ -166,6 +166,33 @@ hitting:
   do not. Staging moved to a content-addressed root outside the output
   directory, and two builds in different directories now agree on both
   their sources and their executable digest.
+
+### …and the staging itself had the race it was built to close
+
+The last finding of the cycle, and the one worth reading twice. `stage()`
+hashed the SOURCE and copied it afterwards — the identical hash-then-read
+window, one level down from the one order 12 was about. Reproduced against
+the shipped function with an adversary that edits the source only when
+something hashes it:
+
+```
+staged path : 45c0b761…-src.F
+name claims : 45c0b761…
+content is  : 66682438…
+```
+
+The store is shared and persistent, so this outlived the build that caused
+it: restoring the source to exactly its original bytes and staging again
+returned the POISONED copy, because the existence check answers on the name
+alone. A later, entirely innocent build would have compiled bytes that were
+never the pinned module.
+
+The address now comes from the stored bytes — copy first, hash the copy,
+name it by that — so a concurrent edit yields a *different* address instead
+of wrong content at the right one. The overlay copy had the same ordering
+and gets the same treatment, and the driver, the last compiled input read
+straight from the tree, is staged like everything else. Both bundles were
+re-produced again: member digests identical, 49 of 49 figures identical.
 
 ## Deferred, with reasons
 
