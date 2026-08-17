@@ -205,7 +205,7 @@ fc() { local o="$1"; shift
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }
        [ -z "$claimed" ] || addr_verify "$last" "$claimed" "compile input (after)"; }
 
-stage "$FIXTURE_SRC"
+stage "$FIXTURE_SRC"; FIXTURE_STAGED="$STAGED"
 fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$STAGED"
 stage "$HOST/frame/libmassv.F"
 fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$STAGED"
@@ -284,5 +284,5 @@ printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
 # unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
     "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" \
-    "$MODULE_SRC" "$MODULE_STAGED"
+    "$MODULE_SRC" "$MODULE_STAGED" "$FIXTURE_STAGED"
 echo "$OUT"

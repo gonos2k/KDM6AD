@@ -62,7 +62,8 @@ def _source_row(line: str, norm) -> dict:
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
             exe: Path | None = None, compiled: Path | None = None,
-            staged: Path | None = None) -> dict:
+            staged: Path | None = None,
+            staged_fixture: Path | None = None) -> dict:
     """Provenance for one build. `fc` may be a name or a path; it is resolved,
     because the digest of whatever `gfortran` resolved to is the point."""
     binary = shutil.which(fc) or fc
@@ -120,7 +121,13 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
                                  and Path(compiled) != Path(module) else None),
         "compiled_module_sha256": (sha256(compiled) if compiled
                                    and Path(compiled) != Path(module) else None),
-        "fixture_path": norm(str(fixture)), "fixture_sha256": sha256(fixture),
+        # ...and the FIXTURE digest is of the staged bytes too (owner §4).
+        # `sources[]` already carried the compiled fixture's digest while this
+        # field re-read the working tree, so one provenance document held two
+        # fixture digests from two sources.
+        "fixture_path": norm(str(fixture)),
+        "fixture_sha256": sha256(staged_fixture if staged_fixture is not None
+                                 else fixture),
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
@@ -186,7 +193,7 @@ def main(argv) -> int:
         bad = verify(Path(argv[1]))
         print("\n".join(bad))
         return 1 if bad else 0
-    if not 5 <= len(argv) <= 8:
+    if not 5 <= len(argv) <= 9:
         print(__doc__)
         return 2
     out = Path(argv[0])
@@ -195,7 +202,8 @@ def main(argv) -> int:
                            Path(argv[4]),
                            Path(argv[5]) if len(argv) > 5 else None,
                            Path(argv[6]) if len(argv) > 6 else None,
-                           Path(argv[7]) if len(argv) > 7 else None),
+                           Path(argv[7]) if len(argv) > 7 else None,
+                           Path(argv[8]) if len(argv) > 8 else None),
                    indent=2, sort_keys=True) + "\n")
     return 0
 
