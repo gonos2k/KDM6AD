@@ -615,6 +615,12 @@ def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
         workdir.mkdir(parents=True, exist_ok=True)
         exe = workdir / "g33_refine_driver"
         exe.touch()
+        # ...and the source log a build leaves: the contract's fixture
+        # parameters come from the bytes the compiler read, so a build that
+        # logs nothing describes a compile that never happened
+        (workdir / "sources.txt").write_text(
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
         return exe
 
     def fake_members(exe, out, nsplits, mode, **k):
