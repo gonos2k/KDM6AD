@@ -6,6 +6,7 @@ prevented provenance from one build being published beside members from another.
 These tests hold the replacement to that: fail-closed at every stage, and visible
 under the destination only after everything succeeded.
 """
+import hashlib
 import inspect
 import json
 import re
@@ -116,9 +117,13 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 # be testing a document that could not describe a run.
 FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
 # ...and RELATIVE, as the real invocation records it: the kernel record and
-# the manifest name one file, so they must spell it the same way.
+# the manifest name one file, so they must spell it the same way. The public
+# checkout's STAND-IN is relative for the same reason -- an absolute
+# `module_path` cannot equal the relative `source_path` the record carries,
+# and v6 requires those two to be one file.
 MOD = (xp.KERNEL_SOURCES["legacy"]
-       if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file() else FIX)
+       if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file()
+       else FIX.relative_to(REPO))
 
 
 def _produce(dest, **kw):
@@ -142,15 +147,39 @@ def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
     # algorithm rather than the SystemExit under test (Codex).
     if REF.is_file() or request.node.get_closest_marker("real_kernel_geometry"):
         return
-    monkeypatch.setattr(xp, "kernel_geometry",
-                        lambda precision="f32", algo="legacy": {
-                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
-                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
-                            "dtcldcr_word": ("42F00000" if precision == "f32"
-                                             else "405E000000000000"),
-                            "algorithm": algo,
-                            "source_path": str(xp.KERNEL_SOURCES[algo]),
-                            "source_sha256": "0" * 64})
+    # The stand-in module is what the manifest pins here, so it has to be
+    # what the kernel record and the validator's `KERNEL_SOURCES` both name:
+    # v6 binds those three together, and a seam that faked only one of them
+    # would be testing a manifest no producer could write.
+    monkeypatch.setitem(xp.KERNEL_SOURCES, "legacy", MOD)
+    monkeypatch.setattr(xp, "kernel_geometry", _fake_kernel_geometry)
+
+
+def _fake_kernel_geometry(precision="f32", algo="legacy", compiled=None):
+    """The seam's record, shaped like the real one INCLUDING the compiled
+    witness -- a v6 manifest assembled without it does not validate."""
+    word = "42F00000" if precision == "f32" else "405E000000000000"
+    return {"schema": xp.KERNEL_GEOMETRY_SCHEMA,
+            **({"compiled_dtcldcr_word": word,
+                "compiled_source_sha256": hashlib.sha256(
+                    Path(compiled).read_bytes()).hexdigest()}
+               if compiled is not None else {}),
+            "dtcldcr": 120.0, "dtcldcr_storage": precision,
+            "dtcldcr_word": word, "algorithm": algo,
+            "source_path": str(xp.KERNEL_SOURCES[algo]),
+            "source_sha256": xp.rm.sha256(xp.KERNEL_SOURCES[algo])}
+
+
+@pytest.mark.real_kernel_geometry
+def test_the_public_checkout_seam_has_the_signature_it_stands_in_for():
+    """The seam only runs where `host/**` is absent, so a signature that
+    drifted from `kernel_geometry` broke NOTHING here and every bundle
+    assembly test on CI -- which is where the compiled-overlay argument was
+    added and this stub was not (Codex, twice now). Asserting the signature
+    makes the drift fail on the machine that caused it."""
+    shape = lambda f: [(p.name, p.default, p.kind)
+                       for p in inspect.signature(f).parameters.values()]
+    assert shape(_fake_kernel_geometry) == shape(xp.kernel_geometry)
 
 
 @pytest.fixture(autouse=True)
