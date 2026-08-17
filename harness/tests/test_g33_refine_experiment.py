@@ -49,8 +49,13 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # a fake whose logs contradict its own record is exactly the build the
         # gate exists to refuse (owner review §6).
         (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        # The FIXTURE is a compiled source too, and the contract's B, K and
+        # DT_BITS are read from the bytes the compiler got (owner review §5) --
+        # a fake that logs only the module describes a build with no fixture.
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n")
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -60,7 +65,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
+                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
@@ -122,6 +128,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 # pins and the resolved gate reads the fixture's own bytes: a stand-in would
 # be testing a document that could not describe a run.
 FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
+#: as the build logs it -- repo-relative, which is what the snapshot keys on
+FIXLOG = str(FIX.relative_to(REPO))
 # ...and RELATIVE, as the real invocation records it: the kernel record and
 # the manifest name one file, so they must spell it the same way. The public
 # checkout's STAND-IN is relative for the same reason -- an absolute
@@ -310,8 +318,13 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # a fake whose logs contradict its own record is exactly the build the
         # gate exists to refuse (owner review §6).
         (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        # The FIXTURE is a compiled source too, and the contract's B, K and
+        # DT_BITS are read from the bytes the compiler got (owner review §5) --
+        # a fake that logs only the module describes a build with no fixture.
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n")
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -321,7 +334,8 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
+                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
