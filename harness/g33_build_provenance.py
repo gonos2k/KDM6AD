@@ -178,8 +178,17 @@ def verify(root: Path) -> list:
                        f"build_provenance cannot be re-derived from it")
     if bad:
         return bad
-    rows = [_source_row(ln, norm) for ln in srcs.read_text().splitlines()
-            if ln.strip()]
+    # A checker REPORTS; it does not crash on the artifact it is judging.
+    # `_source_row` falls back to hashing the path when a line carries no
+    # digest -- right for an older log, but on a tampered one it reached for
+    # a file that does not exist and raised out of the verification instead
+    # of failing it.
+    lines = [ln for ln in srcs.read_text().splitlines() if ln.strip()]
+    malformed = [ln for ln in lines if "\t" not in ln or not ln.split("\t")[1].strip()]
+    if malformed:
+        return bad + [f"sources.txt line {lines.index(malformed[0]) + 1} carries "
+                      f"no digest: {malformed[0][:60]!r}"]
+    rows = [_source_row(ln, norm) for ln in lines]
     if rows != got.get("sources"):
         bad.append("sources.txt is not build_provenance.sources")
     if [norm(c) for c in cmds.read_text().splitlines()] != \

@@ -525,3 +525,20 @@ def test_a_MISSING_log_cannot_clear_the_witness_comparison(tmp_path, drop):
     (root / drop).unlink()
     got = bp.verify(root)
     assert got and drop in got[0] and "not in the bundle" in got[0]
+
+
+def test_a_malformed_source_line_is_REPORTED_not_raised(tmp_path):
+    """`_source_row` falls back to hashing the path when a line carries no
+    digest -- right for an older log, but on a tampered one it reached for a
+    file that does not exist and raised out of the verification instead of
+    failing it. A checker reports on the artifact it judges."""
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\nsmuggled\n")
+    (root / "commands.txt").write_text("gfortran -c x.f90\n")
+    (root / "build_provenance.json").write_text(json.dumps({
+        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c x.f90"],
+        "diagnostic": {"outdir": "/build"}}))
+    got = bp.verify(root)                      # must not raise
+    assert got and "carries no digest" in got[0] and "line 2" in got[0]
