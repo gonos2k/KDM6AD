@@ -44,8 +44,13 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # v6 publishes it and reads the sub-cycle limit from those bytes
         ovl = workdir / "module_mp_ovl.F"
         ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        (workdir / "commands.txt").write_text("fake\n")
-        (workdir / "sources.txt").write_text("fake\n")
+        # ...and the logs the record is DERIVED from, agreeing with it: the
+        # publish gate re-derives `sources`/`compile_commands` from these, and
+        # a fake whose logs contradict its own record is exactly the build the
+        # gate exists to refuse (owner review §6).
+        (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        (workdir / "sources.txt").write_text(
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -57,7 +62,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compile_commands": ["gfortran -c fake"],
             "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "executable_sha256": xp.rm.sha256(exe)}))
+            "diagnostic": {"outdir": str(workdir)},
+            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode, precision="f32"):
@@ -299,8 +305,13 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # v6 publishes it and reads the sub-cycle limit from those bytes
         ovl = workdir / "module_mp_ovl.F"
         ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        (workdir / "commands.txt").write_text("fake\n")
-        (workdir / "sources.txt").write_text("fake\n")
+        # ...and the logs the record is DERIVED from, agreeing with it: the
+        # publish gate re-derives `sources`/`compile_commands` from these, and
+        # a fake whose logs contradict its own record is exactly the build the
+        # gate exists to refuse (owner review §6).
+        (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        (workdir / "sources.txt").write_text(
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -312,7 +323,8 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compile_commands": ["gfortran -c fake"],
             "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "executable_sha256": xp.rm.sha256(exe)}))
+            "diagnostic": {"outdir": str(workdir)},
+            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
