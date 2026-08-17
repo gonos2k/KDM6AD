@@ -389,8 +389,10 @@ def test_the_staging_address_is_the_digest_of_what_it_STORES(tmp_path):
     want = hashlib.sha256(src.read_bytes()).hexdigest()
 
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    prog = (f'STAGE={stage_dir}\nSTAGE_MAP={out}/staged-map.txt\n:>"$STAGE_MAP"\n'
-            + _stage_fn(script) + f'\nstage {src}\n')
+    prog = (f'set -euo pipefail\nSTAGE={stage_dir}\n'
+            f'STAGE_MAP={out}/staged-map.txt\n:>"$STAGE_MAP"\n'
+            + _lift(script, "addr_claim", "addr_verify", "addr_install", "stage")
+            + f'\nstage {src}\nprintf "%s" "$STAGED"\n')
     env = {**os.environ, "PATH": f"{binn}{os.pathsep}{os.environ['PATH']}",
            "G33_RACE_FILE": str(src)}
     dst = Path(subprocess.run(["bash", "-c", prog], capture_output=True,
@@ -418,6 +420,89 @@ def test_every_compiled_source_including_the_driver_is_staged():
         .read_text().replace("\\\n", " ")        # one command, one line
     compiles = [ln for ln in script.splitlines() if ln.startswith("fc ")]
     assert compiles, "the build stopped using fc(); this guard is now blind"
-    unstaged = [ln for ln in compiles
-                if "$(stage " not in ln and "$MODULE_SRC" not in ln]
+    # `stage` is a STATEMENT now (its refusals cannot abort from inside a
+    # command substitution), so the compile input is the variable it publishes
+    staged = ('"$STAGED"', '"$DRIVER_STAGED"', '"$MODULE_SRC"')
+    unstaged = [ln for ln in compiles if not ln.rstrip().endswith(staged)]
     assert not unstaged, f"compiled without staging: {unstaged}"
+    # ...and every one of those variables is set by an actual stage call
+    assert script.count("\nstage ") >= len(compiles) - 1, \
+        "an fc line reuses a staged variable nothing set for it"
+
+
+def _lift(script: str, *fns: str) -> str:
+    """The shipped shell functions, so the test exercises them rather than a
+    paraphrase that can drift from them."""
+    out = []
+    for fn in fns:
+        out.append(fn + "() {" + script.split(fn + "() {", 1)[1]
+                   .split("\n}\n", 1)[0] + "\n}")
+    return "\n".join(out)
+
+
+@pytest.mark.skipif(shutil.which("shasum") is None, reason="needs shasum")
+@pytest.mark.parametrize("plant,why", [
+    ("cp $OTHER $ADDR", "content that is not its address"),
+    ("ln -s $OTHER $ADDR", "a symlink"),
+    ("mkdir -p $ADDR", "a directory"),
+    ("mkfifo $ADDR", "a fifo"),
+])
+def test_an_existing_cache_entry_is_verified_not_trusted(tmp_path, plant, why):
+    """Naming an entry by its digest makes WRITES honest; it does not make a
+    shared store immutable (owner review §4). `$TMPDIR` is long-lived, so an
+    entry already at an address -- from the pre-#140 implementation that could
+    write one, an interrupted run, or anything else with write access -- went
+    straight to the compiler, because the existence check asked only whether a
+    path was there. Reproduced: the store returned B under A's address.
+
+    The non-regular cases are here because `ln` reports SUCCESS when its
+    target is a directory (it means "put it inside"), so an install-then-trust
+    guard accepted one."""
+    stage_dir, out = tmp_path / "stage", tmp_path / "out"
+    stage_dir.mkdir(), out.mkdir()
+    src, other = tmp_path / "src.F", tmp_path / "other.F"
+    src.write_text("A: the real source\n")
+    other.write_text("B: something else\n")
+    addr = stage_dir / f"{bp.sha256(src)}-src.F"
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    prog = (f'set -euo pipefail\nSTAGE={stage_dir}\nSTAGE_MAP={out}/map.txt\n'
+            f':>"$STAGE_MAP"\nOTHER={other}\nADDR={addr}\n{plant}\n'
+            + _lift(script, "addr_claim", "addr_verify", "addr_install", "stage")
+            + f'\nstage {src}\ncat "$STAGED"\n')
+    r = subprocess.run(["bash", "-c", prog], capture_output=True, text=True)
+    assert r.returncode == 2, f"{why} was accepted: {r.stdout!r}"
+    assert "REFUSED" in r.stderr
+    assert "B: something else" not in r.stdout
+
+
+@pytest.mark.skipif(shutil.which("shasum") is None, reason="needs shasum")
+def test_a_sound_cache_entry_is_reused_and_an_empty_store_is_filled(tmp_path):
+    """The refusals must not cost the cache its reason to exist."""
+    stage_dir, out = tmp_path / "stage", tmp_path / "out"
+    stage_dir.mkdir(), out.mkdir()
+    src = tmp_path / "src.F"
+    src.write_text("A: the real source\n")
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    prog = (f'set -euo pipefail\nSTAGE={stage_dir}\nSTAGE_MAP={out}/map.txt\n'
+            f':>"$STAGE_MAP"\n'
+            + _lift(script, "addr_claim", "addr_verify", "addr_install", "stage")
+            + f'\nstage {src}\nstage {src}\ncat "$STAGED"\n')
+    r = subprocess.run(["bash", "-c", prog], capture_output=True, text=True)
+    assert r.returncode == 0 and r.stdout == "A: the real source\n", r.stderr
+    assert len(list(stage_dir.glob("*-src.F"))) == 1
+    assert not list(stage_dir.glob(".staging.*"))
+
+
+def test_staging_is_never_called_from_a_command_substitution():
+    """`fc ... "$(stage "$SRC")"` runs `stage` in a SUBSHELL, so its `exit 2`
+    ended only the substitution: the script continued and the compiler was
+    handed an EMPTY last argument. Every refusal in `stage` was unreachable
+    from the one place that calls it. Fail-closed logic cannot live behind
+    `$( )` -- `stage` publishes into `$STAGED` and is called as a statement."""
+    script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    # CODE only: the comment above `stage` quotes the pattern it removed, and
+    # a guard that reads its own prose would fail on the explanation for it
+    code = "\n".join(ln for ln in script.splitlines()
+                     if not ln.lstrip().startswith("#"))
+    assert "$(stage " not in code, "a refusal behind a subshell cannot abort"
+    assert 'STAGED="$dst"' in code
