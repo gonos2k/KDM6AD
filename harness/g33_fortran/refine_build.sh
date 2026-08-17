@@ -125,10 +125,16 @@ stage() {
 
 SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
 fc() { local o="$1"; shift
-       # log the LOGICAL source, not the staging copy that carries its bytes
-       local last="${@: -1}" logical
+       # The LOGICAL path with the digest of the bytes ACTUALLY COMPILED
+       # (Codex): logging the logical path alone sent the collector back to
+       # the host file, which is the very re-read staging exists to remove --
+       # an edit between compile and collect would then record bytes the
+       # compiler never saw. The name says what this source IS; the digest
+       # says what was fed to the compiler, taken here, at that moment.
+       local last="${@: -1}" logical sha
        logical=$(awk -F'\t' -v k="$last" '$1==k{print $2}' "$STAGE_MAP" 2>/dev/null | tail -1)
-       printf '%s\n' "${logical:-$last}" >>"$SRCLOG"
+       sha=$(shasum -a 256 "$last" | cut -d' ' -f1)
+       printf '%s\t%s\n' "${logical:-$last}" "$sha" >>"$SRCLOG"
        printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
@@ -164,6 +170,11 @@ if [ "$DUMP" = 1 ]; then
     MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL}.F"
     cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"
     mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"
+    # ...and the source log names it as the bundle publishes it: the
+    # content-addressed path lives under TMPDIR, which differs per machine,
+    # and a machine-specific string in the provenance would move the same
+    # experiment's address between hosts.
+    printf '%s\t%s\n' "$MODULE_SRC" "module_mp_ovl.F" >>"$STAGE_MAP"
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi

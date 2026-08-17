@@ -43,6 +43,13 @@ def _git(*args: str) -> str:
                           text=True).stdout.strip()
 
 
+def _source_row(line: str, norm) -> dict:
+    """One `sources.txt` line as a record: the logical path, and the digest
+    of what the compiler read."""
+    path, _, sha = line.partition("\t")
+    return {"path": norm(path), "sha256": sha.strip() or sha256(Path(path))}
+
+
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
             exe: Path | None = None, compiled: Path | None = None,
             staged: Path | None = None) -> dict:
@@ -82,16 +89,20 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
         # literal path gave the same instrumented build a different identity in
         # every run. The digest is what identifies a source; the literal path is
         # diagnostic.
-        "sources": ([{"path": norm(ln), "sha256": sha256(ln)}
-                     for ln in dict.fromkeys(srcs.read_text().split())]
+        # `path<TAB>digest`, where the digest is of the bytes the compiler
+        # was fed, taken AT COMPILE TIME (owner review §10, Codex). Re-reading
+        # the path here is what left a window: staging makes the compiled
+        # bytes addressable, and recording their digest at the moment of
+        # compilation is what closes it. A line without a digest is an older
+        # log, and is hashed as before.
+        "sources": ([_source_row(ln, norm) for ln in
+                     dict.fromkeys(srcs.read_text().splitlines()) if ln.strip()]
                     if srcs.exists() else []),
         "executable_sha256": sha256(exe) if exe and Path(exe).exists() else None,
         "build_script_sha256": sha256(script),
         # The PATH is the pinned host location -- what the experiment is
         # about -- and the DIGEST is of the staged bytes the compiler read,
-        # which are the same bytes by construction (owner review §10). Hashing
-        # the host path again here is what left a window for an edit between
-        # compile and record.
+        # which are the same bytes by construction (owner review §10).
         "module_path": norm(str(module)),
         "module_sha256": sha256(staged if staged is not None else module),
         # None when the pinned module IS what was compiled.

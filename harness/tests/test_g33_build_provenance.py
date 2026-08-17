@@ -156,7 +156,12 @@ def test_identity_is_stable_across_output_directories(build, tmp_path):
 def test_the_build_logs_its_sources_and_its_link():
     """A provenance field nothing populates records nothing."""
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    assert "SRCLOG=" in script and 'printf \'%s\\n\' "${@: -1}" >>"$SRCLOG"' in script
+    assert "SRCLOG=" in script
+    # the log carries the LOGICAL path with the digest of the bytes the
+    # compiler was actually fed, taken at compile time -- re-reading the
+    # path when collecting is what staging exists to remove (owner §10)
+    assert 'sha=$(shasum -a 256 "$last" | cut -d\' \' -f1)' in script
+    assert '>>"$SRCLOG"' in script
     assert 'printf \'%q \' "${LINK[@]}" >>"$CMDLOG"' in script
 
 
